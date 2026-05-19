@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { API_BASE, MARKETS, useLanguage } from './appShared'
+import { API_BASE, MARKETS, marketLabel, useLanguage } from './appShared'
+import { LOCALE_BY_LANGUAGE, tr, type Language } from './i18n'
 
 type ChallengePageProps = {
   token?: string | null
@@ -17,20 +18,16 @@ function formatMoney(value: any) {
   return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
-function formatDate(value: string | null | undefined, language: string) {
+function formatDate(value: string | null | undefined, language: Language) {
   if (!value) return '-'
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+  return parsed.toLocaleString(LOCALE_BY_LANGUAGE[language], {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-function marketLabel(value: string, language: string) {
-  return MARKETS.find((market) => market.value === value)?.[language === 'zh' ? 'labelZh' : 'label'] || value
 }
 
 export function ChallengePage({ token }: ChallengePageProps) {
@@ -89,7 +86,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
       setChallenges(data.challenges || [])
       setError(null)
     } catch (err: any) {
-      setError(err?.message || (language === 'zh' ? '挑战加载失败' : 'Failed to load challenges'))
+      setError(err?.message || tr(language, { en: 'Failed to load challenges', ja: 'チャレンジの読み込みに失敗しました', th: 'โหลดการแข่งขันล้มเหลว', vi: 'Tải thách đấu thất bại' }))
       setChallenges([])
     } finally {
       setLoading(false)
@@ -116,7 +113,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
       setSubmissions(submissionsData.submissions || [])
       setError(null)
     } catch (err: any) {
-      setError(err?.message || (language === 'zh' ? '挑战详情加载失败' : 'Failed to load challenge detail'))
+      setError(err?.message || tr(language, { en: 'Failed to load challenge detail', ja: 'チャレンジ詳細の読み込みに失敗しました', th: 'โหลดรายละเอียดการแข่งขันล้มเหลว', vi: 'Tải chi tiết thách đấu thất bại' }))
       setDetail(null)
       setLeaderboard([])
       setSubmissions([])
@@ -150,7 +147,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
       if (!res.ok) throw new Error(data.detail || 'join_failed')
       await Promise.all([loadMyChallenges(), challengeKey ? loadDetail() : loadList()])
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '加入挑战失败' : 'Failed to join challenge'))
+      alert(err?.message || tr(language, { en: 'Failed to join challenge', ja: 'チャレンジへの参加に失敗しました', th: 'เข้าร่วมการแข่งขันล้มเหลว', vi: 'Tham gia thách đấu thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -193,7 +190,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
       setStatus(data.status === 'upcoming' ? 'upcoming' : 'active')
       await loadList()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '创建挑战失败' : 'Failed to create challenge'))
+      alert(err?.message || tr(language, { en: 'Failed to create challenge', ja: 'チャレンジの作成に失敗しました', th: 'สร้างการแข่งขันล้มเหลว', vi: 'Tạo thách đấu thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -220,7 +217,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
       setSubmissionContent('')
       await loadDetail()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '提交失败' : 'Submission failed'))
+      alert(err?.message || tr(language, { en: 'Submission failed', ja: '送信に失敗しました', th: 'ส่งล้มเหลว', vi: 'Gửi thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -236,7 +233,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
     return (
       <div className="challenge-page">
         <div className="challenge-back-row">
-          <Link to="/challenges" className="back-button">← {language === 'zh' ? '返回挑战列表' : 'Back to challenges'}</Link>
+          <Link to="/challenges" className="back-button">← {tr(language, { en: 'Back to challenges', ja: 'チャレンジ一覧に戻る', th: 'กลับไปยังการแข่งขัน', vi: 'Quay lại danh sách thách đấu' })}</Link>
         </div>
 
         <section className="challenge-hero">
@@ -258,13 +255,13 @@ export function ChallengePage({ token }: ChallengePageProps) {
                 onClick={() => handleJoin(detail.challenge_key)}
               >
                 {isJoined
-                  ? (language === 'zh' ? '已加入' : 'Joined')
-                  : (language === 'zh' ? '加入挑战' : 'Join')}
+                  ? tr(language, { en: 'Joined', ja: '参加済み', th: 'เข้าร่วมแล้ว', vi: 'Đã tham gia' })
+                  : tr(language, { en: 'Join', ja: '参加', th: 'เข้าร่วม', vi: 'Tham gia' })}
               </button>
             )}
             {!token && (
               <Link className="btn btn-secondary" to="/login">
-                {language === 'zh' ? '登录后加入' : 'Login to join'}
+                {tr(language, { en: 'Login to join', ja: 'ログインして参加', th: 'เข้าสู่ระบบเพื่อเข้าร่วม', vi: 'Đăng nhập để tham gia' })}
               </Link>
             )}
           </div>
@@ -272,19 +269,19 @@ export function ChallengePage({ token }: ChallengePageProps) {
 
         <section className="challenge-metrics-strip">
           <div>
-            <span>{language === 'zh' ? '参赛者' : 'Participants'}</span>
+            <span>{tr(language, { en: 'Participants', ja: '参加者', th: 'ผู้เข้าร่วม', vi: 'Người tham gia' })}</span>
             <strong>{detail.participant_count || 0}</strong>
           </div>
           <div>
-            <span>{language === 'zh' ? '初始资金' : 'Initial capital'}</span>
+            <span>{tr(language, { en: 'Initial capital', ja: '初期資金', th: 'เงินทุนเริ่มต้น', vi: 'Vốn ban đầu' })}</span>
             <strong>{formatMoney(detail.initial_capital)}</strong>
           </div>
           <div>
-            <span>{language === 'zh' ? '最大仓位' : 'Max position'}</span>
+            <span>{tr(language, { en: 'Max position', ja: '最大ポジション', th: 'ตำแหน่งสูงสุด', vi: 'Vị thế tối đa' })}</span>
             <strong>{formatPct(detail.max_position_pct)}</strong>
           </div>
           <div>
-            <span>{language === 'zh' ? '结束时间' : 'Ends'}</span>
+            <span>{tr(language, { en: 'Ends', ja: '終了', th: 'สิ้นสุด', vi: 'Kết thúc' })}</span>
             <strong>{formatDate(detail.end_at, language)}</strong>
           </div>
         </section>
@@ -292,12 +289,12 @@ export function ChallengePage({ token }: ChallengePageProps) {
         <div className="challenge-detail-grid">
           <section className="challenge-panel challenge-panel-main">
             <div className="challenge-section-header">
-              <h2>{language === 'zh' ? 'Leaderboard' : 'Leaderboard'}</h2>
+              <h2>{tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' })}</h2>
               <span className="challenge-badge">{detail.challenge_key}</span>
             </div>
             {leaderboard.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-title">{language === 'zh' ? '暂无排名' : 'No leaderboard yet'}</div>
+                <div className="empty-title">{tr(language, { en: 'No leaderboard yet', ja: 'まだリーダーボードがありません', th: 'ยังไม่มีอันดับ', vi: 'Chưa có bảng xếp hạng' })}</div>
               </div>
             ) : (
               <div className="challenge-leaderboard">
@@ -306,8 +303,8 @@ export function ChallengePage({ token }: ChallengePageProps) {
                     <span className="challenge-rank-number">{row.rank ? `#${row.rank}` : 'DQ'}</span>
                     <span className="challenge-agent-name">{row.agent_name || `Agent ${row.agent_id}`}</span>
                     <span className={(row.return_pct || 0) >= 0 ? 'challenge-positive' : 'challenge-negative'}>{formatPct(row.return_pct)}</span>
-                    <span>{language === 'zh' ? '回撤' : 'DD'} {formatPct(row.max_drawdown)}</span>
-                    <span>{language === 'zh' ? '交易' : 'Trades'} {row.trade_count || 0}</span>
+                    <span>{tr(language, { en: 'DD', ja: 'ドローダウン', th: 'ดรอว์ดาวน์', vi: 'Sụt giảm' })} {formatPct(row.max_drawdown)}</span>
+                    <span>{tr(language, { en: 'Trades', ja: '取引数', th: 'จำนวนเทรด', vi: 'Số giao dịch' })} {row.trade_count || 0}</span>
                     <span>{row.disqualified_reason || formatPct(row.final_score)}</span>
                   </div>
                 ))}
@@ -317,13 +314,13 @@ export function ChallengePage({ token }: ChallengePageProps) {
 
           <aside className="challenge-panel">
             <div className="challenge-section-header">
-              <h2>{language === 'zh' ? '规则' : 'Rules'}</h2>
+              <h2>{tr(language, { en: 'Rules', ja: 'ルール', th: 'กฎ', vi: 'Quy tắc' })}</h2>
             </div>
             <div className="challenge-rule-stack">
-              <div><span>{language === 'zh' ? '标的' : 'Symbol'}</span><strong>{detail.symbol || 'all'}</strong></div>
-              <div><span>{language === 'zh' ? '类型' : 'Type'}</span><strong>{detail.challenge_type}</strong></div>
-              <div><span>{language === 'zh' ? '评分' : 'Scoring'}</span><strong>{detail.scoring_method}</strong></div>
-              <div><span>{language === 'zh' ? '最大回撤参数' : 'Drawdown setting'}</span><strong>{formatPct(detail.max_drawdown_pct)}</strong></div>
+              <div><span>{tr(language, { en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' })}</span><strong>{detail.symbol || 'all'}</strong></div>
+              <div><span>{tr(language, { en: 'Type', ja: 'タイプ', th: 'ประเภท', vi: 'Loại' })}</span><strong>{detail.challenge_type}</strong></div>
+              <div><span>{tr(language, { en: 'Scoring', ja: 'スコアリング', th: 'การให้คะแนน', vi: 'Chấm điểm' })}</span><strong>{detail.scoring_method}</strong></div>
+              <div><span>{tr(language, { en: 'Drawdown setting', ja: 'ドローダウン設定', th: 'การตั้งค่าดรอว์ดาวน์', vi: 'Cài đặt sụt giảm' })}</span><strong>{formatPct(detail.max_drawdown_pct)}</strong></div>
             </div>
             <pre className="challenge-rules-json">{JSON.stringify(detail.rules || {}, null, 2)}</pre>
           </aside>
@@ -331,7 +328,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
 
         <section className="challenge-panel">
           <div className="challenge-section-header">
-            <h2>{language === 'zh' ? '提交与复盘' : 'Submissions and Review'}</h2>
+            <h2>{tr(language, { en: 'Submissions and Review', ja: '提出とレビュー', th: 'การส่งและรีวิว', vi: 'Bài nộp và Đánh giá' })}</h2>
           </div>
           {token && isJoined && detail.status !== 'settled' && (
             <form className="challenge-submit-form" onSubmit={handleSubmit}>
@@ -339,17 +336,17 @@ export function ChallengePage({ token }: ChallengePageProps) {
                 className="form-textarea"
                 value={submissionContent}
                 onChange={(event) => setSubmissionContent(event.target.value)}
-                placeholder={language === 'zh' ? '写下你的挑战复盘、预测或策略说明' : 'Add a challenge review, prediction, or strategy note'}
+                placeholder={tr(language, { en: 'Add a challenge review, prediction, or strategy note', ja: 'チャレンジのレビュー、予測、または戦略メモを追加', th: 'เพิ่มรีวิวการแข่งขัน การคาดการณ์ หรือบันทึกกลยุทธ์', vi: 'Thêm đánh giá thách đấu, dự đoán hoặc ghi chú chiến lược' })}
                 required
               />
               <button className="btn btn-primary" disabled={busy} type="submit">
-                {language === 'zh' ? '提交' : 'Submit'}
+                {tr(language, { en: 'Submit', ja: '送信', th: 'ส่ง', vi: 'Gửi' })}
               </button>
             </form>
           )}
           {submissions.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-title">{language === 'zh' ? '暂无提交' : 'No submissions yet'}</div>
+              <div className="empty-title">{tr(language, { en: 'No submissions yet', ja: 'まだ提出がありません', th: 'ยังไม่มีการส่ง', vi: 'Chưa có bài nộp' })}</div>
             </div>
           ) : (
             <div className="challenge-submission-list">
@@ -374,14 +371,14 @@ export function ChallengePage({ token }: ChallengePageProps) {
     <div className="challenge-page">
       <div className="header">
         <div>
-          <h1 className="header-title">{language === 'zh' ? 'Agent Challenge' : 'Agent Challenges'}</h1>
+          <h1 className="header-title">{tr(language, { en: 'Agent Challenges', ja: 'エージェントチャレンジ', th: 'การแข่งขันเอเจนต์', vi: 'Thách đấu Agent' })}</h1>
           <p className="header-subtitle">
-            {language === 'zh' ? '报名、提交、结算和导出都围绕可复现实验记录运行' : 'Enroll, submit, settle, and export reproducible competition records'}
+            {tr(language, { en: 'Enroll, submit, settle, and export reproducible competition records', ja: '登録、提出、決済、エクスポートのすべてが再現可能な競技記録を中心に動作します', th: 'ลงทะเบียน ส่ง ชำระบัญชี และส่งออกบันทึกการแข่งขันที่ทำซ้ำได้', vi: 'Đăng ký, nộp, kết toán và xuất các bản ghi cuộc thi có thể tái lập' })}
           </p>
         </div>
         {token && (
           <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>
-            {language === 'zh' ? '创建挑战' : 'Create challenge'}
+            {tr(language, { en: 'Create challenge', ja: 'チャレンジを作成', th: 'สร้างการแข่งขัน', vi: 'Tạo thách đấu' })}
           </button>
         )}
       </div>
@@ -406,7 +403,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
               className="form-input"
               value={createForm.title}
               onChange={(event) => setCreateForm({ ...createForm, title: event.target.value })}
-              placeholder={language === 'zh' ? '挑战标题' : 'Challenge title'}
+              placeholder={tr(language, { en: 'Challenge title', ja: 'チャレンジタイトル', th: 'ชื่อการแข่งขัน', vi: 'Tiêu đề thách đấu' })}
               required
             />
             <input
@@ -461,7 +458,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
               type="datetime-local"
             />
             <button className="btn btn-primary" disabled={busy} type="submit">
-              {language === 'zh' ? '保存挑战' : 'Save challenge'}
+              {tr(language, { en: 'Save challenge', ja: 'チャレンジを保存', th: 'บันทึกการแข่งขัน', vi: 'Lưu thách đấu' })}
             </button>
           </form>
         </section>
@@ -475,7 +472,7 @@ export function ChallengePage({ token }: ChallengePageProps) {
 
       {challenges.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-title">{language === 'zh' ? '暂无挑战' : 'No challenges yet'}</div>
+          <div className="empty-title">{tr(language, { en: 'No challenges yet', ja: 'まだチャレンジがありません', th: 'ยังไม่มีการแข่งขัน', vi: 'Chưa có thách đấu' })}</div>
         </div>
       ) : (
         <div className="challenge-list">
@@ -493,8 +490,8 @@ export function ChallengePage({ token }: ChallengePageProps) {
                     {challenge.title}
                   </Link>
                   <div className="challenge-list-meta">
-                    <span>{language === 'zh' ? '参赛' : 'Participants'} {challenge.participant_count || 0}</span>
-                    <span>{language === 'zh' ? '结束' : 'Ends'} {formatDate(challenge.end_at, language)}</span>
+                    <span>{tr(language, { en: 'Participants', ja: '参加者', th: 'ผู้เข้าร่วม', vi: 'Người tham gia' })} {challenge.participant_count || 0}</span>
+                    <span>{tr(language, { en: 'Ends', ja: '終了', th: 'สิ้นสุด', vi: 'Kết thúc' })} {formatDate(challenge.end_at, language)}</span>
                     <span>{formatMoney(challenge.initial_capital)}</span>
                   </div>
                 </div>
@@ -505,11 +502,11 @@ export function ChallengePage({ token }: ChallengePageProps) {
                       disabled={busy || isJoined}
                       onClick={() => handleJoin(challenge.challenge_key)}
                     >
-                      {isJoined ? (language === 'zh' ? '已加入' : 'Joined') : (language === 'zh' ? '加入' : 'Join')}
+                      {isJoined ? tr(language, { en: 'Joined', ja: '参加済み', th: 'เข้าร่วมแล้ว', vi: 'Đã tham gia' }) : tr(language, { en: 'Join', ja: '参加', th: 'เข้าร่วม', vi: 'Tham gia' })}
                     </button>
                   )}
                   <Link className="btn btn-ghost" to={`/challenges/${challenge.challenge_key}`}>
-                    {language === 'zh' ? '查看' : 'Open'}
+                    {tr(language, { en: 'Open', ja: '開く', th: 'เปิด', vi: 'Mở' })}
                   </Link>
                 </div>
               </article>

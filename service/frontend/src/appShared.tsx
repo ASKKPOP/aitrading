@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-import { Language, getT } from './i18n'
+import { Language, getT, LOCALE_BY_LANGUAGE, tr } from './i18n'
 
 interface LanguageContextType {
   language: Language
@@ -59,10 +59,10 @@ function parseRecordedAt(recordedAt: string) {
 }
 
 export function formatIntelTimestamp(timestamp: string | null | undefined, language: Language) {
-  if (!timestamp) return language === 'zh' ? '暂无快照' : 'No snapshot yet'
+  if (!timestamp) return tr(language, { en: 'No snapshot yet', ja: 'スナップショットなし', th: 'ยังไม่มีสแนปช็อต', vi: 'Chưa có ảnh chụp' })
   const parsed = parseRecordedAt(timestamp)
-  if (!parsed) return language === 'zh' ? '时间未知' : 'Unknown time'
-  const formatted = parsed.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+  if (!parsed) return tr(language, { en: 'Unknown time', ja: '時刻不明', th: 'เวลาไม่ทราบ', vi: 'Thời gian không rõ' })
+  const formatted = parsed.toLocaleString(LOCALE_BY_LANGUAGE[language], {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -82,14 +82,14 @@ export function formatIntelNumber(value: number | null | undefined, digits = 2) 
 
 function formatLeaderboardLabel(date: Date, chartRange: LeaderboardChartRange, language: Language) {
   if (chartRange === '24h') {
-    return date.toLocaleTimeString(language === 'zh' ? 'zh-CN' : 'en-US', {
+    return date.toLocaleTimeString(LOCALE_BY_LANGUAGE[language], {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     })
   }
 
-  return date.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', {
+  return date.toLocaleDateString(LOCALE_BY_LANGUAGE[language], {
     month: 'short',
     day: 'numeric'
   })
@@ -258,16 +258,26 @@ export type MarketIntelNewsCategory = {
   available: boolean
 }
 
-export const MARKETS = [
-  { value: 'all', label: 'All', labelZh: '全部', supported: true },
-  { value: 'us-stock', label: 'US Stock', labelZh: '美股', supported: true },
-  { value: 'crypto', label: 'Crypto (Testing)', labelZh: '加密货币（测试中）', supported: true },
-  { value: 'a-stock', label: 'A-Share (Developing)', labelZh: 'A股（开发中）', supported: false },
-  { value: 'polymarket', label: 'Polymarket (Testing)', labelZh: '预测市场（测试中）', supported: true },
-  { value: 'forex', label: 'Forex (Developing)', labelZh: '外汇（开发中）', supported: false },
-  { value: 'options', label: 'Options (Developing)', labelZh: '期权（开发中）', supported: false },
-  { value: 'futures', label: 'Futures (Developing)', labelZh: '期货（开发中）', supported: false },
+export type MarketEntry = {
+  value: string
+  supported: boolean
+  labels: Record<Language, string>
+}
+
+export const MARKETS: MarketEntry[] = [
+  { value: 'all', supported: true, labels: { en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả' } },
+  { value: 'us-stock', supported: true, labels: { en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' } },
+  { value: 'crypto', supported: true, labels: { en: 'Crypto (Testing)', ja: '暗号資産（テスト中）', th: 'คริปโต (ทดสอบ)', vi: 'Tiền mã hóa (Thử nghiệm)' } },
+  { value: 'a-stock', supported: false, labels: { en: 'A-Share (Developing)', ja: 'A株（開発中）', th: 'A-Share (กำลังพัฒนา)', vi: 'A-Share (Đang phát triển)' } },
+  { value: 'polymarket', supported: true, labels: { en: 'Polymarket (Testing)', ja: 'Polymarket（テスト中）', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)' } },
+  { value: 'forex', supported: false, labels: { en: 'Forex (Developing)', ja: '外国為替（開発中）', th: 'Forex (กำลังพัฒนา)', vi: 'Forex (Đang phát triển)' } },
+  { value: 'options', supported: false, labels: { en: 'Options (Developing)', ja: 'オプション（開発中）', th: 'ออปชั่น (กำลังพัฒนา)', vi: 'Quyền chọn (Đang phát triển)' } },
+  { value: 'futures', supported: false, labels: { en: 'Futures (Developing)', ja: '先物（開発中）', th: 'ฟิวเจอร์ส (กำลังพัฒนา)', vi: 'Hợp đồng tương lai (Đang phát triển)' } },
 ]
+
+export function marketLabel(value: string, language: Language): string {
+  return MARKETS.find((m) => m.value === value)?.labels[language] ?? value
+}
 
 export function isUSMarketOpen(): boolean {
   const now = new Date()

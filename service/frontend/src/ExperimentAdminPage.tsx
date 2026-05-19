@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
 import { API_BASE, useLanguage } from './appShared'
+import { tr } from './i18n'
 
 type ExperimentAdminPageProps = {
   token?: string | null
@@ -102,7 +103,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       try {
         variants = JSON.parse(formData.variants_json)
       } catch {
-        alert(language === 'zh' ? 'Variants JSON 格式错误' : 'Invalid variants JSON')
+        alert(tr(language, { en: 'Invalid variants JSON', ja: 'バリアント JSON の形式が無効です', th: 'รูปแบบ JSON ของรูปแบบไม่ถูกต้อง', vi: 'JSON biến thể không hợp lệ' }))
         return
       }
       const res = await fetch(`${API_BASE}/experiments`, {
@@ -127,7 +128,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       await loadExperiments()
       await loadAssignments(data.experiment_key)
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '创建实验失败' : 'Failed to create experiment'))
+      alert(err?.message || tr(language, { en: 'Failed to create experiment', ja: '実験の作成に失敗しました', th: 'สร้างการทดลองล้มเหลว', vi: 'Tạo thí nghiệm thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -152,7 +153,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       await loadExperiments()
       await loadAssignments(experimentKey)
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '状态更新失败' : 'Failed to update status'))
+      alert(err?.message || tr(language, { en: 'Failed to update status', ja: 'ステータスの更新に失敗しました', th: 'อัปเดตสถานะล้มเหลว', vi: 'Cập nhật trạng thái thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -213,9 +214,9 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
     <div className="experiment-page">
       <div className="header">
         <div>
-          <h1 className="header-title">{language === 'zh' ? '实验控制台' : 'Experiment Console'}</h1>
+          <h1 className="header-title">{tr(language, { en: 'Experiment Console', ja: '実験コンソール', th: 'คอนโซลการทดลอง', vi: 'Bảng điều khiển Thí nghiệm' })}</h1>
           <p className="header-subtitle">
-            {language === 'zh' ? '创建分组、查看 assignment 规模和奖励机制' : 'Create assignments, inspect variant scale, and manage reward policy'}
+            {tr(language, { en: 'Create assignments, inspect variant scale, and manage reward policy', ja: '割り当てを作成し、バリアントの規模と報酬ポリシーを管理します', th: 'สร้างการมอบหมาย ตรวจสอบขนาดของรูปแบบ และจัดการนโยบายรางวัล', vi: 'Tạo phân bổ, kiểm tra quy mô biến thể và quản lý chính sách phần thưởng' })}
           </p>
         </div>
       </div>
@@ -223,13 +224,13 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       <div className="experiment-grid">
         <section className="experiment-panel experiment-panel-main">
           <div className="experiment-section-header">
-            <h2>{language === 'zh' ? '实验列表' : 'Experiments'}</h2>
-            <button className="btn btn-ghost" onClick={loadExperiments}>{language === 'zh' ? '刷新' : 'Refresh'}</button>
+            <h2>{tr(language, { en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' })}</h2>
+            <button className="btn btn-ghost" onClick={loadExperiments}>{tr(language, { en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới' })}</button>
           </div>
           {loading ? (
             <div className="loading"><div className="spinner"></div></div>
           ) : experiments.length === 0 ? (
-            <div className="empty-state"><div className="empty-title">{language === 'zh' ? '暂无实验' : 'No experiments yet'}</div></div>
+            <div className="empty-state"><div className="empty-title">{tr(language, { en: 'No experiments yet', ja: 'まだ実験がありません', th: 'ยังไม่มีการทดลอง', vi: 'Chưa có thí nghiệm nào' })}</div></div>
           ) : (
             <div className="experiment-list">
               {experiments.map((experiment) => (
@@ -252,10 +253,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   {token && (
                     <div className="experiment-actions">
                       <button className="btn btn-secondary" disabled={busy} onClick={() => updateStatus(experiment.experiment_key, experiment.status === 'active' ? 'paused' : 'active')}>
-                        {experiment.status === 'active' ? (language === 'zh' ? '暂停' : 'Pause') : (language === 'zh' ? '启动' : 'Start')}
+                        {experiment.status === 'active' ? tr(language, { en: 'Pause', ja: '一時停止', th: 'หยุดชั่วคราว', vi: 'Tạm dừng' }) : tr(language, { en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu' })}
                       </button>
                       <button className="btn btn-ghost" onClick={() => loadAssignments(experiment.experiment_key)}>
-                        {language === 'zh' ? '分组' : 'Assignments'}
+                        {tr(language, { en: 'Assignments', ja: '割り当て', th: 'การมอบหมาย', vi: 'Phân bổ' })}
                       </button>
                     </div>
                   )}
@@ -266,10 +267,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
         </section>
 
         <aside className="experiment-panel">
-          <div className="experiment-section-header"><h2>{language === 'zh' ? '创建实验' : 'Create Experiment'}</h2></div>
+          <div className="experiment-section-header"><h2>{tr(language, { en: 'Create Experiment', ja: '実験を作成', th: 'สร้างการทดลอง', vi: 'Tạo thí nghiệm' })}</h2></div>
           {token ? (
             <form className="experiment-form" onSubmit={handleCreate}>
-              <input className="form-input" value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} placeholder={language === 'zh' ? '实验标题' : 'Experiment title'} required />
+              <input className="form-input" value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} placeholder={tr(language, { en: 'Experiment title', ja: '実験タイトル', th: 'ชื่อการทดลอง', vi: 'Tiêu đề thí nghiệm' })} required />
               <input className="form-input" value={formData.experiment_key} onChange={(event) => setFormData({ ...formData, experiment_key: event.target.value })} placeholder="experiment-key" />
               <div className="experiment-form-row">
                 <select className="form-select" value={formData.status} onChange={(event) => setFormData({ ...formData, status: event.target.value })}>
@@ -286,10 +287,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 <input className="form-input" type="datetime-local" value={formData.end_at} onChange={(event) => setFormData({ ...formData, end_at: event.target.value })} />
               </div>
               <textarea className="form-textarea experiment-json" value={formData.variants_json} onChange={(event) => setFormData({ ...formData, variants_json: event.target.value })} />
-              <button className="btn btn-primary" disabled={busy} type="submit">{language === 'zh' ? '保存实验' : 'Save experiment'}</button>
+              <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { en: 'Save experiment', ja: '実験を保存', th: 'บันทึกการทดลอง', vi: 'Lưu thí nghiệm' })}</button>
             </form>
           ) : (
-            <div className="empty-state"><div className="empty-title">{language === 'zh' ? '登录后可创建实验' : 'Login to create experiments'}</div></div>
+            <div className="empty-state"><div className="empty-title">{tr(language, { en: 'Login to create experiments', ja: 'ログイン後に実験を作成できます', th: 'เข้าสู่ระบบเพื่อสร้างการทดลอง', vi: 'Đăng nhập để tạo thí nghiệm' })}</div></div>
           )}
         </aside>
       </div>
@@ -297,7 +298,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       {token && (
         <section className="experiment-panel">
           <div className="experiment-section-header">
-            <h2>{language === 'zh' ? '实验通知' : 'Experiment Notifications'}</h2>
+            <h2>{tr(language, { en: 'Experiment Notifications', ja: '実験通知', th: 'การแจ้งเตือนการทดลอง', vi: 'Thông báo thí nghiệm' })}</h2>
             <span className="experiment-badge">{notificationPreview?.campaign_id || 'dry-run first'}</span>
           </div>
           <form
@@ -314,7 +315,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 onChange={(event) => setNotificationForm({ ...notificationForm, experiment_key: event.target.value, variant_key: '' })}
                 required
               >
-                <option value="">{language === 'zh' ? '选择实验' : 'Select experiment'}</option>
+                <option value="">{tr(language, { en: 'Select experiment', ja: '実験を選択', th: 'เลือกการทดลอง', vi: 'Chọn thí nghiệm' })}</option>
                 {experiments.map((experiment) => (
                   <option key={experiment.experiment_key} value={experiment.experiment_key}>{experiment.title || experiment.experiment_key}</option>
                 ))}
@@ -324,7 +325,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 value={notificationForm.variant_key}
                 onChange={(event) => setNotificationForm({ ...notificationForm, variant_key: event.target.value })}
               >
-                <option value="">{language === 'zh' ? '全部 variant' : 'All variants'}</option>
+                <option value="">{tr(language, { en: 'All variants', ja: 'すべてのバリアント', th: 'รูปแบบทั้งหมด', vi: 'Tất cả biến thể' })}</option>
                 {notificationVariants.map((variant: any) => (
                   <option key={variant.key} value={variant.key}>{variant.key}</option>
                 ))}
@@ -401,10 +402,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
             </div>
             <div className="experiment-actions">
               <button className="btn btn-secondary" type="button" disabled={notificationBusy} onClick={() => submitNotification(true)}>
-                {language === 'zh' ? 'Dry run 预览' : 'Dry run preview'}
+                {tr(language, { en: 'Dry run preview', ja: 'ドライランプレビュー', th: 'ตัวอย่างการทดลองรัน', vi: 'Xem trước chạy thử' })}
               </button>
               <button className="btn btn-primary" type="submit" disabled={notificationBusy || notificationForm.dry_run}>
-                {language === 'zh' ? '确认发送' : 'Confirm send'}
+                {tr(language, { en: 'Confirm send', ja: '送信を確認', th: 'ยืนยันการส่ง', vi: 'Xác nhận gửi' })}
               </button>
             </div>
           </form>
@@ -435,13 +436,13 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 <strong>{row.agent_count || row.count}</strong>
                 {row.quality_score_avg !== undefined && (
                   <small>
-                    {language === 'zh' ? '收益' : 'Return'} {Number(row.return_pct_avg || 0).toFixed(2)}%
+                    {tr(language, { en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi nhuận' })} {Number(row.return_pct_avg || 0).toFixed(2)}%
                     {' · '}
-                    {language === 'zh' ? '回撤' : 'DD'} {Number(row.max_drawdown_avg || 0).toFixed(2)}%
+                    {tr(language, { en: 'DD', ja: 'DD', th: 'DD', vi: 'DD' })} {Number(row.max_drawdown_avg || 0).toFixed(2)}%
                     {' · '}
-                    {language === 'zh' ? '交易' : 'Trades'} {Number(row.trade_count || 0)}
+                    {tr(language, { en: 'Trades', ja: '取引', th: 'การซื้อขาย', vi: 'Giao dịch' })} {Number(row.trade_count || 0)}
                     {' · '}
-                    {language === 'zh' ? '质量' : 'Quality'} {Number(row.quality_score_avg || 0).toFixed(2)}
+                    {tr(language, { en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {Number(row.quality_score_avg || 0).toFixed(2)}
                   </small>
                 )}
               </div>

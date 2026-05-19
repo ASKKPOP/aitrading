@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { API_BASE, MARKETS, useLanguage } from './appShared'
+import { LOCALE_BY_LANGUAGE, tr, type Language } from './i18n'
 
 type TeamMissionsPageProps = {
   token?: string | null
@@ -9,11 +10,11 @@ type TeamMissionsPageProps = {
 
 const missionStatuses = ['upcoming', 'active', 'settled'] as const
 
-function formatDate(value: string | null | undefined, language: string) {
+function formatDate(value: string | null | undefined, language: Language) {
   if (!value) return '-'
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+  return parsed.toLocaleString(LOCALE_BY_LANGUAGE[language], {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -25,8 +26,8 @@ function formatScore(value: any) {
   return Number(value || 0).toFixed(2)
 }
 
-function marketLabel(value: string, language: string) {
-  return MARKETS.find((market) => market.value === value)?.[language === 'zh' ? 'labelZh' : 'label'] || value
+function marketLabel(value: string, language: Language) {
+  return MARKETS.find((market) => market.value === value)?.labels[language] || value
 }
 
 export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
@@ -84,7 +85,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setMissions(data.missions || [])
       setError(null)
     } catch (err: any) {
-      setError(err?.message || (language === 'zh' ? 'Team mission 加载失败' : 'Failed to load team missions'))
+      setError(err?.message || tr(language, { en: 'Failed to load team missions', ja: 'チームミッションの読み込みに失敗しました', th: 'โหลดภารกิจของทีมล้มเหลว', vi: 'Tải nhiệm vụ nhóm thất bại' }))
       setMissions([])
     } finally {
       setLoading(false)
@@ -105,7 +106,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setLeaderboard(leaderboardData.leaderboard || [])
       setError(null)
     } catch (err: any) {
-      setError(err?.message || (language === 'zh' ? 'Mission 详情加载失败' : 'Failed to load mission detail'))
+      setError(err?.message || tr(language, { en: 'Failed to load mission detail', ja: 'ミッション詳細の読み込みに失敗しました', th: 'โหลดรายละเอียดภารกิจล้มเหลว', vi: 'Tải chi tiết nhiệm vụ thất bại' }))
       setMission(null)
       setLeaderboard([])
     } finally {
@@ -123,7 +124,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setTeam(data)
       setError(null)
     } catch (err: any) {
-      setError(err?.message || (language === 'zh' ? 'Team 加载失败' : 'Failed to load team'))
+      setError(err?.message || tr(language, { en: 'Failed to load team', ja: 'チームの読み込みに失敗しました', th: 'โหลดทีมล้มเหลว', vi: 'Tải nhóm thất bại' }))
       setTeam(null)
     } finally {
       setLoading(false)
@@ -142,7 +143,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
   }, [missionKey, teamKey, status, token])
 
   const authedFetch = async (url: string, body: any = {}) => {
-    if (!token) throw new Error(language === 'zh' ? '请先登录' : 'Login required')
+    if (!token) throw new Error(tr(language, { en: 'Login required', ja: 'ログインが必要です', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }))
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -182,7 +183,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setShowCreate(false)
       await loadList()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '创建失败' : 'Create failed'))
+      alert(err?.message || tr(language, { en: 'Create failed', ja: '作成に失敗しました', th: 'สร้างล้มเหลว', vi: 'Tạo thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -194,7 +195,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       await authedFetch(`${API_BASE}/team-missions/${key}/join`, {})
       await Promise.all([loadMine(), missionKey ? loadMission() : loadList()])
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '加入失败' : 'Join failed'))
+      alert(err?.message || tr(language, { en: 'Join failed', ja: '参加に失敗しました', th: 'เข้าร่วมล้มเหลว', vi: 'Tham gia thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -209,7 +210,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setTeamForm({ name: '', role: 'lead' })
       await Promise.all([loadMission(), loadMine()])
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '创建 team 失败' : 'Failed to create team'))
+      alert(err?.message || tr(language, { en: 'Failed to create team', ja: 'チームの作成に失敗しました', th: 'สร้างทีมล้มเหลว', vi: 'Tạo nhóm thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -224,7 +225,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       })
       await loadMission()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '自动组队失败' : 'Auto-form failed'))
+      alert(err?.message || tr(language, { en: 'Auto-form failed', ja: '自動チーム編成に失敗しました', th: 'จัดทีมอัตโนมัติล้มเหลว', vi: 'Tự động tạo nhóm thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -243,7 +244,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setSubmissionForm({ title: '', content: '', confidence: '0.7' })
       await loadTeam()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '提交失败' : 'Submit failed'))
+      alert(err?.message || tr(language, { en: 'Submit failed', ja: '送信に失敗しました', th: 'ส่งล้มเหลว', vi: 'Gửi thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -261,7 +262,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       setSignalLinkForm({ signal_id: '', message_type: 'discussion' })
       await loadTeam()
     } catch (err: any) {
-      alert(err?.message || (language === 'zh' ? '绑定失败' : 'Link failed'))
+      alert(err?.message || tr(language, { en: 'Link failed', ja: 'リンクに失敗しました', th: 'เชื่อมโยงล้มเหลว', vi: 'Liên kết thất bại' }))
     } finally {
       setBusy(false)
     }
@@ -274,7 +275,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
   if (teamKey && team) {
     return (
       <div className="team-page">
-        <Link to={`/team-missions/${team.mission.mission_key}`} className="back-button">← {language === 'zh' ? '返回 Mission' : 'Back to mission'}</Link>
+        <Link to={`/team-missions/${team.mission.mission_key}`} className="back-button">← {tr(language, { en: 'Back to mission', ja: 'ミッションに戻る', th: 'กลับไปยังภารกิจ', vi: 'Quay lại nhiệm vụ' })}</Link>
         <section className="team-hero">
           <div>
             <div className="team-kicker">
@@ -289,7 +290,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
 
         <div className="team-grid">
           <section className="team-panel">
-            <div className="team-section-header"><h2>{language === 'zh' ? '成员与角色' : 'Members and Roles'}</h2></div>
+            <div className="team-section-header"><h2>{tr(language, { en: 'Members and Roles', ja: 'メンバーと役割', th: 'สมาชิกและบทบาท', vi: 'Thành viên và vai trò' })}</h2></div>
             <div className="team-member-list">
               {(team.members || []).map((member: any) => (
                 <div key={member.id} className="team-member-row">
@@ -302,23 +303,23 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
           </section>
 
           <section className="team-panel">
-            <div className="team-section-header"><h2>{language === 'zh' ? '提交团队结论' : 'Submit Team Conclusion'}</h2></div>
+            <div className="team-section-header"><h2>{tr(language, { en: 'Submit Team Conclusion', ja: 'チーム結論を送信', th: 'ส่งข้อสรุปของทีม', vi: 'Gửi kết luận của nhóm' })}</h2></div>
             {token ? (
               <form className="team-form" onSubmit={handleSubmitTeam}>
-                <input className="form-input" value={submissionForm.title} onChange={(event) => setSubmissionForm({ ...submissionForm, title: event.target.value })} placeholder={language === 'zh' ? '结论标题' : 'Submission title'} required />
-                <textarea className="form-textarea" value={submissionForm.content} onChange={(event) => setSubmissionForm({ ...submissionForm, content: event.target.value })} placeholder={language === 'zh' ? '团队共识、预测和证据' : 'Consensus, prediction, and evidence'} required />
+                <input className="form-input" value={submissionForm.title} onChange={(event) => setSubmissionForm({ ...submissionForm, title: event.target.value })} placeholder={tr(language, { en: 'Submission title', ja: '送信タイトル', th: 'หัวข้อการส่ง', vi: 'Tiêu đề bài gửi' })} required />
+                <textarea className="form-textarea" value={submissionForm.content} onChange={(event) => setSubmissionForm({ ...submissionForm, content: event.target.value })} placeholder={tr(language, { en: 'Consensus, prediction, and evidence', ja: 'コンセンサス、予測、根拠', th: 'ฉันทามติ การคาดการณ์ และหลักฐาน', vi: 'Đồng thuận, dự đoán và bằng chứng' })} required />
                 <input className="form-input" type="number" min="0" max="1" step="0.05" value={submissionForm.confidence} onChange={(event) => setSubmissionForm({ ...submissionForm, confidence: event.target.value })} />
-                <button className="btn btn-primary" disabled={busy} type="submit">{language === 'zh' ? '提交' : 'Submit'}</button>
+                <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { en: 'Submit', ja: '送信', th: 'ส่ง', vi: 'Gửi' })}</button>
               </form>
             ) : (
-              <Link className="btn btn-secondary" to="/login">{language === 'zh' ? '登录后提交' : 'Login to submit'}</Link>
+              <Link className="btn btn-secondary" to="/login">{tr(language, { en: 'Login to submit', ja: 'ログインして送信', th: 'เข้าสู่ระบบเพื่อส่ง', vi: 'Đăng nhập để gửi' })}</Link>
             )}
           </section>
         </div>
 
         <div className="team-grid">
           <section className="team-panel">
-            <div className="team-section-header"><h2>{language === 'zh' ? '公开信号绑定' : 'Linked Public Signals'}</h2></div>
+            <div className="team-section-header"><h2>{tr(language, { en: 'Linked Public Signals', ja: 'リンクされた公開シグナル', th: 'สัญญาณสาธารณะที่เชื่อมโยง', vi: 'Tín hiệu công khai đã liên kết' })}</h2></div>
             {token && (
               <form className="team-link-form" onSubmit={handleLinkSignal}>
                 <input className="form-input" type="number" value={signalLinkForm.signal_id} onChange={(event) => setSignalLinkForm({ ...signalLinkForm, signal_id: event.target.value })} placeholder="signal_id" required />
@@ -326,7 +327,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
                   <option value="discussion">discussion</option>
                   <option value="strategy">strategy</option>
                 </select>
-                <button className="btn btn-secondary" disabled={busy} type="submit">{language === 'zh' ? '绑定' : 'Link'}</button>
+                <button className="btn btn-secondary" disabled={busy} type="submit">{tr(language, { en: 'Link', ja: 'リンク', th: 'เชื่อมโยง', vi: 'Liên kết' })}</button>
               </form>
             )}
             <div className="team-message-list">
@@ -341,7 +342,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
           </section>
 
           <section className="team-panel">
-            <div className="team-section-header"><h2>{language === 'zh' ? '团队提交' : 'Team Submissions'}</h2></div>
+            <div className="team-section-header"><h2>{tr(language, { en: 'Team Submissions', ja: 'チーム送信', th: 'การส่งของทีม', vi: 'Bài gửi của nhóm' })}</h2></div>
             <div className="team-submission-list">
               {(team.submissions || []).map((submission: any) => (
                 <article key={submission.id} className="team-submission-item">
@@ -361,7 +362,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
     const isJoined = joinedMissionIds.has(mission.id)
     return (
       <div className="team-page">
-        <Link to="/team-missions" className="back-button">← {language === 'zh' ? '返回 Mission 列表' : 'Back to missions'}</Link>
+        <Link to="/team-missions" className="back-button">← {tr(language, { en: 'Back to missions', ja: 'ミッション一覧に戻る', th: 'กลับไปยังรายการภารกิจ', vi: 'Quay lại danh sách nhiệm vụ' })}</Link>
         <section className="team-hero">
           <div>
             <div className="team-kicker">
@@ -376,10 +377,10 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
             {token && mission.status !== 'settled' && (
               <>
                 <button className="btn btn-primary" disabled={busy || isJoined} onClick={() => handleJoinMission(mission.mission_key)}>
-                  {isJoined ? (language === 'zh' ? '已加入' : 'Joined') : (language === 'zh' ? '加入 Mission' : 'Join mission')}
+                  {isJoined ? tr(language, { en: 'Joined', ja: '参加済み', th: 'เข้าร่วมแล้ว', vi: 'Đã tham gia' }) : tr(language, { en: 'Join mission', ja: 'ミッションに参加', th: 'เข้าร่วมภารกิจ', vi: 'Tham gia nhiệm vụ' })}
                 </button>
                 <button className="btn btn-secondary" disabled={busy} onClick={handleAutoForm}>
-                  {language === 'zh' ? '自动组队' : 'Auto-form teams'}
+                  {tr(language, { en: 'Auto-form teams', ja: 'チーム自動編成', th: 'จัดทีมอัตโนมัติ', vi: 'Tự động tạo nhóm' })}
                 </button>
               </>
             )}
@@ -387,10 +388,10 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
         </section>
 
         <section className="team-metrics">
-          <div><span>{language === 'zh' ? '报名 Agent' : 'Participants'}</span><strong>{mission.participant_count || 0}</strong></div>
-          <div><span>{language === 'zh' ? 'Teams' : 'Teams'}</span><strong>{mission.team_count || 0}</strong></div>
-          <div><span>{language === 'zh' ? '队伍规模' : 'Team size'}</span><strong>{mission.team_size_min}-{mission.team_size_max}</strong></div>
-          <div><span>{language === 'zh' ? '截止' : 'Due'}</span><strong>{formatDate(mission.submission_due_at, language)}</strong></div>
+          <div><span>{tr(language, { en: 'Participants', ja: '参加者', th: 'ผู้เข้าร่วม', vi: 'Người tham gia' })}</span><strong>{mission.participant_count || 0}</strong></div>
+          <div><span>{tr(language, { en: 'Teams', ja: 'チーム', th: 'ทีม', vi: 'Nhóm' })}</span><strong>{mission.team_count || 0}</strong></div>
+          <div><span>{tr(language, { en: 'Team size', ja: 'チームサイズ', th: 'ขนาดทีม', vi: 'Quy mô nhóm' })}</span><strong>{mission.team_size_min}-{mission.team_size_max}</strong></div>
+          <div><span>{tr(language, { en: 'Due', ja: '締切', th: 'กำหนดส่ง', vi: 'Hạn chót' })}</span><strong>{formatDate(mission.submission_due_at, language)}</strong></div>
         </section>
 
         <div className="team-grid">
@@ -402,14 +403,14 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
                   <div>
                     <Link to={`/teams/${item.team_key}`} className="team-list-title">{item.name}</Link>
                     <div className="team-list-meta">
-                      <span>{item.member_count || 0} {language === 'zh' ? '成员' : 'members'}</span>
+                      <span>{item.member_count || 0} {tr(language, { en: 'members', ja: 'メンバー', th: 'สมาชิก', vi: 'thành viên' })}</span>
                       <span>{item.formation_method}</span>
                       <span>{item.status}</span>
                     </div>
                   </div>
                   {token && mission.status !== 'settled' && (
                     <button className="btn btn-ghost" disabled={busy} onClick={() => authedFetch(`${API_BASE}/teams/${item.team_key}/join`, {}).then(() => loadMission()).catch((err) => alert(err.message))}>
-                      {language === 'zh' ? '加入 Team' : 'Join team'}
+                      {tr(language, { en: 'Join team', ja: 'チームに参加', th: 'เข้าร่วมทีม', vi: 'Tham gia nhóm' })}
                     </button>
                   )}
                 </article>
@@ -418,35 +419,35 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
           </section>
 
           <aside className="team-panel">
-            <div className="team-section-header"><h2>{language === 'zh' ? '手动创建 Team' : 'Create Team'}</h2></div>
+            <div className="team-section-header"><h2>{tr(language, { en: 'Create Team', ja: 'チームを作成', th: 'สร้างทีม', vi: 'Tạo nhóm' })}</h2></div>
             {token ? (
               <form className="team-form" onSubmit={handleCreateTeam}>
-                <input className="form-input" value={teamForm.name} onChange={(event) => setTeamForm({ ...teamForm, name: event.target.value })} placeholder={language === 'zh' ? 'Team 名称' : 'Team name'} />
+                <input className="form-input" value={teamForm.name} onChange={(event) => setTeamForm({ ...teamForm, name: event.target.value })} placeholder={tr(language, { en: 'Team name', ja: 'チーム名', th: 'ชื่อทีม', vi: 'Tên nhóm' })} />
                 <select className="form-input" value={teamForm.role} onChange={(event) => setTeamForm({ ...teamForm, role: event.target.value })}>
                   {(mission.required_roles || ['lead', 'analyst', 'risk', 'scribe']).map((role: string) => (
                     <option key={role} value={role}>{role}</option>
                   ))}
                 </select>
-                <button className="btn btn-primary" disabled={busy} type="submit">{language === 'zh' ? '创建' : 'Create'}</button>
+                <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { en: 'Create', ja: '作成', th: 'สร้าง', vi: 'Tạo' })}</button>
               </form>
             ) : (
-              <Link className="btn btn-secondary" to="/login">{language === 'zh' ? '登录后创建' : 'Login to create'}</Link>
+              <Link className="btn btn-secondary" to="/login">{tr(language, { en: 'Login to create', ja: 'ログインして作成', th: 'เข้าสู่ระบบเพื่อสร้าง', vi: 'Đăng nhập để tạo' })}</Link>
             )}
           </aside>
         </div>
 
         <section className="team-panel">
-          <div className="team-section-header"><h2>{language === 'zh' ? 'Team Leaderboard' : 'Team Leaderboard'}</h2></div>
+          <div className="team-section-header"><h2>{tr(language, { en: 'Team Leaderboard', ja: 'チームリーダーボード', th: 'อันดับทีม', vi: 'Bảng xếp hạng nhóm' })}</h2></div>
           <div className="team-leaderboard">
             {leaderboard.length === 0 ? (
-              <div className="empty-state"><div className="empty-title">{language === 'zh' ? '暂无排名' : 'No leaderboard yet'}</div></div>
+              <div className="empty-state"><div className="empty-title">{tr(language, { en: 'No leaderboard yet', ja: 'まだランキングがありません', th: 'ยังไม่มีอันดับ', vi: 'Chưa có bảng xếp hạng' })}</div></div>
             ) : leaderboard.map((row) => (
               <div key={row.team_id} className="team-rank-row">
                 <span>#{row.rank}</span>
                 <strong>{row.team_name || row.team_key}</strong>
-                <span>{language === 'zh' ? '最终分' : 'Final'} {formatScore(row.final_score)}</span>
-                <span>{language === 'zh' ? '质量' : 'Quality'} {formatScore(row.quality_score)}</span>
-                <span>{language === 'zh' ? '共识' : 'Consensus'} {formatScore(row.consensus_gain)}</span>
+                <span>{tr(language, { en: 'Final', ja: '最終', th: 'สุดท้าย', vi: 'Chung cuộc' })} {formatScore(row.final_score)}</span>
+                <span>{tr(language, { en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {formatScore(row.quality_score)}</span>
+                <span>{tr(language, { en: 'Consensus', ja: 'コンセンサス', th: 'ฉันทามติ', vi: 'Đồng thuận' })} {formatScore(row.consensus_gain)}</span>
               </div>
             ))}
           </div>
@@ -459,12 +460,12 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
     <div className="team-page">
       <div className="header">
         <div>
-          <h1 className="header-title">{language === 'zh' ? 'Team Missions' : 'Team Missions'}</h1>
+          <h1 className="header-title">{tr(language, { en: 'Team Missions', ja: 'チームミッション', th: 'ภารกิจทีม', vi: 'Nhiệm vụ nhóm' })}</h1>
           <p className="header-subtitle">
-            {language === 'zh' ? '组队、分工、协作提交和贡献结算的实验工作台' : 'An experiment workspace for teams, roles, submissions, and contribution scoring'}
+            {tr(language, { en: 'An experiment workspace for teams, roles, submissions, and contribution scoring', ja: 'チーム、役割、送信、貢献スコアリングのための実験ワークスペース', th: 'พื้นที่ทดลองสำหรับทีม บทบาท การส่ง และการให้คะแนนการมีส่วนร่วม', vi: 'Không gian thử nghiệm cho nhóm, vai trò, bài gửi và chấm điểm đóng góp' })}
           </p>
         </div>
-        {token && <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>{language === 'zh' ? '创建 Mission' : 'Create mission'}</button>}
+        {token && <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>{tr(language, { en: 'Create mission', ja: 'ミッションを作成', th: 'สร้างภารกิจ', vi: 'Tạo nhiệm vụ' })}</button>}
       </div>
 
       <div className="team-tabs">
@@ -478,7 +479,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       {showCreate && (
         <section className="team-panel">
           <form className="team-create-grid" onSubmit={handleCreateMission}>
-            <input className="form-input" value={createForm.title} onChange={(event) => setCreateForm({ ...createForm, title: event.target.value })} placeholder={language === 'zh' ? 'Mission 标题' : 'Mission title'} required />
+            <input className="form-input" value={createForm.title} onChange={(event) => setCreateForm({ ...createForm, title: event.target.value })} placeholder={tr(language, { en: 'Mission title', ja: 'ミッションタイトル', th: 'หัวข้อภารกิจ', vi: 'Tiêu đề nhiệm vụ' })} required />
             <input className="form-input" value={createForm.mission_key} onChange={(event) => setCreateForm({ ...createForm, mission_key: event.target.value })} placeholder="mission-key" />
             <select className="form-input" value={createForm.market} onChange={(event) => setCreateForm({ ...createForm, market: event.target.value })}>
               {MARKETS.filter((market) => market.value !== 'all' && market.supported).map((market) => (
@@ -494,7 +495,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
             <input className="form-input" type="number" min="1" value={createForm.team_size_min} onChange={(event) => setCreateForm({ ...createForm, team_size_min: event.target.value })} />
             <input className="form-input" type="number" min="1" value={createForm.team_size_max} onChange={(event) => setCreateForm({ ...createForm, team_size_max: event.target.value })} />
             <input className="form-input" type="datetime-local" value={createForm.submission_due_at} onChange={(event) => setCreateForm({ ...createForm, submission_due_at: event.target.value })} />
-            <button className="btn btn-primary" disabled={busy} type="submit">{language === 'zh' ? '保存' : 'Save'}</button>
+            <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { en: 'Save', ja: '保存', th: 'บันทึก', vi: 'Lưu' })}</button>
           </form>
         </section>
       )}
@@ -502,7 +503,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
       {error && <div className="card" style={{ color: 'var(--error)' }}>{error}</div>}
 
       {missions.length === 0 ? (
-        <div className="empty-state"><div className="empty-title">{language === 'zh' ? '暂无 Mission' : 'No missions yet'}</div></div>
+        <div className="empty-state"><div className="empty-title">{tr(language, { en: 'No missions yet', ja: 'まだミッションがありません', th: 'ยังไม่มีภารกิจ', vi: 'Chưa có nhiệm vụ' })}</div></div>
       ) : (
         <div className="team-list">
           {missions.map((item) => {
@@ -517,7 +518,7 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
                   </div>
                   <Link to={`/team-missions/${item.mission_key}`} className="team-list-title">{item.title}</Link>
                   <div className="team-list-meta">
-                    <span>{item.participant_count || 0} {language === 'zh' ? '报名' : 'participants'}</span>
+                    <span>{item.participant_count || 0} {tr(language, { en: 'participants', ja: '参加者', th: 'ผู้เข้าร่วม', vi: 'người tham gia' })}</span>
                     <span>{item.team_count || 0} teams</span>
                     <span>{formatDate(item.submission_due_at, language)}</span>
                   </div>
@@ -525,10 +526,10 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
                 <div className="team-actions">
                   {token && item.status !== 'settled' && (
                     <button className="btn btn-secondary" disabled={busy || isJoined} onClick={() => handleJoinMission(item.mission_key)}>
-                      {isJoined ? (language === 'zh' ? '已加入' : 'Joined') : (language === 'zh' ? '加入' : 'Join')}
+                      {isJoined ? tr(language, { en: 'Joined', ja: '参加済み', th: 'เข้าร่วมแล้ว', vi: 'Đã tham gia' }) : tr(language, { en: 'Join', ja: '参加', th: 'เข้าร่วม', vi: 'Tham gia' })}
                     </button>
                   )}
-                  <Link className="btn btn-ghost" to={`/team-missions/${item.mission_key}`}>{language === 'zh' ? '打开' : 'Open'}</Link>
+                  <Link className="btn btn-ghost" to={`/team-missions/${item.mission_key}`}>{tr(language, { en: 'Open', ja: '開く', th: 'เปิด', vi: 'Mở' })}</Link>
                 </div>
               </article>
             )
@@ -538,4 +539,3 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
     </div>
   )
 }
-

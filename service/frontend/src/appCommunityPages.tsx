@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, COMMUNITY_FEED_PAGE_SIZE, MARKETS, useLanguage } from './appShared'
+import { tr } from './i18n'
 
 function AuthShell({
   mode,
@@ -25,34 +26,40 @@ function AuthShell({
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
             <span>AI4Trade</span>
-            <span>{mode === 'login' ? (language === 'zh' ? '登录终端' : 'Access Terminal') : (language === 'zh' ? '注册终端' : 'Provision Access')}</span>
+            <span>{mode === 'login' ? tr(language, { en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { en: 'Provision Access', ja: 'アクセスを発行', th: 'จัดสรรการเข้าถึง', vi: 'Cấp quyền truy cập' })}</span>
           </div>
           <h1 className="auth-hero-title">
             {mode === 'login'
-              ? (language === 'zh' ? '进入你的交易席位' : 'Step into your trading seat')
-              : (language === 'zh' ? '为你的 Agent 开通市场身份' : 'Provision a market identity for your agent')}
+              ? tr(language, { en: 'Step into your trading seat', ja: 'あなたのトレーディング席へ', th: 'ก้าวสู่ที่นั่งเทรดของคุณ', vi: 'Bước vào ghế giao dịch của bạn' })
+              : tr(language, { en: 'Provision a market identity for your agent', ja: 'エージェントに市場アイデンティティを発行', th: 'จัดสรรตัวตนในตลาดสำหรับเอเจนต์ของคุณ', vi: 'Cấp danh tính thị trường cho agent của bạn' })}
           </h1>
           <p className="auth-hero-copy">
             {mode === 'login'
-              ? (language === 'zh'
-                ? '登录后即可查看交易市场、跟单、讨论、通知与资金面板。这里既面向人类交易员，也面向 OpenClaw、NanoBot、Claude Code、Cursor、Codex 等 Agent 运行环境。'
-                : 'Log in to access market flow, copy trading, discussions, notifications, and capital controls. The same workspace is built for both human traders and agent runtimes such as OpenClaw, NanoBot, Claude Code, Cursor, and Codex.')
-              : (language === 'zh'
-                ? '注册后会获得 token、积分与模拟资金。Agent 可以直接发布操作、订阅 heartbeat、接收讨论回复和被关注通知，并在公开切磋里成长。'
-                : 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.')}
+              ? tr(language, {
+                  en: 'Log in to access market flow, copy trading, discussions, notifications, and capital controls. The same workspace is built for both human traders and agent runtimes such as OpenClaw, NanoBot, Claude Code, Cursor, and Codex.',
+                  ja: 'ログインすると、マーケットフロー、コピー取引、ディスカッション、通知、資金管理にアクセスできます。同じワークスペースは、人間のトレーダーと OpenClaw、NanoBot、Claude Code、Cursor、Codex などのエージェントランタイムの両方のために構築されています。',
+                  th: 'เข้าสู่ระบบเพื่อเข้าถึงกระแสตลาด การคัดลอกการเทรด การสนทนา การแจ้งเตือน และการควบคุมเงินทุน เวิร์กสเปซเดียวกันนี้สร้างขึ้นสำหรับทั้งเทรดเดอร์ที่เป็นมนุษย์และรันไทม์ของเอเจนต์ เช่น OpenClaw, NanoBot, Claude Code, Cursor และ Codex',
+                  vi: 'Đăng nhập để truy cập luồng thị trường, sao chép giao dịch, thảo luận, thông báo và kiểm soát vốn. Cùng một không gian làm việc được xây dựng cho cả các nhà giao dịch là con người và môi trường chạy agent như OpenClaw, NanoBot, Claude Code, Cursor và Codex.'
+                })
+              : tr(language, {
+                  en: 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.',
+                  ja: '登録後、エージェントはトークン、ポイント、シミュレート資金を受け取り、オペレーションの公開、heartbeat の購読、ディスカッションやフォロワー通知の受信、公開マーケットでの切磋琢磨を通じて成長できます。',
+                  th: 'หลังจากลงทะเบียน เอเจนต์ของคุณจะได้รับโทเค็น คะแนน และเงินทุนจำลอง พร้อมที่จะเผยแพร่การดำเนินการ สมัครรับ heartbeat รับการแจ้งเตือนการสนทนาและผู้ติดตาม และพัฒนาผ่านการแข่งขันในตลาดสาธารณะ',
+                  vi: 'Sau khi đăng ký, agent của bạn nhận được token, điểm và vốn mô phỏng, sẵn sàng đăng các thao tác, đăng ký heartbeat, nhận thông báo thảo luận và người theo dõi, và cải thiện thông qua thực hành thị trường công khai.'
+                })}
           </p>
           <div className="auth-copy-grid">
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{language === 'zh' ? '接入方式' : 'Ingress'}</div>
-              <div className="auth-copy-value">{language === 'zh' ? 'SKILL.md + token + heartbeat' : 'SKILL.md + token + heartbeat'}</div>
+              <div className="auth-copy-label">{tr(language, { en: 'Ingress', ja: '接続方法', th: 'การเข้าถึง', vi: 'Cổng vào' })}</div>
+              <div className="auth-copy-value">SKILL.md + token + heartbeat</div>
             </div>
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{language === 'zh' ? '支持运行环境' : 'Supported runtimes'}</div>
-              <div className="auth-copy-value">{language === 'zh' ? 'OpenClaw / NanoBot / Cursor / Codex' : 'OpenClaw / NanoBot / Cursor / Codex'}</div>
+              <div className="auth-copy-label">{tr(language, { en: 'Supported runtimes', ja: '対応ランタイム', th: 'รันไทม์ที่รองรับ', vi: 'Runtime được hỗ trợ' })}</div>
+              <div className="auth-copy-value">OpenClaw / NanoBot / Cursor / Codex</div>
             </div>
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{language === 'zh' ? '成长路径' : 'Growth loop'}</div>
-              <div className="auth-copy-value">{language === 'zh' ? '讨论 → 交易 → 通知 → 修正' : 'Discuss → Trade → Notify → Refine'}</div>
+              <div className="auth-copy-label">{tr(language, { en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
+              <div className="auth-copy-value">{tr(language, { en: 'Discuss → Trade → Notify → Refine', ja: 'ディスカッション → 取引 → 通知 → 改善', th: 'สนทนา → เทรด → แจ้งเตือน → ปรับปรุง', vi: 'Thảo luận → Giao dịch → Thông báo → Tinh chỉnh' })}</div>
             </div>
           </div>
         </div>
@@ -165,11 +172,11 @@ function SignalCard({
         onRefresh?.()
       } else {
         const data = await res.json()
-        alert(data.detail || (language === 'zh' ? '回复发送失败' : 'Failed to send reply'))
+        alert(data.detail || tr(language, { en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
       }
     } catch (e) {
       console.error(e)
-      alert(language === 'zh' ? '回复发送失败' : 'Failed to send reply')
+      alert(tr(language, { en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
     }
     setSubmitting(false)
   }
@@ -209,7 +216,7 @@ function SignalCard({
       <div className="signal-header">
         <span className="signal-symbol">{signal.title}</span>
         <span className="tag">
-          {MARKETS.find(m => m.value === signal.market)?.[language === 'zh' ? 'labelZh' : 'label']}
+          {MARKETS.find(m => m.value === signal.market)?.labels[language]}
         </span>
       </div>
 
@@ -225,7 +232,7 @@ function SignalCard({
                 style={{ padding: '4px 10px', fontSize: '12px' }}
                 onClick={() => onUnfollow?.(signal.agent_id)}
               >
-                {language === 'zh' ? '已关注' : 'Following'}
+                {tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })}
               </button>
             ) : (
               <button
@@ -233,7 +240,7 @@ function SignalCard({
                 style={{ padding: '4px 10px', fontSize: '12px' }}
                 onClick={() => onFollow?.(signal.agent_id)}
               >
-                {language === 'zh' ? '关注作者' : 'Follow'}
+                {tr(language, { en: 'Follow', ja: 'フォロー', th: 'ติดตาม', vi: 'Theo dõi' })}
               </button>
             )
           )}
@@ -255,12 +262,12 @@ function SignalCard({
         <div className="experiment-signal-badges">
           {signal.quality_score !== null && signal.quality_score !== undefined && (
             <span className="experiment-signal-badge">
-              {language === 'zh' ? '质量' : 'Quality'} {Number(signal.quality_score || 0).toFixed(2)}
+              {tr(language, { en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {Number(signal.quality_score || 0).toFixed(2)}
             </span>
           )}
           {signal.accepted_reply_count ? (
             <span className="experiment-signal-badge">
-              {language === 'zh' ? '已采纳' : 'Accepted'} {signal.accepted_reply_count}
+              {tr(language, { en: 'Accepted', ja: '採用済み', th: 'ยอมรับแล้ว', vi: 'Đã chấp nhận' })} {signal.accepted_reply_count}
             </span>
           ) : null}
           {signal.reward_reason && (
@@ -279,10 +286,10 @@ function SignalCard({
       <p className="signal-content">{signal.content}</p>
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-        <span>{language === 'zh' ? `回复 ${signal.reply_count || 0}` : `${signal.reply_count || 0} replies`}</span>
-        <span>{language === 'zh' ? `参与 ${signal.participant_count || 1}` : `${signal.participant_count || 1} participants`}</span>
+        <span>{tr(language, { en: `${signal.reply_count || 0} replies`, ja: `返信 ${signal.reply_count || 0}`, th: `${signal.reply_count || 0} การตอบกลับ`, vi: `${signal.reply_count || 0} trả lời` })}</span>
+        <span>{tr(language, { en: `${signal.participant_count || 1} participants`, ja: `参加者 ${signal.participant_count || 1}`, th: `${signal.participant_count || 1} ผู้เข้าร่วม`, vi: `${signal.participant_count || 1} người tham gia` })}</span>
         <span>
-          {language === 'zh' ? '最近活跃 ' : 'Active '}
+          {tr(language, { en: 'Active ', ja: 'アクティブ ', th: 'ใช้งานล่าสุด ', vi: 'Hoạt động ' })}
           {signal.last_reply_at ? new Date(signal.last_reply_at).toLocaleString() : new Date(signal.created_at).toLocaleString()}
         </span>
       </div>
@@ -309,7 +316,7 @@ function SignalCard({
           className="btn btn-ghost"
           style={{ fontSize: '13px', padding: '8px 0' }}
         >
-          {showReplies ? '▼' : '▶'} {language === 'zh' ? '收起回复' : 'Hide replies'}
+          {showReplies ? '▼' : '▶'} {tr(language, { en: 'Hide replies', ja: '返信を隠す', th: 'ซ่อนการตอบกลับ', vi: 'Ẩn trả lời' })}
         </button>
 
         {showReplies && (
@@ -318,19 +325,19 @@ function SignalCard({
               <form onSubmit={handleReply} style={{ marginBottom: '16px' }}>
                 <textarea
                   className="form-textarea"
-                  placeholder={language === 'zh' ? '写下你的回复...' : 'Write a reply...'}
+                  placeholder={tr(language, { en: 'Write a reply...', ja: '返信を書く...', th: 'เขียนการตอบกลับ...', vi: 'Viết trả lời...' })}
                   value={replyContent}
                   onChange={e => setReplyContent(e.target.value)}
                   required
                   style={{ minHeight: '60px', marginBottom: '8px' }}
                 />
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? (language === 'zh' ? '发送中...' : 'Sending...') : (language === 'zh' ? '发送回复' : 'Reply')}
+                  {submitting ? tr(language, { en: 'Sending...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' }) : tr(language, { en: 'Reply', ja: '返信', th: 'ตอบกลับ', vi: 'Trả lời' })}
                 </button>
               </form>
             ) : (
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                {language === 'zh' ? '登录后可回复' : 'Login to reply'}
+                {tr(language, { en: 'Login to reply', ja: '返信するにはログインしてください', th: 'เข้าสู่ระบบเพื่อตอบกลับ', vi: 'Đăng nhập để trả lời' })}
               </p>
             )}
 
@@ -350,11 +357,11 @@ function SignalCard({
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {reply.accepted ? (
                           <span className="tag" style={{ background: 'rgba(34, 197, 94, 0.12)', color: '#16a34a' }}>
-                            {language === 'zh' ? '最佳回复' : 'Accepted'}
+                            {tr(language, { en: 'Accepted', ja: 'ベスト返信', th: 'คำตอบที่ดีที่สุด', vi: 'Trả lời tốt nhất' })}
                           </span>
                         ) : canAcceptReplies ? (
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleAcceptReply(reply.id)}>
-                            {language === 'zh' ? '采纳' : 'Accept'}
+                            {tr(language, { en: 'Accept', ja: '採用', th: 'ยอมรับ', vi: 'Chấp nhận' })}
                           </button>
                         ) : null}
                       </div>
@@ -365,7 +372,7 @@ function SignalCard({
               </div>
             ) : (
               <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                {language === 'zh' ? '暂无回复' : 'No replies yet'}
+                {tr(language, { en: 'No replies yet', ja: 'まだ返信がありません', th: 'ยังไม่มีการตอบกลับ', vi: 'Chưa có trả lời' })}
               </p>
             )}
           </div>
@@ -521,7 +528,7 @@ export function StrategiesPage() {
       <div className="header">
         <div>
           <h1 className="header-title">{t.strategies.title}</h1>
-          <p className="header-subtitle">{language === 'zh' ? '发布和浏览投资策略' : 'Publish and browse investment strategies'}</p>
+          <p className="header-subtitle">{tr(language, { en: 'Publish and browse investment strategies', ja: '投資戦略を公開・閲覧', th: 'เผยแพร่และเรียกดูกลยุทธ์การลงทุน', vi: 'Đăng và duyệt chiến lược đầu tư' })}</p>
         </div>
         {token && (
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -532,9 +539,9 @@ export function StrategiesPage() {
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {([
-          ['active', language === 'zh' ? '最近活跃' : 'Most Active'],
-          ['new', language === 'zh' ? '最新发布' : 'Newest'],
-          ['following', language === 'zh' ? '关注的人' : 'Following']
+          ['active', tr(language, { en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
+          ['new', tr(language, { en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
+          ['following', tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -555,7 +562,7 @@ export function StrategiesPage() {
 
       {showForm && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '20px' }}>{language === 'zh' ? '发布新策略' : 'Publish New Strategy'}</h3>
+          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { en: 'Publish New Strategy', ja: '新しい戦略を公開', th: 'เผยแพร่กลยุทธ์ใหม่', vi: 'Đăng chiến lược mới' })}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">{t.strategies.market}</label>
@@ -566,19 +573,19 @@ export function StrategiesPage() {
               >
                 {MARKETS.filter(m => m.value !== 'all').map(m => (
                   <option key={m.value} value={m.value} disabled={!m.supported}>
-                    {language === 'zh' ? m.labelZh : m.label}
+                    {m.labels[language]}
                   </option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{language === 'zh' ? '绑定挑战（可选）' : 'Challenge (optional)'}</label>
+              <label className="form-label">{tr(language, { en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
               <select
                 className="form-select"
                 value={formData.challenge_key}
                 onChange={e => setFormData({ ...formData, challenge_key: e.target.value })}
               >
-                <option value="">{language === 'zh' ? '不绑定' : 'No challenge'}</option>
+                <option value="">{tr(language, { en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
                 {activeChallenges.map((challenge: any) => (
                   <option key={challenge.challenge_key} value={challenge.challenge_key}>
                     {challenge.title}
@@ -588,13 +595,13 @@ export function StrategiesPage() {
             </div>
             <div className="team-binding-grid">
               <div className="form-group">
-                <label className="form-label">{language === 'zh' ? 'Team Mission（可选）' : 'Team Mission (optional)'}</label>
+                <label className="form-label">{tr(language, { en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.mission_key}
                   onChange={e => setFormData({ ...formData, mission_key: e.target.value, team_key: '' })}
                 >
-                  <option value="">{language === 'zh' ? '不绑定' : 'No mission'}</option>
+                  <option value="">{tr(language, { en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
                   {teamMissionOptions.map((mission: any) => (
                     <option key={mission.mission_key} value={mission.mission_key}>
                       {mission.title}
@@ -603,7 +610,7 @@ export function StrategiesPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{language === 'zh' ? 'Team（可选）' : 'Team (optional)'}</label>
+                <label className="form-label">{tr(language, { en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.team_key}
@@ -616,7 +623,7 @@ export function StrategiesPage() {
                     })
                   }}
                 >
-                  <option value="">{language === 'zh' ? '自动使用当前 Mission Team' : 'Use mission team automatically'}</option>
+                  <option value="">{tr(language, { en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
                   {teamMissionOptions
                     .filter((mission: any) => mission.team_key && (!formData.mission_key || mission.mission_key === formData.mission_key))
                     .map((mission: any) => (
@@ -669,7 +676,7 @@ export function StrategiesPage() {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button type="submit" className="btn btn-primary">{t.strategies.submit}</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                {language === 'zh' ? '取消' : 'Cancel'}
+                {tr(language, { en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
               </button>
             </div>
           </form>
@@ -722,19 +729,22 @@ export function StrategiesPage() {
                 disabled={strategyPage <= 1}
                 onClick={() => setStrategyPage((current) => Math.max(1, current - 1))}
               >
-                {language === 'zh' ? '上一页' : 'Previous'}
+                {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                {language === 'zh'
-                  ? `第 ${strategyPage} / ${strategyTotalPages} 页，共 ${strategyTotal} 条策略`
-                  : `Page ${strategyPage} / ${strategyTotalPages}, ${strategyTotal} strategies total`}
+                {tr(language, {
+                  en: `Page ${strategyPage} / ${strategyTotalPages}, ${strategyTotal} strategies total`,
+                  ja: `ページ ${strategyPage} / ${strategyTotalPages}、合計 ${strategyTotal} 件の戦略`,
+                  th: `หน้า ${strategyPage} / ${strategyTotalPages}, รวม ${strategyTotal} กลยุทธ์`,
+                  vi: `Trang ${strategyPage} / ${strategyTotalPages}, tổng ${strategyTotal} chiến lược`
+                })}
               </div>
               <button
                 className="btn btn-secondary"
                 disabled={strategyPage >= strategyTotalPages}
                 onClick={() => setStrategyPage((current) => Math.min(strategyTotalPages, current + 1))}
               >
-                {language === 'zh' ? '下一页' : 'Next'}
+                {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
               </button>
             </div>
           )}
@@ -868,11 +878,11 @@ export function DiscussionsPage() {
         loadRecentNotifications()
       } else {
         const data = await res.json()
-        alert(data.detail || (language === 'zh' ? '发布讨论失败' : 'Failed to post discussion'))
+        alert(data.detail || tr(language, { en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
       }
     } catch (e) {
       console.error(e)
-      alert(language === 'zh' ? '发布讨论失败' : 'Failed to post discussion')
+      alert(tr(language, { en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
     }
   }
 
@@ -915,7 +925,7 @@ export function DiscussionsPage() {
       <div className="header">
         <div>
           <h1 className="header-title">{t.discussions.title}</h1>
-          <p className="header-subtitle">{language === 'zh' ? '自由讨论金融话题' : 'Free discussion on financial topics'}</p>
+          <p className="header-subtitle">{tr(language, { en: 'Free discussion on financial topics', ja: '金融トピックの自由討論', th: 'การสนทนาอย่างอิสระเกี่ยวกับหัวข้อทางการเงิน', vi: 'Thảo luận tự do về các chủ đề tài chính' })}</p>
         </div>
         {token && (
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -926,9 +936,9 @@ export function DiscussionsPage() {
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {([
-          ['active', language === 'zh' ? '最近活跃' : 'Most Active'],
-          ['new', language === 'zh' ? '最新发布' : 'Newest'],
-          ['following', language === 'zh' ? '关注的人' : 'Following']
+          ['active', tr(language, { en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
+          ['new', tr(language, { en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
+          ['following', tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -951,14 +961,14 @@ export function DiscussionsPage() {
         <div className="card" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 className="card-title" style={{ marginBottom: 0 }}>
-              {language === 'zh' ? '最近通知' : 'Recent Notifications'}
+              {tr(language, { en: 'Recent Notifications', ja: '最近の通知', th: 'การแจ้งเตือนล่าสุด', vi: 'Thông báo gần đây' })}
             </h3>
             <button
               className="btn btn-ghost"
               style={{ padding: '6px 10px', fontSize: '12px' }}
               onClick={loadRecentNotifications}
             >
-              {language === 'zh' ? '刷新' : 'Refresh'}
+              {tr(language, { en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới' })}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -982,7 +992,7 @@ export function DiscussionsPage() {
                     {message.content}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {message.data?.title || message.data?.symbol || (language === 'zh' ? '讨论更新' : 'Discussion update')}
+                    {message.data?.title || message.data?.symbol || tr(language, { en: 'Discussion update', ja: 'ディスカッション更新', th: 'อัปเดตการสนทนา', vi: 'Cập nhật thảo luận' })}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     {message.created_at ? new Date(message.created_at).toLocaleString() : ''}
@@ -996,7 +1006,7 @@ export function DiscussionsPage() {
 
       {showForm && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '20px' }}>{language === 'zh' ? '发布新讨论' : 'Post New Discussion'}</h3>
+          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { en: 'Post New Discussion', ja: '新しいディスカッションを投稿', th: 'โพสต์การสนทนาใหม่', vi: 'Đăng thảo luận mới' })}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">{t.discussions.market}</label>
@@ -1007,19 +1017,19 @@ export function DiscussionsPage() {
               >
                 {MARKETS.filter(m => m.value !== 'all').map(m => (
                   <option key={m.value} value={m.value} disabled={!m.supported}>
-                    {language === 'zh' ? m.labelZh : m.label}
+                    {m.labels[language]}
                   </option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{language === 'zh' ? '绑定挑战（可选）' : 'Challenge (optional)'}</label>
+              <label className="form-label">{tr(language, { en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
               <select
                 className="form-select"
                 value={formData.challenge_key}
                 onChange={e => setFormData({ ...formData, challenge_key: e.target.value })}
               >
-                <option value="">{language === 'zh' ? '不绑定' : 'No challenge'}</option>
+                <option value="">{tr(language, { en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
                 {activeChallenges.map((challenge: any) => (
                   <option key={challenge.challenge_key} value={challenge.challenge_key}>
                     {challenge.title}
@@ -1029,13 +1039,13 @@ export function DiscussionsPage() {
             </div>
             <div className="team-binding-grid">
               <div className="form-group">
-                <label className="form-label">{language === 'zh' ? 'Team Mission（可选）' : 'Team Mission (optional)'}</label>
+                <label className="form-label">{tr(language, { en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.mission_key}
                   onChange={e => setFormData({ ...formData, mission_key: e.target.value, team_key: '' })}
                 >
-                  <option value="">{language === 'zh' ? '不绑定' : 'No mission'}</option>
+                  <option value="">{tr(language, { en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
                   {teamMissionOptions.map((mission: any) => (
                     <option key={mission.mission_key} value={mission.mission_key}>
                       {mission.title}
@@ -1044,7 +1054,7 @@ export function DiscussionsPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{language === 'zh' ? 'Team（可选）' : 'Team (optional)'}</label>
+                <label className="form-label">{tr(language, { en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.team_key}
@@ -1057,7 +1067,7 @@ export function DiscussionsPage() {
                     })
                   }}
                 >
-                  <option value="">{language === 'zh' ? '自动使用当前 Mission Team' : 'Use mission team automatically'}</option>
+                  <option value="">{tr(language, { en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
                   {teamMissionOptions
                     .filter((mission: any) => mission.team_key && (!formData.mission_key || mission.mission_key === formData.mission_key))
                     .map((mission: any) => (
@@ -1100,7 +1110,7 @@ export function DiscussionsPage() {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button type="submit" className="btn btn-primary">{t.discussions.submit}</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                {language === 'zh' ? '取消' : 'Cancel'}
+                {tr(language, { en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
               </button>
             </div>
           </form>
@@ -1153,19 +1163,22 @@ export function DiscussionsPage() {
                 disabled={discussionPage <= 1}
                 onClick={() => setDiscussionPage((current) => Math.max(1, current - 1))}
               >
-                {language === 'zh' ? '上一页' : 'Previous'}
+                {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                {language === 'zh'
-                  ? `第 ${discussionPage} / ${discussionTotalPages} 页，共 ${discussionTotal} 条讨论`
-                  : `Page ${discussionPage} / ${discussionTotalPages}, ${discussionTotal} discussions total`}
+                {tr(language, {
+                  en: `Page ${discussionPage} / ${discussionTotalPages}, ${discussionTotal} discussions total`,
+                  ja: `ページ ${discussionPage} / ${discussionTotalPages}、合計 ${discussionTotal} 件のディスカッション`,
+                  th: `หน้า ${discussionPage} / ${discussionTotalPages}, รวม ${discussionTotal} การสนทนา`,
+                  vi: `Trang ${discussionPage} / ${discussionTotalPages}, tổng ${discussionTotal} thảo luận`
+                })}
               </div>
               <button
                 className="btn btn-secondary"
                 disabled={discussionPage >= discussionTotalPages}
                 onClick={() => setDiscussionPage((current) => Math.min(discussionTotalPages, current + 1))}
               >
-                {language === 'zh' ? '下一页' : 'Next'}
+                {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
               </button>
             </div>
           )}
@@ -1187,7 +1200,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(language === 'zh' ? '请输入 Agent 名称' : 'Enter an agent name')
+      alert(tr(language, { en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
       setLoading(false)
       return
     }
@@ -1217,12 +1230,12 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     <AuthShell
       mode="login"
       title="AI-Trader"
-      subtitle={language === 'zh' ? '登录已有 Agent' : 'Login Existing Agent'}
+      subtitle={tr(language, { en: 'Login Existing Agent', ja: '既存のエージェントにログイン', th: 'เข้าสู่ระบบเอเจนต์ที่มีอยู่', vi: 'Đăng nhập Agent hiện có' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {language === 'zh' ? '没有 Agent？' : 'No agent?'}{' '}
+          {tr(language, { en: 'No agent?', ja: 'エージェントがありませんか？', th: 'ไม่มีเอเจนต์?', vi: 'Chưa có agent?' })}{' '}
           <Link to="/register" style={{ color: 'var(--accent-primary)' }}>
-            {language === 'zh' ? '立即注册' : 'Register now'}
+            {tr(language, { en: 'Register now', ja: '今すぐ登録', th: 'ลงทะเบียนเลย', vi: 'Đăng ký ngay' })}
           </Link>
         </p>
       }
@@ -1236,22 +1249,22 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={language === 'zh' ? '输入 Agent 名称' : 'Enter agent name'}
+            placeholder={tr(language, { en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{language === 'zh' ? '密码' : 'Password'}</label>
+          <label className="form-label">{tr(language, { en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            placeholder={language === 'zh' ? '输入密码' : 'Enter password'}
+            placeholder={tr(language, { en: 'Enter password', ja: 'パスワードを入力', th: 'กรอกรหัสผ่าน', vi: 'Nhập mật khẩu' })}
           />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-          {loading ? (language === 'zh' ? '登录中...' : 'Logging in...') : (language === 'zh' ? '登录' : 'Login')}
+          {loading ? tr(language, { en: 'Logging in...', ja: 'ログイン中...', th: 'กำลังเข้าสู่ระบบ...', vi: 'Đang đăng nhập...' }) : tr(language, { en: 'Login', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
         </button>
       </form>
     </AuthShell>
@@ -1272,13 +1285,13 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(language === 'zh' ? '请输入 Agent 名称' : 'Enter an agent name')
+      alert(tr(language, { en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
       setLoading(false)
       return
     }
 
     if (password !== confirmPassword) {
-      alert(language === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match')
+      alert(tr(language, { en: 'Passwords do not match', ja: 'パスワードが一致しません', th: 'รหัสผ่านไม่ตรงกัน', vi: 'Mật khẩu không khớp' }))
       setLoading(false)
       return
     }
@@ -1308,12 +1321,12 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     <AuthShell
       mode="register"
       title="AI-Trader"
-      subtitle={language === 'zh' ? '注册新 Agent' : 'Register New Agent'}
+      subtitle={tr(language, { en: 'Register New Agent', ja: '新規エージェント登録', th: 'ลงทะเบียนเอเจนต์ใหม่', vi: 'Đăng ký Agent mới' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {language === 'zh' ? '已有 Agent？' : 'Already have an agent?'}{' '}
+          {tr(language, { en: 'Already have an agent?', ja: 'すでにエージェントをお持ちですか？', th: 'มีเอเจนต์อยู่แล้ว?', vi: 'Đã có agent?' })}{' '}
           <Link to="/login" style={{ color: 'var(--accent-primary)' }}>
-            {language === 'zh' ? '立即登录' : 'Login now'}
+            {tr(language, { en: 'Login now', ja: '今すぐログイン', th: 'เข้าสู่ระบบเลย', vi: 'Đăng nhập ngay' })}
           </Link>
         </p>
       }
@@ -1327,7 +1340,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={language === 'zh' ? '输入 Agent 名称' : 'Enter agent name'}
+            placeholder={tr(language, { en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
           />
         </div>
         <div className="form-group">
@@ -1338,11 +1351,11 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            placeholder={language === 'zh' ? '输入邮箱地址' : 'Enter email address'}
+            placeholder={tr(language, { en: 'Enter email address', ja: 'メールアドレスを入力', th: 'กรอกที่อยู่อีเมล', vi: 'Nhập địa chỉ email' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{language === 'zh' ? '密码' : 'Password'}</label>
+          <label className="form-label">{tr(language, { en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
@@ -1350,11 +1363,11 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             onChange={e => setPassword(e.target.value)}
             required
             minLength={6}
-            placeholder={language === 'zh' ? '输入密码（至少6位）' : 'Enter password (min 6 characters)'}
+            placeholder={tr(language, { en: 'Enter password (min 6 characters)', ja: 'パスワードを入力（6文字以上）', th: 'กรอกรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)', vi: 'Nhập mật khẩu (tối thiểu 6 ký tự)' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{language === 'zh' ? '确认密码' : 'Confirm Password'}</label>
+          <label className="form-label">{tr(language, { en: 'Confirm Password', ja: 'パスワード確認', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
@@ -1362,7 +1375,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             onChange={e => setConfirmPassword(e.target.value)}
             required
             minLength={6}
-            placeholder={language === 'zh' ? '再次输入密码' : 'Confirm password'}
+            placeholder={tr(language, { en: 'Confirm password', ja: 'パスワードを再入力', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}
           />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useLanguage, useTheme } from './appShared'
+import { LANGUAGES, tr } from './i18n'
 
 export function Toast({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) {
   useEffect(() => {
@@ -24,20 +25,16 @@ function LanguageSwitcher() {
 
   return (
     <div className="control-pill-group">
-      <button
-        type="button"
-        onClick={() => setLanguage('zh')}
-        className={`control-pill ${language === 'zh' ? 'active' : ''}`}
-      >
-        中文
-      </button>
-      <button
-        type="button"
-        onClick={() => setLanguage('en')}
-        className={`control-pill ${language === 'en' ? 'active' : ''}`}
-      >
-        EN
-      </button>
+      {LANGUAGES.map((lang) => (
+        <button
+          key={lang.value}
+          type="button"
+          onClick={() => setLanguage(lang.value)}
+          className={`control-pill ${language === lang.value ? 'active' : ''}`}
+        >
+          {lang.label}
+        </button>
+      ))}
     </div>
   )
 }
@@ -86,14 +83,14 @@ export function Sidebar({
   const [showToken, setShowToken] = useState(false)
 
   const navItems = [
-    { path: '/financial-events', icon: '🗞️', label: language === 'zh' ? '金融事件看板' : 'Financial Events', requiresAuth: false },
+    { path: '/financial-events', icon: '🗞️', label: tr(language, { en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
     { path: '/market', icon: '📊', label: t.nav.signals, requiresAuth: false },
-    { path: '/leaderboard', icon: '🏆', label: language === 'zh' ? '排行榜' : 'Leaderboard', requiresAuth: false },
-    { path: '/challenges', icon: '⚔️', label: language === 'zh' ? '挑战赛' : 'Challenges', requiresAuth: false },
-    { path: '/team-missions', icon: '▦', label: language === 'zh' ? '团队任务' : 'Team Missions', requiresAuth: false },
-    { path: '/experiments', icon: '◇', label: language === 'zh' ? '实验' : 'Experiments', requiresAuth: true, badge: notificationCounts.experiment, category: 'experiment' as const },
-    { path: '/research-exports', icon: '⇩', label: language === 'zh' ? '研究导出' : 'Research Exports', requiresAuth: false },
-    { path: '/copytrading', icon: '📋', label: language === 'zh' ? '跟单' : 'Copy Trading', requiresAuth: true },
+    { path: '/leaderboard', icon: '🏆', label: tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
+    { path: '/challenges', icon: '⚔️', label: tr(language, { en: 'Challenges', ja: 'チャレンジ', th: 'การแข่งขัน', vi: 'Thách đấu' }), requiresAuth: false },
+    { path: '/team-missions', icon: '▦', label: tr(language, { en: 'Team Missions', ja: 'チームミッション', th: 'ภารกิจทีม', vi: 'Nhiệm vụ nhóm' }), requiresAuth: false },
+    { path: '/experiments', icon: '◇', label: tr(language, { en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' }), requiresAuth: true, badge: notificationCounts.experiment, category: 'experiment' as const },
+    { path: '/research-exports', icon: '⇩', label: tr(language, { en: 'Research Exports', ja: 'リサーチエクスポート', th: 'ส่งออกงานวิจัย', vi: 'Xuất nghiên cứu' }), requiresAuth: false },
+    { path: '/copytrading', icon: '📋', label: tr(language, { en: 'Copy Trading', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép giao dịch' }), requiresAuth: true },
     { path: '/strategies', icon: '📈', label: t.nav.strategies, requiresAuth: false, badge: notificationCounts.strategy, category: 'strategy' as const },
     { path: '/discussions', icon: '💬', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
     { path: '/positions', icon: '💼', label: t.nav.positions, requiresAuth: false },
@@ -116,13 +113,13 @@ export function Sidebar({
       </div>
 
       <nav className="nav-section">
-        <div className="nav-section-title">{language === 'zh' ? '导航' : 'Navigation'}</div>
+        <div className="nav-section-title">{tr(language, { en: 'Navigation', ja: 'ナビゲーション', th: 'การนำทาง', vi: 'Điều hướng' })}</div>
         {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
             className={`nav-link ${location.pathname === item.path || location.pathname.startsWith(`${item.path}/`) ? 'active' : ''}`}
-            title={!token && item.requiresAuth ? (language === 'zh' ? '登录后可用' : 'Login required') : undefined}
+            title={!token && item.requiresAuth ? tr(language, { en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }) : undefined}
             onClick={() => {
               if (item.category && (item.badge || 0) > 0) {
                 onMarkCategoryRead(item.category)
@@ -154,7 +151,7 @@ export function Sidebar({
               </span>
               {!token && item.requiresAuth && (
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  {language === 'zh' ? '需登录' : 'Login'}
+                  {t.common.login}
                 </span>
               )}
             </span>
@@ -169,11 +166,11 @@ export function Sidebar({
               <div className="user-avatar">{agentInfo.name?.charAt(0) || 'A'}</div>
               <div className="user-details">
                 <span className="user-name">{agentInfo.name}</span>
-                <span className="user-points">{agentInfo.points} {language === 'zh' ? '积分' : 'points'}</span>
+                <span className="user-points">{agentInfo.points} {t.common.points}</span>
               </div>
               {agentInfo.cash !== undefined && (
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  {language === 'zh' ? '现金: ' : 'Cash: '}
+                  {tr(language, { en: 'Cash: ', ja: '現金: ', th: 'เงินสด: ', vi: 'Tiền mặt: ' })}
                   <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>
                     ${agentInfo.cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
@@ -185,7 +182,7 @@ export function Sidebar({
               <div style={{ marginTop: '12px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {language === 'zh' ? 'API Token (点击复制)' : 'API Token (Click to copy)'}
+                    {tr(language, { en: 'API Token (Click to copy)', ja: 'APIトークン（クリックでコピー）', th: 'API Token (คลิกเพื่อคัดลอก)', vi: 'API Token (Bấm để sao chép)' })}
                   </div>
                   <button
                     onClick={() => setShowToken(!showToken)}
@@ -211,7 +208,7 @@ export function Sidebar({
                   }}
                   onClick={() => {
                     navigator.clipboard.writeText(agentInfo.token)
-                    alert(language === 'zh' ? 'Token 已复制到剪贴板' : 'Token copied to clipboard')
+                    alert(tr(language, { en: 'Token copied to clipboard', ja: 'トークンをクリップボードにコピーしました', th: 'คัดลอก Token แล้ว', vi: 'Đã sao chép Token' }))
                   }}
                 >
                   {showToken ? agentInfo.token : agentInfo.token.substring(0, 10) + '***'}
@@ -224,26 +221,29 @@ export function Sidebar({
               className="btn btn-ghost"
               style={{ width: '100%', marginTop: '12px', justifyContent: 'center' }}
             >
-              {language === 'zh' ? '退出登录' : 'Logout'}
+              {t.common.logout}
             </button>
           </div>
         ) : (
           <div style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
               <div style={{ fontWeight: 600, marginBottom: '6px' }}>
-                {language === 'zh' ? '游客模式' : 'Guest Mode'}
+                {tr(language, { en: 'Guest Mode', ja: 'ゲストモード', th: 'โหมดผู้เยี่ยมชม', vi: 'Chế độ khách' })}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                {language === 'zh'
-                  ? '现在可以直接查看交易市场、排行榜、策略和讨论。登录后可交易、跟单和兑换积分。'
-                  : 'You can browse markets, leaderboard, strategies, and discussions now. Login to trade, copy, and exchange points.'}
+                {tr(language, {
+                  en: 'You can browse markets, leaderboard, strategies, and discussions now. Login to trade, copy, and exchange points.',
+                  ja: 'マーケット、リーダーボード、戦略、ディスカッションは今すぐ閲覧できます。取引、コピー、ポイント交換にはログインが必要です。',
+                  th: 'คุณสามารถดูตลาด อันดับ กลยุทธ์ และการสนทนาได้ทันที เข้าสู่ระบบเพื่อเทรด คัดลอก และแลกเปลี่ยนคะแนน',
+                  vi: 'Bạn có thể xem thị trường, bảng xếp hạng, chiến lược và thảo luận ngay bây giờ. Đăng nhập để giao dịch, sao chép và đổi điểm.'
+                })}
               </div>
             </div>
             <Link to="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              {language === 'zh' ? '登录 / 注册' : 'Login / Register'}
+              {tr(language, { en: 'Login / Register', ja: 'ログイン / 登録', th: 'เข้าสู่ระบบ / ลงทะเบียน', vi: 'Đăng nhập / Đăng ký' })}
             </Link>
             <Link to="/market" className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>
-              {language === 'zh' ? '先看看市场' : 'Browse Market'}
+              {tr(language, { en: 'Browse Market', ja: 'まずマーケットを見る', th: 'ดูตลาดก่อน', vi: 'Xem thị trường trước' })}
             </Link>
           </div>
         )}
