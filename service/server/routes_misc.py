@@ -53,7 +53,7 @@ def register_misc_routes(app: FastAPI) -> None:
         index_path = Path(__file__).parent.parent / 'frontend' / 'dist' / 'index.html'
         if index_path.exists():
             return FileResponse(index_path)
-        return {'message': 'AI-Trader API'}
+        return {'message': 'AITRAD API'}
 
     @app.get('/assets/{file}')
     async def serve_assets(file: str):
@@ -67,4 +67,4 @@ def register_misc_routes(app: FastAPI) -> None:
         index_path = Path(__file__).parent.parent / 'frontend' / 'dist' / 'index.html'
         if index_path.exists():
             return FileResponse(index_path)
-        return {'message': 'AI-Trader API'}
+        return {'message': 'AITRAD API'}

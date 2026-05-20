@@ -75,7 +75,7 @@ class ExperimentNotificationTests(unittest.TestCase):
         payload = {
             "message_type": "experiment_announcement",
             "title": "Experiment notice",
-            "content": "You are included in an AI-Trader experiment notification campaign.",
+            "content": "You are included in an AITRAD experiment notification campaign.",
             "dry_run": True,
             "limit": 500,
         }

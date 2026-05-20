@@ -1,4 +1,4 @@
-// i18n translations for AI-Trader (AITRAD)
+// i18n translations for AITRAD (AITRAD)
 // Supported languages: English, Japanese, Thai, Vietnamese
 
 export type Language = 'en' | 'ja' | 'th' | 'vi'

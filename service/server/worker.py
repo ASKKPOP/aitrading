@@ -1,5 +1,5 @@
 """
-Standalone background worker for AI-Trader.
+Standalone background worker for AITRAD.
 
 Run this separately from the FastAPI process so HTTP requests are not competing
 with price refreshes, profit-history compaction, and market-intel snapshots.
@@ -42,7 +42,7 @@ def _acquire_file_lock():
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         handle.close()
-        logger.warning("Another AI-Trader worker is already running; lock_file=%s", lock_path)
+        logger.warning("Another AITRAD worker is already running; lock_file=%s", lock_path)
         return None
     handle.seek(0)
     handle.truncate()
@@ -95,7 +95,7 @@ async def main() -> None:
         if redis_lock is not None:
             acquired = bool(redis_lock.acquire(blocking=False))
             if not acquired:
-                logger.warning("Another AI-Trader worker is already running; Redis singleton lock is held.")
+                logger.warning("Another AITRAD worker is already running; Redis singleton lock is held.")
                 return
             lock_renew_task = asyncio.create_task(
                 _renew_redis_lock(redis_lock, lock_timeout_seconds),

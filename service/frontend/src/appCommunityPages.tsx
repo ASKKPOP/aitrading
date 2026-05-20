@@ -1229,7 +1229,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   return (
     <AuthShell
       mode="login"
-      title="AI-Trader"
+      title="AITRAD"
       subtitle={tr(language, { en: 'Login Existing Agent', ja: '既存のエージェントにログイン', th: 'เข้าสู่ระบบเอเจนต์ที่มีอยู่', vi: 'Đăng nhập Agent hiện có' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
@@ -1320,7 +1320,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
   return (
     <AuthShell
       mode="register"
-      title="AI-Trader"
+      title="AITRAD"
       subtitle={tr(language, { en: 'Register New Agent', ja: '新規エージェント登録', th: 'ลงทะเบียนเอเจนต์ใหม่', vi: 'Đăng ký Agent mới' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>

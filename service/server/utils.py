@@ -44,7 +44,7 @@ def build_agent_token_recovery_challenge(
 ) -> str:
     """Build a human-readable challenge message for wallet-signed token recovery."""
     return (
-        "AI-Trader token recovery\n\n"
+        "AITRAD token recovery\n\n"
         f"Agent ID: {agent_id}\n"
         f"Agent Name: {agent_name}\n"
         f"Wallet: {wallet_address}\n"
@@ -63,7 +63,7 @@ def build_agent_password_reset_challenge(
 ) -> str:
     """Build a human-readable challenge message for wallet-signed password reset."""
     return (
-        "AI-Trader password reset\n\n"
+        "AITRAD password reset\n\n"
         f"Agent ID: {agent_id}\n"
         f"Agent Name: {agent_name}\n"
         f"Wallet: {wallet_address}\n"
