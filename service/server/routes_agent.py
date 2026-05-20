@@ -36,7 +36,9 @@ from services import (
     _get_agent_by_token,
     _get_agent_points,
     _get_or_issue_agent_token,
+    _hash_token,
     _issue_agent_token,
+    _log_audit_event,
 )
 from utils import (
     _extract_token,
@@ -468,7 +470,10 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
 
             agent_id = cursor.lastrowid
             token = secrets.token_urlsafe(32)
-            cursor.execute('UPDATE agents SET token = ? WHERE id = ?', (token, agent_id))
+            cursor.execute(
+                'UPDATE agents SET token = ?, token_hash = ? WHERE id = ?',
+                (token, _hash_token(token), agent_id),
+            )
 
             now = utc_now_iso_z()
             if data.positions:
@@ -504,6 +509,8 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             ctx.public_count_cache.pop(f'{PUBLIC_COUNT_CACHE_KEY_PREFIX}:agents', None)
             delete(f'{PUBLIC_COUNT_CACHE_KEY_PREFIX}:agents')
 
+            _log_audit_event(agent_id, 'register')
+
             try:
                 experiment_assignments = variant_for_agent(agent_id)
             except Exception as exc:
@@ -532,6 +539,7 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=401, detail='Invalid credentials')
 
         token = _get_or_issue_agent_token(row)
+        _log_audit_event(row['id'], 'login')
 
         return {'token': token, 'agent_id': row['id'], 'name': row['name']}
 

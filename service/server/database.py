@@ -1443,6 +1443,37 @@ def init_database():
         ON stock_analysis_snapshots(market, symbol)
     """)
 
+    # Audit log — append-only record of security-relevant actions.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER,
+            action TEXT NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_audit_log_agent_created
+        ON agent_audit_log(agent_id, created_at)
+    """)
+
+    # Token hash column — SHA-256 of the plaintext token.  High-entropy tokens
+    # don't need PBKDF2; SHA-256 is sufficient. New tokens get both token and
+    # token_hash; lookup prefers the hash.  Legacy rows are migrated on first use.
+    try:
+        cursor.execute("ALTER TABLE agents ADD COLUMN token_hash TEXT")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_agents_token_hash ON agents(token_hash)")
+    except Exception:
+        pass
+
     if not using_postgres():
         conn.commit()
     elif previous_autocommit is not None:

@@ -4,6 +4,7 @@ Services Module
 业务逻辑服务层
 """
 
+import hashlib
 import json
 import secrets
 import time
@@ -14,16 +15,72 @@ from database import get_db_connection, is_retryable_db_error
 
 # ==================== Agent Services ====================
 
+def _hash_token(token: str) -> str:
+    """SHA-256 of a high-entropy API token.  Fast enough for verification;
+    safe because tokens are 256-bit from secrets.token_urlsafe(32)."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
 def _get_agent_by_token(token: str) -> Optional[Dict]:
-    """Get agent by token."""
+    """Get agent by token.
+
+    Lookup order:
+      1. By ``token_hash`` (indexed, secure path for new tokens).
+      2. By plaintext ``token`` (legacy fallback); migrates the row on hit.
+    """
     if not token:
         return None
+    token_hash = _hash_token(token)
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # 1. Hash-based lookup — preferred path.
+    cursor.execute("SELECT * FROM agents WHERE token_hash = ?", (token_hash,))
+    row = cursor.fetchone()
+    if row:
+        conn.close()
+        return dict(row)
+
+    # 2. Plaintext fallback for rows that pre-date hashing.
     cursor.execute("SELECT * FROM agents WHERE token = ?", (token,))
     row = cursor.fetchone()
+    if row:
+        agent = dict(row)
+        # Migrate: store hash so future lookups skip the plaintext path.
+        try:
+            cursor.execute(
+                "UPDATE agents SET token_hash = ? WHERE id = ?",
+                (token_hash, agent["id"]),
+            )
+            conn.commit()
+        except Exception:
+            pass
+        conn.close()
+        return agent
+
     conn.close()
-    return dict(row) if row else None
+    return None
+
+
+def _log_audit_event(
+    agent_id: Optional[int],
+    action: str,
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+) -> None:
+    """Append one row to agent_audit_log (best-effort; never raises)."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO agent_audit_log (agent_id, action, ip_address, user_agent)"
+            " VALUES (?, ?, ?, ?)",
+            (agent_id, action, ip_address, user_agent),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 def _get_agent_by_id(agent_id: Optional[int]) -> Optional[Dict]:
@@ -61,11 +118,15 @@ def _get_agent_by_name(name: str) -> Optional[Dict]:
 
 
 def _issue_agent_token(agent_id: int) -> str:
-    """Rotate and return a fresh token for an agent."""
+    """Rotate and return a fresh token for an agent (stores both token and token_hash)."""
     token = secrets.token_urlsafe(32)
+    token_hash = _hash_token(token)
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE agents SET token = ?, token_expires_at = NULL WHERE id = ?", (token, agent_id))
+    cursor.execute(
+        "UPDATE agents SET token = ?, token_hash = ?, token_expires_at = NULL WHERE id = ?",
+        (token, token_hash, agent_id),
+    )
     conn.commit()
     conn.close()
     return token
