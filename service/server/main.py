@@ -59,7 +59,6 @@ if not api_access_log_enabled():
 
 # Initialize database
 if using_postgres():
-    import os
     from alembic.config import Config as _AlembicConfig
     from alembic import command as _alembic_command
     _alembic_cfg = _AlembicConfig(os.path.join(os.path.dirname(__file__), "alembic.ini"))
