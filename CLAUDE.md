@@ -132,3 +132,23 @@ git merge upstream/main      # or rebase, depending on local state
 ```
 
 Keep our changes additive where possible so upstream merges stay clean. When modifying existing files, prefer a clearly-scoped section over scattered edits.
+
+### Research and plans
+
+Durable strategic thinking lives under [docs/](docs/README.md) — read the index first. Three documents today:
+
+- [docs/research/01-competitive-landscape.md](docs/research/01-competitive-landscape.md) — competitors, differentiation, accessibility wins.
+- [docs/research/02-marketing-site.md](docs/research/02-marketing-site.md) — separate Astro marketing site design brief.
+- [docs/plan/01-technical-roadmap.md](docs/plan/01-technical-roadmap.md) — codebase state and 4-phase technical roadmap.
+
+When a finding turns out wrong, **edit the relevant section with a dated note** rather than starting a new document. The "Suggested first sprint" in [docs/README.md](docs/README.md) is the current execution focus.
+
+### Claude Code frameworks installed
+
+This project uses three Claude Code frameworks. Use them in sequence (not parallel) — they cover different phases.
+
+- **gstack** (`~/.claude/skills/gstack`) — decision-making perspectives. Use `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/plan-devex-review` *before* coding to align on what to build.
+- **GSD** (`gsd` CLI, npm `gsd-pi`) — anti-drift execution. Use `/gsd:new-project` to lock specs and prevent context drift across long sessions or session handoffs.
+- **Superpowers** (`/plugin install superpowers@claude-plugins-official`) — TDD-enforced implementation. Use `/brainstorm` to surface requirements, then `/execute-plan` to ship with verification.
+
+Don't layer them simultaneously — GSD's interactive input prompts will block Superpowers' build phase if used in parallel.
