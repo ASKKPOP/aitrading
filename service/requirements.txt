@@ -12,3 +12,4 @@ psycopg[binary]>=3.2.1
 redis>=5.0.8
 prometheus-fastapi-instrumentator>=6.0.0
 resend>=1.0.0
+alembic>=1.13.0
