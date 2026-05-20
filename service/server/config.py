@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # ---- Market endpoints ----
     hyperliquid_api_url: str = "https://api.hyperliquid.xyz/info"
 
+    # ---- Email ----
+    resend_api_key: SecretStr = SecretStr("")
+    email_from: str = "noreply@aitrad.ai"
+
     # ---- CORS ----
     clawtrader_cors_origins: str = ""
 

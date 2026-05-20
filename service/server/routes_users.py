@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Header, HTTPException
 
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
+from email_sender import send_verification_code_email
 from database import get_db_connection
 from routes_models import (
     PointsExchangeRequest,
@@ -87,8 +88,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'attempts': 0,
             'last_sent_at': now,
         }, ctx)
-        # TODO Phase 1.6: send via transactional email (Resend/Postmark).
-        _logger.info('[Email] Verification code for %s: %s', data.email, code)
+        if not send_verification_code_email(data.email, code):
+            # Fallback: log code when Resend is not configured (local dev).
+            _logger.info('[Email] Verification code for %s: %s', data.email, code)
         return {'success': True, 'message': 'Code sent'}
 
     @app.post('/api/users/register')

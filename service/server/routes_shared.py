@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -10,7 +11,11 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException, WebSocket
 from zoneinfo import ZoneInfo
 
+from cache import get_redis_client
+from config import REDIS_PREFIX
 from database import get_db_connection
+
+_RATE_PREFIX = f"{REDIS_PREFIX}:ratelimit"
 
 
 GROUPED_SIGNALS_CACHE_TTL_SECONDS = 30
@@ -344,6 +349,79 @@ def normalize_content_fingerprint(content: str) -> str:
     return ' '.join((content or '').strip().lower().split())
 
 
+def _rl_fingerprint_hash(content: str, target_key: Optional[str]) -> str:
+    """Short SHA-1 of the deduplication key — safe for Redis key segments."""
+    raw = f"{target_key or 'global'}::{normalize_content_fingerprint(content)}"
+    return hashlib.sha1(raw.encode()).hexdigest()[:20]
+
+
+def _enforce_redis_rate_limit(
+    agent_id: int,
+    action: str,
+    fingerprint_hash: str,
+    cooldown_seconds: float,
+    window_seconds: float,
+    window_limit: int,
+    now_ts: float,
+) -> None:
+    """Redis sliding-window rate limit using sorted sets.
+
+    Three Redis structures per (agent, action):
+      • ``{prefix}:{agent}:{action}:win``   — sorted set of timestamps (sliding window)
+      • ``{prefix}:{agent}:{action}:cd``    — string: timestamp of last post (cooldown)
+      • ``{prefix}:{agent}:{action}:dup:{fp}`` — string: timestamp (duplicate detection)
+    """
+    rc = get_redis_client()
+    if rc is None:
+        raise RuntimeError("redis_unavailable")  # caller catches and falls back
+
+    p = f"{_RATE_PREFIX}:{agent_id}:{action}"
+    win_key = f"{p}:win"
+    cd_key  = f"{p}:cd"
+    dup_key = f"{p}:dup:{fingerprint_hash}"
+
+    # Read phase — pipeline to minimise round-trips.
+    with rc.pipeline(transaction=False) as pipe:
+        pipe.get(cd_key)
+        pipe.zremrangebyscore(win_key, 0, now_ts - window_seconds)
+        pipe.zcard(win_key)
+        pipe.get(dup_key)
+        cd_raw, _, win_count, dup_raw = pipe.execute()
+
+    # Cooldown check.
+    if cd_raw:
+        last_ts = float(cd_raw)
+        if now_ts - last_ts < cooldown_seconds:
+            remaining = int(math.ceil(cooldown_seconds - (now_ts - last_ts)))
+            raise HTTPException(
+                status_code=429,
+                detail=f'Too many {action} posts. Try again in {remaining}s.',
+            )
+
+    # Sliding-window check.
+    if win_count >= window_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f'{action.title()} rate limit reached. Please slow down.',
+        )
+
+    # Duplicate check.
+    if dup_raw and now_ts - float(dup_raw) < CONTENT_DUPLICATE_WINDOW_SECONDS:
+        raise HTTPException(
+            status_code=429,
+            detail=f'Duplicate {action} content detected. Please wait before reposting.',
+        )
+
+    # Write phase — record this request.
+    with rc.pipeline(transaction=False) as pipe:
+        score = now_ts
+        pipe.zadd(win_key, {str(score): score})
+        pipe.expire(win_key, int(window_seconds) + 1)
+        pipe.set(cd_key, str(now_ts), ex=int(cooldown_seconds) + 1)
+        pipe.set(dup_key, str(now_ts), ex=int(CONTENT_DUPLICATE_WINDOW_SECONDS) + 1)
+        pipe.execute()
+
+
 def enforce_content_rate_limit(
     ctx: RouteContext,
     agent_id: int,
@@ -352,11 +430,6 @@ def enforce_content_rate_limit(
     target_key: Optional[str] = None,
 ) -> None:
     now_ts = time.time()
-    state_key = (agent_id, action)
-    state = ctx.content_rate_limit_state.setdefault(
-        state_key,
-        {'timestamps': [], 'last_ts': 0.0, 'fingerprints': {}},
-    )
 
     if action == 'discussion':
         cooldown_seconds = DISCUSSION_COOLDOWN_SECONDS
@@ -367,6 +440,27 @@ def enforce_content_rate_limit(
         window_seconds = REPLY_WINDOW_SECONDS
         window_limit = REPLY_WINDOW_LIMIT
 
+    fp_hash = _rl_fingerprint_hash(content, target_key)
+
+    # ── Redis path (preferred — works across processes / instances) ──────────
+    try:
+        _enforce_redis_rate_limit(
+            agent_id, action, fp_hash,
+            cooldown_seconds, window_seconds, window_limit, now_ts,
+        )
+        return  # Redis handled it; skip in-process fallback
+    except HTTPException:
+        raise  # propagate 429s from Redis path unchanged
+    except Exception:
+        pass   # Redis unavailable — fall through to in-process path
+
+    # ── In-process fallback (single-instance dev / no Redis) ────────────────
+    state_key = (agent_id, action)
+    state = ctx.content_rate_limit_state.setdefault(
+        state_key,
+        {'timestamps': [], 'last_ts': 0.0, 'fingerprints': {}},
+    )
+
     last_ts = float(state.get('last_ts') or 0.0)
     if now_ts - last_ts < cooldown_seconds:
         remaining = int(math.ceil(cooldown_seconds - (now_ts - last_ts)))
@@ -376,19 +470,15 @@ def enforce_content_rate_limit(
     if len(timestamps) >= window_limit:
         raise HTTPException(status_code=429, detail=f'{action.title()} rate limit reached. Please slow down.')
 
-    fingerprints = state.get('fingerprints', {})
     fingerprint = normalize_content_fingerprint(content)
     duplicate_key = f"{target_key or 'global'}::{fingerprint}"
+    fingerprints = state.get('fingerprints', {})
     last_duplicate_ts = fingerprints.get(duplicate_key)
     if last_duplicate_ts and now_ts - float(last_duplicate_ts) < CONTENT_DUPLICATE_WINDOW_SECONDS:
         raise HTTPException(status_code=429, detail=f'Duplicate {action} content detected. Please wait before reposting.')
 
     timestamps.append(now_ts)
-    fingerprints = {
-        key: ts
-        for key, ts in fingerprints.items()
-        if now_ts - float(ts) < CONTENT_DUPLICATE_WINDOW_SECONDS
-    }
+    fingerprints = {k: ts for k, ts in fingerprints.items() if now_ts - float(ts) < CONTENT_DUPLICATE_WINDOW_SECONDS}
     fingerprints[duplicate_key] = now_ts
     ctx.content_rate_limit_state[state_key] = {
         'timestamps': timestamps,

@@ -2,6 +2,8 @@ import json
 import secrets
 from datetime import datetime, timedelta, timezone
 
+from metrics import active_ws_connections
+
 from fastapi import FastAPI, Header, HTTPException, WebSocket
 
 from database import get_db_connection
@@ -115,6 +117,7 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
 
             await websocket.accept()
             ctx.ws_connections[client_id_int] = websocket
+            active_ws_connections.inc()
             while True:
                 await websocket.receive_text()
         except Exception:
@@ -122,6 +125,7 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             if client_id_int is not None and client_id_int in ctx.ws_connections:
                 del ctx.ws_connections[client_id_int]
+                active_ws_connections.dec()
 
     @app.post('/api/claw/messages')
     async def create_agent_message(data: AgentMessageCreate, authorization: str = Header(None)):
