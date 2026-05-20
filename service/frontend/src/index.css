@@ -373,6 +373,16 @@ a {
   overflow: hidden;
   margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+/* Auto-inject 2px terracotta stripe on every card via ::before */
+.card::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: var(--accent-gradient);
+  flex-shrink: 0;
 }
 
 .card-stripe {
@@ -418,6 +428,14 @@ a {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.stat-card::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: var(--accent-gradient);
 }
 
 .stat-stripe {
@@ -480,10 +498,14 @@ a {
 }
 
 .agent-card {
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image: var(--accent-gradient);
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: top;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  padding: 18px 18px 16px;
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
@@ -557,10 +579,14 @@ a {
 }
 
 .signal-card {
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image: var(--accent-gradient);
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: top;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  padding: 18px 18px 16px;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
 }
