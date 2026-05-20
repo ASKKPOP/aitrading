@@ -11,7 +11,7 @@ import re
 import sqlite3
 from typing import Any, Iterable, Optional, Sequence
 
-from config import DATABASE_URL
+from config import DATABASE_URL, DB_PATH
 
 try:
     import psycopg
@@ -23,7 +23,7 @@ except ImportError:  # pragma: no cover - dependency is optional until PostgreSQ
 
 _BASE_DIR = os.path.dirname(__file__)
 _DEFAULT_SQLITE_DB_PATH = os.path.join(_BASE_DIR, "data", "clawtrader.db")
-_SQLITE_DB_PATH = os.getenv("DB_PATH", _DEFAULT_SQLITE_DB_PATH)
+_SQLITE_DB_PATH = DB_PATH or _DEFAULT_SQLITE_DB_PATH
 _POSTGRES_NOW_TEXT_SQL = (
     "to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', "
     "'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"

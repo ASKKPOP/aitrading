@@ -1,43 +1,85 @@
 """
-Configuration Module
+Configuration module.
 
-配置和环境变量加载
+All environment variables are loaded once at startup via pydantic-settings.
+The module-level constants below are backward-compatible with the previous
+os.getenv()-based config — no other files need to change.
 """
 
-import os
+from __future__ import annotations
+
 from pathlib import Path
 
-# Load environment variables from .env file in project root
-env_path = Path(__file__).parent.parent.parent / ".env"
-from dotenv import load_dotenv
+from pydantic import SecretStr, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv(env_path)
+_ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 
-# ==================== Configuration ====================
 
-# Database
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+class Settings(BaseSettings):
+    """Application settings.  Loaded from environment variables and .env file."""
 
-# Cache / Redis
-REDIS_ENABLED = os.getenv("REDIS_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
-REDIS_URL = os.getenv("REDIS_URL", "").strip()
-REDIS_PREFIX = os.getenv("REDIS_PREFIX", "ai_trader").strip() or "ai_trader"
+    model_config = SettingsConfigDict(
+        env_file=str(_ENV_FILE),
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
-# API Keys
-ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "demo")
+    # ---- Database ----
+    database_url: str = ""
+    db_path: str = ""
 
-# Market data endpoints
-# Hyperliquid public info endpoint (used for crypto quotes; no API key required)
-HYPERLIQUID_API_URL = os.getenv("HYPERLIQUID_API_URL", "https://api.hyperliquid.xyz/info")
+    # ---- Redis ----
+    redis_enabled: bool = False
+    redis_url: SecretStr = SecretStr("")
+    redis_prefix: str = "ai_trader"
 
-# CORS
-CORS_ORIGINS = os.getenv("CLAWTRADER_CORS_ORIGINS", "").split(",") if os.getenv("CLAWTRADER_CORS_ORIGINS") else ["http://localhost:3000"]
+    # ---- API Keys ----
+    alpha_vantage_api_key: SecretStr = SecretStr("demo")
 
-# Rewards
-SIGNAL_PUBLISH_REWARD = 10  # Points for publishing a signal
-SIGNAL_ADOPT_REWARD = 1     # Points per follower who receives signal
-DISCUSSION_PUBLISH_REWARD = 4  # Points for publishing a discussion
-REPLY_PUBLISH_REWARD = 2       # Points for replying to a strategy/discussion
+    # ---- Market endpoints ----
+    hyperliquid_api_url: str = "https://api.hyperliquid.xyz/info"
 
-# Environment
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    # ---- CORS ----
+    clawtrader_cors_origins: str = ""
+
+    # ---- Runtime ----
+    environment: str = "development"
+
+    @field_validator("redis_prefix", mode="before")
+    @classmethod
+    def _nonempty_redis_prefix(cls, v: object) -> str:
+        return (str(v).strip() or "ai_trader")
+
+
+# Singleton — created once at import time.
+settings = Settings()
+
+# ── Backward-compatible module-level exports ───────────────────────────────────
+# Other modules import these names directly; keep them to avoid a wide diff.
+
+DATABASE_URL: str = settings.database_url
+DB_PATH: str = settings.db_path  # empty → database.py falls back to its local default
+
+REDIS_ENABLED: bool = settings.redis_enabled
+REDIS_URL: str = settings.redis_url.get_secret_value()
+REDIS_PREFIX: str = settings.redis_prefix
+
+ALPHA_VANTAGE_API_KEY: str = settings.alpha_vantage_api_key.get_secret_value()
+
+HYPERLIQUID_API_URL: str = settings.hyperliquid_api_url
+
+CORS_ORIGINS: list[str] = (
+    [o.strip() for o in settings.clawtrader_cors_origins.split(",") if o.strip()]
+    if settings.clawtrader_cors_origins
+    else ["http://localhost:3000"]
+)
+
+ENVIRONMENT: str = settings.environment
+
+# Reward constants — not env-driven, kept here for co-location.
+SIGNAL_PUBLISH_REWARD = 10
+SIGNAL_ADOPT_REWARD = 1
+DISCUSSION_PUBLISH_REWARD = 4
+REPLY_PUBLISH_REWARD = 2
