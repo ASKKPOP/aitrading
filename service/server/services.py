@@ -6,11 +6,14 @@ Services Module
 
 import hashlib
 import json
+import logging
 import secrets
 import time
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from database import get_db_connection, is_retryable_db_error
+
+_logger = logging.getLogger(__name__)
 
 
 # ==================== Agent Services ====================
@@ -318,7 +321,7 @@ def _update_position_from_signal(
                 UPDATE positions SET quantity = ?, entry_price = ?, opened_at = ?
                 WHERE id = ?
             """, (new_qty, new_entry_price, executed_at, position_id))
-            print(f"[Position] {symbol}: increased long position to {new_qty}")
+            _logger.info("[Position] %s: increased long position to %s", symbol, new_qty)
         else:
             # Create new long position
             if leader_id:
@@ -326,13 +329,13 @@ def _update_position_from_signal(
                     INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, leader_id)
                     VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?, ?)
                 """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at, leader_id))
-                print(f"[Position] {symbol}: created copied long position {quantity} from leader {leader_id}")
+                _logger.info("[Position] %s: created copied long position %s from leader %s", symbol, quantity, leader_id)
             else:
                 cursor.execute("""
                     INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at)
                     VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?)
                 """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at))
-                print(f"[Position] {symbol}: created long position {quantity}")
+                _logger.info("[Position] %s: created long position %s", symbol, quantity)
 
     elif action_lower == "sell":
         # Decrease/close long position
@@ -344,13 +347,13 @@ def _update_position_from_signal(
         if new_qty <= 0:
             # Close position
             cursor.execute("DELETE FROM positions WHERE id = ?", (position_id,))
-            print(f"[Position] {symbol}: closed long position")
+            _logger.info("[Position] %s: closed long position", symbol)
         else:
             # Partial close
             cursor.execute("""
                 UPDATE positions SET quantity = ? WHERE id = ?
             """, (new_qty, position_id))
-            print(f"[Position] {symbol}: decreased long position to {new_qty}")
+            _logger.info("[Position] %s: decreased long position to %s", symbol, new_qty)
 
     elif action_lower == "short":
         # Increase short position
@@ -365,7 +368,7 @@ def _update_position_from_signal(
                 UPDATE positions SET quantity = ?, entry_price = ?, opened_at = ?
                 WHERE id = ?
             """, (new_qty, new_entry_price, executed_at, position_id))
-            print(f"[Position] {symbol}: increased short position to {new_qty}")
+            _logger.info("[Position] %s: increased short position to %s", symbol, new_qty)
         else:
             # Create new short position (negative quantity for short)
             if leader_id:
@@ -373,13 +376,13 @@ def _update_position_from_signal(
                     INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, leader_id)
                     VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?, ?)
                 """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at, leader_id))
-                print(f"[Position] {symbol}: created copied short position {quantity} from leader {leader_id}")
+                _logger.info("[Position] %s: created copied short position %s from leader %s", symbol, quantity, leader_id)
             else:
                 cursor.execute("""
                     INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at)
                     VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?)
                 """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at))
-                print(f"[Position] {symbol}: created short position {quantity}")
+                _logger.info("[Position] %s: created short position %s", symbol, quantity)
 
     elif action_lower == "cover":
         # Decrease/close short position
@@ -390,12 +393,12 @@ def _update_position_from_signal(
         new_qty = current_qty + quantity
         if new_qty >= 0:
             cursor.execute("DELETE FROM positions WHERE id = ?", (position_id,))
-            print(f"[Position] {symbol}: closed short position")
+            _logger.info("[Position] %s: closed short position", symbol)
         else:
             cursor.execute("""
                 UPDATE positions SET quantity = ? WHERE id = ?
             """, (new_qty, position_id))
-            print(f"[Position] {symbol}: decreased short position to {new_qty}")
+            _logger.info("[Position] %s: decreased short position to %s", symbol, new_qty)
 
     # Only commit and close if we created our own connection
     if own_connection:

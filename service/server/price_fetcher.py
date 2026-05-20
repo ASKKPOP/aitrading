@@ -399,6 +399,52 @@ def _polymarket_extract_tokens(market: dict) -> list[dict[str, Optional[str]]]:
     return extracted
 
 
+def list_polymarket_markets(
+    limit: int = 20,
+    active: bool = True,
+    order: str = "volume24hr",
+) -> list[dict]:
+    """Return a list of Polymarket markets from the Gamma API.
+
+    Fields returned per market: slug, condition_id, title, end_date,
+    volume_24hr, liquidity, outcomes, tokens (list of {token_id, outcome}).
+    """
+    if not POLYMARKET_GAMMA_BASE_URL:
+        return []
+    url = f"{POLYMARKET_GAMMA_BASE_URL.rstrip('/')}/markets"
+    params: dict = {
+        "limit": str(max(1, min(limit, 100))),
+        "order": order,
+        "ascending": "false",
+    }
+    if active:
+        params["active"] = "true"
+        params["closed"] = "false"
+    try:
+        raw = _polymarket_get_json(url, params=params)
+    except Exception:
+        return []
+    if not isinstance(raw, list):
+        return []
+    result = []
+    for m in raw:
+        if not isinstance(m, dict):
+            continue
+        result.append({
+            "slug": m.get("slug"),
+            "condition_id": m.get("conditionId"),
+            "title": _polymarket_market_title(m),
+            "end_date": m.get("endDate") or m.get("end_date_iso"),
+            "volume_24hr": m.get("volume24hr") or m.get("volumeNum"),
+            "liquidity": m.get("liquidityNum") or m.get("liquidity"),
+            "outcomes": _parse_string_array(m.get("outcomes")),
+            "tokens": _polymarket_extract_tokens(m),
+            "active": m.get("active"),
+            "closed": m.get("closed"),
+        })
+    return result
+
+
 def _polymarket_resolve_reference(reference: str, token_id: Optional[str] = None, outcome: Optional[str] = None) -> Optional[dict]:
     """
     Resolve a Polymarket reference into an explicit outcome token.

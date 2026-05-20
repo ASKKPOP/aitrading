@@ -2,6 +2,7 @@ from typing import Optional
 
 from fastapi import FastAPI
 
+from price_fetcher import list_polymarket_markets
 from market_intel import (
     get_etf_flows_payload,
     get_featured_stock_analysis_payload,
@@ -39,6 +40,18 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get('/health')
     async def health_check():
         return {'status': 'ok', 'timestamp': utc_now_iso_z()}
+
+    @app.get('/api/markets/polymarket')
+    async def polymarket_market_list(limit: int = 20, active: bool = True):
+        """List active Polymarket prediction markets, ordered by 24-hour volume."""
+        safe_limit = max(1, min(limit, 100))
+        redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:polymarket:list:limit={safe_limit}:active={active}'
+        cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, 60)
+        if isinstance(cached, list):
+            return {'markets': cached, 'count': len(cached)}
+        markets = list_polymarket_markets(limit=safe_limit, active=active)
+        set_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, markets, 60)
+        return {'markets': markets, 'count': len(markets)}
 
     @app.get('/api/market-intel/overview')
     async def market_intel_overview():

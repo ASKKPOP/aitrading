@@ -38,6 +38,12 @@ if os.getenv("API_STDERR_LOG", "false").strip().lower() in {"1", "true", "yes", 
 
 logger = logging.getLogger(__name__)
 
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator as _Instrumentator
+    _PROMETHEUS_AVAILABLE = True
+except ImportError:
+    _PROMETHEUS_AVAILABLE = False
+
 from cache import get_cache_status
 from database import init_database, get_database_status
 from routes import create_app
@@ -57,6 +63,10 @@ init_database()
 
 # Create app
 app = create_app()
+
+# Expose /metrics if prometheus-fastapi-instrumentator is installed
+if _PROMETHEUS_AVAILABLE:
+    _Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 
 # ==================== Startup ====================
