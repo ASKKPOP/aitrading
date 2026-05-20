@@ -1,0 +1,40 @@
+# Version control
+.git
+.gitignore
+
+# Python caches and virtual envs
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Frontend (served separately via Cloudflare Pages / Vercel)
+service/frontend/node_modules
+service/frontend/dist
+service/frontend/.next
+
+# Local SQLite data — never bake into the image
+service/server/data/
+service/server/logs/
+
+# Local config — secrets must come from env vars / Fly secrets
+.env
+.env.*
+!.env.example
+
+# Docs, design, research — not needed at runtime
+docs/
+research/
+design/
+marketing/
+skills/
+
+# Dev files
+*.md
+Makefile
+docker-compose*.yml

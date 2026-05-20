@@ -1,0 +1,72 @@
+# fly.toml — AITRAD backend on Fly.io
+# Docs: https://fly.io/docs/reference/configuration/
+#
+# Two processes share the same image:
+#   api    — FastAPI, public HTTPS
+#   worker — background price / settlement / profit-history tasks (singleton)
+#
+# Deploy:
+#   fly launch --no-deploy   # first time: creates app + Postgres + Redis
+#   fly secrets set DATABASE_URL=... REDIS_URL=... RESEND_API_KEY=...
+#   fly deploy
+
+app    = "aitrad"
+primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
+
+[build]
+  dockerfile = "Dockerfile"
+
+# ── Environment (non-secret) ─────────────────────────────────────────────────
+[env]
+  ENVIRONMENT          = "production"
+  PORT                 = "8001"
+  REDIS_ENABLED        = "true"
+  REDIS_PREFIX         = "aitrad"
+  API_STDERR_LOG       = "true"
+  # Background tasks run in the worker process only; disable in the API process.
+  BACKGROUND_TASKS_IN_API = "false"
+
+# ── Process definitions ──────────────────────────────────────────────────────
+[processes]
+  api    = "python -m uvicorn --app-dir service/server main:app --host 0.0.0.0 --port 8001 --workers 2"
+  worker = "python service/server/worker.py"
+
+# ── HTTP service (api process only) ─────────────────────────────────────────
+[[services]]
+  processes      = ["api"]
+  internal_port  = 8001
+  protocol       = "tcp"
+  auto_stop_machines  = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    handlers     = ["http"]
+    port         = 80
+    force_https  = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port     = 443
+
+  [services.concurrency]
+    type       = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+  [[services.http_checks]]
+    interval     = "15s"
+    timeout      = "5s"
+    grace_period = "10s"
+    method       = "GET"
+    path         = "/health"
+    protocol     = "http"
+
+# ── VM sizing ────────────────────────────────────────────────────────────────
+[[vm]]
+  size = "shared-cpu-1x"   # upgrade to performance-1x when load warrants
+
+# ── Mounts (SQLite fallback — remove when Postgres is configured) ────────────
+# [[mounts]]
+#   source      = "aitrad_data"
+#   destination = "/app/service/server/data"
