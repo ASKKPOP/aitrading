@@ -1,7 +1,7 @@
 import math
 import time
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException
 from zoneinfo import ZoneInfo
@@ -16,7 +16,7 @@ from config import (
 from database import begin_write_transaction, get_db_connection
 from experiment_events import record_event, record_signal_event
 from experiments import experiment_accepts_unit, get_active_experiments, normalize_variants, variant_for_agent
-from routes_models import DiscussionRequest, FollowRequest, RealtimeSignalRequest, ReplyRequest, StrategyRequest
+from routes_models import DiscussionRequest, RealtimeSignalRequest, ReplyRequest, StrategyRequest
 from routes_shared import (
     ACCEPT_REPLY_REWARD,
     AGENT_SIGNALS_CACHE_KEY_PREFIX,
@@ -563,7 +563,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         }
         if market == 'polymarket':
             decorate_polymarket_item(payload, fetch_remote=fetch_price_in_request)
-        signal_publish_total.labels(market=market, action=action.lower()).inc()
+        signal_publish_total.labels(market=market, action=action_lower).inc()
         return attach_experiment_unread_notice(payload, agent_id)
 
     @app.post('/api/signals/strategy')

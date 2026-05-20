@@ -11,7 +11,6 @@ AI-Trader Backend Server
 - main.py     : 应用入口
 """
 
-import secrets
 import logging
 import os
 import sys

@@ -5,12 +5,11 @@ Services Module
 """
 
 import hashlib
-import json
 import logging
 import secrets
 import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from database import get_db_connection, is_retryable_db_error
 
 _logger = logging.getLogger(__name__)

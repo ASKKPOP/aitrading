@@ -205,7 +205,6 @@ class ResearchExportTests(unittest.TestCase):
     def test_research_csv_columns_are_stable_and_time_filters_apply(self):
         self._insert_signal_and_reply()
         old_at = iso(datetime.now(timezone.utc) - timedelta(days=3))
-        new_at = utc_now_iso_z()
         record_event(
             "old_event",
             actor_agent_id=self.agent_1,

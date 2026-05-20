@@ -1,7 +1,5 @@
 """Regression tests for user-registration auth hardening."""
 
-import hashlib
-import os
 import sys
 import unittest
 from pathlib import Path

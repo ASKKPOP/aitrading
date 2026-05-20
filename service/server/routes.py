@@ -5,9 +5,11 @@ Routes Module
 """
 
 import time
+import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from config import CORS_ORIGINS
 from routes_agent import register_agent_routes
@@ -35,11 +37,22 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware('http')
-    async def add_process_time_header(request: Request, call_next):
+    async def add_request_metadata(request: Request, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
         start_time = time.time()
         response = await call_next(request)
+        response.headers['X-Request-ID'] = request_id
         response.headers['X-Process-Time'] = str(time.time() - start_time)
         return response
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        request_id = getattr(request.state, 'request_id', None)
+        return JSONResponse(
+            status_code=500,
+            content={'error': {'code': 'internal_error', 'message': 'An unexpected error occurred.', 'request_id': request_id}},
+        )
 
     ctx = RouteContext()
     register_market_routes(app, ctx)

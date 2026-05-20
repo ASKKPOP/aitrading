@@ -25,6 +25,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Lint (ruff)
+        working-directory: service
+        run: |
+          python -m ruff check server/ --select F401,F811,F821,F841
+
       - name: Run pytest
         working-directory: service/server
         env:
