@@ -2186,6 +2186,37 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
     return formatReturnPercent(agent.total_profit_percent)
   }
 
+  // ── Anonymous paper-follow ──────────────────────────────────────────
+  // Stored entirely in localStorage; no backend, no email, no auth.
+  // Lets a guest "follow" an agent and see their P&L delta since follow.
+  type PaperFollow = { followed_at: string; snapshot_profit_pct: number }
+  const PAPER_FOLLOW_KEY = 'aitrad_paper_follows'
+  const [paperFollows, setPaperFollows] = useState<Record<string, PaperFollow>>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      const raw = window.localStorage.getItem(PAPER_FOLLOW_KEY)
+      return raw ? JSON.parse(raw) : {}
+    } catch {
+      return {}
+    }
+  })
+  useEffect(() => {
+    try { window.localStorage.setItem(PAPER_FOLLOW_KEY, JSON.stringify(paperFollows)) } catch {}
+  }, [paperFollows])
+  const togglePaperFollow = (agentId: number | string, currentProfitPct: number) => {
+    setPaperFollows((prev) => {
+      const key = String(agentId)
+      if (prev[key]) {
+        const { [key]: _removed, ...rest } = prev
+        return rest
+      }
+      return {
+        ...prev,
+        [key]: { followed_at: new Date().toISOString(), snapshot_profit_pct: Number(currentProfitPct) || 0 },
+      }
+    })
+  }
+
   if (loading) {
     return <div className="loading"><div className="spinner"></div></div>
   }
@@ -2487,6 +2518,56 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                     </div>
                   )}
                 </div>
+                {/* Anonymous paper-follow — collapses funnel from "land → email → KYC" to "land → tap follow". */}
+                {(() => {
+                  const follow = paperFollows[String(agent.agent_id)]
+                  const currentPct = Number(agent.total_profit_percent || 0)
+                  if (follow) {
+                    const delta = currentPct - (follow.snapshot_profit_pct || 0)
+                    const sign = delta >= 0 ? '▲' : '▼'
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); togglePaperFollow(agent.agent_id, currentPct) }}
+                          className="btn btn-ghost"
+                          style={{ fontSize: '12px', padding: '6px 14px' }}
+                        >
+                          {tr(language, { en: '✓ Following', ja: '✓ フォロー中', th: '✓ กำลังติดตาม', vi: '✓ Đang theo dõi' })}
+                        </button>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '12px',
+                          color: delta >= 0 ? 'var(--success)' : 'var(--error)',
+                          fontWeight: 600,
+                        }}>
+                          {tr(language, { en: 'since follow', ja: 'フォロー以降', th: 'ตั้งแต่ติดตาม', vi: 'từ khi theo dõi' })} {sign} {Math.abs(delta).toFixed(2)}%
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {follow.followed_at?.split('T')[0]}
+                        </span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div style={{ marginTop: '14px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); togglePaperFollow(agent.agent_id, currentPct) }}
+                        className="btn btn-outline"
+                        style={{ fontSize: '12px', padding: '6px 14px' }}
+                        title={tr(language, {
+                          en: 'No signup needed — paper-mode follow stored on this device',
+                          ja: '登録不要 — ペーパーモードのフォローはこのデバイスに保存',
+                          th: 'ไม่ต้องลงทะเบียน — ติดตามแบบเปเปอร์เก็บไว้ในอุปกรณ์นี้',
+                          vi: 'Không cần đăng ký — theo dõi giả lập lưu trên thiết bị này',
+                        })}
+                      >
+                        {tr(language, { en: 'Follow (paper)', ja: 'フォロー (ペーパー)', th: 'ติดตาม (เปเปอร์)', vi: 'Theo dõi (giả lập)' })}
+                      </button>
+                    </div>
+                  )
+                })()}
               </div>
               )
             })}
