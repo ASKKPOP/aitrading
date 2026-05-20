@@ -42,6 +42,7 @@ from routes_shared import (
     validate_executed_at,
     validate_market,
 )
+from metrics import signal_publish_total
 from services import _add_agent_points, _get_agent_by_token, _reserve_signal_id, _update_position_from_signal
 from signal_quality import score_signal_quality
 from team_missions import TeamMissionError, record_team_message_from_signal, record_team_reply_from_parent_signal
@@ -562,6 +563,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         }
         if market == 'polymarket':
             decorate_polymarket_item(payload, fetch_remote=fetch_price_in_request)
+        signal_publish_total.labels(market=market, action=action.lower()).inc()
         return attach_experiment_unread_notice(payload, agent_id)
 
     @app.post('/api/signals/strategy')
@@ -689,6 +691,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
             title=data.title,
         )
 
+        signal_publish_total.labels(market=data.market or 'unknown', action='strategy').inc()
         return attach_experiment_unread_notice(
             {'success': True, 'signal_id': signal_id, 'points_earned': reward_points},
             agent_id,

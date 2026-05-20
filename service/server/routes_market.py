@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import FastAPI
 
-from price_fetcher import list_polymarket_markets
+from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
 from market_intel import (
     get_etf_flows_payload,
     get_featured_stock_analysis_payload,
@@ -52,6 +52,24 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         markets = list_polymarket_markets(limit=safe_limit, active=active)
         set_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, markets, 60)
         return {'markets': markets, 'count': len(markets)}
+
+    @app.get('/api/markets/polymarket/{slug_or_id}')
+    async def polymarket_market_detail(slug_or_id: str):
+        """Return a single Polymarket market with live per-outcome prices.
+
+        `slug_or_id` may be a market slug, conditionId (0x…), or a token ID.
+        Prices are fetched from the CLOB orderbook with a Gamma fallback.
+        """
+        redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:polymarket:detail:{slug_or_id}'
+        cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, 30)
+        if isinstance(cached, dict):
+            return cached
+        detail = get_polymarket_market_detail(slug_or_id)
+        if detail is None:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail='Market not found')
+        set_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, detail, 30)
+        return detail
 
     @app.get('/api/market-intel/overview')
     async def market_intel_overview():

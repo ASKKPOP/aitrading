@@ -1,9 +1,11 @@
 import hmac
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Header, HTTPException
 
+from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
 from database import get_db_connection
 from routes_models import (
     PointsExchangeRequest,
@@ -16,6 +18,7 @@ from routes_shared import RouteContext
 from services import _create_user_session, _get_agent_by_token, _get_user_by_token
 from utils import _extract_token, hash_password, verify_password
 
+_logger = logging.getLogger(__name__)
 
 EXCHANGE_RATE = 1000
 
@@ -26,40 +29,81 @@ EXCHANGE_RATE = 1000
 MAX_CODE_ATTEMPTS = 5
 CODE_RESEND_COOLDOWN_SECONDS = 30
 
+# ── Verification-code store ───────────────────────────────────────────────────
+# Primary: Redis with TTL (survives restarts, works behind a load balancer).
+# Fallback: ctx.verification_codes (per-process dict, preserves test isolation).
+_CODE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _code_key(email: str) -> str:
+    return f"auth:vcode:{email}"
+
+
+def _store_code(email: str, payload: dict, ctx: "RouteContext") -> None:
+    """Write a code entry to Redis (with TTL), falling back to ctx."""
+    serialisable = {
+        k: (v.isoformat() if isinstance(v, datetime) else v)
+        for k, v in payload.items()
+    }
+    if not _cache_set(_code_key(email), serialisable, ttl_seconds=_CODE_TTL_SECONDS):
+        ctx.verification_codes[email] = payload  # fallback keeps native datetime objects
+
+
+def _load_code(email: str, ctx: "RouteContext") -> dict | None:
+    """Read a code entry from Redis, falling back to ctx."""
+    cached = _cache_get(_code_key(email))
+    if cached is not None:
+        # Re-hydrate ISO strings back to datetime objects.
+        for key in ("expires_at", "last_sent_at"):
+            if isinstance(cached.get(key), str):
+                try:
+                    cached[key] = datetime.fromisoformat(cached[key])
+                except ValueError:
+                    pass
+        return cached
+    return ctx.verification_codes.get(email)
+
+
+def _delete_code(email: str, ctx: "RouteContext") -> None:
+    """Remove a code entry from Redis and ctx."""
+    _cache_delete(_code_key(email))
+    ctx.verification_codes.pop(email, None)
+
 
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/users/send-code')
     async def send_verification_code(data: UserSendCodeRequest):
         now = datetime.now(timezone.utc)
-        existing = ctx.verification_codes.get(data.email)
+        existing = _load_code(data.email, ctx)
         if existing:
             last_sent_at = existing.get('last_sent_at')
             if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
                 raise HTTPException(status_code=429, detail='Please wait before requesting another code')
 
         code = f'{secrets.randbelow(1_000_000):06d}'
-        ctx.verification_codes[data.email] = {
+        _store_code(data.email, {
             'code': code,
             'expires_at': now + timedelta(minutes=5),
             'attempts': 0,
             'last_sent_at': now,
-        }
-        print(f'[Email] Verification code for {data.email}: {code}')
+        }, ctx)
+        # TODO Phase 1.6: send via transactional email (Resend/Postmark).
+        _logger.info('[Email] Verification code for %s: %s', data.email, code)
         return {'success': True, 'message': 'Code sent'}
 
     @app.post('/api/users/register')
     async def user_register(data: UserRegisterRequest):
-        if data.email not in ctx.verification_codes:
+        stored = _load_code(data.email, ctx)
+        if stored is None:
             raise HTTPException(status_code=400, detail='No code sent')
 
-        stored = ctx.verification_codes[data.email]
         if stored['expires_at'] < datetime.now(timezone.utc):
-            del ctx.verification_codes[data.email]
+            _delete_code(data.email, ctx)
             raise HTTPException(status_code=400, detail='Code expired')
 
         stored['attempts'] = stored.get('attempts', 0) + 1
         if stored['attempts'] > MAX_CODE_ATTEMPTS:
-            del ctx.verification_codes[data.email]
+            _delete_code(data.email, ctx)
             raise HTTPException(status_code=429, detail='Too many attempts. Request a new code.')
 
         if not hmac.compare_digest(str(stored['code']), str(data.code or '')):
@@ -85,7 +129,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         conn.commit()
         conn.close()
-        del ctx.verification_codes[data.email]
+        _delete_code(data.email, ctx)
 
         return {'success': True, 'token': token, 'user_id': user_id}
 

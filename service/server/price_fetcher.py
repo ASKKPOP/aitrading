@@ -445,6 +445,52 @@ def list_polymarket_markets(
     return result
 
 
+def get_polymarket_market_detail(slug_or_id: str) -> Optional[dict]:
+    """Return a single Polymarket market with live prices per outcome token.
+
+    `slug_or_id` may be a market slug, conditionId (0x…), or token ID.
+    Returns None when the market cannot be found or the Gamma API is unreachable.
+    """
+    ref = (slug_or_id or "").strip()
+    if not ref:
+        return None
+
+    market = _polymarket_fetch_market(ref)
+    if not isinstance(market, dict):
+        return None
+
+    tokens = _polymarket_extract_tokens(market)
+
+    # Fetch live price for each outcome token.
+    priced_tokens = []
+    for t in tokens:
+        token_id = t.get("token_id")
+        outcome = t.get("outcome")
+        price: Optional[float] = None
+        if token_id:
+            price = _get_polymarket_mid_price(ref, token_id=token_id, outcome=outcome)
+        priced_tokens.append({
+            "token_id": token_id,
+            "outcome": outcome,
+            "price": price,
+        })
+
+    return {
+        "slug": market.get("slug"),
+        "condition_id": market.get("conditionId"),
+        "title": _polymarket_market_title(market),
+        "end_date": market.get("endDate") or market.get("end_date_iso"),
+        "volume_24hr": market.get("volume24hr") or market.get("volumeNum"),
+        "liquidity": market.get("liquidityNum") or market.get("liquidity"),
+        "outcomes": _parse_string_array(market.get("outcomes")),
+        "tokens": priced_tokens,
+        "active": market.get("active"),
+        "closed": market.get("closed"),
+        "description": market.get("description"),
+        "image": market.get("image"),
+    }
+
+
 def _polymarket_resolve_reference(reference: str, token_id: Optional[str] = None, outcome: Optional[str] = None) -> Optional[dict]:
     """
     Resolve a Polymarket reference into an explicit outcome token.
@@ -762,6 +808,11 @@ def get_price_from_market(
         return price
     except Exception as e:
         _price_log(f"[Price API] Error fetching {symbol} ({market}): {e}")
+        try:
+            from metrics import price_fetch_errors_total
+            price_fetch_errors_total.labels(provider=market or "unknown").inc()
+        except Exception:
+            pass
         return None
 
 
