@@ -30,6 +30,7 @@ import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { ResearchExportsPage } from './ResearchExportsPage'
 import { TeamMissionsPage } from './TeamMissionsPage'
 import { Language, getT, DEFAULT_LANGUAGE, LANGUAGES } from './i18n'
+import { THEMES, DEFAULT_THEME } from './appShared'
 
 const DISCUSSION_NOTIFICATION_TYPES = new Set([
   'discussion_started',
@@ -65,8 +66,8 @@ function App() {
     localStorage.setItem('aitrad_language', language)
   }, [language])
   const [theme, setTheme] = useState<ThemeMode>(() => {
-    const savedTheme = localStorage.getItem('ai_trader_theme')
-    return savedTheme === 'light' ? 'light' : 'dark'
+    const saved = localStorage.getItem('aitrad_theme')
+    return THEMES.some((t) => t.value === saved) ? (saved as ThemeMode) : DEFAULT_THEME
   })
   const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
   const [agentInfo, setAgentInfo] = useState<any>(null)
@@ -89,7 +90,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('ai_trader_theme', theme)
+    localStorage.setItem('aitrad_theme', theme)
   }, [theme])
 
   const fetchAgentInfo = async () => {

@@ -8,7 +8,14 @@ interface LanguageContextType {
   t: ReturnType<typeof getT>
 }
 
-export type ThemeMode = 'dark' | 'light'
+export type ThemeMode = 'terracotta' | 'slate'
+
+export const THEMES: { value: ThemeMode; label: string; dotColor: string }[] = [
+  { value: 'terracotta', label: 'Terracotta', dotColor: '#b8542f' },
+  { value: 'slate', label: 'Slate', dotColor: '#4a6fa5' },
+]
+
+export const DEFAULT_THEME: ThemeMode = 'terracotta'
 
 interface ThemeContextType {
   theme: ThemeMode

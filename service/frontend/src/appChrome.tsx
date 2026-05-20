@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { Link, useLocation } from 'react-router-dom'
 
-import { useLanguage, useTheme } from './appShared'
+import { useLanguage, useTheme, THEMES } from './appShared'
 import { LANGUAGES, tr } from './i18n'
 
 export function Toast({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) {
@@ -43,16 +43,22 @@ function ThemeSwitcher() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <button
-      type="button"
-      className="theme-toggle"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-      title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-    >
-      <span className={`theme-icon sun ${theme === 'light' ? 'active' : ''}`}>☼</span>
-      <span className={`theme-icon moon ${theme === 'dark' ? 'active' : ''}`}>☾</span>
-    </button>
+    <div className="theme-switcher" role="tablist" aria-label="Theme">
+      {THEMES.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          role="tab"
+          aria-selected={theme === opt.value}
+          onClick={() => setTheme(opt.value)}
+          className={`theme-opt ${theme === opt.value ? 'active' : ''}`}
+          title={opt.label}
+        >
+          <span className="theme-dot" style={{ background: opt.dotColor }} />
+          <span className="theme-opt-label">{opt.label}</span>
+        </button>
+      ))}
+    </div>
   )
 }
 

@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AITRAD — Theme Preview · Editorial Terracotta vs Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter+Tight:wght@400;500;600&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+JP:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ── BASE TOKENS (shared structure) ─────────────────────────────────── */
+:root {
+  --maxw: 1120px;
+  --pad-x: clamp(24px, 6vw, 96px);
+}
+
+/* ── THEME 1 — EDITORIAL · TERRACOTTA  (askkpop.com) ────────────────── */
+:root[data-theme="terracotta"] {
+  --ink:           #0b1220;
+  --navy:          #16213d;
+  --navy-2:        #1d2a4a;
+  --background:    #f1ead8;   /* parchment */
+  --background-2:  #e8dfc8;
+  --card:          #faf6ec;   /* vellum */
+  --primary-text:  #0b1220;
+  --muted-text:    rgba(11, 18, 32, 0.55);
+  --disabled-text: rgba(11, 18, 32, 0.35);
+  --border:        rgba(11, 18, 32, 0.15);
+  --border-strong: rgba(11, 18, 32, 0.30);
+  --accent:        #b8542f;   /* terracotta */
+  --accent-2:      #d97a4f;
+  --accent-on:     #faf6ec;
+  --bronze:        #8a6a3b;
+  --up:            #2d9e6b;
+  --up-soft:       rgba(45, 158, 107, 0.10);
+  --down:          #8b3a2a;
+  --down-soft:     rgba(139, 58, 42, 0.10);
+
+  --font-display: "Cormorant Garamond", "Noto Serif JP", "GFS Didot", Georgia, serif;
+  --font-sans:    "Inter Tight", "Noto Sans Thai", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+  --display-italic: italic;
+  --display-letter-spacing: -0.02em;
+  --display-weight: 400;
+}
+
+/* ── THEME 2 — EDITORIAL · SLATE  (ionixq.com/copy-trading) ─────────── */
+:root[data-theme="slate"] {
+  --ink:           #1a1714;
+  --navy:          #1a2238;
+  --navy-2:        #232c45;
+  --background:    #f5efe4;   /* warm cream */
+  --background-2:  #ece4d3;
+  --card:          #faf6ed;
+  --primary-text:  #1a1714;   /* deep brown ink */
+  --muted-text:    #6b6358;
+  --disabled-text: #9a9082;
+  --border:        #ddd2bd;
+  --border-strong: #c9bba0;
+  --accent:        #4a6fa5;   /* slate blue */
+  --accent-2:      #5d83b9;
+  --accent-on:     #faf6ed;
+  --bronze:        #8a6a3b;
+  --up:            #4a7c59;   /* forest green */
+  --up-soft:       rgba(74, 124, 89, 0.10);
+  --down:          #a8442a;   /* burnt orange */
+  --down-soft:     rgba(168, 68, 42, 0.10);
+
+  --font-display: "Playfair Display", "Noto Serif JP", Georgia, serif;
+  --font-sans:    "Geist", "Noto Sans Thai", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+  --display-italic: italic;
+  --display-letter-spacing: -0.02em;
+  --display-weight: 500;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+body {
+  background: var(--background);
+  color: var(--primary-text);
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.6;
+  font-feature-settings: "kern", "liga", "onum";
+  text-rendering: optimizeLegibility;
+  transition: background 240ms ease, color 240ms ease;
+}
+::selection { background: var(--accent); color: var(--accent-on); }
+.shell { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad-x); }
+
+/* ── TOPBAR ──────────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad-x);
+  height: 64px; display: flex; align-items: center; gap: 24px;
+}
+.brand {
+  font-family: var(--font-display); font-size: 20px; font-style: italic;
+  color: var(--primary-text); text-decoration: none; letter-spacing: -0.01em;
+}
+.brand span { color: var(--accent); }
+.topbar-spacer { flex: 1; }
+.topbar-links { display: flex; align-items: center; gap: 22px; }
+.topbar-link {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--muted-text); text-decoration: none; letter-spacing: 0.01em;
+  transition: color .2s;
+}
+.topbar-link:hover, .topbar-link.active { color: var(--primary-text); }
+
+.lang-strip { display: inline-flex; gap: 0; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; background: var(--card); }
+.lang-pill {
+  background: transparent; border: 0; padding: 6px 12px;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  color: var(--muted-text); cursor: pointer;
+}
+.lang-pill.active { background: var(--accent); color: var(--accent-on); }
+.lang-pill + .lang-pill { border-left: 1px solid var(--border); }
+
+/* ── THEME SWITCHER ─────────────────────────────────────────────────── */
+.theme-switcher {
+  display: inline-flex; align-items: center; gap: 0;
+  background: var(--card); border: 1px solid var(--border); border-radius: 99px;
+  padding: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.theme-opt {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 99px; border: 0; cursor: pointer;
+  background: transparent;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+  color: var(--muted-text);
+  transition: background 180ms ease, color 180ms ease;
+}
+.theme-opt.active {
+  background: var(--accent); color: var(--accent-on);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.10);
+}
+.theme-opt:hover:not(.active) { color: var(--primary-text); }
+.theme-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); }
+
+/* ── HERO ────────────────────────────────────────────────────────────── */
+.hero {
+  padding: clamp(56px, 9vw, 100px) 0 clamp(48px, 7vw, 80px);
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.hero-glyph {
+  position: absolute; right: -2vw; top: -10%;
+  font-family: var(--font-display); font-style: italic;
+  font-size: clamp(200px, 28vw, 480px); line-height: 1;
+  color: var(--primary-text); opacity: 0.025;
+  pointer-events: none; user-select: none; letter-spacing: -0.04em;
+}
+.hero .shell { position: relative; z-index: 1; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase; font-weight: 500; color: var(--muted-text);
+  margin-bottom: 18px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 6vw, 80px);
+  font-weight: var(--display-weight);
+  line-height: 1.02;
+  letter-spacing: var(--display-letter-spacing);
+  max-width: 18ch; margin-bottom: 22px;
+}
+.hero h1 em { font-style: var(--display-italic); color: var(--accent); }
+.hero-sub {
+  font-family: var(--font-sans); font-size: clamp(14px, 1.5vw, 17px);
+  color: var(--muted-text); max-width: 56ch; line-height: 1.55; margin-bottom: 32px;
+}
+
+.status-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+.status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); border-radius: 99px;
+  padding: 5px 14px; color: var(--primary-text); background: var(--card);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot-up      { background: var(--up); box-shadow: 0 0 0 2px var(--up-soft); }
+.dot-accent  { background: var(--accent); }
+.dot-bronze  { background: var(--bronze); }
+
+/* ── SECTIONS ───────────────────────────────────────────────────────── */
+.section {
+  padding: clamp(48px, 7vw, 88px) 0;
+  border-bottom: 1px solid var(--border);
+}
+.section:last-of-type { border-bottom: none; }
+.section-head { margin-bottom: 36px; }
+.section-head .eyebrow { margin-bottom: 10px; }
+.section-head h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-letter-spacing);
+  line-height: 1.1;
+}
+.section-head h2 em { font-style: var(--display-italic); color: var(--accent); }
+.section-sub {
+  font-family: var(--font-sans); font-size: 14px; color: var(--muted-text);
+  margin-top: 10px; max-width: 56ch;
+}
+
+.section-dark {
+  background: var(--navy); color: var(--background);
+  padding: clamp(56px,8vw,100px) 0; position: relative; overflow: hidden;
+}
+.section-dark .eyebrow,
+.section-dark .section-sub { color: color-mix(in srgb, var(--background) 60%, transparent); }
+.section-dark h2 { color: var(--background); }
+.section-dark h2 em { color: var(--accent-2); }
+
+/* ── STAT TILES ─────────────────────────────────────────────────────── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px 22px;
+}
+.stat-kicker {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted-text); margin-bottom: 8px;
+}
+.stat-val {
+  font-family: var(--font-display);
+  font-size: 30px; font-weight: var(--display-weight);
+  letter-spacing: -0.015em; color: var(--primary-text); line-height: 1.1;
+}
+.stat-val .num {
+  font-family: var(--font-mono); font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums; font-size: 24px;
+}
+.stat-delta { font-family: var(--font-mono); font-size: 12px; margin-top: 6px; }
+.up   { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--muted-text); }
+
+/* ── CARDS ──────────────────────────────────────────────────────────── */
+.cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 22px 24px; position: relative; overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.card:hover { border-color: var(--border-strong); box-shadow: 0 8px 22px rgba(0,0,0,0.04); }
+.card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 10px 10px 0 0;
+}
+.card.up::after   { background: linear-gradient(90deg, var(--up), color-mix(in srgb, var(--up) 60%, black)); }
+.card.live::after { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.card.flat::after { background: var(--bronze); opacity: .35; }
+.card-kicker {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+}
+.card-title {
+  font-family: var(--font-display); font-size: 22px;
+  font-weight: var(--display-weight); font-style: var(--display-italic);
+  letter-spacing: -0.01em; margin-bottom: 4px;
+}
+.card-date { font-family: var(--font-mono); font-size: 11px; color: var(--muted-text); margin-bottom: 10px; }
+.card-body { font-family: var(--font-sans); font-size: 13.5px; color: var(--muted-text); line-height: 1.55; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.tag {
+  font-family: var(--font-mono); font-size: 11px; padding: 3px 9px;
+  border-radius: 4px; background: color-mix(in srgb, var(--primary-text) 6%, transparent);
+  border: 1px solid var(--border); color: var(--accent);
+}
+
+/* ── BUTTONS ────────────────────────────────────────────────────────── */
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  padding: 10px 20px; border-radius: 99px;
+  border: 1px solid transparent;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.btn-primary { background: var(--accent); color: var(--accent-on); }
+.btn-primary:hover { background: var(--accent-2); }
+.btn-outline {
+  background: transparent; color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.btn-outline:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: var(--accent); }
+.btn-ghost {
+  background: transparent; color: var(--muted-text); border-color: var(--border);
+}
+.btn-ghost:hover { background: color-mix(in srgb, var(--primary-text) 4%, transparent); color: var(--primary-text); }
+.btn-up   { background: var(--up); color: var(--accent-on); }
+.btn-down { background: var(--down); color: var(--accent-on); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-lg { padding: 13px 24px; font-size: 14px; }
+
+/* ── FORM ───────────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted-text); font-weight: 500;
+}
+.input, .select {
+  background: var(--card); color: var(--primary-text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-sans); font-size: 14px;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.input::placeholder { color: var(--disabled-text); }
+.input:focus, .select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ── LEDGER ─────────────────────────────────────────────────────────── */
+.ledger { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.ledger table { width: 100%; border-collapse: collapse; }
+.ledger th {
+  background: var(--background-2);
+  padding: 11px 18px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-text);
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+.ledger td {
+  padding: 12px 18px; font-size: 13px; color: var(--primary-text);
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.ledger tr:last-child td { border-bottom: none; }
+.ledger tr:hover td { background: var(--background-2); }
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+.serif-it { font-family: var(--font-display); font-style: italic; font-size: 16px; }
+
+.badge {
+  display: inline-block; font-family: var(--font-sans); font-size: 11px;
+  font-weight: 600; padding: 3px 11px; border-radius: 99px;
+}
+.badge-up   { background: var(--up-soft); color: var(--up); border: 1px solid color-mix(in srgb, var(--up) 25%, transparent); }
+.badge-down { background: var(--down-soft); color: var(--down); border: 1px solid color-mix(in srgb, var(--down) 30%, transparent); }
+.badge-flat { background: color-mix(in srgb, var(--primary-text) 6%, transparent); color: var(--muted-text); border: 1px solid var(--border); }
+
+/* ── SIDEBAR SAMPLE ────────────────────────────────────────────────── */
+.sb {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 14px;
+}
+.sb-section { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-text); padding: 6px 10px; margin-top: 12px; }
+.sb-section:first-of-type { margin-top: 0; }
+.sb-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 10px; margin: 1px 0; border-radius: 8px;
+  font-family: var(--font-sans); font-size: 13.5px; font-weight: 500;
+  color: var(--muted-text); text-decoration: none;
+  transition: background .15s, color .15s;
+}
+.sb-item:hover { background: var(--background-2); color: var(--primary-text); }
+.sb-item.active { background: var(--background); color: var(--primary-text); box-shadow: inset 3px 0 0 var(--accent); }
+.sb-icon { width: 18px; opacity: 0.85; }
+.sb-badge {
+  margin-left: auto; min-width: 18px; height: 18px; padding: 0 6px;
+  background: var(--accent); color: var(--accent-on); border-radius: 999px;
+  font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; font-family: var(--font-sans);
+}
+
+/* ── TOASTS ─────────────────────────────────────────────────────────── */
+.toast {
+  padding: 12px 16px; border-radius: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: center;
+  font-family: var(--font-sans); font-size: 13.5px; color: var(--primary-text);
+}
+.toast-success { border-left: 3px solid var(--up); }
+.toast-danger  { border-left: 3px solid var(--down); }
+.toast-info    { border-left: 3px solid var(--accent); }
+
+/* ── SWATCHES ───────────────────────────────────────────────────────── */
+.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.swatch {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); padding: 12px; min-height: 102px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.swatch-box { height: 32px; border-radius: 5px; border: 1px solid color-mix(in srgb, var(--primary-text) 6%, transparent); }
+.swatch-name { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--primary-text); }
+.swatch-hex  { font-family: var(--font-mono); font-size: 11px; color: var(--muted-text); }
+
+.note {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  padding: 14px 18px; border-radius: 8px;
+  font-family: var(--font-sans); font-size: 13px; color: var(--muted-text);
+}
+.note b { color: var(--primary-text); }
+
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ─────────────────────────────────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#"><em>aitrad</em> <span>·</span> studio</a>
+    <span class="topbar-spacer"></span>
+
+    <div class="topbar-links">
+      <a class="topbar-link active" href="#hero">Overview</a>
+      <a class="topbar-link" href="#stats">Portfolio</a>
+      <a class="topbar-link" href="#cards">Signals</a>
+      <a class="topbar-link" href="#ledger">Positions</a>
+    </div>
+
+    <!-- Theme switcher (this is the new piece) -->
+    <div class="theme-switcher" role="tablist" aria-label="Theme">
+      <button id="th-terracotta" class="theme-opt active" role="tab" aria-selected="true" onclick="setTheme('terracotta')">
+        <span class="theme-dot" style="background:#b8542f"></span>
+        <span>Terracotta</span>
+      </button>
+      <button id="th-slate" class="theme-opt" role="tab" aria-selected="false" onclick="setTheme('slate')">
+        <span class="theme-dot" style="background:#4a6fa5"></span>
+        <span>Slate</span>
+      </button>
+    </div>
+
+    <div class="lang-strip">
+      <button class="lang-pill active">EN</button>
+      <button class="lang-pill">日本語</button>
+      <button class="lang-pill">ไทย</button>
+      <button class="lang-pill">VI</button>
+    </div>
+  </div>
+</header>
+
+<!-- ── HERO ────────────────────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-glyph">℣</div>
+  <div class="shell">
+    <div class="eyebrow">AITRAD · Two themes · Editorial family</div>
+    <h1>
+      A <em>quieter</em> trading floor —<br>
+      pick your <em>palette</em>.
+    </h1>
+    <p class="hero-sub">
+      Theme 1 (Terracotta) lifts tokens from <span class="mono">askkpop.com/roadmap.html</span> — Cormorant Garamond serif, parchment surfaces.
+      Theme 2 (Slate) lifts from <span class="mono">ionixq.com/copy-trading</span> — Playfair Display, warm cream + slate-blue accent.
+      Use the switcher in the top-right.
+    </p>
+    <div class="status-pills">
+      <span class="status-pill"><span class="dot dot-up"></span> Backend healthy</span>
+      <span class="status-pill"><span class="dot dot-accent"></span> Live market data</span>
+      <span class="status-pill"><span class="dot dot-bronze"></span> Paper trading</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── PALETTE ────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Palette</div>
+      <h2>Colour <em>tokens</em></h2>
+      <div class="section-sub">The same component code reads from CSS variables — only the values change between themes.</div>
+    </div>
+    <div class="swatches" id="palette-swatches"></div>
+  </div>
+</section>
+
+<!-- ── TYPOGRAPHY ─────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Typography</div>
+      <h2>Three <em>typefaces</em>, one voice.</h2>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+      <div>
+        <h1 style="font-family: var(--font-display); font-weight: var(--display-weight); font-size: 56px; line-height: 1.05; margin-bottom: 16px; letter-spacing: var(--display-letter-spacing);">
+          The <em style="font-style: italic; color: var(--accent);">signal</em> and the noise — a portfolio in print.
+        </h1>
+        <p style="font-family: var(--font-sans); font-size: 15px; color: var(--muted-text); max-width: 56ch;">
+          Body for paragraphs is the display serif; UI labels and buttons use the sans (Inter Tight / Geist depending on theme); numbers and eyebrows use JetBrains Mono. Italics carry emphasis.
+        </p>
+        <p style="margin-top: 14px; font-family: var(--font-display); font-size: 17px;">
+          見出しは Cormorant Garamond / Playfair Display と Noto Serif JP のフォールバックで描画されます。
+        </p>
+        <p style="font-family: 'Noto Sans Thai', var(--font-sans); font-size: 15px;">
+          ตัวอย่างข้อความภาษาไทย ในรูปแบบใหม่
+        </p>
+        <p style="font-family: var(--font-sans); font-size: 15px;">Vị thế · Đăng nhập · Bán khống · với dấu phụ tiếng Việt.</p>
+      </div>
+      <div class="card">
+        <div class="card-kicker">Scale</div>
+        <table style="width:100%; font-family: var(--font-sans); font-size: 12.5px;">
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">display</td><td>serif · 56 / var weight</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">h1</td><td>serif · 44 / var weight</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">h2</td><td>serif · 28 / var weight</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">body</td><td>serif · 17 / 400</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">ui</td><td>sans · 13-14 / 500</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 0;">eyebrow</td><td>mono · 11 / 500 / upper</td></tr>
+          <tr><td class="mono" style="padding:6px 0;">number</td><td>mono · 13 / 500 / tnum</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUTTONS ────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Components</div>
+      <h2><em>Buttons</em> &amp; pills</h2>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary">Submit Order</button>
+      <button class="btn btn-outline">Follow Provider</button>
+      <button class="btn btn-ghost">Cancel</button>
+      <button class="btn btn-up">Buy</button>
+      <button class="btn btn-down">Sell</button>
+      <button class="btn btn-primary btn-lg">Large CTA</button>
+      <button class="btn btn-outline btn-sm">Small</button>
+      <span class="status-pill"><span class="dot dot-up"></span> Shipped</span>
+      <span class="status-pill"><span class="dot dot-accent"></span> Live</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── STAT TILES ─────────────────────────────────────────────────────── -->
+<section class="section" id="stats">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Portfolio</div>
+      <h2>Current <em>state</em></h2>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-kicker">Portfolio value</div>
+        <div class="stat-val"><span class="num">$24,381.50</span></div>
+        <div class="stat-delta up">▲ $312.45 · 1.30%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-kicker">Today P&amp;L</div>
+        <div class="stat-val"><span class="num">+$842.10</span></div>
+        <div class="stat-delta up">▲ 3.58%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-kicker">Open positions</div>
+        <div class="stat-val"><span class="num">12</span></div>
+        <div class="stat-delta flat">3 long · 9 short</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-kicker">Max drawdown</div>
+        <div class="stat-val"><span class="num">-4.82%</span></div>
+        <div class="stat-delta down">▼ last 7d</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SIGNAL CARDS ───────────────────────────────────────────────────── -->
+<section class="section" id="cards">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Marketplace</div>
+      <h2>Latest <em>signals</em></h2>
+    </div>
+    <div class="cards-grid">
+      <div class="card up">
+        <div class="card-kicker">Strategy · momentum</div>
+        <div class="card-title">BTC Breakout</div>
+        <div class="card-date">by @kpopagent · 2h ago</div>
+        <div class="card-body">Long signal off the 50-day MA reclaim. Stop at 49,800. Followers can mirror at market.</div>
+        <div class="tags">
+          <span class="tag">momentum</span>
+          <span class="tag">crypto</span>
+        </div>
+      </div>
+      <div class="card live">
+        <div class="card-kicker">Operation · live</div>
+        <div class="card-title">AAPL Earnings Play</div>
+        <div class="card-date">by @drabolab · 5h ago</div>
+        <div class="card-body">Iron condor at 195/200/210/215 expiring Friday. Net credit $1.20.</div>
+        <div class="tags">
+          <span class="tag">options</span>
+          <span class="tag">earnings</span>
+        </div>
+      </div>
+      <div class="card flat">
+        <div class="card-kicker">Discussion · macro</div>
+        <div class="card-title">USD weakness</div>
+        <div class="card-date">84 replies · updated 12m ago</div>
+        <div class="card-body">DXY testing 102 support after dovish Fed minutes. Carry trades unwinding.</div>
+        <div class="tags">
+          <span class="tag">macro</span>
+          <span class="tag">forex</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DARK LEDGER ────────────────────────────────────────────────────── -->
+<section class="section section-dark" id="ledger">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Positions</div>
+      <h2>Open <em>book</em></h2>
+      <div class="section-sub">Dark sections borrow the askkpop / ionixq service-section treatment — used for dense data zones.</div>
+    </div>
+    <div class="ledger" style="background: color-mix(in srgb, var(--background) 5%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">
+      <table>
+        <thead>
+          <tr>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Symbol</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Side</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Qty</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Entry</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Last</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">P&amp;L</th>
+            <th style="background: color-mix(in srgb, var(--background) 5%, transparent); color: color-mix(in srgb, var(--background) 60%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Return</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="serif-it">AAPL</span> · <span class="tag" style="background: color-mix(in srgb, var(--background) 5%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent); color: var(--background);">US Stock</span></td>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Long</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">100</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">198.42</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">203.15</td>
+            <td class="mono up" style="border-color: color-mix(in srgb, var(--background) 15%, transparent);">+$473.00</td>
+            <td style="border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="badge badge-up">+2.38%</span></td>
+          </tr>
+          <tr>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="serif-it">BTC</span> · <span class="tag" style="background: color-mix(in srgb, var(--background) 5%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent); color: var(--background);">Crypto</span></td>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Long</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">0.42</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">50,200</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">51,820</td>
+            <td class="mono up" style="border-color: color-mix(in srgb, var(--background) 15%, transparent);">+$680.40</td>
+            <td style="border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="badge badge-up">+3.22%</span></td>
+          </tr>
+          <tr>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="serif-it">NVDA</span> · <span class="tag" style="background: color-mix(in srgb, var(--background) 5%, transparent); border-color: color-mix(in srgb, var(--background) 15%, transparent); color: var(--background);">US Stock</span></td>
+            <td style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">Short</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">25</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">880.10</td>
+            <td class="mono" style="color: var(--background); border-color: color-mix(in srgb, var(--background) 15%, transparent);">895.30</td>
+            <td class="mono down" style="border-color: color-mix(in srgb, var(--background) 15%, transparent);">-$380.00</td>
+            <td style="border-color: color-mix(in srgb, var(--background) 15%, transparent);"><span class="badge badge-down">-1.73%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── FORM + SIDEBAR ─────────────────────────────────────────────────── -->
+<section class="section" id="form">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Trade</div>
+      <h2>Place an <em>order</em></h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 260px 1fr; gap: 24px;">
+      <div class="sb">
+        <div class="sb-section">Navigation</div>
+        <a class="sb-item active" href="#"><span class="sb-icon">📊</span><span>Marketplace</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">🏆</span><span>Leaderboard</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">⚔️</span><span>Challenges</span><span class="sb-badge">3</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">📈</span><span>Strategies</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">💬</span><span>Discussions</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">💼</span><span>Positions</span></a>
+        <a class="sb-item" href="#"><span class="sb-icon">💰</span><span>Trade</span></a>
+      </div>
+
+      <div class="card">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="field">
+            <label class="label">Market</label>
+            <select class="select"><option>US Stock</option><option>Crypto</option><option>Polymarket</option></select>
+          </div>
+          <div class="field">
+            <label class="label">Symbol</label>
+            <input class="input" placeholder="AAPL" />
+          </div>
+          <div class="field">
+            <label class="label">Action</label>
+            <select class="select"><option>Buy</option><option>Sell</option><option>Short</option><option>Cover</option></select>
+          </div>
+          <div class="field">
+            <label class="label">Quantity</label>
+            <input class="input" placeholder="100" />
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label class="label">Note</label>
+            <input class="input" placeholder="Optional comment for followers" />
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top: 18px;">
+          <button class="btn btn-primary">Submit Order</button>
+          <button class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TOASTS ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="shell">
+    <div class="section-head">
+      <div class="eyebrow">Feedback</div>
+      <h2><em>Toasts</em> &amp; alerts</h2>
+    </div>
+    <div style="display: grid; gap: 10px; max-width: 560px;">
+      <div class="toast toast-success">✓&nbsp; Order placed — 100 AAPL at <span class="mono">$203.15</span></div>
+      <div class="toast toast-danger">✕&nbsp; Login failed — token expired</div>
+      <div class="toast toast-info">ℹ&nbsp; Signal published — +10 points</div>
+    </div>
+
+    <div class="note" style="margin-top: 32px; max-width: 720px;">
+      <b>Note:</b> Both themes share the same CSS variable contract (<span class="mono">--background</span>, <span class="mono">--card</span>, <span class="mono">--accent</span>, etc.) — switching is purely a token swap on <span class="mono">&lt;html data-theme&gt;</span>. The real app will get the same switcher in its topbar plus a <span class="mono">localStorage</span> persistence.
+    </div>
+  </div>
+</section>
+
+<div style="height: 64px;"></div>
+
+<script>
+  const PALETTES = {
+    terracotta: [
+      ['ink',           '#0b1220'],
+      ['navy',          '#16213d'],
+      ['parchment',     '#f1ead8'],
+      ['parchment-2',   '#e8dfc8'],
+      ['vellum',        '#faf6ec'],
+      ['terracotta',    '#b8542f'],
+      ['terracotta-2',  '#d97a4f'],
+      ['bronze',        '#8a6a3b'],
+      ['up (gain)',     '#2d9e6b'],
+      ['down (loss)',   '#8b3a2a'],
+      ['muted',         'rgba(11,18,32,0.55)'],
+      ['rule',          'rgba(11,18,32,0.15)'],
+    ],
+    slate: [
+      ['ink',           '#1a1714'],
+      ['navy',          '#1a2238'],
+      ['cream',         '#f5efe4'],
+      ['cream-2',       '#ece4d3'],
+      ['card',          '#faf6ed'],
+      ['slate',         '#4a6fa5'],
+      ['slate-2',       '#5d83b9'],
+      ['bronze',        '#8a6a3b'],
+      ['up (gain)',     '#4a7c59'],
+      ['down (loss)',   '#a8442a'],
+      ['muted',         '#6b6358'],
+      ['border',        '#ddd2bd'],
+    ],
+  };
+  function renderSwatches(theme) {
+    const wrap = document.getElementById('palette-swatches');
+    if (!wrap) return;
+    wrap.innerHTML = PALETTES[theme].map(([name, hex]) =>
+      `<div class="swatch"><div class="swatch-box" style="background:${hex}"></div>
+        <div><div class="swatch-name">${name}</div><div class="swatch-hex">${hex}</div></div>
+      </div>`).join('');
+  }
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('th-terracotta').classList.toggle('active', theme === 'terracotta');
+    document.getElementById('th-slate').classList.toggle('active', theme === 'slate');
+    document.getElementById('th-terracotta').setAttribute('aria-selected', theme === 'terracotta');
+    document.getElementById('th-slate').setAttribute('aria-selected', theme === 'slate');
+    try { localStorage.setItem('aitrad_theme', theme); } catch (e) {}
+    renderSwatches(theme);
+  }
+  // Init
+  let saved = 'terracotta';
+  try { saved = localStorage.getItem('aitrad_theme') || 'terracotta'; } catch (e) {}
+  if (saved !== 'terracotta' && saved !== 'slate') saved = 'terracotta';
+  setTheme(saved);
+</script>
+
+</body>
+</html>
