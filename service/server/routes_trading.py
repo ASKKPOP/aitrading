@@ -1,3 +1,4 @@
+import math
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -39,6 +40,41 @@ def profit_percent_for_display(profit: float, deposited: float) -> float:
     if base_capital <= 0:
         return 0.0
     return clamp_profit_for_display(profit) / base_capital * 100
+
+
+def _annualized_sharpe(history: list[dict]) -> float:
+    """Annualized Sharpe ratio computed from profit_history snapshots.
+
+    Returns the mean of per-snapshot percent returns divided by their stddev,
+    scaled by sqrt(snapshots_per_year). Snapshots are taken every 5 minutes by
+    the background worker (POSITION_REFRESH_INTERVAL default 300s), so the
+    annualization factor is sqrt(snapshots/year) ≈ sqrt(105_120). Risk-free
+    rate is assumed zero (paper trading). Needs at least 3 snapshots; returns
+    0.0 otherwise.
+    """
+    if not history or len(history) < 3:
+        return 0.0
+    # Compute simple per-step deltas against running capital base. Use profit
+    # deltas since `profit` in profit_history is cumulative dollars over base.
+    deltas: list[float] = []
+    base = INITIAL_CAPITAL
+    prev = float(history[0].get('profit') or 0.0)
+    for h in history[1:]:
+        cur = float(h.get('profit') or 0.0)
+        deltas.append((cur - prev) / base)
+        prev = cur
+    if len(deltas) < 2:
+        return 0.0
+    mean = sum(deltas) / len(deltas)
+    variance = sum((d - mean) ** 2 for d in deltas) / (len(deltas) - 1)
+    stddev = math.sqrt(variance) if variance > 0 else 0.0
+    if stddev == 0:
+        return 0.0
+    # Snapshots per year at 5-minute cadence.
+    snapshots_per_year = 365 * 24 * 12
+    sharpe = (mean / stddev) * math.sqrt(snapshots_per_year)
+    # Clamp to a sane range so a single huge outlier can't dominate.
+    return max(-10.0, min(10.0, sharpe))
 
 
 def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -230,23 +266,27 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         result = []
         for agent in top_agents:
+            # Always fetch profit_history for Sharpe; reuse for chart points
+            # when `include_history` is True.
+            cursor.execute(
+                """
+                SELECT profit, recorded_at
+                FROM (
+                    SELECT profit, recorded_at
+                    FROM profit_history
+                    WHERE agent_id = ? AND recorded_at >= ?
+                    ORDER BY recorded_at DESC
+                    LIMIT 2000
+                ) recent_history
+                ORDER BY recorded_at ASC
+                """,
+                (agent['agent_id'], cutoff),
+            )
+            history = [dict(h) for h in cursor.fetchall()]
+            sharpe = _annualized_sharpe(history)
+
             history_points = []
             if include_history:
-                cursor.execute(
-                    """
-                    SELECT profit, recorded_at
-                    FROM (
-                        SELECT profit, recorded_at
-                        FROM profit_history
-                        WHERE agent_id = ? AND recorded_at >= ?
-                        ORDER BY recorded_at DESC
-                        LIMIT 2000
-                    ) recent_history
-                    ORDER BY recorded_at ASC
-                    """,
-                    (agent['agent_id'], cutoff),
-                )
-                history = cursor.fetchall()
                 history_points = [
                     {
                         'profit': clamp_profit_for_display(h['profit']),
@@ -255,15 +295,16 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                     }
                     for h in history
                 ]
-
-            if include_history and (not history_points or history_points[-1]['recorded_at'] != live_snapshot_recorded_at):
-                history_points.append({
-                    'profit': clamp_profit_for_display(agent['profit']),
-                    'profit_percent': profit_percent_for_display(agent['profit'], agent['deposited']),
-                    'recorded_at': live_snapshot_recorded_at,
-                })
+                if not history_points or history_points[-1]['recorded_at'] != live_snapshot_recorded_at:
+                    history_points.append({
+                        'profit': clamp_profit_for_display(agent['profit']),
+                        'profit_percent': profit_percent_for_display(agent['profit'], agent['deposited']),
+                        'recorded_at': live_snapshot_recorded_at,
+                    })
 
             current_profit_percent = profit_percent_for_display(agent['profit'], agent['deposited'])
+            metric_snapshot = agent['metric_snapshot']
+            max_drawdown = float(metric_snapshot.get('max_drawdown') or 0) if metric_snapshot else 0.0
             result.append({
                 'agent_id': agent['agent_id'],
                 'name': agent['name'],
@@ -273,6 +314,9 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'total_profit_percent': current_profit_percent,
                 'current_profit_percent': current_profit_percent,
                 'trade_count': agent['trade_count'],
+                'sharpe': sharpe,
+                'max_drawdown': max_drawdown,
+                'sample_size': len(history),
                 'recent_strategy_count_7d': 0,
                 'recent_discussion_count_7d': 0,
                 'recent_activity_at': agent['recorded_at'],
@@ -283,7 +327,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'risk_adjusted_score': agent['risk_adjusted_score'],
                 'collaboration_score': agent['collaboration_score'],
                 'quality_score_avg': agent['quality_score_avg'],
-                'metric_snapshot': agent['metric_snapshot'],
+                'metric_snapshot': metric_snapshot,
                 'history': history_points,
             })
 

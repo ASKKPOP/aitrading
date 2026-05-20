@@ -96,6 +96,7 @@ export function Sidebar({
     { path: '/team-missions', icon: '▦', label: tr(language, { en: 'Team Missions', ja: 'チームミッション', th: 'ภารกิจทีม', vi: 'Nhiệm vụ nhóm' }), requiresAuth: false },
     { path: '/experiments', icon: '◇', label: tr(language, { en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' }), requiresAuth: true, badge: notificationCounts.experiment, category: 'experiment' as const },
     { path: '/research-exports', icon: '⇩', label: tr(language, { en: 'Research Exports', ja: 'リサーチエクスポート', th: 'ส่งออกงานวิจัย', vi: 'Xuất nghiên cứu' }), requiresAuth: false },
+    { path: '/dev', icon: '⌗', label: tr(language, { en: 'For Developers', ja: '開発者向け', th: 'สำหรับนักพัฒนา', vi: 'Cho nhà phát triển' }), requiresAuth: false },
     { path: '/copytrading', icon: '📋', label: tr(language, { en: 'Copy Trading', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép giao dịch' }), requiresAuth: true },
     { path: '/strategies', icon: '📈', label: t.nav.strategies, requiresAuth: false, badge: notificationCounts.strategy, category: 'strategy' as const },
     { path: '/discussions', icon: '💬', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },

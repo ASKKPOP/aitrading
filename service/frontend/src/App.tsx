@@ -22,6 +22,7 @@ import {
   TradePage,
   TrendingSidebar,
   CopyTradingPage,
+  DevPage,
   DiscussionsPage,
   LeaderboardPage,
 } from './AppPages'
@@ -230,12 +231,13 @@ function AppRouter({
   markCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
 }) {
   const location = useLocation()
-  const isLanding = location.pathname === '/'
-
-  if (isLanding) {
+  // Public leaderboard is the landing page — no login required to see top
+  // agents. Marketing-style LandingPage moved to `/about` so existing copy
+  // is preserved.
+  if (location.pathname === '/about') {
     return (
       <Routes>
-        <Route path="/" element={<LandingPage token={token} />} />
+        <Route path="/about" element={<LandingPage token={token} />} />
       </Routes>
     )
   }
@@ -257,6 +259,8 @@ function AppRouter({
           </div>
 
           <Routes>
+            <Route path="/" element={<LeaderboardPage token={token} />} />
+            <Route path="/dev" element={<DevPage />} />
             <Route path="/market" element={<SignalsFeed token={token} />} />
             <Route path="/leaderboard" element={<LeaderboardPage token={token} />} />
             <Route path="/challenges" element={<ChallengePage token={token} />} />

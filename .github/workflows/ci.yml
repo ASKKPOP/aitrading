@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (Python 3.12 · pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install backend deps
+        working-directory: service
+        run: |
+          # Drop unresolvable `openrouter>=1.0.0` (optional; market_intel.py wraps in try/except).
+          grep -v '^openrouter' requirements.txt > /tmp/requirements.txt
+          python -m pip install --upgrade pip
+          pip install -r /tmp/requirements.txt
+          pip install 'pydantic[email]'
+
+      - name: Run pytest
+        working-directory: service/server
+        env:
+          DB_PATH: /tmp/clawtrader-ci.db
+          ALPHA_VANTAGE_API_KEY: demo
+        run: |
+          python -m pytest -q
+
+  frontend:
+    name: Frontend (Node 22 · tsc + vite build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: service/frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: service/frontend
+        run: npm ci
+
+      - name: Type check + build
+        working-directory: service/frontend
+        run: npm run build
