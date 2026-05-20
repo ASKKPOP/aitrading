@@ -1670,6 +1670,74 @@ a {
   margin-top: 18px;
 }
 
+/* ─── Social Sign-In ─── */
+.auth-social {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.auth-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+}
+
+.auth-social-google {
+  background: #fff;
+  color: #3c4043;
+  border-color: #dadce0;
+}
+
+.auth-social-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.auth-social-apple {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.auth-social-apple:hover {
+  background: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.32);
+}
+
+/* Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 18px;
+  color: rgba(255,255,255,0.3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
 /* User Info */
 .user-info {
   display: flex;
