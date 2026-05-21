@@ -1,7 +1,8 @@
-# Server requirements for AI-Trader
+# Server requirements for AITRAD
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.3
+pydantic[email]>=2.5.3
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
 web3>=6.15.1
@@ -13,3 +14,9 @@ redis>=5.0.8
 prometheus-fastapi-instrumentator>=6.0.0
 resend>=1.0.0
 alembic>=1.13.0
+# Sprint 13: Google / Apple OAuth
+authlib>=1.3.0
+# Sprint 14 / 15: historical price data (replaces AV TIME_SERIES_DAILY_ADJUSTED which is now premium-only)
+yfinance>=0.2.38
+# Sprint 18: AI-generated strategy commentary
+anthropic>=0.25.0
