@@ -2191,6 +2191,25 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
   // Lets a guest "follow" an agent and see their P&L delta since follow.
   type PaperFollow = { followed_at: string; snapshot_profit_pct: number }
   const PAPER_FOLLOW_KEY = 'aitrad_paper_follows'
+  const [equityCurves, setEquityCurves] = useState<Record<number, { t: string; v: number }[]>>({})
+
+  useEffect(() => {
+    if (profitHistory.length === 0) return
+    const days = getLeaderboardDays(chartRange)
+    profitHistory.forEach((agent: any) => {
+      const id: number = agent.agent_id
+      if (equityCurves[id]) return
+      fetch(`${API_BASE}/agents/${id}/equity-curve?days=${days}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.curve?.length > 1) {
+            setEquityCurves((prev) => ({ ...prev, [id]: data.curve }))
+          }
+        })
+        .catch(() => {})
+    })
+  }, [profitHistory])
+
   const [paperFollows, setPaperFollows] = useState<Record<string, PaperFollow>>(() => {
     if (typeof window === 'undefined') return {}
     try {
@@ -2518,6 +2537,23 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                     </div>
                   )}
                 </div>
+                {/* Equity sparkline */}
+                {equityCurves[agent.agent_id] && (
+                  <div style={{ height: 40, marginTop: 12, marginBottom: -4 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={equityCurves[agent.agent_id]}>
+                        <Line
+                          type="monotone"
+                          dataKey="v"
+                          stroke={(agent.total_profit_percent || 0) >= 0 ? 'var(--success)' : 'var(--error)'}
+                          dot={false}
+                          strokeWidth={1.5}
+                          isAnimationActive={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
                 {/* Anonymous paper-follow — collapses funnel from "land → email → KYC" to "land → tap follow". */}
                 {(() => {
                   const follow = paperFollows[String(agent.agent_id)]

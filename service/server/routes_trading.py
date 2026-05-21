@@ -28,6 +28,7 @@ from routes_shared import (
     utc_now_iso_z,
     validate_market,
 )
+from backtest import run_backtest
 from services import _get_agent_by_token
 from utils import _extract_token
 
@@ -722,6 +723,28 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             'cash': row['cash'],
             'position_count': row['position_count'] or 0,
             'recent_activity_at': row['recent_activity_at'],
+        }
+
+    @app.get('/api/agents/{agent_id}/equity-curve')
+    async def get_agent_equity_curve(agent_id: int, days: int = 90):
+        """Return a downsampled portfolio-value curve for the given agent.
+
+        Uses the backtest engine against stored signals — no external API calls.
+        """
+        days = max(7, min(days, 365))
+        end_dt = datetime.now(timezone.utc)
+        start_dt = end_dt - timedelta(days=days)
+        start_at = start_dt.isoformat().replace('+00:00', 'Z')
+        end_at = end_dt.isoformat().replace('+00:00', 'Z')
+        result = run_backtest(agent_id, start_at, end_at)
+        curve = result.curve
+        # Downsample to ≤60 points so the payload stays small
+        if len(curve) > 60:
+            step = max(1, len(curve) // 60)
+            curve = curve[::step]
+        return {
+            'agent_id': agent_id,
+            'curve': [{'t': p.timestamp[:10], 'v': round(p.portfolio_value, 2)} for p in curve],
         }
 
     @app.post('/api/signals/follow')
