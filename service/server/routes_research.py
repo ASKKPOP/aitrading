@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import csv
 import io
+from dataclasses import asdict
+from typing import Optional
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Response
 
+from backtest import run_backtest
 from research_exports import (
     RESEARCH_EXPORTS,
     fetch_research_export_rows,
@@ -246,3 +249,54 @@ def register_research_routes(app: FastAPI, ctx: RouteContext) -> None:
         offset: int = 0,
     ):
         return await _download("network_edges.csv", start_at, end_at, experiment_key, variant_key, market, limit, offset)
+
+    @app.get("/api/research/backtest")
+    async def api_backtest(
+        agent_id: int,
+        start_at: str,
+        end_at: str,
+        initial_cash: float = 100_000.0,
+        market: Optional[str] = None,
+        symbol: Optional[str] = None,
+    ):
+        """Replay an agent's recorded trades and return P&L metrics.
+
+        Query parameters:
+          agent_id      – required; agent whose signals to replay
+          start_at      – required; ISO-8601 UTC window start (e.g. 2024-01-01T00:00:00Z)
+          end_at        – required; ISO-8601 UTC window end
+          initial_cash  – starting balance (default 100 000)
+          market        – optional filter (e.g. us-stock)
+          symbol        – optional filter (e.g. AAPL)
+        """
+        if initial_cash <= 0:
+            raise HTTPException(status_code=400, detail="initial_cash must be positive")
+
+        result = run_backtest(
+            agent_id,
+            start_at,
+            end_at,
+            initial_cash=initial_cash,
+            market=market,
+            symbol=symbol,
+        )
+
+        return {
+            "agent_id": agent_id,
+            "start_at": start_at,
+            "end_at": end_at,
+            "summary": {
+                "initial_cash": result.initial_cash,
+                "final_value": result.final_value,
+                "total_return_pct": result.total_return_pct,
+                "max_drawdown_pct": result.max_drawdown_pct,
+                "trade_count": result.trade_count,
+                "winning_trades": result.winning_trades,
+                "losing_trades": result.losing_trades,
+                "win_rate": result.win_rate,
+                "sharpe_ratio": result.sharpe_ratio,
+            },
+            "closed_trades": [asdict(t) for t in result.closed_trades],
+            "open_positions": result.open_positions,
+            "curve": [asdict(p) for p in result.curve],
+        }
