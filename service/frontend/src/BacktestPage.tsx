@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -129,6 +129,30 @@ export function BacktestPage() {
 
   const returnColor = result && result.summary.total_return_pct >= 0 ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)'
 
+  // Buy-and-hold benchmark: invest all cash in first traded symbol at its entry
+  // price, close at the last exit price. Computable from closed_trades alone.
+  const benchmark = useMemo(() => {
+    if (!result || result.closed_trades.length === 0) return null
+    const first = result.closed_trades[0]
+    const last = result.closed_trades[result.closed_trades.length - 1]
+    const shares = result.summary.initial_cash / first.entry_price
+    const finalValue = shares * last.exit_price
+    const returnPct = (finalValue - result.summary.initial_cash) / result.summary.initial_cash * 100
+    return { finalValue, returnPct, symbol: first.symbol }
+  }, [result])
+
+  const chartData = useMemo(() => {
+    if (!curveData.length) return curveData as { t: string; value: number; bh: number | null }[]
+    return curveData.map((p, i) => ({
+      ...p,
+      bh: benchmark
+        ? i === 0 ? result!.summary.initial_cash
+          : i === curveData.length - 1 ? benchmark.finalValue
+          : null
+        : null,
+    }))
+  }, [curveData, benchmark, result])
+
   return (
     <div className="experiment-page">
       <div className="header">
@@ -240,6 +264,13 @@ export function BacktestPage() {
                 value={fmt(result.summary.sharpe_ratio, 3)}
               />
             )}
+            {benchmark && (
+              <SummaryCard
+                label={tr(language, { en: `Alpha vs B&H ${benchmark.symbol}`, ja: `α vs B&H ${benchmark.symbol}`, th: `อัลฟา vs B&H ${benchmark.symbol}`, vi: `Alpha vs B&H ${benchmark.symbol}` })}
+                value={pct(result.summary.total_return_pct - benchmark.returnPct)}
+                color={result.summary.total_return_pct >= benchmark.returnPct ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)'}
+              />
+            )}
           </div>
 
           {/* Portfolio curve */}
@@ -248,9 +279,21 @@ export function BacktestPage() {
               <div className="experiment-section-header">
                 <h2>{tr(language, { en: 'Portfolio Curve', ja: 'ポートフォリオ推移', th: 'กราฟพอร์ตโฟลิโอ', vi: 'Đường cong danh mục' })}</h2>
               </div>
+              {benchmark && (
+                <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ display: 'inline-block', width: 20, height: 2, background: returnColor }} />
+                    {tr(language, { en: 'Agent', ja: 'エージェント', th: 'เอเจนต์', vi: 'Agent' })}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ display: 'inline-block', width: 20, height: 2, background: 'var(--text-muted, #888)', borderTop: '2px dashed var(--text-muted, #888)' }} />
+                    {tr(language, { en: `Buy & Hold ${benchmark.symbol}`, ja: `${benchmark.symbol} 保有`, th: `ถือ ${benchmark.symbol}`, vi: `Giữ ${benchmark.symbol}` })}
+                  </span>
+                </div>
+              )}
               <div style={{ height: 260, marginTop: 12 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={curveData} margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color, #333)" />
                     <XAxis dataKey="t" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                     <YAxis
@@ -259,7 +302,14 @@ export function BacktestPage() {
                       tick={{ fontSize: 10 }}
                       width={56}
                     />
-                    <Tooltip formatter={(v) => [`$${fmt(Number(v))}`, 'Portfolio']} />
+                    <Tooltip
+                      formatter={(v, name) => [
+                        `$${fmt(Number(v))}`,
+                        name === 'bh'
+                          ? `Buy & Hold ${benchmark?.symbol ?? ''}`
+                          : tr(language, { en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ตโฟลิโอ', vi: 'Danh mục' }),
+                      ]}
+                    />
                     <ReferenceLine y={result.summary.initial_cash} stroke="var(--text-muted, #888)" strokeDasharray="4 2" />
                     <Line
                       type="monotone"
@@ -267,7 +317,20 @@ export function BacktestPage() {
                       stroke={returnColor}
                       dot={false}
                       strokeWidth={2}
+                      isAnimationActive={false}
                     />
+                    {benchmark && (
+                      <Line
+                        type="linear"
+                        dataKey="bh"
+                        stroke="var(--text-muted, #888)"
+                        strokeDasharray="6 3"
+                        dot={false}
+                        strokeWidth={1.5}
+                        connectNulls
+                        isAnimationActive={false}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
