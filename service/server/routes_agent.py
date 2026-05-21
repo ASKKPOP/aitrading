@@ -532,7 +532,8 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise
         except Exception as exc:
             conn.close()
-            raise HTTPException(status_code=500, detail=str(exc))
+            print(f"[agent_self_register error] {exc}")
+            raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
 
     @app.post('/api/claw/agents/login')
     async def agent_login(data: AgentLogin):

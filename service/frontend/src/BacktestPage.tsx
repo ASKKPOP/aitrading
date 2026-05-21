@@ -84,6 +84,15 @@ function SummaryCard({ label, value, color }: { label: string; value: string; co
   )
 }
 
+function SkeletonCard() {
+  return (
+    <div className="experiment-panel" style={{ padding: '16px', minWidth: 140 }}>
+      <div style={{ height: 12, width: '60%', background: 'var(--border-color, #333)', borderRadius: 4, marginBottom: 8 }} />
+      <div style={{ height: 22, width: '80%', background: 'var(--border-color, #333)', borderRadius: 4 }} />
+    </div>
+  )
+}
+
 export function BacktestPage() {
   const { language } = useLanguage()
   const location = useLocation()
@@ -254,6 +263,18 @@ export function BacktestPage() {
         {error && <p style={{ color: 'var(--accent-red, #f44336)', marginTop: 8 }}>{error}</p>}
       </section>
 
+      {/* Loading skeleton */}
+      {loading && (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, margin: '16px 0' }}>
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <section className="experiment-panel">
+            <div style={{ height: 260, background: 'var(--border-color, #333)', borderRadius: 8, opacity: 0.4 }} />
+          </section>
+        </>
+      )}
+
       {result && (
         <>
           {/* Summary */}
@@ -395,7 +416,7 @@ export function BacktestPage() {
           )}
 
           {/* Closed trades toggle */}
-          {result.closed_trades.length > 0 && (
+          {result.closed_trades.length > 0 ? (
             <section className="experiment-panel">
               <div className="experiment-section-header" style={{ cursor: 'pointer' }} onClick={() => setShowTrades(!showTrades)}>
                 <h2>
@@ -430,6 +451,52 @@ export function BacktestPage() {
                   </tbody>
                 </table>
               )}
+            </section>
+          ) : (
+            <section className="experiment-panel" style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-muted)' }}>
+              {tr(language, {
+                en: 'No closed trades in this period. Try widening the date range.',
+                ja: 'この期間にクローズトレードはありません。日付範囲を広げてみてください。',
+                th: 'ไม่มีการเทรดที่ปิดแล้วในช่วงนี้ ลองขยายช่วงวันที่',
+                vi: 'Không có giao dịch đã đóng trong kỳ này. Hãy thử mở rộng phạm vi ngày.',
+              })}
+              {result.open_positions.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 13 }}>
+                  {tr(language, {
+                    en: `(${result.open_positions.length} open position(s) not yet closed)`,
+                    ja: `(${result.open_positions.length} 件のオープンポジションがまだクローズされていません)`,
+                    th: `(${result.open_positions.length} โพซิชันที่ยังเปิดอยู่)`,
+                    vi: `(${result.open_positions.length} vị thế đang mở chưa đóng)`,
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* CTA: follow this agent */}
+          {result.summary.trade_count > 0 && (
+            <section className="experiment-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '16px 20px' }}>
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                  {tr(language, {
+                    en: `Agent #${result.agent_id} · ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}% return`,
+                    ja: `エージェント #${result.agent_id} · ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}% リターン`,
+                    th: `เอเจนต์ #${result.agent_id} · ผลตอบแทน ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`,
+                    vi: `Agent #${result.agent_id} · lợi nhuận ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`,
+                  })}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {tr(language, {
+                    en: 'Follow this agent to mirror their trades automatically.',
+                    ja: 'このエージェントをフォローしてトレードを自動ミラーリング。',
+                    th: 'ติดตามเอเจนต์นี้เพื่อคัดลอกการเทรดอัตโนมัติ',
+                    vi: 'Theo dõi agent này để sao chép giao dịch tự động.',
+                  })}
+                </div>
+              </div>
+              <a href={`/signals?agent=${result.agent_id}`} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                {tr(language, { en: 'Follow Agent', ja: 'フォローする', th: 'ติดตามเอเจนต์', vi: 'Theo dõi Agent' })}
+              </a>
             </section>
           )}
         </>

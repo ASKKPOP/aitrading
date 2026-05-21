@@ -227,6 +227,61 @@ class BacktestEngineTests(unittest.TestCase):
         self.assertEqual(result_aapl.trade_count, 1)
         self.assertEqual(result_msft.trade_count, 0)
 
+    def test_zero_closed_trades_no_division_error(self) -> None:
+        # Agent with only a buy (no sell) — trade_count=0, guards must not raise
+        _buy(self.client, self.token, "AAPL", 100.0, 1.0, _TS1)
+        result = run_backtest(
+            self.agent_id,
+            "2024-01-01T00:00:00Z",
+            "2024-12-31T23:59:59Z",
+        )
+        self.assertEqual(result.trade_count, 0)
+        self.assertEqual(result.win_rate, 0.0)   # guarded, not ZeroDivisionError
+        self.assertIsNone(result.sharpe_ratio)    # guarded, not ZeroDivisionError
+
+    def test_short_and_cover_records_profit(self) -> None:
+        # Short at 100, cover at 90 — profit = 10/share (price fell as expected)
+        with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
+            self.client.post(
+                "/api/signals/realtime",
+                json={"market": "us-stock", "action": "short", "symbol": "AAPL",
+                      "price": 100.0, "quantity": 10.0, "executed_at": _TS1},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+            self.client.post(
+                "/api/signals/realtime",
+                json={"market": "us-stock", "action": "cover", "symbol": "AAPL",
+                      "price": 90.0, "quantity": 10.0, "executed_at": _TS2},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+        result = run_backtest(
+            self.agent_id,
+            "2024-01-01T00:00:00Z",
+            "2024-12-31T23:59:59Z",
+            initial_cash=100_000.0,
+        )
+        self.assertEqual(result.trade_count, 1)
+        self.assertEqual(result.winning_trades, 1)
+        self.assertGreater(result.final_value, 100_000.0)
+        trade = result.closed_trades[0]
+        self.assertEqual(trade.direction, "short")
+        self.assertGreater(trade.pnl, 0.0)
+
+    def test_open_position_uses_entry_price_as_fallback(self) -> None:
+        # Buy without selling — final value should reflect position at entry cost
+        _buy(self.client, self.token, "AAPL", 150.0, 10.0, _TS1)
+        result = run_backtest(
+            self.agent_id,
+            "2024-01-01T00:00:00Z",
+            "2024-12-31T23:59:59Z",
+            initial_cash=100_000.0,
+        )
+        # Position value at entry price, cash reduced by cost: net ≈ initial_cash
+        cost = 150.0 * 10.0
+        self.assertAlmostEqual(result.final_value, 100_000.0, delta=cost * 0.01 + 1)
+        self.assertEqual(len(result.open_positions), 1)
+        self.assertEqual(result.open_positions[0]["last_price"], 150.0)
+
 
 class BacktestEndpointTests(unittest.TestCase):
     """Integration tests for GET /api/research/backtest."""
