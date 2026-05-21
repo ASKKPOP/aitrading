@@ -1267,6 +1267,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
   const [agentPositions, setAgentPositions] = useState<any[]>([])
   const [agentCash, setAgentCash] = useState<number>(0)
   const [loadingPositions, setLoadingPositions] = useState(false)
+  const [agentEquityCurve, setAgentEquityCurve] = useState<{ t: string; v: number }[]>([])
   const { t, language } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
@@ -1364,6 +1365,14 @@ export function SignalsFeed({ token }: { token?: string | null }) {
       }
     }
   }, [signalType, selectedAgent])
+
+  useEffect(() => {
+    if (!selectedAgent) { setAgentEquityCurve([]); return }
+    fetch(`${API_BASE}/agents/${selectedAgent.agent_id}/equity-curve?days=365`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.curve?.length > 1) setAgentEquityCurve(data.curve) })
+      .catch(() => {})
+  }, [selectedAgent])
 
   useEffect(() => {
     const agentIdParam = new URLSearchParams(location.search).get('agent')
@@ -1484,9 +1493,39 @@ export function SignalsFeed({ token }: { token?: string | null }) {
       ) : selectedAgent ? (
         // Second level: Show signals from selected agent
         <div>
-          <button className="back-button" onClick={handleBack}>
-            ← {tr(language, { en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })} | {selectedAgent.agent_name}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            <button className="back-button" style={{ margin: 0 }} onClick={handleBack}>
+              ← {tr(language, { en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })} | {selectedAgent.agent_name}
+            </button>
+            <button
+              className="btn btn-outline"
+              style={{ fontSize: 12, padding: '5px 12px' }}
+              onClick={() => navigate(`/backtest?agent=${selectedAgent.agent_id}`)}
+            >
+              ⏮ {tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+            </button>
+          </div>
+
+          {/* Equity curve */}
+          {agentEquityCurve.length > 1 && (
+            <div style={{ height: 100, marginBottom: 12 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={agentEquityCurve} margin={{ top: 2, right: 8, bottom: 2, left: 8 }}>
+                  <XAxis dataKey="t" hide />
+                  <YAxis domain={['auto', 'auto']} hide />
+                  <Tooltip formatter={(v) => [`$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tr(language, { en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ต', vi: 'Danh mục' })]} />
+                  <Line
+                    type="monotone"
+                    dataKey="v"
+                    stroke={agentEquityCurve[agentEquityCurve.length - 1].v >= agentEquityCurve[0].v ? 'var(--success)' : 'var(--error)'}
+                    dot={false}
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Signal type tabs */}
           <div className="market-tabs">
@@ -2586,7 +2625,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                     )
                   }
                   return (
-                    <div style={{ marginTop: '14px' }}>
+                    <div style={{ marginTop: '14px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); togglePaperFollow(agent.agent_id, currentPct) }}
@@ -2600,6 +2639,14 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                         })}
                       >
                         {tr(language, { en: 'Follow (paper)', ja: 'フォロー (ペーパー)', th: 'ติดตาม (เปเปอร์)', vi: 'Theo dõi (giả lập)' })}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/backtest?agent=${agent.agent_id}`) }}
+                        className="btn btn-ghost"
+                        style={{ fontSize: '12px', padding: '6px 14px' }}
+                      >
+                        ⏮ {tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
                       </button>
                     </div>
                   )

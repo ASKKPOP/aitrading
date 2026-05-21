@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -9,6 +9,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, MARKETS, useLanguage } from './appShared'
 import { tr } from './i18n'
@@ -84,6 +86,8 @@ function SummaryCard({ label, value, color }: { label: string; value: string; co
 
 export function BacktestPage() {
   const { language } = useLanguage()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [agentId, setAgentId] = useState('')
   const [startAt, setStartAt] = useState('')
   const [endAt, setEndAt] = useState('')
@@ -95,18 +99,30 @@ export function BacktestPage() {
   const [error, setError] = useState<string | null>(null)
   const [showTrades, setShowTrades] = useState(false)
 
-  const runBacktest = async () => {
-    if (!agentId || !startAt || !endAt) return
+  // Pre-fill form from URL params and auto-run when ?agent= is present.
+  useEffect(() => {
+    const p = new URLSearchParams(location.search)
+    const agentParam = p.get('agent')
+    if (!agentParam) return
+    const days = Math.max(7, Math.min(365, Number(p.get('days')) || 90))
+    const endDt = new Date()
+    const startDt = new Date(endDt.getTime() - days * 86400_000)
+    const startStr = startDt.toISOString().slice(0, 16)
+    const endStr = endDt.toISOString().slice(0, 16)
+    setAgentId(agentParam)
+    setStartAt(startStr)
+    setEndAt(endStr)
+    // Run immediately using local values — state hasn't flushed yet.
+    void runBacktestWith(agentParam, new Date(startStr).toISOString(), new Date(endStr).toISOString())
+  }, [location.search])
+
+  const runBacktestWith = async (aid: string, sat: string, eat: string) => {
+    if (!aid || !sat || !eat) return
     setLoading(true)
     setError(null)
     setResult(null)
     try {
-      const params = new URLSearchParams({
-        agent_id: agentId,
-        start_at: new Date(startAt).toISOString(),
-        end_at: new Date(endAt).toISOString(),
-        initial_cash: initialCash,
-      })
+      const params = new URLSearchParams({ agent_id: aid, start_at: sat, end_at: eat, initial_cash: initialCash })
       if (market) params.set('market', market)
       if (symbol) params.set('symbol', symbol.toUpperCase())
       const res = await fetch(`${API_BASE}/research/backtest?${params}`)
@@ -120,6 +136,12 @@ export function BacktestPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const runBacktest = async () => {
+    if (!agentId || !startAt || !endAt) return
+    navigate(`/backtest?agent=${agentId}`, { replace: true })
+    await runBacktestWith(agentId, new Date(startAt).toISOString(), new Date(endAt).toISOString())
   }
 
   const curveData = result?.curve.map((p) => ({
