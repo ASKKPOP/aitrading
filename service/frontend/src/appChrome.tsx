@@ -130,6 +130,7 @@ export function Sidebar({
       items: [
         { path: '/experiments', icon: '◎', label: tr(language, { en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' }), requiresAuth: true, badge: notificationCounts.experiment, category: 'experiment' as const },
         { path: '/research-exports', icon: '↓', label: tr(language, { en: 'Research Exports', ja: 'リサーチエクスポート', th: 'ส่งออกงานวิจัย', vi: 'Xuất nghiên cứu' }), requiresAuth: false },
+        { path: '/backtest', icon: '⏮', label: tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
         { path: '/dev', icon: '⌥', label: tr(language, { en: 'For Developers', ja: '開発者向け', th: 'สำหรับนักพัฒนา', vi: 'Cho nhà phát triển' }), requiresAuth: false },
       ]
     },
