@@ -127,7 +127,19 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             (data.email, password_hash),
         )
         user_id = cursor.lastrowid
-        token = _create_user_session(user_id)
+
+        # Create the session token within the same connection to avoid a nested
+        # SQLite write lock (_create_user_session would open a second connection
+        # while this one already holds a write transaction).
+        token = secrets.token_urlsafe(32)
+        expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat().replace('+00:00', 'Z')
+        cursor.execute(
+            """
+            INSERT INTO user_tokens (user_id, token, expires_at)
+            VALUES (?, ?, ?)
+            """,
+            (user_id, token, expires_at),
+        )
 
         conn.commit()
         conn.close()
