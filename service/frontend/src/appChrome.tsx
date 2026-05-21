@@ -71,18 +71,35 @@ export function TopbarControls() {
   )
 }
 
+export function HamburgerButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
+  return (
+    <button
+      className="hamburger-btn"
+      aria-label={isOpen ? 'Close menu' : 'Open menu'}
+      aria-expanded={isOpen}
+      onClick={onClick}
+    >
+      {isOpen ? '✕' : '☰'}
+    </button>
+  )
+}
+
 export function Sidebar({
   token,
   agentInfo,
   onLogout,
   notificationCounts,
-  onMarkCategoryRead
+  onMarkCategoryRead,
+  isOpen = false,
+  onClose,
 }: {
   token: string | null
   agentInfo: any
   onLogout: () => void
   notificationCounts: NotificationCounts
   onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
+  isOpen?: boolean
+  onClose?: () => void
 }) {
   const location = useLocation()
   const { t, language } = useLanguage()
@@ -146,7 +163,9 @@ export function Sidebar({
   }, [location.pathname, notificationCounts.discussion, notificationCounts.strategy, notificationCounts.experiment])
 
   return (
-    <div className="sidebar">
+    <>
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} aria-hidden="true" />}
+      <div className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-mark">AITRAD</div>
@@ -168,6 +187,7 @@ export function Sidebar({
                   if (item.category && (item.badge || 0) > 0) {
                     onMarkCategoryRead(item.category)
                   }
+                  onClose?.()
                 }}
               >
                 <span className="nav-icon">{item.icon}</span>
@@ -274,5 +294,6 @@ export function Sidebar({
         )}
       </div>
     </div>
+    </>
   )
 }

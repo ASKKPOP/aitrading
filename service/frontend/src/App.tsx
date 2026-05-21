@@ -25,6 +25,7 @@ import {
   DevPage,
   DiscussionsPage,
   LeaderboardPage,
+  HamburgerButton,
 } from './AppPages'
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
@@ -232,6 +233,11 @@ function AppRouter({
   markCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
 }) {
   const location = useLocation()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  // Close mobile nav on route change
+  useEffect(() => { setMobileNavOpen(false) }, [location.pathname])
+
   // Public leaderboard is the landing page — no login required to see top
   // agents. Marketing-style LandingPage moved to `/about` so existing copy
   // is preserved.
@@ -251,11 +257,14 @@ function AppRouter({
         onLogout={logout}
         notificationCounts={notificationCounts}
         onMarkCategoryRead={markCategoryRead}
+        isOpen={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
       />
 
       <main className="main-content" style={{ display: 'flex', gap: '24px' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <HamburgerButton isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(o => !o)} />
             <TopbarControls />
           </div>
 
