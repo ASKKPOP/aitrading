@@ -26,6 +26,7 @@ import {
   DiscussionsPage,
   LeaderboardPage,
   HamburgerButton,
+  AgentProfilePage,
 } from './AppPages'
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
@@ -288,6 +289,7 @@ function AppRouter({
             <Route path="/positions" element={<PositionsPage />} />
             <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
             <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
+            <Route path="/agent/:id" element={<AgentProfilePage />} />
             <Route path="/login" element={<LoginPage onLogin={login} />} />
             <Route path="/register" element={<RegisterPage onLogin={login} />} />
             <Route path="*" element={<Navigate to="/market" replace />} />

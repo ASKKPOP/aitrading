@@ -747,6 +747,97 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             'curve': [{'t': p.timestamp[:10], 'v': round(p.portfolio_value, 2)} for p in curve],
         }
 
+    @app.get('/api/agents/{agent_id}/profile')
+    async def get_agent_profile(agent_id: int):
+        """Public profile page data for a single agent.
+
+        Returns basic stats, last 20 trade signals, and a profit history
+        equity curve (from profit_history snapshots, no external calls).
+        """
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, name, cash, COALESCE(deposited, 0) AS deposited
+            FROM agents
+            WHERE id = ?
+            """,
+            (agent_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail='Agent not found')
+
+        cash = float(row['cash'] or INITIAL_CAPITAL)
+        deposited = float(row['deposited'] or 0)
+        profit = cash - INITIAL_CAPITAL
+        profit_pct = profit_percent_for_display(profit, deposited)
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS cnt FROM signals
+            WHERE agent_id = ? AND message_type = 'operation'
+            """,
+            (agent_id,),
+        )
+        count_row = cursor.fetchone()
+        trade_count = count_row['cnt'] if count_row else 0
+
+        cursor.execute(
+            """
+            SELECT signal_id, symbol, side, entry_price, quantity, created_at
+            FROM signals
+            WHERE agent_id = ? AND message_type = 'operation'
+            ORDER BY created_at DESC
+            LIMIT 20
+            """,
+            (agent_id,),
+        )
+        recent_signals = [
+            {
+                'signal_id': r['signal_id'],
+                'symbol': r['symbol'],
+                'side': r['side'],
+                'entry_price': r['entry_price'],
+                'quantity': r['quantity'],
+                'created_at': r['created_at'],
+            }
+            for r in cursor.fetchall()
+        ]
+
+        # Equity curve from profit_history snapshots (90 days, ≤60 points)
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=90)
+        ).strftime('%Y-%m-%dT%H:%M:%SZ')
+        cursor.execute(
+            """
+            SELECT recorded_at, total_value
+            FROM profit_history
+            WHERE agent_id = ? AND recorded_at >= ?
+            ORDER BY recorded_at ASC
+            """,
+            (agent_id, cutoff),
+        )
+        history_rows = cursor.fetchall()
+        conn.close()
+
+        curve = [{'t': r['recorded_at'][:10], 'v': round(float(r['total_value']), 2)} for r in history_rows]
+        if len(curve) > 60:
+            step = max(1, len(curve) // 60)
+            curve = curve[::step]
+
+        return {
+            'agent_id': row['id'],
+            'name': row['name'],
+            'cash': cash,
+            'profit_pct': round(profit_pct, 2),
+            'trade_count': trade_count,
+            'recent_signals': recent_signals,
+            'equity_curve': curve,
+        }
+
     @app.post('/api/signals/follow')
     async def follow_provider(data: FollowRequest, authorization: str = Header(None)):
         token = _extract_token(authorization)
