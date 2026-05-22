@@ -213,7 +213,17 @@ def seed(db_path: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    # Default to the project-root-relative path used in development
-    db_path = os.environ.get("DB_PATH", "service/server/data/clawtrader.db")
-    print(f"Seeding {db_path} …")
-    seed(db_path)
+    database_url = os.environ.get("DATABASE_URL", "")
+    if database_url:
+        # Postgres production path — let database module use DATABASE_URL as-is.
+        # Do NOT pass db_path; seed() would otherwise clear DATABASE_URL and
+        # silently write to SQLite instead of the intended Postgres instance.
+        database.DATABASE_URL = database_url
+        safe_url = database_url[:40] + "…" if len(database_url) > 40 else database_url
+        print(f"Seeding Postgres: {safe_url}")
+        seed()
+    else:
+        # SQLite development path
+        db_path = os.environ.get("DB_PATH", "service/server/data/clawtrader.db")
+        print(f"Seeding {db_path} …")
+        seed(db_path)
