@@ -1474,6 +1474,93 @@ def init_database():
     except Exception:
         pass
 
+    # ── Phase 2: Broker execution layer ──────────────────────────────────────
+
+    # Per-agent broker account configuration.
+    # credentials_enc: AES-GCM ciphertext of JSON {key, secret}
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS broker_accounts (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id         INTEGER NOT NULL,
+            broker           TEXT    NOT NULL,
+            execution_mode   TEXT    NOT NULL DEFAULT 'paper',
+            credentials_enc  TEXT,
+            is_active        INTEGER NOT NULL DEFAULT 1,
+            created_at       TEXT    DEFAULT (datetime('now')),
+            updated_at       TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_broker_accounts_agent
+        ON broker_accounts(agent_id, is_active)
+    """)
+
+    # Order record — distinct from the marketplace 'orders' table.
+    # Tracks every execution attempt through its lifecycle.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS broker_orders (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id         INTEGER NOT NULL,
+            symbol           TEXT    NOT NULL,
+            market           TEXT    NOT NULL DEFAULT 'us-stock',
+            side             TEXT    NOT NULL,
+            quantity         NUMERIC(20,8) NOT NULL,
+            price            NUMERIC(20,8) NOT NULL,
+            status           TEXT    NOT NULL DEFAULT 'pending',
+            execution_mode   TEXT    NOT NULL DEFAULT 'paper',
+            broker           TEXT    NOT NULL DEFAULT 'paper',
+            broker_order_id  TEXT,
+            error_message    TEXT,
+            signal_id        INTEGER,
+            leader_id        INTEGER,
+            token_id         TEXT,
+            outcome          TEXT,
+            created_at       TEXT    DEFAULT (datetime('now')),
+            filled_at        TEXT,
+            FOREIGN KEY (agent_id)  REFERENCES agents(id),
+            FOREIGN KEY (signal_id) REFERENCES signals(signal_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_broker_orders_agent_created
+        ON broker_orders(agent_id, created_at)
+    """)
+
+    # Shadow-mode reconciliation records.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS position_reconciliations (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id         INTEGER NOT NULL,
+            broker           TEXT    NOT NULL,
+            paper_order_id   INTEGER,
+            broker_order_id  TEXT,
+            symbol           TEXT    NOT NULL,
+            paper_qty        NUMERIC(20,8),
+            broker_qty       NUMERIC(20,8),
+            drift            NUMERIC(20,8),
+            status           TEXT    DEFAULT 'ok',
+            error_message    TEXT,
+            recorded_at      TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id),
+            FOREIGN KEY (paper_order_id) REFERENCES broker_orders(id)
+        )
+    """)
+
+    # Immutable audit log of T&Cs / live-mode opt-ins (item 2.7).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS broker_live_optins (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     INTEGER NOT NULL,
+            broker       TEXT    NOT NULL,
+            tcs_version  TEXT    NOT NULL DEFAULT 'v1',
+            ip_address   TEXT,
+            user_agent   TEXT,
+            created_at   TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
     if not using_postgres():
         conn.commit()
     elif previous_autocommit is not None:

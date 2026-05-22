@@ -45,6 +45,21 @@ class Settings(BaseSettings):
     resend_api_key: SecretStr = SecretStr("")
     email_from: str = "noreply@aitrad.ai"
 
+    # ---- Broker execution layer ----
+    # Alpaca
+    alpaca_key:    SecretStr = SecretStr("")
+    alpaca_secret: SecretStr = SecretStr("")
+    alpaca_paper:  bool      = True   # True → paper sandbox; False → live
+
+    # Binance
+    binance_key:     SecretStr = SecretStr("")
+    binance_secret:  SecretStr = SecretStr("")
+    binance_testnet: bool      = True  # True → testnet; False → live
+
+    # Credential encryption (AES-GCM).  Generate with:
+    #   python -c "from execution.crypto import generate_key_b64; print(generate_key_b64())"
+    execution_encryption_key: SecretStr = SecretStr("")
+
     # ---- CORS ----
     clawtrader_cors_origins: str = ""
 
@@ -81,6 +96,17 @@ CORS_ORIGINS: list[str] = (
 )
 
 ENVIRONMENT: str = settings.environment
+
+# ── Broker execution ──────────────────────────────────────────────────────────
+ALPACA_KEY:    str  = settings.alpaca_key.get_secret_value()
+ALPACA_SECRET: str  = settings.alpaca_secret.get_secret_value()
+ALPACA_PAPER:  bool = settings.alpaca_paper
+
+BINANCE_KEY:     str  = settings.binance_key.get_secret_value()
+BINANCE_SECRET:  str  = settings.binance_secret.get_secret_value()
+BINANCE_TESTNET: bool = settings.binance_testnet
+
+EXECUTION_ENCRYPTION_KEY: str = settings.execution_encryption_key.get_secret_value()
 
 # Reward constants — not env-driven, kept here for co-location.
 SIGNAL_PUBLISH_REWARD = 10

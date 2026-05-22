@@ -381,6 +381,50 @@ def _update_position_from_signal(
         conn.close()
 
 
+# ==================== Execution Router helper ====================
+
+async def execute_signal_via_broker(
+    agent_id: int,
+    symbol: str,
+    market: str,
+    side: str,
+    quantity: float,
+    price: float,
+    executed_at: str,
+    leader_id: int = None,
+    cursor=None,
+    token_id: str = None,
+    outcome: str = None,
+    signal_id: int = None,
+):
+    """
+    Execute a signal through the ExecutionRouter.
+
+    In paper mode (default) this is equivalent to calling
+    _update_position_from_signal directly.  In shadow/live mode the
+    appropriate broker adapter is used instead.
+
+    The cursor argument is forwarded so the caller's transaction stays open.
+    """
+    from execution.base import Order
+    from execution.router import execution_router
+
+    order = Order(
+        agent_id=agent_id,
+        symbol=symbol,
+        market=market,
+        side=side,
+        quantity=quantity,
+        price=price,
+        created_at=executed_at,
+        leader_id=leader_id,
+        token_id=token_id,
+        outcome=outcome,
+        signal_id=signal_id,
+    )
+    return await execution_router.execute(agent_id=agent_id, order=order, cursor=cursor)
+
+
 # ==================== Signal Services ====================
 
 async def _broadcast_signal_to_followers(leader_id: int, signal_data: dict) -> int:
