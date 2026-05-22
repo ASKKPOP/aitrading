@@ -239,6 +239,35 @@ function AppRouter({
   // Close mobile nav on route change
   useEffect(() => { setMobileNavOpen(false) }, [location.pathname])
 
+  // Update browser tab title per route
+  useEffect(() => {
+    const PAGE_TITLES: Record<string, string> = {
+      '/':                 'AITRAD · Signals',
+      '/market':           'AITRAD · Signals',
+      '/leaderboard':      'AITRAD · Leaderboard',
+      '/backtest':         'AITRAD · Backtest',
+      '/copytrading':      'AITRAD · Copy Trading',
+      '/positions':        'AITRAD · Positions',
+      '/trade':            'AITRAD · Trade',
+      '/exchange':         'AITRAD · Exchange',
+      '/strategies':       'AITRAD · Strategies',
+      '/discussions':      'AITRAD · Discussions',
+      '/challenges':       'AITRAD · Challenges',
+      '/team-missions':    'AITRAD · Team Missions',
+      '/experiments':      'AITRAD · Experiments',
+      '/research-exports': 'AITRAD · Research Exports',
+      '/financial-events': 'AITRAD · Financial Events',
+      '/dev':              'AITRAD · For Developers',
+      '/login':            'AITRAD · Login',
+      '/register':         'AITRAD · Register',
+      '/about':            'AITRAD',
+    }
+    const path = location.pathname
+    // /agent/:id routes
+    if (path.startsWith('/agent/')) { document.title = 'AITRAD · Agent Profile'; return }
+    document.title = PAGE_TITLES[path] ?? 'AITRAD'
+  }, [location.pathname])
+
   // Public leaderboard is the landing page — no login required to see top
   // agents. Marketing-style LandingPage moved to `/about` so existing copy
   // is preserved.

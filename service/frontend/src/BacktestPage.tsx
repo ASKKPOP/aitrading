@@ -75,6 +75,19 @@ function pct(n: number) {
   return `${sign}${fmt(n)}%`
 }
 
+/** Format an ISO timestamp to a compact axis label: "Jan 15" or "Jan 15 10:30". */
+function fmtAxisDate(ts: string): string {
+  const d = new Date(ts.endsWith('Z') ? ts : ts.replace(' ', 'T') + 'Z')
+  if (isNaN(d.getTime())) return ts.slice(5, 10)
+  const month = d.toLocaleString(undefined, { month: 'short' })
+  const day = d.getDate()
+  const h = d.getUTCHours()
+  const m = d.getUTCMinutes()
+  // Include time component only when points are intraday
+  if (h !== 0 || m !== 0) return `${month} ${day} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return `${month} ${day}`
+}
+
 function SummaryCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="experiment-panel" style={{ padding: '16px', minWidth: 140 }}>
@@ -154,11 +167,11 @@ export function BacktestPage() {
   }
 
   const curveData = result?.curve.map((p) => ({
-    t: p.timestamp.replace('T', ' ').replace('Z', ''),
+    t: fmtAxisDate(p.timestamp),
     value: p.portfolio_value,
   })) ?? []
 
-  const returnColor = result && result.summary.total_return_pct >= 0 ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)'
+  const returnColor = result && result.summary.total_return_pct >= 0 ? 'var(--success)' : 'var(--error)'
 
   // Buy-and-hold benchmark: invest all cash in first traded symbol at its entry
   // price, close at the last exit price. Computable from closed_trades alone.
@@ -254,13 +267,14 @@ export function BacktestPage() {
             className="btn btn-primary"
             onClick={runBacktest}
             disabled={loading || !agentId || !startAt || !endAt}
+            style={{ gridColumn: '1 / -1' }}
           >
             {loading
               ? tr(language, { en: 'Running…', ja: '実行中…', th: 'กำลังรัน…', vi: 'Đang chạy…' })
               : tr(language, { en: 'Run Backtest', ja: 'バックテスト実行', th: 'รันแบ็คเทสต์', vi: 'Chạy Backtest' })}
           </button>
         </div>
-        {error && <p style={{ color: 'var(--accent-red, #f44336)', marginTop: 8 }}>{error}</p>}
+        {error && <p style={{ color: 'var(--error)', marginTop: 8 }}>{error}</p>}
       </section>
 
       {/* Loading skeleton */}
@@ -291,7 +305,7 @@ export function BacktestPage() {
             <SummaryCard
               label={tr(language, { en: 'Max Drawdown', ja: '最大ドローダウン', th: 'ดรอดาวน์สูงสุด', vi: 'Sụt giảm tối đa' })}
               value={`−${fmt(result.summary.max_drawdown_pct)}%`}
-              color="var(--accent-red, #f44336)"
+              color="var(--error)"
             />
             <SummaryCard
               label={tr(language, { en: 'Trades', ja: 'トレード数', th: 'จำนวนการเทรด', vi: 'Số giao dịch' })}
@@ -311,7 +325,7 @@ export function BacktestPage() {
               <SummaryCard
                 label={tr(language, { en: `Alpha vs B&H ${benchmark.symbol}`, ja: `α vs B&H ${benchmark.symbol}`, th: `อัลฟา vs B&H ${benchmark.symbol}`, vi: `Alpha vs B&H ${benchmark.symbol}` })}
                 value={pct(result.summary.total_return_pct - benchmark.returnPct)}
-                color={result.summary.total_return_pct >= benchmark.returnPct ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)'}
+                color={result.summary.total_return_pct >= benchmark.returnPct ? 'var(--success)' : 'var(--error)'}
               />
             )}
           </div>
@@ -389,29 +403,31 @@ export function BacktestPage() {
                   <span className="experiment-badge" style={{ marginLeft: 8 }}>{result.open_positions.length}</span>
                 </h2>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color, #333)' }}>
-                    {['Symbol', 'Dir', 'Qty', 'Entry', 'Last', 'Unrealised P&L'].map((h) => (
-                      <th key={h} style={{ padding: '6px 8px', fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.open_positions.map((p, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--border-color, #222)' }}>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{p.symbol}</td>
-                      <td style={{ padding: '6px 8px' }}>{p.direction}</td>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{fmt(p.quantity, 4)}</td>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(p.avg_entry_price)}</td>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(p.last_price)}</td>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: p.unrealised_pnl >= 0 ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)' }}>
-                        {pct(p.unrealised_pnl / result.summary.initial_cash * 100)} (${fmt(p.unrealised_pnl)})
-                      </td>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color, #333)' }}>
+                      {['Symbol', 'Dir', 'Qty', 'Entry', 'Last', 'Unrealised P&L'].map((h) => (
+                        <th key={h} style={{ padding: '6px 8px', fontWeight: 600 }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {result.open_positions.map((p, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--border-color, #222)' }}>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{p.symbol}</td>
+                        <td style={{ padding: '6px 8px' }}>{p.direction}</td>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{fmt(p.quantity, 4)}</td>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(p.avg_entry_price)}</td>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(p.last_price)}</td>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: p.unrealised_pnl >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                          {pct(p.unrealised_pnl / result.summary.initial_cash * 100)} (${fmt(p.unrealised_pnl)})
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
 
@@ -426,30 +442,32 @@ export function BacktestPage() {
                 <span>{showTrades ? '▲' : '▼'}</span>
               </div>
               {showTrades && (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8 }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color, #333)' }}>
-                      {['Symbol', 'Dir', 'Qty', 'Entry', 'Exit', 'P&L', 'Closed At'].map((h) => (
-                        <th key={h} style={{ padding: '6px 8px', fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.closed_trades.map((t, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid var(--border-color, #222)' }}>
-                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{t.symbol}</td>
-                        <td style={{ padding: '6px 8px' }}>{t.direction}</td>
-                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{fmt(t.quantity, 4)}</td>
-                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(t.entry_price)}</td>
-                        <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(t.exit_price)}</td>
-                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: t.pnl >= 0 ? 'var(--accent-green, #4caf50)' : 'var(--accent-red, #f44336)' }}>
-                          ${fmt(t.pnl)}
-                        </td>
-                        <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>{t.closed_at.replace('T', ' ').replace('Z', '')}</td>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8 }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color, #333)' }}>
+                        {['Symbol', 'Dir', 'Qty', 'Entry', 'Exit', 'P&L', 'Closed At'].map((h) => (
+                          <th key={h} style={{ padding: '6px 8px', fontWeight: 600 }}>{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {result.closed_trades.map((t, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--border-color, #222)' }}>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{t.symbol}</td>
+                          <td style={{ padding: '6px 8px' }}>{t.direction}</td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{fmt(t.quantity, 4)}</td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(t.entry_price)}</td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>${fmt(t.exit_price)}</td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: t.pnl >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                            ${fmt(t.pnl)}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>{fmtAxisDate(t.closed_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </section>
           ) : (
