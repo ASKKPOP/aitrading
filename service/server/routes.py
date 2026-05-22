@@ -23,6 +23,7 @@ from routes_signals import register_signal_routes
 from routes_team_missions import register_team_mission_routes
 from routes_trading import register_trading_routes
 from routes_users import register_user_routes
+from routes_backtest import register_backtest_routes
 from routes_execution import register_execution_routes
 from routes_strategies import register_strategy_routes
 
@@ -68,5 +69,6 @@ def create_app() -> FastAPI:
     register_user_routes(app, ctx)
     register_execution_routes(app, ctx)
     register_strategy_routes(app, ctx)
+    register_backtest_routes(app, ctx)
     register_misc_routes(app)   # must be last — contains /{path:path} SPA fallback
     return app

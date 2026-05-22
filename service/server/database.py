@@ -1609,6 +1609,28 @@ def init_database():
     except Exception:
         pass
 
+    # ── Phase 3.4: backtest runs table ───────────────────────────────────────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS backtest_runs (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     INTEGER NOT NULL,
+            strategy_id  INTEGER,
+            status       TEXT    NOT NULL DEFAULT 'pending',
+            config       TEXT    NOT NULL,
+            result       TEXT,
+            error_msg    TEXT,
+            created_at   TEXT DEFAULT (datetime('now')),
+            started_at   TEXT,
+            completed_at TEXT,
+            FOREIGN KEY (agent_id)    REFERENCES agents(id),
+            FOREIGN KEY (strategy_id) REFERENCES strategies(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_backtest_runs_agent
+        ON backtest_runs(agent_id, created_at)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")
