@@ -24,44 +24,16 @@ def _hash_token(token: str) -> str:
 
 
 def _get_agent_by_token(token: str) -> Optional[Dict]:
-    """Get agent by token.
-
-    Lookup order:
-      1. By ``token_hash`` (indexed, secure path for new tokens).
-      2. By plaintext ``token`` (legacy fallback); migrates the row on hit.
-    """
+    """Look up an agent by their bearer token (hash-only, no plaintext fallback)."""
     if not token:
         return None
     token_hash = _hash_token(token)
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # 1. Hash-based lookup — preferred path.
     cursor.execute("SELECT * FROM agents WHERE token_hash = ?", (token_hash,))
     row = cursor.fetchone()
-    if row:
-        conn.close()
-        return dict(row)
-
-    # 2. Plaintext fallback for rows that pre-date hashing.
-    cursor.execute("SELECT * FROM agents WHERE token = ?", (token,))
-    row = cursor.fetchone()
-    if row:
-        agent = dict(row)
-        # Migrate: store hash so future lookups skip the plaintext path.
-        try:
-            cursor.execute(
-                "UPDATE agents SET token_hash = ? WHERE id = ?",
-                (token_hash, agent["id"]),
-            )
-            conn.commit()
-        except Exception:
-            pass
-        conn.close()
-        return agent
-
     conn.close()
-    return None
+    return dict(row) if row else None
 
 
 def _log_audit_event(
@@ -120,14 +92,17 @@ def _get_agent_by_name(name: str) -> Optional[Dict]:
 
 
 def _issue_agent_token(agent_id: int) -> str:
-    """Rotate and return a fresh token for an agent (stores both token and token_hash)."""
+    """Rotate and return a fresh token for an agent.
+
+    Only the SHA-256 hash is persisted — the plaintext is never stored.
+    """
     token = secrets.token_urlsafe(32)
     token_hash = _hash_token(token)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE agents SET token = ?, token_hash = ?, token_expires_at = NULL WHERE id = ?",
-        (token, token_hash, agent_id),
+        "UPDATE agents SET token = NULL, token_hash = ?, token_expires_at = NULL WHERE id = ?",
+        (token_hash, agent_id),
     )
     conn.commit()
     conn.close()
@@ -135,10 +110,11 @@ def _issue_agent_token(agent_id: int) -> str:
 
 
 def _get_or_issue_agent_token(agent: Dict) -> str:
-    """Return the current agent API token, issuing one only for legacy empty rows."""
-    token = (agent.get("token") or "").strip()
-    if token:
-        return token
+    """Issue a fresh token for an agent.
+
+    We never store the plaintext token, so we always issue a new one on login.
+    This rotates the token on each login call, invalidating any prior sessions.
+    """
     return _issue_agent_token(agent["id"])
 
 

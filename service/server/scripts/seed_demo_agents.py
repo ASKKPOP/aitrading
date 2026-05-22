@@ -139,13 +139,15 @@ def seed(db_path: str | None = None) -> None:
             print(f"  skip  {name!r} (already exists)")
             continue
 
-        # Register agent
+        # Register agent — store only the hash, never the plaintext token
+        import hashlib as _hashlib
         pw_hash = hash_password(agent_def["password"])
         token = secrets.token_hex(32)
+        token_hash = _hashlib.sha256(token.encode()).hexdigest()
         cursor.execute(
-            """INSERT INTO agents (name, token, password_hash, cash)
-               VALUES (?, ?, ?, ?)""",
-            (name, token, pw_hash, agent_def["initial_cash"]),
+            """INSERT INTO agents (name, token, token_hash, password_hash, cash)
+               VALUES (?, NULL, ?, ?, ?)""",
+            (name, token_hash, pw_hash, agent_def["initial_cash"]),
         )
         agent_id = cursor.lastrowid
 

@@ -474,8 +474,8 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             agent_id = cursor.lastrowid
             token = secrets.token_urlsafe(32)
             cursor.execute(
-                'UPDATE agents SET token = ?, token_hash = ? WHERE id = ?',
-                (token, _hash_token(token), agent_id),
+                'UPDATE agents SET token = NULL, token_hash = ? WHERE id = ?',
+                (_hash_token(token), agent_id),
             )
 
             now = utc_now_iso_z()

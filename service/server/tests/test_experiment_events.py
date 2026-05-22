@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import sys
@@ -32,14 +33,15 @@ class ExperimentEventRouteTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _create_agent(self, name: str, token: str) -> int:
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
         conn = database.get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO agents (name, token, points, cash, created_at, updated_at)
-            VALUES (?, ?, 0, 100000.0, ?, ?)
+            INSERT INTO agents (name, token, token_hash, points, cash, created_at, updated_at)
+            VALUES (?, NULL, ?, 0, 100000.0, ?, ?)
             """,
-            (name, token, utc_now_iso_z(), utc_now_iso_z()),
+            (name, token_hash, utc_now_iso_z(), utc_now_iso_z()),
         )
         agent_id = cursor.lastrowid
         conn.commit()

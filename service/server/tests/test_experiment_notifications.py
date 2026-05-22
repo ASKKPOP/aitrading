@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import sys
@@ -43,14 +44,16 @@ class ExperimentNotificationTests(unittest.TestCase):
 
     def _create_agent(self, name: str) -> int:
         now = utc_now_iso_z()
+        raw_token = f"token-{name}"
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
         conn = database.get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO agents (name, token, points, cash, created_at, updated_at)
-            VALUES (?, ?, 0, 100000.0, ?, ?)
+            INSERT INTO agents (name, token, token_hash, points, cash, created_at, updated_at)
+            VALUES (?, NULL, ?, 0, 100000.0, ?, ?)
             """,
-            (name, f"token-{name}", now, now),
+            (name, token_hash, now, now),
         )
         agent_id = cursor.lastrowid
         conn.commit()
