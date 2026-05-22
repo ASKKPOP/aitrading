@@ -14,10 +14,10 @@ Public entry point:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Optional
 
+from backtest_metrics import max_drawdown as _calc_max_drawdown, sharpe_ratio as _calc_sharpe
 from database import get_db_connection
 from fees import TRADE_FEE_RATE
 
@@ -103,33 +103,6 @@ def _portfolio_value(cash: float, positions: dict[str, _Position], last_prices: 
     return cash + _position_value(positions, last_prices)
 
 
-def _max_drawdown(curve: list[float]) -> float:
-    if len(curve) < 2:
-        return 0.0
-    peak = curve[0]
-    max_dd = 0.0
-    for v in curve:
-        if v > peak:
-            peak = v
-        dd = (peak - v) / peak * 100 if peak > 0 else 0.0
-        if dd > max_dd:
-            max_dd = dd
-    return max_dd
-
-
-def _annualised_sharpe(daily_returns: list[float]) -> Optional[float]:
-    """Rough annualised Sharpe (risk-free rate = 0) from per-trade returns."""
-    n = len(daily_returns)
-    if n < 2:
-        return None
-    mean = sum(daily_returns) / n
-    variance = sum((r - mean) ** 2 for r in daily_returns) / (n - 1)
-    std = math.sqrt(variance)
-    if std == 0:
-        return None
-    # Scale: sqrt(252) is the standard annualisation factor for daily returns.
-    # We use sqrt(n) as a rough proxy since trades are not evenly spaced.
-    return round((mean / std) * math.sqrt(n), 3)
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +307,7 @@ def run_backtest(
     # ------------------------------------------------------------------
     final_value = _portfolio_value(cash, positions, last_prices)
     total_return_pct = (final_value - initial_cash) / initial_cash * 100 if initial_cash > 0 else 0.0
-    max_dd = _max_drawdown(pv_series)
+    max_dd = _calc_max_drawdown(pv_series)
 
     pnls = [t.pnl for t in closed_trades]
     winning = sum(1 for p in pnls if p > 0)
@@ -342,7 +315,7 @@ def run_backtest(
     trade_count = len(closed_trades)
     win_rate = winning / trade_count if trade_count > 0 else 0.0
     trade_returns = [p / initial_cash * 100 for p in pnls]
-    sharpe = _annualised_sharpe(trade_returns)
+    sharpe = _calc_sharpe(trade_returns, periods_per_year=len(trade_returns) or 1)
 
     open_pos_list = [
         {
