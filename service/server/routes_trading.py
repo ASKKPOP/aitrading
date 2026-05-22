@@ -384,6 +384,28 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                     item['recent_activity_at'] = row['created_at']
                 break
 
+        # Annotate each entry with backtest_validated_strategy flag
+        for item in result:
+            item['backtest_validated_strategy'] = False
+
+        try:
+            cursor.execute(
+                f"""
+                SELECT DISTINCT agent_id
+                FROM strategies
+                WHERE agent_id IN ({placeholders})
+                  AND is_active=1
+                  AND backtest_validated=1
+                """,
+                agent_ids,
+            )
+            validated_ids = {row['agent_id'] for row in cursor.fetchall()}
+            for item in result:
+                if item['agent_id'] in validated_ids:
+                    item['backtest_validated_strategy'] = True
+        except Exception:
+            pass  # strategies table may not exist in very old DBs
+
         conn.close()
         payload = {
             'top_agents': result,

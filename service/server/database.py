@@ -1561,6 +1561,35 @@ def init_database():
         )
     """)
 
+    # ── Phase 3.5: strategies table ──────────────────────────────────────────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS strategies (
+            id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id              INTEGER NOT NULL,
+            name                  TEXT    NOT NULL,
+            description           TEXT,
+            config                TEXT,
+            is_active             INTEGER NOT NULL DEFAULT 1,
+            backtest_validated    INTEGER NOT NULL DEFAULT 0,
+            last_backtest_sharpe  REAL,
+            last_backtest_at      TEXT,
+            created_at            TEXT DEFAULT (datetime('now')),
+            updated_at            TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_strategies_agent
+        ON strategies(agent_id, is_active)
+    """)
+
+    # Add strategy_id FK to signals (idempotent try/except for existing DBs)
+    try:
+        cursor.execute("ALTER TABLE signals ADD COLUMN strategy_id INTEGER")
+    except Exception:
+        pass
+
     if not using_postgres():
         conn.commit()
     elif previous_autocommit is not None:
