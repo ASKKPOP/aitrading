@@ -2501,7 +2501,29 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                     {rank}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '16px' }}>{agent.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 600, fontSize: '16px' }}>{agent.name}</span>
+                      {agent.backtest_validated_strategy && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          background: 'rgba(22, 163, 74, 0.12)',
+                          color: 'var(--success)',
+                          border: '1px solid rgba(22, 163, 74, 0.30)',
+                          borderRadius: '999px',
+                          padding: '2px 8px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          fontFamily: 'var(--font-ui)',
+                          flexShrink: 0,
+                        }}>
+                          ✓ {tr(language, { en: 'Validated', ja: '検証済', th: 'ผ่านการตรวจสอบ', vi: 'Đã xác thực' })}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       {tr(language, { en: 'Last updated', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật lần cuối' })}: {agent.history ? agent.history[agent.history.length - 1]?.recorded_at?.split('T')[0] : '-'}
                     </div>
