@@ -310,7 +310,7 @@ function AppRouter({
             <Route path="/teams/:teamKey" element={<TeamMissionsPage token={token} />} />
             <Route path="/experiments" element={<ExperimentAdminPage token={token} />} />
             <Route path="/research-exports" element={<ResearchExportsPage />} />
-            <Route path="/backtest" element={<BacktestPage />} />
+            <Route path="/backtest" element={<BacktestPage token={token} />} />
             <Route path="/financial-events" element={<FinancialEventsPage />} />
             <Route path="/copytrading" element={token ? <CopyTradingPage token={token} /> : <Navigate to="/login" replace />} />
             <Route path="/strategies" element={<StrategiesPage />} />

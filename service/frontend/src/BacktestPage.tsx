@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -66,6 +66,33 @@ interface BacktestResult {
   curve: CurvePoint[]
 }
 
+interface RunSummary {
+  run_id: number
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  config: {
+    start_at: string
+    end_at: string
+    initial_cash: number
+    market?: string | null
+    symbol?: string | null
+  }
+  result: {
+    summary: BacktestSummary
+    closed_trades: ClosedTrade[]
+    open_positions: OpenPosition[]
+    curve: CurvePoint[]
+  } | null
+  error_msg: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+interface Strategy {
+  strategy_id: number
+  name: string
+  backtest_validated: boolean
+}
+
 function fmt(n: number, decimals = 2) {
   return n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
@@ -83,7 +110,6 @@ function fmtAxisDate(ts: string): string {
   const day = d.getDate()
   const h = d.getUTCHours()
   const m = d.getUTCMinutes()
-  // Include time component only when points are intraday
   if (h !== 0 || m !== 0) return `${month} ${day} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   return `${month} ${day}`
 }
@@ -106,22 +132,89 @@ function SkeletonCard() {
   )
 }
 
-export function BacktestPage() {
+const RUN_STATUS_LABEL: Record<string, string> = {
+  pending: 'Queued…',
+  running: 'Running…',
+  completed: 'Complete',
+  failed: 'Failed',
+}
+
+export function BacktestPage({ token }: { token?: string | null }) {
   const { language } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
+
+  // ── Form state ────────────────────────────────────────────────────────────
   const [agentId, setAgentId] = useState('')
   const [startAt, setStartAt] = useState('')
   const [endAt, setEndAt] = useState('')
   const [initialCash, setInitialCash] = useState('100000')
   const [market, setMarket] = useState('')
   const [symbol, setSymbol] = useState('')
+
+  // ── Result state ──────────────────────────────────────────────────────────
   const [result, setResult] = useState<BacktestResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showTrades, setShowTrades] = useState(false)
 
-  // Pre-fill form from URL params and auto-run when ?agent= is present.
+  // ── Async run state (authenticated only) ─────────────────────────────────
+  const [currentRunId, setCurrentRunId] = useState<number | null>(null)
+  const [runStatus, setRunStatus] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ── Run history ───────────────────────────────────────────────────────────
+  const [runs, setRuns] = useState<RunSummary[]>([])
+
+  // ── Promote flow ──────────────────────────────────────────────────────────
+  const [promotingRunId, setPromotingRunId] = useState<number | null>(null)
+  const [strategies, setStrategies] = useState<Strategy[]>([])
+  const [selectedStrategyId, setSelectedStrategyId] = useState('')
+  const [promoteMsg, setPromoteMsg] = useState<string | null>(null)
+
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+
+  // ── Run history loader ────────────────────────────────────────────────────
+  const loadRuns = async () => {
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/backtest/runs`, { headers: authHeaders })
+      if (res.ok) setRuns(((await res.json()) as { runs: RunSummary[] }).runs ?? [])
+    } catch { /* ignore network hiccups */ }
+  }
+
+  useEffect(() => { void loadRuns() }, [token])
+
+  // ── Polling ───────────────────────────────────────────────────────────────
+  const stopPolling = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+  }
+
+  useEffect(() => () => stopPolling(), [])
+
+  const startPolling = (runId: number) => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/backtest/runs/${runId}`, { headers: authHeaders })
+        if (!res.ok) { stopPolling(); setLoading(false); return }
+        const run = await res.json() as RunSummary
+        setRunStatus(run.status)
+        if (run.status === 'completed') {
+          stopPolling()
+          setLoading(false)
+          if (run.result) setResult({ agent_id: Number(agentId) || 0, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
+          void loadRuns()
+        } else if (run.status === 'failed') {
+          stopPolling()
+          setLoading(false)
+          setError(run.error_msg || 'Backtest failed')
+          void loadRuns()
+        }
+      } catch { stopPolling(); setLoading(false) }
+    }, 1500)
+  }
+
+  // ── URL param pre-fill + auto-run ─────────────────────────────────────────
   useEffect(() => {
     const p = new URLSearchParams(location.search)
     const agentParam = p.get('agent')
@@ -134,38 +227,89 @@ export function BacktestPage() {
     setAgentId(agentParam)
     setStartAt(startStr)
     setEndAt(endStr)
-    // Run immediately using local values — state hasn't flushed yet.
-    void runBacktestWith(agentParam, new Date(startStr).toISOString(), new Date(endStr).toISOString())
+    void runSyncBacktest(agentParam, new Date(startStr).toISOString(), new Date(endStr).toISOString())
   }, [location.search])
 
-  const runBacktestWith = async (aid: string, sat: string, eat: string) => {
+  // ── Sync run (public / no token) ──────────────────────────────────────────
+  const runSyncBacktest = async (aid: string, sat: string, eat: string) => {
     if (!aid || !sat || !eat) return
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    setLoading(true); setError(null); setResult(null)
     try {
       const params = new URLSearchParams({ agent_id: aid, start_at: sat, end_at: eat, initial_cash: initialCash })
       if (market) params.set('market', market)
       if (symbol) params.set('symbol', symbol.toUpperCase())
       const res = await fetch(`${API_BASE}/research/backtest?${params}`)
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.detail || `HTTP ${res.status}`)
-      }
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error((b as any).detail || `HTTP ${res.status}`) }
       setResult(await res.json())
-    } catch (e: any) {
-      setError(e.message || 'Unknown error')
-    } finally {
-      setLoading(false)
-    }
+    } catch (e: any) { setError(e.message || 'Unknown error') }
+    finally { setLoading(false) }
+  }
+
+  // ── Async run (authenticated) ─────────────────────────────────────────────
+  const runAsyncBacktest = async () => {
+    if (!agentId || !startAt || !endAt || !token) return
+    setLoading(true); setError(null); setResult(null); setRunStatus('pending'); stopPolling()
+    try {
+      const res = await fetch(`${API_BASE}/backtest/runs`, {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_at: new Date(startAt).toISOString(),
+          end_at: new Date(endAt).toISOString(),
+          initial_cash: Number(initialCash) || 100_000,
+          market: market || null,
+          symbol: symbol ? symbol.toUpperCase() : null,
+        }),
+      })
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error((b as any).detail || `HTTP ${res.status}`) }
+      const { run_id } = await res.json() as { run_id: number }
+      setCurrentRunId(run_id)
+      startPolling(run_id)
+    } catch (e: any) { setError(e.message || 'Unknown error'); setLoading(false); setRunStatus(null) }
   }
 
   const runBacktest = async () => {
     if (!agentId || !startAt || !endAt) return
     navigate(`/backtest?agent=${agentId}`, { replace: true })
-    await runBacktestWith(agentId, new Date(startAt).toISOString(), new Date(endAt).toISOString())
+    if (token) await runAsyncBacktest()
+    else await runSyncBacktest(agentId, new Date(startAt).toISOString(), new Date(endAt).toISOString())
   }
 
+  // ── Load a historical run into the result view ────────────────────────────
+  const loadRunResult = (run: RunSummary) => {
+    if (!run.result) return
+    setResult({ agent_id: 0, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
+    setCurrentRunId(run.run_id)
+    setRunStatus(run.status)
+  }
+
+  // ── Promote flow ──────────────────────────────────────────────────────────
+  const openPromote = async (runId: number) => {
+    setPromotingRunId(runId); setPromoteMsg(null); setSelectedStrategyId('')
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/strategies`, { headers: authHeaders })
+      if (res.ok) setStrategies(((await res.json()) as { strategies: Strategy[] }).strategies ?? [])
+    } catch { /* ignore */ }
+  }
+
+  const doPromote = async () => {
+    if (!promotingRunId || !selectedStrategyId || !token) return
+    try {
+      const res = await fetch(`${API_BASE}/backtest/runs/${promotingRunId}/promote`, {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy_id: Number(selectedStrategyId) }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const body = await res.json() as { backtest_validated: boolean }
+      setPromoteMsg(body.backtest_validated ? '✅ Strategy validated' : '⚠️ Updated (Sharpe ≤ 0)')
+      setPromotingRunId(null)
+      void loadRuns()
+    } catch (e: any) { setPromoteMsg(`Error: ${e.message}`) }
+  }
+
+  // ── Chart data ────────────────────────────────────────────────────────────
   const curveData = result?.curve.map((p) => ({
     t: fmtAxisDate(p.timestamp),
     value: p.portfolio_value,
@@ -173,8 +317,6 @@ export function BacktestPage() {
 
   const returnColor = result && result.summary.total_return_pct >= 0 ? 'var(--success)' : 'var(--error)'
 
-  // Buy-and-hold benchmark: invest all cash in first traded symbol at its entry
-  // price, close at the last exit price. Computable from closed_trades alone.
   const benchmark = useMemo(() => {
     if (!result || result.closed_trades.length === 0) return null
     const first = result.closed_trades[0]
@@ -196,6 +338,10 @@ export function BacktestPage() {
         : null,
     }))
   }, [curveData, benchmark, result])
+
+  const runBtnLabel = loading
+    ? (runStatus ? (RUN_STATUS_LABEL[runStatus] ?? 'Running…') : tr(language, { en: 'Running…', ja: '実行中…', th: 'กำลังรัน…', vi: 'Đang chạy…' }))
+    : tr(language, { en: 'Run Backtest', ja: 'バックテスト実行', th: 'รันแบ็คเทสต์', vi: 'Chạy Backtest' })
 
   return (
     <div className="experiment-page">
@@ -269,13 +415,91 @@ export function BacktestPage() {
             disabled={loading || !agentId || !startAt || !endAt}
             style={{ gridColumn: '1 / -1' }}
           >
-            {loading
-              ? tr(language, { en: 'Running…', ja: '実行中…', th: 'กำลังรัน…', vi: 'Đang chạy…' })
-              : tr(language, { en: 'Run Backtest', ja: 'バックテスト実行', th: 'รันแบ็คเทสต์', vi: 'Chạy Backtest' })}
+            {runBtnLabel}
           </button>
         </div>
         {error && <p style={{ color: 'var(--error)', marginTop: 8 }}>{error}</p>}
       </section>
+
+      {/* Run history (authenticated) */}
+      {token && runs.length > 0 && (
+        <section className="experiment-panel">
+          <div className="experiment-section-header">
+            <h2>{tr(language, { en: 'Run History', ja: '実行履歴', th: 'ประวัติการรัน', vi: 'Lịch sử chạy' })}</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {runs.map((run) => (
+              <div
+                key={run.run_id}
+                style={{
+                  display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+                  padding: '8px 0', borderBottom: '1px solid var(--border-color, #333)',
+                  background: run.run_id === currentRunId ? 'var(--surface-hover, rgba(255,255,255,.04))' : undefined,
+                }}
+              >
+                <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>#{run.run_id}</span>
+                <span
+                  className="experiment-badge"
+                  style={{ background: run.status === 'completed' ? 'var(--success-dim, #1a3a1a)' : run.status === 'failed' ? 'var(--error-dim, #3a1a1a)' : undefined }}
+                >
+                  {run.status}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {run.config.start_at?.slice(0, 10)} → {run.config.end_at?.slice(0, 10)}
+                </span>
+                {run.config.symbol && <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{run.config.symbol}</span>}
+                {run.status === 'completed' && run.result && (
+                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: run.result.summary.total_return_pct >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                    {pct(run.result.summary.total_return_pct)}
+                  </span>
+                )}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                  {run.status === 'completed' && run.result && (
+                    <>
+                      <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: 12 }} onClick={() => loadRunResult(run)}>
+                        {tr(language, { en: 'View', ja: '表示', th: 'ดู', vi: 'Xem' })}
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: 12 }} onClick={() => openPromote(run.run_id)}>
+                        {tr(language, { en: 'Promote', ja: '昇格', th: 'โปรโมต', vi: 'Thăng cấp' })}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Promote panel */}
+      {promotingRunId !== null && (
+        <section className="experiment-panel">
+          <div className="experiment-section-header">
+            <h2>{tr(language, { en: 'Promote to Strategy', ja: 'ストラテジーに昇格', th: 'โปรโมตเป็นกลยุทธ์', vi: 'Thăng cấp thành chiến lược' })}</h2>
+          </div>
+          {strategies.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+              {tr(language, { en: 'No strategies found.', ja: 'ストラテジーが見つかりません。', th: 'ไม่พบกลยุทธ์', vi: 'Không tìm thấy chiến lược.' })}
+            </p>
+          ) : (
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+              <select className="form-select" value={selectedStrategyId} onChange={(e) => setSelectedStrategyId(e.target.value)} style={{ minWidth: 200 }}>
+                <option value="">— {tr(language, { en: 'Select strategy', ja: 'ストラテジーを選択', th: 'เลือกกลยุทธ์', vi: 'Chọn chiến lược' })} —</option>
+                {strategies.map((s) => (
+                  <option key={s.strategy_id} value={s.strategy_id}>{s.name}{s.backtest_validated ? ' ✅' : ''}</option>
+                ))}
+              </select>
+              <button className="btn btn-primary" onClick={doPromote} disabled={!selectedStrategyId}>
+                {tr(language, { en: 'Confirm', ja: '確認', th: 'ยืนยัน', vi: 'Xác nhận' })}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setPromotingRunId(null)}>
+                {tr(language, { en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
+              </button>
+            </div>
+          )}
+          {promoteMsg && <p style={{ marginTop: 8, fontSize: 14 }}>{promoteMsg}</p>}
+        </section>
+      )}
 
       {/* Loading skeleton */}
       {loading && (
