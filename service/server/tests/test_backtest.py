@@ -22,6 +22,8 @@ _TS1 = "2024-01-02T15:00:00Z"
 _TS2 = "2024-01-02T15:10:00Z"
 _TS3 = "2024-01-02T15:20:00Z"
 _TS4 = "2024-01-02T15:30:00Z"
+_TS5 = "2024-01-02T15:40:00Z"
+_TS6 = "2024-01-02T15:50:00Z"
 
 
 def _register_agent(client: TestClient, name: str = "bt-agent") -> dict:
@@ -354,6 +356,30 @@ class BacktestEndpointTests(unittest.TestCase):
         curve = resp.json()["curve"]
         self.assertGreater(len(curve), 0)
         self.assertEqual(curve[0]["portfolio_value"], 100_000.0)
+
+    def test_signal_scan_limit_caps_results(self) -> None:
+        """run_backtest(max_signals=N) truncates the signal scan to N rows."""
+        # Seed 3 distinct buy/sell pairs with interleaved timestamps so ORDER BY
+        # executed_at, signal_id returns: buy1, sell1, buy2, sell2, buy3, sell3.
+        _buy(self.client, self.token, "AAPL", 100.0, 1.0, _TS1)
+        _sell(self.client, self.token, "AAPL", 110.0, 1.0, _TS2)
+        _buy(self.client, self.token, "AAPL", 110.0, 1.0, _TS3)
+        _sell(self.client, self.token, "AAPL", 120.0, 1.0, _TS4)
+        _buy(self.client, self.token, "AAPL", 120.0, 1.0, _TS5)
+        _sell(self.client, self.token, "AAPL", 130.0, 1.0, _TS6)
+
+        # Without limit: 3 closed trades.
+        full = run_backtest(self.agent_id, "2024-01-01T00:00:00Z", "2024-12-31T23:59:59Z")
+        self.assertEqual(full.trade_count, 3)
+
+        # With max_signals=2: only buy1+sell1 → 1 closed trade.
+        capped = run_backtest(
+            self.agent_id,
+            "2024-01-01T00:00:00Z",
+            "2024-12-31T23:59:59Z",
+            max_signals=2,
+        )
+        self.assertEqual(capped.trade_count, 1)
 
 
 if __name__ == "__main__":

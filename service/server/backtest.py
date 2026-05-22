@@ -136,6 +136,9 @@ def _annualised_sharpe(daily_returns: list[float]) -> Optional[float]:
 # Core engine
 # ---------------------------------------------------------------------------
 
+_MAX_BACKTEST_SIGNALS = 10_000
+
+
 def run_backtest(
     agent_id: int,
     start_at: str,
@@ -144,6 +147,7 @@ def run_backtest(
     initial_cash: float = 100_000.0,
     market: Optional[str] = None,
     symbol: Optional[str] = None,
+    max_signals: int = _MAX_BACKTEST_SIGNALS,
 ) -> BacktestResult:
     """Replay an agent's recorded trades and return backtest metrics.
 
@@ -184,7 +188,7 @@ def run_backtest(
         if symbol:
             sql += " AND symbol = ?"
             params.append(symbol.upper())
-        sql += " ORDER BY executed_at ASC, signal_id ASC"
+        sql += f" ORDER BY executed_at ASC, signal_id ASC LIMIT {int(max_signals)}"
         cursor.execute(sql, params)
         rows = [dict(r) for r in cursor.fetchall()]
     finally:

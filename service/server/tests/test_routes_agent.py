@@ -57,6 +57,34 @@ class AgentRouteTests(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
+    def test_register_excessive_initial_balance_rejected(self) -> None:
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "rich-agent", "password": "pw", "initial_balance": 1_000_001.0},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_register_zero_initial_balance_rejected(self) -> None:
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "broke-agent", "password": "pw", "initial_balance": 0.0},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_register_negative_initial_balance_rejected(self) -> None:
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "debt-agent", "password": "pw", "initial_balance": -500.0},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_register_max_initial_balance_accepted(self) -> None:
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "millionaire", "password": "pw", "initial_balance": 1_000_000.0},
+        )
+        self.assertEqual(resp.status_code, 200)
+
     # --- login ---
 
     def test_login_success(self) -> None:

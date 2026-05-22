@@ -494,8 +494,8 @@ export function BacktestPage() {
                   })}
                 </div>
               </div>
-              <a href={`/signals?agent=${result.agent_id}`} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
-                {tr(language, { en: 'Follow Agent', ja: 'フォローする', th: 'ติดตามเอเจนต์', vi: 'Theo dõi Agent' })}
+              <a href={`/agent/${result.agent_id}`} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                {tr(language, { en: 'View Profile', ja: 'プロフィールを見る', th: 'ดูโปรไฟล์', vi: 'Xem hồ sơ' })}
               </a>
             </section>
           )}

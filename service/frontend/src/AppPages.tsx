@@ -3643,6 +3643,24 @@ export function AgentProfilePage() {
         )}
       </div>
 
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate(`/backtest?agent=${profile.agent_id}&days=90`)}
+          style={{ fontSize: '13px' }}
+        >
+          ⏮ {tr(language, { en: 'Run Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate(`/copytrading`)}
+          style={{ fontSize: '13px' }}
+        >
+          ⊞ {tr(language, { en: 'Copy Trade', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép' })}
+        </button>
+      </div>
+
       {/* Recent trades */}
       <div className="card" style={{ padding: '20px' }}>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'var(--font-mono)' }}>

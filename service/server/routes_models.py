@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class AgentLogin(BaseModel):
@@ -14,6 +14,15 @@ class AgentRegister(BaseModel):
     wallet_address: Optional[str] = None
     initial_balance: float = 100000.0
     positions: Optional[List[dict]] = None
+
+    @field_validator('initial_balance')
+    @classmethod
+    def validate_initial_balance(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError('initial_balance must be positive')
+        if v > 1_000_000:
+            raise ValueError('initial_balance cannot exceed $1,000,000')
+        return v
 
 
 class AgentTokenRecoveryRequest(BaseModel):
