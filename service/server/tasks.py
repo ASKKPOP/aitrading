@@ -238,7 +238,7 @@ def _prune_profit_history() -> None:
 
 def _prune_profit_history_unlocked() -> None:
     """Tier profit history into high-resolution, 15m, hourly, and daily retention."""
-    from database import get_db_connection, using_postgres
+    from database import get_db_connection, using_mysql
 
     full_resolution_hours = _env_int("PROFIT_HISTORY_FULL_RESOLUTION_HOURS", 24, minimum=1)
     fifteen_min_window_days = _env_int(
@@ -272,63 +272,69 @@ def _prune_profit_history_unlocked() -> None:
         deleted_old = cursor.rowcount if cursor.rowcount is not None else 0
         conn.commit()
 
-        if using_postgres():
+        if using_mysql():
+            # MySQL 8.0: use STR_TO_DATE to parse ISO-8601 text timestamps
             if full_resolution_cutoff > fifteen_min_cutoff:
                 cursor.execute("""
-                    WITH ranked AS (
-                        SELECT
-                            id,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY
-                                    agent_id,
-                                    date_trunc('hour', recorded_at::timestamptz)
-                                    + floor(extract(minute FROM recorded_at::timestamptz) / ?) * (? || ' minutes')::interval
-                                ORDER BY recorded_at DESC, id DESC
-                            ) AS rn
-                        FROM profit_history
-                        WHERE recorded_at >= ? AND recorded_at < ?
+                    DELETE FROM profit_history
+                    WHERE id IN (
+                        SELECT id FROM (
+                            SELECT
+                                id,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY
+                                        agent_id,
+                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d %H'),
+                                        FLOOR(MINUTE(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ')) / ?)
+                                    ORDER BY recorded_at DESC, id DESC
+                                ) AS rn
+                            FROM profit_history
+                            WHERE recorded_at >= ? AND recorded_at < ?
+                        ) ranked
+                        WHERE rn > 1
                     )
-                    DELETE FROM profit_history ph
-                    USING ranked
-                    WHERE ph.id = ranked.id AND ranked.rn > 1
-                """, (bucket_minutes, bucket_minutes, fifteen_min_cutoff, full_resolution_cutoff))
+                """, (bucket_minutes, fifteen_min_cutoff, full_resolution_cutoff))
                 deleted_15m = cursor.rowcount if cursor.rowcount is not None else 0
                 conn.commit()
 
             if fifteen_min_cutoff > hourly_cutoff:
                 cursor.execute("""
-                    WITH ranked AS (
-                        SELECT
-                            id,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY agent_id, date_trunc('hour', recorded_at::timestamptz)
-                                ORDER BY recorded_at DESC, id DESC
-                            ) AS rn
-                        FROM profit_history
-                        WHERE recorded_at >= ? AND recorded_at < ?
+                    DELETE FROM profit_history
+                    WHERE id IN (
+                        SELECT id FROM (
+                            SELECT
+                                id,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY agent_id,
+                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d %H')
+                                    ORDER BY recorded_at DESC, id DESC
+                                ) AS rn
+                            FROM profit_history
+                            WHERE recorded_at >= ? AND recorded_at < ?
+                        ) ranked
+                        WHERE rn > 1
                     )
-                    DELETE FROM profit_history ph
-                    USING ranked
-                    WHERE ph.id = ranked.id AND ranked.rn > 1
                 """, (hourly_cutoff, fifteen_min_cutoff))
                 deleted_hourly = cursor.rowcount if cursor.rowcount is not None else 0
                 conn.commit()
 
             if hourly_cutoff > daily_cutoff:
                 cursor.execute("""
-                    WITH ranked AS (
-                        SELECT
-                            id,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY agent_id, date_trunc('day', recorded_at::timestamptz)
-                                ORDER BY recorded_at DESC, id DESC
-                            ) AS rn
-                        FROM profit_history
-                        WHERE recorded_at >= ? AND recorded_at < ?
+                    DELETE FROM profit_history
+                    WHERE id IN (
+                        SELECT id FROM (
+                            SELECT
+                                id,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY agent_id,
+                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d')
+                                    ORDER BY recorded_at DESC, id DESC
+                                ) AS rn
+                            FROM profit_history
+                            WHERE recorded_at >= ? AND recorded_at < ?
+                        ) ranked
+                        WHERE rn > 1
                     )
-                    DELETE FROM profit_history ph
-                    USING ranked
-                    WHERE ph.id = ranked.id AND ranked.rn > 1
                 """, (daily_cutoff, hourly_cutoff))
                 deleted_daily = cursor.rowcount if cursor.rowcount is not None else 0
                 conn.commit()
@@ -408,7 +414,7 @@ def _prune_profit_history_unlocked() -> None:
                 f"compacted_hourly={deleted_hourly} "
                 f"compacted_daily={deleted_daily}"
             )
-            if not using_postgres() and _env_bool("PROFIT_HISTORY_VACUUM_AFTER_PRUNE", True):
+            if not using_mysql() and _env_bool("PROFIT_HISTORY_VACUUM_AFTER_PRUNE", True):
                 min_deleted = _env_int("PROFIT_HISTORY_VACUUM_MIN_DELETED_ROWS", 50000, minimum=1)
                 if total_deleted >= min_deleted:
                     cursor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
@@ -760,7 +766,7 @@ async def periodic_token_cleanup():
 
 
 def _record_profit_history_once() -> int:
-    from database import get_db_connection, using_postgres
+    from database import get_db_connection
 
     started_at = time.monotonic()
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -769,130 +775,71 @@ def _record_profit_history_once() -> int:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        if using_postgres():
-            cursor.execute("""
-                WITH agent_values AS (
-                    SELECT
-                        a.id AS agent_id,
-                        COALESCE(a.cash, 0) AS cash,
-                        COALESCE(a.deposited, 0) AS deposited,
-                        COALESCE(
-                            SUM(
-                                CASE
-                                    WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                    WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                    ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                                END
-                            ),
-                            0
-                        ) AS position_value
-                    FROM agents a
-                    LEFT JOIN positions p ON p.agent_id = a.id
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM agent_leaderboard_exclusions ale
-                        WHERE ale.agent_id = a.id
-                          AND COALESCE(ale.active, 1) = 1
-                    )
-                    GROUP BY a.id, a.cash, a.deposited
-                ),
-                calculated AS (
-                    SELECT
-                        agent_id,
-                        cash,
-                        position_value,
-                        cash + position_value AS total_value,
-                        cash + position_value - (? + deposited) AS raw_profit
-                    FROM agent_values
-                ),
-                inserted AS (
-                    INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
-                    SELECT
-                        agent_id,
-                        total_value,
-                        cash,
-                        position_value,
-                        CASE
-                            WHEN ABS(raw_profit) > ? THEN
-                                CASE WHEN raw_profit > 0 THEN ? ELSE -? END
-                            ELSE raw_profit
-                        END AS profit,
-                        ?
-                    FROM calculated
-                    RETURNING 1
-                )
+        # Single INSERT...SELECT CTE — compatible with SQLite 3.35+ and MySQL 8.0+
+        cursor.execute("""
+            WITH agent_values AS (
                 SELECT
-                    (SELECT COUNT(*) FROM inserted) AS inserted_count,
-                    (SELECT COUNT(*) FROM calculated WHERE ABS(raw_profit) > ?) AS clamped_count
-            """, (initial_capital, max_abs_profit, max_abs_profit, max_abs_profit, now, max_abs_profit))
-            row = cursor.fetchone()
-            inserted_count = int(row["inserted_count"] or 0) if row else 0
-            clamped_count = int(row["clamped_count"] or 0) if row else 0
-        else:
-            cursor.execute("""
-                WITH agent_values AS (
-                    SELECT
-                        a.id AS agent_id,
-                        COALESCE(a.cash, 0) AS cash,
-                        COALESCE(a.deposited, 0) AS deposited,
-                        COALESCE(
-                            SUM(
-                                CASE
-                                    WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                    WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                    ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                                END
-                            ),
-                            0
-                        ) AS position_value
-                    FROM agents a
-                    LEFT JOIN positions p ON p.agent_id = a.id
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM agent_leaderboard_exclusions ale
-                        WHERE ale.agent_id = a.id
-                          AND COALESCE(ale.active, 1) = 1
-                    )
-                    GROUP BY a.id, a.cash, a.deposited
-                ),
-                calculated AS (
-                    SELECT
-                        agent_id,
-                        cash,
-                        position_value,
-                        cash + position_value AS total_value,
-                        cash + position_value - (? + deposited) AS raw_profit
-                    FROM agent_values
+                    a.id AS agent_id,
+                    COALESCE(a.cash, 0) AS cash,
+                    COALESCE(a.deposited, 0) AS deposited,
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
+                                WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
+                                ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
+                            END
+                        ),
+                        0
+                    ) AS position_value
+                FROM agents a
+                LEFT JOIN positions p ON p.agent_id = a.id
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM agent_leaderboard_exclusions ale
+                    WHERE ale.agent_id = a.id
+                      AND COALESCE(ale.active, 1) = 1
                 )
-                INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
+                GROUP BY a.id, a.cash, a.deposited
+            ),
+            calculated AS (
                 SELECT
                     agent_id,
-                    total_value,
                     cash,
                     position_value,
-                    CASE
-                        WHEN ABS(raw_profit) > ? THEN
-                            CASE WHEN raw_profit > 0 THEN ? ELSE -? END
-                        ELSE raw_profit
-                    END AS profit,
-                    ?
-                FROM calculated
-            """, (initial_capital, max_abs_profit, max_abs_profit, max_abs_profit, now))
-            inserted_count = cursor.rowcount if cursor.rowcount is not None and cursor.rowcount >= 0 else 0
-            clamped_count = 0
-            if inserted_count == 0:
-                cursor.execute("""
-                    SELECT COUNT(*) AS agent_count
-                    FROM agents a
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM agent_leaderboard_exclusions ale
-                        WHERE ale.agent_id = a.id
-                          AND COALESCE(ale.active, 1) = 1
-                    )
-                """)
-                row = cursor.fetchone()
-                inserted_count = int(row["agent_count"] or 0) if row else 0
+                    cash + position_value AS total_value,
+                    cash + position_value - (? + deposited) AS raw_profit
+                FROM agent_values
+            )
+            INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
+            SELECT
+                agent_id,
+                total_value,
+                cash,
+                position_value,
+                CASE
+                    WHEN ABS(raw_profit) > ? THEN
+                        CASE WHEN raw_profit > 0 THEN ? ELSE -? END
+                    ELSE raw_profit
+                END AS profit,
+                ?
+            FROM calculated
+        """, (initial_capital, max_abs_profit, max_abs_profit, max_abs_profit, now))
+        inserted_count = cursor.rowcount if cursor.rowcount is not None and cursor.rowcount >= 0 else 0
+        clamped_count = 0
+        if inserted_count == 0:
+            cursor.execute("""
+                SELECT COUNT(*) AS agent_count
+                FROM agents a
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM agent_leaderboard_exclusions ale
+                    WHERE ale.agent_id = a.id
+                      AND COALESCE(ale.active, 1) = 1
+                )
+            """)
+            row = cursor.fetchone()
+            inserted_count = int(row["agent_count"] or 0) if row else 0
         conn.commit()
     except Exception:
         conn.rollback()

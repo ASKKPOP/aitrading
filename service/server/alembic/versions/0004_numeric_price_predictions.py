@@ -31,16 +31,14 @@ def upgrade() -> None:
         "target_price",
         type_=_NUMERIC,
         existing_type=_FLOAT,
-        existing_nullable=True,
-        postgresql_using="target_price::NUMERIC(20, 8)",
+        existing_nullable=True)",
     )
     op.alter_column(
         "stock_analysis_snapshots",
         "current_price",
         type_=_NUMERIC,
         existing_type=_FLOAT,
-        existing_nullable=False,
-        postgresql_using="current_price::NUMERIC(20, 8)",
+        existing_nullable=False)",
     )
 
 
@@ -50,14 +48,10 @@ def downgrade() -> None:
         "current_price",
         type_=_FLOAT,
         existing_type=_NUMERIC,
-        existing_nullable=False,
-        postgresql_using="current_price::REAL",
-    )
+        existing_nullable=False)
     op.alter_column(
         "signal_predictions",
         "target_price",
         type_=_FLOAT,
         existing_type=_NUMERIC,
-        existing_nullable=True,
-        postgresql_using="target_price::REAL",
-    )
+        existing_nullable=True)

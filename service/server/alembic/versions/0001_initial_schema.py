@@ -1,7 +1,7 @@
 """Initial schema — full baseline for all 44 tables.
 
 All ALTER TABLE ADD COLUMN statements from init_database() are baked in here
-so a fresh PostgreSQL install gets the complete schema in a single migration.
+so a fresh MySQL install gets the complete schema in a single migration.
 
 Revision ID: 0001
 Revises:
@@ -15,14 +15,14 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-# Postgres expression that produces ISO-8601 UTC text matching SQLite's datetime('now').
-_NOW = "to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
+# MySQL expression that produces ISO-8601 UTC text matching SQLite's datetime('now').
+_NOW = "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')"
 
 
 def upgrade() -> None:
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agents (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             token TEXT,
             token_hash TEXT,
@@ -42,7 +42,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agent_messages (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             type TEXT NOT NULL,
             content TEXT,
@@ -54,7 +54,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agent_tasks (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             type TEXT NOT NULL,
             status TEXT DEFAULT 'pending',
@@ -67,7 +67,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS listings (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             seller_id INTEGER NOT NULL REFERENCES agents(id),
             category TEXT NOT NULL,
             title TEXT NOT NULL,
@@ -81,7 +81,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS orders (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             listing_id INTEGER NOT NULL REFERENCES listings(id),
             buyer_id INTEGER NOT NULL REFERENCES agents(id),
             seller_id INTEGER NOT NULL REFERENCES agents(id),
@@ -95,7 +95,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS arbitrators (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER UNIQUE NOT NULL REFERENCES agents(id),
             status TEXT DEFAULT 'active',
             created_at TEXT DEFAULT ({_NOW})
@@ -104,7 +104,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS dispute_votes (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             order_id INTEGER NOT NULL REFERENCES orders(id),
             arbitrator_id INTEGER NOT NULL REFERENCES arbitrators(id),
             vote TEXT NOT NULL,
@@ -115,7 +115,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             wallet_address TEXT,
@@ -128,7 +128,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS points_transactions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
             amount INTEGER NOT NULL,
             type TEXT NOT NULL,
@@ -139,7 +139,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS user_tokens (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
             token TEXT UNIQUE NOT NULL,
             expires_at TEXT NOT NULL,
@@ -149,7 +149,7 @@ def upgrade() -> None:
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS rate_limits (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             client_ip TEXT NOT NULL,
             action TEXT NOT NULL,
             count INTEGER DEFAULT 0,
@@ -160,7 +160,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signals (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             signal_id INTEGER UNIQUE NOT NULL,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             message_type TEXT NOT NULL,
@@ -187,7 +187,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signal_replies (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             signal_id INTEGER NOT NULL REFERENCES signals(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             content TEXT NOT NULL,
@@ -198,7 +198,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS subscriptions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             leader_id INTEGER NOT NULL REFERENCES agents(id),
             follower_id INTEGER NOT NULL REFERENCES agents(id),
             status TEXT DEFAULT 'active',
@@ -208,7 +208,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS positions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             leader_id INTEGER REFERENCES agents(id),
             symbol TEXT NOT NULL,
@@ -225,14 +225,14 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signal_sequence (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             created_at TEXT DEFAULT ({_NOW})
         )
     """)
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS polymarket_settlements (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             position_id INTEGER NOT NULL REFERENCES positions(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             symbol TEXT NOT NULL,
@@ -252,7 +252,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS experiment_events (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             event_id TEXT UNIQUE NOT NULL,
             event_type TEXT NOT NULL,
             actor_agent_id INTEGER REFERENCES agents(id),
@@ -269,7 +269,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS experiments (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             experiment_key TEXT UNIQUE NOT NULL,
             title TEXT NOT NULL,
             description TEXT,
@@ -285,7 +285,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS experiment_assignments (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             experiment_key TEXT NOT NULL,
             unit_type TEXT NOT NULL,
             unit_id INTEGER NOT NULL,
@@ -299,7 +299,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agent_reward_ledger (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             amount INTEGER NOT NULL,
             reason TEXT NOT NULL,
@@ -316,7 +316,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS challenges (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_key TEXT UNIQUE NOT NULL,
             title TEXT NOT NULL,
             description TEXT,
@@ -341,7 +341,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS challenge_participants (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             status TEXT DEFAULT 'joined',
@@ -360,7 +360,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS challenge_submissions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             signal_id INTEGER,
@@ -373,7 +373,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS challenge_trades (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             source_signal_id INTEGER NOT NULL,
@@ -389,7 +389,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS challenge_results (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             return_pct REAL,
@@ -405,7 +405,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signal_predictions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             signal_id INTEGER NOT NULL,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             market TEXT,
@@ -425,7 +425,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signal_quality_scores (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             signal_id INTEGER NOT NULL,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             verifiability_score REAL DEFAULT 0,
@@ -442,7 +442,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agent_metric_snapshots (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             window_key TEXT NOT NULL,
             window_start_at TEXT NOT NULL,
@@ -465,7 +465,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS network_edges (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             source_agent_id INTEGER NOT NULL REFERENCES agents(id),
             target_agent_id INTEGER NOT NULL REFERENCES agents(id),
             edge_type TEXT NOT NULL,
@@ -478,7 +478,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_missions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_key TEXT UNIQUE NOT NULL,
             title TEXT NOT NULL,
             description TEXT,
@@ -502,7 +502,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS teams (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_key TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
@@ -516,7 +516,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_mission_participants (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             status TEXT DEFAULT 'joined',
@@ -528,7 +528,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_members (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             role TEXT,
@@ -540,7 +540,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_messages (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             signal_id INTEGER,
@@ -553,7 +553,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_submissions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_id INTEGER NOT NULL REFERENCES teams(id),
             submitted_by_agent_id INTEGER NOT NULL REFERENCES agents(id),
@@ -567,7 +567,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_contributions (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
@@ -582,7 +582,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS team_results (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_id INTEGER NOT NULL REFERENCES teams(id),
             return_pct REAL,
@@ -598,7 +598,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS market_news_snapshots (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             category TEXT NOT NULL,
             snapshot_key TEXT NOT NULL,
             items_json TEXT NOT NULL,
@@ -609,7 +609,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS macro_signal_snapshots (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             snapshot_key TEXT NOT NULL,
             verdict TEXT NOT NULL,
             bullish_count INTEGER NOT NULL DEFAULT 0,
@@ -623,7 +623,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS etf_flow_snapshots (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             snapshot_key TEXT NOT NULL,
             summary_json TEXT NOT NULL,
             etfs_json TEXT NOT NULL,
@@ -633,7 +633,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS stock_analysis_snapshots (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             symbol TEXT NOT NULL,
             market TEXT NOT NULL,
             analysis_id TEXT NOT NULL,
@@ -655,7 +655,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS profit_history (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             total_value REAL NOT NULL,
             cash REAL NOT NULL,
@@ -667,7 +667,7 @@ def upgrade() -> None:
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS agent_audit_log (
-            id SERIAL PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER REFERENCES agents(id),
             action TEXT NOT NULL,
             ip_address TEXT,

@@ -10,24 +10,22 @@ import os
 import re
 import sqlite3
 from typing import Any, Iterable, Optional, Sequence
+from urllib.parse import urlparse
 
 from config import DATABASE_URL, DB_PATH
 
 try:
-    import psycopg
-    from psycopg.rows import dict_row
-except ImportError:  # pragma: no cover - dependency is optional until PostgreSQL is enabled
-    psycopg = None
-    dict_row = None
+    import pymysql
+    import pymysql.cursors
+except ImportError:  # pragma: no cover - dependency is optional until MySQL is enabled
+    pymysql = None
 
 
 _BASE_DIR = os.path.dirname(__file__)
 _DEFAULT_SQLITE_DB_PATH = os.path.join(_BASE_DIR, "data", "clawtrader.db")
 _SQLITE_DB_PATH = DB_PATH or _DEFAULT_SQLITE_DB_PATH
-_POSTGRES_NOW_TEXT_SQL = (
-    "to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', "
-    "'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
-)
+# MySQL expression that produces ISO-8601 UTC text matching sqlite's datetime('now').
+_MYSQL_NOW_TEXT_SQL = "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')"
 _SQLITE_INTERVAL_PATTERN = re.compile(
     r"datetime\s*\(\s*'now'\s*,\s*'([+-]?\d+)\s+([A-Za-z]+)'\s*\)",
     flags=re.IGNORECASE,
@@ -42,23 +40,28 @@ _ALTER_ADD_COLUMN_PATTERN = re.compile(
     r"\bALTER\s+TABLE\s+([A-Za-z_][A-Za-z0-9_]*)\s+ADD\s+COLUMN\s+(?!IF\s+NOT\s+EXISTS)",
     flags=re.IGNORECASE,
 )
-_POSTGRES_RETRYABLE_SQLSTATES = {"40001", "40P01", "55P03"}
+# MySQL retryable error numbers
+_MYSQL_RETRYABLE_ERRNOS = {
+    1205,  # ER_LOCK_WAIT_TIMEOUT
+    1213,  # ER_LOCK_DEADLOCK
+}
 
 
-def using_postgres() -> bool:
+def using_mysql() -> bool:
     return bool(DATABASE_URL)
 
 
+# Backward-compat alias — callers that still say using_postgres() keep working.
+using_postgres = using_mysql
+
+
 def get_database_backend_name() -> str:
-    return "postgresql" if using_postgres() else "sqlite"
+    return "mysql" if using_mysql() else "sqlite"
 
 
 def begin_write_transaction(cursor: Any) -> None:
     """Start a write transaction using syntax compatible with the active backend."""
-    if using_postgres():
-        cursor.execute("BEGIN")
-        return
-    cursor.execute("BEGIN IMMEDIATE")
+    cursor.execute("BEGIN" if using_mysql() else "BEGIN IMMEDIATE")
 
 
 def is_retryable_db_error(exc: Exception) -> bool:
@@ -67,20 +70,21 @@ def is_retryable_db_error(exc: Exception) -> bool:
         message = str(exc).lower()
         return "database is locked" in message or "database is busy" in message
 
-    sqlstate = getattr(exc, "sqlstate", None)
-    if not sqlstate:
-        cause = getattr(exc, "__cause__", None)
-        sqlstate = getattr(cause, "sqlstate", None)
-    if sqlstate in _POSTGRES_RETRYABLE_SQLSTATES:
-        return True
+    # PyMySQL / MySQL errors
+    if pymysql is not None and isinstance(
+        exc, (pymysql.OperationalError, pymysql.InternalError)
+    ):
+        errno = exc.args[0] if exc.args else None
+        if errno in _MYSQL_RETRYABLE_ERRNOS:
+            return True
 
     message = str(exc).lower()
     return any(
         fragment in message
         for fragment in (
-            "could not serialize access",
             "deadlock detected",
             "lock not available",
+            "lock wait timeout",
             "database is locked",
             "database is busy",
         )
@@ -88,7 +92,7 @@ def is_retryable_db_error(exc: Exception) -> bool:
 
 
 def _replace_unquoted_question_marks(sql: str) -> str:
-    """Translate sqlite-style placeholders to psycopg placeholders."""
+    """Translate sqlite-style placeholders (?) to PyMySQL/psycopg placeholders (%s)."""
     result: list[str] = []
     i = 0
     in_single = False
@@ -158,12 +162,13 @@ def _replace_unquoted_question_marks(sql: str) -> str:
     return "".join(result)
 
 
-def _escape_psycopg_percent_literals(sql: str) -> str:
-    """Escape literal percent signs before psycopg placeholder parsing.
+def _escape_percent_literals(sql: str) -> str:
+    """Escape literal percent signs before PyMySQL placeholder parsing.
 
-    psycopg uses percent-format placeholders, so SQL literals such as
-    ``LIKE '%foo%'`` must be sent as ``LIKE '%%foo%%'``. This runs before
-    sqlite ``?`` placeholders are translated to ``%s``.
+    PyMySQL uses percent-format placeholders (%s), so SQL literals such as
+    ``LIKE '%foo%'`` or ``DATE_FORMAT(..., '%Y-%m-%d')`` must be sent as
+    ``'%%foo%%'`` / ``'%%Y-%%m-%%d'``.  This runs BEFORE sqlite ``?``
+    placeholders are translated to ``%s`` so the new ``%s`` are not doubled.
     """
     result: list[str] = []
     i = 0
@@ -179,32 +184,47 @@ def _escape_psycopg_percent_literals(sql: str) -> str:
     return "".join(result)
 
 
-def _replace_sqlite_datetime_functions(sql: str) -> str:
+# Keep old name as alias for any callers in tests.
+_escape_psycopg_percent_literals = _escape_percent_literals
+
+
+def _replace_sqlite_datetime_functions_mysql(sql: str) -> str:
+    _MYSQL_INTERVAL_UNIT_MAP = {
+        "SECOND": "SECOND", "SECONDS": "SECOND",
+        "MINUTE": "MINUTE", "MINUTES": "MINUTE",
+        "HOUR": "HOUR", "HOURS": "HOUR",
+        "DAY": "DAY", "DAYS": "DAY",
+        "MONTH": "MONTH", "MONTHS": "MONTH",
+        "YEAR": "YEAR", "YEARS": "YEAR",
+    }
+
     def replace_interval(match: re.Match[str]) -> str:
         amount = match.group(1)
-        unit = match.group(2)
-        return f"to_char((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') + INTERVAL '{amount} {unit}', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
+        unit = _MYSQL_INTERVAL_UNIT_MAP.get(match.group(2).upper(), match.group(2).upper())
+        return (
+            f"DATE_FORMAT(UTC_TIMESTAMP() + INTERVAL {amount} {unit},"
+            f" '%Y-%m-%dT%H:%i:%sZ')"
+        )
 
     sql = _SQLITE_INTERVAL_PATTERN.sub(replace_interval, sql)
-    sql = _SQLITE_NOW_PATTERN.sub(_POSTGRES_NOW_TEXT_SQL, sql)
+    sql = _SQLITE_NOW_PATTERN.sub(_MYSQL_NOW_TEXT_SQL, sql)
     return sql
 
 
-def _adapt_sql_for_postgres(sql: str) -> str:
+def _adapt_sql_for_mysql(sql: str) -> str:
     adapted = sql
-    adapted = _SQLITE_AUTOINCREMENT_PATTERN.sub("SERIAL PRIMARY KEY", adapted)
-    adapted = _SQLITE_REAL_PATTERN.sub("DOUBLE PRECISION", adapted)
-    adapted = _ALTER_ADD_COLUMN_PATTERN.sub(r"ALTER TABLE \1 ADD COLUMN IF NOT EXISTS ", adapted)
-    adapted = _replace_sqlite_datetime_functions(adapted)
-    adapted = _escape_psycopg_percent_literals(adapted)
+    # INTEGER PRIMARY KEY AUTOINCREMENT → INT AUTO_INCREMENT PRIMARY KEY
+    adapted = _SQLITE_AUTOINCREMENT_PATTERN.sub("INT AUTO_INCREMENT PRIMARY KEY", adapted)
+    # Note: MySQL accepts REAL (alias for DOUBLE); no substitution needed.
+    # ALTER TABLE ... ADD COLUMN (no IF NOT EXISTS — try/except in init_database handles dups)
+    adapted = _ALTER_ADD_COLUMN_PATTERN.sub(r"ALTER TABLE \1 ADD COLUMN ", adapted)
+    # Replace sqlite datetime functions
+    adapted = _replace_sqlite_datetime_functions_mysql(adapted)
+    # Escape literal % signs BEFORE adding %s placeholders
+    adapted = _escape_percent_literals(adapted)
+    # Replace ? → %s
     adapted = _replace_unquoted_question_marks(adapted)
     return adapted
-
-
-def _should_append_returning_id(sql: str) -> bool:
-    stripped = sql.strip().rstrip(";")
-    upper = stripped.upper()
-    return upper.startswith("INSERT INTO ") and " RETURNING " not in upper
 
 
 class DatabaseCursor:
@@ -216,16 +236,11 @@ class DatabaseCursor:
     def execute(self, sql: str, params: Optional[Sequence[Any]] = None):
         self.lastrowid = None
 
-        if self._backend == "postgres":
-            query = _adapt_sql_for_postgres(sql)
-            should_capture_id = _should_append_returning_id(query)
-            if should_capture_id:
-                query = f"{query.strip().rstrip(';')} RETURNING id"
+        if self._backend == "mysql":
+            query = _adapt_sql_for_mysql(sql)
+            # Always pass tuple (even empty) so PyMySQL mogrifies %% → %
             self._cursor.execute(query, tuple(params or ()))
-            if should_capture_id:
-                row = self._cursor.fetchone()
-                if row is not None:
-                    self.lastrowid = int(row["id"] if isinstance(row, dict) else row[0])
+            self.lastrowid = self._cursor.lastrowid
             return self
 
         if params is None:
@@ -237,12 +252,12 @@ class DatabaseCursor:
 
     def executemany(self, sql: str, seq_of_params: Iterable[Sequence[Any]]):
         self.lastrowid = None
-        if self._backend == "postgres":
-            query = _adapt_sql_for_postgres(sql)
-            self._cursor.executemany(query, [tuple(params) for params in seq_of_params])
+        if self._backend == "mysql":
+            query = _adapt_sql_for_mysql(sql)
+            self._cursor.executemany(query, [tuple(p) for p in seq_of_params])
             return self
 
-        self._cursor.executemany(sql, [tuple(params) for params in seq_of_params])
+        self._cursor.executemany(sql, [tuple(p) for p in seq_of_params])
         return self
 
     def fetchone(self):
@@ -265,11 +280,17 @@ class DatabaseConnection:
 
     @property
     def autocommit(self):
+        if self._backend == "mysql":
+            return getattr(self._connection, "_autocommit", None)
         return getattr(self._connection, "autocommit", None)
 
     @autocommit.setter
     def autocommit(self, value):
-        setattr(self._connection, "autocommit", value)
+        if self._backend == "mysql":
+            # PyMySQL exposes autocommit as a method, not a property setter
+            self._connection.autocommit(value)
+        else:
+            setattr(self._connection, "autocommit", value)
 
     def cursor(self):
         return DatabaseCursor(self._connection.cursor(), self._backend)
@@ -303,14 +324,29 @@ class DatabaseConnection:
 
 
 def get_db_connection():
-    """Get database connection. Supports both SQLite and PostgreSQL."""
-    if using_postgres():
-        if psycopg is None:
+    """Get database connection. Supports both SQLite and MySQL."""
+    if using_mysql():
+        if pymysql is None:
             raise RuntimeError(
-                "PostgreSQL support requires psycopg. Install service requirements first."
+                "MySQL support requires PyMySQL. Install service requirements first."
             )
-        conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
-        return DatabaseConnection(conn, "postgres")
+        parsed = urlparse(DATABASE_URL)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 3306
+        user = parsed.username or "root"
+        password = parsed.password or ""
+        database = parsed.path.lstrip("/")
+        conn = pymysql.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            charset="utf8mb4",
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False,
+        )
+        return DatabaseConnection(conn, "mysql")
 
     db_path = _SQLITE_DB_PATH
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -330,22 +366,17 @@ def get_database_status() -> dict[str, Any]:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        if using_postgres():
+        if using_mysql():
             cursor.execute(
-                """
-                SELECT
-                    current_database() AS database_name,
-                    current_user AS current_user,
-                    inet_server_addr()::text AS server_addr,
-                    inet_server_port() AS server_port
-                """
+                "SELECT DATABASE() AS database_name, USER() AS current_user,"
+                " @@hostname AS server_host, @@port AS server_port"
             )
             row = cursor.fetchone()
             return {
                 "backend": get_database_backend_name(),
                 "database_name": row["database_name"],
                 "current_user": row["current_user"],
-                "server_addr": row["server_addr"],
+                "server_host": row["server_host"],
                 "server_port": row["server_port"],
             }
 
@@ -362,10 +393,6 @@ def get_database_status() -> dict[str, Any]:
 def init_database():
     """Initialize database schema."""
     conn = get_db_connection()
-    previous_autocommit = None
-    if using_postgres():
-        previous_autocommit = conn.autocommit
-        conn.autocommit = True
     cursor = conn.cursor()
 
     # Agents table
@@ -531,21 +558,21 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             signal_id INTEGER UNIQUE NOT NULL,
             agent_id INTEGER NOT NULL,
-            message_type TEXT NOT NULL,  -- 'strategy', 'operation', 'discussion'
-            market TEXT NOT NULL,  -- 'us-stock', 'a-stock', 'crypto', 'polymarket', etc.
-            signal_type TEXT,  -- 'position', 'trade', 'realtime' (for operation type)
+            message_type TEXT NOT NULL,
+            market TEXT NOT NULL,
+            signal_type TEXT,
             symbol TEXT,
             token_id TEXT,
             outcome TEXT,
-            symbols TEXT,  -- JSON array for multiple symbols
-            side TEXT,  -- 'long', 'short'
+            symbols TEXT,
+            side TEXT,
             entry_price REAL,
             exit_price REAL,
             quantity REAL,
             pnl REAL,
-            title TEXT,  -- For strategy/discussion
+            title TEXT,
             content TEXT,
-            tags TEXT,  -- JSON array for tags
+            tags TEXT,
             timestamp INTEGER NOT NULL,
             created_at TEXT NOT NULL,
             executed_at TEXT,
@@ -585,7 +612,7 @@ def init_database():
         CREATE TABLE IF NOT EXISTS positions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,
-            leader_id INTEGER,  -- null if self-opened
+            leader_id INTEGER,
             symbol TEXT NOT NULL,
             market TEXT NOT NULL DEFAULT 'us-stock',
             token_id TEXT,
@@ -1461,9 +1488,7 @@ def init_database():
         ON agent_audit_log(agent_id, created_at)
     """)
 
-    # Token hash column — SHA-256 of the plaintext token.  High-entropy tokens
-    # don't need PBKDF2; SHA-256 is sufficient. New tokens get both token and
-    # token_hash; lookup prefers the hash.  Legacy rows are migrated on first use.
+    # Token hash column — SHA-256 of the plaintext token.
     try:
         cursor.execute("ALTER TABLE agents ADD COLUMN token_hash TEXT")
     except Exception:
@@ -1476,8 +1501,6 @@ def init_database():
 
     # ── Phase 2: Broker execution layer ──────────────────────────────────────
 
-    # Per-agent broker account configuration.
-    # credentials_enc: AES-GCM ciphertext of JSON {key, secret}
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS broker_accounts (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1496,8 +1519,6 @@ def init_database():
         ON broker_accounts(agent_id, is_active)
     """)
 
-    # Order record — distinct from the marketplace 'orders' table.
-    # Tracks every execution attempt through its lifecycle.
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS broker_orders (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1527,7 +1548,6 @@ def init_database():
         ON broker_orders(agent_id, created_at)
     """)
 
-    # Shadow-mode reconciliation records.
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS position_reconciliations (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1547,7 +1567,6 @@ def init_database():
         )
     """)
 
-    # Immutable audit log of T&Cs / live-mode opt-ins (item 2.7).
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS broker_live_optins (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1590,9 +1609,6 @@ def init_database():
     except Exception:
         pass
 
-    if not using_postgres():
-        conn.commit()
-    elif previous_autocommit is not None:
-        conn.autocommit = previous_autocommit
+    conn.commit()
     conn.close()
     print("[INFO] Database initialized")

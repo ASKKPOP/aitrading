@@ -3,7 +3,7 @@
 Adds the four tables introduced by the broker execution layer (Phase 2)
 and the strategies table + signals.strategy_id column (Phase 3.5).
 None of these existed in the baseline migration (0001) so they are safe
-ADD IF NOT EXISTS operations.
+CREATE IF NOT EXISTS operations.
 
 New tables:
   broker_accounts          — per-agent broker credential vault
@@ -27,14 +27,14 @@ down_revision = "0004"
 branch_labels = None
 depends_on = None
 
-_NOW = "to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
+_NOW = "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')"
 
 
 def upgrade() -> None:
     # ── broker_accounts ───────────────────────────────────────────────────────
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS broker_accounts (
-            id              SERIAL PRIMARY KEY,
+            id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id        INTEGER NOT NULL REFERENCES agents(id),
             broker          TEXT    NOT NULL,
             execution_mode  TEXT    NOT NULL DEFAULT 'paper',
@@ -52,7 +52,7 @@ def upgrade() -> None:
     # ── broker_orders ─────────────────────────────────────────────────────────
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS broker_orders (
-            id               SERIAL PRIMARY KEY,
+            id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id         INTEGER NOT NULL REFERENCES agents(id),
             symbol           TEXT    NOT NULL,
             market           TEXT    NOT NULL DEFAULT 'us-stock',
@@ -80,7 +80,7 @@ def upgrade() -> None:
     # ── position_reconciliations ──────────────────────────────────────────────
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS position_reconciliations (
-            id              SERIAL PRIMARY KEY,
+            id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id        INTEGER NOT NULL REFERENCES agents(id),
             symbol          TEXT    NOT NULL,
             paper_qty       NUMERIC(20,8),
@@ -95,7 +95,7 @@ def upgrade() -> None:
     # ── broker_live_optins ────────────────────────────────────────────────────
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS broker_live_optins (
-            id           SERIAL PRIMARY KEY,
+            id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id     INTEGER NOT NULL REFERENCES agents(id),
             broker       TEXT    NOT NULL,
             tcs_version  TEXT    NOT NULL DEFAULT 'v1',
@@ -108,7 +108,7 @@ def upgrade() -> None:
     # ── strategies ────────────────────────────────────────────────────────────
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS strategies (
-            id                    SERIAL PRIMARY KEY,
+            id                    INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id              INTEGER NOT NULL REFERENCES agents(id),
             name                  TEXT    NOT NULL,
             description           TEXT,
@@ -128,7 +128,7 @@ def upgrade() -> None:
 
     # ── signals.strategy_id column ────────────────────────────────────────────
     op.execute("""
-        ALTER TABLE signals ADD COLUMN IF NOT EXISTS strategy_id INTEGER
+        ALTER TABLE signals ADD COLUMN strategy_id INTEGER
     """)
 
 

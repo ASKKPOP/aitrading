@@ -44,7 +44,7 @@ except ImportError:
     _PROMETHEUS_AVAILABLE = False
 
 from cache import get_cache_status
-from database import init_database, get_database_status, using_postgres
+from database import init_database, get_database_status, using_mysql
 from routes import create_app
 from routes_shared import api_access_log_enabled
 from tasks import (
@@ -58,7 +58,7 @@ if not api_access_log_enabled():
     logging.getLogger("uvicorn.access").propagate = False
 
 # Initialize database
-if using_postgres():
+if using_mysql():
     from alembic.config import Config as _AlembicConfig
     from alembic import command as _alembic_command
     _alembic_cfg = _AlembicConfig(os.path.join(os.path.dirname(__file__), "alembic.ini"))

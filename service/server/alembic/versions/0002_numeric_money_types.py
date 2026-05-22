@@ -24,16 +24,14 @@ def upgrade() -> None:
         type_=sa.Numeric(20, 8),
         existing_type=sa.Float(),
         existing_nullable=True,
-        existing_server_default=sa.text("100000.0"),
-        postgresql_using="cash::NUMERIC(20, 8)",
+        existing_server_default=sa.text("100000.0"))",
     )
     op.alter_column(
         "positions",
         "entry_price",
         type_=sa.Numeric(20, 8),
         existing_type=sa.Float(),
-        existing_nullable=False,
-        postgresql_using="entry_price::NUMERIC(20, 8)",
+        existing_nullable=False)",
     )
 
 
@@ -43,15 +41,11 @@ def downgrade() -> None:
         "entry_price",
         type_=sa.Float(),
         existing_type=sa.Numeric(20, 8),
-        existing_nullable=False,
-        postgresql_using="entry_price::REAL",
-    )
+        existing_nullable=False)
     op.alter_column(
         "agents",
         "cash",
         type_=sa.Float(),
         existing_type=sa.Numeric(20, 8),
         existing_nullable=True,
-        existing_server_default=sa.text("100000.0"),
-        postgresql_using="cash::REAL",
-    )
+        existing_server_default=sa.text("100000.0"))

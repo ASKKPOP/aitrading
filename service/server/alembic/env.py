@@ -13,7 +13,7 @@ def _db_url() -> str:
     url = settings.database_url
     if not url:
         raise RuntimeError(
-            "DATABASE_URL is not set. Alembic migrations require a PostgreSQL connection."
+            "DATABASE_URL is not set. Alembic migrations require a MySQL connection."
         )
     return url
 
@@ -30,11 +30,12 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Apply migrations using a live psycopg3 connection."""
-    import psycopg  # noqa: PLC0415
+    """Apply migrations using a live MySQL connection via SQLAlchemy + PyMySQL."""
+    from sqlalchemy import create_engine  # noqa: PLC0415
 
-    with psycopg.connect(_db_url()) as conn:
-        context.configure(connection=conn, target_metadata=None)
+    connectable = create_engine(_db_url())
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=None)
         with context.begin_transaction():
             context.run_migrations()
 

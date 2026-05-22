@@ -38,90 +38,74 @@ def upgrade() -> None:
     op.alter_column("agents", "deposited",
                     type_=_NUMERIC, existing_type=_FLOAT,
                     existing_nullable=True,
-                    existing_server_default=sa.text("0.0"),
-                    postgresql_using="deposited::NUMERIC(20, 8)")
+                    existing_server_default=sa.text("0.0"))")
 
     # listings
     op.alter_column("listings", "price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="price::NUMERIC(20, 8)")
+                    existing_nullable=False)")
 
     # orders
     op.alter_column("orders", "price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="price::NUMERIC(20, 8)")
+                    existing_nullable=False)")
 
     # signals
     for col in ("entry_price", "exit_price", "quantity", "pnl"):
         op.alter_column("signals", col,
                         type_=_NUMERIC, existing_type=_FLOAT,
-                        existing_nullable=True,
-                        postgresql_using=f"{col}::NUMERIC(20, 8)")
+                        existing_nullable=True)")
 
     # positions
     op.alter_column("positions", "quantity",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="quantity::NUMERIC(20, 8)")
+                    existing_nullable=False)")
     op.alter_column("positions", "current_price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=True,
-                    postgresql_using="current_price::NUMERIC(20, 8)")
+                    existing_nullable=True)")
 
     # polymarket_settlements
     op.alter_column("polymarket_settlements", "quantity",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="quantity::NUMERIC(20, 8)")
+                    existing_nullable=False)")
     op.alter_column("polymarket_settlements", "entry_price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="entry_price::NUMERIC(20, 8)")
+                    existing_nullable=False)")
     op.alter_column("polymarket_settlements", "settlement_price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="settlement_price::NUMERIC(20, 8)")
+                    existing_nullable=False)")
     op.alter_column("polymarket_settlements", "proceeds",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="proceeds::NUMERIC(20, 8)")
+                    existing_nullable=False)")
 
     # challenges
     op.alter_column("challenges", "initial_capital",
                     type_=_NUMERIC, existing_type=_FLOAT,
                     existing_nullable=True,
-                    existing_server_default=sa.text("100000.0"),
-                    postgresql_using="initial_capital::NUMERIC(20, 8)")
+                    existing_server_default=sa.text("100000.0"))")
 
     # challenge_participants
     op.alter_column("challenge_participants", "starting_cash",
                     type_=_NUMERIC, existing_type=_FLOAT,
                     existing_nullable=True,
-                    existing_server_default=sa.text("100000.0"),
-                    postgresql_using="starting_cash::NUMERIC(20, 8)")
+                    existing_server_default=sa.text("100000.0"))")
     op.alter_column("challenge_participants", "ending_value",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=True,
-                    postgresql_using="ending_value::NUMERIC(20, 8)")
+                    existing_nullable=True)")
 
     # challenge_trades
     op.alter_column("challenge_trades", "price",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="price::NUMERIC(20, 8)")
+                    existing_nullable=False)")
     op.alter_column("challenge_trades", "quantity",
                     type_=_NUMERIC, existing_type=_FLOAT,
-                    existing_nullable=False,
-                    postgresql_using="quantity::NUMERIC(20, 8)")
+                    existing_nullable=False)")
 
     # profit_history
     for col in ("total_value", "cash", "position_value", "profit"):
         op.alter_column("profit_history", col,
                         type_=_NUMERIC, existing_type=_FLOAT,
-                        existing_nullable=False,
-                        postgresql_using=f"{col}::NUMERIC(20, 8)")
+                        existing_nullable=False)")
 
 
 def downgrade() -> None:
@@ -129,87 +113,71 @@ def downgrade() -> None:
     for col in ("profit", "position_value", "cash", "total_value"):
         op.alter_column("profit_history", col,
                         type_=_FLOAT, existing_type=_NUMERIC,
-                        existing_nullable=False,
-                        postgresql_using=f"{col}::REAL")
+                        existing_nullable=False)
 
     # challenge_trades
     op.alter_column("challenge_trades", "quantity",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="quantity::REAL")
+                    existing_nullable=False)
     op.alter_column("challenge_trades", "price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="price::REAL")
+                    existing_nullable=False)
 
     # challenge_participants
     op.alter_column("challenge_participants", "ending_value",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=True,
-                    postgresql_using="ending_value::REAL")
+                    existing_nullable=True)
     op.alter_column("challenge_participants", "starting_cash",
                     type_=_FLOAT, existing_type=_NUMERIC,
                     existing_nullable=True,
-                    existing_server_default=sa.text("100000.0"),
-                    postgresql_using="starting_cash::REAL")
+                    existing_server_default=sa.text("100000.0"))
 
     # challenges
     op.alter_column("challenges", "initial_capital",
                     type_=_FLOAT, existing_type=_NUMERIC,
                     existing_nullable=True,
-                    existing_server_default=sa.text("100000.0"),
-                    postgresql_using="initial_capital::REAL")
+                    existing_server_default=sa.text("100000.0"))
 
     # polymarket_settlements
     op.alter_column("polymarket_settlements", "proceeds",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="proceeds::REAL")
+                    existing_nullable=False)
     op.alter_column("polymarket_settlements", "settlement_price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="settlement_price::REAL")
+                    existing_nullable=False)
     op.alter_column("polymarket_settlements", "entry_price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="entry_price::REAL")
+                    existing_nullable=False)
     op.alter_column("polymarket_settlements", "quantity",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="quantity::REAL")
+                    existing_nullable=False)
 
     # positions
     op.alter_column("positions", "current_price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=True,
-                    postgresql_using="current_price::REAL")
+                    existing_nullable=True)
     op.alter_column("positions", "quantity",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="quantity::REAL")
+                    existing_nullable=False)
 
     # signals
     for col in ("pnl", "quantity", "exit_price", "entry_price"):
         op.alter_column("signals", col,
                         type_=_FLOAT, existing_type=_NUMERIC,
-                        existing_nullable=True,
-                        postgresql_using=f"{col}::REAL")
+                        existing_nullable=True)
 
     # orders
     op.alter_column("orders", "price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="price::REAL")
+                    existing_nullable=False)
 
     # listings
     op.alter_column("listings", "price",
                     type_=_FLOAT, existing_type=_NUMERIC,
-                    existing_nullable=False,
-                    postgresql_using="price::REAL")
+                    existing_nullable=False)
 
     # agents
     op.alter_column("agents", "deposited",
                     type_=_FLOAT, existing_type=_NUMERIC,
                     existing_nullable=True,
-                    existing_server_default=sa.text("0.0"),
-                    postgresql_using="deposited::REAL")
+                    existing_server_default=sa.text("0.0"))
