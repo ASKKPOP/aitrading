@@ -1170,6 +1170,33 @@ async def build_network_edges_loop():
         await asyncio.sleep(interval_s)
 
 
+async def refresh_leaderboard_snapshot_loop():
+    """Phase 4.4: materialize the leaderboard every LEADERBOARD_SNAPSHOT_INTERVAL seconds.
+
+    The /api/profit/history endpoint reads from `leaderboard_snapshot` and
+    falls back to live computation when this table is empty, so a slow
+    initial refresh just means the first few requests pay the old cost.
+    """
+    from leaderboard_snapshot import refresh_leaderboard_snapshot
+
+    await asyncio.sleep(42)
+
+    while True:
+        interval_s = _env_int("LEADERBOARD_SNAPSHOT_INTERVAL", 30, minimum=10)
+        top_n = _env_int("LEADERBOARD_SNAPSHOT_TOP_N", 200, minimum=20)
+        try:
+            result = await asyncio.to_thread(refresh_leaderboard_snapshot, top_n)
+            print(
+                "[Leaderboard Snapshot] refreshed: "
+                f"total_agents={result.get('total_agents', 0)} "
+                f"rows_per_metric={result.get('rows', {})}"
+            )
+        except Exception as e:
+            print(f"[Leaderboard Snapshot Error] {e}")
+
+        await asyncio.sleep(interval_s)
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1181,6 +1208,7 @@ BACKGROUND_TASK_REGISTRY = {
     "signal_quality_score": score_signal_quality_loop,
     "agent_metric_snapshots": refresh_agent_metric_snapshots_loop,
     "network_edges": build_network_edges_loop,
+    "leaderboard_snapshot": refresh_leaderboard_snapshot_loop,
     "market_news": refresh_market_news_snapshots_loop,
     "macro_signals": refresh_macro_signal_snapshots_loop,
     "etf_flows": refresh_etf_flow_snapshots_loop,

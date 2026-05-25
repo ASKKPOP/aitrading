@@ -1675,6 +1675,42 @@ def init_database():
         ON tournament_entries(tournament_id, rank)
     """)
 
+    # ── Phase 4.4: materialized leaderboard snapshot ─────────────────────────
+    # One row per (metric, rank). The worker rebuilds this every 30s by
+    # running the leaderboard aggregate once and writing the result. Read
+    # path is O(limit) instead of O(all agents).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS leaderboard_snapshot (
+            metric                  TEXT    NOT NULL,
+            rank                    INTEGER NOT NULL,
+            agent_id                INTEGER NOT NULL,
+            name                    TEXT    NOT NULL,
+            deposited               REAL    DEFAULT 0,
+            profit                  REAL    DEFAULT 0,
+            profit_percent          REAL    DEFAULT 0,
+            trade_count             INTEGER DEFAULT 0,
+            risk_adjusted_score     REAL    DEFAULT 0,
+            collaboration_score     REAL    DEFAULT 0,
+            quality_score_avg       REAL    DEFAULT 0,
+            max_drawdown            REAL    DEFAULT 0,
+            reply_count             INTEGER DEFAULT 0,
+            accepted_reply_count    INTEGER DEFAULT 0,
+            citation_count          INTEGER DEFAULT 0,
+            adoption_count          INTEGER DEFAULT 0,
+            metric_snapshot_id      INTEGER,
+            metric_window_key       TEXT,
+            metric_window_start_at  TEXT,
+            metric_window_end_at    TEXT,
+            recorded_at             TEXT,
+            refreshed_at            TEXT    NOT NULL,
+            PRIMARY KEY (metric, rank)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_leaderboard_snapshot_metric_rank
+        ON leaderboard_snapshot(metric, rank)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

@@ -127,15 +127,65 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         total_row = cursor.fetchone()
         total = total_row['total'] if total_row else 0
 
+        # Phase 4.4: try the materialized leaderboard_snapshot first.
+        # The background worker (refresh_leaderboard_snapshot_loop) keeps
+        # this table fresh every 30s; we still fall through to the live
+        # aggregate when the snapshot is empty (first boot or worker off)
+        # or the page is past the snapshot's top_n cap.
+        snapshot_rows = None
+        try:
+            from leaderboard_snapshot import read_leaderboard_snapshot
+            snapshot_rows = read_leaderboard_snapshot(metric, limit, offset)
+        except Exception:
+            snapshot_rows = None
+        if snapshot_rows is not None and len(snapshot_rows) > 0:
+            top_agents = [
+                {
+                    'agent_id': row['agent_id'],
+                    'name': row['name'],
+                    'deposited': float(row.get('deposited') or 0),
+                    'profit': clamp_profit_for_display(float(row.get('profit') or 0)),
+                    'profit_percent': float(row.get('profit_percent') or 0),
+                    'recorded_at': row.get('recorded_at') or live_snapshot_recorded_at,
+                    'trade_count': int(row.get('trade_count') or 0),
+                    'risk_adjusted_score': float(row.get('risk_adjusted_score') or 0),
+                    'collaboration_score': float(row.get('collaboration_score') or 0),
+                    'quality_score_avg': float(row.get('quality_score_avg') or 0),
+                    'metric_snapshot': {
+                        'id': row.get('metric_snapshot_id'),
+                        'window_key': row.get('metric_window_key'),
+                        'window_start_at': row.get('metric_window_start_at'),
+                        'window_end_at': row.get('metric_window_end_at'),
+                        'max_drawdown': float(row.get('max_drawdown') or 0),
+                        'reply_count': int(row.get('reply_count') or 0),
+                        'accepted_reply_count': int(row.get('accepted_reply_count') or 0),
+                        'citation_count': int(row.get('citation_count') or 0),
+                        'adoption_count': int(row.get('adoption_count') or 0),
+                        'quality_score_avg': float(row.get('quality_score_avg') or 0),
+                    } if row.get('metric_snapshot_id') is not None else {},
+                }
+                for row in snapshot_rows
+            ]
+            # Fast path joins per-agent enrichment below (history / sharpe /
+            # recent activity / backtest_validated) — same code as the live
+            # path, but on the limit-page only.
+            _process_top_agents = True
+        else:
+            _process_top_agents = False
+
         order_by = {
             'return': 'profit_percent DESC',
             'risk': 'risk_adjusted_score DESC',
             'collaboration': 'collaboration_score DESC',
             'quality': 'quality_score_avg DESC',
         }[metric]
-        cursor.execute(
-            f"""
-            WITH latest_snapshots AS (
+        if _process_top_agents:
+            # Skip the heavy CTE — top_agents was filled from the snapshot.
+            pass
+        else:
+            cursor.execute(
+                f"""
+                WITH latest_snapshots AS (
                 SELECT ams.*
                 FROM agent_metric_snapshots ams
                 JOIN (
@@ -219,35 +269,35 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             ORDER BY {order_by}, ap.profit_percent DESC, ap.agent_id ASC
             LIMIT ? OFFSET ?
             """,
-            (INITIAL_CAPITAL, INITIAL_CAPITAL, INITIAL_CAPITAL, cutoff, limit, offset),
-        )
-        top_agents = [
-            {
-                'agent_id': row['agent_id'],
-                'name': row['name'],
-                'deposited': row['deposited'],
-                'profit': clamp_profit_for_display(row['profit']),
-                'profit_percent': row['profit_percent'] or 0,
-                'recorded_at': row['recorded_at'] or live_snapshot_recorded_at,
-                'trade_count': row['trade_count'] or 0,
-                'risk_adjusted_score': float(row['risk_adjusted_score'] or 0),
-                'collaboration_score': float(row['collaboration_score'] or 0),
-                'quality_score_avg': float(row['quality_score_avg'] or 0),
-                'metric_snapshot': {
-                    'id': row['metric_snapshot_id'],
-                    'window_key': row['metric_window_key'],
-                    'window_start_at': row['metric_window_start_at'],
-                    'window_end_at': row['metric_window_end_at'],
-                    'max_drawdown': row['max_drawdown'],
-                    'reply_count': row['reply_count'],
-                    'accepted_reply_count': row['accepted_reply_count'],
-                    'citation_count': row['citation_count'],
-                    'adoption_count': row['adoption_count'],
-                    'quality_score_avg': row['quality_score_avg'],
-                } if row['metric_snapshot_id'] is not None else {},
-            }
-            for row in cursor.fetchall()
-        ]
+                (INITIAL_CAPITAL, INITIAL_CAPITAL, INITIAL_CAPITAL, cutoff, limit, offset),
+            )
+            top_agents = [
+                {
+                    'agent_id': row['agent_id'],
+                    'name': row['name'],
+                    'deposited': row['deposited'],
+                    'profit': clamp_profit_for_display(row['profit']),
+                    'profit_percent': row['profit_percent'] or 0,
+                    'recorded_at': row['recorded_at'] or live_snapshot_recorded_at,
+                    'trade_count': row['trade_count'] or 0,
+                    'risk_adjusted_score': float(row['risk_adjusted_score'] or 0),
+                    'collaboration_score': float(row['collaboration_score'] or 0),
+                    'quality_score_avg': float(row['quality_score_avg'] or 0),
+                    'metric_snapshot': {
+                        'id': row['metric_snapshot_id'],
+                        'window_key': row['metric_window_key'],
+                        'window_start_at': row['metric_window_start_at'],
+                        'window_end_at': row['metric_window_end_at'],
+                        'max_drawdown': row['max_drawdown'],
+                        'reply_count': row['reply_count'],
+                        'accepted_reply_count': row['accepted_reply_count'],
+                        'citation_count': row['citation_count'],
+                        'adoption_count': row['adoption_count'],
+                        'quality_score_avg': row['quality_score_avg'],
+                    } if row['metric_snapshot_id'] is not None else {},
+                }
+                for row in cursor.fetchall()
+            ]
 
         if not top_agents:
             conn.close()
