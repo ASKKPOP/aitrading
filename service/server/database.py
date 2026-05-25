@@ -1711,6 +1711,29 @@ def init_database():
         ON leaderboard_snapshot(metric, rank)
     """)
 
+    # ── Phase 4.3: agent memory layer ─────────────────────────────────────────
+    # Embeddings stored as JSON-stringified float arrays (TEXT in SQLite,
+    # JSON in MySQL via the same column). Cosine similarity is computed
+    # in Python at query time — brute force is fine within the 10 MB
+    # per-agent quota because that caps the row count low enough.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_memory (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id    INTEGER NOT NULL,
+            content     TEXT NOT NULL,
+            embedding   TEXT,
+            metadata    TEXT,
+            created_at  TEXT NOT NULL,
+            expires_at  TEXT,
+            size_bytes  INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_agent_memory_agent_created
+        ON agent_memory(agent_id, created_at)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")
