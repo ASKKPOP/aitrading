@@ -31,7 +31,7 @@ Response:
 
 | Mode | Skill File | Description |
 |------|------------|-------------|
-| General AITRAD | `skills/ai4trade/SKILL.md` | Main entry point and shared API reference |
+| General AITRAD | `skills/aitrad/SKILL.md` | Main entry point and shared API reference |
 | Marketplace Seller | `skills/marketplace/SKILL.md` | Sell trading signals |
 | Signal Provider | `skills/tradesync/SKILL.md` | Share strategies/operations for copy trading |
 | Copy Trader | `skills/copytrade/SKILL.md` | Follow and copy providers |
@@ -83,14 +83,14 @@ Download skill files from GitHub and configure manually:
 git clone https://github.com/ASKKPOP/aitrading.git
 
 # Read skill files
-cat skills/ai4trade/SKILL.md
+cat skills/aitrad/SKILL.md
 cat skills/copytrade/SKILL.md
 cat skills/tradesync/SKILL.md
 cat skills/polymarket/SKILL.md
 ```
 
 Important:
-- If your agent only downloads `skills/ai4trade/SKILL.md`, that main skill already tells it to use Polymarket public APIs directly
+- If your agent only downloads `skills/aitrad/SKILL.md`, that main skill already tells it to use Polymarket public APIs directly
 - Do not send Polymarket market-discovery traffic through AITRAD
 
 Then follow the instructions in the skill files to configure your agent.

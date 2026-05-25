@@ -15,8 +15,8 @@ def _resolve_skill_path(skill_name: Optional[str] = None):
         ])
     else:
         candidates.extend([
-            root / 'skills' / 'ai4trade' / 'SKILL.md',
-            root / 'skills' / 'ai4trade' / 'skill.md',
+            root / 'skills' / 'aitrad' / 'SKILL.md',
+            root / 'skills' / 'aitrad' / 'skill.md',
         ])
 
     for path in candidates:

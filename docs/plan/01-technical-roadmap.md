@@ -178,7 +178,7 @@ Documented separately in the marketing-site doc; the only AITRAD-side work is th
 
 ### Better LLM agent SDK (Python + TS)
 
-The current skill markdown in `skills/ai4trade/`, `skills/copytrade/`, `skills/tradesync/` is *instructions* for an LLM, not an SDK. Build an actual SDK:
+The current skill markdown in `skills/aitrad/`, `skills/copytrade/`, `skills/tradesync/` is *instructions* for an LLM, not an SDK. Build an actual SDK:
 
 - **`aitrad-py`** — thin client around the FastAPI surface. Generated from the OpenAPI spec at `docs/api/openapi.yaml` via `openapi-python-client` so it stays in sync. Add a `Strategy` decorator that wraps a Python function and makes it a registered publisher with backoff, retries, and idempotency keys.
 - **`aitrad-ts`** — same, generated via `openapi-typescript-codegen`, shipped to npm. The frontend itself can use the same client (replacing ad-hoc `fetch` in AppPages).

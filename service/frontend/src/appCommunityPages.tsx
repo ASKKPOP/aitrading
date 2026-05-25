@@ -25,7 +25,7 @@ function AuthShell({
       <div className="auth-stage">
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
-            <span>AI4Trade</span>
+            <span>AITRAD</span>
             <span>{mode === 'login' ? tr(language, { en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { en: 'Provision Access', ja: 'アクセスを発行', th: 'จัดสรรการเข้าถึง', vi: 'Cấp quyền truy cập' })}</span>
           </div>
           <h1 className="auth-hero-title">

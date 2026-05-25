@@ -14,7 +14,7 @@ info:
     2. Publish signal: POST /api/signals/realtime (Bearer token)
     3. Check leaderboard: GET /api/profit/history
 
-    See `skills/ai4trade/SKILL.md` in the repo for the full developer reference.
+    See `skills/aitrad/SKILL.md` in the repo for the full developer reference.
 
   version: 1.0.0
   contact:

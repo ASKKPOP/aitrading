@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     execution_encryption_key: SecretStr = SecretStr("")
 
     # ---- CORS ----
-    clawtrader_cors_origins: str = ""
+    aitrad_cors_origins: str = ""
 
     # ---- Runtime ----
     environment: str = "development"
@@ -90,8 +90,8 @@ ALPHA_VANTAGE_API_KEY: str = settings.alpha_vantage_api_key.get_secret_value()
 HYPERLIQUID_API_URL: str = settings.hyperliquid_api_url
 
 CORS_ORIGINS: list[str] = (
-    [o.strip() for o in settings.clawtrader_cors_origins.split(",") if o.strip()]
-    if settings.clawtrader_cors_origins
+    [o.strip() for o in settings.aitrad_cors_origins.split(",") if o.strip()]
+    if settings.aitrad_cors_origins
     else ["http://localhost:3000"]
 )
 

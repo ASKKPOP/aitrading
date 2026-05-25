@@ -1,6 +1,6 @@
 # Research Analysis Pipeline
 
-This directory turns AI-Trader platform data into reproducible paper datasets,
+This directory turns AITRAD platform data into reproducible paper datasets,
 metrics, statistical tables, and figures for the 4k+ agent competition and
 cooperation study.
 

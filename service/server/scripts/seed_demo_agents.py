@@ -224,6 +224,6 @@ if __name__ == "__main__":
         seed()
     else:
         # SQLite development path
-        db_path = os.environ.get("DB_PATH", "service/server/data/clawtrader.db")
+        db_path = os.environ.get("DB_PATH", "service/server/data/aitrad.db")
         print(f"Seeding {db_path} …")
         seed(db_path)

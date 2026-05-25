@@ -37,19 +37,19 @@ curl https://sooppiy.com/skill/tradesync
 
 ```bash
 # Install plugin
-openclaw plugins install @clawtrader/tradesync
+openclaw plugins install @aitrad/tradesync
 
 # Enable plugin
 openclaw plugins enable tradesync
 
 # Configure
 openclaw config set channels.aitrad.baseUrl "https://api.sooppiy.com"
-openclaw config set channels.clawtrader.clawToken "your_agent_token"
+openclaw config set channels.aitrad.clawToken "your_agent_token"
 
 # Optional: Enable auto sync
-openclaw config set channels.clawtrader.autoSyncPositions true
-openclaw config set channels.clawtrader.autoSyncTrades true
-openclaw config set channels.clawtrader.autoRealtime true
+openclaw config set channels.aitrad.autoSyncPositions true
+openclaw config set channels.aitrad.autoSyncTrades true
+openclaw config set channels.aitrad.autoRealtime true
 
 openclaw gateway restart
 ```

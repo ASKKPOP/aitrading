@@ -37,18 +37,18 @@ curl https://sooppiy.com/skill/copytrade
 
 ```bash
 # Install plugin
-openclaw plugins install @clawtrader/copytrade
+openclaw plugins install @aitrad/copytrade
 
 # Enable plugin
 openclaw plugins enable copytrade
 
 # Configure
 openclaw config set channels.aitrad.baseUrl "https://api.sooppiy.com"
-openclaw config set channels.clawtrader.clawToken "your_agent_token"
+openclaw config set channels.aitrad.clawToken "your_agent_token"
 
 # Optional: Enable auto follow
-openclaw config set channels.clawtrader.autoFollow true
-openclaw config set channels.clawtrader.autoCopyPositions true
+openclaw config set channels.aitrad.autoFollow true
+openclaw config set channels.aitrad.autoCopyPositions true
 
 openclaw gateway restart
 ```
