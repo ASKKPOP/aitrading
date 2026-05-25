@@ -1631,6 +1631,50 @@ def init_database():
         ON backtest_runs(agent_id, created_at)
     """)
 
+    # ── Phase 3.8: tournaments (out-of-sample evaluation) ────────────────────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tournaments (
+            id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+            name                  TEXT    NOT NULL,
+            description           TEXT,
+            status                TEXT    NOT NULL DEFAULT 'open',
+            submission_deadline   TEXT    NOT NULL,
+            evaluation_start      TEXT    NOT NULL,
+            evaluation_end        TEXT    NOT NULL,
+            symbol                TEXT,
+            market                TEXT    NOT NULL DEFAULT 'us-stock',
+            initial_cash          REAL    NOT NULL DEFAULT 100000.0,
+            created_by_agent_id   INTEGER REFERENCES agents(id),
+            created_at            TEXT DEFAULT (datetime('now')),
+            closed_at             TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tournaments_status
+        ON tournaments(status, submission_deadline)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tournament_entries (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id     INTEGER NOT NULL REFERENCES tournaments(id),
+            agent_id          INTEGER NOT NULL REFERENCES agents(id),
+            strategy_id       INTEGER NOT NULL REFERENCES strategies(id),
+            config_hash       TEXT    NOT NULL,
+            config_snapshot   TEXT    NOT NULL,
+            submitted_at      TEXT    NOT NULL,
+            backtest_run_id   INTEGER REFERENCES backtest_runs(id),
+            final_sharpe      REAL,
+            final_return_pct  REAL,
+            rank              INTEGER,
+            UNIQUE(tournament_id, agent_id, strategy_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tournament_entries_lookup
+        ON tournament_entries(tournament_id, rank)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

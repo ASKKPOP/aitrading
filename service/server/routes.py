@@ -26,6 +26,7 @@ from routes_users import register_user_routes
 from routes_backtest import register_backtest_routes
 from routes_execution import register_execution_routes
 from routes_strategies import register_strategy_routes
+from routes_tournaments import register_tournament_routes
 
 
 def create_app() -> FastAPI:
@@ -70,5 +71,6 @@ def create_app() -> FastAPI:
     register_execution_routes(app, ctx)
     register_strategy_routes(app, ctx)
     register_backtest_routes(app, ctx)
+    register_tournament_routes(app, ctx)
     register_misc_routes(app)   # must be last — contains /{path:path} SPA fallback
     return app
