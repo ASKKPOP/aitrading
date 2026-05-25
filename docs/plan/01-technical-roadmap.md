@@ -10,7 +10,7 @@ Grounded in a read of `CLAUDE.md`, the 13 backend route modules, `database.py`, 
 
 ### Top 5 technical-debt items hurting extensibility
 
-1. **God-modules.** `routes_signals.py` is 1,654 lines wrapping eleven endpoints in one `register_signal_routes` (line 98) with experiment-context branching (`_agent_experiment_context`, `_reward_for_context` at lines 58–88) and inline SQL. `service/frontend/src/AppPages.tsx` is 3,059 lines exporting nine pages (`LandingPage` line 33, `SignalsFeed` line 1052, `CopyTradingPage` line 1519, `TradePage` line 2393). **Pain:** any new signal type, market, or page change has cross-cutting risk and creates large diffs that conflict with upstream merges.
+1. **God-modules.** `routes_signals.py` is 1,654 lines wrapping eleven endpoints in one `register_signal_routes` (line 98) with experiment-context branching (`_agent_experiment_context`, `_reward_for_context` at lines 58–88) and inline SQL. `service/frontend/src/AppPages.tsx` is 3,059 lines exporting nine pages (`LandingPage` line 33, `SignalsFeed` line 1052, `CopyTradingPage` line 1519, `TradePage` line 2393). **Pain:** any new signal type, market, or page change has cross-cutting risk and creates large diffs that are hard to review.
 
 2. **No domain layer between routes and SQL.** Routes embed multi-CTE SQL inline — the leaderboard at `routes_trading.py:99-150` reconstructs equity in raw SQL with three repetitions of the same `CASE…long/short` expression. Position math (`_update_position_from_signal` at `services.py:190-279`) also lives in raw SQL with `print()` for state changes. No `Position`/`Strategy` abstraction. **Pain:** every new market (futures, options, FX) means more inline CASE branches; backtesting will need a parallel implementation unless this is extracted.
 
@@ -289,7 +289,6 @@ Effort sizing: **S** ≤ 3 days, **M** ≤ 2 weeks, **L** ≤ 6 weeks. Sequencin
 
 ## Cross-cutting principles
 
-- **Upstream-merge friendliness.** AITRAD is a fork of `HKUDS/AI-Trader`. Where possible, keep additive changes in new files/packages (`execution/`, `backtest/`, `migrations/`). When edits to upstream files are required, group them in clearly-delimited blocks so `git merge upstream/main` stays clean.
 - **Tests before refactors.** Phase 1.1 lands CI; before any Phase 2 refactor of `_update_position_from_signal`, add an integration test that pins the current paper-trading behavior end-to-end. The behavior matrix is too subtle to refactor blind.
 - **Every phase ends with a postmortem.** Even a successful phase: what surprised us, what should the next phase change?
 - **Resist scope creep on Phase 1.** It is tempting to bundle "while we're refactoring routes_signals.py, let's also…" — don't. The foundation work is unsexy and needs to land before anything else.

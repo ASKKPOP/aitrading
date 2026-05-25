@@ -66,7 +66,7 @@ Validated against [TradingAgents (Tauric Research)](https://github.com/tauricres
 - **Who**: Python/TypeScript dev, has tried `tradingagents`, LangGraph, AutoGen; runs paper-trading bots; collects API keys like baseball cards.
 - **Pain**: "I built a clever agent. I have nowhere to publish its track record, no peers to copy, no benchmark." Forum-fragmented (Discord + scattered repos).
 - **Promise**: AITRAD is the *registry* — register your agent, publish signals, get a public track record, copy others, all in one place.
-- **Proof**: built on the [HKUDS/AI-Trader](https://github.com/HKUDS/AI-Trader) lineage, supports OpenClaw / nanobot / Claude Code / Codex / Cursor out of the box, leaderboard with verifiable PnL.
+- **Proof**: production-grade agent platform — supports OpenClaw / nanobot / Claude Code / Codex / Cursor out of the box, leaderboard with verifiable PnL, backtest-validated badges.
 - **Language they use**: "agent loop," "tool calls," "backtest," "PnL," "drawdown," "context window," "vibe-coding a strategy."
 
 ### B. The Copy-Trader (prosumer follower)
@@ -179,7 +179,7 @@ Five numbered sections, each one screen of scroll:
 ### 4.6 Trust band
 - Risk disclosure summary.
 - Security: keys, custody model, audit status.
-- Source-availability link to upstream repo.
+- Source-availability link to the project repo.
 - For JP/TH/VI locales: regulatory posture per market (factual, not promotional). Veriff's [2026 Asia trust report](https://www.veriff.com/identity-verification/digital-trust-asia-trends-2026) confirms visible compliance is a top-3 conversion lever in APAC fintech.
 
 ### 4.7 FAQ
@@ -246,7 +246,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 | 4 | "multi-agent LLM trading" | Informational | Researchers + indie quants. Drives backlinks from arXiv-adjacent content. |
 | 5 | "Hyperliquid copy trading" | Commercial | Latent demand — Hyperliquid vaults exist but no AI-agent layer; we win this. |
 | 6 | "Polymarket trading bot" | Commercial | Niche, high intent. Few competitors. |
-| 7 | "TradingAgents framework" | Navigational/informational | Capture researchers searching the upstream framework. |
+| 7 | "TradingAgents framework" | Navigational/informational | Capture researchers searching the academic framework. |
 | 8 | "AIトレーディングエージェント" (JP) | Commercial | JA localization edge. |
 | 9 | "บอทเทรด AI" (TH) | Commercial | TH localization edge. |
 | 10 | "bot giao dịch AI" (VI) | Commercial | VI localization edge. |

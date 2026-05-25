@@ -68,9 +68,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project: AITRAD
 
-A fork of [HKUDS/AI-Trader](https://github.com/HKUDS/AI-Trader) — an agent-native trading platform. We are extending it for our own use.
+An independent agent-native trading platform. The codebase originated from a fork of HKUDS/AI-Trader (2026-04, commit `754a3b4`) but is no longer tracking upstream — AITRAD is its own product going forward.
 
-**Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git` (ours), `upstream` → `HKUDS/AI-Trader` (sync source).
+**Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git`. No upstream remote.
 
 ### What this project actually is
 
@@ -123,15 +123,6 @@ cd service/frontend && npm run dev                    # frontend on :3000 (proxi
 2. **Brokers / markets** — `price_fetcher.py` is the single integration point for market data. Real order-routing to IBKR/Alpaca/etc. would be a new subsystem; none exists today.
 3. **Frontend** — most pages live in `service/frontend/src/AppPages.tsx` and `appCommunityPages.tsx`. Recharts for charts.
 4. **Backtesting** — does not exist. Greenfield. Build under `service/server/backtest.py`, expose via `routes_research.py`, use `price_fetcher` for historical data.
-
-### Working with upstream
-
-```bash
-git fetch upstream
-git merge upstream/main      # or rebase, depending on local state
-```
-
-Keep our changes additive where possible so upstream merges stay clean. When modifying existing files, prefer a clearly-scoped section over scattered edits.
 
 ### Research and plans
 
