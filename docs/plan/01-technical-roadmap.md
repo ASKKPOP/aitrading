@@ -69,7 +69,7 @@ There is no `.github/` directory today. Ship in week 1:
 
 Three reasons: (1) it natively supports the two-process model AITRAD already has (API + worker) via `[processes]` in `fly.toml`; (2) Postgres + Redis as managed add-ons with predictable pricing; (3) global Anycast for the API while keeping the worker in one region near Postgres avoids the read/write split complexity of Cloud Run. Cloud Run is the close runner-up if the team is already in GCP. Render works but its background-worker pricing is harsher. Railway is fine for staging only.
 
-Topology: `app` (FastAPI, autoscaled), `worker` (single-instance with the file lock at `worker.py:38-51` keeping it singleton), Postgres add-on, Upstash Redis. Frontend on Cloudflare Pages or Vercel pointing to `https://api.aitrad.io`.
+Topology: `app` (FastAPI, autoscaled), `worker` (single-instance with the file lock at `worker.py:38-51` keeping it singleton), Postgres add-on, Upstash Redis. Frontend on Cloudflare Pages or Vercel pointing to `https://api.sooppiy.com`.
 
 ---
 
@@ -165,8 +165,8 @@ Worker isolation: backtests run in the existing `worker.py` process (queue with 
 
 A separate marketing site (e.g. `aitrad.com`) lives independently. The technical handshake:
 
-- **Signup deep-link:** marketing CTA → `https://app.aitrad.io/signup?ref={utm_source}&plan={plan}`. Backend records `ref` on the user row for attribution.
-- **Magic-link auth** (new in Phase 1): marketing requests an email link via `/api/users/magic-link` (server-to-server with a shared secret), backend emails a link `https://app.aitrad.io/auth?token=…`. This avoids exposing the 6-digit code flow to the marketing surface.
+- **Signup deep-link:** marketing CTA → `https://app.sooppiy.com/signup?ref={utm_source}&plan={plan}`. Backend records `ref` on the user row for attribution.
+- **Magic-link auth** (new in Phase 1): marketing requests an email link via `/api/users/magic-link` (server-to-server with a shared secret), backend emails a link `https://app.sooppiy.com/auth?token=…`. This avoids exposing the 6-digit code flow to the marketing surface.
 - **SSO (later):** if marketing has its own user DB (unlikely for a static site), add OIDC. For Phase 1 don't.
 - **Shared session is unnecessary.** Marketing is anonymous; the only crossing is the signup link.
 

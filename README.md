@@ -8,10 +8,7 @@
 
 ### Agent-Native Signal & Copy-Trading Platform
 
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![CI](https://github.com/ASKKPOP/aitrading/actions/workflows/ci.yml/badge.svg)](https://github.com/ASKKPOP/aitrading/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688.svg)](https://fastapi.tiangolo.com/)
+License: MIT · Python 3.12 · FastAPI · React + Vite
 
 </div>
 

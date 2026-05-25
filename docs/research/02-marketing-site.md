@@ -9,50 +9,50 @@
 Survey of high-signal 2026 fintech / AI / dev-tool marketing sites, with the pattern we can borrow for AITRAD.
 
 ### linear.app
-- **Hero**: dead-centre headline "The product development system for teams and agents", repeated visually for emphasis. Subhead leans into the AI-era angle. Primary CTA is a teaser link ("Issue tracking is dead → linear.app/next") rather than a generic "Sign up". ([Linear homepage](https://linear.app/))
+- **Hero**: dead-centre headline "The product development system for teams and agents", repeated visually for emphasis. Subhead leans into the AI-era angle. Primary CTA is a teaser link ("Issue tracking is dead → linear.app/next") rather than a generic "Sign up". (Linear homepage)
 - **Social proof**: customer logos and pull-quotes mid-page from OpenAI, Ramp, Opendoor. Numeric claim: "Linear powers over 25,000 product teams."
 - **Features**: five numbered sections (Intake, Plan, Build, Diffs, Monitor) — workflow narrative, each with a UI mockup. Pattern is "story of a job to be done" rather than a feature grid.
 - **CTA**: top-right "Sign up" + "Open app"; the hero CTA acts as editorial bait.
 - **Footer**: dense five-column (Product, Features, Company, Resources, Legal).
 
 ### vercel.com
-- **Hero**: minimalist, vast whitespace, custom Geist typeface doing the lifting. Animated background and clearly distinct dual CTAs ("Start Deploying" + "Get a demo"). ([Saaspo Vercel hero study](https://saaspo.com/sections/vercel-hero-section), [InBuild hero guide](https://www.inbuild.io/blog/hero-section-design-guide))
+- **Hero**: minimalist, vast whitespace, custom Geist typeface doing the lifting. Animated background and clearly distinct dual CTAs ("Start Deploying" + "Get a demo"). (Saaspo Vercel hero study, InBuild hero guide)
 - **Pattern takeaway**: typography-first identity. The brand IS the typeface. This is a defensible moat — copying Vercel without their type system produces forgettable output.
 
 ### anthropic.com
-- **Hero**: modern sans-serif, calm and editorial. Headline "AI research and products that put safety at the frontier." Primary CTA "Try Claude". Neutral palette, restrained accent use. ([Anthropic homepage](https://www.anthropic.com/))
+- **Hero**: modern sans-serif, calm and editorial. Headline "AI research and products that put safety at the frontier." Primary CTA "Try Claude". Neutral palette, restrained accent use. (Anthropic homepage)
 - **Nav**: multi-tier with expanded submenus (Products, Models, Solutions). Eight-column footer.
 - **Social proof**: editorial feature card ("Claude on Mars" / NASA) rather than logo wall — credibility via single high-trust collaboration.
 
 ### perplexity.ai
-- **Pattern**: "invisible brand" philosophy — clean Scandinavian-subway feel, FK Grotesk type, vintage textbook / collage imagery via Midjourney. Marketing surface built entirely in Framer for rapid iteration. ([Smith & Diction case study](https://medium.com/smith-diction/branding-perplexity-ai-70eb2cb2ef48), [Framer Stories](https://www.framer.com/stories/perplexity/))
+- **Pattern**: "invisible brand" philosophy — clean Scandinavian-subway feel, FK Grotesk type, vintage textbook / collage imagery via Midjourney. Marketing surface built entirely in Framer for rapid iteration. (Smith & Diction case study, Framer Stories)
 - **Takeaway**: when the product is the moat, the marketing site gets out of the way. Type + restraint + a touch of vintage warmth.
 
 ### pylon.com (usepylon.com)
-- **Hero**: problem-first headline "Your support platform wasn't built for AI." Sub: "Pylon is AI-native B2B support, across every channel." Single CTA "See Pylon". ([Pylon homepage](https://www.usepylon.com/))
+- **Hero**: problem-first headline "Your support platform wasn't built for AI." Sub: "Pylon is AI-native B2B support, across every channel." Single CTA "See Pylon". (Pylon homepage)
 - **Social proof**: customer logos *immediately* under hero, plus competitive callouts ("migrating from Zendesk/Intercom"). Metrics carousel later: "90% response time decrease, 50% autonomous resolution, 8x faster resolution."
 - **Trust band**: SOC 2, a16z + YC funding, G2 ratings. Critical lesson for fintech: monetary-and-compliance trust signals go above the fold area.
 
 ### granola.ai
-- **Hero**: "The AI notepad for people in back-to-back meetings." Sub: "Granola takes your raw meeting notes and makes them awesome." Single download CTA + editorial "Announcing our Series C" link. ([Granola homepage](https://www.granola.ai/), [Lapa Ninja teardown](https://www.lapa.ninja/post/granola/))
+- **Hero**: "The AI notepad for people in back-to-back meetings." Sub: "Granola takes your raw meeting notes and makes them awesome." Single download CTA + editorial "Announcing our Series C" link. (Granola homepage, Lapa Ninja teardown)
 - **Pattern**: before/after demonstration as the central feature device — raw notes morph into structured outputs. Logo wall (PostHog, Intercom, Ramp, Linear, Brex, Replit, Vercel) in a rotating carousel.
-- **Viral loop**: shareable artifact (the meeting note) becomes the marketing vehicle — every shared note links non-users back to a chat-with-transcript demo. ([Over The Anthill analysis](https://overtheanthill.substack.com/p/granola)) **AITRAD has the same shape**: every agent profile / signal page is shareable proof that drives sign-up.
+- **Viral loop**: shareable artifact (the meeting note) becomes the marketing vehicle — every shared note links non-users back to a chat-with-transcript demo. (Over The Anthill analysis) **AITRAD has the same shape**: every agent profile / signal page is shareable proof that drives sign-up.
 
 ### hyperliquid.xyz
-- The marketing surface is intentionally thin; `hyperliquid.xyz` 301s to `hyperfoundation.org`, and the brand puts trading UI front-and-centre at `app.hyperliquid.xyz`. ([Hyperliquid Support](https://hyperliquid.zendesk.com/hc/en-us/articles/15931545575572)) The lesson is inverse: high-volume crypto-native users want app-first. AITRAD's *prosumer* and *researcher* segments don't — we need a story-led front door, but we should still ship a one-click route to the live app.
+- The marketing surface is intentionally thin; `hyperliquid.xyz` 301s to `hyperfoundation.org`, and the brand puts trading UI front-and-centre at `app.hyperliquid.xyz`. (Hyperliquid Support) The lesson is inverse: high-volume crypto-native users want app-first. AITRAD's *prosumer* and *researcher* segments don't — we need a story-led front door, but we should still ship a one-click route to the live app.
 
 ### askkpop.com / ionixq.com (our own reference)
-- Two editorial themes already extracted: **terracotta + parchment** (warm, scholarly) and **slate** (austere, institutional). Both lean on serif headlines, restrained accents, and parchment backgrounds — closer to the [Kami document system](https://kami.tw93.fun/) ("warm parchment canvas, serif carries hierarchy, single accent") than to standard SaaS gradient slop.
+- Two editorial themes already extracted: **terracotta + parchment** (warm, scholarly) and **slate** (austere, institutional). Both lean on serif headlines, restrained accents, and parchment backgrounds — closer to the Kami document system ("warm parchment canvas, serif carries hierarchy, single accent") than to standard SaaS gradient slop.
 
 ### Dominant 2026 pattern in agent-AI startups
 Across Linear, Anthropic, Pylon, Perplexity, and Granola:
-1. **Centred, narrative headline ≤ 10 words** with a benefit + audience hook. ([Hero section guide](https://www.perfectafternoon.com/2025/hero-section-design/))
+1. **Centred, narrative headline ≤ 10 words** with a benefit + audience hook. (Hero section guide)
 2. **One primary CTA, one secondary** (often editorial — "Read the announcement").
 3. **Logo wall + numeric claim** within first scroll.
-4. **Embedded product proof** (interactive demo, looping video, before/after) — static screenshots are now table stakes. ([SaaSFrame 2026 trends](https://www.saasframe.io/blog/10-saas-landing-page-trends-for-2026-with-real-examples), [Storylane 2026 best practices](https://www.storylane.io/blog/saas-landing-pages-best-practices))
+4. **Embedded product proof** (interactive demo, looping video, before/after) — static screenshots are now table stakes. (SaaSFrame 2026 trends, Storylane 2026 best practices)
 5. **Story-led feature sections**, numbered workflow rather than feature grid.
 6. **Trust band** (compliance, funding, security) near the bottom.
-7. **FAQ block** — coming back into favour because LLM crawlers (GPTBot, ClaudeBot, PerplexityBot — now ~33% of organic traffic) cite structured Q&A. ([Search Engine Land](https://searchengineland.com/seo-2026-higher-standards-ai-influence-web-catching-up-473540))
+7. **FAQ block** — coming back into favour because LLM crawlers (GPTBot, ClaudeBot, PerplexityBot — now ~33% of organic traffic) cite structured Q&A. (Search Engine Land)
 
 We will steal liberally from this stack but skin it in AITRAD's editorial/parchment voice — the moat is *not looking like another agent startup*.
 
@@ -60,7 +60,7 @@ We will steal liberally from this stack but skin it in AITRAD's editorial/parchm
 
 ## 2. Audience Segments
 
-Validated against [TradingAgents (Tauric Research)](https://github.com/tauricresearch/tradingagents) GitHub adoption, [Polymarket Q1 2026 retail data](https://www.mexc.com/news/1062153), and [Asia crypto regulatory shifts](https://www.osl.com/en/bits/article/crypto-investing-in-thailand). Four primary segments, ranked by acquisition cost and lifetime intent.
+Validated against TradingAgents (Tauric Research) GitHub adoption, Polymarket Q1 2026 retail data, and Asia crypto regulatory shifts. Four primary segments, ranked by acquisition cost and lifetime intent.
 
 ### A. The Agent-Builder (indie quant / dev-trader)
 - **Who**: Python/TypeScript dev, has tried `tradingagents`, LangGraph, AutoGen; runs paper-trading bots; collects API keys like baseball cards.
@@ -71,21 +71,21 @@ Validated against [TradingAgents (Tauric Research)](https://github.com/tauricres
 
 ### B. The Copy-Trader (prosumer follower)
 - **Who**: already on eToro / ZuluTrade / Hyperliquid Vaults / Binance Copy. Doesn't write code. Wants alpha without the work.
-- **Pain**: "Human signal providers ghost me, overfit to last month, blow up on leverage. I don't know who to trust." ([ForexBrokers copy-trading guide](https://www.forexbrokers.com/guides/social-copy-trading))
+- **Pain**: "Human signal providers ghost me, overfit to last month, blow up on leverage. I don't know who to trust." (ForexBrokers copy-trading guide)
 - **Promise**: copy AI agents whose reasoning is transparent — read why the agent took the trade, see prompt history, sort by Sharpe / drawdown / consistency, not just last-30-day PnL.
 - **Proof**: live leaderboard, full operation history, agent "discussion threads" (the agent explains itself), paper-mode before real money.
 - **Language they use**: "follow," "auto-copy," "drawdown," "vault," "Sharpe," "track record."
 
 ### C. The Multi-Agent Researcher
-- **Who**: ML researcher, grad student, quant finance academic. Reads arXiv on multi-agent LLM systems. ([TradingAgents on arXiv](https://github.com/tauricresearch/tradingagents))
+- **Who**: ML researcher, grad student, quant finance academic. Reads arXiv on multi-agent LLM systems. (TradingAgents on arXiv)
 - **Pain**: no public benchmark for agent trading performance; toy backtests don't survive live markets; can't compare frameworks apples-to-apples.
 - **Promise**: AITRAD is the public test-bed — standardised market access (US equities, Hyperliquid perps, Polymarket binaries), reproducible runs, downloadable trace data, citable leaderboard.
 - **Proof**: open methodology page, dataset access, papers we've enabled, links to source framework on GitHub.
 - **Language they use**: "benchmark," "reproducible," "tool use," "evaluation harness," "rollout."
 
 ### D. The Asia-Localized Prosumer (JP / TH / VN)
-- **Who**: Japan, Thailand, Vietnam crypto-curious retail. Japan has the most mature crypto regime; Thailand has 12% adoption + a capital-gains waiver through 2029 on licensed venues; Vietnam just issued Resolution 05/2025/NQ-CP creating its first licensing regime. ([Thailand crypto guide](https://www.osl.com/en/bits/article/crypto-investing-in-thailand), [Vietnam licensing](https://www.vietnam-briefing.com/news/vietnam-licensing-regime-cryptocurrency-exchanges-digital-economy.html/))
-- **Pain**: English-only fintech feels foreign; date formats, currency, support hours, and tone are wrong. 76% of consumers prefer their language; 75% repurchase more when support is native. ([Honey Translations](https://honeytranslations.com/blog/localization-for-fintech-apps-in-2026/))
+- **Who**: Japan, Thailand, Vietnam crypto-curious retail. Japan has the most mature crypto regime; Thailand has 12% adoption + a capital-gains waiver through 2029 on licensed venues; Vietnam just issued Resolution 05/2025/NQ-CP creating its first licensing regime. (Thailand crypto guide, Vietnam licensing)
+- **Pain**: English-only fintech feels foreign; date formats, currency, support hours, and tone are wrong. 76% of consumers prefer their language; 75% repurchase more when support is native. (Honey Translations)
 - **Promise**: AITRAD is built in your language from the ground up — JA / TH / VI / EN — with culturally aware copy, local time zones, and prediction-market / Hyperliquid access without a US broker.
 - **Proof**: native-quality translations (not Google-translated), local case studies, Asia-friendly support hours, regional payment context where compliant.
 
@@ -112,7 +112,7 @@ Validated against [TradingAgents (Tauric Research)](https://github.com/tauricres
 | `/about`, `/security`, `/legal`, `/privacy`, `/terms`, `/risk-disclosure` | Trust / compliance | P0 (legal pages) |
 | `/jp`, `/th`, `/vi` locale roots | Localized content | P0 — gated to launch markets |
 
-Every page also exists per locale: `/`, `/ja/`, `/th/`, `/vi/`. Use sub-path routing (not subdomain) so SEO authority compounds. ([Astro i18n routing](https://docs.astro.build/en/guides/internationalization/))
+Every page also exists per locale: `/`, `/ja/`, `/th/`, `/vi/`. Use sub-path routing (not subdomain) so SEO authority compounds. (Astro i18n routing)
 
 ### Header nav
 `Agents · Copy · Build · Markets · Research · Pricing · Docs` then right-aligned `Language switcher · Log in · Open app →`.
@@ -125,7 +125,7 @@ Mobile collapses everything to a hamburger except `Open app →`.
 3. **Company** — About, Blog, Research, Brand, Careers
 4. **Legal / Trust** — Security, Risk disclosure, Terms, Privacy, Status
 
-Below the columns: small-print risk disclosure, language switcher, social (X, GitHub, Discord, YouTube), copyright. Risk disclosure visibility is non-optional for a trading site — see [Eleken fintech design guide](https://www.eleken.co/blog-posts/modern-fintech-design-guide).
+Below the columns: small-print risk disclosure, language switcher, social (X, GitHub, Discord, YouTube), copyright. Risk disclosure visibility is non-optional for a trading site — see Eleken fintech design guide.
 
 ---
 
@@ -138,7 +138,7 @@ Below the columns: small-print risk disclosure, language switcher, social (X, Gi
 2. **"Agents trade. You follow."** — punchy, segment B. Subhead carries the depth.
 3. **"A public track record for every trading agent."** — proof-first, kills "is this real?" objection.
 4. **"Markets, for agents. Copy-trading, for humans."** — symmetric, mirrors our dual on-ramp.
-5. **"The agent-native trading platform."** — owns a category phrase already used by [HKUDS/AI-Trader](https://github.com/HKUDS/AI-Trader) and [Bitget's GetClaw narrative](https://www.globenewswire.com/news-release/2026/04/06/3268287/0/en/Bitget-Gives-AI-Its-Own-Trading-Account-Advancing-Toward-an-Agent-Native-Exchange.html). Generic but SEO-rich.
+5. **"The agent-native trading platform."** — owns a category phrase already used by HKUDS/AI-Trader and Bitget's GetClaw narrative. Generic but SEO-rich.
 
 **Recommendation**: lead with #1 in English, #4 as the localized hero in JP/TH/VI where the dual on-ramp framing reads more cleanly.
 
@@ -146,9 +146,9 @@ Below the columns: small-print risk disclosure, language switcher, social (X, Gi
 
 **CTAs**:
 - Primary: `Open the app →` (deep-links to `localhost:3000`, prod URL post-deploy).
-- Secondary: `Browse the leaderboard` (anchors to gallery section, no auth required — tasting the product before sign-up, the [Granola viral pattern](https://overtheanthill.substack.com/p/granola)).
+- Secondary: `Browse the leaderboard` (anchors to gallery section, no auth required — tasting the product before sign-up, the Granola viral pattern).
 
-**Hero visual concept**: editorial parchment background, terracotta accent. A single hero element — a stylized "agent card" showing a top-leaderboard agent: avatar, name, framework tag, 30-day PnL spark, latest signal quote ("Long HYPE perp, conviction 0.7 — funding flipped"). Behind it, a faint scatter of other agent cards fading out (depth of field). No mesh gradient, no Inter font, no purple-pink — the explicit "AI slop" avoidance per [925studios](https://www.925studios.co/blog/ai-slop-web-design-guide).
+**Hero visual concept**: editorial parchment background, terracotta accent. A single hero element — a stylized "agent card" showing a top-leaderboard agent: avatar, name, framework tag, 30-day PnL spark, latest signal quote ("Long HYPE perp, conviction 0.7 — funding flipped"). Behind it, a faint scatter of other agent cards fading out (depth of field). No mesh gradient, no Inter font, no purple-pink — the explicit "AI slop" avoidance per 925studios.
 
 ### 4.2 Dual on-ramp band
 Two side-by-side editorial cards directly below the hero:
@@ -160,7 +160,7 @@ This is the single most important section on the page. It segments traffic befor
 ### 4.3 Agent leaderboard preview
 Live (or live-looking) leaderboard with 5-8 top agents. Columns: agent, framework badge, market, 30d PnL, Sharpe, followers. Each row links to a public agent profile.
 
-Borrowed from the [TradingAgents framework patterns](https://github.com/tauricresearch/tradingagents) which already conditions the audience to expect this. Critical: this section converts skeptics — "real agents, real numbers" beats any tagline.
+Borrowed from the TradingAgents framework patterns which already conditions the audience to expect this. Critical: this section converts skeptics — "real agents, real numbers" beats any tagline.
 
 ### 4.4 Features (numbered narrative, Linear-style)
 Five numbered sections, each one screen of scroll:
@@ -180,7 +180,7 @@ Five numbered sections, each one screen of scroll:
 - Risk disclosure summary.
 - Security: keys, custody model, audit status.
 - Source-availability link to the project repo.
-- For JP/TH/VI locales: regulatory posture per market (factual, not promotional). Veriff's [2026 Asia trust report](https://www.veriff.com/identity-verification/digital-trust-asia-trends-2026) confirms visible compliance is a top-3 conversion lever in APAC fintech.
+- For JP/TH/VI locales: regulatory posture per market (factual, not promotional). Veriff's 2026 Asia trust report confirms visible compliance is a top-3 conversion lever in APAC fintech.
 
 ### 4.7 FAQ
 8-12 questions, schema.org `FAQPage` marked. Tuned for LLM citation as much as Google. Sample: "Is this real trading or paper?" "What chains/markets are supported?" "Can I run my own agent locally?" "How do you measure agent performance?" "What languages is it available in?"
@@ -189,7 +189,7 @@ Five numbered sections, each one screen of scroll:
 Big restated CTA above the footer: "**Open the app**" + small "or read the docs". Don't waste the second-most-scrolled-to area on social icons.
 
 ### 4.9 Mobile
-- 79% of SaaS landing visits are mobile. ([Storylane](https://www.storylane.io/blog/saas-landing-pages-best-practices)) Hero must collapse to single column with CTA in the lower-thumb zone.
+- 79% of SaaS landing visits are mobile. (Storylane) Hero must collapse to single column with CTA in the lower-thumb zone.
 - Leaderboard table → cards (one per row, scrollable horizontally).
 - Numbered feature sections become stacked, each one screen of phone scroll.
 - Skip the hero animation on `prefers-reduced-motion` and small screens.
@@ -201,9 +201,9 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 ### Recommendation: **Astro** in a sibling folder `/marketing/` of the same repo, deployed to **Cloudflare Pages**.
 
 ### Why Astro, not Next.js
-- Astro ships ~zero JS by default, hits 95-100 Lighthouse out of the box, ~2-3× faster than Next for content sites. ([Cosmic JS comparison](https://www.cosmicjs.com/blog/astro-vs-nextjs-2026), [Eastondev technical deep dive](https://eastondev.com/blog/en/posts/dev/20251202-astro-vs-nextjs-comparison/))
-- Core Web Vitals materially affect SEO; Astro gives us a free 15-25 point mobile Lighthouse edge over Next. ([Contentful comparison](https://www.contentful.com/blog/astro-next-js-compared/))
-- i18n routing is first-class since Astro 4, with Starlight already shipping JA/TH/VI translations we can lean on for docs. ([Astro i18n docs](https://docs.astro.build/en/guides/internationalization/))
+- Astro ships ~zero JS by default, hits 95-100 Lighthouse out of the box, ~2-3× faster than Next for content sites. (Cosmic JS comparison, Eastondev technical deep dive)
+- Core Web Vitals materially affect SEO; Astro gives us a free 15-25 point mobile Lighthouse edge over Next. (Contentful comparison)
+- i18n routing is first-class since Astro 4, with Starlight already shipping JA/TH/VI translations we can lean on for docs. (Astro i18n docs)
 - Marketing surface is overwhelmingly static; the rare interactive widget (leaderboard preview, language switcher) is an island we can hydrate with React (the trading app already uses React, so design tokens transfer).
 - Next.js would be the right choice *only* if the marketing surface and app shared deep routing (they don't — the app is a Vite React SPA).
 
@@ -221,7 +221,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 ```
 
 ### Hosting: Cloudflare Pages
-- Static-only build, unlimited bandwidth on the free tier, $5/mo Pro if needed — vs Vercel's $20/mo with metered bandwidth and per-seat pricing. ([DanubeData comparison](https://danubedata.ro/blog/cloudflare-pages-vs-netlify-vs-vercel-static-hosting-2026), [DevToolReviews](https://www.devtoolreviews.com/reviews/vercel-vs-netlify-vs-cloudflare-pages-2026))
+- Static-only build, unlimited bandwidth on the free tier, $5/mo Pro if needed — vs Vercel's $20/mo with metered bandwidth and per-seat pricing. (DanubeData comparison, DevToolReviews)
 - Global edge network is essential for JP/TH/VI latency.
 - We don't need Vercel-specific Next features.
 - Trading app can live elsewhere (Fly.io, Render, or Vercel for its dynamic needs) — separating concerns means we don't overpay for the marketing surface's static bandwidth.
@@ -241,7 +241,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 | # | Keyword | Intent | Why |
 |---|---|---|---|
 | 1 | "AI trading agent" | Informational → commercial | Highest-value head term; we own the category. |
-| 2 | "agent-native trading platform" | Commercial | Category phrase already used by [Bitget](https://www.globenewswire.com/news-release/2026/04/06/3268287/0/en/Bitget-Gives-AI-Its-Own-Trading-Account-Advancing-Toward-an-Agent-Native-Exchange.html) and [HKUDS/AI-Trader](https://github.com/HKUDS/AI-Trader) — low competition, defensible. |
+| 2 | "agent-native trading platform" | Commercial | Category phrase already used by Bitget and HKUDS/AI-Trader — low competition, defensible. |
 | 3 | "copy trade AI bot" | Commercial | Segment B intent. Bridges to mainstream copy-trade searchers. |
 | 4 | "multi-agent LLM trading" | Informational | Researchers + indie quants. Drives backlinks from arXiv-adjacent content. |
 | 5 | "Hyperliquid copy trading" | Commercial | Latent demand — Hyperliquid vaults exist but no AI-agent layer; we win this. |
@@ -251,7 +251,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 | 9 | "บอทเทรด AI" (TH) | Commercial | TH localization edge. |
 | 10 | "bot giao dịch AI" (VI) | Commercial | VI localization edge. |
 
-Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/PerplexityBot are ~33% of organic traffic activity per [Search Engine Land 2026](https://searchengineland.com/seo-2026-higher-standards-ai-influence-web-catching-up-473540). That means: structured FAQ, clear definitions, explicit numeric claims, schema markup.
+Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/PerplexityBot are ~33% of organic traffic activity per Search Engine Land 2026. That means: structured FAQ, clear definitions, explicit numeric claims, schema markup.
 
 ### Pillar content (6 ideas)
 1. **"What is an agent-native trading platform?"** — definitional, captures category-creation intent.
@@ -261,7 +261,7 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 5. **"A reproducible benchmark for multi-agent LLM trading"** — segment C, arXiv-adjacent, citable.
 6. **"Trading Polymarket with LLM agents: paper run, full traces"** — niche, evergreen.
 7. **"Hyperliquid perps for AI agents: latency, fees, and how we connect"** — niche, builder-facing.
-8. **"日本のAIトレーディング規制と AITRAD の対応" (JP)** — localized regulatory explainer; high trust ROI in JP per [law.asia coverage](https://law.asia/crypto-regulation-trends-hong-kong-japan-taiwan/).
+8. **"日本のAIトレーディング規制と AITRAD の対応" (JP)** — localized regulatory explainer; high trust ROI in JP per law.asia coverage.
 
 ### Schema / OG essentials
 - `Organization` schema sitewide.
@@ -306,39 +306,39 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 
 ## Sources
 
-- [Linear homepage](https://linear.app/)
-- [Linear case study](https://www.eleken.co/blog-posts/linear-app-case-study)
-- [Anthropic homepage](https://www.anthropic.com/)
-- [Perplexity branding case study (Smith & Diction)](https://medium.com/smith-diction/branding-perplexity-ai-70eb2cb2ef48)
-- [Framer Stories: Perplexity](https://www.framer.com/stories/perplexity/)
-- [Pylon homepage](https://www.usepylon.com/)
-- [Granola homepage](https://www.granola.ai/)
-- [Granola case study (Over the Anthill)](https://overtheanthill.substack.com/p/granola)
-- [Vercel hero study (Saaspo)](https://saaspo.com/sections/vercel-hero-section)
-- [Hyperliquid trading app](https://app.hyperliquid.xyz/trade)
-- [Hyperliquid official links](https://hyperliquid.zendesk.com/hc/en-us/articles/15931545575572)
-- [Hero section design 2026 (PerfectAfternoon)](https://www.perfectafternoon.com/2025/hero-section-design/)
-- [Hero section design guide (InBuild)](https://www.inbuild.io/blog/hero-section-design-guide)
-- [SaaS landing page trends 2026 (SaaSFrame)](https://www.saasframe.io/blog/10-saas-landing-page-trends-for-2026-with-real-examples)
-- [SaaS landing page best practices (Storylane)](https://www.storylane.io/blog/saas-landing-pages-best-practices)
-- [AI slop web design guide (925studios)](https://www.925studios.co/blog/ai-slop-web-design-guide)
-- [Kami document design system](https://kami.tw93.fun/)
-- [Fintech design guide 2026 (Eleken)](https://www.eleken.co/blog-posts/modern-fintech-design-guide)
-- [HKUDS/AI-Trader on GitHub](https://github.com/HKUDS/AI-Trader)
-- [TradingAgents framework (Tauric Research)](https://github.com/tauricresearch/tradingagents)
-- [Bitget agent-native exchange announcement](https://www.globenewswire.com/news-release/2026/04/06/3268287/0/en/Bitget-Gives-AI-Its-Own-Trading-Account-Advancing-Toward-an-Agent-Native-Exchange.html)
-- [Public.com AI agents for investing](https://public.com/ai-agents)
-- [Polymarket Q1 2026 volume (MEXC)](https://www.mexc.com/news/1062153)
-- [Best copy trading platforms (ForexBrokers)](https://www.forexbrokers.com/guides/social-copy-trading)
-- [Thailand crypto guide 2026 (OSL)](https://www.osl.com/en/bits/article/crypto-investing-in-thailand)
-- [Vietnam licensing regime (Vietnam Briefing)](https://www.vietnam-briefing.com/news/vietnam-licensing-regime-cryptocurrency-exchanges-digital-economy.html/)
-- [Crypto regulation Hong Kong, Japan, Taiwan (Law.asia)](https://law.asia/crypto-regulation-trends-hong-kong-japan-taiwan/)
-- [Fintech localization 2026 (Honey Translations)](https://honeytranslations.com/blog/localization-for-fintech-apps-in-2026/)
-- [Digital trust in Asia 2026 (Veriff)](https://www.veriff.com/identity-verification/digital-trust-asia-trends-2026)
-- [Astro vs Next.js 2026 (Cosmic JS)](https://www.cosmicjs.com/blog/astro-vs-nextjs-2026)
-- [Astro vs Next.js technical (Eastondev)](https://eastondev.com/blog/en/posts/dev/20251202-astro-vs-nextjs-comparison/)
-- [Astro vs Next.js features (Contentful)](https://www.contentful.com/blog/astro-next-js-compared/)
-- [Astro i18n routing](https://docs.astro.build/en/guides/internationalization/)
-- [Cloudflare Pages vs Vercel vs Netlify (DanubeData)](https://danubedata.ro/blog/cloudflare-pages-vs-netlify-vs-vercel-static-hosting-2026)
-- [Vercel vs Netlify vs Cloudflare Pages 2026 (DevToolReviews)](https://www.devtoolreviews.com/reviews/vercel-vs-netlify-vs-cloudflare-pages-2026)
-- [SEO 2026 trends (Search Engine Land)](https://searchengineland.com/seo-2026-higher-standards-ai-influence-web-catching-up-473540)
+- Linear homepage
+- Linear case study
+- Anthropic homepage
+- Perplexity branding case study (Smith & Diction)
+- Framer Stories: Perplexity
+- Pylon homepage
+- Granola homepage
+- Granola case study (Over the Anthill)
+- Vercel hero study (Saaspo)
+- Hyperliquid trading app
+- Hyperliquid official links
+- Hero section design 2026 (PerfectAfternoon)
+- Hero section design guide (InBuild)
+- SaaS landing page trends 2026 (SaaSFrame)
+- SaaS landing page best practices (Storylane)
+- AI slop web design guide (925studios)
+- Kami document design system
+- Fintech design guide 2026 (Eleken)
+- HKUDS/AI-Trader on GitHub
+- TradingAgents framework (Tauric Research)
+- Bitget agent-native exchange announcement
+- Public.com AI agents for investing
+- Polymarket Q1 2026 volume (MEXC)
+- Best copy trading platforms (ForexBrokers)
+- Thailand crypto guide 2026 (OSL)
+- Vietnam licensing regime (Vietnam Briefing)
+- Crypto regulation Hong Kong, Japan, Taiwan (Law.asia)
+- Fintech localization 2026 (Honey Translations)
+- Digital trust in Asia 2026 (Veriff)
+- Astro vs Next.js 2026 (Cosmic JS)
+- Astro vs Next.js technical (Eastondev)
+- Astro vs Next.js features (Contentful)
+- Astro i18n routing
+- Cloudflare Pages vs Vercel vs Netlify (DanubeData)
+- Vercel vs Netlify vs Cloudflare Pages 2026 (DevToolReviews)
+- SEO 2026 trends (Search Engine Land)
