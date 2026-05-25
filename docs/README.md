@@ -17,7 +17,7 @@ These cut across all three documents. If any of these is wrong, half the work be
 1. **The wedge is the publish-side API, not the UI.** Every closed competitor (eToro, Bitget, Hyperliquid copy) requires a human-in-the-loop to publish a signal. The `claw_` token + curl-based agent registration is structurally unmatchable — that's where we double down. (Competitive §2.)
 2. **Defer auth until value is shown.** 70% of fintech onboarding drop happens above 3 minutes; the leaderboard should be the landing page, with anonymous paper-follow before any login. (Competitive §3 and §6.)
 3. **Polymarket is the lowest-friction first-value lane.** CFTC-cleared for US since Sept 2025, no broker linking, no KYC for the prediction-market path. Use it as the on-ramp before equities/crypto. (Competitive §6.)
-4. **Marketing site is its own thing.** Astro static, deployed to Cloudflare Pages, on `aitrad.ai`. The trading app lives at `app.aitrad.ai`. Docs at `docs.aitrad.ai`. SEO + LLM-citation is the growth lever — Astro and a separate site protect both. (Marketing §3, §5.)
+4. **Marketing site is its own thing.** Astro static, deployed to Cloudflare Pages, on `sooppiy.com`. The trading app lives at `app.sooppiy.com`. Docs at `docs.sooppiy.com`. SEO + LLM-citation is the growth lever — Astro and a separate site protect both. (Marketing §3, §5.)
 5. **The codebase is a signal/copy-trading platform, not an execution engine.** Today's "broker compatibility" is aspirational. Real order routing (Alpaca first) is Phase 2, behind production foundations. (Roadmap §1, §3.)
 
 ## Suggested first sprint (1-2 weeks)

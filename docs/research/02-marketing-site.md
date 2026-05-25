@@ -106,7 +106,7 @@ Validated against [TradingAgents (Tauric Research)](https://github.com/tauricres
 | `/markets` | What you can trade: US stocks, Hyperliquid perps, Polymarket. Coverage and venues. | P1 |
 | `/research` | Page for segment C — methodology, datasets, papers, citation block | P1 |
 | `/pricing` | Plans, paper-trading free tier, real-money tiers | P1 |
-| `/docs` | Hosted docs (likely subdomain `docs.aitrad.ai`) | P1 |
+| `/docs` | Hosted docs (likely subdomain `docs.sooppiy.com`) | P1 |
 | `/blog` | Pillar content + agent spotlights + research notes | P2 |
 | `/changelog` | Linear-style — high-frequency, builds trust with builders | P2 |
 | `/about`, `/security`, `/legal`, `/privacy`, `/terms`, `/risk-disclosure` | Trust / compliance | P0 (legal pages) |
@@ -214,8 +214,8 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 
 **Layout**:
 ```
-/app/        (existing Vite React trading app — deploys to app.aitrad.ai)
-/marketing/  (new Astro site — deploys to aitrad.ai)
+/app/        (existing Vite React trading app — deploys to app.sooppiy.com)
+/marketing/  (new Astro site — deploys to sooppiy.com)
 /packages/tokens/ (shared CSS variables, theme switcher logic)
 /docs/
 ```
@@ -227,10 +227,10 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 - Trading app can live elsewhere (Fly.io, Render, or Vercel for its dynamic needs) — separating concerns means we don't overpay for the marketing surface's static bandwidth.
 
 ### Domain plan
-- `aitrad.ai` → marketing (Astro on Cloudflare Pages)
-- `app.aitrad.ai` → live trading app
-- `docs.aitrad.ai` → docs (Astro Starlight, same repo)
-- Localized roots as sub-paths: `aitrad.ai/ja/`, `aitrad.ai/th/`, `aitrad.ai/vi/`.
+- `sooppiy.com` → marketing (Astro on Cloudflare Pages)
+- `app.sooppiy.com` → live trading app
+- `docs.sooppiy.com` → docs (Astro Starlight, same repo)
+- Localized roots as sub-paths: `sooppiy.com/ja/`, `sooppiy.com/th/`, `sooppiy.com/vi/`.
 
 ---
 
@@ -279,12 +279,12 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 ## 7. Three-Phase Rollout
 
 ### Phase 1 — MVP landing (Week 1-2)
-- Astro project in `/marketing/`, deployed to Cloudflare Pages at `aitrad.ai`.
+- Astro project in `/marketing/`, deployed to Cloudflare Pages at `sooppiy.com`.
 - English-only.
 - Pages: `/`, `/agents` (static preview snapshot, not live data), `/copy-trading`, `/build`, `/pricing`, plus legal/risk pages.
 - Dual on-ramp hero, leaderboard preview (snapshot JSON, refreshed on each deploy), feature narrative, FAQ, footer.
 - Schema markup, OG images, sitemap, robots.
-- Single CTA destination: `app.aitrad.ai` (will be `localhost:3000` during local dev).
+- Single CTA destination: `app.sooppiy.com` (will be `localhost:3000` during local dev).
 - **Success metric**: 5% click-through from hero to app, ≥ 95 Lighthouse mobile.
 
 ### Phase 2 — Localized + research surface (Week 3-6)
@@ -297,7 +297,7 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 
 ### Phase 3 — Blog, docs, and editorial flywheel (Week 7-12+)
 - `/blog` with the 8 pillar topics rolled out monthly.
-- `docs.aitrad.ai` on Astro Starlight, localized.
+- `docs.sooppiy.com` on Astro Starlight, localized.
 - Recurring "Top 20 agents this quarter" post + permanent leaderboard URL — designed to be cited by researchers and reposted by agent operators (the Granola viral loop, adapted).
 - Begin tracking LLM citation share (ChatGPT, Perplexity, Claude) alongside Google rankings.
 - **Success metric**: 1 cited post per month in an arXiv preprint or trade publication; LLM citation share visible in mentions.

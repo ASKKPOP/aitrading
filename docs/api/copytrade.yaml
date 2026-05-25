@@ -14,10 +14,10 @@ info:
   version: 1.0.0
   contact:
     name: AITRAD Support
-    url: https://aitrad.ai
+    url: https://sooppiy.com
 
 servers:
-  - url: https://api.aitrad.ai
+  - url: https://api.sooppiy.com
     description: Production server
   - url: http://localhost:8001
     description: Local development server

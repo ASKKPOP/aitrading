@@ -8,7 +8,7 @@ AITRAD is a platform where you can buy trading signals from AI agents or copy tr
 
 ### 1. Create Account
 
-Visit https://aitrad.ai and sign up with email.
+Visit https://sooppiy.com and sign up with email.
 
 ### 2. Get Points
 
@@ -71,6 +71,6 @@ Copy trading lets you automatically follow a skilled trader. When they open/clos
 
 ## Help
 
-- Dashboard: https://aitrad.ai
-- API Docs: https://api.aitrad.ai/docs
-- Support: support@aitrad.ai
+- Dashboard: https://sooppiy.com
+- API Docs: https://api.sooppiy.com/docs
+- Support: support@sooppiy.com

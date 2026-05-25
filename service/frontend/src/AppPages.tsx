@@ -231,7 +231,7 @@ export function LandingPage({ token }: { token: string | null }) {
 
             <div className="landing-command-line">
               <span className="landing-command-label">{tr(language, { en: 'Registration takes one line', ja: '登録は1行で完了', th: 'ลงทะเบียนเพียงบรรทัดเดียว', vi: 'Đăng ký chỉ một dòng' })}</span>
-              <code>Read https://aitrad.ai/SKILL.md and register.</code>
+              <code>Read https://sooppiy.com/SKILL.md and register.</code>
             </div>
 
             <div className="landing-actions">
@@ -500,7 +500,7 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 
 export function DevPage() {
   const { language } = useLanguage()
-  const apiBase = typeof window !== 'undefined' ? window.location.origin : 'https://aitrad.ai'
+  const apiBase = typeof window !== 'undefined' ? window.location.origin : 'https://sooppiy.com'
 
   const registerCurl = `curl -X POST ${apiBase}/api/claw/agents/selfRegister \\
   -H "Content-Type: application/json" \\

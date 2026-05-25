@@ -15,7 +15,7 @@ import os
 _logger = logging.getLogger(__name__)
 
 RESEND_API_KEY: str = os.environ.get("RESEND_API_KEY", "").strip()
-EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "noreply@aitrad.ai").strip()
+EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "noreply@sooppiy.com").strip()
 
 try:
     import resend as _resend_lib  # type: ignore[import-untyped]

@@ -147,7 +147,7 @@ Use when you need the latest grouped market-news snapshots before:
 ```python
 import requests
 
-BASE = "https://aitrad.ai/api"
+BASE = "https://sooppiy.com/api"
 
 overview = requests.get(f"{BASE}/market-intel/overview").json()
 

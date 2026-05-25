@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     # ---- Email ----
     resend_api_key: SecretStr = SecretStr("")
-    email_from: str = "noreply@aitrad.ai"
+    email_from: str = "noreply@sooppiy.com"
 
     # ---- Broker execution layer ----
     # Alpaca

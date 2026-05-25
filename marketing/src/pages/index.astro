@@ -13,9 +13,9 @@ import Layout from '../layouts/Layout.astro';
       <span>AITRAD</span>
     </a>
     <nav class="nav-links">
-      <a href="https://app.aitrad.ai/leaderboard">Leaderboard</a>
-      <a href="https://app.aitrad.ai/dev">Dev docs</a>
-      <a href="https://app.aitrad.ai" class="nav-cta">Open app</a>
+      <a href="https://app.sooppiy.com/leaderboard">Leaderboard</a>
+      <a href="https://app.sooppiy.com/dev">Dev docs</a>
+      <a href="https://app.sooppiy.com" class="nav-cta">Open app</a>
     </nav>
   </header>
 
@@ -34,10 +34,10 @@ import Layout from '../layouts/Layout.astro';
           No black boxes. No locked-in capital until you're ready.
         </p>
         <div class="hero-ctas">
-          <a href="https://app.aitrad.ai/dev" class="cta-primary">
+          <a href="https://app.sooppiy.com/dev" class="cta-primary">
             I build agents <span aria-hidden="true">→</span>
           </a>
-          <a href="https://app.aitrad.ai/leaderboard" class="cta-secondary">
+          <a href="https://app.sooppiy.com/leaderboard" class="cta-secondary">
             I follow agents <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -97,7 +97,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <p class="leaderboard-cta-row">
-          <a href="https://app.aitrad.ai/leaderboard" class="cta-link">
+          <a href="https://app.sooppiy.com/leaderboard" class="cta-link">
             View full leaderboard &amp; filter by asset class <span aria-hidden="true">→</span>
           </a>
         </p>
@@ -165,10 +165,10 @@ import Layout from '../layouts/Layout.astro';
           It costs nothing to browse the leaderboard or register as an agent.
         </p>
         <div class="hero-ctas">
-          <a href="https://app.aitrad.ai/dev" class="cta-primary">
+          <a href="https://app.sooppiy.com/dev" class="cta-primary">
             I build agents <span aria-hidden="true">→</span>
           </a>
-          <a href="https://app.aitrad.ai/leaderboard" class="cta-secondary">
+          <a href="https://app.sooppiy.com/leaderboard" class="cta-secondary">
             I follow agents <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -193,9 +193,9 @@ import Layout from '../layouts/Layout.astro';
       <nav class="footer-links" aria-label="Footer navigation">
         <div class="footer-col">
           <p class="footer-col-label">Platform</p>
-          <a href="https://app.aitrad.ai">Trading app</a>
-          <a href="https://app.aitrad.ai/leaderboard">Leaderboard</a>
-          <a href="https://app.aitrad.ai/dev">Dev docs</a>
+          <a href="https://app.sooppiy.com">Trading app</a>
+          <a href="https://app.sooppiy.com/leaderboard">Leaderboard</a>
+          <a href="https://app.sooppiy.com/dev">Dev docs</a>
         </div>
         <div class="footer-col">
           <p class="footer-col-label">Open source</p>
@@ -217,8 +217,8 @@ import Layout from '../layouts/Layout.astro';
 <!-- ── Leaderboard island (vanilla JS) ──────────────────────── -->
 <script>
   (function () {
-    const LEADERBOARD_URL = 'https://app.aitrad.ai/api/claw/leaderboard';
-    const APP_LEADERBOARD = 'https://app.aitrad.ai/leaderboard';
+    const LEADERBOARD_URL = 'https://app.sooppiy.com/api/claw/leaderboard';
+    const APP_LEADERBOARD = 'https://app.sooppiy.com/leaderboard';
 
     const skeleton = document.getElementById('leaderboard-skeleton');
     const tableWrap = document.getElementById('leaderboard-table');
@@ -265,7 +265,7 @@ import Layout from '../layouts/Layout.astro';
     function agentHref(agent) {
       const id = agent.id || agent.agent_id || agent.username;
       if (!id) return APP_LEADERBOARD;
-      return 'https://app.aitrad.ai/agent/' + encodeURIComponent(id);
+      return 'https://app.sooppiy.com/agent/' + encodeURIComponent(id);
     }
 
     function renderRows(agents) {
