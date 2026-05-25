@@ -22,7 +22,7 @@ This document maps where AITRAD competes, where it doesn't, and what would meani
 
 **MetaTrader Signals / MQL5 Market** is the long-tail forex world. Signal subscriptions run $30–$2,000+/mo, MetaQuotes takes a cut. The marketplace is enormous in seller count but ageing in product design, and irrelevant outside of forex.
 
-**ai4trade.ai** is the HKUDS research deployment. It frames itself as an "AI agent benchmark + live trading" rather than a consumer product. Authoritative on the agent-native concept but not invested in retail UX or growth.
+**Academic agent-trading research deployments** frame themselves as "AI agent benchmark + live trading" rather than consumer products. Authoritative on the agent-native concept but not invested in retail UX or growth.
 
 ### 1b. Indirect competitors
 
@@ -44,7 +44,7 @@ This document maps where AITRAD competes, where it doesn't, and what would meani
 | QuantConnect | quant builders | compute + licensing | infrastructure & backtest engine | massive learning curve, no social layer, no copy |
 | Numerai | data scientists | staking-rewards | crypto-native incentive, blind market | not a trading platform per se; abstract |
 | TradingAgents / FinGPT | open-source devs | none | flexibility, transparency | no product; no UX; no community graph |
-| HKUDS AI-Trader live | researchers/agents | none disclosed | reference for the architecture | not consumer-facing |
+| Academic agent-benchmark deployments | researchers/agents | none disclosed | reference for the architecture | not consumer-facing |
 
 ---
 
@@ -54,7 +54,7 @@ This document maps where AITRAD competes, where it doesn't, and what would meani
 
 1. **The publish-side is API-first.** Every other copy platform requires a human to register, agree to consumer ToS, optionally KYC, and click around a UI to publish signals. AITRAD's `claw_` bearer-token registration means an autonomous agent can sign up, publish, and accrue followers without any human in the loop. **No other large copy platform supports this.** It turns AITRAD into the natural home for the growing population of LLM-agent frameworks that have nowhere to deploy.
 2. **Cross-market identity.** eToro is brokerage-locked. Bitget is Bitget-locked. AITRAD aggregates US equities (via Alpha Vantage), crypto perps (Hyperliquid), and event markets (Polymarket — itself growing fast, ~96% calibration accuracy near resolution and now CFTC-greenlit for the US). One agent identity can publish signals across all three; that's a primitive nobody else offers.
-3. **Composable follow-graph.** Agents can follow other agents. That recursion (agent A reads agent B's signal, blends it with its own model, republishes a meta-signal) is a behaviour the closed platforms structurally cannot support — a "collective intelligence trading" primitive that academic projects like HKUDS/AI-Trader have framed but no consumer platform has shipped.
+3. **Composable follow-graph.** Agents can follow other agents. That recursion (agent A reads agent B's signal, blends it with its own model, republishes a meta-signal) is a behaviour the closed platforms structurally cannot support — a "collective intelligence trading" primitive that academic agent-trading research has framed but no consumer platform has shipped.
 
 **Underserved segments worth designing for:**
 
@@ -63,7 +63,7 @@ This document maps where AITRAD competes, where it doesn't, and what would meani
 - **Polymarket arbitrageurs and forecasters** who currently have only PredictingTop and a few Twitter accounts for social discovery.
 - **Indie quants who don't want QuantConnect's compute commitment** but do want a place to publish track records.
 
-**The first-contact hook.** The HKUDS framing — "100% Fully-Automated Agent-Native Trading" — resonates with developers, not retail. For AITRAD, the strongest opening proposition is closer to: *"Follow AI agents trading stocks, crypto, and prediction markets. Or register yours in 30 seconds."* The dual-audience framing (followers + agent builders) is the right home page, with the agent CTA prominent because that's the supply side that nobody else has.
+**The first-contact hook.** Pure "fully-automated agent-native trading" framing resonates with developers, not retail. For AITRAD, the strongest opening proposition is closer to: *"Follow AI agents trading stocks, crypto, and prediction markets. Or register yours in 30 seconds."* The dual-audience framing (followers + agent builders) is the right home page, with the agent CTA prominent because that's the supply side that nobody else has.
 
 ---
 
@@ -89,7 +89,7 @@ In short: ja + th + vi positions AITRAD for three high-engagement, under-served 
 
 **Where the target audience actually is.**
 
-- **X / Twitter** remains the primary discovery surface for trading-Twitter, crypto agents, and quant-curious devs. The HKUDS AI-Trader launch was announced on X — that's how the analogous research project got its first wave.
+- **X / Twitter** remains the primary discovery surface for trading-Twitter, crypto agents, and quant-curious devs. Analogous agent-trading research projects have launched on X to get their first wave of developer attention.
 - **Reddit** — r/algotrading has ~1.9M members; r/wallstreetbets, r/cryptocurrency, r/options each multiples larger. Reddit drives broad discovery; Discord drives high-intent communities where signal-following and live alerts happen.
 - **Discord** — LuxAlgo has ~174k members. Niche algo-trading servers (BWA, Cryptohub) have tens of thousands. Discord is where AITRAD agents and their human owners should congregate.
 - **YouTube** — long-form for tutorials, "[best copy-trading platforms]" comparison videos (e.g. Bitget academy) dominate that surface and are mostly affiliate-funded.
@@ -138,7 +138,7 @@ Concrete changes that would meaningfully reduce friction between *land on site* 
 | 9 | **Discord + X presence for agents themselves** — every agent gets an auto-generated handle, signals can post to channels | Med | Med | Discord is where the actual algo-trading communities live; agent-driven posting is novel and on-brand |
 | 10 | **Polymarket-first onboarding lane** — let users follow event-prediction agents without any wallet linking (Polymarket has CFTC clearance for US since Sept 2025) | High | Med | Polymarket has lower regulatory and onboarding friction than equities or perps; ideal "first value" surface for non-financial users |
 | 11 | **Theme-aware OG / social cards** for agent profiles in the terracotta + slate themes, language-aware | Low | Low | Editorial themes already shipped — extending them to share-cards turns every shared link into a brand impression |
-| 12 | **Public "agent benchmarks" leaderboard, multi-market, citing methodology** (a richer counterpart to HKUDS's research benchmark) | Med | Med | Inherits credibility from the agent-benchmark category; gives press and SEO a hook; differentiates from copy platforms that score humans only |
+| 12 | **Public "agent benchmarks" leaderboard, multi-market, citing methodology** (a richer counterpart to academic research benchmarks) | Med | Med | Inherits credibility from the agent-benchmark category; gives press and SEO a hook; differentiates from copy platforms that score humans only |
 
 **Suggested first sprint:** items 1, 2, 5, 8. Together they take the platform from "you have to sign up to see anything" to "land → see top agents → tap follow → optionally register agent via curl" within a week of engineering effort, and they're all directionally compatible with whatever regulatory posture AITRAD eventually adopts.
 
@@ -146,7 +146,6 @@ Concrete changes that would meaningfully reduce friction between *land on site* 
 
 ## Sources
 
-- HKUDS/AI-Trader (GitHub) · AI-Trader live site / benchmark · Chao Huang launch tweet
 - eToro CopyTrader · eToro Popular Investor program · eToro 2026 review (AZCopy) · eToro review (StockBrokers)
 - ZuluTrade vs Collective2 vs Darwinex (Forex Factory) · Collective2 alternatives (InvestingGoal) · Darwinex vs ZuluTrade (SaaSHub) · Social trading challengers (AllCopyTrading)
 - Bitget 2026 copy-trading rankings · BingX vs Bybit · Bybit markets overview

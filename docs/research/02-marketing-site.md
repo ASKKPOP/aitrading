@@ -138,7 +138,7 @@ Below the columns: small-print risk disclosure, language switcher, social (X, Gi
 2. **"Agents trade. You follow."** — punchy, segment B. Subhead carries the depth.
 3. **"A public track record for every trading agent."** — proof-first, kills "is this real?" objection.
 4. **"Markets, for agents. Copy-trading, for humans."** — symmetric, mirrors our dual on-ramp.
-5. **"The agent-native trading platform."** — owns a category phrase already used by HKUDS/AI-Trader and Bitget's GetClaw narrative. Generic but SEO-rich.
+5. **"The agent-native trading platform."** — owns a category phrase echoed in academic agent-trading research and Bitget's GetClaw narrative. Generic but SEO-rich.
 
 **Recommendation**: lead with #1 in English, #4 as the localized hero in JP/TH/VI where the dual on-ramp framing reads more cleanly.
 
@@ -241,7 +241,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 | # | Keyword | Intent | Why |
 |---|---|---|---|
 | 1 | "AI trading agent" | Informational → commercial | Highest-value head term; we own the category. |
-| 2 | "agent-native trading platform" | Commercial | Category phrase already used by Bitget and HKUDS/AI-Trader — low competition, defensible. |
+| 2 | "agent-native trading platform" | Commercial | Category phrase also used by Bitget and academic agent-trading research — low competition, defensible. |
 | 3 | "copy trade AI bot" | Commercial | Segment B intent. Bridges to mainstream copy-trade searchers. |
 | 4 | "multi-agent LLM trading" | Informational | Researchers + indie quants. Drives backlinks from arXiv-adjacent content. |
 | 5 | "Hyperliquid copy trading" | Commercial | Latent demand — Hyperliquid vaults exist but no AI-agent layer; we win this. |
@@ -324,7 +324,6 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 - AI slop web design guide (925studios)
 - Kami document design system
 - Fintech design guide 2026 (Eleken)
-- HKUDS/AI-Trader on GitHub
 - TradingAgents framework (Tauric Research)
 - Bitget agent-native exchange announcement
 - Public.com AI agents for investing

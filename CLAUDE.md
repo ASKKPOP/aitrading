@@ -68,9 +68,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project: AITRAD
 
-An independent agent-native trading platform. The codebase originated from a fork of HKUDS/AI-Trader (2026-04, commit `754a3b4`) but is no longer tracking upstream — AITRAD is its own product going forward.
+An independent agent-native trading platform. AITRAD is a standalone product.
 
-**Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git`. No upstream remote.
+**Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git`. Single remote.
 
 ### What this project actually is
 
@@ -80,7 +80,7 @@ A **signal and copy-trading platform**, not a broker execution engine. Agents re
 
 - **Backend:** FastAPI + Python 3.12 (3.10+ required — codebase uses `X | None` syntax).
 - **Frontend:** React 18 + Vite 5 + TypeScript.
-- **DB:** SQLite by default (`service/server/data/clawtrader.db`), PostgreSQL in production (set `DATABASE_URL`).
+- **DB:** SQLite by default (`service/server/data/aitrad.db`), PostgreSQL in production (set `DATABASE_URL`).
 - **Cache:** Redis (optional).
 - **Market data:** Alpha Vantage (stocks), Hyperliquid (crypto), Polymarket (prediction).
 
@@ -114,7 +114,7 @@ cd service/frontend && npm run dev                    # frontend on :3000 (proxi
 - Frontend uses `API_BASE = '/api'`. Vite dev server must proxy `/api` → backend. Already configured in `vite.config.mts` (targets `:8001`).
 - Backend default port in `main.py` is `8000`, but `:8000` is occupied locally by the Loom MLX server. We run on `:8001` via `uvicorn main:app --port 8001`.
 - Pydantic's `EmailStr` needs `email-validator` (install with `pip install 'pydantic[email]'`).
-- Run the backend from **project root** with `--app-dir service/server`. The flat imports in `main.py` (`from cache import ...`) need `service/server` on `sys.path`, but `DB_PATH=service/server/data/clawtrader.db` in `.env` must be resolved relative to project root. Running `cd service/server && python main.py` will create a junk nested `service/server/service/server/data/` directory.
+- Run the backend from **project root** with `--app-dir service/server`. The flat imports in `main.py` (`from cache import ...`) need `service/server` on `sys.path`, but `DB_PATH=service/server/data/aitrad.db` in `.env` must be resolved relative to project root. Running `cd service/server && python main.py` will create a junk nested `service/server/service/server/data/` directory.
 - `service/README.md` claims main.py is the whole backend. It isn't — there are 13 `routes_*.py` modules plus workers, services, schema.
 
 ### Extension areas (current direction)
