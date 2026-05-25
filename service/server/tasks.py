@@ -1170,6 +1170,45 @@ async def build_network_edges_loop():
         await asyncio.sleep(interval_s)
 
 
+async def price_push_loop():
+    """Phase 4.5: push-based market data via WebSocket.
+
+    Off by default — opt in with ENABLE_PRICE_PUSH=true. When enabled,
+    we hold a long-lived WebSocket subscription (Hyperliquid `allMids`
+    for crypto) and stream each price tick straight to positions.
+    The existing polling loop stays running as a fallback so the
+    transition is non-destructive.
+    """
+    if not _env_bool("ENABLE_PRICE_PUSH", default=False):
+        return
+
+    from price_dispatch import apply_price_update
+    from price_feed import HyperliquidWebSocketFeed, PriceTick
+
+    feed = HyperliquidWebSocketFeed()
+
+    def _on_tick(tick: PriceTick) -> None:
+        try:
+            apply_price_update(tick.symbol, tick.market, tick.price)
+        except ValueError:
+            return  # bad payload; drop without crashing the feed
+        except Exception as exc:  # noqa: BLE001
+            print(f"[Price Push Error] dispatch failed for {tick.symbol}: {exc}")
+
+    try:
+        await feed.start(on_tick=_on_tick)
+        print("[Price Push] Hyperliquid WS subscriber started")
+        # Sleep forever — feed.start scheduled the run loop as a Task.
+        while True:
+            await asyncio.sleep(3600)
+    except asyncio.CancelledError:
+        await feed.close()
+        raise
+    except Exception as exc:  # noqa: BLE001
+        print(f"[Price Push Error] {exc}")
+        await feed.close()
+
+
 async def refresh_leaderboard_snapshot_loop():
     """Phase 4.4: materialize the leaderboard every LEADERBOARD_SNAPSHOT_INTERVAL seconds.
 
@@ -1209,6 +1248,7 @@ BACKGROUND_TASK_REGISTRY = {
     "agent_metric_snapshots": refresh_agent_metric_snapshots_loop,
     "network_edges": build_network_edges_loop,
     "leaderboard_snapshot": refresh_leaderboard_snapshot_loop,
+    "price_push": price_push_loop,
     "market_news": refresh_market_news_snapshots_loop,
     "macro_signals": refresh_macro_signal_snapshots_loop,
     "etf_flows": refresh_etf_flow_snapshots_loop,
