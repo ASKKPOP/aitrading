@@ -1734,6 +1734,38 @@ def init_database():
         ON agent_memory(agent_id, created_at)
     """)
 
+    # ── Phase 5: production auth — MFA columns + oauth_identities ────────────
+    # MFA columns added idempotently (existing rows keep NULL/0 defaults).
+    for sql in (
+        "ALTER TABLE users ADD COLUMN mfa_secret TEXT",
+        "ALTER TABLE users ADD COLUMN mfa_enabled INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN mfa_backup_codes TEXT",
+    ):
+        try:
+            cursor.execute(sql)
+        except Exception:
+            pass
+
+    # External-identity mapping: one row per (provider, provider_user_id).
+    # A user can have multiple oauth_identities (e.g. Google + Apple) all
+    # pointing at the same users.id.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS oauth_identities (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id           INTEGER NOT NULL,
+            provider          TEXT    NOT NULL,
+            provider_user_id  TEXT    NOT NULL,
+            email             TEXT,
+            created_at        TEXT    NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            UNIQUE (provider, provider_user_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_oauth_identities_user
+        ON oauth_identities(user_id, provider)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

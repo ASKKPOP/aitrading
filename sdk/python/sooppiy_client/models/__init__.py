@@ -24,6 +24,7 @@ from .create_memory_request import CreateMemoryRequest
 from .create_memory_request_metadata_type_0 import CreateMemoryRequestMetadataType0
 from .create_strategy_request import CreateStrategyRequest
 from .create_tournament_request import CreateTournamentRequest
+from .disable_mfa_body import DisableMfaBody
 from .discussion_request import DiscussionRequest
 from .experiment_create_request import ExperimentCreateRequest
 from .experiment_create_request_variants_json_type_0_item import ExperimentCreateRequestVariantsJsonType0Item
@@ -59,6 +60,8 @@ from .user_send_code_request import UserSendCodeRequest
 from .validate_strategy_request import ValidateStrategyRequest
 from .validation_error import ValidationError
 from .validation_error_context import ValidationErrorContext
+from .verify_mfa_body import VerifyMfaBody
+from .verify_setup_body import VerifySetupBody
 
 __all__ = (
     "AgentLogin",
@@ -85,6 +88,7 @@ __all__ = (
     "CreateMemoryRequestMetadataType0",
     "CreateStrategyRequest",
     "CreateTournamentRequest",
+    "DisableMfaBody",
     "DiscussionRequest",
     "ExperimentCreateRequest",
     "ExperimentCreateRequestVariantsJsonType0Item",
@@ -120,4 +124,6 @@ __all__ = (
     "ValidateStrategyRequest",
     "ValidationError",
     "ValidationErrorContext",
+    "VerifyMfaBody",
+    "VerifySetupBody",
 )

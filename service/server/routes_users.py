@@ -158,6 +158,21 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not row or not verify_password(data.password, row['password_hash']):
             raise HTTPException(status_code=401, detail='Invalid credentials')
 
+        # Phase 5: if the user has MFA enabled, defer the session until
+        # they prove the second factor. The client gets a short-lived
+        # mfa_token to trade for a real session via /api/auth/mfa/verify.
+        try:
+            mfa_on = bool(row['mfa_enabled'])
+        except (KeyError, IndexError):
+            mfa_on = False
+        if mfa_on:
+            from routes_auth import issue_mfa_token_for_user
+            return {
+                'requires_mfa': True,
+                'mfa_token':    issue_mfa_token_for_user(row['id']),
+                'user_id':      row['id'],
+            }
+
         token = _create_user_session(row['id'])
         return {'token': token, 'user_id': row['id'], 'email': row['email']}
 
