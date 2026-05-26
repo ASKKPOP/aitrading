@@ -29,7 +29,7 @@ class OrderStatus(str, Enum):
 class ExecutionMode(str, Enum):
     """Per-agent execution mode.
 
-    paper  — all trades stay inside AITRAD's simulated ledger.
+    paper  — all trades stay inside Sooppiy's simulated ledger.
     shadow — platform ledger is authoritative; real broker runs in parallel
              for comparison.  No live money moves.
     live   — real broker is authoritative; platform reflects broker fills.

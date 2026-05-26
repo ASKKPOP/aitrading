@@ -31,7 +31,7 @@ from routes_tournaments import register_tournament_routes
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title='AITRAD API')
+    app = FastAPI(title='Sooppiy API')
 
     app.add_middleware(
         CORSMiddleware,

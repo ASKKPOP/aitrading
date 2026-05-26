@@ -1,5 +1,5 @@
 """
-Standalone background worker for AITRAD.
+Standalone background worker for Sooppiy.
 
 Run this separately from the FastAPI process so HTTP requests are not competing
 with price refreshes, profit-history compaction, and market-intel snapshots.
@@ -45,17 +45,17 @@ async def _renew_redis_lock(lock, timeout_seconds: int) -> None:
 def _acquire_file_lock(role: str = "all"):
     # Per-role file lock so role-segmented workers don't fight over the same path.
     default_path = (
-        "/tmp/ai-trader-worker.lock"
+        "/tmp/sooppiy-worker.lock"
         if role == "all"
-        else f"/tmp/ai-trader-worker-{role}.lock"
+        else f"/tmp/sooppiy-worker-{role}.lock"
     )
-    lock_path = os.getenv("AI_TRADER_WORKER_LOCK_FILE", default_path)
+    lock_path = os.getenv("SOOPPIY_WORKER_LOCK_FILE", default_path)
     handle = open(lock_path, "w", encoding="utf-8")
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         handle.close()
-        logger.warning("Another AITRAD %s worker is already running; lock_file=%s", role, lock_path)
+        logger.warning("Another Sooppiy %s worker is already running; lock_file=%s", role, lock_path)
         return None
     handle.seek(0)
     handle.truncate()
@@ -80,7 +80,7 @@ async def main() -> None:
         except Exception:
             pass
     try:
-        os.nice(int(os.getenv("AI_TRADER_WORKER_NICE", "10")))
+        os.nice(int(os.getenv("SOOPPIY_WORKER_NICE", "10")))
     except Exception:
         pass
 
@@ -94,23 +94,23 @@ async def main() -> None:
             loop.add_signal_handler(getattr(signal, signame), stop_event.set)
     tasks: list[asyncio.Task] = []
     try:
-        lock_timeout_seconds = max(30, int(os.getenv("AI_TRADER_WORKER_LOCK_TIMEOUT_SECONDS", "120")))
+        lock_timeout_seconds = max(30, int(os.getenv("SOOPPIY_WORKER_LOCK_TIMEOUT_SECONDS", "120")))
     except Exception:
         lock_timeout_seconds = 120
 
-    # Phase 4.6: role-segmented workers. AI_TRADER_WORKER_ROLE picks which
+    # Phase 4.6: role-segmented workers. SOOPPIY_WORKER_ROLE picks which
     # task subset this process runs; each role uses a distinct lock key so
     # role-specialised workers can run side-by-side.
-    role = (os.getenv("AI_TRADER_WORKER_ROLE", "all").strip() or "all").lower()
+    role = (os.getenv("SOOPPIY_WORKER_ROLE", "all").strip() or "all").lower()
     if role not in WORKER_ROLES:
         logger.error(
-            "Invalid AI_TRADER_WORKER_ROLE=%r; expected one of %s",
+            "Invalid SOOPPIY_WORKER_ROLE=%r; expected one of %s",
             role, WORKER_ROLES,
         )
         return
     lock_key = get_worker_lock_key(role)
     logger.info(
-        "Starting AITRAD worker role=%s tasks=%s",
+        "Starting Sooppiy worker role=%s tasks=%s",
         role, tasks_for_role(role),
     )
 
@@ -125,11 +125,11 @@ async def main() -> None:
         if redis_lock is not None:
             acquired = bool(redis_lock.acquire(blocking=False))
             if not acquired:
-                logger.warning("Another AITRAD %s worker is already running; Redis singleton lock %s is held.", role, lock_key)
+                logger.warning("Another Sooppiy %s worker is already running; Redis singleton lock %s is held.", role, lock_key)
                 return
             lock_renew_task = asyncio.create_task(
                 _renew_redis_lock(redis_lock, lock_timeout_seconds),
-                name=f"ai-trader:{role}_worker_lock_renew",
+                name=f"sooppiy:{role}_worker_lock_renew",
             )
             logger.info("Acquired %s worker singleton lock via Redis (%s)", role, lock_key)
         else:
@@ -148,17 +148,17 @@ async def main() -> None:
         init_database()
         logger.info("Worker database ready: %s", get_database_status())
 
-        if os.getenv("AI_TRADER_BACKGROUND_TASKS") is None:
-            os.environ["AI_TRADER_BACKGROUND_TASKS"] = DEFAULT_BACKGROUND_TASKS
+        if os.getenv("SOOPPIY_BACKGROUND_TASKS") is None:
+            os.environ["SOOPPIY_BACKGROUND_TASKS"] = DEFAULT_BACKGROUND_TASKS
 
         tasks = start_background_tasks(logger)
         if not tasks:
-            logger.warning("No background tasks enabled; set AI_TRADER_BACKGROUND_TASKS to a comma-separated task list.")
+            logger.warning("No background tasks enabled; set SOOPPIY_BACKGROUND_TASKS to a comma-separated task list.")
             return
 
         if os.getenv("PROFIT_HISTORY_PRUNE_ON_WORKER_START", "false").strip().lower() in {"1", "true", "yes", "on"}:
             logger.info("Scheduling startup profit history prune")
-            tasks.append(asyncio.create_task(asyncio.to_thread(_prune_profit_history), name="ai-trader:startup_profit_history_prune"))
+            tasks.append(asyncio.create_task(asyncio.to_thread(_prune_profit_history), name="sooppiy:startup_profit_history_prune"))
 
         await stop_event.wait()
         logger.info("Worker shutdown requested")

@@ -1,5 +1,5 @@
 """
-AITRAD Backend Server
+Sooppiy Backend Server
 
 项目结构：
 - config.py   : 配置和环境变量

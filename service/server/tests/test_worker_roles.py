@@ -4,7 +4,7 @@ Goals:
   - Every task in BACKGROUND_TASK_REGISTRY belongs to exactly one role.
   - Roles are exhaustive: "all" covers every task; the three specialised
     roles (prices / settlement / research) partition the registry.
-  - AI_TRADER_WORKER_ROLE filters get_enabled_background_task_names().
+  - SOOPPIY_WORKER_ROLE filters get_enabled_background_task_names().
   - Default behaviour (no env var) keeps every task enabled — backwards
     compat with single-process deployment.
   - Unknown role names raise ValueError so a typo doesn't silently start
@@ -77,8 +77,8 @@ class EnvFilteringTests(unittest.TestCase):
     def setUp(self):
         # Snapshot env so each test can mutate freely.
         self._snap = {
-            "AI_TRADER_WORKER_ROLE":      os.environ.pop("AI_TRADER_WORKER_ROLE", None),
-            "AI_TRADER_BACKGROUND_TASKS": os.environ.pop("AI_TRADER_BACKGROUND_TASKS", None),
+            "SOOPPIY_WORKER_ROLE":      os.environ.pop("SOOPPIY_WORKER_ROLE", None),
+            "SOOPPIY_BACKGROUND_TASKS": os.environ.pop("SOOPPIY_BACKGROUND_TASKS", None),
         }
 
     def tearDown(self):
@@ -93,40 +93,40 @@ class EnvFilteringTests(unittest.TestCase):
         self.assertEqual(set(names), set(BACKGROUND_TASK_REGISTRY))
 
     def test_role_prices_only_starts_prices_tasks(self):
-        os.environ["AI_TRADER_WORKER_ROLE"] = "prices"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "prices"
         names = set(get_enabled_background_task_names())
         # Must include exactly the price-role tasks
         expected = {n for n, r in BACKGROUND_TASK_ROLES.items() if r == "prices"}
         self.assertEqual(names, expected)
 
     def test_role_settlement_only_starts_settlement_tasks(self):
-        os.environ["AI_TRADER_WORKER_ROLE"] = "settlement"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "settlement"
         names = set(get_enabled_background_task_names())
         expected = {n for n, r in BACKGROUND_TASK_ROLES.items() if r == "settlement"}
         self.assertEqual(names, expected)
 
     def test_role_research_only_starts_research_tasks(self):
-        os.environ["AI_TRADER_WORKER_ROLE"] = "research"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "research"
         names = set(get_enabled_background_task_names())
         expected = {n for n, r in BACKGROUND_TASK_ROLES.items() if r == "research"}
         self.assertEqual(names, expected)
 
     def test_role_all_is_explicit_alias_for_default(self):
-        os.environ["AI_TRADER_WORKER_ROLE"] = "all"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "all"
         names = set(get_enabled_background_task_names())
         self.assertEqual(names, set(BACKGROUND_TASK_REGISTRY))
 
     def test_unknown_role_raises(self):
-        os.environ["AI_TRADER_WORKER_ROLE"] = "nonsense"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "nonsense"
         with self.assertRaises(ValueError):
             get_enabled_background_task_names()
 
     def test_explicit_task_list_still_honored_when_role_set(self):
-        # If both AI_TRADER_BACKGROUND_TASKS and AI_TRADER_WORKER_ROLE are
+        # If both SOOPPIY_BACKGROUND_TASKS and SOOPPIY_WORKER_ROLE are
         # set, the intersection wins (role-filter then task-list filter).
         # This lets you say "prices role, but disable price_push for now".
-        os.environ["AI_TRADER_WORKER_ROLE"] = "prices"
-        os.environ["AI_TRADER_BACKGROUND_TASKS"] = "prices,leaderboard_snapshot"
+        os.environ["SOOPPIY_WORKER_ROLE"] = "prices"
+        os.environ["SOOPPIY_BACKGROUND_TASKS"] = "prices,leaderboard_snapshot"
         names = set(get_enabled_background_task_names())
         # 'prices' task is in the prices role → kept.
         # 'leaderboard_snapshot' is in the research role → dropped.

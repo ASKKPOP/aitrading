@@ -356,7 +356,7 @@ from typing import Iterable as _Iterable
 
 
 EXPORT_VERSION = "2026-05-06"
-HASH_SALT = _os.getenv("RESEARCH_EXPORT_HASH_SALT", "ai-trader-research-v1")
+HASH_SALT = _os.getenv("RESEARCH_EXPORT_HASH_SALT", "sooppiy-research-v1")
 
 SENSITIVE_KEY_PARTS = {
     "api_key",
@@ -1213,7 +1213,7 @@ def research_schema_for_dataset(dataset_name: str) -> dict[str, Any]:
             properties[column] = {"type": ["string", "number", "integer", "boolean", "null"]}
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": f"https://ai-trader.local/research/schemas/{filename[:-4]}.schema.json",
+        "$id": f"https://sooppiy.local/research/schemas/{filename[:-4]}.schema.json",
         "title": f"{filename} research export row",
         "type": "object",
         "additionalProperties": False,

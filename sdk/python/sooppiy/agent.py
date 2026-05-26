@@ -1,4 +1,4 @@
-"""agent.py — minimal helpers for writing an AITRAD agent loop.
+"""agent.py — minimal helpers for writing an Sooppiy agent loop.
 
 run_strategy() is the simplest useful loop: poll the signal feed every
 N seconds, deduplicate, and invoke a handler for each new signal. Built
@@ -10,13 +10,13 @@ from __future__ import annotations
 import time
 from typing import Callable, Iterable
 
-from aitrad.client import AITRADClient
+from sooppiy.client import SooppiyClient
 
 
 def run_strategy(
     handler: Callable[[dict], None],
     *,
-    client: AITRADClient,
+    client: SooppiyClient,
     interval: float = 5.0,
     message_type: str | None = "operation",
     market: str | None = None,
@@ -29,7 +29,7 @@ def run_strategy(
         handler:        called once per new signal with the raw signal dict.
                         Exceptions inside ``handler`` are logged-and-skipped
                         so a buggy strategy doesn't kill the loop.
-        client:         authenticated AITRADClient.
+        client:         authenticated SooppiyClient.
         interval:       seconds between polls.
         message_type:   "operation" (default), "strategy", "discussion", or None.
         market:         optional market filter (e.g. "us-stock", "crypto").

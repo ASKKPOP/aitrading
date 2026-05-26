@@ -1,4 +1,4 @@
-# ── AITRAD backend image ────────────────────────────────────────────────────
+# ── Sooppiy backend image ────────────────────────────────────────────────────
 # Build context: repo root
 # Runs from /app (project root) so DB_PATH=service/server/data/... resolves.
 

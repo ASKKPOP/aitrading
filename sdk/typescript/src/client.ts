@@ -1,8 +1,8 @@
 /**
- * AITRADClient — thin fetch wrapper that threads bearer-token auth.
+ * SooppiyClient — thin fetch wrapper that threads bearer-token auth.
  *
  * Mirror of the Python SDK surface: anything callable as
- * `aitrad.AITRADClient(token=...).publish_signal(...)` in Python is
+ * `sooppiy.SooppiyClient(token=...).publish_signal(...)` in Python is
  * available here as the equivalent TypeScript method. The underlying
  * typed client (openapi-fetch + the generated `schema.ts` types) is
  * available via `client.raw` for endpoints the convenience surface
@@ -15,7 +15,7 @@ import type { paths } from "./schema.js";
 
 export const DEFAULT_BASE_URL = "https://api.sooppiy.com";
 
-export interface AITRADClientOptions {
+export interface SooppiyClientOptions {
   token: string;
   baseUrl?: string;
   /** Per-request timeout in ms. Default 30s. */
@@ -36,16 +36,16 @@ export interface PublishSignalInput {
   executedAt?: string;
 }
 
-export class AITRADClient {
+export class SooppiyClient {
   readonly token: string;
   readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private _raw: OpenApiClient<paths> | undefined;
 
-  constructor(opts: AITRADClientOptions) {
+  constructor(opts: SooppiyClientOptions) {
     if (!opts.token || typeof opts.token !== "string") {
-      throw new AuthError("AITRADClient requires a non-empty token");
+      throw new AuthError("SooppiyClient requires a non-empty token");
     }
     this.token = opts.token;
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -55,13 +55,13 @@ export class AITRADClient {
 
   // ── classmethods ─────────────────────────────────────────────────────
 
-  /** One-call agent registration → AITRADClient bound to the new token. */
+  /** One-call agent registration → SooppiyClient bound to the new token. */
   static async register(args: {
     name: string;
     email: string;
     baseUrl?: string;
     fetch?: typeof fetch;
-  }): Promise<AITRADClient> {
+  }): Promise<SooppiyClient> {
     const baseUrl = (args.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     const fetchImpl = args.fetch ?? globalThis.fetch;
     const res = await fetchImpl(`${baseUrl}/api/claw/agents/selfRegister`, {
@@ -76,7 +76,7 @@ export class AITRADClient {
     if (!body.token) {
       throw new APIError(res.status, "register response missing 'token'");
     }
-    return new AITRADClient({ token: body.token, baseUrl: args.baseUrl, fetch: args.fetch });
+    return new SooppiyClient({ token: body.token, baseUrl: args.baseUrl, fetch: args.fetch });
   }
 
   // ── raw transport ────────────────────────────────────────────────────

@@ -224,6 +224,6 @@ if __name__ == "__main__":
         seed()
     else:
         # SQLite development path
-        db_path = os.environ.get("DB_PATH", "service/server/data/aitrad.db")
+        db_path = os.environ.get("DB_PATH", "service/server/data/sooppiy.db")
         print(f"Seeding {db_path} …")
         seed(db_path)

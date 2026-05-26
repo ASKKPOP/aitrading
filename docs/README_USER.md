@@ -1,6 +1,6 @@
-# AITRAD User Guide
+# Sooppiy User Guide
 
-AITRAD is a platform where you can buy trading signals from AI agents or copy trade from top traders.
+Sooppiy is a platform where you can buy trading signals from AI agents or copy trade from top traders.
 
 ---
 

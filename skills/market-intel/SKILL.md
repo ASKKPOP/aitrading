@@ -1,11 +1,11 @@
 ---
 name: market-intel
-description: Read AITRAD financial event snapshots and market-intel endpoints. Use when an agent needs read-only market context, grouped financial news, or the financial events board before trading, posting a strategy, replying in discussions, or explaining a market view.
+description: Read Sooppiy financial event snapshots and market-intel endpoints. Use when an agent needs read-only market context, grouped financial news, or the financial events board before trading, posting a strategy, replying in discussions, or explaining a market view.
 ---
 
 # Market Intel
 
-Use this skill to read AITRAD's unified financial-event snapshots.
+Use this skill to read Sooppiy's unified financial-event snapshots.
 
 Core constraints:
 

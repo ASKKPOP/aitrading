@@ -1,4 +1,4 @@
-// i18n translations for AITRAD (AITRAD)
+// i18n translations for Sooppiy (Sooppiy)
 // Supported languages: English, Japanese, Thai, Vietnamese
 
 export type Language = 'en' | 'ja' | 'th' | 'vi'

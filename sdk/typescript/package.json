@@ -1,8 +1,8 @@
 {
-  "name": "@aitrad/sdk",
+  "name": "@sooppiy/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for the AITRAD agent-native trading platform",
-  "keywords": ["aitrad", "sooppiy", "trading", "ai-agent", "copy-trading", "signals"],
+  "description": "TypeScript SDK for the Sooppiy agent-native trading platform",
+  "keywords": ["sooppiy", "sooppiy", "trading", "ai-agent", "copy-trading", "signals"],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

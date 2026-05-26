@@ -63,14 +63,14 @@ const EXPERIMENT_NOTIFICATION_TYPES = new Set([
 
 function App() {
   const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('aitrad_language')
+    const saved = localStorage.getItem('sooppiy_language')
     return LANGUAGES.some((l) => l.value === saved) ? (saved as Language) : DEFAULT_LANGUAGE
   })
   useEffect(() => {
-    localStorage.setItem('aitrad_language', language)
+    localStorage.setItem('sooppiy_language', language)
   }, [language])
   const [theme, setTheme] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('aitrad_theme')
+    const saved = localStorage.getItem('sooppiy_theme')
     return THEMES.some((t) => t.value === saved) ? (saved as ThemeMode) : DEFAULT_THEME
   })
   const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
@@ -94,7 +94,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('aitrad_theme', theme)
+    localStorage.setItem('sooppiy_theme', theme)
   }, [theme])
 
   const fetchAgentInfo = async () => {
@@ -242,30 +242,30 @@ function AppRouter({
   // Update browser tab title per route
   useEffect(() => {
     const PAGE_TITLES: Record<string, string> = {
-      '/':                 'AITRAD · Signals',
-      '/market':           'AITRAD · Signals',
-      '/leaderboard':      'AITRAD · Leaderboard',
-      '/backtest':         'AITRAD · Backtest',
-      '/copytrading':      'AITRAD · Copy Trading',
-      '/positions':        'AITRAD · Positions',
-      '/trade':            'AITRAD · Trade',
-      '/exchange':         'AITRAD · Exchange',
-      '/strategies':       'AITRAD · Strategies',
-      '/discussions':      'AITRAD · Discussions',
-      '/challenges':       'AITRAD · Challenges',
-      '/team-missions':    'AITRAD · Team Missions',
-      '/experiments':      'AITRAD · Experiments',
-      '/research-exports': 'AITRAD · Research Exports',
-      '/financial-events': 'AITRAD · Financial Events',
-      '/dev':              'AITRAD · For Developers',
-      '/login':            'AITRAD · Login',
-      '/register':         'AITRAD · Register',
-      '/about':            'AITRAD',
+      '/':                 'Sooppiy · Signals',
+      '/market':           'Sooppiy · Signals',
+      '/leaderboard':      'Sooppiy · Leaderboard',
+      '/backtest':         'Sooppiy · Backtest',
+      '/copytrading':      'Sooppiy · Copy Trading',
+      '/positions':        'Sooppiy · Positions',
+      '/trade':            'Sooppiy · Trade',
+      '/exchange':         'Sooppiy · Exchange',
+      '/strategies':       'Sooppiy · Strategies',
+      '/discussions':      'Sooppiy · Discussions',
+      '/challenges':       'Sooppiy · Challenges',
+      '/team-missions':    'Sooppiy · Team Missions',
+      '/experiments':      'Sooppiy · Experiments',
+      '/research-exports': 'Sooppiy · Research Exports',
+      '/financial-events': 'Sooppiy · Financial Events',
+      '/dev':              'Sooppiy · For Developers',
+      '/login':            'Sooppiy · Login',
+      '/register':         'Sooppiy · Register',
+      '/about':            'Sooppiy',
     }
     const path = location.pathname
     // /agent/:id routes
-    if (path.startsWith('/agent/')) { document.title = 'AITRAD · Agent Profile'; return }
-    document.title = PAGE_TITLES[path] ?? 'AITRAD'
+    if (path.startsWith('/agent/')) { document.title = 'Sooppiy · Agent Profile'; return }
+    document.title = PAGE_TITLES[path] ?? 'Sooppiy'
   }, [location.pathname])
 
   // Public leaderboard is the landing page — no login required to see top

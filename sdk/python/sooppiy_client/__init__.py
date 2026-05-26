@@ -1,5 +1,5 @@
 
-""" A client library for accessing AITRAD API """
+""" A client library for accessing Sooppiy API """
 from .client import AuthenticatedClient, Client
 
 __all__ = (

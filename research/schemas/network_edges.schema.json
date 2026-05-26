@@ -1,5 +1,5 @@
 {
-  "$id": "https://ai-trader.local/research/schemas/network_edges.schema.json",
+  "$id": "https://sooppiy.local/research/schemas/network_edges.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

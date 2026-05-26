@@ -1,37 +1,37 @@
 /**
- * Exception hierarchy for the @aitrad/sdk package.
+ * Exception hierarchy for the @sooppiy/sdk package.
  *
- * All SDK errors derive from AITRADError so callers can catch
- * everything with a single `instanceof AITRADError` check.
+ * All SDK errors derive from SooppiyError so callers can catch
+ * everything with a single `instanceof SooppiyError` check.
  */
 
-export class AITRADError extends Error {
+export class SooppiyError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "AITRADError";
+    this.name = "SooppiyError";
   }
 }
 
-export class AuthError extends AITRADError {
+export class AuthError extends SooppiyError {
   constructor(message: string) {
     super(message);
     this.name = "AuthError";
   }
 }
 
-export class NotFound extends AITRADError {
+export class NotFound extends SooppiyError {
   constructor(message: string) {
     super(message);
     this.name = "NotFound";
   }
 }
 
-export class APIError extends AITRADError {
+export class APIError extends SooppiyError {
   readonly statusCode: number;
   readonly body: string;
 
   constructor(statusCode: number, body: string = "") {
-    super(`AITRAD API returned ${statusCode}: ${body.slice(0, 200)}`);
+    super(`Sooppiy API returned ${statusCode}: ${body.slice(0, 200)}`);
     this.name = "APIError";
     this.statusCode = statusCode;
     this.body = body;

@@ -896,6 +896,6 @@ def _get_us_stock_price(symbol: str, executed_at: str) -> Optional[float]:
 def _get_crypto_price(symbol: str, executed_at: str) -> Optional[float]:
     """
     Backwards-compat shim.
-    AITRAD 已停止使用 Alpha Vantage 的 crypto 端点；此函数保留仅为避免旧代码引用时报错。
+    Sooppiy 已停止使用 Alpha Vantage 的 crypto 端点；此函数保留仅为避免旧代码引用时报错。
     """
     return _get_hyperliquid_candle_close(symbol, executed_at) or _get_hyperliquid_mid_price(symbol)

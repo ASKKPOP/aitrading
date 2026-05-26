@@ -1,13 +1,13 @@
 /**
- * Unit tests for @aitrad/sdk. No real network — every test injects a
+ * Unit tests for @sooppiy/sdk. No real network — every test injects a
  * fake `fetch` implementation so we can assert request shape and inject
  * canned responses.
  */
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  AITRADClient,
-  AITRADError,
+  SooppiyClient,
+  SooppiyError,
   APIError,
   AuthError,
   NotFound,
@@ -64,28 +64,28 @@ function makeFakeFetch(responses: FakeResp | FakeResp[]) {
 
 // ── constructor + auth-header threading ───────────────────────────────────
 
-describe("AITRADClient construction", () => {
+describe("SooppiyClient construction", () => {
   it("requires a non-empty token", () => {
-    expect(() => new AITRADClient({ token: "" })).toThrow(AuthError);
+    expect(() => new SooppiyClient({ token: "" })).toThrow(AuthError);
   });
 
   it("requires a string token", () => {
     expect(
       // @ts-expect-error — testing runtime guard against bad types
-      () => new AITRADClient({ token: undefined }),
+      () => new SooppiyClient({ token: undefined }),
     ).toThrow(AuthError);
   });
 
   it("threads bearer-token in Authorization header", async () => {
     const f = makeFakeFetch({ body: { id: 1, name: "bot" } });
-    const c = new AITRADClient({ token: "claw_xyz", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "claw_xyz", fetch: f.fetch });
     await c.me();
     expect(f.requests[0]!.headers.authorization).toBe("Bearer claw_xyz");
   });
 
   it("uses custom base URL", async () => {
     const f = makeFakeFetch({ body: { ok: true } });
-    const c = new AITRADClient({
+    const c = new SooppiyClient({
       token: "t",
       baseUrl: "http://localhost:8001",
       fetch: f.fetch,
@@ -97,7 +97,7 @@ describe("AITRADClient construction", () => {
 
   it("strips trailing slashes from baseUrl", async () => {
     const f = makeFakeFetch({ body: { ok: true } });
-    const c = new AITRADClient({
+    const c = new SooppiyClient({
       token: "t",
       baseUrl: "https://api.sooppiy.com//",
       fetch: f.fetch,
@@ -112,19 +112,19 @@ describe("AITRADClient construction", () => {
 describe("error mapping", () => {
   it("401 → AuthError", async () => {
     const f = makeFakeFetch({ status: 401, body: { detail: "bad" } });
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     await expect(c.me()).rejects.toBeInstanceOf(AuthError);
   });
 
   it("404 → NotFound", async () => {
     const f = makeFakeFetch({ status: 404, body: { detail: "nope" } });
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     await expect(c.me()).rejects.toBeInstanceOf(NotFound);
   });
 
   it("500 → APIError with status & body", async () => {
     const f = makeFakeFetch({ status: 500, body: { detail: "boom" } });
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     try {
       await c.me();
       throw new Error("expected to throw");
@@ -135,10 +135,10 @@ describe("error mapping", () => {
     }
   });
 
-  it("all errors extend AITRADError", () => {
-    expect(new AuthError("x")).toBeInstanceOf(AITRADError);
-    expect(new NotFound("x")).toBeInstanceOf(AITRADError);
-    expect(new APIError(500, "x")).toBeInstanceOf(AITRADError);
+  it("all errors extend SooppiyError", () => {
+    expect(new AuthError("x")).toBeInstanceOf(SooppiyError);
+    expect(new NotFound("x")).toBeInstanceOf(SooppiyError);
+    expect(new APIError(500, "x")).toBeInstanceOf(SooppiyError);
   });
 });
 
@@ -147,7 +147,7 @@ describe("error mapping", () => {
 describe("convenience shortcuts", () => {
   it("listSignals threads query params", async () => {
     const f = makeFakeFetch({ body: { signals: [] } });
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     await c.listSignals({ limit: 10, messageType: "operation", market: "us-stock" });
     const url = new URL(f.requests[0]!.url);
     expect(url.pathname).toBe("/api/signals/feed");
@@ -158,7 +158,7 @@ describe("convenience shortcuts", () => {
 
   it("publishSignal builds the realtime payload", async () => {
     const f = makeFakeFetch({ body: { signal_id: 42 } });
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     await c.publishSignal({
       market: "us-stock",
       symbol: "AAPL",
@@ -178,19 +178,19 @@ describe("convenience shortcuts", () => {
 
   it("register returns an authed client bound to the new token", async () => {
     const f = makeFakeFetch({ body: { token: "claw_new", botUserId: "agent_1" } });
-    const c = await AITRADClient.register({
+    const c = await SooppiyClient.register({
       name: "my-bot",
       email: "bot@x.io",
       fetch: f.fetch,
     });
-    expect(c).toBeInstanceOf(AITRADClient);
+    expect(c).toBeInstanceOf(SooppiyClient);
     expect(c.token).toBe("claw_new");
   });
 
   it("register throws on missing token in response", async () => {
     const f = makeFakeFetch({ body: { error: "denied" } });
     await expect(
-      AITRADClient.register({ name: "bot", email: "x@x", fetch: f.fetch }),
+      SooppiyClient.register({ name: "bot", email: "x@x", fetch: f.fetch }),
     ).rejects.toThrow(/missing 'token'/);
   });
 
@@ -199,7 +199,7 @@ describe("convenience shortcuts", () => {
       { body: { leaderboard: [] } },
       { body: { positions: [] } },
     ]);
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     await c.leaderboard();
     await c.positions();
     expect(f.requests[0]!.url).toContain("/api/claw/leaderboard");
@@ -215,7 +215,7 @@ describe("runStrategy", () => {
       { body: { signals: [{ signal_id: 1, symbol: "AAPL" }] } },   // bootstrap
       { body: { signals: [{ signal_id: 1, symbol: "AAPL" }] } },   // poll: same id
     ]);
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     const seen: Record<string, unknown>[] = [];
     await runStrategy((s) => { seen.push(s); }, {
       client: c, intervalMs: 0, maxIterations: 1,
@@ -231,7 +231,7 @@ describe("runStrategy", () => {
         { signal_id: 8, symbol: "ETH" },
       ] } },
     ]);
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     const seen: Record<string, unknown>[] = [];
     await runStrategy((s) => { seen.push(s); }, {
       client: c, intervalMs: 0, maxIterations: 1,
@@ -244,7 +244,7 @@ describe("runStrategy", () => {
       { body: { signals: [] } },
       { body: { signals: [{ signal_id: 1 }, { signal_id: 2 }] } },
     ]);
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     const fired: number[] = [];
     const errors: unknown[] = [];
     await runStrategy(
@@ -266,7 +266,7 @@ describe("runStrategy", () => {
       { body: [] },                              // bootstrap as bare array
       { body: [{ signal_id: 99 }] },             // poll as bare array
     ]);
-    const c = new AITRADClient({ token: "t", fetch: f.fetch });
+    const c = new SooppiyClient({ token: "t", fetch: f.fetch });
     const seen: Record<string, unknown>[] = [];
     await runStrategy((s) => { seen.push(s); }, {
       client: c, intervalMs: 0, maxIterations: 1,
@@ -284,7 +284,7 @@ describe("runStrategy", () => {
       }
       throw new Error("network down");
     }) as typeof fetch;
-    const c = new AITRADClient({ token: "t", fetch: errFetch });
+    const c = new SooppiyClient({ token: "t", fetch: errFetch });
     const errors: unknown[] = [];
     await runStrategy(() => {}, {
       client: c, intervalMs: 0, maxIterations: 1,
@@ -298,7 +298,7 @@ describe("runStrategy", () => {
 
 describe("client.raw escape hatch", () => {
   it("is lazy-instantiated on first access", () => {
-    const c = new AITRADClient({ token: "t" });
+    const c = new SooppiyClient({ token: "t" });
     // intentionally peek at the internal field
     const before = (c as unknown as { _raw?: unknown })._raw;
     expect(before).toBeUndefined();

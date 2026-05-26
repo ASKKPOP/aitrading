@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover - dependency is optional until MySQL is 
 
 
 _BASE_DIR = os.path.dirname(__file__)
-_DEFAULT_SQLITE_DB_PATH = os.path.join(_BASE_DIR, "data", "aitrad.db")
+_DEFAULT_SQLITE_DB_PATH = os.path.join(_BASE_DIR, "data", "sooppiy.db")
 _SQLITE_DB_PATH = DB_PATH or _DEFAULT_SQLITE_DB_PATH
 # MySQL expression that produces ISO-8601 UTC text matching sqlite's datetime('now').
 _MYSQL_NOW_TEXT_SQL = "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')"

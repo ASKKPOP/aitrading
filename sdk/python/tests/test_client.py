@@ -1,4 +1,4 @@
-"""Unit tests for the aitrad SDK. No network — uses pytest-httpx to mock."""
+"""Unit tests for the sooppiy SDK. No network — uses pytest-httpx to mock."""
 from __future__ import annotations
 
 import sys
@@ -11,8 +11,8 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 if str(SDK_ROOT) not in sys.path:
     sys.path.insert(0, str(SDK_ROOT))
 
-from aitrad import (
-    AITRADClient, AITRADError, APIError, AuthError, NotFound, run_strategy,
+from sooppiy import (
+    SooppiyClient, SooppiyError, APIError, AuthError, NotFound, run_strategy,
 )
 
 
@@ -21,18 +21,18 @@ from aitrad import (
 class TestConstructor:
     def test_requires_token(self):
         with pytest.raises(AuthError):
-            AITRADClient(token="")
+            SooppiyClient(token="")
 
     def test_requires_non_str_token_raises(self):
         with pytest.raises(AuthError):
-            AITRADClient(token=None)  # type: ignore[arg-type]
+            SooppiyClient(token=None)  # type: ignore[arg-type]
 
     def test_token_threads_bearer_header(self, httpx_mock):
         httpx_mock.add_response(
             url="https://api.sooppiy.com/api/claw/agents/me",
             json={"id": 1, "name": "bot"},
         )
-        c = AITRADClient(token="claw_xyz")
+        c = SooppiyClient(token="claw_xyz")
         c.me()
         sent = httpx_mock.get_requests()[0]
         assert sent.headers["Authorization"] == "Bearer claw_xyz"
@@ -42,7 +42,7 @@ class TestConstructor:
             url="http://localhost:8001/api/claw/agents/me",
             json={"ok": True},
         )
-        c = AITRADClient(token="t", base_url="http://localhost:8001")
+        c = SooppiyClient(token="t", base_url="http://localhost:8001")
         assert c.me() == {"ok": True}
 
 
@@ -54,7 +54,7 @@ class TestErrors:
             url="https://api.sooppiy.com/api/claw/agents/me",
             status_code=401, text="bad token",
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         with pytest.raises(AuthError):
             c.me()
 
@@ -63,7 +63,7 @@ class TestErrors:
             url="https://api.sooppiy.com/api/claw/agents/me",
             status_code=404, text="nope",
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         with pytest.raises(NotFound):
             c.me()
 
@@ -72,14 +72,14 @@ class TestErrors:
             url="https://api.sooppiy.com/api/claw/agents/me",
             status_code=500, text="boom",
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         with pytest.raises(APIError) as exc:
             c.me()
         assert exc.value.status_code == 500
 
-    def test_all_errors_subclass_AITRADError(self):
+    def test_all_errors_subclass_SooppiyError(self):
         for cls in (AuthError, NotFound, APIError):
-            assert issubclass(cls, AITRADError)
+            assert issubclass(cls, SooppiyError)
 
 
 # ── convenience shortcuts ─────────────────────────────────────────────────
@@ -90,7 +90,7 @@ class TestConvenienceShortcuts:
             url="https://api.sooppiy.com/api/signals/feed?limit=10&message_type=operation&market=us-stock",
             json={"signals": []},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         c.list_signals(limit=10, message_type="operation", market="us-stock")
 
     def test_publish_signal_payload_shape(self, httpx_mock):
@@ -98,7 +98,7 @@ class TestConvenienceShortcuts:
             url="https://api.sooppiy.com/api/signals/realtime",
             json={"signal_id": 42},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         c.publish_signal(
             market="us-stock", symbol="AAPL", side="buy",
             entry_price=195.5, content="breakout",
@@ -116,8 +116,8 @@ class TestConvenienceShortcuts:
             url="https://api.sooppiy.com/api/claw/agents/selfRegister",
             json={"token": "claw_new", "botUserId": "agent_1"},
         )
-        c = AITRADClient.register(name="my-bot", email="bot@x.io")
-        assert isinstance(c, AITRADClient)
+        c = SooppiyClient.register(name="my-bot", email="bot@x.io")
+        assert isinstance(c, SooppiyClient)
         assert c._token == "claw_new"
 
     def test_leaderboard_and_positions(self, httpx_mock):
@@ -129,7 +129,7 @@ class TestConvenienceShortcuts:
             url="https://api.sooppiy.com/api/positions",
             json={"positions": []},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         c.leaderboard()
         c.positions()
 
@@ -142,7 +142,7 @@ class TestLifecycle:
             url="https://api.sooppiy.com/api/claw/agents/me",
             json={"ok": True},
         )
-        with AITRADClient(token="t") as c:
+        with SooppiyClient(token="t") as c:
             c.me()
         # After exit, the inner httpx client should be closed; calling again raises
         with pytest.raises(RuntimeError):
@@ -162,7 +162,7 @@ class TestRunStrategy:
             url="https://api.sooppiy.com/api/signals/feed?limit=20&message_type=operation",
             json={"signals": [{"signal_id": 1, "symbol": "AAPL"}]},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         seen: list = []
         run_strategy(seen.append, client=c, interval=0, max_iterations=1)
         assert seen == []                       # bootstrap deduped it
@@ -179,7 +179,7 @@ class TestRunStrategy:
                 {"signal_id": 8, "symbol": "ETH"},
             ]},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         seen: list = []
         run_strategy(seen.append, client=c, interval=0, max_iterations=1)
         assert [s["signal_id"] for s in seen] == [7, 8]
@@ -195,7 +195,7 @@ class TestRunStrategy:
                 {"signal_id": 1}, {"signal_id": 2},
             ]},
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         invocations: list = []
 
         def bad(sig):
@@ -215,7 +215,7 @@ class TestRunStrategy:
             url="https://api.sooppiy.com/api/signals/feed?limit=20&message_type=operation",
             json=[{"signal_id": 99}],
         )
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         seen: list = []
         run_strategy(seen.append, client=c, interval=0, max_iterations=1)
         assert len(seen) == 1
@@ -225,7 +225,7 @@ class TestRunStrategy:
 
 class TestRawClient:
     def test_raw_lazy_imported(self):
-        c = AITRADClient(token="t")
+        c = SooppiyClient(token="t")
         assert not hasattr(c, "_raw")
         _ = c.raw
         assert hasattr(c, "_raw")

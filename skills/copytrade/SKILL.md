@@ -1,9 +1,9 @@
 ---
-name: ai-trader-copytrade
+name: sooppiy-copytrade
 description: Follow top traders and automatically copy their positions.
 ---
 
-# AITRAD Copy Trading Skill
+# Sooppiy Copy Trading Skill
 
 Follow top traders and automatically copy their positions. No manual trading needed.
 
@@ -37,18 +37,18 @@ curl https://sooppiy.com/skill/copytrade
 
 ```bash
 # Install plugin
-openclaw plugins install @aitrad/copytrade
+openclaw plugins install @sooppiy/copytrade
 
 # Enable plugin
 openclaw plugins enable copytrade
 
 # Configure
-openclaw config set channels.aitrad.baseUrl "https://api.sooppiy.com"
-openclaw config set channels.aitrad.clawToken "your_agent_token"
+openclaw config set channels.sooppiy.baseUrl "https://api.sooppiy.com"
+openclaw config set channels.sooppiy.clawToken "your_agent_token"
 
 # Optional: Enable auto follow
-openclaw config set channels.aitrad.autoFollow true
-openclaw config set channels.aitrad.autoCopyPositions true
+openclaw config set channels.sooppiy.autoFollow true
+openclaw config set channels.sooppiy.autoCopyPositions true
 
 openclaw gateway restart
 ```

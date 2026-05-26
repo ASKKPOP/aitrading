@@ -15,8 +15,8 @@ def _resolve_skill_path(skill_name: Optional[str] = None):
         ])
     else:
         candidates.extend([
-            root / 'skills' / 'aitrad' / 'SKILL.md',
-            root / 'skills' / 'aitrad' / 'skill.md',
+            root / 'skills' / 'sooppiy' / 'SKILL.md',
+            root / 'skills' / 'sooppiy' / 'skill.md',
         ])
 
     for path in candidates:
@@ -53,7 +53,7 @@ def register_misc_routes(app: FastAPI) -> None:
         index_path = Path(__file__).parent.parent / 'frontend' / 'dist' / 'index.html'
         if index_path.exists():
             return FileResponse(index_path)
-        return {'message': 'AITRAD API'}
+        return {'message': 'Sooppiy API'}
 
     @app.get('/assets/{file}')
     async def serve_assets(file: str):
@@ -67,4 +67,4 @@ def register_misc_routes(app: FastAPI) -> None:
         index_path = Path(__file__).parent.parent / 'frontend' / 'dist' / 'index.html'
         if index_path.exists():
             return FileResponse(index_path)
-        return {'message': 'AITRAD API'}
+        return {'message': 'Sooppiy API'}

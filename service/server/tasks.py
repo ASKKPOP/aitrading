@@ -465,7 +465,7 @@ def _maybe_schedule_profit_history_prune() -> None:
     _last_profit_history_prune_at = now
     _profit_history_prune_task = asyncio.create_task(
         asyncio.to_thread(_prune_profit_history),
-        name="ai-trader:profit_history_prune",
+        name="sooppiy:profit_history_prune",
     )
     _profit_history_prune_task.add_done_callback(_profit_history_prune_done)
     print("[Profit History] Scheduled async prune")
@@ -1261,7 +1261,7 @@ DEFAULT_BACKGROUND_TASKS = ",".join(BACKGROUND_TASK_REGISTRY.keys())
 
 # ── Phase 4.6: worker role partitioning ───────────────────────────────────
 # Each background task is tagged with exactly one of: prices, settlement,
-# research. A worker process is started with AI_TRADER_WORKER_ROLE set to
+# research. A worker process is started with SOOPPIY_WORKER_ROLE set to
 # one of those values (or "all" for the historical single-process behavior)
 # and only runs tasks matching that role. Lock keys are namespaced per role
 # so role-segmented workers don't fight over the same singleton lock.
@@ -1314,34 +1314,34 @@ def get_worker_lock_key(role: str) -> str:
         )
     if role == "all":
         # Preserve the legacy single-process lock name for backward compat —
-        # any operator who hasn't set AI_TRADER_WORKER_ROLE keeps the same lock.
+        # any operator who hasn't set SOOPPIY_WORKER_ROLE keeps the same lock.
         return "worker:singleton"
     return f"worker:singleton:{role}"
 
 
 def background_tasks_enabled_for_api() -> bool:
     """API workers default to HTTP-only; run worker.py for background loops."""
-    return _env_bool("AI_TRADER_API_BACKGROUND_TASKS", False)
+    return _env_bool("SOOPPIY_API_BACKGROUND_TASKS", False)
 
 
 def get_enabled_background_task_names() -> list[str]:
     """Resolve the task list this worker should run.
 
     Order of operations:
-      1. Pick the role (AI_TRADER_WORKER_ROLE, default "all").
+      1. Pick the role (SOOPPIY_WORKER_ROLE, default "all").
       2. Filter the registry by role membership.
-      3. Intersect with AI_TRADER_BACKGROUND_TASKS if set — the explicit
+      3. Intersect with SOOPPIY_BACKGROUND_TASKS if set — the explicit
          task list still wins, so an operator can disable a specific
          task within a role without changing code.
     """
-    role = os.getenv("AI_TRADER_WORKER_ROLE", "all").strip() or "all"
+    role = os.getenv("SOOPPIY_WORKER_ROLE", "all").strip() or "all"
     if role not in WORKER_ROLES:
         raise ValueError(
             f"Unknown worker role {role!r}; expected one of {WORKER_ROLES}"
         )
     role_allowed = set(tasks_for_role(role))
 
-    raw = os.getenv("AI_TRADER_BACKGROUND_TASKS", DEFAULT_BACKGROUND_TASKS)
+    raw = os.getenv("SOOPPIY_BACKGROUND_TASKS", DEFAULT_BACKGROUND_TASKS)
     requested = [item.strip() for item in raw.split(",") if item.strip()]
     return [
         name for name in requested
@@ -1355,5 +1355,5 @@ def start_background_tasks(logger: Optional[Any] = None) -> list[asyncio.Task]:
         task_func = BACKGROUND_TASK_REGISTRY[name]
         if logger:
             logger.info("Starting background task: %s", name)
-        started.append(asyncio.create_task(task_func(), name=f"ai-trader:{name}"))
+        started.append(asyncio.create_task(task_func(), name=f"sooppiy:{name}"))
     return started

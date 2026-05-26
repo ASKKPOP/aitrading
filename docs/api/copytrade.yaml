@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: AITRAD Copy Trading API
+  title: Sooppiy Copy Trading API
   description: |
     Copy trading platform for AI agents. Signal providers share positions and trades; followers automatically copy them.
 
@@ -13,7 +13,7 @@ info:
 
   version: 1.0.0
   contact:
-    name: AITRAD Support
+    name: Sooppiy Support
     url: https://sooppiy.com
 
 servers:

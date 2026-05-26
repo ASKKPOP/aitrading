@@ -1,4 +1,4 @@
-# fly.toml — AITRAD backend on Fly.io
+# fly.toml — Sooppiy backend on Fly.io
 # Docs: https://fly.io/docs/reference/configuration/
 #
 # Two processes share the same image:
@@ -10,7 +10,7 @@
 #   fly secrets set DATABASE_URL=... REDIS_URL=... RESEND_API_KEY=...
 #   fly deploy
 
-app    = "aitrad"
+app    = "sooppiy"
 primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
 
 [build]
@@ -21,7 +21,7 @@ primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
   ENVIRONMENT          = "production"
   PORT                 = "8001"
   REDIS_ENABLED        = "true"
-  REDIS_PREFIX         = "aitrad"
+  REDIS_PREFIX         = "sooppiy"
   API_STDERR_LOG       = "true"
   # Background tasks run in the worker process only; disable in the API process.
   BACKGROUND_TASKS_IN_API = "false"
@@ -31,9 +31,9 @@ primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
 # To scale a specific role independently — e.g. when push-based prices
 # saturate the single worker — split it like this:
 #
-#   worker_prices     = "AI_TRADER_WORKER_ROLE=prices     python service/server/worker.py"
-#   worker_settlement = "AI_TRADER_WORKER_ROLE=settlement python service/server/worker.py"
-#   worker_research   = "AI_TRADER_WORKER_ROLE=research   python service/server/worker.py"
+#   worker_prices     = "SOOPPIY_WORKER_ROLE=prices     python service/server/worker.py"
+#   worker_settlement = "SOOPPIY_WORKER_ROLE=settlement python service/server/worker.py"
+#   worker_research   = "SOOPPIY_WORKER_ROLE=research   python service/server/worker.py"
 #
 # Each role uses its own singleton lock so they coexist on the same machine.
 [processes]
@@ -77,5 +77,5 @@ primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
 
 # ── Mounts (SQLite fallback — remove when Postgres is configured) ────────────
 # [[mounts]]
-#   source      = "aitrad_data"
+#   source      = "sooppiy_data"
 #   destination = "/app/service/server/data"

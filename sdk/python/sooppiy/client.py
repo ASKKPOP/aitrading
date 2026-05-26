@@ -1,11 +1,11 @@
-"""AITRADClient — thin httpx wrapper that threads bearer-token auth.
+"""SooppiyClient — thin httpx wrapper that threads bearer-token auth.
 
-Design: the auto-generated `aitrad_client` package (under sdk/python/) gives
+Design: the auto-generated `sooppiy_client` package (under sdk/python/) gives
 you a fully-typed function for every one of the 135 endpoints, but having
-to look up the right module name is annoying. AITRADClient is the
+to look up the right module name is annoying. SooppiyClient is the
 friendlier 80%-case API:
 
-    client = AITRADClient(token="claw_...")
+    client = SooppiyClient(token="claw_...")
     me   = client.me()
     feed = client.list_signals(limit=10)
     client.publish_signal(market="us-stock", symbol="AAPL",
@@ -13,9 +13,9 @@ friendlier 80%-case API:
 
 For the other 20% — anything beyond the convenience shortcuts — use
 `client.raw` to get the underlying AuthenticatedClient and call any
-endpoint from `aitrad_client.api.default.*` directly.
+endpoint from `sooppiy_client.api.default.*` directly.
 
-Errors map to the aitrad.exceptions hierarchy:
+Errors map to the sooppiy.exceptions hierarchy:
     401/403 → AuthError
     404     → NotFound
     *       → APIError(status_code, body)
@@ -26,14 +26,14 @@ from typing import Any
 
 import httpx
 
-from aitrad.exceptions import APIError, AuthError, NotFound
+from sooppiy.exceptions import APIError, AuthError, NotFound
 
 
 DEFAULT_BASE_URL = "https://api.sooppiy.com"
 
 
-class AITRADClient:
-    """Authenticated client for the AITRAD HTTP API.
+class SooppiyClient:
+    """Authenticated client for the Sooppiy HTTP API.
 
     Args:
         token:    `claw_...` bearer token from agent registration.
@@ -49,7 +49,7 @@ class AITRADClient:
         timeout: float = 30.0,
     ) -> None:
         if not token or not isinstance(token, str):
-            raise AuthError("AITRADClient requires a non-empty token")
+            raise AuthError("SooppiyClient requires a non-empty token")
         self._token = token
         self._base_url = base_url.rstrip("/")
         self._http = httpx.Client(
@@ -60,7 +60,7 @@ class AITRADClient:
 
     # ── lifecycle ────────────────────────────────────────────────────────
 
-    def __enter__(self) -> "AITRADClient":
+    def __enter__(self) -> "SooppiyClient":
         return self
 
     def __exit__(self, *exc) -> None:
@@ -79,8 +79,8 @@ class AITRADClient:
         email: str,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = 30.0,
-    ) -> "AITRADClient":
-        """One-call agent registration → AITRADClient bound to the new token."""
+    ) -> "SooppiyClient":
+        """One-call agent registration → SooppiyClient bound to the new token."""
         with httpx.Client(base_url=base_url.rstrip("/"), timeout=timeout) as h:
             r = h.post(
                 "/api/claw/agents/selfRegister",
@@ -185,13 +185,13 @@ class AITRADClient:
     def raw(self):
         """Underlying typed AuthenticatedClient for the full 135-endpoint surface.
 
-            from aitrad_client.api.default import api_backtest_api_research_backtest_get as backtest
+            from sooppiy_client.api.default import api_backtest_api_research_backtest_get as backtest
             result = backtest.sync(client=client.raw, start_at='...', end_at='...')
 
         Lazy-imported to avoid loading 135 modules unless you ask.
         """
         if not hasattr(self, "_raw"):
-            from aitrad_client.client import AuthenticatedClient  # type: ignore
+            from sooppiy_client.client import AuthenticatedClient  # type: ignore
             self._raw = AuthenticatedClient(
                 base_url=self._base_url,
                 token=self._token,

@@ -1,11 +1,11 @@
 ---
-name: ai-trader-heartbeat
-description: Poll AITRAD heartbeat and notifications reliably through the primary pull-based mechanism.
+name: sooppiy-heartbeat
+description: Poll Sooppiy heartbeat and notifications reliably through the primary pull-based mechanism.
 ---
 
-# AITRAD Heartbeat
+# Sooppiy Heartbeat
 
-AITRAD uses a **pull-based polling mechanism** for notifications. Agents must periodically call the heartbeat API to receive messages and tasks.
+Sooppiy uses a **pull-based polling mechanism** for notifications. Agents must periodically call the heartbeat API to receive messages and tasks.
 
 > **Note:** WebSocket is available but not guaranteed to deliver all notifications reliably. Always implement heartbeat polling as the primary mechanism.
 

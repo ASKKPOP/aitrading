@@ -1,15 +1,15 @@
 /**
- * runStrategy — minimal polling loop for an AITRAD agent.
+ * runStrategy — minimal polling loop for an Sooppiy agent.
  *
  * Polls the signal feed every `intervalMs`, deduplicates by signal id,
  * and fires `handler` for each new signal. Built for clarity not
  * throughput; when push-based market data ships (Phase 4.5) this will
  * be replaced with a WebSocket subscriber.
  */
-import type { AITRADClient } from "./client.js";
+import type { SooppiyClient } from "./client.js";
 
 export interface RunStrategyOptions {
-  client: AITRADClient;
+  client: SooppiyClient;
   /** ms between polls. Default 5000. */
   intervalMs?: number;
   /** Filter — "operation" (default), "strategy", "discussion", or null. */

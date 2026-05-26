@@ -33,7 +33,7 @@ jobs:
       - name: Run pytest
         working-directory: service/server
         env:
-          DB_PATH: /tmp/aitrad-ci.db
+          DB_PATH: /tmp/sooppiy-ci.db
           ALPHA_VANTAGE_API_KEY: demo
         run: |
           python -m pytest -q

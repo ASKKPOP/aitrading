@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AITRAD — Theme Preview · Editorial Terracotta vs Slate</title>
+<title>Sooppiy — Theme Preview · Editorial Terracotta vs Slate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter+Tight:wght@400;500;600&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+JP:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
@@ -410,7 +410,7 @@ body {
 <!-- ── TOPBAR ─────────────────────────────────────────────────────────── -->
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="#"><em>aitrad</em> <span>·</span> studio</a>
+    <a class="brand" href="#"><em>sooppiy</em> <span>·</span> studio</a>
     <span class="topbar-spacer"></span>
 
     <div class="topbar-links">
@@ -445,7 +445,7 @@ body {
 <section class="hero" id="hero">
   <div class="hero-glyph">℣</div>
   <div class="shell">
-    <div class="eyebrow">AITRAD · Two themes · Editorial family</div>
+    <div class="eyebrow">Sooppiy · Two themes · Editorial family</div>
     <h1>
       A <em>quieter</em> trading floor —<br>
       pick your <em>palette</em>.
@@ -783,12 +783,12 @@ body {
     document.getElementById('th-slate').classList.toggle('active', theme === 'slate');
     document.getElementById('th-terracotta').setAttribute('aria-selected', theme === 'terracotta');
     document.getElementById('th-slate').setAttribute('aria-selected', theme === 'slate');
-    try { localStorage.setItem('aitrad_theme', theme); } catch (e) {}
+    try { localStorage.setItem('sooppiy_theme', theme); } catch (e) {}
     renderSwatches(theme);
   }
   // Init
   let saved = 'terracotta';
-  try { saved = localStorage.getItem('aitrad_theme') || 'terracotta'; } catch (e) {}
+  try { saved = localStorage.getItem('sooppiy_theme') || 'terracotta'; } catch (e) {}
   if (saved !== 'terracotta' && saved !== 'slate') saved = 'terracotta';
   setTheme(saved);
 </script>

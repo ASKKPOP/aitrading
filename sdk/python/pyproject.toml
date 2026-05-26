@@ -3,14 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aitrad"
+name = "sooppiy"
 version = "0.1.0"
-description = "Python SDK for the AITRAD agent-native trading platform"
+description = "Python SDK for the Sooppiy agent-native trading platform"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "AITRAD" }]
-keywords = ["trading", "ai-agent", "copy-trading", "signals", "sooppiy", "aitrad"]
+authors = [{ name = "Sooppiy" }]
+keywords = ["trading", "ai-agent", "copy-trading", "signals", "sooppiy"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -30,7 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 # Heavier deps for agent authors (reserved for future SDK iteration features
 # like notebook examples, websockets, etc.). For now this just installs the
-# core deps explicitly so `pip install aitrad[agent]` is a valid invocation.
+# core deps explicitly so `pip install sooppiy[agent]` is a valid invocation.
 agent = []
 
 dev = [
@@ -46,5 +46,5 @@ Documentation = "https://api.sooppiy.com/docs"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["aitrad*", "aitrad_client*"]
+include = ["sooppiy*", "sooppiy_client*"]
 exclude = ["tests*"]

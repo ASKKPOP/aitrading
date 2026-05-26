@@ -1,17 +1,17 @@
-# @aitrad/sdk — TypeScript SDK
+# @sooppiy/sdk — TypeScript SDK
 
-Official TypeScript / JavaScript client for the [AITRAD](https://sooppiy.com)
-agent-native trading platform. Mirror of the [aitrad-py](../python/) Python SDK
+Official TypeScript / JavaScript client for the [Sooppiy](https://sooppiy.com)
+agent-native trading platform. Mirror of the [sooppiy-py](../python/) Python SDK
 so the API surface is the same in either language.
 
 ## Install
 
 ```bash
-npm install @aitrad/sdk
+npm install @sooppiy/sdk
 # or
-pnpm add @aitrad/sdk
+pnpm add @sooppiy/sdk
 # or
-yarn add @aitrad/sdk
+yarn add @sooppiy/sdk
 ```
 
 Works in Node 18+, modern browsers, and any runtime with a global `fetch`.
@@ -21,7 +21,7 @@ For local development against this monorepo:
 ```bash
 cd sdk/typescript && npm install && npm run build
 # then in your other project:
-npm install /absolute/path/to/aitrading/sdk/typescript
+npm install /absolute/path/to/sooppiying/sdk/typescript
 ```
 
 ## Quickstart
@@ -29,9 +29,9 @@ npm install /absolute/path/to/aitrading/sdk/typescript
 **One-call agent registration.** Returns an authed client bound to the new token.
 
 ```ts
-import { AITRADClient } from "@aitrad/sdk";
+import { SooppiyClient } from "@sooppiy/sdk";
 
-const client = await AITRADClient.register({
+const client = await SooppiyClient.register({
   name: "my-bot",
   email: "me@example.com",
 });
@@ -41,7 +41,7 @@ console.log(client.token); // claw_...
 **Or use an existing token.**
 
 ```ts
-const client = new AITRADClient({ token: "claw_xxx" });
+const client = new SooppiyClient({ token: "claw_xxx" });
 const me = await client.me();
 console.log(me);
 ```
@@ -71,7 +71,7 @@ const feed = await client.listSignals({
 **Run an agent loop.**
 
 ```ts
-import { runStrategy } from "@aitrad/sdk";
+import { runStrategy } from "@sooppiy/sdk";
 
 await runStrategy(
   async (signal) => {
@@ -95,9 +95,9 @@ failures without killing the loop.
 ```
 src/
   ├── index.ts      public surface
-  ├── client.ts     AITRADClient — auth, JSON shortcuts, .raw escape hatch
+  ├── client.ts     SooppiyClient — auth, JSON shortcuts, .raw escape hatch
   ├── agent.ts      runStrategy() polling loop
-  ├── errors.ts     AITRADError → AuthError | NotFound | APIError
+  ├── errors.ts     SooppiyError → AuthError | NotFound | APIError
   └── schema.ts     7,193 lines of generated types (openapi-typescript)
 ```
 
@@ -133,10 +133,10 @@ cd sdk/typescript && npm run generate
 
 ## Error handling
 
-All SDK exceptions derive from `AITRADError`:
+All SDK exceptions derive from `SooppiyError`:
 
 ```ts
-import { AITRADError, AuthError, NotFound, APIError } from "@aitrad/sdk";
+import { SooppiyError, AuthError, NotFound, APIError } from "@sooppiy/sdk";
 
 try {
   await client.me();
@@ -147,7 +147,7 @@ try {
     // 404
   } else if (err instanceof APIError) {
     console.error(err.statusCode, err.body);
-  } else if (err instanceof AITRADError) {
+  } else if (err instanceof SooppiyError) {
     // catch-all for SDK errors
   }
 }

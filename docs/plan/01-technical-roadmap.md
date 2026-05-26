@@ -1,8 +1,8 @@
-# AITRAD Technical Roadmap
+# Sooppiy Technical Roadmap
 
 > Living document. Owner: platform team. Reviewed at the end of each phase.
 
-Grounded in a read of `CLAUDE.md`, the 13 backend route modules, `database.py`, `price_fetcher.py`, `tasks.py`, `main.py`, `cache.py`, `routes_shared.py`, `routes_users.py`, `services.py`, `requirements.txt`, and `.env.example`. AITRAD today is ~17 kLOC of backend Python and ~7 kLOC of frontend TypeScript with **no CI**, **no broker integration**, and **no backtest engine** — three facts that drive most of what follows.
+Grounded in a read of `CLAUDE.md`, the 13 backend route modules, `database.py`, `price_fetcher.py`, `tasks.py`, `main.py`, `cache.py`, `routes_shared.py`, `routes_users.py`, `services.py`, `requirements.txt`, and `.env.example`. Sooppiy today is ~17 kLOC of backend Python and ~7 kLOC of frontend TypeScript with **no CI**, **no broker integration**, and **no backtest engine** — three facts that drive most of what follows.
 
 ---
 
@@ -67,7 +67,7 @@ There is no `.github/` directory today. Ship in week 1:
 
 ### Deployment topology — recommendation: **Fly.io**
 
-Three reasons: (1) it natively supports the two-process model AITRAD already has (API + worker) via `[processes]` in `fly.toml`; (2) Postgres + Redis as managed add-ons with predictable pricing; (3) global Anycast for the API while keeping the worker in one region near Postgres avoids the read/write split complexity of Cloud Run. Cloud Run is the close runner-up if the team is already in GCP. Render works but its background-worker pricing is harsher. Railway is fine for staging only.
+Three reasons: (1) it natively supports the two-process model Sooppiy already has (API + worker) via `[processes]` in `fly.toml`; (2) Postgres + Redis as managed add-ons with predictable pricing; (3) global Anycast for the API while keeping the worker in one region near Postgres avoids the read/write split complexity of Cloud Run. Cloud Run is the close runner-up if the team is already in GCP. Render works but its background-worker pricing is harsher. Railway is fine for staging only.
 
 Topology: `app` (FastAPI, autoscaled), `worker` (single-instance with the file lock at `worker.py:38-51` keeping it singleton), Postgres add-on, Upstash Redis. Frontend on Cloudflare Pages or Vercel pointing to `https://api.sooppiy.com`.
 
@@ -115,10 +115,10 @@ This is dangerous. Stage it:
 
 ### Compliance touchpoints
 
-- **KYC.** Don't build it. Use the broker's onboarding (Alpaca KYC API for US, Binance for crypto). AITRAD stores a `broker_account_status` enum and links out.
+- **KYC.** Don't build it. Use the broker's onboarding (Alpaca KYC API for US, Binance for crypto). Sooppiy stores a `broker_account_status` enum and links out.
 - **Broker API key management.** Never store plaintext. AES-GCM-encrypt at the application layer with a key from the secrets provider; store ciphertext + key-version. Rotate quarterly.
 - **Sandbox vs live.** Per-broker URL and credential set; the `Broker` ABC takes a `mode` parameter. Live mode requires an explicit user opt-in via a signed acknowledgement endpoint logged to an immutable audit table.
-- **Regulatory.** Stop calling AITRAD a "broker" or "execution engine" in marketing — it's an introducing/copy-trading platform built on third-party brokers. This affects T&Cs and risk disclosures.
+- **Regulatory.** Stop calling Sooppiy a "broker" or "execution engine" in marketing — it's an introducing/copy-trading platform built on third-party brokers. This affects T&Cs and risk disclosures.
 
 ---
 
@@ -163,14 +163,14 @@ Worker isolation: backtests run in the existing `worker.py` process (queue with 
 
 ## 5. Marketing-site integration
 
-A separate marketing site (e.g. `aitrad.com`) lives independently. The technical handshake:
+A separate marketing site (e.g. `sooppiy.com`) lives independently. The technical handshake:
 
 - **Signup deep-link:** marketing CTA → `https://app.sooppiy.com/signup?ref={utm_source}&plan={plan}`. Backend records `ref` on the user row for attribution.
 - **Magic-link auth** (new in Phase 1): marketing requests an email link via `/api/users/magic-link` (server-to-server with a shared secret), backend emails a link `https://app.sooppiy.com/auth?token=…`. This avoids exposing the 6-digit code flow to the marketing surface.
 - **SSO (later):** if marketing has its own user DB (unlikely for a static site), add OIDC. For Phase 1 don't.
 - **Shared session is unnecessary.** Marketing is anonymous; the only crossing is the signup link.
 
-Documented separately in the marketing-site doc; the only AITRAD-side work is the magic-link endpoint and an attribution column on `users`.
+Documented separately in the marketing-site doc; the only Sooppiy-side work is the magic-link endpoint and an attribution column on `users`.
 
 ---
 
@@ -178,11 +178,11 @@ Documented separately in the marketing-site doc; the only AITRAD-side work is th
 
 ### Better LLM agent SDK (Python + TS)
 
-The current skill markdown in `skills/aitrad/`, `skills/copytrade/`, `skills/tradesync/` is *instructions* for an LLM, not an SDK. Build an actual SDK:
+The current skill markdown in `skills/sooppiy/`, `skills/copytrade/`, `skills/tradesync/` is *instructions* for an LLM, not an SDK. Build an actual SDK:
 
-- **`aitrad-py`** — thin client around the FastAPI surface. Generated from the OpenAPI spec at `docs/api/openapi.yaml` via `openapi-python-client` so it stays in sync. Add a `Strategy` decorator that wraps a Python function and makes it a registered publisher with backoff, retries, and idempotency keys.
-- **`aitrad-ts`** — same, generated via `openapi-typescript-codegen`, shipped to npm. The frontend itself can use the same client (replacing ad-hoc `fetch` in AppPages).
-- **Higher-level agent loop:** a `run_strategy(strategy, schedule)` helper that polls market data, runs the strategy, publishes signals, handles auth refresh. Distributed as `pip install aitrad[agent]`.
+- **`sooppiy-py`** — thin client around the FastAPI surface. Generated from the OpenAPI spec at `docs/api/openapi.yaml` via `openapi-python-client` so it stays in sync. Add a `Strategy` decorator that wraps a Python function and makes it a registered publisher with backoff, retries, and idempotency keys.
+- **`sooppiy-ts`** — same, generated via `openapi-typescript-codegen`, shipped to npm. The frontend itself can use the same client (replacing ad-hoc `fetch` in AppPages).
+- **Higher-level agent loop:** a `run_strategy(strategy, schedule)` helper that polls market data, runs the strategy, publishes signals, handles auth refresh. Distributed as `pip install sooppiy[agent]`.
 
 ### Memory layer for agents
 
@@ -274,8 +274,8 @@ Effort sizing: **S** ≤ 3 days, **M** ≤ 2 weeks, **L** ≤ 6 weeks. Sequencin
 
 | # | Item | Effort | Depends on | Key risk |
 |---|---|---|---|---|
-| 4.1 | Auto-generated `aitrad-py` SDK from OpenAPI | M | 1.1 | API surface churn invalidates SDK |
-| 4.2 | Auto-generated `aitrad-ts` SDK; migrate frontend to use it | L | 4.1 | Frontend regression risk |
+| 4.1 | Auto-generated `sooppiy-py` SDK from OpenAPI | M | 1.1 | API surface churn invalidates SDK |
+| 4.2 | Auto-generated `sooppiy-ts` SDK; migrate frontend to use it | L | 4.1 | Frontend regression risk |
 | 4.3 | Agent memory layer (table + pgvector + API) | M | 1.4 | Vector index size and cost |
 | 4.4 | Materialized leaderboard + signal-feed views | M | 1.4, 1.7 | Refresh lag visible in UI |
 | 4.5 | Push-based market data (WS) replacing polling | L | 1.7 | Connection reliability, reconnect storms |

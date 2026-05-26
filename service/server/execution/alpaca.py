@@ -1,7 +1,7 @@
 """
 execution/alpaca.py — AlpacaBroker.
 
-Wires AITRAD signals to the Alpaca REST API (v2).
+Wires Sooppiy signals to the Alpaca REST API (v2).
 
 Paper sandbox:  https://paper-api.alpaca.markets/v2/orders
 Live:           https://api.alpaca.markets/v2/orders
@@ -30,7 +30,7 @@ _logger = logging.getLogger(__name__)
 _PAPER_BASE = "https://paper-api.alpaca.markets/v2"
 _LIVE_BASE  = "https://api.alpaca.markets/v2"
 
-# Map AITRAD sides to Alpaca order sides.
+# Map Sooppiy sides to Alpaca order sides.
 _SIDE_MAP = {
     "buy":   ("buy",  "long"),
     "sell":  ("sell", "long"),

@@ -1,6 +1,6 @@
-# AITRAD Server - Private Implementation
+# Sooppiy Server - Private Implementation
 
-This directory contains the proprietary server implementation for AITRAD.
+This directory contains the proprietary server implementation for Sooppiy.
 
 ## Contents
 

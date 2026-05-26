@@ -2,7 +2,7 @@
 
 Experiment key: `agent-collab-compete-season-001`
 
-Owner: AITRAD research / ops
+Owner: Sooppiy research / ops
 
 Status: Phase 1 read-adoption mitigation active; Phase 2 not started
 

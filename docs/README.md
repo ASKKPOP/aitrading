@@ -1,12 +1,12 @@
-# AITRAD — Research & Plans
+# Sooppiy — Research & Plans
 
-This folder is the durable thinking for AITRAD: where we are, who we're competing with, what to build, and the order to build it in. Three documents below — read them in this order.
+This folder is the durable thinking for Sooppiy: where we are, who we're competing with, what to build, and the order to build it in. Three documents below — read them in this order.
 
 ## What's here
 
 | # | Document | What it answers | Words |
 |---|---|---|---|
-| 1 | [research/01-competitive-landscape.md](research/01-competitive-landscape.md) | Who exists in the agent-trading / copy-trading space, what's unique about AITRAD, how new users get stuck, and 12 ranked accessibility wins. | ~3,300 |
+| 1 | [research/01-competitive-landscape.md](research/01-competitive-landscape.md) | Who exists in the agent-trading / copy-trading space, what's unique about Sooppiy, how new users get stuck, and 12 ranked accessibility wins. | ~3,300 |
 | 2 | [research/02-marketing-site.md](research/02-marketing-site.md) | A standalone marketing site design brief — references, audience segments, IA, page-by-page, tech stack, SEO, rollout. | ~2,400 |
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
 

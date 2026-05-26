@@ -10,7 +10,7 @@ What this script does:
 - clears Redis-backed leaderboard/signal caches when available
 
 Usage:
-  cd /home/AITRAD/service/server
+  cd /home/Sooppiy/service/server
   python3 scripts/cleanup_dirty_trade_data.py --dry-run
   python3 scripts/cleanup_dirty_trade_data.py --apply
 """

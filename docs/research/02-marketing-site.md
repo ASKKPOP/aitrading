@@ -1,12 +1,12 @@
-# AITRAD Marketing Site — Research & Design Brief
+# Sooppiy Marketing Site — Research & Design Brief
 
-> Scope: a dedicated marketing/landing site whose only job is to convert qualified visitors into sign-ups on the AITRAD trading app (currently `http://localhost:3000`). The marketing site is a **separate property** from the app, optimized for SEO, story, and speed.
+> Scope: a dedicated marketing/landing site whose only job is to convert qualified visitors into sign-ups on the Sooppiy trading app (currently `http://localhost:3000`). The marketing site is a **separate property** from the app, optimized for SEO, story, and speed.
 
 ---
 
 ## 1. Reference Inspection
 
-Survey of high-signal 2026 fintech / AI / dev-tool marketing sites, with the pattern we can borrow for AITRAD.
+Survey of high-signal 2026 fintech / AI / dev-tool marketing sites, with the pattern we can borrow for Sooppiy.
 
 ### linear.app
 - **Hero**: dead-centre headline "The product development system for teams and agents", repeated visually for emphasis. Subhead leans into the AI-era angle. Primary CTA is a teaser link ("Issue tracking is dead → linear.app/next") rather than a generic "Sign up". (Linear homepage)
@@ -36,10 +36,10 @@ Survey of high-signal 2026 fintech / AI / dev-tool marketing sites, with the pat
 ### granola.ai
 - **Hero**: "The AI notepad for people in back-to-back meetings." Sub: "Granola takes your raw meeting notes and makes them awesome." Single download CTA + editorial "Announcing our Series C" link. (Granola homepage, Lapa Ninja teardown)
 - **Pattern**: before/after demonstration as the central feature device — raw notes morph into structured outputs. Logo wall (PostHog, Intercom, Ramp, Linear, Brex, Replit, Vercel) in a rotating carousel.
-- **Viral loop**: shareable artifact (the meeting note) becomes the marketing vehicle — every shared note links non-users back to a chat-with-transcript demo. (Over The Anthill analysis) **AITRAD has the same shape**: every agent profile / signal page is shareable proof that drives sign-up.
+- **Viral loop**: shareable artifact (the meeting note) becomes the marketing vehicle — every shared note links non-users back to a chat-with-transcript demo. (Over The Anthill analysis) **Sooppiy has the same shape**: every agent profile / signal page is shareable proof that drives sign-up.
 
 ### hyperliquid.xyz
-- The marketing surface is intentionally thin; `hyperliquid.xyz` 301s to `hyperfoundation.org`, and the brand puts trading UI front-and-centre at `app.hyperliquid.xyz`. (Hyperliquid Support) The lesson is inverse: high-volume crypto-native users want app-first. AITRAD's *prosumer* and *researcher* segments don't — we need a story-led front door, but we should still ship a one-click route to the live app.
+- The marketing surface is intentionally thin; `hyperliquid.xyz` 301s to `hyperfoundation.org`, and the brand puts trading UI front-and-centre at `app.hyperliquid.xyz`. (Hyperliquid Support) The lesson is inverse: high-volume crypto-native users want app-first. Sooppiy's *prosumer* and *researcher* segments don't — we need a story-led front door, but we should still ship a one-click route to the live app.
 
 ### askkpop.com / ionixq.com (our own reference)
 - Two editorial themes already extracted: **terracotta + parchment** (warm, scholarly) and **slate** (austere, institutional). Both lean on serif headlines, restrained accents, and parchment backgrounds — closer to the Kami document system ("warm parchment canvas, serif carries hierarchy, single accent") than to standard SaaS gradient slop.
@@ -54,7 +54,7 @@ Across Linear, Anthropic, Pylon, Perplexity, and Granola:
 6. **Trust band** (compliance, funding, security) near the bottom.
 7. **FAQ block** — coming back into favour because LLM crawlers (GPTBot, ClaudeBot, PerplexityBot — now ~33% of organic traffic) cite structured Q&A. (Search Engine Land)
 
-We will steal liberally from this stack but skin it in AITRAD's editorial/parchment voice — the moat is *not looking like another agent startup*.
+We will steal liberally from this stack but skin it in Sooppiy's editorial/parchment voice — the moat is *not looking like another agent startup*.
 
 ---
 
@@ -65,7 +65,7 @@ Validated against TradingAgents (Tauric Research) GitHub adoption, Polymarket Q1
 ### A. The Agent-Builder (indie quant / dev-trader)
 - **Who**: Python/TypeScript dev, has tried `tradingagents`, LangGraph, AutoGen; runs paper-trading bots; collects API keys like baseball cards.
 - **Pain**: "I built a clever agent. I have nowhere to publish its track record, no peers to copy, no benchmark." Forum-fragmented (Discord + scattered repos).
-- **Promise**: AITRAD is the *registry* — register your agent, publish signals, get a public track record, copy others, all in one place.
+- **Promise**: Sooppiy is the *registry* — register your agent, publish signals, get a public track record, copy others, all in one place.
 - **Proof**: production-grade agent platform — supports OpenClaw / nanobot / Claude Code / Codex / Cursor out of the box, leaderboard with verifiable PnL, backtest-validated badges.
 - **Language they use**: "agent loop," "tool calls," "backtest," "PnL," "drawdown," "context window," "vibe-coding a strategy."
 
@@ -79,14 +79,14 @@ Validated against TradingAgents (Tauric Research) GitHub adoption, Polymarket Q1
 ### C. The Multi-Agent Researcher
 - **Who**: ML researcher, grad student, quant finance academic. Reads arXiv on multi-agent LLM systems. (TradingAgents on arXiv)
 - **Pain**: no public benchmark for agent trading performance; toy backtests don't survive live markets; can't compare frameworks apples-to-apples.
-- **Promise**: AITRAD is the public test-bed — standardised market access (US equities, Hyperliquid perps, Polymarket binaries), reproducible runs, downloadable trace data, citable leaderboard.
+- **Promise**: Sooppiy is the public test-bed — standardised market access (US equities, Hyperliquid perps, Polymarket binaries), reproducible runs, downloadable trace data, citable leaderboard.
 - **Proof**: open methodology page, dataset access, papers we've enabled, links to source framework on GitHub.
 - **Language they use**: "benchmark," "reproducible," "tool use," "evaluation harness," "rollout."
 
 ### D. The Asia-Localized Prosumer (JP / TH / VN)
 - **Who**: Japan, Thailand, Vietnam crypto-curious retail. Japan has the most mature crypto regime; Thailand has 12% adoption + a capital-gains waiver through 2029 on licensed venues; Vietnam just issued Resolution 05/2025/NQ-CP creating its first licensing regime. (Thailand crypto guide, Vietnam licensing)
 - **Pain**: English-only fintech feels foreign; date formats, currency, support hours, and tone are wrong. 76% of consumers prefer their language; 75% repurchase more when support is native. (Honey Translations)
-- **Promise**: AITRAD is built in your language from the ground up — JA / TH / VI / EN — with culturally aware copy, local time zones, and prediction-market / Hyperliquid access without a US broker.
+- **Promise**: Sooppiy is built in your language from the ground up — JA / TH / VI / EN — with culturally aware copy, local time zones, and prediction-market / Hyperliquid access without a US broker.
 - **Proof**: native-quality translations (not Google-translated), local case studies, Asia-friendly support hours, regional payment context where compliant.
 
 > Segments A and C share the same site experience (technical, leaderboard-led). B and D need a softer, more editorial copy register. We solve this with **two on-ramps from one home page**: "I build agents" and "I follow agents."
@@ -256,12 +256,12 @@ Notably, optimize for **LLM citation** as much as Google — GPTBot/ClaudeBot/Pe
 ### Pillar content (6 ideas)
 1. **"What is an agent-native trading platform?"** — definitional, captures category-creation intent.
 2. **"Open leaderboard: the top 20 LLM trading agents this quarter"** — recurring, link-magnet, naturally cited.
-3. **"How to register your first trading agent on AITRAD (with Claude Code)"** — tutorial, segment A.
+3. **"How to register your first trading agent on Sooppiy (with Claude Code)"** — tutorial, segment A.
 4. **"Copy-trading AI vs human signal providers: a 90-day comparison"** — segment B, also drives backlinks.
 5. **"A reproducible benchmark for multi-agent LLM trading"** — segment C, arXiv-adjacent, citable.
 6. **"Trading Polymarket with LLM agents: paper run, full traces"** — niche, evergreen.
 7. **"Hyperliquid perps for AI agents: latency, fees, and how we connect"** — niche, builder-facing.
-8. **"日本のAIトレーディング規制と AITRAD の対応" (JP)** — localized regulatory explainer; high trust ROI in JP per law.asia coverage.
+8. **"日本のAIトレーディング規制と Sooppiy の対応" (JP)** — localized regulatory explainer; high trust ROI in JP per law.asia coverage.
 
 ### Schema / OG essentials
 - `Organization` schema sitewide.

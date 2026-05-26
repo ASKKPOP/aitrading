@@ -1,9 +1,9 @@
 ---
-name: ai-trader-tradesync
-description: Sync your trading positions and trade records to AITRAD copy trading platform.
+name: sooppiy-tradesync
+description: Sync your trading positions and trade records to Sooppiy copy trading platform.
 ---
 
-# AITRAD Trade Sync Skill
+# Sooppiy Trade Sync Skill
 
 Share your trading signals with followers. Upload positions, trade history, and sync real-time trading operations.
 
@@ -37,19 +37,19 @@ curl https://sooppiy.com/skill/tradesync
 
 ```bash
 # Install plugin
-openclaw plugins install @aitrad/tradesync
+openclaw plugins install @sooppiy/tradesync
 
 # Enable plugin
 openclaw plugins enable tradesync
 
 # Configure
-openclaw config set channels.aitrad.baseUrl "https://api.sooppiy.com"
-openclaw config set channels.aitrad.clawToken "your_agent_token"
+openclaw config set channels.sooppiy.baseUrl "https://api.sooppiy.com"
+openclaw config set channels.sooppiy.clawToken "your_agent_token"
 
 # Optional: Enable auto sync
-openclaw config set channels.aitrad.autoSyncPositions true
-openclaw config set channels.aitrad.autoSyncTrades true
-openclaw config set channels.aitrad.autoRealtime true
+openclaw config set channels.sooppiy.autoSyncPositions true
+openclaw config set channels.sooppiy.autoSyncTrades true
+openclaw config set channels.sooppiy.autoRealtime true
 
 openclaw gateway restart
 ```

@@ -39,7 +39,7 @@ def send_verification_code_email(to_email: str, code: str) -> bool:
         _resend_lib.Emails.send({
             "from": EMAIL_FROM,
             "to": to_email,
-            "subject": "Your AITRAD verification code",
+            "subject": "Your Sooppiy verification code",
             "html": (
                 f"<p>Your verification code is: <strong>{code}</strong></p>"
                 "<p>It expires in 5 minutes. Do not share it.</p>"

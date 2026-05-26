@@ -1,4 +1,4 @@
-"""execution — broker abstraction layer for AITRAD."""
+"""execution — broker abstraction layer for Sooppiy."""
 from execution.base import AVAILABLE_BROKERS, Broker, ExecutionMode, Order, OrderStatus
 from execution.router import ExecutionRouter, execution_router
 from execution.paper import PaperBroker

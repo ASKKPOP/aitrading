@@ -1,5 +1,5 @@
 {
-  "$id": "https://ai-trader.local/research/schemas/experiment_assignments.schema.json",
+  "$id": "https://sooppiy.local/research/schemas/experiment_assignments.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

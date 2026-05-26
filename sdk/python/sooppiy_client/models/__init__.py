@@ -20,6 +20,8 @@ from .challenge_settle_request import ChallengeSettleRequest
 from .challenge_submission_request import ChallengeSubmissionRequest
 from .challenge_submission_request_prediction_json_type_0 import ChallengeSubmissionRequestPredictionJsonType0
 from .create_broker_account_request import CreateBrokerAccountRequest
+from .create_memory_request import CreateMemoryRequest
+from .create_memory_request_metadata_type_0 import CreateMemoryRequestMetadataType0
 from .create_strategy_request import CreateStrategyRequest
 from .create_tournament_request import CreateTournamentRequest
 from .discussion_request import DiscussionRequest
@@ -79,6 +81,8 @@ __all__ = (
     "ChallengeSubmissionRequest",
     "ChallengeSubmissionRequestPredictionJsonType0",
     "CreateBrokerAccountRequest",
+    "CreateMemoryRequest",
+    "CreateMemoryRequestMetadataType0",
     "CreateStrategyRequest",
     "CreateTournamentRequest",
     "DiscussionRequest",
