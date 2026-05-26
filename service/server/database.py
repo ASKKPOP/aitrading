@@ -1675,6 +1675,24 @@ def init_database():
         ON tournament_entries(tournament_id, rank)
     """)
 
+    # ── Phase 4.7: reputation slashing audit log ──────────────────────────────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reputation_slashes (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            leader_id       INTEGER NOT NULL,
+            signal_id       INTEGER,
+            loss_pct        REAL    NOT NULL,
+            follower_count  INTEGER NOT NULL,
+            points_deducted INTEGER NOT NULL,
+            created_at      TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (leader_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_reputation_slashes_leader
+        ON reputation_slashes(leader_id, created_at)
+    """)
+
     # ── Phase 4.4: materialized leaderboard snapshot ─────────────────────────
     # One row per (metric, rank). The worker rebuilds this every 30s by
     # running the leaderboard aggregate once and writing the result. Read
