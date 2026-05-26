@@ -13,6 +13,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "service/frontend",
       "port": 3000
+    },
+    {
+      "name": "marketing",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "marketing",
+      "port": 4321
     }
   ]
 }
