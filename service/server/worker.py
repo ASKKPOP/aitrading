@@ -14,7 +14,14 @@ import sys
 from contextlib import suppress
 
 from database import init_database, get_database_status
-from tasks import DEFAULT_BACKGROUND_TASKS, _prune_profit_history, start_background_tasks
+from tasks import (
+    DEFAULT_BACKGROUND_TASKS,
+    WORKER_ROLES,
+    _prune_profit_history,
+    get_worker_lock_key,
+    start_background_tasks,
+    tasks_for_role,
+)
 
 
 logging.basicConfig(
@@ -35,14 +42,20 @@ async def _renew_redis_lock(lock, timeout_seconds: int) -> None:
             os._exit(1)
 
 
-def _acquire_file_lock():
-    lock_path = os.getenv("AI_TRADER_WORKER_LOCK_FILE", "/tmp/ai-trader-worker.lock")
+def _acquire_file_lock(role: str = "all"):
+    # Per-role file lock so role-segmented workers don't fight over the same path.
+    default_path = (
+        "/tmp/ai-trader-worker.lock"
+        if role == "all"
+        else f"/tmp/ai-trader-worker-{role}.lock"
+    )
+    lock_path = os.getenv("AI_TRADER_WORKER_LOCK_FILE", default_path)
     handle = open(lock_path, "w", encoding="utf-8")
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         handle.close()
-        logger.warning("Another AITRAD worker is already running; lock_file=%s", lock_path)
+        logger.warning("Another AITRAD %s worker is already running; lock_file=%s", role, lock_path)
         return None
     handle.seek(0)
     handle.truncate()
@@ -84,34 +97,51 @@ async def main() -> None:
         lock_timeout_seconds = max(30, int(os.getenv("AI_TRADER_WORKER_LOCK_TIMEOUT_SECONDS", "120")))
     except Exception:
         lock_timeout_seconds = 120
+
+    # Phase 4.6: role-segmented workers. AI_TRADER_WORKER_ROLE picks which
+    # task subset this process runs; each role uses a distinct lock key so
+    # role-specialised workers can run side-by-side.
+    role = (os.getenv("AI_TRADER_WORKER_ROLE", "all").strip() or "all").lower()
+    if role not in WORKER_ROLES:
+        logger.error(
+            "Invalid AI_TRADER_WORKER_ROLE=%r; expected one of %s",
+            role, WORKER_ROLES,
+        )
+        return
+    lock_key = get_worker_lock_key(role)
+    logger.info(
+        "Starting AITRAD worker role=%s tasks=%s",
+        role, tasks_for_role(role),
+    )
+
     try:
         from cache import acquire_lock
 
         redis_lock = acquire_lock(
-            "worker:singleton",
+            lock_key,
             timeout_seconds=lock_timeout_seconds,
             blocking=False,
         )
         if redis_lock is not None:
             acquired = bool(redis_lock.acquire(blocking=False))
             if not acquired:
-                logger.warning("Another AITRAD worker is already running; Redis singleton lock is held.")
+                logger.warning("Another AITRAD %s worker is already running; Redis singleton lock %s is held.", role, lock_key)
                 return
             lock_renew_task = asyncio.create_task(
                 _renew_redis_lock(redis_lock, lock_timeout_seconds),
-                name="ai-trader:worker_lock_renew",
+                name=f"ai-trader:{role}_worker_lock_renew",
             )
-            logger.info("Acquired worker singleton lock via Redis")
+            logger.info("Acquired %s worker singleton lock via Redis (%s)", role, lock_key)
         else:
-            file_lock_handle = _acquire_file_lock()
+            file_lock_handle = _acquire_file_lock(role)
             if file_lock_handle is None:
                 return
-            logger.info("Acquired worker singleton lock via file")
+            logger.info("Acquired %s worker singleton lock via file", role)
     except Exception:
         if redis_lock is not None:
             with suppress(Exception):
                 redis_lock.release()
-        logger.exception("Failed to acquire worker singleton lock")
+        logger.exception("Failed to acquire %s worker singleton lock", role)
         return
 
     try:

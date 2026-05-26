@@ -27,6 +27,15 @@ primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
   BACKGROUND_TASKS_IN_API = "false"
 
 # ── Process definitions ──────────────────────────────────────────────────────
+# The default `worker` runs every background task (role=all, backward-compat).
+# To scale a specific role independently — e.g. when push-based prices
+# saturate the single worker — split it like this:
+#
+#   worker_prices     = "AI_TRADER_WORKER_ROLE=prices     python service/server/worker.py"
+#   worker_settlement = "AI_TRADER_WORKER_ROLE=settlement python service/server/worker.py"
+#   worker_research   = "AI_TRADER_WORKER_ROLE=research   python service/server/worker.py"
+#
+# Each role uses its own singleton lock so they coexist on the same machine.
 [processes]
   api    = "python -m uvicorn --app-dir service/server main:app --host 0.0.0.0 --port 8001 --workers 2"
   worker = "python service/server/worker.py"
