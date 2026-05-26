@@ -1,33 +1,35 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import {
   API_BASE,
-  ExchangePage,
-  FinancialEventsPage,
-  LandingPage,
   LanguageContext,
   LoginPage,
   type NotificationCounts,
   NOTIFICATION_POLL_INTERVAL,
-  PositionsPage,
   RegisterPage,
   Sidebar,
-  SignalsFeed,
   StrategiesPage,
   ThemeContext,
   type ThemeMode,
   Toast,
   TopbarControls,
-  TradePage,
   TrendingSidebar,
-  CopyTradingPage,
-  DevPage,
   DiscussionsPage,
-  LeaderboardPage,
   HamburgerButton,
-  AgentProfilePage,
 } from './AppPages'
+
+// Route-level pages are lazy-loaded to enable bundle code-splitting.
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const DevPage = lazy(() => import('./pages/DevPage'))
+const FinancialEventsPage = lazy(() => import('./pages/FinancialEventsPage'))
+const SignalsFeed = lazy(() => import('./pages/SignalsFeed'))
+const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'))
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
+const PositionsPage = lazy(() => import('./pages/PositionsPage'))
+const TradePage = lazy(() => import('./pages/TradePage'))
+const ExchangePage = lazy(() => import('./pages/ExchangePage'))
+const AgentProfilePage = lazy(() => import('./pages/AgentProfilePage'))
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { BacktestPage } from './BacktestPage'
@@ -296,9 +298,11 @@ function AppRouter({
   // is preserved.
   if (location.pathname === '/about') {
     return (
-      <Routes>
-        <Route path="/about" element={<LandingPage token={token} />} />
-      </Routes>
+      <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
+        <Routes>
+          <Route path="/about" element={<LandingPage token={token} />} />
+        </Routes>
+      </Suspense>
     )
   }
 
@@ -321,49 +325,51 @@ function AppRouter({
             <TopbarControls />
           </div>
 
-          <Routes>
-            <Route path="/" element={<LeaderboardPage token={token} />} />
-            <Route path="/dev" element={<DevPage />} />
-            <Route path="/market" element={<SignalsFeed token={token} />} />
-            <Route path="/leaderboard" element={<LeaderboardPage token={token} />} />
-            <Route path="/challenges" element={<ChallengePage token={token} />} />
-            <Route path="/challenges/:challengeKey" element={<ChallengePage token={token} />} />
-            <Route path="/team-missions" element={<TeamMissionsPage token={token} />} />
-            <Route path="/team-missions/:missionKey" element={<TeamMissionsPage token={token} />} />
-            <Route path="/teams/:teamKey" element={<TeamMissionsPage token={token} />} />
-            <Route path="/experiments" element={<ExperimentAdminPage token={token} />} />
-            <Route path="/research-exports" element={<ResearchExportsPage />} />
-            <Route path="/backtest" element={<BacktestPage token={token} />} />
-            <Route path="/financial-events" element={<FinancialEventsPage />} />
-            <Route path="/copytrading" element={token ? <CopyTradingPage token={token} /> : <Navigate to="/login" replace />} />
-            <Route path="/strategies" element={<StrategiesPage />} />
-            <Route path="/discussions" element={<DiscussionsPage />} />
-            <Route path="/positions" element={<PositionsPage />} />
-            <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
-            <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
-            <Route path="/agent/:id" element={<AgentProfilePage />} />
+          <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
+            <Routes>
+              <Route path="/" element={<LeaderboardPage token={token} />} />
+              <Route path="/dev" element={<DevPage />} />
+              <Route path="/market" element={<SignalsFeed token={token} />} />
+              <Route path="/leaderboard" element={<LeaderboardPage token={token} />} />
+              <Route path="/challenges" element={<ChallengePage token={token} />} />
+              <Route path="/challenges/:challengeKey" element={<ChallengePage token={token} />} />
+              <Route path="/team-missions" element={<TeamMissionsPage token={token} />} />
+              <Route path="/team-missions/:missionKey" element={<TeamMissionsPage token={token} />} />
+              <Route path="/teams/:teamKey" element={<TeamMissionsPage token={token} />} />
+              <Route path="/experiments" element={<ExperimentAdminPage token={token} />} />
+              <Route path="/research-exports" element={<ResearchExportsPage />} />
+              <Route path="/backtest" element={<BacktestPage token={token} />} />
+              <Route path="/financial-events" element={<FinancialEventsPage />} />
+              <Route path="/copytrading" element={token ? <CopyTradingPage token={token} /> : <Navigate to="/login" replace />} />
+              <Route path="/strategies" element={<StrategiesPage />} />
+              <Route path="/discussions" element={<DiscussionsPage />} />
+              <Route path="/positions" element={<PositionsPage />} />
+              <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
+              <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
+              <Route path="/agent/:id" element={<AgentProfilePage />} />
 
-            {/* Phase 5 — public-user auth (humans) */}
-            <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
-            <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
-            <Route path="/auth/mfa/setup" element={<MfaSetupPage userToken={userToken} />} />
-            <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
-            <Route
-              path="/my-trading"
-              element={userToken
-                ? <MyTradingPage userToken={userToken} onSignOut={userLogout} />
-                : <Navigate to="/sign-in" replace />}
-            />
+              {/* Phase 5 — public-user auth (humans) */}
+              <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
+              <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
+              <Route path="/auth/mfa/setup" element={<MfaSetupPage userToken={userToken} />} />
+              <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+              <Route
+                path="/my-trading"
+                element={userToken
+                  ? <MyTradingPage userToken={userToken} onSignOut={userLogout} />
+                  : <Navigate to="/sign-in" replace />}
+              />
 
-            {/* Agent-token paste flow (AI-agent developers) — preserved */}
-            <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
-            <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
-            {/* Backward-compat: old /login + /register still hit the agent flow */}
-            <Route path="/login" element={<LoginPage onLogin={login} />} />
-            <Route path="/register" element={<RegisterPage onLogin={login} />} />
+              {/* Agent-token paste flow (AI-agent developers) — preserved */}
+              <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
+              <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
+              {/* Backward-compat: old /login + /register still hit the agent flow */}
+              <Route path="/login" element={<LoginPage onLogin={login} />} />
+              <Route path="/register" element={<RegisterPage onLogin={login} />} />
 
-            <Route path="*" element={<Navigate to="/market" replace />} />
-          </Routes>
+              <Route path="*" element={<Navigate to="/market" replace />} />
+            </Routes>
+          </Suspense>
         </div>
 
         <TrendingSidebar />
