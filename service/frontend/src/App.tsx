@@ -35,6 +35,15 @@ import { ResearchExportsPage } from './ResearchExportsPage'
 import { TeamMissionsPage } from './TeamMissionsPage'
 import { Language, getT, DEFAULT_LANGUAGE, LANGUAGES } from './i18n'
 import { THEMES, DEFAULT_THEME } from './appShared'
+import {
+  GoogleCallbackPage,
+  MfaSetupPage,
+  SignInPage,
+  SignUpPage,
+  USER_TOKEN_KEY,
+  signOutUser,
+} from './authV2'
+import { MyTradingPage } from './myTradingPage'
 
 const DISCUSSION_NOTIFICATION_TYPES = new Set([
   'discussion_started',
@@ -74,6 +83,7 @@ function App() {
     return THEMES.some((t) => t.value === saved) ? (saved as ThemeMode) : DEFAULT_THEME
   })
   const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
+  const [userToken, setUserToken] = useState<string | null>(localStorage.getItem(USER_TOKEN_KEY))
   const [agentInfo, setAgentInfo] = useState<any>(null)
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
   const [notificationCounts, setNotificationCounts] = useState<NotificationCounts>({ discussion: 0, strategy: 0, experiment: 0 })
@@ -91,6 +101,10 @@ function App() {
     setAgentInfo(null)
     setNotificationCounts({ discussion: 0, strategy: 0, experiment: 0 })
   }
+
+  // Phase 5: human-user auth lives alongside the agent claw_token.
+  const userLogin = (newToken: string) => { setUserToken(newToken) }
+  const userLogout = () => { signOutUser(); setUserToken(null) }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -201,6 +215,9 @@ function App() {
             fetchAgentInfo={fetchAgentInfo}
             notificationCounts={notificationCounts}
             markCategoryRead={markCategoryRead}
+            userToken={userToken}
+            userLogin={userLogin}
+            userLogout={userLogout}
           />
 
           {toast && (
@@ -224,6 +241,9 @@ function AppRouter({
   fetchAgentInfo,
   notificationCounts,
   markCategoryRead,
+  userToken,
+  userLogin,
+  userLogout,
 }: {
   token: string | null
   agentInfo: any
@@ -232,6 +252,9 @@ function AppRouter({
   fetchAgentInfo: () => Promise<void>
   notificationCounts: NotificationCounts
   markCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
+  userToken: string | null
+  userLogin: (token: string) => void
+  userLogout: () => void
 }) {
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -319,8 +342,26 @@ function AppRouter({
             <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
             <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
             <Route path="/agent/:id" element={<AgentProfilePage />} />
+
+            {/* Phase 5 — public-user auth (humans) */}
+            <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
+            <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
+            <Route path="/auth/mfa/setup" element={<MfaSetupPage userToken={userToken} />} />
+            <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+            <Route
+              path="/my-trading"
+              element={userToken
+                ? <MyTradingPage userToken={userToken} onSignOut={userLogout} />
+                : <Navigate to="/sign-in" replace />}
+            />
+
+            {/* Agent-token paste flow (AI-agent developers) — preserved */}
+            <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
+            <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
+            {/* Backward-compat: old /login + /register still hit the agent flow */}
             <Route path="/login" element={<LoginPage onLogin={login} />} />
             <Route path="/register" element={<RegisterPage onLogin={login} />} />
+
             <Route path="*" element={<Navigate to="/market" replace />} />
           </Routes>
         </div>
