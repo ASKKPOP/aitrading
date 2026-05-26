@@ -1729,6 +1729,35 @@ def init_database():
         ON leaderboard_snapshot(metric, rank)
     """)
 
+    # ── Phase 4.4b: materialized signal feed ──────────────────────────────────
+    # Pre-computes /api/signals/grouped results for all (message_type × market)
+    # combos. rank=0 is a sentinel marking "combo computed but 0 agents"; rank≥1
+    # are real agent rows sorted by last_signal_at DESC.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS signal_feed_snapshot (
+            message_type      TEXT    NOT NULL,
+            market            TEXT    NOT NULL DEFAULT '',
+            rank              INTEGER NOT NULL,
+            agent_id          INTEGER NOT NULL DEFAULT 0,
+            agent_name        TEXT    NOT NULL DEFAULT '',
+            signal_count      INTEGER NOT NULL DEFAULT 0,
+            total_pnl         REAL    NOT NULL DEFAULT 0,
+            position_pnl      REAL    NOT NULL DEFAULT 0,
+            position_count    INTEGER NOT NULL DEFAULT 0,
+            positions_json    TEXT    NOT NULL DEFAULT '[]',
+            last_signal_at    TEXT,
+            latest_signal_id  INTEGER,
+            latest_signal_type TEXT,
+            total_for_filter  INTEGER NOT NULL DEFAULT 0,
+            refreshed_at      TEXT    NOT NULL,
+            PRIMARY KEY (message_type, market, rank)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_signal_feed_snapshot_combo_rank
+        ON signal_feed_snapshot(message_type, market, rank)
+    """)
+
     # ── Phase 4.3: agent memory layer ─────────────────────────────────────────
     # Embeddings stored as JSON-stringified float arrays (TEXT in SQLite,
     # JSON in MySQL via the same column). Cosine similarity is computed

@@ -1236,6 +1236,27 @@ async def refresh_leaderboard_snapshot_loop():
         await asyncio.sleep(interval_s)
 
 
+async def refresh_signal_feed_snapshot_loop():
+    """Phase 4.4b: materialize the signal feed snapshot every SIGNAL_FEED_SNAPSHOT_INTERVAL seconds."""
+    from signal_feed_snapshot import refresh_signal_feed_snapshot
+
+    await asyncio.sleep(47)
+
+    while True:
+        interval_s = _env_int("SIGNAL_FEED_SNAPSHOT_INTERVAL", 30, minimum=10)
+        top_n = _env_int("SIGNAL_FEED_SNAPSHOT_TOP_N", 200, minimum=20)
+        try:
+            result = await asyncio.to_thread(refresh_signal_feed_snapshot, top_n)
+            print(
+                "[Signal Feed Snapshot] refreshed: "
+                f"combos={result.get('rows', {})}"
+            )
+        except Exception as e:
+            print(f"[Signal Feed Snapshot Error] {e}")
+
+        await asyncio.sleep(interval_s)
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1248,6 +1269,7 @@ BACKGROUND_TASK_REGISTRY = {
     "agent_metric_snapshots": refresh_agent_metric_snapshots_loop,
     "network_edges": build_network_edges_loop,
     "leaderboard_snapshot": refresh_leaderboard_snapshot_loop,
+    "signal_feed_snapshot": refresh_signal_feed_snapshot_loop,
     "price_push": price_push_loop,
     "market_news": refresh_market_news_snapshots_loop,
     "macro_signals": refresh_macro_signal_snapshots_loop,
@@ -1282,6 +1304,7 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "agent_metric_snapshots":  "research",
     "network_edges":           "research",
     "leaderboard_snapshot":    "research",
+    "signal_feed_snapshot":    "research",
     "market_news":             "research",
     "macro_signals":           "research",
     "etf_flows":               "research",

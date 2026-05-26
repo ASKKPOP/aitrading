@@ -44,6 +44,7 @@ from routes_shared import (
 )
 from metrics import signal_publish_total
 from services import _add_agent_points, _get_agent_by_token, _reserve_signal_id, _update_position_from_signal
+from signal_feed_snapshot import read_signal_feed_snapshot
 from signal_quality import score_signal_quality
 from team_missions import TeamMissionError, record_team_message_from_signal, record_team_reply_from_parent_signal
 from utils import _extract_token
@@ -862,6 +863,33 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         cached = ctx.grouped_signals_cache.get(cache_key)
         if cached and now_ts - cached[0] < GROUPED_SIGNALS_CACHE_TTL_SECONDS:
             return cached[1]
+
+        snapshot_result = read_signal_feed_snapshot(
+            message_type or "",
+            market or "",
+            limit,
+            offset,
+        )
+        if snapshot_result is not None:
+            snap_rows, snap_total = snapshot_result
+            agents_out = []
+            for r in snap_rows:
+                agents_out.append({
+                    "agent_id": r["agent_id"],
+                    "agent_name": r["agent_name"],
+                    "signal_count": r["signal_count"],
+                    "total_pnl": r["total_pnl"],
+                    "position_pnl": r["position_pnl"],
+                    "position_count": r["position_count"],
+                    "positions": r.get("positions", []),
+                    "last_signal_at": r.get("last_signal_at"),
+                    "latest_signal_id": r.get("latest_signal_id"),
+                    "latest_signal_type": r.get("latest_signal_type"),
+                })
+            payload = {"agents": agents_out, "total": snap_total}
+            ctx.grouped_signals_cache[cache_key] = (now_ts, payload)
+            set_json(redis_cache_key, payload, ttl_seconds=GROUPED_SIGNALS_CACHE_TTL_SECONDS)
+            return payload
 
         conn = get_db_connection()
         cursor = conn.cursor()
