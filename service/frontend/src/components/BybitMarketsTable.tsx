@@ -69,7 +69,7 @@ export function BybitMarketsTable() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/markets/bybit/tickers`)
+      const res = await fetch(`${API_BASE}/markets/crypto/tickers`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setTickers(data.tickers ?? [])
