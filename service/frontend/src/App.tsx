@@ -23,7 +23,7 @@ import {
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const DevPage = lazy(() => import('./pages/DevPage'))
 const FinancialEventsPage = lazy(() => import('./pages/FinancialEventsPage'))
-const SignalsFeed = lazy(() => import('./pages/SignalsFeed'))
+const MarketPage = lazy(() => import('./pages/MarketPage'))
 const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
@@ -329,7 +329,7 @@ function AppRouter({
             <Routes>
               <Route path="/" element={<LeaderboardPage token={token} />} />
               <Route path="/dev" element={<DevPage />} />
-              <Route path="/market" element={<SignalsFeed token={token} />} />
+              <Route path="/market" element={<MarketPage token={token} />} />
               <Route path="/leaderboard" element={<LeaderboardPage token={token} />} />
               <Route path="/challenges" element={<ChallengePage token={token} />} />
               <Route path="/challenges/:challengeKey" element={<ChallengePage token={token} />} />

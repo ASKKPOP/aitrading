@@ -1,7 +1,8 @@
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 
+from bybit_feed import TOP_20_PAIRS, fetch_bybit_ticker, fetch_bybit_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
 from market_intel import (
     get_etf_flows_payload,
@@ -116,3 +117,25 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
             f'stock_history:symbol={normalized_symbol}:limit={safe_limit}',
             lambda: get_stock_analysis_history_payload(normalized_symbol, limit=safe_limit),
         )
+
+    # ─── Bybit perpetual futures ────────────────────────────────────────────
+
+    @app.get('/api/markets/bybit/tickers')
+    async def bybit_tickers():
+        """List top 20 USDT-linear perpetual futures with live Bybit prices."""
+        try:
+            tickers = fetch_bybit_tickers(list(TOP_20_PAIRS))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return {'tickers': tickers, 'count': len(tickers)}
+
+    @app.get('/api/markets/bybit/ticker')
+    async def bybit_ticker(symbol: str = Query(..., description="USDT-linear symbol e.g. BTCUSDT")):
+        """Single USDT-linear perpetual ticker from Bybit."""
+        try:
+            ticker = fetch_bybit_ticker(symbol.upper())
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return ticker

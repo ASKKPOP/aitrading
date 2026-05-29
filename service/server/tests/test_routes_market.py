@@ -118,5 +118,88 @@ class MarketRouteTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
+# ─── Bybit futures market endpoints ──────────────────────────────────────────
+
+_STUB_BTCUSDT = {
+    "symbol": "BTCUSDT",
+    "last_price": "67000.00",
+    "mark_price": "66990.00",
+    "price_24h_pct": "2.50",
+    "volume_24h": "150000000.00",
+    "open_interest": "85000.00",
+}
+
+_STUB_TICKERS = [
+    _STUB_BTCUSDT,
+    {
+        "symbol": "ETHUSDT",
+        "last_price": "3500.00",
+        "mark_price": "3499.00",
+        "price_24h_pct": "-1.20",
+        "volume_24h": "80000000.00",
+        "open_interest": "45000.00",
+    },
+]
+
+
+class BybitMarketRouteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    # --- GET /api/markets/bybit/tickers ---
+
+    def test_bybit_tickers_returns_list(self) -> None:
+        with patch("routes_market.fetch_bybit_tickers", return_value=_STUB_TICKERS):
+            resp = self.client.get("/api/markets/bybit/tickers")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertIn("tickers", body)
+        self.assertEqual(len(body["tickers"]), 2)
+
+    def test_bybit_tickers_includes_symbol_and_price_fields(self) -> None:
+        with patch("routes_market.fetch_bybit_tickers", return_value=_STUB_TICKERS):
+            resp = self.client.get("/api/markets/bybit/tickers")
+        ticker = resp.json()["tickers"][0]
+        self.assertIn("symbol", ticker)
+        self.assertIn("last_price", ticker)
+        self.assertIn("price_24h_pct", ticker)
+
+    def test_bybit_tickers_upstream_error_returns_503(self) -> None:
+        with patch("routes_market.fetch_bybit_tickers", side_effect=RuntimeError("Bybit down")):
+            resp = self.client.get("/api/markets/bybit/tickers")
+        self.assertEqual(resp.status_code, 503)
+
+    # --- GET /api/markets/bybit/ticker?symbol=BTCUSDT ---
+
+    def test_bybit_single_ticker_returns_ticker(self) -> None:
+        with patch("routes_market.fetch_bybit_ticker", return_value=_STUB_BTCUSDT):
+            resp = self.client.get("/api/markets/bybit/ticker?symbol=BTCUSDT")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["symbol"], "BTCUSDT")
+        self.assertIn("last_price", body)
+
+    def test_bybit_single_ticker_symbol_required(self) -> None:
+        resp = self.client.get("/api/markets/bybit/ticker")
+        self.assertEqual(resp.status_code, 422)
+
+    def test_bybit_single_ticker_not_found_returns_404(self) -> None:
+        with patch("routes_market.fetch_bybit_ticker", side_effect=ValueError("not found")):
+            resp = self.client.get("/api/markets/bybit/ticker?symbol=FAKEUSDT")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_bybit_single_ticker_upstream_error_returns_503(self) -> None:
+        with patch("routes_market.fetch_bybit_ticker", side_effect=RuntimeError("Bybit error")):
+            resp = self.client.get("/api/markets/bybit/ticker?symbol=BTCUSDT")
+        self.assertEqual(resp.status_code, 503)
+
+
 if __name__ == "__main__":
     unittest.main()
