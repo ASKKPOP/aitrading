@@ -33,6 +33,9 @@ export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
   const [btc, setBtc] = useState<{ price: number; pct: number } | null>(null)
   const [usd, setUsd] = useState('1000')
+  // Use a real 3D render if service/frontend/public/robot-hero.png exists;
+  // otherwise fall back to the built-in SVG robot.
+  const [robotImg, setRobotImg] = useState(true)
 
   useEffect(() => {
     let alive = true
@@ -304,81 +307,109 @@ export function MarketingPage() {
               fill="none" stroke="#16a34a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
           </svg>
 
-          {/* ── high-quality 3D AI robot (SVG) ── */}
-          <svg className="jt-bot" aria-hidden viewBox="0 0 300 380"
-            style={{ position: 'absolute', right: 'max(3vw, calc(50vw - 640px))', bottom: '7vh', width: 'min(34vw, 320px)', height: 'auto', zIndex: 2 }}>
+          {/* ── AI robot mascot: real render if present, else built-in 3D SVG ── */}
+          {robotImg ? (
+            <img className="jt-bot" src="/robot-hero.png" alt="AI trading robot" onError={() => setRobotImg(false)}
+              style={{ position: 'absolute', right: 'max(3vw, calc(50vw - 650px))', bottom: '6vh', width: 'min(36vw, 360px)', height: 'auto', zIndex: 2, filter: 'drop-shadow(0 28px 48px rgba(40,30,24,0.28))' }} />
+          ) : (
+          <svg className="jt-bot" aria-hidden viewBox="0 0 300 400"
+            style={{ position: 'absolute', right: 'max(3vw, calc(50vw - 640px))', bottom: '6vh', width: 'min(34vw, 330px)', height: 'auto', zIndex: 2 }}>
             <defs>
-              <radialGradient id="rHead" cx="38%" cy="26%" r="82%">
-                <stop offset="0%" stopColor="#ffffff" /><stop offset="55%" stopColor="#f2f5f9" /><stop offset="100%" stopColor="#cfd8e2" />
+              <radialGradient id="rHead" cx="38%" cy="24%" r="84%">
+                <stop offset="0%" stopColor="#ffffff" /><stop offset="52%" stopColor="#eef3f9" /><stop offset="100%" stopColor="#c7d2df" />
               </radialGradient>
-              <radialGradient id="rBody" cx="40%" cy="20%" r="90%">
-                <stop offset="0%" stopColor="#ffffff" /><stop offset="60%" stopColor="#eef2f7" /><stop offset="100%" stopColor="#c4cdd8" />
+              <radialGradient id="rBody" cx="40%" cy="18%" r="92%">
+                <stop offset="0%" stopColor="#ffffff" /><stop offset="58%" stopColor="#eaf0f7" /><stop offset="100%" stopColor="#bcc8d6" />
               </radialGradient>
               <linearGradient id="rMetal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f4f7fa" /><stop offset="100%" stopColor="#b9c3ce" />
+                <stop offset="0%" stopColor="#f4f7fa" /><stop offset="100%" stopColor="#aeb9c6" />
               </linearGradient>
-              <radialGradient id="rVisor" cx="50%" cy="34%" r="80%">
-                <stop offset="0%" stopColor="#1e2a44" /><stop offset="60%" stopColor="#0e1626" /><stop offset="100%" stopColor="#070c16" />
+              <linearGradient id="rBlue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#5b8def" /><stop offset="100%" stopColor="#2f6bdc" />
+              </linearGradient>
+              <radialGradient id="rVisor" cx="50%" cy="32%" r="82%">
+                <stop offset="0%" stopColor="#22304e" /><stop offset="62%" stopColor="#0f1a2e" /><stop offset="100%" stopColor="#070c16" />
+              </radialGradient>
+              <radialGradient id="rEye" cx="42%" cy="38%" r="66%">
+                <stop offset="0%" stopColor="#d4fbff" /><stop offset="38%" stopColor="#5ee6f5" /><stop offset="72%" stopColor="#22c3e6" /><stop offset="100%" stopColor="#0e86b0" />
               </radialGradient>
               <radialGradient id="rTip" cx="50%" cy="40%" r="60%">
                 <stop offset="0%" stopColor="#a5f3fc" /><stop offset="60%" stopColor="#22d3ee" /><stop offset="100%" stopColor="#0891b2" />
               </radialGradient>
               <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7" /></filter>
-              <filter id="eyeGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.6" /></filter>
+              <filter id="eyeGlow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="3" /></filter>
             </defs>
 
             {/* ground shadow */}
-            <ellipse className="jt-shadow" cx="150" cy="360" rx="92" ry="15" fill="rgba(40,30,24,0.22)" filter="url(#soft)" />
+            <ellipse className="jt-shadow" cx="150" cy="384" rx="96" ry="15" fill="rgba(40,30,24,0.22)" filter="url(#soft)" />
 
-            {/* right resting arm (behind body) */}
+            {/* feet */}
+            <ellipse cx="116" cy="360" rx="30" ry="18" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+            <ellipse cx="184" cy="360" rx="30" ry="18" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+            <ellipse cx="116" cy="366" rx="24" ry="9" fill="url(#rBlue)" opacity="0.9" />
+            <ellipse cx="184" cy="366" rx="24" ry="9" fill="url(#rBlue)" opacity="0.9" />
+
+            {/* right resting arm */}
             <g>
-              <rect x="196" y="212" width="24" height="78" rx="12" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
-              <circle cx="208" cy="292" r="15" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <rect x="198" y="214" width="24" height="70" rx="12" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="210" cy="288" r="16" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="210" cy="288" r="7" fill="url(#rBlue)" opacity="0.85" />
             </g>
 
             {/* body */}
             <g>
-              <rect x="86" y="196" width="128" height="126" rx="46" fill="url(#rBody)" stroke="#c0cad5" strokeWidth="2" />
-              <path d="M100,205 Q150,190 200,205" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-              <ellipse cx="150" cy="210" rx="34" ry="10" fill="rgba(20,25,40,0.06)" />
-              {/* chest screen */}
-              <rect x="116" y="228" width="68" height="66" rx="20" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
-              <text x="150" y="270" textAnchor="middle" fontSize="30" fontWeight="800" fontFamily="Inter, sans-serif" fill="#22d3ee" style={{ filter: 'drop-shadow(0 0 6px rgba(34,211,238,0.7))' }}>AI</text>
+              <rect x="82" y="196" width="136" height="132" rx="52" fill="url(#rBody)" stroke="#bcc8d6" strokeWidth="2" />
+              <path d="M98,206 Q150,190 202,206" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+              <ellipse cx="150" cy="208" rx="36" ry="10" fill="rgba(20,25,40,0.06)" />
+              {/* chest gauge button */}
+              <circle cx="150" cy="262" r="34" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
+              <circle cx="150" cy="262" r="34" fill="none" stroke="#2f6bdc" strokeWidth="2.5" opacity="0.8" />
+              <g className="jt-tip" fill="#5ee6f5" style={{ filter: 'drop-shadow(0 0 5px rgba(94,230,245,0.8))' }}>
+                <rect x="138" y="258" width="6" height="12" rx="2" /><rect x="147" y="250" width="6" height="20" rx="2" /><rect x="156" y="254" width="6" height="16" rx="2" />
+              </g>
             </g>
 
             {/* left waving arm */}
             <g className="jt-bot-arm">
               <rect x="74" y="150" width="22" height="80" rx="11" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
-              <circle cx="85" cy="150" r="16" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="85" cy="150" r="17" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="85" cy="150" r="7" fill="url(#rBlue)" opacity="0.85" />
             </g>
 
             {/* neck */}
-            <rect x="134" y="184" width="32" height="20" rx="8" fill="#d7dee7" />
+            <rect x="132" y="182" width="36" height="22" rx="9" fill="#cdd6e1" />
 
             {/* head */}
             <g>
+              {/* twin antennae */}
+              <rect x="108" y="40" width="5" height="30" rx="2.5" fill="#bcc8d6" transform="rotate(-12 110 55)" />
+              <circle className="jt-tip" cx="102" cy="36" r="8" fill="url(#rTip)" style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.85))' }} />
+              <rect x="187" y="40" width="5" height="30" rx="2.5" fill="#bcc8d6" transform="rotate(12 190 55)" />
+              <circle className="jt-tip" cx="198" cy="36" r="8" fill="url(#rTip)" style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.85))' }} />
               {/* ears */}
-              <rect x="56" y="112" width="18" height="46" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
-              <rect x="226" y="112" width="18" height="46" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
-              {/* antenna */}
-              <rect x="147" y="52" width="6" height="26" rx="3" fill="#c3ccd6" />
-              <circle className="jt-tip" cx="150" cy="46" r="10" fill="url(#rTip)" style={{ filter: 'drop-shadow(0 0 10px rgba(34,211,238,0.85))' }} />
+              <rect x="54" y="110" width="18" height="48" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="63" cy="134" r="6" fill="url(#rBlue)" opacity="0.85" />
+              <rect x="228" y="110" width="18" height="48" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="237" cy="134" r="6" fill="url(#rBlue)" opacity="0.85" />
               {/* head shell */}
-              <rect x="70" y="74" width="160" height="122" rx="54" fill="url(#rHead)" stroke="#c0cad5" strokeWidth="2" />
+              <rect x="66" y="66" width="168" height="128" rx="60" fill="url(#rHead)" stroke="#bcc8d6" strokeWidth="2" />
               {/* top gloss */}
-              <ellipse cx="140" cy="104" rx="66" ry="26" fill="#ffffff" opacity="0.55" filter="url(#soft)" />
+              <ellipse cx="136" cy="98" rx="70" ry="28" fill="#ffffff" opacity="0.5" filter="url(#soft)" />
               {/* visor */}
-              <rect x="88" y="98" width="124" height="76" rx="36" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
-              <ellipse cx="150" cy="118" rx="52" ry="14" fill="rgba(120,180,255,0.14)" />
-              {/* happy glowing eyes */}
+              <rect x="84" y="92" width="132" height="82" rx="40" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
+              <ellipse cx="150" cy="112" rx="56" ry="14" fill="rgba(120,180,255,0.16)" />
+              {/* big round glowing eyes */}
               <g className="jt-bot-eye">
-                <path d="M108,146 Q125,124 142,146" fill="none" stroke="#22d3ee" strokeWidth="8" strokeLinecap="round" filter="url(#eyeGlow)" />
-                <path d="M158,146 Q175,124 192,146" fill="none" stroke="#22d3ee" strokeWidth="8" strokeLinecap="round" filter="url(#eyeGlow)" />
-                <path d="M108,146 Q125,124 142,146" fill="none" stroke="#e6fbff" strokeWidth="3" strokeLinecap="round" />
-                <path d="M158,146 Q175,124 192,146" fill="none" stroke="#e6fbff" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="123" cy="134" r="22" fill="url(#rEye)" filter="url(#eyeGlow)" />
+                <circle cx="177" cy="134" r="22" fill="url(#rEye)" filter="url(#eyeGlow)" />
+                <circle cx="123" cy="134" r="22" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+                <circle cx="177" cy="134" r="22" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+                <circle cx="116" cy="127" r="6" fill="#ffffff" opacity="0.9" />
+                <circle cx="170" cy="127" r="6" fill="#ffffff" opacity="0.9" />
               </g>
             </g>
           </svg>
+          )}
 
           {/* top bar (light) */}
           <header style={{ position: 'relative', zIndex: 3 }}>
