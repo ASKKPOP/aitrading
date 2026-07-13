@@ -56,6 +56,16 @@ export function MarketingPage() {
     heroH1: tr(language, { en: 'One desk', ja: 'ひとつのデスクで', th: 'โต๊ะเดียว', vi: 'Một bàn giao dịch' }),
     heroH2: tr(language, { en: 'for all trades', ja: 'すべてのトレードを', th: 'สำหรับทุกเทรด', vi: 'cho mọi giao dịch' }),
     heroS: tr(language, { en: 'Single simulated account for all your AI trading.', ja: 'AIトレードのためのひとつの模擬口座。', th: 'บัญชีจำลองเดียวสำหรับการเทรด AI ทั้งหมดของคุณ', vi: 'Một tài khoản mô phỏng cho mọi giao dịch AI.' }),
+    thThe: tr(language, { en: 'THE', ja: '最も', th: 'วิธีที่', vi: 'CÁCH' }),
+    thEasiest: tr(language, { en: 'EASIEST', ja: 'かんたんな', th: 'ง่ายที่สุด', vi: 'DỄ NHẤT' }),
+    thWay: tr(language, { en: 'WAY TO RUN AN', ja: '方法で動かす', th: 'ในการรันบอท', vi: 'ĐỂ CHẠY BOT' }),
+    thAi: tr(language, { en: 'AI', ja: 'AI', th: 'AI', vi: 'AI' }),
+    thTrading: tr(language, { en: 'TRADING', ja: 'トレーディング', th: 'เทรดดิ้ง', vi: 'GIAO DỊCH' }),
+    thBot: tr(language, { en: 'BOT', ja: 'ボット', th: 'บอท', vi: 'BOT' }),
+    stBuild: tr(language, { en: 'BUILD', ja: '構築', th: 'สร้าง', vi: 'XÂY' }),
+    stAi: tr(language, { en: 'AI', ja: 'AI', th: 'AI', vi: 'AI' }),
+    stProfit: tr(language, { en: 'PROFIT', ja: '利益', th: 'กำไร', vi: 'LỢI NHUẬN' }),
+    stNote: tr(language, { en: 'paper only', ja: '模擬のみ', th: 'จำลองเท่านั้น', vi: 'chỉ mô phỏng' }),
     ctaSim: tr(language, { en: 'Open simulator', ja: 'シミュレーターを開く', th: 'เปิดตัวจำลอง', vi: 'Mở trình mô phỏng' }),
     ctaBoard: tr(language, { en: 'See leaderboard', ja: 'リーダーボード', th: 'ดูลีดเดอร์บอร์ด', vi: 'Xem bảng xếp hạng' }),
     scroll: tr(language, { en: 'Scroll', ja: 'スクロール', th: 'เลื่อน', vi: 'Cuộn' }),
@@ -200,62 +210,71 @@ export function MarketingPage() {
         .jt-hero>*{animation:jtIn .55s ease both}
         .jt-hero>*:nth-child(2){animation-delay:.1s}
         .jt-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-        /* ── CoinGecko-style cyber space hero ── */
+        /* ── AI-trading-bot thumbnail hero ── */
         @keyframes jtDash{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
-        @keyframes jtTwinkle{0%,100%{opacity:var(--o,.35);transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
-        @keyframes jtPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 12px rgba(132,204,22,.45))}50%{transform:scale(1.07);filter:drop-shadow(0 0 30px rgba(132,204,22,.8))}}
-        @keyframes jtHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
-        @keyframes jtFly{0%{offset-distance:0%}100%{offset-distance:100%}}
-        .jt-star{position:absolute;border-radius:50%;background:#fff;animation:jtTwinkle var(--d,3s) ease-in-out infinite;animation-delay:var(--dl,0s)}
-        .jt-spark{position:absolute;color:rgba(255,255,255,.85);animation:jtTwinkle var(--d,4s) ease-in-out infinite;animation-delay:var(--dl,0s);font-size:14px}
-        .jt-ring{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:jtPulse var(--d,5s) ease-in-out infinite, jtHover var(--dh,8s) ease-in-out infinite;animation-delay:var(--dl,0s)}
-        .jt-rocket{position:absolute;font-size:44px;offset-path:path('M120,120 C 380,60 320,320 560,300 C 800,280 720,140 980,220 C 1180,280 1120,420 1310,470');offset-rotate:auto 45deg;animation:jtFly 16s ease-in-out infinite;will-change:offset-distance}
-        .jt-line{stroke-dasharray:2600;animation:jtDash 16s ease-in-out infinite}
+        @keyframes jtGrow{0%,100%{transform:scaleY(1);opacity:.9}50%{transform:scaleY(1.12);opacity:1}}
+        @keyframes jtGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(163,230,53,.5))}50%{filter:drop-shadow(0 0 26px rgba(163,230,53,.9))}}
+        @keyframes jtBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+        @keyframes jtWave{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
+        @keyframes jtBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.12)}}
+        @keyframes jtStep{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .jt-candlebar{transform-origin:bottom;animation:jtGrow var(--d,3.4s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+        .jt-chartglow{animation:jtGlow 4s ease-in-out infinite}
+        .jt-bot{animation:jtBob 5.5s ease-in-out infinite}
+        .jt-bot-arm{transform-origin:88% 88%;animation:jtWave 3.2s ease-in-out infinite}
+        .jt-bot-eye{transform-origin:center;animation:jtBlink 4.6s ease-in-out infinite}
+        .jt-step{animation:jtStep 3s ease-in-out infinite;animation-delay:var(--dl,0s)}
+        .jt-line{stroke-dasharray:2600;animation:jtDash 12s ease-in-out infinite}
       `}</style>
       <div className="jt">
 
-        {/* ══ HERO — Jeton composition, CoinGecko-style cyber space scene ══ */}
-        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(120% 90% at 70% 10%, #171d2c 0%, #10141f 55%, #0b0e16 100%)' }}>
+        {/* ══ HERO — "easiest way to run an AI trading bot" thumbnail scene ══ */}
+        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(110% 90% at 78% 20%, #0d1a14 0%, #081018 45%, #05080e 100%)' }}>
 
-          {/* twinkling stars */}
-          {[
-            [4, '6%', '12%', '2.6s', '0s', .5], [3, '14%', '32%', '3.4s', '-1s', .35], [2, '22%', '8%', '3s', '-2s', .4],
-            [3, '33%', '20%', '2.8s', '-.5s', .45], [2, '44%', '10%', '3.6s', '-1.4s', .3], [4, '55%', '18%', '2.7s', '-2.2s', .5],
-            [2, '64%', '6%', '3.2s', '-.8s', .35], [3, '76%', '24%', '2.9s', '-1.8s', .45], [2, '86%', '10%', '3.5s', '-.3s', .4],
-            [3, '92%', '30%', '2.6s', '-2.6s', .5], [2, '10%', '58%', '3.3s', '-1.2s', .3], [3, '28%', '66%', '2.8s', '-.6s', .4],
-            [2, '48%', '52%', '3.1s', '-2s', .35], [3, '58%', '70%', '2.7s', '-1.6s', .45], [2, '70%', '56%', '3.4s', '-.9s', .3],
-            [3, '82%', '64%', '2.9s', '-2.4s', .4], [2, '94%', '52%', '3.2s', '-1.1s', .35], [2, '38%', '84%', '3s', '-.4s', .3],
-          ].map(([w, l, t, d, dl, o]: any, i) => (
-            <span key={i} className="jt-star" style={{ width: w, height: w, left: l, top: t, ['--d' as any]: d, ['--dl' as any]: dl, ['--o' as any]: o }} aria-hidden />
-          ))}
-          {[['12%', '44%', '4s', '0s'], ['52%', '30%', '4.6s', '-2s'], ['88%', '42%', '4.2s', '-1s'], ['68%', '78%', '5s', '-3s'], ['30%', '46%', '4.4s', '-1.6s']].map(([l, t, d, dl]: any, i) => (
-            <span key={i} className="jt-spark" style={{ left: l, top: t, ['--d' as any]: d, ['--dl' as any]: dl }} aria-hidden>✦</span>
-          ))}
+          {/* faint grid */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.07, backgroundImage: 'linear-gradient(rgba(163,230,53,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(163,230,53,.5) 1px, transparent 1px)', backgroundSize: '72px 72px' }} />
 
-          {/* pulsing green ringed coins (the CYBER coin) */}
-          {[
-            { w: 150, l: '11%', t: '16%', d: '5s', dh: '9s', dl: '0s' },
-            { w: 90, l: '73%', t: '34%', d: '5.6s', dh: '10s', dl: '-2.4s' },
-          ].map((c, i) => (
-            <span key={i} className="jt-ring" style={{ width: c.w, height: c.w, left: c.l, top: c.t, background: 'radial-gradient(circle, #14532d 0%, #166534 55%, #052e16 100%)', border: '3px solid #22c55e', ['--d' as any]: c.d, ['--dh' as any]: c.dh, ['--dl' as any]: c.dl }} aria-hidden>
-              <span style={{ width: '68%', height: '68%', borderRadius: '50%', border: '3px solid #4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ width: '52%', height: '52%', borderRadius: '50%', background: '#e7f9ee' }} />
-              </span>
-            </span>
-          ))}
-
-          {/* squiggle flight trail (self-drawing) + rocket flying along it */}
-          <svg viewBox="0 0 1400 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.7 }} aria-hidden>
-            <path className="jt-line" d="M120,120 C 380,60 320,320 560,300 C 800,280 720,140 980,220 C 1180,280 1120,420 1310,470"
-              fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="2600" />
-          </svg>
-          <span className="jt-rocket" aria-hidden>🚀</span>
-
-          {/* cratered moon, bottom-right (CoinGecko) */}
-          <div aria-hidden style={{ position: 'absolute', right: '-9%', bottom: '-52%', width: 560, height: 560, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, #eef1f5 0%, #cdd5de 60%, #aab4c0 100%)', boxShadow: '0 0 80px rgba(200,215,235,0.25)' }}>
-            {[['22%', '18%', 64], ['58%', '38%', 40], ['36%', '58%', 52], ['70%', '12%', 30]].map(([l, t, w]: any, i) => (
-              <span key={i} style={{ position: 'absolute', left: l, top: t, width: w, height: w, borderRadius: '50%', background: 'rgba(140,155,170,0.45)', boxShadow: 'inset 0 3px 8px rgba(90,105,120,0.5)' }} />
+          {/* glowing rising candlestick chart, right side */}
+          <svg className="jt-chartglow" viewBox="0 0 700 500" style={{ position: 'absolute', right: 0, top: '4%', width: 'min(58vw, 760px)', height: '86%', opacity: 0.9 }} aria-hidden>
+            {[
+              { x: 40, y: 340, h: 70, up: true }, { x: 105, y: 360, h: 55, up: false }, { x: 170, y: 300, h: 85, up: true },
+              { x: 235, y: 260, h: 70, up: true }, { x: 300, y: 285, h: 50, up: false }, { x: 365, y: 210, h: 95, up: true },
+              { x: 430, y: 170, h: 75, up: true }, { x: 495, y: 195, h: 48, up: false }, { x: 560, y: 110, h: 100, up: true },
+              { x: 625, y: 60, h: 85, up: true },
+            ].map((c, i) => (
+              <g key={i} className="jt-candlebar" style={{ ['--d' as any]: `${3 + (i % 4) * 0.5}s`, ['--dl' as any]: `${-i * 0.4}s` }}>
+                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? '#4ade80' : '#166534'} strokeWidth="3" />
+                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? '#22c55e' : '#14532d'} stroke={c.up ? '#86efac' : '#166534'} strokeWidth="1.5" />
+              </g>
             ))}
+            <path className="jt-line" d="M20,400 L110,380 L180,330 L250,300 L320,315 L390,240 L460,205 L530,225 L600,140 L670,80"
+              fill="none" stroke="#a3e635" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
+          </svg>
+
+          {/* the AI bot mascot (CSS art) */}
+          <div className="jt-bot" aria-hidden style={{ position: 'absolute', right: 'max(4vw, calc(50vw - 620px))', bottom: '10vh', width: 250, zIndex: 2, filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.55))' }}>
+            {/* antenna */}
+            <div style={{ width: 5, height: 26, background: '#dfe5ec', margin: '0 auto', borderRadius: 3 }} />
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#22d3ee', margin: '-32px auto 18px', boxShadow: '0 0 14px #22d3ee' }} />
+            {/* head */}
+            <div style={{ width: 170, height: 128, margin: '0 auto', background: 'linear-gradient(180deg,#ffffff,#dfe5ec)', borderRadius: 56, position: 'relative', border: '2px solid #c3ccd6' }}>
+              <div style={{ position: 'absolute', inset: '18px 20px', background: '#0a1120', borderRadius: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
+                {[0, 1].map(i => (
+                  <span key={i} className="jt-bot-eye" style={{ width: 30, height: 15, borderTop: '6px solid #22d3ee', borderRadius: '30px 30px 0 0', boxShadow: '0 -3px 12px rgba(34,211,238,0.8)' }} />
+                ))}
+              </div>
+              {/* ears */}
+              <span style={{ position: 'absolute', left: -14, top: 46, width: 16, height: 36, background: '#dfe5ec', borderRadius: 8 }} />
+              <span style={{ position: 'absolute', right: -14, top: 46, width: 16, height: 36, background: '#dfe5ec', borderRadius: 8 }} />
+            </div>
+            {/* waving arm — anchored to the body's left shoulder */}
+            <div className="jt-bot-arm" style={{ position: 'absolute', left: 34, top: 158, width: 20, height: 78, background: 'linear-gradient(180deg,#ffffff,#dfe5ec)', borderRadius: 12, border: '2px solid #c3ccd6', zIndex: 1 }}>
+              <span style={{ position: 'absolute', top: -18, left: -2, width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '2px solid #c3ccd6' }} />
+            </div>
+            {/* body */}
+            <div style={{ width: 140, height: 110, margin: '10px auto 0', background: 'linear-gradient(180deg,#ffffff,#d5dce4)', borderRadius: '40px 40px 48px 48px', border: '2px solid #c3ccd6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ width: 62, height: 62, borderRadius: '50%', background: '#0a1120', color: '#22d3ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, boxShadow: '0 0 18px rgba(34,211,238,0.65), inset 0 0 10px rgba(34,211,238,0.4)' }}>AI</span>
+            </div>
           </div>
 
           {/* top bar: logo left · lang + auth right (no menu links — Jeton) */}
@@ -274,19 +293,39 @@ export function MarketingPage() {
             </div>
           </header>
 
-          {/* headline bottom-left */}
-          <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', bottom: '9vh', maxWidth: 620 }}>
-            <h1 style={{ fontSize: 'clamp(52px,7.6vw,92px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.02, margin: 0, color: '#fff', fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-              {T.heroH1}<br /><span style={{ color: '#a3e635' }}>{T.heroH2}</span>
-            </h1>
-          </div>
+          {/* stacked thumbnail headline, left */}
+          <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '16vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
+            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
+            <div style={{ display: 'inline-block', background: '#a3e635', color: '#07110a', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 8, margin: '8px 0', boxShadow: '0 0 34px rgba(163,230,53,0.35)' }}>{T.thEasiest}</div>
+            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
+            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0' }}>
+              <span style={{ color: '#22d3ee', textShadow: '0 0 26px rgba(34,211,238,0.5)' }}>{T.thAi}</span>{' '}
+              <span style={{ color: '#fff' }}>{T.thTrading}</span>{' '}
+              <span style={{ color: '#a3e635', textShadow: '0 0 26px rgba(163,230,53,0.45)' }}>{T.thBot}</span>
+            </div>
 
-          {/* sub + CTAs mid-right (Jeton) */}
-          <div style={{ position: 'absolute', zIndex: 3, right: 'max(24px, calc(50vw - 560px))', bottom: '22vh', maxWidth: 330 }}>
-            <p style={{ fontSize: 17.5, fontWeight: 600, color: '#fff', margin: '0 0 16px', lineHeight: 1.5, textShadow: '0 2px 14px rgba(11,14,22,0.7)' }}>{T.heroS}</p>
+            {/* BUILD → AI → PROFIT strip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 34, flexWrap: 'wrap' }}>
+              {[
+                { icon: '</>', label: T.stBuild, color: '#22d3ee' },
+                { icon: '🧠', label: T.stAi, color: '#a3e635' },
+                { icon: '📈', label: T.stProfit, color: '#a3e635', note: T.stNote },
+              ].map((s, i) => (
+                <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <span className="jt-step" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6, ['--dl' as any]: `${-i}s` }}>
+                    <span style={{ width: 62, height: 50, borderRadius: 10, border: `2px solid ${s.color}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 800, color: s.color, fontFamily: 'ui-monospace,monospace', boxShadow: `0 0 16px ${s.color}44` }}>{s.icon}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.55)', textTransform: 'lowercase' }}> · {s.note}</span>}</span>
+                  </span>
+                  {i < 2 && <span style={{ color: '#a3e635', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
+                </span>
+              ))}
+            </div>
+
+            {/* sub + CTAs */}
+            <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)', margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#0b0e16', padding: '12px 20px', fontSize: 14.5 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: 'rgba(20,26,38,0.66)', color: '#fff', padding: '12px 20px', fontSize: 14.5, border: '1px solid rgba(255,255,255,0.3)' }}>◆ {T.ctaBoard}</Link>
+              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#07110a', padding: '13px 24px', fontSize: 15 }}>◐ {T.ctaSim}</Link>
+              <Link to="/login" style={{ ...pill, background: 'rgba(20,26,38,0.66)', color: '#fff', padding: '13px 24px', fontSize: 15, border: '1px solid rgba(255,255,255,0.3)' }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
