@@ -200,50 +200,61 @@ export function MarketingPage() {
         .jt-hero>*{animation:jtIn .55s ease both}
         .jt-hero>*:nth-child(2){animation-delay:.1s}
         .jt-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-        @keyframes jtCoin{
-          0%,100%{transform:translateY(0) rotateX(var(--rx,64deg)) rotateZ(var(--rz,0deg))}
-          50%{transform:translateY(var(--fy,-22px)) rotateX(calc(var(--rx,64deg) - 6deg)) rotateZ(calc(var(--rz,0deg) + 4deg))}
-        }
-        @keyframes jtSway{0%,100%{transform:translate(0,0)}50%{transform:translate(-18px,14px)}}
+        /* ── CoinGecko-style cyber space hero ── */
         @keyframes jtDash{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
-        .jt-coins{position:absolute;inset:0;perspective:1400px;animation:jtSway 22s ease-in-out infinite;will-change:transform}
-        .jt-coin{position:absolute;border-radius:50%;animation:jtCoin var(--d,8s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform;
-          background:radial-gradient(circle at 34% 28%, #ffd9bd 0%, #f79f7c 38%, #ef7f62 62%, #e2664f 82%, #d55a46 100%);
-          box-shadow:0 26px 60px rgba(150,40,40,0.25), inset 0 3px 10px rgba(255,255,255,0.55), inset 0 -10px 24px rgba(160,50,40,0.35);}
-        .jt-line{stroke-dasharray:2600;animation:jtDash 14s linear infinite}
+        @keyframes jtTwinkle{0%,100%{opacity:var(--o,.35);transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+        @keyframes jtPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 12px rgba(132,204,22,.45))}50%{transform:scale(1.07);filter:drop-shadow(0 0 30px rgba(132,204,22,.8))}}
+        @keyframes jtHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+        @keyframes jtFly{0%{offset-distance:0%}100%{offset-distance:100%}}
+        .jt-star{position:absolute;border-radius:50%;background:#fff;animation:jtTwinkle var(--d,3s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+        .jt-spark{position:absolute;color:rgba(255,255,255,.85);animation:jtTwinkle var(--d,4s) ease-in-out infinite;animation-delay:var(--dl,0s);font-size:14px}
+        .jt-ring{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:jtPulse var(--d,5s) ease-in-out infinite, jtHover var(--dh,8s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+        .jt-rocket{position:absolute;font-size:44px;offset-path:path('M120,120 C 380,60 320,320 560,300 C 800,280 720,140 980,220 C 1180,280 1120,420 1310,470');offset-rotate:auto 45deg;animation:jtFly 16s ease-in-out infinite;will-change:offset-distance}
+        .jt-line{stroke-dasharray:2600;animation:jtDash 16s ease-in-out infinite}
       `}</style>
       <div className="jt">
 
-        {/* ══ HERO — jeton.com hero, 1:1 composition ══ */}
-        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'linear-gradient(135deg,#f2607a 0%,#f77a5f 45%,#f9a06b 100%)' }}>
+        {/* ══ HERO — Jeton composition, CoinGecko-style cyber space scene ══ */}
+        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(120% 90% at 70% 10%, #171d2c 0%, #10141f 55%, #0b0e16 100%)' }}>
 
-          {/* faint self-drawing price line (automation nod) */}
-          <svg viewBox="0 0 1400 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.18 }} aria-hidden>
-            <path className="jt-line" d="M-20,420 L170,430 L260,340 L450,285 L540,320 L730,275 L840,195 L1040,150 L1130,185 L1330,140 L1440,70"
-              fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          {/* twinkling stars */}
+          {[
+            [4, '6%', '12%', '2.6s', '0s', .5], [3, '14%', '32%', '3.4s', '-1s', .35], [2, '22%', '8%', '3s', '-2s', .4],
+            [3, '33%', '20%', '2.8s', '-.5s', .45], [2, '44%', '10%', '3.6s', '-1.4s', .3], [4, '55%', '18%', '2.7s', '-2.2s', .5],
+            [2, '64%', '6%', '3.2s', '-.8s', .35], [3, '76%', '24%', '2.9s', '-1.8s', .45], [2, '86%', '10%', '3.5s', '-.3s', .4],
+            [3, '92%', '30%', '2.6s', '-2.6s', .5], [2, '10%', '58%', '3.3s', '-1.2s', .3], [3, '28%', '66%', '2.8s', '-.6s', .4],
+            [2, '48%', '52%', '3.1s', '-2s', .35], [3, '58%', '70%', '2.7s', '-1.6s', .45], [2, '70%', '56%', '3.4s', '-.9s', .3],
+            [3, '82%', '64%', '2.9s', '-2.4s', .4], [2, '94%', '52%', '3.2s', '-1.1s', .35], [2, '38%', '84%', '3s', '-.4s', .3],
+          ].map(([w, l, t, d, dl, o]: any, i) => (
+            <span key={i} className="jt-star" style={{ width: w, height: w, left: l, top: t, ['--d' as any]: d, ['--dl' as any]: dl, ['--o' as any]: o }} aria-hidden />
+          ))}
+          {[['12%', '44%', '4s', '0s'], ['52%', '30%', '4.6s', '-2s'], ['88%', '42%', '4.2s', '-1s'], ['68%', '78%', '5s', '-3s'], ['30%', '46%', '4.4s', '-1.6s']].map(([l, t, d, dl]: any, i) => (
+            <span key={i} className="jt-spark" style={{ left: l, top: t, ['--d' as any]: d, ['--dl' as any]: dl }} aria-hidden>✦</span>
+          ))}
+
+          {/* pulsing green ringed coins (the CYBER coin) */}
+          {[
+            { w: 150, l: '11%', t: '16%', d: '5s', dh: '9s', dl: '0s' },
+            { w: 90, l: '73%', t: '34%', d: '5.6s', dh: '10s', dl: '-2.4s' },
+          ].map((c, i) => (
+            <span key={i} className="jt-ring" style={{ width: c.w, height: c.w, left: c.l, top: c.t, background: 'radial-gradient(circle, #14532d 0%, #166534 55%, #052e16 100%)', border: '3px solid #22c55e', ['--d' as any]: c.d, ['--dh' as any]: c.dh, ['--dl' as any]: c.dl }} aria-hidden>
+              <span style={{ width: '68%', height: '68%', borderRadius: '50%', border: '3px solid #4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ width: '52%', height: '52%', borderRadius: '50%', background: '#e7f9ee' }} />
+              </span>
+            </span>
+          ))}
+
+          {/* squiggle flight trail (self-drawing) + rocket flying along it */}
+          <svg viewBox="0 0 1400 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.7 }} aria-hidden>
+            <path className="jt-line" d="M120,120 C 380,60 320,320 560,300 C 800,280 720,140 980,220 C 1180,280 1120,420 1310,470"
+              fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="2600" />
           </svg>
+          <span className="jt-rocket" aria-hidden>🚀</span>
 
-          {/* tumbling coin spiral */}
-          <div className="jt-coins" aria-hidden>
-            {[
-              { w: 300, l: '57%', t: '-8%', rx: 60, rz: -16, fy: -18, d: '9s', dl: '0s' },
-              { w: 315, l: '62%', t: '-1%', rx: 63, rz: -9, fy: -24, d: '8.5s', dl: '-1.5s' },
-              { w: 325, l: '66%', t: '7%', rx: 65, rz: -2, fy: -20, d: '9.5s', dl: '-3s' },
-              { w: 305, l: '70%', t: '16%', rx: 63, rz: 7, fy: -26, d: '8s', dl: '-4.5s' },
-              { w: 285, l: '74%', t: '25%', rx: 61, rz: 13, fy: -18, d: '10s', dl: '-6s' },
-              { w: 250, l: '46%', t: '25%', rx: 70, rz: -20, fy: -28, d: '10s', dl: '-2s' },
-              { w: 175, l: '37%', t: '40%', rx: 72, rz: 12, fy: -22, d: '9s', dl: '-5s' },
-              { w: 230, l: '29%', t: '50%', rx: 68, rz: -6, fy: -26, d: '11s', dl: '-1s' },
-              { w: 330, l: '10%', t: '60%', rx: 60, rz: 9, fy: -20, d: '10s', dl: '-3.5s' },
-              { w: 345, l: '6%', t: '71%', rx: 62, rz: 15, fy: -24, d: '9s', dl: '-6.5s' },
-              { w: 325, l: '13%', t: '81%', rx: 64, rz: 3, fy: -18, d: '8.5s', dl: '-2.5s' },
-              { w: 300, l: '21%', t: '90%', rx: 66, rz: -11, fy: -22, d: '9.5s', dl: '-4s' },
-            ].map((c, i) => (
-              <span key={i} className="jt-coin" style={{
-                width: c.w, height: c.w, left: c.l, top: c.t,
-                ['--rx' as any]: `${c.rx}deg`, ['--rz' as any]: `${c.rz}deg`,
-                ['--fy' as any]: `${c.fy}px`, ['--d' as any]: c.d, ['--dl' as any]: c.dl,
-              }} />
+          {/* cratered moon, bottom-right (CoinGecko) */}
+          <div aria-hidden style={{ position: 'absolute', right: '-9%', bottom: '-52%', width: 560, height: 560, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, #eef1f5 0%, #cdd5de 60%, #aab4c0 100%)', boxShadow: '0 0 80px rgba(200,215,235,0.25)' }}>
+            {[['22%', '18%', 64], ['58%', '38%', 40], ['36%', '58%', 52], ['70%', '12%', 30]].map(([l, t, w]: any, i) => (
+              <span key={i} style={{ position: 'absolute', left: l, top: t, width: w, height: w, borderRadius: '50%', background: 'rgba(140,155,170,0.45)', boxShadow: 'inset 0 3px 8px rgba(90,105,120,0.5)' }} />
             ))}
           </div>
 
@@ -259,23 +270,23 @@ export function MarketingPage() {
                 ))}
               </span>
               <Link to="/login" style={{ ...pill, color: '#fff', padding: '11px 20px', background: 'rgba(255,255,255,0.16)' }}>{T.login}</Link>
-              <Link to="/register" style={{ ...pill, color: CORAL, padding: '11px 22px', background: '#fff' }}>{T.signup}</Link>
+              <Link to="/register" style={{ ...pill, color: '#0b0e16', padding: '11px 22px', background: '#fff' }}>{T.signup}</Link>
             </div>
           </header>
 
           {/* headline bottom-left */}
           <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', bottom: '9vh', maxWidth: 620 }}>
             <h1 style={{ fontSize: 'clamp(52px,7.6vw,92px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.02, margin: 0, color: '#fff', fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-              {T.heroH1}<br />{T.heroH2}
+              {T.heroH1}<br /><span style={{ color: '#a3e635' }}>{T.heroH2}</span>
             </h1>
           </div>
 
           {/* sub + CTAs mid-right (Jeton) */}
           <div style={{ position: 'absolute', zIndex: 3, right: 'max(24px, calc(50vw - 560px))', bottom: '22vh', maxWidth: 330 }}>
-            <p style={{ fontSize: 17.5, fontWeight: 600, color: '#fff', margin: '0 0 16px', lineHeight: 1.5 }}>{T.heroS}</p>
+            <p style={{ fontSize: 17.5, fontWeight: 600, color: '#fff', margin: '0 0 16px', lineHeight: 1.5, textShadow: '0 2px 14px rgba(11,14,22,0.7)' }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link to="/register" style={{ ...pill, background: '#fff', color: CORAL, padding: '12px 20px', fontSize: 14.5 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: 'rgba(255,255,255,0.16)', color: '#fff', padding: '12px 20px', fontSize: 14.5 }}>◆ {T.ctaBoard}</Link>
+              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#0b0e16', padding: '12px 20px', fontSize: 14.5 }}>◐ {T.ctaSim}</Link>
+              <Link to="/login" style={{ ...pill, background: 'rgba(20,26,38,0.66)', color: '#fff', padding: '12px 20px', fontSize: 14.5, border: '1px solid rgba(255,255,255,0.3)' }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
