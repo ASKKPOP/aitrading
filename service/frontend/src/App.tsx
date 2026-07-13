@@ -34,6 +34,7 @@ const AnalystPage = lazy(() => import('./pages/AnalystPage'))
 const AutomationPage = lazy(() => import('./pages/AutomationPage'))
 const AccountsPage = lazy(() => import('./pages/AccountsPage'))
 const AssetsPage = lazy(() => import('./pages/AssetsPage'))
+const MarketingPage = lazy(() => import('./pages/MarketingPage'))
 const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.SpotPage })))
 const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
 import { ChallengePage } from './ChallengePage'
@@ -312,6 +313,27 @@ function AppRouter({
     )
   }
 
+  // Logged-out experience: no left menu. "/" is the marketing landing page and
+  // the auth pages render full-screen. Everything else redirects to the landing.
+  if (!token && !userToken) {
+    return (
+      <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
+        <Routes>
+          <Route path="/" element={<MarketingPage />} />
+          <Route path="/about" element={<MarketingPage />} />
+          <Route path="/login" element={<LoginPage onLogin={login} />} />
+          <Route path="/register" element={<RegisterPage onLogin={login} />} />
+          <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
+          <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
+          <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
+          <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
   return (
     <div className="app-container">
       <Sidebar
@@ -372,12 +394,12 @@ function AppRouter({
                   : <Navigate to="/sign-in" replace />}
               />
 
-              {/* Agent-token paste flow (AI-agent developers) — preserved */}
-              <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
-              <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
-              {/* Backward-compat: old /login + /register still hit the agent flow */}
-              <Route path="/login" element={<LoginPage onLogin={login} />} />
-              <Route path="/register" element={<RegisterPage onLogin={login} />} />
+              {/* Already authenticated — auth pages redirect into the app.
+                  (Logged-out auth flows are handled by the no-sidebar branch above.) */}
+              <Route path="/agent-login" element={<Navigate to="/" replace />} />
+              <Route path="/agent-register" element={<Navigate to="/" replace />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/register" element={<Navigate to="/" replace />} />
 
               <Route path="*" element={<Navigate to="/market" replace />} />
             </Routes>
