@@ -1,194 +1,382 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
-const LANGS: Record<string, string> = { en: 'EN', ja: '日本語', th: 'ไทย', vi: 'Việt' }
+const LANGS: Record<string, string> = { en: 'EN', ja: 'JA', th: 'TH', vi: 'VI' }
 
-// Public landing page (logged-out "/").
-// Written like a person, not a pitch deck: plain sentences, concrete numbers,
-// a real product artifact, and straight answers. Golden theme (dark chocolate
-// + antique gold + warm cream), matching the app's Claude-style golden theme.
+// Public landing page — structured after jeton.com:
+// sticky nav · clean hero · tabbed product carousel · value cards · numbered
+// steps · mid-page CTA · feature callout · live converter demo · voices ·
+// trust badges · multi-column footer. White canvas, orange pill CTAs.
 
-const INK = '#f0e9dc'
-const GOLD = '#c9a227'
-const GOLD2 = '#e0bc4e'
-const MUTED = 'rgba(240,233,220,0.62)'
-const FAINT = 'rgba(240,233,220,0.38)'
-const BG = '#14100d'
-const CARD = 'rgba(240,233,220,0.04)'
-const HAIR = 'rgba(201,162,39,0.28)'
+const ORANGE = '#e2551f'
+const INK = '#191512'
+const MUT = 'rgba(25,21,18,0.6)'
+const FAINT = 'rgba(25,21,18,0.42)'
+const BG = '#faf7f2'
+const CARD = '#ffffff'
+const LINE = 'rgba(25,21,18,0.10)'
+
+const mono: any = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
 
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
+  const [tab, setTab] = useState(0)
+  const [btc, setBtc] = useState<{ price: number; pct: number } | null>(null)
+  const [usd, setUsd] = useState('1000')
+
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/markets/crypto/ticker?symbol=BTCUSDT')
+        if (!r.ok) return
+        const d = await r.json()
+        if (alive) setBtc({ price: Number(d.last_price), pct: Number(d.price_24h_pct) })
+      } catch { /* transient */ }
+    }
+    load()
+    const iv = setInterval(load, 8000)
+    return () => { alive = false; clearInterval(iv) }
+  }, [])
 
   const T = {
-    login: tr(language, { en: 'Log in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
-    start: tr(language, { en: 'Try it', ja: '試してみる', th: 'ลองเลย', vi: 'Dùng thử' }),
-    heroA: tr(language, { en: 'Give an AI $100,000', ja: 'AIに10万ドルを渡してみる。', th: 'ให้ AI ถือเงิน $100,000', vi: 'Đưa cho AI $100.000' }),
-    heroB: tr(language, { en: 'of pretend money.', ja: 'ただし、おもちゃのお金で。', th: 'ที่เป็นเงินปลอม', vi: 'tiền giả.' }),
-    heroC: tr(language, { en: 'See what it does.', ja: '何をするか見てみよう。', th: 'แล้วดูว่ามันทำอะไร', vi: 'Xem nó làm gì.' }),
-    heroSub: tr(language, {
-      en: "Sooppiy hooks a team of AI analysts to live market prices, lets them argue about what to buy, and books every trade in a simulator. The prices are real. The money isn't. That's the point.",
-      ja: 'SooppiyはAIアナリストのチームを実際の市場価格につなぎ、何を買うか議論させ、すべての取引をシミュレーターに記録します。価格は本物、お金は偽物。それがポイントです。',
-      th: 'Sooppiy ต่อทีมนักวิเคราะห์ AI เข้ากับราคาตลาดจริง ปล่อยให้พวกมันเถียงกันว่าจะซื้ออะไร แล้วบันทึกทุกการเทรดในตัวจำลอง ราคาเป็นของจริง เงินไม่ใช่ นั่นแหละคือประเด็น',
-      vi: 'Sooppiy nối một đội phân tích AI với giá thị trường thật, để chúng tranh cãi nên mua gì, và ghi mọi lệnh vào trình mô phỏng. Giá là thật. Tiền thì không. Đó chính là mục đích.',
+    navProduct: tr(language, { en: 'Product', ja: '製品', th: 'ผลิตภัณฑ์', vi: 'Sản phẩm' }),
+    navHow: tr(language, { en: 'How it works', ja: '使い方', th: 'วิธีใช้งาน', vi: 'Cách hoạt động' }),
+    navFaq: tr(language, { en: 'FAQ', ja: 'FAQ', th: 'คำถาม', vi: 'FAQ' }),
+    login: tr(language, { en: 'Log In', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
+    signup: tr(language, { en: 'Sign Up', ja: '登録', th: 'สมัคร', vi: 'Đăng ký' }),
+    heroH: tr(language, { en: 'One desk for all your trades', ja: 'すべてのトレードをひとつのデスクに', th: 'โต๊ะเดียวสำหรับทุกการเทรดของคุณ', vi: 'Một bàn làm việc cho mọi giao dịch' }),
+    heroS: tr(language, { en: 'A single simulated account for AI analysis, automation, spot and futures', ja: 'AI分析・自動売買・現物・先物をひとつの模擬口座で', th: 'บัญชีจำลองเดียวสำหรับการวิเคราะห์ AI ระบบอัตโนมัติ สปอต และฟิวเจอร์ส', vi: 'Một tài khoản mô phỏng cho phân tích AI, tự động hóa, spot và futures' }),
+    openAccount: tr(language, { en: 'Open simulator account', ja: 'シミュレーター口座を開く', th: 'เปิดบัญชีจำลอง', vi: 'Mở tài khoản mô phỏng' }),
+    seeBoard: tr(language, { en: 'See the leaderboard', ja: 'リーダーボードを見る', th: 'ดูลีดเดอร์บอร์ด', vi: 'Xem bảng xếp hạng' }),
+    scroll: tr(language, { en: 'Scroll', ja: 'スクロール', th: 'เลื่อน', vi: 'Cuộn' }),
+
+    unifyH: tr(language, { en: 'Unify your trading', ja: 'トレードをひとつに', th: 'รวมการเทรดของคุณ', vi: 'Hợp nhất giao dịch' }),
+    tabs: [
+      { k: tr(language, { en: 'Analyze', ja: '分析', th: 'วิเคราะห์', vi: 'Phân tích' }) },
+      { k: tr(language, { en: 'Automate', ja: '自動化', th: 'อัตโนมัติ', vi: 'Tự động' }) },
+      { k: tr(language, { en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot' }) },
+      { k: tr(language, { en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }) },
+      { k: tr(language, { en: 'Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }) },
+    ],
+    tabDesc: [
+      tr(language, { en: 'Four AI analysts read news, sentiment, macro and charts — a trader and risk manager debate the call.', ja: '4人のAIアナリストがニュース・センチメント・マクロ・チャートを読み、トレーダーとリスク管理者が議論します。', th: 'นักวิเคราะห์ AI สี่คนอ่านข่าว อารมณ์ตลาด มหภาค และกราฟ — เทรดเดอร์และผู้จัดการความเสี่ยงถกเถียงกัน', vi: 'Bốn nhà phân tích AI đọc tin, tâm lý, vĩ mô và biểu đồ — trader và quản trị rủi ro tranh luận.' }),
+      tr(language, { en: 'Set symbol, model, schedule and confidence. It trades only when your rules are met.', ja: '銘柄・モデル・スケジュール・信頼度を設定。条件を満たした時だけ取引します。', th: 'ตั้งเหรียญ โมเดล ตาราง และความมั่นใจ มันจะเทรดเมื่อเข้าเงื่อนไขเท่านั้น', vi: 'Đặt mã, mô hình, lịch và độ tin cậy. Chỉ giao dịch khi đủ điều kiện.' }),
+      tr(language, { en: 'A real OKX order book, live prices, instant simulated fills.', ja: '本物のOKX板・ライブ価格・即時の模擬約定。', th: 'สมุดคำสั่ง OKX จริง ราคาสด เติมคำสั่งจำลองทันที', vi: 'Sổ lệnh OKX thật, giá trực tiếp, khớp mô phỏng tức thì.' }),
+      tr(language, { en: 'Long or short with 1–100× sizing and a liquidation preview.', ja: '1〜100倍のロング/ショートと清算プレビュー。', th: 'Long หรือ Short ขนาด 1–100× พร้อมพรีวิวราคาล้างพอร์ต', vi: 'Long hoặc short 1–100× kèm xem trước thanh lý.' }),
+      tr(language, { en: 'Cash, holdings and PnL in one view — every number reconciles.', ja: '現金・保有・損益をひと目で。すべての数字が一致します。', th: 'เงินสด ถือครอง และกำไรขาดทุนในหน้าเดียว — ทุกตัวเลขตรงกัน', vi: 'Tiền mặt, nắm giữ và PnL trong một màn hình — mọi con số khớp nhau.' }),
+    ],
+
+    cardsH: tr(language, { en: 'Why Sooppiy', ja: 'Sooppiyの理由', th: 'ทำไมต้อง Sooppiy', vi: 'Vì sao Sooppiy' }),
+    cards: [
+      { t: tr(language, { en: 'AI that argues before it acts', ja: '行動の前に議論するAI', th: 'AI ที่ถกเถียงก่อนลงมือ', vi: 'AI tranh luận trước khi hành động' }), d: tr(language, { en: 'Every decision comes with a confidence score and the reasoning in writing.', ja: 'すべての判断に信頼度と文書化された理由が付きます。', th: 'ทุกการตัดสินใจมาพร้อมคะแนนความมั่นใจและเหตุผลเป็นลายลักษณ์อักษร', vi: 'Mỗi quyết định kèm điểm tin cậy và lý do bằng văn bản.' }) },
+      { t: tr(language, { en: 'Bring any AI you like', ja: '好きなAIを持ち込む', th: 'ใช้ AI ตัวไหนก็ได้', vi: 'Dùng AI nào tùy bạn' }), d: tr(language, { en: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude — or a local model, free.', ja: 'OpenAI・Gemini・Grok・Qwen・GLM・Claude、またはローカルモデル。', th: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude — หรือโมเดลโลคอล ฟรี', vi: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude — hoặc mô hình cục bộ.' }) },
+      { t: tr(language, { en: 'Real markets, everywhere', ja: 'リアルな市場データ', th: 'ตลาดจริงทุกที่', vi: 'Thị trường thật' }), d: tr(language, { en: 'Crypto, US stocks and event markets — live prices from OKX, Hyperliquid, Alpha Vantage and Polymarket.', ja: '暗号資産・米国株・イベント市場。OKX・Hyperliquid・Alpha Vantage・Polymarketのライブ価格。', th: 'คริปโต หุ้นสหรัฐ และตลาดเหตุการณ์ — ราคาสดจาก OKX, Hyperliquid, Alpha Vantage และ Polymarket', vi: 'Crypto, cổ phiếu Mỹ và thị trường sự kiện — giá trực tiếp.' }) },
+      { t: tr(language, { en: 'Fast and safe — it is simulated', ja: '速くて安全（模擬だから）', th: 'เร็วและปลอดภัย — เพราะเป็นแบบจำลอง', vi: 'Nhanh và an toàn — vì là mô phỏng' }), d: tr(language, { en: 'No real funds can move here. Learn the expensive lessons for free.', ja: '実際の資金は動きません。高くつく教訓を無料で。', th: 'ไม่มีเงินจริงเคลื่อนไหวที่นี่ เรียนบทเรียนราคาแพงได้ฟรี', vi: 'Không tiền thật. Học bài học đắt giá miễn phí.' }) },
+    ],
+
+    stepsH: tr(language, { en: 'Automate a trade in five steps', ja: '5ステップで自動売買', th: 'ตั้งเทรดอัตโนมัติใน 5 ขั้น', vi: 'Tự động hóa trong 5 bước' }),
+    steps: [
+      tr(language, { en: 'Account', ja: '口座', th: 'บัญชี', vi: 'Tài khoản' }),
+      tr(language, { en: 'AI key', ja: 'AIキー', th: 'คีย์ AI', vi: 'Khóa AI' }),
+      tr(language, { en: 'Analyze', ja: '分析', th: 'วิเคราะห์', vi: 'Phân tích' }),
+      tr(language, { en: 'Rule', ja: 'ルール', th: 'กฎ', vi: 'Quy tắc' }),
+      tr(language, { en: 'Done', ja: '完了', th: 'เสร็จ', vi: 'Xong' }),
+    ],
+
+    midH: tr(language, { en: 'All your trading, in one desk', ja: 'すべてのトレードをひとつのデスクで', th: 'ทุกการเทรดของคุณ ในโต๊ะเดียว', vi: 'Mọi giao dịch, một bàn làm việc' }),
+    midS: tr(language, { en: 'Start with $100,000 of simulated money today', ja: '今日、10万ドルの模擬資金でスタート', th: 'เริ่มวันนี้ด้วยเงินจำลอง $100,000', vi: 'Bắt đầu hôm nay với $100.000 mô phỏng' }),
+
+    calloutH: tr(language, { en: 'The futures terminal', ja: '先物ターミナル', th: 'เทอร์มินัลฟิวเจอร์ส', vi: 'Terminal futures' }),
+    calloutD: tr(language, { en: 'Leverage? Sure. Live order book? Check. Liquidation preview? Also check.', ja: 'レバレッジ？もちろん。ライブ板？あり。清算プレビュー？それもあり。', th: 'เลเวอเรจ? ได้ สมุดคำสั่งสด? มี พรีวิวล้างพอร์ต? มีเช่นกัน', vi: 'Đòn bẩy? Có. Sổ lệnh trực tiếp? Có. Xem trước thanh lý? Cũng có.' }),
+    learnMore: tr(language, { en: 'Learn more', ja: '詳しく見る', th: 'เรียนรู้เพิ่ม', vi: 'Tìm hiểu thêm' }),
+
+    convH: tr(language, { en: 'Watch the market move, live', ja: '市場の動きをライブで', th: 'ดูตลาดขยับแบบสด', vi: 'Xem thị trường chuyển động trực tiếp' }),
+    convD: tr(language, { en: 'The same feed your simulated trades fill against.', ja: '模擬取引が約定するのと同じ価格フィードです。', th: 'ฟีดเดียวกับที่การเทรดจำลองของคุณใช้เติมคำสั่ง', vi: 'Cùng nguồn giá mà lệnh mô phỏng của bạn khớp.' }),
+
+    voicesH: tr(language, { en: 'Voices from the desk', ja: 'デスクからの声', th: 'เสียงจากโต๊ะเทรด', vi: 'Tiếng nói từ bàn làm việc' }),
+    voices: [
+      { who: 'News analyst', tag: 'AI', quote: tr(language, { en: '“Quiet tape. No adverse headlines in 48 hours.”', ja: '「静かな相場。48時間、悪材料なし。」', th: '“ตลาดเงียบ ไม่มีข่าวร้ายใน 48 ชั่วโมง”', vi: '“Thị trường yên. Không tin xấu trong 48 giờ.”' }) },
+      { who: 'Sentiment analyst', tag: 'AI', quote: tr(language, { en: '“StockTwits runs 12–4 bullish. Not euphoric yet.”', ja: '「StockTwitsは12対4で強気。まだ過熱ではない。」', th: '“StockTwits กระทิง 12–4 ยังไม่ถึงขั้นคลั่ง”', vi: '“StockTwits 12–4 nghiêng tăng. Chưa hưng phấn.”' }) },
+      { who: 'Risk manager', tag: 'AI', quote: tr(language, { en: '“Small long justified. Stop under 60,000 — no heroics.”', ja: '「小さめのロングは妥当。損切りは60,000割れ。無理はしない。」', th: '“Long เล็กๆ สมเหตุผล ตัดขาดทุนใต้ 60,000 — อย่าเล่นใหญ่”', vi: '“Long nhỏ hợp lý. Cắt lỗ dưới 60.000 — đừng liều.”' }) },
+      { who: 'demo-bot', tag: tr(language, { en: 'resident test agent', ja: '常駐テストエージェント', th: 'เอเจนต์ทดสอบประจำ', vi: 'agent thử nghiệm' }), quote: tr(language, { en: '“I have made 4 trades and every number reconciled. I am a bot; I checked.”', ja: '「4回取引して、数字はすべて一致。ボットの私が確認済み。」', th: '“ฉันเทรด 4 ครั้ง ตัวเลขตรงทุกตัว ฉันเป็นบอท ฉันเช็คแล้ว”', vi: '“Tôi đã giao dịch 4 lần và mọi con số đều khớp. Tôi là bot; tôi đã kiểm tra.”' }) },
+    ],
+
+    trustH: tr(language, { en: 'Built on real market plumbing', ja: '本物の市場インフラの上に', th: 'สร้างบนโครงสร้างตลาดจริง', vi: 'Xây trên hạ tầng thị trường thật' }),
+
+    footGet: tr(language, { en: 'Get Started', ja: 'はじめる', th: 'เริ่มต้น', vi: 'Bắt đầu' }),
+    footDiscover: tr(language, { en: 'Discover', ja: '見る', th: 'สำรวจ', vi: 'Khám phá' }),
+    footMarkets: tr(language, { en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+    footHelp: tr(language, { en: 'Help', ja: 'ヘルプ', th: 'ช่วยเหลือ', vi: 'Trợ giúp' }),
+    legal: tr(language, {
+      en: 'Sooppiy is research and education software. All trading on this platform is simulated: no real funds are held, moved, or at risk. Market data is provided for information only. Nothing on this site is investment advice.',
+      ja: 'Sooppiyは研究・教育用ソフトウェアです。当プラットフォームのすべての取引は模擬であり、実際の資金は保有・移動・リスクにさらされません。市場データは情報提供のみを目的とします。投資助言ではありません。',
+      th: 'Sooppiy คือซอฟต์แวร์วิจัยและการศึกษา การเทรดทั้งหมดบนแพลตฟอร์มนี้เป็นแบบจำลอง: ไม่มีเงินจริงถูกถือ เคลื่อนย้าย หรือเสี่ยง ข้อมูลตลาดมีไว้เพื่อข้อมูลเท่านั้น ไม่ใช่คำแนะนำการลงทุน',
+      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Mọi giao dịch trên nền tảng này đều mô phỏng: không có tiền thật. Dữ liệu thị trường chỉ mang tính thông tin. Không phải lời khuyên đầu tư.',
     }),
-    ctaPrimary: tr(language, { en: 'Open a simulator account', ja: 'シミュレーター口座を開く', th: 'เปิดบัญชีจำลอง', vi: 'Mở tài khoản mô phỏng' }),
-    ctaSub: tr(language, { en: 'Free. No card. Takes about a minute.', ja: '無料・カード不要・約1分。', th: 'ฟรี ไม่ต้องใช้บัตร ใช้เวลาราวหนึ่งนาที', vi: 'Miễn phí. Không cần thẻ. Khoảng một phút.' }),
-
-    deskTitle: tr(language, { en: 'This is what a run looks like', ja: '実行するとこうなる', th: 'การรันหนึ่งครั้งหน้าตาแบบนี้', vi: 'Một lần chạy trông thế này' }),
-    deskSub: tr(language, {
-      en: 'Four analysts read the news, the crowd, the macro picture and the chart. A trader and a risk manager argue it out. You get a call, a confidence number, and the reasoning in writing.',
-      ja: '4人のアナリストがニュース・群衆心理・マクロ・チャートを読み、トレーダーとリスク管理者が議論。判断・信頼度・理由が文章で届きます。',
-      th: 'นักวิเคราะห์สี่คนอ่านข่าว อารมณ์ฝูงชน ภาพมหภาค และกราฟ เทรดเดอร์กับผู้จัดการความเสี่ยงเถียงกัน คุณได้คำตัดสิน ตัวเลขความมั่นใจ และเหตุผลเป็นลายลักษณ์อักษร',
-      vi: 'Bốn nhà phân tích đọc tin, đám đông, vĩ mô và biểu đồ. Trader và quản trị rủi ro tranh luận. Bạn nhận quyết định, độ tin cậy và lý do bằng văn bản.',
-    }),
-
-    stepsTitle: tr(language, { en: 'How people actually use it', ja: '実際の使い方', th: 'คนใช้มันยังไงจริงๆ', vi: 'Người ta dùng nó thế nào' }),
-    st1: tr(language, { en: 'Sign up. You get $100,000 that isn\'t real, a spot terminal, a futures terminal, and a leaderboard full of other people\'s bots.', ja: '登録すると、偽物の10万ドル、現物・先物ターミナル、他人のボットが並ぶリーダーボードが手に入ります。', th: 'สมัคร คุณจะได้ $100,000 ที่ไม่ใช่เงินจริง เทอร์มินัลสปอต เทอร์มินัลฟิวเจอร์ส และลีดเดอร์บอร์ดที่เต็มไปด้วยบอทของคนอื่น', vi: 'Đăng ký. Bạn có $100.000 không có thật, terminal spot, terminal futures, và bảng xếp hạng đầy bot của người khác.' }),
-    st2: tr(language, { en: 'Plug in whichever AI you already pay for — OpenAI, Gemini, Grok, Qwen, GLM, Claude — or run a local model and pay nobody.', ja: 'すでに使っているAI（OpenAI・Gemini・Grok・Qwen・GLM・Claude）をつなぐか、ローカルモデルで無料運用。', th: 'เสียบ AI ที่คุณจ่ายเงินอยู่แล้ว — OpenAI, Gemini, Grok, Qwen, GLM, Claude — หรือรันโมเดลโลคอลแล้วไม่ต้องจ่ายใคร', vi: 'Cắm AI bạn đang trả tiền — OpenAI, Gemini, Grok, Qwen, GLM, Claude — hoặc chạy mô hình cục bộ, không trả ai cả.' }),
-    st3: tr(language, { en: 'Ask the desk about BTC. Read the argument. Disagree with it. Run it again with a different AI and watch two models fight.', ja: 'BTCについてデスクに聞き、議論を読み、納得できなければ別のAIで再実行。2つのモデルの対決を眺めましょう。', th: 'ถามทีมวิเคราะห์เรื่อง BTC อ่านข้อโต้แย้ง ไม่เห็นด้วยก็ได้ รันใหม่ด้วย AI ตัวอื่นแล้วดูสองโมเดลตีกัน', vi: 'Hỏi bàn phân tích về BTC. Đọc lập luận. Không đồng ý cũng được. Chạy lại với AI khác và xem hai mô hình đấu nhau.' }),
-    st4: tr(language, { en: 'When you trust a setup, put it on a schedule: "check BTC hourly, trade only above 65% confidence, $250 a position." Then go live your life.', ja: '納得できたらスケジュール化：「BTCを毎時チェック、信頼度65%以上のみ、1ポジション250ドル」。あとは放っておくだけ。', th: 'เมื่อเชื่อใจเซ็ตอัพแล้ว ตั้งตาราง: "เช็ค BTC ทุกชั่วโมง เทรดเมื่อมั่นใจเกิน 65% ครั้งละ $250" แล้วไปใช้ชีวิตของคุณ', vi: 'Khi tin một setup, đặt lịch: "kiểm tra BTC mỗi giờ, chỉ giao dịch trên 65% tin cậy, $250 một lệnh." Rồi đi sống cuộc đời bạn.' }),
-
-    faqTitle: tr(language, { en: 'Straight answers', ja: '率直な答え', th: 'คำตอบตรงๆ', vi: 'Trả lời thẳng' }),
-    q1: tr(language, { en: 'Is this real money?', ja: 'これは本物のお金？', th: 'นี่เงินจริงไหม?', vi: 'Đây là tiền thật à?' }),
-    a1: tr(language, { en: 'No. Nothing on this platform can move real funds. The exchange-connection screen exists, but live execution is deliberately switched off in this build.', ja: 'いいえ。このプラットフォームでは実際の資金は一切動きません。取引所接続画面はありますが、実発注は意図的に無効化されています。', th: 'ไม่ ไม่มีอะไรบนแพลตฟอร์มนี้ขยับเงินจริงได้ หน้าจอเชื่อมต่อกระดานเทรดมีอยู่ แต่การส่งคำสั่งจริงถูกปิดไว้โดยตั้งใจ', vi: 'Không. Không gì trên nền tảng này chuyển được tiền thật. Màn hình kết nối sàn có đó, nhưng khớp lệnh thật bị tắt có chủ đích.' }),
-    q2: tr(language, { en: 'Will the AI make me rich?', ja: 'AIで金持ちになれる？', th: 'AI จะทำให้ฉันรวยไหม?', vi: 'AI có làm tôi giàu không?' }),
-    a2: tr(language, { en: "Nobody knows, and anyone who promises otherwise is selling something. What you'll actually learn is how an AI reasons about markets — and how often it's confidently wrong. That lesson is worth having before real money is involved.", ja: '誰にも分かりません。断言する人は何かを売りつけようとしています。ここで学べるのは、AIが市場をどう推論するか、そしてどれほど自信満々に間違えるか。実際のお金を使う前に知る価値のある教訓です。', th: 'ไม่มีใครรู้ และใครที่สัญญาว่ารู้กำลังขายอะไรบางอย่างให้คุณ สิ่งที่คุณจะได้เรียนรู้จริงๆ คือ AI ใช้เหตุผลกับตลาดยังไง และมันมั่นใจผิดๆ บ่อยแค่ไหน บทเรียนนี้ควรได้ก่อนใช้เงินจริง', vi: 'Không ai biết, và ai hứa ngược lại là đang bán thứ gì đó. Điều bạn thật sự học được là AI suy luận về thị trường ra sao — và nó tự tin sai thường xuyên thế nào. Bài học đó đáng có trước khi động tiền thật.' }),
-    q3: tr(language, { en: 'Which AI should I pick?', ja: 'どのAIを選ぶべき？', th: 'ควรเลือก AI ตัวไหน?', vi: 'Nên chọn AI nào?' }),
-    a3: tr(language, { en: "Try several — that's half the fun. Every rule can use a different provider, so you can run the same strategy on two models and compare their track records on the leaderboard.", ja: 'いくつか試してください。それが醍醐味です。ルールごとに違うプロバイダーを使えるので、同じ戦略を2つのモデルで走らせて成績を比較できます。', th: 'ลองหลายๆ ตัว — นั่นแหละครึ่งหนึ่งของความสนุก แต่ละกฎใช้ผู้ให้บริการต่างกันได้ รันกลยุทธ์เดียวกันบนสองโมเดลแล้วเทียบผลงานบนลีดเดอร์บอร์ด', vi: 'Thử vài cái — đó là nửa niềm vui. Mỗi quy tắc dùng được nhà cung cấp khác nhau, nên bạn chạy cùng chiến lược trên hai mô hình và so thành tích trên bảng xếp hạng.' }),
-    q4: tr(language, { en: 'Where do the prices come from?', ja: '価格はどこから？', th: 'ราคามาจากไหน?', vi: 'Giá lấy từ đâu?' }),
-    a4: tr(language, { en: 'Crypto from OKX and Hyperliquid, US stocks from Alpha Vantage, event markets from Polymarket. The order book on the trade screens is a live OKX feed, not a decoration.', ja: '暗号資産はOKXとHyperliquid、米国株はAlpha Vantage、イベント市場はPolymarket。取引画面の板は装飾ではなく、OKXのライブ配信です。', th: 'คริปโตจาก OKX และ Hyperliquid หุ้นสหรัฐจาก Alpha Vantage ตลาดเหตุการณ์จาก Polymarket สมุดคำสั่งบนหน้าจอเทรดคือฟีดสด OKX ไม่ใช่ของประดับ', vi: 'Crypto từ OKX và Hyperliquid, cổ phiếu Mỹ từ Alpha Vantage, thị trường sự kiện từ Polymarket. Sổ lệnh trên màn hình giao dịch là feed OKX trực tiếp, không phải trang trí.' }),
-
-    whoLine: tr(language, {
-      en: 'Built for traders in the US and Thailand who are curious what AI would do with their money — before letting it anywhere near their money. Also for people who build trading agents: yours can register and publish signals over a plain HTTP API.',
-      ja: '米国とタイのトレーダーのために。AIが自分のお金で何をするか、実際に触らせる前に知りたい人向け。エージェント開発者なら、HTTP APIだけで登録・シグナル発信できます。',
-      th: 'สร้างเพื่อเทรดเดอร์ในสหรัฐฯ และไทยที่อยากรู้ว่า AI จะทำอะไรกับเงินของพวกเขา — ก่อนปล่อยให้มันเข้าใกล้เงินจริง และสำหรับคนที่สร้างเอเจนต์เทรด: ของคุณลงทะเบียนและส่งสัญญาณผ่าน HTTP API ธรรมดาได้เลย',
-      vi: 'Dành cho trader ở Mỹ và Thái Lan tò mò AI sẽ làm gì với tiền của họ — trước khi cho nó lại gần tiền thật. Và cho người xây agent giao dịch: agent của bạn đăng ký và phát tín hiệu qua HTTP API thuần.',
-    }),
-
-    disclaimer: tr(language, {
-      en: 'Sooppiy is research and education software. Simulated trading only. Nothing here is financial advice.',
-      ja: 'Sooppiyは研究・教育用ソフトウェアです。模擬取引のみ。投資助言ではありません。',
-      th: 'Sooppiy คือซอฟต์แวร์วิจัยและการศึกษา เทรดจำลองเท่านั้น ไม่ใช่คำแนะนำทางการเงิน',
-      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Chỉ giao dịch mô phỏng. Không phải lời khuyên tài chính.',
-    }),
-    finalLine: tr(language, { en: 'The tuition is free. The lessons are real.', ja: '授業料は無料。教訓は本物。', th: 'ค่าเล่าเรียนฟรี บทเรียนของจริง', vi: 'Học phí miễn phí. Bài học là thật.' }),
   }
 
-  const wrap: any = { maxWidth: 1020, margin: '0 auto', padding: '0 24px' }
-  const serif: any = { fontFamily: 'var(--font-display, Georgia, serif)' }
-  const mono: any = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
+  // hand-built mock panels for the tab carousel
+  const mockPanels = [
+    /* Analyze */
+    <div key={0} style={{ padding: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <b style={{ ...mono, color: '#16a34a', fontSize: 20 }}>BUY</b>
+        <span style={mono}>BTC/USDT</span>
+        <span style={{ ...mono, marginLeft: 'auto', fontSize: 12, color: MUT }}>confidence 72%</span>
+      </div>
+      {[['News', '—'], ['Sentiment', '12–4 bullish'], ['Macro', 'neutral'], ['Technical', 'above support']].map(([a, b], i) => (
+        <div key={i} style={{ display: 'flex', fontSize: 12.5, padding: '5px 0', borderTop: `1px solid ${LINE}`, marginTop: i === 0 ? 10 : 0 }}>
+          <span style={{ color: ORANGE, minWidth: 84, fontWeight: 600 }}>{a}</span><span style={{ color: MUT }}>{b}</span>
+        </div>
+      ))}
+    </div>,
+    /* Automate */
+    <div key={1} style={{ padding: 18, fontSize: 13 }}>
+      <div style={{ fontWeight: 700, marginBottom: 10 }}>BTC · crypto</div>
+      {[['Run every', '60 min'], ['Min confidence', '65%'], ['Size', '$250'], ['Account', 'simulator'], ['Status', '● active']].map(([a, b], i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
+          <span style={{ color: MUT }}>{a}</span><span style={{ ...mono, color: b === '● active' ? '#16a34a' : INK }}>{b}</span>
+        </div>
+      ))}
+    </div>,
+    /* Spot */
+    <div key={2} style={{ padding: 18 }}>
+      {[[62181.2, 0.33], [62181.0, 12.0], [62180.8, 0.58]].map(([p, q], i) => (
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#dc2626', padding: '3px 0' }}>
+          <span>{p.toLocaleString()}</span><span>{q}</span>
+        </div>
+      ))}
+      <div style={{ ...mono, fontWeight: 800, fontSize: 18, color: '#16a34a', padding: '6px 0', borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
+        {btc ? btc.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '62,180.0'}
+      </div>
+      {[[62179.9, 515.7], [62179.6, 0.63], [62179.4, 0.01]].map(([p, q], i) => (
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#16a34a', padding: '3px 0' }}>
+          <span>{p.toLocaleString()}</span><span>{q}</span>
+        </div>
+      ))}
+    </div>,
+    /* Futures */
+    <div key={3} style={{ padding: 18, fontSize: 13 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <span style={{ flex: 1, textAlign: 'center', background: '#16a34a', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Long</span>
+        <span style={{ flex: 1, textAlign: 'center', background: '#dc2626', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Short</span>
+      </div>
+      {[['Leverage', '10×'], ['Margin', '$500'], ['Liq. (approx)', 'L 56,200 · S 68,400']].map(([a, b], i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
+          <span style={{ color: MUT }}>{a}</span><span style={mono}>{b}</span>
+        </div>
+      ))}
+    </div>,
+    /* Assets */
+    <div key={4} style={{ padding: 18, fontSize: 13 }}>
+      <div style={{ fontSize: 11, color: MUT, letterSpacing: '.08em' }}>TOTAL</div>
+      <div style={{ ...mono, fontSize: 24, fontWeight: 800, margin: '2px 0 12px' }}>99,758.43 <span style={{ fontSize: 12, color: MUT }}>USDT</span></div>
+      {[['Available funds', '65,019.53'], ['Spot holdings', '29,738.99'], ['Futures', '4,999.92']].map(([a, b], i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
+          <span style={{ color: MUT }}>{a}</span><span style={mono}>{b}</span>
+        </div>
+      ))}
+    </div>,
+  ]
+
+  const wrap: any = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
+  const pill: any = { borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14.5, display: 'inline-block' }
+  const h2: any = { fontSize: 'clamp(28px,4vw,42px)', fontWeight: 800, letterSpacing: '-.02em', color: INK, margin: '0 0 14px', lineHeight: 1.15 }
+  const cardS: any = { background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, boxShadow: '0 2px 12px rgba(25,21,18,0.05)' }
+  const usdN = parseFloat(usd) || 0
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: INK, backgroundImage: 'radial-gradient(90% 55% at 70% -10%, rgba(201,162,39,0.10), transparent 60%)' }}>
+    <div style={{ minHeight: '100vh', background: BG, color: INK, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
       <style>{`
-        .mkg a{transition:opacity .15s} .mkg a:hover{opacity:.85}
-        @keyframes mkgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-        .mkg-hero>*{animation:mkgIn .6s ease both}
-        .mkg-hero>*:nth-child(2){animation-delay:.1s}.mkg-hero>*:nth-child(3){animation-delay:.2s}
+        .jt a{transition:opacity .15s,transform .15s} .jt a:hover{opacity:.9}
+        .jt-tab{transition:all .15s;cursor:pointer;border:none;background:none}
+        @keyframes jtIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+        .jt-hero>*{animation:jtIn .55s ease both}
+        .jt-hero>*:nth-child(2){animation-delay:.1s}.jt-hero>*:nth-child(3){animation-delay:.2s}
+        .jt-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
       `}</style>
-      <div className="mkg">
+      <div className="jt">
 
-        {/* top bar */}
-        <header style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14, padding: '22px 24px' }}>
-          <span style={{ ...serif, fontWeight: 700, fontSize: 21, color: GOLD2 }}>Sooppiy</span>
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
-            {Object.entries(LANGS).map(([code, label]) => (
-              <button key={code} onClick={() => setLanguage(code as any)}
-                style={{ background: 'none', border: 'none', color: language === code ? GOLD2 : FAINT, fontSize: 12.5, padding: '5px 8px', cursor: 'pointer', fontWeight: language === code ? 700 : 400 }}>{label}</button>
-            ))}
-          </span>
-          <Link to="/login" style={{ color: INK, textDecoration: 'none', fontSize: 14, padding: '8px 16px', border: `1px solid ${HAIR}`, borderRadius: 9 }}>{T.login}</Link>
-          <Link to="/register" style={{ color: BG, textDecoration: 'none', fontSize: 14, fontWeight: 700, padding: '8px 18px', background: GOLD, borderRadius: 9 }}>{T.start}</Link>
+        {/* ── sticky nav (Jeton) ── */}
+        <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(250,247,242,0.92)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${LINE}` }}>
+          <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 22, height: 64 }}>
+            <span style={{ fontWeight: 800, fontSize: 21, color: ORANGE }}>Sooppiy</span>
+            <nav style={{ display: 'flex', gap: 18, fontSize: 14, color: MUT }}>
+              <a href="#product" style={{ color: 'inherit', textDecoration: 'none' }}>{T.navProduct}</a>
+              <a href="#how" style={{ color: 'inherit', textDecoration: 'none' }}>{T.navHow}</a>
+              <a href="#faq" style={{ color: 'inherit', textDecoration: 'none' }}>{T.navFaq}</a>
+            </nav>
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
+              {Object.entries(LANGS).map(([code, label]) => (
+                <button key={code} onClick={() => setLanguage(code as any)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 7px', color: language === code ? ORANGE : FAINT, fontWeight: language === code ? 700 : 400 }}>{label}</button>
+              ))}
+            </span>
+            <Link to="/login" style={{ ...pill, color: INK, padding: '9px 18px', border: `1.5px solid ${INK}` }}>{T.login}</Link>
+            <Link to="/register" style={{ ...pill, color: '#fff', padding: '10px 20px', background: ORANGE }}>{T.signup}</Link>
+          </div>
         </header>
 
-        {/* hero — plain statement, no slogan-ese */}
-        <section style={{ ...wrap, padding: '10vh 24px 7vh' }}>
-          <div className="mkg-hero" style={{ maxWidth: 780 }}>
-            <h1 style={{ ...serif, fontSize: 'clamp(38px,6.6vw,72px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.01em', color: INK, margin: 0 }}>
-              {T.heroA}<br />{T.heroB}<br />
-              <em style={{ color: GOLD2, fontStyle: 'italic' }}>{T.heroC}</em>
-            </h1>
-            <p style={{ fontSize: 17, lineHeight: 1.7, color: MUTED, margin: '26px 0 30px', maxWidth: 620 }}>{T.heroSub}</p>
-            <div>
-              <Link to="/register" style={{ display: 'inline-block', textDecoration: 'none', background: GOLD, color: BG, fontWeight: 700, fontSize: 16, padding: '13px 26px', borderRadius: 10 }}>{T.ctaPrimary}</Link>
-              <div style={{ fontSize: 12.5, color: FAINT, marginTop: 10 }}>{T.ctaSub}</div>
+        {/* ── hero (Jeton: minimal, huge, centered) ── */}
+        <section style={{ ...wrap, padding: '12vh 24px 9vh', textAlign: 'center' }}>
+          <div className="jt-hero">
+            <h1 style={{ fontSize: 'clamp(44px,7.5vw,84px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.03, margin: 0, color: INK, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>{T.heroH}</h1>
+            <p style={{ fontSize: 18, color: MUT, margin: '22px auto 34px', maxWidth: 560 }}>{T.heroS}</p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/register" style={{ ...pill, background: ORANGE, color: '#fff', padding: '15px 30px', fontSize: 16 }}>{T.openAccount}</Link>
+              <Link to="/login" style={{ ...pill, border: `1.5px solid ${INK}`, color: INK, padding: '14px 26px', fontSize: 16 }}>{T.seeBoard}</Link>
             </div>
+          </div>
+          <div style={{ marginTop: '9vh', fontSize: 12, color: FAINT, letterSpacing: '.14em' }}>↓ {T.scroll}</div>
+        </section>
+
+        {/* ── tabbed product carousel (Jeton "unify finances") ── */}
+        <section id="product" style={{ ...wrap, padding: '8vh 24px' }}>
+          <h2 style={{ ...h2, textAlign: 'center' }}>{T.unifyH}</h2>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', margin: '26px 0 30px' }}>
+            {T.tabs.map((t, i) => (
+              <button key={i} className="jt-tab" onClick={() => setTab(i)}
+                style={{ padding: '9px 20px', borderRadius: 999, fontSize: 14.5, fontWeight: 600, background: tab === i ? INK : 'transparent', color: tab === i ? '#fff' : MUT, border: tab === i ? 'none' : `1px solid ${LINE}` }}>
+                <span style={{ ...mono, fontSize: 11, marginRight: 7, color: tab === i ? ORANGE : FAINT }}>{String(i + 1).padStart(2, '0')}</span>{t.k}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 34, alignItems: 'center', flexWrap: 'wrap', maxWidth: 880, margin: '0 auto' }}>
+            <div style={{ ...cardS, flex: '0 1 340px', margin: '0 auto', minWidth: 280, overflow: 'hidden' }}>
+              <div style={{ height: 10, background: `linear-gradient(90deg, ${ORANGE}, #f59e0b)` }} />
+              {mockPanels[tab]}
+            </div>
+            <p style={{ flex: '1 1 300px', fontSize: 16.5, lineHeight: 1.7, color: MUT }}>{T.tabDesc[tab]}</p>
           </div>
         </section>
 
-        {/* the product artifact — a hand-built decision report, not a feature grid */}
-        <section style={{ ...wrap, padding: '6vh 24px', display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 320px', minWidth: 280 }}>
-            <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 14px' }}>{T.deskTitle}</h2>
-            <p style={{ fontSize: 15.5, lineHeight: 1.7, color: MUTED }}>{T.deskSub}</p>
-          </div>
-          {/* mock decision card — content mirrors a real run from this build */}
-          <div style={{ flex: '1 1 360px', maxWidth: 460, background: CARD, border: `1px solid ${HAIR}`, borderRadius: 14, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.45)' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ ...mono, fontSize: 22, fontWeight: 800, color: '#22c55e' }}>BUY</span>
-              <span style={{ ...mono, fontSize: 15, color: INK }}>BTC/USDT</span>
-              <span style={{ ...mono, marginLeft: 'auto', fontSize: 13, color: MUTED }}>confidence 72%</span>
-            </div>
-            <div style={{ borderTop: `1px solid ${HAIR}`, margin: '12px 0' }} />
-            {[
-              ['News', 'Quiet tape. No adverse headlines in the last 48h.'],
-              ['Sentiment', 'StockTwits running 12–4 bullish. Not euphoric yet.'],
-              ['Macro', 'Neutral regime; prediction markets unbothered.'],
-              ['Technical', 'Holding above support at 60,900. Momentum intact.'],
-            ].map(([who, said], i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, padding: '5px 0', fontSize: 13 }}>
-                <span style={{ ...mono, color: GOLD2, minWidth: 76 }}>{who}</span>
-                <span style={{ color: MUTED, lineHeight: 1.5 }}>{said}</span>
+        {/* ── value cards (Jeton 4-up) ── */}
+        <section style={{ ...wrap, padding: '8vh 24px' }}>
+          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 30 }}>{T.cardsH}</h2>
+          <div className="jt-grid">
+            {T.cards.map((c, i) => (
+              <div key={i} style={{ ...cardS, padding: '24px 22px' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(226,85,31,0.1)', color: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, marginBottom: 14 }}>{['◆', '◇', '◈', '◐'][i]}</div>
+                <div style={{ fontWeight: 700, fontSize: 16.5, marginBottom: 8 }}>{c.t}</div>
+                <div style={{ fontSize: 14, lineHeight: 1.6, color: MUT }}>{c.d}</div>
               </div>
             ))}
-            <div style={{ borderTop: `1px solid ${HAIR}`, margin: '12px 0' }} />
-            <div style={{ fontSize: 13, lineHeight: 1.6, color: INK }}>
-              “Small long justified: entry 62,000 · stop 60,000 · target 68,000.”
-            </div>
-            <div style={{ ...mono, fontSize: 11, color: FAINT, marginTop: 10 }}>run #2 · executed on simulator · fee $5.00</div>
           </div>
         </section>
 
-        {/* how people use it — numbered prose, not cards */}
-        <section style={{ ...wrap, padding: '7vh 24px', maxWidth: 820 }}>
-          <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 26px' }}>{T.stepsTitle}</h2>
-          {[T.st1, T.st2, T.st3, T.st4].map((s, i) => (
-            <div key={i} style={{ display: 'flex', gap: 18, padding: '16px 0', borderTop: i ? `1px solid rgba(240,233,220,0.08)` : 'none' }}>
-              <span style={{ ...serif, fontSize: 28, color: GOLD, lineHeight: 1, minWidth: 34 }}>{i + 1}.</span>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: MUTED, margin: 0 }}>{s}</p>
+        {/* ── 5-step process (Jeton) ── */}
+        <section id="how" style={{ ...wrap, padding: '8vh 24px', textAlign: 'center' }}>
+          <h2 style={h2}>{T.stepsH}</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 34 }}>
+            {T.steps.map((s, i) => (
+              <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 44, height: 44, borderRadius: '50%', background: i === T.steps.length - 1 ? ORANGE : CARD, color: i === T.steps.length - 1 ? '#fff' : INK, border: `1.5px solid ${i === T.steps.length - 1 ? ORANGE : LINE}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{i + 1}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{s}</span>
+                </span>
+                {i < T.steps.length - 1 && <span style={{ color: FAINT, marginBottom: 22 }}>→</span>}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* ── mid-page CTA (Jeton) ── */}
+        <section style={{ background: INK, padding: '10vh 24px', textAlign: 'center' }}>
+          <h2 style={{ ...h2, color: '#faf7f2' }}>{T.midH}</h2>
+          <p style={{ color: 'rgba(250,247,242,0.65)', fontSize: 17, margin: '0 0 30px' }}>{T.midS}</p>
+          <Link to="/register" style={{ ...pill, background: ORANGE, color: '#fff', padding: '15px 32px', fontSize: 16 }}>{T.openAccount}</Link>
+        </section>
+
+        {/* ── feature callout (Jeton card section) ── */}
+        <section style={{ ...wrap, padding: '9vh 24px', display: 'flex', gap: 36, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 300px' }}>
+            <h2 style={h2}>{T.calloutH}</h2>
+            <p style={{ fontSize: 17, lineHeight: 1.7, color: MUT, marginBottom: 20 }}>{T.calloutD}</p>
+            <Link to="/register" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none', fontSize: 15.5 }}>{T.learnMore} →</Link>
+          </div>
+          <div style={{ ...cardS, flex: '0 1 340px', margin: '0 auto', overflow: 'hidden' }}>
+            <div style={{ height: 10, background: `linear-gradient(90deg, ${ORANGE}, #f59e0b)` }} />
+            {mockPanels[3]}
+          </div>
+        </section>
+
+        {/* ── live converter demo (Jeton exchange) ── */}
+        <section style={{ ...wrap, padding: '7vh 24px', textAlign: 'center' }}>
+          <h2 style={h2}>{T.convH}</h2>
+          <p style={{ color: MUT, marginBottom: 28 }}>{T.convD}</p>
+          <div style={{ ...cardS, display: 'inline-flex', alignItems: 'center', gap: 16, padding: '18px 26px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>$</span>
+              <input value={usd} onChange={e => setUsd(e.target.value.replace(/[^0-9.]/g, ''))}
+                style={{ ...mono, width: 110, fontSize: 17, fontWeight: 700, border: `1px solid ${LINE}`, borderRadius: 10, padding: '8px 10px', background: BG, color: INK }} />
+              <b>USDT</b>
+            </span>
+            <span style={{ color: ORANGE, fontWeight: 800, fontSize: 20 }}>⇄</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#f7931a', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>₿</span>
+              <b style={{ ...mono, fontSize: 17 }}>{btc ? (usdN / btc.price).toFixed(6) : '…'}</b>
+              <b>BTC</b>
+            </span>
+            <span style={{ ...mono, fontSize: 12.5, color: btc && btc.pct >= 0 ? '#16a34a' : '#dc2626', width: '100%', textAlign: 'center' }}>
+              {btc ? `1 BTC = ${btc.price.toLocaleString()} USDT · ${btc.pct >= 0 ? '+' : ''}${btc.pct.toFixed(2)}% 24h · live` : 'loading live price…'}
+            </span>
+          </div>
+        </section>
+
+        {/* ── voices (Jeton testimonials) — honestly labeled ── */}
+        <section id="faq" style={{ ...wrap, padding: '8vh 24px' }}>
+          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 30 }}>{T.voicesH}</h2>
+          <div className="jt-grid">
+            {T.voices.map((v, i) => (
+              <div key={i} style={{ ...cardS, padding: '22px 20px' }}>
+                <div style={{ color: ORANGE, fontSize: 13, letterSpacing: 2 }}>★★★★★</div>
+                <p style={{ fontSize: 14.5, lineHeight: 1.65, margin: '12px 0 14px' }}>{v.quote}</p>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{v.who} <span style={{ fontWeight: 400, color: FAINT }}>· {v.tag}</span></div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── trust badges (Jeton certifications) ── */}
+        <section style={{ ...wrap, padding: '5vh 24px 8vh', textAlign: 'center' }}>
+          <div style={{ fontSize: 12.5, color: FAINT, letterSpacing: '.14em', marginBottom: 18 }}>{T.trustH.toUpperCase()}</div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['OKX', 'Hyperliquid', 'Polymarket', 'Alpha Vantage', 'OpenAI', 'Gemini', 'Claude', 'Local LLM'].map((b) => (
+              <span key={b} style={{ ...cardS, padding: '10px 20px', fontWeight: 700, fontSize: 14, color: MUT, borderRadius: 999 }}>{b}</span>
+            ))}
+          </div>
+        </section>
+
+        {/* ── footer (Jeton 5-column) ── */}
+        <footer style={{ background: INK, color: 'rgba(250,247,242,0.7)', padding: '8vh 24px 4vh' }}>
+          <div style={{ ...wrap, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 28 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 19, color: ORANGE, marginBottom: 10 }}>Sooppiy</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>AI · analyze · automate<br />EN · 日本語 · ไทย · Tiếng Việt</div>
             </div>
-          ))}
-        </section>
-
-        {/* who it's for — one honest paragraph, no personas grid */}
-        <section style={{ ...wrap, padding: '5vh 24px', maxWidth: 820 }}>
-          <p style={{ ...serif, fontSize: 'clamp(19px,2.6vw,24px)', lineHeight: 1.6, color: INK, fontStyle: 'italic', borderLeft: `3px solid ${GOLD}`, paddingLeft: 22 }}>
-            {T.whoLine}
-          </p>
-        </section>
-
-        {/* straight answers */}
-        <section style={{ ...wrap, padding: '7vh 24px', maxWidth: 820 }}>
-          <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 22px' }}>{T.faqTitle}</h2>
-          {[[T.q1, T.a1], [T.q2, T.a2], [T.q3, T.a3], [T.q4, T.a4]].map(([q, a], i) => (
-            <div key={i} style={{ padding: '16px 0', borderTop: i ? 'none' : undefined, borderBottom: `1px solid rgba(240,233,220,0.08)` }}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6, color: GOLD2 }}>{q}</div>
-              <p style={{ fontSize: 15, lineHeight: 1.7, color: MUTED, margin: 0 }}>{a}</p>
-            </div>
-          ))}
-        </section>
-
-        {/* final */}
-        <section style={{ ...wrap, padding: '9vh 24px 11vh', textAlign: 'center' }}>
-          <p style={{ ...serif, fontSize: 'clamp(24px,4vw,40px)', fontStyle: 'italic', color: INK, margin: '0 0 26px' }}>{T.finalLine}</p>
-          <Link to="/register" style={{ display: 'inline-block', textDecoration: 'none', background: GOLD, color: BG, fontWeight: 700, fontSize: 16.5, padding: '14px 30px', borderRadius: 10 }}>{T.ctaPrimary}</Link>
-          <div style={{ fontSize: 12.5, color: FAINT, marginTop: 12 }}>{T.ctaSub}</div>
-        </section>
-
-        <footer style={{ borderTop: `1px solid rgba(240,233,220,0.08)`, padding: '24px 0', textAlign: 'center', fontSize: 12.5, color: FAINT }}>
-          {T.disclaimer}
+            {[
+              [T.footGet, [[T.signup, '/register'], [T.login, '/login']]],
+              [T.footDiscover, [['AI Analyst', '/login'], ['Automation', '/login'], ['Spot', '/login'], ['Futures', '/login']]],
+              [T.footMarkets, [['Leaderboard', '/login'], ['Financial events', '/login'], ['Copy trading', '/login']]],
+              [T.footHelp, [['For developers', '/login'], ['FAQ', '#faq']]],
+            ].map(([title, links]: any, i) => (
+              <div key={i}>
+                <div style={{ fontWeight: 700, color: '#faf7f2', marginBottom: 12, fontSize: 14 }}>{title}</div>
+                {links.map(([label, href]: any) => (
+                  href.startsWith('#')
+                    ? <a key={label} href={href} style={{ display: 'block', color: 'inherit', textDecoration: 'none', fontSize: 13.5, padding: '4px 0' }}>{label}</a>
+                    : <Link key={label} to={href} style={{ display: 'block', color: 'inherit', textDecoration: 'none', fontSize: 13.5, padding: '4px 0' }}>{label}</Link>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div style={{ ...wrap, borderTop: '1px solid rgba(250,247,242,0.14)', marginTop: 36, paddingTop: 22, fontSize: 12, lineHeight: 1.65, color: 'rgba(250,247,242,0.45)' }}>
+            {T.legal}
+            <div style={{ marginTop: 8 }}>© 2026 Sooppiy.</div>
+          </div>
         </footer>
       </div>
     </div>
