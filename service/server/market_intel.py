@@ -19,10 +19,7 @@ from typing import Any, Optional
 import re
 
 import requests
-try:
-    from openrouter import OpenRouter
-except ImportError:  # pragma: no cover - optional dependency in some environments
-    OpenRouter = None
+from llm_client import generate_text, llm_configured
 try:
     from zoneinfo import ZoneInfo
 except ImportError:  # pragma: no cover - Python < 3.9 fallback
@@ -33,8 +30,6 @@ from config import ALPHA_VANTAGE_API_KEY
 from database import get_db_connection
 
 ALPHA_VANTAGE_BASE_URL = os.getenv("ALPHA_VANTAGE_BASE_URL", "https://www.alphavantage.co/query").strip()
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "").strip()
 MARKET_NEWS_LOOKBACK_HOURS = int(os.getenv("MARKET_NEWS_LOOKBACK_HOURS", "48"))
 MARKET_NEWS_CATEGORY_LIMIT = int(os.getenv("MARKET_NEWS_CATEGORY_LIMIT", "12"))
 MARKET_NEWS_HISTORY_PER_CATEGORY = int(os.getenv("MARKET_NEWS_HISTORY_PER_CATEGORY", "96"))
@@ -400,37 +395,6 @@ def _alpha_vantage_get(params: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _extract_openrouter_text(response: Any) -> str:
-    choices = getattr(response, "choices", None)
-    if choices is None and isinstance(response, dict):
-        choices = response.get("choices")
-    if not choices:
-        return ""
-
-    first_choice = choices[0]
-    message = getattr(first_choice, "message", None)
-    if message is None and isinstance(first_choice, dict):
-        message = first_choice.get("message")
-    if message is None:
-        return ""
-
-    content = getattr(message, "content", None)
-    if content is None and isinstance(message, dict):
-        content = message.get("content")
-
-    if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, list):
-        parts: list[str] = []
-        for part in content:
-            if isinstance(part, str):
-                parts.append(part)
-            elif isinstance(part, dict) and isinstance(part.get("text"), str):
-                parts.append(part["text"])
-        return "\n".join(part.strip() for part in parts if part and part.strip()).strip()
-    return ""
-
-
 def _normalize_news_item(item: dict[str, Any]) -> Optional[dict[str, Any]]:
     title = (item.get("title") or "").strip()
     if not title:
@@ -512,7 +476,7 @@ def _build_stock_analysis_fallback_summary(analysis: dict[str, Any]) -> str:
 
 def _generate_stock_analysis_summary(analysis: dict[str, Any]) -> str:
     fallback_summary = _build_stock_analysis_fallback_summary(analysis)
-    if not OPENROUTER_API_KEY or not OPENROUTER_MODEL or OpenRouter is None:
+    if not llm_configured():
         return fallback_summary
 
     prompt = (
@@ -537,16 +501,8 @@ def _generate_stock_analysis_summary(analysis: dict[str, Any]) -> str:
         f"Risk factors: {json.dumps(analysis.get('risk_factors') or [], ensure_ascii=True)}\n"
     )
 
-    try:
-        with OpenRouter(api_key=OPENROUTER_API_KEY) as client:
-            response = client.chat.send(
-                model=OPENROUTER_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-            )
-        content = _extract_openrouter_text(response)
-        return content[:500].strip() if content else fallback_summary
-    except Exception:
-        return fallback_summary
+    content = generate_text(prompt, max_tokens=200, temperature=0.4)
+    return content[:500].strip() if content else fallback_summary
 
 
 def _dedupe_news_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
