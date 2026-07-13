@@ -88,7 +88,7 @@ function App() {
     localStorage.setItem('sooppiy_language', language)
   }, [language])
   const [theme, setTheme] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('sooppiy_theme')
+    const saved = localStorage.getItem('sooppiy_theme_v2')
     return THEMES.some((t) => t.value === saved) ? (saved as ThemeMode) : DEFAULT_THEME
   })
   const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
@@ -117,7 +117,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('sooppiy_theme', theme)
+    localStorage.setItem('sooppiy_theme_v2', theme)
   }, [theme])
 
   const fetchAgentInfo = async () => {

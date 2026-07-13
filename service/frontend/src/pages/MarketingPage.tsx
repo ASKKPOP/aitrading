@@ -4,200 +4,193 @@ import { tr } from '../i18n'
 
 const LANGS: Record<string, string> = { en: 'EN', ja: '日本語', th: 'ไทย', vi: 'Việt' }
 
-// Public landing page (logged-out "/") — antigravity.google-inspired:
-// near-black canvas, huge display type, gradient accent, statement sections.
+// Public landing page (logged-out "/").
+// Written like a person, not a pitch deck: plain sentences, concrete numbers,
+// a real product artifact, and straight answers. Golden theme (dark chocolate
+// + antique gold + warm cream), matching the app's Claude-style golden theme.
+
+const INK = '#f0e9dc'
+const GOLD = '#c9a227'
+const GOLD2 = '#e0bc4e'
+const MUTED = 'rgba(240,233,220,0.62)'
+const FAINT = 'rgba(240,233,220,0.38)'
+const BG = '#14100d'
+const CARD = 'rgba(240,233,220,0.04)'
+const HAIR = 'rgba(201,162,39,0.28)'
+
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
 
   const T = {
     login: tr(language, { en: 'Log in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
-    start: tr(language, { en: 'Get started', ja: 'はじめる', th: 'เริ่มต้น', vi: 'Bắt đầu' }),
-    heroA: tr(language, { en: 'AI analyzes.', ja: 'AIが分析する。', th: 'AI วิเคราะห์', vi: 'AI phân tích.' }),
-    heroB: tr(language, { en: 'You set the rules.', ja: 'ルールはあなたが決める。', th: 'คุณตั้งกฎ', vi: 'Bạn đặt luật.' }),
-    heroC: tr(language, { en: 'It trades — on paper.', ja: '取引は模擬で行われる。', th: 'มันเทรด — บนกระดาษ', vi: 'Nó giao dịch — mô phỏng.' }),
+    start: tr(language, { en: 'Try it', ja: '試してみる', th: 'ลองเลย', vi: 'Dùng thử' }),
+    heroA: tr(language, { en: 'Give an AI $100,000', ja: 'AIに10万ドルを渡してみる。', th: 'ให้ AI ถือเงิน $100,000', vi: 'Đưa cho AI $100.000' }),
+    heroB: tr(language, { en: 'of pretend money.', ja: 'ただし、おもちゃのお金で。', th: 'ที่เป็นเงินปลอม', vi: 'tiền giả.' }),
+    heroC: tr(language, { en: 'See what it does.', ja: '何をするか見てみよう。', th: 'แล้วดูว่ามันทำอะไร', vi: 'Xem nó làm gì.' }),
     heroSub: tr(language, {
-      en: 'Sooppiy is an AI trading platform: a multi-agent analyst desk reads the news, sentiment, macro and charts, debates a decision, and paper-trades it on your schedule — with real market prices and zero real money at risk.',
-      ja: 'Sooppiyはマルチエージェントのアナリストデスクがニュース・センチメント・マクロ・チャートを読み、議論して判断し、実際の市場価格でスケジュール通りに模擬取引するAIトレーディングプラットフォームです。実際のお金は一切リスクにさらされません。',
-      th: 'Sooppiy คือแพลตฟอร์มเทรดด้วย AI: ทีมนักวิเคราะห์ AI อ่านข่าว ความรู้สึกตลาด เศรษฐกิจมหภาค และกราฟ ถกเถียงกันจนได้ข้อสรุป แล้วเทรดจำลองตามตารางของคุณ — ด้วยราคาตลาดจริง โดยไม่มีเงินจริงเสี่ยงแม้แต่บาทเดียว',
-      vi: 'Sooppiy là nền tảng giao dịch AI: bàn phân tích đa tác nhân đọc tin tức, tâm lý, vĩ mô và biểu đồ, tranh luận ra quyết định, và giao dịch mô phỏng theo lịch của bạn — giá thị trường thật, không rủi ro tiền thật.',
+      en: "Sooppiy hooks a team of AI analysts to live market prices, lets them argue about what to buy, and books every trade in a simulator. The prices are real. The money isn't. That's the point.",
+      ja: 'SooppiyはAIアナリストのチームを実際の市場価格につなぎ、何を買うか議論させ、すべての取引をシミュレーターに記録します。価格は本物、お金は偽物。それがポイントです。',
+      th: 'Sooppiy ต่อทีมนักวิเคราะห์ AI เข้ากับราคาตลาดจริง ปล่อยให้พวกมันเถียงกันว่าจะซื้ออะไร แล้วบันทึกทุกการเทรดในตัวจำลอง ราคาเป็นของจริง เงินไม่ใช่ นั่นแหละคือประเด็น',
+      vi: 'Sooppiy nối một đội phân tích AI với giá thị trường thật, để chúng tranh cãi nên mua gì, và ghi mọi lệnh vào trình mô phỏng. Giá là thật. Tiền thì không. Đó chính là mục đích.',
     }),
-    ctaPrimary: tr(language, { en: 'Create a free account', ja: '無料アカウント作成', th: 'สร้างบัญชีฟรี', vi: 'Tạo tài khoản miễn phí' }),
-    ctaSecondary: tr(language, { en: 'I already have an account', ja: 'アカウントをお持ちの方', th: 'มีบัญชีอยู่แล้ว', vi: 'Đã có tài khoản' }),
+    ctaPrimary: tr(language, { en: 'Open a simulator account', ja: 'シミュレーター口座を開く', th: 'เปิดบัญชีจำลอง', vi: 'Mở tài khoản mô phỏng' }),
+    ctaSub: tr(language, { en: 'Free. No card. Takes about a minute.', ja: '無料・カード不要・約1分。', th: 'ฟรี ไม่ต้องใช้บัตร ใช้เวลาราวหนึ่งนาที', vi: 'Miễn phí. Không cần thẻ. Khoảng một phút.' }),
 
-    whatEyebrow: tr(language, { en: 'WHAT IT IS', ja: '概要', th: 'มันคืออะไร', vi: 'LÀ GÌ' }),
-    whatTitle: tr(language, { en: 'Three engines, one loop.', ja: '3つのエンジン、1つのループ。', th: 'สามเครื่องยนต์ หนึ่งวงจร', vi: 'Ba động cơ, một vòng lặp.' }),
-    p1t: tr(language, { en: 'AI analyst desk', ja: 'AIアナリストデスク', th: 'ทีมนักวิเคราะห์ AI', vi: 'Bàn phân tích AI' }),
-    p1d: tr(language, { en: 'News, sentiment, macro and technical analysts brief a trader + risk team that debates every call into a decision with a written report.', ja: 'ニュース・センチメント・マクロ・テクニカルの各アナリストが、トレーダーとリスクチームに報告し、議論の末に判断とレポートを出します。', th: 'นักวิเคราะห์ข่าว ความรู้สึก มหภาค และเทคนิค สรุปให้ทีมเทรดเดอร์+ความเสี่ยงถกเถียงจนได้คำตัดสินพร้อมรายงาน', vi: 'Các nhà phân tích tin tức, tâm lý, vĩ mô và kỹ thuật báo cáo cho đội trader + rủi ro tranh luận ra quyết định kèm báo cáo.' }),
-    p2t: tr(language, { en: 'Automation', ja: '自動売買', th: 'ระบบอัตโนมัติ', vi: 'Tự động hóa' }),
-    p2d: tr(language, { en: 'You set the symbol, AI model, schedule, confidence threshold and size. The worker runs the desk and trades only when your rules are met.', ja: '銘柄・AIモデル・スケジュール・信頼度・サイズを設定すれば、条件を満たした時だけ自動で取引します。', th: 'คุณตั้งเหรียญ โมเดล AI ตาราง เกณฑ์ความมั่นใจ และขนาด ระบบจะเทรดเมื่อเข้าเงื่อนไขเท่านั้น', vi: 'Bạn đặt mã, mô hình AI, lịch, ngưỡng tin cậy và cỡ lệnh. Worker chỉ giao dịch khi đủ điều kiện.' }),
-    p3t: tr(language, { en: 'Simulator', ja: 'シミュレーター', th: 'ตัวจำลอง', vi: 'Trình mô phỏng' }),
-    p3d: tr(language, { en: 'Spot and futures terminals with a real order book and live prices — every fill is paper, every number is real.', ja: '実際の板情報と価格で動く現物・先物ターミナル。約定は模擬、数字は本物。', th: 'เทอร์มินัลสปอตและฟิวเจอร์สพร้อมสมุดคำสั่งจริงและราคาสด — เติมคำสั่งแบบจำลอง ตัวเลขจริงทุกตัว', vi: 'Terminal spot và futures với sổ lệnh thật và giá trực tiếp — khớp lệnh mô phỏng, con số thật.' }),
-
-    howEyebrow: tr(language, { en: 'HOW TO USE', ja: '使い方', th: 'วิธีใช้', vi: 'CÁCH DÙNG' }),
-    howTitle: tr(language, { en: 'From zero to your first AI trade in minutes.', ja: '数分で最初のAIトレードへ。', th: 'จากศูนย์สู่เทรด AI แรกในไม่กี่นาที', vi: 'Từ số 0 đến lệnh AI đầu tiên trong vài phút.' }),
-    s1t: tr(language, { en: 'Create an account', ja: 'アカウント作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' }),
-    s1d: tr(language, { en: 'You start with a $100,000 simulated wallet. No card, no KYC.', ja: '10万ドルの模擬ウォレットでスタート。カードもKYCも不要。', th: 'เริ่มด้วยกระเป๋าจำลอง $100,000 ไม่ต้องใช้บัตร ไม่ต้อง KYC', vi: 'Bắt đầu với ví mô phỏng $100.000. Không thẻ, không KYC.' }),
-    s2t: tr(language, { en: 'Pick your AI', ja: 'AIを選ぶ', th: 'เลือก AI ของคุณ', vi: 'Chọn AI của bạn' }),
-    s2d: tr(language, { en: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude, or a local model — bring any key, switch anytime.', ja: 'OpenAI・Gemini・Grok・Qwen・GLM・Claude・ローカルモデル。どのキーでも、いつでも切替可能。', th: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude หรือโมเดลโลคอล — ใช้คีย์ใดก็ได้ เปลี่ยนได้ตลอด', vi: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude hay mô hình cục bộ — dùng khóa nào cũng được.' }),
-    s3t: tr(language, { en: 'Run the analyst desk', ja: 'アナリストデスクを実行', th: 'รันทีมนักวิเคราะห์', vi: 'Chạy bàn phân tích' }),
-    s3d: tr(language, { en: 'Ask for a call on BTC, ETH or a US stock — get BUY / SELL / HOLD with confidence and a full report.', ja: 'BTC・ETH・米国株について尋ねると、信頼度とレポート付きで判断が返ります。', th: 'ขอคำตัดสินสำหรับ BTC, ETH หรือหุ้นสหรัฐ — รับ ซื้อ/ขาย/ถือ พร้อมความมั่นใจและรายงานเต็ม', vi: 'Hỏi về BTC, ETH hay cổ phiếu Mỹ — nhận MUA/BÁN/GIỮ kèm độ tin cậy và báo cáo.' }),
-    s4t: tr(language, { en: 'Automate it', ja: '自動化する', th: 'ทำให้อัตโนมัติ', vi: 'Tự động hóa' }),
-    s4d: tr(language, { en: 'Turn the call into a rule. The worker re-runs it on your schedule and paper-trades when it agrees with you.', ja: '判断をルール化。スケジュール通りに再実行し、条件が合えば模擬取引します。', th: 'เปลี่ยนคำตัดสินเป็นกฎ ระบบรันซ้ำตามตารางและเทรดจำลองเมื่อเข้าเงื่อนไข', vi: 'Biến quyết định thành quy tắc. Worker chạy lại theo lịch và giao dịch mô phỏng khi khớp điều kiện.' }),
-
-    whoEyebrow: tr(language, { en: 'WHO IT IS FOR', ja: '対象', th: 'เหมาะกับใคร', vi: 'DÀNH CHO AI' }),
-    whoTitle: tr(language, { en: 'Built for traders in the US and Thailand — and their agents.', ja: '米国とタイのトレーダー、そして彼らのエージェントのために。', th: 'สร้างเพื่อเทรดเดอร์ในสหรัฐฯ และไทย — และเอเจนต์ของพวกเขา', vi: 'Dành cho trader ở Mỹ và Thái Lan — và các agent của họ.' }),
-    w1t: tr(language, { en: 'Curious traders', ja: '好奇心あるトレーダー', th: 'เทรดเดอร์ผู้อยากรู้', vi: 'Trader tò mò' }),
-    w1d: tr(language, { en: 'Test what AI would actually do with your ideas before any real money moves. US market hours and Thai time both respected.', ja: '実際のお金を動かす前に、AIが何をするか試せます。米国市場・タイ時間の両方に対応。', th: 'ทดสอบว่า AI จะทำอะไรกับไอเดียของคุณก่อนใช้เงินจริง รองรับเวลาตลาดสหรัฐฯ และเวลาไทย', vi: 'Thử xem AI sẽ làm gì với ý tưởng của bạn trước khi động tiền thật.' }),
-    w2t: tr(language, { en: 'Strategy builders', ja: '戦略ビルダー', th: 'นักสร้างกลยุทธ์', vi: 'Người xây chiến lược' }),
-    w2d: tr(language, { en: 'Compare providers head-to-head, tune confidence thresholds, and read every debate that led to every trade.', ja: 'プロバイダーを比較し、しきい値を調整し、全トレードの議論を確認できます。', th: 'เปรียบเทียบผู้ให้บริการ ปรับเกณฑ์ความมั่นใจ และอ่านทุกการถกเถียงเบื้องหลังทุกเทรด', vi: 'So sánh các nhà cung cấp, tinh chỉnh ngưỡng, đọc mọi cuộc tranh luận sau mỗi lệnh.' }),
-    w3t: tr(language, { en: 'AI-agent developers', ja: 'AIエージェント開発者', th: 'นักพัฒนาเอเจนต์ AI', vi: 'Dev AI-agent' }),
-    w3d: tr(language, { en: 'Agents register and publish signals with a single API call — no human in the loop required.', ja: 'エージェントはAPIひとつで登録・シグナル発信。人手は不要。', th: 'เอเจนต์ลงทะเบียนและส่งสัญญาณด้วย API เดียว — ไม่ต้องมีมนุษย์ในลูป', vi: 'Agent đăng ký và phát tín hiệu bằng một API call — không cần con người.' }),
-
-    featEyebrow: tr(language, { en: 'UNDER THE HOOD', ja: '機能', th: 'เบื้องหลัง', vi: 'BÊN TRONG' }),
-    features: [
-      tr(language, { en: '8 AI providers, one switch', ja: '8つのAIプロバイダー', th: 'ผู้ให้บริการ AI 8 ราย', vi: '8 nhà cung cấp AI' }),
-      tr(language, { en: 'Multi-agent debate → decision + report', ja: 'マルチエージェント討議→判断+レポート', th: 'ถกเถียงหลายเอเจนต์ → คำตัดสิน + รายงาน', vi: 'Tranh luận đa tác nhân → quyết định + báo cáo' }),
-      tr(language, { en: 'Real prices: OKX · Hyperliquid · Polymarket', ja: '実勢価格: OKX・Hyperliquid・Polymarket', th: 'ราคาจริง: OKX · Hyperliquid · Polymarket', vi: 'Giá thật: OKX · Hyperliquid · Polymarket' }),
-      tr(language, { en: 'Spot & futures terminals with live order book', ja: '現物・先物ターミナル（ライブ板）', th: 'เทอร์มินัลสปอต & ฟิวเจอร์สพร้อมสมุดคำสั่งสด', vi: 'Terminal spot & futures với sổ lệnh trực tiếp' }),
-      tr(language, { en: 'Public leaderboard & copy-trading', ja: 'リーダーボードとコピートレード', th: 'ลีดเดอร์บอร์ดสาธารณะ & คัดลอกเทรด', vi: 'Bảng xếp hạng & copy-trading' }),
-      tr(language, { en: 'Every run audited — action, confidence, reason', ja: '全実行を監査記録', th: 'บันทึกทุกการรัน — การกระทำ ความมั่นใจ เหตุผล', vi: 'Mọi lần chạy đều được ghi lại' }),
-    ],
-
-    safety: tr(language, {
-      en: 'Sooppiy is research and education software. All trading is simulated — no real funds can move in this platform, and nothing here is financial advice.',
-      ja: 'Sooppiyは研究・教育用ソフトウェアです。すべての取引は模擬であり、実際の資金は動きません。投資助言ではありません。',
-      th: 'Sooppiy คือซอฟต์แวร์เพื่อการวิจัยและการศึกษา การเทรดทั้งหมดเป็นแบบจำลอง — ไม่มีเงินจริงเคลื่อนไหวในแพลตฟอร์มนี้ และไม่ใช่คำแนะนำทางการเงิน',
-      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Mọi giao dịch đều mô phỏng — không có tiền thật, không phải lời khuyên tài chính.',
+    deskTitle: tr(language, { en: 'This is what a run looks like', ja: '実行するとこうなる', th: 'การรันหนึ่งครั้งหน้าตาแบบนี้', vi: 'Một lần chạy trông thế này' }),
+    deskSub: tr(language, {
+      en: 'Four analysts read the news, the crowd, the macro picture and the chart. A trader and a risk manager argue it out. You get a call, a confidence number, and the reasoning in writing.',
+      ja: '4人のアナリストがニュース・群衆心理・マクロ・チャートを読み、トレーダーとリスク管理者が議論。判断・信頼度・理由が文章で届きます。',
+      th: 'นักวิเคราะห์สี่คนอ่านข่าว อารมณ์ฝูงชน ภาพมหภาค และกราฟ เทรดเดอร์กับผู้จัดการความเสี่ยงเถียงกัน คุณได้คำตัดสิน ตัวเลขความมั่นใจ และเหตุผลเป็นลายลักษณ์อักษร',
+      vi: 'Bốn nhà phân tích đọc tin, đám đông, vĩ mô và biểu đồ. Trader và quản trị rủi ro tranh luận. Bạn nhận quyết định, độ tin cậy và lý do bằng văn bản.',
     }),
-    finalTitle: tr(language, { en: 'Watch AI trade your ideas.', ja: 'あなたのアイデアをAIが取引する。', th: 'ดู AI เทรดไอเดียของคุณ', vi: 'Xem AI giao dịch ý tưởng của bạn.' }),
-    finalSub: tr(language, { en: 'Free. Simulated. Yours to configure.', ja: '無料・模擬・自由に設定。', th: 'ฟรี จำลอง ปรับแต่งได้ตามใจ', vi: 'Miễn phí. Mô phỏng. Tùy bạn cấu hình.' }),
+
+    stepsTitle: tr(language, { en: 'How people actually use it', ja: '実際の使い方', th: 'คนใช้มันยังไงจริงๆ', vi: 'Người ta dùng nó thế nào' }),
+    st1: tr(language, { en: 'Sign up. You get $100,000 that isn\'t real, a spot terminal, a futures terminal, and a leaderboard full of other people\'s bots.', ja: '登録すると、偽物の10万ドル、現物・先物ターミナル、他人のボットが並ぶリーダーボードが手に入ります。', th: 'สมัคร คุณจะได้ $100,000 ที่ไม่ใช่เงินจริง เทอร์มินัลสปอต เทอร์มินัลฟิวเจอร์ส และลีดเดอร์บอร์ดที่เต็มไปด้วยบอทของคนอื่น', vi: 'Đăng ký. Bạn có $100.000 không có thật, terminal spot, terminal futures, và bảng xếp hạng đầy bot của người khác.' }),
+    st2: tr(language, { en: 'Plug in whichever AI you already pay for — OpenAI, Gemini, Grok, Qwen, GLM, Claude — or run a local model and pay nobody.', ja: 'すでに使っているAI（OpenAI・Gemini・Grok・Qwen・GLM・Claude）をつなぐか、ローカルモデルで無料運用。', th: 'เสียบ AI ที่คุณจ่ายเงินอยู่แล้ว — OpenAI, Gemini, Grok, Qwen, GLM, Claude — หรือรันโมเดลโลคอลแล้วไม่ต้องจ่ายใคร', vi: 'Cắm AI bạn đang trả tiền — OpenAI, Gemini, Grok, Qwen, GLM, Claude — hoặc chạy mô hình cục bộ, không trả ai cả.' }),
+    st3: tr(language, { en: 'Ask the desk about BTC. Read the argument. Disagree with it. Run it again with a different AI and watch two models fight.', ja: 'BTCについてデスクに聞き、議論を読み、納得できなければ別のAIで再実行。2つのモデルの対決を眺めましょう。', th: 'ถามทีมวิเคราะห์เรื่อง BTC อ่านข้อโต้แย้ง ไม่เห็นด้วยก็ได้ รันใหม่ด้วย AI ตัวอื่นแล้วดูสองโมเดลตีกัน', vi: 'Hỏi bàn phân tích về BTC. Đọc lập luận. Không đồng ý cũng được. Chạy lại với AI khác và xem hai mô hình đấu nhau.' }),
+    st4: tr(language, { en: 'When you trust a setup, put it on a schedule: "check BTC hourly, trade only above 65% confidence, $250 a position." Then go live your life.', ja: '納得できたらスケジュール化：「BTCを毎時チェック、信頼度65%以上のみ、1ポジション250ドル」。あとは放っておくだけ。', th: 'เมื่อเชื่อใจเซ็ตอัพแล้ว ตั้งตาราง: "เช็ค BTC ทุกชั่วโมง เทรดเมื่อมั่นใจเกิน 65% ครั้งละ $250" แล้วไปใช้ชีวิตของคุณ', vi: 'Khi tin một setup, đặt lịch: "kiểm tra BTC mỗi giờ, chỉ giao dịch trên 65% tin cậy, $250 một lệnh." Rồi đi sống cuộc đời bạn.' }),
+
+    faqTitle: tr(language, { en: 'Straight answers', ja: '率直な答え', th: 'คำตอบตรงๆ', vi: 'Trả lời thẳng' }),
+    q1: tr(language, { en: 'Is this real money?', ja: 'これは本物のお金？', th: 'นี่เงินจริงไหม?', vi: 'Đây là tiền thật à?' }),
+    a1: tr(language, { en: 'No. Nothing on this platform can move real funds. The exchange-connection screen exists, but live execution is deliberately switched off in this build.', ja: 'いいえ。このプラットフォームでは実際の資金は一切動きません。取引所接続画面はありますが、実発注は意図的に無効化されています。', th: 'ไม่ ไม่มีอะไรบนแพลตฟอร์มนี้ขยับเงินจริงได้ หน้าจอเชื่อมต่อกระดานเทรดมีอยู่ แต่การส่งคำสั่งจริงถูกปิดไว้โดยตั้งใจ', vi: 'Không. Không gì trên nền tảng này chuyển được tiền thật. Màn hình kết nối sàn có đó, nhưng khớp lệnh thật bị tắt có chủ đích.' }),
+    q2: tr(language, { en: 'Will the AI make me rich?', ja: 'AIで金持ちになれる？', th: 'AI จะทำให้ฉันรวยไหม?', vi: 'AI có làm tôi giàu không?' }),
+    a2: tr(language, { en: "Nobody knows, and anyone who promises otherwise is selling something. What you'll actually learn is how an AI reasons about markets — and how often it's confidently wrong. That lesson is worth having before real money is involved.", ja: '誰にも分かりません。断言する人は何かを売りつけようとしています。ここで学べるのは、AIが市場をどう推論するか、そしてどれほど自信満々に間違えるか。実際のお金を使う前に知る価値のある教訓です。', th: 'ไม่มีใครรู้ และใครที่สัญญาว่ารู้กำลังขายอะไรบางอย่างให้คุณ สิ่งที่คุณจะได้เรียนรู้จริงๆ คือ AI ใช้เหตุผลกับตลาดยังไง และมันมั่นใจผิดๆ บ่อยแค่ไหน บทเรียนนี้ควรได้ก่อนใช้เงินจริง', vi: 'Không ai biết, và ai hứa ngược lại là đang bán thứ gì đó. Điều bạn thật sự học được là AI suy luận về thị trường ra sao — và nó tự tin sai thường xuyên thế nào. Bài học đó đáng có trước khi động tiền thật.' }),
+    q3: tr(language, { en: 'Which AI should I pick?', ja: 'どのAIを選ぶべき？', th: 'ควรเลือก AI ตัวไหน?', vi: 'Nên chọn AI nào?' }),
+    a3: tr(language, { en: "Try several — that's half the fun. Every rule can use a different provider, so you can run the same strategy on two models and compare their track records on the leaderboard.", ja: 'いくつか試してください。それが醍醐味です。ルールごとに違うプロバイダーを使えるので、同じ戦略を2つのモデルで走らせて成績を比較できます。', th: 'ลองหลายๆ ตัว — นั่นแหละครึ่งหนึ่งของความสนุก แต่ละกฎใช้ผู้ให้บริการต่างกันได้ รันกลยุทธ์เดียวกันบนสองโมเดลแล้วเทียบผลงานบนลีดเดอร์บอร์ด', vi: 'Thử vài cái — đó là nửa niềm vui. Mỗi quy tắc dùng được nhà cung cấp khác nhau, nên bạn chạy cùng chiến lược trên hai mô hình và so thành tích trên bảng xếp hạng.' }),
+    q4: tr(language, { en: 'Where do the prices come from?', ja: '価格はどこから？', th: 'ราคามาจากไหน?', vi: 'Giá lấy từ đâu?' }),
+    a4: tr(language, { en: 'Crypto from OKX and Hyperliquid, US stocks from Alpha Vantage, event markets from Polymarket. The order book on the trade screens is a live OKX feed, not a decoration.', ja: '暗号資産はOKXとHyperliquid、米国株はAlpha Vantage、イベント市場はPolymarket。取引画面の板は装飾ではなく、OKXのライブ配信です。', th: 'คริปโตจาก OKX และ Hyperliquid หุ้นสหรัฐจาก Alpha Vantage ตลาดเหตุการณ์จาก Polymarket สมุดคำสั่งบนหน้าจอเทรดคือฟีดสด OKX ไม่ใช่ของประดับ', vi: 'Crypto từ OKX và Hyperliquid, cổ phiếu Mỹ từ Alpha Vantage, thị trường sự kiện từ Polymarket. Sổ lệnh trên màn hình giao dịch là feed OKX trực tiếp, không phải trang trí.' }),
+
+    whoLine: tr(language, {
+      en: 'Built for traders in the US and Thailand who are curious what AI would do with their money — before letting it anywhere near their money. Also for people who build trading agents: yours can register and publish signals over a plain HTTP API.',
+      ja: '米国とタイのトレーダーのために。AIが自分のお金で何をするか、実際に触らせる前に知りたい人向け。エージェント開発者なら、HTTP APIだけで登録・シグナル発信できます。',
+      th: 'สร้างเพื่อเทรดเดอร์ในสหรัฐฯ และไทยที่อยากรู้ว่า AI จะทำอะไรกับเงินของพวกเขา — ก่อนปล่อยให้มันเข้าใกล้เงินจริง และสำหรับคนที่สร้างเอเจนต์เทรด: ของคุณลงทะเบียนและส่งสัญญาณผ่าน HTTP API ธรรมดาได้เลย',
+      vi: 'Dành cho trader ở Mỹ và Thái Lan tò mò AI sẽ làm gì với tiền của họ — trước khi cho nó lại gần tiền thật. Và cho người xây agent giao dịch: agent của bạn đăng ký và phát tín hiệu qua HTTP API thuần.',
+    }),
+
+    disclaimer: tr(language, {
+      en: 'Sooppiy is research and education software. Simulated trading only. Nothing here is financial advice.',
+      ja: 'Sooppiyは研究・教育用ソフトウェアです。模擬取引のみ。投資助言ではありません。',
+      th: 'Sooppiy คือซอฟต์แวร์วิจัยและการศึกษา เทรดจำลองเท่านั้น ไม่ใช่คำแนะนำทางการเงิน',
+      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Chỉ giao dịch mô phỏng. Không phải lời khuyên tài chính.',
+    }),
+    finalLine: tr(language, { en: 'The tuition is free. The lessons are real.', ja: '授業料は無料。教訓は本物。', th: 'ค่าเล่าเรียนฟรี บทเรียนของจริง', vi: 'Học phí miễn phí. Bài học là thật.' }),
   }
 
-  const wrap: any = { maxWidth: 1080, margin: '0 auto', padding: '0 24px' }
-  const eyebrow: any = { fontSize: 12, letterSpacing: '.22em', color: '#c9a26e', fontWeight: 700 }
-  const h2: any = { fontSize: 'clamp(28px,4.4vw,44px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.12, margin: '14px 0 40px', color: '#f4efe6' }
-  const card: any = { background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 18, padding: '26px 26px' }
-  const muted = 'rgba(235,228,215,0.62)'
+  const wrap: any = { maxWidth: 1020, margin: '0 auto', padding: '0 24px' }
+  const serif: any = { fontFamily: 'var(--font-display, Georgia, serif)' }
+  const mono: any = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0b0a09', color: '#f4efe6', fontFamily: 'inherit' }}>
+    <div style={{ minHeight: '100vh', background: BG, color: INK, backgroundImage: 'radial-gradient(90% 55% at 70% -10%, rgba(201,162,39,0.10), transparent 60%)' }}>
       <style>{`
-        .mk-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-        .mk-cta{transition:transform .15s ease, box-shadow .15s ease}
-        .mk-cta:hover{transform:translateY(-2px)}
-        @keyframes mkFade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-        .mk-hero>*{animation:mkFade .7s ease both}
-        .mk-hero>*:nth-child(2){animation-delay:.12s}.mk-hero>*:nth-child(3){animation-delay:.22s}.mk-hero>*:nth-child(4){animation-delay:.32s}
+        .mkg a{transition:opacity .15s} .mkg a:hover{opacity:.85}
+        @keyframes mkgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+        .mkg-hero>*{animation:mkgIn .6s ease both}
+        .mkg-hero>*:nth-child(2){animation-delay:.1s}.mkg-hero>*:nth-child(3){animation-delay:.2s}
       `}</style>
+      <div className="mkg">
 
-      {/* top bar */}
-      <header style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14, padding: '22px 24px' }}>
-        <span style={{ fontWeight: 800, fontSize: 19, letterSpacing: '.02em' }}>Sooppiy</span>
-        <span style={{ fontSize: 11, color: muted, letterSpacing: '.14em' }}>AI · ANALYZE · AUTOMATE</span>
-        <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          {Object.entries(LANGS).map(([code, label]) => (
-            <button key={code} onClick={() => setLanguage(code as any)}
-              style={{ background: language === code ? 'rgba(255,255,255,0.12)' : 'none', border: 'none', color: language === code ? '#f4efe6' : muted, fontSize: 12, padding: '5px 9px', borderRadius: 7, cursor: 'pointer' }}>{label}</button>
-          ))}
-        </span>
-        <Link to="/login" style={{ color: '#f4efe6', textDecoration: 'none', fontSize: 14, padding: '8px 16px', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 10 }}>{T.login}</Link>
-        <Link to="/register" className="mk-cta" style={{ color: '#141210', textDecoration: 'none', fontSize: 14, fontWeight: 700, padding: '8px 18px', background: '#e8ddc8', borderRadius: 10 }}>{T.start}</Link>
-      </header>
+        {/* top bar */}
+        <header style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14, padding: '22px 24px' }}>
+          <span style={{ ...serif, fontWeight: 700, fontSize: 21, color: GOLD2 }}>Sooppiy</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
+            {Object.entries(LANGS).map(([code, label]) => (
+              <button key={code} onClick={() => setLanguage(code as any)}
+                style={{ background: 'none', border: 'none', color: language === code ? GOLD2 : FAINT, fontSize: 12.5, padding: '5px 8px', cursor: 'pointer', fontWeight: language === code ? 700 : 400 }}>{label}</button>
+            ))}
+          </span>
+          <Link to="/login" style={{ color: INK, textDecoration: 'none', fontSize: 14, padding: '8px 16px', border: `1px solid ${HAIR}`, borderRadius: 9 }}>{T.login}</Link>
+          <Link to="/register" style={{ color: BG, textDecoration: 'none', fontSize: 14, fontWeight: 700, padding: '8px 18px', background: GOLD, borderRadius: 9 }}>{T.start}</Link>
+        </header>
 
-      {/* hero */}
-      <section style={{ ...wrap, padding: '9vh 24px 10vh', position: 'relative' }}>
-        <div aria-hidden style={{ position: 'absolute', inset: '-40% -20% auto', height: '90%', background: 'radial-gradient(60% 60% at 50% 30%, rgba(194,106,69,0.22), transparent 70%)', pointerEvents: 'none' }} />
-        <div className="mk-hero" style={{ position: 'relative' }}>
-          <h1 style={{ fontSize: 'clamp(42px,8vw,88px)', lineHeight: 1.04, letterSpacing: '-.03em', fontWeight: 800, margin: 0, color: '#f4efe6' }}>
-            {T.heroA}<br />
-            <span style={{ background: 'linear-gradient(92deg,#e8b07a,#c26a45 55%,#8b5cf6)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{T.heroB}</span><br />
-            {T.heroC}
-          </h1>
-          <p style={{ maxWidth: 640, fontSize: 17.5, lineHeight: 1.65, color: muted, margin: '28px 0 36px' }}>{T.heroSub}</p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link to="/register" className="mk-cta" style={{ textDecoration: 'none', background: 'linear-gradient(92deg,#c26a45,#a8442a)', color: '#fff', fontWeight: 700, fontSize: 16, padding: '14px 28px', borderRadius: 12, boxShadow: '0 8px 30px rgba(194,106,69,0.35)' }}>{T.ctaPrimary}</Link>
-            <Link to="/login" className="mk-cta" style={{ textDecoration: 'none', color: '#f4efe6', fontSize: 16, padding: '14px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.22)' }}>{T.ctaSecondary}</Link>
+        {/* hero — plain statement, no slogan-ese */}
+        <section style={{ ...wrap, padding: '10vh 24px 7vh' }}>
+          <div className="mkg-hero" style={{ maxWidth: 780 }}>
+            <h1 style={{ ...serif, fontSize: 'clamp(38px,6.6vw,72px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.01em', color: INK, margin: 0 }}>
+              {T.heroA}<br />{T.heroB}<br />
+              <em style={{ color: GOLD2, fontStyle: 'italic' }}>{T.heroC}</em>
+            </h1>
+            <p style={{ fontSize: 17, lineHeight: 1.7, color: MUTED, margin: '26px 0 30px', maxWidth: 620 }}>{T.heroSub}</p>
+            <div>
+              <Link to="/register" style={{ display: 'inline-block', textDecoration: 'none', background: GOLD, color: BG, fontWeight: 700, fontSize: 16, padding: '13px 26px', borderRadius: 10 }}>{T.ctaPrimary}</Link>
+              <div style={{ fontSize: 12.5, color: FAINT, marginTop: 10 }}>{T.ctaSub}</div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 26, marginTop: 46, flexWrap: 'wrap', fontSize: 13, color: muted }}>
-            <span>◐ $100,000 simulated wallet</span><span>◈ Live market data</span><span>⚡ 8 AI providers</span><span>EN · 日本語 · ไทย · Tiếng Việt</span>
+        </section>
+
+        {/* the product artifact — a hand-built decision report, not a feature grid */}
+        <section style={{ ...wrap, padding: '6vh 24px', display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+            <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 14px' }}>{T.deskTitle}</h2>
+            <p style={{ fontSize: 15.5, lineHeight: 1.7, color: MUTED }}>{T.deskSub}</p>
           </div>
-        </div>
-      </section>
+          {/* mock decision card — content mirrors a real run from this build */}
+          <div style={{ flex: '1 1 360px', maxWidth: 460, background: CARD, border: `1px solid ${HAIR}`, borderRadius: 14, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.45)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ ...mono, fontSize: 22, fontWeight: 800, color: '#22c55e' }}>BUY</span>
+              <span style={{ ...mono, fontSize: 15, color: INK }}>BTC/USDT</span>
+              <span style={{ ...mono, marginLeft: 'auto', fontSize: 13, color: MUTED }}>confidence 72%</span>
+            </div>
+            <div style={{ borderTop: `1px solid ${HAIR}`, margin: '12px 0' }} />
+            {[
+              ['News', 'Quiet tape. No adverse headlines in the last 48h.'],
+              ['Sentiment', 'StockTwits running 12–4 bullish. Not euphoric yet.'],
+              ['Macro', 'Neutral regime; prediction markets unbothered.'],
+              ['Technical', 'Holding above support at 60,900. Momentum intact.'],
+            ].map(([who, said], i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '5px 0', fontSize: 13 }}>
+                <span style={{ ...mono, color: GOLD2, minWidth: 76 }}>{who}</span>
+                <span style={{ color: MUTED, lineHeight: 1.5 }}>{said}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: `1px solid ${HAIR}`, margin: '12px 0' }} />
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: INK }}>
+              “Small long justified: entry 62,000 · stop 60,000 · target 68,000.”
+            </div>
+            <div style={{ ...mono, fontSize: 11, color: FAINT, marginTop: 10 }}>run #2 · executed on simulator · fee $5.00</div>
+          </div>
+        </section>
 
-      {/* what it is */}
-      <section style={{ ...wrap, padding: '9vh 24px' }}>
-        <div style={eyebrow}>{T.whatEyebrow}</div>
-        <h2 style={h2}>{T.whatTitle}</h2>
-        <div className="mk-grid">
-          {[{ t: T.p1t, d: T.p1d, i: '🧠' }, { t: T.p2t, d: T.p2d, i: '⚙' }, { t: T.p3t, d: T.p3d, i: '◐' }].map((p, i) => (
-            <div key={i} style={card}>
-              <div style={{ fontSize: 26, marginBottom: 12 }}>{p.i}</div>
-              <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>{p.t}</div>
-              <div style={{ fontSize: 14.5, lineHeight: 1.6, color: muted }}>{p.d}</div>
+        {/* how people use it — numbered prose, not cards */}
+        <section style={{ ...wrap, padding: '7vh 24px', maxWidth: 820 }}>
+          <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 26px' }}>{T.stepsTitle}</h2>
+          {[T.st1, T.st2, T.st3, T.st4].map((s, i) => (
+            <div key={i} style={{ display: 'flex', gap: 18, padding: '16px 0', borderTop: i ? `1px solid rgba(240,233,220,0.08)` : 'none' }}>
+              <span style={{ ...serif, fontSize: 28, color: GOLD, lineHeight: 1, minWidth: 34 }}>{i + 1}.</span>
+              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: MUTED, margin: 0 }}>{s}</p>
             </div>
           ))}
-        </div>
-      </section>
+        </section>
 
-      {/* how to use */}
-      <section style={{ ...wrap, padding: '9vh 24px' }}>
-        <div style={eyebrow}>{T.howEyebrow}</div>
-        <h2 style={h2}>{T.howTitle}</h2>
-        <div className="mk-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
-          {[{ t: T.s1t, d: T.s1d }, { t: T.s2t, d: T.s2d }, { t: T.s3t, d: T.s3d }, { t: T.s4t, d: T.s4d }].map((s, i) => (
-            <div key={i} style={{ ...card, position: 'relative', paddingTop: 58 }}>
-              <span style={{ position: 'absolute', top: 18, left: 22, fontSize: 40, fontWeight: 800, color: 'rgba(232,176,122,0.35)', fontFamily: 'ui-monospace,monospace' }}>{i + 1}</span>
-              <div style={{ fontWeight: 700, fontSize: 16.5, marginBottom: 8 }}>{s.t}</div>
-              <div style={{ fontSize: 14, lineHeight: 1.6, color: muted }}>{s.d}</div>
+        {/* who it's for — one honest paragraph, no personas grid */}
+        <section style={{ ...wrap, padding: '5vh 24px', maxWidth: 820 }}>
+          <p style={{ ...serif, fontSize: 'clamp(19px,2.6vw,24px)', lineHeight: 1.6, color: INK, fontStyle: 'italic', borderLeft: `3px solid ${GOLD}`, paddingLeft: 22 }}>
+            {T.whoLine}
+          </p>
+        </section>
+
+        {/* straight answers */}
+        <section style={{ ...wrap, padding: '7vh 24px', maxWidth: 820 }}>
+          <h2 style={{ ...serif, fontSize: 'clamp(26px,3.6vw,36px)', fontWeight: 600, color: INK, margin: '0 0 22px' }}>{T.faqTitle}</h2>
+          {[[T.q1, T.a1], [T.q2, T.a2], [T.q3, T.a3], [T.q4, T.a4]].map(([q, a], i) => (
+            <div key={i} style={{ padding: '16px 0', borderTop: i ? 'none' : undefined, borderBottom: `1px solid rgba(240,233,220,0.08)` }}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6, color: GOLD2 }}>{q}</div>
+              <p style={{ fontSize: 15, lineHeight: 1.7, color: MUTED, margin: 0 }}>{a}</p>
             </div>
           ))}
-        </div>
-      </section>
+        </section>
 
-      {/* who it's for */}
-      <section style={{ ...wrap, padding: '9vh 24px' }}>
-        <div style={eyebrow}>{T.whoEyebrow}</div>
-        <h2 style={h2}>{T.whoTitle}</h2>
-        <div className="mk-grid">
-          {[{ t: T.w1t, d: T.w1d }, { t: T.w2t, d: T.w2d }, { t: T.w3t, d: T.w3d }].map((w, i) => (
-            <div key={i} style={card}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>{w.t}</div>
-              <div style={{ fontSize: 14.5, lineHeight: 1.6, color: muted }}>{w.d}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+        {/* final */}
+        <section style={{ ...wrap, padding: '9vh 24px 11vh', textAlign: 'center' }}>
+          <p style={{ ...serif, fontSize: 'clamp(24px,4vw,40px)', fontStyle: 'italic', color: INK, margin: '0 0 26px' }}>{T.finalLine}</p>
+          <Link to="/register" style={{ display: 'inline-block', textDecoration: 'none', background: GOLD, color: BG, fontWeight: 700, fontSize: 16.5, padding: '14px 30px', borderRadius: 10 }}>{T.ctaPrimary}</Link>
+          <div style={{ fontSize: 12.5, color: FAINT, marginTop: 12 }}>{T.ctaSub}</div>
+        </section>
 
-      {/* features strip */}
-      <section style={{ ...wrap, padding: '7vh 24px' }}>
-        <div style={eyebrow}>{T.featEyebrow}</div>
-        <div className="mk-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', marginTop: 22 }}>
-          {T.features.map((f, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
-              <span style={{ color: '#e8b07a', fontWeight: 800 }}>—</span>
-              <span style={{ fontSize: 15.5, lineHeight: 1.5 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* safety */}
-      <section style={{ ...wrap, padding: '5vh 24px' }}>
-        <div style={{ ...card, borderColor: 'rgba(232,176,122,0.35)', background: 'rgba(232,176,122,0.06)', fontSize: 14, lineHeight: 1.65, color: muted }}>
-          ⚠ {T.safety}
-        </div>
-      </section>
-
-      {/* final CTA */}
-      <section style={{ ...wrap, padding: '11vh 24px 13vh', textAlign: 'center' }}>
-        <h2 style={{ ...h2, fontSize: 'clamp(32px,5.6vw,56px)', margin: '0 0 12px' }}>{T.finalTitle}</h2>
-        <p style={{ color: muted, marginBottom: 34, fontSize: 16 }}>{T.finalSub}</p>
-        <Link to="/register" className="mk-cta" style={{ textDecoration: 'none', background: 'linear-gradient(92deg,#c26a45,#a8442a)', color: '#fff', fontWeight: 700, fontSize: 17, padding: '16px 36px', borderRadius: 13, boxShadow: '0 8px 30px rgba(194,106,69,0.35)' }}>{T.ctaPrimary}</Link>
-      </section>
-
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '26px 0', textAlign: 'center', fontSize: 12.5, color: 'rgba(235,228,215,0.4)' }}>
-        © 2026 Sooppiy — simulated trading for research & education. Not financial advice.
-      </footer>
+        <footer style={{ borderTop: `1px solid rgba(240,233,220,0.08)`, padding: '24px 0', textAlign: 'center', fontSize: 12.5, color: FAINT }}>
+          {T.disclaimer}
+        </footer>
+      </div>
     </div>
   )
 }
