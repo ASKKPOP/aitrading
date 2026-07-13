@@ -1,0 +1,205 @@
+"""Automation routes (Target 3) — CRUD for per-agent AI auto-trading rules + run history.
+
+    GET    /api/automation/configs        list my rules
+    POST   /api/automation/configs        create a rule
+    PUT    /api/automation/configs/{id}   update a rule (partial)
+    DELETE /api/automation/configs/{id}   delete a rule
+    GET    /api/automation/runs           recent run history (optionally ?config_id=)
+"""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel, field_validator
+
+from automation import VALID_MARKETS
+from database import begin_write_transaction, get_db_connection
+from routes_shared import RouteContext
+from services import _get_agent_by_token
+from utils import _extract_token
+
+ALLOWED_PROVIDERS = ("", "openai", "gemini", "grok", "qwen", "glm", "local", "openrouter", "anthropic")
+
+
+class AutomationConfigIn(BaseModel):
+    symbol: str
+    market: str = "crypto"
+    provider: Optional[str] = None
+    interval_minutes: int = 60
+    min_confidence: float = 0.65
+    size_usd: float = 500
+    auto_execute: bool = False
+    account_type: str = "simulator"
+    enabled: bool = True
+    lang: str = "en"
+
+    @field_validator("symbol")
+    @classmethod
+    def _symbol(cls, v: str) -> str:
+        v = (v or "").strip().upper()
+        if not v or len(v) > 20:
+            raise ValueError("symbol must be 1-20 characters")
+        return v
+
+    @field_validator("market")
+    @classmethod
+    def _market(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if v not in VALID_MARKETS:
+            raise ValueError(f"market must be one of {VALID_MARKETS}")
+        return v
+
+    @field_validator("provider")
+    @classmethod
+    def _provider(cls, v):
+        v = (v or "").strip().lower()
+        if v not in ALLOWED_PROVIDERS:
+            raise ValueError(f"provider must be one of {[p for p in ALLOWED_PROVIDERS if p]} or empty")
+        return v or None
+
+    @field_validator("interval_minutes")
+    @classmethod
+    def _interval(cls, v: int) -> int:
+        if v < 5 or v > 24 * 60:
+            raise ValueError("interval_minutes must be between 5 and 1440")
+        return v
+
+    @field_validator("min_confidence")
+    @classmethod
+    def _conf(cls, v: float) -> float:
+        if not (0 <= v <= 1):
+            raise ValueError("min_confidence must be 0..1")
+        return v
+
+    @field_validator("size_usd")
+    @classmethod
+    def _size(cls, v: float) -> float:
+        if v <= 0 or v > 1_000_000:
+            raise ValueError("size_usd must be positive and <= 1,000,000")
+        return v
+
+    @field_validator("account_type")
+    @classmethod
+    def _account(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if v not in ("simulator", "real"):
+            raise ValueError("account_type must be simulator or real")
+        return v
+
+    @field_validator("lang")
+    @classmethod
+    def _lang(cls, v: str) -> str:
+        return "th" if (v or "en").lower().startswith("th") else "en"
+
+
+def _auth(authorization: Optional[str]):
+    agent = _get_agent_by_token(_extract_token(authorization))
+    if not agent:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return agent
+
+
+def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
+
+    @app.get("/api/automation/configs")
+    async def list_configs(authorization: str = Header(None)):
+        agent = _auth(authorization)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM automation_configs WHERE agent_id = ? ORDER BY id DESC",
+                (agent["id"],),
+            )
+            return {"configs": [dict(r) for r in cursor.fetchall()]}
+        finally:
+            conn.close()
+
+    @app.post("/api/automation/configs")
+    async def create_config(data: AutomationConfigIn, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            cursor.execute(
+                """INSERT INTO automation_configs
+                   (agent_id, symbol, market, provider, interval_minutes, min_confidence,
+                    size_usd, auto_execute, account_type, enabled, lang)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (agent["id"], data.symbol, data.market, data.provider, data.interval_minutes,
+                 data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
+                 data.account_type, 1 if data.enabled else 0, data.lang),
+            )
+            config_id = cursor.lastrowid
+            conn.commit()
+            return {"id": config_id, "ok": True}
+        finally:
+            conn.close()
+
+    @app.put("/api/automation/configs/{config_id}")
+    async def update_config(config_id: int, data: AutomationConfigIn, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM automation_configs WHERE id = ? AND agent_id = ?",
+                           (config_id, agent["id"]))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Rule not found")
+            begin_write_transaction(cursor)
+            cursor.execute(
+                """UPDATE automation_configs SET symbol=?, market=?, provider=?, interval_minutes=?,
+                   min_confidence=?, size_usd=?, auto_execute=?, account_type=?, enabled=?, lang=?
+                   WHERE id=? AND agent_id=?""",
+                (data.symbol, data.market, data.provider, data.interval_minutes,
+                 data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
+                 data.account_type, 1 if data.enabled else 0, data.lang,
+                 config_id, agent["id"]),
+            )
+            conn.commit()
+            return {"ok": True}
+        finally:
+            conn.close()
+
+    @app.delete("/api/automation/configs/{config_id}")
+    async def delete_config(config_id: int, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            cursor.execute("DELETE FROM automation_configs WHERE id = ? AND agent_id = ?",
+                           (config_id, agent["id"]))
+            deleted = cursor.rowcount
+            conn.commit()
+            if not deleted:
+                raise HTTPException(status_code=404, detail="Rule not found")
+            return {"ok": True}
+        finally:
+            conn.close()
+
+    @app.get("/api/automation/runs")
+    async def list_runs(config_id: Optional[int] = None, limit: int = 30,
+                        authorization: str = Header(None)):
+        agent = _auth(authorization)
+        limit = max(1, min(limit, 100))
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            if config_id:
+                cursor.execute(
+                    """SELECT * FROM automation_runs WHERE agent_id = ? AND config_id = ?
+                       ORDER BY id DESC LIMIT ?""",
+                    (agent["id"], config_id, limit),
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM automation_runs WHERE agent_id = ? ORDER BY id DESC LIMIT ?",
+                    (agent["id"], limit),
+                )
+            return {"runs": [dict(r) for r in cursor.fetchall()]}
+        finally:
+            conn.close()

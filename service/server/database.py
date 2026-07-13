@@ -1813,6 +1813,52 @@ def init_database():
         ON oauth_identities(user_id, provider)
     """)
 
+    # AI trading automation (Target 3): per-agent rules that the automation worker
+    # executes on schedule — run the multi-agent analysis and, when the decision
+    # meets the rule, auto paper-trade it on the simulator account.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS automation_configs (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id         INTEGER NOT NULL,
+            symbol           TEXT    NOT NULL,
+            market           TEXT    NOT NULL DEFAULT 'crypto',
+            provider         TEXT,
+            interval_minutes INTEGER NOT NULL DEFAULT 60,
+            min_confidence   REAL    NOT NULL DEFAULT 0.65,
+            size_usd         REAL    NOT NULL DEFAULT 500,
+            auto_execute     INTEGER NOT NULL DEFAULT 0,
+            account_type     TEXT    NOT NULL DEFAULT 'simulator',
+            enabled          INTEGER NOT NULL DEFAULT 1,
+            lang             TEXT    NOT NULL DEFAULT 'en',
+            last_run_at      TEXT,
+            created_at       TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_automation_configs_agent
+        ON automation_configs(agent_id, enabled)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS automation_runs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id   INTEGER NOT NULL,
+            agent_id    INTEGER NOT NULL,
+            ran_at      TEXT    DEFAULT (datetime('now')),
+            action      TEXT,
+            confidence  REAL,
+            executed    INTEGER NOT NULL DEFAULT 0,
+            skip_reason TEXT,
+            signal_id   INTEGER,
+            report      TEXT,
+            FOREIGN KEY (config_id) REFERENCES automation_configs(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_automation_runs_config
+        ON automation_runs(config_id, ran_at)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

@@ -656,6 +656,34 @@ async def update_position_prices():
         await asyncio.sleep(refresh_interval)
 
 
+async def automation_loop():
+    """Background task for AI trading automation (Target 3).
+
+    Every AUTOMATION_TICK_INTERVAL seconds, scan enabled automation_configs and
+    run each due rule: multi-agent analysis -> decision -> (if the rule allows)
+    auto paper-trade on the simulator account. See automation.py.
+    """
+    from automation import run_automation_tick
+
+    tick_interval = _env_int("AUTOMATION_TICK_INTERVAL", 60, minimum=15)
+
+    # Give the API a moment to start before running analyses.
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(run_automation_tick)
+            if result.get("due"):
+                print(
+                    "[Automation] Tick complete: "
+                    f"due={result.get('due', 0)} executed={result.get('executed', 0)}"
+                )
+        except Exception as e:
+            print(f"[Automation Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1275,6 +1303,7 @@ BACKGROUND_TASK_REGISTRY = {
     "macro_signals": refresh_macro_signal_snapshots_loop,
     "etf_flows": refresh_etf_flow_snapshots_loop,
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
+    "automation": automation_loop,
 }
 
 
@@ -1309,6 +1338,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "macro_signals":           "research",
     "etf_flows":               "research",
     "stock_analysis":          "research",
+    # automation — executes user-configured AI trading rules (Target 3)
+    "automation":              "settlement",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
