@@ -218,24 +218,27 @@ export function MarketingPage() {
         @keyframes jtWave{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
         @keyframes jtBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.12)}}
         @keyframes jtStep{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-        .jt-candlebar{transform-origin:bottom;animation:jtGrow var(--d,3.4s) ease-in-out infinite;animation-delay:var(--dl,0s)}
-        .jt-chartglow{animation:jtGlow 4s ease-in-out infinite}
+        @keyframes jtTip{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}
+        @keyframes jtShadow{0%,100%{transform:scaleX(1);opacity:.9}50%{transform:scaleX(.9);opacity:.68}}
+        .jt-candlebar{transform-box:fill-box;transform-origin:bottom;animation:jtGrow var(--d,3.4s) ease-in-out infinite;animation-delay:var(--dl,0s)}
         .jt-bot{animation:jtBob 5.5s ease-in-out infinite}
-        .jt-bot-arm{transform-origin:88% 88%;animation:jtWave 3.2s ease-in-out infinite}
-        .jt-bot-eye{transform-origin:center;animation:jtBlink 4.6s ease-in-out infinite}
+        .jt-bot-arm{transform-box:fill-box;transform-origin:center bottom;animation:jtWave 3.4s ease-in-out infinite}
+        .jt-bot-eye{transform-box:fill-box;transform-origin:center;animation:jtBlink 4.6s ease-in-out infinite}
+        .jt-tip{transform-box:fill-box;transform-origin:center;animation:jtTip 1.8s ease-in-out infinite}
+        .jt-shadow{transform-box:fill-box;transform-origin:center;animation:jtShadow 5.5s ease-in-out infinite}
         .jt-step{animation:jtStep 3s ease-in-out infinite;animation-delay:var(--dl,0s)}
         .jt-line{stroke-dasharray:2600;animation:jtDash 12s ease-in-out infinite}
       `}</style>
       <div className="jt">
 
-        {/* ══ HERO — "easiest way to run an AI trading bot" thumbnail scene ══ */}
-        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(110% 90% at 78% 20%, #0d1a14 0%, #081018 45%, #05080e 100%)' }}>
+        {/* ══ HERO — Claude light theme + 3D AI robot ══ */}
+        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(115% 95% at 80% 8%, #fdfbf6 0%, #f5efe4 52%, #ece3d3 100%)' }}>
 
-          {/* faint grid */}
-          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.07, backgroundImage: 'linear-gradient(rgba(163,230,53,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(163,230,53,.5) 1px, transparent 1px)', backgroundSize: '72px 72px' }} />
+          {/* faint warm grid */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: 'linear-gradient(rgba(201,100,66,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(201,100,66,.06) 1px, transparent 1px)', backgroundSize: '76px 76px' }} />
 
-          {/* glowing rising candlestick chart, right side */}
-          <svg className="jt-chartglow" viewBox="0 0 700 500" style={{ position: 'absolute', right: 0, top: '4%', width: 'min(58vw, 760px)', height: '86%', opacity: 0.9 }} aria-hidden>
+          {/* rising candlestick chart, right side (green on cream) */}
+          <svg viewBox="0 0 700 500" style={{ position: 'absolute', right: 0, top: '5%', width: 'min(56vw, 740px)', height: '82%', opacity: 0.95 }} aria-hidden>
             {[
               { x: 40, y: 340, h: 70, up: true }, { x: 105, y: 360, h: 55, up: false }, { x: 170, y: 300, h: 85, up: true },
               { x: 235, y: 260, h: 70, up: true }, { x: 300, y: 285, h: 50, up: false }, { x: 365, y: 210, h: 95, up: true },
@@ -243,96 +246,146 @@ export function MarketingPage() {
               { x: 625, y: 60, h: 85, up: true },
             ].map((c, i) => (
               <g key={i} className="jt-candlebar" style={{ ['--d' as any]: `${3 + (i % 4) * 0.5}s`, ['--dl' as any]: `${-i * 0.4}s` }}>
-                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? '#4ade80' : '#166534'} strokeWidth="3" />
-                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? '#22c55e' : '#14532d'} stroke={c.up ? '#86efac' : '#166534'} strokeWidth="1.5" />
+                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? '#16a34a' : '#b6c0c9'} strokeWidth="3" />
+                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? '#22c55e' : '#cdd5de'} stroke={c.up ? '#16a34a' : '#aab4bf'} strokeWidth="1.5" />
               </g>
             ))}
             <path className="jt-line" d="M20,400 L110,380 L180,330 L250,300 L320,315 L390,240 L460,205 L530,225 L600,140 L670,80"
-              fill="none" stroke="#a3e635" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
+              fill="none" stroke="#16a34a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
           </svg>
 
-          {/* the AI bot mascot (CSS art) */}
-          <div className="jt-bot" aria-hidden style={{ position: 'absolute', right: 'max(4vw, calc(50vw - 620px))', bottom: '10vh', width: 250, zIndex: 2, filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.55))' }}>
-            {/* antenna */}
-            <div style={{ width: 5, height: 26, background: '#dfe5ec', margin: '0 auto', borderRadius: 3 }} />
-            <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#22d3ee', margin: '-32px auto 18px', boxShadow: '0 0 14px #22d3ee' }} />
-            {/* head */}
-            <div style={{ width: 170, height: 128, margin: '0 auto', background: 'linear-gradient(180deg,#ffffff,#dfe5ec)', borderRadius: 56, position: 'relative', border: '2px solid #c3ccd6' }}>
-              <div style={{ position: 'absolute', inset: '18px 20px', background: '#0a1120', borderRadius: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
-                {[0, 1].map(i => (
-                  <span key={i} className="jt-bot-eye" style={{ width: 30, height: 15, borderTop: '6px solid #22d3ee', borderRadius: '30px 30px 0 0', boxShadow: '0 -3px 12px rgba(34,211,238,0.8)' }} />
-                ))}
-              </div>
-              {/* ears */}
-              <span style={{ position: 'absolute', left: -14, top: 46, width: 16, height: 36, background: '#dfe5ec', borderRadius: 8 }} />
-              <span style={{ position: 'absolute', right: -14, top: 46, width: 16, height: 36, background: '#dfe5ec', borderRadius: 8 }} />
-            </div>
-            {/* waving arm — anchored to the body's left shoulder */}
-            <div className="jt-bot-arm" style={{ position: 'absolute', left: 34, top: 158, width: 20, height: 78, background: 'linear-gradient(180deg,#ffffff,#dfe5ec)', borderRadius: 12, border: '2px solid #c3ccd6', zIndex: 1 }}>
-              <span style={{ position: 'absolute', top: -18, left: -2, width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '2px solid #c3ccd6' }} />
-            </div>
-            {/* body */}
-            <div style={{ width: 140, height: 110, margin: '10px auto 0', background: 'linear-gradient(180deg,#ffffff,#d5dce4)', borderRadius: '40px 40px 48px 48px', border: '2px solid #c3ccd6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ width: 62, height: 62, borderRadius: '50%', background: '#0a1120', color: '#22d3ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, boxShadow: '0 0 18px rgba(34,211,238,0.65), inset 0 0 10px rgba(34,211,238,0.4)' }}>AI</span>
-            </div>
-          </div>
+          {/* ── high-quality 3D AI robot (SVG) ── */}
+          <svg className="jt-bot" aria-hidden viewBox="0 0 300 380"
+            style={{ position: 'absolute', right: 'max(3vw, calc(50vw - 640px))', bottom: '7vh', width: 'min(34vw, 320px)', height: 'auto', zIndex: 2 }}>
+            <defs>
+              <radialGradient id="rHead" cx="38%" cy="26%" r="82%">
+                <stop offset="0%" stopColor="#ffffff" /><stop offset="55%" stopColor="#f2f5f9" /><stop offset="100%" stopColor="#cfd8e2" />
+              </radialGradient>
+              <radialGradient id="rBody" cx="40%" cy="20%" r="90%">
+                <stop offset="0%" stopColor="#ffffff" /><stop offset="60%" stopColor="#eef2f7" /><stop offset="100%" stopColor="#c4cdd8" />
+              </radialGradient>
+              <linearGradient id="rMetal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f4f7fa" /><stop offset="100%" stopColor="#b9c3ce" />
+              </linearGradient>
+              <radialGradient id="rVisor" cx="50%" cy="34%" r="80%">
+                <stop offset="0%" stopColor="#1e2a44" /><stop offset="60%" stopColor="#0e1626" /><stop offset="100%" stopColor="#070c16" />
+              </radialGradient>
+              <radialGradient id="rTip" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stopColor="#a5f3fc" /><stop offset="60%" stopColor="#22d3ee" /><stop offset="100%" stopColor="#0891b2" />
+              </radialGradient>
+              <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7" /></filter>
+              <filter id="eyeGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.6" /></filter>
+            </defs>
 
-          {/* top bar: logo left · lang + auth right (no menu links — Jeton) */}
+            {/* ground shadow */}
+            <ellipse className="jt-shadow" cx="150" cy="360" rx="92" ry="15" fill="rgba(40,30,24,0.22)" filter="url(#soft)" />
+
+            {/* right resting arm (behind body) */}
+            <g>
+              <rect x="196" y="212" width="24" height="78" rx="12" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="208" cy="292" r="15" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+            </g>
+
+            {/* body */}
+            <g>
+              <rect x="86" y="196" width="128" height="126" rx="46" fill="url(#rBody)" stroke="#c0cad5" strokeWidth="2" />
+              <path d="M100,205 Q150,190 200,205" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+              <ellipse cx="150" cy="210" rx="34" ry="10" fill="rgba(20,25,40,0.06)" />
+              {/* chest screen */}
+              <rect x="116" y="228" width="68" height="66" rx="20" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
+              <text x="150" y="270" textAnchor="middle" fontSize="30" fontWeight="800" fontFamily="Inter, sans-serif" fill="#22d3ee" style={{ filter: 'drop-shadow(0 0 6px rgba(34,211,238,0.7))' }}>AI</text>
+            </g>
+
+            {/* left waving arm */}
+            <g className="jt-bot-arm">
+              <rect x="74" y="150" width="22" height="80" rx="11" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <circle cx="85" cy="150" r="16" fill="url(#rBody)" stroke="#b3bdc8" strokeWidth="1.5" />
+            </g>
+
+            {/* neck */}
+            <rect x="134" y="184" width="32" height="20" rx="8" fill="#d7dee7" />
+
+            {/* head */}
+            <g>
+              {/* ears */}
+              <rect x="56" y="112" width="18" height="46" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              <rect x="226" y="112" width="18" height="46" rx="9" fill="url(#rMetal)" stroke="#b3bdc8" strokeWidth="1.5" />
+              {/* antenna */}
+              <rect x="147" y="52" width="6" height="26" rx="3" fill="#c3ccd6" />
+              <circle className="jt-tip" cx="150" cy="46" r="10" fill="url(#rTip)" style={{ filter: 'drop-shadow(0 0 10px rgba(34,211,238,0.85))' }} />
+              {/* head shell */}
+              <rect x="70" y="74" width="160" height="122" rx="54" fill="url(#rHead)" stroke="#c0cad5" strokeWidth="2" />
+              {/* top gloss */}
+              <ellipse cx="140" cy="104" rx="66" ry="26" fill="#ffffff" opacity="0.55" filter="url(#soft)" />
+              {/* visor */}
+              <rect x="88" y="98" width="124" height="76" rx="36" fill="url(#rVisor)" stroke="#0b1220" strokeWidth="2" />
+              <ellipse cx="150" cy="118" rx="52" ry="14" fill="rgba(120,180,255,0.14)" />
+              {/* happy glowing eyes */}
+              <g className="jt-bot-eye">
+                <path d="M108,146 Q125,124 142,146" fill="none" stroke="#22d3ee" strokeWidth="8" strokeLinecap="round" filter="url(#eyeGlow)" />
+                <path d="M158,146 Q175,124 192,146" fill="none" stroke="#22d3ee" strokeWidth="8" strokeLinecap="round" filter="url(#eyeGlow)" />
+                <path d="M108,146 Q125,124 142,146" fill="none" stroke="#e6fbff" strokeWidth="3" strokeLinecap="round" />
+                <path d="M158,146 Q175,124 192,146" fill="none" stroke="#e6fbff" strokeWidth="3" strokeLinecap="round" />
+              </g>
+            </g>
+          </svg>
+
+          {/* top bar (light) */}
           <header style={{ position: 'relative', zIndex: 3 }}>
             <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 78 }}>
-              <span style={{ fontWeight: 800, fontSize: 24, color: '#fff' }}>Sooppiy</span>
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '4px 8px' }}>
-                <span aria-hidden style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
+              <span style={{ fontWeight: 800, fontSize: 24, color: INK }}>Sooppiy</span>
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: 'rgba(25,21,18,0.06)', borderRadius: 999, padding: '4px 8px' }}>
+                <span aria-hidden style={{ color: FAINT, fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
                 {Object.entries(LANGS).map(([code, label]) => (
                   <button key={code} onClick={() => setLanguage(code as any)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? '#fff' : 'rgba(255,255,255,0.6)', fontWeight: language === code ? 700 : 400 }}>{label}</button>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? INK : FAINT, fontWeight: language === code ? 700 : 400 }}>{label}</button>
                 ))}
               </span>
-              <Link to="/login" style={{ ...pill, color: '#fff', padding: '11px 20px', background: 'rgba(255,255,255,0.16)' }}>{T.login}</Link>
-              <Link to="/register" style={{ ...pill, color: '#0b0e16', padding: '11px 22px', background: '#fff' }}>{T.signup}</Link>
+              <Link to="/login" style={{ ...pill, color: INK, padding: '11px 20px', background: 'rgba(25,21,18,0.06)' }}>{T.login}</Link>
+              <Link to="/register" style={{ ...pill, color: '#fff', padding: '11px 22px', background: INK }}>{T.signup}</Link>
             </div>
           </header>
 
           {/* stacked thumbnail headline, left */}
-          <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '16vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
-            <div style={{ display: 'inline-block', background: '#a3e635', color: '#07110a', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 8, margin: '8px 0', boxShadow: '0 0 34px rgba(163,230,53,0.35)' }}>{T.thEasiest}</div>
-            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
+          <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '15vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
+            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: INK, letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
+            <div style={{ display: 'inline-block', background: '#a3e635', color: '#0a1a04', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 10, margin: '8px 0', boxShadow: '0 8px 22px rgba(163,230,53,0.4)' }}>{T.thEasiest}</div>
+            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: INK, letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
             <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0' }}>
-              <span style={{ color: '#22d3ee', textShadow: '0 0 26px rgba(34,211,238,0.5)' }}>{T.thAi}</span>{' '}
-              <span style={{ color: '#fff' }}>{T.thTrading}</span>{' '}
-              <span style={{ color: '#a3e635', textShadow: '0 0 26px rgba(163,230,53,0.45)' }}>{T.thBot}</span>
+              <span style={{ color: '#0891b2' }}>{T.thAi}</span>{' '}
+              <span style={{ color: INK }}>{T.thTrading}</span>{' '}
+              <span style={{ color: '#15803d' }}>{T.thBot}</span>
             </div>
 
             {/* BUILD → AI → PROFIT strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 34, flexWrap: 'wrap' }}>
               {[
-                { icon: '</>', label: T.stBuild, color: '#22d3ee' },
-                { icon: '🧠', label: T.stAi, color: '#a3e635' },
-                { icon: '📈', label: T.stProfit, color: '#a3e635', note: T.stNote },
+                { icon: '</>', label: T.stBuild, color: '#0891b2' },
+                { icon: '🧠', label: T.stAi, color: '#15803d' },
+                { icon: '📈', label: T.stProfit, color: '#15803d', note: T.stNote },
               ].map((s, i) => (
                 <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span className="jt-step" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6, ['--dl' as any]: `${-i}s` }}>
-                    <span style={{ width: 62, height: 50, borderRadius: 10, border: `2px solid ${s.color}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 800, color: s.color, fontFamily: 'ui-monospace,monospace', boxShadow: `0 0 16px ${s.color}44` }}>{s.icon}</span>
-                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.55)', textTransform: 'lowercase' }}> · {s.note}</span>}</span>
+                    <span style={{ width: 62, height: 50, borderRadius: 12, border: `2px solid ${s.color}`, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 800, color: s.color, fontFamily: 'ui-monospace,monospace', boxShadow: '0 4px 14px rgba(25,21,18,0.08)' }}>{s.icon}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: INK, letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: FAINT, textTransform: 'lowercase' }}> · {s.note}</span>}</span>
                   </span>
-                  {i < 2 && <span style={{ color: '#a3e635', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
+                  {i < 2 && <span style={{ color: '#15803d', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
                 </span>
               ))}
             </div>
 
             {/* sub + CTAs */}
-            <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)', margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
+            <p style={{ fontSize: 16, fontWeight: 600, color: MUT, margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#07110a', padding: '13px 24px', fontSize: 15 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: 'rgba(20,26,38,0.66)', color: '#fff', padding: '13px 24px', fontSize: 15, border: '1px solid rgba(255,255,255,0.3)' }}>◆ {T.ctaBoard}</Link>
+              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#0a1a04', padding: '13px 24px', fontSize: 15 }}>◐ {T.ctaSim}</Link>
+              <Link to="/login" style={{ ...pill, background: '#fff', color: INK, padding: '13px 24px', fontSize: 15, border: `1.5px solid ${INK}` }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
-          {/* scroll pill bottom-left (Jeton) */}
-          <span style={{ position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 12, color: '#fff', background: 'rgba(255,255,255,0.16)', padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
-          {/* support pill bottom-right (Jeton) */}
-          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: '#fff', background: 'rgba(40,25,20,0.55)', padding: '10px 18px', borderRadius: 999, textDecoration: 'none' }}>💬 {T.support}</a>
+          {/* scroll pill bottom-left */}
+          <span style={{ position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 12, color: MUT, background: 'rgba(25,21,18,0.06)', padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
+          {/* support pill bottom-right */}
+          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: '#fff', background: INK, padding: '10px 18px', borderRadius: 999, textDecoration: 'none' }}>💬 {T.support}</a>
         </section>
 
         {/* ══ floating bottom dock (Jeton's signature nav) — persists on scroll ══ */}
