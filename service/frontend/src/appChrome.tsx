@@ -104,6 +104,7 @@ export function Sidebar({
   const location = useLocation()
   const { t, language } = useLanguage()
   const [showToken, setShowToken] = useState(false)
+  const [accountType, setAccountType] = useState<string>(() => localStorage.getItem('account_type') || 'simulator')
 
   type NavItem = {
     path: string
@@ -114,41 +115,38 @@ export function Sidebar({
     category?: 'discussion' | 'strategy' | 'experiment'
   }
 
-  // Grouped nav sections for Noēsis sidebar
+  // Grouped nav sections — organized around this project's three targets:
+  // AI analysis (Target 2), automation (Target 3), and simulation/trading (Target 1).
   const navSections: Array<{ label: string; items: NavItem[] }> = [
     {
-      label: tr(language, { en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+      label: tr(language, { en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' }),
       items: [
-        { path: '/financial-events', icon: '🗞', label: tr(language, { en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
-        { path: '/market', icon: '◈', label: t.nav.signals, requiresAuth: false },
-        { path: '/leaderboard', icon: '◆', label: tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
-      ]
-    },
-    {
-      label: tr(language, { en: 'Social', ja: 'ソーシャル', th: 'สังคม', vi: 'Xã hội' }),
-      items: [
-        { path: '/challenges', icon: '◇', label: tr(language, { en: 'Challenges', ja: 'チャレンジ', th: 'การแข่งขัน', vi: 'Thách đấu' }), requiresAuth: false },
-        { path: '/team-missions', icon: '▦', label: tr(language, { en: 'Team Missions', ja: 'チームミッション', th: 'ภารกิจทีม', vi: 'Nhiệm vụ nhóm' }), requiresAuth: false },
-        { path: '/strategies', icon: '↗', label: t.nav.strategies, requiresAuth: false, badge: notificationCounts.strategy, category: 'strategy' as const },
-        { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
+        { path: '/analyst', icon: '🧠', label: tr(language, { en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }), requiresAuth: true },
+        { path: '/automation', icon: '⚙', label: tr(language, { en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
       ]
     },
     {
       label: tr(language, { en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch' }),
       items: [
-        { path: '/copytrading', icon: '⊞', label: tr(language, { en: 'Copy Trading', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép giao dịch' }), requiresAuth: true },
+        { path: '/accounts', icon: '◱', label: tr(language, { en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }), requiresAuth: true },
         { path: '/positions', icon: '≡', label: t.nav.positions, requiresAuth: false },
         { path: '/trade', icon: '↕', label: t.nav.trade, requiresAuth: true },
-        { path: '/exchange', icon: '⟳', label: t.nav.exchange, requiresAuth: true },
+      ]
+    },
+    {
+      label: tr(language, { en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+      items: [
+        { path: '/market', icon: '◈', label: t.nav.signals, requiresAuth: false },
+        { path: '/leaderboard', icon: '◆', label: tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
+        { path: '/financial-events', icon: '🗞', label: tr(language, { en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
+        { path: '/copytrading', icon: '⊞', label: tr(language, { en: 'Copy Trading', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép giao dịch' }), requiresAuth: true },
       ]
     },
     {
       label: tr(language, { en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
       items: [
-        { path: '/experiments', icon: '◎', label: tr(language, { en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' }), requiresAuth: true, badge: notificationCounts.experiment, category: 'experiment' as const },
-        { path: '/research-exports', icon: '↓', label: tr(language, { en: 'Research Exports', ja: 'リサーチエクスポート', th: 'ส่งออกงานวิจัย', vi: 'Xuất nghiên cứu' }), requiresAuth: false },
         { path: '/backtest', icon: '⏮', label: tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
-        { path: '/dev', icon: '⌥', label: tr(language, { en: 'For Developers', ja: '開発者向け', th: 'สำหรับนักพัฒนา', vi: 'Cho nhà phát triển' }), requiresAuth: false },
+        { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
       ]
     },
   ]
@@ -169,7 +167,36 @@ export function Sidebar({
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-mark">Sooppiy</div>
-        <div className="logo-tagline">signal · copy · trade</div>
+        <div className="logo-tagline">AI · analyze · automate</div>
+      </div>
+
+      {/* Account-type switcher: Simulator (paper) vs Real (connected exchange) */}
+      <div style={{ display: 'flex', gap: '6px', margin: '0 16px 14px' }}>
+        <button
+          onClick={() => { localStorage.setItem('account_type', 'simulator'); setAccountType('simulator') }}
+          style={{
+            flex: 1, padding: '7px 6px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            border: '1px solid ' + (accountType === 'simulator' ? 'transparent' : 'rgba(255,255,255,0.14)'),
+            background: accountType === 'simulator' ? 'var(--accent-primary, #c26a45)' : 'transparent',
+            color: accountType === 'simulator' ? '#fff' : 'rgba(255,255,255,0.7)',
+          }}
+          title={tr(language, { en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
+        >
+          ◐ {tr(language, { en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}
+        </button>
+        <Link
+          to="/accounts"
+          onClick={() => onClose?.()}
+          style={{
+            flex: 1, padding: '7px 6px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, textAlign: 'center', textDecoration: 'none',
+            border: '1px solid ' + (accountType === 'real' ? 'transparent' : 'rgba(255,255,255,0.14)'),
+            background: accountType === 'real' ? 'var(--accent-primary, #c26a45)' : 'transparent',
+            color: accountType === 'real' ? '#fff' : 'rgba(255,255,255,0.7)',
+          }}
+          title={tr(language, { en: 'Real account — connect Coinbase / Bybit / Binance', ja: '実口座', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật' })}
+        >
+          ● {tr(language, { en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}
+        </Link>
       </div>
 
       {/* Nav sections */}
