@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy · Project Targets & Architecture</title>
+<style>
+  :root{
+    --bg:#0e1116; --bg2:#161b22; --card:#171c24; --card2:#1e2530;
+    --bd:#2a3340; --bd2:#3a4655;
+    --tx:#e8edf3; --tx2:#9fb0c3; --tx3:#6d7d90;
+    --clay:#c26a45; --clay2:#e08a5f;
+    --blue:#4c8dff; --teal:#2dd4bf; --violet:#8b7cf0; --green:#3fb950; --amber:#e3a008; --red:#f0663f;
+    --r:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f6f3ee; --bg2:#fffdf9; --card:#fffdf9; --card2:#f3efe7;
+      --bd:#e6ddd0; --bd2:#d3c8b6;
+      --tx:#2c2620; --tx2:#5f574c; --tx3:#8a8073;
+      --clay:#b3562f; --clay2:#c26a45;
+      --blue:#2563eb; --teal:#0d9488; --violet:#6d5bd0; --green:#16a34a; --amber:#b45309; --red:#dc2626;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--tx);line-height:1.6;padding:0 20px 80px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Thai","Apple SD Gothic Neo",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{padding:56px 0 8px}
+  .kicker{color:var(--clay);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+  h1{font-size:38px;line-height:1.12;margin:12px 0 12px;letter-spacing:-.02em;font-weight:800}
+  h1 b{color:var(--clay)}
+  .lead{color:var(--tx2);font-size:18px;max-width:720px}
+  .lead .kr{display:block;color:var(--tx3);font-size:14px;margin-top:8px}
+  h2{font-size:24px;margin:56px 0 4px;letter-spacing:-.01em;font-weight:700;display:flex;align-items:center;gap:10px}
+  h2 .n{width:28px;height:28px;border-radius:8px;background:var(--clay);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--tx2);margin-bottom:22px;font-size:15px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:22px}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .tgt{border-top:3px solid var(--accent, var(--clay))}
+  .tgt .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;margin-bottom:10px}
+  .b-done{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+  .b-next{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+  .tgt h3{font-size:18px;margin-bottom:6px}
+  .tgt p{color:var(--tx2);font-size:14.5px}
+  .figure{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:22px;overflow-x:auto}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:13px;color:var(--tx2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;flex:none}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+  th{color:var(--tx3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  td b{color:var(--tx)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px}
+  .p-ok{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+  .p-wip{background:color-mix(in srgb,var(--amber) 16%,transparent);color:var(--amber)}
+  .p-plan{background:color-mix(in srgb,var(--tx3) 20%,transparent);color:var(--tx2)}
+  .note{background:color-mix(in srgb,var(--amber) 9%,transparent);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);
+    border-radius:var(--r);padding:14px 18px;color:var(--tx2);font-size:14px;margin-top:18px}
+  code{background:var(--card2);border:1px solid var(--bd);padding:1px 6px;border-radius:5px;font-size:13px;color:var(--teal);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--bd);color:var(--tx3);font-size:13px}
+  /* svg text */
+  .t{fill:var(--tx);font-size:13px;font-weight:600}
+  .ts{fill:var(--tx2);font-size:11px}
+  .tw{fill:#fff;font-size:13px;font-weight:700}
+  .tws{fill:rgba(255,255,255,.85);font-size:10.5px}
+  .edge{stroke:var(--bd2);stroke-width:2;fill:none}
+  .edge-lbl{fill:var(--tx3);font-size:10.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Project targets · architecture · status</div>
+    <h1>An <b>AI trading</b> platform:<br>analyze, decide, simulate — <b>automatically</b>.</h1>
+    <p class="lead">
+      Built on <b>Sooppiy</b> (agent-native signal &amp; copy-trading). We add a multi-agent AI analyst desk and a
+      user-configurable automation loop so a trader — in the US or Thailand — can have AI research the market,
+      reach a decision, and paper-trade it on a schedule. No real money is moved.
+      <span class="kr">Sooppiy 기반 · 멀티 에이전트 AI 분석 + 사용자 설정 자동화 루프 · 실제 자금 이동 없음(페이퍼 트레이딩)</span>
+    </p>
+  </header>
+
+  <!-- THREE TARGETS -->
+  <h2><span class="n">◎</span>The three targets</h2>
+  <p class="sub">They form one loop: configuration drives analysis, analysis drives simulation. · 설정 → 분석 → 시뮬레이션의 한 루프</p>
+  <div class="grid3">
+    <div class="card tgt" style="--accent:var(--teal)">
+      <span class="badge b-done">Target 1 · built ✓</span>
+      <h3>Simulation buy &amp; sell</h3>
+      <p>Paper-trade signals against <b>live market prices</b> (crypto via Hyperliquid, US stocks via Alpha Vantage, events via Polymarket). Positions, cash, and PnL are tracked — no broker, no real funds.</p>
+    </div>
+    <div class="card tgt" style="--accent:var(--violet)">
+      <span class="badge b-done">Target 2 · built ✓</span>
+      <h3>Multi-agent analysis</h3>
+      <p>Four AI analysts — <b>News, Sentiment, Fundamentals/Macro, Technical</b> — gather data and brief a <b>Trader + Risk</b> team that debates them into a <b>decision + report</b>.</p>
+    </div>
+    <div class="card tgt" style="--accent:var(--clay)">
+      <span class="badge b-done">Target 3 · built ✓</span>
+      <h3>Automation by user config</h3>
+      <p>A user sets symbols, AI provider, schedule, confidence threshold, size and account. A background worker runs the analysis on that schedule and <b>auto paper-trades</b> when the decision meets the rules — simulator account only.</p>
+    </div>
+  </div>
+
+  <!-- MASTER LOOP -->
+  <h2><span class="n">1</span>The main loop</h2>
+  <p class="sub">How the three targets connect into one automated cycle. · 세 목표가 하나의 자동 사이클로 연결</p>
+  <div class="figure">
+    <svg viewBox="0 0 920 300" role="img" aria-label="Automation loop: user config to analysis to simulation and back">
+      <!-- config -->
+      <rect x="20" y="110" width="200" height="90" rx="12" fill="var(--card2)" stroke="var(--clay)" stroke-width="2"/>
+      <text x="120" y="140" text-anchor="middle" class="t">Target 3 · User config</text>
+      <text x="120" y="160" text-anchor="middle" class="ts">symbols · provider · schedule</text>
+      <text x="120" y="176" text-anchor="middle" class="ts">min-confidence · size · risk caps</text>
+      <!-- analysis -->
+      <rect x="360" y="110" width="200" height="90" rx="12" fill="var(--card2)" stroke="var(--violet)" stroke-width="2"/>
+      <text x="460" y="140" text-anchor="middle" class="t">Target 2 · AI analysis</text>
+      <text x="460" y="160" text-anchor="middle" class="ts">4 analysts → Trader+Risk</text>
+      <text x="460" y="176" text-anchor="middle" class="ts">→ decision + report</text>
+      <!-- simulation -->
+      <rect x="700" y="110" width="200" height="90" rx="12" fill="var(--card2)" stroke="var(--teal)" stroke-width="2"/>
+      <text x="800" y="140" text-anchor="middle" class="t">Target 1 · Simulation</text>
+      <text x="800" y="160" text-anchor="middle" class="ts">paper buy / sell</text>
+      <text x="800" y="176" text-anchor="middle" class="ts">position · cash · PnL</text>
+      <!-- arrows -->
+      <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--bd2)"/></marker></defs>
+      <path class="edge" d="M220 155 H360" marker-end="url(#ar)"/>
+      <text x="290" y="146" text-anchor="middle" class="edge-lbl">every N min</text>
+      <path class="edge" d="M560 155 H700" marker-end="url(#ar)"/>
+      <text x="630" y="146" text-anchor="middle" class="edge-lbl">if rules met</text>
+      <!-- feedback loop -->
+      <path class="edge" d="M800 200 V250 H120 V200" marker-end="url(#ar)"/>
+      <text x="460" y="270" text-anchor="middle" class="edge-lbl">results feed back → next scheduled run</text>
+    </svg>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--clay)"></i>Target 3 — configuration</span>
+      <span><i class="dot" style="background:var(--violet)"></i>Target 2 — analysis</span>
+      <span><i class="dot" style="background:var(--teal)"></i>Target 1 — simulation</span>
+    </div>
+  </div>
+
+  <!-- ANALYSIS PIPELINE -->
+  <h2><span class="n">2</span>The analyst desk (Target 2)</h2>
+  <p class="sub">Four analysts brief a Trader + Risk team that debates a decision. Each analyst degrades gracefully if a data source or the LLM is missing. · 4 분석가 → 트레이더/리스크 토론 → 결정</p>
+  <div class="figure">
+    <svg viewBox="0 0 920 360" role="img" aria-label="Multi-agent analysis pipeline">
+      <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--bd2)"/></marker></defs>
+      <!-- analysts -->
+      <g>
+        <rect x="20" y="20" width="250" height="62" rx="10" fill="var(--card2)" stroke="var(--blue)" stroke-width="1.6"/>
+        <text x="36" y="45" class="t">News analyst</text>
+        <text x="36" y="66" class="ts">Alpha Vantage · FinnHub · Reddit</text>
+      </g>
+      <g>
+        <rect x="20" y="98" width="250" height="62" rx="10" fill="var(--card2)" stroke="var(--amber)" stroke-width="1.6"/>
+        <text x="36" y="123" class="t">Sentiment analyst</text>
+        <text x="36" y="144" class="ts">StockTwits · Reddit · X · ticker sent.</text>
+      </g>
+      <g>
+        <rect x="20" y="176" width="250" height="62" rx="10" fill="var(--card2)" stroke="var(--teal)" stroke-width="1.6"/>
+        <text x="36" y="201" class="t">Fundamentals + macro</text>
+        <text x="36" y="222" class="ts">FRED · Polymarket · macro signals</text>
+      </g>
+      <g>
+        <rect x="20" y="254" width="250" height="62" rx="10" fill="var(--card2)" stroke="var(--violet)" stroke-width="1.6"/>
+        <text x="36" y="279" class="t">Technical analyst</text>
+        <text x="36" y="300" class="ts">price · MAs · support / resistance</text>
+      </g>
+      <!-- arrows to trader -->
+      <path class="edge" d="M270 51 C 360 51, 380 150, 470 168" marker-end="url(#ar2)"/>
+      <path class="edge" d="M270 129 C 360 129, 400 155, 470 176" marker-end="url(#ar2)"/>
+      <path class="edge" d="M270 207 C 360 207, 400 195, 470 188" marker-end="url(#ar2)"/>
+      <path class="edge" d="M270 285 C 360 285, 380 210, 470 196" marker-end="url(#ar2)"/>
+      <!-- trader+risk -->
+      <rect x="470" y="140" width="190" height="80" rx="12" fill="var(--clay)" />
+      <text x="565" y="172" text-anchor="middle" class="tw">Trader + Risk team</text>
+      <text x="565" y="192" text-anchor="middle" class="tws">debate · size · decide</text>
+      <!-- output -->
+      <path class="edge" d="M660 180 H720" marker-end="url(#ar2)"/>
+      <rect x="720" y="120" width="180" height="120" rx="12" fill="var(--card2)" stroke="var(--green)" stroke-width="1.8"/>
+      <text x="810" y="150" text-anchor="middle" class="t">Decision</text>
+      <text x="810" y="172" text-anchor="middle" class="ts">BUY / SELL / HOLD</text>
+      <text x="810" y="190" text-anchor="middle" class="ts">confidence · entry/target/stop</text>
+      <text x="810" y="214" text-anchor="middle" class="t">+ Report</text>
+      <text x="810" y="230" text-anchor="middle" class="ts">EN or TH</text>
+    </svg>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--green)"></i>Verified: real StockTwits, Polymarket &amp; live prices flow in; decision + report come out</span>
+    </div>
+  </div>
+
+  <!-- AI PROVIDERS -->
+  <h2><span class="n">3</span>Bring any AI (multi-provider)</h2>
+  <p class="sub">One switch (<code>LLM_PROVIDER</code>) chooses the brain. Most speak the OpenAI-compatible API, so one client covers them. · 하나의 스위치로 AI 선택</p>
+  <div class="figure">
+    <svg viewBox="0 0 920 250" role="img" aria-label="Multi-provider LLM client">
+      <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--bd2)"/></marker></defs>
+      <!-- providers -->
+      <g font-size="12">
+        <rect x="20" y="20" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="95" y="42" text-anchor="middle" class="t">OpenAI</text>
+        <rect x="20" y="62" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="95" y="84" text-anchor="middle" class="t">Gemini</text>
+        <rect x="20" y="104" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="95" y="126" text-anchor="middle" class="t">Grok (xAI)</text>
+        <rect x="20" y="146" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="95" y="168" text-anchor="middle" class="t">Qwen</text>
+        <rect x="200" y="20" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="275" y="42" text-anchor="middle" class="t">GLM (Zhipu)</text>
+        <rect x="200" y="62" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="275" y="84" text-anchor="middle" class="t">Local (Ollama)</text>
+        <rect x="200" y="104" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--bd2)"/><text x="275" y="126" text-anchor="middle" class="t">OpenRouter</text>
+        <rect x="200" y="146" width="150" height="34" rx="8" fill="var(--card2)" stroke="var(--violet)"/><text x="275" y="168" text-anchor="middle" class="t">Anthropic</text>
+      </g>
+      <text x="185" y="205" text-anchor="middle" class="ts">7 via OpenAI-compatible API · Anthropic via native SDK</text>
+      <!-- client -->
+      <path class="edge" d="M350 100 H470" marker-end="url(#ar3)"/>
+      <rect x="470" y="70" width="170" height="66" rx="12" fill="var(--clay)"/>
+      <text x="555" y="100" text-anchor="middle" class="tw">llm_client.py</text>
+      <text x="555" y="120" text-anchor="middle" class="tws">generate_text()</text>
+      <path class="edge" d="M640 103 H760" marker-end="url(#ar3)"/>
+      <rect x="760" y="70" width="140" height="66" rx="12" fill="var(--card2)" stroke="var(--violet)" stroke-width="1.8"/>
+      <text x="830" y="100" text-anchor="middle" class="t">Analyst desk</text>
+      <text x="830" y="120" text-anchor="middle" class="ts">(Target 2)</text>
+    </svg>
+  </div>
+
+  <!-- DATA SOURCES -->
+  <h2><span class="n">4</span>Data sources per analyst</h2>
+  <p class="sub">Present today vs. optional (added when a key exists). Missing sources are skipped, never fatal. · 현재 사용 vs 키 있을 때 추가</p>
+  <div class="figure" style="padding:6px 4px">
+    <table>
+      <tr><th>Analyst</th><th>In use now</th><th>Optional (key)</th><th>Covers (your spec)</th></tr>
+      <tr><td><b>News</b></td><td>Alpha Vantage news+sentiment <span class="pill p-ok">live</span></td><td>FinnHub, Reddit</td><td>Bloomberg / Yahoo / FinnHub / Reddit · company, global, macro, government</td></tr>
+      <tr><td><b>Sentiment</b></td><td>StockTwits <span class="pill p-ok">live</span> · ticker sentiment</td><td>Reddit, X/Twitter</td><td>Reddit / X / StockTwits sentiment scores</td></tr>
+      <tr><td><b>Fundamentals + macro</b></td><td>Macro signals · Polymarket <span class="pill p-ok">live</span></td><td>FRED</td><td>FRED macro + Polymarket prediction markets</td></tr>
+      <tr><td><b>Technical</b></td><td>Prices, MAs, S/R, signal score <span class="pill p-ok">live</span></td><td>—</td><td>Price / indicators</td></tr>
+    </table>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <h2><span class="n">5</span>Architecture &amp; delivery</h2>
+  <p class="sub">Local Docker first, AWS after the first version. · 로컬 Docker 우선, 이후 AWS</p>
+  <div class="figure">
+    <svg viewBox="0 0 920 260" role="img" aria-label="System architecture">
+      <defs><marker id="ar4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--bd2)"/></marker></defs>
+      <rect x="20" y="90" width="180" height="80" rx="12" fill="var(--card2)" stroke="var(--blue)" stroke-width="1.8"/>
+      <text x="110" y="120" text-anchor="middle" class="t">Browser (React)</text>
+      <text x="110" y="140" text-anchor="middle" class="ts">EN · 日本語 · ไทย · VI</text>
+      <text x="110" y="156" text-anchor="middle" class="ts">Vite · :3000</text>
+
+      <path class="edge" d="M200 130 H300" marker-end="url(#ar4)"/><text x="250" y="121" text-anchor="middle" class="edge-lbl">/api · /ws</text>
+
+      <rect x="300" y="70" width="220" height="120" rx="12" fill="var(--card2)" stroke="var(--clay)" stroke-width="2"/>
+      <text x="410" y="98" text-anchor="middle" class="t">FastAPI backend</text>
+      <text x="410" y="118" text-anchor="middle" class="ts">Python 3.12 · :8001</text>
+      <text x="410" y="140" text-anchor="middle" class="ts">analysis_agents · llm_client</text>
+      <text x="410" y="156" text-anchor="middle" class="ts">signals · positions · worker</text>
+      <text x="410" y="174" text-anchor="middle" class="ts">SQLite → Postgres (scale)</text>
+
+      <path class="edge" d="M520 110 H620" marker-end="url(#ar4)"/>
+      <rect x="620" y="20" width="280" height="70" rx="10" fill="var(--card2)" stroke="var(--violet)" stroke-width="1.6"/>
+      <text x="760" y="48" text-anchor="middle" class="t">AI provider</text>
+      <text x="760" y="68" text-anchor="middle" class="ts">OpenAI / Gemini / Grok / Qwen / GLM / local</text>
+
+      <path class="edge" d="M520 135 H620" marker-end="url(#ar4)"/>
+      <rect x="620" y="100" width="280" height="60" rx="10" fill="var(--card2)" stroke="var(--teal)" stroke-width="1.6"/>
+      <text x="760" y="126" text-anchor="middle" class="t">Market data</text>
+      <text x="760" y="146" text-anchor="middle" class="ts">Hyperliquid · Alpha Vantage · Polymarket · StockTwits</text>
+
+      <path class="edge" d="M520 160 H620" marker-end="url(#ar4)"/>
+      <rect x="620" y="170" width="280" height="60" rx="10" fill="var(--card2)" stroke="var(--amber)" stroke-width="1.6"/>
+      <text x="760" y="196" text-anchor="middle" class="t">Packaging</text>
+      <text x="760" y="216" text-anchor="middle" class="ts">Docker (local) → AWS ECS Fargate + RDS (later)</text>
+    </svg>
+  </div>
+
+  <!-- STATUS -->
+  <h2><span class="n">6</span>Build status</h2>
+  <p class="sub">What is verified running today vs. what is next. · 검증 완료 vs 다음 단계</p>
+  <div class="figure" style="padding:6px 4px">
+    <table>
+      <tr><th>Piece</th><th>Status</th><th>Notes</th></tr>
+      <tr><td><b>Local Docker stack</b></td><td><span class="pill p-ok">verified</span></td><td>Backend :8001 + frontend :3000, Python 3.12 in-container</td></tr>
+      <tr><td><b>Target 1 — simulation</b></td><td><span class="pill p-ok">verified</span></td><td>Registered agent, published crypto signal at live BTC price, position + PnL + leaderboard</td></tr>
+      <tr><td><b>Target 2 — analysis engine</b></td><td><span class="pill p-ok">verified</span></td><td>4 analysts + Trader/Risk → decision + report; deterministic and LLM paths both tested</td></tr>
+      <tr><td><b>Multi-provider AI</b></td><td><span class="pill p-ok">verified</span></td><td>8 providers routed; live call proven inside the container</td></tr>
+      <tr><td><b>Data sources — StockTwits, Polymarket, prices</b></td><td><span class="pill p-ok">live</span></td><td>Real data flowing; FinnHub / FRED / Reddit / X are key-gated add-ons</td></tr>
+      <tr><td><b>Target 3 — automation loop</b></td><td><span class="pill p-ok">verified</span></td><td><code>automation_configs</code> + worker tick → analysis → auto paper-trade proven (ledger correct); real-account execution blocked by design</td></tr>
+      <tr><td><b>Frontend — AI Analyst, Automation, Accounts pages</b></td><td><span class="pill p-ok">verified</span></td><td>New project menu (AI Desk / Trading / Markets / Research), Simulator↔Real switcher, rules + run history live in UI</td></tr>
+      <tr><td><b>Two account types</b></td><td><span class="pill p-ok">verified</span></td><td>Simulator (simulated wallet) active; Real (Coinbase/Bybit/Binance) setup UI present, live execution intentionally gated</td></tr>
+      <tr><td><b>AWS deploy</b></td><td><span class="pill p-plan">after v1</span></td><td>ECS Fargate + RDS Postgres + Secrets Manager + HTTPS ALB</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>Scope &amp; safety.</b> Everything is <b>paper trading</b> — simulated buys/sells tracked against live prices, no broker and no real funds moved.
+    The AI produces research and a decision; it is not personalized financial advice, and a human stays in control of the configuration.
+    <span style="display:block;color:var(--tx3);margin-top:6px">전부 페이퍼 트레이딩(실제 자금 없음). AI는 연구·결정을 제공하며 개인 투자 조언이 아님. 설정은 사람이 통제.</span>
+  </div>
+
+  <footer>
+    Sooppiy · project targets &amp; architecture · reflects the verified state as of this build.
+    Targets: 1) simulation buy/sell · 2) multi-agent analysis → decision + report · 3) automation by user configuration.
+  </footer>
+
+</div>
+</body>
+</html>
