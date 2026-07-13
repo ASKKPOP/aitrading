@@ -131,3 +131,27 @@ def fetch_tickers(symbols: list[str]) -> list[dict[str, Any]]:
     wanted = {_to_inst_id(s) for s in symbols}
     data = _okx_get("tickers", {"instType": "SWAP"})
     return [_normalise(item) for item in data if item.get("instId") in wanted]
+
+
+def fetch_order_book(symbol: str, depth: int = 25) -> dict[str, Any]:
+    """
+    Fetch the live order book for a USDT-margined perpetual from OKX.
+
+    Returns {"symbol", "bids": [[price, qty], ...], "asks": [[price, qty], ...]}
+    with prices/qtys as floats, best bid/ask first, up to `depth` levels each.
+    """
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("books", {"instId": inst_id, "sz": str(max(1, min(depth, 50)))})
+    if not data:
+        raise ValueError(f"Symbol {symbol!r} not found in OKX order book response")
+    book = data[0]
+
+    def _levels(rows: list[list[str]]) -> list[list[float]]:
+        return [[float(r[0]), float(r[1])] for r in rows if len(r) >= 2]
+
+    return {
+        "symbol": symbol.upper(),
+        "bids": _levels(book.get("bids", [])),
+        "asks": _levels(book.get("asks", [])),
+        "ts": book.get("ts"),
+    }

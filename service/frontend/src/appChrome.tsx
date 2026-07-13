@@ -128,9 +128,11 @@ export function Sidebar({
     {
       label: tr(language, { en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch' }),
       items: [
+        { path: '/assets', icon: '◈', label: tr(language, { en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }), requiresAuth: true },
+        { path: '/spot', icon: '◉', label: tr(language, { en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot' }), requiresAuth: true },
+        { path: '/futures', icon: '⚡', label: tr(language, { en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }), requiresAuth: true },
         { path: '/accounts', icon: '◱', label: tr(language, { en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }), requiresAuth: true },
         { path: '/positions', icon: '≡', label: t.nav.positions, requiresAuth: false },
-        { path: '/trade', icon: '↕', label: t.nav.trade, requiresAuth: true },
       ]
     },
     {

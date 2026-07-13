@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 
-from crypto_feed import TOP_20_PAIRS, fetch_ticker, fetch_tickers
+from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
 from market_intel import (
     get_etf_flows_payload,
@@ -139,3 +139,16 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc))
         return ticker
+
+    @app.get('/api/markets/crypto/orderbook')
+    async def crypto_orderbook(
+        symbol: str = Query(..., description="USDT-margined symbol e.g. BTCUSDT"),
+        depth: int = Query(25, ge=1, le=50),
+    ):
+        """Live order book (OKX) for the spot/futures trade terminals."""
+        try:
+            return fetch_order_book(symbol.upper(), depth)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))

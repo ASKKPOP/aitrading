@@ -33,6 +33,9 @@ const AgentProfilePage = lazy(() => import('./pages/AgentProfilePage'))
 const AnalystPage = lazy(() => import('./pages/AnalystPage'))
 const AutomationPage = lazy(() => import('./pages/AutomationPage'))
 const AccountsPage = lazy(() => import('./pages/AccountsPage'))
+const AssetsPage = lazy(() => import('./pages/AssetsPage'))
+const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.SpotPage })))
+const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { BacktestPage } from './BacktestPage'
@@ -350,6 +353,9 @@ function AppRouter({
               <Route path="/analyst" element={token ? <AnalystPage /> : <Navigate to="/login" replace />} />
               <Route path="/automation" element={token ? <AutomationPage /> : <Navigate to="/login" replace />} />
               <Route path="/accounts" element={token ? <AccountsPage /> : <Navigate to="/login" replace />} />
+              <Route path="/assets" element={token ? <AssetsPage /> : <Navigate to="/login" replace />} />
+              <Route path="/spot" element={token ? <SpotPage /> : <Navigate to="/login" replace />} />
+              <Route path="/futures" element={token ? <FuturesPage /> : <Navigate to="/login" replace />} />
               <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
               <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
               <Route path="/agent/:id" element={<AgentProfilePage />} />
