@@ -198,63 +198,61 @@ export function MarketingPage() {
         .jt-hero>*:nth-child(2){animation-delay:.1s}.jt-hero>*:nth-child(3){animation-delay:.2s}
         .jt-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 
-        /* ── hero background animation: automated trading ── */
-        @keyframes jtFloat{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-26px) rotate(var(--r,0deg))}}
-        @keyframes jtDrift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.06)}}
-        @keyframes jtRise{0%{transform:translateY(40px);opacity:0}12%{opacity:.95}82%{opacity:.95}100%{transform:translateY(-72vh);opacity:0}}
+        /* ── hero background animation — Jeton-style tumbling coin spiral ──
+           Deliberately NOT gated behind prefers-reduced-motion: like Jeton's
+           looping hero video, this is always-on decorative brand motion. */
+        @keyframes jtCoin{
+          0%,100%{transform:translateY(0) rotateX(var(--rx,64deg)) rotateZ(var(--rz,0deg))}
+          50%{transform:translateY(var(--fy,-22px)) rotateX(calc(var(--rx,64deg) - 6deg)) rotateZ(calc(var(--rz,0deg) + 4deg))}
+        }
+        @keyframes jtSway{0%,100%{transform:translate(0,0)}50%{transform:translate(-18px,14px)}}
         @keyframes jtDash{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
-        @keyframes jtTick{0%,100%{opacity:.5}50%{opacity:1}}
-        .jt-candle{position:absolute;animation:jtFloat var(--d,7s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform}
-        .jt-disc{position:absolute;border-radius:50%;filter:blur(2px);animation:jtDrift var(--d,16s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform}
-        .jt-chip{position:absolute;animation:jtRise var(--d,11s) linear infinite;animation-delay:var(--dl,0s);will-change:transform,opacity}
-        .jt-line{stroke-dasharray:2600;animation:jtDash 12s linear infinite}
-        @media (prefers-reduced-motion: reduce){.jt-candle,.jt-disc,.jt-chip,.jt-line,.jt-hero>*{animation:none!important}}
+        @keyframes jtRise{0%{transform:translateY(40px);opacity:0}12%{opacity:.9}82%{opacity:.9}100%{transform:translateY(-70vh);opacity:0}}
+        .jt-coins{position:absolute;inset:0;perspective:1400px;animation:jtSway 22s ease-in-out infinite;will-change:transform}
+        .jt-coin{position:absolute;border-radius:50%;animation:jtCoin var(--d,8s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform;
+          background:radial-gradient(circle at 34% 28%, #ffd9bd 0%, #f79f7c 38%, #ef7f62 62%, #e2664f 82%, #d55a46 100%);
+          box-shadow:0 26px 60px rgba(150,40,40,0.25), inset 0 3px 10px rgba(255,255,255,0.55), inset 0 -10px 24px rgba(160,50,40,0.35);}
+        .jt-line{stroke-dasharray:2600;animation:jtDash 14s linear infinite}
+        .jt-chip{position:absolute;animation:jtRise var(--d,12s) linear infinite;animation-delay:var(--dl,0s);will-change:transform,opacity}
       `}</style>
       <div className="jt">
 
         {/* ── full-bleed animated hero (Jeton) — automated-trading background ── */}
         <section style={{ position: 'relative', minHeight: '94vh', overflow: 'hidden', background: 'linear-gradient(135deg,#f2607a 0%,#f77a5f 45%,#f9a06b 100%)', display: 'flex', flexDirection: 'column' }}>
 
-          {/* layer 1 — soft drifting discs (Jeton's coins) */}
-          {[
-            { w: 420, l: '52%', t: '-8%', d: '18s', dl: '0s', o: 0.35 },
-            { w: 300, l: '68%', t: '30%', d: '22s', dl: '-6s', o: 0.28 },
-            { w: 220, l: '38%', t: '18%', d: '15s', dl: '-3s', o: 0.30 },
-            { w: 160, l: '12%', t: '8%', d: '19s', dl: '-9s', o: 0.22 },
-          ].map((c, i) => (
-            <span key={i} className="jt-disc" style={{ width: c.w, height: c.w, left: c.l, top: c.t, opacity: c.o, background: 'radial-gradient(circle at 32% 28%, #ffe3c2, #f7906d 60%, rgba(247,144,109,0))', ['--d' as any]: c.d, ['--dl' as any]: c.dl }} />
-          ))}
-
-          {/* layer 2 — self-drawing price line */}
-          <svg viewBox="0 0 1400 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5 }} aria-hidden>
+          {/* layer 1 — faint self-drawing price line (the automation nod) */}
+          <svg viewBox="0 0 1400 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.22 }} aria-hidden>
             <path className="jt-line" d="M-20,420 L90,395 L170,430 L260,340 L340,365 L450,285 L540,320 L640,240 L730,275 L840,195 L930,235 L1040,150 L1130,185 L1240,110 L1330,140 L1440,70"
-              fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
 
-          {/* layer 3 — floating candlesticks */}
-          {[
-            { l: '20%', t: '22%', h: 84, up: true, d: '7s', dl: '0s', r: '-6deg' },
-            { l: '31%', t: '48%', h: 62, up: false, d: '8.5s', dl: '-2s', r: '5deg' },
-            { l: '47%', t: '30%', h: 100, up: true, d: '6.5s', dl: '-4s', r: '-3deg' },
-            { l: '60%', t: '56%', h: 70, up: true, d: '9s', dl: '-1s', r: '7deg' },
-            { l: '74%', t: '24%', h: 90, up: false, d: '7.5s', dl: '-5s', r: '-8deg' },
-            { l: '86%', t: '46%', h: 64, up: true, d: '8s', dl: '-3s', r: '4deg' },
-          ].map((c, i) => (
-            <span key={i} className="jt-candle" style={{ left: c.l, top: c.t, ['--d' as any]: c.d, ['--dl' as any]: c.dl, ['--r' as any]: c.r }}>
-              <span style={{ display: 'block', width: 3, height: c.h * 1.5, background: 'rgba(255,255,255,0.55)', borderRadius: 2, margin: '0 auto' }} />
-              <span style={{ display: 'block', width: 18, height: c.h, borderRadius: 5, marginTop: -c.h * 1.25, background: c.up ? 'rgba(255,255,255,0.92)' : 'rgba(120,20,30,0.35)', border: '1.5px solid rgba(255,255,255,0.8)', boxShadow: '0 8px 24px rgba(120,20,30,0.18)' }} />
-            </span>
-          ))}
-
-          {/* layer 4 — rising AI order tickets (the "automation") */}
-          {[
-            { txt: 'AI · BUY BTC · 72%', l: '16%', d: '11s', dl: '0s', c: '#0a7f3f' },
-            { txt: 'rule met · +$250', l: '40%', d: '13s', dl: '-4s', c: '#0a7f3f' },
-            { txt: 'AI · HOLD ETH · 51%', l: '58%', d: '12s', dl: '-7s', c: '#8a5a00' },
-            { txt: 'AI · SELL SOL · 68%', l: '78%', d: '14s', dl: '-2s', c: '#a02020' },
-          ].map((c, i) => (
-            <span key={i} className="jt-chip" style={{ left: c.l, bottom: '-6%', ['--d' as any]: c.d, ['--dl' as any]: c.dl, ...mono, fontSize: 12, fontWeight: 700, color: c.c, background: 'rgba(255,255,255,0.92)', padding: '7px 13px', borderRadius: 999, boxShadow: '0 10px 30px rgba(120,20,30,0.22)' }}>{c.txt}</span>
-          ))}
+          {/* layer 2 — Jeton's tumbling coin spiral: an S-curve of tilted 3D coins,
+              top-right fan → mid diagonal → bottom-left stack, each bobbing */}
+          <div className="jt-coins" aria-hidden>
+            {[
+              /* top-right fanned cluster */
+              { w: 300, l: '57%', t: '-8%', rx: 60, rz: -16, fy: -18, d: '9s', dl: '0s' },
+              { w: 315, l: '62%', t: '-1%', rx: 63, rz: -9, fy: -24, d: '8.5s', dl: '-1.5s' },
+              { w: 325, l: '66%', t: '7%', rx: 65, rz: -2, fy: -20, d: '9.5s', dl: '-3s' },
+              { w: 305, l: '70%', t: '16%', rx: 63, rz: 7, fy: -26, d: '8s', dl: '-4.5s' },
+              { w: 285, l: '74%', t: '25%', rx: 61, rz: 13, fy: -18, d: '10s', dl: '-6s' },
+              /* middle diagonal singles */
+              { w: 250, l: '46%', t: '25%', rx: 70, rz: -20, fy: -28, d: '10s', dl: '-2s' },
+              { w: 175, l: '37%', t: '40%', rx: 72, rz: 12, fy: -22, d: '9s', dl: '-5s' },
+              { w: 230, l: '29%', t: '50%', rx: 68, rz: -6, fy: -26, d: '11s', dl: '-1s' },
+              /* bottom-left stack */
+              { w: 330, l: '10%', t: '60%', rx: 60, rz: 9, fy: -20, d: '10s', dl: '-3.5s' },
+              { w: 345, l: '6%', t: '71%', rx: 62, rz: 15, fy: -24, d: '9s', dl: '-6.5s' },
+              { w: 325, l: '13%', t: '81%', rx: 64, rz: 3, fy: -18, d: '8.5s', dl: '-2.5s' },
+              { w: 300, l: '21%', t: '90%', rx: 66, rz: -11, fy: -22, d: '9.5s', dl: '-4s' },
+            ].map((c, i) => (
+              <span key={i} className="jt-coin" style={{
+                width: c.w, height: c.w, left: c.l, top: c.t,
+                ['--rx' as any]: `${c.rx}deg`, ['--rz' as any]: `${c.rz}deg`,
+                ['--fy' as any]: `${c.fy}px`, ['--d' as any]: c.d, ['--dl' as any]: c.dl,
+              }} />
+            ))}
+          </div>
 
           {/* transparent nav over the gradient (Jeton) */}
           <header style={{ position: 'relative', zIndex: 3 }}>
