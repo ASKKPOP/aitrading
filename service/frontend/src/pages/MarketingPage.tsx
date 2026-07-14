@@ -18,16 +18,19 @@ const LANGS: Record<string, string> = { en: 'EN', ja: 'JA', th: 'TH', vi: 'VI' }
 //   → extra-bold closer ("… , plus you.")
 //   → multi-column dark footer
 
-const ORANGE = '#f73b20'
-const CORAL = '#e2551f'
-const INK = '#191512'
-const MUT = 'rgba(25,21,18,0.6)'
-const FAINT = 'rgba(25,21,18,0.42)'
-const BG = '#faf7f2'
+/* Paper Ledger palette (design/theme: paper · ink · terracotta) */
+const ORANGE = '#c2553b'                 /* terracotta accent */
+const CORAL = '#a13a26'                  /* deep rust */
+const INK = '#24211b'
+const MUT = '#55503f'
+const FAINT = 'rgba(36,33,27,0.45)'
+const BG = '#faf8f3'                     /* paper */
 const CARD = '#ffffff'
-const LINE = 'rgba(25,21,18,0.10)'
+const LINE = '#e7e1d3'
+const UP = '#47764f'                     /* ledger green */
 
-const mono: any = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
+const mono: any = { fontFamily: '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
+const serif: any = { fontFamily: '"Source Serif 4","Noto Serif JP",Georgia,serif' }
 
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
@@ -190,7 +193,7 @@ export function MarketingPage() {
   const mockPanels = [
     <div key={0} style={{ padding: 18 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <b style={{ ...mono, color: '#16a34a', fontSize: 20 }}>BUY</b>
+        <b style={{ ...mono, color: '#47764f', fontSize: 20 }}>BUY</b>
         <span style={mono}>BTC/USDT</span>
         <span style={{ ...mono, marginLeft: 'auto', fontSize: 12, color: MUT }}>confidence 72%</span>
       </div>
@@ -204,29 +207,29 @@ export function MarketingPage() {
       <div style={{ fontWeight: 700, marginBottom: 10 }}>BTC · crypto</div>
       {[['Run every', '60 min'], ['Min confidence', '65%'], ['Size', '$250'], ['Status', '● active']].map(([a, b], i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
-          <span style={{ color: MUT }}>{a}</span><span style={{ ...mono, color: b === '● active' ? '#16a34a' : INK }}>{b}</span>
+          <span style={{ color: MUT }}>{a}</span><span style={{ ...mono, color: b === '● active' ? '#47764f' : INK }}>{b}</span>
         </div>
       ))}
     </div>,
     <div key={2} style={{ padding: 18 }}>
       {[[62181.2, 0.33], [62181.0, 12.0]].map(([p, q], i) => (
-        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#dc2626', padding: '3px 0' }}>
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#a13a26', padding: '3px 0' }}>
           <span>{p.toLocaleString()}</span><span>{q}</span>
         </div>
       ))}
-      <div style={{ ...mono, fontWeight: 800, fontSize: 18, color: '#16a34a', padding: '6px 0', borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
+      <div style={{ ...mono, fontWeight: 800, fontSize: 18, color: '#47764f', padding: '6px 0', borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
         {btc ? btc.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '62,180.0'}
       </div>
       {[[62179.9, 515.7], [62179.6, 0.63]].map(([p, q], i) => (
-        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#16a34a', padding: '3px 0' }}>
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#47764f', padding: '3px 0' }}>
           <span>{p.toLocaleString()}</span><span>{q}</span>
         </div>
       ))}
     </div>,
     <div key={3} style={{ padding: 18, fontSize: 13 }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <span style={{ flex: 1, textAlign: 'center', background: '#16a34a', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Long</span>
-        <span style={{ flex: 1, textAlign: 'center', background: '#dc2626', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Short</span>
+        <span style={{ flex: 1, textAlign: 'center', background: '#47764f', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Long</span>
+        <span style={{ flex: 1, textAlign: 'center', background: '#a13a26', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Short</span>
       </div>
       {[['Leverage', '10×'], ['Margin', '$500'], ['Liq. (approx)', 'L 56,200 · S 68,400']].map(([a, b], i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
@@ -263,7 +266,7 @@ export function MarketingPage() {
         /* ── AI-trading-bot thumbnail hero ── */
         @keyframes jtDash{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
         @keyframes jtGrow{0%,100%{transform:scaleY(1);opacity:.9}50%{transform:scaleY(1.12);opacity:1}}
-        @keyframes jtGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(163,230,53,.5))}50%{filter:drop-shadow(0 0 26px rgba(163,230,53,.9))}}
+        @keyframes jtGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(194,85,59,.45))}50%{filter:drop-shadow(0 0 26px rgba(194,85,59,.8))}}
         @keyframes jtBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes jtWave{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
         @keyframes jtBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.12)}}
@@ -307,14 +310,13 @@ export function MarketingPage() {
       <div className="jt">
 
         {/* ══ HERO — Claude light theme + 3D AI robot ══ */}
-        <section style={{ position: 'relative', minHeight: 'min(78vh, 680px)', overflow: 'hidden', background: '#f84d35' }}>
+        <section style={{ position: 'relative', minHeight: 'min(78vh, 680px)', overflow: 'hidden', background: BG }}>
 
-          {/* jeton-style warm-orange field: flat base + soft top glow + gentle bottom deepen */}
-          <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(125% 120% at 50% -12%, #ff7a4d 0%, #fb5c3a 34%, #f84d35 58%, #e8401f 100%)' }} />
-          <div aria-hidden className="hero-glow" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(80% 55% at 78% 12%, rgba(255,200,150,0.28) 0%, rgba(255,200,150,0) 60%)' }} />
+          {/* Paper Ledger field: warm paper + drifting constellation dots */}
+          <div aria-hidden className="hero-glow" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(194,85,59,0.30) 1.4px, transparent 1.6px), radial-gradient(rgba(36,33,27,0.14) 1.1px, transparent 1.3px)', backgroundSize: '96px 96px, 148px 148px', backgroundPosition: '0 0, 48px 64px' }} />
 
-          {/* whisper grid (barely-there texture) */}
-          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.6, backgroundImage: 'linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)', backgroundSize: '76px 76px' }} />
+          {/* whisper ledger grid */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: `linear-gradient(${LINE} 1px, transparent 1px), linear-gradient(90deg, ${LINE} 1px, transparent 1px)`, backgroundSize: '76px 76px' }} />
 
           {/* rising candlestick chart, right side (green on cream) */}
           <svg viewBox="0 0 700 500" style={{ position: 'absolute', right: 0, top: '5%', width: 'min(56vw, 740px)', height: '82%', opacity: 0.95 }} aria-hidden>
@@ -325,12 +327,12 @@ export function MarketingPage() {
               { x: 625, y: 60, h: 85, up: true },
             ].map((c, i) => (
               <g key={i} className="jt-candlebar" style={{ ['--d' as any]: `${3 + (i % 4) * 0.5}s`, ['--dl' as any]: `${-i * 0.4}s` }}>
-                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'} strokeWidth="3" />
-                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.32)'} stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" />
+                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? 'rgba(71,118,79,0.75)' : 'rgba(161,58,38,0.45)'} strokeWidth="3" />
+                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? 'rgba(71,118,79,0.30)' : 'rgba(161,58,38,0.18)'} stroke={c.up ? 'rgba(71,118,79,0.8)' : 'rgba(161,58,38,0.5)'} strokeWidth="1.5" />
               </g>
             ))}
             <path className="jt-line" d="M20,400 L110,380 L180,330 L250,300 L320,315 L390,240 L460,205 L530,225 L600,140 L670,80"
-              fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
+              fill="none" stroke={ORANGE} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
           </svg>
 
           {/* ── AI robot mascot: real render if present, else built-in 3D SVG ── */}
@@ -440,62 +442,63 @@ export function MarketingPage() {
           {/* top bar (light) */}
           <header style={{ position: 'relative', zIndex: 3 }}>
             <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 78 }}>
-              <span style={{ fontWeight: 800, fontSize: 24, color: '#fff' }}>Sooppiy</span>
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '4px 8px' }}>
-                <span aria-hidden style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
+              <span style={{ width: 30, height: 30, borderRadius: '50%', background: ORANGE, color: BG, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>s</span>
+              <span style={{ fontWeight: 700, fontSize: 22, color: INK }}>Sooppiy</span>
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: CARD, border: `1px solid ${LINE}`, borderRadius: 999, padding: '4px 8px' }}>
+                <span aria-hidden style={{ color: FAINT, fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
                 {Object.entries(LANGS).map(([code, label]) => (
                   <button key={code} onClick={() => setLanguage(code as any)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? '#fff' : 'rgba(255,255,255,0.6)', fontWeight: language === code ? 700 : 400 }}>{label}</button>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? INK : FAINT, fontWeight: language === code ? 700 : 400 }}>{label}</button>
                 ))}
               </span>
-              <Link to="/login" style={{ ...pill, color: '#fff', padding: '11px 20px', background: 'rgba(255,255,255,0.16)' }}>{T.login}</Link>
-              <Link to="/register" style={{ ...pill, color: '#e8401f', padding: '11px 22px', background: '#fff' }}>{T.signup}</Link>
+              <Link to="/login" style={{ ...pill, color: INK, padding: '11px 20px', background: 'transparent' }}>{T.login}</Link>
+              <Link to="/register" style={{ ...pill, color: BG, padding: '11px 22px', background: ORANGE, borderRadius: 6 }}>{T.signup}</Link>
             </div>
           </header>
 
           {/* stacked thumbnail headline, left */}
           <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '15vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
-            <div style={{ display: 'inline-block', background: '#a3e635', color: '#0a1a04', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 10, margin: '8px 0', boxShadow: '0 10px 26px rgba(0,0,0,0.18)' }}>{T.thEasiest}</div>
-            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
-            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 700, color: INK, letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
+            <div style={{ display: 'inline-block', background: ORANGE, color: BG, fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 8, margin: '8px 0', boxShadow: '0 10px 26px rgba(36,33,27,0.14)' }}>{T.thEasiest}</div>
+            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 700, color: INK, letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
+            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 700, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0', color: INK }}>
               <span>{T.thAi}</span>{' '}
-              <span style={{ color: '#bef264' }}>{T.thBot}</span>
+              <span style={{ color: ORANGE }}>{T.thBot}</span>
             </div>
 
             {/* BUILD → AI → PROFIT strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 34, flexWrap: 'wrap' }}>
               {[
-                { icon: '</>', label: T.stBuild, color: '#0891b2' },
-                { icon: '🧠', label: T.stAi, color: '#15803d' },
-                { icon: '📈', label: T.stProfit, color: '#15803d', note: T.stNote },
+                { icon: '</>', label: T.stBuild, color: ORANGE },
+                { icon: '🧠', label: T.stAi, color: UP },
+                { icon: '📈', label: T.stProfit, color: UP, note: T.stNote },
               ].map((s, i) => (
                 <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span className="jt-step" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6, ['--dl' as any]: `${-i}s` }}>
-                    <span style={{ width: 62, height: 50, borderRadius: 12, border: `2px solid ${s.color}`, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 800, color: s.color, fontFamily: 'ui-monospace,monospace', boxShadow: '0 4px 14px rgba(25,21,18,0.08)' }}>{s.icon}</span>
-                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)', textTransform: 'lowercase' }}> · {s.note}</span>}</span>
+                    <span style={{ width: 62, height: 50, borderRadius: 8, border: `1.5px solid ${s.color}`, background: CARD, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 700, color: s.color, fontFamily: '"JetBrains Mono",ui-monospace,monospace', boxShadow: '0 4px 14px rgba(36,33,27,0.07)' }}>{s.icon}</span>
+                    <span style={{ ...mono, fontSize: 12, fontWeight: 600, color: INK, letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 400, color: FAINT, textTransform: 'lowercase' }}> · {s.note}</span>}</span>
                   </span>
-                  {i < 2 && <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
+                  {i < 2 && <span style={{ color: ORANGE, fontWeight: 700, fontSize: 20, marginBottom: 20 }}>›</span>}
                 </span>
               ))}
             </div>
 
             {/* sub + CTAs */}
-            <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.92)', margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
+            <p style={{ ...serif, fontSize: 18, fontWeight: 400, color: MUT, margin: '30px 0 16px', lineHeight: 1.55, maxWidth: 460 }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#0a1a04', padding: '13px 24px', fontSize: 15 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: 'transparent', color: '#fff', padding: '13px 24px', fontSize: 15, border: '1.5px solid rgba(255,255,255,0.7)' }}>◆ {T.ctaBoard}</Link>
+              <Link to="/register" style={{ ...pill, background: ORANGE, color: BG, padding: '13px 24px', fontSize: 15, borderRadius: 6 }}>◐ {T.ctaSim}</Link>
+              <Link to="/login" style={{ ...pill, background: 'rgba(255,255,255,0.7)', color: INK, padding: '13px 24px', fontSize: 15, borderRadius: 6, border: '1.5px solid #c9c2b2' }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
           {/* scroll pill bottom-left */}
-          <span style={{ position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.16)', padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
+          <span style={{ ...mono, position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 11.5, color: MUT, background: CARD, border: `1px solid ${LINE}`, padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
           {/* support pill bottom-right */}
-          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: '#e8401f', background: '#fff', padding: '10px 18px', borderRadius: 999, textDecoration: 'none' }}>💬 {T.support}</a>
+          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: BG, background: ORANGE, padding: '10px 18px', borderRadius: 6, textDecoration: 'none' }}>💬 {T.support}</a>
         </section>
 
         {/* ══ floating bottom dock (Jeton's signature nav) — persists on scroll ══ */}
-        <nav style={{ position: 'fixed', zIndex: 60, left: '50%', transform: 'translateX(-50%)', bottom: 18, display: 'flex', alignItems: 'center', gap: 4, background: ORANGE, borderRadius: 999, padding: '7px 10px', boxShadow: '0 14px 40px rgba(180,40,20,0.35)' }}>
+        <nav style={{ position: 'fixed', zIndex: 60, left: '50%', transform: 'translateX(-50%)', bottom: 18, display: 'flex', alignItems: 'center', gap: 4, background: ORANGE, borderRadius: 999, padding: '7px 10px', boxShadow: '0 14px 40px rgba(36,33,27,0.25)' }}>
           <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
             style={{ width: 34, height: 34, borderRadius: '50%', background: '#fff', color: ORANGE, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, textDecoration: 'none' }}>⌂</a>
           <a href="#product" style={{ color: '#fff', textDecoration: 'none', fontSize: 13.5, fontWeight: 700, padding: '8px 14px' }}>{T.dockProduct} ⌄</a>
@@ -512,17 +515,17 @@ export function MarketingPage() {
 
             {/* order card (blue) — top right */}
             <div className="uni-card" data-dx="200" data-dy="-140" style={{ top: 8, right: -6 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#fff', border: '2px solid #3b82f6', borderRadius: 26, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(30,60,120,0.4)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 15 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: '#3b82f6', fontSize: 12 }}>▾</span></div>
+              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#fff', border: '1.5px solid #c9c2b2', borderRadius: 12, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(36,33,27,0.28)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 15 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: ORANGE, fontSize: 12 }}>▾</span></div>
                 <div style={{ ...mono, fontSize: 40, fontWeight: 800, margin: '12px 0 2px', letterSpacing: '-.02em' }}>$250</div>
                 <div style={{ fontSize: 13, color: MUT }}>{T.uniBalance}: $65,019.53</div>
-                <div style={{ marginTop: 16, textAlign: 'center', background: '#eef4ff', color: '#2563eb', borderRadius: 14, padding: '11px 0', fontWeight: 700, fontSize: 14.5 }}>AI · {T.uniOrder}</div>
+                <div style={{ ...mono, marginTop: 16, textAlign: 'center', background: 'rgba(194,85,59,0.10)', color: ORANGE, borderRadius: 8, padding: '11px 0', fontWeight: 600, fontSize: 13.5 }}>AI · {T.uniOrder}</div>
               </div>
             </div>
 
             {/* AI decision card (green) — left */}
             <div className="uni-card" data-dx="-240" data-dy="-30" style={{ top: 176, left: -8 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#28cd66,#18b957)', color: '#fff', borderRadius: 26, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(24,185,87,0.55)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#4f8258,#3c6443)', color: '#faf8f3', borderRadius: 12, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(60,100,67,0.45)' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, opacity: 0.92 }}>⇄ {T.uniDecision}</div>
                 <div style={{ ...mono, fontSize: 32, fontWeight: 800, marginTop: 10, letterSpacing: '-.01em' }}>BUY · 72%</div>
                 <div style={{ ...mono, fontSize: 16, fontWeight: 700, opacity: 0.95, marginTop: 2 }}>BTC/USDT</div>
@@ -532,22 +535,22 @@ export function MarketingPage() {
 
             {/* analyst card (pink) — bottom centre */}
             <div className="uni-card" data-dx="20" data-dy="200" style={{ bottom: 6, left: '41%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#fbe3f1', borderRadius: 26, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(160,40,120,0.32)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#f3efe6', border: `1px solid ${LINE}`, borderRadius: 12, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(36,33,27,0.24)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#ec4899,#a855f7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>NA</span>
-                  <span style={{ fontWeight: 700, color: '#a21caf', fontSize: 15 }}>{T.uniAnalyst}</span>
+                  <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#c2553b,#a13a26)', color: '#faf8f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>NA</span>
+                  <span style={{ fontWeight: 700, color: ORANGE, fontSize: 15 }}>{T.uniAnalyst}</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: 12.5, color: '#9d5b86', margin: '12px 0' }}>🔒 {T.uniReasoning}</div>
-                <div style={{ textAlign: 'center', background: '#fff', borderRadius: 14, padding: '10px 0', fontWeight: 700, fontSize: 14.5, color: '#a21caf' }}>{T.uniRun}</div>
+                <div style={{ ...mono, textAlign: 'center', fontSize: 12, color: MUT, margin: '12px 0' }}>🔒 {T.uniReasoning}</div>
+                <div style={{ textAlign: 'center', background: '#fff', border: `1px solid ${LINE}`, borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 14.5, color: ORANGE }}>{T.uniRun}</div>
               </div>
             </div>
 
             {/* live BTC mini-chart tile — top left */}
             <div className="uni-card" data-dx="-205" data-dy="-175" style={{ top: 24, left: '9%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#fff', borderRadius: 22, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(20,80,50,0.32)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#fff', border: '1px solid #e7e1d3', borderRadius: 12, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(36,33,27,0.22)' }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: MUT, marginBottom: 8 }}>{T.uniLiveBtc}</div>
                 <svg viewBox="0 0 140 48" style={{ width: '100%', height: 48 }} aria-hidden>
-                  <polyline points="4,42 26,32 44,36 68,20 88,28 110,12 136,5" fill="none" stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="4,42 26,32 44,36 68,20 88,28 110,12 136,5" fill="none" stroke="#47764f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <div style={{ ...mono, fontSize: 17, fontWeight: 800, marginTop: 8 }}>{btc ? `$${btc.price.toLocaleString()}` : '$62,180'}</div>
               </div>
@@ -555,8 +558,8 @@ export function MarketingPage() {
 
             {/* leaderboard tile — bottom right */}
             <div className="uni-card" data-dx="220" data-dy="155" style={{ bottom: 56, right: '3%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#fff', borderRadius: 22, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(30,25,20,0.28)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#16a34a' }}>#1</span></div>
+              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#fff', border: '1px solid #e7e1d3', borderRadius: 12, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(36,33,27,0.22)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#47764f' }}>#1</span></div>
                 <div style={{ marginTop: 12, background: BG, borderRadius: 14, padding: '10px 14px', fontSize: 12.5, color: MUT }}>“{T.uniReconciled}”</div>
               </div>
             </div>
@@ -579,13 +582,13 @@ export function MarketingPage() {
         </section>
 
         {/* ══ 3 · "All your trading, in one app." — full-bleed coil + phone (Jeton) ══ */}
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '94vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(118deg,#0f6f66 0%,#2b8078 26%,#a94f47 66%,#cf897f 100%)' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '94vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(118deg,#24211b 0%,#3a2e26 38%,#7d352f 72%,#a1543b 100%)' }}>
           {/* 3D-style coiled torus (bead rings) */}
           <svg viewBox="0 0 900 900" preserveAspectRatio="xMidYMid slice" aria-hidden
             style={{ position: 'absolute', right: '-10%', top: '50%', transform: 'translateY(-50%)', width: 'min(128vh, 1200px)', height: 'min(128vh, 1200px)' }}>
             <defs>
               <linearGradient id="gCoilA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e7a498" /><stop offset="48%" stopColor="#b5544a" /><stop offset="100%" stopColor="#7d352f" /></linearGradient>
-              <linearGradient id="gCoilB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6fc7bb" /><stop offset="50%" stopColor="#2b8b81" /><stop offset="100%" stopColor="#155249" /></linearGradient>
+              <linearGradient id="gCoilB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ba377" /><stop offset="50%" stopColor="#47764f" /><stop offset="100%" stopColor="#2e4a33" /></linearGradient>
               <radialGradient id="gCore" cx="42%" cy="38%" r="70%"><stop offset="0%" stopColor="#e9b4a8" /><stop offset="100%" stopColor="#c07c72" /></radialGradient>
               <radialGradient id="gVig" cx="62%" cy="50%" r="60%"><stop offset="60%" stopColor="rgba(0,0,0,0)" /><stop offset="100%" stopColor="rgba(20,40,40,0.35)" /></radialGradient>
               <filter id="coilShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#3a1a16" floodOpacity="0.35" /></filter>
@@ -622,7 +625,7 @@ export function MarketingPage() {
             <div style={{ flex: '0 1 340px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
               <div aria-hidden style={{ position: 'absolute', inset: '-8% -4%', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(255,255,255,0.22), transparent)' }} />
               <div className="uni-phone" style={{ width: 300, background: 'linear-gradient(160deg,#20242e,#05070c)', borderRadius: 52, padding: 12, boxShadow: '0 50px 110px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.12), inset 0 0 0 6px #0a0d16', position: 'relative', zIndex: 1 }}>
-                <div style={{ position: 'relative', borderRadius: 42, overflow: 'hidden', background: 'linear-gradient(168deg,#f9536f 0%,#f77a5f 52%,#f6a468 100%)', height: 588, padding: '20px 20px 0' }}>
+                <div style={{ position: 'relative', borderRadius: 42, overflow: 'hidden', background: 'linear-gradient(168deg,#c2553b 0%,#d97a4f 55%,#e8b28e 100%)', height: 588, padding: '20px 20px 0' }}>
                   {/* dynamic island */}
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 108, height: 30, background: '#05070c', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 12 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1d2b3a' }} />
@@ -633,12 +636,12 @@ export function MarketingPage() {
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.94)', marginTop: 12 }}>{T.phoneBody}</p>
                   </div>
                   {/* tilted decision cards */}
-                  <div style={{ position: 'absolute', left: 30, bottom: 40, width: 172, height: 108, borderRadius: 20, background: 'linear-gradient(140deg,#ffe0cc,#f8875f)', transform: 'rotate(-12deg)', boxShadow: '0 22px 46px rgba(120,30,20,0.4)', padding: 14 }}>
+                  <div style={{ position: 'absolute', left: 30, bottom: 40, width: 172, height: 108, borderRadius: 20, background: 'linear-gradient(140deg,#f6e3d3,#d97a4f)', transform: 'rotate(-12deg)', boxShadow: '0 22px 46px rgba(120,30,20,0.4)', padding: 14 }}>
                     <div style={{ ...mono, color: '#7a2e18', fontWeight: 800, fontSize: 17 }}>BUY 72%</div>
                     <div style={{ ...mono, color: 'rgba(122,46,24,0.8)', fontSize: 12, marginTop: 5 }}>BTC · executed</div>
                   </div>
                   <div style={{ position: 'absolute', right: 26, bottom: 84, width: 134, height: 84, borderRadius: 16, background: 'rgba(255,255,255,0.94)', transform: 'rotate(9deg)', boxShadow: '0 16px 38px rgba(120,30,20,0.3)', padding: 12 }}>
-                    <div style={{ ...mono, color: '#16a34a', fontWeight: 800, fontSize: 15 }}>+ paper</div>
+                    <div style={{ ...mono, color: '#47764f', fontWeight: 800, fontSize: 15 }}>+ paper</div>
                     <div style={{ ...mono, color: '#6b7280', fontSize: 11, marginTop: 4 }}>live price</div>
                   </div>
                 </div>
@@ -657,7 +660,7 @@ export function MarketingPage() {
             <Link to="/register" style={{ ...pill, background: ORANGE, color: '#fff', padding: '12px 24px', fontSize: 15 }}>{T.learnMore}</Link>
           </div>
           <div style={{ ...cardS, flex: '0 1 340px', margin: '0 auto', overflow: 'hidden' }}>
-            <div style={{ height: 10, background: `linear-gradient(90deg, ${ORANGE}, #f9a06b)` }} />
+            <div style={{ height: 10, background: `linear-gradient(90deg, ${ORANGE}, #d97a4f)` }} />
             {mockPanels[3]}
           </div>
         </section>
@@ -668,7 +671,7 @@ export function MarketingPage() {
           <p style={{ color: MUT, marginBottom: 28 }}>{T.convD}</p>
           <div style={{ ...cardS, display: 'inline-flex', alignItems: 'center', gap: 16, padding: '20px 28px', flexWrap: 'wrap', justifyContent: 'center', borderRadius: 24 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>$</span>
+              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#47764f', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>$</span>
               <input value={usd} onChange={e => setUsd(e.target.value.replace(/[^0-9.]/g, ''))}
                 style={{ ...mono, width: 110, fontSize: 17, fontWeight: 700, border: `1px solid ${LINE}`, borderRadius: 10, padding: '8px 10px', background: BG, color: INK }} />
               <b>USDT</b>
@@ -679,7 +682,7 @@ export function MarketingPage() {
               <b style={{ ...mono, fontSize: 17 }}>{btc ? (usdN / btc.price).toFixed(6) : '…'}</b>
               <b>BTC</b>
             </span>
-            <span style={{ ...mono, fontSize: 12.5, color: btc && btc.pct >= 0 ? '#16a34a' : '#dc2626', width: '100%', textAlign: 'center' }}>
+            <span style={{ ...mono, fontSize: 12.5, color: btc && btc.pct >= 0 ? '#47764f' : '#a13a26', width: '100%', textAlign: 'center' }}>
               {btc ? `1 BTC = ${btc.price.toLocaleString()} USDT · ${btc.pct >= 0 ? '+' : ''}${btc.pct.toFixed(2)}% 24h · live` : 'loading live price…'}
             </span>
           </div>
@@ -701,7 +704,7 @@ export function MarketingPage() {
         </section>
 
         {/* ══ 7 · extra-bold closer ("1 million users, plus you.") ══ */}
-        <section style={{ background: 'linear-gradient(135deg,#f2607a,#f9a06b)', padding: '13vh 24px', textAlign: 'center' }}>
+        <section style={{ background: 'linear-gradient(135deg,#c2553b,#d97a4f)', padding: '13vh 24px', textAlign: 'center' }}>
           <h2 style={{ ...h2, color: '#fff', fontSize: 'clamp(38px,6.4vw,74px)', maxWidth: 900, margin: '0 auto 14px' }}>{T.boldH}</h2>
           <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 17.5, margin: '0 0 32px' }}>{T.boldS}</p>
           <Link to="/register" style={{ ...pill, background: '#fff', color: CORAL, padding: '15px 32px', fontSize: 16.5 }}>{T.signup}</Link>
