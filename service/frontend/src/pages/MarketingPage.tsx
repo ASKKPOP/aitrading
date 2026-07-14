@@ -266,7 +266,7 @@ export function MarketingPage() {
         .jt-line{stroke-dasharray:2600;animation:jtDash 12s ease-in-out infinite}
 
         /* Jeton "Unify" floating cards + parallax */
-        @keyframes uniFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+        @keyframes uniFloat{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-16px) rotate(var(--rot,0deg))}}
         .uni-card{position:absolute;transform:translateY(var(--py,0px));transition:transform .12s linear;will-change:transform}
         .uni-float{animation:uniFloat var(--d,6s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform}
         /* Jeton "one app" rotating coil rings + phone */
@@ -274,7 +274,7 @@ export function MarketingPage() {
         @keyframes uniSpinR{to{transform:rotate(-360deg)}}
         .uni-ring{transform-box:fill-box;transform-origin:center;animation:uniSpin var(--d,80s) linear infinite}
         .uni-ring-r{transform-box:fill-box;transform-origin:center;animation:uniSpinR var(--d,60s) linear infinite}
-        @keyframes uniPhone{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(-2deg)}}
+        @keyframes uniPhone{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-20px) rotate(-7deg)}}
         .uni-phone{animation:uniPhone 6.5s ease-in-out infinite}
         @media(max-width:900px){
           .uni-stage{min-height:auto!important;gap:16px}
@@ -479,60 +479,60 @@ export function MarketingPage() {
         </nav>
 
         {/* ══ 1 · "Unify" — big centred headline with floating cards (Jeton) ══ */}
-        <section id="product" style={{ padding: '9vh 0' }}>
-          <div id="uni-stage" className="uni-stage" style={{ position: 'relative', maxWidth: 1120, margin: '0 auto', padding: '0 24px', minHeight: 640, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <h2 style={{ fontSize: 'clamp(52px,8vw,104px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 0.98, color: ORANGE, textAlign: 'center', margin: 0, fontFamily: 'var(--font-ui, Inter, sans-serif)', position: 'relative', zIndex: 1 }}>
+        <section id="product" style={{ padding: '11vh 0' }}>
+          <div id="uni-stage" className="uni-stage" style={{ position: 'relative', maxWidth: 1180, margin: '0 auto', padding: '0 24px', minHeight: 760, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <h2 style={{ fontSize: 'clamp(56px,9.2vw,132px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 0.92, color: ORANGE, textAlign: 'center', margin: 0, maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)', position: 'relative', zIndex: 1 }}>
               {T.unifyH}
             </h2>
 
             {/* order card (blue) — top right */}
-            <div className="uni-card" data-speed="0.05" style={{ top: 10, right: 0 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ...cardS, border: '3px solid #3b82f6', borderRadius: 22, padding: 16, width: 220 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: '#3b82f6' }}>▾</span></div>
-                <div style={{ ...mono, fontSize: 30, fontWeight: 800, margin: '10px 0 2px' }}>$250</div>
-                <div style={{ fontSize: 12.5, color: MUT }}>{T.uniBalance}: $65,019.53</div>
-                <div style={{ marginTop: 12, textAlign: 'center', background: BG, borderRadius: 12, padding: '9px 0', fontWeight: 700, fontSize: 14 }}>{T.ctaSim.split(' ')[0]} · {T.uniOrder}</div>
+            <div className="uni-card" data-speed="0.05" style={{ top: 8, right: -6 }}>
+              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#fff', border: '2px solid #3b82f6', borderRadius: 26, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(30,60,120,0.4)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 15 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: '#3b82f6', fontSize: 12 }}>▾</span></div>
+                <div style={{ ...mono, fontSize: 40, fontWeight: 800, margin: '12px 0 2px', letterSpacing: '-.02em' }}>$250</div>
+                <div style={{ fontSize: 13, color: MUT }}>{T.uniBalance}: $65,019.53</div>
+                <div style={{ marginTop: 16, textAlign: 'center', background: '#eef4ff', color: '#2563eb', borderRadius: 14, padding: '11px 0', fontWeight: 700, fontSize: 14.5 }}>{T.ctaSim.split(' ')[0]} · {T.uniOrder}</div>
               </div>
             </div>
 
             {/* AI decision card (green) — left */}
-            <div className="uni-card" data-speed="0.09" style={{ top: 150, left: 0 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', background: '#22c55e', color: '#fff', borderRadius: 22, padding: 18, width: 232, boxShadow: '0 16px 40px rgba(34,197,94,0.35)' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>⇄ {T.uniDecision}</div>
-                <div style={{ ...mono, fontSize: 26, fontWeight: 800, marginTop: 8 }}>BUY · 72%</div>
-                <div style={{ ...mono, fontSize: 15, fontWeight: 700, opacity: 0.95 }}>BTC/USDT</div>
-                <div style={{ marginTop: 14, display: 'inline-block', background: 'rgba(255,255,255,0.25)', borderRadius: 999, padding: '4px 12px', fontSize: 12.5, fontWeight: 700 }}>✓ {T.uniExecuted}</div>
+            <div className="uni-card" data-speed="0.09" style={{ top: 176, left: -8 }}>
+              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#28cd66,#18b957)', color: '#fff', borderRadius: 26, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(24,185,87,0.55)' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, opacity: 0.92 }}>⇄ {T.uniDecision}</div>
+                <div style={{ ...mono, fontSize: 32, fontWeight: 800, marginTop: 10, letterSpacing: '-.01em' }}>BUY · 72%</div>
+                <div style={{ ...mono, fontSize: 16, fontWeight: 700, opacity: 0.95, marginTop: 2 }}>BTC/USDT</div>
+                <div style={{ marginTop: 16, display: 'inline-block', background: 'rgba(255,255,255,0.28)', borderRadius: 999, padding: '5px 14px', fontSize: 13, fontWeight: 700 }}>✓ {T.uniExecuted}</div>
               </div>
             </div>
 
             {/* analyst card (pink) — bottom centre */}
-            <div className="uni-card" data-speed="0.07" style={{ bottom: 0, left: '40%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', background: '#fce7f3', borderRadius: 22, padding: 16, width: 210, boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#ec4899,#a855f7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>NA</span>
-                  <span style={{ fontWeight: 700, color: '#a21caf', fontSize: 14 }}>{T.uniAnalyst}</span>
+            <div className="uni-card" data-speed="0.07" style={{ bottom: 6, left: '41%' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#fbe3f1', borderRadius: 26, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(160,40,120,0.32)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#ec4899,#a855f7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>NA</span>
+                  <span style={{ fontWeight: 700, color: '#a21caf', fontSize: 15 }}>{T.uniAnalyst}</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: 12, color: '#9d5b86', margin: '10px 0' }}>🔒 {T.uniReasoning}</div>
-                <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '8px 0', fontWeight: 700, fontSize: 14, color: '#a21caf' }}>{T.uniRun}</div>
+                <div style={{ textAlign: 'center', fontSize: 12.5, color: '#9d5b86', margin: '12px 0' }}>🔒 {T.uniReasoning}</div>
+                <div style={{ textAlign: 'center', background: '#fff', borderRadius: 14, padding: '10px 0', fontWeight: 700, fontSize: 14.5, color: '#a21caf' }}>{T.uniRun}</div>
               </div>
             </div>
 
             {/* live BTC mini-chart tile — top left */}
-            <div className="uni-card" data-speed="0.12" style={{ top: 26, left: '10%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ...cardS, borderRadius: 18, padding: 14, width: 150 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: MUT, marginBottom: 8 }}>{T.uniLiveBtc}</div>
-                <svg viewBox="0 0 120 44" style={{ width: '100%', height: 44 }} aria-hidden>
-                  <polyline points="4,38 24,30 40,34 60,20 78,26 96,12 116,6" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="uni-card" data-speed="0.12" style={{ top: 24, left: '9%' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#fff', borderRadius: 22, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(20,80,50,0.32)' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: MUT, marginBottom: 8 }}>{T.uniLiveBtc}</div>
+                <svg viewBox="0 0 140 48" style={{ width: '100%', height: 48 }} aria-hidden>
+                  <polyline points="4,42 26,32 44,36 68,20 88,28 110,12 136,5" fill="none" stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <div style={{ ...mono, fontSize: 15, fontWeight: 800, marginTop: 6 }}>{btc ? `$${btc.price.toLocaleString()}` : '$62,180'}</div>
+                <div style={{ ...mono, fontSize: 17, fontWeight: 800, marginTop: 8 }}>{btc ? `$${btc.price.toLocaleString()}` : '$62,180'}</div>
               </div>
             </div>
 
             {/* leaderboard tile — bottom right */}
-            <div className="uni-card" data-speed="0.10" style={{ bottom: 40, right: '4%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ...cardS, borderRadius: 18, padding: 14, width: 200 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#16a34a' }}>#1</span></div>
-                <div style={{ marginTop: 10, background: BG, borderRadius: 12, padding: '8px 12px', fontSize: 12, color: MUT }}>“{T.uniReconciled}”</div>
+            <div className="uni-card" data-speed="0.10" style={{ bottom: 56, right: '3%' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#fff', borderRadius: 22, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(30,25,20,0.28)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#16a34a' }}>#1</span></div>
+                <div style={{ marginTop: 12, background: BG, borderRadius: 14, padding: '10px 14px', fontSize: 12.5, color: MUT }}>“{T.uniReconciled}”</div>
               </div>
             </div>
           </div>
@@ -553,52 +553,68 @@ export function MarketingPage() {
           </div>
         </section>
 
-        {/* ══ 3 · "All your trading, in one app." — full-bleed rings + phone (Jeton) ══ */}
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '92vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(115deg,#16746b 0%,#2a8079 22%,#b4544a 62%,#cf8f86 100%)' }}>
-          {/* rotating concentric coil rings */}
+        {/* ══ 3 · "All your trading, in one app." — full-bleed coil + phone (Jeton) ══ */}
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '94vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(118deg,#0f6f66 0%,#2b8078 26%,#a94f47 66%,#cf897f 100%)' }}>
+          {/* 3D-style coiled torus (bead rings) */}
           <svg viewBox="0 0 900 900" preserveAspectRatio="xMidYMid slice" aria-hidden
-            style={{ position: 'absolute', right: '-6%', top: '50%', transform: 'translateY(-50%)', width: 'min(115vh, 1100px)', height: 'min(115vh, 1100px)', opacity: 0.9 }}>
-            <g className="uni-ring" style={{ ['--d' as any]: '120s' }}>
-              <circle cx="450" cy="450" r="410" fill="none" stroke="#8f3f38" strokeWidth="46" strokeDasharray="3 20" strokeLinecap="round" opacity="0.55" />
+            style={{ position: 'absolute', right: '-10%', top: '50%', transform: 'translateY(-50%)', width: 'min(128vh, 1200px)', height: 'min(128vh, 1200px)' }}>
+            <defs>
+              <linearGradient id="gCoilA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e7a498" /><stop offset="48%" stopColor="#b5544a" /><stop offset="100%" stopColor="#7d352f" /></linearGradient>
+              <linearGradient id="gCoilB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6fc7bb" /><stop offset="50%" stopColor="#2b8b81" /><stop offset="100%" stopColor="#155249" /></linearGradient>
+              <radialGradient id="gCore" cx="42%" cy="38%" r="70%"><stop offset="0%" stopColor="#e9b4a8" /><stop offset="100%" stopColor="#c07c72" /></radialGradient>
+              <radialGradient id="gVig" cx="62%" cy="50%" r="60%"><stop offset="60%" stopColor="rgba(0,0,0,0)" /><stop offset="100%" stopColor="rgba(20,40,40,0.35)" /></radialGradient>
+              <filter id="coilShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#3a1a16" floodOpacity="0.35" /></filter>
+            </defs>
+            <circle cx="450" cy="450" r="200" fill="url(#gCore)" />
+            {/* outer clay coil */}
+            <g className="uni-ring" style={{ ['--d' as any]: '150s' }} filter="url(#coilShadow)">
+              {Array.from({ length: 72 }).map((_, i) => {
+                const a = (i / 72) * Math.PI * 2, R = 372, cx = 450 + R * Math.cos(a), cy = 450 + R * Math.sin(a)
+                return <rect key={i} x={cx - 40} y={cy - 11} width={80} height={22} rx={11} fill="url(#gCoilA)" transform={`rotate(${a * 180 / Math.PI} ${cx} ${cy})`} />
+              })}
             </g>
-            <g className="uni-ring-r" style={{ ['--d' as any]: '90s' }}>
-              <circle cx="450" cy="450" r="330" fill="none" stroke="#1c6f66" strokeWidth="60" strokeDasharray="4 22" strokeLinecap="round" opacity="0.6" />
+            {/* inner teal coil */}
+            <g className="uni-ring-r" style={{ ['--d' as any]: '110s' }} filter="url(#coilShadow)">
+              {Array.from({ length: 60 }).map((_, i) => {
+                const a = (i / 60) * Math.PI * 2, R = 288, cx = 450 + R * Math.cos(a), cy = 450 + R * Math.sin(a)
+                return <rect key={i} x={cx - 42} y={cy - 12} width={84} height={24} rx={12} fill="url(#gCoilB)" transform={`rotate(${a * 180 / Math.PI} ${cx} ${cy})`} />
+              })}
             </g>
-            <g className="uni-ring" style={{ ['--d' as any]: '70s' }}>
-              <circle cx="450" cy="450" r="250" fill="none" stroke="#b5544a" strokeWidth="52" strokeDasharray="3 20" strokeLinecap="round" opacity="0.7" />
-            </g>
-            <circle cx="450" cy="450" r="190" fill="#d69a90" opacity="0.5" />
+            <circle cx="450" cy="450" r="450" fill="url(#gVig)" />
           </svg>
 
           <div style={{ ...wrap, position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 30, flexWrap: 'wrap', width: '100%' }}>
             {/* left copy */}
-            <div style={{ flex: '1 1 380px' }}>
-              <h2 style={{ fontSize: 'clamp(42px,6vw,76px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.02, color: '#fff', margin: 0, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
+            <div style={{ flex: '1 1 400px' }}>
+              <h2 style={{ fontSize: 'clamp(46px,6.6vw,86px)', fontWeight: 800, letterSpacing: '-.025em', lineHeight: 0.98, color: '#fff', margin: 0, fontFamily: 'var(--font-ui, Inter, sans-serif)', textShadow: '0 2px 30px rgba(20,40,40,0.3)' }}>
                 {T.appHeroH1}<br />{T.appHeroH2}
               </h2>
-              <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: '22px 0 30px' }}>{T.appHeroS}</p>
-              <Link to="/register" style={{ ...pill, background: '#fff', color: ORANGE, padding: '15px 30px', fontSize: 16 }}>{T.getStarted}</Link>
+              <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.92)', margin: '24px 0 32px' }}>{T.appHeroS}</p>
+              <Link to="/register" style={{ ...pill, background: '#fff', color: ORANGE, padding: '16px 34px', fontSize: 16.5 }}>{T.getStarted}</Link>
             </div>
 
             {/* phone mockup */}
-            <div style={{ flex: '0 1 320px', display: 'flex', justifyContent: 'center' }}>
-              <div className="uni-phone" style={{ width: 268, background: '#0a0d16', borderRadius: 44, padding: 11, boxShadow: '0 40px 90px rgba(0,0,0,0.4), 0 0 0 2px rgba(255,255,255,0.12)' }}>
-                <div style={{ position: 'relative', borderRadius: 34, overflow: 'hidden', background: 'linear-gradient(165deg,#f7647a 0%,#f78a5f 55%,#f6a071 100%)', height: 520, padding: '18px 18px 0' }}>
-                  {/* notch */}
-                  <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', width: 96, height: 22, background: '#0a0d16', borderRadius: 999 }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', fontSize: 11.5, fontWeight: 600, marginTop: 2 }}><span>20:22</span><span>▂▄▆ ᯤ ▮</span></div>
-                  <div style={{ color: '#fff', marginTop: 40 }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.01em' }}>{T.phoneTitle}</div>
-                    <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.92)', marginTop: 10 }}>{T.phoneBody}</p>
+            <div style={{ flex: '0 1 340px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+              <div aria-hidden style={{ position: 'absolute', inset: '-8% -4%', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(255,255,255,0.22), transparent)' }} />
+              <div className="uni-phone" style={{ width: 300, background: 'linear-gradient(160deg,#20242e,#05070c)', borderRadius: 52, padding: 12, boxShadow: '0 50px 110px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.12), inset 0 0 0 6px #0a0d16', position: 'relative', zIndex: 1 }}>
+                <div style={{ position: 'relative', borderRadius: 42, overflow: 'hidden', background: 'linear-gradient(168deg,#f9536f 0%,#f77a5f 52%,#f6a468 100%)', height: 588, padding: '20px 20px 0' }}>
+                  {/* dynamic island */}
+                  <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 108, height: 30, background: '#05070c', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 12 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1d2b3a' }} />
                   </div>
-                  {/* tilted decision card */}
-                  <div style={{ position: 'absolute', left: 34, bottom: 34, width: 150, height: 96, borderRadius: 16, background: 'linear-gradient(135deg,#ffd9c2,#f77a5f)', transform: 'rotate(-12deg)', boxShadow: '0 18px 40px rgba(120,30,20,0.35)', padding: 12 }}>
-                    <div style={{ ...mono, color: '#7a2e18', fontWeight: 800, fontSize: 15 }}>BUY 72%</div>
-                    <div style={{ ...mono, color: 'rgba(122,46,24,0.8)', fontSize: 11, marginTop: 4 }}>BTC · executed</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', fontSize: 12, fontWeight: 700 }}><span>20:22</span><span style={{ letterSpacing: 1 }}>▂▃▅ ᯤ ▮</span></div>
+                  <div style={{ color: '#fff', marginTop: 44 }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-.015em' }}>{T.phoneTitle}</div>
+                    <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.94)', marginTop: 12 }}>{T.phoneBody}</p>
                   </div>
-                  <div style={{ position: 'absolute', right: 30, bottom: 70, width: 120, height: 78, borderRadius: 14, background: 'rgba(255,255,255,0.9)', transform: 'rotate(8deg)', boxShadow: '0 14px 34px rgba(120,30,20,0.28)', padding: 10 }}>
-                    <div style={{ ...mono, color: '#16a34a', fontWeight: 800, fontSize: 14 }}>+ paper</div>
-                    <div style={{ ...mono, color: '#6b7280', fontSize: 10.5, marginTop: 4 }}>live price</div>
+                  {/* tilted decision cards */}
+                  <div style={{ position: 'absolute', left: 30, bottom: 40, width: 172, height: 108, borderRadius: 20, background: 'linear-gradient(140deg,#ffe0cc,#f8875f)', transform: 'rotate(-12deg)', boxShadow: '0 22px 46px rgba(120,30,20,0.4)', padding: 14 }}>
+                    <div style={{ ...mono, color: '#7a2e18', fontWeight: 800, fontSize: 17 }}>BUY 72%</div>
+                    <div style={{ ...mono, color: 'rgba(122,46,24,0.8)', fontSize: 12, marginTop: 5 }}>BTC · executed</div>
+                  </div>
+                  <div style={{ position: 'absolute', right: 26, bottom: 84, width: 134, height: 84, borderRadius: 16, background: 'rgba(255,255,255,0.94)', transform: 'rotate(9deg)', boxShadow: '0 16px 38px rgba(120,30,20,0.3)', padding: 12 }}>
+                    <div style={{ ...mono, color: '#16a34a', fontWeight: 800, fontSize: 15 }}>+ paper</div>
+                    <div style={{ ...mono, color: '#6b7280', fontSize: 11, marginTop: 4 }}>live price</div>
                   </div>
                 </div>
               </div>
