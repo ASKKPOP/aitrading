@@ -4,39 +4,37 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sooppiy — AI 매매 신호 수집 프레임워크 (Target Spec)</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f1ead8; --bg2:#e8dfc8; --card:#faf6ec; --ink:#0b1220;
-  --mut:rgba(11,18,32,0.60); --faint:rgba(11,18,32,0.38);
-  --line:rgba(11,18,32,0.15); --accent:#b8542f; --accent-on:#faf6ec;
-  --up:#2d9e6b; --down:#8b3a2a; --warn:#b45309;
-  --disp:"Cormorant Garamond",Georgia,serif;
-  --sans:"Inter Tight","Noto Sans KR",-apple-system,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --bg:#f9f9f7; --bg2:#f1f0ec; --card:#ffffff; --ink:#0b0b0b;
+  --mut:#52514e; --faint:#898781;
+  --line:rgba(11,11,11,0.10); --accent:#2a78d6; --accent-on:#ffffff;
+  --up:#006300; --down:#d03b3b; --warn:#eda100;
+  --disp:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  --sans:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:15px}
 .wrap{max-width:960px;margin:0 auto;padding:0 24px}
 header.doc{border-bottom:1px solid var(--line);padding:44px 0 30px}
 .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;font-weight:500}
-h1{font-family:var(--disp);font-weight:500;font-size:clamp(30px,4.6vw,46px);letter-spacing:-.02em;line-height:1.1;margin:10px 0 8px}
-h1 em{font-style:italic;color:var(--accent)}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.6vw,46px);letter-spacing:-.02em;line-height:1.1;margin:10px 0 8px}
+h1 em{font-style:normal;color:var(--accent)}
 .meta{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
 section{border-bottom:1px solid var(--line);padding:34px 0}
-h2{font-family:var(--disp);font-weight:600;font-size:25px;letter-spacing:-.01em;margin:0 0 4px}
+h2{font-family:var(--disp);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:0 0 4px}
 h2 .no{color:var(--accent);font-family:var(--mono);font-size:13px;vertical-align:middle;margin-right:8px}
 .sub{color:var(--mut);font-size:14px;margin:4px 0 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
-table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg2)}
 td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:none}
 .tag{font-family:var(--mono);font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
-.ok{background:rgba(45,158,107,.13);color:var(--up)}
-.part{background:rgba(180,83,9,.12);color:var(--warn)}
-.no-t{background:rgba(139,58,42,.12);color:var(--down)}
+.ok{background:rgba(12,163,12,.14);color:var(--up)}
+.part{background:rgba(237,161,0,.15);color:#a16800}
+.no-t{background:rgba(208,59,59,.13);color:var(--down)}
 code,.mono{font-family:var(--mono);font-size:.92em}
 code{background:var(--bg2);border-radius:4px;padding:1px 5px}
 ul{padding-left:20px;margin:8px 0}

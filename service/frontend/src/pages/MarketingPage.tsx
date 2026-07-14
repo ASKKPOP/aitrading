@@ -8,32 +8,32 @@ const LANGS: Record<string, string> = { en: 'EN', ja: 'JA', th: 'TH', vi: 'VI' }
 // Public landing page — quiet editorial, zero animation, compact blocks.
 // Narrative: the AI *measures* market footprints (quant × qualitative × psychology
 // proxies), decides on your rules, and paper-trades with hard risk limits.
-// Design system: Editorial Terracotta tokens from index.css (Cormorant display,
-// Inter Tight UI, JetBrains Mono ledger).
+// Design system: Signal tokens from index.css (system-ui type, white cards,
+// signal accent colors, automatic dark mode).
 
-/* theme shorthands (fall back to the terracotta palette) */
+/* theme shorthands (fall back to the Signal palette) */
 const V = {
-  bg: 'var(--bg-primary, #f1ead8)',
-  bg2: 'var(--bg-secondary, #e8dfc8)',
-  card: 'var(--bg-card, #faf6ec)',
-  ink: 'var(--text-primary, #0b1220)',
-  mut: 'var(--text-secondary, rgba(11,18,32,0.55))',
-  faint: 'var(--text-muted, rgba(11,18,32,0.35))',
-  line: 'var(--border-color, rgba(11,18,32,0.15))',
-  lineStrong: 'var(--border-strong, rgba(11,18,32,0.30))',
-  accent: 'var(--accent-primary, #b8542f)',
-  accentOn: 'var(--accent-contrast, #faf6ec)',
-  up: 'var(--up, #2d9e6b)',
-  down: 'var(--down, #8b3a2a)',
-  display: 'var(--font-display, "Cormorant Garamond", Georgia, serif)',
-  sans: 'var(--font-sans, "Inter Tight", sans-serif)',
-  mono: 'var(--font-mono, "JetBrains Mono", monospace)',
+  bg: 'var(--bg-primary, #f9f9f7)',
+  bg2: 'var(--bg-secondary, #f1f0ec)',
+  card: 'var(--bg-card, #ffffff)',
+  ink: 'var(--text-primary, #0b0b0b)',
+  mut: 'var(--text-secondary, #52514e)',
+  faint: 'var(--text-muted, #898781)',
+  line: 'var(--border-color, rgba(11,11,11,0.10))',
+  lineStrong: 'var(--border-strong, #c3c2b7)',
+  accent: 'var(--accent-primary, #2a78d6)',
+  accentOn: 'var(--accent-contrast, #ffffff)',
+  up: 'var(--up, #006300)',
+  down: 'var(--down, #d03b3b)',
+  display: 'var(--font-display, system-ui, sans-serif)',
+  sans: 'var(--font-sans, system-ui, sans-serif)',
+  mono: 'var(--font-mono, ui-monospace, monospace)',
 }
 
 const wrap: any = { maxWidth: 1040, margin: '0 auto', padding: '0 24px' }
 const kicker: any = { fontFamily: V.mono, fontSize: 11.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: V.accent, fontWeight: 500 }
-const cardS: any = { background: V.card, border: `1px solid ${V.line}`, borderRadius: 12, padding: '18px 20px' }
-const h2S: any = { fontFamily: V.display, fontWeight: 500, fontSize: 'clamp(28px,3.6vw,40px)', letterSpacing: '-0.02em', lineHeight: 1.08, color: V.ink, margin: '10px 0 10px' }
+const cardS: any = { background: V.card, border: `1px solid ${V.line}`, borderRadius: 14, padding: '16px 18px' }
+const h2S: any = { fontFamily: V.display, fontWeight: 700, fontSize: 'clamp(28px,3.6vw,40px)', letterSpacing: '-0.02em', lineHeight: 1.08, color: V.ink, margin: '10px 0 10px' }
 
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
@@ -181,7 +181,7 @@ export function MarketingPage() {
       <header style={{ position: 'sticky', top: 0, zIndex: 20, background: V.card, borderBottom: `1px solid ${V.line}` }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 62 }}>
           <span style={{ width: 26, height: 26, borderRadius: '50%', background: V.accent, color: V.accentOn, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>s</span>
-          <span style={{ fontFamily: V.display, fontStyle: 'italic', fontSize: 21, fontWeight: 500 }}>Sooppiy</span>
+          <span style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px' }}>
             {Object.entries(LANGS).map(([code, label]) => (
               <button key={code} onClick={() => setLanguage(code as any)}
@@ -197,8 +197,8 @@ export function MarketingPage() {
       <section style={{ borderBottom: `1px solid ${V.line}`, padding: '64px 0 56px' }}>
         <div style={wrap}>
           <div style={kicker}>{T.heroKicker}</div>
-          <h1 style={{ fontFamily: V.display, fontWeight: 500, fontSize: 'clamp(40px,6vw,72px)', lineHeight: 1.04, letterSpacing: '-0.02em', margin: '14px 0 18px', maxWidth: '18ch' }}>
-            {T.heroH1a}<br /><em style={{ fontStyle: 'italic', color: V.accent }}>{T.heroH1b}</em>
+          <h1 style={{ fontFamily: V.display, fontWeight: 800, fontSize: 'clamp(38px,5.6vw,66px)', lineHeight: 1.04, letterSpacing: '-0.02em', margin: '14px 0 18px', maxWidth: '18ch' }}>
+            {T.heroH1a}<br /><em style={{ fontStyle: 'normal', color: V.accent }}>{T.heroH1b}</em>
           </h1>
           <p style={{ fontSize: 17, color: V.mut, maxWidth: '58ch', margin: '0 0 26px' }}>{T.heroSub}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -351,7 +351,7 @@ export function MarketingPage() {
       <footer style={{ padding: '32px 0 48px' }}>
         <div style={{ ...wrap, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: V.display, fontStyle: 'italic', fontSize: 18 }}>Sooppiy</span>
+            <span style={{ fontFamily: V.display, fontSize: 18, fontWeight: 700 }}>Sooppiy</span>
             <span style={{ fontFamily: V.mono, fontSize: 11, color: V.faint }}>AI · ANALYZE · AUTOMATE</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, fontSize: 13 }}>
               <Link to="/login" style={{ color: V.mut, textDecoration: 'none' }}>{T.login}</Link>
