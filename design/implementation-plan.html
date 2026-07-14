@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — 신호 수집 구현 계획 (Implementation Plan)</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.phase{border:1px solid var(--border);border-radius:14px;background:var(--card);margin-top:14px;overflow:hidden}
+.phase-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--grid);flex-wrap:wrap}
+.phase-no{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-on);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+.phase-title{font-weight:700;font-size:15px}
+.phase-eta{margin-left:auto;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.phase-body{padding:13px 16px}
+.cols{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;overflow-x:auto;margin-top:12px}
+.diagram svg{display:block;min-width:840px;width:100%;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:8px}
+.legend b{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+footer{padding:22px 0 50px;font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="doc">
+  <div class="wrap">
+    <div class="kicker">SOOPPIY · IMPLEMENTATION PLAN · 검토용</div>
+    <h1>AI 매매 신호 수집 — 구현 계획</h1>
+    <p class="sub" style="max-width:76ch">프레임워크 갭(리스크 엔진 · 심리 피드 · 크립토 정량 · 스캐너 · 신호 융합)을 5단계로 구현하는 계획입니다.
+    모든 외부 데이터 소스는 <strong>2026-07-14 실제 호출로 검증</strong>했으며, 새 API 키가 필요 없는 소스만 사용합니다. 단계별로 하나씩 검토 후 착수합니다.</p>
+    <div class="meta">작성: Claude · 2026-07-14 · 전량 페이퍼 트레이딩 · 투자 자문 아님</div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">0</span>리서치 결과 — 데이터 소스 검증 (오늘 실측)</h2>
+    <table>
+      <tr><th>소스</th><th>제공 신호</th><th>키</th><th>오늘 실측값</th><th>판정</th></tr>
+      <tr><td><b>alternative.me</b> /fng</td><td>공포·탐욕 지수 (일별 히스토리 포함)</td><td>불필요</td><td><code>22 · Extreme Fear</code></td><td><span class="tag ok">✅ 사용</span></td></tr>
+      <tr><td><b>OKX</b> /public/funding-rate</td><td>펀딩비율 (SWAP)</td><td>불필요</td><td><code>0.0001 · BTC-USDT-SWAP</code></td><td><span class="tag ok">✅ 사용</span></td></tr>
+      <tr><td><b>OKX</b> /market/candles</td><td>캔들 → RSI · 이동평균 · σ · 거래량비 자체 계산</td><td>불필요</td><td><code>1H 캔들 정상 수신</code></td><td><span class="tag ok">✅ 사용</span></td></tr>
+      <tr><td><b>OKX</b> spot + swap tickers</td><td>현물-선물 베이시스</td><td>불필요</td><td>두 시장 시세 수신</td><td><span class="tag ok">✅ 사용</span></td></tr>
+      <tr><td><b>StockTwits</b> streams</td><td>언급량 시계열 · 군중 감성</td><td>불필요</td><td><code>BTC.X 30 msgs · watchers 671,934</code></td><td><span class="tag ok">✅ 사용</span></td></tr>
+      <tr><td><b>Polymarket</b> (기연동)</td><td>배당률 스냅샷 → 변화율(Δ)</td><td>불필요</td><td>기존 <code>price_fetcher</code> 동작 중</td><td><span class="tag ok">✅ 확장</span></td></tr>
+      <tr><td>기존 뉴스 스냅샷 (AV NEWS_SENTIMENT)</td><td>감성 시계열 → 스파이크(Δ) 감지</td><td>기존 키</td><td>스냅샷 히스토리 이미 DB 저장 중</td><td><span class="tag ok">✅ 확장</span></td></tr>
+      <tr><td>Bybit API</td><td>—</td><td>—</td><td><code>CloudFront 지역 차단</code> (미국 IP)</td><td><span class="tag hold">보류 · OKX로 대체</span></td></tr>
+      <tr><td>청산 데이터 (Coinglass류)</td><td>청산량</td><td><b>유료 키</b></td><td>—</td><td><span class="tag warn">🟡 프록시로 근사</span></td></tr>
+      <tr><td>온체인 고래 (Hashdive류)</td><td>고래 지갑 이동</td><td><b>유료 키</b></td><td>—</td><td><span class="tag hold">Phase 6 보류</span></td></tr>
+    </table>
+    <div class="note">발견 사항: 코드의 크립토 피드는 실제로 <b>OKX</b>입니다(<code>crypto_feed.py</code>). 마켓플레이스 UI의 "via Bybit" 문구는 오기 → Phase 3에서 수정. 청산 데이터는 무료 소스가 없어 <b>변동성 3σ + 거래량 폭증 프록시</b>로 정직하게 근사하고 화면에 "추정"으로 표기합니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">1</span>목표 아키텍처 — 데이터 흐름</h2>
+    <div class="diagram">
+    <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#898781"/></marker>
+      </defs>
+      <!-- col 1: sources -->
+      <text x="70" y="24" font-size="11" font-weight="700" fill="#898781" letter-spacing="1">SOURCES</text>
+      <g font-size="12">
+        <rect x="20" y="36" width="150" height="40" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.5"/><text x="95" y="55" text-anchor="middle" fill="#0ca30c" font-weight="700">OKX 시세·캔들</text><text x="95" y="69" text-anchor="middle" fill="#898781" font-size="10">기존 ✅ + 캔들 확장</text>
+        <rect x="20" y="86" width="150" height="40" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="95" y="105" text-anchor="middle" fill="#2a78d6" font-weight="700">OKX 펀딩·베이시스</text><text x="95" y="119" text-anchor="middle" fill="#898781" font-size="10">신규 P3</text>
+        <rect x="20" y="136" width="150" height="40" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="95" y="155" text-anchor="middle" fill="#2a78d6" font-weight="700">Fear &amp; Greed</text><text x="95" y="169" text-anchor="middle" fill="#898781" font-size="10">alternative.me · 신규 P2</text>
+        <rect x="20" y="186" width="150" height="40" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.5"/><text x="95" y="205" text-anchor="middle" fill="#0ca30c" font-weight="700">뉴스·감성 스냅샷</text><text x="95" y="219" text-anchor="middle" fill="#898781" font-size="10">기존 ✅ + Δ스파이크 P2</text>
+        <rect x="20" y="236" width="150" height="40" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.5"/><text x="95" y="255" text-anchor="middle" fill="#0ca30c" font-weight="700">StockTwits·Polymarket</text><text x="95" y="269" text-anchor="middle" fill="#898781" font-size="10">기존 ✅ + 언급량·Δ배당 P2/P4</text>
+      </g>
+      <!-- col 2: collectors -->
+      <text x="285" y="24" font-size="11" font-weight="700" fill="#898781" letter-spacing="1">COLLECT · COMPUTE</text>
+      <g font-size="12">
+        <rect x="230" y="60" width="160" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="310" y="80" text-anchor="middle" fill="#2a78d6" font-weight="700">quant_crypto.py</text><text x="310" y="94" text-anchor="middle" fill="#898781" font-size="10">RSI·MA·σ·거래량비·베이시스 P3</text>
+        <rect x="230" y="126" width="160" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="310" y="146" text-anchor="middle" fill="#2a78d6" font-weight="700">psych_feed.py</text><text x="310" y="160" text-anchor="middle" fill="#898781" font-size="10">F&amp;G·감성Δ·충격 프록시 P2</text>
+        <rect x="230" y="192" width="160" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="310" y="212" text-anchor="middle" fill="#2a78d6" font-weight="700">scanner.py</text><text x="310" y="226" text-anchor="middle" fill="#898781" font-size="10">거래량 급증·언급량·신규상장 P4</text>
+      </g>
+      <!-- col 3: fusion -->
+      <rect x="450" y="110" width="170" height="70" rx="9" fill="none" stroke="#4a3aa7" stroke-width="2"/>
+      <text x="535" y="138" text-anchor="middle" fill="#4a3aa7" font-weight="800" font-size="13">signal_fusion</text>
+      <text x="535" y="154" text-anchor="middle" fill="#898781" font-size="10">score = 정량 × 정성 P5</text>
+      <text x="535" y="168" text-anchor="middle" fill="#898781" font-size="10">+ 기존 4-분석가 LLM ✅</text>
+      <!-- col 4: risk gate -->
+      <rect x="680" y="96" width="140" height="98" rx="9" fill="none" stroke="#d03b3b" stroke-width="2"/>
+      <text x="750" y="118" text-anchor="middle" fill="#d03b3b" font-weight="800" font-size="13">RISK GATE</text>
+      <text x="750" y="136" text-anchor="middle" fill="#898781" font-size="10">① Kelly 사이징 P1</text>
+      <text x="750" y="150" text-anchor="middle" fill="#898781" font-size="10">② 손절·최대손실 P1</text>
+      <text x="750" y="164" text-anchor="middle" fill="#898781" font-size="10">③ 서킷브레이커 P1</text>
+      <text x="750" y="181" text-anchor="middle" fill="#d03b3b" font-size="10" font-weight="700">차단 시 → 기록만</text>
+      <!-- col 5: exec + journal -->
+      <rect x="860" y="70" width="105" height="44" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.5"/><text x="912" y="89" text-anchor="middle" fill="#0ca30c" font-weight="700" font-size="12">페이퍼 체결 ✅</text><text x="912" y="103" text-anchor="middle" fill="#898781" font-size="10">automation.py 기존</text>
+      <rect x="860" y="130" width="105" height="44" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.5"/><text x="912" y="149" text-anchor="middle" fill="#0ca30c" font-weight="700" font-size="12">저널 ✅</text><text x="912" y="163" text-anchor="middle" fill="#898781" font-size="10">automation_runs</text>
+      <rect x="860" y="190" width="105" height="44" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="912" y="209" text-anchor="middle" fill="#2a78d6" font-weight="700" font-size="12">postmortem</text><text x="912" y="223" text-anchor="middle" fill="#898781" font-size="10">신규 P5 · 지는 신호 정리</text>
+      <!-- dashboard -->
+      <rect x="450" y="230" width="370" height="46" rx="9" fill="none" stroke="#eda100" stroke-width="1.5"/>
+      <text x="635" y="250" text-anchor="middle" fill="#a16800" font-weight="700" font-size="12">신호 대시보드 (목업 → 실데이터) P5 · /signals-board</text>
+      <text x="635" y="265" text-anchor="middle" fill="#898781" font-size="10">F&amp;G 게이지 · 감성 소스바 · 신호 테이블 · 충격 스파크라인 — signal_dashboard.html 그대로</text>
+      <!-- snapshots store -->
+      <rect x="230" y="300" width="390" height="44" rx="9" fill="none" stroke="#898781" stroke-width="1.3" stroke-dasharray="5 4"/>
+      <text x="425" y="319" text-anchor="middle" fill="#52514e" font-weight="700" font-size="12">snapshot store — signal_snapshots · psych_snapshots (SQLite/PG)</text>
+      <text x="425" y="333" text-anchor="middle" fill="#898781" font-size="10">모든 수집값은 시계열 저장 → Δ(변화율) 계산과 백테스트에 사용</text>
+      <!-- arrows -->
+      <g stroke="#898781" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <path d="M170,56 L230,76"/><path d="M170,106 L230,86"/>
+        <path d="M170,156 L230,146"/><path d="M170,206 L230,152"/>
+        <path d="M170,256 L230,212"/>
+        <path d="M390,83 L450,128"/><path d="M390,149 L450,145"/><path d="M390,215 L450,162"/>
+        <path d="M620,145 L680,145"/>
+        <path d="M820,118 L860,95"/><path d="M820,152 L860,152"/><path d="M820,180 L860,206"/>
+        <path d="M535,180 L535,230"/>
+        <path d="M425,300 L425,238 L450,238" stroke-dasharray="4 4"/>
+      </g>
+      <!-- kill path -->
+      <text x="750" y="215" text-anchor="middle" fill="#d03b3b" font-size="10">HALT 시 자동매매 전체 정지</text>
+    </svg>
+    </div>
+    <div class="legend">
+      <span><b style="background:#0ca30c"></b>기존 구현 (재사용)</span>
+      <span><b style="background:#2a78d6"></b>신규 모듈</span>
+      <span><b style="background:#4a3aa7"></b>융합 계층</span>
+      <span><b style="background:#d03b3b"></b>리스크 게이트 (모든 주문이 통과해야 함)</span>
+      <span><b style="background:#eda100"></b>대시보드</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">2</span>리스크 게이트 — 상세 플로우 (Phase 1 · 최우선)</h2>
+    <p class="sub">프레임워크가 '필수'로 지정한 부분. <b>모든 자동 주문은 이 게이트를 통과해야만 체결</b>됩니다.</p>
+    <div class="diagram">
+    <svg viewBox="0 0 980 210" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#898781"/></marker></defs>
+      <rect x="10" y="70" width="120" height="46" rx="9" fill="none" stroke="#4a3aa7" stroke-width="1.5"/><text x="70" y="90" text-anchor="middle" fill="#4a3aa7" font-weight="700">신호 (score·conf)</text><text x="70" y="104" text-anchor="middle" fill="#898781" font-size="10">BUY BTC · 0.78</text>
+      <rect x="180" y="70" width="150" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="255" y="88" text-anchor="middle" fill="#2a78d6" font-weight="700">① Kelly 사이징</text><text x="255" y="103" text-anchor="middle" fill="#898781" font-size="10">f* = W − (1−W)/R · ½캘리 캡</text>
+      <rect x="380" y="70" width="160" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="460" y="88" text-anchor="middle" fill="#2a78d6" font-weight="700">② 한도 체크</text><text x="460" y="103" text-anchor="middle" fill="#898781" font-size="10">일일 최대손실 · 심볼 익스포저</text>
+      <rect x="590" y="70" width="170" height="46" rx="9" fill="none" stroke="#2a78d6" stroke-width="1.5"/><text x="675" y="88" text-anchor="middle" fill="#2a78d6" font-weight="700">③ 서킷브레이커</text><text x="675" y="103" text-anchor="middle" fill="#898781" font-size="10">3σ 충격 · API 지연 · HALT 플래그</text>
+      <rect x="820" y="20" width="140" height="42" rx="9" fill="none" stroke="#0ca30c" stroke-width="1.8"/><text x="890" y="38" text-anchor="middle" fill="#0ca30c" font-weight="800">체결 (페이퍼)</text><text x="890" y="53" text-anchor="middle" fill="#898781" font-size="10">+ SL/TP 자동 등록</text>
+      <rect x="820" y="130" width="140" height="42" rx="9" fill="none" stroke="#d03b3b" stroke-width="1.8"/><text x="890" y="148" text-anchor="middle" fill="#d03b3b" font-weight="800">거부 → 저널만</text><text x="890" y="163" text-anchor="middle" fill="#898781" font-size="10">skip_reason 기록</text>
+      <g stroke="#898781" stroke-width="1.4" fill="none" marker-end="url(#ar2)">
+        <path d="M130,93 L180,93"/><path d="M330,93 L380,93"/><path d="M540,93 L590,93"/>
+        <path d="M760,80 L820,45"/><path d="M760,106 L820,145"/>
+      </g>
+      <text x="785" y="55" fill="#0ca30c" font-size="10" font-weight="700">PASS</text>
+      <text x="785" y="140" fill="#d03b3b" font-size="10" font-weight="700">FAIL</text>
+      <!-- watcher -->
+      <rect x="180" y="150" width="360" height="40" rx="9" fill="none" stroke="#eda100" stroke-width="1.5"/>
+      <text x="360" y="167" text-anchor="middle" fill="#a16800" font-weight="700">SL/TP 워처 루프 (30s) — 보유 포지션 실시간 감시</text>
+      <text x="360" y="182" text-anchor="middle" fill="#898781" font-size="10">손절/익절 도달 시 자동 청산 · 3σ 충격 시 전 포지션 축소</text>
+      <path d="M540,170 C660,170 760,120 815,60" stroke="#eda100" stroke-width="1.3" fill="none" marker-end="url(#ar2)" stroke-dasharray="4 4"/>
+    </svg>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">3</span>5단계 구현 계획</h2>
+
+    <div class="phase">
+      <div class="phase-head"><span class="phase-no">1</span><span class="phase-title">리스크 엔진 — 손절 · 서킷브레이커 · 켈리</span><span class="tag new">신규</span><span class="phase-eta">규모: 대 · 최우선</span></div>
+      <div class="phase-body cols">
+        <div>
+          <h3 style="margin-top:0">만드는 것</h3>
+          <ul>
+            <li><code>risk_engine.py</code> — Kelly 사이징(<code>f* = W−(1−W)/R</code>, ½켈리 캡), 한도 체크, 브레이커 상태기계</li>
+            <li>DB: <code>positions</code>에 <code>stop_loss·take_profit</code> 컬럼, <code>risk_limits</code>·<code>breaker_state</code> 테이블</li>
+            <li>SL/TP 워처 루프(기존 가격 폴링에 편승, 30초) — 도달 시 페이퍼 자동 청산</li>
+            <li><code>automation.py</code> 체결 직전에 게이트 삽입 (한 줄 훅)</li>
+            <li>API: <code>GET/PUT /api/risk/limits</code> · <code>GET /api/risk/breaker</code> · <code>POST /api/risk/halt</code></li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0">완료 기준 (검수)</h3>
+          <ul>
+            <li>SL 걸린 포지션이 가격 도달 시 자동 청산되고 저널에 남는다</li>
+            <li>일일 최대손실 초과 시 automation이 주문을 거부한다 (<code>skip_reason</code>)</li>
+            <li>HALT 발동 시 모든 자동매매 정지, 해제 전까지 유지</li>
+            <li>Kelly 계산이 저널의 승률·손익비 기반으로 사이즈를 낮춘다</li>
+            <li>pytest 케이스 ≥ 8</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="phase-no">2</span><span class="phase-title">심리 피드 — F&amp;G · 감성 스파이크 · 충격 프록시</span><span class="tag new">신규</span><span class="phase-eta">규모: 중</span></div>
+      <div class="phase-body cols">
+        <div>
+          <h3 style="margin-top:0">만드는 것</h3>
+          <ul>
+            <li><code>psych_feed.py</code> — alternative.me F&amp;G 수집(시간별) + 히스토리</li>
+            <li>감성 Δ: 기존 뉴스 스냅샷 시계열에서 카테고리별 감성 변화율 → 스파이크 감지(z-score)</li>
+            <li>충격 프록시: OKX 캔들 σ + 거래량비 결합, <b>"추정" 라벨 필수</b></li>
+            <li>기대감: Polymarket 배당률 스냅샷 저장 → Δ배당률</li>
+            <li>API: <code>GET /api/market-intel/psych</code> (F&amp;G·spikes·anticipation 통합)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0">완료 기준</h3>
+          <ul>
+            <li>F&amp;G 실측값이 대시보드/분석가에 반영 (오늘: 22 Extreme Fear)</li>
+            <li>부정 감성 z&gt;2 스파이크가 이벤트로 기록된다</li>
+            <li>배당률 0.61→0.68류 변화가 Δ%로 조회된다</li>
+            <li>4-분석가의 감성 분석가가 이 피드를 사용한다</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="phase-no">3</span><span class="phase-title">크립토 정량 — RSI · 펀딩 · 베이시스</span><span class="tag new">신규</span><span class="phase-eta">규모: 중</span></div>
+      <div class="phase-body cols">
+        <div>
+          <h3 style="margin-top:0">만드는 것</h3>
+          <ul>
+            <li><code>quant_crypto.py</code> — OKX 캔들 → RSI(14)·MA(5/20/60)·σ·거래량비 자체 계산 (라이브러리 불필요)</li>
+            <li>펀딩비: <code>/public/funding-rate</code> · 베이시스: spot vs swap 시세 차</li>
+            <li><code>analysis_agents._gather_technical</code>의 크립토 경로를 이것으로 교체 (현재 "현물가만")</li>
+            <li>UI 오기 수정: "via Bybit" → "via OKX"</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0">완료 기준</h3>
+          <ul>
+            <li>BTC 분석 실행 시 실제 RSI·MA·베이시스·펀딩이 근거에 표시</li>
+            <li>매수/매도 트리거가 크립토에서도 정량 조건을 사용</li>
+            <li>계산값이 외부 차트 사이트와 ±오차 허용범위 일치 (스팟체크)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="phase-no">4</span><span class="phase-title">Which-coin 스캐너 — 급증 · 언급량 · 신규상장</span><span class="tag new">신규</span><span class="phase-eta">규모: 중</span></div>
+      <div class="phase-body cols">
+        <div>
+          <h3 style="margin-top:0">만드는 것</h3>
+          <ul>
+            <li><code>scanner.py</code> — 전 종목 거래량비(24h vs 7d 평균) 랭킹</li>
+            <li>StockTwits 언급량 시계열(시간당 메시지 수) → 급등 감지</li>
+            <li>신규 상장: OKX instruments 목록 diff</li>
+            <li>API: <code>GET /api/scanner/candidates</code> — 후보 + 사유</li>
+            <li>고래/온체인은 유료 소스라 <b>Phase 6 보류</b> (인터페이스만 설계)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0">완료 기준</h3>
+          <ul>
+            <li>후보 목록이 "왜 후보인가"(급증 x2.4 · 언급 +180% 등)와 함께 반환</li>
+            <li>automation 룰에서 "스캐너 후보 자동 분석" 옵션 동작</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><span class="phase-no">5</span><span class="phase-title">신호 융합 + 실데이터 대시보드 + 스킬</span><span class="tag new">신규</span><span class="phase-eta">규모: 중</span></div>
+      <div class="phase-body cols">
+        <div>
+          <h3 style="margin-top:0">만드는 것</h3>
+          <ul>
+            <li><code>signal_fusion.py</code> — score = w₁·정량 + w₂·감성 + w₃·심리 (가중치 설정 가능)</li>
+            <li>앱 페이지 <code>/signals-board</code> — signal_dashboard.html 목업을 <b>실데이터로</b> (F&amp;G 게이지·소스별 감성바·신호 테이블·충격 스파크라인)</li>
+            <li><code>skills/trading-signal-collector/SKILL.md</code> — 에이전트가 위 API로 신호 수집하는 방법 문서화 (+ position-sizer·signal-postmortem 스킬 문서)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0">완료 기준</h3>
+          <ul>
+            <li>대시보드의 모든 숫자가 실제 수집값 (목업 데이터 0)</li>
+            <li>신호 테이블이 프레임워크 형식(코인·신호·근거·트리거·신뢰도) 그대로</li>
+            <li>에이전트가 스킬 문서만 보고 신호 API를 사용할 수 있다</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">공통 원칙: 각 Phase는 <b>env 플래그로 격리</b>(기본 off → 검증 후 on), 전량 페이퍼, pytest 추가, 배포 전 로컬 검증. 외부 API는 실패 시 조용히 스킵하고 기존 동작 유지(현 코드 패턴과 동일).</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">4</span>트리거 로직 명세 — 프레임워크 → 계산식</h2>
+    <table>
+      <tr><th>프레임워크 트리거</th><th>계산 입력 (Phase)</th><th>기본 임계치 (설정 가능)</th></tr>
+      <tr><td><b>매수</b> · 공포지수 회복 + 긍정 감성 + 갭 ≥ 임계치</td><td>F&amp;G Δ(P2) + 감성점수(기존) + 베이시스(P3)</td><td><code>F&amp;G +10 in 3d · senti &gt; +0.2 · basis ≥ 1.2%</code></td></tr>
+      <tr><td><b>매수</b> · 배당률 재평가 확인</td><td>Polymarket Δ배당률(P2)</td><td><code>Δodds ≥ +0.05 / 24h</code></td></tr>
+      <tr><td><b>매도</b> · RSI 과매수 + 부정 스파이크 + 유출</td><td>RSI(P3) + 감성 z-score(P2) + (고래 P6 보류)</td><td><code>RSI ≥ 70 · z ≤ −2</code></td></tr>
+      <tr><td><b>축소</b> · 변동성 3σ 충격</td><td>캔들 σ(P3) → 브레이커(P1)</td><td><code>|r| &gt; 3σ(24h) → 포지션 50% 축소 + HALT 검토</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">5</span>검토 순서 제안</h2>
+    <ul>
+      <li><b>지금:</b> 이 계획 문서를 함께 검토 — Phase 순서 · 임계치 기본값 · 보류 항목(고래·청산) 동의 여부</li>
+      <li><b>다음:</b> Phase 1(리스크 엔진)부터 하나씩: 구현 → 로컬 검증 → 함께 확인 → 다음 Phase</li>
+      <li>각 Phase 완료 시 이 문서의 해당 칸을 ✅로 갱신 (문서가 곧 진행표)</li>
+    </ul>
+    <div class="note red">정직한 한계 재확인: 심리·충격 신호는 후행·노이즈·조작 취약. 그래서 이 계획은 ①심리 단독 매매 금지(융합 점수에서 가중치 상한) ②모든 주문의 리스크 게이트 통과 ③전량 페이퍼를 구조로 강제합니다. 투자 자문이 아닙니다.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">sooppiy.com/plan.html · 데이터 소스 실측: 2026-07-14 · 구현 전 검토용 문서</div>
+</footer>
+
+</body>
+</html>
