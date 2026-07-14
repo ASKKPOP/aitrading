@@ -19,18 +19,18 @@ const LANGS: Record<string, string> = { en: 'EN', ja: 'JA', th: 'TH', vi: 'VI' }
 //   → multi-column dark footer
 
 /* Paper Ledger palette (design/theme: paper · ink · terracotta) */
-const ORANGE = '#c2553b'                 /* terracotta accent */
-const CORAL = '#a13a26'                  /* deep rust */
-const INK = '#24211b'
-const MUT = '#55503f'
-const FAINT = 'rgba(36,33,27,0.45)'
-const BG = '#faf8f3'                     /* paper */
-const CARD = '#ffffff'
-const LINE = '#e7e1d3'
-const UP = '#47764f'                     /* ledger green */
+const ORANGE = '#b8542f'                 /* terracotta accent */
+const CORAL = '#8b3a2a'                  /* deep rust */
+const INK = '#0b1220'
+const MUT = 'rgba(11,18,32,0.55)'
+const FAINT = 'rgba(11,18,32,0.45)'
+const BG = '#f1ead8'                     /* paper */
+const CARD = '#faf6ec'
+const LINE = 'rgba(11,18,32,0.15)'
+const UP = '#2d9e6b'                     /* ledger green */
 
 const mono: any = { fontFamily: '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
-const serif: any = { fontFamily: '"Source Serif 4","Noto Serif JP",Georgia,serif' }
+const serif: any = { fontFamily: 'var(--font-display, "Cormorant Garamond", Georgia, serif)' }
 
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
@@ -193,7 +193,7 @@ export function MarketingPage() {
   const mockPanels = [
     <div key={0} style={{ padding: 18 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <b style={{ ...mono, color: '#47764f', fontSize: 20 }}>BUY</b>
+        <b style={{ ...mono, color: '#2d9e6b', fontSize: 20 }}>BUY</b>
         <span style={mono}>BTC/USDT</span>
         <span style={{ ...mono, marginLeft: 'auto', fontSize: 12, color: MUT }}>confidence 72%</span>
       </div>
@@ -207,29 +207,29 @@ export function MarketingPage() {
       <div style={{ fontWeight: 700, marginBottom: 10 }}>BTC · crypto</div>
       {[['Run every', '60 min'], ['Min confidence', '65%'], ['Size', '$250'], ['Status', '● active']].map(([a, b], i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
-          <span style={{ color: MUT }}>{a}</span><span style={{ ...mono, color: b === '● active' ? '#47764f' : INK }}>{b}</span>
+          <span style={{ color: MUT }}>{a}</span><span style={{ ...mono, color: b === '● active' ? '#2d9e6b' : INK }}>{b}</span>
         </div>
       ))}
     </div>,
     <div key={2} style={{ padding: 18 }}>
       {[[62181.2, 0.33], [62181.0, 12.0]].map(([p, q], i) => (
-        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#a13a26', padding: '3px 0' }}>
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#8b3a2a', padding: '3px 0' }}>
           <span>{p.toLocaleString()}</span><span>{q}</span>
         </div>
       ))}
-      <div style={{ ...mono, fontWeight: 800, fontSize: 18, color: '#47764f', padding: '6px 0', borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
+      <div style={{ ...mono, fontWeight: 800, fontSize: 18, color: '#2d9e6b', padding: '6px 0', borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
         {btc ? btc.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '62,180.0'}
       </div>
       {[[62179.9, 515.7], [62179.6, 0.63]].map(([p, q], i) => (
-        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#47764f', padding: '3px 0' }}>
+        <div key={i} style={{ ...mono, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#2d9e6b', padding: '3px 0' }}>
           <span>{p.toLocaleString()}</span><span>{q}</span>
         </div>
       ))}
     </div>,
     <div key={3} style={{ padding: 18, fontSize: 13 }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <span style={{ flex: 1, textAlign: 'center', background: '#47764f', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Long</span>
-        <span style={{ flex: 1, textAlign: 'center', background: '#a13a26', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Short</span>
+        <span style={{ flex: 1, textAlign: 'center', background: '#2d9e6b', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Long</span>
+        <span style={{ flex: 1, textAlign: 'center', background: '#8b3a2a', color: '#fff', borderRadius: 8, padding: '7px 0', fontWeight: 700 }}>Short</span>
       </div>
       {[['Leverage', '10×'], ['Margin', '$500'], ['Liq. (approx)', 'L 56,200 · S 68,400']].map(([a, b], i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: `1px solid ${LINE}` }}>
@@ -250,7 +250,7 @@ export function MarketingPage() {
 
   const wrap: any = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
   const pill: any = { borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14.5, display: 'inline-block' }
-  const h2: any = { fontSize: 'clamp(30px,4.6vw,52px)', fontWeight: 800, letterSpacing: '-.02em', color: INK, margin: '0 0 14px', lineHeight: 1.08, fontFamily: 'var(--font-ui, Inter, sans-serif)' }
+  const h2: any = { fontSize: 'clamp(30px,4.6vw,52px)', fontWeight: 600, letterSpacing: '-.02em', color: INK, margin: '0 0 14px', lineHeight: 1.08, fontFamily: 'var(--font-display, Georgia, serif)' }
   const cardS: any = { background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, boxShadow: '0 2px 12px rgba(25,21,18,0.05)' }
   const usdN = parseFloat(usd) || 0
 
@@ -266,7 +266,7 @@ export function MarketingPage() {
         /* ── AI-trading-bot thumbnail hero ── */
         @keyframes jtDash{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
         @keyframes jtGrow{0%,100%{transform:scaleY(1);opacity:.9}50%{transform:scaleY(1.12);opacity:1}}
-        @keyframes jtGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(194,85,59,.45))}50%{filter:drop-shadow(0 0 26px rgba(194,85,59,.8))}}
+        @keyframes jtGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(184,84,47,.45))}50%{filter:drop-shadow(0 0 26px rgba(184,84,47,.8))}}
         @keyframes jtBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes jtWave{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
         @keyframes jtBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.12)}}
@@ -313,7 +313,7 @@ export function MarketingPage() {
         <section style={{ position: 'relative', minHeight: 'min(78vh, 680px)', overflow: 'hidden', background: BG }}>
 
           {/* Paper Ledger field: warm paper + drifting constellation dots */}
-          <div aria-hidden className="hero-glow" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(194,85,59,0.30) 1.4px, transparent 1.6px), radial-gradient(rgba(36,33,27,0.14) 1.1px, transparent 1.3px)', backgroundSize: '96px 96px, 148px 148px', backgroundPosition: '0 0, 48px 64px' }} />
+          <div aria-hidden className="hero-glow" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(184,84,47,0.30) 1.4px, transparent 1.6px), radial-gradient(rgba(11,18,32,0.14) 1.1px, transparent 1.3px)', backgroundSize: '96px 96px, 148px 148px', backgroundPosition: '0 0, 48px 64px' }} />
 
           {/* whisper ledger grid */}
           <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: `linear-gradient(${LINE} 1px, transparent 1px), linear-gradient(90deg, ${LINE} 1px, transparent 1px)`, backgroundSize: '76px 76px' }} />
@@ -327,8 +327,8 @@ export function MarketingPage() {
               { x: 625, y: 60, h: 85, up: true },
             ].map((c, i) => (
               <g key={i} className="jt-candlebar" style={{ ['--d' as any]: `${3 + (i % 4) * 0.5}s`, ['--dl' as any]: `${-i * 0.4}s` }}>
-                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? 'rgba(71,118,79,0.75)' : 'rgba(161,58,38,0.45)'} strokeWidth="3" />
-                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? 'rgba(71,118,79,0.30)' : 'rgba(161,58,38,0.18)'} stroke={c.up ? 'rgba(71,118,79,0.8)' : 'rgba(161,58,38,0.5)'} strokeWidth="1.5" />
+                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? 'rgba(45,158,107,0.75)' : 'rgba(139,58,42,0.45)'} strokeWidth="3" />
+                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? 'rgba(45,158,107,0.30)' : 'rgba(139,58,42,0.18)'} stroke={c.up ? 'rgba(45,158,107,0.8)' : 'rgba(139,58,42,0.5)'} strokeWidth="1.5" />
               </g>
             ))}
             <path className="jt-line" d="M20,400 L110,380 L180,330 L250,300 L320,315 L390,240 L460,205 L530,225 L600,140 L670,80"
@@ -458,12 +458,12 @@ export function MarketingPage() {
 
           {/* stacked thumbnail headline, left */}
           <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '15vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 700, color: INK, letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
-            <div style={{ display: 'inline-block', background: ORANGE, color: BG, fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 8, margin: '8px 0', boxShadow: '0 10px 26px rgba(36,33,27,0.14)' }}>{T.thEasiest}</div>
-            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 700, color: INK, letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
-            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 700, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0', color: INK }}>
+            <div style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 500, color: INK, letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
+            <div style={{ fontFamily: 'var(--font-display, Georgia, serif)', display: 'inline-block', background: ORANGE, color: '#faf6ec', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 8, margin: '8px 0', boxShadow: '0 10px 26px rgba(11,18,32,0.14)' }}>{T.thEasiest}</div>
+            <div style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 500, color: INK, letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
+            <div style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 'clamp(44px,6vw,74px)', fontWeight: 500, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0', color: INK }}>
               <span>{T.thAi}</span>{' '}
-              <span style={{ color: ORANGE }}>{T.thBot}</span>
+              <span style={{ color: ORANGE, fontStyle: 'italic' }}>{T.thBot}</span>
             </div>
 
             {/* BUILD → AI → PROFIT strip */}
@@ -475,7 +475,7 @@ export function MarketingPage() {
               ].map((s, i) => (
                 <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span className="jt-step" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6, ['--dl' as any]: `${-i}s` }}>
-                    <span style={{ width: 62, height: 50, borderRadius: 8, border: `1.5px solid ${s.color}`, background: CARD, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 700, color: s.color, fontFamily: '"JetBrains Mono",ui-monospace,monospace', boxShadow: '0 4px 14px rgba(36,33,27,0.07)' }}>{s.icon}</span>
+                    <span style={{ width: 62, height: 50, borderRadius: 8, border: `1.5px solid ${s.color}`, background: CARD, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 700, color: s.color, fontFamily: '"JetBrains Mono",ui-monospace,monospace', boxShadow: '0 4px 14px rgba(11,18,32,0.07)' }}>{s.icon}</span>
                     <span style={{ ...mono, fontSize: 12, fontWeight: 600, color: INK, letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 400, color: FAINT, textTransform: 'lowercase' }}> · {s.note}</span>}</span>
                   </span>
                   {i < 2 && <span style={{ color: ORANGE, fontWeight: 700, fontSize: 20, marginBottom: 20 }}>›</span>}
@@ -487,7 +487,7 @@ export function MarketingPage() {
             <p style={{ ...serif, fontSize: 18, fontWeight: 400, color: MUT, margin: '30px 0 16px', lineHeight: 1.55, maxWidth: 460 }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <Link to="/register" style={{ ...pill, background: ORANGE, color: BG, padding: '13px 24px', fontSize: 15, borderRadius: 6 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: 'rgba(255,255,255,0.7)', color: INK, padding: '13px 24px', fontSize: 15, borderRadius: 6, border: '1.5px solid #c9c2b2' }}>◆ {T.ctaBoard}</Link>
+              <Link to="/login" style={{ ...pill, background: 'rgba(255,255,255,0.7)', color: INK, padding: '13px 24px', fontSize: 15, borderRadius: 6, border: '1.5px solid rgba(11,18,32,0.30)' }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
@@ -498,9 +498,9 @@ export function MarketingPage() {
         </section>
 
         {/* ══ floating bottom dock (Jeton's signature nav) — persists on scroll ══ */}
-        <nav style={{ position: 'fixed', zIndex: 60, left: '50%', transform: 'translateX(-50%)', bottom: 18, display: 'flex', alignItems: 'center', gap: 4, background: ORANGE, borderRadius: 999, padding: '7px 10px', boxShadow: '0 14px 40px rgba(36,33,27,0.25)' }}>
+        <nav style={{ position: 'fixed', zIndex: 60, left: '50%', transform: 'translateX(-50%)', bottom: 18, display: 'flex', alignItems: 'center', gap: 4, background: ORANGE, borderRadius: 999, padding: '7px 10px', boxShadow: '0 14px 40px rgba(11,18,32,0.25)' }}>
           <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-            style={{ width: 34, height: 34, borderRadius: '50%', background: '#fff', color: ORANGE, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, textDecoration: 'none' }}>⌂</a>
+            style={{ width: 34, height: 34, borderRadius: '50%', background: '#faf6ec', color: ORANGE, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, textDecoration: 'none' }}>⌂</a>
           <a href="#product" style={{ color: '#fff', textDecoration: 'none', fontSize: 13.5, fontWeight: 700, padding: '8px 14px' }}>{T.dockProduct} ⌄</a>
           <Link to="/login" style={{ color: '#fff', textDecoration: 'none', fontSize: 13.5, fontWeight: 700, padding: '8px 14px' }}>{T.dockMarkets} ↗</Link>
           <a href="#voices" style={{ color: '#fff', textDecoration: 'none', fontSize: 13.5, fontWeight: 700, padding: '8px 14px' }}>{T.dockCompany} ⌄</a>
@@ -509,23 +509,23 @@ export function MarketingPage() {
         {/* ══ 1 · "Unify" — big centred headline with floating cards (Jeton) ══ */}
         <section id="product" style={{ padding: '11vh 0' }}>
           <div id="uni-stage" className="uni-stage" style={{ position: 'relative', maxWidth: 1180, margin: '0 auto', padding: '0 24px', minHeight: 760, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <h2 style={{ fontSize: 'clamp(56px,9.2vw,132px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 0.92, color: ORANGE, textAlign: 'center', margin: 0, maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)', position: 'relative', zIndex: 1 }}>
+            <h2 style={{ fontSize: 'clamp(56px,9.2vw,132px)', fontWeight: 500, fontStyle: 'italic', letterSpacing: '-.03em', lineHeight: 0.92, color: ORANGE, textAlign: 'center', margin: 0, maxWidth: 640, fontFamily: 'var(--font-display, Georgia, serif)', position: 'relative', zIndex: 1 }}>
               {T.unifyH}
             </h2>
 
             {/* order card (blue) — top right */}
             <div className="uni-card" data-dx="200" data-dy="-140" style={{ top: 8, right: -6 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#fff', border: '1.5px solid #c9c2b2', borderRadius: 12, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(36,33,27,0.28)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#faf6ec', border: '1.5px solid rgba(11,18,32,0.30)', borderRadius: 12, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(11,18,32,0.28)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 15 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: ORANGE, fontSize: 12 }}>▾</span></div>
                 <div style={{ ...mono, fontSize: 40, fontWeight: 800, margin: '12px 0 2px', letterSpacing: '-.02em' }}>$250</div>
                 <div style={{ fontSize: 13, color: MUT }}>{T.uniBalance}: $65,019.53</div>
-                <div style={{ ...mono, marginTop: 16, textAlign: 'center', background: 'rgba(194,85,59,0.10)', color: ORANGE, borderRadius: 8, padding: '11px 0', fontWeight: 600, fontSize: 13.5 }}>AI · {T.uniOrder}</div>
+                <div style={{ ...mono, marginTop: 16, textAlign: 'center', background: 'rgba(184,84,47,0.10)', color: ORANGE, borderRadius: 8, padding: '11px 0', fontWeight: 600, fontSize: 13.5 }}>AI · {T.uniOrder}</div>
               </div>
             </div>
 
             {/* AI decision card (green) — left */}
             <div className="uni-card" data-dx="-240" data-dy="-30" style={{ top: 176, left: -8 }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#4f8258,#3c6443)', color: '#faf8f3', borderRadius: 12, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(60,100,67,0.45)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#2d9e6b,#1f7350)', color: '#faf6ec', borderRadius: 12, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(31,115,80,0.45)' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, opacity: 0.92 }}>⇄ {T.uniDecision}</div>
                 <div style={{ ...mono, fontSize: 32, fontWeight: 800, marginTop: 10, letterSpacing: '-.01em' }}>BUY · 72%</div>
                 <div style={{ ...mono, fontSize: 16, fontWeight: 700, opacity: 0.95, marginTop: 2 }}>BTC/USDT</div>
@@ -535,22 +535,22 @@ export function MarketingPage() {
 
             {/* analyst card (pink) — bottom centre */}
             <div className="uni-card" data-dx="20" data-dy="200" style={{ bottom: 6, left: '41%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#f3efe6', border: `1px solid ${LINE}`, borderRadius: 12, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(36,33,27,0.24)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#e8dfc8', border: `1px solid ${LINE}`, borderRadius: 12, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(11,18,32,0.24)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#c2553b,#a13a26)', color: '#faf8f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>NA</span>
+                  <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#b8542f,#8b3a2a)', color: '#faf6ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>NA</span>
                   <span style={{ fontWeight: 700, color: ORANGE, fontSize: 15 }}>{T.uniAnalyst}</span>
                 </div>
                 <div style={{ ...mono, textAlign: 'center', fontSize: 12, color: MUT, margin: '12px 0' }}>🔒 {T.uniReasoning}</div>
-                <div style={{ textAlign: 'center', background: '#fff', border: `1px solid ${LINE}`, borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 14.5, color: ORANGE }}>{T.uniRun}</div>
+                <div style={{ textAlign: 'center', background: '#faf6ec', border: `1px solid ${LINE}`, borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 14.5, color: ORANGE }}>{T.uniRun}</div>
               </div>
             </div>
 
             {/* live BTC mini-chart tile — top left */}
             <div className="uni-card" data-dx="-205" data-dy="-175" style={{ top: 24, left: '9%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#fff', border: '1px solid #e7e1d3', borderRadius: 12, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(36,33,27,0.22)' }}>
+              <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#faf6ec', border: '1px solid rgba(11,18,32,0.15)', borderRadius: 12, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(11,18,32,0.22)' }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: MUT, marginBottom: 8 }}>{T.uniLiveBtc}</div>
                 <svg viewBox="0 0 140 48" style={{ width: '100%', height: 48 }} aria-hidden>
-                  <polyline points="4,42 26,32 44,36 68,20 88,28 110,12 136,5" fill="none" stroke="#47764f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="4,42 26,32 44,36 68,20 88,28 110,12 136,5" fill="none" stroke="#2d9e6b" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <div style={{ ...mono, fontSize: 17, fontWeight: 800, marginTop: 8 }}>{btc ? `$${btc.price.toLocaleString()}` : '$62,180'}</div>
               </div>
@@ -558,8 +558,8 @@ export function MarketingPage() {
 
             {/* leaderboard tile — bottom right */}
             <div className="uni-card" data-dx="220" data-dy="155" style={{ bottom: 56, right: '3%' }}>
-              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#fff', border: '1px solid #e7e1d3', borderRadius: 12, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(36,33,27,0.22)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#47764f' }}>#1</span></div>
+              <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#faf6ec', border: '1px solid rgba(11,18,32,0.15)', borderRadius: 12, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(11,18,32,0.22)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#2d9e6b' }}>#1</span></div>
                 <div style={{ marginTop: 12, background: BG, borderRadius: 14, padding: '10px 14px', fontSize: 12.5, color: MUT }}>“{T.uniReconciled}”</div>
               </div>
             </div>
@@ -582,13 +582,13 @@ export function MarketingPage() {
         </section>
 
         {/* ══ 3 · "All your trading, in one app." — full-bleed coil + phone (Jeton) ══ */}
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '94vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(118deg,#24211b 0%,#3a2e26 38%,#7d352f 72%,#a1543b 100%)' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '94vh', display: 'flex', alignItems: 'center', background: 'linear-gradient(118deg,#0b1220 0%,#3a2e26 38%,#7d352f 72%,#a1543b 100%)' }}>
           {/* 3D-style coiled torus (bead rings) */}
           <svg viewBox="0 0 900 900" preserveAspectRatio="xMidYMid slice" aria-hidden
             style={{ position: 'absolute', right: '-10%', top: '50%', transform: 'translateY(-50%)', width: 'min(128vh, 1200px)', height: 'min(128vh, 1200px)' }}>
             <defs>
               <linearGradient id="gCoilA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e7a498" /><stop offset="48%" stopColor="#b5544a" /><stop offset="100%" stopColor="#7d352f" /></linearGradient>
-              <linearGradient id="gCoilB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ba377" /><stop offset="50%" stopColor="#47764f" /><stop offset="100%" stopColor="#2e4a33" /></linearGradient>
+              <linearGradient id="gCoilB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ba377" /><stop offset="50%" stopColor="#2d9e6b" /><stop offset="100%" stopColor="#2e4a33" /></linearGradient>
               <radialGradient id="gCore" cx="42%" cy="38%" r="70%"><stop offset="0%" stopColor="#e9b4a8" /><stop offset="100%" stopColor="#c07c72" /></radialGradient>
               <radialGradient id="gVig" cx="62%" cy="50%" r="60%"><stop offset="60%" stopColor="rgba(0,0,0,0)" /><stop offset="100%" stopColor="rgba(20,40,40,0.35)" /></radialGradient>
               <filter id="coilShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#3a1a16" floodOpacity="0.35" /></filter>
@@ -614,18 +614,18 @@ export function MarketingPage() {
           <div style={{ ...wrap, position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 30, flexWrap: 'wrap', width: '100%' }}>
             {/* left copy */}
             <div style={{ flex: '1 1 400px' }}>
-              <h2 style={{ fontSize: 'clamp(46px,6.6vw,86px)', fontWeight: 800, letterSpacing: '-.025em', lineHeight: 0.98, color: '#fff', margin: 0, fontFamily: 'var(--font-ui, Inter, sans-serif)', textShadow: '0 2px 30px rgba(20,40,40,0.3)' }}>
+              <h2 style={{ fontSize: 'clamp(46px,6.6vw,86px)', fontWeight: 500, letterSpacing: '-.025em', lineHeight: 0.98, color: '#faf6ec', margin: 0, fontFamily: 'var(--font-display, Georgia, serif)', textShadow: '0 2px 30px rgba(20,40,40,0.3)' }}>
                 {T.appHeroH1}<br />{T.appHeroH2}
               </h2>
               <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.92)', margin: '24px 0 32px' }}>{T.appHeroS}</p>
-              <Link to="/register" style={{ ...pill, background: '#fff', color: ORANGE, padding: '16px 34px', fontSize: 16.5 }}>{T.getStarted}</Link>
+              <Link to="/register" style={{ ...pill, background: '#faf6ec', color: ORANGE, padding: '16px 34px', fontSize: 16.5 }}>{T.getStarted}</Link>
             </div>
 
             {/* phone mockup */}
             <div style={{ flex: '0 1 340px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
               <div aria-hidden style={{ position: 'absolute', inset: '-8% -4%', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(255,255,255,0.22), transparent)' }} />
               <div className="uni-phone" style={{ width: 300, background: 'linear-gradient(160deg,#20242e,#05070c)', borderRadius: 52, padding: 12, boxShadow: '0 50px 110px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.12), inset 0 0 0 6px #0a0d16', position: 'relative', zIndex: 1 }}>
-                <div style={{ position: 'relative', borderRadius: 42, overflow: 'hidden', background: 'linear-gradient(168deg,#c2553b 0%,#d97a4f 55%,#e8b28e 100%)', height: 588, padding: '20px 20px 0' }}>
+                <div style={{ position: 'relative', borderRadius: 42, overflow: 'hidden', background: 'linear-gradient(168deg,#b8542f 0%,#d97a4f 55%,#e8b28e 100%)', height: 588, padding: '20px 20px 0' }}>
                   {/* dynamic island */}
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 108, height: 30, background: '#05070c', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 12 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1d2b3a' }} />
@@ -641,7 +641,7 @@ export function MarketingPage() {
                     <div style={{ ...mono, color: 'rgba(122,46,24,0.8)', fontSize: 12, marginTop: 5 }}>BTC · executed</div>
                   </div>
                   <div style={{ position: 'absolute', right: 26, bottom: 84, width: 134, height: 84, borderRadius: 16, background: 'rgba(255,255,255,0.94)', transform: 'rotate(9deg)', boxShadow: '0 16px 38px rgba(120,30,20,0.3)', padding: 12 }}>
-                    <div style={{ ...mono, color: '#47764f', fontWeight: 800, fontSize: 15 }}>+ paper</div>
+                    <div style={{ ...mono, color: '#2d9e6b', fontWeight: 800, fontSize: 15 }}>+ paper</div>
                     <div style={{ ...mono, color: '#6b7280', fontSize: 11, marginTop: 4 }}>live price</div>
                   </div>
                 </div>
@@ -671,7 +671,7 @@ export function MarketingPage() {
           <p style={{ color: MUT, marginBottom: 28 }}>{T.convD}</p>
           <div style={{ ...cardS, display: 'inline-flex', alignItems: 'center', gap: 16, padding: '20px 28px', flexWrap: 'wrap', justifyContent: 'center', borderRadius: 24 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#47764f', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>$</span>
+              <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#2d9e6b', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>$</span>
               <input value={usd} onChange={e => setUsd(e.target.value.replace(/[^0-9.]/g, ''))}
                 style={{ ...mono, width: 110, fontSize: 17, fontWeight: 700, border: `1px solid ${LINE}`, borderRadius: 10, padding: '8px 10px', background: BG, color: INK }} />
               <b>USDT</b>
@@ -682,7 +682,7 @@ export function MarketingPage() {
               <b style={{ ...mono, fontSize: 17 }}>{btc ? (usdN / btc.price).toFixed(6) : '…'}</b>
               <b>BTC</b>
             </span>
-            <span style={{ ...mono, fontSize: 12.5, color: btc && btc.pct >= 0 ? '#47764f' : '#a13a26', width: '100%', textAlign: 'center' }}>
+            <span style={{ ...mono, fontSize: 12.5, color: btc && btc.pct >= 0 ? '#2d9e6b' : '#8b3a2a', width: '100%', textAlign: 'center' }}>
               {btc ? `1 BTC = ${btc.price.toLocaleString()} USDT · ${btc.pct >= 0 ? '+' : ''}${btc.pct.toFixed(2)}% 24h · live` : 'loading live price…'}
             </span>
           </div>
@@ -704,10 +704,10 @@ export function MarketingPage() {
         </section>
 
         {/* ══ 7 · extra-bold closer ("1 million users, plus you.") ══ */}
-        <section style={{ background: 'linear-gradient(135deg,#c2553b,#d97a4f)', padding: '13vh 24px', textAlign: 'center' }}>
+        <section style={{ background: 'linear-gradient(135deg,#b8542f,#d97a4f)', padding: '13vh 24px', textAlign: 'center' }}>
           <h2 style={{ ...h2, color: '#fff', fontSize: 'clamp(38px,6.4vw,74px)', maxWidth: 900, margin: '0 auto 14px' }}>{T.boldH}</h2>
           <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 17.5, margin: '0 0 32px' }}>{T.boldS}</p>
-          <Link to="/register" style={{ ...pill, background: '#fff', color: CORAL, padding: '15px 32px', fontSize: 16.5 }}>{T.signup}</Link>
+          <Link to="/register" style={{ ...pill, background: '#faf6ec', color: CORAL, padding: '15px 32px', fontSize: 16.5 }}>{T.signup}</Link>
         </section>
 
         {/* ══ 8 · footer (multi-column) ══ */}
