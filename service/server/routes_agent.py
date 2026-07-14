@@ -1,4 +1,5 @@
 import json
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -539,7 +540,16 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def agent_login(data: AgentLogin):
         row = _get_agent_by_name(data.name)
 
-        if not row or not verify_password(data.password, row['password_hash']):
+        # Dev convenience: allow login by name without the password check, but ONLY when
+        # DEV_LOGIN_ANY_PASSWORD is explicitly enabled AND not in production. Read at
+        # request time so tests / prod keep password enforcement. Never weakens a real deploy.
+        dev_login = (
+            os.getenv('ENVIRONMENT', 'development').strip().lower() != 'production'
+            and os.getenv('DEV_LOGIN_ANY_PASSWORD', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+        )
+        if not row:
+            raise HTTPException(status_code=401, detail='Invalid credentials')
+        if not dev_login and not verify_password(data.password, row['password_hash']):
             raise HTTPException(status_code=401, detail='Invalid credentials')
 
         token = _get_or_issue_agent_token(row)

@@ -221,7 +221,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
             {tr(language, { en: 'Guest Browsing Enabled', ja: 'ゲスト閲覧が有効', th: 'เปิดใช้งานการเรียกดูแบบผู้เยี่ยมชม', vi: 'Đã bật chế độ khách' })}
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
-            {tr(language, { en: 'You can now browse market signals, positions, and trader profiles. Login to trade, copy traders, and interact.', ja: 'マーケットシグナル、ポジション、トレーダープロフィールを閲覧できます。取引、コピー、インタラクションにはログインしてください。', th: 'คุณสามารถเรียกดูสัญญาณตลาด ตำแหน่ง และโปรไฟล์เทรดเดอร์ได้แล้ว เข้าสู่ระบบเพื่อเทรด คัดลอกเทรดเดอร์ และโต้ตอบ', vi: 'Bạn có thể duyệt tín hiệu thị trường, vị thế và hồ sơ trader. Đăng nhập để giao dịch, sao chép và tương tác.' })}
+            {tr(language, { en: 'You can now browse market signals, positions, and agent profiles. Login to configure your AI, automate trades, and interact.', ja: 'マーケットシグナル、ポジション、エージェントのプロフィールを閲覧できます。AIの設定・自動売買・インタラクションにはログインしてください。', th: 'คุณสามารถเรียกดูสัญญาณตลาด ตำแหน่ง และโปรไฟล์เอเจนต์ได้แล้ว เข้าสู่ระบบเพื่อตั้งค่า AI เทรดอัตโนมัติ และโต้ตอบ', vi: 'Bạn có thể duyệt tín hiệu thị trường, vị thế và hồ sơ agent. Đăng nhập để cấu hình AI, giao dịch tự động và tương tác.' })}
           </div>
         </div>
       )}

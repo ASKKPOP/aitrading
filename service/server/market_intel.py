@@ -1532,6 +1532,185 @@ def refresh_stock_analysis_snapshots() -> dict[str, Any]:
     }
 
 
+# ── Local-dev market-intel seed (works with no external API keys) ──────────────
+def _dev_market_intel_enabled() -> bool:
+    """Dev-only: gate seed on DEV_MARKET_INTEL_SEED and never in production."""
+    if os.getenv("ENVIRONMENT", "development").strip().lower() == "production":
+        return False
+    return os.getenv("DEV_MARKET_INTEL_SEED", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _dev_av_ts(now: datetime, hours_ago: float) -> str:
+    return (now - timedelta(hours=hours_ago)).strftime("%Y%m%dT%H%M%S")
+
+
+_DEV_NEWS: dict[str, list[tuple]] = {
+    "equities": [
+        ("S&P 500 grinds higher as megacap earnings beat", "MarketPulse", "Broad indices edged up after strong megacap results.", "Bullish", 0.34, [("SPY", 0.9, 0.30, "Bullish"), ("NVDA", 0.6, 0.45, "Bullish")]),
+        ("Growth reclaims leadership as value rotation cools", "StreetWire", "Growth names outperformed value into the close.", "Somewhat-Bullish", 0.18, [("QQQ", 0.8, 0.22, "Bullish")]),
+        ("Buybacks accelerate across large-cap tech", "CapitalDesk", "Corporates stepped up repurchases this quarter.", "Neutral", 0.05, [("AAPL", 0.5, 0.10, "Neutral")]),
+    ],
+    "macro": [
+        ("Inflation print lands in line, easing rate-cut worries", "MacroLens", "Headline CPI matched expectations.", "Somewhat-Bullish", 0.20, [("SPY", 0.4, 0.15, "Bullish")]),
+        ("Labor market stays resilient but softens at the margin", "PolicyWatch", "Payrolls cooled modestly.", "Neutral", 0.00, []),
+        ("Dollar steadies as yields hold their range", "MacroLens", "The dollar index traded roughly flat.", "Neutral", -0.02, [("UUP", 0.5, -0.05, "Neutral")]),
+    ],
+    "crypto": [
+        ("Bitcoin holds key support as ETF demand persists", "ChainSignal", "BTC stayed firm on steady inflows.", "Bullish", 0.40, [("CRYPTO:BTC", 0.95, 0.42, "Bullish")]),
+        ("Ether outperforms as staking activity climbs", "BlockDesk", "ETH led the majors higher.", "Somewhat-Bullish", 0.24, [("CRYPTO:ETH", 0.8, 0.28, "Bullish")]),
+        ("Funding rates normalize after volatility spike", "ChainSignal", "Perp funding cooled back to neutral.", "Neutral", 0.03, [("CRYPTO:BTC", 0.6, 0.05, "Neutral")]),
+    ],
+    "commodities": [
+        ("Crude steadies as supply risk offsets demand doubts", "EnergyBeat", "Oil traded in a tight range.", "Neutral", 0.00, [("USO", 0.6, 0.02, "Neutral")]),
+        ("Gold firms as real yields dip", "MetalsWire", "Bullion caught a modest bid.", "Somewhat-Bullish", 0.16, [("GLD", 0.7, 0.20, "Bullish")]),
+        ("Freight rates ease on improving logistics", "TradeFlow", "Shipping costs softened week over week.", "Neutral", -0.04, []),
+    ],
+}
+
+
+def _dev_news_raw(category: str, now: datetime) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for i, (title, source, summ, label, score, tickers) in enumerate(_DEV_NEWS.get(category, [])):
+        out.append({
+            "title": title,
+            "url": f"https://example.dev/news/{category}/{i}",
+            "source": source,
+            "summary": summ,
+            "banner_image": None,
+            "time_published": _dev_av_ts(now, 1.5 * (i + 1)),
+            "overall_sentiment_score": score,
+            "overall_sentiment_label": label,
+            "ticker_sentiment": [
+                {"ticker": t, "relevance_score": rel, "ticker_sentiment_score": ss, "ticker_sentiment_label": sl}
+                for (t, rel, ss, sl) in tickers
+            ],
+            "topics": [{"topic": category, "relevance_score": 0.9}],
+        })
+    return out
+
+
+def _dev_macro(now: datetime) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    as_of = now.strftime("%Y-%m-%d")
+    signals = [
+        {"id": "btc_trend", "label": "BTC trend", "label_zh": "BTC 趋势", "status": "bullish", "value": 5.4, "unit": "%", "lookback_days": 7, "explanation": "BTC momentum remains positive over the last week.", "explanation_zh": "BTC 最近一周动量偏强。", "source": "DIGITAL_CURRENCY_DAILY", "as_of": as_of},
+        {"id": "qqq_trend", "label": "QQQ trend", "label_zh": "QQQ 趋势", "status": "bullish", "value": 3.8, "unit": "%", "lookback_days": 20, "explanation": "Growth equities are trending higher.", "explanation_zh": "成长股整体趋势向上。", "source": "TIME_SERIES_DAILY_ADJUSTED", "as_of": as_of},
+        {"id": "qqq_vs_xlp", "label": "QQQ vs XLP", "label_zh": "QQQ 相对 XLP", "status": "bullish", "value": 2.5, "unit": "spread_pct", "lookback_days": 20, "explanation": "Growth is outperforming defensive staples.", "explanation_zh": "成长板块显著跑赢防御消费。", "source": "TIME_SERIES_DAILY_ADJUSTED", "as_of": as_of},
+        {"id": "safe_haven_pressure", "label": "Safe-haven pressure", "label_zh": "避险压力", "status": "neutral", "value": 1.1, "unit": "%", "lookback_days": 20, "explanation": "Safe-haven demand is present but not dominant.", "explanation_zh": "避险需求存在，但并不极端。", "source": "TIME_SERIES_DAILY_ADJUSTED", "as_of": as_of},
+    ]
+    snapshot = {
+        "verdict": "bullish", "bullish_count": 3, "total_count": 4,
+        "meta": {
+            "summary": "Risk appetite is leading across the current macro snapshot.",
+            "summary_zh": "当前宏观快照整体偏向风险偏好。",
+            "defensive_count": 0,
+            "latest_prices": {"BTC": 62740.0, "QQQ": 452.3, "XLP": 79.1, "GLD": 214.6, "UUP": 28.4},
+        },
+        "source": {"alpha_vantage_functions": ["TIME_SERIES_DAILY_ADJUSTED", "DIGITAL_CURRENCY_DAILY"], "news_dependency": "market_news_snapshots.macro", "note": "dev sample data"},
+    }
+    return signals, snapshot
+
+
+def _dev_etf(now: datetime) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    as_of = now.strftime("%Y-%m-%d")
+    etfs = [
+        {"symbol": "IBIT", "name": "iShares Bitcoin Trust", "latest_volume": 41200000, "avg_volume": 33800000, "volume_ratio": 1.22, "estimated_flow_score": 2.4, "direction": "inflow", "as_of": as_of},
+        {"symbol": "FBTC", "name": "Fidelity Wise Origin Bitcoin", "latest_volume": 12800000, "avg_volume": 11100000, "volume_ratio": 1.15, "estimated_flow_score": 1.1, "direction": "inflow", "as_of": as_of},
+        {"symbol": "GBTC", "name": "Grayscale Bitcoin Trust", "latest_volume": 6400000, "avg_volume": 7300000, "volume_ratio": 0.88, "estimated_flow_score": -0.6, "direction": "outflow", "as_of": as_of},
+    ]
+    summary = {"direction": "inflow", "summary": "Estimated BTC ETF flow leans positive.", "summary_zh": "估算的 BTC ETF 资金方向整体偏流入。", "inflow_count": 2, "outflow_count": 1, "tracked_count": 3, "net_score": 2.9, "is_estimated": True}
+    return etfs, summary
+
+
+def _dev_stock_row(symbol: str, price: float, signal: str, score: float, trend: str, bull: list[str], risk: list[str], as_of: str, created_at: str) -> tuple:
+    analysis = {
+        "symbol": symbol, "market": "us-stock", "current_price": price,
+        "return_5d_pct": round(score * 1.1, 2), "return_20d_pct": round(score * 2.2, 2),
+        "moving_averages": {"ma5": round(price * 0.99, 2), "ma10": round(price * 0.985, 2), "ma20": round(price * 0.97, 2), "ma60": round(price * 0.94, 2)},
+        "support_levels": [round(price * 0.95, 2)], "resistance_levels": [round(price * 1.05, 2)],
+        "distance_to_support_pct": 5.0, "distance_to_resistance_pct": 5.0,
+        "signal": signal, "signal_score": score, "trend_status": trend,
+        "bullish_factors": bull, "risk_factors": risk, "as_of": as_of,
+    }
+    summary_text = f"{symbol} looks {trend}: {'; '.join(bull[:2]) or 'signals are mixed'}."
+    analysis["summary"] = summary_text
+    return (
+        symbol, "us-stock", f"dev-{symbol}-{created_at}", price, "USD", signal, score, trend,
+        json.dumps(analysis["support_levels"]), json.dumps(analysis["resistance_levels"]),
+        json.dumps(bull, ensure_ascii=True), json.dumps(risk, ensure_ascii=True),
+        summary_text, json.dumps(analysis, ensure_ascii=True), json.dumps([]), created_at,
+    )
+
+
+def _dev_stocks(now: datetime, created_at: str) -> list[tuple]:
+    as_of = now.strftime("%Y-%m-%d")
+    return [
+        _dev_stock_row("NVDA", 118.40, "buy", 3.5, "bullish", ["Price is above the 20-day moving average.", "Short-term momentum is positive."], [], as_of, created_at),
+        _dev_stock_row("AAPL", 214.90, "hold", 1.5, "constructive", ["Monthly trend remains constructive."], ["Price is approaching the recent resistance zone."], as_of, created_at),
+        _dev_stock_row("TSLA", 242.10, "watch", 0.0, "mixed", [], ["Moving averages are stacked in a bearish order."], as_of, created_at),
+    ]
+
+
+def seed_dev_market_intel() -> dict[str, Any]:
+    """Populate market-intel snapshots with sample data so the Financial Events board
+    works locally without external API keys. Seeds only empty tables (real data or a
+    prior seed is never overwritten). Gated by DEV_MARKET_INTEL_SEED — off in production."""
+    if not _dev_market_intel_enabled():
+        return {"skipped": "disabled"}
+    now = _utc_now()
+    created_at = _utc_now_iso_z()
+    seeded: dict[str, int] = {}
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM market_news_snapshots")
+        if cursor.fetchone()["c"] == 0:
+            for category in NEWS_CATEGORY_DEFINITIONS:
+                items = [it for it in (_normalize_news_item(r) for r in _dev_news_raw(category, now)) if it]
+                summary = _build_news_summary(category, items)
+                cursor.execute(
+                    "INSERT INTO market_news_snapshots (category, snapshot_key, items_json, summary_json, created_at) VALUES (?,?,?,?,?)",
+                    (category, f"{category}:{created_at}", json.dumps(items, ensure_ascii=True), json.dumps(summary, ensure_ascii=True), created_at),
+                )
+            seeded["news"] = len(NEWS_CATEGORY_DEFINITIONS)
+
+        cursor.execute("SELECT COUNT(*) AS c FROM macro_signal_snapshots")
+        if cursor.fetchone()["c"] == 0:
+            signals, snap = _dev_macro(now)
+            cursor.execute(
+                "INSERT INTO macro_signal_snapshots (snapshot_key, verdict, bullish_count, total_count, signals_json, meta_json, source_json, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                (f"macro:{created_at}", snap["verdict"], snap["bullish_count"], snap["total_count"], json.dumps(signals, ensure_ascii=True), json.dumps(snap["meta"], ensure_ascii=True), json.dumps(snap["source"], ensure_ascii=True), created_at),
+            )
+            seeded["macro"] = 1
+
+        cursor.execute("SELECT COUNT(*) AS c FROM etf_flow_snapshots")
+        if cursor.fetchone()["c"] == 0:
+            etfs, summary = _dev_etf(now)
+            cursor.execute(
+                "INSERT INTO etf_flow_snapshots (snapshot_key, summary_json, etfs_json, created_at) VALUES (?,?,?,?)",
+                (f"etf:{created_at}", json.dumps(summary, ensure_ascii=True), json.dumps(etfs, ensure_ascii=True), created_at),
+            )
+            seeded["etf"] = 1
+
+        cursor.execute("SELECT COUNT(*) AS c FROM stock_analysis_snapshots")
+        if cursor.fetchone()["c"] == 0:
+            rows = _dev_stocks(now, created_at)
+            cursor.executemany(
+                "INSERT INTO stock_analysis_snapshots (symbol, market, analysis_id, current_price, currency, signal, signal_score, trend_status, support_levels_json, resistance_levels_json, bullish_factors_json, risk_factors_json, summary_text, analysis_json, news_json, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                rows,
+            )
+            seeded["stocks"] = len(rows)
+        conn.commit()
+    finally:
+        conn.close()
+
+    for pattern in (_cache_key("news", "*"), _cache_key("macro_signals"), _cache_key("etf_flows"), _cache_key("stocks", "*"), _cache_key("overview")):
+        try:
+            delete_pattern(pattern)
+        except Exception:
+            pass
+    return {"seeded": seeded, "created_at": created_at}
+
+
 def _get_stock_analysis_snapshot_payload(symbol: str) -> dict[str, Any]:
     symbol = symbol.strip().upper()
     cache_key = _cache_key("stocks", "snapshot_v1", symbol)

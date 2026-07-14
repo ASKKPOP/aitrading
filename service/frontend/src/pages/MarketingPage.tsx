@@ -52,25 +52,40 @@ export function MarketingPage() {
     return () => { alive = false; clearInterval(iv) }
   }, [])
 
-  // Jeton-style scroll parallax for the "Unify" floating cards.
+  // Jeton "Unify" scroll convergence: as the section moves toward viewport centre
+  // the floating cards fly in from a wide spread and scale up to rest, reversing on
+  // scroll-up. Driven by a rAF loop gated to when the section is near the viewport
+  // (IntersectionObserver) so it reacts to any scroll and stays idle-cheap off-screen.
   useEffect(() => {
     const stage = document.getElementById('uni-stage')
     if (!stage) return
-    let raf = 0
+    const cards = Array.from(stage.querySelectorAll<HTMLElement>('.uni-card'))
     const apply = () => {
+      const vh = window.innerHeight
       const rect = stage.getBoundingClientRect()
-      const offset = (rect.top + rect.height / 2) - window.innerHeight / 2
-      stage.querySelectorAll<HTMLElement>('[data-speed]').forEach((el) => {
-        const sp = parseFloat(el.dataset.speed || '0')
-        el.style.setProperty('--py', `${(-offset * sp).toFixed(1)}px`)
-      })
-      raf = 0
+      const offset = (rect.top + rect.height / 2) - vh / 2
+      const p = Math.max(0, Math.min(1, 1 - offset / (vh * 0.6))) // 0 spread → 1 converged
+      const e = p * p * (3 - 2 * p) // smoothstep
+      const spread = 1 - e
+      for (const el of cards) {
+        const dx = parseFloat(el.dataset.dx || '0')
+        const dy = parseFloat(el.dataset.dy || '0')
+        el.style.setProperty('--tx', `${(dx * spread).toFixed(1)}px`)
+        el.style.setProperty('--ty', `${(dy * spread).toFixed(1)}px`)
+        el.style.setProperty('--sc', (0.7 + 0.3 * e).toFixed(3))
+        el.style.setProperty('--op', (0.5 + 0.5 * e).toFixed(3))
+      }
     }
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply) }
+    let raf = 0, active = false
+    const loop = () => { apply(); if (active) raf = requestAnimationFrame(loop) }
+    const io = new IntersectionObserver((ents) => {
+      const vis = ents.some((en) => en.isIntersecting)
+      if (vis && !active) { active = true; loop() }
+      else if (!vis && active) { active = false; if (raf) cancelAnimationFrame(raf); raf = 0 }
+    }, { rootMargin: '200px 0px 200px 0px' })
+    io.observe(stage)
     apply()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf) }
+    return () => { active = false; if (raf) cancelAnimationFrame(raf); io.disconnect() }
   }, [])
 
   const T = {
@@ -78,18 +93,17 @@ export function MarketingPage() {
     signup: tr(language, { en: 'Sign up', ja: '登録', th: 'สมัคร', vi: 'Đăng ký' }),
     heroH1: tr(language, { en: 'One desk', ja: 'ひとつのデスクで', th: 'โต๊ะเดียว', vi: 'Một bàn giao dịch' }),
     heroH2: tr(language, { en: 'for all trades', ja: 'すべてのトレードを', th: 'สำหรับทุกเทรด', vi: 'cho mọi giao dịch' }),
-    heroS: tr(language, { en: 'Single simulated account for all your AI trading.', ja: 'AIトレードのためのひとつの模擬口座。', th: 'บัญชีจำลองเดียวสำหรับการเทรด AI ทั้งหมดของคุณ', vi: 'Một tài khoản mô phỏng cho mọi giao dịch AI.' }),
-    thThe: tr(language, { en: 'THE', ja: '最も', th: 'วิธีที่', vi: 'CÁCH' }),
-    thEasiest: tr(language, { en: 'EASIEST', ja: 'かんたんな', th: 'ง่ายที่สุด', vi: 'DỄ NHẤT' }),
-    thWay: tr(language, { en: 'WAY TO RUN AN', ja: '方法で動かす', th: 'ในการรันบอท', vi: 'ĐỂ CHẠY BOT' }),
+    heroS: tr(language, { en: 'Your AI reads the news, economic data, trending markets and price charts — then trades automatically on the rules you set. Tracked on live prices. Paper only, no real orders.', ja: 'あなたのAIがニュース・経済指標・トレンド市場・価格チャートを読み取り、あなたが設定したルールで自動売買。すべてライブ価格で追跡、模擬のみで実注文なし。', th: 'AI ของคุณอ่านข่าว ข้อมูลเศรษฐกิจ ตลาดที่กำลังมาแรง และกราฟราคา — แล้วเทรดอัตโนมัติตามกฎที่คุณตั้ง ติดตามด้วยราคาสด จำลองเท่านั้น ไม่มีคำสั่งจริง', vi: 'AI của bạn đọc tin tức, dữ liệu kinh tế, thị trường xu hướng và biểu đồ giá — rồi giao dịch tự động theo quy tắc bạn đặt. Theo giá trực tiếp. Chỉ mô phỏng, không lệnh thật.' }),
+    thThe: tr(language, { en: 'TRADING ON', ja: '自動売買を', th: 'เทรดแบบ', vi: 'GIAO DỊCH' }),
+    thEasiest: tr(language, { en: 'AUTOPILOT', ja: 'オートパイロット', th: 'ออโต้ไพลอต', vi: 'TỰ ĐỘNG' }),
+    thWay: tr(language, { en: 'POWERED BY', ja: 'で動かす', th: 'ขับเคลื่อนโดย', vi: 'DẪN DẮT BỞI' }),
     thAi: tr(language, { en: 'AI', ja: 'AI', th: 'AI', vi: 'AI' }),
-    thTrading: tr(language, { en: 'TRADING', ja: 'トレーディング', th: 'เทรดดิ้ง', vi: 'GIAO DỊCH' }),
-    thBot: tr(language, { en: 'BOT', ja: 'ボット', th: 'บอท', vi: 'BOT' }),
-    stBuild: tr(language, { en: 'BUILD', ja: '構築', th: 'สร้าง', vi: 'XÂY' }),
-    stAi: tr(language, { en: 'AI', ja: 'AI', th: 'AI', vi: 'AI' }),
-    stProfit: tr(language, { en: 'PROFIT', ja: '利益', th: 'กำไร', vi: 'LỢI NHUẬN' }),
+    thBot: tr(language, { en: 'ANALYSIS', ja: '分析', th: 'การวิเคราะห์', vi: 'PHÂN TÍCH' }),
+    stBuild: tr(language, { en: 'CONFIGURE', ja: '設定', th: 'ตั้งค่า', vi: 'CẤU HÌNH' }),
+    stAi: tr(language, { en: 'ANALYZE', ja: '分析', th: 'วิเคราะห์', vi: 'PHÂN TÍCH' }),
+    stProfit: tr(language, { en: 'AUTO-TRADE', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'TỰ ĐỘNG' }),
     stNote: tr(language, { en: 'paper only', ja: '模擬のみ', th: 'จำลองเท่านั้น', vi: 'chỉ mô phỏng' }),
-    ctaSim: tr(language, { en: 'Open simulator', ja: 'シミュレーターを開く', th: 'เปิดตัวจำลอง', vi: 'Mở trình mô phỏng' }),
+    ctaSim: tr(language, { en: 'Start trading', ja: 'トレードを始める', th: 'เริ่มเทรด', vi: 'Bắt đầu' }),
     ctaBoard: tr(language, { en: 'See leaderboard', ja: 'リーダーボード', th: 'ดูลีดเดอร์บอร์ด', vi: 'Xem bảng xếp hạng' }),
     scroll: tr(language, { en: 'Scroll', ja: 'スクロール', th: 'เลื่อน', vi: 'Cuộn' }),
     support: tr(language, { en: 'Support', ja: 'サポート', th: 'ซัพพอร์ต', vi: 'Hỗ trợ' }),
@@ -97,7 +111,7 @@ export function MarketingPage() {
     dockMarkets: tr(language, { en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
     dockCompany: tr(language, { en: 'Company', ja: '会社', th: 'บริษัท', vi: 'Công ty' }),
 
-    unifyH: tr(language, { en: 'Unify your trading', ja: 'トレードをひとつに', th: 'รวมการเทรดของคุณ', vi: 'Hợp nhất giao dịch' }),
+    unifyH: tr(language, { en: 'One AI reads it all', ja: 'ひとつのAIが全てを読む', th: 'AI เดียว อ่านทุกอย่าง', vi: 'Một AI đọc tất cả' }),
     tabs: [
       tr(language, { en: 'Analyze', ja: '分析', th: 'วิเคราะห์', vi: 'Phân tích' }),
       tr(language, { en: 'Automate', ja: '自動化', th: 'อัตโนมัติ', vi: 'Tự động' }),
@@ -108,25 +122,25 @@ export function MarketingPage() {
     tabDesc: [
       tr(language, { en: 'Four AI analysts read news, sentiment, macro and charts — a trader and risk manager debate the call.', ja: '4人のAIアナリストが読み、トレーダーとリスク管理者が議論します。', th: 'นักวิเคราะห์ AI สี่คนอ่านข้อมูล — เทรดเดอร์และผู้จัดการความเสี่ยงถกเถียงกัน', vi: 'Bốn nhà phân tích AI đọc dữ liệu — trader và quản trị rủi ro tranh luận.' }),
       tr(language, { en: 'Set symbol, model, schedule and confidence. It trades only when your rules are met.', ja: '銘柄・モデル・スケジュール・信頼度を設定。条件を満たした時だけ取引。', th: 'ตั้งเหรียญ โมเดล ตาราง และความมั่นใจ มันเทรดเมื่อเข้าเงื่อนไขเท่านั้น', vi: 'Đặt mã, mô hình, lịch và độ tin cậy. Chỉ giao dịch khi đủ điều kiện.' }),
-      tr(language, { en: 'A real OKX order book, live prices, instant simulated fills.', ja: '本物のOKX板・ライブ価格・即時の模擬約定。', th: 'สมุดคำสั่ง OKX จริง ราคาสด เติมจำลองทันที', vi: 'Sổ lệnh OKX thật, giá trực tiếp, khớp mô phỏng tức thì.' }),
+      tr(language, { en: 'A live order book, real-time prices, instant simulated fills.', ja: 'ライブ板・リアルタイム価格・即時の模擬約定。', th: 'สมุดคำสั่งสด ราคาเรียลไทม์ เติมจำลองทันที', vi: 'Sổ lệnh trực tiếp, giá thời gian thực, khớp mô phỏng tức thì.' }),
       tr(language, { en: 'Long or short with 1–100× sizing and a liquidation preview.', ja: '1〜100倍のロング/ショートと清算プレビュー。', th: 'Long/Short ขนาด 1–100× พร้อมพรีวิวล้างพอร์ต', vi: 'Long hoặc short 1–100× kèm xem trước thanh lý.' }),
       tr(language, { en: 'Cash, holdings and PnL in one view — every number reconciles.', ja: '現金・保有・損益をひと目で。', th: 'เงินสด ถือครอง กำไรขาดทุนในหน้าเดียว', vi: 'Tiền, nắm giữ và PnL trong một màn hình.' }),
     ],
 
-    orangeLead: tr(language, { en: 'All markets. One desk.', ja: 'すべての市場を、ひとつのデスクで。', th: 'ทุกตลาด โต๊ะเดียว', vi: 'Mọi thị trường. Một bàn.' }),
+    orangeLead: tr(language, { en: 'How it works.', ja: '仕組み。', th: 'ทำงานอย่างไร', vi: 'Cách hoạt động.' }),
     props: [
-      { t: tr(language, { en: 'AI that argues before it acts', ja: '行動の前に議論するAI', th: 'AI ที่ถกเถียงก่อนลงมือ', vi: 'AI tranh luận trước khi hành động' }), d: tr(language, { en: 'Every decision ships with a confidence score and written reasoning.', ja: 'すべての判断に信頼度と理由が付属。', th: 'ทุกการตัดสินใจมาพร้อมคะแนนความมั่นใจและเหตุผล', vi: 'Mỗi quyết định kèm điểm tin cậy và lý do.' }) },
-      { t: tr(language, { en: 'Trade crypto, US stocks and events', ja: '暗号資産・米国株・イベント市場', th: 'เทรดคริปโต หุ้นสหรัฐ และตลาดเหตุการณ์', vi: 'Crypto, cổ phiếu Mỹ và sự kiện' }), d: tr(language, { en: 'Live prices from OKX, Hyperliquid, Alpha Vantage and Polymarket.', ja: 'OKX・Hyperliquid・Alpha Vantage・Polymarketのライブ価格。', th: 'ราคาสดจาก OKX, Hyperliquid, Alpha Vantage และ Polymarket', vi: 'Giá trực tiếp từ OKX, Hyperliquid, Alpha Vantage, Polymarket.' }) },
-      { t: tr(language, { en: '8 AI providers, or your own', ja: '8つのAIプロバイダー', th: 'ผู้ให้บริการ AI 8 ราย หรือของคุณเอง', vi: '8 nhà cung cấp AI, hoặc của bạn' }), d: tr(language, { en: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude, OpenRouter — or a local model.', ja: 'OpenAI・Gemini・Grok・Qwen・GLM・Claude・ローカル。', th: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude — หรือโมเดลโลคอล', vi: 'OpenAI, Gemini, Grok, Qwen, GLM, Claude — hoặc mô hình cục bộ.' }) },
-      { t: tr(language, { en: 'Fast and safe transactions', ja: '速くて安全な取引', th: 'ธุรกรรมเร็วและปลอดภัย', vi: 'Giao dịch nhanh và an toàn' }), d: tr(language, { en: 'Because every one of them is simulated. Learn free; risk nothing.', ja: 'すべて模擬取引だから。無料で学び、リスクはゼロ。', th: 'เพราะทั้งหมดเป็นแบบจำลอง เรียนรู้ฟรี ไม่เสี่ยงอะไรเลย', vi: 'Vì tất cả đều mô phỏng. Học miễn phí; không rủi ro.' }) },
+      { t: tr(language, { en: 'AI reads the whole market', ja: 'AIが市場全体を読む', th: 'AI อ่านทั้งตลาด', vi: 'AI đọc toàn thị trường' }), d: tr(language, { en: 'News, economic data, trending markets and price charts — your AI analyzes them all before every trade, with a confidence score and written reasoning.', ja: 'ニュース・経済指標・トレンド市場・価格チャートを、AIが取引前にすべて分析。信頼度スコアと根拠付き。', th: 'ข่าว ข้อมูลเศรษฐกิจ ตลาดมาแรง และกราฟราคา — AI วิเคราะห์ทั้งหมดก่อนทุกการเทรด พร้อมคะแนนความมั่นใจและเหตุผล', vi: 'Tin tức, dữ liệu kinh tế, thị trường xu hướng và biểu đồ giá — AI phân tích tất cả trước mỗi lệnh, kèm điểm tin cậy và lý do.' }) },
+      { t: tr(language, { en: 'Trades on your rules', ja: 'あなたのルールで売買', th: 'เทรดตามกฎของคุณ', vi: 'Giao dịch theo quy tắc của bạn' }), d: tr(language, { en: 'Set the symbol, model, schedule, size and confidence threshold. It trades automatically — only when your conditions are met.', ja: '銘柄・モデル・スケジュール・サイズ・信頼度のしきい値を設定。条件を満たした時だけ自動で売買。', th: 'ตั้งเหรียญ โมเดล ตาราง ขนาด และเกณฑ์ความมั่นใจ มันเทรดอัตโนมัติเมื่อเข้าเงื่อนไขเท่านั้น', vi: 'Đặt mã, mô hình, lịch, khối lượng và ngưỡng tin cậy. Giao dịch tự động — chỉ khi đủ điều kiện của bạn.' }) },
+      { t: tr(language, { en: 'Crypto, US stocks & predictions', ja: '暗号資産・米国株・予測市場', th: 'คริปโต หุ้นสหรัฐ และตลาดทำนาย', vi: 'Crypto, cổ phiếu Mỹ & dự đoán' }), d: tr(language, { en: 'Live prices from Hyperliquid, Alpha Vantage and Polymarket — positions tracked by polling, never routed to a real broker.', ja: 'Hyperliquid・Alpha Vantage・Polymarketのライブ価格。ポジションは価格ポーリングで追跡し、実際のブローカーには送りません。', th: 'ราคาสดจาก Hyperliquid, Alpha Vantage และ Polymarket โพซิชันติดตามด้วยการดึงราคา ไม่ส่งไปโบรกเกอร์จริง', vi: 'Giá trực tiếp từ Hyperliquid, Alpha Vantage và Polymarket — vị thế theo dõi bằng polling, không gửi tới broker thật.' }) },
+      { t: tr(language, { en: 'Backtest before you automate', ja: '自動化の前にバックテスト', th: 'แบ็กเทสต์ก่อนใช้อัตโนมัติ', vi: 'Backtest trước khi tự động' }), d: tr(language, { en: 'Test any strategy on historical data, then let it run live — with reputation, scoring and leaderboards to keep it honest.', ja: '戦略を過去データでテストしてからライブ運用。評価・スコア・リーダーボードで健全性を担保。', th: 'ทดสอบกลยุทธ์กับข้อมูลย้อนหลัง แล้วปล่อยรันจริง พร้อมชื่อเสียง คะแนน และลีดเดอร์บอร์ด', vi: 'Kiểm tra chiến lược trên dữ liệu lịch sử, rồi chạy thật — với uy tín, điểm số và bảng xếp hạng.' }) },
     ],
 
-    appHeroH1: tr(language, { en: 'All your trading,', ja: 'すべてのトレードを、', th: 'ทุกการเทรดของคุณ', vi: 'Mọi giao dịch,' }),
-    appHeroH2: tr(language, { en: 'in one app.', ja: 'ひとつのアプリに。', th: 'ในแอปเดียว', vi: 'trong một ứng dụng.' }),
-    appHeroS: tr(language, { en: 'Join the desk today — it takes a minute.', ja: '今日から参加。1分で始められます。', th: 'เข้าร่วมวันนี้ — ใช้เวลาแค่นาทีเดียว', vi: 'Tham gia hôm nay — chỉ mất một phút.' }),
+    appHeroH1: tr(language, { en: 'Trading on autopilot,', ja: '自動売買を、', th: 'เทรดแบบออโต้', vi: 'Giao dịch tự động,' }),
+    appHeroH2: tr(language, { en: 'configured by you.', ja: 'あなたの設定で。', th: 'ตั้งค่าโดยคุณ', vi: 'do bạn cấu hình.' }),
+    appHeroS: tr(language, { en: 'Set it up once — your AI watches the markets and trades for you. Takes a minute.', ja: '一度設定すれば、AIが市場を監視して代わりに売買。1分で完了。', th: 'ตั้งค่าครั้งเดียว — AI เฝ้าตลาดและเทรดให้คุณ ใช้เวลาแค่นาทีเดียว', vi: 'Cài đặt một lần — AI theo dõi thị trường và giao dịch cho bạn. Chỉ mất một phút.' }),
     getStarted: tr(language, { en: 'Get Started', ja: 'はじめる', th: 'เริ่มต้น', vi: 'Bắt đầu' }),
     phoneTitle: tr(language, { en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }),
-    phoneBody: tr(language, { en: 'Run your AI analyst desk and paper-trade crypto, US stocks and events — with live prices and zero real money at risk.', ja: 'AIアナリストデスクを動かし、ライブ価格で暗号資産・米国株・イベントを模擬取引。実際の資金はリスクゼロ。', th: 'รันทีมนักวิเคราะห์ AI และเทรดจำลองคริปโต หุ้นสหรัฐ และเหตุการณ์ — ด้วยราคาสด ไม่มีเงินจริงเสี่ยง', vi: 'Chạy bàn phân tích AI và giao dịch mô phỏng crypto, cổ phiếu Mỹ và sự kiện — giá trực tiếp, không rủi ro tiền thật.' }),
+    phoneBody: tr(language, { en: 'Configure your AI once — it reads news, economic data and charts to trade crypto, US stocks and prediction markets automatically. Tracked on live prices, no real money at risk.', ja: 'AIを一度設定すれば、ニュース・経済指標・チャートを読んで暗号資産・米国株・予測市場を自動売買。ライブ価格で追跡、実際の資金はリスクゼロ。', th: 'ตั้งค่า AI ครั้งเดียว — มันอ่านข่าว ข้อมูลเศรษฐกิจ และกราฟ เพื่อเทรดคริปโต หุ้นสหรัฐ และตลาดทำนายอัตโนมัติ ติดตามด้วยราคาสด ไม่มีเงินจริงเสี่ยง', vi: 'Cấu hình AI một lần — nó đọc tin tức, dữ liệu kinh tế và biểu đồ để giao dịch crypto, cổ phiếu Mỹ và thị trường dự đoán tự động. Theo giá trực tiếp, không rủi ro tiền thật.' }),
     uniOrder: tr(language, { en: 'Order', ja: '注文', th: 'คำสั่ง', vi: 'Lệnh' }),
     uniBalance: tr(language, { en: 'Balance', ja: '残高', th: 'ยอดคงเหลือ', vi: 'Số dư' }),
     uniDecision: tr(language, { en: 'AI decision', ja: 'AIの判断', th: 'การตัดสินใจ AI', vi: 'Quyết định AI' }),
@@ -142,14 +156,14 @@ export function MarketingPage() {
       tr(language, { en: 'Live order book? Check.', ja: 'ライブ板？あり。', th: 'สมุดคำสั่งสด? มี', vi: 'Sổ lệnh trực tiếp? Có.' }),
       tr(language, { en: 'Liquidation preview? Also check.', ja: '清算プレビュー？それもあり。', th: 'พรีวิวล้างพอร์ต? ก็มีเช่นกัน', vi: 'Xem trước thanh lý? Cũng có.' }),
     ],
-    calloutD: tr(language, { en: 'The futures terminal gives you the full desk — sized 1× to 100×, with the risk math in front of you before you click.', ja: '先物ターミナルは1〜100倍のサイズ設定と、クリック前のリスク計算を提供します。', th: 'เทอร์มินัลฟิวเจอร์สให้ครบทั้งโต๊ะ — ขนาด 1× ถึง 100× พร้อมคณิตความเสี่ยงตรงหน้าก่อนคุณคลิก', vi: 'Terminal futures cho bạn cả bàn làm việc — cỡ 1× đến 100×, phép toán rủi ro ngay trước mắt.' }),
+    calloutD: tr(language, { en: 'This is where your AI executes its trades — sized 1× to 100×, with the liquidation math shown before any fill. All simulated: real mechanics, zero real risk.', ja: 'AIが取引を執行する場所。1〜100倍のサイズ設定と、約定前の清算計算を表示。すべて模擬で、仕組みは本物、リスクはゼロ。', th: 'ที่นี่คือที่ AI ดำเนินการเทรด — ขนาด 1× ถึง 100× แสดงคณิตการล้างพอร์ตก่อนเติมทุกครั้ง ทั้งหมดจำลอง กลไกจริง ไม่มีความเสี่ยงจริง', vi: 'Đây là nơi AI thực thi giao dịch — cỡ 1× đến 100×, phép toán thanh lý hiển thị trước mỗi lệnh. Tất cả mô phỏng: cơ chế thật, không rủi ro thật.' }),
     learnMore: tr(language, { en: 'Learn more', ja: '詳しく', th: 'เรียนรู้เพิ่ม', vi: 'Tìm hiểu thêm' }),
 
     convH1: tr(language, { en: 'Convert USDT', ja: 'USDTを', th: 'แปลง USDT', vi: 'Chuyển USDT' }),
     convH2: tr(language, { en: 'to BTC easily.', ja: 'BTCへ簡単に。', th: 'เป็น BTC ง่ายๆ', vi: 'sang BTC dễ dàng.' }),
     convD: tr(language, { en: 'Live rate — the same feed your simulated trades fill against.', ja: 'ライブレート。模擬取引が約定するのと同じフィード。', th: 'เรตสด — ฟีดเดียวกับที่เทรดจำลองของคุณใช้', vi: 'Tỷ giá trực tiếp — cùng nguồn giá lệnh mô phỏng của bạn.' }),
 
-    voicesH: tr(language, { en: 'Hear it from the desk', ja: 'デスクからの声', th: 'ฟังจากโต๊ะเทรด', vi: 'Nghe từ bàn làm việc' }),
+    voicesH: tr(language, { en: 'Hear it from the AI analysts', ja: 'AIアナリストの声', th: 'ฟังจากนักวิเคราะห์ AI', vi: 'Nghe từ các nhà phân tích AI' }),
     voices: [
       { title: tr(language, { en: 'Recommended', ja: 'おすすめ', th: 'แนะนำ', vi: 'Khuyên dùng' }), who: 'News analyst · AI', quote: tr(language, { en: 'Quiet tape. No adverse headlines in 48 hours. Constructive.', ja: '静かな相場。48時間、悪材料なし。', th: 'ตลาดเงียบ ไม่มีข่าวร้ายใน 48 ชม.', vi: 'Thị trường yên. Không tin xấu 48 giờ.' }) },
       { title: tr(language, { en: 'Not euphoric yet', ja: 'まだ過熱ではない', th: 'ยังไม่คลั่ง', vi: 'Chưa hưng phấn' }), who: 'Sentiment analyst · AI', quote: tr(language, { en: 'StockTwits runs 12–4 bullish. A tailwind, not a top.', ja: 'StockTwitsは12対4で強気。追い風だ。', th: 'StockTwits กระทิง 12–4 เป็นลมส่ง ไม่ใช่ยอดดอย', vi: 'StockTwits 12–4 tăng. Gió thuận, chưa phải đỉnh.' }) },
@@ -157,7 +171,7 @@ export function MarketingPage() {
       { title: tr(language, { en: 'Every number reconciled', ja: '数字はすべて一致', th: 'ตัวเลขตรงทุกตัว', vi: 'Mọi con số đều khớp' }), who: 'demo-bot · resident test agent', quote: tr(language, { en: 'Four trades in. Cash, fees, PnL — all correct. I am a bot; I checked.', ja: '4回取引して現金・手数料・損益すべて正確。ボットの私が確認。', th: 'เทรดไป 4 ครั้ง เงินสด ค่าธรรมเนียม กำไรขาดทุน — ถูกทุกตัว', vi: 'Bốn lệnh. Tiền, phí, PnL — đều đúng. Tôi là bot; tôi đã kiểm.' }) },
     ],
 
-    boldH: tr(language, { en: '$100,000 of pretend money, plus you.', ja: '10万ドルの模擬資金と、あなた。', th: 'เงินปลอม $100,000 บวกกับคุณ', vi: '$100.000 tiền giả, cộng với bạn.' }),
+    boldH: tr(language, { en: '$100,000 of paper money. Let the AI trade it.', ja: '10万ドルの模擬資金を、AIに任せて売買。', th: 'เงินจำลอง $100,000 ให้ AI เทรดให้', vi: '$100.000 tiền mô phỏng. Để AI giao dịch.' }),
     boldS: tr(language, { en: 'It only takes a few seconds to get started.', ja: '開始まで数秒。', th: 'ใช้เวลาแค่ไม่กี่วินาทีในการเริ่ม', vi: 'Chỉ mất vài giây để bắt đầu.' }),
 
     footGet: tr(language, { en: 'Get Started', ja: 'はじめる', th: 'เริ่มต้น', vi: 'Bắt đầu' }),
@@ -264,10 +278,13 @@ export function MarketingPage() {
         .jt-shadow{transform-box:fill-box;transform-origin:center;animation:jtShadow 5.5s ease-in-out infinite}
         .jt-step{animation:jtStep 3s ease-in-out infinite;animation-delay:var(--dl,0s)}
         .jt-line{stroke-dasharray:2600;animation:jtDash 12s ease-in-out infinite}
+        /* hero background: slow living glow (Jeton-style warm field) */
+        @keyframes heroGlow{0%,100%{opacity:.8;transform:translate(0,0) scale(1)}50%{opacity:1;transform:translate(-2.5%,2%) scale(1.08)}}
+        .hero-glow{animation:heroGlow 15s ease-in-out infinite;will-change:opacity,transform}
 
-        /* Jeton "Unify" floating cards + parallax */
+        /* Jeton "Unify" scroll-convergence floating cards */
         @keyframes uniFloat{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-16px) rotate(var(--rot,0deg))}}
-        .uni-card{position:absolute;transform:translateY(var(--py,0px));transition:transform .12s linear;will-change:transform}
+        .uni-card{position:absolute;transform:translate(var(--tx,0px),var(--ty,0px)) scale(var(--sc,1));opacity:var(--op,1);will-change:transform,opacity}
         .uni-float{animation:uniFloat var(--d,6s) ease-in-out infinite;animation-delay:var(--dl,0s);will-change:transform}
         /* Jeton "one app" rotating coil rings + phone */
         @keyframes uniSpin{to{transform:rotate(360deg)}}
@@ -278,17 +295,26 @@ export function MarketingPage() {
         .uni-phone{animation:uniPhone 6.5s ease-in-out infinite}
         @media(max-width:900px){
           .uni-stage{min-height:auto!important;gap:16px}
-          .uni-card{position:static!important;transform:none!important;margin:8px auto}
+          .uni-card{position:static!important;transform:none!important;opacity:1!important;margin:8px auto}
           .uni-float{animation:none}
+        }
+        /* Reduced motion: keep the small AI/robot animations, drop the large
+           idle-float and background drift/spin. */
+        @media(prefers-reduced-motion:reduce){
+          .hero-glow,.uni-ring,.uni-ring-r,.uni-phone,.uni-float{animation:none!important}
         }
       `}</style>
       <div className="jt">
 
         {/* ══ HERO — Claude light theme + 3D AI robot ══ */}
-        <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: 'radial-gradient(115% 95% at 80% 8%, #fdfbf6 0%, #f5efe4 52%, #ece3d3 100%)' }}>
+        <section style={{ position: 'relative', minHeight: 'min(78vh, 680px)', overflow: 'hidden', background: '#f84d35' }}>
 
-          {/* faint warm grid */}
-          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: 'linear-gradient(rgba(201,100,66,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(201,100,66,.06) 1px, transparent 1px)', backgroundSize: '76px 76px' }} />
+          {/* jeton-style warm-orange field: flat base + soft top glow + gentle bottom deepen */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(125% 120% at 50% -12%, #ff7a4d 0%, #fb5c3a 34%, #f84d35 58%, #e8401f 100%)' }} />
+          <div aria-hidden className="hero-glow" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(80% 55% at 78% 12%, rgba(255,200,150,0.28) 0%, rgba(255,200,150,0) 60%)' }} />
+
+          {/* whisper grid (barely-there texture) */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, opacity: 0.6, backgroundImage: 'linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)', backgroundSize: '76px 76px' }} />
 
           {/* rising candlestick chart, right side (green on cream) */}
           <svg viewBox="0 0 700 500" style={{ position: 'absolute', right: 0, top: '5%', width: 'min(56vw, 740px)', height: '82%', opacity: 0.95 }} aria-hidden>
@@ -299,12 +325,12 @@ export function MarketingPage() {
               { x: 625, y: 60, h: 85, up: true },
             ].map((c, i) => (
               <g key={i} className="jt-candlebar" style={{ ['--d' as any]: `${3 + (i % 4) * 0.5}s`, ['--dl' as any]: `${-i * 0.4}s` }}>
-                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? '#16a34a' : '#b6c0c9'} strokeWidth="3" />
-                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? '#22c55e' : '#cdd5de'} stroke={c.up ? '#16a34a' : '#aab4bf'} strokeWidth="1.5" />
+                <line x1={c.x + 14} y1={c.y - 26} x2={c.x + 14} y2={c.y + c.h + 26} stroke={c.up ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'} strokeWidth="3" />
+                <rect x={c.x} y={c.y} width="28" height={c.h} rx="5" fill={c.up ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.32)'} stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" />
               </g>
             ))}
             <path className="jt-line" d="M20,400 L110,380 L180,330 L250,300 L320,315 L390,240 L460,205 L530,225 L600,140 L670,80"
-              fill="none" stroke="#16a34a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
+              fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2600" />
           </svg>
 
           {/* ── AI robot mascot: real render if present, else built-in 3D SVG ── */}
@@ -414,28 +440,27 @@ export function MarketingPage() {
           {/* top bar (light) */}
           <header style={{ position: 'relative', zIndex: 3 }}>
             <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 78 }}>
-              <span style={{ fontWeight: 800, fontSize: 24, color: INK }}>Sooppiy</span>
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: 'rgba(25,21,18,0.06)', borderRadius: 999, padding: '4px 8px' }}>
-                <span aria-hidden style={{ color: FAINT, fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
+              <span style={{ fontWeight: 800, fontSize: 24, color: '#fff' }}>Sooppiy</span>
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '4px 8px' }}>
+                <span aria-hidden style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, padding: '3px 2px 0 4px' }}>🌐</span>
                 {Object.entries(LANGS).map(([code, label]) => (
                   <button key={code} onClick={() => setLanguage(code as any)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? INK : FAINT, fontWeight: language === code ? 700 : 400 }}>{label}</button>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, padding: '4px 6px', color: language === code ? '#fff' : 'rgba(255,255,255,0.6)', fontWeight: language === code ? 700 : 400 }}>{label}</button>
                 ))}
               </span>
-              <Link to="/login" style={{ ...pill, color: INK, padding: '11px 20px', background: 'rgba(25,21,18,0.06)' }}>{T.login}</Link>
-              <Link to="/register" style={{ ...pill, color: '#fff', padding: '11px 22px', background: INK }}>{T.signup}</Link>
+              <Link to="/login" style={{ ...pill, color: '#fff', padding: '11px 20px', background: 'rgba(255,255,255,0.16)' }}>{T.login}</Link>
+              <Link to="/register" style={{ ...pill, color: '#e8401f', padding: '11px 22px', background: '#fff' }}>{T.signup}</Link>
             </div>
           </header>
 
           {/* stacked thumbnail headline, left */}
           <div className="jt-hero" style={{ position: 'absolute', zIndex: 3, left: 'max(24px, calc(50vw - 560px))', top: '15vh', maxWidth: 640, fontFamily: 'var(--font-ui, Inter, sans-serif)' }}>
-            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: INK, letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
-            <div style={{ display: 'inline-block', background: '#a3e635', color: '#0a1a04', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 10, margin: '8px 0', boxShadow: '0 8px 22px rgba(163,230,53,0.4)' }}>{T.thEasiest}</div>
-            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: INK, letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
-            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0' }}>
-              <span style={{ color: '#0891b2' }}>{T.thAi}</span>{' '}
-              <span style={{ color: INK }}>{T.thTrading}</span>{' '}
-              <span style={{ color: '#15803d' }}>{T.thBot}</span>
+            <div style={{ fontSize: 'clamp(30px,3.6vw,44px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.05 }}>{T.thThe}</div>
+            <div style={{ display: 'inline-block', background: '#a3e635', color: '#0a1a04', fontSize: 'clamp(40px,5.6vw,68px)', fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1, padding: '6px 16px', borderRadius: 10, margin: '8px 0', boxShadow: '0 10px 26px rgba(0,0,0,0.18)' }}>{T.thEasiest}</div>
+            <div style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#fff', letterSpacing: '-.01em', lineHeight: 1.1 }}>{T.thWay}</div>
+            <div style={{ fontSize: 'clamp(44px,6vw,74px)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-.02em', margin: '6px 0 0', color: '#fff' }}>
+              <span>{T.thAi}</span>{' '}
+              <span style={{ color: '#bef264' }}>{T.thBot}</span>
             </div>
 
             {/* BUILD → AI → PROFIT strip */}
@@ -448,25 +473,25 @@ export function MarketingPage() {
                 <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span className="jt-step" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6, ['--dl' as any]: `${-i}s` }}>
                     <span style={{ width: 62, height: 50, borderRadius: 12, border: `2px solid ${s.color}`, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: s.icon === '</>' ? 17 : 22, fontWeight: 800, color: s.color, fontFamily: 'ui-monospace,monospace', boxShadow: '0 4px 14px rgba(25,21,18,0.08)' }}>{s.icon}</span>
-                    <span style={{ fontSize: 12.5, fontWeight: 800, color: INK, letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: FAINT, textTransform: 'lowercase' }}> · {s.note}</span>}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', letterSpacing: '.08em' }}>{s.label}{s.note && <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)', textTransform: 'lowercase' }}> · {s.note}</span>}</span>
                   </span>
-                  {i < 2 && <span style={{ color: '#15803d', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
+                  {i < 2 && <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 900, fontSize: 20, marginBottom: 20 }}>›</span>}
                 </span>
               ))}
             </div>
 
             {/* sub + CTAs */}
-            <p style={{ fontSize: 16, fontWeight: 600, color: MUT, margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
+            <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.92)', margin: '30px 0 14px', lineHeight: 1.5, maxWidth: 440 }}>{T.heroS}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <Link to="/register" style={{ ...pill, background: '#a3e635', color: '#0a1a04', padding: '13px 24px', fontSize: 15 }}>◐ {T.ctaSim}</Link>
-              <Link to="/login" style={{ ...pill, background: '#fff', color: INK, padding: '13px 24px', fontSize: 15, border: `1.5px solid ${INK}` }}>◆ {T.ctaBoard}</Link>
+              <Link to="/login" style={{ ...pill, background: 'transparent', color: '#fff', padding: '13px 24px', fontSize: 15, border: '1.5px solid rgba(255,255,255,0.7)' }}>◆ {T.ctaBoard}</Link>
             </div>
           </div>
 
           {/* scroll pill bottom-left */}
-          <span style={{ position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 12, color: MUT, background: 'rgba(25,21,18,0.06)', padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
+          <span style={{ position: 'absolute', zIndex: 3, left: 22, bottom: 20, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.16)', padding: '7px 14px', borderRadius: 999 }}>⌄ {T.scroll}</span>
           {/* support pill bottom-right */}
-          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: '#fff', background: INK, padding: '10px 18px', borderRadius: 999, textDecoration: 'none' }}>💬 {T.support}</a>
+          <a href="mailto:support@sooppiy.app" style={{ position: 'absolute', zIndex: 3, right: 22, bottom: 20, fontSize: 13, fontWeight: 600, color: '#e8401f', background: '#fff', padding: '10px 18px', borderRadius: 999, textDecoration: 'none' }}>💬 {T.support}</a>
         </section>
 
         {/* ══ floating bottom dock (Jeton's signature nav) — persists on scroll ══ */}
@@ -486,17 +511,17 @@ export function MarketingPage() {
             </h2>
 
             {/* order card (blue) — top right */}
-            <div className="uni-card" data-speed="0.05" style={{ top: 8, right: -6 }}>
+            <div className="uni-card" data-dx="200" data-dy="-140" style={{ top: 8, right: -6 }}>
               <div className="uni-float" style={{ ['--d' as any]: '6.5s', ['--rot' as any]: '3deg', background: '#fff', border: '2px solid #3b82f6', borderRadius: 26, padding: 20, width: 258, boxShadow: '0 34px 70px -24px rgba(30,60,120,0.4)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 15 }}>🟢 BTC/USDT <span style={{ marginLeft: 'auto', color: '#3b82f6', fontSize: 12 }}>▾</span></div>
                 <div style={{ ...mono, fontSize: 40, fontWeight: 800, margin: '12px 0 2px', letterSpacing: '-.02em' }}>$250</div>
                 <div style={{ fontSize: 13, color: MUT }}>{T.uniBalance}: $65,019.53</div>
-                <div style={{ marginTop: 16, textAlign: 'center', background: '#eef4ff', color: '#2563eb', borderRadius: 14, padding: '11px 0', fontWeight: 700, fontSize: 14.5 }}>{T.ctaSim.split(' ')[0]} · {T.uniOrder}</div>
+                <div style={{ marginTop: 16, textAlign: 'center', background: '#eef4ff', color: '#2563eb', borderRadius: 14, padding: '11px 0', fontWeight: 700, fontSize: 14.5 }}>AI · {T.uniOrder}</div>
               </div>
             </div>
 
             {/* AI decision card (green) — left */}
-            <div className="uni-card" data-speed="0.09" style={{ top: 176, left: -8 }}>
+            <div className="uni-card" data-dx="-240" data-dy="-30" style={{ top: 176, left: -8 }}>
               <div className="uni-float" style={{ ['--d' as any]: '7.5s', ['--dl' as any]: '-1.5s', ['--rot' as any]: '-4deg', background: 'linear-gradient(160deg,#28cd66,#18b957)', color: '#fff', borderRadius: 26, padding: 22, width: 260, boxShadow: '0 34px 66px -22px rgba(24,185,87,0.55)' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, opacity: 0.92 }}>⇄ {T.uniDecision}</div>
                 <div style={{ ...mono, fontSize: 32, fontWeight: 800, marginTop: 10, letterSpacing: '-.01em' }}>BUY · 72%</div>
@@ -506,7 +531,7 @@ export function MarketingPage() {
             </div>
 
             {/* analyst card (pink) — bottom centre */}
-            <div className="uni-card" data-speed="0.07" style={{ bottom: 6, left: '41%' }}>
+            <div className="uni-card" data-dx="20" data-dy="200" style={{ bottom: 6, left: '41%' }}>
               <div className="uni-float" style={{ ['--d' as any]: '6.8s', ['--dl' as any]: '-3s', ['--rot' as any]: '2deg', background: '#fbe3f1', borderRadius: 26, padding: 20, width: 236, boxShadow: '0 34px 66px -24px rgba(160,40,120,0.32)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#ec4899,#a855f7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>NA</span>
@@ -518,7 +543,7 @@ export function MarketingPage() {
             </div>
 
             {/* live BTC mini-chart tile — top left */}
-            <div className="uni-card" data-speed="0.12" style={{ top: 24, left: '9%' }}>
+            <div className="uni-card" data-dx="-205" data-dy="-175" style={{ top: 24, left: '9%' }}>
               <div className="uni-float" style={{ ['--d' as any]: '8s', ['--dl' as any]: '-2s', ['--rot' as any]: '-6deg', background: '#fff', borderRadius: 22, padding: 16, width: 174, boxShadow: '0 30px 60px -24px rgba(20,80,50,0.32)' }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: MUT, marginBottom: 8 }}>{T.uniLiveBtc}</div>
                 <svg viewBox="0 0 140 48" style={{ width: '100%', height: 48 }} aria-hidden>
@@ -529,7 +554,7 @@ export function MarketingPage() {
             </div>
 
             {/* leaderboard tile — bottom right */}
-            <div className="uni-card" data-speed="0.10" style={{ bottom: 56, right: '3%' }}>
+            <div className="uni-card" data-dx="220" data-dy="155" style={{ bottom: 56, right: '3%' }}>
               <div className="uni-float" style={{ ['--d' as any]: '7s', ['--dl' as any]: '-4s', ['--rot' as any]: '5deg', background: '#fff', borderRadius: 22, padding: 16, width: 224, boxShadow: '0 30px 60px -24px rgba(30,25,20,0.28)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15 }}>🏆 demo-bot <span style={{ marginLeft: 'auto', color: '#16a34a' }}>#1</span></div>
                 <div style={{ marginTop: 12, background: BG, borderRadius: 14, padding: '10px 14px', fontSize: 12.5, color: MUT }}>“{T.uniReconciled}”</div>
@@ -692,7 +717,7 @@ export function MarketingPage() {
             {[
               [T.footGet, [[T.signup, '/register'], [T.login, '/login']]],
               [T.footDiscover, [['AI Analyst', '/login'], ['Automation', '/login'], ['Spot', '/login'], ['Futures', '/login']]],
-              [T.footMarkets, [['Leaderboard', '/login'], ['Financial events', '/login'], ['Copy trading', '/login']]],
+              [T.footMarkets, [['Leaderboard', '/login'], ['Financial events', '/login'], ['Backtest', '/login']]],
               [T.footHelp, [['For developers', '/login'], ['Support', 'mailto:support@sooppiy.app']]],
             ].map(([title, links]: any, i) => (
               <div key={i}>

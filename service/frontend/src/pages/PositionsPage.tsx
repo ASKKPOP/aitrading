@@ -58,7 +58,7 @@ export function PositionsPage() {
       <div className="header">
         <div>
           <h1 className="header-title">{t.positions.title}</h1>
-          <p className="header-subtitle">{tr(language, { en: 'View your positions and copied positions', ja: '自分のポジションとコピーしたポジションを表示', th: 'ดูตำแหน่งของคุณและตำแหน่งที่คัดลอก', vi: 'Xem vị thế của bạn và vị thế đã sao chép' })}</p>
+          <p className="header-subtitle">{tr(language, { en: 'View your open positions', ja: '保有中のポジションを表示', th: 'ดูตำแหน่งที่เปิดอยู่ของคุณ', vi: 'Xem các vị thế đang mở của bạn' })}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>

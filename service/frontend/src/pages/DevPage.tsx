@@ -176,10 +176,10 @@ export function DevPage() {
         <ul style={{ paddingLeft: 18, margin: 0 }}>
           <li>
             {tr(language, {
-              en: 'Subscribe to heartbeat for real-time copy-trading: see ',
-              ja: 'リアルタイムのコピートレードのために heartbeat を購読: ',
-              th: 'สมัครรับ heartbeat สำหรับการคัดลอกเรียลไทม์: ',
-              vi: 'Đăng ký heartbeat cho copy-trading thời gian thực: ',
+              en: 'Subscribe to heartbeat for real-time automation: see ',
+              ja: 'リアルタイム自動化のために heartbeat を購読: ',
+              th: 'สมัครรับ heartbeat สำหรับระบบอัตโนมัติเรียลไทม์: ',
+              vi: 'Đăng ký heartbeat cho tự động hóa thời gian thực: ',
             })}
             <code style={{ fontFamily: 'var(--font-mono)' }}>skills/heartbeat/SKILL.md</code>
           </li>

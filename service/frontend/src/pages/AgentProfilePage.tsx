@@ -183,13 +183,6 @@ export function AgentProfilePage() {
         >
           ⏮ {tr(language, { en: 'Run Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
         </button>
-        <button
-          className="btn btn-secondary"
-          onClick={() => navigate(`/copytrading`)}
-          style={{ fontSize: '13px' }}
-        >
-          ⊞ {tr(language, { en: 'Copy Trade', ja: 'コピートレード', th: 'คัดลอกเทรด', vi: 'Sao chép' })}
-        </button>
       </div>
 
       {/* Recent trades */}

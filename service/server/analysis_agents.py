@@ -148,10 +148,64 @@ def _brief(role: str, instructions: str, data: dict[str, Any], lang: str) -> str
 
 
 def _fallback_brief(role: str, data: dict[str, Any]) -> str:
+    """Readable, rule-based brief used when no LLM provider is configured.
+    Summarises the gathered data per analyst instead of dumping raw JSON."""
     if data.get("error"):
         return f"[{role}] data unavailable: {data['error']}"
+
+    # Technical analyst — signal / score / price / trend
+    if "signal" in data or str(data.get("note", "")).startswith("light technical"):
+        sig = str(data.get("signal") or "neutral").lower()
+        trend = data.get("trend_status")
+        bits = []
+        if data.get("current_price") is not None:
+            bits.append(f"price {data['current_price']}")
+        if data.get("signal_score") is not None:
+            bits.append(f"score {data['signal_score']}")
+        msg = f"Technical read is {sig}" + (f" ({trend})" if trend else "")
+        if bits:
+            msg += " — " + ", ".join(bits)
+        msg += "."
+        bull = data.get("bullish_factors") or []
+        risk = data.get("risk_factors") or []
+        if bull:
+            msg += " Supports: " + "; ".join(bull[:2]) + "."
+        if risk:
+            msg += " Risks: " + "; ".join(risk[:2]) + "."
+        return msg
+
+    # News analyst — headline count, tone, lead headline
+    if "items" in data:
+        items = data.get("items") or []
+        bd = data.get("sentiment_breakdown") or {}
+        bull = bd.get("bullish", 0) + bd.get("somewhat-bullish", 0)
+        bear = bd.get("bearish", 0) + bd.get("somewhat-bearish", 0)
+        tone = "constructive" if bull > bear else ("cautious" if bear > bull else "mixed")
+        msg = f"{len(items)} headlines scanned — tone {tone} ({bull} bullish vs {bear} bearish)."
+        if items and items[0].get("title"):
+            msg += f' Lead: "{items[0]["title"]}".'
+        return msg
+
+    # Sentiment analyst — net sentiment from news (+ StockTwits if present)
+    if "from_news" in data:
+        bd = data.get("from_news") or {}
+        bull = bd.get("bullish", 0) + bd.get("somewhat-bullish", 0)
+        bear = bd.get("bearish", 0) + bd.get("somewhat-bearish", 0)
+        lean = "bullish" if bull > bear else ("bearish" if bear > bull else "neutral")
+        msg = f"News-derived sentiment leans {lean} ({bull} vs {bear})."
+        st = data.get("stocktwits")
+        if isinstance(st, dict) and st:
+            msg += f" StockTwits {st.get('bullish', '?')} bull / {st.get('bearish', '?')} bear."
+        return msg
+
+    # Fundamentals / macro analyst — macro regime verdict
+    if "macro" in data:
+        m = data.get("macro") or {}
+        verdict = m.get("verdict") or "unavailable"
+        return f"Macro regime reads {verdict} ({m.get('bullish_count', 0)}/{m.get('total_count', 0)} signals bullish)."
+
     compact = json.dumps(data, ensure_ascii=False, default=str)
-    return f"[{role}] (no LLM configured) key data: {compact[:400]}"
+    return f"[{role}] key data: {compact[:300]}"
 
 
 # ─────────────────────────── trader + risk decision ───────────────────────────

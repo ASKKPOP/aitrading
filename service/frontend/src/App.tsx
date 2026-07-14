@@ -24,7 +24,6 @@ const LandingPage = lazy(() => import('./pages/LandingPage'))
 const DevPage = lazy(() => import('./pages/DevPage'))
 const FinancialEventsPage = lazy(() => import('./pages/FinancialEventsPage'))
 const MarketPage = lazy(() => import('./pages/MarketPage'))
-const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
@@ -278,7 +277,6 @@ function AppRouter({
       '/market':           'Sooppiy · Signals',
       '/leaderboard':      'Sooppiy · Leaderboard',
       '/backtest':         'Sooppiy · Backtest',
-      '/copytrading':      'Sooppiy · Copy Trading',
       '/positions':        'Sooppiy · Positions',
       '/trade':            'Sooppiy · Trade',
       '/exchange':         'Sooppiy · Exchange',
@@ -368,7 +366,6 @@ function AppRouter({
               <Route path="/research-exports" element={<ResearchExportsPage />} />
               <Route path="/backtest" element={<BacktestPage token={token} />} />
               <Route path="/financial-events" element={<FinancialEventsPage />} />
-              <Route path="/copytrading" element={token ? <CopyTradingPage token={token} /> : <Navigate to="/login" replace />} />
               <Route path="/strategies" element={<StrategiesPage />} />
               <Route path="/discussions" element={<DiscussionsPage />} />
               <Route path="/positions" element={<PositionsPage />} />

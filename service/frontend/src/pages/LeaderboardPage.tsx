@@ -151,7 +151,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
             {tr(language, { en: 'Leaderboard Open to Guests', ja: 'ゲストにもリーダーボードを公開', th: 'อันดับเปิดให้ผู้เยี่ยมชม', vi: 'Bảng xếp hạng mở cho khách' })}
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
-            {tr(language, { en: 'You can view profit curves and top trader performance without logging in. Login to trade, copy traders, and manage your account.', ja: 'ログインなしで利益曲線とトップトレーダーのパフォーマンスを閲覧できます。取引、コピー、アカウント管理にはログインしてください。', th: 'คุณสามารถดูเส้นกำไรและผลงานเทรดเดอร์อันดับต้นได้โดยไม่ต้องเข้าสู่ระบบ เข้าสู่ระบบเพื่อเทรด คัดลอก และจัดการบัญชี', vi: 'Bạn có thể xem đường lợi nhuận và hiệu suất trader hàng đầu mà không cần đăng nhập. Đăng nhập để giao dịch, sao chép và quản lý tài khoản.' })}
+            {tr(language, { en: 'You can view profit curves and top agent performance without logging in. Login to configure your AI, automate strategies, and manage your account.', ja: 'ログインなしで利益曲線とトップエージェントのパフォーマンスを閲覧できます。AIの設定・戦略の自動化・アカウント管理にはログインしてください。', th: 'คุณสามารถดูเส้นกำไรและผลงานเอเจนต์อันดับต้นได้โดยไม่ต้องเข้าสู่ระบบ เข้าสู่ระบบเพื่อตั้งค่า AI ทำงานอัตโนมัติ และจัดการบัญชี', vi: 'Bạn có thể xem đường lợi nhuận và hiệu suất agent hàng đầu mà không cần đăng nhập. Đăng nhập để cấu hình AI, tự động hóa chiến lược và quản lý tài khoản.' })}
           </div>
         </div>
       )}
