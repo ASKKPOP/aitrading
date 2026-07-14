@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — AI 매매 신호 수집 프레임워크 (Target Spec)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f1ead8; --bg2:#e8dfc8; --card:#faf6ec; --ink:#0b1220;
+  --mut:rgba(11,18,32,0.60); --faint:rgba(11,18,32,0.38);
+  --line:rgba(11,18,32,0.15); --accent:#b8542f; --accent-on:#faf6ec;
+  --up:#2d9e6b; --down:#8b3a2a; --warn:#b45309;
+  --disp:"Cormorant Garamond",Georgia,serif;
+  --sans:"Inter Tight","Noto Sans KR",-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:15px}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+header.doc{border-bottom:1px solid var(--line);padding:44px 0 30px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;font-weight:500}
+h1{font-family:var(--disp);font-weight:500;font-size:clamp(30px,4.6vw,46px);letter-spacing:-.02em;line-height:1.1;margin:10px 0 8px}
+h1 em{font-style:italic;color:var(--accent)}
+.meta{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+section{border-bottom:1px solid var(--line);padding:34px 0}
+h2{font-family:var(--disp);font-weight:600;font-size:25px;letter-spacing:-.01em;margin:0 0 4px}
+h2 .no{color:var(--accent);font-family:var(--mono);font-size:13px;vertical-align:middle;margin-right:8px}
+.sub{color:var(--mut);font-size:14px;margin:4px 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg2)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-family:var(--mono);font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:rgba(45,158,107,.13);color:var(--up)}
+.part{background:rgba(180,83,9,.12);color:var(--warn)}
+.no-t{background:rgba(139,58,42,.12);color:var(--down)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+code{background:var(--bg2);border-radius:4px;padding:1px 5px}
+ul{padding-left:20px;margin:8px 0}
+li{margin:5px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;font-size:13.5px;color:var(--mut);margin-top:14px}
+.grid2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:10px}
+footer{padding:26px 0 48px;font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+@media(max-width:700px){td,th{padding:8px 8px}}
+</style>
+</head>
+<body>
+
+<header class="doc">
+  <div class="wrap">
+    <div class="kicker">SOOPPIY · TARGET SPEC · 신호 수집 프레임워크</div>
+    <h1>AI 매매 신호는 <em>측정</em>하는 것</h1>
+    <p class="sub" style="max-width:70ch">예측시장 · 암호화폐 매매를 위한 데이터 · API · 심리 지표 설계 가이드이자, Sooppiy 서비스의 구현 현황표(✅ 구현 · 🟡 부분 · ❌ 미구현)입니다.</p>
+    <div class="meta">작성: Claude · 2026-07-14 · 교육용 참고 자료 · 모든 매매는 모의(paper)이며 투자 자문이 아닙니다</div>
+    <div class="legend">
+      <span><span class="tag ok">✅ 구현</span> 코드에 존재하고 동작 확인</span>
+      <span><span class="tag part">🟡 부분</span> 일부만 구현 / 제한적</span>
+      <span><span class="tag no-t">❌ 미구현</span> 다음 구현 대상</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">1</span>개요 — 신호는 '측정'하는 것</h2>
+    <p>AI는 감정이나 미래를 '예측'하기보다, 시장에 이미 남은 흔적을 실시간으로 <strong>'측정'하고 반응</strong>합니다. 매수/매도 신호는 두 축의 결합으로 만들어집니다:</p>
+    <ul>
+      <li><strong>정량 신호</strong> — 가격 · 거래량 · 온체인 · 차익거래 갭 같은 수치</li>
+      <li><strong>정성 신호</strong> — 뉴스 · 소셜 언급 · 감성(sentiment) · 예측시장 배당률 같은 심리 대용 지표</li>
+    </ul>
+    <div class="note">Sooppiy 구현: <code>analysis_agents.py</code>의 4-분석가(뉴스 · 감성 · 펀더멘털/매크로 · 기술) 구조가 이 두 축을 결합해 매수/매도/보류 + 신뢰도를 산출합니다. LLM 키가 없으면 규칙 기반으로 동일하게 동작합니다. ✅</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">2</span>신호 수집 6요소 — 구현 현황</h2>
+    <table>
+      <tr><th style="width:150px">요소</th><th>목표 (프레임워크)</th><th style="width:250px">Sooppiy 구현</th></tr>
+      <tr>
+        <td><strong>어떤 코인</strong><br><span class="mono" style="color:var(--faint)">Which</span></td>
+        <td>거래량 급증 · 소셜 언급량 급등 · 고래 지갑 이동 · 신규 상장 스캔으로 후보 선별</td>
+        <td><span class="tag part">🟡 부분</span><br>Bybit 24h 거래량 목록(<code>crypto_feed</code>) · 보유자 기반 트렌딩 ✅<br>급증 감지 · 언급량 스캐너 · 고래/온체인 · 신규 상장 ❌</td>
+      </tr>
+      <tr>
+        <td><strong>이유</strong><br><span class="mono" style="color:var(--faint)">Why</span></td>
+        <td>가격 변동을 뉴스 · 이벤트와 대조해 LLM이 인과 태깅</td>
+        <td><span class="tag ok">✅ 구현</span><br><code>analysis_agents._gather_news</code> + LLM 브리핑 (키 없으면 규칙 요약)</td>
+      </tr>
+      <tr>
+        <td><strong>언제 매수</strong><br><span class="mono" style="color:var(--faint)">When Buy</span></td>
+        <td>정량(RSI · 베이시스 · 펀딩비) × 정성(감성 스파이크) 트리거 결합, 예측시장은 현물-계약 시차(lag)</td>
+        <td><span class="tag part">🟡 부분</span><br>RSI · 이동평균 · 지지/저항 · 모멘텀 ✅ (미국주식; 크립토는 현물가만)<br>펀딩비 · 베이시스 · 시차 트리거 ❌</td>
+      </tr>
+      <tr>
+        <td><strong>언제 매도</strong><br><span class="mono" style="color:var(--faint)">When Sell</span></td>
+        <td>과열(RSI 과매수) · 부정 감성 급증 · 고래 유출 · 변동성 3σ 초과 시 청산/축소</td>
+        <td><span class="tag part">🟡 부분</span><br>점수 기반 SELL 신호(과열 반영) ✅<br>3σ 자동 축소 · 고래 유출 ❌</td>
+      </tr>
+      <tr>
+        <td><strong>뉴스 · 핫이슈</strong><br><span class="mono" style="color:var(--faint)">News</span></td>
+        <td>뉴스 API · X · 텔레그램 · 레딧 스크레이핑 → LLM 요약 · 중요도 점수화 → 영향 예측</td>
+        <td><span class="tag ok">✅ 대부분</span><br>Alpha Vantage NEWS_SENTIMENT 파이프라인(요약 · 중요도/감성 점수) + FinnHub(옵션) + StockTwits ✅<br>X/텔레그램/레딧 직접 스크레이핑 ❌</td>
+      </tr>
+      <tr>
+        <td><strong>심리</strong><br><span class="mono" style="color:var(--faint)">Psychology</span></td>
+        <td>공포/탐욕 · 충격 · 기대감을 대용 지표로 수치화</td>
+        <td><span class="tag part">🟡 부분</span> — 아래 4절 참조</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">3</span>데이터 소스 · API 매핑</h2>
+    <p class="sub">구체적 서비스명 · 가용성은 실제 사용 전 반드시 직접 확인이 필요합니다.</p>
+    <table>
+      <tr><th>신호</th><th>데이터 소스 (예시)</th><th style="width:230px">Sooppiy 연동</th></tr>
+      <tr><td>시세 · 거래량</td><td>거래소 API (Binance · Bybit 등)</td><td><span class="tag ok">✅</span> Bybit 시세/호가/거래량 (<code>crypto_feed.py</code>)</td></tr>
+      <tr><td>미국 주식 · 뉴스 감성</td><td>Alpha Vantage (시세 · NEWS_SENTIMENT)</td><td><span class="tag ok">✅</span> <code>market_intel.py</code> · <code>historical_data.py</code></td></tr>
+      <tr><td>예측시장 배당률</td><td>Polymarket API</td><td><span class="tag ok">✅</span> <code>price_fetcher.list_polymarket_markets</code></td></tr>
+      <tr><td>군중 감성</td><td>StockTwits (공개 · 키 불필요)</td><td><span class="tag ok">✅</span> <code>analysis_sources.fetch_stocktwits_sentiment</code></td></tr>
+      <tr><td>기업 · 시장 뉴스</td><td>FinnHub (무료 티어)</td><td><span class="tag ok">✅</span> 옵션 (<code>FINNHUB_API_KEY</code>)</td></tr>
+      <tr><td>매크로 지표</td><td>FRED (금리 · CPI · 고용)</td><td><span class="tag ok">✅</span> 옵션 (<code>FRED_API_KEY</code>)</td></tr>
+      <tr><td>온체인 · 고래 이동</td><td>Hashdive류 온체인 데이터</td><td><span class="tag no-t">❌ 미연동</span></td></tr>
+      <tr><td>공포 · 탐욕 지수</td><td>Crypto Fear &amp; Greed Index API</td><td><span class="tag no-t">❌ 미연동</span> (데모 시드에만 존재)</td></tr>
+      <tr><td>청산 데이터</td><td>거래소 청산 피드 (Coinglass류)</td><td><span class="tag no-t">❌ 미연동</span></td></tr>
+      <tr><td>소셜 트렌드 (X · 텔레그램 · 레딧)</td><td>각 플랫폼 API · 스크레이핑</td><td><span class="tag no-t">❌ 미연동</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">4</span>심리 신호의 정량화</h2>
+    <p>핵심: AI는 감정 자체가 아니라 <strong>'감정의 대용 지표(proxy)'</strong>를 수치로 잡습니다.</p>
+    <table>
+      <tr><th style="width:130px">심리</th><th>대용 지표 (proxy)</th><th style="width:220px">Sooppiy 구현</th></tr>
+      <tr><td><strong>공포/탐욕</strong></td><td>Crypto Fear &amp; Greed Index · 변동성(VIX류) · 청산 데이터</td><td><span class="tag no-t">❌</span> 지수/청산 미연동</td></tr>
+      <tr><td><strong>충격 · 공포</strong></td><td>뉴스 · 소셜 감성의 급격한 부정 스파이크 · 거래량 폭증</td><td><span class="tag part">🟡</span> 감성 점수 ✅ / 스파이크(델타) 감지 ❌</td></tr>
+      <tr><td><strong>기대감</strong></td><td>이벤트 전 언급량 증가 · 예측시장 배당률 변화 · "before the news" 포지셔닝</td><td><span class="tag part">🟡</span> 배당률 수집 ✅ / 변화율 트리거 ❌</td></tr>
+    </table>
+    <div class="note"><strong>한계 (솔직하게):</strong> 심리 · 충격 신호는 후행하거나 노이즈가 많고, 조작(가짜 뉴스 · 봇 언급)에 취약합니다. AI는 감정을 "예측"한다기보다 <strong>"측정 · 반응"</strong>합니다. 단독 신호로 매매하지 말고 반드시 정량 신호와 교차 검증해야 합니다. — 이 원칙은 <code>analysis_agents</code>의 다중 분석가 교차 구조로 구현되어 있습니다. ✅</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">5</span>매수 / 매도 트리거 로직</h2>
+    <div class="grid2">
+      <div class="card">
+        <div class="kicker" style="color:var(--up)">매수 트리거</div>
+        <ul>
+          <li>공포지수 회복 국면 + 긍정 뉴스 감성 + 현물-예측계약 갭 ≥ 임계치</li>
+          <li>예측시장 배당률 상승(예: 0.61 → 0.68)으로 확률 재평가 확인</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kicker" style="color:var(--down)">매도 / 축소 트리거</div>
+        <ul>
+          <li>RSI 과매수 + 부정 감성 스파이크 + 고래 유출 동시 발생</li>
+          <li>변동성 3σ 초과(충격 감지) 시 포지션 자동 축소 — 손실 방어 우선</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">Sooppiy 구현: 자동화 룰(<code>automation.py</code>)이 심볼 · 주기 · <code>min_confidence</code> · <code>size_usd</code> · <code>auto_execute</code>로 트리거를 실행하고, 신뢰도 ≥ 임계치일 때만 페이퍼 주문. 모든 실행/스킵이 <code>automation_runs</code>에 기록. ✅ — 단, 위 예시의 세부 트리거(갭 · 배당률 변화 · 3σ)는 아직 신호원 미연동으로 <span class="tag no-t">❌</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">6</span>리스크 관리 (필수)</h2>
+    <table>
+      <tr><th style="width:130px">항목</th><th>목표</th><th style="width:220px">Sooppiy 구현</th></tr>
+      <tr><td><strong>사이징</strong></td><td>켈리 기준(Kelly criterion) 등으로 베팅 규모 제한</td><td><span class="tag part">🟡</span> 룰당 고정 <code>size_usd</code>만 / 켈리 ❌</td></tr>
+      <tr><td><strong>손절</strong></td><td>손절 · 최대 손실 한도를 코드에 하드코딩해 감정 개입 차단</td><td><span class="tag no-t">❌ 미구현</span></td></tr>
+      <tr><td><strong>안전장치</strong></td><td>API 지연 · 급락 · 조작 대비 서킷브레이커(자동 정지)</td><td><span class="tag no-t">❌ 미구현</span></td></tr>
+    </table>
+    <div class="note" style="border-left-color:var(--down)"><strong>가장 큰 갭:</strong> 프레임워크가 '필수'로 지정한 리스크 엔진이 대부분 미구현입니다. 현재는 전량 페이퍼 트레이딩이라 실손실은 없지만, 실거래 전 반드시 선행 구현해야 합니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">7</span>핵심 역량 · 트레이딩 스킬</h2>
+    <table>
+      <tr><th style="width:210px">역량 / 스킬</th><th>설명</th><th style="width:210px">Sooppiy 구현</th></tr>
+      <tr><td>Strategy Backtesting</td><td>파라미터로 과거 데이터를 검증해 전략 수익성 사전 확인</td><td><span class="tag part">🟡</span> 기록 재생형 백테스트(<code>backtest.py</code>) ✅ / 파라미터 시뮬레이터 ❌</td></tr>
+      <tr><td>Signal Generation</td><td>시장 데이터 · 뉴스 · 기술 지표 분석으로 매매 조건 판단</td><td><span class="tag ok">✅</span> <code>analysis_agents.run_analysis</code></td></tr>
+      <tr><td>Order Execution</td><td>브로커/거래소에 시장가 · 지정가 자동 주문</td><td><span class="tag part">🟡</span> 페이퍼 즉시 체결 ✅ / 실거래 스캐폴드 있으나 비활성</td></tr>
+      <tr><td>Trade Journaling</td><td>매매 여부와 무관하게 모든 판단을 구조화 기록</td><td><span class="tag ok">✅</span> <code>automation_runs</code> · 이벤트/감사 로그 · 신호 로그</td></tr>
+      <tr><td>Risk Management</td><td>손실 전략 자동 정리 · 손절/익절 트리거 (Chief Risk Officer)</td><td><span class="tag no-t">❌ 미구현</span></td></tr>
+      <tr><td colspan="3" style="background:var(--bg2);font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--faint)">조합용 스킬 (재사용 가능한 작은 단위)</td></tr>
+      <tr><td class="mono">trading-signal-collector</td><td>정량+감성 신호를 하나의 스코어 피드로 수집</td><td><span class="tag no-t">❌ 저장소에 없음</span></td></tr>
+      <tr><td class="mono">market-breadth-analyzer</td><td>공개 CSV 점수 분포 — API 키 불필요</td><td><span class="tag no-t">❌ 저장소에 없음</span></td></tr>
+      <tr><td class="mono">uptrend-analyzer</td><td>공개 CSV 상승 추세 참여 — API 키 불필요</td><td><span class="tag no-t">❌ 저장소에 없음</span></td></tr>
+      <tr><td class="mono">position-sizer</td><td>순수 계산 (켈리류 사이징)</td><td><span class="tag no-t">❌ 저장소에 없음</span></td></tr>
+      <tr><td class="mono">trader-memory-core</td><td>로컬 YAML 저널링</td><td><span class="tag part">🟡</span> DB 저널로 대체 구현</td></tr>
+      <tr><td class="mono">signal-postmortem</td><td>검토 프레임워크 — 지는 신호 정리</td><td><span class="tag no-t">❌ 저장소에 없음</span></td></tr>
+      <tr><td colspan="3" style="background:var(--bg2);font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--faint)">저장소에 이미 있는 에이전트 스킬 (skills/)</td></tr>
+      <tr><td class="mono">sooppiy · heartbeat · market-intel · polymarket · tradesync · copytrade</td><td colspan="2">에이전트 온보딩 · 하트비트 구독 · 마켓 인텔 · 예측시장 · 거래 동기화 문서 <span class="tag ok">✅</span></td></tr>
+    </table>
+    <div class="note">워크플로 예시: <code>deep-research</code>로 뉴스 · 심리 수집 → <code>xlsx</code>로 신호 스코어링 → <code>dataviz</code>로 대시보드 → <code>claude-in-chrome</code>로 데이터 조회 — 또는 <code>skill-creator</code>로 맞춤형 "매매 신호 수집 스킬" 제작. (이 스킬들은 Claude 작업환경의 범용 스킬로, 서비스 저장소와 별개)</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="no">8</span>구현 우선순위 (갭 로드맵)</h2>
+    <ul>
+      <li><strong>1. 리스크 엔진</strong> — 손절/최대손실 하드코딩 · 서킷브레이커(3σ · API 지연 감지) · 켈리 사이징. <em>프레임워크상 '필수'인데 전부 미구현.</em></li>
+      <li><strong>2. 심리 지표 연동</strong> — Fear &amp; Greed 지수 API · 감성 스파이크(델타) 감지 · 청산 데이터.</li>
+      <li><strong>3. 크립토 정량 확장</strong> — 크립토 RSI/이동평균(현재 미국주식만) · 펀딩비 · 현물-선물 베이시스.</li>
+      <li><strong>4. Which-coin 스캐너</strong> — 거래량 급증 감지 · 소셜 언급량 시계열 · 신규 상장 알림.</li>
+      <li><strong>5. 스킬 이식</strong> — <code>trading-signal-collector</code> 등 6종을 서비스 <code>skills/</code>로 이식해 에이전트가 사용하도록.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    ⚠️ 본 문서는 교육용 참고 자료입니다. Sooppiy의 모든 매매는 모의(paper)이며, 어떤 내용도 투자 자문이 아닙니다. 실제 투자 판단은 본인 책임입니다.<br>
+    sooppiy.com · 구현 현황은 커밋 시점 기준 (<span class="mono">service/server</span> 코드 감사 결과)
+  </div>
+</footer>
+
+</body>
+</html>
