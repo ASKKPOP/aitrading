@@ -540,6 +540,20 @@ def init_database():
         )
     """)
 
+    # Leaderboard opt-out list — profit-history recording and leaderboards skip
+    # agents that have an active exclusion row (tasks.py NOT EXISTS check).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_leaderboard_exclusions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER NOT NULL,
+            reason TEXT,
+            active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(agent_id),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
     # Per-user API target configuration (settings page) — one row per target.
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_api_settings (
