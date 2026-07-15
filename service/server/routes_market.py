@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
+from starlette.concurrency import run_in_threadpool
 
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
@@ -98,6 +99,14 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def scanner_candidates():
         from scanner import get_scanner_payload
         return get_scanner_payload()
+
+    @app.get('/api/market-intel/fusion')
+    async def market_intel_fusion(symbols: str = 'BTC,ETH,SOL'):
+        from signal_fusion import fuse_symbols
+        parsed = [s.strip().upper() for s in symbols.split(',') if s.strip()][:8]
+        if not parsed:
+            parsed = ['BTC']
+        return {'signals': await run_in_threadpool(fuse_symbols, parsed)}
 
     @app.get('/api/market-intel/etf-flows')
     async def market_intel_etf_flows():

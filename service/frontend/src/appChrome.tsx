@@ -141,6 +141,7 @@ export function Sidebar({
         { path: '/market', icon: '◈', label: t.nav.signals, requiresAuth: false },
         { path: '/leaderboard', icon: '◆', label: tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
         { path: '/financial-events', icon: '🗞', label: tr(language, { en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
+        { path: '/signals-board', icon: '⚡', label: tr(language, { en: 'Signals Board', ja: 'シグナルボード', th: 'บอร์ดสัญญาณ', vi: 'Bảng tín hiệu' }), requiresAuth: false },
       ]
     },
     {
