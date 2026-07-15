@@ -110,11 +110,17 @@ function App() {
     setToken(null)
     setAgentInfo(null)
     setNotificationCounts({ discussion: 0, strategy: 0, experiment: 0 })
+    // Linked sessions sign out together — otherwise the auto-link effect
+    // would immediately re-issue an agent token from the surviving user session.
+    if (userToken) { signOutUser(); setUserToken(null); setUserInfo(null) }
   }
 
   // Phase 5: human-user auth lives alongside the agent claw_token.
   const userLogin = (newToken: string) => { setUserToken(newToken) }
-  const userLogout = () => { signOutUser(); setUserToken(null); setUserInfo(null) }
+  const userLogout = () => {
+    signOutUser(); setUserToken(null); setUserInfo(null)
+    localStorage.removeItem('claw_token'); setToken(null); setAgentInfo(null)
+  }
 
   const [userInfo, setUserInfo] = useState<any>(null)
   useEffect(() => {
@@ -127,6 +133,20 @@ function App() {
       .then(data => { if (data) setUserInfo(data) })
       .catch(() => {})
   }, [userToken])
+
+  // Every human account gets its own auto-provisioned simulator agent — most of
+  // the app runs on agent (claw) auth, so link it whenever the claw session is
+  // missing. Guarded so an existing agent session is never rotated away.
+  useEffect(() => {
+    if (!userToken || token) return
+    fetch(`${API_BASE}/users/agent`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${userToken}` }
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data?.token) login(data.token) })
+      .catch(() => {})
+  }, [userToken, token])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme

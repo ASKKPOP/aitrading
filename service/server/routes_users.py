@@ -462,3 +462,51 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.commit()
         conn.close()
         return {'success': True, 'target': target}
+
+    # ─────────────────── linked agent (one per human user) ───────────────────
+    # Most of the app runs on agent (claw) auth. A human account gets its own
+    # auto-provisioned simulator agent so logging in unlocks the whole app.
+
+    @app.post('/api/users/agent')
+    async def ensure_user_agent(authorization: str = Header(None)):
+        from services import _issue_agent_token
+
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT id, name FROM agents WHERE user_id = ?', (user['id'],))
+            row = cursor.fetchone()
+            created = False
+            if row is None:
+                # Derive a readable unique agent name from the email local part.
+                base = ''.join(ch for ch in user['email'].split('@')[0].lower()
+                               if ch.isalnum() or ch in '-_') or 'trader'
+                name = base
+                suffix = 1
+                while True:
+                    cursor.execute('SELECT 1 FROM agents WHERE TRIM(name) = ?', (name,))
+                    if cursor.fetchone() is None:
+                        break
+                    suffix += 1
+                    name = f'{base}-{suffix}'
+                # Password is random and unused — this agent authenticates only
+                # through the linked user account (token issued below).
+                cursor.execute(
+                    'INSERT INTO agents (name, password_hash, wallet_address, cash, user_id) VALUES (?, ?, ?, ?, ?)',
+                    (name, hash_password(secrets.token_urlsafe(24)), '', 100000.0, user['id']),
+                )
+                agent_id = cursor.lastrowid
+                conn.commit()
+                created = True
+            else:
+                agent_id, name = row['id'], row['name']
+        finally:
+            conn.close()
+
+        agent_token = _issue_agent_token(agent_id)
+        return {'token': agent_token, 'agent_id': agent_id, 'name': name, 'created': created}
