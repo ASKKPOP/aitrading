@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { API_BASE } from '../appShared'
+import { API_BASE, useLanguage } from '../appShared'
+import { tr } from '../i18n'
 
 interface BybitTicker {
   symbol: string
@@ -62,6 +63,7 @@ function SkeletonRow() {
 }
 
 export function BybitMarketsTable() {
+  const { language } = useLanguage()
   const [tickers, setTickers] = useState<BybitTicker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,11 +77,11 @@ export function BybitMarketsTable() {
       setTickers(data.tickers ?? [])
       setError(null)
     } catch (e: any) {
-      setError('Unable to load live prices')
+      setError(tr(language, { ko: '실시간 가격을 불러올 수 없습니다', en: 'Unable to load live prices', ja: 'リアルタイム価格を読み込めません', th: 'ไม่สามารถโหลดราคาสดได้', vi: 'Không thể tải giá trực tiếp' }))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [language])
 
   useEffect(() => {
     load()
@@ -97,16 +99,16 @@ export function BybitMarketsTable() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
-            Crypto Futures Markets
+            {tr(language, { ko: '암호화폐 선물 시장', en: 'Crypto Futures Markets', ja: '暗号資産先物マーケット', th: 'ตลาดฟิวเจอร์สคริปโต', vi: 'Thị trường phái sinh Crypto' })}
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-            Top 20 USDT-margined perpetuals · Live prices via OKX
+            {tr(language, { ko: '상위 20개 USDT 마진 무기한 선물 · OKX 실시간 가격', en: 'Top 20 USDT-margined perpetuals · Live prices via OKX', ja: 'USDT証拠金無期限先物トップ20 · OKXによるリアルタイム価格', th: 'สัญญาถาวรมาร์จิน USDT 20 อันดับแรก · ราคาสดผ่าน OKX', vi: 'Top 20 hợp đồng vĩnh cửu ký quỹ USDT · Giá trực tiếp qua OKX' })}
           </p>
         </div>
         {!loading && !error && (
           <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
-            Live
+            {tr(language, { ko: '실시간', en: 'Live', ja: 'ライブ', th: 'สด', vi: 'Trực tiếp' })}
           </span>
         )}
       </div>
@@ -130,7 +132,7 @@ export function BybitMarketsTable() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
-              {['Symbol', 'Last Price', '24h Change', 'Volume 24h', ''].map((h, i) => (
+              {[tr(language, { ko: '종목', en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' }), tr(language, { ko: '현재가', en: 'Last Price', ja: '現在価格', th: 'ราคาล่าสุด', vi: 'Giá cuối' }), tr(language, { ko: '24시간 변동', en: '24h Change', ja: '24時間変動', th: 'เปลี่ยนแปลง 24 ชม.', vi: 'Thay đổi 24h' }), tr(language, { ko: '24시간 거래량', en: 'Volume 24h', ja: '24時間出来高', th: 'ปริมาณ 24 ชม.', vi: 'Khối lượng 24h' }), ''].map((h, i) => (
                 <th key={h || i} style={{
                   padding: '10px 16px',
                   textAlign: i === 4 ? 'right' : 'left',
@@ -196,7 +198,7 @@ export function BybitMarketsTable() {
                         e.currentTarget.style.color = 'var(--accent-primary)'
                       }}
                     >
-                      Trade
+                      {tr(language, { ko: '거래', en: 'Trade', ja: '取引', th: 'เทรด', vi: 'Giao dịch' })}
                     </button>
                   </td>
                 </tr>

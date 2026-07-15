@@ -211,17 +211,17 @@ export function SignalsFeed({ token }: { token?: string | null }) {
       <div className="header">
         <div>
           <h1 className="header-title">{t.signals.operations}</h1>
-          <p className="header-subtitle">{tr(language, { en: 'Browse trading operation signals', ja: '取引オペレーションシグナルを閲覧', th: 'เรียกดูสัญญาณการดำเนินการเทรด', vi: 'Duyệt tín hiệu thao tác giao dịch' })}</p>
+          <p className="header-subtitle">{tr(language, { ko: '트레이딩 운영 시그널 둘러보기', en: 'Browse trading operation signals', ja: '取引オペレーションシグナルを閲覧', th: 'เรียกดูสัญญาณการดำเนินการเทรด', vi: 'Duyệt tín hiệu thao tác giao dịch' })}</p>
         </div>
       </div>
 
       {!token && (
         <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
           <div style={{ fontWeight: 600, marginBottom: '6px' }}>
-            {tr(language, { en: 'Guest Browsing Enabled', ja: 'ゲスト閲覧が有効', th: 'เปิดใช้งานการเรียกดูแบบผู้เยี่ยมชม', vi: 'Đã bật chế độ khách' })}
+            {tr(language, { ko: '게스트 둘러보기 활성화됨', en: 'Guest Browsing Enabled', ja: 'ゲスト閲覧が有効', th: 'เปิดใช้งานการเรียกดูแบบผู้เยี่ยมชม', vi: 'Đã bật chế độ khách' })}
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
-            {tr(language, { en: 'You can now browse market signals, positions, and agent profiles. Login to configure your AI, automate trades, and interact.', ja: 'マーケットシグナル、ポジション、エージェントのプロフィールを閲覧できます。AIの設定・自動売買・インタラクションにはログインしてください。', th: 'คุณสามารถเรียกดูสัญญาณตลาด ตำแหน่ง และโปรไฟล์เอเจนต์ได้แล้ว เข้าสู่ระบบเพื่อตั้งค่า AI เทรดอัตโนมัติ และโต้ตอบ', vi: 'Bạn có thể duyệt tín hiệu thị trường, vị thế và hồ sơ agent. Đăng nhập để cấu hình AI, giao dịch tự động và tương tác.' })}
+            {tr(language, { ko: '이제 시장 시그널, 포지션, 에이전트 프로필을 둘러볼 수 있습니다. 로그인하여 AI를 설정하고, 거래를 자동화하고, 상호작용하세요.', en: 'You can now browse market signals, positions, and agent profiles. Login to configure your AI, automate trades, and interact.', ja: 'マーケットシグナル、ポジション、エージェントのプロフィールを閲覧できます。AIの設定・自動売買・インタラクションにはログインしてください。', th: 'คุณสามารถเรียกดูสัญญาณตลาด ตำแหน่ง และโปรไฟล์เอเจนต์ได้แล้ว เข้าสู่ระบบเพื่อตั้งค่า AI เทรดอัตโนมัติ และโต้ตอบ', vi: 'Bạn có thể duyệt tín hiệu thị trường, vị thế và hồ sơ agent. Đăng nhập để cấu hình AI, giao dịch tự động và tương tác.' })}
           </div>
         </div>
       )}
@@ -246,14 +246,14 @@ export function SignalsFeed({ token }: { token?: string | null }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
             <button className="back-button" style={{ margin: 0 }} onClick={handleBack}>
-              ← {tr(language, { en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })} | {selectedAgent.agent_name}
+              ← {tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })} | {selectedAgent.agent_name}
             </button>
             <button
               className="btn btn-outline"
               style={{ fontSize: 12, padding: '5px 12px' }}
               onClick={() => navigate(`/backtest?agent=${selectedAgent.agent_id}`)}
             >
-              ⏮ {tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+              ⏮ {tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
             </button>
           </div>
 
@@ -264,7 +264,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 <LineChart data={agentEquityCurve} margin={{ top: 2, right: 8, bottom: 2, left: 8 }}>
                   <XAxis dataKey="t" hide />
                   <YAxis domain={['auto', 'auto']} hide />
-                  <Tooltip formatter={(v) => [`$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tr(language, { en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ต', vi: 'Danh mục' })]} />
+                  <Tooltip formatter={(v) => [`$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tr(language, { ko: '포트폴리오', en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ต', vi: 'Danh mục' })]} />
                   <Line
                     type="monotone"
                     dataKey="v"
@@ -284,25 +284,25 @@ export function SignalsFeed({ token }: { token?: string | null }) {
               className={`market-tab ${signalType === 'positions' ? 'active' : ''}`}
               onClick={() => setSignalType('positions')}
             >
-              {tr(language, { en: 'Positions', ja: 'ポジション', th: 'ตำแหน่ง', vi: 'Vị thế' })}
+              {tr(language, { ko: '포지션', en: 'Positions', ja: 'ポジション', th: 'ตำแหน่ง', vi: 'Vị thế' })}
             </button>
             <button
               className={`market-tab ${signalType === 'operation' ? 'active' : ''}`}
               onClick={() => setSignalType('operation')}
             >
-              {tr(language, { en: 'Trading Signals', ja: '取引シグナル', th: 'สัญญาณเทรด', vi: 'Tín hiệu giao dịch' })}
+              {tr(language, { ko: '트레이딩 시그널', en: 'Trading Signals', ja: '取引シグナル', th: 'สัญญาณเทรด', vi: 'Tín hiệu giao dịch' })}
             </button>
             <button
               className={`market-tab ${signalType === 'strategy' ? 'active' : ''}`}
               onClick={() => setSignalType('strategy')}
             >
-              {tr(language, { en: 'Strategies', ja: '戦略', th: 'กลยุทธ์', vi: 'Chiến lược' })}
+              {tr(language, { ko: '전략', en: 'Strategies', ja: '戦略', th: 'กลยุทธ์', vi: 'Chiến lược' })}
             </button>
             <button
               className={`market-tab ${signalType === 'discussion' ? 'active' : ''}`}
               onClick={() => setSignalType('discussion')}
             >
-              {tr(language, { en: 'Discussions', ja: 'ディスカッション', th: 'การสนทนา', vi: 'Thảo luận' })}
+              {tr(language, { ko: '토론', en: 'Discussions', ja: 'ディスカッション', th: 'การสนทนา', vi: 'Thảo luận' })}
             </button>
           </div>
 
@@ -316,7 +316,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 {agentCash > 0 && (
                   <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {tr(language, { en: 'Available Cash', ja: '利用可能な現金', th: 'เงินสดที่ใช้ได้', vi: 'Tiền khả dụng' })}
+                      {tr(language, { ko: '가용 현금', en: 'Available Cash', ja: '利用可能な現金', th: 'เงินสดที่ใช้ได้', vi: 'Tiền khả dụng' })}
                     </div>
                     <div style={{ fontSize: '20px', fontWeight: 600, color: 'var(--accent-primary)' }}>
                       ${agentCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -326,7 +326,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 {agentPositions.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">📋</div>
-                    <div className="empty-title">{tr(language, { en: 'No positions', ja: 'ポジションはありません', th: 'ไม่มีตำแหน่ง', vi: 'Không có vị thế' })}</div>
+                    <div className="empty-title">{tr(language, { ko: '포지션 없음', en: 'No positions', ja: 'ポジションはありません', th: 'ไม่มีตำแหน่ง', vi: 'Không có vị thế' })}</div>
                   </div>
                 ) : (
                   <div className="card">
@@ -334,12 +334,12 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                       <table className="table">
                         <thead>
                           <tr>
-                            <th>{tr(language, { en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' })}</th>
-                            <th>{tr(language, { en: 'Side', ja: 'サイド', th: 'ฝั่ง', vi: 'Phía' })}</th>
-                            <th>{tr(language, { en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}</th>
-                            <th>{tr(language, { en: 'Entry', ja: 'エントリー', th: 'เข้า', vi: 'Vào' })}</th>
-                            <th>{tr(language, { en: 'Current', ja: '現在', th: 'ปัจจุบัน', vi: 'Hiện tại' })}</th>
-                            <th>{tr(language, { en: 'PnL', ja: '損益', th: 'กำไรขาดทุน', vi: 'Lãi/Lỗ' })}</th>
+                            <th>{tr(language, { ko: '종목', en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' })}</th>
+                            <th>{tr(language, { ko: '방향', en: 'Side', ja: 'サイド', th: 'ฝั่ง', vi: 'Phía' })}</th>
+                            <th>{tr(language, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}</th>
+                            <th>{tr(language, { ko: '진입', en: 'Entry', ja: 'エントリー', th: 'เข้า', vi: 'Vào' })}</th>
+                            <th>{tr(language, { ko: '현재', en: 'Current', ja: '現在', th: 'ปัจจุบัน', vi: 'Hiện tại' })}</th>
+                            <th>{tr(language, { ko: '손익', en: 'PnL', ja: '損益', th: 'กำไรขาดทุน', vi: 'Lãi/Lỗ' })}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -348,7 +348,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                               <td style={{ fontWeight: 600 }}>{getInstrumentLabel(pos)}</td>
                               <td>
                                 <span className={`tag ${pos.side === 'long' ? 'signal-side long' : 'signal-side short'}`}>
-                                  {pos.side === 'long' ? (tr(language, { en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Mua dài' })) : (tr(language, { en: 'Short', ja: 'ショート', th: 'ขายชอร์ต', vi: 'Bán khống' }))}
+                                  {pos.side === 'long' ? (tr(language, { ko: '롱', en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Mua dài' })) : (tr(language, { ko: '공매도', en: 'Short', ja: 'ショート', th: 'ขายชอร์ต', vi: 'Bán khống' }))}
                                 </span>
                               </td>
                               <td>{Math.abs(pos.quantity)}</td>
@@ -359,7 +359,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                               </td>
                               <td>
                                 <span className="tag" style={{ background: 'var(--bg-tertiary)' }}>
-                                  {tr(language, { en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu' })}
+                                  {tr(language, { ko: '시그널', en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu' })}
                                 </span>
                               </td>
                             </tr>
@@ -393,10 +393,10 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                       </div>
                       <div className="signal-meta">
                         {signal.market === 'polymarket' && signal.outcome && (
-                          <span className="signal-meta-item">🎯 {tr(language, { en: 'Outcome', ja: '結果', th: 'ผลลัพธ์', vi: 'Kết quả' })}: {signal.outcome}</span>
+                          <span className="signal-meta-item">🎯 {tr(language, { ko: '결과', en: 'Outcome', ja: '結果', th: 'ผลลัพธ์', vi: 'Kết quả' })}: {signal.outcome}</span>
                         )}
-                        <span className="signal-meta-item">💰 {tr(language, { en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' })}: ${(signal.price || signal.entry_price)?.toLocaleString()}</span>
-                        <span className="signal-meta-item">📦 {tr(language, { en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}: {signal.quantity}</span>
+                        <span className="signal-meta-item">💰 {tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' })}: ${(signal.price || signal.entry_price)?.toLocaleString()}</span>
+                        <span className="signal-meta-item">📦 {tr(language, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}: {signal.quantity}</span>
                         <span className="signal-meta-item">🏷️ {getMarketLabel(signal.market)}</span>
                         {/* Show executed time */}
                         {signal.executed_at && (
@@ -463,11 +463,11 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 </div>
                 <div className="agent-stats">
                   <div className="agent-stat">
-                    <span className="stat-label">{tr(language, { en: 'Positions', ja: 'ポジション', th: 'ตำแหน่ง', vi: 'Vị thế' })}</span>
+                    <span className="stat-label">{tr(language, { ko: '포지션', en: 'Positions', ja: 'ポジション', th: 'ตำแหน่ง', vi: 'Vị thế' })}</span>
                     <span className="stat-value">{agent.position_count || 0}</span>
                   </div>
                   <div className="agent-stat">
-                    <span className="stat-label">{tr(language, { en: 'Position PnL (Unrealized)', ja: 'ポジション損益 (未実現)', th: 'กำไรขาดทุนตำแหน่ง (ยังไม่รับรู้)', vi: 'Lãi/Lỗ vị thế (Chưa thực hiện)' })}</span>
+                    <span className="stat-label">{tr(language, { ko: '포지션 손익 (미실현)', en: 'Position PnL (Unrealized)', ja: 'ポジション損益 (未実現)', th: 'กำไรขาดทุนตำแหน่ง (ยังไม่รับรู้)', vi: 'Lãi/Lỗ vị thế (Chưa thực hiện)' })}</span>
                     <span className={`stat-value ${(agent.position_pnl || 0) >= 0 ? 'positive' : 'negative'}`}>
                       {(agent.position_pnl || 0) >= 0 ? '+' : ''}{agent.position_pnl?.toFixed(2) || '0.00'}
                     </span>
@@ -475,7 +475,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 </div>
                 <div className="agent-meta">
                   <span className="agent-last-signal">
-                    {tr(language, { en: 'Positions: ', ja: 'ポジション: ', th: 'ตำแหน่ง: ', vi: 'Vị thế: ' })}
+                    {tr(language, { ko: '포지션: ', en: 'Positions: ', ja: 'ポジション: ', th: 'ตำแหน่ง: ', vi: 'Vị thế: ' })}
                     {(agent.positions || []).map((p: any) => getInstrumentLabel(p)).join(', ') || '-'}
                   </span>
                 </div>
@@ -490,17 +490,17 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
-                {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
+                {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                {tr(language, { en: `Page ${page} / ${totalPages}, ${totalAgents} traders total`, ja: `ページ ${page} / ${totalPages}、合計 ${totalAgents} トレーダー`, th: `หน้า ${page} / ${totalPages}, รวม ${totalAgents} เทรดเดอร์`, vi: `Trang ${page} / ${totalPages}, tổng ${totalAgents} trader` })}
+                {tr(language, { ko: `페이지 ${page} / ${totalPages}, 총 트레이더 ${totalAgents}명`, en: `Page ${page} / ${totalPages}, ${totalAgents} traders total`, ja: `ページ ${page} / ${totalPages}、合計 ${totalAgents} トレーダー`, th: `หน้า ${page} / ${totalPages}, รวม ${totalAgents} เทรดเดอร์`, vi: `Trang ${page} / ${totalPages}, tổng ${totalAgents} trader` })}
               </div>
               <button
                 className="btn btn-secondary"
                 disabled={page >= totalPages}
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               >
-                {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
+                {tr(language, { ko: '다음', en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
               </button>
             </div>
           )}

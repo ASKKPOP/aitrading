@@ -1,11 +1,14 @@
 import { BybitMarketsTable } from '../components/BybitMarketsTable'
 import SignalsFeed from './SignalsFeed'
+import { useLanguage } from '../appShared'
+import { tr } from '../i18n'
 
 interface Props {
   token?: string | null
 }
 
 export function MarketPage({ token }: Props) {
+  const { language } = useLanguage()
   return (
     <div className="page-container">
       <BybitMarketsTable />
@@ -22,7 +25,7 @@ export function MarketPage({ token }: Props) {
         letterSpacing: '0.08em',
       }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        Agent Signals
+        {tr(language, { ko: '에이전트 시그널', en: 'Agent Signals', ja: 'エージェントシグナル', th: 'สัญญาณเอเจนต์', vi: 'Tín hiệu Agent' })}
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
 

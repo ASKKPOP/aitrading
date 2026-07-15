@@ -65,9 +65,9 @@ function parseRecordedAt(recordedAt: string) {
 }
 
 export function formatIntelTimestamp(timestamp: string | null | undefined, language: Language) {
-  if (!timestamp) return tr(language, { en: 'No snapshot yet', ja: 'スナップショットなし', th: 'ยังไม่มีสแนปช็อต', vi: 'Chưa có ảnh chụp' })
+  if (!timestamp) return tr(language, { ko: '아직 스냅샷이 없습니다', en: 'No snapshot yet', ja: 'スナップショットなし', th: 'ยังไม่มีสแนปช็อต', vi: 'Chưa có ảnh chụp' })
   const parsed = parseRecordedAt(timestamp)
-  if (!parsed) return tr(language, { en: 'Unknown time', ja: '時刻不明', th: 'เวลาไม่ทราบ', vi: 'Thời gian không rõ' })
+  if (!parsed) return tr(language, { ko: '알 수 없는 시각', en: 'Unknown time', ja: '時刻不明', th: 'เวลาไม่ทราบ', vi: 'Thời gian không rõ' })
   const formatted = parsed.toLocaleString(LOCALE_BY_LANGUAGE[language], {
     month: 'short',
     day: 'numeric',

@@ -20,22 +20,22 @@ export function AccountsPage() {
   }, [token])
 
   const T = {
-    title: tr(language, { en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }),
-    subtitle: tr(language, { en: 'Choose how trades are executed', ja: '取引の実行方法を選択', th: 'เลือกวิธีดำเนินการเทรด', vi: 'Chọn cách thực hiện giao dịch' }),
-    simTitle: tr(language, { en: 'Simulator account', ja: 'シミュレーター口座', th: 'บัญชีจำลอง', vi: 'Tài khoản mô phỏng' }),
-    simDesc: tr(language, { en: 'Simulated wallet. Buys and sells are paper-traded against live market prices — no real money.', ja: '模擬ウォレット。実際の資金は動きません。', th: 'กระเป๋าจำลอง ซื้อขายแบบกระดาษกับราคาตลาดจริง — ไม่มีเงินจริง', vi: 'Ví mô phỏng. Không có tiền thật.' }),
-    balance: tr(language, { en: 'Simulated balance', ja: '模擬残高', th: 'ยอดจำลอง', vi: 'Số dư mô phỏng' }),
-    active: tr(language, { en: 'Active', ja: '有効', th: 'ใช้งาน', vi: 'Đang dùng' }),
-    use: tr(language, { en: 'Use this account', ja: 'この口座を使う', th: 'ใช้บัญชีนี้', vi: 'Dùng tài khoản này' }),
-    realTitle: tr(language, { en: 'Real account', ja: '実口座', th: 'บัญชีจริง', vi: 'Tài khoản thật' }),
-    realDesc: tr(language, { en: 'Connect a live exchange to trade with real funds.', ja: '実際の資金で取引するために取引所を接続します。', th: 'เชื่อมต่อกระดานเทรดเพื่อเทรดด้วยเงินจริง', vi: 'Kết nối sàn giao dịch thật.' }),
-    exchange: tr(language, { en: 'Exchange', ja: '取引所', th: 'กระดานเทรด', vi: 'Sàn' }),
-    apiKey: tr(language, { en: 'API key', ja: 'APIキー', th: 'คีย์ API', vi: 'Khóa API' }),
-    apiSecret: tr(language, { en: 'API secret', ja: 'APIシークレット', th: 'ความลับ API', vi: 'Bí mật API' }),
-    connect: tr(language, { en: 'Connect exchange', ja: '取引所を接続', th: 'เชื่อมต่อ', vi: 'Kết nối' }),
-    warn: tr(language, { en: 'Real trading risks real money. Only ever use API keys scoped to TRADE — never withdrawal. Start small.', ja: '実取引は実際の資金を失う恐れがあります。', th: 'การเทรดจริงมีความเสี่ยงต่อเงินจริง ใช้คีย์ที่จำกัดสิทธิ์เฉพาะการเทรดเท่านั้น', vi: 'Giao dịch thật có rủi ro mất tiền thật.' }),
-    gated: tr(language, { en: 'Setup saved. Live order execution is intentionally disabled in this build — it requires secure server-side key storage and an explicit go-live step.', ja: '発注実行は本ビルドでは無効です。', th: 'บันทึกการตั้งค่าแล้ว การส่งคำสั่งจริงถูกปิดไว้ในเวอร์ชันนี้', vi: 'Đã lưu. Thực thi lệnh thật đang tắt trong bản này.' }),
-    login: tr(language, { en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    title: tr(language, { ko: '계정', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }),
+    subtitle: tr(language, { ko: '거래 실행 방식을 선택하세요', en: 'Choose how trades are executed', ja: '取引の実行方法を選択', th: 'เลือกวิธีดำเนินการเทรด', vi: 'Chọn cách thực hiện giao dịch' }),
+    simTitle: tr(language, { ko: '시뮬레이터 계정', en: 'Simulator account', ja: 'シミュレーター口座', th: 'บัญชีจำลอง', vi: 'Tài khoản mô phỏng' }),
+    simDesc: tr(language, { ko: '모의 지갑입니다. 매수와 매도는 실시간 시장 가격에 대해 모의 거래됩니다 — 실제 자금은 사용되지 않습니다.', en: 'Simulated wallet. Buys and sells are paper-traded against live market prices — no real money.', ja: '模擬ウォレット。実際の資金は動きません。', th: 'กระเป๋าจำลอง ซื้อขายแบบกระดาษกับราคาตลาดจริง — ไม่มีเงินจริง', vi: 'Ví mô phỏng. Không có tiền thật.' }),
+    balance: tr(language, { ko: '모의 잔고', en: 'Simulated balance', ja: '模擬残高', th: 'ยอดจำลอง', vi: 'Số dư mô phỏng' }),
+    active: tr(language, { ko: '활성', en: 'Active', ja: '有効', th: 'ใช้งาน', vi: 'Đang dùng' }),
+    use: tr(language, { ko: '이 계정 사용', en: 'Use this account', ja: 'この口座を使う', th: 'ใช้บัญชีนี้', vi: 'Dùng tài khoản này' }),
+    realTitle: tr(language, { ko: '실계좌', en: 'Real account', ja: '実口座', th: 'บัญชีจริง', vi: 'Tài khoản thật' }),
+    realDesc: tr(language, { ko: '실제 자금으로 거래하려면 라이브 거래소를 연결하세요.', en: 'Connect a live exchange to trade with real funds.', ja: '実際の資金で取引するために取引所を接続します。', th: 'เชื่อมต่อกระดานเทรดเพื่อเทรดด้วยเงินจริง', vi: 'Kết nối sàn giao dịch thật.' }),
+    exchange: tr(language, { ko: '교환', en: 'Exchange', ja: '取引所', th: 'กระดานเทรด', vi: 'Sàn' }),
+    apiKey: tr(language, { ko: 'API 키', en: 'API key', ja: 'APIキー', th: 'คีย์ API', vi: 'Khóa API' }),
+    apiSecret: tr(language, { ko: 'API 시크릿', en: 'API secret', ja: 'APIシークレット', th: 'ความลับ API', vi: 'Bí mật API' }),
+    connect: tr(language, { ko: '거래소 연결', en: 'Connect exchange', ja: '取引所を接続', th: 'เชื่อมต่อ', vi: 'Kết nối' }),
+    warn: tr(language, { ko: '실거래는 실제 자금을 위험에 노출시킵니다. 반드시 거래(TRADE) 권한으로 한정된 API 키만 사용하세요 — 출금 권한은 절대 안 됩니다. 소액으로 시작하세요.', en: 'Real trading risks real money. Only ever use API keys scoped to TRADE — never withdrawal. Start small.', ja: '実取引は実際の資金を失う恐れがあります。', th: 'การเทรดจริงมีความเสี่ยงต่อเงินจริง ใช้คีย์ที่จำกัดสิทธิ์เฉพาะการเทรดเท่านั้น', vi: 'Giao dịch thật có rủi ro mất tiền thật.' }),
+    gated: tr(language, { ko: '설정이 저장되었습니다. 이 빌드에서는 라이브 주문 실행이 의도적으로 비활성화되어 있습니다 — 안전한 서버 측 키 저장과 명시적인 라이브 전환 단계가 필요합니다.', en: 'Setup saved. Live order execution is intentionally disabled in this build — it requires secure server-side key storage and an explicit go-live step.', ja: '発注実行は本ビルドでは無効です。', th: 'บันทึกการตั้งค่าแล้ว การส่งคำสั่งจริงถูกปิดไว้ในเวอร์ชันนี้', vi: 'Đã lưu. Thực thi lệnh thật đang tắt trong bản này.' }),
+    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
   }
 
   function chooseSimulator() { localStorage.setItem('account_type', 'simulator'); setAccountType('simulator') }

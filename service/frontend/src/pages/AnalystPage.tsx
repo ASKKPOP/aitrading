@@ -14,26 +14,26 @@ export function AnalystPage() {
   const [error, setError] = useState('')
 
   const T = {
-    title: tr(language, { en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }),
-    subtitle: tr(language, { en: 'Four AI analysts debate a decision + report', ja: '4人のAIアナリストが討議', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ', vi: 'Bốn nhà phân tích AI tranh luận' }),
-    symbol: tr(language, { en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' }),
-    market: tr(language, { en: 'Market', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
-    run: tr(language, { en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích' }),
-    running: tr(language, { en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…' }),
-    decision: tr(language, { en: 'Decision', ja: '判断', th: 'การตัดสินใจ', vi: 'Quyết định' }),
-    confidence: tr(language, { en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy' }),
-    report: tr(language, { en: 'Report', ja: 'レポート', th: 'รายงาน', vi: 'Báo cáo' }),
-    analysts: tr(language, { en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích' }),
-    login: tr(language, { en: 'Please log in to run analysis.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
-    provider: tr(language, { en: 'AI provider', ja: 'AIプロバイダー', th: 'ผู้ให้บริการ AI', vi: 'Nhà cung cấp AI' }),
-    none: tr(language, { en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM' }),
-    disclaimer: tr(language, { en: 'Research only — not financial advice. All trades are simulated.', ja: '調査目的のみ。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
+    title: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }),
+    subtitle: tr(language, { ko: '네 명의 AI 애널리스트가 결정과 리포트를 두고 토론합니다', en: 'Four AI analysts debate a decision + report', ja: '4人のAIアナリストが討議', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ', vi: 'Bốn nhà phân tích AI tranh luận' }),
+    symbol: tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' }),
+    market: tr(language, { ko: '시장', en: 'Market', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+    run: tr(language, { ko: '분석 실행', en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích' }),
+    running: tr(language, { ko: '애널리스트들이 토론 중…', en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…' }),
+    decision: tr(language, { ko: '결정', en: 'Decision', ja: '判断', th: 'การตัดสินใจ', vi: 'Quyết định' }),
+    confidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy' }),
+    report: tr(language, { ko: '리포트', en: 'Report', ja: 'レポート', th: 'รายงาน', vi: 'Báo cáo' }),
+    analysts: tr(language, { ko: '애널리스트 브리프', en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích' }),
+    login: tr(language, { ko: '분석을 실행하려면 로그인하세요.', en: 'Please log in to run analysis.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    provider: tr(language, { ko: 'AI 제공자', en: 'AI provider', ja: 'AIプロバイダー', th: 'ผู้ให้บริการ AI', vi: 'Nhà cung cấp AI' }),
+    none: tr(language, { ko: '결정론적 (LLM 키 미설정)', en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM' }),
+    disclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다. 모든 거래는 모의입니다.', en: 'Research only — not financial advice. All trades are simulated.', ja: '調査目的のみ。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
   }
   const roleLabels: Record<string, string> = {
-    news: tr(language, { en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức' }),
-    sentiment: tr(language, { en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý' }),
-    fundamentals_macro: tr(language, { en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô' }),
-    technical: tr(language, { en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
+    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức' }),
+    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý' }),
+    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô' }),
+    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
   }
 
   async function run() {

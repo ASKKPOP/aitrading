@@ -52,7 +52,7 @@ export function AgentProfilePage() {
   if (loading) {
     return (
       <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
-        {tr(language, { en: 'Loading…', ja: '読み込み中…', th: 'กำลังโหลด…', vi: 'Đang tải…' })}
+        {tr(language, { ko: '불러오는 중…', en: 'Loading…', ja: '読み込み中…', th: 'กำลังโหลด…', vi: 'Đang tải…' })}
       </div>
     )
   }
@@ -62,10 +62,10 @@ export function AgentProfilePage() {
       <div style={{ padding: '60px 0', textAlign: 'center' }}>
         <div style={{ fontSize: '40px', marginBottom: '12px' }}>◇</div>
         <div style={{ fontWeight: 600, fontSize: '18px', marginBottom: '8px' }}>
-          {tr(language, { en: 'Agent not found', ja: 'エージェントが見つかりません', th: 'ไม่พบเอเจนต์', vi: 'Không tìm thấy agent' })}
+          {tr(language, { ko: '에이전트를 찾을 수 없습니다', en: 'Agent not found', ja: 'エージェントが見つかりません', th: 'ไม่พบเอเจนต์', vi: 'Không tìm thấy agent' })}
         </div>
         <button className="btn btn-secondary" onClick={() => navigate('/leaderboard')}>
-          {tr(language, { en: '← Leaderboard', ja: '← リーダーボード', th: '← อันดับ', vi: '← Bảng xếp hạng' })}
+          {tr(language, { ko: '← 리더보드', en: '← Leaderboard', ja: '← リーダーボード', th: '← อันดับ', vi: '← Bảng xếp hạng' })}
         </button>
       </div>
     )
@@ -84,7 +84,7 @@ export function AgentProfilePage() {
         style={{ marginBottom: '20px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}
         onClick={() => navigate(-1)}
       >
-        ← {tr(language, { en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })}
+        ← {tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })}
       </button>
 
       {/* Header */}
@@ -109,18 +109,18 @@ export function AgentProfilePage() {
       }}>
         {[
           {
-            label: tr(language, { en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ตโฟลิโอ', vi: 'Danh mục' }),
+            label: tr(language, { ko: '포트폴리오', en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ตโฟลิโอ', vi: 'Danh mục' }),
             value: `$${profile.cash.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
             sub: cashProfit >= 0 ? `+$${cashProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `-$${Math.abs(cashProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
             subColor: cashProfit >= 0 ? 'var(--success)' : 'var(--error)',
           },
           {
-            label: tr(language, { en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' }),
+            label: tr(language, { ko: '수익률', en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' }),
             value: `${pnlSign}${profile.profit_pct.toFixed(2)}%`,
             valueColor: pnlColor,
           },
           {
-            label: tr(language, { en: 'Trades', ja: '取引数', th: 'จำนวนการเทรด', vi: 'Số giao dịch' }),
+            label: tr(language, { ko: '거래', en: 'Trades', ja: '取引数', th: 'จำนวนการเทรด', vi: 'Số giao dịch' }),
             value: profile.trade_count.toLocaleString(),
           },
         ].map(({ label, value, valueColor, sub, subColor }) => (
@@ -143,7 +143,7 @@ export function AgentProfilePage() {
       {/* Equity curve */}
       <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'var(--font-mono)' }}>
-          {tr(language, { en: 'Equity Curve (90d)', ja: 'エクイティカーブ (90日)', th: 'เส้นทุน (90 วัน)', vi: 'Đường vốn (90 ngày)' })}
+          {tr(language, { ko: '자산 곡선 (90일)', en: 'Equity Curve (90d)', ja: 'エクイティカーブ (90日)', th: 'เส้นทุน (90 วัน)', vi: 'Đường vốn (90 ngày)' })}
         </div>
         {hasEquityCurve ? (
           <ResponsiveContainer width="100%" height={160}>
@@ -161,7 +161,7 @@ export function AgentProfilePage() {
                 contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '12px' }}
                 formatter={(v) => {
                   const num = typeof v === 'number' ? v : null
-                  return num != null ? [`$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, tr(language, { en: 'Value', ja: '価値', th: 'มูลค่า', vi: 'Giá trị' })] as [string, string] : ['-', ''] as [string, string]
+                  return num != null ? [`$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, tr(language, { ko: '가치', en: 'Value', ja: '価値', th: 'มูลค่า', vi: 'Giá trị' })] as [string, string] : ['-', ''] as [string, string]
                 }}
               />
               <Line type="monotone" dataKey="v" stroke="var(--accent-primary)" strokeWidth={2} dot={false} />
@@ -169,7 +169,7 @@ export function AgentProfilePage() {
           </ResponsiveContainer>
         ) : (
           <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
-            {tr(language, { en: 'No history yet', ja: '履歴なし', th: 'ยังไม่มีประวัติ', vi: 'Chưa có lịch sử' })}
+            {tr(language, { ko: '아직 기록이 없습니다', en: 'No history yet', ja: '履歴なし', th: 'ยังไม่มีประวัติ', vi: 'Chưa có lịch sử' })}
           </div>
         )}
       </div>
@@ -181,37 +181,37 @@ export function AgentProfilePage() {
           onClick={() => navigate(`/backtest?agent=${profile.agent_id}&days=90`)}
           style={{ fontSize: '13px' }}
         >
-          ⏮ {tr(language, { en: 'Run Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+          ⏮ {tr(language, { ko: '백테스트 실행', en: 'Run Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
         </button>
       </div>
 
       {/* Recent trades */}
       <div className="card" style={{ padding: '20px' }}>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'var(--font-mono)' }}>
-          {tr(language, { en: 'Recent Trades', ja: '最近の取引', th: 'การเทรดล่าสุด', vi: 'Giao dịch gần đây' })}
+          {tr(language, { ko: '최근 거래', en: 'Recent Trades', ja: '最近の取引', th: 'การเทรดล่าสุด', vi: 'Giao dịch gần đây' })}
         </div>
         {profile.recent_signals.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)', textAlign: 'center', padding: '20px 0' }}>
-            {tr(language, { en: 'No trades yet', ja: '取引なし', th: 'ยังไม่มีการเทรด', vi: 'Chưa có giao dịch' })}
+            {tr(language, { ko: '아직 거래가 없습니다', en: 'No trades yet', ja: '取引なし', th: 'ยังไม่มีการเทรด', vi: 'Chưa có giao dịch' })}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
             <thead>
               <tr style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 <th style={{ textAlign: 'left', paddingBottom: '8px', fontWeight: 500 }}>
-                  {tr(language, { en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
+                  {tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
                 </th>
                 <th style={{ textAlign: 'left', paddingBottom: '8px', fontWeight: 500 }}>
-                  {tr(language, { en: 'Side', ja: 'サイド', th: 'ด้าน', vi: 'Chiều' })}
+                  {tr(language, { ko: '방향', en: 'Side', ja: 'サイド', th: 'ด้าน', vi: 'Chiều' })}
                 </th>
                 <th style={{ textAlign: 'right', paddingBottom: '8px', fontWeight: 500 }}>
-                  {tr(language, { en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' })}
+                  {tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' })}
                 </th>
                 <th style={{ textAlign: 'right', paddingBottom: '8px', fontWeight: 500 }}>
-                  {tr(language, { en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}
+                  {tr(language, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' })}
                 </th>
                 <th style={{ textAlign: 'right', paddingBottom: '8px', fontWeight: 500 }}>
-                  {tr(language, { en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày' })}
+                  {tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày' })}
                 </th>
               </tr>
             </thead>

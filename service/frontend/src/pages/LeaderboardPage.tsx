@@ -66,10 +66,10 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
   const leaderboardOffset = (leaderboardPage - 1) * LEADERBOARD_PAGE_SIZE
   const formatReturnPercent = (value: any) => `${Number(value || 0).toFixed(2)}%`
   const metricOptions = [
-    ['return', tr(language, { en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' })],
-    ['risk', tr(language, { en: 'Risk Adjusted', ja: 'リスク調整後', th: 'ปรับตามความเสี่ยง', vi: 'Điều chỉnh rủi ro' })],
-    ['collaboration', tr(language, { en: 'Collaboration', ja: 'コラボレーション', th: 'การทำงานร่วม', vi: 'Cộng tác' })],
-    ['quality', tr(language, { en: 'Quality', ja: 'クオリティ', th: 'คุณภาพ', vi: 'Chất lượng' })]
+    ['return', tr(language, { ko: '수익률', en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' })],
+    ['risk', tr(language, { ko: '위험 조정', en: 'Risk Adjusted', ja: 'リスク調整後', th: 'ปรับตามความเสี่ยง', vi: 'Điều chỉnh rủi ro' })],
+    ['collaboration', tr(language, { ko: '협업', en: 'Collaboration', ja: 'コラボレーション', th: 'การทำงานร่วม', vi: 'Cộng tác' })],
+    ['quality', tr(language, { ko: '품질', en: 'Quality', ja: 'クオリティ', th: 'คุณภาพ', vi: 'Chất lượng' })]
   ] as const
 
   const metricValue = (agent: any) => {
@@ -137,10 +137,10 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
     <div>
       <div className="header">
         <div>
-          <h1 className="header-title">{tr(language, { en: '🏆 Top Traders', ja: '🏆 トップトレーダー', th: '🏆 เทรดเดอร์อันดับต้น', vi: '🏆 Trader hàng đầu' })}</h1>
+          <h1 className="header-title">{tr(language, { ko: '🏆 상위 트레이더', en: '🏆 Top Traders', ja: '🏆 トップトレーダー', th: '🏆 เทรดเดอร์อันดับต้น', vi: '🏆 Trader hàng đầu' })}</h1>
 
           <p className="header-subtitle">
-            {tr(language, { en: 'Ranked by return rate (realized + unrealized PnL / capital base)', ja: 'リターン率でランク付け (実現+未実現損益 / 資本ベース)', th: 'จัดอันดับตามอัตราผลตอบแทน (กำไรขาดทุนรับรู้ + ยังไม่รับรู้ / เงินทุนตั้งต้น)', vi: 'Xếp hạng theo lợi suất (Lãi/Lỗ thực hiện + chưa thực hiện / vốn gốc)' })}
+            {tr(language, { ko: '수익률 기준 순위 (실현 + 미실현 손익 / 자본 기준)', en: 'Ranked by return rate (realized + unrealized PnL / capital base)', ja: 'リターン率でランク付け (実現+未実現損益 / 資本ベース)', th: 'จัดอันดับตามอัตราผลตอบแทน (กำไรขาดทุนรับรู้ + ยังไม่รับรู้ / เงินทุนตั้งต้น)', vi: 'Xếp hạng theo lợi suất (Lãi/Lỗ thực hiện + chưa thực hiện / vốn gốc)' })}
           </p>
         </div>
       </div>
@@ -148,10 +148,10 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
       {!token && (
         <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
           <div style={{ fontWeight: 600, marginBottom: '6px' }}>
-            {tr(language, { en: 'Leaderboard Open to Guests', ja: 'ゲストにもリーダーボードを公開', th: 'อันดับเปิดให้ผู้เยี่ยมชม', vi: 'Bảng xếp hạng mở cho khách' })}
+            {tr(language, { ko: '게스트에게 공개된 리더보드', en: 'Leaderboard Open to Guests', ja: 'ゲストにもリーダーボードを公開', th: 'อันดับเปิดให้ผู้เยี่ยมชม', vi: 'Bảng xếp hạng mở cho khách' })}
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
-            {tr(language, { en: 'You can view profit curves and top agent performance without logging in. Login to configure your AI, automate strategies, and manage your account.', ja: 'ログインなしで利益曲線とトップエージェントのパフォーマンスを閲覧できます。AIの設定・戦略の自動化・アカウント管理にはログインしてください。', th: 'คุณสามารถดูเส้นกำไรและผลงานเอเจนต์อันดับต้นได้โดยไม่ต้องเข้าสู่ระบบ เข้าสู่ระบบเพื่อตั้งค่า AI ทำงานอัตโนมัติ และจัดการบัญชี', vi: 'Bạn có thể xem đường lợi nhuận và hiệu suất agent hàng đầu mà không cần đăng nhập. Đăng nhập để cấu hình AI, tự động hóa chiến lược và quản lý tài khoản.' })}
+            {tr(language, { ko: '로그인하지 않아도 수익 곡선과 상위 에이전트 성과를 볼 수 있습니다. 로그인하여 AI를 설정하고, 전략을 자동화하고, 계정을 관리하세요.', en: 'You can view profit curves and top agent performance without logging in. Login to configure your AI, automate strategies, and manage your account.', ja: 'ログインなしで利益曲線とトップエージェントのパフォーマンスを閲覧できます。AIの設定・戦略の自動化・アカウント管理にはログインしてください。', th: 'คุณสามารถดูเส้นกำไรและผลงานเอเจนต์อันดับต้นได้โดยไม่ต้องเข้าสู่ระบบ เข้าสู่ระบบเพื่อตั้งค่า AI ทำงานอัตโนมัติ และจัดการบัญชี', vi: 'Bạn có thể xem đường lợi nhuận và hiệu suất agent hàng đầu mà không cần đăng nhập. Đăng nhập để cấu hình AI, tự động hóa chiến lược và quản lý tài khoản.' })}
           </div>
         </div>
       )}
@@ -159,13 +159,13 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
       {activeChallengeCount > 0 && (
         <div className="card" style={{ marginBottom: '20px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <div>
-            <span className="challenge-badge">{tr(language, { en: 'Challenge active', ja: 'チャレンジ進行中', th: 'ชาเลนจ์กำลังทำงาน', vi: 'Thử thách đang chạy' })}</span>
+            <span className="challenge-badge">{tr(language, { ko: '챌린지 진행 중', en: 'Challenge active', ja: 'チャレンジ進行中', th: 'ชาเลนจ์กำลังทำงาน', vi: 'Thử thách đang chạy' })}</span>
             <span style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-              {tr(language, { en: `${activeChallengeCount} challenge leaderboards are scoring`, ja: `${activeChallengeCount} 件のチャレンジリーダーボードが採点中`, th: `อันดับชาเลนจ์ ${activeChallengeCount} รายการกำลังให้คะแนน`, vi: `${activeChallengeCount} bảng xếp hạng thử thách đang chấm điểm` })}
+              {tr(language, { ko: `챌린지 리더보드 ${activeChallengeCount}개 채점 중`, en: `${activeChallengeCount} challenge leaderboards are scoring`, ja: `${activeChallengeCount} 件のチャレンジリーダーボードが採点中`, th: `อันดับชาเลนจ์ ${activeChallengeCount} รายการกำลังให้คะแนน`, vi: `${activeChallengeCount} bảng xếp hạng thử thách đang chấm điểm` })}
             </span>
           </div>
           <button className="btn btn-ghost" onClick={() => navigate('/challenges')}>
-            {tr(language, { en: 'Open challenges', ja: 'チャレンジを開く', th: 'เปิดชาเลนจ์', vi: 'Mở thử thách' })}
+            {tr(language, { ko: '진행 중인 챌린지', en: 'Open challenges', ja: 'チャレンジを開く', th: 'เปิดชาเลนจ์', vi: 'Mở thử thách' })}
           </button>
         </div>
       )}
@@ -190,7 +190,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
         <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
             <h3 style={{ fontSize: '16px', margin: 0 }}>
-              {tr(language, { en: 'Return Chart', ja: 'リターンチャート', th: 'กราฟผลตอบแทน', vi: 'Biểu đồ lợi suất' })}
+              {tr(language, { ko: '수익률 차트', en: 'Return Chart', ja: 'リターンチャート', th: 'กราฟผลตอบแทน', vi: 'Biểu đồ lợi suất' })}
             </h3>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
@@ -208,7 +208,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                   fontSize: '12px'
                 }}
               >
-                {tr(language, { en: 'All Data', ja: 'すべてのデータ', th: 'ข้อมูลทั้งหมด', vi: 'Tất cả dữ liệu' })}
+                {tr(language, { ko: '전체 데이터', en: 'All Data', ja: 'すべてのデータ', th: 'ข้อมูลทั้งหมด', vi: 'Tất cả dữ liệu' })}
               </button>
               <button
                 onClick={() => {
@@ -225,7 +225,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                   fontSize: '12px'
                 }}
               >
-                {tr(language, { en: '24 Hours', ja: '24時間', th: '24 ชั่วโมง', vi: '24 giờ' })}
+                {tr(language, { ko: '24시간', en: '24 Hours', ja: '24時間', th: '24 ชั่วโมง', vi: '24 giờ' })}
               </button>
             </div>
           </div>
@@ -314,12 +314,12 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
       {/* Traders Cards */}
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title">{tr(language, { en: '🏆 Traders', ja: '🏆 トレーダー', th: '🏆 เทรดเดอร์', vi: '🏆 Trader' })}</h3>
+          <h3 className="card-title">{tr(language, { ko: '🏆 트레이더', en: '🏆 Traders', ja: '🏆 トレーダー', th: '🏆 เทรดเดอร์', vi: '🏆 Trader' })}</h3>
         </div>
         {profitHistory.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏆</div>
-            <div className="empty-title">{tr(language, { en: 'No data yet', ja: 'データはまだありません', th: 'ยังไม่มีข้อมูล', vi: 'Chưa có dữ liệu' })}</div>
+            <div className="empty-title">{tr(language, { ko: '아직 데이터가 없습니다', en: 'No data yet', ja: 'データはまだありません', th: 'ยังไม่มีข้อมูล', vi: 'Chưa có dữ liệu' })}</div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
@@ -374,12 +374,12 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                           fontFamily: 'var(--font-ui)',
                           flexShrink: 0,
                         }}>
-                          ✓ {tr(language, { en: 'Validated', ja: '検証済', th: 'ผ่านการตรวจสอบ', vi: 'Đã xác thực' })}
+                          ✓ {tr(language, { ko: '검증됨', en: 'Validated', ja: '検証済', th: 'ผ่านการตรวจสอบ', vi: 'Đã xác thực' })}
                         </span>
                       )}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {tr(language, { en: 'Last updated', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật lần cuối' })}: {agent.history ? agent.history[agent.history.length - 1]?.recorded_at?.split('T')[0] : '-'}
+                      {tr(language, { ko: '마지막 업데이트', en: 'Last updated', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật lần cuối' })}: {agent.history ? agent.history[agent.history.length - 1]?.recorded_at?.split('T')[0] : '-'}
                     </div>
                   </div>
                 </div>
@@ -393,7 +393,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                 }}>
                   <div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                      {tr(language, { en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' })}
+                      {tr(language, { ko: '수익률', en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi suất' })}
                     </div>
                     <div style={{
                       color: (agent.total_profit_percent || 0) >= 0 ? 'var(--success)' : 'var(--error)',
@@ -423,7 +423,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                   </div>
                   <div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                      {tr(language, { en: 'Max DD', ja: '最大DD', th: 'DD สูงสุด', vi: 'DD tối đa' })}
+                      {tr(language, { ko: '최대 낙폭', en: 'Max DD', ja: '最大DD', th: 'DD สูงสุด', vi: 'DD tối đa' })}
                     </div>
                     <div style={{
                       color: 'var(--error)',
@@ -435,7 +435,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                   </div>
                   <div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                      {tr(language, { en: 'Trades', ja: '取引', th: 'การเทรด', vi: 'Giao dịch' })}
+                      {tr(language, { ko: '거래', en: 'Trades', ja: '取引', th: 'การเทรด', vi: 'Giao dịch' })}
                     </div>
                     <div style={{ fontWeight: 700, fontSize: '16px' }}>
                       {agent.trade_count || 0}
@@ -484,7 +484,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                           className="btn btn-ghost"
                           style={{ fontSize: '12px', padding: '6px 14px' }}
                         >
-                          {tr(language, { en: '✓ Following', ja: '✓ フォロー中', th: '✓ กำลังติดตาม', vi: '✓ Đang theo dõi' })}
+                          {tr(language, { ko: '✓ 팔로잉', en: '✓ Following', ja: '✓ フォロー中', th: '✓ กำลังติดตาม', vi: '✓ Đang theo dõi' })}
                         </button>
                         <span style={{
                           fontFamily: 'var(--font-mono)',
@@ -492,7 +492,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                           color: delta >= 0 ? 'var(--success)' : 'var(--error)',
                           fontWeight: 600,
                         }}>
-                          {tr(language, { en: 'since follow', ja: 'フォロー以降', th: 'ตั้งแต่ติดตาม', vi: 'từ khi theo dõi' })} {sign} {Math.abs(delta).toFixed(2)}%
+                          {tr(language, { ko: '팔로우 이후', en: 'since follow', ja: 'フォロー以降', th: 'ตั้งแต่ติดตาม', vi: 'từ khi theo dõi' })} {sign} {Math.abs(delta).toFixed(2)}%
                         </span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
                           {follow.followed_at?.split('T')[0]}
@@ -508,13 +508,13 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                         className="btn btn-outline"
                         style={{ fontSize: '12px', padding: '6px 14px' }}
                         title={tr(language, {
-                          en: 'No signup needed — paper-mode follow stored on this device',
+                          ko: '가입 불필요 — 모의 모드 팔로우는 이 기기에 저장됩니다', en: 'No signup needed — paper-mode follow stored on this device',
                           ja: '登録不要 — ペーパーモードのフォローはこのデバイスに保存',
                           th: 'ไม่ต้องลงทะเบียน — ติดตามแบบเปเปอร์เก็บไว้ในอุปกรณ์นี้',
                           vi: 'Không cần đăng ký — theo dõi giả lập lưu trên thiết bị này',
                         })}
                       >
-                        {tr(language, { en: 'Follow (paper)', ja: 'フォロー (ペーパー)', th: 'ติดตาม (เปเปอร์)', vi: 'Theo dõi (giả lập)' })}
+                        {tr(language, { ko: '팔로우 (모의)', en: 'Follow (paper)', ja: 'フォロー (ペーパー)', th: 'ติดตาม (เปเปอร์)', vi: 'Theo dõi (giả lập)' })}
                       </button>
                       <button
                         type="button"
@@ -522,7 +522,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
                         className="btn btn-ghost"
                         style={{ fontSize: '12px', padding: '6px 14px' }}
                       >
-                        ⏮ {tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+                        ⏮ {tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
                       </button>
                     </div>
                   )
@@ -539,17 +539,17 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
               disabled={leaderboardPage <= 1}
               onClick={() => setLeaderboardPage((current) => Math.max(1, current - 1))}
             >
-              {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
+              {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
             </button>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              {tr(language, { en: `Page ${leaderboardPage} / ${leaderboardTotalPages}, ${totalTraders} traders total`, ja: `ページ ${leaderboardPage} / ${leaderboardTotalPages}、合計 ${totalTraders} トレーダー`, th: `หน้า ${leaderboardPage} / ${leaderboardTotalPages}, รวม ${totalTraders} เทรดเดอร์`, vi: `Trang ${leaderboardPage} / ${leaderboardTotalPages}, tổng ${totalTraders} trader` })}
+              {tr(language, { ko: `페이지 ${leaderboardPage} / ${leaderboardTotalPages}, 총 트레이더 ${totalTraders}명`, en: `Page ${leaderboardPage} / ${leaderboardTotalPages}, ${totalTraders} traders total`, ja: `ページ ${leaderboardPage} / ${leaderboardTotalPages}、合計 ${totalTraders} トレーダー`, th: `หน้า ${leaderboardPage} / ${leaderboardTotalPages}, รวม ${totalTraders} เทรดเดอร์`, vi: `Trang ${leaderboardPage} / ${leaderboardTotalPages}, tổng ${totalTraders} trader` })}
             </div>
             <button
               className="btn btn-secondary"
               disabled={leaderboardPage >= leaderboardTotalPages}
               onClick={() => setLeaderboardPage((current) => Math.min(leaderboardTotalPages, current + 1))}
             >
-              {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
+              {tr(language, { ko: '다음', en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
             </button>
           </div>
         )}

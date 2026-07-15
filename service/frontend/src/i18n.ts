@@ -612,7 +612,7 @@ export const translations: Record<Language, Translations> = {
 export const getT = (lang: Language): Translations => translations[lang]
 
 // Inline translation helper for ad-hoc strings outside the structured Translations.
-// Usage: tr(language, { en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })
+// Usage: tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })
 // Falls back to English if a translation is missing.
 export type TrMap = { en: string } & Partial<Record<Language, string>>
 export const tr = (lang: Language, m: TrMap): string => m[lang] ?? m.en

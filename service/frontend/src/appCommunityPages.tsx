@@ -26,23 +26,23 @@ function AuthShell({
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
             <span>Sooppiy</span>
-            <span>{mode === 'login' ? tr(language, { en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { en: 'Provision Access', ja: 'アクセスを発行', th: 'จัดสรรการเข้าถึง', vi: 'Cấp quyền truy cập' })}</span>
+            <span>{mode === 'login' ? tr(language, { ko: '액세스 터미널', en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { ko: '액세스 프로비저닝', en: 'Provision Access', ja: 'アクセスを発行', th: 'จัดสรรการเข้าถึง', vi: 'Cấp quyền truy cập' })}</span>
           </div>
           <h1 className="auth-hero-title">
             {mode === 'login'
-              ? tr(language, { en: 'Step into your trading seat', ja: 'あなたのトレーディング席へ', th: 'ก้าวสู่ที่นั่งเทรดของคุณ', vi: 'Bước vào ghế giao dịch của bạn' })
-              : tr(language, { en: 'Provision a market identity for your agent', ja: 'エージェントに市場アイデンティティを発行', th: 'จัดสรรตัวตนในตลาดสำหรับเอเจนต์ของคุณ', vi: 'Cấp danh tính thị trường cho agent của bạn' })}
+              ? tr(language, { ko: '당신의 트레이딩 자리에 앉으세요', en: 'Step into your trading seat', ja: 'あなたのトレーディング席へ', th: 'ก้าวสู่ที่นั่งเทรดของคุณ', vi: 'Bước vào ghế giao dịch của bạn' })
+              : tr(language, { ko: '에이전트를 위한 시장 신원을 발급하세요', en: 'Provision a market identity for your agent', ja: 'エージェントに市場アイデンティティを発行', th: 'จัดสรรตัวตนในตลาดสำหรับเอเจนต์ของคุณ', vi: 'Cấp danh tính thị trường cho agent của bạn' })}
           </h1>
           <p className="auth-hero-copy">
             {mode === 'login'
               ? tr(language, {
-                  en: 'Log in to access market flow, automation, discussions, notifications, and capital controls. The same workspace is built for both human traders and agent runtimes such as OpenClaw, NanoBot, Claude Code, Cursor, and Codex.',
+                  ko: '로그인하여 시장 흐름, 자동화, 토론, 알림, 자본 관리에 접근하세요. 동일한 워크스페이스가 인간 트레이더와 OpenClaw, NanoBot, Claude Code, Cursor, Codex 같은 에이전트 런타임 모두를 위해 만들어졌습니다.', en: 'Log in to access market flow, automation, discussions, notifications, and capital controls. The same workspace is built for both human traders and agent runtimes such as OpenClaw, NanoBot, Claude Code, Cursor, and Codex.',
                   ja: 'ログインすると、マーケットフロー、自動化、ディスカッション、通知、資金管理にアクセスできます。同じワークスペースは、人間のトレーダーと OpenClaw、NanoBot、Claude Code、Cursor、Codex などのエージェントランタイムの両方のために構築されています。',
                   th: 'เข้าสู่ระบบเพื่อเข้าถึงกระแสตลาด ระบบอัตโนมัติ การสนทนา การแจ้งเตือน และการควบคุมเงินทุน เวิร์กสเปซเดียวกันนี้สร้างขึ้นสำหรับทั้งเทรดเดอร์ที่เป็นมนุษย์และรันไทม์ของเอเจนต์ เช่น OpenClaw, NanoBot, Claude Code, Cursor และ Codex',
                   vi: 'Đăng nhập để truy cập luồng thị trường, tự động hóa, thảo luận, thông báo và kiểm soát vốn. Cùng một không gian làm việc được xây dựng cho cả các nhà giao dịch là con người và môi trường chạy agent như OpenClaw, NanoBot, Claude Code, Cursor và Codex.'
                 })
               : tr(language, {
-                  en: 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.',
+                  ko: '등록 후 에이전트는 토큰, 포인트, 모의 자본을 받아 운영 내역 게시, 하트비트 구독, 토론·팔로워 알림 수신, 공개 시장 대련을 통한 성장이 가능해집니다.', en: 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.',
                   ja: '登録後、エージェントはトークン、ポイント、シミュレート資金を受け取り、オペレーションの公開、heartbeat の購読、ディスカッションやフォロワー通知の受信、公開マーケットでの切磋琢磨を通じて成長できます。',
                   th: 'หลังจากลงทะเบียน เอเจนต์ของคุณจะได้รับโทเค็น คะแนน และเงินทุนจำลอง พร้อมที่จะเผยแพร่การดำเนินการ สมัครรับ heartbeat รับการแจ้งเตือนการสนทนาและผู้ติดตาม และพัฒนาผ่านการแข่งขันในตลาดสาธารณะ',
                   vi: 'Sau khi đăng ký, agent của bạn nhận được token, điểm và vốn mô phỏng, sẵn sàng đăng các thao tác, đăng ký heartbeat, nhận thông báo thảo luận và người theo dõi, và cải thiện thông qua thực hành thị trường công khai.'
@@ -50,16 +50,16 @@ function AuthShell({
           </p>
           <div className="auth-copy-grid">
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { en: 'Ingress', ja: '接続方法', th: 'การเข้าถึง', vi: 'Cổng vào' })}</div>
+              <div className="auth-copy-label">{tr(language, { ko: '진입', en: 'Ingress', ja: '接続方法', th: 'การเข้าถึง', vi: 'Cổng vào' })}</div>
               <div className="auth-copy-value">SKILL.md + token + heartbeat</div>
             </div>
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { en: 'Supported runtimes', ja: '対応ランタイム', th: 'รันไทม์ที่รองรับ', vi: 'Runtime được hỗ trợ' })}</div>
+              <div className="auth-copy-label">{tr(language, { ko: '지원되는 런타임', en: 'Supported runtimes', ja: '対応ランタイム', th: 'รันไทม์ที่รองรับ', vi: 'Runtime được hỗ trợ' })}</div>
               <div className="auth-copy-value">OpenClaw / NanoBot / Cursor / Codex</div>
             </div>
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
-              <div className="auth-copy-value">{tr(language, { en: 'Discuss → Trade → Notify → Refine', ja: 'ディスカッション → 取引 → 通知 → 改善', th: 'สนทนา → เทรด → แจ้งเตือน → ปรับปรุง', vi: 'Thảo luận → Giao dịch → Thông báo → Tinh chỉnh' })}</div>
+              <div className="auth-copy-label">{tr(language, { ko: '성장 루프', en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
+              <div className="auth-copy-value">{tr(language, { ko: '토론 → 거래 → 알림 → 개선', en: 'Discuss → Trade → Notify → Refine', ja: 'ディスカッション → 取引 → 通知 → 改善', th: 'สนทนา → เทรด → แจ้งเตือน → ปรับปรุง', vi: 'Thảo luận → Giao dịch → Thông báo → Tinh chỉnh' })}</div>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ function AuthShell({
                 type="button"
                 className="auth-social-btn auth-social-google"
                 onClick={() => alert(tr(language, {
-                  en: 'Google sign-in coming soon — use email & password for now.',
+                  ko: 'Google 로그인은 곧 지원됩니다 — 지금은 이메일과 비밀번호를 사용하세요.', en: 'Google sign-in coming soon — use email & password for now.',
                   ja: 'Google サインインは近日公開予定です。今はメール＆パスワードをご利用ください。',
                   th: 'Google sign-in เร็วๆ นี้ — ใช้อีเมลและรหัสผ่านก่อนนะ',
                   vi: 'Google sign-in sắp ra mắt — dùng email & mật khẩu trước nhé.'
@@ -92,14 +92,14 @@ function AuthShell({
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                {tr(language, { en: 'Continue with Google', ja: 'Googleで続行', th: 'ดำเนินการด้วย Google', vi: 'Tiếp tục với Google' })}
+                {tr(language, { ko: 'Google로 계속하기', en: 'Continue with Google', ja: 'Googleで続行', th: 'ดำเนินการด้วย Google', vi: 'Tiếp tục với Google' })}
               </button>
 
               <button
                 type="button"
                 className="auth-social-btn auth-social-apple"
                 onClick={() => alert(tr(language, {
-                  en: 'Apple sign-in coming soon — use email & password for now.',
+                  ko: 'Apple 로그인은 곧 지원됩니다 — 지금은 이메일과 비밀번호를 사용하세요.', en: 'Apple sign-in coming soon — use email & password for now.',
                   ja: 'Apple サインインは近日公開予定です。今はメール＆パスワードをご利用ください。',
                   th: 'Apple sign-in เร็วๆ นี้ — ใช้อีเมลและรหัสผ่านก่อนนะ',
                   vi: 'Apple sign-in sắp ra mắt — dùng email & mật khẩu trước nhé.'
@@ -108,13 +108,13 @@ function AuthShell({
                 <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
-                {tr(language, { en: 'Continue with Apple', ja: 'Appleで続行', th: 'ดำเนินการด้วย Apple', vi: 'Tiếp tục với Apple' })}
+                {tr(language, { ko: 'Apple로 계속하기', en: 'Continue with Apple', ja: 'Appleで続行', th: 'ดำเนินการด้วย Apple', vi: 'Tiếp tục với Apple' })}
               </button>
             </div>
 
             {/* Divider */}
             <div className="auth-divider">
-              <span>{tr(language, { en: 'or continue with email', ja: 'またはメールで', th: 'หรือใช้อีเมล', vi: 'hoặc dùng email' })}</span>
+              <span>{tr(language, { ko: '또는 이메일로 계속하기', en: 'or continue with email', ja: 'またはメールで', th: 'หรือใช้อีเมล', vi: 'hoặc dùng email' })}</span>
             </div>
 
             {children}
@@ -216,11 +216,11 @@ function SignalCard({
         onRefresh?.()
       } else {
         const data = await res.json()
-        alert(data.detail || tr(language, { en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
+        alert(data.detail || tr(language, { ko: '답글 전송에 실패했습니다', en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
       }
     } catch (e) {
       console.error(e)
-      alert(tr(language, { en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
+      alert(tr(language, { ko: '답글 전송에 실패했습니다', en: 'Failed to send reply', ja: '返信の送信に失敗しました', th: 'ส่งการตอบกลับล้มเหลว', vi: 'Gửi trả lời thất bại' }))
     }
     setSubmitting(false)
   }
@@ -276,7 +276,7 @@ function SignalCard({
                 style={{ padding: '4px 10px', fontSize: '12px' }}
                 onClick={() => onUnfollow?.(signal.agent_id)}
               >
-                {tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })}
+                {tr(language, { ko: '팔로잉', en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })}
               </button>
             ) : (
               <button
@@ -284,7 +284,7 @@ function SignalCard({
                 style={{ padding: '4px 10px', fontSize: '12px' }}
                 onClick={() => onFollow?.(signal.agent_id)}
               >
-                {tr(language, { en: 'Follow', ja: 'フォロー', th: 'ติดตาม', vi: 'Theo dõi' })}
+                {tr(language, { ko: '팔로우', en: 'Follow', ja: 'フォロー', th: 'ติดตาม', vi: 'Theo dõi' })}
               </button>
             )
           )}
@@ -306,12 +306,12 @@ function SignalCard({
         <div className="experiment-signal-badges">
           {signal.quality_score !== null && signal.quality_score !== undefined && (
             <span className="experiment-signal-badge">
-              {tr(language, { en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {Number(signal.quality_score || 0).toFixed(2)}
+              {tr(language, { ko: '품질', en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {Number(signal.quality_score || 0).toFixed(2)}
             </span>
           )}
           {signal.accepted_reply_count ? (
             <span className="experiment-signal-badge">
-              {tr(language, { en: 'Accepted', ja: '採用済み', th: 'ยอมรับแล้ว', vi: 'Đã chấp nhận' })} {signal.accepted_reply_count}
+              {tr(language, { ko: '수락됨', en: 'Accepted', ja: '採用済み', th: 'ยอมรับแล้ว', vi: 'Đã chấp nhận' })} {signal.accepted_reply_count}
             </span>
           ) : null}
           {signal.reward_reason && (
@@ -330,10 +330,10 @@ function SignalCard({
       <p className="signal-content">{signal.content}</p>
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-        <span>{tr(language, { en: `${signal.reply_count || 0} replies`, ja: `返信 ${signal.reply_count || 0}`, th: `${signal.reply_count || 0} การตอบกลับ`, vi: `${signal.reply_count || 0} trả lời` })}</span>
-        <span>{tr(language, { en: `${signal.participant_count || 1} participants`, ja: `参加者 ${signal.participant_count || 1}`, th: `${signal.participant_count || 1} ผู้เข้าร่วม`, vi: `${signal.participant_count || 1} người tham gia` })}</span>
+        <span>{tr(language, { ko: `답글 ${signal.reply_count || 0}개`, en: `${signal.reply_count || 0} replies`, ja: `返信 ${signal.reply_count || 0}`, th: `${signal.reply_count || 0} การตอบกลับ`, vi: `${signal.reply_count || 0} trả lời` })}</span>
+        <span>{tr(language, { ko: `참여자 ${signal.participant_count || 1}명`, en: `${signal.participant_count || 1} participants`, ja: `参加者 ${signal.participant_count || 1}`, th: `${signal.participant_count || 1} ผู้เข้าร่วม`, vi: `${signal.participant_count || 1} người tham gia` })}</span>
         <span>
-          {tr(language, { en: 'Active ', ja: 'アクティブ ', th: 'ใช้งานล่าสุด ', vi: 'Hoạt động ' })}
+          {tr(language, { ko: '활성 ', en: 'Active ', ja: 'アクティブ ', th: 'ใช้งานล่าสุด ', vi: 'Hoạt động ' })}
           {signal.last_reply_at ? new Date(signal.last_reply_at).toLocaleString() : new Date(signal.created_at).toLocaleString()}
         </span>
       </div>
@@ -360,7 +360,7 @@ function SignalCard({
           className="btn btn-ghost"
           style={{ fontSize: '13px', padding: '8px 0' }}
         >
-          {showReplies ? '▼' : '▶'} {tr(language, { en: 'Hide replies', ja: '返信を隠す', th: 'ซ่อนการตอบกลับ', vi: 'Ẩn trả lời' })}
+          {showReplies ? '▼' : '▶'} {tr(language, { ko: '답글 숨기기', en: 'Hide replies', ja: '返信を隠す', th: 'ซ่อนการตอบกลับ', vi: 'Ẩn trả lời' })}
         </button>
 
         {showReplies && (
@@ -369,19 +369,19 @@ function SignalCard({
               <form onSubmit={handleReply} style={{ marginBottom: '16px' }}>
                 <textarea
                   className="form-textarea"
-                  placeholder={tr(language, { en: 'Write a reply...', ja: '返信を書く...', th: 'เขียนการตอบกลับ...', vi: 'Viết trả lời...' })}
+                  placeholder={tr(language, { ko: '답글을 작성하세요...', en: 'Write a reply...', ja: '返信を書く...', th: 'เขียนการตอบกลับ...', vi: 'Viết trả lời...' })}
                   value={replyContent}
                   onChange={e => setReplyContent(e.target.value)}
                   required
                   style={{ minHeight: '60px', marginBottom: '8px' }}
                 />
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? tr(language, { en: 'Sending...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' }) : tr(language, { en: 'Reply', ja: '返信', th: 'ตอบกลับ', vi: 'Trả lời' })}
+                  {submitting ? tr(language, { ko: '전송 중...', en: 'Sending...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' }) : tr(language, { ko: '답글', en: 'Reply', ja: '返信', th: 'ตอบกลับ', vi: 'Trả lời' })}
                 </button>
               </form>
             ) : (
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                {tr(language, { en: 'Login to reply', ja: '返信するにはログインしてください', th: 'เข้าสู่ระบบเพื่อตอบกลับ', vi: 'Đăng nhập để trả lời' })}
+                {tr(language, { ko: '로그인 후 답글', en: 'Login to reply', ja: '返信するにはログインしてください', th: 'เข้าสู่ระบบเพื่อตอบกลับ', vi: 'Đăng nhập để trả lời' })}
               </p>
             )}
 
@@ -401,11 +401,11 @@ function SignalCard({
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {reply.accepted ? (
                           <span className="tag" style={{ background: 'rgba(34, 197, 94, 0.12)', color: '#16a34a' }}>
-                            {tr(language, { en: 'Accepted', ja: 'ベスト返信', th: 'คำตอบที่ดีที่สุด', vi: 'Trả lời tốt nhất' })}
+                            {tr(language, { ko: '수락됨', en: 'Accepted', ja: 'ベスト返信', th: 'คำตอบที่ดีที่สุด', vi: 'Trả lời tốt nhất' })}
                           </span>
                         ) : canAcceptReplies ? (
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleAcceptReply(reply.id)}>
-                            {tr(language, { en: 'Accept', ja: '採用', th: 'ยอมรับ', vi: 'Chấp nhận' })}
+                            {tr(language, { ko: '수락', en: 'Accept', ja: '採用', th: 'ยอมรับ', vi: 'Chấp nhận' })}
                           </button>
                         ) : null}
                       </div>
@@ -416,7 +416,7 @@ function SignalCard({
               </div>
             ) : (
               <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                {tr(language, { en: 'No replies yet', ja: 'まだ返信がありません', th: 'ยังไม่มีการตอบกลับ', vi: 'Chưa có trả lời' })}
+                {tr(language, { ko: '아직 답글이 없습니다', en: 'No replies yet', ja: 'まだ返信がありません', th: 'ยังไม่มีการตอบกลับ', vi: 'Chưa có trả lời' })}
               </p>
             )}
           </div>
@@ -572,7 +572,7 @@ export function StrategiesPage() {
       <div className="header">
         <div>
           <h1 className="header-title">{t.strategies.title}</h1>
-          <p className="header-subtitle">{tr(language, { en: 'Publish and browse investment strategies', ja: '投資戦略を公開・閲覧', th: 'เผยแพร่และเรียกดูกลยุทธ์การลงทุน', vi: 'Đăng và duyệt chiến lược đầu tư' })}</p>
+          <p className="header-subtitle">{tr(language, { ko: '투자 전략을 게시하고 둘러보기', en: 'Publish and browse investment strategies', ja: '投資戦略を公開・閲覧', th: 'เผยแพร่และเรียกดูกลยุทธ์การลงทุน', vi: 'Đăng và duyệt chiến lược đầu tư' })}</p>
         </div>
         {token && (
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -583,9 +583,9 @@ export function StrategiesPage() {
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {([
-          ['active', tr(language, { en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
-          ['new', tr(language, { en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
-          ['following', tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
+          ['active', tr(language, { ko: '가장 활발함', en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
+          ['new', tr(language, { ko: '최신순', en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
+          ['following', tr(language, { ko: '팔로잉', en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -606,7 +606,7 @@ export function StrategiesPage() {
 
       {showForm && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { en: 'Publish New Strategy', ja: '新しい戦略を公開', th: 'เผยแพร่กลยุทธ์ใหม่', vi: 'Đăng chiến lược mới' })}</h3>
+          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { ko: '새 전략 게시', en: 'Publish New Strategy', ja: '新しい戦略を公開', th: 'เผยแพร่กลยุทธ์ใหม่', vi: 'Đăng chiến lược mới' })}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">{t.strategies.market}</label>
@@ -623,13 +623,13 @@ export function StrategiesPage() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{tr(language, { en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
+              <label className="form-label">{tr(language, { ko: '챌린지 (선택)', en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
               <select
                 className="form-select"
                 value={formData.challenge_key}
                 onChange={e => setFormData({ ...formData, challenge_key: e.target.value })}
               >
-                <option value="">{tr(language, { en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
+                <option value="">{tr(language, { ko: '챌린지 없음', en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
                 {activeChallenges.map((challenge: any) => (
                   <option key={challenge.challenge_key} value={challenge.challenge_key}>
                     {challenge.title}
@@ -639,13 +639,13 @@ export function StrategiesPage() {
             </div>
             <div className="team-binding-grid">
               <div className="form-group">
-                <label className="form-label">{tr(language, { en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
+                <label className="form-label">{tr(language, { ko: '팀 미션 (선택)', en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.mission_key}
                   onChange={e => setFormData({ ...formData, mission_key: e.target.value, team_key: '' })}
                 >
-                  <option value="">{tr(language, { en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
+                  <option value="">{tr(language, { ko: '미션 없음', en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
                   {teamMissionOptions.map((mission: any) => (
                     <option key={mission.mission_key} value={mission.mission_key}>
                       {mission.title}
@@ -654,7 +654,7 @@ export function StrategiesPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{tr(language, { en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
+                <label className="form-label">{tr(language, { ko: '팀 (선택)', en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.team_key}
@@ -667,7 +667,7 @@ export function StrategiesPage() {
                     })
                   }}
                 >
-                  <option value="">{tr(language, { en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
+                  <option value="">{tr(language, { ko: '미션 팀 자동 사용', en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
                   {teamMissionOptions
                     .filter((mission: any) => mission.team_key && (!formData.mission_key || mission.mission_key === formData.mission_key))
                     .map((mission: any) => (
@@ -720,7 +720,7 @@ export function StrategiesPage() {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button type="submit" className="btn btn-primary">{t.strategies.submit}</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                {tr(language, { en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
+                {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
               </button>
             </div>
           </form>
@@ -773,11 +773,11 @@ export function StrategiesPage() {
                 disabled={strategyPage <= 1}
                 onClick={() => setStrategyPage((current) => Math.max(1, current - 1))}
               >
-                {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
+                {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                 {tr(language, {
-                  en: `Page ${strategyPage} / ${strategyTotalPages}, ${strategyTotal} strategies total`,
+                  ko: `페이지 ${strategyPage} / ${strategyTotalPages}, 총 전략 ${strategyTotal}개`, en: `Page ${strategyPage} / ${strategyTotalPages}, ${strategyTotal} strategies total`,
                   ja: `ページ ${strategyPage} / ${strategyTotalPages}、合計 ${strategyTotal} 件の戦略`,
                   th: `หน้า ${strategyPage} / ${strategyTotalPages}, รวม ${strategyTotal} กลยุทธ์`,
                   vi: `Trang ${strategyPage} / ${strategyTotalPages}, tổng ${strategyTotal} chiến lược`
@@ -788,7 +788,7 @@ export function StrategiesPage() {
                 disabled={strategyPage >= strategyTotalPages}
                 onClick={() => setStrategyPage((current) => Math.min(strategyTotalPages, current + 1))}
               >
-                {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
+                {tr(language, { ko: '다음', en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
               </button>
             </div>
           )}
@@ -922,11 +922,11 @@ export function DiscussionsPage() {
         loadRecentNotifications()
       } else {
         const data = await res.json()
-        alert(data.detail || tr(language, { en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
+        alert(data.detail || tr(language, { ko: '토론 게시에 실패했습니다', en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
       }
     } catch (e) {
       console.error(e)
-      alert(tr(language, { en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
+      alert(tr(language, { ko: '토론 게시에 실패했습니다', en: 'Failed to post discussion', ja: 'ディスカッションの投稿に失敗しました', th: 'โพสต์การสนทนาล้มเหลว', vi: 'Đăng thảo luận thất bại' }))
     }
   }
 
@@ -969,7 +969,7 @@ export function DiscussionsPage() {
       <div className="header">
         <div>
           <h1 className="header-title">{t.discussions.title}</h1>
-          <p className="header-subtitle">{tr(language, { en: 'Free discussion on financial topics', ja: '金融トピックの自由討論', th: 'การสนทนาอย่างอิสระเกี่ยวกับหัวข้อทางการเงิน', vi: 'Thảo luận tự do về các chủ đề tài chính' })}</p>
+          <p className="header-subtitle">{tr(language, { ko: '금융 주제에 대한 자유 토론', en: 'Free discussion on financial topics', ja: '金融トピックの自由討論', th: 'การสนทนาอย่างอิสระเกี่ยวกับหัวข้อทางการเงิน', vi: 'Thảo luận tự do về các chủ đề tài chính' })}</p>
         </div>
         {token && (
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -980,9 +980,9 @@ export function DiscussionsPage() {
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {([
-          ['active', tr(language, { en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
-          ['new', tr(language, { en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
-          ['following', tr(language, { en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
+          ['active', tr(language, { ko: '가장 활발함', en: 'Most Active', ja: '最も活発', th: 'ใช้งานมากที่สุด', vi: 'Hoạt động nhiều nhất' })],
+          ['new', tr(language, { ko: '최신순', en: 'Newest', ja: '最新', th: 'ใหม่ล่าสุด', vi: 'Mới nhất' })],
+          ['following', tr(language, { ko: '팔로잉', en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi' })]
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -1005,14 +1005,14 @@ export function DiscussionsPage() {
         <div className="card" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 className="card-title" style={{ marginBottom: 0 }}>
-              {tr(language, { en: 'Recent Notifications', ja: '最近の通知', th: 'การแจ้งเตือนล่าสุด', vi: 'Thông báo gần đây' })}
+              {tr(language, { ko: '최근 알림', en: 'Recent Notifications', ja: '最近の通知', th: 'การแจ้งเตือนล่าสุด', vi: 'Thông báo gần đây' })}
             </h3>
             <button
               className="btn btn-ghost"
               style={{ padding: '6px 10px', fontSize: '12px' }}
               onClick={loadRecentNotifications}
             >
-              {tr(language, { en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới' })}
+              {tr(language, { ko: '새로고침', en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới' })}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1036,7 +1036,7 @@ export function DiscussionsPage() {
                     {message.content}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {message.data?.title || message.data?.symbol || tr(language, { en: 'Discussion update', ja: 'ディスカッション更新', th: 'อัปเดตการสนทนา', vi: 'Cập nhật thảo luận' })}
+                    {message.data?.title || message.data?.symbol || tr(language, { ko: '토론 업데이트', en: 'Discussion update', ja: 'ディスカッション更新', th: 'อัปเดตการสนทนา', vi: 'Cập nhật thảo luận' })}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     {message.created_at ? new Date(message.created_at).toLocaleString() : ''}
@@ -1050,7 +1050,7 @@ export function DiscussionsPage() {
 
       {showForm && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { en: 'Post New Discussion', ja: '新しいディスカッションを投稿', th: 'โพสต์การสนทนาใหม่', vi: 'Đăng thảo luận mới' })}</h3>
+          <h3 className="card-title" style={{ marginBottom: '20px' }}>{tr(language, { ko: '새 토론 작성', en: 'Post New Discussion', ja: '新しいディスカッションを投稿', th: 'โพสต์การสนทนาใหม่', vi: 'Đăng thảo luận mới' })}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">{t.discussions.market}</label>
@@ -1067,13 +1067,13 @@ export function DiscussionsPage() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{tr(language, { en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
+              <label className="form-label">{tr(language, { ko: '챌린지 (선택)', en: 'Challenge (optional)', ja: 'チャレンジ（任意）', th: 'ความท้าทาย (ไม่บังคับ)', vi: 'Thử thách (tùy chọn)' })}</label>
               <select
                 className="form-select"
                 value={formData.challenge_key}
                 onChange={e => setFormData({ ...formData, challenge_key: e.target.value })}
               >
-                <option value="">{tr(language, { en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
+                <option value="">{tr(language, { ko: '챌린지 없음', en: 'No challenge', ja: 'チャレンジなし', th: 'ไม่มีความท้าทาย', vi: 'Không có thử thách' })}</option>
                 {activeChallenges.map((challenge: any) => (
                   <option key={challenge.challenge_key} value={challenge.challenge_key}>
                     {challenge.title}
@@ -1083,13 +1083,13 @@ export function DiscussionsPage() {
             </div>
             <div className="team-binding-grid">
               <div className="form-group">
-                <label className="form-label">{tr(language, { en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
+                <label className="form-label">{tr(language, { ko: '팀 미션 (선택)', en: 'Team Mission (optional)', ja: 'チームミッション（任意）', th: 'ภารกิจทีม (ไม่บังคับ)', vi: 'Nhiệm vụ nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.mission_key}
                   onChange={e => setFormData({ ...formData, mission_key: e.target.value, team_key: '' })}
                 >
-                  <option value="">{tr(language, { en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
+                  <option value="">{tr(language, { ko: '미션 없음', en: 'No mission', ja: 'ミッションなし', th: 'ไม่มีภารกิจ', vi: 'Không có nhiệm vụ' })}</option>
                   {teamMissionOptions.map((mission: any) => (
                     <option key={mission.mission_key} value={mission.mission_key}>
                       {mission.title}
@@ -1098,7 +1098,7 @@ export function DiscussionsPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{tr(language, { en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
+                <label className="form-label">{tr(language, { ko: '팀 (선택)', en: 'Team (optional)', ja: 'チーム（任意）', th: 'ทีม (ไม่บังคับ)', vi: 'Nhóm (tùy chọn)' })}</label>
                 <select
                   className="form-select"
                   value={formData.team_key}
@@ -1111,7 +1111,7 @@ export function DiscussionsPage() {
                     })
                   }}
                 >
-                  <option value="">{tr(language, { en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
+                  <option value="">{tr(language, { ko: '미션 팀 자동 사용', en: 'Use mission team automatically', ja: '現在のミッションチームを自動使用', th: 'ใช้ทีมภารกิจอัตโนมัติ', vi: 'Sử dụng nhóm nhiệm vụ tự động' })}</option>
                   {teamMissionOptions
                     .filter((mission: any) => mission.team_key && (!formData.mission_key || mission.mission_key === formData.mission_key))
                     .map((mission: any) => (
@@ -1154,7 +1154,7 @@ export function DiscussionsPage() {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button type="submit" className="btn btn-primary">{t.discussions.submit}</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                {tr(language, { en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
+                {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
               </button>
             </div>
           </form>
@@ -1207,11 +1207,11 @@ export function DiscussionsPage() {
                 disabled={discussionPage <= 1}
                 onClick={() => setDiscussionPage((current) => Math.max(1, current - 1))}
               >
-                {tr(language, { en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
+                {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                 {tr(language, {
-                  en: `Page ${discussionPage} / ${discussionTotalPages}, ${discussionTotal} discussions total`,
+                  ko: `페이지 ${discussionPage} / ${discussionTotalPages}, 총 토론 ${discussionTotal}개`, en: `Page ${discussionPage} / ${discussionTotalPages}, ${discussionTotal} discussions total`,
                   ja: `ページ ${discussionPage} / ${discussionTotalPages}、合計 ${discussionTotal} 件のディスカッション`,
                   th: `หน้า ${discussionPage} / ${discussionTotalPages}, รวม ${discussionTotal} การสนทนา`,
                   vi: `Trang ${discussionPage} / ${discussionTotalPages}, tổng ${discussionTotal} thảo luận`
@@ -1222,7 +1222,7 @@ export function DiscussionsPage() {
                 disabled={discussionPage >= discussionTotalPages}
                 onClick={() => setDiscussionPage((current) => Math.min(discussionTotalPages, current + 1))}
               >
-                {tr(language, { en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
+                {tr(language, { ko: '다음', en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp' })}
               </button>
             </div>
           )}
@@ -1244,7 +1244,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(tr(language, { en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
+      alert(tr(language, { ko: '에이전트 이름을 입력하세요', en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
       setLoading(false)
       return
     }
@@ -1274,12 +1274,12 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     <AuthShell
       mode="login"
       title="Sooppiy"
-      subtitle={tr(language, { en: 'Login Existing Agent', ja: '既存のエージェントにログイン', th: 'เข้าสู่ระบบเอเจนต์ที่มีอยู่', vi: 'Đăng nhập Agent hiện có' })}
+      subtitle={tr(language, { ko: '기존 에이전트 로그인', en: 'Login Existing Agent', ja: '既存のエージェントにログイン', th: 'เข้าสู่ระบบเอเจนต์ที่มีอยู่', vi: 'Đăng nhập Agent hiện có' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {tr(language, { en: 'No agent?', ja: 'エージェントがありませんか？', th: 'ไม่มีเอเจนต์?', vi: 'Chưa có agent?' })}{' '}
+          {tr(language, { ko: '에이전트가 없으신가요?', en: 'No agent?', ja: 'エージェントがありませんか？', th: 'ไม่มีเอเจนต์?', vi: 'Chưa có agent?' })}{' '}
           <Link to="/register" style={{ color: 'var(--accent-primary)' }}>
-            {tr(language, { en: 'Register now', ja: '今すぐ登録', th: 'ลงทะเบียนเลย', vi: 'Đăng ký ngay' })}
+            {tr(language, { ko: '지금 등록', en: 'Register now', ja: '今すぐ登録', th: 'ลงทะเบียนเลย', vi: 'Đăng ký ngay' })}
           </Link>
         </p>
       }
@@ -1293,22 +1293,22 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={tr(language, { en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
+            placeholder={tr(language, { ko: '에이전트 이름 입력', en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{tr(language, { en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
+          <label className="form-label">{tr(language, { ko: '비밀번호', en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            placeholder={tr(language, { en: 'Enter password', ja: 'パスワードを入力', th: 'กรอกรหัสผ่าน', vi: 'Nhập mật khẩu' })}
+            placeholder={tr(language, { ko: '비밀번호 입력', en: 'Enter password', ja: 'パスワードを入力', th: 'กรอกรหัสผ่าน', vi: 'Nhập mật khẩu' })}
           />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-          {loading ? tr(language, { en: 'Logging in...', ja: 'ログイン中...', th: 'กำลังเข้าสู่ระบบ...', vi: 'Đang đăng nhập...' }) : tr(language, { en: 'Login', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
+          {loading ? tr(language, { ko: '로그인 중...', en: 'Logging in...', ja: 'ログイン中...', th: 'กำลังเข้าสู่ระบบ...', vi: 'Đang đăng nhập...' }) : tr(language, { ko: '로그인', en: 'Login', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
         </button>
       </form>
     </AuthShell>
@@ -1329,13 +1329,13 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(tr(language, { en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
+      alert(tr(language, { ko: '에이전트 이름을 입력하세요', en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
       setLoading(false)
       return
     }
 
     if (password !== confirmPassword) {
-      alert(tr(language, { en: 'Passwords do not match', ja: 'パスワードが一致しません', th: 'รหัสผ่านไม่ตรงกัน', vi: 'Mật khẩu không khớp' }))
+      alert(tr(language, { ko: '비밀번호가 일치하지 않습니다', en: 'Passwords do not match', ja: 'パスワードが一致しません', th: 'รหัสผ่านไม่ตรงกัน', vi: 'Mật khẩu không khớp' }))
       setLoading(false)
       return
     }
@@ -1365,12 +1365,12 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     <AuthShell
       mode="register"
       title="Sooppiy"
-      subtitle={tr(language, { en: 'Register New Agent', ja: '新規エージェント登録', th: 'ลงทะเบียนเอเจนต์ใหม่', vi: 'Đăng ký Agent mới' })}
+      subtitle={tr(language, { ko: '새 에이전트 등록', en: 'Register New Agent', ja: '新規エージェント登録', th: 'ลงทะเบียนเอเจนต์ใหม่', vi: 'Đăng ký Agent mới' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {tr(language, { en: 'Already have an agent?', ja: 'すでにエージェントをお持ちですか？', th: 'มีเอเจนต์อยู่แล้ว?', vi: 'Đã có agent?' })}{' '}
+          {tr(language, { ko: '이미 에이전트가 있으신가요?', en: 'Already have an agent?', ja: 'すでにエージェントをお持ちですか？', th: 'มีเอเจนต์อยู่แล้ว?', vi: 'Đã có agent?' })}{' '}
           <Link to="/login" style={{ color: 'var(--accent-primary)' }}>
-            {tr(language, { en: 'Login now', ja: '今すぐログイン', th: 'เข้าสู่ระบบเลย', vi: 'Đăng nhập ngay' })}
+            {tr(language, { ko: '지금 로그인', en: 'Login now', ja: '今すぐログイン', th: 'เข้าสู่ระบบเลย', vi: 'Đăng nhập ngay' })}
           </Link>
         </p>
       }
@@ -1384,7 +1384,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={tr(language, { en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
+            placeholder={tr(language, { ko: '에이전트 이름 입력', en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
           />
         </div>
         <div className="form-group">
@@ -1395,11 +1395,11 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            placeholder={tr(language, { en: 'Enter email address', ja: 'メールアドレスを入力', th: 'กรอกที่อยู่อีเมล', vi: 'Nhập địa chỉ email' })}
+            placeholder={tr(language, { ko: '이메일 주소 입력', en: 'Enter email address', ja: 'メールアドレスを入力', th: 'กรอกที่อยู่อีเมล', vi: 'Nhập địa chỉ email' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{tr(language, { en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
+          <label className="form-label">{tr(language, { ko: '비밀번호', en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
@@ -1407,11 +1407,11 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             onChange={e => setPassword(e.target.value)}
             required
             minLength={6}
-            placeholder={tr(language, { en: 'Enter password (min 6 characters)', ja: 'パスワードを入力（6文字以上）', th: 'กรอกรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)', vi: 'Nhập mật khẩu (tối thiểu 6 ký tự)' })}
+            placeholder={tr(language, { ko: '비밀번호 입력 (최소 6자)', en: 'Enter password (min 6 characters)', ja: 'パスワードを入力（6文字以上）', th: 'กรอกรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)', vi: 'Nhập mật khẩu (tối thiểu 6 ký tự)' })}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">{tr(language, { en: 'Confirm Password', ja: 'パスワード確認', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}</label>
+          <label className="form-label">{tr(language, { ko: '비밀번호 확인', en: 'Confirm Password', ja: 'パスワード確認', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}</label>
           <input
             type="password"
             className="form-input"
@@ -1419,7 +1419,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             onChange={e => setConfirmPassword(e.target.value)}
             required
             minLength={6}
-            placeholder={tr(language, { en: 'Confirm password', ja: 'パスワードを再入力', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}
+            placeholder={tr(language, { ko: '비밀번호 확인', en: 'Confirm password', ja: 'パスワードを再入力', th: 'ยืนยันรหัสผ่าน', vi: 'Xác nhận mật khẩu' })}
           />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>

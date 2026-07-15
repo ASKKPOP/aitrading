@@ -57,7 +57,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
   // Get Price button handler
   const handleGetPrice = async () => {
     if (!symbol) {
-      alert(tr(language, { en: 'Please enter symbol', ja: '銘柄を入力してください', th: 'กรุณาใส่สัญลักษณ์', vi: 'Vui lòng nhập mã' }))
+      alert(tr(language, { ko: '종목을 입력하세요', en: 'Please enter symbol', ja: '銘柄を入力してください', th: 'กรุณาใส่สัญลักษณ์', vi: 'Vui lòng nhập mã' }))
       return
     }
 
@@ -88,13 +88,13 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
           priceInput.value = data.price.toString()
         }
       } else if (res.status === 404) {
-        alert(tr(language, { en: 'Unable to get price for this symbol', ja: 'この銘柄の価格を取得できません', th: 'ไม่สามารถดึงราคาของสัญลักษณ์นี้ได้', vi: 'Không thể lấy giá cho mã này' }))
+        alert(tr(language, { ko: '이 종목의 가격을 조회할 수 없습니다', en: 'Unable to get price for this symbol', ja: 'この銘柄の価格を取得できません', th: 'ไม่สามารถดึงราคาของสัญลักษณ์นี้ได้', vi: 'Không thể lấy giá cho mã này' }))
       } else {
-        alert(tr(language, { en: 'Failed to get price', ja: '価格の取得に失敗しました', th: 'ดึงราคาล้มเหลว', vi: 'Lấy giá thất bại' }))
+        alert(tr(language, { ko: '가격 조회에 실패했습니다', en: 'Failed to get price', ja: '価格の取得に失敗しました', th: 'ดึงราคาล้มเหลว', vi: 'Lấy giá thất bại' }))
       }
     } catch (e) {
       console.error(e)
-      alert(tr(language, { en: 'Failed to get price', ja: '価格の取得に失敗しました', th: 'ดึงราคาล้มเหลว', vi: 'Lấy giá thất bại' }))
+      alert(tr(language, { ko: '가격 조회에 실패했습니다', en: 'Failed to get price', ja: '価格の取得に失敗しました', th: 'ดึงราคาล้มเหลว', vi: 'Lấy giá thất bại' }))
     }
     setPriceLoading(false)
   }
@@ -106,7 +106,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
     if (market === 'us-stock') {
       if (!isUSMarketOpen()) {
         alert(tr(language, {
-          en: 'US market is closed. Current time: ' + getCurrentETTime() + ' ET\nUS market hours: Mon-Fri 9:30-16:00 ET',
+          ko: '미국 장이 마감되었습니다. 현재 시각: ', en: 'US market is closed. Current time: ' + getCurrentETTime() + ' ET\nUS market hours: Mon-Fri 9:30-16:00 ET',
           ja: '米国株式市場は休場です。現在時刻: ' + getCurrentETTime() + ' ET\n取引時間: 月-金 9:30-16:00 ET',
           th: 'ตลาดหุ้นสหรัฐปิดอยู่ เวลาปัจจุบัน: ' + getCurrentETTime() + ' ET\nเวลาทำการ: จันทร์-ศุกร์ 9:30-16:00 ET',
           vi: 'Thị trường Mỹ đã đóng. Giờ hiện tại: ' + getCurrentETTime() + ' ET\nGiờ giao dịch: T2-T6 9:30-16:00 ET'
@@ -117,7 +117,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
 
     // Require price to be fetched first
     if (!currentPrice) {
-      alert(tr(language, { en: 'Please click "Get Price" first', ja: 'まず「価格を取得」をクリックしてください', th: 'กรุณาคลิก "รับราคา" ก่อน', vi: 'Vui lòng nhấp "Lấy giá" trước' }))
+      alert(tr(language, { ko: '먼저 "가격 가져오기"를 클릭하세요', en: 'Please click "Get Price" first', ja: 'まず「価格を取得」をクリックしてください', th: 'กรุณาคลิก "รับราคา" ก่อน', vi: 'Vui lòng nhấp "Lấy giá" trước' }))
       return
     }
 
@@ -132,7 +132,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
         const exchangeRate = 0.01 // 100 points = $1
         const exchangeableCash = points * exchangeRate
         const fee = tradeValue * feeRate
-        alert(tr(language, { en: `Insufficient cash! Required: $${totalRequired.toFixed(2)} (trade: $${tradeValue.toFixed(2)} + fee: $${fee.toFixed(2)}), Available: $${availableCash.toFixed(2)}\n\nYou have ${points} points, can exchange for $${exchangeableCash.toFixed(2)}\nPlease go to "Points Exchange" page first`, ja: `現金が不足しています！必要: $${totalRequired.toFixed(2)} (取引: $${tradeValue.toFixed(2)} + 手数料: $${fee.toFixed(2)})、利用可能: $${availableCash.toFixed(2)}\n\n${points} ポイントを保有しており、$${exchangeableCash.toFixed(2)} と交換できます\nまず「ポイント交換」ページへ移動してください`, th: `เงินสดไม่เพียงพอ! ต้องการ: $${totalRequired.toFixed(2)} (เทรด: $${tradeValue.toFixed(2)} + ค่าธรรมเนียม: $${fee.toFixed(2)}), ใช้ได้: $${availableCash.toFixed(2)}\n\nคุณมี ${points} คะแนน แลกได้ $${exchangeableCash.toFixed(2)}\nกรุณาไปหน้า "แลกคะแนน" ก่อน`, vi: `Không đủ tiền! Yêu cầu: $${totalRequired.toFixed(2)} (giao dịch: $${tradeValue.toFixed(2)} + phí: $${fee.toFixed(2)}), Khả dụng: $${availableCash.toFixed(2)}\n\nBạn có ${points} điểm, có thể đổi $${exchangeableCash.toFixed(2)}\nVui lòng đến trang "Đổi điểm" trước` }))
+        alert(tr(language, { ko: `현금이 부족합니다! 필요: $${totalRequired.toFixed(2)} (거래: $${tradeValue.toFixed(2)} + 수수료: $${fee.toFixed(2)}), 가용: $${availableCash.toFixed(2)}\n\n보유 포인트 ${points}개로 $${exchangeableCash.toFixed(2)}를 교환할 수 있습니다\n먼저 "포인트 교환" 페이지로 이동하세요`, en: `Insufficient cash! Required: $${totalRequired.toFixed(2)} (trade: $${tradeValue.toFixed(2)} + fee: $${fee.toFixed(2)}), Available: $${availableCash.toFixed(2)}\n\nYou have ${points} points, can exchange for $${exchangeableCash.toFixed(2)}\nPlease go to "Points Exchange" page first`, ja: `現金が不足しています！必要: $${totalRequired.toFixed(2)} (取引: $${tradeValue.toFixed(2)} + 手数料: $${fee.toFixed(2)})、利用可能: $${availableCash.toFixed(2)}\n\n${points} ポイントを保有しており、$${exchangeableCash.toFixed(2)} と交換できます\nまず「ポイント交換」ページへ移動してください`, th: `เงินสดไม่เพียงพอ! ต้องการ: $${totalRequired.toFixed(2)} (เทรด: $${tradeValue.toFixed(2)} + ค่าธรรมเนียม: $${fee.toFixed(2)}), ใช้ได้: $${availableCash.toFixed(2)}\n\nคุณมี ${points} คะแนน แลกได้ $${exchangeableCash.toFixed(2)}\nกรุณาไปหน้า "แลกคะแนน" ก่อน`, vi: `Không đủ tiền! Yêu cầu: $${totalRequired.toFixed(2)} (giao dịch: $${tradeValue.toFixed(2)} + phí: $${fee.toFixed(2)}), Khả dụng: $${availableCash.toFixed(2)}\n\nBạn có ${points} điểm, có thể đổi $${exchangeableCash.toFixed(2)}\nVui lòng đến trang "Đổi điểm" trước` }))
         return
       }
     }
@@ -166,7 +166,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
       const data = await res.json()
 
       if (res.ok) {
-        alert(tr(language, { en: 'Order placed successfully!', ja: '注文が成立しました！', th: 'วางคำสั่งสำเร็จ!', vi: 'Đặt lệnh thành công!' }))
+        alert(tr(language, { ko: '주문이 완료되었습니다!', en: 'Order placed successfully!', ja: '注文が成立しました！', th: 'วางคำสั่งสำเร็จ!', vi: 'Đặt lệnh thành công!' }))
         // Reset form
         setSymbol('')
         setPolymarketOutcome('')
@@ -178,11 +178,11 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
         if (onTradeSuccess) onTradeSuccess()
         navigate('/positions')
       } else {
-        alert(data.detail || (tr(language, { en: 'Order failed', ja: '注文に失敗しました', th: 'วางคำสั่งล้มเหลว', vi: 'Đặt lệnh thất bại' })))
+        alert(data.detail || (tr(language, { ko: '주문 실패', en: 'Order failed', ja: '注文に失敗しました', th: 'วางคำสั่งล้มเหลว', vi: 'Đặt lệnh thất bại' })))
       }
     } catch (e) {
       console.error(e)
-      alert(tr(language, { en: 'Order failed', ja: '注文に失敗しました', th: 'วางคำสั่งล้มเหลว', vi: 'Đặt lệnh thất bại' }))
+      alert(tr(language, { ko: '주문 실패', en: 'Order failed', ja: '注文に失敗しました', th: 'วางคำสั่งล้มเหลว', vi: 'Đặt lệnh thất bại' }))
     }
 
     setLoading(false)
@@ -202,7 +202,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
       {matchingChallenges.length > 0 && (
         <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
           <div style={{ fontWeight: 700, marginBottom: '8px' }}>
-            {tr(language, { en: 'This trade will count toward active challenges', ja: 'この取引はアクティブなチャレンジにカウントされます', th: 'การเทรดนี้จะถูกนับรวมในชาเลนจ์ที่ใช้งานอยู่', vi: 'Giao dịch này sẽ được tính vào các thử thách đang chạy' })}
+            {tr(language, { ko: '이 거래는 진행 중인 챌린지에 반영됩니다', en: 'This trade will count toward active challenges', ja: 'この取引はアクティブなチャレンジにカウントされます', th: 'การเทรดนี้จะถูกนับรวมในชาเลนจ์ที่ใช้งานอยู่', vi: 'Giao dịch này sẽ được tính vào các thử thách đang chạy' })}
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {matchingChallenges.map((challenge) => (
@@ -223,9 +223,9 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
             value={market}
             onChange={e => setMarket(e.target.value)}
           >
-            <option value="us-stock">{tr(language, { en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' })}</option>
-            <option value="crypto">{tr(language, { en: 'Crypto', ja: '暗号通貨', th: 'คริปโต', vi: 'Tiền mã hóa' })}</option>
-            <option value="polymarket">{tr(language, { en: 'Polymarket (Testing)', ja: 'Polymarket (テスト)', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)' })}</option>
+            <option value="us-stock">{tr(language, { ko: '미국 주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' })}</option>
+            <option value="crypto">{tr(language, { ko: '암호화폐', en: 'Crypto', ja: '暗号通貨', th: 'คริปโต', vi: 'Tiền mã hóa' })}</option>
+            <option value="polymarket">{tr(language, { ko: 'Polymarket (테스트)', en: 'Polymarket (Testing)', ja: 'Polymarket (テスト)', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)' })}</option>
           </select>
         </div>
 
@@ -252,7 +252,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
               className={`btn ${action === 'short' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setAction('short')}
               disabled={market === 'polymarket'}
-              title={market === 'polymarket' ? (tr(language, { en: 'Polymarket does not support short/cover', ja: 'Polymarket はショート/カバーをサポートしません', th: 'Polymarket ไม่รองรับ short/cover', vi: 'Polymarket không hỗ trợ short/cover' })) : undefined}
+              title={market === 'polymarket' ? (tr(language, { ko: 'Polymarket은 공매도/환매수를 지원하지 않습니다', en: 'Polymarket does not support short/cover', ja: 'Polymarket はショート/カバーをサポートしません', th: 'Polymarket ไม่รองรับ short/cover', vi: 'Polymarket không hỗ trợ short/cover' })) : undefined}
             >
               {t.trade.short} 🔻
             </button>
@@ -261,14 +261,14 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
               className={`btn ${action === 'cover' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setAction('cover')}
               disabled={market === 'polymarket'}
-              title={market === 'polymarket' ? (tr(language, { en: 'Polymarket does not support short/cover', ja: 'Polymarket はショート/カバーをサポートしません', th: 'Polymarket ไม่รองรับ short/cover', vi: 'Polymarket không hỗ trợ short/cover' })) : undefined}
+              title={market === 'polymarket' ? (tr(language, { ko: 'Polymarket은 공매도/환매수를 지원하지 않습니다', en: 'Polymarket does not support short/cover', ja: 'Polymarket はショート/カバーをサポートしません', th: 'Polymarket ไม่รองรับ short/cover', vi: 'Polymarket không hỗ trợ short/cover' })) : undefined}
             >
               {t.trade.cover} 🔺
             </button>
           </div>
           {market === 'polymarket' && (
             <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              {tr(language, { en: 'Note: Polymarket is spot-like paper trading here (no short/cover). Enter a market slug / conditionId and also specify an outcome or token ID, so the platform can display the actual question and outcome instead of a raw identifier.', ja: '注: ここでの Polymarket はスポット風の模擬取引です (ショート/カバーなし)。market slug / conditionId を入力し、outcome または token ID も指定してください。プラットフォームが生の識別子ではなく実際の質問と結果を表示できます。', th: 'หมายเหตุ: Polymarket ที่นี่เป็นการเทรดจำลองแบบ spot (ไม่มี short/cover) ใส่ market slug / conditionId และระบุ outcome หรือ token ID ด้วย เพื่อให้แพลตฟอร์มแสดงคำถามและผลลัพธ์จริงแทนตัวระบุดิบ', vi: 'Lưu ý: Polymarket ở đây là giao dịch giả lập kiểu spot (không short/cover). Nhập market slug / conditionId và chỉ định outcome hoặc token ID để nền tảng hiển thị câu hỏi và kết quả thực thay vì định danh thô.' })}
+              {tr(language, { ko: '참고: 여기서 Polymarket은 현물과 유사한 모의 거래입니다 (공매도/환매수 없음). 마켓 슬러그 / conditionId를 입력하고 결과 또는 토큰 ID도 지정하면, 플랫폼이 원시 식별자 대신 실제 질문과 결과를 표시할 수 있습니다.', en: 'Note: Polymarket is spot-like paper trading here (no short/cover). Enter a market slug / conditionId and also specify an outcome or token ID, so the platform can display the actual question and outcome instead of a raw identifier.', ja: '注: ここでの Polymarket はスポット風の模擬取引です (ショート/カバーなし)。market slug / conditionId を入力し、outcome または token ID も指定してください。プラットフォームが生の識別子ではなく実際の質問と結果を表示できます。', th: 'หมายเหตุ: Polymarket ที่นี่เป็นการเทรดจำลองแบบ spot (ไม่มี short/cover) ใส่ market slug / conditionId และระบุ outcome หรือ token ID ด้วย เพื่อให้แพลตฟอร์มแสดงคำถามและผลลัพธ์จริงแทนตัวระบุดิบ', vi: 'Lưu ý: Polymarket ở đây là giao dịch giả lập kiểu spot (không short/cover). Nhập market slug / conditionId và chỉ định outcome hoặc token ID để nền tảng hiển thị câu hỏi và kết quả thực thay vì định danh thô.' })}
             </div>
           )}
         </div>
@@ -285,7 +285,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
                 setSymbol(e.target.value)
                 setCurrentPrice(null)
               }}
-              placeholder={tr(language, { en: 'e.g., BTC, AAPL, TSLA', ja: '例: BTC, AAPL, TSLA', th: 'เช่น BTC, AAPL, TSLA', vi: 'VD: BTC, AAPL, TSLA' })}
+              placeholder={tr(language, { ko: '예: BTC, AAPL, TSLA', en: 'e.g., BTC, AAPL, TSLA', ja: '例: BTC, AAPL, TSLA', th: 'เช่น BTC, AAPL, TSLA', vi: 'VD: BTC, AAPL, TSLA' })}
               required
               style={{ flex: 1 }}
             />
@@ -295,12 +295,12 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
               onClick={handleGetPrice}
               disabled={!symbol || priceLoading}
             >
-              {priceLoading ? '...' : (tr(language, { en: 'Get Price', ja: '価格を取得', th: 'รับราคา', vi: 'Lấy giá' }))}
+              {priceLoading ? '...' : (tr(language, { ko: '가격 가져오기', en: 'Get Price', ja: '価格を取得', th: 'รับราคา', vi: 'Lấy giá' }))}
             </button>
           </div>
           {currentPrice && (
             <div style={{ marginTop: '8px', color: 'var(--accent-primary)', fontWeight: 500 }}>
-              {tr(language, { en: 'Current Price: $', ja: '現在価格: $', th: 'ราคาปัจจุบัน: $', vi: 'Giá hiện tại: $' })}{currentPrice.toFixed(2)}
+              {tr(language, { ko: '현재 가격: $', en: 'Current Price: $', ja: '現在価格: $', th: 'ราคาปัจจุบัน: $', vi: 'Giá hiện tại: $' })}{currentPrice.toFixed(2)}
             </div>
           )}
         </div>
@@ -308,7 +308,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
         {market === 'polymarket' && (
           <>
             <div className="form-group">
-              <label className="form-label">{tr(language, { en: 'Outcome', ja: '結果', th: 'ผลลัพธ์', vi: 'Kết quả' })}</label>
+              <label className="form-label">{tr(language, { ko: '결과', en: 'Outcome', ja: '結果', th: 'ผลลัพธ์', vi: 'Kết quả' })}</label>
               <input
                 type="text"
                 className="form-input"
@@ -317,12 +317,12 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
                   setPolymarketOutcome(e.target.value)
                   setCurrentPrice(null)
                 }}
-                placeholder={tr(language, { en: 'e.g. Yes / No', ja: '例: Yes / No', th: 'เช่น Yes / No', vi: 'VD: Yes / No' })}
+                placeholder={tr(language, { ko: '예: Yes / No', en: 'e.g. Yes / No', ja: '例: Yes / No', th: 'เช่น Yes / No', vi: 'VD: Yes / No' })}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">{tr(language, { en: 'Token ID (Optional)', ja: 'トークンID (任意)', th: 'Token ID (ตัวเลือก)', vi: 'Token ID (Tùy chọn)' })}</label>
+              <label className="form-label">{tr(language, { ko: '토큰 ID (선택)', en: 'Token ID (Optional)', ja: 'トークンID (任意)', th: 'Token ID (ตัวเลือก)', vi: 'Token ID (Tùy chọn)' })}</label>
               <input
                 type="text"
                 className="form-input"
@@ -331,7 +331,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
                   setPolymarketTokenId(e.target.value)
                   setCurrentPrice(null)
                 }}
-                placeholder={tr(language, { en: 'Fill this if you already know the outcome token', ja: '結果トークンが分かっている場合に入力', th: 'กรอกหากทราบ outcome token แล้ว', vi: 'Điền nếu bạn đã biết outcome token' })}
+                placeholder={tr(language, { ko: '결과 토큰을 이미 알고 있다면 입력하세요', en: 'Fill this if you already know the outcome token', ja: '結果トークンが分かっている場合に入力', th: 'กรอกหากทราบ outcome token แล้ว', vi: 'Điền nếu bạn đã biết outcome token' })}
               />
             </div>
           </>
@@ -346,7 +346,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
             className="form-input"
             value={currentPrice ? `$${currentPrice.toFixed(2)}` : ''}
             readOnly
-            placeholder={tr(language, { en: 'Click "Get Price" to get price', ja: '「価格を取得」をクリックして価格を取得', th: 'คลิก "รับราคา" เพื่อดึงราคา', vi: 'Nhấp "Lấy giá" để lấy giá' })}
+            placeholder={tr(language, { ko: '"가격 가져오기"를 클릭하여 가격을 조회하세요', en: 'Click "Get Price" to get price', ja: '「価格を取得」をクリックして価格を取得', th: 'คลิก "รับราคา" เพื่อดึงราคา', vi: 'Nhấp "Lấy giá" để lấy giá' })}
             style={{ backgroundColor: 'var(--bg-secondary)' }}
           />
         </div>
@@ -360,7 +360,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
             className="form-input"
             value={quantity}
             onChange={e => setQuantity(e.target.value)}
-            placeholder={tr(language, { en: 'Quantity', ja: '数量', th: 'จำนวน', vi: 'Số lượng' })}
+            placeholder={tr(language, { ko: '수량', en: 'Quantity', ja: '数量', th: 'จำนวน', vi: 'Số lượng' })}
             required
           />
         </div>
@@ -375,7 +375,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
             fontFamily: 'monospace',
             fontSize: '14px'
           }}>
-            {new Date(currentTime).toLocaleString(tr(language, { en: 'en-US', ja: 'en-US', th: 'en-US', vi: 'en-US' }), {
+            {new Date(currentTime).toLocaleString(tr(language, { ko: 'ko-KR', en: 'en-US', ja: 'en-US', th: 'en-US', vi: 'en-US' }), {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',
@@ -384,7 +384,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
               second: '2-digit'
             })}
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {tr(language, { en: 'Eastern Time (ET)', ja: '米国東部時間 (ET)', th: 'เวลาตะวันออก (ET)', vi: 'Giờ miền Đông (ET)' })}: {getCurrentETTime()}
+              {tr(language, { ko: '동부 시간 (ET)', en: 'Eastern Time (ET)', ja: '米国東部時間 (ET)', th: 'เวลาตะวันออก (ET)', vi: 'Giờ miền Đông (ET)' })}: {getCurrentETTime()}
             </div>
           </div>
         </div>
@@ -396,13 +396,13 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
             className="form-input"
             value={content}
             onChange={e => setContent(e.target.value)}
-            placeholder={tr(language, { en: 'Note (optional)', ja: 'メモ (任意)', th: 'หมายเหตุ (ตัวเลือก)', vi: 'Ghi chú (tùy chọn)' })}
+            placeholder={tr(language, { ko: '메모 (선택)', en: 'Note (optional)', ja: 'メモ (任意)', th: 'หมายเหตุ (ตัวเลือก)', vi: 'Ghi chú (tùy chọn)' })}
             rows={3}
           />
         </div>
 
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-          {loading ? (tr(language, { en: 'Submitting...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' })) : t.trade.submit}
+          {loading ? (tr(language, { ko: '제출 중...', en: 'Submitting...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' })) : t.trade.submit}
         </button>
       </form>
     </div>
