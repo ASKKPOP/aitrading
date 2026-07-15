@@ -44,7 +44,17 @@ def _gather_technical(symbol: str, market: str) -> dict[str, Any]:
             return _build_stock_analysis(symbol)
         except Exception as exc:  # noqa: BLE001
             return {"symbol": symbol, "market": market, "error": str(exc)}
-    # crypto / polymarket: light technical from the live price
+    # crypto: full quant technicals from OKX (Phase 3) — RSI/MA/σ/funding/basis.
+    # Falls back to the light spot-price path when disabled or OKX is unreachable.
+    if market == "crypto":
+        try:
+            from quant_crypto import build_crypto_analysis, quant_crypto_enabled
+            if quant_crypto_enabled():
+                return build_crypto_analysis(symbol)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("quant crypto technicals failed for %s, using light path: %s",
+                           symbol, exc)
+    # polymarket / fallback: light technical from the live price
     try:
         from price_fetcher import get_price_from_market
         price = get_price_from_market(symbol, _now_iso(), market)

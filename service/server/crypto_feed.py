@@ -16,6 +16,7 @@ import requests
 # ─── constants ────────────────────────────────────────────────────────────────
 
 OKX_REST_BASE = os.environ.get("OKX_REST_BASE", "https://www.okx.com/api/v5/market").rstrip("/")
+OKX_PUBLIC_BASE = os.environ.get("OKX_PUBLIC_BASE", "https://www.okx.com/api/v5/public").rstrip("/")
 OKX_TIMEOUT = int(os.environ.get("OKX_TIMEOUT", "5"))
 
 TOP_20_PAIRS: tuple[str, ...] = (
@@ -81,14 +82,14 @@ def _normalise(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _okx_get(path: str, params: dict[str, str]) -> list[dict[str, Any]]:
+def _okx_get(path: str, params: dict[str, str], base: str = None) -> list[dict[str, Any]]:
     """
-    GET from OKX v5 market API.
+    GET from OKX v5 API (market base by default; pass base for /public etc).
     Raises RuntimeError on non-zero code, Exception on HTTP error.
     Returns the data list on success.
     """
     from urllib.parse import urlencode
-    url = f"{OKX_REST_BASE}/{path}?{urlencode(params)}"
+    url = f"{base or OKX_REST_BASE}/{path}?{urlencode(params)}"
     resp = requests.get(url, timeout=OKX_TIMEOUT)
     resp.raise_for_status()
     body = resp.json()
@@ -155,6 +156,37 @@ def fetch_candles(symbol: str, bar: str = "1H", limit: int = 100) -> list[dict[s
             "volume": float(row[5]),
         })
     return candles
+
+
+def fetch_funding_rate(symbol: str) -> dict[str, Any]:
+    """
+    Fetch the current funding rate for a USDT-margined perpetual (OKX /public).
+
+    Returns {"symbol", "funding_rate": float, "next_funding_time": ms|None}.
+    """
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("funding-rate", {"instId": inst_id}, base=OKX_PUBLIC_BASE)
+    if not data:
+        raise ValueError(f"Symbol {symbol!r} not found in OKX funding response")
+    row = data[0]
+    return {
+        "symbol": symbol.upper(),
+        "funding_rate": float(row.get("fundingRate") or 0),
+        "next_funding_time": int(row["fundingTime"]) if row.get("fundingTime") else None,
+    }
+
+
+def fetch_spot_ticker(symbol: str) -> dict[str, Any]:
+    """
+    Fetch the SPOT ticker (instId like BTC-USDT, no -SWAP) for basis calculation.
+
+    Returns {"symbol", "last_price": float}.
+    """
+    base = symbol[:-4] if symbol.upper().endswith("USDT") else symbol.upper()
+    data = _okx_get("ticker", {"instId": f"{base}-USDT"})
+    if not data:
+        raise ValueError(f"Symbol {symbol!r} not found in OKX spot response")
+    return {"symbol": symbol.upper(), "last_price": float(data[0].get("last") or 0)}
 
 
 def fetch_order_book(symbol: str, depth: int = 25) -> dict[str, Any]:

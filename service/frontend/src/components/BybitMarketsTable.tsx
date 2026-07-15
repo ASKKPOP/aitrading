@@ -100,7 +100,7 @@ export function BybitMarketsTable() {
             Crypto Futures Markets
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-            Top 20 USDT-margined perpetuals · Live prices via Bybit
+            Top 20 USDT-margined perpetuals · Live prices via OKX
           </p>
         </div>
         {!loading && !error && (
