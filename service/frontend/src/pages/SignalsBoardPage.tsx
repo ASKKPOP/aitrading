@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../appShared'
 
 // Signals Board (signal-collection plan Phase 5): every number on this page is
@@ -75,7 +75,7 @@ function FngSparkline({ history }: { history: FearGreed['history'] }) {
   }).join(' ')
   return (
     <svg width={w} height={h} style={{ display: 'block', marginTop: 6 }} aria-label="Fear & Greed 30d">
-      <path d={path} fill="none" stroke="var(--accent)" strokeWidth={1.5} />
+      <path d={path} fill="none" stroke="var(--accent-primary)" strokeWidth={1.5} />
     </svg>
   )
 }
@@ -92,7 +92,13 @@ export function SignalsBoardPage() {
   const [fusion, setFusion] = useState<FusedSignal[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const loadingRef = useRef(false)
+
   const load = useCallback(async () => {
+    // Skip ticks while a previous load is in flight, and don't poll hidden tabs
+    // — every fetch of /fusion costs the server upstream API calls.
+    if (loadingRef.current || document.hidden) return
+    loadingRef.current = true
     try {
       const [psychRes, scannerRes, fusionRes] = await Promise.all([
         fetch(`${API_BASE}/market-intel/psych`),
@@ -106,13 +112,20 @@ export function SignalsBoardPage() {
       setError(null)
     } catch {
       setError('Signal APIs unreachable — is the backend running with the signal phases enabled?')
+    } finally {
+      loadingRef.current = false
     }
   }, [])
 
   useEffect(() => {
     load()
     const id = setInterval(load, REFRESH_MS)
-    return () => clearInterval(id)
+    const onVisible = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [load])
 
   const fng = psych?.fear_greed ?? null
@@ -239,7 +252,7 @@ export function SignalsBoardPage() {
         ))}
       </div>
 
-      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+      <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
         Fused score = weighted quant × sentiment × psychology (psych weight structurally capped — psychology never
         trades alone). Shock figures are an estimated proxy (volatility σ + volume), not real liquidation data.
         All trading is simulated.

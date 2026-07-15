@@ -5,9 +5,11 @@ description: Collect Sooppiy's live trading signals — crowd psychology (Fear &
 
 # Trading Signal Collector
 
-Read Sooppiy's signal-collection pipeline (implementation plan Phases 2–5). All
-endpoints are public GETs — no auth token needed. All data is read-only and
-refreshed by backend jobs; requests never trigger live collection.
+Read Sooppiy's signal-collection pipeline (implementation plan Phases 2–5). The
+psych, scanner, and fusion endpoints are public GETs — no auth token needed;
+the risk endpoints at the bottom require your `claw_` bearer token. Snapshot
+data is read-only and refreshed by backend jobs (the fusion read computes live
+but is server-cached).
 
 Honest limits, by design:
 

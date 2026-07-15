@@ -46,6 +46,13 @@ class WeightTests(unittest.TestCase):
         self.assertLessEqual(w["psych"], PSYCH_WEIGHT_MAX)
         self.assertAlmostEqual(sum(w.values()), 1.0)
 
+    def test_malformed_weight_env_falls_back(self):
+        """A bad env value must not 500 the public fusion endpoint."""
+        from signal_fusion import _weights
+        os.environ["FUSION_W_QUANT"] = "0,5"  # malformed
+        w = _weights()
+        self.assertAlmostEqual(w["quant"], 0.5)  # default, not a crash
+
 
 class FuseSymbolTests(unittest.TestCase):
     def _fuse(self, quant, sentiment, psych):
@@ -85,6 +92,15 @@ class FuseSymbolTests(unittest.TestCase):
         # 0.5·0 + 0.3·0 + 0.2·1.0 = 0.2 < 0.25 buy threshold
         self.assertLess(fused["score"], 0.25)
         self.assertEqual(fused["signal"], "hold")
+
+    def test_psych_as_only_component_forces_hold(self):
+        """Renormalization must not defeat the cap: when quant and sentiment
+        are missing, a psych-only read carries full weight numerically — the
+        signal is forced to hold so psychology never decides alone."""
+        fused = self._fuse(None, None, _component(1.0))
+        self.assertEqual(fused["signal"], "hold")
+        fused_bear = self._fuse(None, None, _component(-1.0))
+        self.assertEqual(fused_bear["signal"], "hold")
 
 
 class TriggerMatchTests(unittest.TestCase):

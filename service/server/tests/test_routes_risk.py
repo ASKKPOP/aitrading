@@ -37,6 +37,7 @@ class RiskRouteTests(unittest.TestCase):
 
     def test_risk_endpoints_require_auth(self):
         self.assertEqual(self.client.get("/api/risk/limits").status_code, 401)
+        self.assertEqual(self.client.put("/api/risk/limits", json={}).status_code, 401)
         self.assertEqual(self.client.get("/api/risk/breaker").status_code, 401)
         self.assertEqual(self.client.post("/api/risk/halt", json={}).status_code, 401)
         self.assertEqual(self.client.post("/api/risk/resume").status_code, 401)

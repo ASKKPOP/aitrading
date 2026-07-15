@@ -107,6 +107,34 @@ class AgentLoginTokenStabilityTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
+    def test_dev_login_bypass_works_only_in_explicit_dev_env(self) -> None:
+        """DEV_LOGIN_ANY_PASSWORD is allow-list gated: bypass in an explicit dev
+        environment, password enforced in production AND when ENVIRONMENT is
+        unset (fail-closed — a copied dev .env can't weaken a real deploy)."""
+        from unittest.mock import patch
+
+        self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "devlogin-agent", "password": "password123"},
+        )
+
+        def _login():
+            return self.client.post(
+                "/api/claw/agents/login",
+                json={"name": "devlogin-agent", "password": "WRONG"},
+            )
+
+        with patch.dict(os.environ, {"DEV_LOGIN_ANY_PASSWORD": "true",
+                                     "ENVIRONMENT": "development"}):
+            self.assertEqual(_login().status_code, 200)
+        with patch.dict(os.environ, {"DEV_LOGIN_ANY_PASSWORD": "true",
+                                     "ENVIRONMENT": "production"}):
+            self.assertEqual(_login().status_code, 401)
+        env_no_environment = {k: v for k, v in os.environ.items() if k != "ENVIRONMENT"}
+        env_no_environment["DEV_LOGIN_ANY_PASSWORD"] = "true"
+        with patch.dict(os.environ, env_no_environment, clear=True):
+            self.assertEqual(_login().status_code, 401)
+
     def test_agent_login_returns_valid_token(self) -> None:
         """Login always returns a usable token (rotation is expected)."""
         self.client.post(

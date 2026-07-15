@@ -37,6 +37,10 @@ logger = logging.getLogger(__name__)
 
 # Minimum closed trades before the journal supports a Kelly estimate.
 KELLY_MIN_TRADES = 10
+# Journal replay bound — the most recent N executed signals. Keeps the gate
+# O(bounded) for hyperactive agents; recent history is what Kelly should
+# reflect anyway.
+TRADE_STATS_MAX_SIGNALS = 5000
 # Below this notional a Kelly-shrunk order is pointless — reject instead.
 MIN_ORDER_NOTIONAL_USD = 1.0
 
@@ -187,6 +191,8 @@ def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
         conn = get_db_connection()
         cursor = conn.cursor()
     try:
+        # Most recent N signals, replayed oldest-first. Bounded so the gate
+        # stays cheap no matter how long an agent has been trading.
         cursor.execute(
             """SELECT market, symbol, COALESCE(token_id, '') AS token_id, side,
                       entry_price, quantity, executed_at
@@ -194,10 +200,11 @@ def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
                WHERE agent_id = ? AND executed_at IS NOT NULL
                  AND side IN ('buy', 'sell', 'short', 'cover')
                  AND entry_price IS NOT NULL AND quantity IS NOT NULL
-               ORDER BY executed_at, id""",
-            (agent_id,),
+               ORDER BY executed_at DESC, id DESC
+               LIMIT ?""",
+            (agent_id, TRADE_STATS_MAX_SIGNALS),
         )
-        rows = cursor.fetchall()
+        rows = list(reversed(cursor.fetchall()))
     finally:
         if own:
             conn.close()
@@ -302,11 +309,17 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
         if halted:
             return GateDecision(allowed=False, quantity=0.0, reason=f"risk: {halted}")
 
+        # Sells reduce risk — they pass the gate (only the explicit HALT above
+        # stops them). Blocking exits under a daily-loss lockout would trap
+        # losing positions that have no SL/TP registered (pre-engine, manual).
+        if side != "buy":
+            return GateDecision(allowed=True, quantity=quantity)
+
         limits = get_risk_limits(agent_id, cursor=cursor)
         stats = trade_stats(agent_id, cursor=cursor)
 
-        # Daily max loss — realized P&L (UTC day) from the journal. Blocks all
-        # new automation orders; watcher exits bypass the gate by design.
+        # Daily max loss — realized P&L (UTC day) from the journal. Blocks new
+        # buys; watcher exits and automation sells bypass by design.
         max_daily = float(limits["max_daily_loss_usd"])
         if max_daily > 0 and stats["realized_today"] <= -max_daily:
             return GateDecision(
@@ -314,11 +327,17 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                 reason=(f"risk: daily loss limit hit "
                         f"(realized today ${stats['realized_today']:.2f} ≤ -${max_daily:.2f})"))
 
-        if side != "buy":
-            return GateDecision(allowed=True, quantity=quantity)
+        cursor.execute(
+            """SELECT COALESCE(SUM(quantity * COALESCE(current_price, entry_price)), 0) AS mv
+               FROM positions WHERE agent_id = ? AND market = ? AND symbol = ?""",
+            (agent_id, market, symbol),
+        )
+        exposure = float(cursor.fetchone()["mv"] or 0.0)
 
         # Kelly sizing first (plan flow ① — only ever shrinks), so the exposure
-        # check below sees the size that would actually be filled.
+        # check below sees the size that would actually be filled. The ½-Kelly
+        # cap is a POSITION cap: existing exposure in the symbol counts against
+        # it, so repeated ticks can't stack orders past the cap.
         adjustment = None
         if int(limits["use_kelly"]) and stats["n_trades"] >= KELLY_MIN_TRADES:
             f_star = kelly_fraction(stats["win_rate"], stats["payoff_ratio"])
@@ -328,23 +347,18 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                         allowed=False, quantity=0.0,
                         reason=(f"risk: kelly no-edge (W={stats['win_rate']:.2f}, "
                                 f"R={stats['payoff_ratio']:.2f}, f*={f_star:.3f} ≤ 0)"))
-                cap_notional = 0.5 * f_star * _equity(cursor, agent_id)
+                cap_notional = 0.5 * f_star * _equity(cursor, agent_id) - exposure
                 if cap_notional < quantity * price:
                     if cap_notional < MIN_ORDER_NOTIONAL_USD:
                         return GateDecision(
                             allowed=False, quantity=0.0,
-                            reason=f"risk: kelly cap ${cap_notional:.2f} below minimum order")
+                            reason=(f"risk: kelly position cap reached "
+                                    f"(½f* headroom ${max(cap_notional, 0):.2f})"))
                     adjustment = (f"kelly: size ${quantity * price:.2f} → ${cap_notional:.2f} "
-                                  f"(½f*={0.5 * f_star:.3f})")
+                                  f"(½f*={0.5 * f_star:.3f}, minus ${exposure:.2f} held)")
                     quantity = cap_notional / price
 
         # Per-symbol exposure cap (existing notional + this order, post-Kelly).
-        cursor.execute(
-            """SELECT COALESCE(SUM(quantity * COALESCE(current_price, entry_price)), 0) AS mv
-               FROM positions WHERE agent_id = ? AND market = ? AND symbol = ?""",
-            (agent_id, market, symbol),
-        )
-        exposure = float(cursor.fetchone()["mv"] or 0.0)
         max_exposure = float(limits["max_symbol_exposure_usd"])
         if max_exposure > 0 and exposure + quantity * price > max_exposure:
             return GateDecision(

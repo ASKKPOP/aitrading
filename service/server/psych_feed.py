@@ -329,12 +329,16 @@ def refresh_psych_snapshot() -> dict[str, Any]:
              json.dumps(anticipation, ensure_ascii=True),
              created_at),
         )
+        # Two-step prune: MySQL rejects both LIMIT-in-IN-subquery (1235) and
+        # selecting from the DELETE target (1093), so pick the cutoff first.
         cursor.execute(
-            """DELETE FROM psych_snapshots
-               WHERE id NOT IN (SELECT id FROM psych_snapshots
-                                ORDER BY created_at DESC, id DESC LIMIT ?)""",
-            (PSYCH_HISTORY_LIMIT,),
+            """SELECT id FROM psych_snapshots
+               ORDER BY created_at DESC, id DESC LIMIT 1 OFFSET ?""",
+            (PSYCH_HISTORY_LIMIT - 1,),
         )
+        cutoff = cursor.fetchone()
+        if cutoff:
+            cursor.execute("DELETE FROM psych_snapshots WHERE id < ?", (cutoff["id"],))
         conn.commit()
     finally:
         conn.close()

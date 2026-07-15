@@ -32,7 +32,7 @@ f* = W − (1 − W) / R
 - `max_symbol_exposure_usd` (default 10000) — held + new notional per symbol
 - `stop_loss_pct` / `take_profit_pct` (defaults 0.05 / 0.10) — auto-registered
   on every automation buy; the SL/TP watcher closes crossed positions
-- `use_kelly` (default 1)
+- `use_kelly` (integer 0/1 in responses, default 1; the PUT accepts a boolean)
 
 `PUT /api/risk/limits` — partial update, e.g. `{"max_daily_loss_usd": 500}`.
 

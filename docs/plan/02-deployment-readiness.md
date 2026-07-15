@@ -6,9 +6,9 @@ Local Docker dev is fully working; this is what stands between that and a real d
 ## Ready
 
 - **Backend image is prod-capable** — `Dockerfile` builds a slim, non-root Python 3.12
-  image with `libpq5` for Postgres, runs uvicorn on `:8001`. Override `CMD` to
+  image, runs uvicorn on `:8001`. Override `CMD` to
   `python -m uvicorn ...` (API) or `python service/server/worker.py` (worker).
-- **Postgres/MySQL supported** — set `DATABASE_URL`; SQLite is only the local fallback.
+- **MySQL supported** — set `DATABASE_URL` (connects via PyMySQL; there is no Postgres driver in requirements.txt — `using_mysql()` in database.py treats any `DATABASE_URL` as MySQL). SQLite is only the local fallback.
 - **Dev conveniences are safe by default** — `DEV_LOGIN_ANY_PASSWORD`, `DEV_MARKET_INTEL_SEED`
   default to `false` and are additionally disabled whenever `ENVIRONMENT=production`.
   Setting `ENVIRONMENT=production` alone locks them all off.
@@ -24,7 +24,7 @@ Local Docker dev is fully working; this is what stands between that and a real d
    - add a frontend build stage to the Dockerfile (`npm ci && npm run build`) and
      `COPY service/frontend/dist/ ./service/frontend/dist/`, **or**
    - host the built frontend separately (S3/CloudFront/Vercel) and point it at the API.
-2. **Set production env** — `ENVIRONMENT=production`, a real `DATABASE_URL` (Postgres),
+2. **Set production env** — `ENVIRONMENT=production`, a real `DATABASE_URL` (MySQL — the only wired prod driver),
    and a strong secret set (JWT/session, whatever `config.py` expects).
 3. **Real API keys** (all optional but each unlocks a feature; without them the feature
    degrades gracefully):
@@ -43,5 +43,5 @@ Local Docker dev is fully working; this is what stands between that and a real d
 ## Suggested first deploy
 
 Single VM or a small container platform: one API container, one worker container, one
-managed Postgres, `ENVIRONMENT=production`, frontend built into the API image (gap #1),
+managed MySQL, `ENVIRONMENT=production`, frontend built into the API image (gap #1),
 TLS via a reverse proxy. Add the market-data + LLM keys once the core is up.

@@ -290,12 +290,16 @@ def refresh_scanner_snapshot() -> dict[str, Any]:
              json.dumps(mentions, ensure_ascii=True),
              json.dumps(instruments, ensure_ascii=True), created_at),
         )
+        # Two-step prune: MySQL rejects both LIMIT-in-IN-subquery (1235) and
+        # selecting from the DELETE target (1093), so pick the cutoff first.
         cursor.execute(
-            """DELETE FROM scanner_snapshots
-               WHERE id NOT IN (SELECT id FROM scanner_snapshots
-                                ORDER BY created_at DESC, id DESC LIMIT ?)""",
-            (SCANNER_HISTORY_LIMIT,),
+            """SELECT id FROM scanner_snapshots
+               ORDER BY created_at DESC, id DESC LIMIT 1 OFFSET ?""",
+            (SCANNER_HISTORY_LIMIT - 1,),
         )
+        cutoff = cursor.fetchone()
+        if cutoff:
+            cursor.execute("DELETE FROM scanner_snapshots WHERE id < ?", (cutoff["id"],))
         conn.commit()
     finally:
         conn.close()
@@ -354,11 +358,27 @@ def get_scanner_payload() -> dict[str, Any]:
 
 def top_candidate() -> Optional[str]:
     """Symbol of the current top-ranked candidate (for automation rules whose
-    symbol is set to 'SCANNER'). Trims the USDT suffix — automation/crypto
-    symbols are base assets ('BTC')."""
+    symbol is set to 'SCANNER'). Trims the USDT/USD suffix — automation/crypto
+    symbols are base assets ('BTC'). Returns None when the latest scan is
+    stale (older than 2× the scan interval) so a dead scanner can't keep
+    feeding the same candidate to automation forever."""
     payload = get_scanner_payload()
     candidates = payload.get("candidates") or []
     if not candidates:
         return None
+    created_at = payload.get("created_at")
+    if created_at:
+        try:
+            scanned = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+            if scanned.tzinfo is None:  # SQLite datetime('now') is naive UTC
+                scanned = scanned.replace(tzinfo=timezone.utc)
+            interval_s = max(300, int(os.environ.get("SCANNER_INTERVAL", "3600")))
+            if (datetime.now(timezone.utc) - scanned).total_seconds() > 2 * interval_s:
+                return None
+        except (TypeError, ValueError):
+            pass
     symbol = str(candidates[0]["symbol"])
-    return symbol[:-4] if symbol.endswith("USDT") else symbol
+    for suffix in ("USDT", "USD"):
+        if symbol.endswith(suffix) and len(symbol) > len(suffix):
+            return symbol[:-len(suffix)]
+    return symbol

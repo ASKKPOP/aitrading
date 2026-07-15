@@ -48,11 +48,20 @@ ODDS_RERATING_MIN = 0.05
 RSI_OVERBOUGHT = 70
 
 
+def _env_weight(name: str, default: float) -> float:
+    """A malformed weight env var must not 500 a public endpoint — fall back."""
+    try:
+        return float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        logger.warning("invalid %s value %r — using default %s", name, os.getenv(name), default)
+        return default
+
+
 def _weights() -> dict[str, float]:
     w = {
-        "quant": float(os.getenv("FUSION_W_QUANT", "0.5")),
-        "sentiment": float(os.getenv("FUSION_W_SENTIMENT", "0.3")),
-        "psych": float(os.getenv("FUSION_W_PSYCH", "0.2")),
+        "quant": _env_weight("FUSION_W_QUANT", 0.5),
+        "sentiment": _env_weight("FUSION_W_SENTIMENT", 0.3),
+        "psych": _env_weight("FUSION_W_PSYCH", 0.2),
     }
     w = {k: max(0.0, v) for k, v in w.items()}
     total = sum(w.values()) or 1.0
@@ -168,8 +177,11 @@ def _matched_triggers(quant, sentiment, psych) -> list[str]:
             and basis is not None and basis >= BASIS_BUY_GAP_PCT):
         triggers.append(f"buy: F&G recovery +{fng_delta} · sentiment {senti_val:+.2f} · basis {basis:.2f}%")
     if psych and psych.get("odds_reratings"):
+        # Odds come from the top Polymarket markets by volume (any topic), so
+        # this is a market-wide anticipation read, not a per-symbol buy call.
         d = psych["odds_reratings"][0]
-        triggers.append(f"buy: odds re-rating {d.get('odds_from')}→{d.get('odds_to')}")
+        triggers.append(
+            f"anticipation (market-wide): odds re-rating {d.get('odds_from')}→{d.get('odds_to')}")
     rsi = (quant or {}).get("rsi_14")
     if (rsi is not None and rsi >= RSI_OVERBOUGHT and psych and psych.get("negative_spikes")):
         triggers.append(f"sell: RSI {rsi:.0f} overbought · negative sentiment spike")
@@ -203,6 +215,11 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
 
     signal = "buy" if score >= BUY_THRESHOLD else ("sell" if score <= SELL_THRESHOLD else "hold")
     if not available:
+        signal = "hold"
+    elif set(available) == {"psych"}:
+        # Structural invariant: renormalizing over available components would
+        # otherwise let a psych-only read carry full weight. Psychology may
+        # inform the score but never decides alone — force hold.
         signal = "hold"
 
     evidence: list[str] = []

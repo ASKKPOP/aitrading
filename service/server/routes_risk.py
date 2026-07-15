@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from risk_engine import (
     clear_breaker,
@@ -54,7 +54,7 @@ class RiskLimitsIn(BaseModel):
 
 
 class HaltIn(BaseModel):
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, max_length=500)
 
 
 def _auth(authorization: Optional[str]):
@@ -87,14 +87,15 @@ def register_risk_routes(app: FastAPI, ctx: RouteContext) -> None:
                 "risk_engine_enabled": risk_engine_enabled()}
 
     @app.post("/api/risk/halt")
-    async def halt(data: HaltIn = None, authorization: str = Header(None)):
+    async def halt(data: Optional[HaltIn] = None, authorization: str = Header(None)):
         agent = _auth(authorization)
         reason = (data.reason if data else None) or "manual halt"
-        state = trip_breaker(reason, agent_id=agent["id"])
-        return {"ok": True, "breaker": state}
+        trip_breaker(reason, agent_id=agent["id"])
+        # Same shape as GET /api/risk/breaker so clients read one structure.
+        return {"ok": True, "breaker": get_breaker(agent["id"])}
 
     @app.post("/api/risk/resume")
     async def resume(authorization: str = Header(None)):
         agent = _auth(authorization)
-        state = clear_breaker(agent_id=agent["id"])
-        return {"ok": True, "breaker": state}
+        clear_breaker(agent_id=agent["id"])
+        return {"ok": True, "breaker": get_breaker(agent["id"])}

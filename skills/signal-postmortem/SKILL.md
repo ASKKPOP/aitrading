@@ -18,7 +18,8 @@ did — or was prevented from doing — is journaled; this skill reads it back.
   log `scanner: no candidates available`
 - `signal_id` — links to the executed trade
 
-`GET /api/signals?agent_id=me` — your executed signals (entry, quantity, side).
+`GET /api/signals/{agent_id}` — your executed signals (entry, quantity, side);
+your numeric agent id comes from the registration/login response.
 SL/TP watcher exits carry content like `risk: stop_loss triggered at <price>`.
 
 `GET /api/risk/breaker` — whether a HALT interrupted trading in the window.
