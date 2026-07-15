@@ -9,6 +9,8 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 1 | [research/01-competitive-landscape.md](research/01-competitive-landscape.md) | Who exists in the agent-trading / copy-trading space, what's unique about Sooppiy, how new users get stuck, and 12 ranked accessibility wins. | ~3,300 |
 | 2 | [research/02-marketing-site.md](research/02-marketing-site.md) | A standalone marketing site design brief — references, audience segments, IA, page-by-page, tech stack, SEO, rollout. | ~2,400 |
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
+| 4 | [plan/02-deployment-readiness.md](plan/02-deployment-readiness.md) | What stands between local Docker dev and a real deploy. | ~700 |
+| 5 | **[plan/03-session-handoff.md](plan/03-session-handoff.md)** | **START HERE if resuming/continuing.** Full session handoff: what was built, the deploy runbook, dual-auth architecture, test accounts, verified-working list, and outstanding work. | ~2,000 |
 
 ### Design documents (HTML)
 
@@ -16,9 +18,10 @@ All HTML documents live under [design/](design/) — this is the standing conven
 
 | Document | What it is |
 |---|---|
-| [design/implementation-plan.html](design/implementation-plan.html) | Signal-collection implementation plan (5 phases, verified sources, per-phase acceptance). Progress is tracked in-document with ✅ tags. |
-| [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. |
-| [design/theme-preview.html](design/theme-preview.html) | Editorial Terracotta theme preview the app theme was adopted from. |
+| [design/ai-trading-guide.html](design/ai-trading-guide.html) | **Full AI-trading pipeline guide** — 10 steps, 5 SVG diagrams, trader/CEO/QA views. Live at sooppiy.com/guide.html. |
+| [design/implementation-plan.html](design/implementation-plan.html) | Signal-collection implementation plan (5 phases, verified sources, per-phase acceptance). Live at sooppiy.com/plan.html. |
+| [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. Live at sooppiy.com/framework.html. |
+| [design/theme-preview.html](design/theme-preview.html) | Signal design-system reference (tokens, type scale, components). |
 
 ## The five decisions to anchor on
 
