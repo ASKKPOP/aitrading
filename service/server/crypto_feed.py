@@ -219,6 +219,45 @@ def fetch_long_short_ratio(symbol: str) -> dict[str, Any]:
     }
 
 
+def fetch_instrument_ct_val(symbol: str) -> float:
+    """Contract value (ctVal, in base currency) of a USDT-margined perpetual.
+    Needed to turn liquidation sizes (contracts) into notional."""
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("instruments", {"instType": "SWAP", "instId": inst_id},
+                    base=OKX_PUBLIC_BASE)
+    if not data:
+        raise ValueError(f"Symbol {symbol!r} not found in OKX instruments response")
+    return float(data[0].get("ctVal") or 0)
+
+
+def fetch_liquidation_orders(symbol: str, limit: int = 100) -> list[dict[str, Any]]:
+    """
+    Recent filled liquidation orders for a USDT-margined perpetual
+    (OKX /public/liquidation-orders — real forced liquidations, keyless).
+
+    Returns newest-first rows: {"price", "contracts", "pos_side" ('long'|'short'),
+    "ts" (ms)}. Raises on API/HTTP error like the other fetchers.
+    """
+    base_ccy = symbol[:-4].upper() if symbol.upper().endswith("USDT") else symbol.upper()
+    data = _okx_get("liquidation-orders",
+                    {"instType": "SWAP", "uly": f"{base_ccy}-USDT",
+                     "state": "filled", "limit": str(limit)},
+                    base=OKX_PUBLIC_BASE)
+    details = (data[0].get("details") or []) if data else []
+    rows = []
+    for d in details:
+        try:
+            rows.append({
+                "price": float(d.get("bkPx") or 0),
+                "contracts": float(d.get("sz") or 0),
+                "pos_side": d.get("posSide") or "",
+                "ts": int(d.get("ts") or 0),
+            })
+        except (TypeError, ValueError):
+            continue
+    return rows
+
+
 def fetch_spot_ticker(symbol: str) -> dict[str, Any]:
     """
     Fetch the SPOT ticker (instId like BTC-USDT, no -SWAP) for basis calculation.

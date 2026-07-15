@@ -20,7 +20,7 @@ interface PsychPayload {
   available: boolean
   fear_greed: FearGreed | null
   spikes: { category: string; z: number; latest_score: number; spike: boolean; direction: string }[]
-  shock: { symbol: string; sigma_multiple: number; volume_ratio: number; shock: boolean; estimated: boolean }[]
+  shock: { symbol: string; sigma_multiple: number; volume_ratio: number; shock: boolean; estimated: boolean; liq_notional_usd_1h?: number; long_liq_usd_1h?: number; short_liq_usd_1h?: number }[]
   shock_note?: string
   odds_deltas: { title: string; outcome: string; odds_from: number; odds_to: number; delta_pct: number }[]
   created_at: string | null
@@ -161,6 +161,8 @@ export function SignalsBoardPage() {
   const cryptoSpike = psych?.spikes?.find(s => s.category === 'crypto') ?? psych?.spikes?.[0] ?? null
   const nextEvent = events?.next?.[0] ?? null
   const shockAlerts = (psych?.shock ?? []).filter(s => s.shock)
+  const liqRows = (psych?.shock ?? []).filter(s => s.liq_notional_usd_1h != null)
+  const liqTotal1h = liqRows.length ? liqRows.reduce((a, s) => a + (s.liq_notional_usd_1h || 0), 0) : null
   const candidates = scanner?.candidates ?? []
 
   const th: React.CSSProperties = {
@@ -212,7 +214,11 @@ export function SignalsBoardPage() {
         <Tile
           label={tr(language, { ko: '쇼크 경보', en: 'Shock Alerts', ja: 'ショックアラート', th: 'แจ้งเตือนช็อก', vi: 'Cảnh báo sốc' })}
           value={psych?.available ? String(shockAlerts.length) : '—'}
-          sub={psych?.available ? tr(language, { ko: '변동성 σ + 거래량 · 추정 프록시', en: 'volatility σ + volume · estimated proxy', ja: 'ボラティリティσ + 出来高 · 推定プロキシ', th: 'ความผันผวน σ + ปริมาณ · พรอกซีประมาณ', vi: 'biến động σ + khối lượng · proxy ước tính' }) : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          sub={!psych?.available
+            ? tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })
+            : liqTotal1h != null
+              ? tr(language, { ko: `실제 청산 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ 프록시`, en: `real liquidations (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy`, ja: `実清算 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σプロキシ`, th: `การชำระบัญชีจริง (OKX) 1 ชม. $${(liqTotal1h / 1e6).toFixed(2)}M + σ พรอกซี`, vi: `thanh lý thực (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy` })
+              : tr(language, { ko: '변동성 σ + 거래량 · 추정 프록시', en: 'volatility σ + volume · estimated proxy', ja: 'ボラティリティσ + 出来高 · 推定プロキシ', th: 'ความผันผวน σ + ปริมาณ · พรอกซีประมาณ', vi: 'biến động σ + khối lượng · proxy ước tính' })}
           accent={shockAlerts.length > 0 ? 'var(--error)' : undefined}
         />
         <Tile

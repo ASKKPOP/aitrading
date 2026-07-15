@@ -44,6 +44,9 @@ FNG_HISTORY_DAYS = 30
 SHOCK_SYMBOLS = ("BTCUSDT", "ETHUSDT")
 SHOCK_SIGMA_MULTIPLE = 3.0     # |latest return| ≥ 3σ counts as a shock
 SHOCK_VOLUME_RATIO = 2.0       # last-hour volume ≥ 2× 24h average
+# Card 11 — real liquidations (OKX, keyless). Last-hour liquidation notional
+# at/above this threshold flags a shock regardless of the σ proxy.
+LIQ_SHOCK_NOTIONAL_USD = float(os.getenv("LIQ_SHOCK_NOTIONAL_USD", "5000000") or 5_000_000)
 SPIKE_Z = 2.0                  # |z| ≥ 2 is a sentiment spike
 SPIKE_MIN_POINTS = 5           # snapshots needed before z-scores mean anything
 ANTICIPATION_MARKETS = 10
@@ -210,6 +213,57 @@ def compute_shock_proxy(candles: list[dict[str, Any]], symbol: str) -> Optional[
     }
 
 
+def aggregate_liquidations(rows: list[dict[str, Any]], ct_val: float,
+                           now_ms: Optional[int] = None,
+                           window_minutes: int = 60) -> dict[str, Any]:
+    """Aggregate raw OKX liquidation orders into last-window totals.
+
+    Notional per order = contracts x ctVal x bankruptcy price. 'long' pos_side
+    means longs got liquidated (forced sells) and vice versa.
+    """
+    if now_ms is None:
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    cutoff = now_ms - window_minutes * 60 * 1000
+    count = 0
+    long_usd = short_usd = 0.0
+    for r in rows:
+        if (r.get("ts") or 0) < cutoff:
+            continue
+        notional = (r.get("contracts") or 0) * ct_val * (r.get("price") or 0)
+        count += 1
+        if r.get("pos_side") == "long":
+            long_usd += notional
+        else:
+            short_usd += notional
+    total = long_usd + short_usd
+    return {
+        "liq_count_1h": count,
+        "liq_notional_usd_1h": round(total, 0),
+        "long_liq_usd_1h": round(long_usd, 0),
+        "short_liq_usd_1h": round(short_usd, 0),
+    }
+
+
+def _merge_real_liquidations(proxy: dict[str, Any], symbol: str) -> dict[str, Any]:
+    """Attach real OKX liquidation aggregates to a shock row (card 11).
+    On success the row stops being an estimate; on any failure the σ proxy
+    stands unchanged."""
+    try:
+        from crypto_feed import fetch_instrument_ct_val, fetch_liquidation_orders
+        rows = fetch_liquidation_orders(symbol, limit=100)
+        ct_val = fetch_instrument_ct_val(symbol)
+        agg = aggregate_liquidations(rows, ct_val)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("real liquidation fetch failed for %s: %s", symbol, exc)
+        return proxy
+    proxy.update(agg)
+    proxy["estimated"] = False
+    proxy["liq_source"] = "okx"
+    proxy["liq_shock_threshold_usd"] = LIQ_SHOCK_NOTIONAL_USD
+    proxy["shock"] = bool(proxy["shock"]) or agg["liq_notional_usd_1h"] >= LIQ_SHOCK_NOTIONAL_USD
+    return proxy
+
+
 def _gather_shock_proxies() -> list[dict[str, Any]]:
     from crypto_feed import fetch_candles
 
@@ -219,7 +273,7 @@ def _gather_shock_proxies() -> list[dict[str, Any]]:
             candles = fetch_candles(symbol, bar="1H", limit=100)
             proxy = compute_shock_proxy(candles, symbol)
             if proxy:
-                proxies.append(proxy)
+                proxies.append(_merge_real_liquidations(proxy, symbol))
         except Exception as exc:  # noqa: BLE001
             logger.warning("shock proxy fetch failed for %s: %s", symbol, exc)
     return proxies

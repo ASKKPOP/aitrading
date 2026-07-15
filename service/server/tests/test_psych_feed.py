@@ -82,6 +82,7 @@ class PsychFeedTestCase(unittest.TestCase):
         from psych_feed import refresh_psych_snapshot
         with patch("psych_feed.fetch_fear_greed", return_value=dict(FNG_FIXTURE)), \
              patch("crypto_feed.fetch_candles", return_value=_flat_candles()), \
+             patch("crypto_feed.fetch_liquidation_orders", side_effect=RuntimeError("offline test")), \
              patch("price_fetcher._polymarket_get_json", return_value=gamma):
             return refresh_psych_snapshot()
 

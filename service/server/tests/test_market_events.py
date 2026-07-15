@@ -222,3 +222,50 @@ class SosoValueEtfTests(unittest.TestCase):
         with patch.dict(os.environ, {"SOSOVALUE_API_KEY": "k"}):
             with patch.object(sosovalue_etf, "fetch_summary_history", side_effect=RuntimeError("api down")):
                 self.assertIsNone(sosovalue_etf.build_real_flow_summary())
+
+
+class RealLiquidationTests(unittest.TestCase):
+    def test_aggregation_math_and_window(self):
+        from psych_feed import aggregate_liquidations
+        now_ms = 1_784_150_000_000
+        rows = [
+            # inside window: 2 contracts x 0.01 x 64000 = $1,280 (long side)
+            {"price": 64000.0, "contracts": 2.0, "pos_side": "long", "ts": now_ms - 10 * 60 * 1000},
+            # inside window: short, 5 x 0.01 x 65000 = $3,250
+            {"price": 65000.0, "contracts": 5.0, "pos_side": "short", "ts": now_ms - 30 * 60 * 1000},
+            # outside window (2h old) — ignored
+            {"price": 64000.0, "contracts": 100.0, "pos_side": "long", "ts": now_ms - 120 * 60 * 1000},
+        ]
+        agg = aggregate_liquidations(rows, ct_val=0.01, now_ms=now_ms, window_minutes=60)
+        self.assertEqual(agg["liq_count_1h"], 2)
+        self.assertEqual(agg["long_liq_usd_1h"], 1280.0)
+        self.assertEqual(agg["short_liq_usd_1h"], 3250.0)
+        self.assertEqual(agg["liq_notional_usd_1h"], 4530.0)
+
+    def test_merge_marks_real_and_flags_cascade(self):
+        import psych_feed
+        proxy = {"symbol": "BTCUSDT", "sigma_multiple": 1.0, "volume_ratio": 1.0,
+                 "shock": False, "estimated": True}
+        big_rows = [{"price": 64000.0, "contracts": 1000.0, "pos_side": "long",
+                     "ts": 10 ** 15}]  # far future ts → inside any window
+        with patch("crypto_feed.fetch_liquidation_orders", return_value=big_rows), \
+             patch("crypto_feed.fetch_instrument_ct_val", return_value=0.01):
+            out = psych_feed._merge_real_liquidations(dict(proxy), "BTCUSDT")
+        # 1000 x 0.01 x 64000 = $640,000 < $5M default → no cascade shock
+        self.assertFalse(out["shock"])
+        self.assertFalse(out["estimated"])
+        self.assertEqual(out["liq_source"], "okx")
+        # 10x bigger → crosses the $5M threshold
+        big_rows[0]["contracts"] = 10_000.0
+        with patch("crypto_feed.fetch_liquidation_orders", return_value=big_rows), \
+             patch("crypto_feed.fetch_instrument_ct_val", return_value=0.01):
+            out2 = psych_feed._merge_real_liquidations(dict(proxy), "BTCUSDT")
+        self.assertTrue(out2["shock"])
+
+    def test_merge_fails_soft_to_proxy(self):
+        import psych_feed
+        proxy = {"symbol": "BTCUSDT", "shock": True, "estimated": True}
+        with patch("crypto_feed.fetch_liquidation_orders", side_effect=RuntimeError("okx down")):
+            out = psych_feed._merge_real_liquidations(dict(proxy), "BTCUSDT")
+        self.assertTrue(out["estimated"])   # unchanged proxy
+        self.assertNotIn("liq_source", out)
