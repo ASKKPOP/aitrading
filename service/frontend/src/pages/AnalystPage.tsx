@@ -76,12 +76,12 @@ export function AnalystPage() {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           {T.symbol}
           <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())}
-            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-input,#fff)', color: 'inherit', width: 120 }} />
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', width: 120 }} />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           {T.market}
           <select value={market} onChange={e => setMarket(e.target.value)}
-            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-input,#fff)', color: 'inherit' }}>
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)' }}>
             <option value="crypto">crypto</option>
             <option value="us-stock">us-stock</option>
           </select>

@@ -168,7 +168,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   }
 
   /* ── styles ── */
-  const inp: any = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-input,#fff)', color: 'inherit', ...mono }
+  const inp: any = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', ...mono }
   const panel: any = { background: 'var(--bg-card,#fffdf9)', border: '1px solid var(--border,#d3c8b6)', borderRadius: 12 }
 
   if (!token) {
