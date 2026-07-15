@@ -809,7 +809,13 @@ def _build_etf_flow_snapshot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     etf_rows: list[dict[str, Any]] = []
 
     for symbol in BTC_ETF_SYMBOLS:
-        series = _fetch_daily_adjusted_series(symbol)
+        # Per-symbol fail-soft: an Alpha Vantage failure (missing key, rate
+        # limit) must not kill the snapshot — the real SoSoValue summary
+        # below can still land without the estimated per-ETF rows.
+        try:
+            series = _fetch_daily_adjusted_series(symbol)
+        except Exception:  # noqa: BLE001
+            continue
         if len(series) <= ETF_FLOW_BASELINE_VOLUME_DAYS:
             continue
 
@@ -874,6 +880,18 @@ def _build_etf_flow_snapshot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "net_score": net_score,
         "is_estimated": True,
     }
+
+    # Card 08 upgrade: when SOSOVALUE_API_KEY is set, replace the estimated
+    # headline with real aggregate dollar flows (per-ETF rows stay estimated —
+    # the free tier only exposes complex-level aggregates). Fails soft back
+    # to the proxy summary.
+    try:
+        from sosovalue_etf import build_real_flow_summary
+        real = build_real_flow_summary()
+        if real:
+            summary = {**summary, **real}
+    except Exception:  # noqa: BLE001
+        pass
 
     return etf_rows, summary
 

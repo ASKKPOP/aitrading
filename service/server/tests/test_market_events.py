@@ -173,3 +173,52 @@ class QuantPositioningTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SosoValueEtfTests(unittest.TestCase):
+    _ROWS = [
+        {"date": "2026-07-14", "total_net_inflow": 1.81e8, "total_value_traded": 2.3e9,
+         "total_net_assets": 7.79e10, "cum_net_inflow": 5.10e10},
+        {"date": "2026-07-13", "total_net_inflow": -4.24e8, "total_value_traded": 2.0e9,
+         "total_net_assets": 7.47e10, "cum_net_inflow": 5.08e10},
+        {"date": "2026-07-10", "total_net_inflow": 9.0e7, "total_value_traded": 1.4e9,
+         "total_net_assets": 7.74e10, "cum_net_inflow": 5.12e10},
+    ]
+
+    def test_disabled_without_key(self):
+        import sosovalue_etf
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("SOSOVALUE_API_KEY", None)
+            self.assertIsNone(sosovalue_etf.build_real_flow_summary())
+
+    def test_real_summary_from_rows(self):
+        import sosovalue_etf
+        with patch.dict(os.environ, {"SOSOVALUE_API_KEY": "k"}):
+            with patch.object(sosovalue_etf, "fetch_summary_history", return_value=list(self._ROWS)):
+                s = sosovalue_etf.build_real_flow_summary()
+        self.assertEqual(s["direction"], "inflow")
+        self.assertFalse(s["is_estimated"])
+        self.assertEqual(s["btc"]["latest_net_inflow_usd"], 181000000.0)
+        self.assertEqual(s["btc"]["streak_days"], 1)   # +181M then -424M breaks the streak
+        self.assertIn("$181M", s["summary"])
+
+    def test_outflow_streak(self):
+        import sosovalue_etf
+        rows = [
+            {"date": "2026-07-14", "total_net_inflow": -1e8, "cum_net_inflow": 1, "total_net_assets": 1},
+            {"date": "2026-07-13", "total_net_inflow": -2e8, "cum_net_inflow": 1, "total_net_assets": 1},
+            {"date": "2026-07-10", "total_net_inflow": -3e8, "cum_net_inflow": 1, "total_net_assets": 1},
+            {"date": "2026-07-09", "total_net_inflow": 5e7, "cum_net_inflow": 1, "total_net_assets": 1},
+        ]
+        with patch.dict(os.environ, {"SOSOVALUE_API_KEY": "k"}):
+            with patch.object(sosovalue_etf, "fetch_summary_history", return_value=rows):
+                s = sosovalue_etf.build_real_flow_summary()
+        self.assertEqual(s["direction"], "outflow")
+        self.assertEqual(s["btc"]["streak_days"], -3)
+        self.assertIn("3 consecutive days of outflows", s["summary"])
+
+    def test_fetch_failure_returns_none(self):
+        import sosovalue_etf
+        with patch.dict(os.environ, {"SOSOVALUE_API_KEY": "k"}):
+            with patch.object(sosovalue_etf, "fetch_summary_history", side_effect=RuntimeError("api down")):
+                self.assertIsNone(sosovalue_etf.build_real_flow_summary())

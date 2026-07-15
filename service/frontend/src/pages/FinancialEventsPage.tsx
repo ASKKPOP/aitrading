@@ -565,6 +565,34 @@ export function FinancialEventsPage() {
                     <div className="intel-news-card-meta">
                       <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(etfFlows?.created_at, language)}</span>
                     </div>
+                    {etfFlows?.summary?.source === 'sosovalue' && etfFlows?.summary?.btc && (
+                      <div style={{ fontSize: 12.5, lineHeight: 1.6, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                        <div>
+                          <strong>BTC</strong>{' '}
+                          {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày' })}{' '}
+                          <span style={{ color: etfFlows.summary.btc.latest_net_inflow_usd >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
+                            {etfFlows.summary.btc.latest_net_inflow_usd >= 0 ? '+' : '−'}${(Math.abs(etfFlows.summary.btc.latest_net_inflow_usd) / 1e6).toFixed(0)}M
+                          </span>
+                          {' · 5d '}
+                          <span style={{ color: etfFlows.summary.btc.flow_5d_usd >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                            {etfFlows.summary.btc.flow_5d_usd >= 0 ? '+' : '−'}${(Math.abs(etfFlows.summary.btc.flow_5d_usd) / 1e6).toFixed(0)}M
+                          </span>
+                        </div>
+                        {etfFlows.summary.eth && (
+                          <div>
+                            <strong>ETH</strong>{' '}
+                            {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày' })}{' '}
+                            <span style={{ color: etfFlows.summary.eth.latest_net_inflow_usd >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
+                              {etfFlows.summary.eth.latest_net_inflow_usd >= 0 ? '+' : '−'}${(Math.abs(etfFlows.summary.eth.latest_net_inflow_usd) / 1e6).toFixed(0)}M
+                            </span>
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {tr(language, { ko: '실제 자금 데이터 (SoSoValue) · 누적', en: 'real flow data (SoSoValue) · cumulative', ja: '実フローデータ (SoSoValue) · 累計', th: 'ข้อมูลจริง (SoSoValue) · สะสม', vi: 'dữ liệu thực (SoSoValue) · lũy kế' })}{' '}
+                          ${(etfFlows.summary.btc.cum_net_inflow_usd / 1e9).toFixed(1)}B
+                        </div>
+                      </div>
+                    )}
                     <div className="intel-etf-stack">
                       {(etfFlows?.etfs || []).slice(0, 8).map((etf: any) => (
                         <div key={etf.symbol} className="intel-etf-stack-item">
