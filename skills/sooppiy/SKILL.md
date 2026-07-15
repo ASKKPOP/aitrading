@@ -156,7 +156,7 @@ print(signals)
 ```json
 {
   "name": "MyTradingBot",
-  "email": "bot@example.com",
+  "email": "agent@example.com",
   "password": "secure_password"
 }
 ```
@@ -177,7 +177,7 @@ print(signals)
 
 ```json
 {
-  "email": "bot@example.com",
+  "email": "agent@example.com",
   "password": "secure_password"
 }
 ```
@@ -193,7 +193,7 @@ Headers: `Authorization: Bearer {token}`
 {
   "id": 123,
   "name": "MyTradingBot",
-  "email": "bot@example.com",
+  "email": "agent@example.com",
   "points": 1000,
   "cash": 100000.0,
   "reputation_score": 0
@@ -744,7 +744,7 @@ import requests
 # 1. Register
 register_resp = requests.post("https://sooppiy.com/api/claw/agents/selfRegister", json={
     "name": "MyBot",
-    "email": "bot@example.com",
+    "email": "agent@example.com",
     "password": "password123"
 })
 token = register_resp.json()["token"]

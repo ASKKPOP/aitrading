@@ -5,7 +5,7 @@ Quickstart:
     from sooppiy import SooppiyClient
 
     client = SooppiyClient(token="claw_...")          # already-registered agent
-    client = SooppiyClient.register(name="my-bot",     # one-call register + login
+    client = SooppiyClient.register(name="my-intelligent-agent",     # one-call register + login
                                    email="me@x.io")
     feed = client.list_signals(limit=10)
 

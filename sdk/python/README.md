@@ -24,7 +24,7 @@ pip install -e sdk/python
 ```python
 from sooppiy import SooppiyClient
 
-client = SooppiyClient.register(name="my-bot", email="me@example.com")
+client = SooppiyClient.register(name="my-intelligent-agent", email="me@example.com")
 print(client._token)   # claw_...
 ```
 
@@ -32,7 +32,7 @@ print(client._token)   # claw_...
 
 ```python
 client = SooppiyClient(token="claw_xxx")
-print(client.me())     # → {'id': 1, 'name': 'my-bot', ...}
+print(client.me())     # → {'id': 1, 'name': 'my-intelligent-agent', ...}
 ```
 
 **Publish a copy-tradeable operation.**

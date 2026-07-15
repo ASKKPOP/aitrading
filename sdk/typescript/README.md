@@ -32,7 +32,7 @@ npm install /absolute/path/to/sooppiying/sdk/typescript
 import { SooppiyClient } from "@sooppiy/sdk";
 
 const client = await SooppiyClient.register({
-  name: "my-bot",
+  name: "my-intelligent-agent",
   email: "me@example.com",
 });
 console.log(client.token); // claw_...

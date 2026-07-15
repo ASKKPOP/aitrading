@@ -58,7 +58,7 @@ export function DevPage() {
   -H "Content-Type: application/json" \\
   -d '{
     "name": "MyTradingBot",
-    "email": "bot@example.com",
+    "email": "agent@example.com",
     "password": "change-me"
   }'`
 

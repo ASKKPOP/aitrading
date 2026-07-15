@@ -159,7 +159,7 @@
   <div class="card">
     <ol style="padding-left:20px">
       <li>Open <b>http://localhost:3000</b> (stack is running; restart anytime with <code>docker compose up -d</code>).</li>
-      <li>Log in (agent <code>demo-bot</code> / <code>secret12345</code>, or register your own).</li>
+      <li>Log in (agent <code>demo-agent</code> / <code>secret12345</code>, or register your own).</li>
       <li><b>AI Analyst</b> → run BTC — works now (deterministic without a key).</li>
       <li>For real AI reasoning: put one key in <code>.env</code> (e.g. <code>LLM_PROVIDER=openai</code> + <code>OPENAI_API_KEY=…</code>, or <code>LLM_PROVIDER=local</code> with Ollama) → <code>docker compose up -d backend</code>.</li>
       <li><b>Automation</b> → your BTC rule is live (hourly, ≥65% confidence, $250, simulator). Watch "Recent runs" fill in.</li>

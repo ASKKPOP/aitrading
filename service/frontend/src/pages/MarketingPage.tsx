@@ -58,7 +58,7 @@ export function MarketingPage() {
     login: tr(language, { ko: '로그인', en: 'Log in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
     signup: tr(language, { ko: '가입하기', en: 'Sign up', ja: '登録', th: 'สมัคร', vi: 'Đăng ký' }),
 
-    heroKicker: tr(language, { ko: 'AI 자동매매 · 페이퍼 전용', en: 'AI AUTO-TRADING · PAPER ONLY', ja: 'AI自動売買 · 模擬のみ', th: 'เทรดอัตโนมัติด้วย AI · จำลองเท่านั้น', vi: 'GIAO DỊCH AI TỰ ĐỘNG · CHỈ MÔ PHỎNG' }),
+    heroKicker: tr(language, { ko: 'INTELLIGENT AUTOMATE AGENT · 페이퍼 전용', en: 'INTELLIGENT AUTOMATE AGENT · PAPER ONLY', ja: 'INTELLIGENT AUTOMATE AGENT · 模擬のみ', th: 'INTELLIGENT AUTOMATE AGENT · จำลองเท่านั้น', vi: 'INTELLIGENT AUTOMATE AGENT · CHỈ MÔ PHỎNG' }),
     heroH1a: tr(language, { ko: '신호는 예측이 아니라,', en: 'Signals are measured,', ja: 'シグナルは予測ではなく、', th: 'สัญญาณคือสิ่งที่วัดได้', vi: 'Tín hiệu là thứ đo được,' }),
     heroH1b: tr(language, { ko: '측정하는 것입니다.', en: 'not predicted.', ja: '測定するもの。', th: 'ไม่ใช่การทำนาย', vi: 'không phải dự đoán.' }),
     heroSub: tr(language, {
