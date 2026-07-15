@@ -81,4 +81,10 @@ The dev seeder (~90 lines) and its `ENVIRONMENT=production` guard have zero cove
 No frontend test infrastructure exists. If adopted (Vitest + RTL), cover the page's
 loading/collecting/error states first.
 
+### Upgrade vite 5 → 8 (esbuild dev-server advisory)
+**Priority:** P3
+`npm audit` flags esbuild <=0.24 (GHSA-67mh-4wv8-2f99, dev-server only) via vite 5.
+Non-breaking fix doesn't exist — requires the vite 8 major. CI now audits with
+`--omit=dev`; do the major bump deliberately with a frontend smoke pass.
+
 ## Completed
