@@ -1,19 +1,21 @@
 // i18n translations for Sooppiy (Sooppiy)
-// Supported languages: English, Japanese, Thai, Vietnamese
+// Supported languages: Korean (default), English, Japanese, Thai, Vietnamese
 
-export type Language = 'en' | 'ja' | 'th' | 'vi'
+export type Language = 'ko' | 'en' | 'ja' | 'th' | 'vi'
 
 export const LANGUAGES: { value: Language; label: string }[] = [
+  { value: 'ko', label: '한국어' },
   { value: 'en', label: 'English' },
   { value: 'ja', label: '日本語' },
   { value: 'th', label: 'ไทย' },
   { value: 'vi', label: 'Tiếng Việt' },
 ]
 
-export const DEFAULT_LANGUAGE: Language = 'en'
+export const DEFAULT_LANGUAGE: Language = 'ko'
 
 // Locale codes for Intl APIs (toLocaleString / toLocaleDateString / etc.)
 export const LOCALE_BY_LANGUAGE: Record<Language, string> = {
+  ko: 'ko-KR',
   en: 'en-US',
   ja: 'ja-JP',
   th: 'th-TH',
@@ -119,6 +121,103 @@ export interface Translations {
 }
 
 export const translations: Record<Language, Translations> = {
+  ko: {
+    nav: {
+      signals: '마켓플레이스',
+      strategies: '전략',
+      discussions: '토론',
+      positions: '포지션',
+      trade: '거래',
+      exchange: '교환',
+      create: '만들기',
+    },
+    common: {
+      login: '로그인',
+      logout: '로그아웃',
+      connected: '연결됨',
+      balance: '잔고',
+      claw: 'CLAW',
+      points: '포인트',
+      loading: '불러오는 중...',
+      cancel: '취소',
+      confirm: '확인',
+      submit: '제출',
+      close: '닫기',
+      back: '뒤로',
+      next: '다음',
+      refresh: '새로고침',
+    },
+    signals: {
+      operations: '운영 내역',
+      noSignals: '아직 신호가 없습니다',
+      publish: '게시',
+    },
+    strategies: {
+      title: '전략',
+      market: '시장',
+      noStrategies: '아직 전략이 없습니다',
+      publish: '전략 게시',
+      publishSuccess: '전략이 게시되었습니다!',
+      submit: '게시',
+      content: '전략 내용',
+      symbols: '관련 종목',
+      tags: '태그',
+    },
+    discussions: {
+      title: '토론',
+      market: '시장',
+      noDiscussions: '아직 토론이 없습니다',
+      post: '토론 올리기',
+      postSuccess: '토론이 게시되었습니다!',
+      submit: '게시',
+      content: '토론 내용',
+      tags: '태그',
+    },
+    positions: {
+      title: '내 포지션',
+      noPositions: '아직 포지션이 없습니다',
+    },
+    trade: {
+      title: '주문하기',
+      market: '시장',
+      action: '방향',
+      symbol: '종목',
+      price: '가격',
+      quantity: '수량',
+      content: '메모',
+      executedAt: '체결 시각',
+      submit: '주문 제출',
+      success: '주문이 완료되었습니다!',
+      buy: '매수',
+      sell: '매도',
+      short: '공매도',
+      cover: '환매수',
+    },
+    exchange: {
+      title: '포인트 교환',
+      currentPoints: '보유 포인트',
+      currentCash: '보유 현금',
+      exchangeRate: '환율: 1 포인트 = 1,000 USD',
+      amount: '교환할 포인트',
+      submit: '교환하기',
+      success: '교환이 완료되었습니다!',
+      insufficientPoints: '포인트가 부족합니다',
+      enterAmount: '포인트 수량을 입력하세요',
+    },
+    login: {
+      title: '가입 / 로그인',
+      name: '이름',
+      email: '이메일',
+      register: '가입하기',
+      registering: '가입 중...',
+      success: '로그인 성공!',
+      failed: '로그인 실패',
+    },
+    errors: {
+      pleaseLogin: '먼저 로그인해 주세요',
+      operationFailed: '작업에 실패했습니다',
+    },
+  },
   en: {
     nav: {
       signals: 'Marketplace',
@@ -520,6 +619,14 @@ export const tr = (lang: Language, m: TrMap): string => m[lang] ?? m.en
 
 // Category translations
 export const categoryTranslations: Record<Language, Record<string, string>> = {
+  ko: {
+    'trading-signal': '트레이딩 신호',
+    'data-feed': '데이터 피드',
+    'model-access': '모델 액세스',
+    'analysis': '분석',
+    'tool': '도구',
+    'all': '전체 카테고리',
+  },
   en: {
     'trading-signal': 'Trading Signal',
     'data-feed': 'Data Feed',

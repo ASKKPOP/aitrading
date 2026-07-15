@@ -161,3 +161,126 @@ Key routing rules:
 - Ship/deploy/PR → invoke /ship or /land-and-deploy
 - Save progress → invoke /context-save
 - Resume context → invoke /context-restore
+
+
+## Basic Working Rules (Non-Negotiable — from the user)
+
+1. **Never flatter me or simply give the answers I want to hear.**
+2. **If you believe something is correct, state your position firmly, regardless of my own opinion.**
+3. **Never gloss over errors or let them slide simply to save effort.**
+4. **Verify everything thoroughly — run a verification loop at least ten times when needed. Even after it verifies successfully, repeat the check a MINIMUM of 2 times to make it 100% before reporting results.**
+
+These override any tendency to agree, hedge, or cut verification short. Disagree openly with evidence; report failures plainly; do not claim something works until it is actually verified. A single passing check is never enough — re-run it (≥2×, up to 10) before you report "it works".
+
+## Behavioral Guidelines
+
+1. **Think before coding** — state assumptions explicitly; surface tradeoffs; ask when uncertain
+2. **Simplicity first** — minimum code that solves the problem; no speculative features or abstractions
+3. **Surgical changes** — touch only what the task requires; match existing style; don't refactor adjacent code
+4. **Goal-driven execution** — define success criteria before implementing; verify after each step
+
+
+# 1. Think Before Coding
+
+Don't assume.  
+Don't hide confusion.  
+Surface tradeoffs.
+
+Before implementing:
+
+- State your assumptions explicitly.
+- If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so.
+- Push back when warranted.
+- If something is unclear, stop.
+- Name what's confusing then Ask.
+
+---
+
+# 2. Simplicity First
+
+Minimum code that solves the problem.  
+Nothing speculative.
+
+Rules:
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+
+If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself:
+
+> "Would a senior engineer say this is overcomplicated?"
+
+If yes, simplify.
+
+---
+
+# 3. Surgical Changes
+
+Touch only what you must.  
+Clean up only your own mess.
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that **YOUR** changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test:
+
+> Every changed line should trace directly to the user's request.
+
+---
+
+# 4. Goal-Driven Execution
+
+Define success criteria.  
+Loop until verified.
+
+Transform tasks into verifiable goals:
+
+- `"Add validation"`  
+  → `"Write tests for invalid inputs, then make them pass"`
+
+- `"Fix the bug"`  
+  → `"Write a test that reproduces it, then make it pass"`
+
+- `"Refactor X"`  
+  → `"Ensure tests pass before and after"`
+
+For multi-step tasks, state a brief plan:
+
+```txt
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently.
+
+Weak criteria like:
+
+> "make it work"
+
+require constant clarification.
+
+---
+
+# Success Indicators
+
+These guidelines are working if you see:
+
+- Fewer unnecessary changes in diffs
+- Fewer rewrites caused by overcomplication
+- Clarifying questions appearing before implementation instead of after mistakes

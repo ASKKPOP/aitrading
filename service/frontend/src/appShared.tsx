@@ -271,14 +271,14 @@ export type MarketEntry = {
 }
 
 export const MARKETS: MarketEntry[] = [
-  { value: 'all', supported: true, labels: { en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả' } },
-  { value: 'us-stock', supported: true, labels: { en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' } },
-  { value: 'crypto', supported: true, labels: { en: 'Crypto (Testing)', ja: '暗号資産（テスト中）', th: 'คริปโต (ทดสอบ)', vi: 'Tiền mã hóa (Thử nghiệm)' } },
-  { value: 'a-stock', supported: false, labels: { en: 'A-Share (Developing)', ja: 'A株（開発中）', th: 'A-Share (กำลังพัฒนา)', vi: 'A-Share (Đang phát triển)' } },
-  { value: 'polymarket', supported: true, labels: { en: 'Polymarket (Testing)', ja: 'Polymarket（テスト中）', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)' } },
-  { value: 'forex', supported: false, labels: { en: 'Forex (Developing)', ja: '外国為替（開発中）', th: 'Forex (กำลังพัฒนา)', vi: 'Forex (Đang phát triển)' } },
-  { value: 'options', supported: false, labels: { en: 'Options (Developing)', ja: 'オプション（開発中）', th: 'ออปชั่น (กำลังพัฒนา)', vi: 'Quyền chọn (Đang phát triển)' } },
-  { value: 'futures', supported: false, labels: { en: 'Futures (Developing)', ja: '先物（開発中）', th: 'ฟิวเจอร์ส (กำลังพัฒนา)', vi: 'Hợp đồng tương lai (Đang phát triển)' } },
+  { value: 'all', supported: true, labels: { ko: '전체', en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả' } },
+  { value: 'us-stock', supported: true, labels: { ko: '미국주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' } },
+  { value: 'crypto', supported: true, labels: { ko: '암호화폐 (테스트)', en: 'Crypto (Testing)', ja: '暗号資産（テスト中）', th: 'คริปโต (ทดสอบ)', vi: 'Tiền mã hóa (Thử nghiệm)' } },
+  { value: 'a-stock', supported: false, labels: { ko: 'A주 (개발 중)', en: 'A-Share (Developing)', ja: 'A株（開発中）', th: 'A-Share (กำลังพัฒนา)', vi: 'A-Share (Đang phát triển)' } },
+  { value: 'polymarket', supported: true, labels: { ko: 'Polymarket (테스트)', en: 'Polymarket (Testing)', ja: 'Polymarket（テスト中）', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)' } },
+  { value: 'forex', supported: false, labels: { ko: '외환 (개발 중)', en: 'Forex (Developing)', ja: '外国為替（開発中）', th: 'Forex (กำลังพัฒนา)', vi: 'Forex (Đang phát triển)' } },
+  { value: 'options', supported: false, labels: { ko: '옵션 (개발 중)', en: 'Options (Developing)', ja: 'オプション（開発中）', th: 'ออปชั่น (กำลังพัฒนา)', vi: 'Quyền chọn (Đang phát triển)' } },
+  { value: 'futures', supported: false, labels: { ko: '선물 (개발 중)', en: 'Futures (Developing)', ja: '先物（開発中）', th: 'ฟิวเจอร์ส (กำลังพัฒนา)', vi: 'Hợp đồng tương lai (Đang phát triển)' } },
 ]
 
 export function marketLabel(value: string, language: Language): string {

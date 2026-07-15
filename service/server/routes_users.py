@@ -1,4 +1,5 @@
 import hmac
+import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,7 @@ from database import get_db_connection
 from routes_models import (
     PointsExchangeRequest,
     PointsTransferRequest,
+    UserApiSettingRequest,
     UserLoginRequest,
     UserRegisterRequest,
     UserSendCodeRequest,
@@ -22,6 +24,59 @@ from utils import _extract_token, hash_password, verify_password
 _logger = logging.getLogger(__name__)
 
 EXCHANGE_RATE = 1000
+
+# External API targets a user can configure on the settings page. Keyless
+# targets appear read-only so the UI shows the full data-source picture.
+API_TARGET_CATALOG: dict = {
+    'llm': {
+        'label': 'LLM (AI analysis)',
+        'description': 'Provider for the 4-analyst analysis engine. Without a key the deterministic rule-based engine runs.',
+        'requires_key': True,
+        'fields': ['provider', 'model'],
+    },
+    'alpha_vantage': {
+        'label': 'Alpha Vantage',
+        'description': 'US stock prices, news + sentiment, ETF flows.',
+        'requires_key': True,
+        'fields': [],
+    },
+    'finnhub': {
+        'label': 'FinnHub',
+        'description': 'Company news merged into the news analyst when a key is present.',
+        'requires_key': True,
+        'fields': [],
+    },
+    'fred': {
+        'label': 'FRED',
+        'description': 'Macro-economic series merged into the fundamentals analyst.',
+        'requires_key': True,
+        'fields': [],
+    },
+    'okx': {
+        'label': 'OKX',
+        'description': 'Crypto candles, funding rate, basis, volume. Public API — no key needed.',
+        'requires_key': False,
+        'fields': [],
+    },
+    'stocktwits': {
+        'label': 'StockTwits',
+        'description': 'Crowd sentiment and mention rates. Public API — no key needed.',
+        'requires_key': False,
+        'fields': [],
+    },
+    'polymarket': {
+        'label': 'Polymarket',
+        'description': 'Prediction-market odds (anticipation signal). Public API — no key needed.',
+        'requires_key': False,
+        'fields': [],
+    },
+    'alternative_me': {
+        'label': 'alternative.me',
+        'description': 'Fear & Greed index. Public API — no key needed.',
+        'requires_key': False,
+        'fields': [],
+    },
+}
 
 # Bounds the brute-force budget for the 6-digit (1M-space) verification code:
 # attackers who blow past MAX_CODE_ATTEMPTS must request a fresh code, and the
@@ -302,3 +357,108 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.close()
 
         return {'success': True, 'amount': data.amount}
+
+    # ─────────────────── per-target API configuration (settings page) ───────────────────
+    # Catalog of external API targets a user can configure. Keyless targets are
+    # listed so the settings UI can show the full data-source picture; only
+    # requires_key targets accept an api_key.
+
+    @app.get('/api/users/settings')
+    async def get_user_settings(authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT target, api_key, config_json, enabled, updated_at FROM user_api_settings WHERE user_id = ?',
+            (user['id'],),
+        )
+        rows = {r['target']: dict(r) for r in cursor.fetchall()}
+        conn.close()
+
+        targets = []
+        for target, spec in API_TARGET_CATALOG.items():
+            row = rows.get(target)
+            api_key = (row or {}).get('api_key') or ''
+            try:
+                config = json.loads((row or {}).get('config_json') or '{}')
+            except (TypeError, ValueError):
+                config = {}
+            targets.append({
+                'target': target,
+                'label': spec['label'],
+                'description': spec['description'],
+                'requires_key': spec['requires_key'],
+                'fields': spec.get('fields', []),
+                'configured': bool(api_key) or bool(config),
+                'enabled': bool(row['enabled']) if row is not None else True,
+                'masked_key': f'····{api_key[-4:]}' if api_key else None,
+                'config': {k: v for k, v in config.items() if k in spec.get('fields', [])},
+                'updated_at': (row or {}).get('updated_at'),
+            })
+        return {'user_id': user['id'], 'targets': targets}
+
+    @app.put('/api/users/settings/api/{target}')
+    async def put_user_api_setting(target: str, data: UserApiSettingRequest,
+                                   authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        spec = API_TARGET_CATALOG.get(target)
+        if spec is None:
+            raise HTTPException(status_code=404, detail=f'Unknown API target: {target}')
+        if data.api_key and not spec['requires_key']:
+            raise HTTPException(status_code=400, detail=f'{target} does not take an API key')
+
+        config = {k: v for k, v in (data.config or {}).items() if k in spec.get('fields', [])}
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id, api_key, config_json, enabled FROM user_api_settings WHERE user_id = ? AND target = ?',
+            (user['id'], target),
+        )
+        row = cursor.fetchone()
+        if row is not None:
+            # Partial update: absent fields keep their stored values.
+            new_key = data.api_key if data.api_key is not None else row['api_key']
+            if data.config is not None:
+                new_config = json.dumps(config)
+            else:
+                new_config = row['config_json']
+            new_enabled = int(data.enabled) if data.enabled is not None else row['enabled']
+            cursor.execute(
+                'UPDATE user_api_settings SET api_key = ?, config_json = ?, enabled = ?, updated_at = ? WHERE id = ?',
+                (new_key, new_config, new_enabled, now, row['id']),
+            )
+        else:
+            cursor.execute(
+                'INSERT INTO user_api_settings (user_id, target, api_key, config_json, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+                (user['id'], target, data.api_key, json.dumps(config),
+                 int(data.enabled) if data.enabled is not None else 1, now),
+            )
+        conn.commit()
+        conn.close()
+        return {'success': True, 'target': target}
+
+    @app.delete('/api/users/settings/api/{target}')
+    async def delete_user_api_setting(target: str, authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        if target not in API_TARGET_CATALOG:
+            raise HTTPException(status_code=404, detail=f'Unknown API target: {target}')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM user_api_settings WHERE user_id = ? AND target = ?', (user['id'], target))
+        conn.commit()
+        conn.close()
+        return {'success': True, 'target': target}

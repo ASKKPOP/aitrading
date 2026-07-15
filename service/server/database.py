@@ -540,6 +540,21 @@ def init_database():
         )
     """)
 
+    # Per-user API target configuration (settings page) — one row per target.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_api_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            target TEXT NOT NULL,
+            api_key TEXT,
+            config_json TEXT,
+            enabled INTEGER DEFAULT 1,
+            updated_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(user_id, target),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
     # Rate limits table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS rate_limits (

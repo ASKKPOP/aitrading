@@ -271,3 +271,15 @@ class PointsTransferRequest(BaseModel):
 
 class PointsExchangeRequest(BaseModel):
     amount: int
+
+class UserApiSettingRequest(BaseModel):
+    api_key: Optional[str] = None
+    enabled: Optional[bool] = None
+    config: Optional[Dict[str, Any]] = None
+
+    @field_validator("api_key")
+    @classmethod
+    def _key_len(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v) > 500:
+            raise ValueError("api_key too long")
+        return v.strip() if v else v

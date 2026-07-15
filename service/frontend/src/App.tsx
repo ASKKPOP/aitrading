@@ -35,6 +35,7 @@ const AutomationPage = lazy(() => import('./pages/AutomationPage'))
 const AccountsPage = lazy(() => import('./pages/AccountsPage'))
 const AssetsPage = lazy(() => import('./pages/AssetsPage'))
 const MarketingPage = lazy(() => import('./pages/MarketingPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.SpotPage })))
 const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
 import { ChallengePage } from './ChallengePage'
@@ -113,7 +114,19 @@ function App() {
 
   // Phase 5: human-user auth lives alongside the agent claw_token.
   const userLogin = (newToken: string) => { setUserToken(newToken) }
-  const userLogout = () => { signOutUser(); setUserToken(null) }
+  const userLogout = () => { signOutUser(); setUserToken(null); setUserInfo(null) }
+
+  const [userInfo, setUserInfo] = useState<any>(null)
+  useEffect(() => {
+    if (!userToken) { setUserInfo(null); return }
+    fetch(`${API_BASE}/users/me`, { headers: { 'Authorization': `Bearer ${userToken}` } })
+      .then(res => {
+        if (res.status === 401) { userLogout(); return null }
+        return res.ok ? res.json() : null
+      })
+      .then(data => { if (data) setUserInfo(data) })
+      .catch(() => {})
+  }, [userToken])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -225,6 +238,7 @@ function App() {
             notificationCounts={notificationCounts}
             markCategoryRead={markCategoryRead}
             userToken={userToken}
+            userInfo={userInfo}
             userLogin={userLogin}
             userLogout={userLogout}
           />
@@ -251,6 +265,7 @@ function AppRouter({
   notificationCounts,
   markCategoryRead,
   userToken,
+  userInfo,
   userLogin,
   userLogout,
 }: {
@@ -262,6 +277,7 @@ function AppRouter({
   notificationCounts: NotificationCounts
   markCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
   userToken: string | null
+  userInfo: any
   userLogin: (token: string) => void
   userLogout: () => void
 }) {
@@ -339,6 +355,9 @@ function AppRouter({
         token={token}
         agentInfo={agentInfo}
         onLogout={logout}
+        userToken={userToken}
+        userInfo={userInfo}
+        onUserLogout={userLogout}
         notificationCounts={notificationCounts}
         onMarkCategoryRead={markCategoryRead}
         isOpen={mobileNavOpen}
@@ -390,6 +409,12 @@ function AppRouter({
                 path="/my-trading"
                 element={userToken
                   ? <MyTradingPage userToken={userToken} onSignOut={userLogout} />
+                  : <Navigate to="/sign-in" replace />}
+              />
+              <Route
+                path="/settings"
+                element={userToken
+                  ? <SettingsPage userToken={userToken} userInfo={userInfo} onSignOut={userLogout} />
                   : <Navigate to="/sign-in" replace />}
               />
 

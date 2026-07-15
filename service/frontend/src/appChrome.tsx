@@ -88,6 +88,9 @@ export function Sidebar({
   token,
   agentInfo,
   onLogout,
+  userToken,
+  userInfo,
+  onUserLogout,
   notificationCounts,
   onMarkCategoryRead,
   isOpen = false,
@@ -96,6 +99,9 @@ export function Sidebar({
   token: string | null
   agentInfo: any
   onLogout: () => void
+  userToken?: string | null
+  userInfo?: any
+  onUserLogout?: () => void
   notificationCounts: NotificationCounts
   onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
   isOpen?: boolean
@@ -119,35 +125,35 @@ export function Sidebar({
   // AI analysis (Target 2), automation (Target 3), and simulation/trading (Target 1).
   const navSections: Array<{ label: string; items: NavItem[] }> = [
     {
-      label: tr(language, { en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' }),
+      label: tr(language, { ko: 'AI 데스크', en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' }),
       items: [
-        { path: '/analyst', icon: '🧠', label: tr(language, { en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }), requiresAuth: true },
-        { path: '/automation', icon: '⚙', label: tr(language, { en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
+        { path: '/analyst', icon: '🧠', label: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }), requiresAuth: true },
+        { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
       ]
     },
     {
-      label: tr(language, { en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch' }),
+      label: tr(language, { ko: '트레이딩', en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch' }),
       items: [
-        { path: '/assets', icon: '◈', label: tr(language, { en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }), requiresAuth: true },
-        { path: '/spot', icon: '◉', label: tr(language, { en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot' }), requiresAuth: true },
-        { path: '/futures', icon: '⚡', label: tr(language, { en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }), requiresAuth: true },
-        { path: '/accounts', icon: '◱', label: tr(language, { en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }), requiresAuth: true },
+        { path: '/assets', icon: '◈', label: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }), requiresAuth: true },
+        { path: '/spot', icon: '◉', label: tr(language, { ko: '현물', en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot' }), requiresAuth: true },
+        { path: '/futures', icon: '⚡', label: tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }), requiresAuth: true },
+        { path: '/accounts', icon: '◱', label: tr(language, { ko: '계좌', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }), requiresAuth: true },
         { path: '/positions', icon: '≡', label: t.nav.positions, requiresAuth: false },
       ]
     },
     {
-      label: tr(language, { en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+      label: tr(language, { ko: '마켓', en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
       items: [
         { path: '/market', icon: '◈', label: t.nav.signals, requiresAuth: false },
-        { path: '/leaderboard', icon: '◆', label: tr(language, { en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
-        { path: '/financial-events', icon: '🗞', label: tr(language, { en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
-        { path: '/signals-board', icon: '◬', label: tr(language, { en: 'Signals Board', ja: 'シグナルボード', th: 'บอร์ดสัญญาณ', vi: 'Bảng tín hiệu' }), requiresAuth: false },
+        { path: '/leaderboard', icon: '◆', label: tr(language, { ko: '리더보드', en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
+        { path: '/financial-events', icon: '🗞', label: tr(language, { ko: '금융 이벤트', en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
+        { path: '/signals-board', icon: '◬', label: tr(language, { ko: '시그널 보드', en: 'Signals Board', ja: 'シグナルボード', th: 'บอร์ดสัญญาณ', vi: 'Bảng tín hiệu' }), requiresAuth: false },
       ]
     },
     {
-      label: tr(language, { en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
+      label: tr(language, { ko: '리서치', en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
       items: [
-        { path: '/backtest', icon: '⏮', label: tr(language, { en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
+        { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
         { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
       ]
     },
@@ -182,9 +188,9 @@ export function Sidebar({
             background: accountType === 'simulator' ? 'var(--accent-primary, #c26a45)' : 'transparent',
             color: accountType === 'simulator' ? '#fff' : 'rgba(255,255,255,0.7)',
           }}
-          title={tr(language, { en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
+          title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
         >
-          ◐ {tr(language, { en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}
+          ◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}
         </button>
         <Link
           to="/accounts"
@@ -195,9 +201,9 @@ export function Sidebar({
             background: accountType === 'real' ? 'var(--accent-primary, #c26a45)' : 'transparent',
             color: accountType === 'real' ? '#fff' : 'rgba(255,255,255,0.7)',
           }}
-          title={tr(language, { en: 'Real account — connect Coinbase / Bybit / Binance', ja: '実口座', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật' })}
+          title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect Coinbase / Bybit / Binance', ja: '実口座', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật' })}
         >
-          ● {tr(language, { en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}
+          ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}
         </Link>
       </div>
 
@@ -211,7 +217,7 @@ export function Sidebar({
                 key={item.path}
                 to={item.path}
                 className={`nav-link ${location.pathname === item.path || location.pathname.startsWith(`${item.path}/`) ? 'active' : ''}`}
-                title={!token && item.requiresAuth ? tr(language, { en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }) : undefined}
+                title={!token && item.requiresAuth ? tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }) : undefined}
                 onClick={() => {
                   if (item.category && (item.badge || 0) > 0) {
                     onMarkCategoryRead(item.category)
@@ -277,7 +283,7 @@ export function Sidebar({
                 onClick={() => {
                   if (showToken) {
                     navigator.clipboard.writeText(agentInfo.token)
-                    alert(tr(language, { en: 'Token copied', ja: 'トークンをコピーしました', th: 'คัดลอก Token แล้ว', vi: 'Đã sao chép' }))
+                    alert(tr(language, { ko: '토큰이 복사되었습니다', en: 'Token copied', ja: 'トークンをコピーしました', th: 'คัดลอก Token แล้ว', vi: 'Đã sao chép' }))
                   }
                   setShowToken(!showToken)
                 }}
@@ -285,6 +291,30 @@ export function Sidebar({
                 {showToken ? agentInfo.token : agentInfo.token.substring(0, 12) + '···'}
               </div>
             )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+              {agentInfo.id && (
+                <Link
+                  to={`/agent/${agentInfo.id}`}
+                  onClick={() => onClose?.()}
+                  className="nav-link"
+                  style={{ padding: '5px 10px', fontSize: '12px' }}
+                >
+                  <span className="nav-icon">◱</span>
+                  {tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ' })}
+                </Link>
+              )}
+              {userToken && (
+                <Link
+                  to="/settings"
+                  onClick={() => onClose?.()}
+                  className="nav-link"
+                  style={{ padding: '5px 10px', fontSize: '12px' }}
+                >
+                  <span className="nav-icon">⚙</span>
+                  {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' })}
+                </Link>
+              )}
+            </div>
             <button
               onClick={onLogout}
               style={{
@@ -306,18 +336,73 @@ export function Sidebar({
               {t.common.logout}
             </button>
           </div>
+        ) : userToken && userInfo ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div className="agent-avatar-sm">{(userInfo.email || 'U').charAt(0).toUpperCase()}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {userInfo.email}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>
+                  {userInfo.points ?? 0} {t.common.points}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Link
+                to="/my-trading"
+                onClick={() => onClose?.()}
+                className="nav-link"
+                style={{ padding: '6px 10px', fontSize: '12px' }}
+              >
+                <span className="nav-icon">◱</span>
+                {tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi' })}
+              </Link>
+              <Link
+                to="/settings"
+                onClick={() => onClose?.()}
+                className="nav-link"
+                style={{ padding: '6px 10px', fontSize: '12px' }}
+              >
+                <span className="nav-icon">⚙</span>
+                {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' })}
+              </Link>
+              <button
+                onClick={onUserLogout}
+                style={{
+                  width: '100%',
+                  padding: '6px 0',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '8px',
+                  color: 'rgba(255,255,255,0.45)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
+              >
+                {t.common.logout}
+              </button>
+            </div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5, marginBottom: '4px' }}>
               {tr(language, {
-                en: 'Browse freely — login to trade & copy.',
-                ja: 'ログインで取引・コピーが可能。',
-                th: 'เข้าสู่ระบบเพื่อเทรดและคัดลอก',
-                vi: 'Đăng nhập để giao dịch & sao chép.'
+                ko: '자유롭게 둘러보고, 로그인하면 AI 자동매매를 설정할 수 있습니다.',
+                en: 'Browse freely — login to configure AI auto-trading.',
+                ja: 'ログインでAI自動売買を設定できます。',
+                th: 'เข้าสู่ระบบเพื่อตั้งค่าเทรดอัตโนมัติ AI',
+                vi: 'Đăng nhập để cấu hình giao dịch AI.'
               })}
             </div>
             <Link to="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '6px 12px' }}>
-              {tr(language, { en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
+              {tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
             </Link>
           </div>
         )}
