@@ -135,17 +135,27 @@ function App() {
   }, [userToken])
 
   // Every human account gets its own auto-provisioned simulator agent — most of
-  // the app runs on agent (claw) auth, so link it whenever the claw session is
-  // missing. Guarded so an existing agent session is never rotated away.
+  // the app runs on agent (claw) auth. Issue/refresh the claw token from the
+  // user session; returns the fresh token so callers can retry immediately.
+  const linkAgent = async (): Promise<string | null> => {
+    if (!userToken) return null
+    try {
+      const res = await fetch(`${API_BASE}/users/agent`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data?.token) { login(data.token); return data.token }
+    } catch { /* transient */ }
+    return null
+  }
+
+  // Link when the claw session is missing. Guarded so an existing agent
+  // session is never rotated away on every render.
   useEffect(() => {
     if (!userToken || token) return
-    fetch(`${API_BASE}/users/agent`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${userToken}` }
-    })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => { if (data?.token) login(data.token) })
-      .catch(() => {})
+    linkAgent()
   }, [userToken, token])
 
   useEffect(() => {
@@ -161,6 +171,19 @@ function App() {
       if (res.ok) {
         const data = await res.json()
         setAgentInfo(data)
+        return
+      }
+      // A stale/rotated claw token (401/403) would otherwise strand every
+      // agent-authed page on errors with no recovery. If a user session is
+      // present, re-link to mint a fresh token and retry once.
+      if ((res.status === 401 || res.status === 403) && userToken) {
+        const fresh = await linkAgent()
+        if (fresh) {
+          const retry = await fetch(`${API_BASE}/claw/agents/me`, {
+            headers: { 'Authorization': `Bearer ${fresh}` }
+          })
+          if (retry.ok) setAgentInfo(await retry.json())
+        }
       }
     } catch (e) {
       console.error(e)
