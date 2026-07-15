@@ -1859,6 +1859,41 @@ def init_database():
         ON automation_runs(config_id, ran_at)
     """)
 
+    # Risk engine (signal-collection plan Phase 1): per-agent limits consulted by
+    # the automation gate, plus the circuit-breaker state machine. Breaker rows are
+    # keyed by scope: 'global' (system trips) or 'agent:<id>' (manual HALT).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS risk_limits (
+            agent_id                INTEGER PRIMARY KEY,
+            max_daily_loss_usd      REAL    NOT NULL DEFAULT 1000,
+            max_symbol_exposure_usd REAL    NOT NULL DEFAULT 10000,
+            stop_loss_pct           REAL    NOT NULL DEFAULT 0.05,
+            take_profit_pct         REAL    NOT NULL DEFAULT 0.10,
+            use_kelly               INTEGER NOT NULL DEFAULT 1,
+            updated_at              TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS breaker_state (
+            scope      TEXT PRIMARY KEY,
+            state      TEXT NOT NULL DEFAULT 'normal',
+            reason     TEXT,
+            tripped_at TEXT,
+            updated_at TEXT
+        )
+    """)
+
+    # SL/TP columns on positions (risk engine Phase 1)
+    try:
+        cursor.execute("ALTER TABLE positions ADD COLUMN stop_loss REAL")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE positions ADD COLUMN take_profit REAL")
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

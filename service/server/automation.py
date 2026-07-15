@@ -36,9 +36,13 @@ def _now_iso() -> str:
 # ─────────────────────────── paper-trade executor ───────────────────────────
 
 def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
-                        quantity: float, price: float) -> tuple[Optional[int], Optional[str]]:
+                        quantity: float, price: float, content: str = "AI automation",
+                        stop_loss: Optional[float] = None,
+                        take_profit: Optional[float] = None) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
+    On buys, stop_loss/take_profit (from the risk gate) are registered on the
+    position row in the same transaction so the SL/TP watcher can act on them.
     Returns (signal_id, None) on success or (None, reason) when skipped."""
     from fees import TRADE_FEE_RATE
     from services import _reserve_signal_id, _update_position_from_signal
@@ -85,10 +89,16 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
             """,
             (signal_id, agent_id, market, symbol, side, price, quantity,
-             "AI automation", int(datetime.now(timezone.utc).timestamp()), now, now),
+             content, int(datetime.now(timezone.utc).timestamp()), now, now),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
         if side == "buy":
+            if stop_loss is not None or take_profit is not None:
+                cursor.execute(
+                    """UPDATE positions SET stop_loss = ?, take_profit = ?
+                       WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                    (stop_loss, take_profit, agent_id, market, symbol),
+                )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
         else:
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
@@ -144,11 +154,23 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["skip_reason"] = "no valid price in decision"
         else:
             quantity = float(config.get("size_usd") or 0) / float(entry)
-            signal_id, skip = execute_paper_trade(agent_id, symbol, market, action, quantity, float(entry))
-            if signal_id:
-                result["executed"] = True
+            # Risk gate (Phase 1): breaker → limits → Kelly. No-op unless
+            # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
+            from risk_engine import evaluate_order
+            gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry))
+            if not gate.allowed:
+                result["skip_reason"] = gate.reason
             else:
-                result["skip_reason"] = skip
+                signal_id, skip = execute_paper_trade(
+                    agent_id, symbol, market, action, gate.quantity, float(entry),
+                    stop_loss=gate.stop_loss, take_profit=gate.take_profit)
+                if signal_id:
+                    result["executed"] = True
+                    if gate.adjustment:
+                        logger.info("risk gate adjusted order (config %s): %s",
+                                    config_id, gate.adjustment)
+                else:
+                    result["skip_reason"] = skip
     except Exception as exc:  # noqa: BLE001
         logger.exception("automation rule %s failed: %s", config_id, exc)
         result["skip_reason"] = f"error: {exc}"

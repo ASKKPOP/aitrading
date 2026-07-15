@@ -684,6 +684,35 @@ async def automation_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def risk_watcher_loop():
+    """Background task for the risk engine SL/TP watcher (Phase 1).
+
+    Every RISK_WATCHER_INTERVAL seconds (default 30), close long positions whose
+    polled current_price crossed their stop_loss/take_profit. Reads prices from
+    the positions table (maintained by update_position_prices) — no external
+    calls. No-op unless RISK_ENGINE_ENABLED. See risk_engine.py.
+    """
+    from risk_engine import risk_engine_enabled, run_sltp_watcher_tick
+
+    interval_s = _env_int("RISK_WATCHER_INTERVAL", 30, minimum=5)
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            if risk_engine_enabled():
+                result = await asyncio.to_thread(run_sltp_watcher_tick)
+                if result.get("closed"):
+                    print(
+                        "[Risk Watcher] SL/TP tick: "
+                        f"checked={result.get('checked', 0)} closed={result.get('closed', 0)}"
+                    )
+        except Exception as e:
+            print(f"[Risk Watcher Error] {e}")
+
+        await asyncio.sleep(interval_s)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1304,6 +1333,7 @@ BACKGROUND_TASK_REGISTRY = {
     "etf_flows": refresh_etf_flow_snapshots_loop,
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
+    "risk_watcher": risk_watcher_loop,
 }
 
 
@@ -1340,6 +1370,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "stock_analysis":          "research",
     # automation — executes user-configured AI trading rules (Target 3)
     "automation":              "settlement",
+    # risk engine — closes positions at stop-loss/take-profit (Phase 1)
+    "risk_watcher":            "settlement",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
