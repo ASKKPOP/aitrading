@@ -176,6 +176,49 @@ def fetch_funding_rate(symbol: str) -> dict[str, Any]:
     }
 
 
+def fetch_open_interest(symbol: str) -> dict[str, Any]:
+    """
+    Fetch current open interest for a USDT-margined perpetual (OKX /public).
+
+    Returns {"symbol", "open_interest": float (contracts), "open_interest_ccy":
+    float (base currency), "ts": ms|None}.
+    """
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("open-interest", {"instType": "SWAP", "instId": inst_id},
+                    base=OKX_PUBLIC_BASE)
+    if not data:
+        raise ValueError(f"Symbol {symbol!r} not found in OKX open-interest response")
+    row = data[0]
+    return {
+        "symbol": symbol.upper(),
+        "open_interest": float(row.get("oi") or 0),
+        "open_interest_ccy": float(row.get("oiCcy") or 0),
+        "ts": int(row["ts"]) if row.get("ts") else None,
+    }
+
+
+def fetch_long_short_ratio(symbol: str) -> dict[str, Any]:
+    """
+    Fetch the latest long/short account ratio for a coin (OKX rubik stats,
+    public, keyless). Ratio > 1 = more long accounts than short.
+
+    Returns {"symbol", "long_short_ratio": float, "ts": ms|None}.
+    """
+    ccy = symbol[:-4].upper() if symbol.upper().endswith("USDT") else symbol.upper()
+    rubik_base = OKX_PUBLIC_BASE.replace("/public", "/rubik/stat")
+    data = _okx_get("contracts/long-short-account-ratio",
+                    {"ccy": ccy, "period": "5m"}, base=rubik_base)
+    if not data:
+        raise ValueError(f"Currency {ccy!r} not found in OKX long/short response")
+    # Rows are [ts, ratio] newest-first.
+    ts, ratio = data[0][0], data[0][1]
+    return {
+        "symbol": symbol.upper(),
+        "long_short_ratio": float(ratio),
+        "ts": int(ts) if ts else None,
+    }
+
+
 def fetch_spot_ticker(symbol: str) -> dict[str, Any]:
     """
     Fetch the SPOT ticker (instId like BTC-USDT, no -SWAP) for basis calculation.

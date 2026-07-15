@@ -33,6 +33,24 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _event_guard_blocks() -> Optional[str]:
+    """Skip-reason string when EVENT_GUARD_ENABLED and a scheduled macro
+    release window (FOMC/CPI/jobs) is active; None otherwise. Fail-open —
+    the guard never blocks on its own errors."""
+    import os
+    if os.getenv("EVENT_GUARD_ENABLED", "false").strip().lower() not in ("1", "true", "yes", "on"):
+        return None
+    try:
+        from market_events import active_event_window
+        window = active_event_window()
+        if window:
+            return (f"event guard: {window['title']} release window active "
+                    f"({window['window_start']}–{window['window_end']})")
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
 # ─────────────────────────── paper-trade executor ───────────────────────────
 
 def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
@@ -166,6 +184,11 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["skip_reason"] = f"confidence {confidence} below threshold {config.get('min_confidence')}"
         elif not is_market_open(market):
             result["skip_reason"] = "market closed"
+        elif _event_guard_blocks():
+            # Card 07 — scheduled macro releases spike volatility without a
+            # reliable direction; skip new entries inside the release window.
+            # Opt-in via EVENT_GUARD_ENABLED (default off).
+            result["skip_reason"] = _event_guard_blocks()
         elif not entry or entry <= 0:
             result["skip_reason"] = "no valid price in decision"
         else:

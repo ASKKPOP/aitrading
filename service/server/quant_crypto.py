@@ -36,6 +36,8 @@ RSI_PERIOD = 14
 DAILY_CANDLES = 120
 HOURLY_CANDLES = 100
 FUNDING_CROWDED = 0.0005    # ±0.05% per 8h
+LS_CROWDED_LONG = 2.0       # long/short account ratio ≥ 2 = crowded long
+LS_CROWDED_SHORT = 0.5      # ≤ 0.5 = crowded short (contrarian)
 BASIS_BUY_GAP_PCT = 1.2     # framework buy trigger: basis ≥ 1.2%
 BASIS_STRESS_PCT = -0.5
 
@@ -137,6 +139,22 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         pass
 
+    # Card 12 — positioning: open interest + long/short account ratio (OKX).
+    open_interest_ccy = open_interest_usd = long_short_ratio = None
+    try:
+        from crypto_feed import fetch_open_interest
+        oi = fetch_open_interest(okx)
+        open_interest_ccy = oi["open_interest_ccy"]
+        if current_price is not None and open_interest_ccy:
+            open_interest_usd = open_interest_ccy * current_price
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from crypto_feed import fetch_long_short_ratio
+        long_short_ratio = fetch_long_short_ratio(okx)["long_short_ratio"]
+    except Exception:  # noqa: BLE001
+        pass
+
     score = 0
     bullish: list[str] = []
     risks: list[str] = []
@@ -186,6 +204,15 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
         elif basis_pct <= BASIS_STRESS_PCT:
             score -= 1
             risks.append(f"spot-perp basis {_fmt(basis_pct)}% in backwardation")
+    if long_short_ratio is not None:
+        if long_short_ratio >= LS_CROWDED_LONG:
+            score -= 1
+            risks.append(f"long/short ratio {_fmt(long_short_ratio)} crowded long "
+                         f"(≥{LS_CROWDED_LONG}, squeeze risk)")
+        elif long_short_ratio <= LS_CROWDED_SHORT:
+            score += 1
+            bullish.append(f"long/short ratio {_fmt(long_short_ratio)} crowded short "
+                           f"(≤{LS_CROWDED_SHORT}, contrarian)")
 
     signal = "buy" if score >= 2 else ("sell" if score <= -2 else "hold")
     if ma5 is not None and ma20 is not None and ma60 is not None:
@@ -208,6 +235,9 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
         "funding_rate": funding_rate,
         "basis_pct": round(basis_pct, 4) if basis_pct is not None else None,
+        "open_interest_ccy": round(open_interest_ccy, 2) if open_interest_ccy is not None else None,
+        "open_interest_usd": round(open_interest_usd, 0) if open_interest_usd is not None else None,
+        "long_short_ratio": round(long_short_ratio, 3) if long_short_ratio is not None else None,
         "signal": signal,
         "signal_score": score,
         "trend_status": trend_status,

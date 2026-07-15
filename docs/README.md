@@ -8,6 +8,7 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 |---|---|---|---|
 | 1 | [research/01-competitive-landscape.md](research/01-competitive-landscape.md) | Who exists in the agent-trading / copy-trading space, what's unique about Sooppiy, how new users get stuck, and 12 ranked accessibility wins. | ~3,300 |
 | 2 | [research/02-marketing-site.md](research/02-marketing-site.md) | A standalone marketing site design brief — references, audience segments, IA, page-by-page, tech stack, SEO, rollout. | ~2,400 |
+| 3 | [research/03-signal-expansion-gap-analysis.md](research/03-signal-expansion-gap-analysis.md) | Signal cards 07–16 vs the platform: what existed, what was built (macro calendar, OI/long-short, kimchi premium/DXY), what needs paid keys, and the priority queue. | ~1,200 |
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
 | 4 | [plan/02-deployment-readiness.md](plan/02-deployment-readiness.md) | What stands between local Docker dev and a real deploy. | ~700 |
 | 5 | **[plan/03-session-handoff.md](plan/03-session-handoff.md)** | **START HERE if resuming/continuing.** Full session handoff: what was built, the deploy runbook, dual-auth architecture, test accounts, verified-working list, and outstanding work. | ~2,000 |

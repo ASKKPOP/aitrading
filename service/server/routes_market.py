@@ -104,6 +104,20 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         from scanner import get_scanner_payload
         return await run_in_threadpool(get_scanner_payload)
 
+    @app.get('/api/market-intel/events')
+    async def market_intel_events():
+        # Card 07 — static macro calendar; pure computation, no cache needed.
+        from market_events import build_events_payload
+        return build_events_payload()
+
+    @app.get('/api/market-intel/cross')
+    async def market_intel_cross():
+        # Card 16 — kimchi premium + dollar index. Fans out to Upbit/OKX/FX/FRED,
+        # so serve through the shared market-intel cache like fusion does.
+        from cross_market import build_cross_market_payload
+        return await run_in_threadpool(
+            _cached_market_payload, 'cross_market', build_cross_market_payload)
+
     @app.get('/api/market-intel/fusion')
     async def market_intel_fusion(symbols: str = 'BTC,ETH,SOL'):
         from signal_fusion import fuse_symbols

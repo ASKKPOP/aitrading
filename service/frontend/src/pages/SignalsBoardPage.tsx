@@ -41,6 +41,7 @@ interface FusedSignal {
   matched_triggers: string[]
   missing: string[]
   current_price: number | null
+  components?: { quant?: { open_interest_usd?: number | null; long_short_ratio?: number | null } | null }
 }
 
 function Tile({ label, value, sub, accent }: {
@@ -87,11 +88,33 @@ function SignalBadge({ signal }: { signal: string }) {
   return <span style={{ color, fontWeight: 700 }}>{mark} {signal.toUpperCase()}</span>
 }
 
+interface MacroEvent {
+  event_type: string
+  title: string
+  at: string
+  hours_until: number
+  days_until: number
+}
+
+interface EventsPayload {
+  available: boolean
+  next: MacroEvent[]
+  event_window: { title: string; minutes_to_release: number } | null
+}
+
+interface CrossPayload {
+  available: boolean
+  kimchi: { premium_pct: number; verdict: string; upbit_usd_equiv: number; global_usd: number } | null
+  dollar_index: { value: number; change_1d_pct: number | null; date: string } | null
+}
+
 export function SignalsBoardPage() {
   const { language } = useLanguage()
   const [psych, setPsych] = useState<PsychPayload | null>(null)
   const [scanner, setScanner] = useState<ScannerPayload | null>(null)
   const [fusion, setFusion] = useState<FusedSignal[] | null>(null)
+  const [events, setEvents] = useState<EventsPayload | null>(null)
+  const [cross, setCross] = useState<CrossPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadingRef = useRef(false)
@@ -102,14 +125,18 @@ export function SignalsBoardPage() {
     if (loadingRef.current || document.hidden) return
     loadingRef.current = true
     try {
-      const [psychRes, scannerRes, fusionRes] = await Promise.all([
+      const [psychRes, scannerRes, fusionRes, eventsRes, crossRes] = await Promise.all([
         fetch(`${API_BASE}/market-intel/psych`),
         fetch(`${API_BASE}/scanner/candidates`),
         fetch(`${API_BASE}/market-intel/fusion?symbols=${FUSION_SYMBOLS}`),
+        fetch(`${API_BASE}/market-intel/events`),
+        fetch(`${API_BASE}/market-intel/cross`),
       ])
       if (psychRes.ok) setPsych(await psychRes.json())
       if (scannerRes.ok) setScanner(await scannerRes.json())
       if (fusionRes.ok) setFusion((await fusionRes.json()).signals ?? [])
+      if (eventsRes.ok) setEvents(await eventsRes.json())
+      if (crossRes.ok) setCross(await crossRes.json())
       if (!psychRes.ok && !scannerRes.ok && !fusionRes.ok) throw new Error('all sources failed')
       setError(null)
     } catch {
@@ -132,6 +159,7 @@ export function SignalsBoardPage() {
 
   const fng = psych?.fear_greed ?? null
   const cryptoSpike = psych?.spikes?.find(s => s.category === 'crypto') ?? psych?.spikes?.[0] ?? null
+  const nextEvent = events?.next?.[0] ?? null
   const shockAlerts = (psych?.shock ?? []).filter(s => s.shock)
   const candidates = scanner?.candidates ?? []
 
@@ -192,6 +220,30 @@ export function SignalsBoardPage() {
           value={scanner?.available ? String(candidates.length) : '—'}
           sub={scanner?.available ? tr(language, { ko: '거래량 · 언급 · 신규 상장', en: 'volume · mentions · new listings', ja: '出来高 · 言及 · 新規上場', th: 'ปริมาณ · การกล่าวถึง · เหรียญใหม่', vi: 'khối lượng · lượt nhắc · niêm yết mới' }) : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
         />
+        <Tile
+          label={tr(language, { ko: '다음 거시 이벤트', en: 'Next Macro Event', ja: '次のマクロイベント', th: 'เหตุการณ์มหภาคถัดไป', vi: 'Sự kiện vĩ mô tiếp theo' })}
+          value={nextEvent ? (nextEvent.days_until >= 1 ? `D-${Math.ceil(nextEvent.days_until)}` : `${Math.round(nextEvent.hours_until)}h`) : '—'}
+          sub={events?.event_window
+            ? tr(language, { ko: `⚠ ${events.event_window.title} 발표 창 진행 중`, en: `⚠ ${events.event_window.title} release window active`, ja: `⚠ ${events.event_window.title} 発表ウィンドウ中`, th: `⚠ ช่วงประกาศ ${events.event_window.title}`, vi: `⚠ Cửa sổ công bố ${events.event_window.title}` })
+            : nextEvent
+              ? `${nextEvent.title} · ${nextEvent.at.slice(0, 10)}`
+              : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          accent={events?.event_window ? 'var(--error)' : undefined}
+        />
+        <Tile
+          label={tr(language, { ko: '김치 프리미엄', en: 'Kimchi Premium', ja: 'キムチプレミアム', th: 'พรีเมียมกิมจิ', vi: 'Kimchi Premium' })}
+          value={cross?.kimchi ? `${cross.kimchi.premium_pct >= 0 ? '+' : ''}${cross.kimchi.premium_pct.toFixed(2)}%` : '—'}
+          sub={cross?.kimchi
+            ? (cross.kimchi.verdict === 'overheated'
+              ? tr(language, { ko: '국내 과열 — 컨트래리언 주의', en: 'local overheating — contrarian caution', ja: '国内過熱 — 逆張り警戒', th: 'ร้อนแรงในประเทศ — ระวังสวนทาง', vi: 'quá nóng nội địa — thận trọng ngược chiều' })
+              : cross.kimchi.verdict === 'discount'
+                ? tr(language, { ko: '디스카운트 — 한국 수요 위축', en: 'discount — Korean demand contraction', ja: 'ディスカウント — 韓国需要縮小', th: 'ส่วนลด — อุปสงค์เกาหลีหด', vi: 'chiết khấu — nhu cầu Hàn Quốc giảm' })
+                : tr(language, { ko: 'Upbit 대비 글로벌 스프레드', en: 'Upbit vs global spread', ja: 'Upbit対グローバル', th: 'Upbit เทียบทั่วโลก', vi: 'Upbit so với toàn cầu' }))
+            : cross?.available === false
+              ? tr(language, { ko: '비활성화됨 (CROSS_MARKET_ENABLED)', en: 'disabled (CROSS_MARKET_ENABLED)', ja: '無効 (CROSS_MARKET_ENABLED)', th: 'ปิดอยู่ (CROSS_MARKET_ENABLED)', vi: 'tắt (CROSS_MARKET_ENABLED)' })
+              : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          accent={cross?.kimchi && Math.abs(cross.kimchi.premium_pct) >= 3 ? 'var(--error)' : undefined}
+        />
       </div>
 
       {/* Fused signal table — framework format: coin · signal · reason · trigger · confidence */}
@@ -212,6 +264,13 @@ export function SignalsBoardPage() {
                   {s.current_price != null && (
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
                       ${s.current_price.toLocaleString()}
+                    </div>
+                  )}
+                  {(s.components?.quant?.open_interest_usd != null || s.components?.quant?.long_short_ratio != null) && (
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 400 }}>
+                      {s.components?.quant?.open_interest_usd != null && `OI $${(s.components.quant.open_interest_usd / 1e9).toFixed(2)}B`}
+                      {s.components?.quant?.open_interest_usd != null && s.components?.quant?.long_short_ratio != null && ' · '}
+                      {s.components?.quant?.long_short_ratio != null && `L/S ${s.components.quant.long_short_ratio.toFixed(2)}`}
                     </div>
                   )}
                 </td>

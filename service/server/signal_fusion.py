@@ -98,6 +98,8 @@ def _quant_component(symbol: str) -> Optional[dict[str, Any]]:
         "rsi_14": analysis.get("rsi_14"),
         "basis_pct": analysis.get("basis_pct"),
         "funding_rate": analysis.get("funding_rate"),
+        "open_interest_usd": analysis.get("open_interest_usd"),
+        "long_short_ratio": analysis.get("long_short_ratio"),
         "current_price": analysis.get("current_price"),
         "trend_status": analysis.get("trend_status"),
         "evidence": (analysis.get("bullish_factors") or [])[:2]
@@ -227,6 +229,24 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
         if components[key]:
             evidence.extend(components[key]["evidence"])
 
+    # Card 07 — scheduled macro releases are volatility events; surface them
+    # in evidence so readers (and the automation guard) see the context.
+    event_window = None
+    try:
+        from market_events import active_event_window, upcoming_events
+        event_window = active_event_window()
+        if event_window:
+            evidence.append(
+                f"{event_window['title']} release window active "
+                f"({event_window['minutes_to_release']}min to release — scheduled volatility)")
+        else:
+            nxt = upcoming_events(limit=1)
+            if nxt and nxt[0]["hours_until"] <= 24:
+                evidence.append(
+                    f"{nxt[0]['title']} in {nxt[0]['hours_until']}h (scheduled volatility event)")
+    except Exception:  # noqa: BLE001
+        pass
+
     return {
         "symbol": symbol,
         "score": round(score, 3),
@@ -238,7 +258,9 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
             for k, v in components.items()
         },
         "missing": missing,
-        "matched_triggers": _matched_triggers(quant, sentiment, psych),
+        "matched_triggers": (_matched_triggers(quant, sentiment, psych)
+                             + (["event_window"] if event_window else [])),
+        "event_window": event_window,
         "evidence": evidence,
         "current_price": (quant or {}).get("current_price"),
         "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
