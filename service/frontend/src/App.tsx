@@ -304,6 +304,14 @@ function AppRouter({
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
+  // Agent-gated route: with a user session present, the agent token is being
+  // auto-linked (POST /api/users/agent) — render a spinner instead of
+  // redirecting, or the first click after login bounces to the leaderboard.
+  const agentGate = (el: React.ReactElement) =>
+    token ? el
+    : userToken ? <div className="loading"><div className="spinner"></div></div>
+    : <Navigate to="/login" replace />
+
   // Close mobile nav on route change
   useEffect(() => { setMobileNavOpen(false) }, [location.pathname])
 
@@ -410,14 +418,14 @@ function AppRouter({
               <Route path="/strategies" element={<StrategiesPage />} />
               <Route path="/discussions" element={<DiscussionsPage />} />
               <Route path="/positions" element={<PositionsPage />} />
-              <Route path="/analyst" element={token ? <AnalystPage /> : <Navigate to="/login" replace />} />
-              <Route path="/automation" element={token ? <AutomationPage /> : <Navigate to="/login" replace />} />
-              <Route path="/accounts" element={token ? <AccountsPage /> : <Navigate to="/login" replace />} />
-              <Route path="/assets" element={token ? <AssetsPage /> : <Navigate to="/login" replace />} />
-              <Route path="/spot" element={token ? <SpotPage /> : <Navigate to="/login" replace />} />
-              <Route path="/futures" element={token ? <FuturesPage /> : <Navigate to="/login" replace />} />
-              <Route path="/trade" element={token ? <TradePage token={token} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
-              <Route path="/exchange" element={token ? <ExchangePage token={token} onExchangeSuccess={fetchAgentInfo} /> : <Navigate to="/login" replace />} />
+              <Route path="/analyst" element={agentGate(<AnalystPage />)} />
+              <Route path="/automation" element={agentGate(<AutomationPage />)} />
+              <Route path="/accounts" element={agentGate(<AccountsPage />)} />
+              <Route path="/assets" element={agentGate(<AssetsPage />)} />
+              <Route path="/spot" element={agentGate(<SpotPage />)} />
+              <Route path="/futures" element={agentGate(<FuturesPage />)} />
+              <Route path="/trade" element={agentGate(<TradePage token={token!} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} />)} />
+              <Route path="/exchange" element={agentGate(<ExchangePage token={token!} onExchangeSuccess={fetchAgentInfo} />)} />
               <Route path="/agent/:id" element={<AgentProfilePage />} />
 
               {/* Phase 5 — public-user auth (humans) */}
