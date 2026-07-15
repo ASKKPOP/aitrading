@@ -97,6 +97,22 @@ def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[st
             out["stocktwits"] = st
     except Exception:  # noqa: BLE001
         pass
+    # Psych feed (Phase 2): F&G index, sentiment-spike z-scores, odds deltas.
+    try:
+        from psych_feed import get_psych_payload
+        psych = get_psych_payload()
+        if psych.get("available"):
+            out["psych"] = {
+                "fear_greed": {k: psych["fear_greed"][k]
+                               for k in ("value", "classification", "delta_3d")}
+                              if psych.get("fear_greed") else None,
+                "spikes": [s for s in psych.get("spikes", []) if s.get("spike")],
+                "odds_deltas": psych.get("odds_deltas", [])[:5],
+                "shock": psych.get("shock", []),
+                "shock_note": psych.get("shock_note"),
+            }
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 
@@ -196,6 +212,14 @@ def _fallback_brief(role: str, data: dict[str, Any]) -> str:
         st = data.get("stocktwits")
         if isinstance(st, dict) and st:
             msg += f" StockTwits {st.get('bullish', '?')} bull / {st.get('bearish', '?')} bear."
+        psych = data.get("psych") or {}
+        fng = psych.get("fear_greed")
+        if isinstance(fng, dict) and fng.get("value") is not None:
+            msg += f" Fear & Greed {fng['value']} ({fng.get('classification')})."
+        spikes = psych.get("spikes") or []
+        if spikes:
+            s = spikes[0]
+            msg += f" Sentiment spike in {s.get('category')} (z={s.get('z')}, {s.get('direction')})."
         return msg
 
     # Fundamentals / macro analyst — macro regime verdict

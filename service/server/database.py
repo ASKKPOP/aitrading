@@ -1884,6 +1884,24 @@ def init_database():
         )
     """)
 
+    # Psychology feed snapshots (signal-collection plan Phase 2): F&G index,
+    # sentiment-spike z-scores, volatility shock proxy, Polymarket odds.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS psych_snapshots (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_key      TEXT NOT NULL,
+            fng_json          TEXT,
+            spikes_json       TEXT,
+            shock_json        TEXT,
+            anticipation_json TEXT,
+            created_at        TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_psych_snapshots_created
+        ON psych_snapshots(created_at)
+    """)
+
     # SL/TP columns on positions (risk engine Phase 1)
     try:
         cursor.execute("ALTER TABLE positions ADD COLUMN stop_loss REAL")

@@ -133,6 +133,30 @@ def fetch_tickers(symbols: list[str]) -> list[dict[str, Any]]:
     return [_normalise(item) for item in data if item.get("instId") in wanted]
 
 
+def fetch_candles(symbol: str, bar: str = "1H", limit: int = 100) -> list[dict[str, Any]]:
+    """
+    Fetch OHLCV candles for a USDT-margined perpetual from OKX.
+
+    Returns oldest-first: [{"ts": ms, "open", "high", "low", "close", "volume"}, ...]
+    (OKX returns newest-first; we reverse). volume is contract volume (candle[5]).
+    """
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("candles", {"instId": inst_id, "bar": bar, "limit": str(max(1, min(limit, 300)))})
+    candles = []
+    for row in reversed(data):
+        if len(row) < 6:
+            continue
+        candles.append({
+            "ts": int(row[0]),
+            "open": float(row[1]),
+            "high": float(row[2]),
+            "low": float(row[3]),
+            "close": float(row[4]),
+            "volume": float(row[5]),
+        })
+    return candles
+
+
 def fetch_order_book(symbol: str, depth: int = 25) -> dict[str, Any]:
     """
     Fetch the live order book for a USDT-margined perpetual from OKX.

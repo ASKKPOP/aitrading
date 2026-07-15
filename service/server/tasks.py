@@ -713,6 +713,36 @@ async def risk_watcher_loop():
         await asyncio.sleep(interval_s)
 
 
+async def psych_feed_loop():
+    """Background task for the psychology feed (Phase 2).
+
+    Every PSYCH_REFRESH_INTERVAL seconds (default hourly), snapshot the crowd-
+    psychology inputs: Fear & Greed index, news-sentiment spike z-scores,
+    volatility shock proxy (OKX candles), and Polymarket odds. No-op unless
+    PSYCH_FEED_ENABLED. See psych_feed.py.
+    """
+    from psych_feed import psych_feed_enabled, refresh_psych_snapshot
+
+    refresh_interval = _env_int("PSYCH_REFRESH_INTERVAL", 3600, minimum=300)
+
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            if psych_feed_enabled():
+                result = await asyncio.to_thread(refresh_psych_snapshot)
+                print(
+                    "[Psych Feed] snapshot stored: "
+                    f"fng={result.get('fng')} "
+                    f"spike_events={result.get('spike_events_recorded', 0)} "
+                    f"errors={result.get('errors') or 'none'}"
+                )
+        except Exception as e:
+            print(f"[Psych Feed Error] {e}")
+
+        await asyncio.sleep(refresh_interval)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1334,6 +1364,7 @@ BACKGROUND_TASK_REGISTRY = {
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
     "risk_watcher": risk_watcher_loop,
+    "psych_feed": psych_feed_loop,
 }
 
 
@@ -1372,6 +1403,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "automation":              "settlement",
     # risk engine — closes positions at stop-loss/take-profit (Phase 1)
     "risk_watcher":            "settlement",
+    # psych feed — crowd-psychology snapshots: F&G, spikes, shock, odds (Phase 2)
+    "psych_feed":              "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

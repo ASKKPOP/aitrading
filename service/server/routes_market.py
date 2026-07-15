@@ -89,6 +89,11 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def market_intel_macro_signals():
         return _cached_market_payload('macro_signals', get_macro_signals_payload)
 
+    @app.get('/api/market-intel/psych')
+    async def market_intel_psych():
+        from psych_feed import get_psych_payload
+        return get_psych_payload()
+
     @app.get('/api/market-intel/etf-flows')
     async def market_intel_etf_flows():
         return _cached_market_payload('etf_flows', get_etf_flows_payload)
