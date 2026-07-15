@@ -253,7 +253,9 @@ def _rule_based_decision(technical: dict[str, Any], news: dict[str, Any]) -> dic
     bear = breakdown.get("bearish", 0) + breakdown.get("somewhat-bearish", 0)
     confidence = 0.5
     if isinstance(score, (int, float)):
-        confidence = max(0.3, min(0.9, 0.5 + score / 20.0))
+        # |score| — conviction strength is direction-agnostic. A strongly
+        # negative score is a confident SELL, not a low-confidence one.
+        confidence = max(0.3, min(0.9, 0.5 + abs(score) / 20.0))
     rationale = (
         f"Technical signal is '{signal}'"
         + (f" (score {score})" if score is not None else "")

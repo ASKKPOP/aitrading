@@ -206,6 +206,17 @@ class GatherTechnicalTests(unittest.TestCase):
         self.assertEqual(decision["action"], "sell")
         self.assertEqual(decision["entry"], 64000.0)
 
+    def test_rule_based_confidence_is_direction_agnostic(self):
+        """A strong bearish score is a confident sell — same confidence as an
+        equally strong bullish score (soak finding: score/20 buried all sells)."""
+        from analysis_agents import _rule_based_decision
+        sell = _rule_based_decision({"signal": "sell", "signal_score": -3,
+                                     "current_price": 100.0}, {"sentiment_breakdown": {}})
+        buy = _rule_based_decision({"signal": "buy", "signal_score": 3,
+                                    "current_price": 100.0}, {"sentiment_breakdown": {}})
+        self.assertEqual(sell["confidence"], buy["confidence"])
+        self.assertGreaterEqual(sell["confidence"], 0.65)
+
 
 if __name__ == "__main__":
     unittest.main()
