@@ -1902,6 +1902,23 @@ def init_database():
         ON psych_snapshots(created_at)
     """)
 
+    # Which-coin scanner snapshots (signal-collection plan Phase 4): ranked
+    # candidates + mention-rate history (baseline) + instrument list (diff).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scanner_snapshots (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_key     TEXT NOT NULL,
+            candidates_json  TEXT,
+            mentions_json    TEXT,
+            instruments_json TEXT,
+            created_at       TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_scanner_snapshots_created
+        ON scanner_snapshots(created_at)
+    """)
+
     # SL/TP columns on positions (risk engine Phase 1)
     try:
         cursor.execute("ALTER TABLE positions ADD COLUMN stop_loss REAL")

@@ -94,6 +94,11 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         from psych_feed import get_psych_payload
         return get_psych_payload()
 
+    @app.get('/api/scanner/candidates')
+    async def scanner_candidates():
+        from scanner import get_scanner_payload
+        return get_scanner_payload()
+
     @app.get('/api/market-intel/etf-flows')
     async def market_intel_etf_flows():
         return _cached_market_payload('etf_flows', get_etf_flows_payload)

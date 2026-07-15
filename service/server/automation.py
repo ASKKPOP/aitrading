@@ -125,6 +125,22 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     market = config["market"]
 
     result: dict[str, Any] = {"config_id": config_id, "executed": False, "skip_reason": None}
+
+    # Scanner option (Phase 4): a rule whose symbol is 'SCANNER' analyzes the
+    # which-coin scanner's current top candidate instead of a fixed symbol.
+    if symbol == "SCANNER":
+        try:
+            from scanner import top_candidate
+            resolved = top_candidate()
+        except Exception:  # noqa: BLE001
+            resolved = None
+        if not resolved:
+            result["skip_reason"] = "scanner: no candidates available"
+            result.update({"action": None, "confidence": None, "signal_id": None})
+            _record_run(config_id, agent_id, result, None)
+            return result
+        symbol = resolved
+        result["scanner_symbol"] = symbol
     action = None
     confidence = None
     report = None
@@ -176,7 +192,12 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         result["skip_reason"] = f"error: {exc}"
 
     result.update({"action": action, "confidence": confidence, "signal_id": signal_id})
+    _record_run(config_id, agent_id, result, report)
+    return result
 
+
+def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
+                report: Optional[str]) -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -185,8 +206,8 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             """INSERT INTO automation_runs
                (config_id, agent_id, ran_at, action, confidence, executed, skip_reason, signal_id, report)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (config_id, agent_id, _now_iso(), action, confidence,
-             1 if result["executed"] else 0, result["skip_reason"], signal_id, report),
+            (config_id, agent_id, _now_iso(), result.get("action"), result.get("confidence"),
+             1 if result["executed"] else 0, result["skip_reason"], result.get("signal_id"), report),
         )
         cursor.execute("UPDATE automation_configs SET last_run_at = ? WHERE id = ?", (_now_iso(), config_id))
         conn.commit()
@@ -195,8 +216,6 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         logger.exception("failed to record automation run for config %s", config_id)
     finally:
         conn.close()
-
-    return result
 
 
 # ─────────────────────────── the tick ───────────────────────────
