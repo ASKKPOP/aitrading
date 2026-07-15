@@ -24,14 +24,14 @@ def upgrade() -> None:
         type_=sa.Numeric(20, 8),
         existing_type=sa.Float(),
         existing_nullable=True,
-        existing_server_default=sa.text("100000.0"))",
+        existing_server_default=sa.text("100000.0"),
     )
     op.alter_column(
         "positions",
         "entry_price",
         type_=sa.Numeric(20, 8),
         existing_type=sa.Float(),
-        existing_nullable=False)",
+        existing_nullable=False,
     )
 
 
