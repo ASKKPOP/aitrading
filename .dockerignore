@@ -13,7 +13,8 @@ venv
 .mypy_cache
 .ruff_cache
 
-# Frontend (served separately via Cloudflare Pages / Vercel)
+# Frontend build artifacts — the image builds the SPA in its own stage
+# (source is copied; node_modules/dist come from `npm ci && npm run build`)
 service/frontend/node_modules
 service/frontend/dist
 service/frontend/.next
