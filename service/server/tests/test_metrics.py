@@ -5,7 +5,6 @@ All values are computed from known inputs so results are deterministic.
 
 from __future__ import annotations
 
-import math
 import sys
 import unittest
 from pathlib import Path

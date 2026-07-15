@@ -203,7 +203,7 @@ class TestExecutionRouterPaperMode(unittest.TestCase):
         self.assertEqual(row["status"], "filled")
 
     def test_order_for_unknown_agent_is_rejected(self):
-        from execution.base import Order, OrderStatus
+        from execution.base import Order
         from execution.router import ExecutionRouter
         order = Order(
             agent_id=99999, symbol="AAPL", market="us-stock",

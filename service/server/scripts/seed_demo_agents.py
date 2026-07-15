@@ -185,7 +185,6 @@ def seed(db_path: str | None = None) -> None:
                  sell_ts, sell_ts),
             )
             proceeds = sell_price * qty
-            pnl = (sell_price - buy_price) * qty
             cash += proceeds
 
             # Record a profit snapshot after the sell
