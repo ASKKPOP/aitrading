@@ -6,7 +6,6 @@ POST /api/signals/{signal_id}/slash             — evaluate a closed signal for
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel

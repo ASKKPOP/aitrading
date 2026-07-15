@@ -1,138 +1,130 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+JP:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap');
-
 /* ──────────────────────────────────────────────────────────────────────────
-   Sooppiy — Editorial themes
-   Theme 1: 'terracotta' (default) — askkpop.com/roadmap.html
-   Theme 2: 'slate' — ionixq.com/copy-trading
-   The component CSS below uses these tokens; switching is purely a token swap
-   on <html data-theme="...">.
+   Sooppiy — Signal design system (single theme, from signal_dashboard.html)
+   Neutral warm-gray page, white cards, system-ui type, signal accent colors.
+   Includes the mock's automatic dark-mode variant (prefers-color-scheme).
    ────────────────────────────────────────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════════════════
-   Sooppiy — Noēsis Design System
-   Based on nexus.eklotho.com/docs/design-theme-showcase.html
-   ═══════════════════════════════════════════════════════════ */
-
 :root,
-:root[data-theme='terracotta'] {
+:root[data-theme='signal'] {
   /* Page backgrounds */
-  --bg-primary:   #faf9f5;        /* Noēsis --bg */
-  --bg-secondary: #f1ead8;        /* parchment */
-  --bg-tertiary:  #e8dfc8;        /* parchment-2 */
-  --bg-card:      #faf6ec;        /* vellum */
-  --bg-hover:     rgba(184,84,47,0.08); /* terra-tint */
+  --bg-primary:   #f9f9f7;   /* page */
+  --bg-secondary: #f1f0ec;
+  --bg-tertiary:  #e1e0d9;   /* grid */
+  --bg-card:      #ffffff;
+  --bg-hover:     rgba(42,120,214,0.08);
 
-  /* Noēsis semantic aliases */
-  --vellum:    #faf6ec;
-  --parchment: #f1ead8;
-  --sidebar-bg: #1e1c1a;
+  /* Semantic aliases */
+  --vellum:    #ffffff;
+  --parchment: #f1f0ec;
+  --sidebar-bg: #1a1a19;
   --sidebar-hover: rgba(255,255,255,0.06);
-  --sidebar-active: rgba(184,84,47,0.18);
+  --sidebar-active: rgba(42,120,214,0.28);
 
   /* Text */
-  --text-primary:   #0b1220;
-  --text-secondary: rgba(11,18,32,0.55);
-  --text-muted:     rgba(11,18,32,0.38);
+  --text-primary:   #0b0b0b;  /* ink */
+  --text-secondary: #52514e;  /* ink-2 */
+  --text-muted:     #898781;  /* muted */
 
-  /* Accent — terracotta */
-  --accent-primary:   #b8542f;
-  --accent-secondary: #d97a4f;
-  --accent-gradient:  linear-gradient(90deg, #b8542f, #d97a4f);
-  --accent-contrast:  #faf6ec;
+  /* Accent — signal blue */
+  --accent-primary:   #2a78d6;
+  --accent-secondary: #5d95e0;
+  --accent-gradient:  linear-gradient(90deg, #2a78d6, #5d95e0);
+  --accent-contrast:  #ffffff;
+
+  /* Signal palette */
+  --s-aqua:   #1baf7a;
+  --s-yellow: #eda100;
+  --s-violet: #4a3aa7;
 
   /* Semantic colours */
-  --success: #16a34a;
-  --error:   #b91c1c;
-  --warning: #b45309;
-  --info:    #1d4ed8;
+  --success: #006300;   /* good-ink */
+  --error:   #d03b3b;   /* critical */
+  --warning: #eda100;
+  --info:    #2a78d6;
 
-  --up:        #16a34a;
-  --down:      #b91c1c;
-  --up-soft:   rgba(22,163,74,0.08);
-  --down-soft: rgba(185,28,28,0.08);
+  --up:        #006300;
+  --down:      #d03b3b;
+  --up-soft:   rgba(12,163,12,0.14);
+  --down-soft: rgba(208,59,59,0.14);
 
   /* Rules / borders */
-  --border-color:  rgba(11,18,32,0.15);
-  --border-light:  rgba(184,84,47,0.22);
-  --border-strong: rgba(11,18,32,0.30);
-  --rule:          rgba(11,18,32,0.15);
-  --rule-2:        rgba(11,18,32,0.08);
+  --border-color:  rgba(11,11,11,0.10);
+  --border-light:  rgba(42,120,214,0.25);
+  --border-strong: #c3c2b7;   /* baseline */
+  --rule:          #e1e0d9;   /* grid */
+  --rule-2:        rgba(11,11,11,0.06);
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(11,18,32,0.06), 0 4px 12px rgba(11,18,32,0.04);
-  --shadow-md: 0 4px 16px rgba(11,18,32,0.08), 0 12px 32px rgba(11,18,32,0.06);
-  --shadow-lg: 0 12px 48px rgba(11,18,32,0.14);
+  --shadow-sm: 0 1px 2px rgba(11,11,11,0.05), 0 3px 10px rgba(11,11,11,0.04);
+  --shadow-md: 0 4px 14px rgba(11,11,11,0.07), 0 10px 28px rgba(11,11,11,0.05);
+  --shadow-lg: 0 12px 44px rgba(11,11,11,0.12);
 
-  /* Radii */
+  /* Radii — dashboard cards use 14px */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
   --transition: all 0.18s ease;
 
-  /* Fonts */
-  --font-display: "Cormorant Garamond", "GFS Didot", Georgia, serif;
-  --font-sans:    "Inter Tight", "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-ui:      "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Fonts — system stack (mock), tabular numerals via mono stack */
+  --font-display: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-serif:   system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+  --font-sans:    system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans Thai", sans-serif;
+  --font-ui:      system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 
   /* Layout */
   --sidebar-w: 228px;
   --topbar-h:  52px;
 }
 
-/* ── Golden theme — Claude-style warmth on dark chocolate with antique gold ── */
-:root[data-theme='golden'] {
-  /* Page backgrounds — warm near-black, like Claude's dark surfaces */
-  --bg-primary:   #14100d;
-  --bg-secondary: #1b1611;
-  --bg-tertiary:  #221b14;
-  --bg-card:      #1a1510;
-  --bg-hover:     rgba(201,162,39,0.10);
+/* Dark variant — same mapping as the mock */
+@media (prefers-color-scheme: dark) {
+  :root,
+  :root[data-theme='signal'] {
+    --bg-primary:   #0d0d0d;
+    --bg-secondary: #1a1a19;
+    --bg-tertiary:  #2c2c2a;
+    --bg-card:      #202020;
+    --bg-hover:     rgba(57,135,229,0.14);
 
-  --vellum:    #1a1510;
-  --parchment: #1b1611;
-  --sidebar-bg: #0f0c09;
-  --sidebar-hover: rgba(201,162,39,0.08);
-  --sidebar-active: rgba(201,162,39,0.20);
+    --vellum:    #202020;
+    --parchment: #1a1a19;
+    --sidebar-bg: #141413;
 
-  /* Text — warm cream */
-  --text-primary:   #f0e9dc;
-  --text-secondary: rgba(240,233,220,0.60);
-  --text-muted:     rgba(240,233,220,0.38);
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
 
-  /* Accent — antique gold */
-  --accent-primary:   #c9a227;
-  --accent-secondary: #e0bc4e;
-  --accent-gradient:  linear-gradient(90deg, #c9a227, #e0bc4e);
-  --accent-contrast:  #14100d;
+    --accent-primary:   #3987e5;
+    --accent-secondary: #5d95e0;
+    --accent-gradient:  linear-gradient(90deg, #3987e5, #5d95e0);
+    --accent-contrast:  #ffffff;
 
-  --success: #22c55e;
-  --error:   #ef4444;
-  --warning: #e0bc4e;
-  --info:    #7aa2f7;
+    --s-aqua:   #199e70;
+    --s-yellow: #c98500;
+    --s-violet: #9085e9;
 
-  --up:        #22c55e;
-  --down:      #ef4444;
-  --up-soft:   rgba(34,197,94,0.10);
-  --down-soft: rgba(239,68,68,0.10);
+    --success: #0ca30c;
+    --error:   #d03b3b;
+    --warning: #c98500;
+    --info:    #3987e5;
 
-  /* Gold-hairline rules */
-  --border-color:  rgba(201,162,39,0.22);
-  --border-light:  rgba(201,162,39,0.35);
-  --border-strong: rgba(240,233,220,0.30);
-  --rule:          rgba(201,162,39,0.22);
-  --rule-2:        rgba(240,233,220,0.07);
+    --up:   #0ca30c;
+    --down: #e05252;
+    --up-soft:   rgba(12,163,12,0.16);
+    --down-soft: rgba(224,82,82,0.16);
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 12px 32px rgba(0,0,0,0.35);
-  --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
-}
+    --border-color:  rgba(255,255,255,0.10);
+    --border-light:  rgba(57,135,229,0.30);
+    --border-strong: #383835;
+    --rule:          #2c2c2a;
+    --rule-2:        rgba(255,255,255,0.06);
 
-/* Golden: ambient gold sheen, like a desk lamp on dark wood */
-:root[data-theme='golden'] body {
-  background-image: radial-gradient(90% 60% at 70% -10%, rgba(201,162,39,0.07), transparent 60%);
-  background-attachment: fixed;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 3px 10px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.45), 0 10px 28px rgba(0,0,0,0.35);
+    --shadow-lg: 0 12px 44px rgba(0,0,0,0.6);
+  }
 }
 
 * {
@@ -153,15 +145,15 @@ body {
   transition: background-color 240ms ease, color 240ms ease;
 }
 
-/* Editorial display type for headings */
+/* Signal display type — plain bold system sans */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 h1 em, h2 em, h3 em, h4 em {
-  font-style: italic;
+  font-style: normal;
   color: var(--accent-primary);
 }
 
@@ -3337,7 +3329,7 @@ a {
   letter-spacing: -0.01em;
 }
 
-.topbar-em { color: var(--accent-primary); font-style: italic; }
+.topbar-em { color: var(--accent-primary); font-style: normal; font-weight: 600; }
 
 .topbar-divider { width: 1px; height: 16px; background: var(--border-color); }
 

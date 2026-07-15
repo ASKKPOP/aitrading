@@ -19,7 +19,6 @@ returns OrderStatus.REJECTED with a clear error message — safe to use in dev.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import httpx
 

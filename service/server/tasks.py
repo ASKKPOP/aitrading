@@ -684,6 +684,95 @@ async def automation_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def risk_watcher_loop():
+    """Background task for the risk engine SL/TP watcher (Phase 1).
+
+    Every RISK_WATCHER_INTERVAL seconds (default 30), close long positions whose
+    polled current_price crossed their stop_loss/take_profit. Reads prices from
+    the positions table (maintained by update_position_prices) — no external
+    calls. No-op unless RISK_ENGINE_ENABLED. See risk_engine.py.
+    """
+    from risk_engine import risk_engine_enabled, run_sltp_watcher_tick
+
+    interval_s = _env_int("RISK_WATCHER_INTERVAL", 30, minimum=5)
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            if risk_engine_enabled():
+                result = await asyncio.to_thread(run_sltp_watcher_tick)
+                if result.get("closed"):
+                    print(
+                        "[Risk Watcher] SL/TP tick: "
+                        f"checked={result.get('checked', 0)} closed={result.get('closed', 0)}"
+                    )
+        except Exception as e:
+            print(f"[Risk Watcher Error] {e}")
+
+        await asyncio.sleep(interval_s)
+
+
+async def psych_feed_loop():
+    """Background task for the psychology feed (Phase 2).
+
+    Every PSYCH_REFRESH_INTERVAL seconds (default hourly), snapshot the crowd-
+    psychology inputs: Fear & Greed index, news-sentiment spike z-scores,
+    volatility shock proxy (OKX candles), and Polymarket odds. No-op unless
+    PSYCH_FEED_ENABLED. See psych_feed.py.
+    """
+    from psych_feed import psych_feed_enabled, refresh_psych_snapshot
+
+    refresh_interval = _env_int("PSYCH_REFRESH_INTERVAL", 3600, minimum=300)
+
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            if psych_feed_enabled():
+                result = await asyncio.to_thread(refresh_psych_snapshot)
+                print(
+                    "[Psych Feed] snapshot stored: "
+                    f"fng={result.get('fng')} "
+                    f"spike_events={result.get('spike_events_recorded', 0)} "
+                    f"errors={result.get('errors') or 'none'}"
+                )
+        except Exception as e:
+            print(f"[Psych Feed Error] {e}")
+
+        await asyncio.sleep(refresh_interval)
+
+
+async def scanner_loop():
+    """Background task for the which-coin scanner (Phase 4).
+
+    Every SCANNER_INTERVAL seconds (default hourly), scan OKX volume ratios,
+    StockTwits mention rates, and new listings into ranked candidates. No-op
+    unless SCANNER_ENABLED. See scanner.py.
+    """
+    from scanner import refresh_scanner_snapshot, scanner_enabled
+
+    scan_interval = _env_int("SCANNER_INTERVAL", 3600, minimum=300)
+
+    await asyncio.sleep(25)
+
+    while True:
+        try:
+            if scanner_enabled():
+                result = await asyncio.to_thread(refresh_scanner_snapshot)
+                print(
+                    "[Scanner] scan complete: "
+                    f"candidates={result.get('candidates', 0)} "
+                    f"volume_symbols={result.get('volume_symbols', 0)} "
+                    f"new_listings={len(result.get('new_listings') or [])} "
+                    f"errors={result.get('errors') or 'none'}"
+                )
+        except Exception as e:
+            print(f"[Scanner Error] {e}")
+
+        await asyncio.sleep(scan_interval)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1304,6 +1393,9 @@ BACKGROUND_TASK_REGISTRY = {
     "etf_flows": refresh_etf_flow_snapshots_loop,
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
+    "risk_watcher": risk_watcher_loop,
+    "psych_feed": psych_feed_loop,
+    "scanner": scanner_loop,
 }
 
 
@@ -1340,6 +1432,12 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "stock_analysis":          "research",
     # automation — executes user-configured AI trading rules (Target 3)
     "automation":              "settlement",
+    # risk engine — closes positions at stop-loss/take-profit (Phase 1)
+    "risk_watcher":            "settlement",
+    # psych feed — crowd-psychology snapshots: F&G, spikes, shock, odds (Phase 2)
+    "psych_feed":              "research",
+    # scanner — which-coin candidates: volume surge, mentions, listings (Phase 4)
+    "scanner":                 "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

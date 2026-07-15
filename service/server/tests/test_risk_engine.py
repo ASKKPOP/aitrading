@@ -1,0 +1,379 @@
+"""Risk engine (Phase 1) — Kelly sizing, limits, circuit breaker, SL/TP watcher.
+
+Covers the phase acceptance criteria:
+  - SL/TP positions auto-close when the polled price crosses, journaled as signals
+  - daily max-loss breach makes automation reject orders (skip_reason)
+  - HALT stops auto-trading until cleared
+  - Kelly lowers order size based on journal win-rate / payoff ratio
+"""
+import os
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
+import database
+from routes import create_app
+
+
+def _iso(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# Anchor test timestamps at 01:00 UTC so a few hours of offsets never cross a
+# UTC day boundary (realized_today is bucketed by UTC date).
+TODAY = datetime.now(timezone.utc).replace(hour=1, minute=0, second=0, microsecond=0)
+YESTERDAY = TODAY - timedelta(days=1)
+
+
+class RiskEngineTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["RISK_ENGINE_ENABLED"] = "true"
+        self.client = TestClient(create_app())
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "risk-agent", "password": "pw123", "initial_balance": 100000.0},
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        self.agent_id = body["agent_id"]
+        self.token = body["token"]
+
+    def tearDown(self) -> None:
+        os.environ["RISK_ENGINE_ENABLED"] = "false"
+        self.tmp.cleanup()
+
+    # ── helpers ──────────────────────────────────────────────────────────
+
+    _next_signal_id = 900000
+
+    def _insert_signal(self, side: str, price: float, qty: float,
+                       executed_at: str, symbol: str = "BTC", market: str = "crypto"):
+        RiskEngineTestCase._next_signal_id += 1
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO signals
+               (signal_id, agent_id, message_type, market, signal_type, symbol,
+                side, entry_price, quantity, content, timestamp, created_at, executed_at)
+               VALUES (?, ?, 'operation', ?, 'automation', ?, ?, ?, ?, 'test', 0, ?, ?)""",
+            (RiskEngineTestCase._next_signal_id, self.agent_id, market, symbol,
+             side, price, qty, executed_at, executed_at),
+        )
+        conn.commit()
+        conn.close()
+
+    def _round_trip(self, buy: float, sell: float, when: datetime, qty: float = 1.0):
+        self._insert_signal("buy", buy, qty, _iso(when))
+        self._insert_signal("sell", sell, qty, _iso(when + timedelta(minutes=1)))
+
+    def _insert_position(self, symbol="BTC", market="crypto", qty=1.0, entry=100.0,
+                         current=None, stop_loss=None, take_profit=None):
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO positions
+               (agent_id, symbol, market, side, quantity, entry_price, current_price,
+                opened_at, stop_loss, take_profit)
+               VALUES (?, ?, ?, 'long', ?, ?, ?, ?, ?, ?)""",
+            (self.agent_id, symbol, market, qty, entry, current,
+             _iso(datetime.now(timezone.utc)), stop_loss, take_profit),
+        )
+        conn.commit()
+        conn.close()
+
+    def _position(self, symbol="BTC", market="crypto"):
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM positions WHERE agent_id = ? AND market = ? AND symbol = ?",
+            (self.agent_id, market, symbol),
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    def _cash(self) -> float:
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT cash FROM agents WHERE id = ?", (self.agent_id,))
+        cash = cursor.fetchone()["cash"]
+        conn.close()
+        return float(cash)
+
+
+# ── Kelly math ────────────────────────────────────────────────────────────
+
+class KellyFractionTests(unittest.TestCase):
+    def test_kelly_fraction_positive_edge(self):
+        from risk_engine import kelly_fraction
+        # W=0.6, R=2 → f* = 0.6 − 0.4/2 = 0.4
+        self.assertAlmostEqual(kelly_fraction(0.6, 2.0), 0.4)
+
+    def test_kelly_fraction_negative_edge(self):
+        from risk_engine import kelly_fraction
+        # W=0.3, R=1 → f* = 0.3 − 0.7 = −0.4
+        self.assertAlmostEqual(kelly_fraction(0.3, 1.0), -0.4)
+
+    def test_kelly_fraction_unavailable_payoff(self):
+        from risk_engine import kelly_fraction
+        self.assertIsNone(kelly_fraction(0.6, None))
+        self.assertIsNone(kelly_fraction(0.6, 0.0))
+
+
+# ── journal replay ────────────────────────────────────────────────────────
+
+class TradeStatsTests(RiskEngineTestCase):
+    def test_replay_win_rate_payoff_and_daily_pnl(self):
+        from risk_engine import trade_stats
+        # Two wins of +20 yesterday, one loss of −10 today.
+        self._round_trip(100.0, 120.0, YESTERDAY)
+        self._round_trip(100.0, 120.0, YESTERDAY + timedelta(hours=1))
+        self._round_trip(100.0, 90.0, TODAY)
+        stats = trade_stats(self.agent_id)
+        self.assertEqual(stats["n_trades"], 3)
+        self.assertAlmostEqual(stats["win_rate"], 2 / 3)
+        self.assertAlmostEqual(stats["payoff_ratio"], 2.0)  # avg win 20 / avg loss 10
+        self.assertAlmostEqual(stats["realized_today"], -10.0)
+
+    def test_replay_averages_cost_basis(self):
+        from risk_engine import trade_stats
+        # Buy 1 @100 and 1 @200 (avg 150), sell 2 @180 → pnl +60, one winning trade.
+        self._insert_signal("buy", 100.0, 1.0, _iso(TODAY))
+        self._insert_signal("buy", 200.0, 1.0, _iso(TODAY + timedelta(minutes=1)))
+        self._insert_signal("sell", 180.0, 2.0, _iso(TODAY + timedelta(minutes=2)))
+        stats = trade_stats(self.agent_id)
+        self.assertEqual(stats["n_trades"], 1)
+        self.assertAlmostEqual(stats["realized_today"], 60.0)
+
+
+# ── the gate ──────────────────────────────────────────────────────────────
+
+class GateTests(RiskEngineTestCase):
+    def test_gate_passes_through_when_disabled(self):
+        from risk_engine import evaluate_order, trip_breaker
+        os.environ["RISK_ENGINE_ENABLED"] = "false"
+        trip_breaker("test halt", agent_id=self.agent_id)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0)
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.quantity, 5.0)
+
+    def test_gate_rejects_when_agent_halted_until_cleared(self):
+        from risk_engine import clear_breaker, evaluate_order, trip_breaker
+        trip_breaker("manual test halt", agent_id=self.agent_id)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
+        self.assertFalse(decision.allowed)
+        self.assertIn("breaker", decision.reason)
+        # HALT persists until explicitly cleared
+        decision2 = evaluate_order(self.agent_id, "BTC", "crypto", "sell", 1.0, 100.0)
+        self.assertFalse(decision2.allowed)
+        clear_breaker(agent_id=self.agent_id)
+        decision3 = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
+        self.assertTrue(decision3.allowed)
+
+    def test_gate_rejects_when_globally_halted(self):
+        from risk_engine import clear_breaker, evaluate_order, trip_breaker
+        trip_breaker("3σ shock", agent_id=None)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
+        self.assertFalse(decision.allowed)
+        self.assertIn("global", decision.reason)
+        clear_breaker(agent_id=None)
+
+    def test_gate_rejects_after_daily_loss_limit(self):
+        from risk_engine import evaluate_order
+        # Realize a −1500 loss today; default limit is 1000.
+        self._round_trip(2000.0, 500.0, TODAY)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
+        self.assertFalse(decision.allowed)
+        self.assertIn("daily loss", decision.reason)
+
+    def test_gate_rejects_over_symbol_exposure(self):
+        from risk_engine import evaluate_order
+        # Default cap 10k; hold 9k of BTC and try to buy 2k more.
+        self._insert_position(qty=90.0, entry=100.0, current=100.0)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 20.0, 100.0)
+        self.assertFalse(decision.allowed)
+        self.assertIn("exposure", decision.reason)
+
+    def test_gate_kelly_lowers_size(self):
+        from risk_engine import evaluate_order, put_risk_limits
+        # Lift the exposure cap so this test exercises Kelly, not the exposure check.
+        put_risk_limits(self.agent_id, {"max_symbol_exposure_usd": 1_000_000})
+        # 12 closed trades: 8 wins +20, 4 losses −10 → W=2/3, R=2, f*=1/2, ½f*=1/4.
+        for i in range(8):
+            self._round_trip(100.0, 120.0, YESTERDAY + timedelta(minutes=10 * i))
+        for i in range(4):
+            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (8 + i)))
+        # Equity = 100000 cash (signals inserted directly — no cash/position moved).
+        # Request $50k at $100/unit.
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 500.0, 100.0)
+        self.assertTrue(decision.allowed)
+        self.assertLess(decision.quantity, 500.0)
+        # cap ≈ 0.25 × 100000 = 25000 → 250 units at $100
+        self.assertAlmostEqual(decision.quantity, 250.0, delta=5.0)
+
+    def test_gate_kelly_rejects_no_edge(self):
+        from risk_engine import evaluate_order
+        # 12 closed trades: 3 wins +10, 9 losses −10 → W=0.25, R=1, f*=−0.5.
+        for i in range(3):
+            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i))
+        for i in range(9):
+            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)))
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 10.0, 100.0)
+        self.assertFalse(decision.allowed)
+        self.assertIn("kelly", decision.reason)
+
+    def test_gate_kelly_skipped_below_min_trades(self):
+        from risk_engine import evaluate_order
+        # Only 3 closed trades — not enough history, no Kelly adjustment.
+        for i in range(3):
+            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * i))
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0)
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.quantity, 5.0)
+
+    def test_gate_attaches_default_sl_tp_on_buy(self):
+        from risk_engine import evaluate_order
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
+        self.assertTrue(decision.allowed)
+        self.assertAlmostEqual(decision.stop_loss, 95.0)    # default 5%
+        self.assertAlmostEqual(decision.take_profit, 110.0)  # default 10%
+
+
+# ── SL/TP watcher ─────────────────────────────────────────────────────────
+
+class WatcherTests(RiskEngineTestCase):
+    def test_watcher_closes_position_at_stop_loss(self):
+        from risk_engine import run_sltp_watcher_tick
+        cash_before = self._cash()
+        self._insert_position(qty=2.0, entry=100.0, current=94.0,
+                              stop_loss=95.0, take_profit=120.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 1)
+        self.assertIsNone(self._position())  # position fully closed
+        self.assertGreater(self._cash(), cash_before)  # sale proceeds credited
+        # Journaled: a sell signal with the trigger in its content
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT side, content FROM signals
+               WHERE agent_id = ? AND signal_type = 'automation'
+               ORDER BY id DESC LIMIT 1""",
+            (self.agent_id,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+        self.assertEqual(row["side"], "sell")
+        self.assertIn("stop_loss", row["content"])
+
+    def test_watcher_closes_position_at_take_profit(self):
+        from risk_engine import run_sltp_watcher_tick
+        self._insert_position(qty=1.0, entry=100.0, current=121.0,
+                              stop_loss=95.0, take_profit=120.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 1)
+        self.assertIsNone(self._position())
+
+    def test_watcher_leaves_position_inside_band(self):
+        from risk_engine import run_sltp_watcher_tick
+        self._insert_position(qty=1.0, entry=100.0, current=105.0,
+                              stop_loss=95.0, take_profit=120.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 0)
+        self.assertIsNotNone(self._position())
+
+    def test_watcher_noop_when_disabled(self):
+        from risk_engine import run_sltp_watcher_tick
+        os.environ["RISK_ENGINE_ENABLED"] = "false"
+        self._insert_position(qty=1.0, entry=100.0, current=50.0,
+                              stop_loss=95.0, take_profit=120.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 0)
+        self.assertIsNotNone(self._position())
+
+    def test_watcher_runs_even_when_halted(self):
+        """Protective exits must bypass the breaker — HALT never traps a position."""
+        from risk_engine import run_sltp_watcher_tick, trip_breaker
+        trip_breaker("test halt", agent_id=self.agent_id)
+        self._insert_position(qty=1.0, entry=100.0, current=90.0,
+                              stop_loss=95.0, take_profit=None)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 1)
+        self.assertIsNone(self._position())
+
+
+# ── automation integration ────────────────────────────────────────────────
+
+class AutomationGateIntegrationTests(RiskEngineTestCase):
+    def _make_config(self) -> int:
+        resp = self.client.post(
+            "/api/automation/configs",
+            json={"symbol": "BTC", "market": "crypto", "auto_execute": True,
+                  "min_confidence": 0.5, "size_usd": 1000},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["id"]
+
+    def _run_rule(self, config_id: int):
+        from automation import run_rule
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM automation_configs WHERE id = ?", (config_id,))
+        config = dict(cursor.fetchone())
+        conn.close()
+        fake = {"decision": {"action": "buy", "confidence": 0.9, "entry": 100.0,
+                             "report": "test"}}
+        with patch("analysis_agents.run_analysis", return_value=fake), \
+             patch("routes_shared.is_market_open", return_value=True):
+            return run_rule(config)
+
+    def test_run_rule_executes_and_registers_sl_tp(self):
+        config_id = self._make_config()
+        result = self._run_rule(config_id)
+        self.assertTrue(result["executed"], result)
+        pos = self._position()
+        self.assertIsNotNone(pos)
+        self.assertAlmostEqual(pos["stop_loss"], 95.0)
+        self.assertAlmostEqual(pos["take_profit"], 110.0)
+
+    def test_run_rule_halt_records_skip_reason(self):
+        from risk_engine import trip_breaker
+        trip_breaker("test halt", agent_id=self.agent_id)
+        config_id = self._make_config()
+        result = self._run_rule(config_id)
+        self.assertFalse(result["executed"])
+        self.assertIn("breaker", result["skip_reason"])
+        # journaled in automation_runs
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT skip_reason FROM automation_runs WHERE config_id = ? ORDER BY id DESC",
+            (config_id,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+        self.assertIn("breaker", row["skip_reason"])
+
+    def test_run_rule_daily_loss_records_skip_reason(self):
+        self._round_trip(2000.0, 500.0, TODAY)  # −1500 realized today > 1000 limit
+        config_id = self._make_config()
+        result = self._run_rule(config_id)
+        self.assertFalse(result["executed"])
+        self.assertIn("daily loss", result["skip_reason"])
+
+
+if __name__ == "__main__":
+    unittest.main()

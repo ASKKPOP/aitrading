@@ -44,7 +44,17 @@ def _gather_technical(symbol: str, market: str) -> dict[str, Any]:
             return _build_stock_analysis(symbol)
         except Exception as exc:  # noqa: BLE001
             return {"symbol": symbol, "market": market, "error": str(exc)}
-    # crypto / polymarket: light technical from the live price
+    # crypto: full quant technicals from OKX (Phase 3) — RSI/MA/σ/funding/basis.
+    # Falls back to the light spot-price path when disabled or OKX is unreachable.
+    if market == "crypto":
+        try:
+            from quant_crypto import build_crypto_analysis, quant_crypto_enabled
+            if quant_crypto_enabled():
+                return build_crypto_analysis(symbol)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("quant crypto technicals failed for %s, using light path: %s",
+                           symbol, exc)
+    # polymarket / fallback: light technical from the live price
     try:
         from price_fetcher import get_price_from_market
         price = get_price_from_market(symbol, _now_iso(), market)
@@ -95,6 +105,22 @@ def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[st
         st = fetch_stocktwits_sentiment(symbol)
         if st:
             out["stocktwits"] = st
+    except Exception:  # noqa: BLE001
+        pass
+    # Psych feed (Phase 2): F&G index, sentiment-spike z-scores, odds deltas.
+    try:
+        from psych_feed import get_psych_payload
+        psych = get_psych_payload()
+        if psych.get("available"):
+            out["psych"] = {
+                "fear_greed": {k: psych["fear_greed"][k]
+                               for k in ("value", "classification", "delta_3d")}
+                              if psych.get("fear_greed") else None,
+                "spikes": [s for s in psych.get("spikes", []) if s.get("spike")],
+                "odds_deltas": psych.get("odds_deltas", [])[:5],
+                "shock": psych.get("shock", []),
+                "shock_note": psych.get("shock_note"),
+            }
     except Exception:  # noqa: BLE001
         pass
     return out
@@ -148,10 +174,72 @@ def _brief(role: str, instructions: str, data: dict[str, Any], lang: str) -> str
 
 
 def _fallback_brief(role: str, data: dict[str, Any]) -> str:
+    """Readable, rule-based brief used when no LLM provider is configured.
+    Summarises the gathered data per analyst instead of dumping raw JSON."""
     if data.get("error"):
         return f"[{role}] data unavailable: {data['error']}"
+
+    # Technical analyst — signal / score / price / trend
+    if "signal" in data or str(data.get("note", "")).startswith("light technical"):
+        sig = str(data.get("signal") or "neutral").lower()
+        trend = data.get("trend_status")
+        bits = []
+        if data.get("current_price") is not None:
+            bits.append(f"price {data['current_price']}")
+        if data.get("signal_score") is not None:
+            bits.append(f"score {data['signal_score']}")
+        msg = f"Technical read is {sig}" + (f" ({trend})" if trend else "")
+        if bits:
+            msg += " — " + ", ".join(bits)
+        msg += "."
+        bull = data.get("bullish_factors") or []
+        risk = data.get("risk_factors") or []
+        if bull:
+            msg += " Supports: " + "; ".join(bull[:2]) + "."
+        if risk:
+            msg += " Risks: " + "; ".join(risk[:2]) + "."
+        return msg
+
+    # News analyst — headline count, tone, lead headline
+    if "items" in data:
+        items = data.get("items") or []
+        bd = data.get("sentiment_breakdown") or {}
+        bull = bd.get("bullish", 0) + bd.get("somewhat-bullish", 0)
+        bear = bd.get("bearish", 0) + bd.get("somewhat-bearish", 0)
+        tone = "constructive" if bull > bear else ("cautious" if bear > bull else "mixed")
+        msg = f"{len(items)} headlines scanned — tone {tone} ({bull} bullish vs {bear} bearish)."
+        if items and items[0].get("title"):
+            msg += f' Lead: "{items[0]["title"]}".'
+        return msg
+
+    # Sentiment analyst — net sentiment from news (+ StockTwits if present)
+    if "from_news" in data:
+        bd = data.get("from_news") or {}
+        bull = bd.get("bullish", 0) + bd.get("somewhat-bullish", 0)
+        bear = bd.get("bearish", 0) + bd.get("somewhat-bearish", 0)
+        lean = "bullish" if bull > bear else ("bearish" if bear > bull else "neutral")
+        msg = f"News-derived sentiment leans {lean} ({bull} vs {bear})."
+        st = data.get("stocktwits")
+        if isinstance(st, dict) and st:
+            msg += f" StockTwits {st.get('bullish', '?')} bull / {st.get('bearish', '?')} bear."
+        psych = data.get("psych") or {}
+        fng = psych.get("fear_greed")
+        if isinstance(fng, dict) and fng.get("value") is not None:
+            msg += f" Fear & Greed {fng['value']} ({fng.get('classification')})."
+        spikes = psych.get("spikes") or []
+        if spikes:
+            s = spikes[0]
+            msg += f" Sentiment spike in {s.get('category')} (z={s.get('z')}, {s.get('direction')})."
+        return msg
+
+    # Fundamentals / macro analyst — macro regime verdict
+    if "macro" in data:
+        m = data.get("macro") or {}
+        verdict = m.get("verdict") or "unavailable"
+        return f"Macro regime reads {verdict} ({m.get('bullish_count', 0)}/{m.get('total_count', 0)} signals bullish)."
+
     compact = json.dumps(data, ensure_ascii=False, default=str)
-    return f"[{role}] (no LLM configured) key data: {compact[:400]}"
+    return f"[{role}] key data: {compact[:300]}"
 
 
 # ─────────────────────────── trader + risk decision ───────────────────────────
@@ -165,7 +253,9 @@ def _rule_based_decision(technical: dict[str, Any], news: dict[str, Any]) -> dic
     bear = breakdown.get("bearish", 0) + breakdown.get("somewhat-bearish", 0)
     confidence = 0.5
     if isinstance(score, (int, float)):
-        confidence = max(0.3, min(0.9, 0.5 + score / 20.0))
+        # |score| — conviction strength is direction-agnostic. A strongly
+        # negative score is a confident SELL, not a low-confidence one.
+        confidence = max(0.3, min(0.9, 0.5 + abs(score) / 20.0))
     rationale = (
         f"Technical signal is '{signal}'"
         + (f" (score {score})" if score is not None else "")

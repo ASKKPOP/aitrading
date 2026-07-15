@@ -17,6 +17,16 @@ FROM base AS deps
 COPY service/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# ── frontend build (deployment gap #1: the API serves the SPA from
+#    service/frontend/dist via routes_misc — the image must contain it) ───────
+FROM node:20-bookworm-slim AS frontend
+
+WORKDIR /fe
+COPY service/frontend/package.json service/frontend/package-lock.json ./
+RUN npm ci
+COPY service/frontend/ ./
+RUN npm run build
+
 # ── final image ──────────────────────────────────────────────────────────────
 FROM base
 
@@ -26,6 +36,9 @@ COPY --from=deps /usr/local/bin /usr/local/bin
 
 # Copy application source (keep same relative path so imports work)
 COPY service/server/ ./service/server/
+
+# Built SPA — served by the API's routes_misc fallback from service/frontend/dist
+COPY --from=frontend /fe/dist ./service/frontend/dist/
 
 # SQLite data dir — overridden by DATABASE_URL in production
 RUN mkdir -p service/server/data

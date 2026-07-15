@@ -250,7 +250,7 @@ class ResearchShortcutCsvTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_agents_csv_contains_seeded_agent(self) -> None:
-        agent_id = _create_agent("csv-export-agent", "tok-csv")
+        _create_agent("csv-export-agent", "tok-csv")
         resp = self.client.get("/api/research/agents.csv")
         self.assertEqual(resp.status_code, 200)
         # agent_id should appear in the CSV body (anonymized as hash, not raw id)

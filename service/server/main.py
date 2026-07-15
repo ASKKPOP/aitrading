@@ -98,6 +98,16 @@ async def startup_event():
     # Initialize trending cache
     logger.info("Initializing trending cache...")
     _update_trending_cache()
+
+    # Dev-only: seed sample market-intel snapshots so Financial Events works without
+    # external API keys. No-op unless DEV_MARKET_INTEL_SEED is set (never in production).
+    try:
+        from market_intel import seed_dev_market_intel
+        seed_result = seed_dev_market_intel()
+        if seed_result.get("seeded"):
+            logger.info("Dev market-intel seeded: %s", seed_result["seeded"])
+    except Exception as exc:
+        logger.warning("Dev market-intel seed skipped: %s", exc)
     if not background_tasks_enabled_for_api():
         logger.info(
             "API background tasks disabled. Run `python service/server/worker.py` "

@@ -31,14 +31,14 @@ def upgrade() -> None:
         "target_price",
         type_=_NUMERIC,
         existing_type=_FLOAT,
-        existing_nullable=True)",
+        existing_nullable=True,
     )
     op.alter_column(
         "stock_analysis_snapshots",
         "current_price",
         type_=_NUMERIC,
         existing_type=_FLOAT,
-        existing_nullable=False)",
+        existing_nullable=False,
     )
 
 

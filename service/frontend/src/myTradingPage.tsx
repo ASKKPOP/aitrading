@@ -270,7 +270,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
 
       <Section
         title={`⊞ Following (${following.length})`}
-        action={<Link to="/copytrading" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>Manage →</Link>}
+        action={<Link to="/leaderboard" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>Find agents →</Link>}
       >
         {following.length === 0 ? (
           <div style={{ color: 'var(--muted, #6b7280)', fontSize: 14 }}>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="signal">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — Design Reference · Signal</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Signal — the single Sooppiy design system.
+   Source: signal_dashboard.html mock. Mirrors
+   service/frontend/src/index.css `:root[data-theme='signal']`.
+   Neutral warm-gray page · white cards · system-ui type ·
+   signal accent colors · automatic dark mode.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#ffffff;
+  --s-aqua:#1baf7a; --s-yellow:#eda100; --s-violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --warning:#fab219;
+  --serious:#ec835a; --critical:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --s-aqua:#199e70; --s-yellow:#c98500; --s-violet:#9085e9;
+    --good-ink:#0ca30c;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.55;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+header.site{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+header.site .wrap{display:flex;align-items:center;gap:12px;height:60px}
+.brand-dot{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-on);
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.brand{font-weight:700;font-size:18px}
+header.site nav{margin-left:auto;display:flex;gap:20px;font-size:14px}
+header.site nav a{color:var(--ink-2);text-decoration:none}
+.btn{display:inline-block;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;
+  text-decoration:none;cursor:pointer;border:0}
+.btn-primary{background:var(--accent);color:var(--accent-on)}
+.btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--baseline)}
+section{padding:44px 0;border-bottom:1px solid var(--grid)}
+.kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px}
+h1{font-size:clamp(30px,4.6vw,44px);font-weight:800;letter-spacing:-.01em;line-height:1.1}
+h1 .accent{color:var(--accent)}
+h2{font-size:22px;font-weight:700;margin-bottom:14px}
+.lede{font-size:16px;color:var(--ink-2);max-width:64ch;margin-top:10px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-top:8px}
+.swatch{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)}
+.swatch .fill{height:64px}
+.swatch .meta{padding:9px 11px;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.swatch .meta b{display:block;color:var(--ink);font-weight:600;font-size:12px}
+.type-row{display:flex;gap:24px;align-items:baseline;padding:12px 0;border-bottom:1px dashed var(--grid);flex-wrap:wrap}
+.type-row .label{font-size:11px;color:var(--muted);width:190px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:8px}
+.card h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px;font-weight:600}
+.stat{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat-sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px}
+.pill.buy{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good-ink)}
+.pill.sell{background:color-mix(in srgb,var(--critical) 16%,transparent);color:var(--critical)}
+.pill.hold{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--ink-2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.03em;padding:6px 10px;border-bottom:1px solid var(--grid)}
+td{padding:10px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.senti-row{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+.senti-row .name{width:90px;flex-shrink:0}
+.senti-track{flex:1;height:8px;background:var(--grid);border-radius:999px;overflow:hidden}
+.senti-fill{height:100%;border-radius:999px}
+.senti-val{width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px}
+.badge.hot{background:color-mix(in srgb,var(--critical) 16%,transparent);color:var(--critical)}
+.badge.watch{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:44px;margin-top:8px}
+.spark i{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;opacity:.85}
+.spark i.hi{background:var(--critical)}
+footer{padding:24px 0 52px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <span class="brand-dot">s</span><span class="brand">Sooppiy</span>
+    <nav><a href="#tokens">Tokens</a><a href="#type">Type</a><a href="#components">Components</a></nav>
+    <a class="btn btn-primary" href="#" style="margin-left:14px">Sign up</a>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">SOOPPIY · ONE THEME · SIGNAL</div>
+    <h1>Quiet surface, <span class="accent">loud signals</span>.</h1>
+    <p class="lede">Signal is the single Sooppiy design system, taken from the AI signal-dashboard mock:
+    a neutral warm-gray page, white cards with 14px corners, plain system-ui type, tabular numerals,
+    and color reserved exclusively for signals — buy, sell, shock, anticipation. Dark mode is automatic.</p>
+  </div>
+</section>
+
+<section id="tokens">
+  <div class="wrap">
+    <div class="kicker">PALETTE</div>
+    <h2>Colour tokens</h2>
+    <div class="grid">
+      <div class="swatch"><div class="fill" style="background:#f9f9f7"></div><div class="meta"><b>--page</b>#F9F9F7 · page</div></div>
+      <div class="swatch"><div class="fill" style="background:#f1f0ec"></div><div class="meta"><b>--surface</b>#F1F0EC</div></div>
+      <div class="swatch"><div class="fill" style="background:#ffffff;border-bottom:1px solid #e1e0d9"></div><div class="meta"><b>--card</b>#FFFFFF</div></div>
+      <div class="swatch"><div class="fill" style="background:#e1e0d9"></div><div class="meta"><b>--grid</b>#E1E0D9 · rules</div></div>
+      <div class="swatch"><div class="fill" style="background:#0b0b0b"></div><div class="meta"><b>--ink</b>#0B0B0B</div></div>
+      <div class="swatch"><div class="fill" style="background:#52514e"></div><div class="meta"><b>--ink-2</b>#52514E</div></div>
+      <div class="swatch"><div class="fill" style="background:#898781"></div><div class="meta"><b>--muted</b>#898781</div></div>
+      <div class="swatch"><div class="fill" style="background:#2a78d6"></div><div class="meta"><b>--accent</b>#2A78D6 · signal blue</div></div>
+      <div class="swatch"><div class="fill" style="background:#1baf7a"></div><div class="meta"><b>--s-aqua</b>#1BAF7A</div></div>
+      <div class="swatch"><div class="fill" style="background:#eda100"></div><div class="meta"><b>--s-yellow</b>#EDA100 · fear/greed</div></div>
+      <div class="swatch"><div class="fill" style="background:#4a3aa7"></div><div class="meta"><b>--s-violet</b>#4A3AA7</div></div>
+      <div class="swatch"><div class="fill" style="background:#0ca30c"></div><div class="meta"><b>--good</b>#0CA30C · buy</div></div>
+      <div class="swatch"><div class="fill" style="background:#006300"></div><div class="meta"><b>--good-ink</b>#006300 · buy text</div></div>
+      <div class="swatch"><div class="fill" style="background:#fab219"></div><div class="meta"><b>--warning</b>#FAB219</div></div>
+      <div class="swatch"><div class="fill" style="background:#ec835a"></div><div class="meta"><b>--serious</b>#EC835A</div></div>
+      <div class="swatch"><div class="fill" style="background:#d03b3b"></div><div class="meta"><b>--critical</b>#D03B3B · sell/shock</div></div>
+    </div>
+    <p class="stat-sub" style="margin-top:12px">Dark mode swaps page #0D0D0D · card #202020 · ink #FFFFFF automatically via <code>prefers-color-scheme</code>.</p>
+  </div>
+</section>
+
+<section id="type">
+  <div class="wrap">
+    <div class="kicker">TYPOGRAPHY</div>
+    <h2>System type, tabular numbers</h2>
+    <div class="type-row"><span class="label">display · 800</span><span style="font-size:30px;font-weight:800">AI trading signals</span></div>
+    <div class="type-row"><span class="label">heading · 700</span><span style="font-size:20px;font-weight:700">매매 신호 — 어떤 코인 · 이유 · 타이밍</span></div>
+    <div class="type-row"><span class="label">body · 400</span><span style="font-size:15px;color:var(--ink-2)">The AI measures market footprints and reacts on your rules.</span></div>
+    <div class="type-row"><span class="label">label · 600 caps</span><span style="font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600">NEWS SENTIMENT (24H)</span></div>
+    <div class="type-row"><span class="label">numeral · tabular</span><span class="stat" style="font-size:26px">62,712.00 · +0.42%</span></div>
+  </div>
+</section>
+
+<section id="components">
+  <div class="wrap">
+    <div class="kicker">COMPONENTS</div>
+    <h2>Dashboard pieces</h2>
+    <p style="margin-bottom:14px">
+      <a class="btn btn-primary" href="#">Start free</a>&nbsp;
+      <a class="btn btn-secondary" href="#">See leaderboard</a>&nbsp;
+      <span class="pill buy">▲ BUY</span> <span class="pill sell">▼ SELL</span> <span class="pill hold">■ HOLD</span>
+      <span class="badge hot">HOT</span> <span class="badge watch">WATCH</span>
+    </p>
+    <div class="cards">
+      <div class="card">
+        <h3>공포·탐욕 지수</h3>
+        <div class="stat" style="color:var(--s-yellow)">58</div>
+        <div class="stat-sub"><b style="color:var(--good-ink)">▲ 7</b> vs yesterday</div>
+      </div>
+      <div class="card">
+        <h3>News sentiment (24h)</h3>
+        <div class="stat" style="color:var(--good-ink)">+0.42</div>
+        <div class="stat-sub">1,284 items analysed</div>
+      </div>
+      <div class="card">
+        <h3>Shock · volatility</h3>
+        <div class="spark">
+          <i style="height:30%"></i><i style="height:42%"></i><i style="height:35%"></i><i style="height:50%"></i>
+          <i class="hi" style="height:92%"></i><i style="height:60%"></i><i style="height:45%"></i>
+          <i style="height:38%"></i><i class="hi" style="height:80%"></i><i style="height:33%"></i>
+        </div>
+        <div class="stat-sub" style="margin-top:8px">red bar = 3σ shock → auto risk-reduce</div>
+      </div>
+      <div class="card">
+        <h3>Source sentiment</h3>
+        <div class="senti-row"><span class="name">X / Twitter</span><div class="senti-track"><div class="senti-fill" style="width:72%;background:var(--good)"></div></div><span class="senti-val">+0.44</span></div>
+        <div class="senti-row"><span class="name">News</span><div class="senti-track"><div class="senti-fill" style="width:64%;background:var(--accent)"></div></div><span class="senti-val">+0.28</span></div>
+        <div class="senti-row"><span class="name">Telegram</span><div class="senti-track"><div class="senti-fill" style="width:40%;background:var(--serious)"></div></div><span class="senti-val">−0.12</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;padding:0;overflow-x:auto">
+      <table>
+        <thead><tr><th>Coin</th><th>Signal</th><th>Reason</th><th>Confidence</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:700">BTC</td><td><span class="pill buy">▲ BUY</span></td><td style="color:var(--ink-2)">ETF inflow news + fear index recovering</td><td>82%</td></tr>
+          <tr><td style="font-weight:700">SOL</td><td><span class="pill sell">▼ SELL</span></td><td style="color:var(--ink-2)">Whale outflow · RSI 74 + negative spike</td><td>76%</td></tr>
+          <tr><td style="font-weight:700">XRP</td><td><span class="pill hold">■ HOLD</span></td><td style="color:var(--ink-2)">Event-driven — odds 0.61 → 0.68</td><td>63%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    signal v1 · mirrors service/frontend/src/index.css (data-theme="signal") ·
+    previous systems (Paper Ledger, Editorial Terracotta) retired — see git history of this file.
+  </div>
+</footer>
+
+</body>
+</html>

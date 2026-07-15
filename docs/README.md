@@ -10,6 +10,16 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 2 | [research/02-marketing-site.md](research/02-marketing-site.md) | A standalone marketing site design brief — references, audience segments, IA, page-by-page, tech stack, SEO, rollout. | ~2,400 |
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
 
+### Design documents (HTML)
+
+All HTML documents live under [design/](design/) — this is the standing convention; new documents always go somewhere under `docs/`.
+
+| Document | What it is |
+|---|---|
+| [design/implementation-plan.html](design/implementation-plan.html) | Signal-collection implementation plan (5 phases, verified sources, per-phase acceptance). Progress is tracked in-document with ✅ tags. |
+| [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. |
+| [design/theme-preview.html](design/theme-preview.html) | Editorial Terracotta theme preview the app theme was adopted from. |
+
 ## The five decisions to anchor on
 
 These cut across all three documents. If any of these is wrong, half the work below changes.

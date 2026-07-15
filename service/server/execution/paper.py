@@ -12,9 +12,8 @@ at once, which is the existing behaviour.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from execution.base import Broker, ExecutionMode, Order, OrderStatus
+from execution.base import Broker, Order, OrderStatus
 
 _logger = logging.getLogger(__name__)
 

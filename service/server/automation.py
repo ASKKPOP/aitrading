@@ -36,9 +36,13 @@ def _now_iso() -> str:
 # ─────────────────────────── paper-trade executor ───────────────────────────
 
 def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
-                        quantity: float, price: float) -> tuple[Optional[int], Optional[str]]:
+                        quantity: float, price: float, content: str = "AI automation",
+                        stop_loss: Optional[float] = None,
+                        take_profit: Optional[float] = None) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
+    On buys, stop_loss/take_profit (from the risk gate) are registered on the
+    position row in the same transaction so the SL/TP watcher can act on them.
     Returns (signal_id, None) on success or (None, reason) when skipped."""
     from fees import TRADE_FEE_RATE
     from services import _reserve_signal_id, _update_position_from_signal
@@ -85,10 +89,16 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
             """,
             (signal_id, agent_id, market, symbol, side, price, quantity,
-             "AI automation", int(datetime.now(timezone.utc).timestamp()), now, now),
+             content, int(datetime.now(timezone.utc).timestamp()), now, now),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
         if side == "buy":
+            if stop_loss is not None or take_profit is not None:
+                cursor.execute(
+                    """UPDATE positions SET stop_loss = ?, take_profit = ?
+                       WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                    (stop_loss, take_profit, agent_id, market, symbol),
+                )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
         else:
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
@@ -115,6 +125,22 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     market = config["market"]
 
     result: dict[str, Any] = {"config_id": config_id, "executed": False, "skip_reason": None}
+
+    # Scanner option (Phase 4): a rule whose symbol is 'SCANNER' analyzes the
+    # which-coin scanner's current top candidate instead of a fixed symbol.
+    if symbol == "SCANNER":
+        try:
+            from scanner import top_candidate
+            resolved = top_candidate()
+        except Exception:  # noqa: BLE001
+            resolved = None
+        if not resolved:
+            result["skip_reason"] = "scanner: no candidates available"
+            result.update({"action": None, "confidence": None, "signal_id": None})
+            _record_run(config_id, agent_id, result, None)
+            return result
+        symbol = resolved
+        result["scanner_symbol"] = symbol
     action = None
     confidence = None
     report = None
@@ -144,17 +170,34 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["skip_reason"] = "no valid price in decision"
         else:
             quantity = float(config.get("size_usd") or 0) / float(entry)
-            signal_id, skip = execute_paper_trade(agent_id, symbol, market, action, quantity, float(entry))
-            if signal_id:
-                result["executed"] = True
+            # Risk gate (Phase 1): breaker → limits → Kelly. No-op unless
+            # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
+            from risk_engine import evaluate_order
+            gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry))
+            if not gate.allowed:
+                result["skip_reason"] = gate.reason
             else:
-                result["skip_reason"] = skip
+                signal_id, skip = execute_paper_trade(
+                    agent_id, symbol, market, action, gate.quantity, float(entry),
+                    stop_loss=gate.stop_loss, take_profit=gate.take_profit)
+                if signal_id:
+                    result["executed"] = True
+                    if gate.adjustment:
+                        logger.info("risk gate adjusted order (config %s): %s",
+                                    config_id, gate.adjustment)
+                else:
+                    result["skip_reason"] = skip
     except Exception as exc:  # noqa: BLE001
         logger.exception("automation rule %s failed: %s", config_id, exc)
         result["skip_reason"] = f"error: {exc}"
 
     result.update({"action": action, "confidence": confidence, "signal_id": signal_id})
+    _record_run(config_id, agent_id, result, report)
+    return result
 
+
+def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
+                report: Optional[str]) -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -163,8 +206,8 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             """INSERT INTO automation_runs
                (config_id, agent_id, ran_at, action, confidence, executed, skip_reason, signal_id, report)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (config_id, agent_id, _now_iso(), action, confidence,
-             1 if result["executed"] else 0, result["skip_reason"], signal_id, report),
+            (config_id, agent_id, _now_iso(), result.get("action"), result.get("confidence"),
+             1 if result["executed"] else 0, result["skip_reason"], result.get("signal_id"), report),
         )
         cursor.execute("UPDATE automation_configs SET last_run_at = ? WHERE id = ?", (_now_iso(), config_id))
         conn.commit()
@@ -173,8 +216,6 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         logger.exception("failed to record automation run for config %s", config_id)
     finally:
         conn.close()
-
-    return result
 
 
 # ─────────────────────────── the tick ───────────────────────────

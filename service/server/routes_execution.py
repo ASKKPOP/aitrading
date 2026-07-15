@@ -19,7 +19,7 @@ from typing import Optional
 
 import database
 from execution.base import AVAILABLE_BROKERS, ExecutionMode
-from execution.crypto import decrypt_credentials, encrypt_credentials
+from execution.crypto import encrypt_credentials
 from routes_shared import RouteContext, utc_now_iso_z
 
 

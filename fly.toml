@@ -25,6 +25,12 @@ primary_region = "nrt"   # Tokyo — nearest to ja/th/vi audience
   API_STDERR_LOG       = "true"
   # Background tasks run in the worker process only; disable in the API process.
   BACKGROUND_TASKS_IN_API = "false"
+  # Signal-collection phases (verified locally 2026-07-14; all paper, fail-soft)
+  RISK_ENGINE_ENABLED  = "true"
+  RISK_WATCHER_INTERVAL = "30"
+  PSYCH_FEED_ENABLED   = "true"
+  QUANT_CRYPTO_ENABLED = "true"
+  SCANNER_ENABLED      = "true"
 
 # ── Process definitions ──────────────────────────────────────────────────────
 # The default `worker` runs every background task (role=all, backward-compat).

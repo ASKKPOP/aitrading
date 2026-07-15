@@ -729,10 +729,10 @@ export function BacktestPage({ token }: { token?: string | null }) {
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {tr(language, {
-                    en: 'Follow this agent to mirror their trades automatically.',
-                    ja: 'このエージェントをフォローしてトレードを自動ミラーリング。',
-                    th: 'ติดตามเอเจนต์นี้เพื่อคัดลอกการเทรดอัตโนมัติ',
-                    vi: 'Theo dõi agent này để sao chép giao dịch tự động.',
+                    en: 'Follow this agent to track their signals and activity.',
+                    ja: 'このエージェントをフォローしてシグナルと活動を追跡。',
+                    th: 'ติดตามเอเจนต์นี้เพื่อดูสัญญาณและกิจกรรม',
+                    vi: 'Theo dõi agent này để xem tín hiệu và hoạt động.',
                   })}
                 </div>
               </div>

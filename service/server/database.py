@@ -1859,6 +1859,76 @@ def init_database():
         ON automation_runs(config_id, ran_at)
     """)
 
+    # Risk engine (signal-collection plan Phase 1): per-agent limits consulted by
+    # the automation gate, plus the circuit-breaker state machine. Breaker rows are
+    # keyed by scope: 'global' (system trips) or 'agent:<id>' (manual HALT).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS risk_limits (
+            agent_id                INTEGER PRIMARY KEY,
+            max_daily_loss_usd      REAL    NOT NULL DEFAULT 1000,
+            max_symbol_exposure_usd REAL    NOT NULL DEFAULT 10000,
+            stop_loss_pct           REAL    NOT NULL DEFAULT 0.05,
+            take_profit_pct         REAL    NOT NULL DEFAULT 0.10,
+            use_kelly               INTEGER NOT NULL DEFAULT 1,
+            updated_at              TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS breaker_state (
+            scope      TEXT PRIMARY KEY,
+            state      TEXT NOT NULL DEFAULT 'normal',
+            reason     TEXT,
+            tripped_at TEXT,
+            updated_at TEXT
+        )
+    """)
+
+    # Psychology feed snapshots (signal-collection plan Phase 2): F&G index,
+    # sentiment-spike z-scores, volatility shock proxy, Polymarket odds.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS psych_snapshots (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_key      TEXT NOT NULL,
+            fng_json          TEXT,
+            spikes_json       TEXT,
+            shock_json        TEXT,
+            anticipation_json TEXT,
+            created_at        TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_psych_snapshots_created
+        ON psych_snapshots(created_at)
+    """)
+
+    # Which-coin scanner snapshots (signal-collection plan Phase 4): ranked
+    # candidates + mention-rate history (baseline) + instrument list (diff).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scanner_snapshots (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_key     TEXT NOT NULL,
+            candidates_json  TEXT,
+            mentions_json    TEXT,
+            instruments_json TEXT,
+            created_at       TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_scanner_snapshots_created
+        ON scanner_snapshots(created_at)
+    """)
+
+    # SL/TP columns on positions (risk engine Phase 1)
+    try:
+        cursor.execute("ALTER TABLE positions ADD COLUMN stop_loss REAL")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE positions ADD COLUMN take_profit REAL")
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

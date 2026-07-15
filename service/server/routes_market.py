@@ -1,6 +1,11 @@
 from typing import Optional
 
+import re
+
 from fastapi import FastAPI, HTTPException, Query
+from starlette.concurrency import run_in_threadpool
+
+_FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
@@ -88,6 +93,34 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get('/api/market-intel/macro-signals')
     async def market_intel_macro_signals():
         return _cached_market_payload('macro_signals', get_macro_signals_payload)
+
+    @app.get('/api/market-intel/psych')
+    async def market_intel_psych():
+        from psych_feed import get_psych_payload
+        return await run_in_threadpool(get_psych_payload)
+
+    @app.get('/api/scanner/candidates')
+    async def scanner_candidates():
+        from scanner import get_scanner_payload
+        return await run_in_threadpool(get_scanner_payload)
+
+    @app.get('/api/market-intel/fusion')
+    async def market_intel_fusion(symbols: str = 'BTC,ETH,SOL'):
+        from signal_fusion import fuse_symbols
+        # Strict symbol charset — these flow into outbound API URL paths.
+        parsed = [s.strip().upper() for s in symbols.split(',')
+                  if _FUSION_SYMBOL_RE.fullmatch(s.strip().upper())][:8]
+        if not parsed:
+            raise HTTPException(status_code=422, detail='no valid symbols (A-Z0-9, 1-12 chars)')
+        # Fusion fans out to live OKX/StockTwits calls per symbol — cache the
+        # payload like every other market-intel endpoint so open dashboards
+        # poll the cache, not the upstream APIs.
+        cache_key = f'fusion:{",".join(sorted(parsed))}'
+
+        def _build():
+            return {'signals': fuse_symbols(parsed)}
+
+        return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
     @app.get('/api/market-intel/etf-flows')
     async def market_intel_etf_flows():
