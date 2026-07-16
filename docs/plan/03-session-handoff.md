@@ -95,6 +95,22 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
 '
 ```
 
+### Management console (administr.sooppiy.com)
+- **Domain:** `administr.sooppiy.com` (Route 53 + AWS ALB terminate TLS; host nginx speaks plain HTTP).
+- **Container:** `sooppiy-admin` — `nginx:alpine` on **127.0.0.1:8201**, serving the SPA build
+  from **`~/sooppiy/admin-site/`** (read-only bind mounts: site dir + `~/sooppiy/admin-nginx.conf`).
+- **Routing:** host `/etc/nginx/conf.d/domains.conf` block `administr.sooppiy.com` →
+  `/api/` proxies to the backend (127.0.0.1:8101), everything else to 127.0.0.1:8201.
+- **App behavior:** the same SPA build detects `hostname.startsWith('administr.')` and renders
+  ONLY the manager console (token gate → 개요/사용자·에이전트/거래·자금/AI 자동화).
+  `/admin` does NOT exist on the main domain.
+- **Auth:** `ADMIN_TOKEN` in `~/sooppiy/app/.env` (unset = admin API 503-disabled).
+- **On frontend deploys, also refresh the admin site:**
+  ```bash
+  rm -rf ~/sooppiy/admin-site/* && tar xzf /tmp/fe-dist.tar.gz -C ~/sooppiy/admin-site
+  # (no container restart needed — static bind mount)
+  ```
+
 ### Deploy gotchas (learned the hard way)
 - **`docker restart` does NOT reload `--env-file`.** You must `docker rm -f` + `docker run` to pick up `.env` changes.
 - **Always back up & restore `~/sooppiy/app/.env`** before wiping `app/` — it holds the signal-phase flags and any real keys.
