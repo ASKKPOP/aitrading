@@ -73,6 +73,20 @@
       "env": {
         "VITE_PROXY_TARGET": "http://127.0.0.1:8011"
       }
+    },
+    {
+      "name": "docs-8022",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8022",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "docs"
+      ],
+      "port": 8022
     }
   ]
 }

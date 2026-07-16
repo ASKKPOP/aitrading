@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parameter-Upgrade Implementation Result — Sooppiy AI Model</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --s1: #3987e5;  /* blue — primary / strategy */
+    --s2: #199e70;  /* aqua — secondary / walk-forward */
+    --s3: #c98500;  /* yellow — tertiary */
+    --s6: #e66767;  /* red — buy & hold / bearish */
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --accent: #f0b35a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55; font-size: 15px;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 48px 24px 80px; }
+  header .kicker { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 8px 0 10px; }
+  h2 { font-size: 20px; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 8px; color: var(--ink); }
+  .sub { color: var(--ink-2); max-width: 74ch; }
+  .meta { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+  section { margin-top: 44px; }
+  .sec-kicker { font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  .sec-sub { color: var(--ink-2); font-size: 13.5px; margin: 4px 0 16px; max-width: 80ch; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+  .grid { display: grid; gap: 12px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .tile .value { font-size: 27px; font-weight: 750; margin-top: 4px; }
+  .tile .sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .ko { border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 12px 12px 0; padding: 14px 18px; color: var(--ink-2); font-size: 13.5px; margin-top: 18px; }
+  .ko b { color: var(--ink); }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .chart-note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 2px 0 10px; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; padding: 8px 10px; border-bottom: 1px solid var(--grid); }
+  table.data td { padding: 8px 10px; border-bottom: 1px solid var(--grid); color: var(--ink-2); vertical-align: top; }
+  table.data td:first-child { color: var(--ink); font-weight: 600; }
+  table.data tr:last-child td { border-bottom: none; }
+  .num { font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 10px; letter-spacing: .04em; }
+  .pill.off { background: rgba(137,135,129,.15); color: var(--muted); border: 1px solid var(--baseline); }
+  .pill.on { background: rgba(12,163,12,.14); color: #4cc94c; border: 1px solid rgba(12,163,12,.4); }
+  .pill.adv { background: rgba(57,135,229,.14); color: #7ab2f0; border: 1px solid rgba(57,135,229,.4); }
+  .pill.crit { background: rgba(208,59,59,.16); color: #ef8a8a; border: 1px solid rgba(208,59,59,.45); }
+  .checks li { list-style: none; padding: 9px 0; border-bottom: 1px solid var(--grid); color: var(--ink-2); display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; }
+  .checks li:last-child { border-bottom: none; }
+  .ic { font-weight: 800; font-size: 14px; width: 18px; flex: none; text-align: center; }
+  .ic.pass { color: var(--good); } .ic.fail { color: var(--critical); }
+  details { margin-top: 10px; }
+  summary { color: var(--muted); font-size: 12.5px; cursor: pointer; }
+  .scroll { overflow-x: auto; }
+  .two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
+  .flownote { font-size: 12px; color: var(--muted); }
+  a { color: var(--s1); text-decoration: none; }
+  code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; color: var(--ink-2); }
+  .foot { margin-top: 56px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--grid); padding-top: 16px; }
+  .barlist .row { display: grid; grid-template-columns: 110px 1fr 64px; align-items: center; gap: 10px; padding: 6px 0; }
+  .barlist .name { font-size: 13px; color: var(--ink); }
+  .barlist .track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .barlist .fill { height: 100%; border-radius: 4px 3px 3px 4px; }
+  .barlist .val { font-size: 12.5px; color: var(--ink-2); text-align: right; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Sooppiy · AI Model Parameter Upgrade · Implementation Result</div>
+  <h1>Research → Engine → Evidence:<br>what was built, what the data said, and why the gates stayed off</h1>
+  <p class="sub">Full result of the overnight parameter-upgrade session: the verified research corpus was turned into a
+  five-phase implementation (confluence engine, regime filter, risk &amp; exit stack, strategy backtester), adversarially
+  verified by a six-agent panel, tested, deployed to sooppiy.com — and honestly gated: the pre-registered go/no-go
+  returned <b>insufficient evidence</b>, so no execution default changed.</p>
+  <div class="meta">2026-07-16 · commits <code>f46ab32…0fe4317</code> · plan: <a href="../plan/04-ai-model-parameter-upgrade.md">04-ai-model-parameter-upgrade.md</a> (v2)
+  · backtest report: <a href="../research/parameters/3-phase4-backtest-report.md">3-phase4-backtest-report.md</a> · not investment advice, paper trading only</div>
+
+  <div class="ko"><b>한국어 요약</b> — 리서치의 4-레이어 하이브리드 프레임워크를 5단계로 전부 구현했습니다(컨플루언스 엔진 ·
+  국면 필터 · 리스크/청산 스택 · 전략 백테스터 · 텔레메트리). 6-에이전트 검증 패널의 63개 지적을 반영했고, 테스트 854개
+  통과 후 sooppiy.com에 배포했습니다. 다만 사전 등록된 백테스트 합격 기준이 <b>증거 불충분</b>으로 나와 — OOS 거래 38건
+  (기준 400건) — 실행 게이트는 전부 기본 OFF로 유지했습니다. 검증된 가치는 예측이 아니라 <b>자본 보전</b>: 약세장에서
+  최대 낙폭 2.2% vs 단순보유 −38~−47%. 모든 수치는 아래 차트와 동일한 원본 JSON에서 나왔습니다.</div>
+</header>
+
+<!-- ═══════════════ hero tiles ═══════════════ -->
+<section>
+  <div class="grid tiles">
+    <div class="card tile"><div class="label">Go / No-Go</div><div class="value" style="color:var(--warning); font-size:19px; line-height:1.25; padding-top:6px;">INSUFFICIENT<br>EVIDENCE</div><div class="sub">pre-registered criteria</div></div>
+    <div class="card tile"><div class="label">Tests passing</div><div class="value num">854</div><div class="sub">+95 vs baseline 759</div></div>
+    <div class="card tile"><div class="label">OOS trades</div><div class="value num">38</div><div class="sub">evidence floor: 400</div></div>
+    <div class="card tile"><div class="label">Worst max drawdown</div><div class="value num" style="color:var(--good)">2.2%</div><div class="sub">vs B&amp;H −38…−47% (F4)</div></div>
+    <div class="card tile"><div class="label">Panel findings fixed</div><div class="value num">63</div><div class="sub">9 critical · 31 major · 23 minor</div></div>
+    <div class="card tile"><div class="label">Execution defaults changed</div><div class="value num">0</div><div class="sub">every new gate ships OFF</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════ 1. pipeline ═══════════════ -->
+<section>
+  <div class="sec-kicker">① Session pipeline</div>
+  <h2>From research corpus to gated deployment</h2>
+  <p class="sec-sub">Each stage fed the next; the two verification stages (panel, backtest) each had veto power — and the second one used it.</p>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 150" width="100%" style="min-width:860px" role="img" aria-label="Session pipeline: research, codebase map, plan v1, 6-agent panel, plan v2, implementation phases 0 to 3, phase 4 backtest, deploy with gates off">
+      <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#898781"/></marker></defs>
+      <g font-size="12" fill="#ffffff" text-anchor="middle">
+        <rect x="8"   y="36" width="108" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="62"  y="58">7 research docs</text><text x="62" y="74" fill="#898781" font-size="10.5">verified numbers</text>
+        <rect x="140" y="36" width="108" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="194" y="58">Codebase map</text><text x="194" y="74" fill="#898781" font-size="10.5">3 explore agents</text>
+        <rect x="272" y="36" width="92"  height="52" rx="10" fill="#222220" stroke="#383835"/><text x="318" y="58">Plan v1</text><text x="318" y="74" fill="#898781" font-size="10.5">draft</text>
+        <rect x="388" y="30" width="116" height="64" rx="10" fill="#1a2434" stroke="#3987e5"/><text x="446" y="52">6-agent panel</text><text x="446" y="68" fill="#7ab2f0" font-size="10.5">63 findings</text><text x="446" y="82" fill="#898781" font-size="10">adversarial</text>
+        <rect x="528" y="36" width="92"  height="52" rx="10" fill="#222220" stroke="#383835"/><text x="574" y="58">Plan v2</text><text x="574" y="74" fill="#898781" font-size="10.5">all fixes in</text>
+        <rect x="644" y="36" width="116" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="702" y="58">Phases 0–3</text><text x="702" y="74" fill="#898781" font-size="10.5">854 tests green</text>
+        <rect x="784" y="30" width="116" height="64" rx="10" fill="#2b2114" stroke="#fab219"/><text x="842" y="52">Phase 4 gate</text><text x="842" y="68" fill="#fab219" font-size="10.5">insufficient</text><text x="842" y="82" fill="#fab219" font-size="10.5">evidence</text>
+        <rect x="924" y="36" width="68" height="52" rx="10" fill="#14231a" stroke="#0ca30c"/><text x="958" y="58" font-size="11.5">Deploy</text><text x="958" y="74" fill="#4cc94c" font-size="10">gates OFF</text>
+      </g>
+      <g stroke="#898781" stroke-width="1.5" marker-end="url(#ar)">
+        <line x1="116" y1="62" x2="136" y2="62"/><line x1="248" y1="62" x2="268" y2="62"/><line x1="364" y1="62" x2="384" y2="62"/>
+        <line x1="504" y1="62" x2="524" y2="62"/><line x1="620" y1="62" x2="640" y2="62"/><line x1="760" y1="62" x2="780" y2="62"/><line x1="900" y1="62" x2="920" y2="62"/>
+      </g>
+      <g font-size="10.5" fill="#898781" text-anchor="middle">
+        <text x="446" y="118">verdicts: 3× “not approved as drafted” → every confirmed finding folded into v2</text>
+        <text x="842" y="118">pre-registered rule enforced: no PASS → no flip package</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════════ 2. architecture ═══════════════ -->
+<section>
+  <div class="sec-kicker">② Architecture</div>
+  <h2>The four-layer decision stack, as implemented</h2>
+  <p class="sec-sub">Research prescription (psychology = regime · charts = direction · volume+sentiment = confirmation · volatility = size) mapped onto real modules.
+  Solid boxes are live on the server today; badges show each gate's deployed state. Any layer can veto; exits are never blocked.</p>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 560" width="100%" style="min-width:820px" role="img" aria-label="Four layer decision stack diagram with data sources feeding regime filter, direction engine, confluence checklist and risk sizing, ending in paper trade and watcher">
+      <defs><marker id="ar2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#898781"/></marker></defs>
+      <!-- data sources -->
+      <g font-size="11.5" fill="#c3c2b7" text-anchor="middle">
+        <rect x="20" y="16" width="960" height="64" rx="10" fill="#161616" stroke="#2c2c2a"/>
+        <text x="500" y="36" fill="#898781" font-size="10.5" letter-spacing="2">DATA SOURCES (fail-soft; nulls are conservative for entries)</text>
+        <text x="105" y="60">OKX candles ×400 (paginated)</text>
+        <text x="280" y="60">yfinance daily corpus</text>
+        <text x="425" y="60">F&amp;G index (2018+)</text>
+        <text x="560" y="60">StockTwits + news z-spikes</text>
+        <text x="710" y="60">OKX liq/OI/L-S/funding</text>
+        <text x="880" y="60">macro calendar 2019–2027</text>
+      </g>
+      <line x1="500" y1="80" x2="500" y2="102" stroke="#898781" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <!-- L1 -->
+      <g>
+        <rect x="20" y="106" width="960" height="88" rx="12" fill="#1a1a19" stroke="#383835"/>
+        <text x="36" y="130" fill="#7ab2f0" font-size="12" font-weight="700">LAYER 1 · REGIME — “should we trade at all, and how big?”</text>
+        <text x="36" y="150" fill="#c3c2b7" font-size="12">regime.py — trend / caution(×0.5) / panic / euphoria / event / unknown · F&amp;G bands + realized-vol percentile (365d) + unresolved shocks + event windows</text>
+        <text x="36" y="169" fill="#898781" font-size="11.5">transitions persisted (panic day-0 survives restarts) · panic auto-trip: 2 consecutive REAL liquidation shocks → market-scoped breaker with expiry</text>
+        <g font-size="10.5" font-weight="700"><rect x="806" y="118" width="158" height="20" rx="10" fill="rgba(57,135,229,.14)" stroke="rgba(57,135,229,.4)"/><text x="885" y="132" text-anchor="middle" fill="#7ab2f0">ADVISORY — gate OFF</text></g>
+      </g>
+      <line x1="500" y1="194" x2="500" y2="216" stroke="#898781" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <!-- L2 -->
+      <g>
+        <rect x="20" y="220" width="960" height="74" rx="12" fill="#1a1a19" stroke="#383835"/>
+        <text x="36" y="244" fill="#7ab2f0" font-size="12" font-weight="700">LAYER 2 · DIRECTION — “long or short bias?”</text>
+        <text x="36" y="264" fill="#c3c2b7" font-size="12">quant_crypto / market_intel — 12-1 momentum · price vs MA200 · golden-cross state · 1-month reversal (computed, use deferred) · daily σ(20d)</text>
+        <text x="36" y="282" fill="#898781" font-size="11.5">the two most-verified predictors in the literature (GKX 2020, Brock 1992) — previously absent from the codebase entirely</text>
+        <g font-size="10.5" font-weight="700"><rect x="836" y="232" width="128" height="20" rx="10" fill="rgba(12,163,12,.14)" stroke="rgba(12,163,12,.4)"/><text x="900" y="246" text-anchor="middle" fill="#4cc94c">LIVE — features</text></g>
+      </g>
+      <line x1="500" y1="294" x2="500" y2="316" stroke="#898781" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <!-- L3 -->
+      <g>
+        <rect x="20" y="320" width="960" height="110" rx="12" fill="#1a1a19" stroke="#383835"/>
+        <text x="36" y="344" fill="#7ab2f0" font-size="12" font-weight="700">LAYER 3 · CONFLUENCE — “act only when independent-ish conditions agree (≥4/6)”</text>
+        <g font-size="11.5" fill="#c3c2b7" text-anchor="middle">
+          <rect x="36"  y="356" width="146" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="109" y="377">B1 price &gt; MA200</text>
+          <rect x="192" y="356" width="146" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="265" y="377">B2 momentum &gt; 0</text>
+          <rect x="348" y="356" width="170" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="433" y="377">B3 trigger + volume ≥1.5×</text>
+          <rect x="528" y="356" width="170" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="613" y="377">B4 sentiment ok / recovering</text>
+          <rect x="708" y="356" width="130" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="773" y="377">B5 fear fading</text>
+          <rect x="848" y="356" width="130" height="34" rx="8" fill="#222220" stroke="#383835"/><text x="913" y="377">B6 no event &lt;24h</text>
+        </g>
+        <text x="36" y="414" fill="#898781" font-size="11.5">confluence.py — nulls NEVER satisfy · vetoes: news-spike blocks buys, event window blocks both sides · S1–S6 mirror · the count IS the score</text>
+        <g font-size="10.5" font-weight="700"><rect x="700" y="332" width="264" height="20" rx="10" fill="rgba(57,135,229,.14)" stroke="rgba(57,135,229,.4)"/><text x="832" y="346" text-anchor="middle" fill="#7ab2f0">DISPLAY + AGENT API + TELEMETRY — gate OFF</text></g>
+      </g>
+      <line x1="500" y1="430" x2="500" y2="452" stroke="#898781" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <!-- L4 -->
+      <g>
+        <rect x="20" y="456" width="960" height="88" rx="12" fill="#1a1a19" stroke="#383835"/>
+        <text x="36" y="480" fill="#7ab2f0" font-size="12" font-weight="700">LAYER 4 · RISK &amp; EXITS — “how much, and when out” (risk rules override everything)</text>
+        <text x="36" y="500" fill="#c3c2b7" font-size="12">risk_engine.py — breaker(scoped, expiring auto-trips) → daily-loss → vol sizing (equity×0.5% ÷ σ_daily, exposure-deducted, σ-null rejects) → ½-Kelly → exposure cap</text>
+        <text x="36" y="519" fill="#c3c2b7" font-size="12">exits: fixed SL · trailing ratchet (never loosens, clears TP when armed) · time stop (first_opened_at, losers only, 48h cooldown) · watcher bypasses gate</text>
+        <text x="36" y="537" fill="#898781" font-size="11.5">grandfathering: trailing/time stops act only on exit_policy='v1' positions AND per-agent opt-in — pre-existing positions untouched</text>
+        <g font-size="10.5" font-weight="700">
+          <rect x="676" y="468" width="150" height="20" rx="10" fill="rgba(137,135,129,.15)" stroke="#383835"/><text x="751" y="482" text-anchor="middle" fill="#898781">VOL SIZING — OFF</text>
+          <rect x="836" y="468" width="128" height="20" rx="10" fill="rgba(12,163,12,.14)" stroke="rgba(12,163,12,.4)"/><text x="900" y="482" text-anchor="middle" fill="#4cc94c">SAFETY FIXES — LIVE</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════════ 3. automation flow ═══════════════ -->
+<section>
+  <div class="sec-kicker">③ Execution flow</div>
+  <h2>One automation tick — the skip-chain with the new stations</h2>
+  <p class="sec-sub">Every enabled rule passes this chain each interval. New stations from this session are highlighted; dashed borders mean the station journals
+  advisory data today and only enforces after a future evidence-backed flip. Every skip is journaled with a named <code>skip_reason</code> — including which null conditions starved confluence.</p>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 384" width="100%" style="min-width:860px" role="img" aria-label="Automation tick flowchart: resume sweep, LLM analysis, confluence telemetry, regime advisory, guard chain, risk gate, paper trade, watcher loop">
+      <defs><marker id="ar3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#898781"/></marker></defs>
+      <g font-size="11.5" fill="#ffffff" text-anchor="middle">
+        <!-- row 1 -->
+        <rect x="16"  y="24" width="130" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="81" y="46">tick (60s)</text><text x="81" y="62" fill="#4cc94c" font-size="10">+ auto-breaker resume ★</text>
+        <rect x="170" y="24" width="150" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="245" y="46">run_analysis</text><text x="245" y="62" fill="#898781" font-size="10">4 briefs + LLM decision</text>
+        <rect x="344" y="24" width="170" height="52" rx="10" fill="#1a2434" stroke="#3987e5"/><text x="429" y="46">confluence vector ★</text><text x="429" y="62" fill="#7ab2f0" font-size="10">journaled every decision</text>
+        <rect x="538" y="24" width="150" height="52" rx="10" fill="#1a2434" stroke="#3987e5" stroke-dasharray="5 4"/><text x="613" y="46">regime read ★</text><text x="613" y="62" fill="#7ab2f0" font-size="10">advisory (gate exists, OFF)</text>
+        <rect x="712" y="24" width="272" height="52" rx="10" fill="#222220" stroke="#383835"/><text x="848" y="42">guard chain</text><text x="848" y="58" fill="#898781" font-size="10">auto_execute · simulator-only · min_confidence</text><text x="848" y="70" fill="#898781" font-size="10">market open · event guard · cooldown ★ · price ok</text>
+        <!-- row 2 -->
+        <rect x="712" y="140" width="272" height="66" rx="10" fill="#222220" stroke="#383835"/><text x="848" y="160">risk gate (RISK_ENGINE_ENABLED)</text><text x="848" y="176" fill="#898781" font-size="10">breaker(scoped ★) → daily-loss → vol-sizing(OFF ★)</text><text x="848" y="190" fill="#898781" font-size="10">→ ½-Kelly → exposure · buy/short gated, sell/cover pass ★</text>
+        <rect x="454" y="140" width="216" height="66" rx="10" fill="#14231a" stroke="#0ca30c"/><text x="562" y="162">execute_paper_trade</text><text x="562" y="178" fill="#4cc94c" font-size="10">SL/TP registered — NEVER loosened ★</text><text x="562" y="192" fill="#4cc94c" font-size="10">first_opened_at + exit_policy stamped ★</text>
+        <rect x="180" y="140" width="230" height="66" rx="10" fill="#222220" stroke="#383835"/><text x="295" y="160">watcher (30s)</text><text x="295" y="176" fill="#898781" font-size="10">SL / TP / trailing ratchet ★ / time stop ★</text><text x="295" y="192" fill="#898781" font-size="10">exits bypass the gate — never trapped</text>
+        <!-- telemetry sink -->
+        <rect x="180" y="272" width="490" height="56" rx="10" fill="#161616" stroke="#2c2c2a"/><text x="425" y="294" fill="#c3c2b7">telemetry sinks — the live-forward evidence base</text><text x="425" y="312" fill="#898781" font-size="10.5">automation_runs.confluence_json · regime_snapshots · factor_snapshots (6h loop) · skip_reason journal</text>
+      </g>
+      <g stroke="#898781" stroke-width="1.5" fill="none" marker-end="url(#ar3)">
+        <line x1="146" y1="50" x2="166" y2="50"/><line x1="320" y1="50" x2="340" y2="50"/><line x1="514" y1="50" x2="534" y2="50"/><line x1="688" y1="50" x2="708" y2="50"/>
+        <line x1="848" y1="76" x2="848" y2="136"/>
+        <line x1="708" y1="173" x2="674" y2="173"/>
+        <line x1="450" y1="173" x2="414" y2="173"/>
+        <path d="M 562 206 L 562 240 L 480 240 L 480 268"/>
+        <path d="M 295 206 L 295 240 L 380 240 L 380 268"/>
+        <path d="M 429 76 L 429 110 L 300 110 L 300 136" stroke-dasharray="3 4"/>
+      </g>
+      <g font-size="10.5" fill="#898781"><text x="20" y="358">★ = added or fixed this session · any station can set skip_reason and end the tick — “confluence 2/6 — B4, B5 unavailable: psych feed stale” beats silent inaction</text></g>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════════ 4. verification panel + tests ═══════════════ -->
+<section>
+  <div class="sec-kicker">④ Adversarial verification</div>
+  <h2>Six lenses, 63 confirmed findings — and what each severity meant</h2>
+  <p class="sec-sub">Every agent was instructed to refute, not confirm. Three returned “not approved as drafted.” All confirmed findings were resolved in plan v2
+  before a line of implementation code was written; the decisive one (statistics: “your go/no-go cannot distinguish edge from a coin flip”) is what later prevented an unjustified flip.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Findings by verification lens</h3>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--critical)"></span>Critical</span>
+        <span><span class="sw" style="background:var(--serious)"></span>Major</span>
+        <span><span class="sw" style="background:var(--warning)"></span>Minor</span>
+      </div>
+      <div id="chart-findings"></div>
+      <div class="chart-note">Highest-confidence findings were independently confirmed by 2–4 agents (σ-unit bug, migration arithmetic, backtest/live mismatch, default stranding).</div>
+    </div>
+    <div class="card">
+      <h3>Test suite growth by phase</h3>
+      <div id="chart-tests"></div>
+      <div class="chart-note">Every phase landed green before the next began; the final suite ran three times (plus two byte-identical backtest runs) before deploy.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 5. backtest ═══════════════ -->
+<section>
+  <div class="sec-kicker">⑤ Phase-4 evidence</div>
+  <h2>The walk-forward backtest: honest scope, honest verdict</h2>
+  <p class="sec-sub">Anchored 4-fold walk-forward, 14-day purge, 2019→2026 (per-asset windows: BTC/ETH signals from 2020-02, SOL from 2021-05).
+  B4 (crowd sentiment) has no historical archive and stayed null throughout — the backtested ≥4/6 gate is therefore <em>stricter</em> than the live one, which is
+  exactly why only historically-evaluated conditions could ever earn default-on.</p>
+
+  <div class="card" style="margin-bottom:12px;">
+    <h3>Pre-registered go/no-go — primary row (deployment-faithful config, never tuned)</h3>
+    <ul class="checks">
+      <li><span class="ic fail">✕</span><span><b>Evidence floor:</b> 38 pooled OOS trades &lt; 400 required. At this n, a zero-edge strategy passes a naive 52% accuracy bar ~1 time in 3 — which is precisely why the floor exists.</span></li>
+      <li><span class="ic fail">✕</span><span><b>Win-rate Wilson 90% lower bound &gt; 0.50:</b> observed 36.8% (14/38), lower bound <span class="num">0.276</span>.</span></li>
+      <li><span class="ic fail">✕</span><span><b>Profit-factor bootstrap 90% lower bound &gt; 1.0:</b> point estimate <span class="num">1.13</span>, lower bound <span class="num">0.644</span> — profitability not distinguishable from break-even.</span></li>
+      <li><span class="ic pass">✓</span><span><b>Worst-asset max drawdown ≤ 30%:</b> <span class="num">2.18%</span>. The risk stack is the part that works.</span></li>
+    </ul>
+    <div class="chart-note">Verdict: <span class="pill crit">NO FLIP</span> &nbsp;<code>CONFLUENCE_GATE_ENABLED</code> · <code>REGIME_FILTER_ENABLED</code> · <code>VOL_SIZING_ENABLED</code> remain unset/off in production. Sensitivity row (≥3 of 5 available): 237 trades, PF 1.15, bootstrap LB 0.884 — more evidence, same conclusion.</div>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Profit factor per OOS fold — one axis, PF 1.0 = break-even</h3>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--s1)"></span>Primary ≥4/6 (fixed)</span>
+        <span><span class="sw" style="background:var(--s2)"></span>Walk-forward tuned ≥3</span>
+      </div>
+      <div id="chart-pf"></div>
+      <div class="chart-note">Trade counts label each bar — F2/F3/F4 primary folds hold 6–7 trades each, so single trades swing PF wildly (F3's 6.53 is five winners out of seven). The edge does not persist across regimes.</div>
+    </div>
+    <div class="card">
+      <h3>Capital preservation — F4 bear fold (2025-07 → 2026-07), total return %</h3>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--s1)"></span>Strategy (gated)</span>
+        <span><span class="sw" style="background:var(--s6)"></span>Buy &amp; hold</span>
+      </div>
+      <div id="chart-preserve"></div>
+      <div class="chart-note">The verified value: in the bear fold the system sat out (exposure 3–6% of days) and lost ~1%, while holding lost 21–47%. “The edge comes from risk management, not prediction” — confirmed.</div>
+    </div>
+    <div class="card">
+      <h3>How positions exited (primary row, 38 trades)</h3>
+      <div class="barlist" id="chart-exits"></div>
+      <div class="chart-note">53% of exits were the trailing ratchet riding winners — the trend-following profile the research prescribes (win rate 37%, but mean winner ≫ mean loser).</div>
+    </div>
+    <div class="card">
+      <h3>Condition agreement matrix — “independent” conditions aren't</h3>
+      <div id="chart-heat"></div>
+      <div class="chart-note">Daily agreement of buy-side conditions over every evaluated bar (B4 excluded — null historically). B1↔B2 at 0.71 and B3↔B5 at 0.84 confirm the statistics lens: the “stack independent 53% edges” arithmetic doesn't apply at face value.</div>
+    </div>
+  </div>
+
+  <details class="card" style="margin-top:12px;">
+    <summary>Full per-fold table (primary + walk-forward, from phase4-backtest-result.json)</summary>
+    <div class="scroll" style="margin-top:10px;">
+    <table class="data">
+      <tr><th>Fold · window</th><th>Row</th><th class="num">Trades</th><th class="num">Win rate</th><th class="num">Wilson LB90</th><th class="num">PF</th><th class="num">PF boot LB90</th><th class="num">Worst DD</th><th>Tuned config</th></tr>
+      <tr><td rowspan="2">F1 · 2021-07 → 2022-12</td><td>primary</td><td class="num">19</td><td class="num">36.8%</td><td class="num">0.242</td><td class="num">1.82</td><td class="num">0.825</td><td class="num">2.07%</td><td>—</td></tr>
+      <tr><td>walk-fwd</td><td class="num">85</td><td class="num">34.1%</td><td class="num">0.279</td><td class="num">1.46</td><td class="num">0.905</td><td class="num">6.52%</td><td>min 3 · vol 1.5</td></tr>
+      <tr><td rowspan="2">F2 · 2023-01 → 2024-03</td><td>primary</td><td class="num">6</td><td class="num">33.3%</td><td class="num">0.148</td><td class="num">0.69</td><td class="num">0.123</td><td class="num">2.63%</td><td>—</td></tr>
+      <tr><td>walk-fwd</td><td class="num">40</td><td class="num">45.0%</td><td class="num">0.353</td><td class="num">1.82</td><td class="num">1.039</td><td class="num">8.34%</td><td>min 3 · vol 2.0</td></tr>
+      <tr><td rowspan="2">F3 · 2024-04 → 2025-06</td><td>primary</td><td class="num">7</td><td class="num">71.4%</td><td class="num">0.473</td><td class="num">6.53</td><td class="num">2.153</td><td class="num">1.58%</td><td>—</td></tr>
+      <tr><td>walk-fwd</td><td class="num">75</td><td class="num">36.0%</td><td class="num">0.293</td><td class="num">0.69</td><td class="num">—</td><td class="num">—</td><td>min 3 · vol 2.0</td></tr>
+      <tr><td rowspan="2">F4 · 2025-07 → 2026-07</td><td>primary</td><td class="num">6</td><td class="num">0.0%</td><td class="num">0.000</td><td class="num">0.00</td><td class="num">—</td><td class="num">2.18%</td><td>—</td></tr>
+      <tr><td>walk-fwd</td><td class="num">30</td><td class="num">36.7%</td><td class="num">0.281</td><td class="num">0.79</td><td class="num">—</td><td class="num">—</td><td>min 3 · vol 2.0</td></tr>
+      <tr><td>Pooled OOS</td><td>primary</td><td class="num">38</td><td class="num">36.8%</td><td class="num">0.276</td><td class="num">1.13</td><td class="num">0.644</td><td class="num">2.18%</td><td>6-config grid reported</td></tr>
+      <tr><td>Pooled OOS</td><td>sensitivity ≥3</td><td class="num">237</td><td class="num">37.1%</td><td class="num">0.332</td><td class="num">1.15</td><td class="num">0.884</td><td class="num">8.97%</td><td>fixed</td></tr>
+    </table></div>
+  </details>
+</section>
+
+<!-- ═══════════════ 6. deploy state ═══════════════ -->
+<section>
+  <div class="sec-kicker">⑥ Deployed state</div>
+  <h2>What is live on sooppiy.com right now — and what is deliberately off</h2>
+  <p class="sec-sub">Deployed 2026-07-16, container tree byte-identical to <code>origin/main</code>. Verified post-deploy in three passes: live endpoints, schema
+  migration on the production DB (all guarded ALTERs applied), zero exceptions in container logs, new bundle hash served.</p>
+  <div class="card scroll">
+    <table class="data">
+      <tr><th>Capability</th><th>Surface</th><th>State</th><th>Why</th></tr>
+      <tr><td>Confluence checklist (B1–B6/S1–S6)</td><td><code>GET /api/market-intel/confluence</code> · Signals Board column · skills/ docs</td><td><span class="pill on">LIVE</span></td><td>agent-readable read; the count IS the score, no invented probability</td></tr>
+      <tr><td>Confluence telemetry</td><td><code>automation_runs.confluence_json</code> per decision</td><td><span class="pill on">LIVE</span></td><td>accumulates the live-forward evidence the backtest couldn't provide</td></tr>
+      <tr><td>Regime read</td><td><code>GET /api/market-intel/regime</code> · Market Regime tile</td><td><span class="pill adv">ADVISORY</span></td><td>displayed + journaled; enforcement flag exists, off</td></tr>
+      <tr><td>Factor snapshots (funding/OI/L-S/StockTwits)</td><td>6-hour research loop → <code>factor_snapshots</code></td><td><span class="pill on">LIVE</span></td><td>live-only factors get the history vendors don't sell</td></tr>
+      <tr><td>Never-loosen SL/TP · scoped breaker · put_risk_limits repair</td><td>risk_engine / automation</td><td><span class="pill on">LIVE</span></td><td>strictly protective — the only always-on behavior changes</td></tr>
+      <tr><td>Trailing stop · time stop</td><td>per-agent <code>risk_limits</code> opt-in + <code>exit_policy</code> grandfathering</td><td><span class="pill on">OPT-IN</span></td><td>positional risk tools; existing positions untouched</td></tr>
+      <tr><td>Confluence execution gate</td><td><code>CONFLUENCE_GATE_ENABLED</code></td><td><span class="pill off">OFF</span></td><td rowspan="3">pre-registered go/no-go returned INSUFFICIENT_EVIDENCE — flips require evidence, not enthusiasm</td></tr>
+      <tr><td>Regime enforcement + panic auto-trip</td><td><code>REGIME_FILTER_ENABLED</code></td><td><span class="pill off">OFF</span></td></tr>
+      <tr><td>Volatility sizing</td><td><code>VOL_SIZING_ENABLED</code></td><td><span class="pill off">OFF</span></td></tr>
+      <tr><td>Historical macro calendar 2019–2025 (+2026 midterm)</td><td><code>market_events_history.py</code> — doubly source-verified</td><td><span class="pill on">LIVE</span></td><td>backtester B6; 2025 shutdown irregularities captured</td></tr>
+      <tr><td>Repaired backtest metrics</td><td>daily-equity Sharpe · Sortino · Calmar · profit factor in API</td><td><span class="pill on">LIVE</span></td><td>trade-count Sharpe inflation fixed (intentional metric correction)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════ 7. next ═══════════════ -->
+<section>
+  <div class="sec-kicker">⑦ What unlocks the flip</div>
+  <h2>The path from here is data, not code</h2>
+  <div class="card">
+    <ul class="checks">
+      <li><span class="ic" style="color:var(--s1)">1</span><span><b>Live-forward evidence accumulates automatically.</b> Every automation decision journals its full 6-condition vector (including B4, which no backtest can reach); factor snapshots record the live-only factors. When ≥400 gated-quality decisions exist, re-run the pre-registered criteria — the calibration table (hit rate per confluence count, Wilson CIs) builds itself.</span></li>
+      <li><span class="ic" style="color:var(--s1)">2</span><span><b>The open research question the data raised:</b> the exit stack (trail + time stop + regime veto) preserved capital brilliantly while the strict entry gate traded ~6×/year across 3 assets. Testing the exit stack on a simpler entry signal is the highest-value next experiment.</span></li>
+      <li><span class="ic" style="color:var(--s1)">3</span><span><b>Owner decisions pending (plan §7):</b> surface confluence/regime on public signal cards + guide.html? Priority vs the product-sprint items (public leaderboard, anonymous follow, curl registration)?</span></li>
+    </ul>
+  </div>
+</section>
+
+<div class="foot">
+  Sources: <a href="../research/parameters/phase4-backtest-result.json">phase4-backtest-result.json</a> (deterministic across runs) ·
+  <a href="../plan/04-ai-model-parameter-upgrade.md">plan v2 §8 verification log</a> ·
+  <a href="../research/parameters/3-phase4-backtest-report.md">backtest report</a>.
+  All trading is paper/simulator. Educational — not investment advice. 모든 거래는 모의이며 투자 자문이 아닙니다.
+</div>
+
+</div>
+
+<script>
+// ── tiny chart renderers (inline SVG, thin marks, direct labels, native <title> hover) ──
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, at, parent) => { const e = document.createElementNS(NS, t); for (const k in at) e.setAttribute(k, at[k]); if (parent) parent.appendChild(e); return e; };
+const txt = (parent, x, y, s, fill, size, anchor, weight) => { const t = el('text', {x, y, fill: fill || '#c3c2b7', 'font-size': size || 11, 'text-anchor': anchor || 'middle', 'font-weight': weight || 400}, parent); t.textContent = s; return t; };
+const tip = (node, s) => { const t = el('title', {}, node); t.textContent = s; };
+
+// grouped vertical bars: {labels, series:[{name,color,values,notes?}], max, refLine?, fmt, h}
+function groupedBars(id, cfg) {
+  const W = 480, H = cfg.h || 240, padL = 34, padB = 26, padT = 14;
+  const root = document.getElementById(id);
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, width: '100%', role: 'img'}, root);
+  const plotW = W - padL - 8, plotH = H - padT - padB;
+  const y = v => padT + plotH - (v / cfg.max) * plotH;
+  // gridlines
+  for (let g = 0; g <= cfg.gridN; g++) {
+    const gv = cfg.max * g / cfg.gridN, gy = y(gv);
+    el('line', {x1: padL, x2: W - 8, y1: gy, y2: gy, stroke: '#2c2c2a', 'stroke-width': 1}, svg);
+    txt(svg, padL - 6, gy + 4, cfg.fmt(gv), '#898781', 10, 'end');
+  }
+  if (cfg.refLine != null) {
+    const ry = y(cfg.refLine);
+    // dashed reference line only — its meaning lives in the card title
+    el('line', {x1: padL, x2: W - 8, y1: ry, y2: ry, stroke: '#898781', 'stroke-width': 1.2, 'stroke-dasharray': '4 4'}, svg);
+  }
+  el('line', {x1: padL, x2: W - 8, y1: y(0), y2: y(0), stroke: '#383835', 'stroke-width': 1.5}, svg);
+  const nG = cfg.labels.length, nS = cfg.series.length;
+  const slot = plotW / nG, barW = Math.min(30, (slot - 18) / nS);
+  cfg.labels.forEach((lab, i) => {
+    const cx = padL + slot * i + slot / 2;
+    txt(svg, cx, H - 8, lab, '#c3c2b7', 11);
+    cfg.series.forEach((s, j) => {
+      const v = s.values[i];
+      if (v == null) return;
+      const bx = cx - (nS * barW + (nS - 1) * 2) / 2 + j * (barW + 2);
+      const capped = Math.min(v, cfg.max), by = y(capped), bh = Math.max(2, y(0) - by);
+      const r = el('rect', {x: bx, y: by, width: barW, height: bh, rx: 3, fill: s.color}, svg);
+      tip(r, `${s.name} · ${lab}: ${cfg.fmt(v)}${s.notes && s.notes[i] ? ' — ' + s.notes[i] : ''}`);
+      txt(svg, bx + barW / 2, by - 5, cfg.fmt(v), '#ffffff', 10.5, 'middle', 650);
+      if (s.notes && s.notes[i]) txt(svg, bx + barW / 2, y(0) + (cfg.noteBelow ? 0 : -6) + (cfg.noteBelow ? 22 : 0), '', '#898781', 9);
+    });
+  });
+  return svg;
+}
+
+// 1) findings by agent — horizontal stacked severity bars
+(function () {
+  const data = [
+    {name: 'Statistics', c: 2, M: 4, m: 4, note: '"not approved" — forced the CI-based go/no-go'},
+    {name: 'Risk mgmt', c: 3, M: 8, m: 1, note: '"Phases 2–3 refuted" — σ-unit bug, trail overwrite, breaker blast radius'},
+    {name: 'Feasibility', c: 2, M: 5, m: 4, note: 'alembic never runs on SQLite; cache staleness dead code'},
+    {name: 'Data reality', c: 2, M: 4, m: 2, note: 'B4 has no archive; SOL has no 2019; verified live with curl'},
+    {name: 'Product', c: 2, M: 4, m: 4, note: '"not approved as-is" — ungateable migration; stranded defaults'},
+    {name: 'Research', c: 0, M: 6, m: 8, note: '55–58% was invented; contrarian rule was dead code'},
+  ];
+  const W = 480, rowH = 42, padL = 92, H = data.length * rowH + 26;
+  const root = document.getElementById('chart-findings');
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, width: '100%', role: 'img'}, root);
+  const maxT = 12, plotW = W - padL - 40;
+  const colors = {c: '#d03b3b', M: '#ec835a', m: '#fab219'};
+  const names = {c: 'critical', M: 'major', m: 'minor'};
+  data.forEach((d, i) => {
+    const yy = 10 + i * rowH, total = d.c + d.M + d.m;
+    txt(svg, padL - 8, yy + 15, d.name, '#ffffff', 11.5, 'end', 600);
+    let x = padL;
+    ['c', 'M', 'm'].forEach(k => {
+      if (!d[k]) return;
+      const w = (d[k] / maxT) * plotW;
+      const r = el('rect', {x, y: yy, width: Math.max(w - 2, 2), height: 20, rx: 3, fill: colors[k]}, svg);
+      tip(r, `${d.name} — ${d[k]} ${names[k]} · ${d.note}`);
+      if (w > 14) txt(svg, x + (w - 2) / 2, yy + 14, d[k], '#0b0b0b', 10.5, 'middle', 700);
+      x += w;
+    });
+    txt(svg, x + 8, yy + 14, total, '#c3c2b7', 11, 'start', 650);
+    const noteT = txt(svg, padL, yy + 32, d.note, '#898781', 9.5, 'start');
+  });
+})();
+
+// 2) tests per phase
+groupedBars('chart-tests', {
+  labels: ['baseline', 'P0', 'P1', 'P2', 'P3', 'P4'],
+  series: [{name: 'tests passing', color: '#3987e5', values: [759, 781, 801, 819, 839, 854]}],
+  max: 900, gridN: 3, fmt: v => String(Math.round(v)), h: 230,
+});
+
+// 3) profit factor per fold
+groupedBars('chart-pf', {
+  labels: ['F1 bear', 'F2 recovery', 'F3 post-halving', 'F4 bear'],
+  series: [
+    {name: 'primary ≥4/6', color: '#3987e5', values: [1.82, 0.69, 6.53, 0.0],
+     notes: ['19 trades', '6 trades', '7 trades', '6 trades']},
+    {name: 'walk-forward ≥3', color: '#199e70', values: [1.46, 1.82, 0.69, 0.79],
+     notes: ['85 trades', '40 trades', '75 trades', '30 trades']},
+  ],
+  max: 7, gridN: 7, refLine: 1.0, refLabel: 'PF 1.0 = break-even', fmt: v => v.toFixed(2), h: 260,
+});
+
+// 4) capital preservation (negative bars)
+(function () {
+  const W = 480, H = 260, padL = 44, padT = 24, padB = 26;
+  const root = document.getElementById('chart-preserve');
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, width: '100%', role: 'img'}, root);
+  const min = -50, plotW = W - padL - 10, plotH = H - padT - padB;
+  const y = v => padT + (0 - v) / (0 - min) * 0; // placeholder
+  const y2 = v => padT + ((0 - v) / (0 - min)) * plotH;
+  for (let gv = 0; gv >= min; gv -= 10) {
+    const gy = y2(gv);
+    el('line', {x1: padL, x2: W - 10, y1: gy, y2: gy, stroke: '#2c2c2a'}, svg);
+    txt(svg, padL - 6, gy + 4, gv + '%', '#898781', 10, 'end');
+  }
+  el('line', {x1: padL, x2: W - 10, y1: y2(0), y2: y2(0), stroke: '#383835', 'stroke-width': 1.5}, svg);
+  const assets = ['BTC', 'ETH', 'SOL'];
+  const strat = [-1.65, -1.11, -1.11], bh = [-38.55, -21.46, -47.07];
+  const dd = ['max DD 2.18%', 'max DD 1.35%', 'max DD 1.22%'];
+  const slot = plotW / 3, barW = 34;
+  assets.forEach((a, i) => {
+    const cx = padL + slot * i + slot / 2;
+    txt(svg, cx, padT - 8, a, '#ffffff', 12, 'middle', 700);
+    const sx = cx - barW - 1, bx = cx + 1;
+    const sh = Math.max(2, y2(strat[i]) - y2(0));
+    const r1 = el('rect', {x: sx, y: y2(0), width: barW, height: sh, rx: 3, fill: '#3987e5'}, svg);
+    tip(r1, `Strategy ${a}: ${strat[i]}% total return · ${dd[i]} · exposure 3–6% of days`);
+    txt(svg, sx + barW / 2, y2(strat[i]) + 16, strat[i] + '%', '#ffffff', 10.5, 'middle', 650);
+    const bh2 = y2(bh[i]) - y2(0);
+    const r2 = el('rect', {x: bx, y: y2(0), width: barW, height: bh2, rx: 3, fill: '#e66767'}, svg);
+    tip(r2, `Buy & hold ${a}: ${bh[i]}% over the same window`);
+    txt(svg, bx + barW / 2, y2(bh[i]) + 16, bh[i] + '%', '#ffffff', 10.5, 'middle', 650);
+  });
+})();
+
+// 5) exit-reason mix (HTML bar list)
+(function () {
+  const data = [
+    {name: 'trail_stop', v: 20, note: 'ratchet riding winners'},
+    {name: 'stop_loss', v: 15, note: 'fixed −5% cut'},
+    {name: 'time_stop', v: 3, note: 'stale losers ≥14d'},
+  ];
+  const rootEl = document.getElementById('chart-exits');
+  data.forEach(d => {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<div class="name">${d.name}</div>
+      <div class="track"><div class="fill" style="width:${d.v / 38 * 100}%; background:#3987e5" title="${d.name}: ${d.v} of 38 exits — ${d.note}"></div></div>
+      <div class="val num">${d.v} · ${(d.v / 38 * 100).toFixed(0)}%</div>`;
+    rootEl.appendChild(row);
+  });
+})();
+
+// 6) agreement heatmap — sequential blue ramp
+(function () {
+  const keys = ['B1', 'B2', 'B3', 'B5', 'B6'];
+  const M = {
+    B1: {B1: 1.0, B2: .709, B3: .519, B5: .391, B6: .493},
+    B2: {B1: .709, B2: 1.0, B3: .4, B5: .365, B6: .591},
+    B3: {B1: .519, B2: .4, B3: 1.0, B5: .84, B6: .097},
+    B5: {B1: .391, B2: .365, B3: .84, B5: 1.0, B6: .197},
+    B6: {B1: .493, B2: .591, B3: .097, B5: .197, B6: 1.0},
+  };
+  const ramp = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+  const shade = v => ramp[Math.min(6, Math.floor(v * 6.999))];
+  const cell = 58, pad = 40, W = pad + cell * 5 + 8, H = pad + cell * 5 + 8;
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, width: '100%', style: 'max-width:380px', role: 'img'}, document.getElementById('chart-heat'));
+  keys.forEach((k, i) => {
+    txt(svg, pad + cell * i + cell / 2, pad - 10, k, '#c3c2b7', 11.5, 'middle', 650);
+    txt(svg, pad - 10, pad + cell * i + cell / 2 + 4, k, '#c3c2b7', 11.5, 'end', 650);
+    keys.forEach((k2, j) => {
+      const v = M[k][k2];
+      const r = el('rect', {x: pad + cell * j + 1, y: pad + cell * i + 1, width: cell - 2, height: cell - 2, rx: 5, fill: shade(v)}, svg);
+      tip(r, `${k} ↔ ${k2}: agree on ${(v * 100).toFixed(1)}% of evaluated days`);
+      txt(svg, pad + cell * j + cell / 2, pad + cell * i + cell / 2 + 4, v.toFixed(2), v > 0.55 ? '#ffffff' : '#0b0b0b', 11, 'middle', 650);
+    });
+  });
+})();
+</script>
+</body>
+</html>

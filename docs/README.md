@@ -24,6 +24,7 @@ All HTML documents live under [design/](design/) — this is the standing conven
 | [design/implementation-plan.html](design/implementation-plan.html) | Signal-collection implementation plan (5 phases, verified sources, per-phase acceptance). Live at sooppiy.com/plan.html. |
 | [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. Live at sooppiy.com/framework.html. |
 | [design/theme-preview.html](design/theme-preview.html) | Signal design-system reference (tokens, type scale, components). |
+| [design/parameter-upgrade-result.html](design/parameter-upgrade-result.html) | **Parameter-upgrade implementation result** — full visual report: session pipeline, 4-layer architecture diagram, automation-tick flow, verification-panel charts, Phase-4 backtest evidence (PF per fold, capital preservation, exit mix, agreement heatmap), deployed-state table. |
 
 ## The five decisions to anchor on
 
