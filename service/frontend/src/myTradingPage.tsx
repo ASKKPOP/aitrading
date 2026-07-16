@@ -94,7 +94,7 @@ function AccountHeader({ user, mfa, onSignOut }: {
             color: 'var(--accent-primary, #b8542f)',
             marginBottom: 6,
           }}>{tr(language, { ko: '내 트레이딩', en: 'My Trading', ja: 'マイトレード', th: 'การเทรดของฉัน', vi: 'Giao dịch của tôi' })}</div>
-          <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0, color: '#fff' }}>
             {user?.email ?? '…'}
           </h1>
           <div style={{ marginTop: 8, fontSize: 13, opacity: 0.7 }}>

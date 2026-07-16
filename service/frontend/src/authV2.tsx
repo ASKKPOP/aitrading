@@ -102,6 +102,7 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
   borderRadius: 6,
   background: 'var(--bg-secondary, #fff)',
+  color: 'var(--text-primary, #0b0b0b)',
   marginBottom: 12,
   fontFamily: 'inherit',
 }
