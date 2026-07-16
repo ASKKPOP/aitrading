@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { API_BASE, REFRESH_INTERVAL, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
@@ -7,6 +8,7 @@ export function TrendingSidebar() {
   const [trending, setTrending] = useState<any[]>([])
   const [agentCount, setAgentCount] = useState(0)
   const { language } = useLanguage()
+  const navigate = useNavigate()
 
   useEffect(() => {
     loadTrending()
@@ -58,7 +60,11 @@ export function TrendingSidebar() {
       alignSelf: 'flex-start'
     }}>
       {/* Agent Count */}
-      <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+      <div
+        className="card"
+        onClick={() => navigate('/leaderboard')}
+        style={{ padding: '16px', marginBottom: '16px', cursor: 'pointer' }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             {tr(language, { ko: '등록 트레이더', en: 'Registered Traders', ja: '登録トレーダー', th: 'เทรดเดอร์ที่ลงทะเบียน', vi: 'Trader đã đăng ký' })}
@@ -83,6 +89,7 @@ export function TrendingSidebar() {
             {trending.map((item, idx) => (
               <div
                 key={`${item.symbol}-${item.market}`}
+                onClick={() => navigate('/market')}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -90,7 +97,8 @@ export function TrendingSidebar() {
                   padding: '8px 10px',
                   background: 'var(--bg-tertiary)',
                   borderRadius: '8px',
-                  fontSize: '13px'
+                  fontSize: '13px',
+                  cursor: 'pointer'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
