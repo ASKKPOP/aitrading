@@ -76,7 +76,13 @@ _CALENDAR: list[tuple[str, str, str, str]] = [
     ("nfp", "2026-10-02", "08:30", "Jobs report (Sep 2026)"),
     ("nfp", "2026-11-06", "08:30", "Jobs report (Oct 2026)"),
     ("nfp", "2026-12-04", "08:30", "Jobs report (Nov 2026)"),
+    # ── US election days (statutory Tuesday after first Monday of November;
+    #    18:00 ET approximates earliest polls close, not a release time) ─────
+    ("election", "2026-11-03", "18:00", "US midterm election day"),
 ]
+
+# Historical 2019–2025 calendar (source-verified) lives in
+# market_events_history.py — used by the strategy backtester, not the live feed.
 
 # Entry-block window around a release: default 60 min before -> 60 min after.
 # Slippage/whipsaw risk concentrates here (see module docstring).
