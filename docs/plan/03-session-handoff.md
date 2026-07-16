@@ -110,6 +110,9 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
   rm -rf ~/sooppiy/admin-site/* && tar xzf /tmp/fe-dist.tar.gz -C ~/sooppiy/admin-site
   # (no container restart needed — static bind mount)
   ```
+  **Never swap the directory itself** (`mv admin-site.new admin-site`): the bind mount is
+  pinned to the old inode, so the container keeps serving the stale bundle until
+  `docker restart sooppiy-admin`. Extract *in place* as above, or restart after a swap.
 
 ### Deploy gotchas (learned the hard way)
 - **`docker restart` does NOT reload `--env-file`.** You must `docker rm -f` + `docker run` to pick up `.env` changes.
