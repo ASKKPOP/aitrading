@@ -275,17 +275,44 @@ function HeroWaveBackground({ gain = 1, amp = 1 }: { gain?: number; amp?: number
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
   )
 }
-// ── six-signal flow diagram (guide.html §0 style) ────────────────────────
+// ── pipeline flow diagram (verbatim port of guide.html §0 geometry) ──────
 // Coordinate space shared by the SVG diagram and the particle overlay.
-const FLOW_W = 960, FLOW_H = 320
-const RAIL_Y = 208
-// pipeline box x-spans — rail particles are hidden while passing behind a box
-const FLOW_BOXES: Array<[number, number]> = [[20, 230], [256, 466], [492, 702], [728, 938]]
-const FLOW_PATHS: Array<{ pts: Array<[number, number]>; n: number; k: number; rail?: boolean }> = [
-  { pts: [[290, 88], [290, 164]], n: 3, k: 0.25 },            // news feeder ↓
-  { pts: [[670, 88], [670, 164]], n: 3, k: 0.25 },            // psychology feeder ↓
-  { pts: [[24, RAIL_Y], [936, RAIL_Y]], n: 14, k: 0.08, rail: true }, // pipeline rail →
+const FLOW_W = 960, FLOW_H = 620
+// Connector polylines traced from the guide SVG; particles ride them.
+// c: color group · n: particles · k: cycle speed · o: phase offset
+const FLOW_PATHS: Array<{ pts: Array<[number, number]>; n: number; k: number; o: number; c: 'base' | 'acc' | 'good' | 'bad' }> = [
+  // sources → collectors
+  { pts: [[102, 80], [102, 108]], n: 1, k: 0.5, o: 0.0, c: 'base' },
+  { pts: [[290, 80], [290, 108]], n: 1, k: 0.5, o: 0.2, c: 'base' },
+  { pts: [[478, 80], [478, 108]], n: 1, k: 0.5, o: 0.4, c: 'base' },
+  { pts: [[666, 80], [666, 108]], n: 1, k: 0.5, o: 0.6, c: 'base' },
+  { pts: [[856, 80], [856, 108]], n: 1, k: 0.5, o: 0.8, c: 'base' },
+  // collectors → snapshot store
+  { pts: [[126, 168], [126, 196]], n: 1, k: 0.5, o: 0.1, c: 'base' },
+  { pts: [[362, 168], [362, 196]], n: 1, k: 0.5, o: 0.35, c: 'base' },
+  { pts: [[598, 168], [598, 196]], n: 1, k: 0.5, o: 0.6, c: 'base' },
+  { pts: [[834, 168], [834, 196]], n: 1, k: 0.5, o: 0.85, c: 'base' },
+  // snapshot store → fusion / AI analysts
+  { pts: [[240, 238], [240, 266]], n: 1, k: 0.5, o: 0.0, c: 'base' },
+  { pts: [[720, 238], [720, 266]], n: 1, k: 0.5, o: 0.5, c: 'base' },
+  // fusion + analysts → automation rules
+  { pts: [[240, 334], [240, 360], [180, 360], [180, 386]], n: 2, k: 0.28, o: 0.0, c: 'base' },
+  { pts: [[720, 334], [720, 360], [184, 360]], n: 3, k: 0.13, o: 0.0, c: 'base' },
+  // rules → risk gate → PASS → paper execution · FAIL ↓ journal
+  { pts: [[320, 421], [366, 421]], n: 1, k: 0.5, o: 0.0, c: 'acc' },
+  { pts: [[624, 421], [670, 421]], n: 1, k: 0.5, o: 0.3, c: 'good' },
+  { pts: [[496, 454], [496, 488]], n: 1, k: 0.45, o: 0.0, c: 'bad' },
+  // execution → tracking → journal → dashboard
+  { pts: [[808, 454], [808, 488]], n: 1, k: 0.45, o: 0.5, c: 'base' },
+  { pts: [[672, 517], [626, 517]], n: 1, k: 0.5, o: 0.2, c: 'base' },
+  { pts: [[496, 544], [496, 572]], n: 1, k: 0.5, o: 0.6, c: 'acc' },
 ]
+const FLOW_COLORS: Record<string, [number, number, number]> = {
+  base: [0.55, 0.62, 0.85],
+  acc: [0.30, 0.58, 0.98],
+  good: [0.20, 0.78, 0.35],
+  bad: [0.92, 0.35, 0.35],
+}
 
 // WebGL glow particles travelling along the diagram connectors.
 // Same lifecycle rules as HeroWaveBackground (no loseContext in cleanup,
@@ -307,23 +334,26 @@ function FlowParticles() {
     const VS = `
       attribute vec2 aPos;        // diagram coords
       attribute float aAlpha;
+      attribute vec3 aColor;
       uniform float uDpr;
       varying float vAlpha;
+      varying vec3 vColor;
       void main() {
         gl_Position = vec4(aPos.x / ${FLOW_W}.0 * 2.0 - 1.0, 1.0 - aPos.y / ${FLOW_H}.0 * 2.0, 0.0, 1.0);
         gl_PointSize = 7.0 * uDpr;
         vAlpha = aAlpha;
+        vColor = aColor;
       }`
     const FS = `
       precision mediump float;
       varying float vAlpha;
-      uniform vec3 uColor;
+      varying vec3 vColor;
       void main() {
         vec2 d = gl_PointCoord - vec2(0.5);
         float r = length(d) * 2.0;
         if (r > 1.0) discard;
         float a = vAlpha * smoothstep(1.0, 0.15, r);
-        gl_FragColor = vec4(uColor * a, a);      // premultiplied
+        gl_FragColor = vec4(vColor * a, a);      // premultiplied
       }`
     const compile = (type: number, src: string) => {
       const s = gl.createShader(type)!
@@ -342,18 +372,37 @@ function FlowParticles() {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return
     const aPos = gl.getAttribLocation(prog, 'aPos')
     const aAlpha = gl.getAttribLocation(prog, 'aAlpha')
+    const aColor = gl.getAttribLocation(prog, 'aColor')
     const uDpr = gl.getUniformLocation(prog, 'uDpr')
-    const uColor = gl.getUniformLocation(prog, 'uColor')
     const vbo = gl.createBuffer()
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
+    // precompute per-path segment lengths for polyline interpolation
+    const geo = FLOW_PATHS.map(p => {
+      const segs: number[] = []
+      let len = 0
+      for (let i = 1; i < p.pts.length; i++) {
+        const d = Math.hypot(p.pts[i][0] - p.pts[i - 1][0], p.pts[i][1] - p.pts[i - 1][1])
+        segs.push(d); len += d
+      }
+      return { segs, len }
+    })
     const total = FLOW_PATHS.reduce((s, p) => s + p.n, 0)
-    const data = new Float32Array(total * 3)
-    const pointAt = (pts: Array<[number, number]>, f: number): [number, number] => {
-      // paths here are single segments; lerp is exact
-      const [a, b] = pts
-      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]
+    const data = new Float32Array(total * 6)
+    const pointAt = (pi: number, f: number): [number, number] => {
+      const { pts } = FLOW_PATHS[pi]
+      const { segs, len } = geo[pi]
+      let target = f * len
+      for (let i = 0; i < segs.length; i++) {
+        if (target <= segs[i] || i === segs.length - 1) {
+          const u = segs[i] === 0 ? 0 : Math.min(1, target / segs[i])
+          const a = pts[i], b = pts[i + 1]
+          return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]
+        }
+        target -= segs[i]
+      }
+      return pts[pts.length - 1]
     }
     const smooth = (e0: number, e1: number, x: number) => {
       const u = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
@@ -363,15 +412,16 @@ function FlowParticles() {
     const draw = () => {
       if (canvas.width < 10 || canvas.height < 10) return
       let i = 0
-      for (const p of FLOW_PATHS) {
+      FLOW_PATHS.forEach((p, pi) => {
+        const [cr, cg, cb] = FLOW_COLORS[p.c]
         for (let j = 0; j < p.n; j++) {
-          const ph = ((j / p.n) + t * p.k) % 1
-          const [x, y] = pointAt(p.pts, ph)
-          let a = smooth(0, 0.06, ph) * (1 - smooth(0.94, 1, ph))
-          if (p.rail && FLOW_BOXES.some(([x0, x1]) => x > x0 && x < x1)) a = 0
-          data[i++] = x; data[i++] = y; data[i++] = a * 0.9
+          const ph = ((j / p.n) + p.o + t * p.k) % 1
+          const [x, y] = pointAt(pi, ph)
+          const a = smooth(0, 0.08, ph) * (1 - smooth(0.92, 1, ph)) * 0.95
+          data[i++] = x; data[i++] = y; data[i++] = a
+          data[i++] = cr; data[i++] = cg; data[i++] = cb
         }
-      }
+      })
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
@@ -379,11 +429,12 @@ function FlowParticles() {
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
       gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
       gl.enableVertexAttribArray(aPos)
-      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 12, 0)
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 24, 0)
       gl.enableVertexAttribArray(aAlpha)
-      gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 12, 8)
+      gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 24, 8)
+      gl.enableVertexAttribArray(aColor)
+      gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 24, 12)
       gl.uniform1f(uDpr, dpr)
-      gl.uniform3f(uColor, 0.25, 0.55, 0.95)
       gl.drawArrays(gl.POINTS, 0, total)
     }
     const resize = () => {
@@ -498,12 +549,12 @@ export function MarketingPage() {
     readKicker: tr(language, { ko: 'AI가 읽는 것', en: 'WHAT THE AI READS', ja: 'AIが読むもの', th: 'สิ่งที่ AI อ่าน', vi: 'AI ĐỌC GÌ' }),
     readH: tr(language, { ko: '여섯 가지 신호 요소', en: 'Six signal elements', ja: '6つのシグナル要素', th: 'องค์ประกอบสัญญาณ 6 อย่าง', vi: 'Sáu yếu tố tín hiệu' }),
     read: [
-      { t: tr(language, { ko: '어떤 코인을', en: 'Which coin', ja: 'どのコイン', th: 'เหรียญไหน', vi: 'Coin nào' }), s: tr(language, { ko: '거래량·멘션·지갑 스캔', en: 'volume · mentions · wallets', ja: '出来高・言及・ウォレット', th: 'สแกนปริมาณ·การพูดถึง·กระเป๋า', vi: 'khối lượng · nhắc · ví' }), d: tr(language, { ko: '거래량 급증, 소셜 멘션 급등, 고래 지갑 이동, 신규 상장을 스캔해 후보를 추립니다.', en: 'Scans volume surges, social mention spikes, whale wallet moves and new listings to shortlist candidates.', ja: '出来高急増・ソーシャル言及の急上昇・クジラの移動・新規上場をスキャンして候補を絞ります。', th: 'สแกนปริมาณพุ่ง การพูดถึงในโซเชียล การเคลื่อนไหวกระเป๋าวาฬ และเหรียญลิสต์ใหม่เพื่อคัดตัวเลือก', vi: 'Quét khối lượng tăng vọt, lượt nhắc mạng xã hội, ví cá voi và niêm yết mới để chọn ứng viên.' }) },
-      { t: tr(language, { ko: '왜 움직였나', en: 'Why it moved', ja: 'なぜ動いたか', th: 'ทำไมถึงขยับ', vi: 'Vì sao biến động' }), s: tr(language, { ko: '뉴스·이벤트 원인 태깅', en: 'news/event causal tags', ja: 'ニュース・イベント因果タグ', th: 'แท็กสาเหตุข่าว·อีเวนต์', vi: 'gắn nhãn nguyên nhân' }), d: tr(language, { ko: 'LLM이 가격 변동을 실시간 뉴스·이벤트와 대조해 원인을 태깅합니다.', en: 'The LLM matches each price move against live news and events — causal tagging in real time.', ja: 'LLMが価格変動をライブのニュース・イベントと照合し、リアルタイムで因果タグ付けします。', th: 'LLM จับคู่การเคลื่อนไหวราคากับข่าวและเหตุการณ์สด — ติดแท็กเชิงสาเหตุแบบเรียลไทม์', vi: 'LLM đối chiếu mỗi biến động giá với tin tức và sự kiện trực tiếp — gắn nhãn nhân quả theo thời gian thực.' }) },
-      { t: tr(language, { ko: '언제 살까', en: 'When to buy', ja: 'いつ買うか', th: 'ซื้อเมื่อไร', vi: 'Khi nào mua' }), s: tr(language, { ko: '정량 × 정성 트리거', en: 'quant × qualitative triggers', ja: '定量×定性トリガー', th: 'ทริกเกอร์ปริมาณ×คุณภาพ', vi: 'trigger định lượng × định tính' }), d: tr(language, { ko: '정량 트리거(RSI·베이시스·펀딩)와 정성 트리거(감성 급등·확률 변화)를 결합합니다.', en: 'Quant triggers (RSI, basis, funding) combined with qualitative ones (sentiment spikes, odds shifts).', ja: '定量トリガー（RSI・ベーシス・資金調達率）と定性トリガー（感性スパイク・オッズ変化）を結合。', th: 'ทริกเกอร์เชิงปริมาณ (RSI, เบสิส, ฟันดิง) ผสานทริกเกอร์เชิงคุณภาพ (เซนติเมนต์พุ่ง, อัตราต่อรองเปลี่ยน)', vi: 'Trigger định lượng (RSI, basis, funding) kết hợp trigger định tính (tâm lý tăng vọt, tỷ lệ cược đổi).' }) },
-      { t: tr(language, { ko: '언제 팔까', en: 'When to sell', ja: 'いつ売るか', th: 'ขายเมื่อไร', vi: 'Khi nào bán' }), s: tr(language, { ko: '과열·유출·3σ 청산', en: 'overheat · outflow · 3σ exits', ja: '過熱・流出・3σ手仕舞い', th: 'ร้อนแรง·ไหลออก·3σ', vi: 'quá nóng · rút · 3σ' }), d: tr(language, { ko: '과열(RSI 과매수), 음의 감성 급등, 고래 유출, 3σ 변동성이 청산을 강제합니다.', en: 'Overheat (RSI overbought), negative sentiment spikes, whale outflows or 3σ volatility force exits.', ja: '過熱（RSI過買い）・部定感性の急増・クジラ流出・3σ変動で強制的に手仕舞います。', th: 'ความร้อนแรงเกิน (RSI ซื้อมากไป) เซนติเมนต์ลบพุ่ง วาฬไหลออก หรือความผันผวน 3σ บังคับปิดสถานะ', vi: 'Quá nóng (RSI quá mua), tâm lý tiêu cực tăng vọt, cá voi rút hoặc biến động 3σ buộc thoát lệnh.' }) },
-      { t: tr(language, { ko: '뉴스 · 핫이슈', en: 'News & hot issues', ja: 'ニュース・注目イベント', th: 'ข่าวและประเด็นร้อน', vi: 'Tin tức & vấn đề nóng' }), s: tr(language, { ko: 'LLM 요약·중요도 평가', en: 'LLM summary & importance', ja: 'LLM要約・重要度', th: 'LLM สรุป·ให้คะแนน', vi: 'LLM tóm tắt · chấm điểm' }), d: tr(language, { ko: '뉴스 API와 소셜 피드를 LLM이 요약·중요도 평가해 시장 영향을 추정합니다.', en: 'News APIs and social feeds, summarised and importance-scored by the LLM to estimate market impact.', ja: 'ニュースAPIとソーシャルフィードをLLMが要約・重要度スコア化し、市場影響を推定します。', th: 'API ข่าวและฟีดโซเชียล ถูก LLM สรุปและให้คะแนนความสำคัญเพื่อประเมินผลกระทบต่อตลาด', vi: 'API tin tức và mạng xã hội được LLM tóm tắt, chấm điểm mức quan trọng để ước tính tác động thị trường.' }) },
-      { t: tr(language, { ko: '심리', en: 'Psychology', ja: '心理', th: 'จิตวิทยา', vi: 'Tâm lý' }), s: tr(language, { ko: '공포·충격·기대 프록시', en: 'fear · shock · anticipation', ja: '恐怖・衝撃・期待の代用指標', th: 'พร็อกซีกลัว·ช็อก·คาดหวัง', vi: 'proxy sợ · sốc · kỳ vọng' }), d: tr(language, { ko: '공포·충격·기대 — 멘션·감성 점수·변동성·청산·확률이라는 프록시로 근사합니다.', en: 'Fear, shock and anticipation — approximated with proxies: mentions, sentiment scores, volatility, liquidations, odds.', ja: '恐怖・衝撃・期待感 — 言及量・感性スコア・変動率・清算・オッズという代用指標で近似します。', th: 'ความกลัว ช็อก และความคาดหวัง — ประมาณด้วยตัวแทน: การพูดถึง คะแนนเซนติเมนต์ ความผันผวน การล้างพอร์ต อัตราต่อรอง', vi: 'Sợ hãi, sốc và kỳ vọng — xấp xỉ bằng proxy: lượt nhắc, điểm tâm lý, biến động, thanh lý, tỷ lệ cược.' }) },
+      { t: tr(language, { ko: '어떤 코인을', en: 'Which coin', ja: 'どのコイン', th: 'เหรียญไหน', vi: 'Coin nào' }), d: tr(language, { ko: '거래량 급증, 소셜 멘션 급등, 고래 지갑 이동, 신규 상장을 스캔해 후보를 추립니다.', en: 'Scans volume surges, social mention spikes, whale wallet moves and new listings to shortlist candidates.', ja: '出来高急増・ソーシャル言及の急上昇・クジラの移動・新規上場をスキャンして候補を絞ります。', th: 'สแกนปริมาณพุ่ง การพูดถึงในโซเชียล การเคลื่อนไหวกระเป๋าวาฬ และเหรียญลิสต์ใหม่เพื่อคัดตัวเลือก', vi: 'Quét khối lượng tăng vọt, lượt nhắc mạng xã hội, ví cá voi và niêm yết mới để chọn ứng viên.' }) },
+      { t: tr(language, { ko: '왜 움직였나', en: 'Why it moved', ja: 'なぜ動いたか', th: 'ทำไมถึงขยับ', vi: 'Vì sao biến động' }), d: tr(language, { ko: 'LLM이 가격 변동을 실시간 뉴스·이벤트와 대조해 원인을 태깅합니다.', en: 'The LLM matches each price move against live news and events — causal tagging in real time.', ja: 'LLMが価格変動をライブのニュース・イベントと照合し、リアルタイムで因果タグ付けします。', th: 'LLM จับคู่การเคลื่อนไหวราคากับข่าวและเหตุการณ์สด — ติดแท็กเชิงสาเหตุแบบเรียลไทม์', vi: 'LLM đối chiếu mỗi biến động giá với tin tức và sự kiện trực tiếp — gắn nhãn nhân quả theo thời gian thực.' }) },
+      { t: tr(language, { ko: '언제 살까', en: 'When to buy', ja: 'いつ買うか', th: 'ซื้อเมื่อไร', vi: 'Khi nào mua' }), d: tr(language, { ko: '정량 트리거(RSI·베이시스·펀딩)와 정성 트리거(감성 급등·확률 변화)를 결합합니다.', en: 'Quant triggers (RSI, basis, funding) combined with qualitative ones (sentiment spikes, odds shifts).', ja: '定量トリガー（RSI・ベーシス・資金調達率）と定性トリガー（感性スパイク・オッズ変化）を結合。', th: 'ทริกเกอร์เชิงปริมาณ (RSI, เบสิส, ฟันดิง) ผสานทริกเกอร์เชิงคุณภาพ (เซนติเมนต์พุ่ง, อัตราต่อรองเปลี่ยน)', vi: 'Trigger định lượng (RSI, basis, funding) kết hợp trigger định tính (tâm lý tăng vọt, tỷ lệ cược đổi).' }) },
+      { t: tr(language, { ko: '언제 팔까', en: 'When to sell', ja: 'いつ売るか', th: 'ขายเมื่อไร', vi: 'Khi nào bán' }), d: tr(language, { ko: '과열(RSI 과매수), 음의 감성 급등, 고래 유출, 3σ 변동성이 청산을 강제합니다.', en: 'Overheat (RSI overbought), negative sentiment spikes, whale outflows or 3σ volatility force exits.', ja: '過熱（RSI過買い）・部定感性の急増・クジラ流出・3σ変動で強制的に手仕舞います。', th: 'ความร้อนแรงเกิน (RSI ซื้อมากไป) เซนติเมนต์ลบพุ่ง วาฬไหลออก หรือความผันผวน 3σ บังคับปิดสถานะ', vi: 'Quá nóng (RSI quá mua), tâm lý tiêu cực tăng vọt, cá voi rút hoặc biến động 3σ buộc thoát lệnh.' }) },
+      { t: tr(language, { ko: '뉴스 · 핫이슈', en: 'News & hot issues', ja: 'ニュース・注目イベント', th: 'ข่าวและประเด็นร้อน', vi: 'Tin tức & vấn đề nóng' }), d: tr(language, { ko: '뉴스 API와 소셜 피드를 LLM이 요약·중요도 평가해 시장 영향을 추정합니다.', en: 'News APIs and social feeds, summarised and importance-scored by the LLM to estimate market impact.', ja: 'ニュースAPIとソーシャルフィードをLLMが要約・重要度スコア化し、市場影響を推定します。', th: 'API ข่าวและฟีดโซเชียล ถูก LLM สรุปและให้คะแนนความสำคัญเพื่อประเมินผลกระทบต่อตลาด', vi: 'API tin tức và mạng xã hội được LLM tóm tắt, chấm điểm mức quan trọng để ước tính tác động thị trường.' }) },
+      { t: tr(language, { ko: '심리', en: 'Psychology', ja: '心理', th: 'จิตวิทยา', vi: 'Tâm lý' }), d: tr(language, { ko: '공포·충격·기대 — 멘션·감성 점수·변동성·청산·확률이라는 프록시로 근사합니다.', en: 'Fear, shock and anticipation — approximated with proxies: mentions, sentiment scores, volatility, liquidations, odds.', ja: '恐怖・衝撃・期待感 — 言及量・感性スコア・変動率・清算・オッズという代用指標で近似します。', th: 'ความกลัว ช็อก และความคาดหวัง — ประมาณด้วยตัวแทน: การพูดถึง คะแนนเซนติเมนต์ ความผันผวน การล้างพอร์ต อัตราต่อรอง', vi: 'Sợ hãi, sốc và kỳ vọng — xấp xỉ bằng proxy: lượt nhắc, điểm tâm lý, biến động, thanh lý, tỷ lệ cược.' }) },
     ],
 
     psyKicker: tr(language, { ko: '심리의 정량화', en: 'PSYCHOLOGY, QUANTIFIED', ja: '心理の定量化', th: 'จิตวิทยาเชิงตัวเลข', vi: 'TÂM LÝ ĐƯỢC LƯỢNG HÓA' }),
@@ -639,69 +690,169 @@ export function MarketingPage() {
         <div style={wrap}>
           <div style={kicker}>{T.readKicker}</div>
           <h2 style={h2S}>{T.readH}</h2>
-          {/* guide.html §0 layout: steps-strip chips + flow diagram.
-              The SVG carries the structure; FlowParticles animates the
-              connectors in the same coordinate space. */}
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', margin: '18px 0 14px' }}>
-            {T.read.map((r, i) => (
-              <div key={i} style={{ background: V.card, border: `1px solid ${V.line}`, borderRadius: 10, padding: '9px 8px', textAlign: 'center' }}>
-                <b style={{ display: 'block', fontSize: 11, color: V.accent, fontVariantNumeric: 'tabular-nums', fontFamily: V.mono }}>{String(i + 1).padStart(2, '0')}</b>
-                <span style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{r.t}</span>
+          {/* Verbatim reproduction of guide.html §0 (10-step strip, pipeline
+              SVG at original geometry, KPI row), localized; FlowParticles
+              animates the connectors in the same coordinate space. */}
+          {(() => {
+            const L = (ko: string, en: string, ja: string, th: string, vi: string) => tr(language, { ko, en, ja, th, vi })
+            const svT: any = { font: `600 12px ${V.sans}`, fill: V.ink }
+            const svS: any = { font: `500 10.5px ${V.sans}`, fill: V.mut }
+            const svM: any = { font: `600 10px ${V.mono}`, fill: V.faint }
+            const svLb: any = { font: `700 10px ${V.sans}`, fill: V.faint, letterSpacing: '.08em' }
+            const GOOD = 'var(--up, #0ca30c)', BAD = 'var(--down, #d03b3b)', YELL = '#cf8f00'
+            const accF = `color-mix(in srgb, ${V.accent} 12%, ${V.card})`
+            const goodF = `color-mix(in srgb, ${GOOD} 12%, ${V.card})`
+            const warnF = `color-mix(in srgb, ${YELL} 14%, ${V.card})`
+            const steps = [
+              L('데이터 수집', 'Data collection', 'データ収集', 'เก็บข้อมูล', 'Thu thập dữ liệu'),
+              L('종목 발굴', 'Coin discovery', '銘柄発掘', 'ค้นหาเหรียญ', 'Tìm coin'),
+              L('정량 분석', 'Quant analysis', '定量分析', 'วิเคราะห์เชิงปริมาณ', 'Phân tích định lượng'),
+              L('심리 분석', 'Psych analysis', '心理分析', 'วิเคราะห์จิตวิทยา', 'Phân tích tâm lý'),
+              L('신호 융합', 'Signal fusion', 'シグナル融合', 'ผสานสัญญาณ', 'Hợp nhất tín hiệu'),
+              L('AI 4-분석가', 'AI 4 analysts', 'AI 4アナリスト', 'นักวิเคราะห์ AI 4', '4 nhà phân tích AI'),
+              L('자동매매 규칙', 'Automation rules', '自動売買ルール', 'กฎเทรดอัตโนมัติ', 'Quy tắc tự động'),
+              L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'),
+              L('체결·SL/TP', 'Fill · SL/TP', '約定·SL/TP', 'เติมคำสั่ง·SL/TP', 'Khớp · SL/TP'),
+              L('기록·복기', 'Journal & review', '記録・振り返り', 'บันทึก·ทบทวน', 'Nhật ký & xem lại'),
+            ]
+            const kpis = [
+              { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh'), vl: L('페이퍼 전용', 'Paper only', 'ペーパー専用', 'เปเปอร์เท่านั้น', 'Chỉ paper'), hint: L('실계좌 주문 코드 자체가 비활성', 'real-account order code disabled', '実口座注文コード自体が無効', 'โค้ดคำสั่งบัญชีจริงถูกปิด', 'mã lệnh tài khoản thật bị vô hiệu') },
+              { lb: L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'), vl: L('3중 검사', 'Triple check', '三重チェック', 'ตรวจ 3 ชั้น', 'Kiểm tra 3 lớp'), hint: L('켈리 → 한도 → 브레이커', 'Kelly → limits → breaker', 'ケリー → 上限 → ブレーカー', 'เคลลี → ลิมิต → เบรกเกอร์', 'Kelly → hạn mức → breaker') },
+              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: L('708 통과', '708 passing', '708件通過', 'ผ่าน 708', '708 đạt'), hint: L('신규 위상 테스트 126개 포함', 'incl. 126 new phase tests', '新規位相テスト126件含む', 'รวมเทสต์เฟสใหม่ 126', 'gồm 126 test pha mới') },
+              { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền'), vl: '21' + L('개', '', '件', '', ''), hint: 'risk_watcher · psych · scanner' },
+            ]
+            return (<>
+              <p style={{ fontSize: 14, color: V.mut, margin: '4px 0 14px', maxWidth: '80ch' }}>
+                {L('데이터 수집부터 복기까지. 모든 매매는 페이퍼(시뮬레이터) 계정에서만 체결되고, 모든 단계는 env 플래그로 격리되며, 외부 소스 장애는 해당 부분만 조용히 빠지는 fail-soft 구조입니다.',
+                  'From data collection to review. Every trade fills only on the paper (simulator) account, every stage is isolated behind env flags, and an external-source outage silently drops only its own part — fail-soft by design.',
+                  'データ収集から振り返りまで。全ての売買はペーパー（シミュレーター）口座のみで約定し、各段階はenvフラグで隔離され、外部ソース障害は該当部分だけが静かに抜けるfail-soft構造です。',
+                  'ตั้งแต่เก็บข้อมูลจนถึงทบทวน ทุกการเทรดเกิดในบัญชีเปเปอร์ (จำลอง) เท่านั้น ทุกขั้นถูกแยกด้วย env flag และเมื่อแหล่งข้อมูลภายนอกล่ม เฉพาะส่วนนั้นจะหายไปเงียบ ๆ — โครงสร้าง fail-soft',
+                  'Từ thu thập dữ liệu đến xem lại. Mọi giao dịch chỉ khớp trên tài khoản paper (mô phỏng), mọi giai đoạn được cách ly bằng cờ env, và sự cố nguồn ngoài chỉ làm rơi phần đó một cách im lặng — thiết kế fail-soft.')}
+              </p>
+              <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))', margin: '14px 0' }}>
+                {steps.map((s, i) => (
+                  <div key={i} style={{ background: V.card, border: `1px solid ${V.line}`, borderRadius: 10, padding: '9px 8px', textAlign: 'center' }}>
+                    <b style={{ display: 'block', fontSize: 11, color: V.accent, fontVariantNumeric: 'tabular-nums' }}>STEP {i + 1}</b>
+                    <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{s}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div style={{ ...cardS, padding: 14, overflowX: 'auto' }}>
-            <div style={{ position: 'relative', minWidth: 680 }}>
-              {(() => {
-                const boxColor = [V.accent, V.accent, 'var(--up, #0ca30c)', '#cf8f00']
-                const feeder = (i: number, x: number) => (
-                  <g key={i}>
-                    <rect x={x} y={28} width={280} height={60} rx={10} fill={V.bg2} stroke={V.line} />
-                    <text x={x + 140} y={54} textAnchor="middle" style={{ font: `700 14px ${V.sans}`, fill: V.ink }}>
-                      <tspan style={{ fill: V.accent, fontFamily: V.mono as string, fontSize: 11 }}>{String(i + 1).padStart(2, '0')}</tspan>
-                      <tspan dx={7}>{T.read[i].t}</tspan>
-                    </text>
-                    <text x={x + 140} y={74} textAnchor="middle" style={{ font: `500 11px ${V.sans}`, fill: V.mut }}>{T.read[i].s}</text>
-                  </g>
-                )
-                return (
+              <div style={{ ...cardS, padding: 14, overflowX: 'auto', margin: '14px 0' }}>
+                <div style={{ position: 'relative', minWidth: 680 }}>
                   <svg viewBox={`0 0 ${FLOW_W} ${FLOW_H}`} style={{ display: 'block', width: '100%', height: 'auto' }} role="img" aria-label={T.readH}>
                     <defs>
-                      <marker id="mp-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                        <path d="M0 0L10 5L0 10z" fill={V.lineStrong} />
-                      </marker>
+                      <marker id="mp-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={V.lineStrong} /></marker>
+                      <marker id="mp-arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={V.accent} /></marker>
+                      <marker id="mp-arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={GOOD} /></marker>
+                      <marker id="mp-arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={BAD} /></marker>
                     </defs>
-                    {/* pipeline rail (drawn first; boxes cover it, particles ride it) */}
-                    <line x1={24} y1={RAIL_Y} x2={936} y2={RAIL_Y} stroke={V.line} strokeWidth={1.4} />
-                    {/* feeders 05 · 06 */}
-                    {feeder(4, 150)}
-                    {feeder(5, 530)}
-                    <line x1={290} y1={88} x2={290} y2={162} stroke={V.lineStrong} strokeWidth={1.4} markerEnd="url(#mp-ar)" />
-                    <line x1={670} y1={88} x2={670} y2={162} stroke={V.lineStrong} strokeWidth={1.4} markerEnd="url(#mp-ar)" />
-                    {/* pipeline 01 → 04 */}
-                    {FLOW_BOXES.map(([x0, x1], i) => (
-                      <g key={i}>
-                        <rect x={x0} y={168} width={x1 - x0} height={80} rx={10}
-                          fill={`color-mix(in srgb, ${boxColor[i]} 10%, ${V.card})`} stroke={boxColor[i]} strokeWidth={1.2} />
-                        <text x={(x0 + x1) / 2} y={202} textAnchor="middle" style={{ font: `700 14.5px ${V.sans}`, fill: V.ink }}>
-                          <tspan style={{ fill: boxColor[i], fontFamily: V.mono as string, fontSize: 11 }}>{String(i + 1).padStart(2, '0')}</tspan>
-                          <tspan dx={7}>{T.read[i].t}</tspan>
-                        </text>
-                        <text x={(x0 + x1) / 2} y={226} textAnchor="middle" style={{ font: `500 11px ${V.sans}`, fill: V.mut }}>{T.read[i].s}</text>
-                      </g>
-                    ))}
-                    {[230, 466, 702].map(x => (
-                      <line key={x} x1={x} y1={RAIL_Y} x2={x + 26} y2={RAIL_Y} stroke={V.lineStrong} strokeWidth={1.4} markerEnd="url(#mp-ar)" />
-                    ))}
-                    {/* footer note line */}
-                    <text x={FLOW_W / 2} y={300} textAnchor="middle" style={{ font: `600 11.5px ${V.mono}`, fill: V.faint }}>
-                      {T.read[4].t} + {T.read[5].t} → 01–04
-                    </text>
+                    {/* band 1: sources */}
+                    <text x={16} y={24} style={svLb}>{L('외부 데이터 소스 (전부 무키 검증 완료)', 'EXTERNAL DATA SOURCES (ALL VERIFIED KEYLESS)', '外部データソース（全て無キー検証済み）', 'แหล่งข้อมูลภายนอก (ตรวจสอบแบบไร้คีย์แล้ว)', 'NGUỒN DỮ LIỆU NGOÀI (ĐÃ KIỂM CHỨNG KHÔNG CẦN KEY)')}</text>
+                    <rect x={16} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={102} y={53} textAnchor="middle" style={svT}>OKX</text>
+                    <text x={102} y={68} textAnchor="middle" style={svS}>{L('캔들·펀딩비·베이시스·거래량', 'candles·funding·basis·volume', 'ローソク足・資金調達率・ベーシス・出来高', 'แท่งเทียน·ฟันดิง·เบสิส·ปริมาณ', 'nến·funding·basis·khối lượng')}</text>
+                    <rect x={204} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={290} y={53} textAnchor="middle" style={svT}>alternative.me</text>
+                    <text x={290} y={68} textAnchor="middle" style={svS}>{L('공포·탐욕 지수 + 이력', 'Fear & Greed index + history', 'Fear&Greed指数＋履歴', 'ดัชนี F&G + ประวัติ', 'chỉ số F&G + lịch sử')}</text>
+                    <rect x={392} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={478} y={53} textAnchor="middle" style={svT}>StockTwits</text>
+                    <text x={478} y={68} textAnchor="middle" style={svS}>{L('군중 감성·멘션 속도', 'crowd sentiment · mention velocity', '群衆感情・言及速度', 'อารมณ์ฝูงชน·ความเร็วการพูดถึง', 'tâm lý đám đông · tốc độ nhắc')}</text>
+                    <rect x={580} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={666} y={53} textAnchor="middle" style={svT}>Polymarket</text>
+                    <text x={666} y={68} textAnchor="middle" style={svS}>{L('예측시장 확률(Δodds)', 'prediction-market odds (Δodds)', '予測市場オッズ(Δodds)', 'อัตราต่อรองตลาดคาดการณ์ (Δodds)', 'tỷ lệ cược dự đoán (Δodds)')}</text>
+                    <rect x={768} y={34} width={176} height={46} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={856} y={53} textAnchor="middle" style={svT}>AV · FRED · FinnHub</text>
+                    <text x={856} y={68} textAnchor="middle" style={svS}>{L('뉴스·매크로·펀더멘털', 'news · macro · fundamentals', 'ニュース・マクロ・ファンダ', 'ข่าว·มหภาค·ปัจจัยพื้นฐาน', 'tin tức · vĩ mô · cơ bản')}</text>
+                    {[102, 290, 478, 666, 856].map(x => <path key={x} d={`M${x} 80 V108`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
+                    {/* band 2: collectors */}
+                    <rect x={16} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={126} y={130} textAnchor="middle" style={svT}>{L('STEP 2 · 스캐너', 'STEP 2 · Scanner', 'STEP 2 · スキャナー', 'STEP 2 · สแกนเนอร์', 'STEP 2 · Máy quét')}</text>
+                    <text x={126} y={145} textAnchor="middle" style={svS}>{L('거래량 급증 ×2 · 멘션 +100%', 'volume surge ×2 · mentions +100%', '出来高急増×2・言及+100%', 'ปริมาณพุ่ง ×2 · การพูดถึง +100%', 'khối lượng ×2 · nhắc +100%')}</text>
+                    <text x={126} y={159} textAnchor="middle" style={svM}>scanner.py · 1h</text>
+                    <rect x={252} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={362} y={130} textAnchor="middle" style={svT}>{L('STEP 3 · 정량(퀀트)', 'STEP 3 · Quant', 'STEP 3 · 定量(クオンツ)', 'STEP 3 · ควอนต์', 'STEP 3 · Định lượng')}</text>
+                    <text x={362} y={145} textAnchor="middle" style={svS}>RSI·MA·σ·{L('펀딩·베이시스', 'funding·basis', '資金調達率・ベーシス', 'ฟันดิง·เบสิส', 'funding·basis')}</text>
+                    <text x={362} y={159} textAnchor="middle" style={svM}>quant_crypto.py · {L('온디맨드', 'on-demand', 'オンデマンド', 'ออนดีมานด์', 'theo yêu cầu')}</text>
+                    <rect x={488} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={598} y={130} textAnchor="middle" style={svT}>{L('STEP 4 · 심리 피드', 'STEP 4 · Psych feed', 'STEP 4 · 心理フィード', 'STEP 4 · ฟีดจิตวิทยา', 'STEP 4 · Nguồn tâm lý')}</text>
+                    <text x={598} y={145} textAnchor="middle" style={svS}>{L('F&G·감성 스파이크·쇼크 추정', 'F&G · sentiment spikes · shock est.', 'F&G・感情スパイク・ショック推定', 'F&G·สไปก์อารมณ์·ประเมินช็อก', 'F&G · tâm lý tăng vọt · ước tính sốc')}</text>
+                    <text x={598} y={159} textAnchor="middle" style={svM}>psych_feed.py · 1h</text>
+                    <rect x={724} y={110} width={220} height={58} rx={9} fill={V.bg2} stroke={V.line} />
+                    <text x={834} y={130} textAnchor="middle" style={svT}>{L('뉴스 · 매크로 인텔', 'News · macro intel', 'ニュース・マクロインテル', 'ข่าว · อินเทลมหภาค', 'Tin tức · vĩ mô')}</text>
+                    <text x={834} y={145} textAnchor="middle" style={svS}>{L('뉴스 감성·ETF 흐름·매크로', 'news sentiment · ETF flows · macro', 'ニュース感情・ETFフロー・マクロ', 'เซนติเมนต์ข่าว·ETF·มหภาค', 'tâm lý tin · dòng ETF · vĩ mô')}</text>
+                    <text x={834} y={159} textAnchor="middle" style={svM}>market_intel.py · {L('주기 갱신', 'periodic refresh', '定期更新', 'รีเฟรชตามรอบ', 'làm mới định kỳ')}</text>
+                    {[126, 362, 598, 834].map(x => <path key={x} d={`M${x} 168 V196`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
+                    {/* snapshot store */}
+                    <rect x={16} y={198} width={928} height={40} rx={9} fill={V.card} stroke={V.lineStrong} strokeDasharray="5 4" />
+                    <text x={480} y={222} textAnchor="middle" style={svT}>{L('스냅샷 저장소', 'Snapshot store', 'スナップショット保存所', 'คลังสแนปช็อต', 'Kho snapshot')} — scanner · psych · market_news/macro/etf/stock_analysis ({L('모든 판단의 증거가 DB에 남음', 'evidence of every decision stays in the DB', '全判断の証拠がDBに残る', 'หลักฐานทุกการตัดสินใจอยู่ใน DB', 'bằng chứng mọi quyết định lưu trong DB')})</text>
+                    <path d="M240 238 V266" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    <path d="M720 238 V266" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    {/* band 3: fusion + AI */}
+                    <rect x={60} y={268} width={360} height={66} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={240} y={288} textAnchor="middle" style={svT}>{L('STEP 5 · 신호 융합', 'STEP 5 · Signal fusion', 'STEP 5 · シグナル融合', 'STEP 5 · ผสานสัญญาณ', 'STEP 5 · Hợp nhất tín hiệu')}</text>
+                    <text x={240} y={304} textAnchor="middle" style={svS}>{L('0.5·퀀트 + 0.3·감성 + 0.2·심리 (심리 상한 0.3)', '0.5·quant + 0.3·sentiment + 0.2·psych (psych cap 0.3)', '0.5·クオンツ+0.3·感情+0.2·心理（心理上限0.3）', '0.5·ควอนต์ + 0.3·อารมณ์ + 0.2·จิต (จำกัด 0.3)', '0.5·quant + 0.3·cảm xúc + 0.2·tâm lý (trần 0.3)')}</text>
+                    <text x={240} y={320} textAnchor="middle" style={svM}>signal_fusion.py · GET /api/market-intel/fusion</text>
+                    <rect x={540} y={268} width={360} height={66} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={720} y={288} textAnchor="middle" style={svT}>{L('STEP 6 · AI 4-분석가 + 트레이더 토론', 'STEP 6 · AI 4 analysts + trader debate', 'STEP 6 · AI 4アナリスト＋トレーダー討論', 'STEP 6 · นักวิเคราะห์ AI 4 + ดีเบต', 'STEP 6 · 4 nhà phân tích AI + tranh luận')}</text>
+                    <text x={720} y={304} textAnchor="middle" style={svS}>{L('뉴스·감성·펀더멘털/매크로·기술 → BUY/SELL/HOLD + 신뢰도', 'news·sentiment·fundamental/macro·technical → BUY/SELL/HOLD + confidence', 'ニュース・感情・ファンダ/マクロ・技術 → BUY/SELL/HOLD＋信頼度', 'ข่าว·อารมณ์·พื้นฐาน/มหภาค·เทคนิค → BUY/SELL/HOLD + ความเชื่อมั่น', 'tin·cảm xúc·cơ bản/vĩ mô·kỹ thuật → BUY/SELL/HOLD + độ tin cậy')}</text>
+                    <text x={720} y={320} textAnchor="middle" style={svM}>analysis_agents.py · {L('LLM 또는 룰 기반 폴백', 'LLM or rule-based fallback', 'LLMまたはルールベースのフォールバック', 'LLM หรือ fallback แบบกฎ', 'LLM hoặc fallback theo luật')}</text>
+                    {/* band 4: automation → gate → execution */}
+                    <path d="M240 334 V360 H180 V386" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    <path d="M720 334 V360 H180" stroke={V.lineStrong} strokeWidth={1.4} fill="none" />
+                    <rect x={40} y={388} width={280} height={66} rx={9} fill={V.card} stroke={V.lineStrong} />
+                    <text x={180} y={408} textAnchor="middle" style={svT}>{L('STEP 7 · 자동매매 규칙 (사용자 설정)', 'STEP 7 · Automation rules (user-set)', 'STEP 7 · 自動売買ルール（ユーザー設定）', 'STEP 7 · กฎเทรดอัตโนมัติ (ผู้ใช้ตั้ง)', 'STEP 7 · Quy tắc tự động (người dùng đặt)')}</text>
+                    <text x={180} y={424} textAnchor="middle" style={svS}>{L('주기 5–1440분 · 최소 신뢰도 0.65 · 자동체결 on/off', 'interval 5–1440min · min confidence 0.65 · auto-execute on/off', '周期5–1440分・最低信頼度0.65・自動約定on/off', 'รอบ 5–1440 นาที · เชื่อมั่นขั้นต่ำ 0.65 · เทรดอัตโนมัติ on/off', 'chu kỳ 5–1440ph · tin cậy tối thiểu 0.65 · tự khớp on/off')}</text>
+                    <text x={180} y={440} textAnchor="middle" style={svM}>automation.py · 60s {L('틱', 'tick', 'ティック', 'ติ๊ก', 'tick')}</text>
+                    <rect x={368} y={388} width={256} height={66} rx={9} fill={warnF} stroke={YELL} />
+                    <text x={496} y={408} textAnchor="middle" style={svT}>{L('STEP 8 · 리스크 게이트', 'STEP 8 · Risk gate', 'STEP 8 · リスクゲート', 'STEP 8 · ประตูความเสี่ยง', 'STEP 8 · Cổng rủi ro')}</text>
+                    <text x={496} y={424} textAnchor="middle" style={svS}>{L('① 켈리 사이징 → ② 한도 → ③ 브레이커', '① Kelly sizing → ② limits → ③ breaker', '① ケリーサイジング → ② 上限 → ③ ブレーカー', '① ไซซิ่งเคลลี → ② ลิมิต → ③ เบรกเกอร์', '① Kelly sizing → ② hạn mức → ③ breaker')}</text>
+                    <text x={496} y={440} textAnchor="middle" style={svM}>risk_engine.py · {L('전 주문 통과 필수', 'every order must pass', '全注文の通過必須', 'ทุกคำสั่งต้องผ่าน', 'mọi lệnh phải qua')}</text>
+                    <rect x={672} y={388} width={272} height={66} rx={9} fill={goodF} stroke={GOOD} />
+                    <text x={808} y={408} textAnchor="middle" style={svT}>{L('STEP 9 · 페이퍼 체결', 'STEP 9 · Paper execution', 'STEP 9 · ペーパー約定', 'STEP 9 · ดำเนินการเปเปอร์', 'STEP 9 · Khớp lệnh paper')}</text>
+                    <text x={808} y={424} textAnchor="middle" style={svS}>{L('SL −5% / TP +10% 자동 등록 · 30초 워처', 'SL −5% / TP +10% auto-set · 30s watcher', 'SL−5%／TP+10%自動登録・30秒ウォッチャー', 'SL −5% / TP +10% อัตโนมัติ · วอตเชอร์ 30 วิ', 'SL −5% / TP +10% tự đặt · watcher 30s')}</text>
+                    <text x={808} y={440} textAnchor="middle" style={svM}>{L('시뮬레이터 계정만 · 실계좌 체결 없음', 'simulator account only · no real orders', 'シミュレーター口座のみ・実口座約定なし', 'บัญชีจำลองเท่านั้น · ไม่มีคำสั่งจริง', 'chỉ tài khoản mô phỏng · không lệnh thật')}</text>
+                    <path d="M320 421 H366" stroke={V.accent} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arA)" />
+                    <path d="M624 421 H670" stroke={GOOD} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arG)" />
+                    <text x={643} y={412} textAnchor="middle" style={{ ...svM, fill: GOOD }}>PASS</text>
+                    <path d="M496 454 V488" stroke={BAD} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arR)" />
+                    <text x={522} y={474} style={{ ...svM, fill: BAD }}>{L('FAIL → 사유 기록', 'FAIL → reason logged', 'FAIL → 理由記録', 'FAIL → บันทึกเหตุผล', 'FAIL → ghi lý do')}</text>
+                    {/* band 5: journal */}
+                    <path d="M808 454 V488" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    <rect x={368} y={490} width={256} height={54} rx={9} fill={V.card} stroke={V.lineStrong} />
+                    <text x={496} y={510} textAnchor="middle" style={svT}>{L('STEP 10 · 저널 · 복기', 'STEP 10 · Journal & review', 'STEP 10 · 記録・振り返り', 'STEP 10 · บันทึก·ทบทวน', 'STEP 10 · Nhật ký & xem lại')}</text>
+                    <text x={496} y={526} textAnchor="middle" style={svS}>automation_runs · signals {L('원장', 'ledger', '台帳', 'บัญชีแยกประเภท', 'sổ cái')} · {L('실험 이벤트', 'experiment events', '実験イベント', 'อีเวนต์ทดลอง', 'sự kiện thử nghiệm')}</text>
+                    <rect x={672} y={490} width={272} height={54} rx={9} fill={V.card} stroke={V.lineStrong} />
+                    <text x={808} y={510} textAnchor="middle" style={svT}>{L('포지션 · 손익 추적', 'Position & P&L tracking', 'ポジション・損益追跡', 'ติดตามสถานะ·กำไรขาดทุน', 'Theo dõi vị thế & P&L')}</text>
+                    <text x={808} y={526} textAnchor="middle" style={svS}>{L('가격 폴링 → 평가손익 · SL/TP 워처 감시', 'price polling → unrealized P&L · SL/TP watcher', '価格ポーリング → 評価損益・SL/TPウォッチャー', 'โพลราคา → P&L · วอตเชอร์ SL/TP', 'poll giá → P&L tạm tính · watcher SL/TP')}</text>
+                    <path d="M672 517 H626" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    {/* dashboard */}
+                    <path d="M496 544 V572" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
+                    <rect x={280} y={574} width={432} height={38} rx={9} fill={accF} stroke={V.accent} />
+                    <text x={496} y={597} textAnchor="middle" style={svT}>{L('시그널 보드 대시보드 + 알림 — 사람이 항상 검증 가능', 'Signal board dashboard + alerts — humans can always verify', 'シグナルボード＋アラート — 人がいつでも検証可能', 'แดชบอร์ด + แจ้งเตือน — คนตรวจสอบได้เสมอ', 'Bảng tín hiệu + cảnh báo — con người luôn kiểm chứng được')}</text>
                   </svg>
-                )
-              })()}
-              <FlowParticles />
-            </div>
+                  <FlowParticles />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', margin: '14px 0' }}>
+                {kpis.map((k, i) => (
+                  <div key={i} style={{ background: V.card, border: `1px solid ${V.line}`, borderRadius: 12, padding: '11px 13px' }}>
+                    <div style={{ fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.05em', color: V.faint, fontWeight: 700 }}>{k.lb}</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{k.vl}</div>
+                    <div style={{ fontSize: 11, color: V.faint }}>{k.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </>)
+          })()}
+          {/* six signal elements — full descriptions */}
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginTop: 18 }}>
+            {T.read.map((r, i) => (
+              <div key={i} style={{ ...cardS, padding: '15px 17px' }}>
+                <div style={{ fontFamily: V.mono, fontSize: 11, fontWeight: 700, color: V.accent, fontVariantNumeric: 'tabular-nums', marginBottom: 6 }}>{String(i + 1).padStart(2, '0')}</div>
+                <div style={{ fontWeight: 700, fontSize: 16.5, marginBottom: 6 }}>{r.t}</div>
+                <div style={{ fontSize: 14, color: V.mut }}>{r.d}</div>
+              </div>
+            ))}
           </div>
           <a href="/guide.html" target="_blank" rel="noopener" style={{ display: 'inline-block', marginTop: 16, fontSize: 13.5, fontWeight: 600, color: V.accent, textDecoration: 'none' }}>
             {tr(language, { ko: '전체 파이프라인 가이드 보기 →', en: 'Read the full pipeline guide →', ja: 'パイプライン全体ガイドを見る →', th: 'ดูคู่มือไปป์ไลน์ฉบับเต็ม →', vi: 'Xem hướng dẫn pipeline đầy đủ →' })}
