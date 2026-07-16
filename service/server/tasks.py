@@ -737,6 +737,16 @@ async def psych_feed_loop():
                     f"spike_events={result.get('spike_events_recorded', 0)} "
                     f"errors={result.get('errors') or 'none'}"
                 )
+                # Phase 2: panic auto-trip check on fresh shock data — no-op
+                # unless REGIME_FILTER_ENABLED; needs 2 consecutive real
+                # liquidation shocks; per-market scope with expiry.
+                try:
+                    from regime import maybe_auto_trip_market_breaker
+                    tripped = await asyncio.to_thread(maybe_auto_trip_market_breaker)
+                    if tripped:
+                        print(f"[Regime] panic auto-trip: {tripped}")
+                except Exception as e:
+                    print(f"[Regime Auto-trip Error] {e}")
         except Exception as e:
             print(f"[Psych Feed Error] {e}")
 

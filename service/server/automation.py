@@ -133,6 +133,19 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
 
 # ─────────────────────────── one rule ───────────────────────────
 
+def _regime_blocks(regime_read: Optional[dict[str, Any]], action: Optional[str]) -> Optional[str]:
+    """Skip reason when the enforced regime forbids this NEW BUY. Sells are
+    never regime-blocked (exit-permissiveness rule)."""
+    if action != "buy" or not regime_read:
+        return None
+    if not regime_read.get("enforced"):
+        return None  # advisory-only until the Phase-4 flip
+    if regime_read.get("allow_new_buys", True):
+        return None
+    reasons = "; ".join(regime_read.get("reasons") or [])
+    return f"regime '{regime_read.get('regime')}' blocks new buys ({reasons})"
+
+
 def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     """Run one automation rule: analysis -> (maybe) execute -> record the run."""
     from analysis_agents import run_analysis
@@ -180,6 +193,18 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         except Exception as exc:  # noqa: BLE001
             logger.debug("confluence telemetry unavailable for %s: %s", symbol, exc)
 
+        # Regime read (Phase 2): advisory journal always; a hard entry gate
+        # only when REGIME_FILTER_ENABLED (Phase-4 flip). Exits never gated.
+        regime_read = None
+        if market == "crypto":
+            try:
+                from regime import evaluate_market_regime
+                regime_read = evaluate_market_regime()
+                result["regime"] = {k: regime_read[k] for k in
+                                    ("regime", "reasons", "allow_new_buys", "size_multiplier")}
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("regime read unavailable: %s", exc)
+
         decision = analysis.get("decision") or {}
         action = decision.get("action")
         confidence = decision.get("confidence")
@@ -202,10 +227,21 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             # reliable direction; skip new entries inside the release window.
             # Opt-in via EVENT_GUARD_ENABLED (default off).
             result["skip_reason"] = _event_guard_blocks()
+        elif _regime_blocks(regime_read, action):
+            # Phase 2 regime gate — active only when REGIME_FILTER_ENABLED
+            # (Phase-4 flip). Blocks new buys in panic/euphoria/event regimes;
+            # never blocks sells.
+            result["skip_reason"] = _regime_blocks(regime_read, action)
         elif not entry or entry <= 0:
             result["skip_reason"] = "no valid price in decision"
         else:
             quantity = float(config.get("size_usd") or 0) / float(entry)
+            if (action == "buy" and regime_read is not None
+                    and regime_read.get("enforced")):
+                multiplier = float(regime_read.get("size_multiplier") or 1.0)
+                if multiplier != 1.0:
+                    quantity *= multiplier
+                    result["regime_size_multiplier"] = multiplier
             # Risk gate (Phase 1): breaker → limits → Kelly. No-op unless
             # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
             from risk_engine import evaluate_order
@@ -238,10 +274,16 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
     cursor = conn.cursor()
     try:
         begin_write_transaction(cursor)
-        confluence_json = None
+        # Telemetry: confluence vector + regime read per decision (Phase 1–2).
+        telemetry: dict[str, Any] = {}
         if result.get("confluence") is not None:
+            telemetry["confluence"] = result["confluence"]
+        if result.get("regime") is not None:
+            telemetry["regime"] = result["regime"]
+        confluence_json = None
+        if telemetry:
             try:
-                confluence_json = json.dumps(result["confluence"], ensure_ascii=False)
+                confluence_json = json.dumps(telemetry, ensure_ascii=False)
             except (TypeError, ValueError):
                 confluence_json = None
         cursor.execute(
@@ -266,6 +308,15 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
 
 def run_automation_tick() -> dict[str, Any]:
     """Find all enabled rules that are due (last_run_at + interval <= now) and run them."""
+    # Auto-resume sweep (Phase 2): clear expired AUTO-tripped breakers here —
+    # the tick always runs, unlike the risk watcher (gated). Manual HALTs are
+    # never touched. Fail-soft.
+    try:
+        from risk_engine import resume_expired_auto_breakers
+        resume_expired_auto_breakers()
+    except Exception:  # noqa: BLE001
+        logger.exception("auto-breaker resume sweep failed")
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:

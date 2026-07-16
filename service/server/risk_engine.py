@@ -137,7 +137,9 @@ def get_breaker(agent_id: Optional[int] = None) -> dict[str, Any]:
         conn.close()
 
 
-def _set_breaker(scope: str, state: str, reason: Optional[str]) -> dict[str, Any]:
+def _set_breaker(scope: str, state: str, reason: Optional[str],
+                 tripped_by: str = "manual",
+                 expires_at: Optional[str] = None) -> dict[str, Any]:
     now = _now_iso()
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -145,33 +147,75 @@ def _set_breaker(scope: str, state: str, reason: Optional[str]) -> dict[str, Any
         begin_write_transaction(cursor)
         cursor.execute("DELETE FROM breaker_state WHERE scope = ?", (scope,))
         cursor.execute(
-            """INSERT INTO breaker_state (scope, state, reason, tripped_at, updated_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (scope, state, reason, now if state == "halted" else None, now),
+            """INSERT INTO breaker_state
+               (scope, state, reason, tripped_at, updated_at, tripped_by, expires_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (scope, state, reason, now if state == "halted" else None, now,
+             tripped_by if state == "halted" else None,
+             expires_at if state == "halted" else None),
         )
         conn.commit()
     finally:
         conn.close()
-    return {"scope": scope, "state": state, "reason": reason}
+    return {"scope": scope, "state": state, "reason": reason,
+            "tripped_by": tripped_by if state == "halted" else None,
+            "expires_at": expires_at if state == "halted" else None}
 
 
-def trip_breaker(reason: str, agent_id: Optional[int] = None) -> dict[str, Any]:
-    """HALT automation — for one agent, or globally when agent_id is None."""
-    scope = f"agent:{agent_id}" if agent_id is not None else "global"
-    logger.warning("breaker HALT (%s): %s", scope, reason)
-    return _set_breaker(scope, "halted", reason)
+def trip_breaker(reason: str, agent_id: Optional[int] = None, *,
+                 scope: Optional[str] = None, tripped_by: str = "manual",
+                 expires_at: Optional[str] = None) -> dict[str, Any]:
+    """HALT automation — per agent, per market (scope='market:crypto'), or
+    globally. Auto-trips must pass tripped_by='auto' + expires_at so the
+    auto-resume sweep can clear them; a manual HALT is never auto-cleared."""
+    if scope is None:
+        scope = f"agent:{agent_id}" if agent_id is not None else "global"
+    logger.warning("breaker HALT (%s, by=%s): %s", scope, tripped_by, reason)
+    return _set_breaker(scope, "halted", reason, tripped_by=tripped_by, expires_at=expires_at)
 
 
-def clear_breaker(agent_id: Optional[int] = None) -> dict[str, Any]:
-    scope = f"agent:{agent_id}" if agent_id is not None else "global"
+def clear_breaker(agent_id: Optional[int] = None, *, scope: Optional[str] = None) -> dict[str, Any]:
+    if scope is None:
+        scope = f"agent:{agent_id}" if agent_id is not None else "global"
     return _set_breaker(scope, "normal", None)
 
 
-def _is_halted(cursor, agent_id: int) -> Optional[str]:
-    """Return the halt reason when the global or agent breaker is tripped."""
-    for scope in ("global", f"agent:{agent_id}"):
+def resume_expired_auto_breakers() -> int:
+    """Clear halted breakers that were AUTO-tripped and have expired.
+    Manual halts (tripped_by null/'manual') are never touched. Returns the
+    number of scopes resumed. Called from the automation tick (always runs)."""
+    now = _now_iso()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT scope FROM breaker_state
+               WHERE state = 'halted' AND tripped_by = 'auto'
+                 AND expires_at IS NOT NULL AND expires_at <= ?""", (now,))
+        scopes = [row["scope"] for row in cursor.fetchall()]
+    finally:
+        conn.close()
+    for scope in scopes:
+        logger.warning("breaker auto-resume (%s): expiry reached", scope)
+        _set_breaker(scope, "normal", None)
+    return len(scopes)
+
+
+def _is_halted(cursor, agent_id: int, market: Optional[str] = None,
+               include_auto: bool = True) -> Optional[str]:
+    """Return the halt reason when a matching breaker is tripped.
+    Scopes checked: global → market:<market> → agent:<id>.
+    include_auto=False skips auto-tripped rows — risk-reducing sells pass
+    auto-trips (a panic halt must not trap exits); only a manual HALT stops them."""
+    scopes = ["global"]
+    if market:
+        scopes.append(f"market:{market}")
+    scopes.append(f"agent:{agent_id}")
+    for scope in scopes:
         row = _breaker_row(cursor, scope)
         if row["state"] == "halted":
+            if not include_auto and (row.get("tripped_by") or "manual") == "auto":
+                continue
             return f"breaker halted ({scope}): {row['reason'] or 'manual halt'}"
     return None
 
@@ -305,15 +349,19 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        halted = _is_halted(cursor, agent_id)
+        # Sells reduce risk — they pass the gate, including AUTO-tripped
+        # breakers (a panic auto-halt must not trap exits). Only a manual
+        # admin HALT stops them. Blocking exits under a daily-loss lockout
+        # would trap losing positions with no SL/TP registered.
+        if side != "buy":
+            halted = _is_halted(cursor, agent_id, market, include_auto=False)
+            if halted:
+                return GateDecision(allowed=False, quantity=0.0, reason=f"risk: {halted}")
+            return GateDecision(allowed=True, quantity=quantity)
+
+        halted = _is_halted(cursor, agent_id, market, include_auto=True)
         if halted:
             return GateDecision(allowed=False, quantity=0.0, reason=f"risk: {halted}")
-
-        # Sells reduce risk — they pass the gate (only the explicit HALT above
-        # stops them). Blocking exits under a daily-loss lockout would trap
-        # losing positions that have no SL/TP registered (pre-engine, manual).
-        if side != "buy":
-            return GateDecision(allowed=True, quantity=quantity)
 
         limits = get_risk_limits(agent_id, cursor=cursor)
         stats = trade_stats(agent_id, cursor=cursor)

@@ -92,3 +92,33 @@ def shock_clear_hours() -> int:
     """B5 shock leg: a shock flagged within this window that has since cleared
     counts as 'fear spike fading'. S5 uses unresolved (still-flagged) shocks."""
     return _env_int("SHOCK_CLEAR_HOURS", 72)
+
+
+# ── Regime filter (Phase 2) ─────────────────────────────────────────────────
+
+def regime_filter_enabled() -> bool:
+    """Phase-4 flip: when on, the regime filter gates automation entries and
+    the panic auto-trip may arm the per-market breaker. Default OFF —
+    Phase 2 ships advisory-only (display + journal)."""
+    return _env_bool("REGIME_FILTER_ENABLED", False)
+
+
+def vol_caution_percentile() -> float:
+    """Realized-vol percentile (vs trailing year) at/above which = caution."""
+    return _env_float("VOL_CAUTION_PERCENTILE", 70.0)
+
+
+def vol_panic_percentile() -> float:
+    """Realized-vol percentile at/above which = panic (no new buys)."""
+    return _env_float("VOL_PANIC_PERCENTILE", 90.0)
+
+
+def caution_size_multiplier() -> float:
+    """Entry size multiplier in the caution regime."""
+    return _env_float("CAUTION_SIZE_MULTIPLIER", 0.5)
+
+
+def panic_breaker_minutes() -> int:
+    """Auto-tripped per-market breaker expiry. Auto-resume clears ONLY rows
+    tripped_by='auto' — a manual admin HALT is never auto-cleared."""
+    return _env_int("PANIC_BREAKER_MINUTES", 60)

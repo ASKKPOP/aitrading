@@ -136,6 +136,16 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
+    @app.get('/api/market-intel/regime')
+    async def market_intel_regime():
+        """Market regime read (parameter-upgrade plan Phase 2, advisory).
+        regime: trend | caution | panic | euphoria | event | unknown, with
+        reasons, entry policy, and F&G / realized-vol-percentile inputs.
+        Bands are unvalidated placeholders pending Phase-4 validation."""
+        from regime import evaluate_market_regime
+        return await run_in_threadpool(
+            _cached_market_payload, 'regime', lambda: evaluate_market_regime())
+
     @app.get('/api/market-intel/confluence')
     async def market_intel_confluence(symbols: str = 'BTC,ETH,SOL'):
         """Confluence checklist (parameter-upgrade plan Phase 1) — the

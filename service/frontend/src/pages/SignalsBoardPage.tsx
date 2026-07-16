@@ -139,6 +139,16 @@ interface EventsPayload {
   event_window: { title: string; minutes_to_release: number } | null
 }
 
+interface RegimePayload {
+  regime: 'trend' | 'caution' | 'panic' | 'euphoria' | 'event' | 'unknown'
+  reasons: string[]
+  allow_new_buys: boolean
+  size_multiplier: number
+  fng_value: number | null
+  vol_percentile: number | null
+  enforced: boolean
+}
+
 interface CrossPayload {
   available: boolean
   kimchi: { premium_pct: number; verdict: string; upbit_usd_equiv: number; global_usd: number } | null
@@ -152,6 +162,7 @@ export function SignalsBoardPage() {
   const [fusion, setFusion] = useState<FusedSignal[] | null>(null)
   const [events, setEvents] = useState<EventsPayload | null>(null)
   const [cross, setCross] = useState<CrossPayload | null>(null)
+  const [regime, setRegime] = useState<RegimePayload | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadingRef = useRef(false)
@@ -162,18 +173,20 @@ export function SignalsBoardPage() {
     if (loadingRef.current || document.hidden) return
     loadingRef.current = true
     try {
-      const [psychRes, scannerRes, fusionRes, eventsRes, crossRes] = await Promise.all([
+      const [psychRes, scannerRes, fusionRes, eventsRes, crossRes, regimeRes] = await Promise.all([
         fetch(`${API_BASE}/market-intel/psych`),
         fetch(`${API_BASE}/scanner/candidates`),
         fetch(`${API_BASE}/market-intel/fusion?symbols=${FUSION_SYMBOLS}`),
         fetch(`${API_BASE}/market-intel/events`),
         fetch(`${API_BASE}/market-intel/cross`),
+        fetch(`${API_BASE}/market-intel/regime`),
       ])
       if (psychRes.ok) setPsych(await psychRes.json())
       if (scannerRes.ok) setScanner(await scannerRes.json())
       if (fusionRes.ok) setFusion((await fusionRes.json()).signals ?? [])
       if (eventsRes.ok) setEvents(await eventsRes.json())
       if (crossRes.ok) setCross(await crossRes.json())
+      if (regimeRes.ok) setRegime(await regimeRes.json())
       if (!psychRes.ok && !scannerRes.ok && !fusionRes.ok) throw new Error('all sources failed')
       setError(null)
     } catch {
@@ -240,6 +253,24 @@ export function SignalsBoardPage() {
           </div>
           {fng && <FngSparkline history={fng.history} />}
         </div>
+        <Tile
+          label={tr(language, { ko: '시장 국면', en: 'Market Regime', ja: '市場レジーム', th: 'สภาวะตลาด', vi: 'Chế độ thị trường' })}
+          value={regime ? tr(language, {
+            ko: { trend: '추세', caution: '주의', panic: '패닉', euphoria: '과열', event: '이벤트', unknown: '미확정' }[regime.regime],
+            en: regime.regime.toUpperCase(),
+            ja: { trend: 'トレンド', caution: '注意', panic: 'パニック', euphoria: '過熱', event: 'イベント', unknown: '不明' }[regime.regime],
+            th: regime.regime.toUpperCase(),
+            vi: regime.regime.toUpperCase(),
+          }) : '—'}
+          sub={regime
+            ? `${regime.allow_new_buys
+                ? tr(language, { ko: `신규 진입 ×${regime.size_multiplier}`, en: `entries ×${regime.size_multiplier}`, ja: `新規 ×${regime.size_multiplier}`, th: `เข้าใหม่ ×${regime.size_multiplier}`, vi: `vào lệnh ×${regime.size_multiplier}` })
+                : tr(language, { ko: '신규 매수 금지', en: 'no new buys', ja: '新規買い禁止', th: 'ห้ามซื้อใหม่', vi: 'không mua mới' })}${regime.vol_percentile != null ? ` · vol p${regime.vol_percentile.toFixed(0)}` : ''}${regime.enforced ? '' : tr(language, { ko: ' · 자문용', en: ' · advisory', ja: ' · 参考', th: ' · แนะนำ', vi: ' · tư vấn' })}`
+            : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          accent={regime ? (regime.regime === 'trend' ? 'var(--success)'
+            : regime.regime === 'panic' || regime.regime === 'event' ? 'var(--error)'
+            : undefined) : undefined}
+        />
         <Tile
           label={tr(language, { ko: '뉴스 심리', en: 'News Sentiment', ja: 'ニュースセンチメント', th: 'อารมณ์ข่าว', vi: 'Tâm lý tin tức' })}
           value={cryptoSpike ? cryptoSpike.latest_score.toFixed(2) : '—'}

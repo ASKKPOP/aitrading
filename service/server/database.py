@@ -1923,9 +1923,23 @@ def init_database():
             state      TEXT NOT NULL DEFAULT 'normal',
             reason     TEXT,
             tripped_at TEXT,
-            updated_at TEXT
+            updated_at TEXT,
+            tripped_by TEXT,
+            expires_at TEXT
         )
     """)
+
+    # Breaker safety columns (parameter-upgrade plan Phase 2) for existing DBs:
+    # tripped_by ('manual'|'auto') + expires_at let auto-resume clear ONLY
+    # auto-tripped rows — a deliberate admin HALT is never auto-cleared.
+    try:
+        cursor.execute("ALTER TABLE breaker_state ADD COLUMN tripped_by TEXT")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE breaker_state ADD COLUMN expires_at TEXT")
+    except Exception:
+        pass
 
     # Psychology feed snapshots (signal-collection plan Phase 2): F&G index,
     # sentiment-spike z-scores, volatility shock proxy, Polymarket odds.
@@ -1963,6 +1977,22 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_factor_snapshots_symbol_created
         ON factor_snapshots(symbol, created_at)
+    """)
+
+    # Regime transitions (parameter-upgrade plan Phase 2): one row per regime
+    # CHANGE — the newest row's created_at is "day 0" of the current regime,
+    # so panic-age survives process restarts.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS regime_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            regime      TEXT NOT NULL,
+            detail_json TEXT,
+            created_at  TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_regime_snapshots_created
+        ON regime_snapshots(created_at)
     """)
 
     # Which-coin scanner snapshots (signal-collection plan Phase 4): ranked
