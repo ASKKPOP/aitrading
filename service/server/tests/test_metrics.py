@@ -212,5 +212,60 @@ class TestProfitFactor(unittest.TestCase):
         self.assertAlmostEqual(result, 1.0, places=6)
 
 
+class DailyEquityReturnsTests(unittest.TestCase):
+    """Phase 0.3 — daily mark-to-market resampling for honest Sharpe."""
+
+    def test_known_two_day_return(self):
+        from backtest_metrics import daily_equity_returns
+        returns = daily_equity_returns([
+            ("2026-01-01T10:00:00Z", 100_000.0),
+            ("2026-01-02T10:00:00Z", 101_000.0),
+        ])
+        self.assertEqual(len(returns), 1)
+        self.assertAlmostEqual(returns[0], 0.01)
+
+    def test_flat_days_are_forward_filled(self):
+        from backtest_metrics import daily_equity_returns
+        returns = daily_equity_returns([
+            ("2026-01-01T10:00:00Z", 100_000.0),
+            ("2026-01-04T10:00:00Z", 103_030.1),  # 3 days later
+        ])
+        # 3 daily returns: 0, 0, then the jump
+        self.assertEqual(len(returns), 3)
+        self.assertAlmostEqual(returns[0], 0.0)
+        self.assertAlmostEqual(returns[1], 0.0)
+        self.assertGreater(returns[2], 0.03)
+
+    def test_last_observation_of_day_wins(self):
+        from backtest_metrics import daily_equity_returns
+        returns = daily_equity_returns([
+            ("2026-01-01T09:00:00Z", 100_000.0),
+            ("2026-01-01T18:00:00Z", 90_000.0),   # intraday dip then same-day final
+            ("2026-01-02T10:00:00Z", 90_000.0),
+        ])
+        self.assertEqual(len(returns), 1)
+        self.assertAlmostEqual(returns[0], 0.0)
+
+    def test_insufficient_days_returns_empty(self):
+        from backtest_metrics import daily_equity_returns
+        self.assertEqual(daily_equity_returns([("2026-01-01T00:00:00Z", 1.0)]), [])
+        self.assertEqual(daily_equity_returns([]), [])
+
+    def test_sharpe_no_longer_scales_with_trade_count(self):
+        """Same equity path chopped into more observations must not raise Sharpe —
+        regression for the trade-count annualisation bug."""
+        from backtest_metrics import daily_equity_returns, sharpe_ratio
+        few = [("2026-01-01T00:00:00Z", 100.0), ("2026-01-05T00:00:00Z", 102.0),
+               ("2026-01-09T00:00:00Z", 104.0)]
+        many = few + [("2026-01-02T01:00:00Z", 100.5), ("2026-01-03T01:00:00Z", 101.0),
+                      ("2026-01-06T01:00:00Z", 102.5), ("2026-01-07T01:00:00Z", 103.0)]
+        s_few = sharpe_ratio(daily_equity_returns(sorted(few)), periods_per_year=365)
+        s_many = sharpe_ratio(daily_equity_returns(sorted(many)), periods_per_year=365)
+        # both defined and same order of magnitude — no √N blow-up with activity
+        self.assertIsNotNone(s_few)
+        self.assertIsNotNone(s_many)
+        self.assertLess(abs(s_many), abs(s_few) * 3)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
 | 4 | [plan/02-deployment-readiness.md](plan/02-deployment-readiness.md) | What stands between local Docker dev and a real deploy. | ~700 |
 | 5 | **[plan/03-session-handoff.md](plan/03-session-handoff.md)** | **START HERE if resuming/continuing.** Full session handoff: what was built, the deploy runbook, dual-auth architecture, test accounts, verified-working list, and outstanding work. | ~2,000 |
+| 6 | [plan/04-ai-model-parameter-upgrade.md](plan/04-ai-model-parameter-upgrade.md) | Deep analysis of `research/parameters/*` vs the decision engine, and the 5-phase modification plan (confluence engine, regime filter, vol sizing, validated flip). v2 — adversarially verified by a 6-agent panel (2026-07-16). | ~3,500 |
 
 ### Design documents (HTML)
 
@@ -35,6 +36,8 @@ These cut across all three documents. If any of these is wrong, half the work be
 5. **The codebase is a signal/copy-trading platform, not an execution engine.** Today's "broker compatibility" is aspirational. Real order routing (Alpaca first) is Phase 2, behind production foundations. (Roadmap §1, §3.)
 
 ## Suggested first sprint (1-2 weeks)
+
+> **2026-07-16 note:** two Foundations rows below have since landed in code (GitHub Actions CI; pydantic-settings config). Token hashing has NOT landed. The four Product/accessibility rows and the Marketing row remain open. See the roadmap's dated corrections for details.
 
 A single coherent slice that touches all three docs. Each item maps to a research finding or roadmap line item — chosen because they're independent enough to parallelize.
 

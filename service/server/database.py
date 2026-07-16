@@ -1937,6 +1937,26 @@ def init_database():
         ON psych_snapshots(created_at)
     """)
 
+    # Factor snapshots (parameter-upgrade plan Phase 0.4): daily record of the
+    # live-only factors (funding, OI, long/short, StockTwits tilt) so B4/S4
+    # legs can be validated live-forward — they have no vendor history.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS factor_snapshots (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol            TEXT NOT NULL,
+            funding_rate      REAL,
+            open_interest_usd REAL,
+            long_short_ratio  REAL,
+            stocktwits_tilt   REAL,
+            stocktwits_n      INTEGER,
+            created_at        TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_factor_snapshots_symbol_created
+        ON factor_snapshots(symbol, created_at)
+    """)
+
     # Which-coin scanner snapshots (signal-collection plan Phase 4): ranked
     # candidates + mention-rate history (baseline) + instrument list (diff).
     cursor.execute("""

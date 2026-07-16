@@ -17,7 +17,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from backtest_metrics import max_drawdown as _calc_max_drawdown, sharpe_ratio as _calc_sharpe
+from backtest_metrics import (
+    avg_loss as _calc_avg_loss,
+    avg_win as _calc_avg_win,
+    calmar_ratio as _calc_calmar,
+    daily_equity_returns as _calc_daily_returns,
+    max_drawdown as _calc_max_drawdown,
+    profit_factor as _calc_profit_factor,
+    sharpe_ratio as _calc_sharpe,
+    sortino_ratio as _calc_sortino,
+)
 from database import get_db_connection
 from fees import TRADE_FEE_RATE
 
@@ -72,6 +81,11 @@ class BacktestResult:
     losing_trades: int
     win_rate: float
     sharpe_ratio: Optional[float]
+    sortino_ratio: Optional[float] = None
+    calmar_ratio: Optional[float] = None
+    profit_factor: Optional[float] = None
+    avg_win: Optional[float] = None
+    avg_loss: Optional[float] = None
     closed_trades: list[ClosedTrade] = field(default_factory=list)
     curve: list[CurvePoint] = field(default_factory=list)
     open_positions: list[dict] = field(default_factory=list)
@@ -314,8 +328,14 @@ def run_backtest(
     losing = sum(1 for p in pnls if p <= 0)
     trade_count = len(closed_trades)
     win_rate = winning / trade_count if trade_count > 0 else 0.0
-    trade_returns = [p / initial_cash * 100 for p in pnls]
-    sharpe = _calc_sharpe(trade_returns, periods_per_year=len(trade_returns) or 1)
+    # Sharpe/Sortino from the daily mark-to-market equity curve (flat days
+    # included, calendar-day convention → annualise with 365). The previous
+    # trade-count annualisation inflated Sharpe with trade frequency.
+    daily_returns = _calc_daily_returns([(p.timestamp, p.portfolio_value) for p in curve])
+    sharpe = _calc_sharpe(daily_returns, periods_per_year=365)
+    sortino = _calc_sortino(daily_returns, periods_per_year=365)
+    calmar = _calc_calmar(total_return_pct, max_dd)
+    pf = _calc_profit_factor(pnls)
 
     open_pos_list = [
         {
@@ -344,6 +364,11 @@ def run_backtest(
         losing_trades=losing,
         win_rate=round(win_rate, 4),
         sharpe_ratio=sharpe,
+        sortino_ratio=sortino,
+        calmar_ratio=calmar,
+        profit_factor=round(pf, 4) if pf is not None else None,
+        avg_win=_calc_avg_win(pnls),
+        avg_loss=_calc_avg_loss(pnls),
         closed_trades=closed_trades,
         curve=curve,
         open_positions=open_pos_list,

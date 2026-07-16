@@ -143,9 +143,27 @@ def fetch_candles(symbol: str, bar: str = "1H", limit: int = 100) -> list[dict[s
     (OKX returns newest-first; we reverse). volume is contract volume (candle[5]).
     """
     inst_id = _to_inst_id(symbol)
-    data = _okx_get("candles", {"instId": inst_id, "bar": bar, "limit": str(max(1, min(limit, 300)))})
+    limit = max(1, limit)
+    # OKX caps /market/candles at 300 rows per call; paginate older pages with
+    # `after` (exclusive, newest-first) when callers need longer windows
+    # (e.g. 380+ daily closes for MA200 / 12-1 momentum).
+    rows: list[list[str]] = []
+    after: str | None = None
+    while len(rows) < limit:
+        page_limit = min(300, limit - len(rows))
+        params = {"instId": inst_id, "bar": bar, "limit": str(page_limit)}
+        if after is not None:
+            params["after"] = after
+        data = _okx_get("candles", params)
+        if not data:
+            break
+        rows.extend(data)
+        if len(data) < page_limit:
+            break  # exchange history exhausted
+        after = data[-1][0]  # oldest ts of this page → next page is strictly older
+
     candles = []
-    for row in reversed(data):
+    for row in reversed(rows):
         if len(row) < 6:
             continue
         candles.append({

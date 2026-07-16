@@ -239,5 +239,48 @@ class StockPriceMetadataTests(unittest.TestCase):
         self.assertIsNone(meta["price_age_seconds"])
 
 
+class StockLongWindowFeatureTests(unittest.TestCase):
+    """Phase 0.2 — MA200 / 12-1 momentum / daily σ for stocks via yfinance bars."""
+
+    @staticmethod
+    def _av_series(n=100, start_price=100.0):
+        # newest-first, matching _fetch_daily_adjusted_series output
+        return [{"date": f"2026-{4 + i // 30:02d}-{1 + i % 30:02d}",
+                 "close": start_price + (n - i) * 0.5, "volume": 1_000_000.0}
+                for i in range(n)]
+
+    @staticmethod
+    def _bars(n=300, start_price=100.0):
+        from historical_data import Bar
+        return [Bar(date=f"d{i:04d}", open=0, high=0, low=0,
+                    close=start_price + i * 0.5, volume=1_000_000 + (500_000 if i == n - 1 else 0))
+                for i in range(n)]
+
+    @patch("market_intel._generate_stock_analysis_summary", return_value="s")
+    def test_long_window_fields_flow_through(self, _summary):
+        bars = self._bars(300)
+        with patch("market_intel._fetch_daily_adjusted_series", return_value=self._av_series()), \
+             patch("historical_data.get_bars", return_value=bars):
+            analysis = market_intel._build_stock_analysis("AAPL")
+        self.assertIsNotNone(analysis["moving_averages"]["ma200"])
+        self.assertIsNotNone(analysis["momentum_12_1_pct"])
+        self.assertGreater(analysis["momentum_12_1_pct"], 0)
+        self.assertTrue(analysis["price_above_ma200"])
+        self.assertTrue(analysis["golden_cross_state"])
+        self.assertIsNotNone(analysis["sigma_daily_pct"])
+        self.assertAlmostEqual(analysis["volume_ratio"], 1.5, delta=0.01)
+
+    @patch("market_intel._generate_stock_analysis_summary", return_value="s")
+    def test_long_window_fails_soft_to_nulls(self, _summary):
+        with patch("market_intel._fetch_daily_adjusted_series", return_value=self._av_series()), \
+             patch("historical_data.get_bars", side_effect=Exception("yfinance down")):
+            analysis = market_intel._build_stock_analysis("AAPL")
+        self.assertIsNone(analysis["momentum_12_1_pct"])
+        self.assertIsNone(analysis["price_above_ma200"])
+        self.assertIsNone(analysis["moving_averages"]["ma200"])
+        # legacy fields unaffected by the long-window failure
+        self.assertIn(analysis["signal"], {"buy", "sell", "hold", "watch"})
+
+
 if __name__ == "__main__":
     unittest.main()

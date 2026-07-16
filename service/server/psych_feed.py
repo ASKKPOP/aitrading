@@ -95,6 +95,60 @@ def fetch_fear_greed(limit: int = FNG_HISTORY_DAYS) -> dict[str, Any]:
     }
 
 
+def fetch_fear_greed_full_history() -> list[dict[str, Any]]:
+    """Complete F&G daily archive (limit=0 → everything since 2018-02),
+    oldest-first as {date, value, classification}. Used by the strategy
+    backtester (Phase 4) — live reads keep the 30-day window."""
+    resp = requests.get(FNG_API_URL, params={"limit": "0"}, timeout=30)
+    resp.raise_for_status()
+    data = resp.json().get("data") or []
+    rows = []
+    for row in data:
+        try:
+            ts = int(row["timestamp"])
+            rows.append({
+                "date": datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"),
+                "value": int(row["value"]),
+                "classification": row.get("value_classification"),
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+    rows.sort(key=lambda r: r["date"])
+    return rows
+
+
+def shock_history(hours: int = 72) -> list[dict[str, Any]]:
+    """Shock readings from stored psych snapshots within the last `hours`.
+
+    Returns [{created_at, shocks: [...only rows flagged shock...]}, ...]
+    oldest-first. Confluence B5's "shock flagged then cleared" and the regime
+    filter's panic age both need this window; snapshots retain ~20 days at the
+    hourly cadence, comfortably covering 72h.
+    """
+    from datetime import timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT shock_json, created_at FROM psych_snapshots
+               WHERE created_at >= ? ORDER BY created_at ASC, id ASC""",
+            (cutoff,))
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
+
+    out = []
+    for row in rows:
+        try:
+            shocks = [s for s in json.loads(row["shock_json"] or "[]")
+                      if isinstance(s, dict) and s.get("shock")]
+        except ValueError:
+            continue
+        out.append({"created_at": row["created_at"], "shocks": shocks})
+    return out
+
+
 # ─────────────────────────── sentiment spikes ───────────────────────────
 
 def _news_sentiment_series() -> dict[str, list[dict[str, Any]]]:

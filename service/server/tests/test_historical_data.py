@@ -223,6 +223,40 @@ class TestGetBars(unittest.TestCase):
     # Cache requests that exceed cached range trigger a re-fetch
     # ------------------------------------------------------------------
 
+    def test_stale_cache_triggers_refetch_without_force_refresh(self):
+        """A cached range that does not cover the request must re-fetch and merge —
+        regression for the dormant `_cache_covers` dead-code bug."""
+        df_small = _make_yfinance_df(_SAMPLE_ROWS[:2])  # 01-02, 01-03
+        df_full = _make_yfinance_df(_SAMPLE_ROWS)       # 01-02 .. 01-04
+
+        download_call_count = {"n": 0}
+
+        def mock_download(ticker, **kwargs):
+            download_call_count["n"] += 1
+            return df_small if download_call_count["n"] == 1 else df_full
+
+        with patch("historical_data.yf.download", side_effect=mock_download):
+            get_bars("AAPL", "1d", "2024-01-02", "2024-01-03", cache_dir=self.cache_dir)
+            bars = get_bars("AAPL", "1d", "2024-01-02", "2024-01-04", cache_dir=self.cache_dir)
+
+        self.assertEqual(download_call_count["n"], 2, "uncovered range must re-fetch without force_refresh")
+        self.assertIn("2024-01-04", [b.date for b in bars])
+        # merged cache now covers the wider range — third call needs no fetch
+        with patch("historical_data.yf.download", side_effect=AssertionError("should not fetch")):
+            bars2 = get_bars("AAPL", "1d", "2024-01-02", "2024-01-04", cache_dir=self.cache_dir)
+        self.assertEqual([b.date for b in bars2], ["2024-01-02", "2024-01-03", "2024-01-04"])
+
+    def test_provider_outage_falls_back_to_stale_cache(self):
+        df_small = _make_yfinance_df(_SAMPLE_ROWS[:2])
+
+        with patch("historical_data.yf.download", return_value=df_small):
+            get_bars("AAPL", "1d", "2024-01-02", "2024-01-03", cache_dir=self.cache_dir)
+        with patch("historical_data.yf.download", side_effect=Exception("outage")):
+            bars = get_bars("AAPL", "1d", "2024-01-02", "2024-01-04", cache_dir=self.cache_dir)
+
+        self.assertEqual([b.date for b in bars], ["2024-01-02", "2024-01-03"],
+                         "stale cache should be served when the provider errors")
+
     def test_refetch_when_requested_range_extends_beyond_cache(self):
         """If start_date is before the earliest cached bar, a fresh fetch happens."""
         df_small = _make_yfinance_df(_SAMPLE_ROWS[1:])  # only 2024-01-03, 2024-01-04

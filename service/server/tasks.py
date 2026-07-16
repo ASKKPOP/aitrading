@@ -743,6 +743,34 @@ async def psych_feed_loop():
         await asyncio.sleep(refresh_interval)
 
 
+async def factor_snapshot_loop():
+    """Background task for factor snapshots (parameter-upgrade plan Phase 0.4).
+
+    Every FACTOR_SNAPSHOT_INTERVAL seconds (default 6h), record funding/OI/
+    long-short/StockTwits-tilt per symbol so live-only factors accumulate the
+    history their confluence conditions need for live-forward validation.
+    Always on — cheap and keyless.
+    """
+    from factor_snapshots import record_factor_snapshots
+
+    refresh_interval = _env_int("FACTOR_SNAPSHOT_INTERVAL", 21600, minimum=3600)
+
+    await asyncio.sleep(25)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(record_factor_snapshots)
+            print(
+                "[Factor Snapshots] stored: "
+                f"written={result.get('written')} "
+                f"errors={len(result.get('errors') or [])}"
+            )
+        except Exception as e:
+            print(f"[Factor Snapshots Error] {e}")
+
+        await asyncio.sleep(refresh_interval)
+
+
 async def scanner_loop():
     """Background task for the which-coin scanner (Phase 4).
 
@@ -1396,6 +1424,7 @@ BACKGROUND_TASK_REGISTRY = {
     "risk_watcher": risk_watcher_loop,
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
+    "factor_snapshots": factor_snapshot_loop,
 }
 
 
@@ -1438,6 +1467,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "psych_feed":              "research",
     # scanner — which-coin candidates: volume surge, mentions, listings (Phase 4)
     "scanner":                 "research",
+    # factor snapshots — live-only factor history for confluence validation
+    "factor_snapshots":        "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

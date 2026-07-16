@@ -173,5 +173,51 @@ class FetchTickersTests(unittest.TestCase):
         self.assertEqual(results[0]["symbol"], "BTCUSDT")
 
 
+class FetchCandlesPaginationTests(unittest.TestCase):
+    """fetch_candles must chain OKX pages (max 300/call) for long windows."""
+
+    @staticmethod
+    def _candle_row(ts_ms: int) -> list:
+        return [str(ts_ms), "100", "110", "90", "105", "1000", "0", "0", "1"]
+
+    def test_single_page_under_300(self) -> None:
+        day = 86_400_000
+        rows = [self._candle_row(1_700_000_000_000 - i * day) for i in range(100)]
+        with patch("crypto_feed.requests.get", return_value=_mock_response(_okx_envelope(rows))):
+            candles = crypto_feed.fetch_candles("BTCUSDT", bar="1D", limit=100)
+        self.assertEqual(len(candles), 100)
+        self.assertLess(candles[0]["ts"], candles[-1]["ts"], "oldest-first ordering")
+
+    def test_paginates_beyond_300(self) -> None:
+        day = 86_400_000
+        newest = 1_700_000_000_000
+        page1 = [self._candle_row(newest - i * day) for i in range(300)]
+        page2 = [self._candle_row(newest - (300 + i) * day) for i in range(100)]
+        calls = []
+
+        def fake_get(url, timeout=None):
+            calls.append(url)
+            return _mock_response(_okx_envelope(page1 if len(calls) == 1 else page2))
+
+        with patch("crypto_feed.requests.get", side_effect=fake_get):
+            candles = crypto_feed.fetch_candles("BTCUSDT", bar="1D", limit=400)
+
+        self.assertEqual(len(calls), 2)
+        self.assertIn("after=", calls[1], "second page must pass the `after` cursor")
+        self.assertEqual(len(candles), 400)
+        ts_list = [c["ts"] for c in candles]
+        self.assertEqual(ts_list, sorted(ts_list), "merged pages stay oldest-first")
+        self.assertEqual(len(set(ts_list)), 400, "no duplicate bars across pages")
+
+    def test_stops_when_history_exhausted(self) -> None:
+        day = 86_400_000
+        rows = [self._candle_row(1_700_000_000_000 - i * day) for i in range(120)]
+        with patch("crypto_feed.requests.get", return_value=_mock_response(_okx_envelope(rows))) as mock_get:
+            candles = crypto_feed.fetch_candles("BTCUSDT", bar="1D", limit=400)
+        # first page returned 120 < 300 requested → history exhausted, no second call
+        self.assertEqual(mock_get.call_count, 1)
+        self.assertEqual(len(candles), 120)
+
+
 if __name__ == "__main__":
     unittest.main()

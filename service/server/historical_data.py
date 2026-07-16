@@ -218,22 +218,32 @@ def get_bars(
 
     fetch_fn = _PROVIDERS.get(provider, _fetch_yfinance)
 
-    # Try cache first
+    # Try cache first — only when the cached range actually covers the request
+    cached: list[Bar] = []
     if not force_refresh and cache_file.exists():
         try:
             cached = _read_cache(cache_file)
-            # Always filter by requested date range, even when cache is a superset
-            filtered = [b for b in cached if start_date <= b.date <= end_date]
-            return filtered
+            if _cache_covers(cached, start_date, end_date):
+                return [b for b in cached if start_date <= b.date <= end_date]
         except Exception:
-            pass  # corrupt cache — fall through to fetch
+            cached = []  # corrupt cache — fall through to fetch
 
-    # Fetch from provider
-    bars = fetch_fn(symbol, start_date, end_date)
+    # Fetch from provider, extending to the union of cached + requested range so
+    # the cache monotonically grows instead of being replaced by a narrower window.
+    fetch_start = min(start_date, cached[0].date) if cached else start_date
+    fetch_end = max(end_date, cached[-1].date) if cached else end_date
+    bars = fetch_fn(symbol, fetch_start, fetch_end)
+
     if bars:
+        if cached:
+            merged = {b.date: b for b in cached}
+            merged.update({b.date: b for b in bars})  # fresh data wins on overlap
+            bars = sorted(merged.values(), key=lambda b: b.date)
         try:
             _write_cache(bars, cache_file)
         except Exception:
             pass  # cache write failure is non-fatal
+    elif cached:
+        bars = cached  # provider outage — stale cache beats nothing
 
     return [b for b in bars if start_date <= b.date <= end_date]

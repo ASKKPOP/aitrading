@@ -76,6 +76,50 @@ class MaAndBasisTests(unittest.TestCase):
         self.assertAlmostEqual(volume_ratio, 3.0, delta=0.01)  # 150 vs 50 avg
 
 
+class LongWindowFeatureTests(unittest.TestCase):
+    """Phase 0.2 — momentum_12_1, 1-month reversal, daily σ (units matter)."""
+
+    def test_momentum_12_1_known_value(self):
+        from quant_crypto import compute_momentum_12_1_pct
+        closes = [100.0] * 400
+        closes[-366] = 100.0   # price 365 days ago
+        closes[-31] = 120.0    # price 30 days ago
+        self.assertAlmostEqual(compute_momentum_12_1_pct(closes), 20.0)
+
+    def test_momentum_needs_full_lookback(self):
+        from quant_crypto import compute_momentum_12_1_pct
+        self.assertIsNone(compute_momentum_12_1_pct([100.0] * 300))
+
+    def test_momentum_skips_last_month(self):
+        """A pump inside the skip window must not affect 12-1 momentum."""
+        from quant_crypto import compute_momentum_12_1_pct
+        flat = [100.0] * 400
+        pumped = flat[:-20] + [500.0] * 20  # last 20 days pump — inside skip 30
+        self.assertAlmostEqual(compute_momentum_12_1_pct(pumped), compute_momentum_12_1_pct(flat))
+
+    def test_reversal_1m(self):
+        from quant_crypto import compute_return_pct
+        closes = [100.0] * 370
+        closes[-31] = 80.0
+        # 80 → 100 over the last 30 bars = +25%
+        self.assertAlmostEqual(compute_return_pct(closes, 30), 25.0)
+
+    def test_daily_sigma_is_daily_units(self):
+        """±1% alternating daily returns → σ ≈ 1% in DAILY units."""
+        from quant_crypto import compute_daily_sigma_pct
+        closes, price = [], 100.0
+        for i in range(30):
+            price *= 1.01 if i % 2 == 0 else 0.99
+            closes.append(price)
+        sigma = compute_daily_sigma_pct(closes)
+        self.assertIsNotNone(sigma)
+        self.assertAlmostEqual(sigma, 1.0, delta=0.05)
+
+    def test_daily_sigma_insufficient_data(self):
+        from quant_crypto import compute_daily_sigma_pct
+        self.assertIsNone(compute_daily_sigma_pct([100.0] * 10))
+
+
 # ─── analysis builder ──────────────────────────────────────────────────────
 
 class BuildAnalysisTests(unittest.TestCase):
@@ -100,6 +144,24 @@ class BuildAnalysisTests(unittest.TestCase):
              patch("crypto_feed.fetch_spot_ticker",
                    return_value={"symbol": "BTCUSDT", "last_price": float(spot)}):
             return build_crypto_analysis("BTC")
+
+    def test_long_window_fields_populated_with_400_closes(self):
+        closes = [100.0 + i * 0.5 for i in range(400)]  # steady uptrend
+        analysis = self._build(closes)
+        self.assertIsNotNone(analysis["moving_averages"]["ma200"])
+        self.assertIsNotNone(analysis["momentum_12_1_pct"])
+        self.assertGreater(analysis["momentum_12_1_pct"], 0)
+        self.assertTrue(analysis["price_above_ma200"])
+        self.assertTrue(analysis["golden_cross_state"])
+        self.assertIsNotNone(analysis["sigma_daily_pct"])
+        self.assertIsNotNone(analysis["reversal_1m_pct"])
+
+    def test_long_window_fields_null_with_short_history(self):
+        closes = [100.0 + i * 0.5 for i in range(120)]
+        analysis = self._build(closes)
+        self.assertIsNone(analysis["momentum_12_1_pct"])
+        self.assertIsNone(analysis["moving_averages"]["ma200"])
+        self.assertIsNone(analysis["price_above_ma200"])
 
     def test_analysis_carries_all_quant_evidence(self):
         closes = [100.0 + i * 0.5 for i in range(120)]  # steady uptrend

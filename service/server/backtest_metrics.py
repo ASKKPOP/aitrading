@@ -39,6 +39,49 @@ def max_drawdown(curve: list[float]) -> float:
     return worst
 
 
+def daily_equity_returns(points: list[tuple[str, float]]) -> list[float]:
+    """Resample an equity curve to daily returns, including flat days.
+
+    Args:
+        points: (iso_timestamp, portfolio_value) in chronological order. Only
+                the date part of each timestamp is used; the last value of each
+                calendar day wins; days with no observation are forward-filled.
+
+    Returns:
+        Daily return fractions between consecutive calendar days from the first
+        to the last observed date. Empty when fewer than 2 distinct days.
+
+    Trade-count-based Sharpe inflates with activity and ignores time flat —
+    this resampling is what makes sharpe_ratio() honest for irregular trades.
+    """
+    from datetime import date, timedelta
+
+    by_day: dict[str, float] = {}
+    for ts, pv in points:
+        day = (ts or "")[:10]
+        if len(day) == 10:
+            by_day[day] = pv  # last observation of the day wins
+    if len(by_day) < 2:
+        return []
+
+    days = sorted(by_day)
+    start = date.fromisoformat(days[0])
+    end = date.fromisoformat(days[-1])
+    series: list[float] = []
+    current = by_day[days[0]]
+    d = start
+    while d <= end:
+        current = by_day.get(d.isoformat(), current)  # forward-fill flat days
+        series.append(current)
+        d += timedelta(days=1)
+
+    return [
+        (series[i] - series[i - 1]) / series[i - 1]
+        for i in range(1, len(series))
+        if series[i - 1] > 0
+    ]
+
+
 def sharpe_ratio(
     returns: list[float],
     periods_per_year: int = 252,

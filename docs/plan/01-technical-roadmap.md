@@ -35,6 +35,8 @@ Grounded in a read of `CLAUDE.md`, the 13 backend route modules, `database.py`, 
 
 ## 2. Foundation upgrades (Phase 1)
 
+> **2026-07-16 correction:** much of this section has since landed in code — GitHub Actions CI (`.github/workflows/ci.yml`, `security.yml`), pydantic-settings config (`config.py`), alembic migrations (16 versions), and the broker execution ABC (`execution/`). Treat the remaining items (observability, rate limiting via Redis, token hashing/scopes) as the open subset.
+
 ### Production-readiness gaps
 
 - **Secrets.** `.env.example` (57 lines) mixes intervals/URLs with secrets like `ALPHA_VANTAGE_API_KEY`. Move secrets to a provider (1Password Connect, Doppler, AWS SSM, or Fly secrets); keep `.env.example` as a *names-only* template. Add a pre-commit hook that scans for high-entropy strings.
@@ -124,7 +126,7 @@ This is dangerous. Stage it:
 
 ## 4. Backtesting layer (Phase 3)
 
-CLAUDE.md flags this as greenfield. Build it under `service/server/backtest/` (a package, not a single file as the doc currently suggests).
+> **2026-07-16 correction:** a replay backtester (`backtest.py`, `backtest_metrics.py`, `routes_backtest.py`) and the Parquet daily-bar loader (`historical_data.py`) now exist. The parameter-upgrade plan ([04-ai-model-parameter-upgrade.md](04-ai-model-parameter-upgrade.md)) deliberately extends `backtest.py` with a strategy mode rather than starting the package layout below — the package split remains the eventual shape if strategy plugins multiply. Historical daily data is sourced from yfinance (adjusted closes), not Alpha Vantage (premium/unadjusted issues).
 
 ### Design
 

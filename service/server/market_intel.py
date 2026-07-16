@@ -896,6 +896,49 @@ def _build_etf_flow_snapshot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     return etf_rows, summary
 
 
+def _build_stock_long_window_features(symbol: str) -> dict[str, Any]:
+    """Research-L2 long-window features from yfinance daily bars (adjusted closes).
+
+    Alpha Vantage `compact` gives ~100 rows — not enough for MA200 / 12-1
+    momentum — and its full-history daily series is unadjusted (splits corrupt
+    momentum), so these come from historical_data's yfinance path. Fail-soft:
+    any error returns all-None (confluence treats nulls conservatively).
+    Trading-day windows: skip 21 / lookback 252 / reversal 21 / σ 20.
+    """
+    none = {"momentum_12_1_pct": None, "reversal_1m_pct": None, "ma50": None,
+            "ma200": None, "price_above_ma200": None, "golden_cross_state": None,
+            "sigma_daily_pct": None, "volume_ratio": None}
+    try:
+        from datetime import date, timedelta
+        from historical_data import get_bars
+        from quant_crypto import (compute_daily_sigma_pct, compute_ma,
+                                  compute_momentum_12_1_pct, compute_return_pct)
+        end = date.today()
+        start = end - timedelta(days=550)  # 252+21 trading days ≈ 395 calendar days; 550 gives slack
+        bars = get_bars(symbol, "1d", start.isoformat(), end.isoformat())
+        closes = [b.close for b in bars]
+        volumes = [b.volume for b in bars]
+        if len(closes) < 30:
+            return none
+        ma50 = compute_ma(closes, 50)
+        ma200 = compute_ma(closes, 200)
+        latest = closes[-1]
+        vol_window = volumes[-21:-1]
+        avg_volume = sum(vol_window) / len(vol_window) if vol_window else 0
+        return {
+            "momentum_12_1_pct": compute_momentum_12_1_pct(closes, skip=21, lookback=252),
+            "reversal_1m_pct": compute_return_pct(closes, 21),
+            "ma50": ma50,
+            "ma200": ma200,
+            "price_above_ma200": (latest > ma200) if ma200 is not None else None,
+            "golden_cross_state": (ma50 > ma200) if (ma50 is not None and ma200 is not None) else None,
+            "sigma_daily_pct": compute_daily_sigma_pct(closes),
+            "volume_ratio": (volumes[-1] / avg_volume) if avg_volume > 0 else None,
+        }
+    except Exception:  # noqa: BLE001
+        return none
+
+
 def _build_stock_analysis(symbol: str) -> dict[str, Any]:
     series = _fetch_daily_adjusted_series(symbol)
     if len(series) < 20:
@@ -908,6 +951,7 @@ def _build_stock_analysis(symbol: str) -> dict[str, Any]:
     ma60 = _calc_simple_moving_average(series, 60)
     return_5d = _calc_return_pct(series, 5) or 0.0
     return_20d = _calc_return_pct(series, 20) or 0.0
+    long_window = _build_stock_long_window_features(symbol)
 
     recent_window = [float(row["close"]) for row in series[:20]]
     support = min(recent_window)
@@ -985,7 +1029,21 @@ def _build_stock_analysis(symbol: str) -> dict[str, Any]:
             "ma10": round(ma10, 2) if ma10 is not None else None,
             "ma20": round(ma20, 2) if ma20 is not None else None,
             "ma60": round(ma60, 2) if ma60 is not None else None,
+            "ma50": round(long_window["ma50"], 2) if long_window["ma50"] is not None else None,
+            "ma200": round(long_window["ma200"], 2) if long_window["ma200"] is not None else None,
         },
+        # Long-window direction features (research L2, yfinance-sourced) —
+        # consumed by confluence, deliberately NOT part of signal_score.
+        "momentum_12_1_pct": round(long_window["momentum_12_1_pct"], 3)
+            if long_window["momentum_12_1_pct"] is not None else None,
+        "reversal_1m_pct": round(long_window["reversal_1m_pct"], 3)
+            if long_window["reversal_1m_pct"] is not None else None,
+        "price_above_ma200": long_window["price_above_ma200"],
+        "golden_cross_state": long_window["golden_cross_state"],
+        "sigma_daily_pct": round(long_window["sigma_daily_pct"], 3)
+            if long_window["sigma_daily_pct"] is not None else None,
+        "volume_ratio": round(long_window["volume_ratio"], 2)
+            if long_window["volume_ratio"] is not None else None,
         "support_levels": [round(support, 2)],
         "resistance_levels": [round(resistance, 2)],
         "distance_to_support_pct": round(distance_to_support, 2),

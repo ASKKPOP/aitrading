@@ -33,8 +33,12 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 RSI_PERIOD = 14
-DAILY_CANDLES = 120
+DAILY_CANDLES = 400   # 365d momentum lookback + 30d skip needs 396 closes; 400 gives slack
 HOURLY_CANDLES = 100
+MOMENTUM_SKIP_DAYS = 30      # 12-1 momentum: skip the most recent month (calendar days, 24/7 market)
+MOMENTUM_LOOKBACK_DAYS = 365
+REVERSAL_DAYS = 30           # 1-month short-term reversal (research L2 timing component)
+DAILY_SIGMA_WINDOW = 20      # 20-day daily-return σ — the sizing volatility (DAILY units)
 FUNDING_CROWDED = 0.0005    # ±0.05% per 8h
 LS_CROWDED_LONG = 2.0       # long/short account ratio ≥ 2 = crowded long
 LS_CROWDED_SHORT = 0.5      # ≤ 0.5 = crowded short (contrarian)
@@ -96,6 +100,40 @@ def compute_sigma_and_volume(hourly: list[dict[str, Any]]) -> tuple[Optional[flo
     return sigma * 100, volume_ratio
 
 
+def compute_momentum_12_1_pct(closes: list[float],
+                              skip: int = MOMENTUM_SKIP_DAYS,
+                              lookback: int = MOMENTUM_LOOKBACK_DAYS) -> Optional[float]:
+    """12-1 momentum: return from `lookback` days ago to `skip` days ago, in %.
+    The most-verified return predictor (Gu–Kelly–Xiu 2020). Bars are calendar
+    days for crypto; equity callers pass trading-day equivalents (21/252)."""
+    if len(closes) < lookback + 1:
+        return None
+    then, recent = closes[-(lookback + 1)], closes[-(skip + 1)]
+    if then <= 0:
+        return None
+    return (recent - then) / then * 100
+
+
+def compute_return_pct(closes: list[float], days: int) -> Optional[float]:
+    """Simple trailing return over `days` bars, in % (1-month reversal input)."""
+    if len(closes) < days + 1 or closes[-(days + 1)] <= 0:
+        return None
+    return (closes[-1] - closes[-(days + 1)]) / closes[-(days + 1)] * 100
+
+
+def compute_daily_sigma_pct(closes: list[float], window: int = DAILY_SIGMA_WINDOW) -> Optional[float]:
+    """σ of the last `window` DAILY returns, in %. This — not sigma_24h_pct,
+    which is an HOURLY-return σ (~√24 smaller) — is the sizing/regime volatility."""
+    if len(closes) < window + 1:
+        return None
+    returns = [(closes[i] - closes[i - 1]) / closes[i - 1]
+               for i in range(len(closes) - window, len(closes)) if closes[i - 1] > 0]
+    if len(returns) < window:
+        return None
+    mean = sum(returns) / len(returns)
+    return math.sqrt(sum((r - mean) ** 2 for r in returns) / len(returns)) * 100
+
+
 def compute_basis_pct(swap_last: float, spot_last: float) -> Optional[float]:
     if spot_last <= 0:
         return None
@@ -117,6 +155,13 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
     ma5 = compute_ma(closes, 5)
     ma20 = compute_ma(closes, 20)
     ma60 = compute_ma(closes, 60)
+    ma50 = compute_ma(closes, 50)
+    ma200 = compute_ma(closes, 200)
+    momentum_12_1_pct = compute_momentum_12_1_pct(closes)
+    reversal_1m_pct = compute_return_pct(closes, REVERSAL_DAYS)
+    sigma_daily_pct = compute_daily_sigma_pct(closes)
+    price_above_ma200 = (current_price > ma200) if (current_price is not None and ma200 is not None) else None
+    golden_cross_state = (ma50 > ma200) if (ma50 is not None and ma200 is not None) else None
 
     sigma_pct = volume_ratio = None
     try:
@@ -229,8 +274,17 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
         "moving_averages": {
             "ma5": round(ma5, 4) if ma5 is not None else None,
             "ma20": round(ma20, 4) if ma20 is not None else None,
+            "ma50": round(ma50, 4) if ma50 is not None else None,
             "ma60": round(ma60, 4) if ma60 is not None else None,
+            "ma200": round(ma200, 4) if ma200 is not None else None,
         },
+        # Long-window direction features (research L2) — consumed by confluence,
+        # deliberately NOT part of signal_score (B1/B2 are separate conditions).
+        "momentum_12_1_pct": round(momentum_12_1_pct, 3) if momentum_12_1_pct is not None else None,
+        "reversal_1m_pct": round(reversal_1m_pct, 3) if reversal_1m_pct is not None else None,
+        "price_above_ma200": price_above_ma200,
+        "golden_cross_state": golden_cross_state,
+        "sigma_daily_pct": round(sigma_daily_pct, 3) if sigma_daily_pct is not None else None,
         "sigma_24h_pct": round(sigma_pct, 3) if sigma_pct is not None else None,
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
         "funding_rate": funding_rate,
