@@ -489,26 +489,21 @@ export function MarketingPage() {
         <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
           <div style={kicker}>{T.readKicker}</div>
           <h2 style={h2S}>{T.readH}</h2>
+          {/* boxes follow guide.html's card language: solid card, 1px border,
+              radius 14, accent tabular number (see /guide.html .steps-strip) */}
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginTop: 18 }}>
             {T.read.map((r, i) => (
-              <div key={i} className="sigcard" style={{
-                ...cardS,
-                background: `color-mix(in srgb, ${V.card} 82%, transparent)`,
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                padding: '18px 20px',
-              }}>
-                <div style={{ fontFamily: V.mono, fontSize: 12, fontWeight: 700, marginBottom: 8, background: 'linear-gradient(92deg, #e8912d 0%, #f7b955 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>{String(i + 1).padStart(2, '0')}</div>
+              <div key={i} style={{ ...cardS, padding: '15px 17px' }}>
+                <div style={{ fontFamily: V.mono, fontSize: 11, fontWeight: 700, color: V.accent, fontVariantNumeric: 'tabular-nums', marginBottom: 6 }}>{String(i + 1).padStart(2, '0')}</div>
                 <div style={{ fontWeight: 700, fontSize: 16.5, marginBottom: 6 }}>{r.t}</div>
                 <div style={{ fontSize: 14, color: V.mut }}>{r.d}</div>
               </div>
             ))}
           </div>
+          <a href="/guide.html" target="_blank" rel="noopener" style={{ display: 'inline-block', marginTop: 16, fontSize: 13.5, fontWeight: 600, color: V.accent, textDecoration: 'none' }}>
+            {tr(language, { ko: '전체 파이프라인 가이드 보기 →', en: 'Read the full pipeline guide →', ja: 'パイプライン全体ガイドを見る →', th: 'ดูคู่มือไปป์ไลน์ฉบับเต็ม →', vi: 'Xem hướng dẫn pipeline đầy đủ →' })}
+          </a>
         </div>
-        <style>{`
-          .sigcard { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
-          .sigcard:hover { transform: translateY(-3px); border-color: rgba(232,145,45,0.45); box-shadow: 0 10px 30px rgba(232,145,45,0.12); }
-        `}</style>
       </section>
 
       {/* ── psychology proxies ── */}
