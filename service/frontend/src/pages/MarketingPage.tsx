@@ -38,7 +38,7 @@ const wrap: any = { maxWidth: 1040, margin: '0 auto', padding: '0 24px' }
 // glow of the design reference; crests warm to amber, troughs cool to teal.
 // Behaviors: DPR cap 2, resize redraw, pause in hidden tabs, reduced-motion
 // drifts slowly instead of freezing, one synchronous first frame on mount.
-function HeroWaveBackground() {
+function HeroWaveBackground({ gain = 1, amp = 1 }: { gain?: number; amp?: number }) {
   const ref = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
     const canvas = ref.current
@@ -58,6 +58,7 @@ function HeroWaveBackground() {
       uniform mat4 uProj;
       uniform mat4 uView;
       uniform float uDpr;
+      uniform float uAmp;
       varying float vHeat;
       varying float vDepth;
       void main() {
@@ -67,7 +68,7 @@ function HeroWaveBackground() {
                    + 0.5 * sin(x * 7.5 - uTime * 0.6 + z * 11.0)
                    + 0.25 * sin(x * 13.0 + uTime * 1.3 + z * 3.0);
         wave /= 1.75;
-        float y = wave * 0.55 * (1.0 - z * 0.22);
+        float y = wave * 0.55 * uAmp * (1.0 - z * 0.22);
         vec4 world = vec4(x * 4.2, y - 0.28, -0.9 - z * 6.5, 1.0);
         gl_Position = uProj * uView * world;
         vHeat = wave;
@@ -83,6 +84,7 @@ function HeroWaveBackground() {
       varying float vHeat;
       varying float vDepth;
       uniform float uDark;
+      uniform float uGain;
       vec4 waveColor(float alphaBase, float mask) {
         float heat = max(vHeat, 0.0);
         float cold = max(-vHeat, 0.0);
@@ -93,7 +95,7 @@ function HeroWaveBackground() {
         color = mix(color, amber, smoothstep(0.08, 0.75, heat));
         color = mix(color, teal, smoothstep(0.45, 0.95, cold) * 0.8);
         float fog = 1.0 - vDepth * 0.78;
-        float a = alphaBase * fog * (0.55 + 0.85 * heat + 0.3 * cold) * mask;
+        float a = alphaBase * uGain * fog * (0.55 + 0.85 * heat + 0.3 * cold) * mask;
         return vec4(color * a, a);               // premultiplied
       }`
     const FS_LINE = FS_COMMON + `
@@ -162,6 +164,8 @@ function HeroWaveBackground() {
       uView: gl.getUniformLocation(pr, 'uView'),
       uDpr: gl.getUniformLocation(pr, 'uDpr'),
       uDark: gl.getUniformLocation(pr, 'uDark'),
+      uAmp: gl.getUniformLocation(pr, 'uAmp'),
+      uGain: gl.getUniformLocation(pr, 'uGain'),
     })
     const L = uni(lineProg)
     const P = uni(pointProg)
@@ -209,6 +213,8 @@ function HeroWaveBackground() {
         gl.uniformMatrix4fv(U.uView, false, view)
         gl.uniform1f(U.uDpr, dpr)
         gl.uniform1f(U.uDark, dark ? 1 : 0)
+        gl.uniform1f(U.uAmp, amp)
+        gl.uniform1f(U.uGain, gain)
       }
       if (uint32ok) {
         setUniforms(L)
@@ -263,7 +269,7 @@ function HeroWaveBackground() {
       // would receive this same, now permanently-lost context and every
       // shader compile would fail. The browser reclaims it with the canvas.
     }
-  }, [])
+  }, [gain, amp])
   return (
     <canvas ref={ref} aria-hidden
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
@@ -475,21 +481,34 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* ── six signal elements ── */}
-      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
-        <div style={wrap}>
+      {/* ── six signal elements — glass cards over a calm WebGL wave field ── */}
+      <section style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
+        <HeroWaveBackground gain={0.85} amp={0.9} />
+        {/* soft scrim: keeps the mesh a texture, not a distraction */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, color-mix(in srgb, ${V.bg} 55%, transparent) 0%, color-mix(in srgb, ${V.bg} 18%, transparent) 45%, color-mix(in srgb, ${V.bg} 55%, transparent) 100%)` }} />
+        <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
           <div style={kicker}>{T.readKicker}</div>
           <h2 style={h2S}>{T.readH}</h2>
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginTop: 18 }}>
             {T.read.map((r, i) => (
-              <div key={i} style={cardS}>
-                <div style={{ fontFamily: V.mono, fontSize: 11, color: V.accent, marginBottom: 6 }}>{String(i + 1).padStart(2, '0')}</div>
+              <div key={i} className="sigcard" style={{
+                ...cardS,
+                background: `color-mix(in srgb, ${V.card} 82%, transparent)`,
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                padding: '18px 20px',
+              }}>
+                <div style={{ fontFamily: V.mono, fontSize: 12, fontWeight: 700, marginBottom: 8, background: 'linear-gradient(92deg, #e8912d 0%, #f7b955 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>{String(i + 1).padStart(2, '0')}</div>
                 <div style={{ fontWeight: 700, fontSize: 16.5, marginBottom: 6 }}>{r.t}</div>
                 <div style={{ fontSize: 14, color: V.mut }}>{r.d}</div>
               </div>
             ))}
           </div>
         </div>
+        <style>{`
+          .sigcard { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+          .sigcard:hover { transform: translateY(-3px); border-color: rgba(232,145,45,0.45); box-shadow: 0 10px 30px rgba(232,145,45,0.12); }
+        `}</style>
       </section>
 
       {/* ── psychology proxies ── */}
