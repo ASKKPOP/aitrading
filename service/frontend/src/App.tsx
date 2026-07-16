@@ -394,6 +394,9 @@ function AppRouter({
           <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
           <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+          {/* Guest browsing: the leaderboard is public by design ("view profit
+              curves and top agent performance without logging in"). */}
+          <Route path="/leaderboard" element={<div className="page-container" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}><LeaderboardPage token={null} /></div>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

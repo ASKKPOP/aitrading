@@ -4,6 +4,17 @@ import { tr } from '../i18n'
 
 export function FinancialEventsPage() {
   const { language } = useLanguage()
+
+  const macroVerdictLabel = (v?: string) => {
+    if (!v) return tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' })
+    const map: Record<string, string> = {
+      bullish: tr(language, { ko: '강세', en: 'bullish', ja: '強気', th: 'ขาขึ้น', vi: 'tăng' }),
+      bearish: tr(language, { ko: '약세', en: 'bearish', ja: '弱気', th: 'ขาลง', vi: 'giảm' }),
+      mixed: tr(language, { ko: '혼조', en: 'mixed', ja: 'まちまち', th: 'ผสม', vi: 'trái chiều' }),
+      unavailable: tr(language, { ko: '데이터 없음', en: 'unavailable', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'không có dữ liệu' }),
+    }
+    return map[v] || v
+  }
   const [macro, setMacro] = useState<any | null>(null)
   const [etfFlows, setEtfFlows] = useState<any | null>(null)
   const [featuredStocks, setFeaturedStocks] = useState<any | null>(null)
@@ -190,7 +201,7 @@ export function FinancialEventsPage() {
             <div className="intel-status-strip">
               <div className="intel-status-card">
                 <span>{tr(language, { ko: '매크로 국면', en: 'Macro regime', ja: 'マクロレジーム', th: 'ระบอบมหภาค', vi: 'Chế độ vĩ mô' })}</span>
-                <strong>{macro?.verdict || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}</strong>
+                <strong>{macroVerdictLabel(macro?.verdict)}</strong>
               </div>
               <div className="intel-status-card">
                 <span>{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF' })}</span>
@@ -525,7 +536,7 @@ export function FinancialEventsPage() {
                         </div>
                       </div>
                       <div className={`intel-activity-badge ${macro?.verdict || 'quiet'}`}>
-                        {macro?.verdict || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}
+                        {macroVerdictLabel(macro?.verdict)}
                       </div>
                     </div>
                     <div className="intel-news-card-meta">

@@ -79,12 +79,15 @@ class FetchTickerTests(unittest.TestCase):
         self.assertIn("volume_24h", result)
         self.assertIn("open_interest", result)
 
-    def test_last_price_preserved(self) -> None:
+    def test_last_price_numeric(self) -> None:
+        # last_price is cast to float (consistent with fetch_spot_ticker) —
+        # consumers expect numeric prices, not OKX's raw strings.
         payload = _okx_envelope([_ticker_item(last="73779.0")])
         with patch("crypto_feed.requests.get", return_value=_mock_response(payload)):
             result = crypto_feed.fetch_ticker("BTCUSDT")
 
-        self.assertEqual(result["last_price"], "73779.0")
+        self.assertEqual(result["last_price"], 73779.0)
+        self.assertIsInstance(result["last_price"], float)
 
     def test_24h_pct_computed_from_open24h(self) -> None:
         # (73779 - 71000) / 71000 * 100 = 3.91...% ≈ 3.91

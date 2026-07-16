@@ -228,7 +228,7 @@ export function MarketingPage() {
           <p style={{ fontSize: 17, color: V.mut, maxWidth: '58ch', margin: '0 0 26px' }}>{T.heroSub}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <Link to="/register" style={{ ...pillBtn, background: V.accent, color: V.accentOn }}>{T.ctaStart}</Link>
-            <Link to="/login" style={{ ...pillBtn, color: V.ink, border: `1.5px solid ${V.lineStrong}`, background: V.card }}>{T.ctaBoard}</Link>
+            <Link to="/leaderboard" style={{ ...pillBtn, color: V.ink, border: `1.5px solid ${V.lineStrong}`, background: V.card }}>{T.ctaBoard}</Link>
           </div>
           <p style={{ fontFamily: V.mono, fontSize: 11.5, color: V.faint, marginTop: 20 }}>{T.heroNote}</p>
         </div>

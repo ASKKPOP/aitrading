@@ -36,7 +36,7 @@ TOP_20_PAIRS: tuple[str, ...] = (
     "ATOMUSDT",
     "TRXUSDT",
     "NEARUSDT",
-    "MATICUSDT",
+    "POLUSDT",  # was MATICUSDT — OKX delisted MATIC-USDT-SWAP after the POL rebrand
     "FILUSDT",
     "APTUSDT",
     "ARBUSDT",
@@ -74,8 +74,9 @@ def _normalise(item: dict[str, Any]) -> dict[str, Any]:
     open24h = item.get("open24h", last)  # fallback to last if missing
     return {
         "symbol": _to_symbol(item.get("instId", "")),
-        "last_price": last,
-        "mark_price": last,  # OKX ticker doesn't include markPx; use last as proxy
+        # Cast like fetch_spot_ticker does — consumers expect numeric prices.
+        "last_price": float(last or 0),
+        "mark_price": float(last or 0),  # OKX ticker doesn't include markPx; use last as proxy
         "price_24h_pct": _compute_pct(last, open24h),
         "volume_24h": item.get("volCcy24h", "0"),  # USDT-denominated volume
         "open_interest": "0",                        # OI requires separate endpoint
