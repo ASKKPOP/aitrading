@@ -61,7 +61,7 @@ export function TrendingSidebar() {
       <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            {tr(language, { ko: '온라인 트레이더', en: 'Online Traders', ja: 'オンラインのトレーダー', th: 'เทรดเดอร์ออนไลน์', vi: 'Trader trực tuyến' })}
+            {tr(language, { ko: '등록 트레이더', en: 'Registered Traders', ja: '登録トレーダー', th: 'เทรดเดอร์ที่ลงทะเบียน', vi: 'Trader đã đăng ký' })}
           </span>
           <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--accent-primary)' }}>
             {agentCount}

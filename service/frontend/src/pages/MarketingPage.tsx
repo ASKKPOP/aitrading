@@ -38,6 +38,9 @@ const h2S: any = { fontFamily: V.display, fontWeight: 700, fontSize: 'clamp(28px
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
   const [btc, setBtc] = useState<{ price: number; pct: number } | null>(null)
+  // Live signal data for the dashboard preview — no hardcoded sample numbers.
+  const [psych, setPsych] = useState<any | null>(null)
+  const [fusion, setFusion] = useState<any[] | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -53,6 +56,29 @@ export function MarketingPage() {
     const iv = setInterval(load, 15000)
     return () => { alive = false; clearInterval(iv) }
   }, [])
+
+  useEffect(() => {
+    let alive = true
+    const loadSignals = async () => {
+      try {
+        const [pRes, fRes] = await Promise.all([
+          fetch('/api/market-intel/psych'),
+          fetch('/api/market-intel/fusion?symbols=BTC,ETH,SOL'),
+        ])
+        if (alive && pRes.ok) setPsych(await pRes.json())
+        if (alive && fRes.ok) setFusion((await fRes.json()).signals ?? null)
+      } catch { /* transient */ }
+    }
+    loadSignals()
+    const iv = setInterval(loadSignals, 60000)
+    return () => { alive = false; clearInterval(iv) }
+  }, [])
+
+  const fng = psych?.available ? psych?.fear_greed : null
+  const newsSpike = psych?.available
+    ? (psych?.spikes?.find((s: any) => s.category === 'crypto') ?? psych?.spikes?.[0] ?? null)
+    : null
+  const shockCount = psych?.available ? (psych?.shock ?? []).filter((s: any) => s.shock).length : null
 
   const T = {
     login: tr(language, { ko: '로그인', en: 'Log in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
@@ -100,13 +126,13 @@ export function MarketingPage() {
 
     dashKicker: tr(language, { ko: '시그널 대시보드', en: 'SIGNAL DASHBOARD', ja: 'シグナルダッシュボード', th: 'แดชบอร์ดสัญญาณ', vi: 'BẢNG TÍN HIỆU' }),
     dashH: tr(language, { ko: '하나의 보드에 모든 신호', en: 'One board, every signal', ja: 'ひとつのボードにすべてのシグナル', th: 'บอร์ดเดียว ครบทุกสัญญาณ', vi: 'Một bảng, mọi tín hiệu' }),
-    demoTag: tr(language, { ko: '데모 · 샘플 데이터', en: 'DEMO · SAMPLE DATA', ja: 'デモ · 例示データ', th: 'เดโม · ข้อมูลตัวอย่าง', vi: 'DEMO · DỮ LIỆU MẪU' }),
+    liveTag: tr(language, { ko: '라이브 데이터', en: 'LIVE DATA', ja: 'ライブデータ', th: 'ข้อมูลสด', vi: 'DỮ LIỆU TRỰC TIẾP' }),
+    collecting: tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'đang thu thập…' }),
     kpiFear: tr(language, { ko: '공포·탐욕 지수', en: 'Fear & Greed', ja: '恐怖・強欲指数', th: 'Fear & Greed', vi: 'Fear & Greed' }),
-    kpiFearSub: tr(language, { ko: '중립 → 탐욕', en: 'neutral → greed', ja: '中立 → 強欲', th: 'กลาง → โลภ', vi: 'trung lập → tham' }),
     kpiNews: tr(language, { ko: '뉴스 감성 (24h)', en: 'News sentiment (24h)', ja: 'ニュース感性 (24h)', th: 'เซนติเมนต์ข่าว (24 ชม.)', vi: 'Tâm lý tin tức (24h)' }),
-    kpiNewsSub: tr(language, { ko: '1,284건 분석', en: '1,284 items analysed', ja: '1,284件を分析', th: 'วิเคราะห์ 1,284 รายการ', vi: 'phân tích 1.284 mục' }),
+    kpiNewsSub: tr(language, { ko: '뉴스 스냅샷 z-점수', en: 'news snapshot z-score', ja: 'ニューススナップショットzスコア', th: 'z-score ของสแนปช็อตข่าว', vi: 'z-score ảnh chụp tin tức' }),
     kpiShock: tr(language, { ko: '충격 감지', en: 'Shock alerts', ja: '衝撃検知', th: 'แจ้งเตือนช็อก', vi: 'Cảnh báo sốc' }),
-    kpiShockSub: tr(language, { ko: '변동성 · 청산', en: 'volatility · liquidations', ja: '変動率 · 清算', th: 'ความผันผวน · การล้างพอร์ต', vi: 'biến động · thanh lý' }),
+    kpiShockSub: tr(language, { ko: '실제 청산 (OKX) + 변동성', en: 'real liquidations (OKX) + volatility', ja: '実清算 (OKX) + 変動率', th: 'การชำระบัญชีจริง (OKX) + ความผันผวน', vi: 'thanh lý thực (OKX) + biến động' }),
     kpiBtc: tr(language, { ko: '실시간 BTC', en: 'Live BTC', ja: 'ライブBTC', th: 'BTC สด', vi: 'BTC trực tiếp' }),
     thCoin: tr(language, { ko: '코인', en: 'Coin', ja: 'コイン', th: 'เหรียญ', vi: 'Coin' }),
     thSignal: tr(language, { ko: '신호', en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu' }),
@@ -115,11 +141,6 @@ export function MarketingPage() {
     sigBuy: tr(language, { ko: '매수', en: 'BUY', ja: '買い', th: 'ซื้อ', vi: 'MUA' }),
     sigSell: tr(language, { ko: '매도', en: 'SELL', ja: '売り', th: 'ขาย', vi: 'BÁN' }),
     sigHold: tr(language, { ko: '관망', en: 'HOLD', ja: '様子見', th: 'ถือ', vi: 'GIỮ' }),
-    rows: [
-      { coin: 'BTC', sig: 'buy', why: tr(language, { ko: 'ETF 유입 뉴스 + 공포지수 회복, 베이시스 확대', en: 'ETF inflow news + fear index recovering; basis widening', ja: 'ETF流入ニュース + 恐怖指数回復、ベーシス拡大', th: 'ข่าวเงินไหลเข้า ETF + ดัชนีความกลัวฟื้น เบสิสกว้างขึ้น', vi: 'Tin ETF vào ròng + chỉ số sợ hồi phục; basis mở rộng' }), when: tr(language, { ko: '현물–선물 갭 ≥ 1.2%', en: 'spot–futures gap ≥ 1.2%', ja: '現物-先物ギャップ ≥ 1.2%', th: 'ส่วนต่างสปอต–ฟิวเจอร์ส ≥ 1.2%', vi: 'chênh spot–futures ≥ 1,2%' }) },
-      { coin: 'SOL', sig: 'sell', why: tr(language, { ko: '멘션 감소 + 고래 유출, 청산 리스크', en: 'Mentions fading + whale outflow; liquidation risk', ja: '言及減少 + クジラ流出、清算リスク', th: 'การพูดถึงลดลง + วาฬไหลออก เสี่ยงล้างพอร์ต', vi: 'Lượt nhắc giảm + cá voi rút; rủi ro thanh lý' }), when: tr(language, { ko: 'RSI 74 + 음의 감성 스파이크', en: 'RSI 74 + negative sentiment spike', ja: 'RSI 74 + 部定感性スパイク', th: 'RSI 74 + เซนติเมนต์ลบพุ่ง', vi: 'RSI 74 + tâm lý tiêu cực tăng vọt' }) },
-      { coin: 'XRP', sig: 'hold', why: tr(language, { ko: '판결 기대감, 확률 0.61 → 0.68', en: 'Ruling anticipation; odds moved 0.61 → 0.68', ja: '判決への期待、オッズ 0.61→0.68', th: 'รอคำตัดสิน อัตราต่อรองขยับ 0.61 → 0.68', vi: 'Kỳ vọng phán quyết; tỷ lệ cược 0,61 → 0,68' }), when: tr(language, { ko: '이벤트 드리븐 — 헤드라인 대기', en: 'event-driven — wait for headline', ja: 'イベントドリブン — ヘッドライン待ち', th: 'อิงเหตุการณ์ — รอพาดหัวข่าว', vi: 'theo sự kiện — chờ tin chính thức' }) },
-    ],
     dashNote: tr(language, { ko: '신호 = 정량(베이시스·RSI·청산·온체인) × 정성(뉴스 감성·멘션·예측시장 확률).', en: 'Signal = quant (basis · RSI · liquidations · on-chain) × qualitative (news sentiment · mentions · prediction-market odds).', ja: 'シグナル = 定量（ベーシス·RSI·清算·オンチェーン）× 定性（ニュース感性·言及量·予測市場オッズ）。', th: 'สัญญาณ = เชิงปริมาณ (เบสิส · RSI · การล้างพอร์ต · ออนเชน) × เชิงคุณภาพ (เซนติเมนต์ข่าว · การพูดถึง · อัตราต่อรอง)', vi: 'Tín hiệu = định lượng (basis · RSI · thanh lý · on-chain) × định tính (tâm lý tin tức · lượt nhắc · tỷ lệ cược).' }),
 
     skillKicker: tr(language, { ko: '트레이딩 스킬', en: 'TRADING SKILLS', ja: 'トレーディングスキル', th: 'สกิลเทรดดิ้ง', vi: 'KỸ NĂNG GIAO DỊCH' }),
@@ -252,25 +273,25 @@ export function MarketingPage() {
         <div style={wrap}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <div style={kicker}>{T.dashKicker}</div>
-            <span style={{ fontFamily: V.mono, fontSize: 10.5, color: V.faint, border: `1px solid ${V.line}`, borderRadius: 999, padding: '2px 9px' }}>{T.demoTag}</span>
+            <span style={{ fontFamily: V.mono, fontSize: 10.5, color: V.faint, border: `1px solid ${V.line}`, borderRadius: 999, padding: '2px 9px' }}>{T.liveTag}</span>
           </div>
           <h2 style={h2S}>{T.dashH}</h2>
 
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginTop: 18 }}>
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiFear}</div>
-              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px' }}>58</div>
-              <div style={{ fontSize: 12.5, color: V.mut }}>{T.kpiFearSub}</div>
+              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px' }}>{fng ? fng.value : '—'}</div>
+              <div style={{ fontSize: 12.5, color: V.mut }}>{fng ? `${fng.classification}${fng.delta_3d != null ? ` · Δ3d ${fng.delta_3d >= 0 ? '+' : ''}${fng.delta_3d}` : ''}` : T.collecting}</div>
             </div>
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiNews}</div>
-              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px', color: V.up }}>+0.42</div>
-              <div style={{ fontSize: 12.5, color: V.mut }}>{T.kpiNewsSub}</div>
+              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px', color: newsSpike && newsSpike.latest_score < 0 ? V.down : V.up }}>{newsSpike ? `${newsSpike.latest_score >= 0 ? '+' : ''}${Number(newsSpike.latest_score).toFixed(2)}` : '—'}</div>
+              <div style={{ fontSize: 12.5, color: V.mut }}>{newsSpike ? T.kpiNewsSub : T.collecting}</div>
             </div>
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiShock}</div>
-              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px', color: V.down }}>2</div>
-              <div style={{ fontSize: 12.5, color: V.mut }}>{T.kpiShockSub}</div>
+              <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px', color: shockCount ? V.down : undefined }}>{shockCount != null ? shockCount : '—'}</div>
+              <div style={{ fontSize: 12.5, color: V.mut }}>{shockCount != null ? T.kpiShockSub : T.collecting}</div>
             </div>
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiBtc}</div>
@@ -289,14 +310,18 @@ export function MarketingPage() {
                 </tr>
               </thead>
               <tbody>
-                {T.rows.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ padding: '12px 16px', fontFamily: V.mono, fontWeight: 700, borderBottom: i < T.rows.length - 1 ? `1px solid ${V.line}` : 'none' }}>{r.coin}</td>
-                    <td style={{ padding: '12px 16px', borderBottom: i < T.rows.length - 1 ? `1px solid ${V.line}` : 'none' }}>{sigPill(r.sig)}</td>
-                    <td style={{ padding: '12px 16px', color: V.mut, borderBottom: i < T.rows.length - 1 ? `1px solid ${V.line}` : 'none' }}>{r.why}</td>
-                    <td style={{ padding: '12px 16px', color: V.mut, borderBottom: i < T.rows.length - 1 ? `1px solid ${V.line}` : 'none' }}>{r.when}</td>
+                {(fusion && fusion.length > 0) ? fusion.map((s: any, i: number) => (
+                  <tr key={s.symbol}>
+                    <td style={{ padding: '12px 16px', fontFamily: V.mono, fontWeight: 700, borderBottom: i < fusion.length - 1 ? `1px solid ${V.line}` : 'none' }}>{s.symbol}</td>
+                    <td style={{ padding: '12px 16px', borderBottom: i < fusion.length - 1 ? `1px solid ${V.line}` : 'none' }}>{sigPill(s.signal)}</td>
+                    <td style={{ padding: '12px 16px', color: V.mut, borderBottom: i < fusion.length - 1 ? `1px solid ${V.line}` : 'none' }}>{(s.evidence || []).slice(0, 2).join('; ') || '—'}</td>
+                    <td style={{ padding: '12px 16px', color: V.mut, borderBottom: i < fusion.length - 1 ? `1px solid ${V.line}` : 'none' }}>{(s.matched_triggers || []).join(' · ') || '—'}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '14px 16px', color: V.mut }}>{T.collecting}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
