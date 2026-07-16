@@ -67,12 +67,12 @@ function HeroWaveBackground() {
                    + 0.5 * sin(x * 7.5 - uTime * 0.6 + z * 11.0)
                    + 0.25 * sin(x * 13.0 + uTime * 1.3 + z * 3.0);
         wave /= 1.75;
-        float y = wave * 0.38 * (1.0 - z * 0.25);
-        vec4 world = vec4(x * 4.2, y - 0.48, -1.1 - z * 6.5, 1.0);
+        float y = wave * 0.55 * (1.0 - z * 0.22);
+        vec4 world = vec4(x * 4.2, y - 0.28, -0.9 - z * 6.5, 1.0);
         gl_Position = uProj * uView * world;
         vHeat = wave;
         vDepth = z;
-        gl_PointSize = (2.2 + max(wave, 0.0) * 3.2) * (1.0 - z * 0.72) * uDpr;
+        gl_PointSize = (2.6 + max(wave, 0.0) * 3.8) * (1.0 - z * 0.70) * uDpr;
       }`
     // Shared color math; two fragment shaders because gl_PointCoord may only
     // be referenced when drawing POINTS — one program for lines, one for dots
@@ -187,7 +187,7 @@ function HeroWaveBackground() {
         cy, sx * sy, -cx * sy, 0,
         0, cx, sx, 0,
         sy, -sx * cy, cx * cy, 0,
-        0, -0.08, -0.5, 1,
+        0, -0.02, -0.35, 1,
       ])
     }
 
