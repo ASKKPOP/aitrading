@@ -97,6 +97,23 @@ export function AutomationPage() {
     proHint: tr(language, { ko: '이벤트 가드(EVENT_GUARD_ENABLED)가 켜져 있으면 FOMC·CPI·고용지표 발표 전후 1시간 동안 신규 진입이 차단됩니다.', en: 'With the event guard (EVENT_GUARD_ENABLED) on, new entries are blocked ±1h around FOMC/CPI/jobs releases.', ja: 'イベントガード有効時、FOMC・CPI・雇用統計の前後1時間は新規エントリーを停止します。', th: 'เมื่อเปิด event guard จะบล็อกการเข้าใหม่ ±1 ชม. รอบ FOMC/CPI/การจ้างงาน', vi: 'Khi bật event guard, chặn lệnh mới ±1h quanh FOMC/CPI/việc làm.' }),
   }
 
+  // Backend skip_reason strings arrive in English; localize the known set,
+  // fall back to the raw text for anything new (e.g. risk-gate detail).
+  const skipLabel = (reason?: string | null): string => {
+    if (!reason) return '—'
+    if (reason === 'auto_execute off') return tr(language, { ko: '자동 실행 꺼짐', en: 'auto-execute off', ja: '自動執行オフ', th: 'ปิดการดำเนินการอัตโนมัติ', vi: 'tắt tự động thực hiện' })
+    if (reason.startsWith('real account')) return tr(language, { ko: '실계좌 — 이 빌드에서는 분석만 실행', en: 'real account — analysis only in this build', ja: '実口座 — 分析のみ', th: 'บัญชีจริง — วิเคราะห์เท่านั้น', vi: 'tài khoản thật — chỉ phân tích' })
+    const dm = reason.match(/^decision is '(.+)'$/)
+    if (dm) return tr(language, { ko: `결정이 '${dm[1]}' — 체결 조건 아님`, en: `decision is '${dm[1]}'`, ja: `判断が'${dm[1]}'のため見送り`, th: `ผลตัดสินคือ '${dm[1]}'`, vi: `quyết định là '${dm[1]}'` })
+    const cm = reason.match(/^confidence (.+) below threshold (.+)$/)
+    if (cm) return tr(language, { ko: `신뢰도 ${cm[1]} — 임계값 ${cm[2]} 미달`, en: reason, ja: `信頼度 ${cm[1]} がしきい値 ${cm[2]} 未満`, th: `ความมั่นใจ ${cm[1]} ต่ำกว่าเกณฑ์ ${cm[2]}`, vi: `độ tin cậy ${cm[1]} dưới ngưỡng ${cm[2]}` })
+    if (reason === 'market closed') return tr(language, { ko: '장 마감', en: 'market closed', ja: '市場クローズ', th: 'ตลาดปิด', vi: 'thị trường đóng cửa' })
+    if (reason === 'no valid price in decision') return tr(language, { ko: '유효한 가격 없음', en: 'no valid price', ja: '有効な価格なし', th: 'ไม่มีราคาที่ใช้ได้', vi: 'không có giá hợp lệ' })
+    if (reason.startsWith('scanner:')) return tr(language, { ko: '스캐너: 후보 없음', en: 'scanner: no candidates', ja: 'スキャナー: 候補なし', th: 'สแกนเนอร์: ไม่มีตัวเลือก', vi: 'máy quét: không có ứng viên' })
+    if (reason.startsWith('event guard:')) return tr(language, { ko: '이벤트 가드: 거시 지표 발표 창 — 진입 차단', en: reason, ja: 'イベントガード: 発表ウィンドウ中', th: 'event guard: ช่วงประกาศตัวเลข', vi: 'event guard: cửa sổ công bố' })
+    return reason
+  }
+
   const authHeaders: any = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
 
   async function refresh() {
@@ -308,7 +325,7 @@ export function AutomationPage() {
               <span style={{ fontSize: 12 }}>{Math.round((run.confidence || 0) * 100)}%</span>
               {run.executed
                 ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(63,185,80,0.16)', color: '#3fb950' }}>✓ {T.executed} #{run.signal_id}</span>
-                : <span style={{ fontSize: 11.5, color: 'var(--text-secondary,#8a8073)' }}>{run.skip_reason}</span>}
+                : <span style={{ fontSize: 11.5, color: 'var(--text-secondary,#8a8073)' }}>{skipLabel(run.skip_reason)}</span>}
             </div>
           ))}
         </div>

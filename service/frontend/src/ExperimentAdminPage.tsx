@@ -344,14 +344,14 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
               className="form-input"
               value={notificationForm.title}
               onChange={(event) => setNotificationForm({ ...notificationForm, title: event.target.value })}
-              placeholder="Notification title"
+              placeholder={tr(language, { ko: '알림 제목', en: 'Notification title', ja: '通知タイトル', th: 'หัวข้อการแจ้งเตือน', vi: 'Tiêu đề thông báo' })}
               required
             />
             <textarea
               className="form-textarea"
               value={notificationForm.content}
               onChange={(event) => setNotificationForm({ ...notificationForm, content: event.target.value })}
-              placeholder="Write the notification body in English."
+              placeholder={tr(language, { ko: '알림 본문을 입력하세요.', en: 'Write the notification body.', ja: '通知本文を入力してください。', th: 'เขียนเนื้อหาการแจ้งเตือน', vi: 'Viết nội dung thông báo.' })}
               required
             />
             <div className="experiment-form-row">
@@ -377,7 +377,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   checked={notificationForm.dry_run}
                   onChange={(event) => setNotificationForm({ ...notificationForm, dry_run: event.target.checked })}
                 />
-                <span>Dry run</span>
+                <span>{tr(language, { ko: '드라이런', en: 'Dry run', ja: 'ドライラン', th: 'ทดลองรัน', vi: 'Chạy thử' })}</span>
               </label>
               <label className="experiment-check">
                 <input
@@ -385,7 +385,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   checked={notificationForm.create_task}
                   onChange={(event) => setNotificationForm({ ...notificationForm, create_task: event.target.checked })}
                 />
-                <span>Create task</span>
+                <span>{tr(language, { ko: '작업 생성', en: 'Create task', ja: 'タスク作成', th: 'สร้างงาน', vi: 'Tạo tác vụ' })}</span>
               </label>
               <select
                 className="form-select"

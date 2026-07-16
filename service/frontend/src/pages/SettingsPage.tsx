@@ -114,11 +114,29 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
     })
   }
 
-  const sectionTitle = (ko: string, en: string) => (
+  const sectionTitle = (m: { ko: string; en: string; ja: string; th: string; vi: string }) => (
     <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '26px 0 4px' }}>
-      {tr(language, { ko, en })}
+      {tr(language, m)}
     </h2>
   )
+
+  // Backend catalog labels/descriptions arrive in English; localize known
+  // targets here and fall back to the backend text for anything new.
+  const targetLabel = (t: ApiTarget) =>
+    t.target === 'llm' ? tr(language, { ko: 'LLM (AI 분석)', en: 'LLM (AI analysis)', ja: 'LLM (AI分析)', th: 'LLM (วิเคราะห์ AI)', vi: 'LLM (phân tích AI)' }) : t.label
+  const targetDescription = (t: ApiTarget) => {
+    const m: Record<string, { ko: string; en: string; ja: string; th: string; vi: string }> = {
+      llm: { ko: '4-애널리스트 분석 엔진의 제공자. 키가 없으면 결정론적 규칙 기반 엔진이 동작합니다.', en: 'Provider for the 4-analyst analysis engine. Without a key the deterministic rule-based engine runs.', ja: '4アナリスト分析エンジンのプロバイダー。キーなしでは決定論的ルールエンジンが動作。', th: 'ผู้ให้บริการเอนจินวิเคราะห์ 4 นักวิเคราะห์ ไม่มีคีย์จะใช้เอนจินกฎที่กำหนดแน่นอน', vi: 'Nhà cung cấp cho engine 4 nhà phân tích. Không có khóa sẽ chạy engine quy tắc xác định.' },
+      alpha_vantage: { ko: '미국 주식 시세, 뉴스+감성, ETF 자금 흐름.', en: 'US stock prices, news + sentiment, ETF flows.', ja: '米国株価、ニュース＋感性、ETFフロー。', th: 'ราคาหุ้นสหรัฐ ข่าว+เซนติเมนต์ กระแส ETF', vi: 'Giá cổ phiếu Mỹ, tin tức + tâm lý, dòng tiền ETF.' },
+      finnhub: { ko: '키가 있으면 기업 뉴스가 뉴스 애널리스트에 병합됩니다.', en: 'Company news merged into the news analyst when a key is present.', ja: 'キーがあれば企業ニュースをニュースアナリストに統合。', th: 'ข่าวบริษัทถูกรวมเข้านักวิเคราะห์ข่าวเมื่อมีคีย์', vi: 'Tin doanh nghiệp được gộp vào nhà phân tích tin tức khi có khóa.' },
+      fred: { ko: '거시경제 지표가 펀더멘털 애널리스트에 병합됩니다.', en: 'Macro-economic series merged into the fundamentals analyst.', ja: 'マクロ経済指標をファンダメンタルズアナリストに統合。', th: 'ข้อมูลเศรษฐกิจมหภาครวมเข้านักวิเคราะห์พื้นฐาน', vi: 'Chuỗi kinh tế vĩ mô được gộp vào nhà phân tích cơ bản.' },
+      okx: { ko: '암호화폐 캔들, 펀딩비, 베이시스, 거래량. 공개 API — 키 불필요.', en: 'Crypto candles, funding rate, basis, volume. Public API — no key needed.', ja: '暗号資産のローソク足・資金調達率・ベーシス・出来高。公開API。', th: 'แท่งเทียนคริปโต ฟันดิง เบสิส ปริมาณ API สาธารณะ — ไม่ต้องใช้คีย์', vi: 'Nến crypto, funding, basis, khối lượng. API công khai — không cần khóa.' },
+      stocktwits: { ko: '군중 심리와 멘션 비율. 공개 API — 키 불필요.', en: 'Crowd sentiment and mention rates. Public API — no key needed.', ja: '群集センチメントと言及率。公開API。', th: 'เซนติเมนต์ฝูงชนและอัตราการพูดถึง API สาธารณะ', vi: 'Tâm lý đám đông và tỷ lệ nhắc đến. API công khai.' },
+      polymarket: { ko: '예측시장 확률 (기대 신호). 공개 API — 키 불필요.', en: 'Prediction-market odds (anticipation signal). Public API — no key needed.', ja: '予測市場オッズ（期待シグナル）。公開API。', th: 'อัตราต่อรองตลาดคาดการณ์ (สัญญาณคาดหวัง) API สาธารณะ', vi: 'Tỷ lệ cược thị trường dự đoán (tín hiệu kỳ vọng). API công khai.' },
+      alternative_me: { ko: '공포·탐욕 지수. 공개 API — 키 불필요.', en: 'Fear & Greed index. Public API — no key needed.', ja: 'Fear & Greed指数。公開API。', th: 'ดัชนี Fear & Greed API สาธารณะ', vi: 'Chỉ số Fear & Greed. API công khai.' },
+    }
+    return m[t.target] ? tr(language, m[t.target]) : t.description
+  }
 
   return (
     <div style={{ maxWidth: '760px' }}>
@@ -146,7 +164,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       )}
 
       {/* ── Account ─────────────────────────────────────── */}
-      {sectionTitle('계정', 'Account')}
+      {sectionTitle({ ko: '계정', en: 'Account', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' })}
       <div className="card" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 18px', fontSize: '13.5px' }}>
           <span style={{ color: 'var(--text-muted)' }}>{tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email' })}</span>
@@ -168,7 +186,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       </div>
 
       {/* ── Preferences ─────────────────────────────────── */}
-      {sectionTitle('환경설정', 'Preferences')}
+      {sectionTitle({ ko: '환경설정', en: 'Preferences', ja: '環境設定', th: 'การตั้งค่า', vi: 'Tùy chọn' })}
       <div className="card" style={{ padding: '14px 16px' }}>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
           {tr(language, { ko: '언어', en: 'Language', ja: '言語', th: 'ภาษา', vi: 'Ngôn ngữ' })}
@@ -188,7 +206,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       </div>
 
       {/* ── API configuration per target ────────────────── */}
-      {sectionTitle('API 구성 — 데이터 · AI 소스별 설정', 'API Configuration — per data / AI target')}
+      {sectionTitle({ ko: 'API 구성 — 데이터 · AI 소스별 설정', en: 'API Configuration — per data / AI target', ja: 'API構成 — データ · AIソース別設定', th: 'การกำหนดค่า API — แยกตามแหล่งข้อมูล/AI', vi: 'Cấu hình API — theo nguồn dữ liệu/AI' })}
       <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
         {tr(language, {
           ko: '키가 없어도 공개 API 소스로 전체 파이프라인이 동작합니다. 키를 등록하면 해당 소스의 데이터가 더 깊어집니다. 키는 마스킹되어 저장되며 전체 값은 다시 표시되지 않습니다.',
@@ -207,7 +225,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         return (
           <div key={t.target} className="card" style={{ padding: '14px 16px', marginBottom: '10px', opacity: t.enabled ? 1 : 0.55 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <div style={{ fontWeight: 700, fontSize: '14px' }}>{t.label}</div>
+              <div style={{ fontWeight: 700, fontSize: '14px' }}>{targetLabel(t)}</div>
               <span style={{
                 fontSize: '10.5px', fontWeight: 700, borderRadius: '999px', padding: '2px 9px',
                 background: t.requires_key
@@ -227,7 +245,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                 {tr(language, { ko: '사용', en: 'Enabled', ja: '有効', th: 'เปิดใช้', vi: 'Bật' })}
               </label>
             </div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '6px 0 0' }}>{t.description}</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '6px 0 0' }}>{targetDescription(t)}</div>
 
             {t.requires_key && (
               <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
