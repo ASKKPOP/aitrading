@@ -141,14 +141,25 @@ def _find_or_create_user_from_google(google_user: dict[str, Any]) -> int:
     conn = database.get_db_connection()
     cur = conn.cursor()
     try:
-        # 1. existing link
+        # 1. existing link — but only if the linked user still exists. Users
+        # can be deleted (admin console, data resets) without their
+        # oauth_identities rows; blindly trusting the link would mint a
+        # session for a ghost user_id that every authed endpoint then 401s.
         cur.execute(
-            "SELECT user_id FROM oauth_identities WHERE provider='google' AND provider_user_id=?",
+            "SELECT oi.user_id FROM oauth_identities oi "
+            "JOIN users u ON u.id = oi.user_id "
+            "WHERE oi.provider='google' AND oi.provider_user_id=?",
             (sub,),
         )
         row = cur.fetchone()
         if row:
             return int(row["user_id"])
+        # Drop any stale link for this Google account so the re-link INSERT
+        # below can't collide with the UNIQUE(provider, provider_user_id) index.
+        cur.execute(
+            "DELETE FROM oauth_identities WHERE provider='google' AND provider_user_id=?",
+            (sub,),
+        )
 
         # 2. existing user with same email
         if email:

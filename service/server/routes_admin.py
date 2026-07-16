@@ -220,7 +220,7 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
             linked = [r["id"] for r in cursor.fetchall()]
             for aid in linked:
                 deleted[f"agent:{aid}"] = _delete_agent_cascade(cursor, aid)
-            for table in ("user_tokens", "user_api_settings", "points_transactions"):
+            for table in ("user_tokens", "user_api_settings", "points_transactions", "oauth_identities"):
                 try:
                     cursor.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
                     if cursor.rowcount:

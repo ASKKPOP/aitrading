@@ -147,3 +147,46 @@ class PostMentionTests(_Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StaleOAuthIdentityTests(_Base):
+    """A Google identity whose linked user was deleted must not resurrect the
+    ghost user_id — the callback should create a fresh user and re-link."""
+
+    def test_stale_identity_creates_fresh_user(self):
+        import database
+        from routes_oauth import _find_or_create_user_from_google
+
+        google_user = {"sub": "g-sub-123", "email": "boss@example.com"}
+        # First sign-in: creates user + identity link.
+        first_id = _find_or_create_user_from_google(google_user)
+        # Simulate the data reset: user deleted, identity row left behind.
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM users WHERE id = ?", (first_id,))
+        conn.commit(); conn.close()
+        # Second sign-in must NOT return the ghost id.
+        second_id = _find_or_create_user_from_google(google_user)
+        self.assertNotEqual(second_id, first_id)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE id = ?", (second_id,))
+        self.assertIsNotNone(cur.fetchone())
+        # And the identity link now points at the fresh user (no duplicates).
+        cur.execute("SELECT user_id FROM oauth_identities WHERE provider='google' AND provider_user_id='g-sub-123'")
+        rows = cur.fetchall()
+        conn.close()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["user_id"], second_id)
+
+    def test_admin_user_delete_cascades_oauth_identity(self):
+        import database
+        from routes_oauth import _find_or_create_user_from_google
+        user_id = _find_or_create_user_from_google({"sub": "g-sub-9", "email": "del@example.com"})
+        r = self.client.delete(f"/api/admin/users/{user_id}", headers=ADMIN)
+        self.assertEqual(r.status_code, 200)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) AS c FROM oauth_identities WHERE user_id = ?", (user_id,))
+        self.assertEqual(cur.fetchone()["c"], 0)
+        conn.close()
