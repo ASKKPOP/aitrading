@@ -47,8 +47,11 @@ function HeroWaveBackground() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-    const COLS = 70
-    const ROWS = 16
+    // Tuned to the design reference: dense full-width mesh, calm but visible
+    // drift. Reduced-motion users get a slow drift instead of a freeze.
+    const COLS = 110
+    const ROWS = 22
+    const SPEED = reduced ? 0.005 : 0.022
 
     const draw = () => {
       const W = canvas.width, H = canvas.height
@@ -63,8 +66,8 @@ function HeroWaveBackground() {
           const fx = c / (COLS - 1)
           const h = (Math.sin(fx * 6.0 + t * 0.9 + z * 2.2)
             + 0.5 * Math.sin(fx * 11.0 - t * 0.6 + z * 4.0)) / 1.5
-          const baseY = H * (0.92 - z * 0.62)
-          const amp = H * 0.11 * (1 - z * 0.55)
+          const baseY = H * (0.95 - z * 0.72)
+          const amp = H * 0.13 * (1 - z * 0.5)
           row.push({ x: fx * W, y: baseY - h * amp, z, h })
         }
         pts.push(row)
@@ -75,12 +78,12 @@ function HeroWaveBackground() {
         for (let c = 0; c < COLS; c++) {
           const p = pts[r][c]
           const heat = Math.max(0, p.h)
-          const base = (dark ? 0.14 : 0.20) * (1 - p.z * 0.7) * (0.55 + 0.45 * heat)
-          ctx.strokeStyle = p.h > 0.15
-            ? `rgba(255,${Math.round(150 - 50 * p.h)},45,${base})`
+          const base = (dark ? 0.18 : 0.24) * (1 - p.z * 0.65) * (0.5 + 0.5 * heat)
+          ctx.strokeStyle = p.h > 0.1
+            ? `rgba(255,${Math.round(150 - 65 * p.h)},25,${base * (0.9 + 0.5 * heat)})`
             : p.h < -0.35
-              ? `rgba(45,212,191,${base * 0.85})`
-              : (dark ? `rgba(148,163,184,${base * 0.7})` : `rgba(71,85,105,${base * 0.6})`)
+              ? `rgba(45,212,191,${base * 0.9})`
+              : (dark ? `rgba(148,163,184,${base * 0.65})` : `rgba(71,85,105,${base * 0.55})`)
           if (c < COLS - 1) {
             const q = pts[r][c + 1]
             ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke()
@@ -91,19 +94,38 @@ function HeroWaveBackground() {
           }
         }
       }
-      // dots — brighter and warmer on wave crests
+      // dots — warmer on crests; a second glow pass on the strongest peaks
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const p = pts[r][c]
           const heat = Math.max(0, p.h)
-          const size = dpr * (0.7 + (1 - p.z) * 1.1 + heat * 1.2)
-          const a = (dark ? 0.22 : 0.30) + (1 - p.z) * 0.35 + heat * 0.25
-          ctx.fillStyle = heat > 0.55
-            ? `rgba(255,170,80,${Math.min(1, a)})`
+          const size = dpr * (0.6 + (1 - p.z) * 1.2 + heat * 1.4)
+          const a = (dark ? 0.24 : 0.32) + (1 - p.z) * 0.38 + heat * 0.3
+          ctx.fillStyle = heat > 0.45
+            ? `rgba(255,${Math.round(185 - 70 * heat)},60,${Math.min(1, a)})`
             : dark ? `rgba(226,232,240,${a * 0.8})` : `rgba(51,65,85,${a * 0.55})`
           ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, 6.2832); ctx.fill()
         }
       }
+      // glow pass — only the hottest crests and deepest troughs (cheap subset)
+      ctx.save()
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const p = pts[r][c]
+          if (p.h > 0.72) {
+            ctx.shadowColor = 'rgba(255,150,40,0.9)'
+            ctx.shadowBlur = 10 * dpr * (1 - p.z * 0.5)
+            ctx.fillStyle = `rgba(255,190,90,${0.5 + 0.4 * (1 - p.z)})`
+            ctx.beginPath(); ctx.arc(p.x, p.y, dpr * (1.1 + (1 - p.z) * 1.3), 0, 6.2832); ctx.fill()
+          } else if (p.h < -0.78) {
+            ctx.shadowColor = 'rgba(45,212,191,0.8)'
+            ctx.shadowBlur = 8 * dpr * (1 - p.z * 0.5)
+            ctx.fillStyle = `rgba(120,230,215,${0.35 + 0.3 * (1 - p.z)})`
+            ctx.beginPath(); ctx.arc(p.x, p.y, dpr * (0.9 + (1 - p.z) * 1.0), 0, 6.2832); ctx.fill()
+          }
+        }
+      }
+      ctx.restore()
     }
 
     // Setting canvas.width clears the buffer, so every resize must repaint
@@ -121,18 +143,16 @@ function HeroWaveBackground() {
 
     const loop = () => {
       if (!running) return
-      t += 0.016
+      t += SPEED
       draw()
       raf = requestAnimationFrame(loop)
     }
     // First paint: measure + draw synchronously so the mesh shows even before
     // the first rAF tick (and in throttled tabs where rAF never fires).
     resize()
-    if (!reduced) {
-      raf = requestAnimationFrame(loop)
-    }
+    raf = requestAnimationFrame(loop)
     const onVis = () => {
-      running = !document.hidden && !reduced
+      running = !document.hidden
       cancelAnimationFrame(raf)
       if (running) raf = requestAnimationFrame(loop)
     }
@@ -340,7 +360,7 @@ export function MarketingPage() {
       <section style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${V.line}`, padding: '64px 0 56px' }}>
         <HeroWaveBackground />
         {/* readability scrim over the animated mesh, strongest where the copy sits */}
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, ${V.bg} 0%, color-mix(in srgb, ${V.bg} 62%, transparent) 55%, transparent 100%)` }} />
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, color-mix(in srgb, ${V.bg} 78%, transparent) 0%, color-mix(in srgb, ${V.bg} 35%, transparent) 48%, transparent 78%)` }} />
         <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
           <div style={kicker}>{T.heroKicker}</div>
           <h1 style={{ fontFamily: V.display, fontWeight: 800, fontSize: 'clamp(38px,5.6vw,66px)', lineHeight: 1.04, letterSpacing: '-0.02em', margin: '14px 0 18px', maxWidth: '18ch' }}>
