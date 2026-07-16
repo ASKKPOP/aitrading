@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>하이브리드 전략 — 차트 패턴 × 인간 심리</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — 차트 */
+    --series-3: #e87ba4; /* magenta — 심리 */
+    --series-4: #eda100; /* yellow — 리스크 */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #d03b3b;  /* 한국 관례: 매수=빨강 */
+    --sell: #2a78d6; /* 한국 관례: 매도=파랑 */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #e66767; --sell: #3987e5;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>하이브리드 전략: 차트 패턴 × 인간 심리</h1>
+      <p class="sub">검증된 리서치 결과에 근거해 두 진영을 각자 잘하는 역할에 배치한 매수/매도 의사결정 프레임워크입니다. <b>심리는 국면을 정하고</b>(언제 거래할지, 리스크를 얼마나 질지), <b>차트는 트리거를 정하고</b>(무엇을, 어느 가격에), <b>거래량+감성이 확인</b>하고, <b>변동성이 규모를 정합니다.</b> 어떤 신호도 단독으로 신뢰하지 않으며, 반드시 여러 신호가 겹칠 때(컨플루언스)만 행동합니다.</p>
+      <span class="stamp">2차에 걸친 검증 딥 리서치 기반 · 2026년 7월 · 교육용 — 투자 조언 아님</span>
+    </header>
+
+    <!-- ① 개념 -->
+    <section class="card">
+      <h2 class="sec">① 융합 구조: 누가 무엇을 담당하는가</h2>
+      <p class="secnote">리서치 결론: 차트 패턴은 통계적 정보는 있으나 단독으로는 수익성이 입증되지 않았고(승률 최대 53–54%), 심리 신호는 평상시에는 약하지만 극단 상황과 이벤트 전후에 강력합니다. 따라서 각자 검증된 강점에 맞는 역할만 맡깁니다.</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>차트 — 트리거 담당</h3>
+          <ul>
+            <li>12-1 모멘텀 &amp; 추세(200일 이동평균) — 검증된 최상위 예측 변수</li>
+            <li>패턴(이중 바닥, 헤드앤숄더) — 완성 + 거래량 동반 시에만 인정</li>
+            <li>승률의 현실: 53–54% (Brock 1992)</li>
+            <li>평균회귀 / 1개월 반전 → 타이밍 보조</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">답하는 질문: 무엇을, 어느 가격에</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>인간 심리 — 국면 담당</h3>
+          <ul>
+            <li>공포/탐욕 수준(VIX), 뉴스·소셜 감성 톤</li>
+            <li>정책·이벤트 캘린더(FOMC, CPI, 선거, 전쟁 헤드라인)</li>
+            <li>예측력의 현실: 정확도 50–55%, 야간 감성 표준편차당 약 6bp</li>
+            <li>가장 강력한 순간: 패닉과 유포리아(극단)</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">답하는 질문: 언제 거래할지, 언제 반대로 갈지</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>컨플루언스 엔진 — 6개 조건 중 4개 이상 일치할 때만 행동</h3>
+        <p>독립적인 약 53%짜리 우위들을 겹겹이 쌓는 것이 55%를 넘기는 유일하게 검증된 방법입니다. 신호 하나만으로는 거래 금지. 리스크 규칙(변동성 기반 규모, 손절)은 언제나 모든 것에 우선합니다.</p>
+      </div>
+    </section>
+
+    <!-- ② 플로우 -->
+    <section class="card">
+      <h2 class="sec">② 의사결정 플로우: 4단 레이어 스택</h2>
+      <p class="secnote">모든 매매 후보는 위에서 아래로 통과해야 하며, 어느 레이어든 거부권(비토)을 행사할 수 있습니다.</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">레이어 1</span> 심리 국면 필터 <span class="q">— "지금 거래해도 되는가? 어떤 모드인가?"</span></h4>
+        <p>VIX &lt; 20 → <b>추세 모드</b>(차트를 따름). VIX 20–30 → 규모 절반, 손절 타이트하게. VIX &gt; 30 + 공포 극단 → <b>역발상 모드</b>(약세 패턴 무시, 평균회귀 매수 준비). FOMC/CPI/선거 ±1일 이내 → 신규 진입 금지. 전쟁·정책 쇼크 → 첫 반등은 절대 사지 않음, 1–3일 대기.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">레이어 2</span> 방향 엔진 (차트) <span class="q">— "롱인가 숏인가?"</span></h4>
+        <p>12개월 모멘텀(최근 1개월 제외) 양(+) <b>그리고</b> 가격이 200일 이동평균 위 → 롱 편향. 둘 다 음(−) → 숏/회피 편향. 엇갈리면 → 편향 없음, 건너뜀. 이 둘은 전체 문헌에서 가장 확실하게 검증된 예측 변수입니다.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">레이어 3</span> 트리거 + 확인 (차트 × 심리) <span class="q">— "정확히 언제?"</span></h4>
+        <p>패턴 완성(이중 바닥 돌파, 헤드앤숄더 넥라인 이탈) <b>그리고</b> 돌파 시 거래량 증가 <b>그리고</b> 야간/뉴스 감성이 반대 방향이 아닐 것. 거래량 없는 패턴 = 함정, 건너뜀. 차트는 강세인데 실제 악재로 감성이 무너지는 중 = 심리가 비토.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">레이어 4</span> 규모·청산 (리스크) <span class="q">— "얼마나? 언제 나올까?"</span></h4>
+        <p>포지션 규모 = 리스크 예산 ÷ 변동성. 패턴 무효화 지점 아래 하드 스톱. 이동평균으로 트레일링. 타임 스톱: N일 안에 작동하지 않으면 청산. 정확도가 약 55%인 이상, 손실을 빨리 자르는 것 자체가 우위입니다.</p>
+      </div>
+      <div class="arrow">▼<small>주문</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">매수</span> · 보유 · <span style="color:var(--sell)">매도</span></h3><p>결과는 기록하고 피드백합니다 — 공개된 우위는 시간이 지나며 소멸하므로, 규칙을 정기적으로 표본외 재검증하세요.</p></div>
+    </section>
+
+    <!-- ③ 체크리스트 -->
+    <section class="card">
+      <h2 class="sec">③ 매수·매도 체크리스트</h2>
+      <p class="secnote">충족된 조건마다 1점. 6개 중 4점 이상에서 행동합니다. 태그는 신호의 출처 진영을 나타냅니다.</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">매수 — 6개 중 4개 이상</h3>
+          <div class="rule">추세 + 모멘텀 + 확인된 패턴 + 우호적 심리</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">가격이 200일 이동평균 위 / 골든크로스 상태<small>Brock 1992: 매수신호일 연환산 약 +12%</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">12-1 모멘텀 양(+)<small>Gu–Kelly–Xiu: ML 예측 변수 1위</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">강세 패턴 완성 + 거래량 증가 동반<small>패턴 단독으로는 불충분 (LMW 2000)</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">야간/뉴스 감성 긍정적이거나 회복 중<small>연준: 표준편차당 다음 날 약 6bp</small></span><span class="tag psy">심리</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">공포 스파이크 진정 중 (VIX가 30 초과 정점에서 하락)<small>과잉반응 → 평균회귀 구간</small></span><span class="tag psy">심리</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">24시간 내 FOMC/CPI/대형 이벤트 없음<small>이벤트 구간 리스크 통제</small></span><span class="tag risk">리스크</span></div>
+          <div class="special"><b>역발상 스페셜 (패닉 매수):</b> VIX &gt; 30 + 극단적 공포 + 가격이 단기 이동평균 위에서 안정 + 거래량 클라이맥스 통과 → <b>절반 규모</b>로 평균회귀 매수. "남들이 공포에 떨 때 탐욕스럽게"를 시스템화한 것.</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">매도 / 회피 — 6개 중 4개 이상</h3>
+          <div class="rule">추세 붕괴 + 모멘텀 붕괴 + 유포리아 또는 쇼크</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">가격이 200일 이동평균 아래 / 데드크로스 상태<small>매도신호일 연환산 약 −7% (Brock 1992)</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">모멘텀 음(−) 전환<small>방향 엔진 반전</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">약세 패턴(이중 천장/헤드앤숄더) 완성 + 거래량<small>매수와 동일하게 확인 필수</small></span><span class="tag chart">차트</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">감성 유포리아 극단<small>모두가 강세론자 = 역발상 매도 신호</small></span><span class="tag psy">심리</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">부정적 정책/지정학 쇼크 미해소<small>1–3일간 국면 리스크 지속</small></span><span class="tag psy">심리</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">손절 라인 또는 변동성 목표 도달<small>항상 모든 것에 우선 — 예외 없음</small></span><span class="tag risk">리스크</span></div>
+          <div class="special"><b>비토 규칙:</b> 차트는 매수 신호인데 실제 악재로 감성이 무너지는 중 → <b>거래 건너뜀</b>. 새로운 뉴스 국면이 낡은 차트를 이깁니다.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ 시나리오 매트릭스 -->
+    <section class="card">
+      <h2 class="sec">④ 언제 × 무엇: 시나리오 매트릭스</h2>
+      <p class="secnote">시장 심리 상태별로 어느 쪽이 의사결정을 주도하는지 정리했습니다.</p>
+      <table class="mx">
+        <thead><tr><th>시나리오 (심리 상태)</th><th>주도권</th><th>행동</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">평온한 상승 추세, 긍정적 감성</td><td><span class="who wc">차트</span></td><td>추세 추종: 이동평균까지의 눌림목을 거래량 확인 후 매수, 수익 종목 보유</td></tr>
+          <tr><td class="scn">평온한 하락 추세</td><td><span class="who wc">차트</span></td><td>관망 또는 숏 편향. 레이어 1의 패닉 신호 없이 떨어지는 칼날 잡기 금지</td></tr>
+          <tr><td class="scn">패닉 — 전쟁 헤드라인, VIX &gt; 30, 공포 극단</td><td><span class="who wp">심리</span></td><td>1–3일차: 아무것도 하지 않음. 이후 안정화 트리거(B5) 확인 시 절반 규모 역발상 매수</td></tr>
+          <tr><td class="scn">유포리아 — 수직 상승 + 모두가 강세론</td><td><span class="who wp">심리</span></td><td>강세 속에 이익 실현(S4). 추가 매수 금지. 손절 타이트하게</td></tr>
+          <tr><td class="scn">FOMC / CPI / 선거 구간</td><td><span class="who wp">심리</span></td><td>포지션 정리/신규 진입 금지, 다음 날 재개</td></tr>
+          <tr><td class="scn">거래량 없는 패턴 돌파</td><td><span class="who wn">둘 다 아님</span></td><td>건너뜀 — 가짜 돌파 대부분이 여기서 발생</td></tr>
+          <tr><td class="scn">차트는 강세인데 실제 악재로 감성 붕괴 중</td><td><span class="who wp">심리 비토</span></td><td>거래 건너뜀 — 새 뉴스 국면이 낡은 차트를 이김</td></tr>
+          <tr><td class="scn">감성은 잡음, 극단 없음, 차트는 명확</td><td><span class="who wc">차트</span></td><td>차트대로 거래, 감성은 동점 상황의 보조 판단만</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ 기대치 -->
+    <section class="card">
+      <h2 class="sec">⑤ 기대치 점검: 실제로 가능한 정확도</h2>
+      <p class="secnote">방향 예측 정확도 — 검증된 수치와 속설 비교. 세로선은 동전 던지기(50%)입니다. 눈금 40–90%.</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">동전 던지기<small>기준선</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">소셜 감성 모델<small>검증됨, 8개 시장 (2025)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">이동평균 규칙<small>검증된 승률 (Brock 1992)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">우수한 다중신호 ML 모델<small>이 프레임워크의 현실적 목표</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">약 55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">차트 패턴 속설<small>동료검증 근거 없음</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">트위터 무드 (Bollen 2011)<small>재현 실패, 검증 표본 약 15일</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">이 프레임워크의 우위는 55–58%보다 잘 맞히는 데서 나오지 않습니다. 독립적인 약한 신호를 겹쳐 쌓고, 이벤트 구간을 피하고, 변동성으로 규모를 정하고, 손실을 빨리 자르는 데서 나옵니다. 실제 자금 투입 전에 반드시 백테스트와 모의투자를 거치세요. 공개된 우위는 소멸합니다.</p>
+    </section>
+
+    <footer class="src">
+      <b>검증된 출처 기반:</b> Gu–Kelly–Xiu (2020) <i>RFS</i> · Lo–Mamaysky–Wang (2000), Brock 외 (1992), Sullivan 외 (1999) <i>Journal of Finance</i> · Savin 외 (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Bollen 외 (2011) + Lachanski &amp; Pav (2017) 재현 실패 · Greyling &amp; Rossouw (2025) CEPR · 연준 FEDS 2023-034 · Dinh &amp; Kwon (2018).
+      <br><b>면책:</b> 공개 연구를 정리한 교육용 프레임워크이며 투자 조언이나 수익 보장이 아닙니다. 정책/전쟁/FOMC의 수치화된 효과는 검증을 통과하지 못했으므로, 본 프레임워크에서는 수익 예측 변수가 아닌 타이밍·리스크 필터로만 사용합니다. 매수/매도 색상은 한국 관례(상승=빨강, 하락=파랑)를 따랐습니다.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

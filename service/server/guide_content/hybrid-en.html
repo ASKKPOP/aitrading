@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid Strategy — Chart Patterns × Human Psychology</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — charts */
+    --series-3: #e87ba4; /* magenta — psychology */
+    --series-4: #eda100; /* yellow — risk */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #0ca30c; --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  /* concept merge diagram */
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  /* layer stack */
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 0; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  /* checklists */
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  /* matrix */
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  /* expectation bars */
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>Hybrid Strategy: Chart Patterns × Human Psychology</h1>
+      <p class="sub">A buy/sell decision framework that mixes both sides according to what the verified research actually supports: <b>psychology sets the regime</b> (when to trade, how much risk), <b>charts set the trigger</b> (what and at what price), <b>volume + sentiment confirm</b>, and <b>volatility sets the size</b>. No single signal is trusted — you act only on confluence.</p>
+      <span class="stamp">Built from 2 rounds of verified deep research · July 2026 · Educational — not investment advice</span>
+    </header>
+
+    <!-- ① CONCEPT -->
+    <section class="card">
+      <h2 class="sec">① The Mix: Who Does What</h2>
+      <p class="secnote">Research verdict: chart patterns are statistically informative but not profitable alone (53–54% edge at best); psychology signals are weak day-to-day but powerful at extremes and around events. So each side does the job it's verified to be good at.</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>CHARTS — the trigger</h3>
+          <ul>
+            <li>Momentum 12-1 &amp; trend (200-day MA) — verified #1 predictors</li>
+            <li>Patterns (double bottom, H&amp;S) — only when completed + volume</li>
+            <li>Win rate reality: 53–54% (Brock 1992)</li>
+            <li>Mean-reversion / 1-month reversal for timing</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">Answers: WHAT to trade, at WHAT price</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>PSYCHOLOGY — the regime</h3>
+          <ul>
+            <li>Fear/greed level (VIX), news &amp; social sentiment tone</li>
+            <li>Policy &amp; event calendar (FOMC, CPI, elections, war headlines)</li>
+            <li>Edge reality: 50–55% accuracy; ~6bp/SD overnight sentiment</li>
+            <li>Strongest at extremes: panic and euphoria</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">Answers: WHEN to trade, WHEN to do the opposite</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>CONFLUENCE ENGINE — act only when ≥ 4 of 6 conditions agree</h3>
+        <p>Stacking independent ~53% edges is the only verified way past 55%. One signal alone = no trade. Risk rules (volatility sizing, stops) override everything.</p>
+      </div>
+    </section>
+
+    <!-- ② LAYER FLOW -->
+    <section class="card">
+      <h2 class="sec">② Decision Flow: The 4-Layer Stack</h2>
+      <p class="secnote">Every candidate trade passes top to bottom. Any layer can veto.</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">LAYER 1</span> Psychology Regime Filter <span class="q">— "Should I trade at all? Which mode?"</span></h4>
+        <p>VIX &lt; 20 → <b>trend mode</b> (follow charts). VIX 20–30 → half size, tighter stops. VIX &gt; 30 + fear extreme → <b>contrarian mode</b> (ignore bearish patterns, prepare mean-reversion buys). FOMC/CPI/election within ±1 day → no new entries. War/policy shock → never buy the first bounce; wait days 1–3.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LAYER 2</span> Direction Engine (Charts) <span class="q">— "Long or short bias?"</span></h4>
+        <p>12-month momentum (skip last month) positive AND price above 200-day MA → long bias. Both negative → short/avoid bias. Mixed → no bias, skip. These are the two most verified predictors in the entire literature.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LAYER 3</span> Trigger + Confirmation (Charts × Psychology) <span class="q">— "Exactly when?"</span></h4>
+        <p>Pattern completes (breakout of double bottom, neckline break of H&amp;S) <b>AND</b> volume rises on the break <b>AND</b> overnight/news sentiment does not contradict. Pattern without volume = trap, skip. Chart bullish but sentiment collapsing on real news = psychology vetoes.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">LAYER 4</span> Size &amp; Exit (Risk) <span class="q">— "How much? When out?"</span></h4>
+        <p>Position size = risk budget ÷ volatility. Hard stop below pattern invalidation. Trail with MA. Time stop: not working in N days → exit. With ~55% accuracy, cutting losers fast IS the edge.</p>
+      </div>
+      <div class="arrow">▼<small>order</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">BUY</span> · HOLD · <span style="color:var(--sell)">SELL</span></h3><p>Outcomes are logged and fed back — re-validate the rules out-of-sample regularly, because published edges decay.</p></div>
+    </section>
+
+    <!-- ③ CHECKLISTS -->
+    <section class="card">
+      <h2 class="sec">③ The Buy &amp; Sell Checklists</h2>
+      <p class="secnote">Each satisfied condition = 1 point. Act at 4+ of 6. Tags show which side the signal comes from.</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">BUY — confluence ≥ 4/6</h3>
+          <div class="rule">Trend + momentum + confirmed pattern + supportive psychology</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">Price above 200-day MA / golden-cross state<small>Brock 1992: buy-signal days ≈ +12% annualized</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">Positive 12-1 momentum<small>Gu–Kelly–Xiu: #1 ML predictor</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">Bullish pattern completed WITH rising volume<small>Pattern alone = not enough (LMW 2000)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">Overnight/news sentiment positive or recovering<small>Fed: ~6bp per SD next day</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">Fear spike fading (VIX falling from &gt;30 peak)<small>Overreaction → mean-reversion window</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">No FOMC / CPI / major event within 24h<small>Event-window risk control</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Contrarian special (panic buy):</b> VIX &gt; 30 + extreme fear + price stabilizing above short MA + volume climax passed → mean-reversion buy at <b>half size</b>. "Greedy when others are fearful," systematized.</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">SELL / AVOID — confluence ≥ 4/6</h3>
+          <div class="rule">Broken trend + broken momentum + euphoria or shock</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">Price below 200-day MA / death-cross state<small>Sell-signal days ≈ −7% annualized (Brock 1992)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">Momentum turned negative<small>Direction engine flips</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">Bearish pattern (double top / H&amp;S) completed with volume<small>Confirmation required, same as buys</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">Sentiment euphoria extreme<small>Everyone bullish = contrarian sell signal</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">Negative policy / geopolitical shock unresolved<small>Regime risk stays elevated days 1–3</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">Stop-loss or volatility target hit<small>ALWAYS overrides everything else — no exceptions</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Veto rule:</b> chart says buy but sentiment is collapsing on real news → <b>skip the trade</b>. Fresh news regime beats a stale chart.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ WHEN × WHAT -->
+    <section class="card">
+      <h2 class="sec">④ WHEN × WHAT Scenario Matrix</h2>
+      <p class="secnote">Which side leads the decision in each market-psychology state.</p>
+      <table class="mx">
+        <thead><tr><th>Scenario (psychology state)</th><th>Who leads</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">Calm uptrend, positive sentiment</td><td><span class="who wc">CHARTS</span></td><td>Trend-follow: buy pullbacks to the MA with volume; hold winners</td></tr>
+          <tr><td class="scn">Calm downtrend</td><td><span class="who wc">CHARTS</span></td><td>Stay out / short bias. No knife-catching without a Layer-1 panic signal</td></tr>
+          <tr><td class="scn">Panic — war headline, VIX &gt; 30, fear extreme</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Days 1–3: do nothing. Then contrarian buy on stabilization trigger (B5), half size</td></tr>
+          <tr><td class="scn">Euphoria — parabolic price, everyone bullish</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Take profits into strength (S4). Never add. Tighten stops</td></tr>
+          <tr><td class="scn">FOMC / CPI / election window</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Flat — no new entries; resume the day after</td></tr>
+          <tr><td class="scn">Pattern breakout without volume</td><td><span class="who wn">NEITHER</span></td><td>Skip — this is where most false breakouts live</td></tr>
+          <tr><td class="scn">Chart bullish BUT sentiment collapsing on real news</td><td><span class="who wp">PSYCHOLOGY vetoes</span></td><td>Skip the trade — the news regime beats the stale chart</td></tr>
+          <tr><td class="scn">Sentiment noisy, no extreme, chart clear</td><td><span class="who wc">CHARTS</span></td><td>Trade the chart; sentiment is only a tiebreaker</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ EXPECTATIONS -->
+    <section class="card">
+      <h2 class="sec">⑤ Expectation Check: What Accuracy Is Real</h2>
+      <p class="secnote">Directional accuracy — verified numbers vs the folklore. The vertical line is a coin flip (50%). Scale 40–90%.</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">Coin flip<small>baseline</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">Social sentiment models<small>verified, 8 markets (2025)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">Moving-average rules<small>verified win rate (Brock 1992)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">Good multi-signal ML model<small>realistic target of this framework</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">~55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Chart pattern folklore<small>no peer-reviewed support</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Twitter mood (Bollen 2011)<small>failed replication, ~15 test days</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">The edge of this framework does NOT come from predicting better than 55–58% — it comes from stacking independent weak signals, skipping event windows, sizing by volatility, and cutting losers fast. Backtest and paper-trade before risking money; published edges decay.</p>
+    </section>
+
+    <footer class="src">
+      <b>Built from verified sources:</b> Gu–Kelly–Xiu (2020) <i>RFS</i> · Lo–Mamaysky–Wang (2000), Brock et al. (1992), Sullivan et al. (1999) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Bollen et al. (2011) + Lachanski &amp; Pav (2017) failed replication · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018).
+      <br><b>Disclaimer:</b> educational framework describing published research. Not investment advice, not a promise of profit. Policy/war/FOMC quantified effects did not survive verification and are used here only as timing/risk filters, not return predictors.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+{
+  "groups": [
+    {
+      "group": "guide",
+      "ko": "완전 가이드",
+      "en": "Full Guide"
+    },
+    {
+      "group": "top10",
+      "ko": "TOP 10 파라미터",
+      "en": "Top-10 Parameters"
+    },
+    {
+      "group": "hybrid",
+      "ko": "하이브리드 전략",
+      "en": "Hybrid Strategy"
+    },
+    {
+      "group": "framework",
+      "ko": "프레임워크 체크리스트",
+      "en": "Framework Checklists"
+    },
+    {
+      "group": "psych-report",
+      "ko": "차트 vs 심리 리포트",
+      "en": "Charts vs Psychology"
+    },
+    {
+      "group": "backtest-report",
+      "ko": "백테스트 결과",
+      "en": "Backtest Result"
+    }
+  ],
+  "docs": [
+    {
+      "key": "guide-ko",
+      "lang": "ko",
+      "group": "guide",
+      "title": "AI 자동매매 완전 가이드"
+    },
+    {
+      "key": "guide-en",
+      "lang": "en",
+      "group": "guide",
+      "title": "Full AI-Trading Pipeline Guide"
+    },
+    {
+      "key": "top10-en",
+      "lang": "en",
+      "group": "top10",
+      "title": "Top-10 Decision Parameters"
+    },
+    {
+      "key": "top10-ko",
+      "lang": "ko",
+      "group": "top10",
+      "title": "핵심 파라미터 TOP 10"
+    },
+    {
+      "key": "hybrid-en",
+      "lang": "en",
+      "group": "hybrid",
+      "title": "Hybrid Strategy: Charts × Psychology"
+    },
+    {
+      "key": "hybrid-ko",
+      "lang": "ko",
+      "group": "hybrid",
+      "title": "하이브리드 전략: 차트 × 심리"
+    },
+    {
+      "key": "psych-report-en",
+      "lang": "en",
+      "group": "psych-report",
+      "title": "Chart Analysis vs Human Psychology — Verified Numbers"
+    },
+    {
+      "key": "psych-report-ko",
+      "lang": "ko",
+      "group": "psych-report",
+      "title": "차트 분석 vs 인간 심리 — 검증된 수치"
+    },
+    {
+      "key": "framework-en",
+      "lang": "en",
+      "group": "framework",
+      "title": "Hybrid Framework — Decision Stack & Checklists"
+    },
+    {
+      "key": "backtest-report-en",
+      "lang": "en",
+      "group": "backtest-report",
+      "title": "Phase-4 Strategy Backtest — Go/No-Go Result"
+    }
+  ]
+}

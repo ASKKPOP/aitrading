@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase-4 Strategy Backtest — Go/No-Go Result</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<h1>Phase-4 strategy backtest — go/no-go result</h1>
+<p><strong>Date:</strong> 2026-07-16 · <strong>Verdict: INSUFFICIENT_EVIDENCE → the flip package does NOT ship. All execution gates stay default-off.</strong>
+<strong>Runner:</strong> <code>service/server/run_phase4_backtest.py</code> · raw numbers: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · engine: <code>backtest_strategy.py</code> (unit-tested; two independent runs byte-identical).
+<strong>Plan:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — criteria were pre-registered before the OOS windows were opened.</p>
+<h2>0. 한국어 요약</h2>
+<p>사전 등록 기준으로 평가한 결과 <strong>증거 불충분(INSUFFICIENT_EVIDENCE)</strong> — 플립 패키지(실행 게이트 기본 활성화)는 배포하지 않습니다. 배포-충실 설정(≥4/6)은 6년 워크포워드에서 OOS 거래가 <strong>38건</strong>뿐(기준 400건)이고, 승률 36.8%의 Wilson 90% 하한(0.28)과 PF 부트스트랩 하한(0.64) 모두 기준 미달. 민감도 행(≥3)은 237건으로 늘지만 PF 하한 0.88로 여전히 1.0 미만 — 수익성이 통계적으로 입증되지 않음.</p>
+<p><strong>긍정적 발견:</strong> 리스크 스택은 리서치가 약속한 대로 작동 — 최악 자산 최대 낙폭 <strong>2.2%</strong>(B&amp;H는 같은 구간 −38%~−47%), 청산의 53%가 트레일링 스톱(승자 태우기), 시스템이 예측이 아니라 손실 차단으로 자본을 보전함. 검증 패널 통계 렌즈의 예측(트레이드 수 부족)이 정확히 적중.</p>
+<p><strong>다음 단계:</strong> 모든 기능은 표시/자문/옵트인으로 이미 배포 가능 상태. 라이브 텔레메트리(컨플루언스 벡터, 팩터 스냅샷)가 축적되면 B4 포함 6조건 시스템을 라이브-포워드로 재평가. 임계값은 리서치로 돌아감 — 프로덕션이 아니라.</p>
+<h2>1. Pre-registered setup (unchanged after seeing results)</h2>
+<ul>
+<li><strong>Primary row:</strong> deployment-faithful defaults (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), never tuned — zero snooping by construction.</li>
+<li><strong>Walk-forward row:</strong> anchored, 4 folds, 14-day purge, 6-config grid (reported), tuned on train by pooled profit factor (≥30 trades), frozen on test.</li>
+<li><strong>Sensitivity row:</strong> <code>confluence_min=3</code> fixed (B4 is null historically → only 5 of 6 conditions achievable; the live gate is therefore <em>stricter</em> in backtest than in deployment).</li>
+<li><strong>Criteria:</strong> ≥400 pooled OOS trades, else INSUFFICIENT_EVIDENCE · Wilson 90% lower bound of win rate &gt; 0.50 · bootstrap 90% lower bound of profit factor &gt; 1.0 · worst-asset max DD ≤ 30%.</li>
+<li><strong>Scope honesty:</strong> B4 null throughout; B3 degraded to MA/RSI/volume; B5 = F&amp;G leg only (full 2018+ archive, one-day extra lag); S5 null; events = the doubly-source-verified 2019–2025 calendar. Assets: BTC/ETH bars from 2019-01 (signals ≈2020-02 after 400-bar warmup), SOL from 2020-04 (signals ≈2021-05). Fees 0.1%/leg + 0.05% slippage; close-t signals fill at open t+1.</li>
+</ul>
+<h2>2. Results</h2>
+<h3>Primary (deployment-faithful ≥4/6) — pooled over 4 OOS folds × 3 assets</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Criterion</th>
+<th>Met?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OOS trades</td>
+<td><strong>38</strong></td>
+<td>≥ 400</td>
+<td>❌ (evidence floor)</td>
+</tr>
+<tr>
+<td>Win rate</td>
+<td>36.8% (14/38)</td>
+<td>Wilson90 LB &gt; 0.50 → LB = <strong>0.276</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Profit factor</td>
+<td>1.13</td>
+<td>bootstrap90 LB &gt; 1.0 → LB = <strong>0.644</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Worst-asset max DD</td>
+<td><strong>2.18%</strong></td>
+<td>≤ 30%</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>Per fold: F1 (2021-07→2022-12, bear): 19 trades, PF 1.82 · F2: 6 trades, PF 0.69 · F3: 7 trades, PF 6.53 · F4 (2025-07→2026-07, bear): 6 trades, PF 0.0.
+Exit mix: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — the trend-following profile the research prescribes (win small share of trades, let winners run: mean winner ≫ mean loser is what pushes PF above 1 at a 37% win rate).</p>
+<h3>Sensitivity (≥3 of 5 available)</h3>
+<p>237 trades · win 37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · worst DD 8.97%. More evidence, same conclusion: point-estimate profitability, not statistically distinguishable from break-even.</p>
+<h3>Walk-forward (tuned per fold, 6 configs — snooping accounted)</h3>
+<p>Every fold tuned to <code>confluence_min=3</code>; test PF: F1 1.46, F2 1.82, F3 0.69, F4 0.79. Edge is regime-dependent and does not persist across folds — consistent with the research's "published edges decay" warning.</p>
+<h3>Condition correlation (the statistics lens predicted this)</h3>
+<p>B1↔B2 daily agreement <strong>0.709</strong> (both trend measures), B1↔B3 0.52, B2↔B3 0.40. The six conditions are not independent; the "stack independent 53% edges" arithmetic does not apply at face value.</p>
+<h3>What DID work</h3>
+<p>In the F4 bear window the strategy lost ≈1.1–1.7% per asset while buy-and-hold lost <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong>. Max drawdowns of 2–9% vs B&amp;H's 60%+ historical drawdowns. Exposure 3–6% of days. <strong>The system's verified value is capital preservation through regime filtering and the exit stack — exactly the research's claim that "the edge comes from risk management, not prediction." What is NOT verified is stand-alone profitability.</strong></p>
+<h2>3. Decision (per the pre-registered rule)</h2>
+<ol>
+<li><strong>No flip.</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> stay <strong>default-off</strong>. No preset/<code>min_confidence</code> migration ships. The plan's own sentence governs: <em>"If below [criteria], the confluence thresholds go back to research, not production."</em></li>
+<li><strong>What ships anyway (already merged, zero execution-behavior change):</strong> confluence display + agent API, regime advisory + tile, telemetry (confluence vector per decision, factor snapshots), the safety fixes (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, risk-direction gating, put_risk_limits repair), the repaired backtester metrics, and the opt-in per-agent exit toolkit (trailing/time stops — individual agents may enable them; they are positional risk tools, not profitability claims).</li>
+<li><strong>Re-evaluation path:</strong> live-forward. The Phase-1 telemetry accumulates the full 6-condition vector (including B4) with every decision; factor snapshots record funding/OI/L-S/StockTwits. When ≥400 gated-quality live decisions exist (or a future backtest can include the missing conditions), re-run the criteria. The calibration table (hit rate per confluence count, Wilson CIs) builds itself from telemetry.</li>
+<li><strong>Threshold work returns to research:</strong> the interesting open question from the data is whether the <em>exit stack alone</em> (trail + time stop + regime veto) on a simpler entry signal carries the value — the confluence entry gate at ≥4/5 was so strict it traded 6×/year across 3 assets.</li>
+</ol>
+<p><em>Not investment advice. Simulator platform. Historical edges decay; these numbers describe one backtest under the documented scope limits.</em></p>
+</main></body></html>

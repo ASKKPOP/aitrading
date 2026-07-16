@@ -1,647 +1,185 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sooppiy — AI 자동매매 전체 단계 완전 가이드</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sooppiy — Guide &amp; Research</title>
 <style>
 :root{
-  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
-  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
-  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
-  --accent:#2a78d6; --accent-on:#fff;
-  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
-  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+  --page:#f9f9f7; --surface:#f1f0ec; --card:#fff; --grid:#e1e0d9;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --accent:#2a78d6;
+  --border:rgba(11,11,11,.1);
 }
 @media (prefers-color-scheme: dark){
-  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
-    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
-    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --card:#202020; --grid:#2c2c2a;
+    --ink:#fff; --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); }
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
-  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
-header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
-.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
-h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
-.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-section{border-bottom:1px solid var(--grid);padding:30px 0}
-h2{font-size:21px;font-weight:700;margin-bottom:4px}
-h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
-h3{font-size:15px;font-weight:700;margin:14px 0 6px}
-.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
-td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
-tr:last-child td{border-bottom:none}
-.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
-.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
-.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
-.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
-.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
-.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
-code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
-ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
-.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
-.note.red{border-left-color:var(--critical)}
-.note.green{border-left-color:var(--good)}
-.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
-.diagram svg{display:block;min-width:680px;width:100%;height:auto}
-.formula{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0;font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap}
-.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
-.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
-.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
-.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
-.persona{border:1px solid var(--border);border-radius:14px;background:var(--card);margin-top:14px;overflow:hidden}
-.persona-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--grid)}
-.persona-icon{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;font-weight:800}
-.persona-body{padding:13px 16px;font-size:13.5px;color:var(--ink-2)}
-.persona-body b{color:var(--ink)}
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
-.kpi .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
-.kpi .vl{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
-.kpi .hint{font-size:11px;color:var(--muted)}
-/* SVG shared */
-.sv-t{font:600 12px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink)}
-.sv-s{font:500 10.5px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink-2)}
-.sv-m{font:600 10px ui-monospace,Menlo,monospace;fill:var(--muted)}
-.sv-lb{font:700 10px system-ui,sans-serif;fill:var(--muted);letter-spacing:.08em}
-.sv-box{fill:var(--surface);stroke:var(--border)}
-.sv-card{fill:var(--card);stroke:var(--baseline)}
-.sv-acc{fill:color-mix(in srgb,var(--accent) 12%,var(--card));stroke:var(--accent)}
-.sv-good{fill:color-mix(in srgb,var(--good) 12%,var(--card));stroke:var(--good)}
-.sv-bad{fill:color-mix(in srgb,var(--critical) 10%,var(--card));stroke:var(--critical)}
-.sv-warn{fill:color-mix(in srgb,var(--yellow) 14%,var(--card));stroke:var(--yellow)}
-.sv-line{stroke:var(--baseline);stroke-width:1.4;fill:none}
-.sv-accline{stroke:var(--accent);stroke-width:1.6;fill:none}
-.sv-goodline{stroke:var(--good);stroke-width:1.6;fill:none}
-.sv-badline{stroke:var(--critical);stroke-width:1.6;fill:none}
-footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
-@media (max-width:640px){ .formula{font-size:12px} }
+html,body{height:100%}
+body{background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  display:flex;flex-direction:column}
+/* top bar */
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1px solid var(--grid);background:var(--surface);flex-wrap:wrap}
+.brand{font-weight:800;font-size:15px;letter-spacing:.02em;white-space:nowrap}
+.brand a{color:var(--ink);text-decoration:none}
+.brand span{color:var(--accent)}
+.menu{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.menu button{border:1px solid var(--border);background:var(--card);color:var(--ink2);
+  font-size:12.5px;font-weight:600;border-radius:999px;padding:5px 13px;cursor:pointer;
+  font-family:inherit;white-space:nowrap}
+.menu button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.menu button:hover:not(.active){color:var(--ink)}
+.lang{display:flex;gap:2px;border:1px solid var(--border);border-radius:999px;
+  overflow:hidden;background:var(--card)}
+.lang button{border:none;background:transparent;color:var(--muted);font-size:12px;
+  font-weight:700;padding:5px 11px;cursor:pointer;font-family:inherit}
+.lang button.active{background:var(--accent);color:#fff}
+.appLink{font-size:12.5px;color:var(--accent);text-decoration:none;white-space:nowrap;font-weight:600}
+/* frame */
+#frame{flex:1;width:100%;border:none;background:var(--page)}
+/* gate + loading */
+.gate{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{max-width:430px;text-align:center;background:var(--card);
+  border:1px solid var(--border);border-radius:16px;padding:38px 34px}
+.gate-card .lock{font-size:34px;margin-bottom:10px}
+.gate-card h1{font-size:19px;margin-bottom:8px}
+.gate-card p{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
+.gate-card a{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+  font-size:14px;border-radius:10px;padding:10px 26px;text-decoration:none}
+.gate-card .sub{font-size:12px;color:var(--muted);margin-top:14px}
+.hidden{display:none !important}
+.spin{width:26px;height:26px;border:3px solid var(--grid);border-top-color:var(--accent);
+  border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<header class="doc"><div class="wrap">
-  <div class="kicker">Sooppiy · Full Pipeline Guide</div>
-  <h1>AI 자동매매 전체 단계 — 완전 가이드</h1>
-  <div class="meta">2026-07-15 · 코드 기준(main, PR #2 머지) · 모든 수치는 실제 구현값 · sooppiy.com 가동 중</div>
-</div></header>
-
-<!-- ═══════════════ 0. 한눈에 보기 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">§0</span>한눈에 보기 — 10단계 파이프라인</h2>
-  <p class="sub">데이터 수집부터 복기까지. 모든 매매는 페이퍼(시뮬레이터) 계정에서만 체결되고, 모든 단계는 env 플래그로 격리되며, 외부 소스 장애는 해당 부분만 조용히 빠지는 fail-soft 구조입니다.</p>
-
-  <div class="steps-strip">
-    <div class="st"><b>STEP 1</b><span>데이터 수집</span></div>
-    <div class="st"><b>STEP 2</b><span>종목 발굴</span></div>
-    <div class="st"><b>STEP 3</b><span>정량 분석</span></div>
-    <div class="st"><b>STEP 4</b><span>심리 분석</span></div>
-    <div class="st"><b>STEP 5</b><span>신호 융합</span></div>
-    <div class="st"><b>STEP 6</b><span>AI 4-분석가</span></div>
-    <div class="st"><b>STEP 7</b><span>자동매매 규칙</span></div>
-    <div class="st"><b>STEP 8</b><span>리스크 게이트</span></div>
-    <div class="st"><b>STEP 9</b><span>체결·SL/TP</span></div>
-    <div class="st"><b>STEP 10</b><span>기록·복기</span></div>
+<div class="bar hidden" id="bar">
+  <div class="brand"><a href="/">Soo<span>ppiy</span> · Docs</a></div>
+  <nav class="menu" id="menu" aria-label="documents"></nav>
+  <div class="lang" id="lang" role="group" aria-label="language">
+    <button data-lang="ko">KO</button>
+    <button data-lang="en">EN</button>
   </div>
+  <a class="appLink" href="/">← App</a>
+</div>
 
-  <div class="diagram">
-  <svg viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="전체 파이프라인">
-    <defs>
-      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
-      <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
-      <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
-      <marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--critical)"/></marker>
-    </defs>
+<div class="gate" id="loading"><div class="spin" role="status" aria-label="loading"></div></div>
 
-    <!-- band 1: sources -->
-    <text x="16" y="24" class="sv-lb">외부 데이터 소스 (전부 무키 검증 완료)</text>
-    <g>
-      <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
-      <text x="102" y="68" text-anchor="middle" class="sv-s">캔들·펀딩비·베이시스·거래량</text>
-      <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
-      <text x="290" y="68" text-anchor="middle" class="sv-s">공포·탐욕 지수 + 이력</text>
-      <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits</text>
-      <text x="478" y="68" text-anchor="middle" class="sv-s">군중 감성·멘션 속도</text>
-      <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="666" y="53" text-anchor="middle" class="sv-t">Polymarket</text>
-      <text x="666" y="68" text-anchor="middle" class="sv-s">예측시장 확률(Δodds)</text>
-      <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
-      <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
-      <text x="856" y="68" text-anchor="middle" class="sv-s">뉴스·매크로·펀더멘털</text>
-    </g>
-
-    <path d="M102 80 V108" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M290 80 V108" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M478 80 V108" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M666 80 V108" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M856 80 V108" class="sv-line" marker-end="url(#ar)"/>
-
-    <!-- band 2: collectors -->
-    <text x="16" y="104" class="sv-lb" fill="var(--accent)"></text>
-    <g>
-      <rect x="16" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="126" y="130" text-anchor="middle" class="sv-t">STEP 2 · 스캐너</text>
-      <text x="126" y="145" text-anchor="middle" class="sv-s">거래량 급증 ×2 · 멘션 +100%</text>
-      <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1h</text>
-      <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="362" y="130" text-anchor="middle" class="sv-t">STEP 3 · 정량(퀀트)</text>
-      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·MA·σ·펀딩·베이시스</text>
-      <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · 온디맨드</text>
-      <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="598" y="130" text-anchor="middle" class="sv-t">STEP 4 · 심리 피드</text>
-      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·감성 스파이크·쇼크 추정</text>
-      <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1h</text>
-      <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
-      <text x="834" y="130" text-anchor="middle" class="sv-t">뉴스 · 매크로 인텔</text>
-      <text x="834" y="145" text-anchor="middle" class="sv-s">뉴스 감성·ETF 흐름·매크로</text>
-      <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · 주기 갱신</text>
-    </g>
-
-    <!-- snapshot store -->
-    <path d="M126 168 V196" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M362 168 V196" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M598 168 V196" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M834 168 V196" class="sv-line" marker-end="url(#ar)"/>
-    <rect x="16" y="198" width="928" height="40" rx="9" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="480" y="222" text-anchor="middle" class="sv-t">스냅샷 저장소 — scanner_snapshots · psych_snapshots · market_news/macro/etf/stock_analysis_snapshots (모든 판단의 증거가 DB에 남음)</text>
-
-    <!-- band 3: fusion + AI -->
-    <path d="M240 238 V266" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M720 238 V266" class="sv-line" marker-end="url(#ar)"/>
-    <g>
-      <rect x="60" y="268" width="360" height="66" rx="9" class="sv-acc"/>
-      <text x="240" y="288" text-anchor="middle" class="sv-t">STEP 5 · 신호 융합</text>
-      <text x="240" y="304" text-anchor="middle" class="sv-s">0.5·퀀트 + 0.3·감성 + 0.2·심리 (심리 상한 0.3)</text>
-      <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py · GET /api/market-intel/fusion</text>
-      <rect x="540" y="268" width="360" height="66" rx="9" class="sv-acc"/>
-      <text x="720" y="288" text-anchor="middle" class="sv-t">STEP 6 · AI 4-분석가 + 트레이더 토론</text>
-      <text x="720" y="304" text-anchor="middle" class="sv-s">뉴스·감성·펀더멘털/매크로·기술 → BUY/SELL/HOLD + 신뢰도</text>
-      <text x="720" y="320" text-anchor="middle" class="sv-m">analysis_agents.py · LLM 또는 룰 기반 폴백</text>
-    </g>
-
-    <!-- band 4: automation → gate → execution -->
-    <path d="M240 334 V360 H180 V386" class="sv-line" marker-end="url(#ar)"/>
-    <path d="M720 334 V360 H180 M180 360 V386" class="sv-line"/>
-    <g>
-      <rect x="40" y="388" width="280" height="66" rx="9" class="sv-card"/>
-      <text x="180" y="408" text-anchor="middle" class="sv-t">STEP 7 · 자동매매 규칙 (사용자 설정)</text>
-      <text x="180" y="424" text-anchor="middle" class="sv-s">주기 5–1440분 · 최소 신뢰도 0.65 · 자동체결 on/off</text>
-      <text x="180" y="440" text-anchor="middle" class="sv-m">automation.py · 60s 틱</text>
-      <rect x="368" y="388" width="256" height="66" rx="9" class="sv-warn"/>
-      <text x="496" y="408" text-anchor="middle" class="sv-t">STEP 8 · 리스크 게이트</text>
-      <text x="496" y="424" text-anchor="middle" class="sv-s">① 켈리 사이징 → ② 한도 → ③ 브레이커</text>
-      <text x="496" y="440" text-anchor="middle" class="sv-m">risk_engine.py · 전 주문 통과 필수</text>
-      <rect x="672" y="388" width="272" height="66" rx="9" class="sv-good"/>
-      <text x="808" y="408" text-anchor="middle" class="sv-t">STEP 9 · 페이퍼 체결</text>
-      <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% 자동 등록 · 30초 워처</text>
-      <text x="808" y="440" text-anchor="middle" class="sv-m">시뮬레이터 계정만 · 실계좌 체결 없음</text>
-    </g>
-    <path d="M320 421 H366" class="sv-accline" marker-end="url(#arA)"/>
-    <path d="M624 421 H670" class="sv-goodline" marker-end="url(#arG)"/>
-    <text x="643" y="412" text-anchor="middle" class="sv-m" fill="var(--good)">PASS</text>
-    <path d="M496 454 V488" class="sv-badline" marker-end="url(#arR)"/>
-    <text x="522" y="474" class="sv-m" fill="var(--critical)">FAIL → 사유 기록</text>
-
-    <!-- band 5: journal -->
-    <path d="M808 454 V488" class="sv-line" marker-end="url(#ar)"/>
-    <g>
-      <rect x="368" y="490" width="256" height="54" rx="9" class="sv-card"/>
-      <text x="496" y="510" text-anchor="middle" class="sv-t">STEP 10 · 저널 · 복기</text>
-      <text x="496" y="526" text-anchor="middle" class="sv-s">automation_runs · signals 원장 · 실험 이벤트</text>
-      <rect x="672" y="490" width="272" height="54" rx="9" class="sv-card"/>
-      <text x="808" y="510" text-anchor="middle" class="sv-t">포지션 · 손익 추적</text>
-      <text x="808" y="526" text-anchor="middle" class="sv-s">가격 폴링 → 평가손익 · SL/TP 워처 감시</text>
-    </g>
-    <path d="M672 517 H626" class="sv-line" marker-end="url(#ar)"/>
-
-    <!-- dashboard -->
-    <path d="M496 544 V572" class="sv-line" marker-end="url(#ar)"/>
-    <rect x="280" y="574" width="432" height="38" rx="9" class="sv-acc"/>
-    <text x="496" y="597" text-anchor="middle" class="sv-t">시그널 보드 대시보드 + 알림 — 사람이 항상 검증 가능</text>
-  </svg>
+<div class="gate hidden" id="gate">
+  <div class="gate-card">
+    <div class="lock">🔒</div>
+    <h1 id="gate-title">로그인이 필요합니다</h1>
+    <p id="gate-body">가이드와 리서치 문서는 Sooppiy 회원에게만 제공됩니다.<br>로그인 후 이 페이지를 다시 열어주세요.</p>
+    <a href="/login" id="gate-btn">로그인</a>
+    <div class="sub" id="gate-sub">Login required — the guide and research documents are members-only. Sign in, then reopen this page.</div>
   </div>
+</div>
 
-  <div class="kpi-row">
-    <div class="kpi"><div class="lb">체결 방식</div><div class="vl">페이퍼 전용</div><div class="hint">실계좌 주문 코드 자체가 비활성</div></div>
-    <div class="kpi"><div class="lb">리스크 게이트</div><div class="vl">3중 검사</div><div class="hint">켈리 → 한도 → 브레이커</div></div>
-    <div class="kpi"><div class="lb">테스트</div><div class="vl">708 통과</div><div class="hint">신규 위상 테스트 126개 포함</div></div>
-    <div class="kpi"><div class="lb">백그라운드 태스크</div><div class="vl">21개</div><div class="hint">risk_watcher·psych·scanner 포함</div></div>
-  </div>
-</div></section>
+<iframe id="frame" class="hidden" title="document"></iframe>
 
-<!-- ═══════════════ STEP 1 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 1</span>데이터 수집 — 모든 판단의 원료</h2>
-  <p class="sub">전부 API 키 없이 동작하는 무료 소스로 시작합니다(2026-07-14 실측 검증). 키를 넣으면 같은 자리에 유료·고급 소스가 얹히는 구조입니다. 소스 하나가 죽어도 나머지 스냅샷은 정상 저장됩니다(fail-soft).</p>
-  <table>
-    <thead><tr><th>소스</th><th>수집 항목</th><th>사용하는 단계</th><th>비고</th></tr></thead>
-    <tbody>
-      <tr><td><b>OKX</b></td><td>일봉/시간봉 캔들, 펀딩비, 현물·선물 가격(베이시스), 24h 거래량, 신규상장 목록</td><td>STEP 2·3·4</td><td>Bybit은 미국 IP 차단 → OKX 사용 확정</td></tr>
-      <tr><td><b>alternative.me</b></td><td>공포·탐욕 지수(F&amp;G) + 일별 이력</td><td>STEP 4·5</td><td>실측: 22→25 "Extreme Fear"</td></tr>
-      <tr><td><b>StockTwits</b></td><td>심볼별 군중 감성(강세/약세), 시간당 멘션 수</td><td>STEP 2·4·5·6</td><td>BTC.X 워처 67만 명</td></tr>
-      <tr><td><b>Polymarket</b></td><td>예측시장 확률과 24h 변화(Δodds)</td><td>STEP 4·6</td><td>기대(anticipation) 신호의 원천</td></tr>
-      <tr><td><b>Alpha Vantage</b></td><td>뉴스+감성 점수, 주가, ETF 흐름</td><td>STEP 6, 뉴스 인텔</td><td>demo 키로도 기본 동작</td></tr>
-      <tr><td><b>FRED · FinnHub</b></td><td>매크로 지표, 기업 뉴스(선택)</td><td>STEP 6</td><td>키 있을 때만 자동 합류</td></tr>
-    </tbody>
-  </table>
-  <div class="note red"><b>정직성 원칙:</b> 청산(liquidation)·고래(on-chain whale) 데이터는 유료 소스뿐입니다. 그래서 변동성 σ + 거래량 비율로 만든 <b>"쇼크 추정치(estimated: true)"</b>로 대체하고, UI에 반드시 "추정"이라 표기합니다. 고래 추적은 Phase 6(유료 소스 도입 시)로 명시적 보류 — 인터페이스 스텁(<code>fetch_whale_signals</code>)은 이미 배선되어 있어 소스만 꽂으면 됩니다.</div>
-</div></section>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/guide';
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { manifest: null, current: null, lang: null, cache: {} };
 
-<!-- ═══════════════ STEP 2 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 2</span>종목 발굴 — "어떤 코인을 볼 것인가" (스캐너)</h2>
-  <p class="sub">매매 이전의 질문 — 데스크가 볼 후보를 기계가 먼저 추립니다. 1시간마다 3개 축으로 스캔해 <code>scanner_snapshots</code>에 저장하고, 모든 후보에 사람이 읽을 수 있는 근거가 붙습니다.</p>
-  <table>
-    <thead><tr><th>탐지 축</th><th>기준(기본값)</th><th>방법</th></tr></thead>
-    <tbody>
-      <tr><td><b>거래량 급증</b></td><td>24h 거래량 ≥ 자기 7일 평균의 <b>×2.0</b></td><td>OKX 상위 30개 USDT 퍼프 각각을 자기 1D 캔들 7일 평균과 비교</td></tr>
-      <tr><td><b>멘션 급증</b></td><td>시간당 멘션 ≥ 기준선 대비 <b>+100%</b></td><td>StockTwits 멘션 속도를 우리 자신의 과거 스냅샷 기준선과 비교(최소 3회 스캔 축적 후 발동)</td></tr>
-      <tr><td><b>신규 상장</b></td><td>목록에 새로 등장하면 즉시 후보</td><td>OKX SWAP 상품 목록을 직전 스냅샷과 diff</td></tr>
-    </tbody>
-  </table>
-  <div class="note"><b>자동매매 연결:</b> 규칙의 심볼을 <code>SCANNER</code>로 지정하면, 매 틱마다 그 시점의 <b>1위 후보를 자동 분석</b>합니다. "무엇을 살까"까지 자동화되는 지점입니다. 실측 예: <code>BSBUSDT — volume x3.52 vs 7d avg</code>.</div>
-</div></section>
+  function token() {
+    return localStorage.getItem('claw_token') || localStorage.getItem('sooppiy_user_token') || '';
+  }
+  function preferredLang() {
+    var l = localStorage.getItem('sooppiy_guide_lang') || localStorage.getItem('sooppiy_language') || 'ko';
+    return l === 'en' ? 'en' : (l === 'ko' ? 'ko' : 'en'); // docs exist in ko/en; others read en
+  }
+  function showGate() {
+    $('loading').classList.add('hidden');
+    $('bar').classList.add('hidden');
+    $('frame').classList.add('hidden');
+    $('gate').classList.remove('hidden');
+  }
+  function groupLabel(g) {
+    return (state.lang === 'ko' ? g.ko : g.en) || g.en;
+  }
+  function docFor(group, lang) {
+    var docs = state.manifest.docs.filter(function (d) { return d.group === group; });
+    return docs.find(function (d) { return d.lang === lang; }) || docs[0] || null;
+  }
+  function buildMenu() {
+    var menu = $('menu');
+    menu.innerHTML = '';
+    state.manifest.groups.forEach(function (g) {
+      if (!docFor(g.group, state.lang)) return;
+      var b = document.createElement('button');
+      b.textContent = groupLabel(g);
+      b.dataset.group = g.group;
+      if (state.current && state.current.group === g.group) b.classList.add('active');
+      b.onclick = function () { open(g.group); };
+      menu.appendChild(b);
+    });
+    var langBtns = $('lang').querySelectorAll('button');
+    langBtns.forEach(function (b) {
+      b.classList.toggle('active', b.dataset.lang === state.lang);
+      b.onclick = function () {
+        state.lang = b.dataset.lang;
+        localStorage.setItem('sooppiy_guide_lang', state.lang);
+        open(state.current ? state.current.group : 'guide');
+      };
+    });
+  }
+  function open(group) {
+    var doc = docFor(group, state.lang);
+    if (!doc) return;
+    state.current = doc;
+    buildMenu();
+    var hash = '#' + doc.group;
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+    if (state.cache[doc.key]) { render(state.cache[doc.key]); return; }
+    $('frame').classList.add('hidden');
+    $('loading').classList.remove('hidden');
+    fetch(API + '/doc/' + encodeURIComponent(doc.key), {
+      headers: { Authorization: 'Bearer ' + token() }
+    }).then(function (r) {
+      if (r.status === 401) { showGate(); throw new Error('401'); }
+      if (!r.ok) throw new Error('fetch ' + r.status);
+      return r.text();
+    }).then(function (html) {
+      state.cache[doc.key] = html;
+      render(html);
+    }).catch(function () { /* gate already shown on 401; other errors keep spinner replaced by gate */
+      if (!$('gate').classList.contains('hidden')) return;
+      showGate();
+    });
+  }
+  function render(html) {
+    $('loading').classList.add('hidden');
+    $('frame').classList.remove('hidden');
+    $('frame').setAttribute('srcdoc', html);
+    document.title = 'Sooppiy — ' + state.current.title;
+  }
 
-<!-- ═══════════════ STEP 3 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 3</span>정량 분석 — 숫자가 먼저다 (크립토 퀀트)</h2>
-  <p class="sub">외부 TA 라이브러리 없이 자체 계산합니다. 결과는 기존 4-분석가 파이프라인의 기술 분석가 입력과 같은 형태로 나와서, 크립토도 미국주식과 동일한 정량 판단을 받습니다.</p>
-  <table>
-    <thead><tr><th>지표</th><th>계산</th><th>점수 규칙 (결정론적)</th></tr></thead>
-    <tbody>
-      <tr><td><b>RSI(14)</b></td><td>OKX 일봉, Wilder 평활(차트 사이트 기본값과 일치)</td><td>≥ 70 과매수 <b>−2</b> (프레임워크 매도 트리거) · ≤ 30 <b>+2</b> (역발상)</td></tr>
-      <tr><td><b>MA 5 / 20 / 60</b></td><td>일봉 단순이동평균</td><td>가격&gt;MA20 <b>±1</b> · MA5&gt;MA20 <b>±1</b> · MA20&gt;MA60 <b>±1</b></td></tr>
-      <tr><td><b>σ · 거래량</b></td><td>24h 시간봉 수익률 표준편차 + 최근 1h 거래량 비율</td><td>3σ 쇼크 → 브레이커 신호로 전달(STEP 8)</td></tr>
-      <tr><td><b>펀딩비</b></td><td>OKX 퍼프 펀딩비(8h)</td><td>&gt; +0.05% 롱 과밀 <b>−1</b> · &lt; −0.05% <b>+1</b></td></tr>
-      <tr><td><b>베이시스</b></td><td>(스왑 − 현물) / 현물</td><td>≥ +1.2% <b>+1</b> (매수 갭 트리거) · ≤ −0.5% <b>−1</b></td></tr>
-    </tbody>
-  </table>
-  <div class="formula">종합점수 ≥ +2 → BUY &nbsp;·&nbsp; ≤ −2 → SELL &nbsp;·&nbsp; 그 외 → HOLD &nbsp;&nbsp;(각 요인은 bullish_factors / risk_factors 목록에 근거 문장으로 남음)</div>
-  <div class="note">실측(배포 직후 sooppiy.com): BTC RSI 55.05 · 펀딩 0.0001 · 베이시스 −0.03% · 가격 64,757 — 정량 컴포넌트 +0.25.</div>
-</div></section>
-
-<!-- ═══════════════ STEP 4 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 4</span>심리 분석 — 군중을 읽되, 따르지 않는다</h2>
-  <p class="sub">시장 심리는 <b>측정 대상</b>이지 추종 대상이 아닙니다. 1시간마다 4개 심리 지표를 <code>psych_snapshots</code>로 적재합니다.</p>
-  <table>
-    <thead><tr><th>지표</th><th>내용</th><th>트리거 연결</th></tr></thead>
-    <tbody>
-      <tr><td><b>공포·탐욕</b></td><td>지수값 + 분류 + 3일 변화량(Δ3d)</td><td>Δ3d ≥ <b>+10</b> = 공포 회복 → 매수 신호 성분</td></tr>
-      <tr><td><b>감성 스파이크</b></td><td>뉴스 카테고리별 감성 평균의 z-score (우리 자신의 뉴스 스냅샷 이력 대비)</td><td>z ≤ <b>−2</b> 음의 스파이크 → 매도 성분 + 실험 이벤트 저널링</td></tr>
-      <tr><td><b>쇼크 추정</b></td><td>시간봉 σ + 거래량 비율 (청산 데이터의 정직한 프록시, <code>estimated: true</code>)</td><td>3σ 초과 → 브레이커/감축 신호</td></tr>
-      <tr><td><b>기대(예측시장)</b></td><td>Polymarket 상위 마켓 확률, 직전 스냅샷과의 Δodds</td><td>Δodds ≥ <b>+0.05</b>/24h = 재평가 → 매수 성분</td></tr>
-    </tbody>
-  </table>
-  <div class="note">실측: F&amp;G <b>25 · Extreme Fear</b>, Δ3d −1 — 지금은 "회복 트리거 미발동" 상태를 데이터로 확인할 수 있습니다.</div>
-</div></section>
-
-<!-- ═══════════════ STEP 5 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 5</span>신호 융합 — 세 가족을 하나의 점수로</h2>
-  <p class="sub">정량·감성·심리 세 신호 가족을 가중 합산해 심볼당 하나의 점수를 만듭니다. 읽기 전용(GET)이며 이 단계 자체는 절대 주문을 내지 않습니다.</p>
-  <div class="formula">fused = 0.5 × 퀀트 + 0.3 × 감성 + 0.2 × 심리 &nbsp;&nbsp;(각 성분은 −1 ~ +1로 클램프, 빠진 성분은 제외하고 정규화)</div>
-
-  <div class="diagram">
-  <svg viewBox="0 0 940 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="신호 융합">
-    <defs>
-      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
-    </defs>
-    <g>
-      <rect x="20" y="24" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="48" text-anchor="middle" class="sv-t">퀀트 (STEP 3)</text>
-      <text x="145" y="66" text-anchor="middle" class="sv-s">signal_score ÷ 4 → −1 ~ +1</text>
-      <rect x="20" y="112" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="136" text-anchor="middle" class="sv-t">감성 (StockTwits)</text>
-      <text x="145" y="154" text-anchor="middle" class="sv-s">(강세 − 약세) ÷ 전체 스코어드</text>
-      <rect x="20" y="200" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="224" text-anchor="middle" class="sv-t">심리 (STEP 4)</text>
-      <text x="145" y="242" text-anchor="middle" class="sv-s">F&amp;G Δ + 스파이크 + Δodds 결합</text>
-    </g>
-    <path d="M270 54 H400 Q430 54 442 118" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
-    <path d="M270 142 H436" class="sv-accline" marker-end="url(#ar2)"/>
-    <path d="M270 230 H400 Q430 230 442 166" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
-    <text x="330" y="44" class="sv-m" fill="var(--accent)">w = 0.5</text>
-    <text x="330" y="132" class="sv-m" fill="var(--accent)">w = 0.3</text>
-    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2 (상한 0.3 — 구조적)</text>
-    <circle cx="480" cy="142" r="34" class="sv-card" stroke-width="2"/>
-    <text x="480" y="138" text-anchor="middle" class="sv-t" style="font-size:17px">Σ</text>
-    <text x="480" y="156" text-anchor="middle" class="sv-s">가중합</text>
-    <path d="M514 142 H580" class="sv-accline" marker-end="url(#ar2)"/>
-    <!-- threshold gauge -->
-    <rect x="584" y="96" width="336" height="92" rx="10" class="sv-card"/>
-    <text x="752" y="118" text-anchor="middle" class="sv-t">판정 임계값</text>
-    <rect x="604" y="132" width="98" height="24" rx="6" class="sv-bad"/>
-    <text x="653" y="148" text-anchor="middle" class="sv-s" fill="var(--critical)">SELL ≤ −0.25</text>
-    <rect x="706" y="132" width="92" height="24" rx="6" class="sv-box"/>
-    <text x="752" y="148" text-anchor="middle" class="sv-s">HOLD</text>
-    <rect x="802" y="132" width="98" height="24" rx="6" class="sv-good"/>
-    <text x="851" y="148" text-anchor="middle" class="sv-s" fill="var(--good-ink)">BUY ≥ +0.25</text>
-    <text x="752" y="176" text-anchor="middle" class="sv-m">missing 배열로 "무엇이 빠졌는지" 항상 공개</text>
-  </svg>
-  </div>
-
-  <h3>프레임워크 트리거 매핑 (계획서 §4 그대로 구현)</h3>
-  <table>
-    <thead><tr><th>방향</th><th>트리거</th><th>임계값(기본)</th></tr></thead>
-    <tbody>
-      <tr><td><span class="tag ok">매수</span></td><td>공포 회복: F&amp;G 3일 변화</td><td>Δ3d ≥ +10</td></tr>
-      <tr><td><span class="tag ok">매수</span></td><td>군중 감성 우위</td><td>sentiment &gt; +0.2</td></tr>
-      <tr><td><span class="tag ok">매수</span></td><td>현물–선물 갭</td><td>basis ≥ +1.2%</td></tr>
-      <tr><td><span class="tag ok">매수</span></td><td>예측시장 재평가</td><td>Δodds ≥ +0.05 / 24h</td></tr>
-      <tr><td><span class="tag crit">매도</span></td><td>과매수</td><td>RSI ≥ 70</td></tr>
-      <tr><td><span class="tag crit">매도</span></td><td>음의 감성 스파이크</td><td>z ≤ −2</td></tr>
-      <tr><td><span class="tag warn">감축</span></td><td>변동성 쇼크(청산 프록시)</td><td>|수익률| &gt; 3σ → 브레이커 후보</td></tr>
-    </tbody>
-  </table>
-  <div class="note red"><b>심리 상한은 구조입니다.</b> 심리 가중치는 어떤 설정으로도 0.3을 넘을 수 없게 코드에 하드캡되어 있습니다(<code>PSYCH_WEIGHT_MAX</code>). "심리 주도 매매 금지"는 권고가 아니라 아예 불가능하게 만든 제약입니다.</div>
-</div></section>
-
-<!-- ═══════════════ STEP 6 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 6</span>AI 4-분석가 + 트레이더 토론 — 최종 판단</h2>
-  <p class="sub">실제 매매 결정을 내리는 엔진입니다. 네 명의 분석가가 각자 브리프를 쓰고, 트레이더+리스크 팀이 토론해 하나의 결정과 서면 보고서를 만듭니다.</p>
-
-  <div class="diagram">
-  <svg viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-분석가 구조">
-    <defs>
-      <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
-      <marker id="ar3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
-    </defs>
-    <g>
-      <rect x="20" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="125" y="42" text-anchor="middle" class="sv-t">① 뉴스 분석가</text>
-      <text x="125" y="58" text-anchor="middle" class="sv-s">시장·매크로 뉴스 + 감성 점수</text>
-      <text x="125" y="73" text-anchor="middle" class="sv-m">AV NEWS_SENTIMENT · FinnHub</text>
-      <rect x="250" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="355" y="42" text-anchor="middle" class="sv-t">② 감성 분석가</text>
-      <text x="355" y="58" text-anchor="middle" class="sv-s">티커·시장 감성 집계</text>
-      <text x="355" y="73" text-anchor="middle" class="sv-m">StockTwits 군중 데이터</text>
-      <rect x="480" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="585" y="42" text-anchor="middle" class="sv-t">③ 펀더멘털·매크로</text>
-      <text x="585" y="58" text-anchor="middle" class="sv-s">매크로 레짐 + 예측시장</text>
-      <text x="585" y="73" text-anchor="middle" class="sv-m">FRED · Polymarket</text>
-      <rect x="710" y="20" width="210" height="62" rx="10" class="sv-acc"/>
-      <text x="815" y="42" text-anchor="middle" class="sv-t">④ 기술 분석가</text>
-      <text x="815" y="58" text-anchor="middle" class="sv-s">크립토는 STEP 3 퀀트가 입력됨</text>
-      <text x="815" y="73" text-anchor="middle" class="sv-m">RSI·MA·σ·펀딩·베이시스</text>
-    </g>
-    <path d="M125 82 V120 H470" class="sv-line"/>
-    <path d="M355 82 V120" class="sv-line"/>
-    <path d="M585 82 V120" class="sv-line"/>
-    <path d="M815 82 V120 H470 M470 120 V138" class="sv-line" marker-end="url(#ar3)"/>
-    <rect x="290" y="140" width="360" height="56" rx="10" class="sv-warn"/>
-    <text x="470" y="162" text-anchor="middle" class="sv-t">트레이더 + 리스크 팀 토론</text>
-    <text x="470" y="180" text-anchor="middle" class="sv-s">네 브리프를 반박·종합 (ANALYSIS_DEBATE_ROUNDS)</text>
-    <path d="M470 196 V222" class="sv-goodline" marker-end="url(#ar3g)"/>
-    <rect x="270" y="224" width="400" height="30" rx="8" class="sv-good"/>
-    <text x="470" y="244" text-anchor="middle" class="sv-t">결정: BUY / SELL / HOLD + 신뢰도(0~1) + 서면 보고서</text>
-  </svg>
-  </div>
-
-  <ul>
-    <li><b>LLM이 있으면</b> — OpenAI·Gemini·Grok·Qwen·GLM·로컬·OpenRouter·Anthropic 중 설정된 제공자로 브리프와 토론을 생성합니다.</li>
-    <li><b>LLM이 없으면</b> — 역할별 <b>결정론적 룰 기반 폴백</b>이 같은 데이터로 같은 형식의 브리프·결정을 만듭니다. 엔진이 멈추는 경우는 없습니다.</li>
-    <li>레드팀 리뷰에서 발견·수정된 실제 버그: 룰 기반 신뢰도가 |score|가 아닌 score를 쓰고 있어 <b>매도 결정이 도달 불가능</b>했음 → 수정 완료(<code>105d7e6</code>).</li>
-  </ul>
-</div></section>
-
-<!-- ═══════════════ STEP 7 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 7</span>자동매매 규칙 — 사용자가 정하는 것</h2>
-  <p class="sub">자동화의 범위와 강도는 전적으로 사용자 설정입니다. 60초마다 도는 자동화 틱이 "켜져 있고 + 주기가 도래한" 규칙만 실행합니다.</p>
-  <table>
-    <thead><tr><th>설정</th><th>범위 / 기본값</th><th>의미</th></tr></thead>
-    <tbody>
-      <tr><td><code>symbol</code></td><td>BTC, NVDA … 또는 <b>SCANNER</b></td><td>분석 대상. SCANNER면 그 시점 스캐너 1위 후보를 자동 선택</td></tr>
-      <tr><td><code>market</code></td><td>crypto · us-stock</td><td>미국주식은 장 마감 중 체결 스킵(분석은 수행, 사유 기록)</td></tr>
-      <tr><td><code>interval_minutes</code></td><td>5 ~ 1440 (기본 60)</td><td>분석 주기</td></tr>
-      <tr><td><code>min_confidence</code></td><td>0 ~ 1 (기본 <b>0.65</b>)</td><td>이 신뢰도 미만의 결정은 기록만 하고 체결하지 않음</td></tr>
-      <tr><td><code>auto_execute</code></td><td>on / off (기본 <b>off</b>)</td><td>off면 순수 신호 생성 모드 — 사람이 보고 판단</td></tr>
-      <tr><td><code>account_type</code></td><td>simulator · real</td><td><b>simulator만 체결.</b> real은 분석·기록만 하고 주문은 절대 내지 않음(코드 불변식)</td></tr>
-    </tbody>
-  </table>
-
-  <div class="diagram">
-  <svg viewBox="0 0 940 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="자동화 틱 시퀀스">
-    <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker></defs>
-    <line x1="30" y1="75" x2="910" y2="75" class="sv-line" marker-end="url(#ar4)"/>
-    <g>
-      <circle cx="70" cy="75" r="5" fill="var(--accent)"/>
-      <text x="70" y="52" text-anchor="middle" class="sv-t">60s 틱</text>
-      <text x="70" y="102" text-anchor="middle" class="sv-s">due 규칙 선별</text>
-      <circle cx="240" cy="75" r="5" fill="var(--accent)"/>
-      <text x="240" y="52" text-anchor="middle" class="sv-t">분석 실행</text>
-      <text x="240" y="102" text-anchor="middle" class="sv-s">STEP 6 (4-분석가)</text>
-      <circle cx="410" cy="75" r="5" fill="var(--accent)"/>
-      <text x="410" y="52" text-anchor="middle" class="sv-t">3중 조건 확인</text>
-      <text x="410" y="102" text-anchor="middle" class="sv-s">auto_execute ∧ BUY/SELL ∧ 신뢰도≥기준</text>
-      <circle cx="600" cy="75" r="5" fill="var(--yellow)"/>
-      <text x="600" y="52" text-anchor="middle" class="sv-t">리스크 게이트</text>
-      <text x="600" y="102" text-anchor="middle" class="sv-s">STEP 8 통과 필수</text>
-      <circle cx="760" cy="75" r="5" fill="var(--good)"/>
-      <text x="760" y="52" text-anchor="middle" class="sv-t">페이퍼 체결</text>
-      <text x="760" y="102" text-anchor="middle" class="sv-s">SL/TP 동시 등록</text>
-      <circle cx="880" cy="75" r="5" fill="var(--muted)"/>
-      <text x="880" y="52" text-anchor="middle" class="sv-t">저널</text>
-      <text x="880" y="102" text-anchor="middle" class="sv-s">automation_runs</text>
-    </g>
-  </svg>
-  </div>
-  <div class="note">조건 셋 중 하나라도 미달이면 <b>체결 없이 결정만 기록</b>됩니다 — 왜 안 샀는지도 데이터로 남습니다.</div>
-</div></section>
-
-<!-- ═══════════════ STEP 8 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 8</span>리스크 게이트 — 프레임워크의 "필수" 항목</h2>
-  <p class="sub">자동 주문은 예외 없이 3중 게이트를 통과해야 합니다. 게이트는 주문을 <b>축소</b>하거나 <b>거부</b>할 수만 있고, 키울 수는 없습니다.</p>
-
-  <div class="diagram">
-  <svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="리스크 게이트 흐름">
-    <defs>
-      <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
-      <marker id="ar5g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
-      <marker id="ar5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--critical)"/></marker>
-    </defs>
-    <rect x="20" y="30" width="150" height="52" rx="10" class="sv-card"/>
-    <text x="95" y="52" text-anchor="middle" class="sv-t">주문 의도</text>
-    <text x="95" y="69" text-anchor="middle" class="sv-s">심볼·방향·수량·가격</text>
-    <path d="M170 56 H206" class="sv-line" marker-end="url(#ar5)"/>
-
-    <rect x="208" y="18" width="222" height="86" rx="10" class="sv-warn"/>
-    <text x="319" y="40" text-anchor="middle" class="sv-t">① 켈리 사이징</text>
-    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½켈리 × 자본 상한</text>
-    <text x="319" y="74" text-anchor="middle" class="sv-s">자기 저널 기반(최소 10건) · f*≤0이면 매수 거부</text>
-    <text x="319" y="92" text-anchor="middle" class="sv-m">use_kelly=0으로 에이전트별 옵트아웃</text>
-    <path d="M430 56 H466" class="sv-line" marker-end="url(#ar5)"/>
-
-    <rect x="468" y="18" width="212" height="86" rx="10" class="sv-warn"/>
-    <text x="574" y="40" text-anchor="middle" class="sv-t">② 한도 검사</text>
-    <text x="574" y="58" text-anchor="middle" class="sv-s">일일 실현손실 ≤ $1,000 (UTC 기준)</text>
-    <text x="574" y="74" text-anchor="middle" class="sv-s">심볼별 노출 ≤ $10,000</text>
-    <text x="574" y="92" text-anchor="middle" class="sv-m">PUT /api/risk/limits로 에이전트별 조정</text>
-    <path d="M680 56 H716" class="sv-line" marker-end="url(#ar5)"/>
-
-    <rect x="718" y="18" width="202" height="86" rx="10" class="sv-warn"/>
-    <text x="819" y="40" text-anchor="middle" class="sv-t">③ 서킷 브레이커</text>
-    <text x="819" y="58" text-anchor="middle" class="sv-s">global 스코프(시스템·3σ 쇼크)</text>
-    <text x="819" y="74" text-anchor="middle" class="sv-s">agent 스코프(수동 HALT)</text>
-    <text x="819" y="92" text-anchor="middle" class="sv-m">둘 중 하나라도 halted → 거부</text>
-
-    <path d="M819 104 V150" class="sv-goodline" marker-end="url(#ar5g)"/>
-    <text x="848" y="132" class="sv-m" fill="var(--good)">PASS</text>
-    <rect x="640" y="152" width="286" height="64" rx="10" class="sv-good"/>
-    <text x="783" y="176" text-anchor="middle" class="sv-t">체결 (수량은 켈리로 축소됐을 수 있음)</text>
-    <text x="783" y="194" text-anchor="middle" class="sv-s">매수 포지션에 SL −5% · TP +10% 자동 등록</text>
-
-    <path d="M319 104 V178 H240" class="sv-badline" marker-end="url(#ar5r)"/>
-    <text x="345" y="140" class="sv-m" fill="var(--critical)">FAIL (어느 단계든)</text>
-    <rect x="30" y="152" width="208" height="52" rx="10" class="sv-bad"/>
-    <text x="134" y="174" text-anchor="middle" class="sv-t">거부 + 사유 저널링</text>
-    <text x="134" y="191" text-anchor="middle" class="sv-s">"why not"도 기록으로 남음</text>
-
-    <!-- watcher loop -->
-    <rect x="20" y="240" width="900" height="70" rx="10" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="470" y="264" text-anchor="middle" class="sv-t">SL/TP 워처 — 30초마다 전체 열린 포지션 감시</text>
-    <text x="470" y="284" text-anchor="middle" class="sv-s">폴링 가격이 stop_loss / take_profit을 넘으면 자동 청산. 청산은 리스크 "축소" 방향이므로 의도적으로 게이트를 우회 —</text>
-    <text x="470" y="300" text-anchor="middle" class="sv-s">일일 손실 한도 초과나 HALT 상태가 열린 포지션을 가두는 일은 구조적으로 불가능</text>
-  </svg>
-  </div>
-
-  <h3>켈리 공식이 하는 일</h3>
-  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = 승률, R = 평균이익/평균손실 &nbsp;&nbsp;·&nbsp;&nbsp; 주문 상한 = ½ f* × 자본(현금+보유평가)</div>
-  <ul>
-    <li>에이전트 <b>자기 자신의 청산 저널</b>(평균단가 리플레이, 최근 5,000건 한도)에서 W와 R을 계산합니다 — 남의 성적이 아닌 자기 실력 기준.</li>
-    <li>닫힌 거래가 10건 미만이면 통계적 근거가 없으므로 조정하지 않습니다(과대확신 방지).</li>
-    <li>f* ≤ 0은 "엣지 없음" — 그 매수는 거부됩니다. 축소된 주문이 $1 미만이면 의미가 없으므로 역시 거부.</li>
-  </ul>
-</div></section>
-
-<!-- ═══════════════ STEP 9 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 9</span>체결과 포지션 관리 — 전부 페이퍼, 전부 원장</h2>
-  <p class="sub">체결은 수동 매매와 완전히 같은 원장을 씁니다: signals 행(signal_type='automation') + 포지션 갱신 + 현금 갱신 + 수수료 — 한 트랜잭션 안에서.</p>
-  <ul>
-    <li><b>매수:</b> 현금 확인 → 체결 → 같은 트랜잭션에서 포지션 행에 SL/TP 등록(게이트가 계산한 값, 기본 −5% / +10%).</li>
-    <li><b>매도:</b> 보유 롱 포지션이 있어야만 실행 — 없으면 "no long position to sell"로 스킵. 공매도 없음.</li>
-    <li><b>미국주식:</b> 장 마감 중엔 체결하지 않고 분석·기록만(skip_reason 저장).</li>
-    <li><b>가격 추적:</b> 브로커 없이 <code>price_fetcher</code> 폴링으로 평가손익을 계산 — 워처가 이 가격으로 SL/TP를 판정합니다.</li>
-    <li><b>실계좌:</b> account_type='real' 규칙도 분석은 수행하지만 <b>주문 코드가 아예 배선되어 있지 않습니다.</b> 실브로커 연동은 별도 서브시스템으로 미래 단계.</li>
-  </ul>
-</div></section>
-
-<!-- ═══════════════ STEP 10 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">STEP 10</span>기록·복기 — 신호는 예측이 아니라 측정이다</h2>
-  <p class="sub">모든 판단이 재구성 가능해야 시스템이 개선됩니다. 각 층위가 남기는 기록:</p>
-  <table>
-    <thead><tr><th>기록</th><th>내용</th><th>어디서 보나</th></tr></thead>
-    <tbody>
-      <tr><td><code>signals</code> 원장</td><td>체결·수량·가격·수수료·SL/TP — 수동 매매와 동일 형식</td><td>에이전트 프로필 · 피드</td></tr>
-      <tr><td><code>automation_runs</code></td><td>매 실행의 결정·신뢰도·체결/스킵 사유</td><td>자동매매 규칙 상세</td></tr>
-      <tr><td>스냅샷 6종</td><td>뉴스·매크로·ETF·종목분석·심리·스캐너 — 판단 시점의 증거 보존</td><td>API · 시그널 보드</td></tr>
-      <tr><td>실험 이벤트</td><td>감성 스파이크 등 트리거 발동 순간의 저널</td><td>experiments</td></tr>
-      <tr><td>리스크 이벤트</td><td>게이트 거부 사유 · 브레이커 트립 · 워처 청산</td><td>/api/risk/* · 로그</td></tr>
-    </tbody>
-  </table>
-  <div class="note green"><b>시그널 보드</b>가 이 전부를 한 화면으로 모읍니다: 융합 점수, 발동/미발동 트리거, F&amp;G, 스캐너 후보, 최근 자동 실행 — 사람이 기계의 판단을 언제든 감사(audit)할 수 있는 구조.</div>
-</div></section>
-
-<!-- ═══════════════ 세 가지 관점 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">§11</span>세 가지 관점 — 트레이더 · CEO · QA</h2>
-
-  <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--accent)">T</span><b>트레이더 관점 — "이 시스템을 어떻게 믿고 쓰나"</b></div>
-    <div class="persona-body">
-      <ul>
-        <li><b>규율이 코드로 강제됩니다.</b> 심리 가중치 상한(0.3), 켈리 최소 표본(10건), 신뢰도 게이트(0.65) — 사람이 흥분해도 시스템은 흥분하지 못합니다.</li>
-        <li><b>모든 신호에 근거 문장이 붙습니다.</b> "BUY 0.36"이 아니라 "가격이 MA20 위 + 펀딩 중립 + F&amp;G 극공포에서 회복 미발동"까지 읽고 동의 여부를 판단하세요.</li>
-        <li><b>손실은 두 겹으로 잘립니다.</b> 포지션 단위(SL −5%)와 계좌 단위(일 $1,000). 워처 청산이 게이트를 우회하므로 락아웃 상태에서도 탈출은 항상 가능합니다.</li>
-        <li><b>추천 사용 순서:</b> ① auto_execute off로 신호만 몇 주 관찰 → ② 자기 저널이 10건 쌓여 켈리가 켜진 뒤 소액 자동화 → ③ min_confidence를 자기 성향대로 조정. 성급하게 0.5로 낮추지 말 것 — 기본 0.65가 보수적인 데는 이유가 있습니다.</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>CEO 관점 — "왜 이 설계가 제품 경쟁력인가"</b></div>
-    <div class="persona-body">
-      <ul>
-        <li><b>포지셔닝:</b> 단순 "수익 보장 봇"이 아니라 <b>지능형 자동화 에이전트(Intelligent Automate Agent) — 측정 가능한 신호 수집 + 규율 있는 자동화 플랫폼</b>. 근거 문장·스냅샷·복기 가능성이 차별점이며, 이것이 규제·신뢰 리스크를 함께 낮춥니다.</li>
-        <li><b>페이퍼 우선은 전략입니다.</b> 실계좌 미연동은 미완성이 아니라 단계 설계 — 사용자는 무위험으로 시스템 실력을 검증하고, 우리는 실측 데이터로 엔진을 개선한 뒤 브로커 연동(별도 서브시스템)을 얹습니다.</li>
-        <li><b>비용 구조:</b> 현재 파이프라인 전체가 무료 소스로 동작 — 한계비용 없이 스케일. LLM·유료 데이터(고래/청산)는 매출 발생 후 얹는 옵션 레이어.</li>
-        <li><b>로드맵 순서:</b> P6 고래/청산(유료 소스) → 백테스트 고도화 → 실브로커 연동 → 에이전트 마켓플레이스. 각 단계가 이전 단계의 데이터 위에 쌓입니다.</li>
-        <li><b>리스크 관리가 곧 브랜드:</b> "심리 주도 매매가 구조적으로 불가능한 플랫폼"은 마케팅 문구이면서 동시에 사실입니다 — 코드로 증명 가능.</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QA 관점 — "무엇이 어떻게 검증되어 있나"</b></div>
-    <div class="persona-body">
-      <ul>
-        <li><b>테스트 708개 전체 통과</b> (신규 위상 테스트 126개 포함: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
-        <li><b>안전 불변식이 테스트로 고정:</b> simulator만 체결 · 매도는 보유 포지션 필수 · 장 마감 스킵 · real 계정 주문 불가 · 게이트는 축소/거부만 가능.</li>
-        <li><b>fail-soft 전면 적용:</b> 외부 소스 실패 시 해당 성분만 빠지고(missing 배열에 명시) 나머지 스냅샷은 저장. 잘못된 env 가중치도 500 대신 기본값 폴백.</li>
-        <li><b>단계 격리:</b> 5개 위상 모두 env 플래그 기본 off — 프로덕션 사고 시 플래그 하나로 해당 단계만 차단 가능.</li>
-        <li><b>레드팀 리뷰 실적:</b> 6개 전문 관점 + 레드팀 리뷰에서 "매도 도달 불가" 버그를 배포 전 발견·수정 — 리뷰 프로세스가 실제로 작동함을 증명.</li>
-        <li><b>라이브 검증(2026-07-15):</b> sooppiy.com에서 융합·심리·스캐너·리스크 엔드포인트 전부 실데이터 응답 확인(F&amp;G 25, BTC RSI 55.05, 스캐너 후보 BSBUSDT ×3.52), 회귀 없음.</li>
-        <li><b>남은 검증 항목:</b> 워처 청산의 장기 관측(스테이징에서 실SL 발동 사례 수집), 스캐너 멘션 기준선 축적(스캔 3회 이상), 브레이커 자동 트립(3σ) 실발동 모니터링.</li>
-      </ul>
-    </div>
-  </div>
-</div></section>
-
-<!-- ═══════════════ 레퍼런스 ═══════════════ -->
-<section><div class="wrap">
-  <h2><span class="no">§12</span>레퍼런스 — API · 설정 플래그</h2>
-  <h3>주요 API</h3>
-  <table>
-    <thead><tr><th>엔드포인트</th><th>역할</th><th>인증</th></tr></thead>
-    <tbody>
-      <tr><td><code>GET /api/market-intel/fusion</code></td><td>융합 점수 + 트리거 발동 현황 (STEP 5)</td><td>공개</td></tr>
-      <tr><td><code>GET /api/market-intel/psych</code></td><td>F&amp;G·스파이크·쇼크·Δodds (STEP 4)</td><td>공개</td></tr>
-      <tr><td><code>GET /api/scanner/candidates</code></td><td>랭킹된 후보 + 근거 (STEP 2)</td><td>공개</td></tr>
-      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>에이전트별 한도·SL/TP·켈리 옵트아웃 (STEP 8)</td><td>claw_ 토큰</td></tr>
-      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>브레이커 수동 HALT/해제</td><td>claw_ 토큰</td></tr>
-      <tr><td><code>/api/automation/*</code></td><td>규칙 생성·수정·실행 이력 (STEP 7)</td><td>claw_ 토큰</td></tr>
-    </tbody>
-  </table>
-  <h3>단계 격리 플래그 (전부 기본 off · 현재 테스트 서버는 전부 on)</h3>
-  <table>
-    <thead><tr><th>플래그</th><th>단계</th><th>부속 설정</th></tr></thead>
-    <tbody>
-      <tr><td><code>RISK_ENGINE_ENABLED</code></td><td>STEP 8·9 게이트 + 워처</td><td><code>RISK_WATCHER_INTERVAL=30</code></td></tr>
-      <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>STEP 4 심리 수집 루프</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
-      <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>STEP 3 크립토 퀀트 경로</td><td>—</td></tr>
-      <tr><td><code>SCANNER_ENABLED</code></td><td>STEP 2 스캐너 루프</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
-      <tr><td><code>FUSION_W_*</code></td><td>STEP 5 가중치 조정</td><td>심리는 0.3 하드캡 — 설정으로 초과 불가</td></tr>
-    </tbody>
-  </table>
-</div></section>
-
-<footer><div class="wrap">
-  Sooppiy · AI 자동매매 전체 단계 가이드 · 2026-07-15 · 본 문서의 모든 수치는 main 브랜치 코드의 실제 구현값이며, 라이브 값은 배포 당일 sooppiy.com 실측입니다. 관련 문서: <a href="/plan.html" style="color:var(--accent)">구현 계획</a> · <a href="/framework.html" style="color:var(--accent)">프레임워크 명세</a>
-</div></footer>
-
+  // boot: verify login by fetching the manifest (content is never in this page)
+  if (!token()) { showGate(); return; }
+  fetch(API + '/docs', { headers: { Authorization: 'Bearer ' + token() } })
+    .then(function (r) {
+      if (r.status === 401) { showGate(); throw new Error('401'); }
+      if (!r.ok) throw new Error('manifest ' + r.status);
+      return r.json();
+    })
+    .then(function (m) {
+      state.manifest = m;
+      state.lang = preferredLang();
+      $('bar').classList.remove('hidden');
+      var initial = (location.hash || '#guide').slice(1);
+      var known = m.groups.some(function (g) { return g.group === initial; });
+      open(known ? initial : 'guide');
+    })
+    .catch(function () { showGate(); });
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>차트 분석 vs 인간 심리 — 검증된 수치</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<h1>차트 분석 vs 인간 심리: 검증된 수치가 말해주는 것</h1>
+<p><strong>심층 리서치 보고서 — 파라미터별 성공률, 매수/매도 예측 · 2026년 7월</strong>
+<strong>방법:</strong> 아래의 모든 백분율은 3명의 독립 검증자가 1차 출처와 대조하여 적대적(adversarial) 방식으로 사실 검증했습니다. 검증에 실패한 주장은 사실로 보고하지 않고 실패로 표시했습니다.</p>
+<hr />
+<h2>질문에 대한 핵심 답변</h2>
+<p>당신의 직관은 절반은 맞습니다 — 그리고 연구 결과는 <em>나머지</em> 절반 역시 사람들이 생각하는 것보다 약하다는 것을 보여줍니다.</p>
+<p>당신은 대부분의 사람들이 차트를 믿지만, <strong>"정부 정책, 시장 추세, 전쟁, 사회 이슈, 뉴스, 소셜 미디어, 경제 지표, 주요 헤드라인이 형성하는 사람들의 심리 패턴"</strong>이 더 중요하다고 썼습니다. 검증된 증거는 다음과 같이 말합니다.</p>
+<ol>
+<li><strong>유명한 차트 패턴 수치들은 속설입니다.</strong> 트레이딩 사이트에 떠도는 헤드앤숄더와 더블 바텀의 "80% 이상 성공률"은 <strong>동료평가를 거친 근거가 전혀 없습니다.</strong> 그 출처는 실무자의 집계(불코프스키의 <em>Encyclopedia of Chart Patterns</em>)로 거슬러 올라가며 — 표본 내(in-sample) 집계일 뿐 독립적으로 재현된 적이 없고, 이번 리서치에서도 검증할 수 없었습니다.</li>
+<li><strong>그러나 유명한 심리 수치 역시 속설에 가깝습니다.</strong> 당신의 견해를 뒷받침하는 가장 많이 인용되는 근거 — "트위터 무드가 시장을 87.6% 정확도로 예측한다"(Bollen et al. 2011) — 는 <strong>표본외(out-of-sample) 거래일 약 15일</strong>만을 근거로 했고, 아무도 검토할 수 없는 독점 감성 사전을 사용했으며, <strong>독립 재현에 실패</strong>했고(표본외 예측력 0), 이 전략 위에 세워진 헤지펀드는 1년 안에 문을 닫았습니다.</li>
+<li><strong>양측이 실제로 내놓는 검증된 성과: 대략 50~55%의 방향 정확도, 또는 연간 몇 퍼센트 수준의 위험조정 초과수익.</strong> 시장은 어렵습니다. 통계적으로 감지 가능한 우위는 양쪽 모두에 존재하지만, 경제적으로 큰 우위는 면밀한 검증을 견디지 못합니다.</li>
+<li><strong>당신이 가장 옳은 지점:</strong> 학계의 합의는 차트 패턴이 <em>정보성은 있으나 단독으로는 수익성이 없다</em>는 것입니다 — 반면 인간 행동 데이터(감성, 뉴스 타이밍)는 모델에 측정 가능한 수준으로 정보를 <em>더해줍니다</em>. 현대 AI 시스템은 심리를 실질적인 입력값으로 취급하며, 고전적 차트 패턴은 의사결정 규칙이 아닌 약한 피처(feature) 정도로 다룹니다.</li>
+</ol>
+<hr />
+<h2>파트 A — 차트 분석: 검증된 성공률</h2>
+<h3>A1. 차트 패턴 전반 (고전 패턴 10종)</h3>
+<p><strong>Lo, Mamaysky &amp; Wang (2000), <em>Journal of Finance</em></strong> — 학계의 정석적 검증, 미국 주식 1962–1996, 헤드앤숄더, 더블 탑/바텀, 삼각형 포함.</p>
+<table>
+<thead>
+<tr>
+<th>결과</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>통계적으로 정보성 있는 패턴 (NYSE/AMEX)</td>
+<td><strong>10개 중 7개</strong> (더블 바텀은 여기에 포함되지 않음)</td>
+</tr>
+<tr>
+<td>통계적으로 정보성 있는 패턴 (나스닥)</td>
+<td><strong>10개 중 10개</strong></td>
+</tr>
+<tr>
+<td>더 엄격한 콜모고로프–스미르노프 검정 기준</td>
+<td>10개 중 5개에 불과</td>
+</tr>
+<tr>
+<td>이것이 수익을 낸다는 증거</td>
+<td><strong>없음</strong> — 저자들은 "기술적 분석이 초과 거래 수익을 창출하는 데 사용될 수 있음을 반드시 의미하지는 않는다"고 명시</td>
+</tr>
+</tbody>
+</table>
+<p><strong>"80% 이상 성공" 주장에 대한 판정:</strong> 정보성 ≠ 승률. 어떤 고전 패턴에 대해서도 80% 이상의 성공률을 뒷받침하는 동료평가 출처는 없습니다.</p>
+<h3>A2. 헤드앤숄더 단독 분석</h3>
+<p><strong>Savin, Weller &amp; Zvingelis (2007), <em>Journal of Financial Econometrics</em></strong> — S&amp;P 500 및 러셀 2000 종목, 1990–1999.</p>
+<table>
+<thead>
+<tr>
+<th>결과</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시장 헤지 전략의 위험조정 초과수익</td>
+<td><strong>연 5–7%</strong></td>
+</tr>
+<tr>
+<td>S&amp;P 500 종목 대상 단독 H&amp;S 매매</td>
+<td><strong>수익성 증거 없음</strong></td>
+</tr>
+<tr>
+<td>러셀 2000(소형주) 대상 단독 매매</td>
+<td>근거 미약; 기관 비용 차감 후 연 약 4.2%</td>
+</tr>
+</tbody>
+</table>
+<p>이 패턴은 실제 정보를 담고 있지만 — 트레이더들이 주장하는 높은 원승률(raw win rate)은 아닙니다.</p>
+<h3>A3. 이동평균 / 골든크로스 규칙</h3>
+<p><strong>Brock, Lakonishok &amp; LeBaron (1992), <em>Journal of Finance</em></strong> — 다우존스 산업평균지수(DJIA), 1897–1986. 학술 문헌에서 측정된 정석적 "승률":</p>
+<table>
+<thead>
+<tr>
+<th>결과</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>매수 신호 후 상승 마감한 날의 비율</td>
+<td><strong>53–54%</strong></td>
+</tr>
+<tr>
+<td>매도 신호 후 상승 마감한 날의 비율</td>
+<td><strong>약 49%</strong></td>
+</tr>
+<tr>
+<td>매수 신호일 연환산 수익률</td>
+<td>무조건부 +4% 대비 약 +12%</td>
+</tr>
+<tr>
+<td>매도 신호일 연환산 수익률</td>
+<td>약 −7%</td>
+</tr>
+<tr>
+<td>데이터 스누핑 보정 + 거래비용 반영 후 (Sullivan et al. 1999; Bajgrowicz &amp; Scaillet 2012)</td>
+<td><strong>수익이 사실상 사라짐</strong>, 특히 최근 수십 년에는 더욱</td>
+</tr>
+</tbody>
+</table>
+<p>즉, 가장 유명한 기술적 규칙의 실제 측정된 우위는 <strong>비용 반영 전 기준, 동전 던지기 대비 승률 약 4~5%포인트</strong> — 70~80%가 아닙니다.</p>
+<h3>A4. MACD와 RSI</h3>
+<p><strong>Chio (2022), arXiv 백테스트</strong> — DJIA/나스닥/S&amp;P 500, 2015–2021 (⚠️ 프리프린트, 동료평가 없음, 거래비용 미반영, 강세장 구간, 매수 후 보유(buy-and-hold) 벤치마크 없음):</p>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>승률</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MACD 단독</td>
+<td>변형/지수에 따라 <strong>37–68%</strong>; 샤프 비율은 0.28–0.50에 불과 — "강력한 예측 도구가 아님"</td>
+</tr>
+<tr>
+<td>MACD + RSI 결합</td>
+<td><strong>78–86%</strong> — 그러나 지수를 단순 보유하는 것과 한 번도 비교되지 않았으므로, 시장을 이겼다는 증거가 아님</td>
+</tr>
+</tbody>
+</table>
+<p>이는 당신이 인용한 커뮤니티의 견해와 일치합니다. 즉, 지표를 조합하면(거래량, 지지/저항선과 함께) 단일 패턴보다 낫지만 — 여기서의 "승률"도 여전히 수익을 의미하지는 않습니다.</p>
+<h3>A5. 기술적 분석은 애초에 수익성이 있는가?</h3>
+<p><strong>Park &amp; Irwin (2007), <em>Journal of Economic Surveys</em></strong> — 현대 연구 95편(1988–2004)에 대한 리뷰:</p>
+<table>
+<thead>
+<tr>
+<th>결과</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>긍정적 결과를 보고한 연구</td>
+<td><strong>95편 중 56편 (약 59%)</strong></td>
+</tr>
+<tr>
+<td>부정적</td>
+<td>20편 · 혼재: 19편</td>
+</tr>
+<tr>
+<td>종합 결론</td>
+<td><strong>결론 불가(inconclusive)</strong> — 긍정적 결과들은 데이터 스누핑, 사후적 규칙 선택, 과소평가된 비용으로 인해 신뢰성이 훼손됨</td>
+</tr>
+<tr>
+<td>주식시장에 한정하면 (초기 문헌)</td>
+<td>기술적 규칙은 외환/선물에서는 통했지만, <strong>주식시장에서는 통하지 않음</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>파트 B — 인간 심리: 검증된 성공률</h2>
+<h3>B1. 그 유명한 숫자 — 그리고 그 붕괴</h3>
+<p><strong>Bollen, Mao &amp; Zeng (2011):</strong> 트위터의 "차분함(calm)" 무드 → DJIA 방향, <strong>87.6% 정확도</strong> 주장.</p>
+<table>
+<thead>
+<tr>
+<th>사실</th>
+<th>검증된 세부 내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>학습 구간</td>
+<td>2008년의 약 8개월뿐</td>
+</tr>
+<tr>
+<td>87.6%가 나온 테스트 구간</td>
+<td><strong>약 15거래일</strong> (2008년 12월 1일–19일)</td>
+</tr>
+<tr>
+<td>무드 감성 사전</td>
+<td>독점 자산, 공개된 적 없음</td>
+</tr>
+<tr>
+<td>독립 재현 (Lachanski &amp; Pav 2017)</td>
+<td>효과는 원래 부분표본에서만 존재; <strong>표본을 확장하면 사라짐</strong> ("데이터 스누핑과 부합"); <strong>표본외 예측력 없음</strong></td>
+</tr>
+<tr>
+<td>실전 검증</td>
+<td>이 전략 위에 세워진 헤지펀드 Derwent Capital Markets, <strong>2012년 초 폐업</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>B2. 감성이 실제로 내놓는 성과</h3>
+<p><strong>Greyling &amp; Rossouw (2025, CEPR/VoxEU; 트윗 약 300만 건, 8개 시장):</strong></p>
+<table>
+<thead>
+<tr>
+<th>결과</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>방향 정확도, 8개 시장 전체 (프랑스, 독일, 일본, 스페인, 영국, 미국, 인도, 폴란드)</td>
+<td><strong>전 시장에서 50% 초과</strong> — 우연을 간신히 넘는 수준</td>
+</tr>
+<tr>
+<td>미국 S&amp;P 500</td>
+<td>정확도 <strong>55% 초과</strong> (재현율 최대 92%, 클래스 불균형으로 부풀려졌을 가능성)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>1차 리서치 라운드 결과 (3-0 검증):</strong> 야간/장외 시간대 트위터 감성은 다음 날 S&amp;P 500 수익률을 <strong>표준편차당 약 6bp</strong> 수준으로 예측합니다(연방준비제도 연구) — 실재하고 거래에 활용할 여지는 있으나, 매우 작습니다.</p>
+<h3>B3. 이번 라운드에서 검증하지 못한 것 (정직성 섹션)</h3>
+<p>다음 인간 심리 채널들에 대해서는 <strong>정량화된 주장 중 어느 것도 이번 적대적 검증을 통과하지 못했습니다</strong> — 중요하지 않아서가 아니라, 동료평가를 거친 깔끔한 백분율이 확인되지 않았기 때문입니다.</p>
+<ul>
+<li>방향 예측 지표로서의 VIX / AAII 투자자 심리 지수</li>
+<li>경제정책 불확실성(정부 정책) 지수 → 수익률 효과</li>
+<li>전쟁 / 지정학 이벤트 스터디의 백분율 수치</li>
+<li>FOMC / CPI 발표일 효과</li>
+<li>군집행동(herding), 손실 회피, 과잉반응 — 정량화된 수익률 효과</li>
+<li><strong>감성 피처 vs 기술적 피처를 직접 맞대결시킨 ML 연구 일체</strong> — 당신의 가설에 필요한 바로 그 비교는 여전히 미해결 연구 과제로 남아 있음</li>
+</ul>
+<p>따라서 가장 정직한 진술은 이렇습니다: 심리 기반 입력값은 AI 시스템의 표준 구성요소이며 측정 가능하지만 완만한 수준의 정확도를 더해줍니다. 다만 문헌은 그것이 기술적 입력값을 X%만큼 이긴다는 것을 입증하지 <strong>못했습니다</strong>.</p>
+<hr />
+<h2>비교표</h2>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>속설의 수치</th>
+<th>검증된 수치</th>
+<th>동전 던지기를 이기는가?</th>
+<th>비용 차감 후 수익성?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>헤드앤숄더</td>
+<td>"80% 이상 성공"</td>
+<td>헤지 초과수익 연 5–7%; 단독으로는 수익성 없음</td>
+<td>정보성 있음</td>
+<td>아니요 (S&amp;P 500)</td>
+</tr>
+<tr>
+<td>더블 바텀</td>
+<td>"80% 이상 성공"</td>
+<td>NYSE/AMEX에서 유의하지 않음 (LMW 2000)</td>
+<td>미약</td>
+<td>미입증</td>
+</tr>
+<tr>
+<td>페넌트/깃발</td>
+<td>"약 50% 실패"</td>
+<td>동료평가 검증에서 다뤄지지 않음</td>
+<td>불명</td>
+<td>미입증</td>
+</tr>
+<tr>
+<td>골든크로스 / 이동평균</td>
+<td>높은 승률</td>
+<td>승률 <strong>53–54% 대 49%</strong></td>
+<td>간신히</td>
+<td>보정 후 사라짐</td>
+</tr>
+<tr>
+<td>MACD 단독</td>
+<td>대중적</td>
+<td>승률 <strong>37–68%</strong>, 샤프 비율 미약</td>
+<td>때때로</td>
+<td>벤치마크 없음</td>
+</tr>
+<tr>
+<td>MACD + RSI</td>
+<td>—</td>
+<td>승률 78–86% (프리프린트, 비용 미반영, 벤치마크 없음)</td>
+<td>표본 내에서는 예</td>
+<td>미입증</td>
+</tr>
+<tr>
+<td>트위터 무드 (Bollen)</td>
+<td><strong>87.6%</strong></td>
+<td>재현 실패; 표본외 예측력 0</td>
+<td>아니요</td>
+<td>펀드 폐업</td>
+</tr>
+<tr>
+<td>소셜 감성 (현실적 수준)</td>
+<td>—</td>
+<td>방향 정확도 <strong>50–55%</strong></td>
+<td>간신히</td>
+<td>미미함</td>
+</tr>
+<tr>
+<td>야간 뉴스/소셜 감성</td>
+<td>—</td>
+<td>표준편차당 다음 날 약 6bp</td>
+<td>예, 아주 작게</td>
+<td>미미함</td>
+</tr>
+<tr>
+<td>정책/전쟁/FOMC/VIX 효과</td>
+<td>주장 다수</td>
+<td>이번 라운드에서 미검증</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2>이것이 AI 트레이딩 시스템에 의미하는 것</h2>
+<p>두 차례의 리서치 라운드 모두와 일관된 실용적 종합:</p>
+<ol>
+<li>차트/기술적 신호는 <strong>규칙이 아니라 피처로</strong> 사용하십시오 — 어느 것도 단독 전략으로는 통하지 않지만, 통계적 정보는 담고 있습니다(LMW 2000).</li>
+<li>인간 심리 데이터(뉴스 감성, 소셜 미디어, 거시경제 발표)는 <strong>추가 피처로</strong> 사용하십시오 — 특히 야간 감성은 실질적인 정보를 더해주지만, 87.6%가 아니라 몇 퍼센트포인트를 기대해야 합니다.</li>
+<li>좋은 모델에서 기대할 것은 <strong>50~55%의 방향 정확도</strong>입니다. Gu–Kelly–Xiu 벤치마크는 우위가 어느 단일 파라미터(차트든 심리든)가 아니라 다수의 약한 신호를 비선형적으로 <em>결합</em>하는 데서 나온다는 것을 보여줍니다(샤프 비율 1.35 대 0.61).</li>
+<li>표본외 검증, 비용 조정, 재현이 확인되지 않은 약 60% 이상의 단일 정확도 수치는 모두 의심하십시오. 양 진영의 유명한 수치들은 모두 그 검증을 통과하지 못했습니다.</li>
+</ol>
+<p><em>투자 조언이 아닙니다. 저는 금융 자문가가 아니며 — 이는 공개된 측정 결과에 대한 서술일 뿐이고, 과거의 우위는 발표 이후 감소합니다.</em></p>
+<h2>주요 출처</h2>
+<ol>
+<li>Lo, Mamaysky &amp; Wang (2000), <em>Journal of Finance</em> — https://web.mit.edu/wangj/www/pap/LoMamayskyWang00.pdf</li>
+<li>Savin, Weller &amp; Zvingelis (2007), <em>Journal of Financial Econometrics</em> — https://academic.oup.com/jfec/article-abstract/5/2/243/785044</li>
+<li>Park &amp; Irwin (2007), <em>Journal of Economic Surveys</em> — https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-6419.2007.00519.x</li>
+<li>Brock, Lakonishok &amp; LeBaron (1992), <em>Journal of Finance</em> — https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1992.tb04681.x</li>
+<li>Sullivan, Timmermann &amp; White (1999), <em>Journal of Finance</em> — https://ideas.repec.org/a/bla/jfinan/v54y1999i5p1647-1691.html</li>
+<li>Chio (2022), MACD/RSI 백테스트, arXiv — https://arxiv.org/pdf/2206.12282</li>
+<li>Bollen, Mao &amp; Zeng (2011) — https://arxiv.org/abs/1010.3003</li>
+<li>Lachanski &amp; Pav (2017), <em>Econ Journal Watch</em> (재현 실패) — https://econjwatch.org/articles/shy-of-the-character-limit-twitter-mood-predicts-the-stock-market-revisited</li>
+<li>Greyling &amp; Rossouw (2025), CEPR/VoxEU — https://cepr.org/voxeu/columns/twitter-sentiment-and-stock-market-movements-predictive-power-social-media</li>
+</ol>
+</main></body></html>
