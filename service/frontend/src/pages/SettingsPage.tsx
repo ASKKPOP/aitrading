@@ -233,7 +233,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       </div>
 
       {loading && <div className="card" style={{ padding: '16px' }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...' })}</div>}
-      {error && <div className="card" style={{ padding: '16px', color: 'var(--danger, #d03b3b)' }}>{error}</div>}
+      {error && <div className="card" style={{ padding: '16px', color: 'var(--error, #d03b3b)' }}>{error}</div>}
 
       {targets.map(t => {
         const draft = draftOf(t)

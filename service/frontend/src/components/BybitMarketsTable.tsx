@@ -46,7 +46,7 @@ function PctCell({ pct }: { pct: string }) {
 
 function SkeletonRow() {
   return (
-    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
       {[1, 2, 3, 4, 5].map(i => (
         <td key={i} style={{ padding: '12px 16px' }}>
           <div style={{
@@ -128,10 +128,10 @@ export function BybitMarketsTable() {
       )}
 
       {/* Table */}
-      <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border)' }}>
+      <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border-color)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
-            <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
+            <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
               {[tr(language, { ko: '종목', en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' }), tr(language, { ko: '현재가', en: 'Last Price', ja: '現在価格', th: 'ราคาล่าสุด', vi: 'Giá cuối' }), tr(language, { ko: '24시간 변동', en: '24h Change', ja: '24時間変動', th: 'เปลี่ยนแปลง 24 ชม.', vi: 'Thay đổi 24h' }), tr(language, { ko: '24시간 거래량', en: 'Volume 24h', ja: '24時間出来高', th: 'ปริมาณ 24 ชม.', vi: 'Khối lượng 24h' }), ''].map((h, i) => (
                 <th key={h || i} style={{
                   padding: '10px 16px',
@@ -154,7 +154,7 @@ export function BybitMarketsTable() {
               : tickers.map(ticker => (
                 <tr
                   key={ticker.symbol}
-                  style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
+                  style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >

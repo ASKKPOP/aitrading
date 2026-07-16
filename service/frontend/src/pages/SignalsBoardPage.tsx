@@ -49,7 +49,7 @@ function Tile({ label, value, sub, accent }: {
 }) {
   return (
     <div style={{
-      flex: '1 1 160px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+      flex: '1 1 160px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
       borderRadius: 12, padding: '14px 16px', minWidth: 150,
     }}>
       <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
@@ -167,9 +167,9 @@ export function SignalsBoardPage() {
 
   const th: React.CSSProperties = {
     padding: '10px 14px', textAlign: 'left', fontSize: 11, textTransform: 'uppercase',
-    letterSpacing: '0.06em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)',
+    letterSpacing: '0.06em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)',
   }
-  const td: React.CSSProperties = { padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 13, verticalAlign: 'top' }
+  const td: React.CSSProperties = { padding: '12px 14px', borderBottom: '1px solid var(--border-color)', fontSize: 13, verticalAlign: 'top' }
 
   return (
     <div className="page-container">
@@ -189,7 +189,7 @@ export function SignalsBoardPage() {
       {/* Stat tiles — all real values */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
         <div style={{
-          flex: '1 1 180px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+          flex: '1 1 180px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
           borderRadius: 12, padding: '14px 16px', minWidth: 170,
         }}>
           <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
@@ -254,7 +254,7 @@ export function SignalsBoardPage() {
 
       {/* Fused signal table — framework format: coin · signal · reason · trigger · confidence */}
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px' }}>{tr(language, { ko: '융합 시그널', en: 'Fused Signals', ja: '融合シグナル', th: 'สัญญาณรวม', vi: 'Tín hiệu tổng hợp' })}</h3>
-      <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 24 }}>
+      <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 12, marginBottom: 24 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
           <thead>
             <tr>
@@ -304,14 +304,14 @@ export function SignalsBoardPage() {
 
       {/* Scanner candidates with reasons */}
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px' }}>{tr(language, { ko: '어떤 코인 스캐너', en: 'Which-coin Scanner', ja: 'どのコインスキャナー', th: 'สแกนเนอร์เลือกเหรียญ', vi: 'Máy quét chọn coin' })}</h3>
-      <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '4px 0', marginBottom: 24 }}>
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 12, padding: '4px 0', marginBottom: 24 }}>
         {candidates.length === 0 && (
           <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
             {scanner?.available ? tr(language, { ko: '최근 스캔에서 급등이 감지되지 않았습니다', en: 'no surges detected in the latest scan', ja: '最新スキャンで急騰は検出されませんでした', th: 'ไม่พบการพุ่งในสแกนล่าสุด', vi: 'không phát hiện đợt tăng nào trong lần quét gần nhất' }) : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
           </div>
         )}
         {candidates.slice(0, 8).map(c => (
-          <div key={c.symbol} style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, alignItems: 'baseline' }}>
+          <div key={c.symbol} style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--border-color)', fontSize: 13, alignItems: 'baseline' }}>
             <span style={{ fontWeight: 700, minWidth: 90 }}>{c.symbol}</span>
             <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{tr(language, { ko: '점수', en: 'score', ja: 'スコア', th: 'คะแนน', vi: 'điểm' })} {c.score}</span>
             <span style={{ color: 'var(--text-secondary)' }}>{c.reasons.join(' · ')}</span>

@@ -71,7 +71,7 @@ export function AssetsPage() {
   const total = cash + spotValue + futValue
   const M = (v: string) => hide ? '****' : v
 
-  const walletCard: any = { background: 'var(--bg-card,#fffdf9)', border: '1px solid var(--border,#d3c8b6)', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }
+  const walletCard: any = { background: 'var(--bg-card,#fffdf9)', border: '1px solid var(--border-color,#d3c8b6)', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }
   const icon = (bg: string, ch: string) => (
     <span style={{ width: 38, height: 38, borderRadius: '50%', background: bg, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flex: 'none' }}>{ch}</span>
   )
@@ -124,7 +124,7 @@ export function AssetsPage() {
           </div>
           {spotOpen && longs.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0 0 52px', fontSize: 13.5 }}>
-              <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--card2,#f3efe7)', border: '1px solid var(--border,#d3c8b6)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{p.symbol[0]}</span>
+              <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-secondary,#f3efe7)', border: '1px solid var(--border-color,#d3c8b6)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{p.symbol[0]}</span>
               <b>{p.symbol}</b>
               <span style={mono}>{M(fmtQty(p.quantity))}</span>
               <span style={{ ...mono, color: 'var(--text-secondary,#8a8073)' }}>≈ {M(fmtUsd(val(p)))} USDT</span>
@@ -162,7 +162,7 @@ export function AssetsPage() {
             </thead>
             <tbody>
               {trades.map((s, i) => (
-                <tr key={i} style={{ borderTop: '1px solid var(--border,#e6ddd0)' }}>
+                <tr key={i} style={{ borderTop: '1px solid var(--border-color,#e6ddd0)' }}>
                   <td style={{ padding: '9px 16px' }}>
                     <span style={{ fontWeight: 700, fontSize: 12, textTransform: 'uppercase', color: (s.side === 'buy' || s.side === 'cover') ? '#3fb950' : '#f0663f' }}>{s.side}</span>
                     {s.signal_type === 'automation' && <span style={{ marginLeft: 6, fontSize: 10.5, color: 'var(--text-secondary,#8a8073)' }}>AI</span>}

@@ -67,8 +67,8 @@ function AuthShell({ title, subtitle, children }: {
         width: '100%',
         maxWidth: 420,
         padding: 32,
-        background: 'var(--surface, #faf6ec)',
-        border: '1px solid var(--border, rgba(0,0,0,0.08))',
+        background: 'var(--bg-card, #faf6ec)',
+        border: '1px solid var(--border-color, rgba(0,0,0,0.08))',
         borderRadius: 12,
         boxShadow: '0 2px 16px rgba(0,0,0,0.04)',
       }}>
@@ -83,7 +83,7 @@ function AuthShell({ title, subtitle, children }: {
           }}>Sooppiy</div>
           <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>{title}</h1>
           {subtitle && (
-            <p style={{ marginTop: 8, fontSize: 14, color: 'var(--muted, #6b7280)' }}>
+            <p style={{ marginTop: 8, fontSize: 14, color: 'var(--text-muted, #6b7280)' }}>
               {subtitle}
             </p>
           )}
@@ -99,9 +99,9 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
   fontSize: 14,
-  border: '1px solid var(--border, rgba(0,0,0,0.12))',
+  border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
   borderRadius: 6,
-  background: 'var(--bg, #fff)',
+  background: 'var(--bg-secondary, #fff)',
   marginBottom: 12,
   fontFamily: 'inherit',
 }
@@ -163,7 +163,7 @@ function OAuthButtons({ providers }: { providers: ProvidersResponse }) {
           display: 'block',
           background: providers.google ? '#fff' : '#f1f5f9',
           color: providers.google ? '#0f172a' : '#94a3b8',
-          border: '1px solid var(--border, rgba(0,0,0,0.12))',
+          border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
           cursor: providers.google ? 'pointer' : 'not-allowed',
         }}
       >
@@ -173,7 +173,7 @@ function OAuthButtons({ providers }: { providers: ProvidersResponse }) {
         type="button"
         disabled
         title={tr(language, { ko: '곧 지원 — Apple Developer 자격 증명 필요', en: 'Coming soon — needs Apple Developer credentials', ja: '近日対応 — Apple Developer 資格情報が必要', th: 'เร็ว ๆ นี้ — ต้องใช้ข้อมูลรับรอง Apple Developer', vi: 'Sắp có — cần thông tin Apple Developer' })}
-        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border, rgba(0,0,0,0.12))' }}
+        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}
       >
         {tr(language, { ko: 'Apple로 로그인 · 곧 지원', en: 'Sign in with Apple · Coming soon', ja: 'Appleでログイン · 近日対応', th: 'เข้าสู่ระบบด้วย Apple · เร็ว ๆ นี้', vi: 'Đăng nhập bằng Apple · Sắp có' })}
       </button>
@@ -181,7 +181,7 @@ function OAuthButtons({ providers }: { providers: ProvidersResponse }) {
         type="button"
         disabled
         title={tr(language, { ko: '곧 지원 — Twilio SMS 자격 증명 필요', en: 'Coming soon — needs Twilio SMS credentials', ja: '近日対応 — Twilio SMS 資格情報が必要', th: 'เร็ว ๆ นี้ — ต้องใช้ข้อมูลรับรอง Twilio SMS', vi: 'Sắp có — cần thông tin Twilio SMS' })}
-        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border, rgba(0,0,0,0.12))' }}
+        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}
       >
         {tr(language, { ko: '전화번호로 계속 · 곧 지원', en: 'Continue with Phone · Coming soon', ja: '電話番号で続行 · 近日対応', th: 'ดำเนินการต่อด้วยโทรศัพท์ · เร็ว ๆ นี้', vi: 'Tiếp tục bằng điện thoại · Sắp có' })}
       </button>
@@ -290,7 +290,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '로그인 중…', en: 'Signing in…', ja: 'ログイン中…', th: 'กำลังเข้าสู่ระบบ…', vi: 'Đang đăng nhập…' }) : tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
           </button>
           <OAuthButtons providers={providers} />
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--muted, #6b7280)', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
             {tr(language, { ko: '처음이신가요?', en: 'New here?', ja: 'はじめての方はこちら', th: 'เพิ่งเข้ามาใช่ไหม?', vi: 'Lần đầu ở đây?' })} <Link to="/sign-up" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '계정 만들기', en: 'Create an account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' })}</Link>
             {' · '}
             <Link to="/agent-login" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: 'AI 에이전트가 있어요', en: 'I have an AI agent', ja: 'AIエージェントを持っています', th: 'ฉันมี AI เอเจนต์', vi: 'Tôi có AI agent' })}</Link>
@@ -314,7 +314,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '확인 중…', en: 'Verifying…', ja: '確認中…', th: 'กำลังยืนยัน…', vi: 'Đang xác minh…' }) : tr(language, { ko: '확인', en: 'Verify', ja: '確認', th: 'ยืนยัน', vi: 'Xác minh' })}
           </button>
           <button type="button" onClick={() => { setMfaToken(null); setMfaCode(''); setError('') }}
-            style={{ ...buttonStyle, background: 'transparent', color: 'var(--muted, #6b7280)', marginTop: 8 }}>
+            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
             {tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })}
           </button>
         </form>
@@ -394,7 +394,7 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã' })}
           </button>
           <OAuthButtons providers={providers} />
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--muted, #6b7280)', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
             {tr(language, { ko: '이미 계정이 있으신가요?', en: 'Already have an account?', ja: 'すでにアカウントをお持ちですか？', th: 'มีบัญชีอยู่แล้ว?', vi: 'Đã có tài khoản?' })} <Link to="/sign-in" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}</Link>
           </div>
         </form>
@@ -418,7 +418,7 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '생성 중…', en: 'Creating…', ja: '作成中…', th: 'กำลังสร้าง…', vi: 'Đang tạo…' }) : tr(language, { ko: '계정 만들기', en: 'Create account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' })}
           </button>
           <button type="button" onClick={() => setStep('email')}
-            style={{ ...buttonStyle, background: 'transparent', color: 'var(--muted, #6b7280)', marginTop: 8 }}>
+            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
             {tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác' })}
           </button>
         </form>
@@ -522,7 +522,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
         </button>
       ) : (
         <form onSubmit={verifyAndEnable}>
-          <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--muted, #6b7280)' }}>
+          <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>
             {tr(language, { ko: '인증 앱에 이 계정을 추가하세요. 아래 URL의 QR 코드를 스캔하거나 시크릿을 직접 붙여넣으세요.', en: 'Add this account to your authenticator. Either scan a QR code from the URL below, or paste the secret directly.', ja: '認証アプリにこのアカウントを追加してください。下記URLのQRコードをスキャンするか、シークレットを直接貼り付けます。', th: 'เพิ่มบัญชีนี้ในแอปยืนยันตัวตน สแกน QR จาก URL ด้านล่าง หรือวางซีเคร็ตโดยตรง', vi: 'Thêm tài khoản này vào ứng dụng xác thực. Quét mã QR từ URL bên dưới, hoặc dán secret trực tiếp.' })}
           </div>
           <div style={{
@@ -589,7 +589,7 @@ export function GoogleCallbackPage({ onLogin }: { onLogin: (token: string) => vo
     <AuthShell title={tr(language, { ko: 'Google 로그인 마무리 중…', en: 'Finishing Google sign-in…', ja: 'Googleログインを完了しています…', th: 'กำลังทำการเข้าสู่ระบบด้วย Google…', vi: 'Đang hoàn tất đăng nhập Google…' })} subtitle={tr(language, { ko: '잠시만요.', en: 'One moment.', ja: '少々お待ちください。', th: 'สักครู่', vi: 'Chờ một chút.' })}>
       {error
         ? <div style={{ color: '#dc2626', fontSize: 14 }}>{error}</div>
-        : <div style={{ color: 'var(--muted, #6b7280)' }}>{tr(language, { ko: 'Google로 확인 중…', en: 'Verifying with Google…', ja: 'Googleで確認中…', th: 'กำลังยืนยันกับ Google…', vi: 'Đang xác minh với Google…' })}</div>}
+        : <div style={{ color: 'var(--text-muted, #6b7280)' }}>{tr(language, { ko: 'Google로 확인 중…', en: 'Verifying with Google…', ja: 'Googleで確認中…', th: 'กำลังยืนยันกับ Google…', vi: 'Đang xác minh với Google…' })}</div>}
     </AuthShell>
   )
 }

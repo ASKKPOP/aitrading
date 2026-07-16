@@ -434,7 +434,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                 style={{
                   display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
                   padding: '8px 0', borderBottom: '1px solid var(--border-color, #333)',
-                  background: run.run_id === currentRunId ? 'var(--surface-hover, rgba(255,255,255,.04))' : undefined,
+                  background: run.run_id === currentRunId ? 'var(--bg-hover, rgba(255,255,255,.04))' : undefined,
                 }}
               >
                 <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>#{run.run_id}</span>

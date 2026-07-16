@@ -168,8 +168,8 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   }
 
   /* ── styles ── */
-  const inp: any = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', ...mono }
-  const panel: any = { background: 'var(--bg-card,#fffdf9)', border: '1px solid var(--border,#d3c8b6)', borderRadius: 12 }
+  const inp: any = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', ...mono }
+  const panel: any = { background: 'var(--bg-card,#fffdf9)', border: '1px solid var(--border-color,#d3c8b6)', borderRadius: 12 }
 
   if (!token) {
     return <div><div className="header"><div><h1 className="header-title">{isSpot ? T.spotTitle : T.futTitle}</h1></div></div>
@@ -213,14 +213,14 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {/* ── OrderBookPanel (ga) ── */}
         <div style={{ ...panel, flex: '1 1 260px', maxWidth: 340, overflow: 'hidden' }}>
-          <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--border,#e6ddd0)' }}>{T.orderBook}</div>
+          <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--border-color,#e6ddd0)' }}>{T.orderBook}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 4, padding: '6px 10px', fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', textTransform: 'uppercase' }}>
             <span>{T.priceCol}</span><span style={{ textAlign: 'right' }}>{T.qtyCol}</span><span style={{ textAlign: 'right' }}>{T.totalCol}</span>
           </div>
           {book ? (
             <>
               {bookRows(book.asks.slice(0, 10), DOWN, true)}
-              <div style={{ ...mono, padding: '6px 10px', fontSize: 16, fontWeight: 800, borderTop: '1px solid var(--border,#e6ddd0)', borderBottom: '1px solid var(--border,#e6ddd0)', color: flash === 'down' ? DOWN : UP }}>
+              <div style={{ ...mono, padding: '6px 10px', fontSize: 16, fontWeight: 800, borderTop: '1px solid var(--border-color,#e6ddd0)', borderBottom: '1px solid var(--border-color,#e6ddd0)', color: flash === 'down' ? DOWN : UP }}>
                 {price ? fmtUsd(price, price > 100 ? 2 : 4) : '—'} {flash === 'up' ? '↑' : flash === 'down' ? '↓' : ''}
               </div>
               {bookRows(book.bids.slice(0, 10), UP)}
@@ -238,13 +238,13 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
           {/* order type tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
             <button style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 12.5 }}>{T.market}</button>
-            <button disabled style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'transparent', color: 'var(--text-secondary,#8a8073)', fontSize: 12.5, cursor: 'not-allowed' }}>{T.limitSoon}</button>
+            <button disabled style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'var(--text-secondary,#8a8073)', fontSize: 12.5, cursor: 'not-allowed' }}>{T.limitSoon}</button>
           </div>
 
           {isSpot && (
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-              <button onClick={() => { setSide('buy'); setPct(0) }} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: side === 'buy' ? UP : 'var(--card2,#f3efe7)', color: side === 'buy' ? '#fff' : 'inherit' }}>{T.buy}</button>
-              <button onClick={() => { setSide('sell'); setPct(0) }} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: side === 'sell' ? DOWN : 'var(--card2,#f3efe7)', color: side === 'sell' ? '#fff' : 'inherit' }}>{T.sell}</button>
+              <button onClick={() => { setSide('buy'); setPct(0) }} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: side === 'buy' ? UP : 'var(--bg-secondary,#f3efe7)', color: side === 'buy' ? '#fff' : 'inherit' }}>{T.buy}</button>
+              <button onClick={() => { setSide('sell'); setPct(0) }} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: side === 'sell' ? DOWN : 'var(--bg-secondary,#f3efe7)', color: side === 'sell' ? '#fff' : 'inherit' }}>{T.sell}</button>
             </div>
           )}
 
@@ -272,7 +272,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
           {/* % allocation (ga slider → buttons) */}
           <div style={{ display: 'flex', gap: 6, margin: '10px 0' }}>
             {[25, 50, 75, 100].map(p => (
-              <button key={p} onClick={() => applyPct(p)} style={{ flex: 1, padding: '5px 0', borderRadius: 6, border: '1px solid var(--border,#d3c8b6)', background: pct === p ? 'var(--accent-primary,#c26a45)' : 'transparent', color: pct === p ? '#fff' : 'var(--text-secondary,#8a8073)', fontSize: 11.5, cursor: 'pointer' }}>{p}%</button>
+              <button key={p} onClick={() => applyPct(p)} style={{ flex: 1, padding: '5px 0', borderRadius: 6, border: '1px solid var(--border-color,#d3c8b6)', background: pct === p ? 'var(--accent-primary,#c26a45)' : 'transparent', color: pct === p ? '#fff' : 'var(--text-secondary,#8a8073)', fontSize: 11.5, cursor: 'pointer' }}>{p}%</button>
             ))}
           </div>
 
@@ -309,7 +309,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
 
       {/* ── BottomTabs (ga): Holdings / Positions ── */}
       <div style={{ ...panel, marginTop: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--border,#e6ddd0)' }}>
+        <div style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--border-color,#e6ddd0)' }}>
           {isSpot ? T.holdings : T.positionsTab}
         </div>
         {(() => {
@@ -336,7 +336,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
                     const value = Math.abs(p.quantity) * (cur ?? 0)
                     const roi = p.entry_price ? ((p.pnl ?? 0) / (Math.abs(p.quantity) * p.entry_price)) * 100 : 0
                     return (
-                      <tr key={i} style={{ borderTop: '1px solid var(--border,#e6ddd0)' }}>
+                      <tr key={i} style={{ borderTop: '1px solid var(--border-color,#e6ddd0)' }}>
                         <td style={{ padding: '8px 14px', fontWeight: 700 }}>{pair(p.symbol)}</td>
                         {!isSpot && <td style={{ padding: '8px 8px', color: p.side === 'long' ? UP : DOWN, fontWeight: 700, fontSize: 12, textTransform: 'uppercase' }}>{p.side}</td>}
                         <td style={{ ...mono, textAlign: 'right', padding: '8px 8px' }}>{fmtQty(Math.abs(p.quantity))}</td>
@@ -347,7 +347,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
                           {(p.pnl ?? 0) >= 0 ? '+' : ''}{fmtUsd(p.pnl ?? 0)} / {roi.toFixed(2)}%
                         </td>
                         <td style={{ textAlign: 'right', padding: '8px 14px' }}>
-                          <button onClick={() => marketClose(p)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 11.5, cursor: 'pointer' }}>{T.close}</button>
+                          <button onClick={() => marketClose(p)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 11.5, cursor: 'pointer' }}>{T.close}</button>
                         </td>
                       </tr>
                     )
@@ -371,7 +371,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
             <InfoRow label={T.fee} value={`${fmtUsd(fee)} USDT`} />
             <InfoRow label={T.totalCost} value={`${fmtUsd((confirm.action === 'buy' || confirm.action === 'short' ? notional : 0) + fee)} USDT`} strong />
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button onClick={() => setConfirm(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer' }}>{T.cancel}</button>
+              <button onClick={() => setConfirm(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer' }}>{T.cancel}</button>
               <button disabled={busy} onClick={() => submit(confirm.action)}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: (confirm.action === 'buy') ? UP : DOWN, color: '#fff' }}>{T.confirmBtn}</button>
             </div>

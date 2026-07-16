@@ -1998,7 +1998,7 @@ a {
 .intel-empty-card {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  background: var(--card-bg);
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2018,7 +2018,7 @@ a {
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -2099,7 +2099,7 @@ a {
 
 .intel-panel-tab:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--card-bg) 75%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 75%, transparent);
 }
 
 .intel-panel-tab.active {
@@ -2121,7 +2121,7 @@ a {
   padding: 18px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  background: var(--card-bg);
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2129,7 +2129,7 @@ a {
   padding: 18px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  background: var(--card-bg);
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2137,7 +2137,7 @@ a {
   padding: 18px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  background: var(--card-bg);
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2170,7 +2170,7 @@ a {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
 }
 
 .intel-macro-item-header {
@@ -2207,7 +2207,7 @@ a {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
 }
 
 .intel-macro-row-top,
@@ -2239,14 +2239,14 @@ a {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
 }
 
 .intel-stock-item {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
 }
 
 .intel-stock-item-header {
@@ -2285,14 +2285,14 @@ a {
 .intel-price-badge.live,
 .intel-chip-live {
   border: 1px solid color-mix(in srgb, #4ea87f 42%, var(--border-color));
-  background: color-mix(in srgb, #4ea87f 14%, var(--card-bg));
+  background: color-mix(in srgb, #4ea87f 14%, var(--bg-card));
   color: #8ce0b5;
 }
 
 .intel-price-badge.stale,
 .intel-chip-warn {
   border: 1px solid color-mix(in srgb, #d58a55 42%, var(--border-color));
-  background: color-mix(in srgb, #d58a55 14%, var(--card-bg));
+  background: color-mix(in srgb, #d58a55 14%, var(--bg-card));
   color: #ffbf8c;
 }
 
@@ -2311,7 +2311,7 @@ a {
   padding: 12px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
 }
 
 .intel-stock-metric-card {
@@ -2391,7 +2391,7 @@ a {
   padding: 12px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
 }
 
 .intel-history-item-header {
@@ -2476,7 +2476,7 @@ a {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
   text-decoration: none;
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
@@ -2484,7 +2484,7 @@ a {
 .intel-news-item:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-color));
-  background: color-mix(in srgb, var(--card-bg) 70%, var(--accent-primary) 10%);
+  background: color-mix(in srgb, var(--bg-card) 70%, var(--accent-primary) 10%);
 }
 
 .intel-news-item-title {
@@ -2550,7 +2550,7 @@ a {
   padding: 4px 9px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
   color: var(--text-secondary);
   font-size: 11px;
   letter-spacing: 0.04em;

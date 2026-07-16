@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
@@ -31,6 +31,124 @@ const V = {
 }
 
 const wrap: any = { maxWidth: 1040, margin: '0 auto', padding: '0 24px' }
+
+// Animated hero backdrop: a receding dot-grid wave mesh (plexus style) with
+// glowing crests — plain canvas 2D, no libraries. Theme-aware, pauses in
+// background tabs, honors prefers-reduced-motion (renders one static frame).
+function HeroWaveBackground() {
+  const ref = useRef<HTMLCanvasElement | null>(null)
+  useEffect(() => {
+    const canvas = ref.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    let raf = 0
+    let t = 2.5
+    let running = true
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+
+    const COLS = 70
+    const ROWS = 16
+
+    const draw = () => {
+      const W = canvas.width, H = canvas.height
+      const dark = document.documentElement.dataset.theme !== 'light'
+      ctx.clearRect(0, 0, W, H)
+      // build the mesh: rows recede upward with damped amplitude
+      const pts: { x: number; y: number; z: number; h: number }[][] = []
+      for (let r = 0; r < ROWS; r++) {
+        const row: { x: number; y: number; z: number; h: number }[] = []
+        const z = r / (ROWS - 1) // 0 near … 1 far
+        for (let c = 0; c < COLS; c++) {
+          const fx = c / (COLS - 1)
+          const h = (Math.sin(fx * 6.0 + t * 0.9 + z * 2.2)
+            + 0.5 * Math.sin(fx * 11.0 - t * 0.6 + z * 4.0)) / 1.5
+          const baseY = H * (0.92 - z * 0.62)
+          const amp = H * 0.11 * (1 - z * 0.55)
+          row.push({ x: fx * W, y: baseY - h * amp, z, h })
+        }
+        pts.push(row)
+      }
+      // connecting lines
+      ctx.lineWidth = dpr * 0.6
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const p = pts[r][c]
+          const heat = Math.max(0, p.h)
+          const base = (dark ? 0.14 : 0.20) * (1 - p.z * 0.7) * (0.55 + 0.45 * heat)
+          ctx.strokeStyle = p.h > 0.15
+            ? `rgba(255,${Math.round(150 - 50 * p.h)},45,${base})`
+            : p.h < -0.35
+              ? `rgba(45,212,191,${base * 0.85})`
+              : (dark ? `rgba(148,163,184,${base * 0.7})` : `rgba(71,85,105,${base * 0.6})`)
+          if (c < COLS - 1) {
+            const q = pts[r][c + 1]
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke()
+          }
+          if (r < ROWS - 1) {
+            const q = pts[r + 1][c]
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke()
+          }
+        }
+      }
+      // dots — brighter and warmer on wave crests
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const p = pts[r][c]
+          const heat = Math.max(0, p.h)
+          const size = dpr * (0.7 + (1 - p.z) * 1.1 + heat * 1.2)
+          const a = (dark ? 0.22 : 0.30) + (1 - p.z) * 0.35 + heat * 0.25
+          ctx.fillStyle = heat > 0.55
+            ? `rgba(255,170,80,${Math.min(1, a)})`
+            : dark ? `rgba(226,232,240,${a * 0.8})` : `rgba(51,65,85,${a * 0.55})`
+          ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, 6.2832); ctx.fill()
+        }
+      }
+    }
+
+    // Setting canvas.width clears the buffer, so every resize must repaint
+    // immediately — rAF is throttled in background tabs and would leave the
+    // hero blank until the tab is foregrounded.
+    const resize = () => {
+      const host = canvas.parentElement
+      if (!host) return
+      const r = host.getBoundingClientRect()
+      canvas.width = Math.max(1, Math.round(r.width * dpr))
+      canvas.height = Math.max(1, Math.round(r.height * dpr))
+      draw()
+    }
+    window.addEventListener('resize', resize)
+
+    const loop = () => {
+      if (!running) return
+      t += 0.016
+      draw()
+      raf = requestAnimationFrame(loop)
+    }
+    // First paint: measure + draw synchronously so the mesh shows even before
+    // the first rAF tick (and in throttled tabs where rAF never fires).
+    resize()
+    if (!reduced) {
+      raf = requestAnimationFrame(loop)
+    }
+    const onVis = () => {
+      running = !document.hidden && !reduced
+      cancelAnimationFrame(raf)
+      if (running) raf = requestAnimationFrame(loop)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      running = false
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [])
+  return (
+    <canvas ref={ref} aria-hidden
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
+  )
+}
 const kicker: any = { fontFamily: V.mono, fontSize: 11.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: V.accent, fontWeight: 500 }
 const cardS: any = { background: V.card, border: `1px solid ${V.line}`, borderRadius: 14, padding: '16px 18px' }
 const h2S: any = { fontFamily: V.display, fontWeight: 700, fontSize: 'clamp(28px,3.6vw,40px)', letterSpacing: '-0.02em', lineHeight: 1.08, color: V.ink, margin: '10px 0 10px' }
@@ -219,8 +337,11 @@ export function MarketingPage() {
       </header>
 
       {/* ── hero ── */}
-      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '64px 0 56px' }}>
-        <div style={wrap}>
+      <section style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${V.line}`, padding: '64px 0 56px' }}>
+        <HeroWaveBackground />
+        {/* readability scrim over the animated mesh, strongest where the copy sits */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, ${V.bg} 0%, color-mix(in srgb, ${V.bg} 62%, transparent) 55%, transparent 100%)` }} />
+        <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
           <div style={kicker}>{T.heroKicker}</div>
           <h1 style={{ fontFamily: V.display, fontWeight: 800, fontSize: 'clamp(38px,5.6vw,66px)', lineHeight: 1.04, letterSpacing: '-0.02em', margin: '14px 0 18px', maxWidth: '18ch' }}>
             {T.heroH1a}<br /><em style={{ fontStyle: 'normal', color: V.accent }}>{T.heroH1b}</em>

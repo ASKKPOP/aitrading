@@ -52,7 +52,7 @@ export function AccountsPage() {
   }
 
   const card = (active: boolean): any => ({
-    flex: '1 1 320px', border: '2px solid ' + (active ? 'var(--accent-primary,#c26a45)' : 'var(--border,#d3c8b6)'),
+    flex: '1 1 320px', border: '2px solid ' + (active ? 'var(--accent-primary,#c26a45)' : 'var(--border-color,#d3c8b6)'),
     borderRadius: 14, padding: 22, background: 'var(--bg-card,#fffdf9)',
   })
   const badge = (bg: string): any => ({ display: 'inline-block', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6, background: bg, color: '#fff' })
@@ -98,13 +98,13 @@ export function AccountsPage() {
 
           <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>{T.exchange}</label>
           <select value={exchange} onChange={e => setExchange(e.target.value)}
-            style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 10 }}>
+            style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 10 }}>
             <option value="binance">Binance</option>
             <option value="bybit">Bybit</option>
             <option value="coinbase">Coinbase</option>
           </select>
-          <input placeholder={T.apiKey} style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 8 }} />
-          <input placeholder={T.apiSecret} type="password" style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 12 }} />
+          <input placeholder={T.apiKey} style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 8 }} />
+          <input placeholder={T.apiSecret} type="password" style={{ width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', marginBottom: 12 }} />
           <button onClick={connect} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{T.connect}</button>
 
           {connected && (

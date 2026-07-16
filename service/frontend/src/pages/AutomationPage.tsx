@@ -170,7 +170,7 @@ export function AutomationPage() {
 
   // --bg-input is not defined in index.css; use the theme vars that are, so
   // fields stay readable in both light and dark themes.
-  const inp: any = { padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)' }
+  const inp: any = { padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)' }
   const fld = (label: string, node: any, hint?: string) => (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
       {label}{node}
@@ -180,7 +180,7 @@ export function AutomationPage() {
 
   const chip = (active: boolean): any => ({
     padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500,
-    border: active ? '1.5px solid var(--accent-primary,#c26a45)' : '1px solid var(--border,#d3c8b6)',
+    border: active ? '1.5px solid var(--accent-primary,#c26a45)' : '1px solid var(--border-color,#d3c8b6)',
     background: active ? 'rgba(194,106,69,0.12)' : 'transparent',
     color: active ? 'var(--accent-primary,#c26a45)' : 'inherit',
   })
@@ -307,7 +307,7 @@ export function AutomationPage() {
                 {r.auto_execute ? 'auto' : 'analysis only'}
               </span>
               {r.last_run_at && <span style={{ fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>last: {String(r.last_run_at).replace('T', ' ').slice(0, 16)}</span>}
-              <button onClick={() => remove(r.id)} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.remove}</button>
+              <button onClick={() => remove(r.id)} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.remove}</button>
             </div>
           ))}
         </div>

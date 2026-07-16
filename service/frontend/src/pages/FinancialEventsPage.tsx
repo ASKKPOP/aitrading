@@ -577,7 +577,7 @@ export function FinancialEventsPage() {
                       <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(etfFlows?.created_at, language)}</span>
                     </div>
                     {etfFlows?.summary?.source === 'sosovalue' && etfFlows?.summary?.btc && (
-                      <div style={{ fontSize: 12.5, lineHeight: 1.6, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: 12.5, lineHeight: 1.6, padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                         <div>
                           <strong>BTC</strong>{' '}
                           {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày' })}{' '}

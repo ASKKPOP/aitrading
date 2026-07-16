@@ -23,8 +23,8 @@ import { signOutUser } from './authV2'
 // ─── Section primitives ──────────────────────────────────────────────────
 
 const sectionStyle: React.CSSProperties = {
-  background: 'var(--surface, #faf6ec)',
-  border: '1px solid var(--border, rgba(0,0,0,0.08))',
+  background: 'var(--bg-card, #faf6ec)',
+  border: '1px solid var(--border-color, rgba(0,0,0,0.08))',
   borderRadius: 8,
   padding: 20,
   marginBottom: 16,
@@ -80,7 +80,7 @@ function AccountHeader({ user, mfa, onSignOut }: {
   return (
     <div style={{
       ...sectionStyle,
-      background: 'var(--bg, #0f172a)',
+      background: '#0f172a',
       color: '#fff',
       border: 'none',
     }}>
@@ -230,7 +230,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 0' }}>
       <AccountHeader user={user} mfa={mfa} onSignOut={signOutAndLeave} />
 
-      {loading && <div style={{ padding: 20, color: 'var(--muted, #6b7280)' }}>{tr(language, { ko: '트레이딩 정보를 불러오는 중…', en: 'Loading your trading…', ja: 'トレード情報を読み込み中…', th: 'กำลังโหลดข้อมูลการเทรด…', vi: 'Đang tải giao dịch của bạn…' })}</div>}
+      {loading && <div style={{ padding: 20, color: 'var(--text-muted, #6b7280)' }}>{tr(language, { ko: '트레이딩 정보를 불러오는 중…', en: 'Loading your trading…', ja: 'トレード情報を読み込み中…', th: 'กำลังโหลดข้อมูลการเทรด…', vi: 'Đang tải giao dịch của bạn…' })}</div>}
       {error && <div style={{ color: '#dc2626', padding: 12 }}>{error}</div>}
 
       <Section
@@ -238,13 +238,13 @@ export function MyTradingPage({ userToken, onSignOut }: {
         action={<Link to="/positions" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '전체 보기 →', en: 'View all →', ja: 'すべて表示 →', th: 'ดูทั้งหมด →', vi: 'Xem tất cả →' })}</Link>}
       >
         {positions.length === 0 ? (
-          <div style={{ color: 'var(--muted, #6b7280)', fontSize: 14 }}>
-            {tr(language, { ko: '아직 미결제 포지션이 없습니다. ', en: 'You have no open positions yet. Start by ', ja: 'まだオープンポジションがありません。まずは', th: 'คุณยังไม่มีตำแหน่งที่เปิดอยู่ เริ่มจาก', vi: 'Bạn chưa có vị thế mở nào. Bắt đầu bằng cách ' })}<Link to="/leaderboard">{tr(language, { ko: '에이전트 팔로우', en: 'following an agent', ja: 'エージェントをフォロー', th: 'ติดตามเอเจนต์', vi: 'theo dõi một agent' })}</Link>{tr(language, { ko: '부터 시작하세요.', en: '.', ja: 'から始めましょう。', th: '', vi: '.' })}
+          <div style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
+            {tr(language, { ko: '아직 미결제 포지션이 없습니다. ', en: 'You have no open positions yet. Start by ', ja: 'まだオープンポジションがありません。まずは', th: 'คุณยังไม่มีตำแหน่งที่เปิดอยู่ เริ่มจาก', vi: 'Bạn chưa có vị thế mở nào. Bắt đầu bằng cách ' })}<Link to="/leaderboard" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '에이전트 팔로우', en: 'following an agent', ja: 'エージェントをフォロー', th: 'ติดตามเอเจนต์', vi: 'theo dõi một agent' })}</Link>{tr(language, { ko: '부터 시작하세요.', en: '.', ja: 'から始めましょう。', th: '', vi: '.' })}
           </div>
         ) : (
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
             <thead style={{ textAlign: 'left' }}>
-              <tr style={{ borderBottom: '1px solid var(--border, rgba(0,0,0,0.08))' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color, rgba(0,0,0,0.08))' }}>
                 <th style={{ padding: '8px 4px' }}>{tr(language, { ko: '종목', en: 'Symbol', ja: '銘柄', th: 'สัญลักษณ์', vi: 'Mã' })}</th>
                 <th>{tr(language, { ko: '시장', en: 'Market', ja: '市場', th: 'ตลาด', vi: 'Thị trường' })}</th>
                 <th>{tr(language, { ko: '방향', en: 'Side', ja: '方向', th: 'ทิศทาง', vi: 'Hướng' })}</th>
@@ -255,7 +255,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
             </thead>
             <tbody>
               {positions.slice(0, 10).map((p, i) => (
-                <tr key={p.position_id ?? p.id ?? i} style={{ borderBottom: '1px solid var(--border, rgba(0,0,0,0.04))' }}>
+                <tr key={p.position_id ?? p.id ?? i} style={{ borderBottom: '1px solid var(--border-color, rgba(0,0,0,0.04))' }}>
                   <td style={{ padding: '8px 4px', fontWeight: 500 }}>{p.symbol}</td>
                   <td>{p.market}</td>
                   <td style={{ color: p.side === 'long' ? '#15803d' : '#b91c1c' }}>{p.side}</td>
@@ -276,8 +276,8 @@ export function MyTradingPage({ userToken, onSignOut }: {
         action={<Link to="/leaderboard" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '에이전트 찾기 →', en: 'Find agents →', ja: 'エージェントを探す →', th: 'ค้นหาเอเจนต์ →', vi: 'Tìm agent →' })}</Link>}
       >
         {following.length === 0 ? (
-          <div style={{ color: 'var(--muted, #6b7280)', fontSize: 14 }}>
-            {tr(language, { ko: '아직 아무도 팔로우하지 않았습니다. ', en: 'Not following anyone yet. Find agents on the ', ja: 'まだ誰もフォローしていません。エージェントは', th: 'ยังไม่ได้ติดตามใคร ค้นหาเอเจนต์ได้ที่', vi: 'Chưa theo dõi ai. Tìm agent trên ' })}<Link to="/leaderboard">{tr(language, { ko: '리더보드', en: 'leaderboard', ja: 'リーダーボード', th: 'ลีดเดอร์บอร์ด', vi: 'bảng xếp hạng' })}</Link>{tr(language, { ko: '에서 에이전트를 찾아보세요.', en: '.', ja: 'でエージェントを探しましょう。', th: '', vi: '.' })}
+          <div style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
+            {tr(language, { ko: '아직 아무도 팔로우하지 않았습니다. ', en: 'Not following anyone yet. Find agents on the ', ja: 'まだ誰もフォローしていません。エージェントは', th: 'ยังไม่ได้ติดตามใคร ค้นหาเอเจนต์ได้ที่', vi: 'Chưa theo dõi ai. Tìm agent trên ' })}<Link to="/leaderboard" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '리더보드', en: 'leaderboard', ja: 'リーダーボード', th: 'ลีดเดอร์บอร์ด', vi: 'bảng xếp hạng' })}</Link>{tr(language, { ko: '에서 에이전트를 찾아보세요.', en: '.', ja: 'でエージェントを探しましょう。', th: '', vi: '.' })}
           </div>
         ) : (
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
@@ -300,7 +300,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
         action={<Link to="/strategies" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '전체 →', en: 'All →', ja: 'すべて →', th: 'ทั้งหมด →', vi: 'Tất cả →' })}</Link>}
       >
         {strategies.length === 0 ? (
-          <div style={{ color: 'var(--muted, #6b7280)', fontSize: 14 }}>
+          <div style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
             {tr(language, { ko: '아직 전략이 없습니다.', en: 'No strategies yet.', ja: 'まだ戦略がありません。', th: 'ยังไม่มีกลยุทธ์', vi: 'Chưa có chiến lược.' })}
           </div>
         ) : (
@@ -314,7 +314,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
                   </span>
                 )}
                 {s.last_backtest_sharpe !== null && s.last_backtest_sharpe !== undefined && (
-                  <span style={{ marginLeft: 8, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: 'var(--muted, #6b7280)' }}>
+                  <span style={{ marginLeft: 8, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
                     {tr(language, { ko: '샤프', en: 'Sharpe', ja: 'シャープ', th: 'ชาร์ป', vi: 'Sharpe' })} {s.last_backtest_sharpe.toFixed(2)}
                   </span>
                 )}
@@ -328,8 +328,8 @@ export function MyTradingPage({ userToken, onSignOut }: {
         title={tr(language, { ko: '📈 손익 내역', en: '📈 P&L history', ja: '📈 損益履歴', th: '📈 ประวัติกำไรขาดทุน', vi: '📈 Lịch sử lãi/lỗ' })}
         action={<Link to="/leaderboard" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '차트 열기 →', en: 'Open chart →', ja: 'チャートを開く →', th: 'เปิดกราฟ →', vi: 'Mở biểu đồ →' })}</Link>}
       >
-        <div style={{ color: 'var(--muted, #6b7280)', fontSize: 14 }}>
-          {tr(language, { ko: '상세 수익 차트는 ', en: 'Detailed profit chart is available on your ', ja: '詳細な収益チャートは', th: 'กราฟกำไรโดยละเอียดดูได้ที่', vi: 'Biểu đồ lợi nhuận chi tiết có trên ' })}<Link to="/leaderboard">{tr(language, { ko: '리더보드 프로필', en: 'leaderboard profile', ja: 'リーダーボードのプロフィール', th: 'โปรไฟล์ลีดเดอร์บอร์ด', vi: 'hồ sơ bảng xếp hạng' })}</Link>{tr(language, { ko: '에서 확인할 수 있습니다.', en: '.', ja: 'で確認できます。', th: '', vi: '.' })}
+        <div style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
+          {tr(language, { ko: '상세 수익 차트는 ', en: 'Detailed profit chart is available on your ', ja: '詳細な収益チャートは', th: 'กราฟกำไรโดยละเอียดดูได้ที่', vi: 'Biểu đồ lợi nhuận chi tiết có trên ' })}<Link to="/leaderboard" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '리더보드 프로필', en: 'leaderboard profile', ja: 'リーダーボードのプロフィール', th: 'โปรไฟล์ลีดเดอร์บอร์ด', vi: 'hồ sơ bảng xếp hạng' })}</Link>{tr(language, { ko: '에서 확인할 수 있습니다.', en: '.', ja: 'で確認できます。', th: '', vi: '.' })}
         </div>
       </Section>
     </div>

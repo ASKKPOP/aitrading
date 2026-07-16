@@ -24,9 +24,9 @@ export function MarketPage({ token }: Props) {
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
       }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
         {tr(language, { ko: '에이전트 시그널', en: 'Agent Signals', ja: 'エージェントシグナル', th: 'สัญญาณเอเจนต์', vi: 'Tín hiệu Agent' })}
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
       </div>
 
       <SignalsFeed token={token} />

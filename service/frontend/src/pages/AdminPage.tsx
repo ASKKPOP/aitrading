@@ -76,10 +76,10 @@ export function AdminPage() {
     refresh('accounts'); refresh('overview')
   }
 
-  const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border,#2a2a28)', borderRadius: 12, padding: '16px 18px' }
-  const th: any = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted,#8a8073)', padding: '8px 10px', borderBottom: '1px solid var(--border,#2a2a28)' }
-  const td: any = { padding: '8px 10px', fontSize: 13, borderBottom: '1px solid var(--border,#2a2a28)' }
-  const chip = (active: boolean): any => ({ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, border: active ? '1.5px solid var(--accent-primary,#c26a45)' : '1px solid var(--border,#2a2a28)', background: active ? 'rgba(194,106,69,0.12)' : 'transparent', color: active ? 'var(--accent-primary,#c26a45)' : 'inherit' })
+  const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border-color,#2a2a28)', borderRadius: 12, padding: '16px 18px' }
+  const th: any = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted,#8a8073)', padding: '8px 10px', borderBottom: '1px solid var(--border-color,#2a2a28)' }
+  const td: any = { padding: '8px 10px', fontSize: 13, borderBottom: '1px solid var(--border-color,#2a2a28)' }
+  const chip = (active: boolean): any => ({ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, border: active ? '1.5px solid var(--accent-primary,#c26a45)' : '1px solid var(--border-color,#2a2a28)', background: active ? 'rgba(194,106,69,0.12)' : 'transparent', color: active ? 'var(--accent-primary,#c26a45)' : 'inherit' })
   const delBtn: any = { padding: '4px 10px', borderRadius: 6, border: '1px solid #7f1d1d', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: 12 }
 
   if (!token) {
@@ -88,7 +88,7 @@ export function AdminPage() {
         <h1 style={{ fontSize: 22, marginBottom: 8 }}>🔐 {T.title}</h1>
         <p style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)', marginBottom: 16 }}>{T.enterToken}</p>
         <input type="password" value={draft} onChange={e => setDraft(e.target.value)}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border,#2a2a28)', background: 'var(--bg-secondary,#161615)', color: 'var(--text-primary,#fff)', marginBottom: 12 }} />
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-color,#2a2a28)', background: 'var(--bg-secondary,#161615)', color: 'var(--text-primary,#fff)', marginBottom: 12 }} />
         <button onClick={() => { localStorage.setItem(ADMIN_TOKEN_KEY, draft.trim()); setToken(draft.trim()) }}
           style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{T.connect}</button>
       </div>
@@ -102,7 +102,7 @@ export function AdminPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>🔐 {T.title}</h1>
         <button onClick={() => { localStorage.removeItem(ADMIN_TOKEN_KEY); setToken('') }}
-          style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border,#2a2a28)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.logout}</button>
+          style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#2a2a28)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.logout}</button>
       </div>
       <div style={{ display: 'flex', gap: 8, margin: '14px 0', flexWrap: 'wrap' }}>
         <button style={chip(tab === 'overview')} onClick={() => setTab('overview')}>{T.tabOverview}</button>
@@ -138,7 +138,7 @@ export function AdminPage() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <input placeholder={T.search} value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && refresh('accounts')}
-              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border,#2a2a28)', background: 'var(--bg-secondary,#161615)', color: 'var(--text-primary,#fff)', width: 260 }} />
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color,#2a2a28)', background: 'var(--bg-secondary,#161615)', color: 'var(--text-primary,#fff)', width: 260 }} />
           </div>
           <div style={{ ...card, padding: 0, marginBottom: 16, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
