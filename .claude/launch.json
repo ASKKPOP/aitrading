@@ -4,22 +4,75 @@
     {
       "name": "backend",
       "runtimeExecutable": ".venv/bin/python",
-      "runtimeArgs": ["-m", "uvicorn", "--app-dir", "service/server", "main:app", "--host", "127.0.0.1", "--port", "8001"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "--app-dir",
+        "service/server",
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001"
+      ],
       "port": 8001
     },
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3010", "--strictPort"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3010",
+        "--strictPort"
+      ],
       "cwd": "service/frontend",
       "port": 3010
     },
     {
       "name": "marketing",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "cwd": "marketing",
       "port": 4321
+    },
+    {
+      "name": "backend-8011",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "--app-dir",
+        "service/server",
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8011"
+      ],
+      "port": 8011
+    },
+    {
+      "name": "frontend-3011",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3011",
+        "--strictPort"
+      ],
+      "cwd": "service/frontend",
+      "port": 3011,
+      "env": {
+        "VITE_PROXY_TARGET": "http://127.0.0.1:8011"
+      }
     }
   ]
 }

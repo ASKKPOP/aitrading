@@ -5,6 +5,8 @@ Read this first, then [docs/README.md](../README.md) and [CLAUDE.md](../../CLAUD
 
 ---
 
+> **2026-07-16 addendum (overnight parameter-upgrade session):** the AI-model parameter-upgrade plan ([04-ai-model-parameter-upgrade.md](04-ai-model-parameter-upgrade.md), v2 — 6-agent verified) was fully implemented (Phases 0–4, commits `f46ab32`…`0fe4317`), tested (**854 passing**), and **deployed to sooppiy.com**. New on the server: confluence engine (display + `GET /api/market-intel/confluence` agent API + Signals Board column), regime filter (advisory + `GET /api/market-intel/regime` + tile), factor-snapshot telemetry loop, historical macro calendar 2019–2025, repaired backtester metrics, breaker safety upgrade, and the opt-in per-agent exit toolkit (trailing/time stops; `exit_policy` grandfathering — existing positions untouched). **The Phase-4 walk-forward backtest returned INSUFFICIENT_EVIDENCE** ([report](../research/parameters/3-phase4-backtest-report.md)), so per the pre-registered rule the execution gates (`CONFLUENCE_GATE_ENABLED`, `REGIME_FILTER_ENABLED`, `VOL_SIZING_ENABLED`) remain **default-off / unset on the server** — no live trading behavior changed except the deliberate never-loosen-SL/TP safety fix. Re-evaluation is live-forward via the accumulating telemetry. Owner decisions pending in plan §7.
+
 ## 1. TL;DR — where things stand
 
 - **Product:** Sooppiy — an **AI auto-trading / signal-collection platform** (NOT copy-trading, NOT real execution). All trades are **paper (simulator)**. Term of art: an **"Intelligent Automate Agent"** (never say "bot").
