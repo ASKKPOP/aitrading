@@ -25,6 +25,7 @@ const DevPage = lazy(() => import('./pages/DevPage'))
 const FinancialEventsPage = lazy(() => import('./pages/FinancialEventsPage'))
 const MarketPage = lazy(() => import('./pages/MarketPage'))
 const SignalsBoardPage = lazy(() => import('./pages/SignalsBoardPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
@@ -394,6 +395,7 @@ function AppRouter({
           <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
           <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+          <Route path="/admin" element={<AdminPage />} />
           {/* Guest browsing: the leaderboard is public by design ("view profit
               curves and top agent performance without logging in"). */}
           <Route path="/leaderboard" element={<div className="page-container" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}><LeaderboardPage token={null} /></div>} />
@@ -441,6 +443,7 @@ function AppRouter({
               <Route path="/backtest" element={<BacktestPage token={token} />} />
               <Route path="/financial-events" element={<FinancialEventsPage />} />
               <Route path="/signals-board" element={<SignalsBoardPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/strategies" element={<StrategiesPage />} />
               <Route path="/discussions" element={<DiscussionsPage />} />
               <Route path="/positions" element={<PositionsPage />} />

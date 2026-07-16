@@ -831,7 +831,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         cursor.execute(
             """
-            SELECT id, name, cash, COALESCE(deposited, 0) AS deposited
+            SELECT id, name, cash, points, COALESCE(deposited, 0) AS deposited
             FROM agents
             WHERE id = ?
             """,
@@ -843,6 +843,9 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=404, detail='Agent not found')
 
         cash = float(row['cash'] or INITIAL_CAPITAL)
+        # Partial public display: points are shown (social/reward standing),
+        # while email/tokens/API settings stay private to the agent itself.
+        points = int(row['points'] or 0)
         deposited = float(row['deposited'] or 0)
         profit = cash - INITIAL_CAPITAL
         profit_pct = profit_percent_for_display(profit, deposited)
@@ -904,6 +907,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             'agent_id': row['id'],
             'name': row['name'],
             'cash': cash,
+            'points': points,
             'profit_pct': round(profit_pct, 2),
             'trade_count': trade_count,
             'recent_signals': recent_signals,

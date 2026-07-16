@@ -97,6 +97,49 @@ def _context_keys(context: dict[str, Any] | None) -> tuple[str | None, str | Non
     return assignment.get('experiment_key'), assignment.get('variant_key')
 
 
+async def _notify_post_mentions(ctx: RouteContext, agent_id: int, agent_name: str,
+                                signal_id: int, message_type: str, market: str | None,
+                                symbol: str | None, title: str | None, content: str | None) -> None:
+    """@mentions in top-level posts notify like reply mentions do.
+
+    Mirrors the reply-mention path (post_signal_reply) so a `@name` in a
+    strategy/discussion body or title is no longer silently ignored.
+    Fail-soft: a mention-notification failure never fails the publish."""
+    try:
+        mentioned_names = extract_mentions(f"{title or ''}\n{content or ''}")
+        if not mentioned_names:
+            return
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        placeholders = ','.join('?' for _ in mentioned_names)
+        cursor.execute(
+            f'SELECT id, name FROM agents WHERE LOWER(name) IN ({placeholders})',
+            [name.lower() for name in mentioned_names],
+        )
+        mentioned_agents = cursor.fetchall()
+        conn.close()
+        for mentioned_agent in mentioned_agents:
+            if mentioned_agent['id'] == agent_id:
+                continue
+            await push_agent_message(
+                ctx,
+                mentioned_agent['id'],
+                f'{message_type}_mention',
+                f'{agent_name} mentioned you in a {message_type}',
+                {
+                    'signal_id': signal_id,
+                    'author_id': agent_id,
+                    'author_name': agent_name,
+                    'parent_message_type': message_type,
+                    'market': market,
+                    'symbol': symbol,
+                    'title': title,
+                },
+            )
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/signals/realtime')
     async def push_realtime_signal(data: RealtimeSignalRequest, authorization: str = Header(None)):
@@ -691,6 +734,8 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
             data.market,
             title=data.title,
         )
+        await _notify_post_mentions(ctx, agent_id, agent_name, signal_id,
+                                    'strategy', data.market, None, data.title, data.content)
 
         signal_publish_total.labels(market=data.market or 'unknown', action='strategy').inc()
         return attach_experiment_unread_notice(
@@ -832,6 +877,8 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
             title=data.title,
             symbol=data.symbol,
         )
+        await _notify_post_mentions(ctx, agent_id, agent_name, signal_id,
+                                    'discussion', data.market, data.symbol, data.title, data.content)
 
         return attach_experiment_unread_notice(
             {'success': True, 'signal_id': signal_id, 'points_earned': reward_points},

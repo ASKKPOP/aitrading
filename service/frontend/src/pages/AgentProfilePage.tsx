@@ -12,6 +12,7 @@ type AgentProfile = {
   agent_id: number
   name: string
   cash: number
+  points?: number
   profit_pct: number
   trade_count: number
   recent_signals: {
@@ -103,7 +104,7 @@ export function AgentProfilePage() {
       {/* Stats row */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '12px',
         marginBottom: '28px',
       }}>
@@ -122,6 +123,10 @@ export function AgentProfilePage() {
           {
             label: tr(language, { ko: '거래', en: 'Trades', ja: '取引数', th: 'จำนวนการเทรด', vi: 'Số giao dịch' }),
             value: profile.trade_count.toLocaleString(),
+          },
+          {
+            label: tr(language, { ko: '포인트', en: 'Points', ja: 'ポイント', th: 'คะแนน', vi: 'Điểm' }),
+            value: (profile.points ?? 0).toLocaleString(),
           },
         ].map(({ label, value, valueColor, sub, subColor }) => (
           <div key={label} className="card" style={{ padding: '16px 18px' }}>
