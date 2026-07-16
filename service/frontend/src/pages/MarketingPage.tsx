@@ -634,12 +634,9 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* ── six signal elements — glass cards over a calm WebGL wave field ── */}
-      <section style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
-        <HeroWaveBackground gain={0.85} amp={0.9} />
-        {/* soft scrim: keeps the mesh a texture, not a distraction */}
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, color-mix(in srgb, ${V.bg} 55%, transparent) 0%, color-mix(in srgb, ${V.bg} 18%, transparent) 45%, color-mix(in srgb, ${V.bg} 55%, transparent) 100%)` }} />
-        <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
+      {/* ── six signal elements — guide §0 flow diagram ── */}
+      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
+        <div style={wrap}>
           <div style={kicker}>{T.readKicker}</div>
           <h2 style={h2S}>{T.readH}</h2>
           {/* guide.html §0 layout: steps-strip chips + flow diagram.
