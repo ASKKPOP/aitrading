@@ -20,6 +20,20 @@ type ApiTarget = {
 
 const LLM_PROVIDERS = ['openai', 'gemini', 'grok', 'qwen', 'glm', 'openrouter', 'anthropic', 'local']
 
+// Per-provider model choices. First entry mirrors the server default in
+// llm_client.py; the '__custom__' option opens a free-text field so new
+// model ids never require a release.
+const MODEL_OPTIONS: Record<string, string[]> = {
+  openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1', 'gpt-4.1-mini', 'o3-mini'],
+  gemini: ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'],
+  grok: ['grok-2-latest', 'grok-3', 'grok-3-mini'],
+  qwen: ['qwen-plus', 'qwen-max', 'qwen-turbo'],
+  glm: ['glm-4-plus', 'glm-4-flash', 'glm-4-air'],
+  openrouter: ['openai/gpt-4o-mini', 'anthropic/claude-sonnet-4.5', 'openai/gpt-4o', 'google/gemini-2.0-flash', 'meta-llama/llama-3.1-70b-instruct'],
+  anthropic: ['claude-3-5-sonnet-latest', 'claude-sonnet-5', 'claude-opus-4-8', 'claude-haiku-4-5'],
+  local: ['llama3.1', 'qwen2.5', 'mistral', 'deepseek-r1'],
+}
+
 export default function SettingsPage({ userToken, userInfo, onSignOut }: {
   userToken: string
   userInfo: any
@@ -33,6 +47,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
   // per-target editable state
   const [drafts, setDrafts] = useState<Record<string, { api_key: string; provider: string; model: string }>>({})
   const [saving, setSaving] = useState<string | null>(null)
+  const [customModel, setCustomModel] = useState<Record<string, boolean>>({})
 
   const auth = () => ({ 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' })
 
@@ -253,19 +268,45 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <select
                       value={draft.provider}
-                      onChange={e => setDraft(t.target, { provider: e.target.value })}
+                      onChange={e => { setDraft(t.target, { provider: e.target.value, model: '' }); setCustomModel(c => ({ ...c, [t.target]: false })) }}
                       style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(0,0,0,0.15))', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '13px' }}
                     >
                       <option value="">{tr(language, { ko: '프로바이더 선택', en: 'Select provider', ja: 'プロバイダー選択', th: 'เลือกผู้ให้บริการ', vi: 'Chọn nhà cung cấp' })}</option>
                       {LLM_PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
-                    <input
-                      type="text"
-                      placeholder={tr(language, { ko: '모델 (예: gpt-4o)', en: 'Model (e.g. gpt-4o)', ja: 'モデル', th: 'โมเดล', vi: 'Mô hình' })}
-                      value={draft.model}
-                      onChange={e => setDraft(t.target, { model: e.target.value })}
-                      style={{ flex: 1, minWidth: '160px', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(0,0,0,0.15))', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '13px' }}
-                    />
+                    <select
+                      value={customModel[t.target] ? '__custom__' : (draft.model || '')}
+                      disabled={!draft.provider}
+                      onChange={e => {
+                        if (e.target.value === '__custom__') {
+                          setCustomModel(c => ({ ...c, [t.target]: true }))
+                        } else {
+                          setCustomModel(c => ({ ...c, [t.target]: false }))
+                          setDraft(t.target, { model: e.target.value })
+                        }
+                      }}
+                      style={{ flex: 1, minWidth: '180px', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(0,0,0,0.15))', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '13px' }}
+                    >
+                      <option value="">
+                        {tr(language, { ko: '서버 기본 모델', en: 'Server default model', ja: 'サーバー既定モデル', th: 'โมเดลเริ่มต้นของเซิร์ฟเวอร์', vi: 'Mô hình mặc định máy chủ' })}
+                        {draft.provider && MODEL_OPTIONS[draft.provider]?.[0] ? ` (${MODEL_OPTIONS[draft.provider][0]})` : ''}
+                      </option>
+                      {(MODEL_OPTIONS[draft.provider] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                      {draft.model && !customModel[t.target] && !(MODEL_OPTIONS[draft.provider] || []).includes(draft.model) && (
+                        <option value={draft.model}>{draft.model}</option>
+                      )}
+                      <option value="__custom__">{tr(language, { ko: '직접 입력…', en: 'Custom…', ja: '直接入力…', th: 'กำหนดเอง…', vi: 'Tự nhập…' })}</option>
+                    </select>
+                    {customModel[t.target] && (
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder={tr(language, { ko: '모델 ID 직접 입력', en: 'Enter model id', ja: 'モデルIDを入力', th: 'ใส่รหัสโมเดล', vi: 'Nhập id mô hình' })}
+                        value={draft.model}
+                        onChange={e => setDraft(t.target, { model: e.target.value })}
+                        style={{ flex: 1, minWidth: '160px', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(0,0,0,0.15))', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}
+                      />
+                    )}
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
