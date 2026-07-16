@@ -87,10 +87,22 @@
       "title": "Hybrid Framework — Decision Stack & Checklists"
     },
     {
+      "key": "framework-ko",
+      "lang": "ko",
+      "group": "framework",
+      "title": "하이브리드 프레임워크 — 의사결정 스택 & 체크리스트"
+    },
+    {
       "key": "backtest-report-en",
       "lang": "en",
       "group": "backtest-report",
       "title": "Phase-4 Strategy Backtest — Go/No-Go Result"
+    },
+    {
+      "key": "backtest-report-ko",
+      "lang": "ko",
+      "group": "backtest-report",
+      "title": "Phase-4 전략 백테스트 — Go/No-Go 결과"
     }
   ]
 }

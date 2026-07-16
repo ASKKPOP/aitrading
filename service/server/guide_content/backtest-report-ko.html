@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase-4 전략 백테스트 — Go/No-Go 결과</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<h1>Phase-4 전략 백테스트 — Go/No-Go 결과</h1>
+<p><strong>날짜:</strong> 2026-07-16 · <strong>판정: INSUFFICIENT_EVIDENCE(증거 불충분) → 플립 패키지는 배포하지 않습니다. 모든 실행 게이트는 기본 off 유지.</strong>
+<strong>러너:</strong> <code>service/server/run_phase4_backtest.py</code> · 원시 수치: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · 엔진: <code>backtest_strategy.py</code> (단위 테스트 완료; 독립 2회 실행이 바이트 단위 동일).
+<strong>계획서:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — 판정 기준은 OOS 구간을 열기 전에 사전 등록되었습니다.</p>
+<h2>0. 요약</h2>
+<p>사전 등록 기준으로 평가한 결과 <strong>증거 불충분(INSUFFICIENT_EVIDENCE)</strong> — 플립 패키지(실행 게이트 기본 활성화)는 배포하지 않습니다. 배포-충실 설정(≥4/6)은 6년 워크포워드에서 OOS 거래가 <strong>38건</strong>뿐(기준 400건)이고, 승률 36.8%의 Wilson 90% 하한(0.28)과 PF 부트스트랩 하한(0.64) 모두 기준 미달. 민감도 행(≥3)은 237건으로 늘지만 PF 하한 0.88로 여전히 1.0 미만 — 수익성이 통계적으로 입증되지 않음.</p>
+<p><strong>긍정적 발견:</strong> 리스크 스택은 리서치가 약속한 대로 작동 — 최악 자산 최대 낙폭 <strong>2.2%</strong>(B&amp;H는 같은 구간 −38%~−47%), 청산의 53%가 트레일링 스톱(승자 태우기), 시스템이 예측이 아니라 손실 차단으로 자본을 보전함. 검증 패널 통계 렌즈의 예측(트레이드 수 부족)이 정확히 적중.</p>
+<p><strong>다음 단계:</strong> 모든 기능은 표시/자문/옵트인으로 이미 배포 가능 상태. 라이브 텔레메트리(컨플루언스 벡터, 팩터 스냅샷)가 축적되면 B4 포함 6조건 시스템을 라이브-포워드로 재평가. 임계값은 리서치로 돌아감 — 프로덕션이 아니라.</p>
+<h2>1. 사전 등록된 설정 (결과 확인 후 무변경)</h2>
+<ul>
+<li><strong>기본 행:</strong> 배포-충실 기본값(<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), 튜닝 없음 — 설계상 스누핑 0.</li>
+<li><strong>워크포워드 행:</strong> 앵커드, 4개 폴드, 14일 퍼지, 6-설정 그리드(보고됨), 훈련 구간에서 풀링 PF(≥30 거래)로 튜닝 후 테스트 구간 동결.</li>
+<li><strong>민감도 행:</strong> <code>confluence_min=3</code> 고정 (B4는 과거 데이터에서 null → 6개 중 5개 조건만 달성 가능; 따라서 백테스트의 라이브 게이트는 배포판보다 오히려 <em>엄격</em>함).</li>
+<li><strong>판정 기준:</strong> 풀링 OOS 거래 ≥400건, 미달 시 INSUFFICIENT_EVIDENCE · 승률 Wilson 90% 하한 &gt; 0.50 · PF 부트스트랩 90% 하한 &gt; 1.0 · 최악 자산 최대 낙폭 ≤ 30%.</li>
+<li><strong>범위 정직성:</strong> B4 전 구간 null; B3는 MA/RSI/거래량으로 저하; B5 = F&amp;G 축만(2018+ 전체 아카이브, 하루 추가 지연); S5 null; 이벤트 = 이중 출처 검증된 2019–2025 캘린더. 자산: BTC/ETH 봉은 2019-01부터(400봉 워밍업 후 신호 ≈2020-02), SOL은 2020-04부터(신호 ≈2021-05). 수수료 0.1%/레그 + 슬리피지 0.05%; t 종가 신호는 t+1 시가 체결.</li>
+</ul>
+<h2>2. 결과</h2>
+<h3>기본 행 (배포-충실 ≥4/6) — 4개 OOS 폴드 × 3개 자산 풀링</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>값</th>
+<th>기준</th>
+<th>충족?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OOS 거래 수</td>
+<td><strong>38</strong></td>
+<td>≥ 400</td>
+<td>❌ (증거 하한선)</td>
+</tr>
+<tr>
+<td>승률</td>
+<td>36.8% (14/38)</td>
+<td>Wilson90 하한 &gt; 0.50 → 하한 = <strong>0.276</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>프로핏 팩터</td>
+<td>1.13</td>
+<td>부트스트랩90 하한 &gt; 1.0 → 하한 = <strong>0.644</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>최악 자산 최대 낙폭</td>
+<td><strong>2.18%</strong></td>
+<td>≤ 30%</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>폴드별: F1 (2021-07→2022-12, 약세장): 19건, PF 1.82 · F2: 6건, PF 0.69 · F3: 7건, PF 6.53 · F4 (2025-07→2026-07, 약세장): 6건, PF 0.0.
+청산 구성: trail_stop 20건 (53%) · stop_loss 15건 · time_stop 3건 — 리서치가 처방한 추세추종 프로파일(적은 승률로 이기되 승자를 태움: 평균 승자 ≫ 평균 패자가 37% 승률에서 PF를 1 위로 밀어올리는 구조).</p>
+<h3>민감도 행 (가용 5개 중 ≥3)</h3>
+<p>237건 · 승률 37.1% (Wilson 하한 0.332) · PF 1.15 (부트스트랩 하한 <strong>0.884</strong>) · 최악 낙폭 8.97%. 증거는 늘었지만 결론은 동일: 점추정 수익성일 뿐, 손익분기와 통계적으로 구별되지 않음.</p>
+<h3>워크포워드 (폴드별 튜닝, 6개 설정 — 스누핑 반영)</h3>
+<p>모든 폴드가 <code>confluence_min=3</code>으로 튜닝됨; 테스트 PF: F1 1.46, F2 1.82, F3 0.69, F4 0.79. 엣지는 국면 의존적이며 폴드를 넘어 지속되지 않음 — 리서치의 "발표된 엣지는 감쇠한다" 경고와 일치.</p>
+<h3>조건 상관관계 (통계 렌즈가 예측한 그대로)</h3>
+<p>B1↔B2 일간 일치도 <strong>0.709</strong> (둘 다 추세 지표), B1↔B3 0.52, B2↔B3 0.40. 6개 조건은 독립이 아니며, "독립적인 53% 엣지 중첩" 산술을 액면 그대로 적용할 수 없음.</p>
+<h3>실제로 작동한 것</h3>
+<p>F4 약세장 구간에서 전략은 자산당 약 1.1–1.7% 손실에 그친 반면 바이앤홀드는 <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong>. 최대 낙폭 2–9% vs B&amp;H의 역사적 60%+ 낙폭. 노출일 비율 3–6%. <strong>시스템의 검증된 가치는 국면 필터링과 청산 스택을 통한 자본 보전 — 정확히 리서치의 "엣지는 예측이 아니라 리스크 관리에서 나온다"는 주장 그대로입니다. 검증되지 않은 것은 단독 수익성입니다.</strong></p>
+<h2>3. 결정 (사전 등록 규칙에 따라)</h2>
+<ol>
+<li><strong>플립 없음.</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code>는 <strong>기본 off</strong> 유지. 프리셋/<code>min_confidence</code> 이관도 배포하지 않음. 계획서의 문장이 그대로 적용됩니다: <em>"기준 미달이면 컨플루언스 임계값은 프로덕션이 아니라 리서치로 돌아간다."</em></li>
+<li><strong>그래도 배포되는 것 (이미 머지됨, 실행 동작 변화 0):</strong> 컨플루언스 표시 + 에이전트 API, 국면 자문 + 타일, 텔레메트리(결정별 컨플루언스 벡터, 팩터 스냅샷), 안전성 수정(브레이커 tripped_by/expires_at, SL/TP 완화 금지, first_opened_at, 리스크 방향 게이팅, put_risk_limits 복구), 수리된 백테스터 지표, 옵트인 에이전트별 청산 툴킷(트레일링/시간 손절 — 개별 에이전트가 켤 수 있음; 수익성 주장이 아니라 포지션 리스크 도구).</li>
+<li><strong>재평가 경로:</strong> 라이브-포워드. Phase-1 텔레메트리가 모든 결정과 함께 6조건 벡터 전체(B4 포함)를 축적; 팩터 스냅샷이 펀딩/OI/롱숏/StockTwits를 기록. 게이트 품질의 라이브 결정이 ≥400건 쌓이면(또는 미래 백테스트가 누락 조건을 포함할 수 있게 되면) 기준을 재실행. 보정 테이블(컨플루언스 수별 적중률, Wilson CI)은 텔레메트리에서 자동으로 만들어짐.</li>
+<li><strong>임계값 작업은 리서치로 복귀:</strong> 데이터가 남긴 흥미로운 미해결 질문 — 더 단순한 진입 신호 위에 <em>청산 스택만</em>(트레일 + 시간 손절 + 국면 거부권) 얹어도 가치가 유지되는가. ≥4/5 컨플루언스 진입 게이트는 너무 엄격해 3개 자산 합쳐 연 6회만 거래했음.</li>
+</ol>
+<p><em>투자 자문이 아닙니다. 시뮬레이터 플랫폼입니다. 역사적 엣지는 감쇠하며, 이 수치들은 문서화된 범위 한계 안에서의 단일 백테스트를 설명할 뿐입니다.</em></p>
+</main></body></html>

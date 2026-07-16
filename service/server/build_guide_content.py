@@ -42,8 +42,12 @@ SOURCES: list[dict] = [
      "kind": "md", "lang": "ko", "group": "psych-report", "title": "차트 분석 vs 인간 심리 — 검증된 수치"},
     {"key": "framework-en", "src": "research/parameters/2-hybrid-strategy-framework.md",
      "kind": "md", "lang": "en", "group": "framework", "title": "Hybrid Framework — Decision Stack & Checklists"},
+    {"key": "framework-ko", "src": "research/parameters/2-hybrid-strategy-framework-ko.md",
+     "kind": "md", "lang": "ko", "group": "framework", "title": "하이브리드 프레임워크 — 의사결정 스택 & 체크리스트"},
     {"key": "backtest-report-en", "src": "research/parameters/3-phase4-backtest-report.md",
      "kind": "md", "lang": "en", "group": "backtest-report", "title": "Phase-4 Strategy Backtest — Go/No-Go Result"},
+    {"key": "backtest-report-ko", "src": "research/parameters/3-phase4-backtest-report-ko.md",
+     "kind": "md", "lang": "ko", "group": "backtest-report", "title": "Phase-4 전략 백테스트 — Go/No-Go 결과"},
 ]
 
 GROUPS = [
