@@ -560,7 +560,7 @@ export function MarketingPage() {
     psyKicker: tr(language, { ko: '심리의 정량화', en: 'PSYCHOLOGY, QUANTIFIED', ja: '心理の定量化', th: 'จิตวิทยาเชิงตัวเลข', vi: 'TÂM LÝ ĐƯỢC LƯỢNG HÓA' }),
     psyH: tr(language, { ko: '감정이 아니라, 감정이 남긴 발자국을', en: 'Not emotions — their footprints', ja: '感情そのものではなく、その痕跡を', th: 'ไม่ใช่อารมณ์ — แต่คือรอยเท้าของมัน', vi: 'Không phải cảm xúc — mà là dấu vết của chúng' }),
     psyRows: [
-      { k: tr(language, { ko: '공포 / 탐욕', en: 'Fear / Greed', ja: '恐怖／強欲', th: 'กลัว / โลภ', vi: 'Sợ / Tham' }), v: tr(language, { ko: '공포·탐욕 지수 · 변동성 · 청산 데이터', en: 'Fear & Greed index · volatility · liquidation data', ja: 'Fear&Greed指数 · 変動率 · 清算データ', th: 'ดัชนี Fear & Greed · ความผันผวน · ข้อมูลการล้างพอร์ต', vi: 'Chỉ số Fear & Greed · biến động · dữ liệu thanh lý' }) },
+      { k: tr(language, { ko: '공포 / 탐욕', en: 'Fear / Greed', ja: '恐怖／強欲', th: 'กลัว / โลภ', vi: 'Sợ / Tham' }), v: tr(language, { ko: '공포·탐욕 지수 · 변동성 · 실제 청산 데이터(OKX)', en: 'Fear & Greed index · volatility · real liquidation data (OKX)', ja: 'Fear&Greed指数 · 変動率 · 実清算データ(OKX)', th: 'ดัชนี Fear & Greed · ความผันผวน · ข้อมูลล้างพอร์ตจริง (OKX)', vi: 'Chỉ số Fear & Greed · biến động · dữ liệu thanh lý thật (OKX)' }) },
       { k: tr(language, { ko: '충격', en: 'Shock', ja: '衝撃', th: 'ช็อก', vi: 'Sốc' }), v: tr(language, { ko: '급격한 음의 감성 스파이크 · 거래량 폭발', en: 'Sudden negative sentiment spikes · volume explosions', ja: '部定感性の急激なスパイク · 出来高の爆発', th: 'เซนติเมนต์ลบพุ่งฉับพลัน · ปริมาณระเบิด', vi: 'Tâm lý tiêu cực tăng đột biến · khối lượng bùng nổ' }) },
       { k: tr(language, { ko: '기대', en: 'Anticipation', ja: '期待感', th: 'ความคาดหวัง', vi: 'Kỳ vọng' }), v: tr(language, { ko: '이벤트 전 멘션 증가 · 예측시장 확률 변화', en: 'Pre-event mention growth · prediction-market odds shifts', ja: 'イベント前の言及増加 · 予測市場オッズの変化', th: 'การพูดถึงก่อนเหตุการณ์เพิ่มขึ้น · อัตราต่อรองตลาดคาดการณ์เปลี่ยน', vi: 'Lượt nhắc tăng trước sự kiện · tỷ lệ cược thị trường dự đoán đổi' }) },
     ],
@@ -589,7 +589,7 @@ export function MarketingPage() {
     sigBuy: tr(language, { ko: '매수', en: 'BUY', ja: '買い', th: 'ซื้อ', vi: 'MUA' }),
     sigSell: tr(language, { ko: '매도', en: 'SELL', ja: '売り', th: 'ขาย', vi: 'BÁN' }),
     sigHold: tr(language, { ko: '관망', en: 'HOLD', ja: '様子見', th: 'ถือ', vi: 'GIỮ' }),
-    dashNote: tr(language, { ko: '신호 = 정량(베이시스·RSI·청산·온체인) × 정성(뉴스 감성·멘션·예측시장 확률).', en: 'Signal = quant (basis · RSI · liquidations · on-chain) × qualitative (news sentiment · mentions · prediction-market odds).', ja: 'シグナル = 定量（ベーシス·RSI·清算·オンチェーン）× 定性（ニュース感性·言及量·予測市場オッズ）。', th: 'สัญญาณ = เชิงปริมาณ (เบสิส · RSI · การล้างพอร์ต · ออนเชน) × เชิงคุณภาพ (เซนติเมนต์ข่าว · การพูดถึง · อัตราต่อรอง)', vi: 'Tín hiệu = định lượng (basis · RSI · thanh lý · on-chain) × định tính (tâm lý tin tức · lượt nhắc · tỷ lệ cược).' }),
+    dashNote: tr(language, { ko: '신호 = 정량(베이시스·RSI·OI·롱숏·실제 청산) × 정성(뉴스 감성·멘션·예측시장 확률·ETF 흐름·김치 프리미엄).', en: 'Signal = quant (basis · RSI · OI · long/short · real liquidations) × qualitative (news sentiment · mentions · prediction-market odds · ETF flows · kimchi premium).', ja: 'シグナル = 定量（ベーシス·RSI·OI·L/S·実清算）× 定性（ニュース感性·言及量·予測市場オッズ·ETFフロー·キムチプレミアム）。', th: 'สัญญาณ = เชิงปริมาณ (เบสิส · RSI · OI · L/S · ล้างพอร์ตจริง) × เชิงคุณภาพ (เซนติเมนต์ข่าว · การพูดถึง · อัตราต่อรอง · กระแส ETF · คิมชิพรีเมียม)', vi: 'Tín hiệu = định lượng (basis · RSI · OI · L/S · thanh lý thật) × định tính (tâm lý tin · lượt nhắc · tỷ lệ cược · dòng ETF · kimchi premium).' }),
 
     skillKicker: tr(language, { ko: '트레이딩 스킬', en: 'TRADING SKILLS', ja: 'トレーディングスキル', th: 'สกิลเทรดดิ้ง', vi: 'KỸ NĂNG GIAO DỊCH' }),
     skillH: tr(language, { ko: '조합 가능한 스킬, 하나의 워크플로', en: 'Composable skills, one workflow', ja: '組み合わせ可能なスキル、ひとつのワークフロー', th: 'สกิลประกอบกันได้ ในเวิร์กโฟลว์เดียว', vi: 'Kỹ năng lắp ghép, một quy trình' }),
@@ -614,6 +614,7 @@ export function MarketingPage() {
       tr(language, { ko: '주문 체결(모의)', en: 'Order execution (paper)', ja: '注文執行（模擬）', th: 'ส่งคำสั่ง (จำลอง)', vi: 'Khớp lệnh (mô phỏng)' }),
       tr(language, { ko: '거래 기록', en: 'Trade journaling', ja: '取引記録', th: 'บันทึกการเทรด', vi: 'Nhật ký giao dịch' }),
       tr(language, { ko: '리스크 관리', en: 'Risk management', ja: 'リスク管理', th: 'จัดการความเสี่ยง', vi: 'Quản trị rủi ro' }),
+      tr(language, { ko: '3단계 자동화 모드', en: '3-tier automation modes', ja: '3段階自動化モード', th: 'โหมดอัตโนมัติ 3 ระดับ', vi: '3 cấp độ tự động hóa' }),
     ],
 
     riskKicker: tr(language, { ko: '리스크는 코드에 고정', en: 'RISK, HARD-CODED', ja: 'リスクはコードに固定', th: 'ความเสี่ยงถูกฝังในโค้ด', vi: 'RỦI RO ĐƯỢC MÃ HÓA CỨNG' }),
@@ -622,6 +623,7 @@ export function MarketingPage() {
       { t: tr(language, { ko: '포지션 사이징', en: 'Position sizing', ja: 'ポジションサイジング', th: 'ขนาดสถานะ', vi: 'Khối lượng vị thế' }), d: tr(language, { ko: '켈리 기준 한도가 모든 베팅을 주문 전에 제한합니다.', en: 'Kelly-criterion style limits cap every bet before it is placed.', ja: 'ケリー基準の制限が、すべてのベットを発注前に制御します。', th: 'ลิมิตแบบเคลลีคุมทุกการเดิมพันก่อนส่งคำสั่ง', vi: 'Giới hạn kiểu Kelly chặn mọi lệnh trước khi đặt.' }) },
       { t: tr(language, { ko: '하드 손절', en: 'Hard stop-losses', ja: 'ハード損切り', th: 'จุดตัดขาดทุนตายตัว', vi: 'Cắt lỗ cứng' }), d: tr(language, { ko: '손절과 최대 손실 한도는 코드 안에 있어 감정이 건드릴 수 없습니다.', en: 'Stops and max-loss limits live in code, where emotions cannot touch them.', ja: '損切りと最大損失の上限はコード内にあり、感情は介入できません。', th: 'จุดตัดขาดทุนและลิมิตขาดทุนสูงสุดอยู่ในโค้ด อารมณ์แตะต้องไม่ได้', vi: 'Điểm dừng và giới hạn lỗ tối đa nằm trong code, cảm xúc không chạm tới.' }) },
       { t: tr(language, { ko: '서킷 브레이커', en: 'Circuit breakers', ja: 'サーキットブレーカー', th: 'เซอร์กิตเบรกเกอร์', vi: 'Ngắt mạch' }), d: tr(language, { ko: '3σ 변동성, API 지연, 조작 의심 시 자동 정지합니다.', en: 'Auto-halt on 3σ volatility, API lag or suspected manipulation.', ja: '3σ変動・API遅延・操作疑いで自動停止します。', th: 'หยุดอัตโนมัติเมื่อผันผวน 3σ, API หน่วง หรือสงสัยการปั่นราคา', vi: 'Tự dừng khi biến động 3σ, API trễ hoặc nghi thao túng.' }) },
+      { t: tr(language, { ko: '이벤트 캘린더 가드', en: 'Event-calendar guard', ja: 'イベントカレンダーガード', th: 'การ์ดปฏิทินอีเวนต์', vi: 'Chắn lịch sự kiện' }), d: tr(language, { ko: 'FOMC·CPI·NFP 이벤트 창을 표시하고, 옵션으로 해당 구간의 신규 진입을 차단할 수 있습니다.', en: 'Shows FOMC/CPI/NFP event windows and can optionally block new entries inside them.', ja: 'FOMC・CPI・NFPのイベント窓を表示し、オプションでその区間の新規エントリーを遮断できます。', th: 'แสดงหน้าต่างอีเวนต์ FOMC·CPI·NFP และเลือกบล็อกการเข้าใหม่ในช่วงนั้นได้', vi: 'Hiển thị cửa sổ sự kiện FOMC·CPI·NFP và có thể tùy chọn chặn lệnh mới trong đó.' }) },
     ],
 
     ctaH: tr(language, { ko: '모의 자금 $100,000. 실제 리스크는 0.', en: '$100,000 of paper money. Zero real risk.', ja: '10万ドルの模擬資金。実リスクはゼロ。', th: 'เงินจำลอง $100,000 ความเสี่ยงจริงเป็นศูนย์', vi: '$100.000 tiền mô phỏng. Rủi ro thật bằng không.' }),
@@ -854,9 +856,9 @@ export function MarketingPage() {
               </div>
             ))}
           </div>
-          <a href="/guide.html" target="_blank" rel="noopener" style={{ display: 'inline-block', marginTop: 16, fontSize: 13.5, fontWeight: 600, color: V.accent, textDecoration: 'none' }}>
-            {tr(language, { ko: '전체 파이프라인 가이드 보기 →', en: 'Read the full pipeline guide →', ja: 'パイプライン全体ガイドを見る →', th: 'ดูคู่มือไปป์ไลน์ฉบับเต็ม →', vi: 'Xem hướng dẫn pipeline đầy đủ →' })}
-          </a>
+          <Link to="/docs/guide" style={{ display: 'inline-block', marginTop: 16, fontSize: 13.5, fontWeight: 600, color: V.accent, textDecoration: 'none' }}>
+            {tr(language, { ko: '전체 파이프라인 가이드 보기 (로그인) →', en: 'Read the full pipeline guide (sign in) →', ja: 'パイプライン全体ガイドを見る（ログイン）→', th: 'ดูคู่มือไปป์ไลน์ฉบับเต็ม (เข้าสู่ระบบ) →', vi: 'Xem hướng dẫn pipeline đầy đủ (đăng nhập) →' })}
+          </Link>
         </div>
       </section>
 
