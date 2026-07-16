@@ -359,7 +359,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 className="form-input"
                 value={notificationForm.agent_ids}
                 onChange={(event) => setNotificationForm({ ...notificationForm, agent_ids: event.target.value })}
-                placeholder="Optional agent ids: 1,2,3"
+                placeholder={tr(language, { ko: '에이전트 ID (선택): 1,2,3', en: 'Optional agent ids: 1,2,3', ja: 'エージェントID（任意）: 1,2,3', th: 'รหัสเอเจนต์ (ไม่บังคับ): 1,2,3', vi: 'ID agent (tuỳ chọn): 1,2,3' })}
               />
               <input
                 className="form-input"
