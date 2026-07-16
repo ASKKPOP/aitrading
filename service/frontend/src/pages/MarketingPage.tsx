@@ -718,7 +718,7 @@ export function MarketingPage() {
             const kpis = [
               { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh'), vl: L('페이퍼 전용', 'Paper only', 'ペーパー専用', 'เปเปอร์เท่านั้น', 'Chỉ paper'), hint: L('실계좌 주문 코드 자체가 비활성', 'real-account order code disabled', '実口座注文コード自体が無効', 'โค้ดคำสั่งบัญชีจริงถูกปิด', 'mã lệnh tài khoản thật bị vô hiệu') },
               { lb: L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'), vl: L('3중 검사', 'Triple check', '三重チェック', 'ตรวจ 3 ชั้น', 'Kiểm tra 3 lớp'), hint: L('켈리 → 한도 → 브레이커', 'Kelly → limits → breaker', 'ケリー → 上限 → ブレーカー', 'เคลลี → ลิมิต → เบรกเกอร์', 'Kelly → hạn mức → breaker') },
-              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: L('708 통과', '708 passing', '708件通過', 'ผ่าน 708', '708 đạt'), hint: L('신규 위상 테스트 126개 포함', 'incl. 126 new phase tests', '新規位相テスト126件含む', 'รวมเทสต์เฟสใหม่ 126', 'gồm 126 test pha mới') },
+              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: L('854 통과', '854 passing', '854件通過', 'ผ่าน 854', '854 đạt'), hint: L('시그널 확장 테스트 포함', 'incl. signal-expansion tests', 'シグナル拡張テスト含む', 'รวมเทสต์ขยายสัญญาณ', 'gồm test mở rộng tín hiệu') },
               { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền'), vl: '21' + L('개', '', '件', '', ''), hint: 'risk_watcher · psych · scanner' },
             ]
             return (<>
@@ -750,19 +750,19 @@ export function MarketingPage() {
                     <text x={16} y={24} style={svLb}>{L('외부 데이터 소스 (전부 무키 검증 완료)', 'EXTERNAL DATA SOURCES (ALL VERIFIED KEYLESS)', '外部データソース（全て無キー検証済み）', 'แหล่งข้อมูลภายนอก (ตรวจสอบแบบไร้คีย์แล้ว)', 'NGUỒN DỮ LIỆU NGOÀI (ĐÃ KIỂM CHỨNG KHÔNG CẦN KEY)')}</text>
                     <rect x={16} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={102} y={53} textAnchor="middle" style={svT}>OKX</text>
-                    <text x={102} y={68} textAnchor="middle" style={svS}>{L('캔들·펀딩비·베이시스·거래량', 'candles·funding·basis·volume', 'ローソク足・資金調達率・ベーシス・出来高', 'แท่งเทียน·ฟันดิง·เบสิส·ปริมาณ', 'nến·funding·basis·khối lượng')}</text>
+                    <text x={102} y={68} textAnchor="middle" style={svS}>{L('캔들·펀딩·OI·롱숏·청산', 'candles·funding·OI·L/S·liq.', 'ローソク足・資金調達率・OI・L/S・清算', 'แท่งเทียน·ฟันดิง·OI·L/S·ล้างพอร์ต', 'nến·funding·OI·L/S·thanh lý')}</text>
                     <rect x={204} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={290} y={53} textAnchor="middle" style={svT}>alternative.me</text>
                     <text x={290} y={68} textAnchor="middle" style={svS}>{L('공포·탐욕 지수 + 이력', 'Fear & Greed index + history', 'Fear&Greed指数＋履歴', 'ดัชนี F&G + ประวัติ', 'chỉ số F&G + lịch sử')}</text>
                     <rect x={392} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
-                    <text x={478} y={53} textAnchor="middle" style={svT}>StockTwits</text>
-                    <text x={478} y={68} textAnchor="middle" style={svS}>{L('군중 감성·멘션 속도', 'crowd sentiment · mention velocity', '群衆感情・言及速度', 'อารมณ์ฝูงชน·ความเร็วการพูดถึง', 'tâm lý đám đông · tốc độ nhắc')}</text>
+                    <text x={478} y={53} textAnchor="middle" style={svT}>StockTwits · Polymarket</text>
+                    <text x={478} y={68} textAnchor="middle" style={svS}>{L('군중 감성·예측시장 Δodds', 'crowd sentiment · Δodds', '群衆感情・予測市場Δodds', 'อารมณ์ฝูงชน · Δodds', 'tâm lý đám đông · Δodds')}</text>
                     <rect x={580} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
-                    <text x={666} y={53} textAnchor="middle" style={svT}>Polymarket</text>
-                    <text x={666} y={68} textAnchor="middle" style={svS}>{L('예측시장 확률(Δodds)', 'prediction-market odds (Δodds)', '予測市場オッズ(Δodds)', 'อัตราต่อรองตลาดคาดการณ์ (Δodds)', 'tỷ lệ cược dự đoán (Δodds)')}</text>
+                    <text x={666} y={53} textAnchor="middle" style={svT}>SoSoValue · Upbit</text>
+                    <text x={666} y={68} textAnchor="middle" style={svS}>{L('ETF 실흐름·김치 프리미엄', 'real ETF flows · kimchi premium', 'ETF実フロー・キムチプレミアム', 'กระแส ETF จริง · คิมชิพรีเมียม', 'dòng ETF thật · kimchi premium')}</text>
                     <rect x={768} y={34} width={176} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={856} y={53} textAnchor="middle" style={svT}>AV · FRED · FinnHub</text>
-                    <text x={856} y={68} textAnchor="middle" style={svS}>{L('뉴스·매크로·펀더멘털', 'news · macro · fundamentals', 'ニュース・マクロ・ファンダ', 'ข่าว·มหภาค·ปัจจัยพื้นฐาน', 'tin tức · vĩ mô · cơ bản')}</text>
+                    <text x={856} y={68} textAnchor="middle" style={svS}>{L('뉴스·매크로·DXY', 'news · macro · DXY', 'ニュース・マクロ・DXY', 'ข่าว·มหภาค·DXY', 'tin tức · vĩ mô · DXY')}</text>
                     {[102, 290, 478, 666, 856].map(x => <path key={x} d={`M${x} 80 V108`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
                     {/* band 2: collectors */}
                     <rect x={16} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
@@ -771,15 +771,15 @@ export function MarketingPage() {
                     <text x={126} y={159} textAnchor="middle" style={svM}>scanner.py · 1h</text>
                     <rect x={252} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
                     <text x={362} y={130} textAnchor="middle" style={svT}>{L('STEP 3 · 정량(퀀트)', 'STEP 3 · Quant', 'STEP 3 · 定量(クオンツ)', 'STEP 3 · ควอนต์', 'STEP 3 · Định lượng')}</text>
-                    <text x={362} y={145} textAnchor="middle" style={svS}>RSI·MA·σ·{L('펀딩·베이시스', 'funding·basis', '資金調達率・ベーシス', 'ฟันดิง·เบสิส', 'funding·basis')}</text>
+                    <text x={362} y={145} textAnchor="middle" style={svS}>RSI·σ·{L('펀딩·베이시스·OI·롱숏', 'funding·basis·OI·long/short', '資金調達率・ベーシス・OI・L/S', 'ฟันดิง·เบสิส·OI·L/S', 'funding·basis·OI·L/S')}</text>
                     <text x={362} y={159} textAnchor="middle" style={svM}>quant_crypto.py · {L('온디맨드', 'on-demand', 'オンデマンド', 'ออนดีมานด์', 'theo yêu cầu')}</text>
                     <rect x={488} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
                     <text x={598} y={130} textAnchor="middle" style={svT}>{L('STEP 4 · 심리 피드', 'STEP 4 · Psych feed', 'STEP 4 · 心理フィード', 'STEP 4 · ฟีดจิตวิทยา', 'STEP 4 · Nguồn tâm lý')}</text>
-                    <text x={598} y={145} textAnchor="middle" style={svS}>{L('F&G·감성 스파이크·쇼크 추정', 'F&G · sentiment spikes · shock est.', 'F&G・感情スパイク・ショック推定', 'F&G·สไปก์อารมณ์·ประเมินช็อก', 'F&G · tâm lý tăng vọt · ước tính sốc')}</text>
+                    <text x={598} y={145} textAnchor="middle" style={svS}>{L('F&G·감성 스파이크·실제 청산', 'F&G · sentiment spikes · real liq.', 'F&G・感情スパイク・実清算', 'F&G·สไปก์อารมณ์·ล้างพอร์ตจริง', 'F&G · tâm lý tăng vọt · thanh lý thật')}</text>
                     <text x={598} y={159} textAnchor="middle" style={svM}>psych_feed.py · 1h</text>
                     <rect x={724} y={110} width={220} height={58} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={834} y={130} textAnchor="middle" style={svT}>{L('뉴스 · 매크로 인텔', 'News · macro intel', 'ニュース・マクロインテル', 'ข่าว · อินเทลมหภาค', 'Tin tức · vĩ mô')}</text>
-                    <text x={834} y={145} textAnchor="middle" style={svS}>{L('뉴스 감성·ETF 흐름·매크로', 'news sentiment · ETF flows · macro', 'ニュース感情・ETFフロー・マクロ', 'เซนติเมนต์ข่าว·ETF·มหภาค', 'tâm lý tin · dòng ETF · vĩ mô')}</text>
+                    <text x={834} y={145} textAnchor="middle" style={svS}>{L('뉴스 감성·ETF 실흐름·이벤트 캘린더', 'news sentiment · real ETF · event calendar', 'ニュース感情・ETF実フロー・イベント暦', 'เซนติเมนต์ข่าว·ETF จริง·ปฏิทินอีเวนต์', 'tâm lý tin · ETF thật · lịch sự kiện')}</text>
                     <text x={834} y={159} textAnchor="middle" style={svM}>market_intel.py · {L('주기 갱신', 'periodic refresh', '定期更新', 'รีเฟรชตามรอบ', 'làm mới định kỳ')}</text>
                     {[126, 362, 598, 834].map(x => <path key={x} d={`M${x} 168 V196`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
                     {/* snapshot store */}
