@@ -326,8 +326,8 @@ export function MarketingPage() {
     heroH1a: tr(language, { ko: '신호는 예측이 아니라,', en: 'Signals are measured,', ja: 'シグナルは予測ではなく、', th: 'สัญญาณคือสิ่งที่วัดได้', vi: 'Tín hiệu là thứ đo được,' }),
     heroH1b: tr(language, { ko: '측정하는 것입니다.', en: 'not predicted.', ja: '測定するもの。', th: 'ไม่ใช่การทำนาย', vi: 'không phải dự đoán.' }),
     heroSub: tr(language, {
-      ko: 'AI는 시장이 이미 남긴 흔적 — 거래량 급증, 고래 지갑, 뉴스, 군중 심리 — 을 읽고, 정량 트리거와 결합해, 엄격한 리스크 한도 안에서 당신의 규칙대로 모의 매매합니다.',
-      en: 'The AI reads the traces a market already left — volume surges, whale wallets, news, crowd psychology — combines them with quant triggers, and paper-trades on your rules with hard risk limits.',
+      ko: 'AI는 시장이 이미 남긴 흔적 — 거래량 급증, 고래 지갑, 뉴스, 군중 심리 — 을 읽고, 정량 트리거와 결합해, 엄격한 리스크 한도 안에서 당신의 규칙대로 매매합니다.',
+      en: 'The AI reads the traces a market already left — volume surges, whale wallets, news, crowd psychology — combines them with quant triggers, and trades on your rules with hard risk limits.',
       ja: 'AIは市場に残された痕跡 — 出来高急増・クジラのウォレット・ニュース・群集心理 — を読み取り、定量トリガーと組み合わせ、厳格なリスク制限のもとであなたのルール通りに模擬売買します。',
       th: 'AI อ่านร่องรอยที่ตลาดทิ้งไว้ — ปริมาณพุ่ง กระเป๋าวาฬ ข่าว จิตวิทยาฝูงชน — ผสานกับทริกเกอร์เชิงปริมาณ แล้วเทรดจำลองตามกฎของคุณพร้อมลิมิตความเสี่ยงที่ตายตัว',
       vi: 'AI đọc các dấu vết thị trường để lại — khối lượng tăng vọt, ví cá voi, tin tức, tâm lý đám đông — kết hợp với trigger định lượng, rồi giao dịch mô phỏng theo quy tắc của bạn với giới hạn rủi ro cứng.',
@@ -464,7 +464,7 @@ export function MarketingPage() {
         <div style={{ ...wrap, position: 'relative', zIndex: 1 }}>
           <div style={kicker}>{T.heroKicker}</div>
           <h1 style={{ fontFamily: V.display, fontWeight: 800, fontSize: 'clamp(38px,5.6vw,66px)', lineHeight: 1.04, letterSpacing: '-0.02em', margin: '14px 0 18px', maxWidth: '18ch' }}>
-            {T.heroH1a}<br /><em style={{ fontStyle: 'normal', color: V.accent }}>{T.heroH1b}</em>
+            <span style={{ background: `linear-gradient(92deg, ${V.ink} 8%, #e8912d 62%, #f7b955 96%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>{T.heroH1a}</span><br /><em style={{ fontStyle: 'normal', color: V.accent }}>{T.heroH1b}</em>
           </h1>
           <p style={{ fontSize: 17, color: V.mut, maxWidth: '58ch', margin: '0 0 26px' }}>{T.heroSub}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
