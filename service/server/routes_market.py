@@ -136,6 +136,32 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
+    @app.get('/api/market-intel/confluence')
+    async def market_intel_confluence(symbols: str = 'BTC,ETH,SOL'):
+        """Confluence checklist (parameter-upgrade plan Phase 1) — the
+        deterministic B1–B6/S1–S6 read per symbol, agent-consumable.
+
+        Contract (stable): per symbol —
+          buy_confluence / sell_confluence  int 0–6 (the count IS the score)
+          threshold                         int, current CONFLUENCE_MIN
+          conditions                        {B1..B6, S1..S6: true|false|null}
+          nulls                             {condition: reason} — null never satisfies
+          vetoes                            list of veto strings (buy_veto / entry_veto)
+          direction_bias                    long | short | none
+        No probability-formatted confidence is emitted by design.
+        """
+        from confluence import evaluate_confluence
+        parsed = [s.strip().upper() for s in symbols.split(',')
+                  if _FUSION_SYMBOL_RE.fullmatch(s.strip().upper())][:8]
+        if not parsed:
+            raise HTTPException(status_code=422, detail='no valid symbols (A-Z0-9, 1-12 chars)')
+        cache_key = f'confluence:{",".join(sorted(parsed))}'
+
+        def _build():
+            return {'symbols': [evaluate_confluence(s, 'crypto') for s in parsed]}
+
+        return await run_in_threadpool(_cached_market_payload, cache_key, _build)
+
     @app.get('/api/market-intel/etf-flows')
     async def market_intel_etf_flows():
         return _cached_market_payload('etf_flows', get_etf_flows_payload)

@@ -17,6 +17,7 @@ Safety invariants:
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -167,6 +168,18 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     try:
         analysis = run_analysis(symbol, market, config.get("lang") or "en",
                                 provider=config.get("provider") or None)
+
+        # Confluence telemetry (Phase 1): record the deterministic condition
+        # vector alongside every decision — display/journal only until the
+        # Phase-4 flip turns it into a gate. Fail-soft.
+        try:
+            from confluence import evaluate_confluence
+            technical = (analysis.get("technical") or {}).get("data") \
+                if isinstance(analysis.get("technical"), dict) else None
+            result["confluence"] = evaluate_confluence(symbol, market, analysis=technical)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("confluence telemetry unavailable for %s: %s", symbol, exc)
+
         decision = analysis.get("decision") or {}
         action = decision.get("action")
         confidence = decision.get("confidence")
@@ -225,12 +238,20 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
     cursor = conn.cursor()
     try:
         begin_write_transaction(cursor)
+        confluence_json = None
+        if result.get("confluence") is not None:
+            try:
+                confluence_json = json.dumps(result["confluence"], ensure_ascii=False)
+            except (TypeError, ValueError):
+                confluence_json = None
         cursor.execute(
             """INSERT INTO automation_runs
-               (config_id, agent_id, ran_at, action, confidence, executed, skip_reason, signal_id, report)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (config_id, agent_id, ran_at, action, confidence, executed, skip_reason,
+                signal_id, report, confluence_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (config_id, agent_id, _now_iso(), result.get("action"), result.get("confidence"),
-             1 if result["executed"] else 0, result["skip_reason"], result.get("signal_id"), report),
+             1 if result["executed"] else 0, result["skip_reason"], result.get("signal_id"),
+             report, confluence_json),
         )
         cursor.execute("UPDATE automation_configs SET last_run_at = ? WHERE id = ?", (_now_iso(), config_id))
         conn.commit()

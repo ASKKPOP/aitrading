@@ -1894,6 +1894,14 @@ def init_database():
         ON automation_runs(config_id, ran_at)
     """)
 
+    # Confluence telemetry (parameter-upgrade plan Phase 1): the B1-B6/S1-S6
+    # condition vector recorded with every automation decision — the raw
+    # material for live-forward calibration (hit rate per confluence count).
+    try:
+        cursor.execute("ALTER TABLE automation_runs ADD COLUMN confluence_json TEXT")
+    except Exception:
+        pass
+
     # Risk engine (signal-collection plan Phase 1): per-agent limits consulted by
     # the automation gate, plus the circuit-breaker state machine. Breaker rows are
     # keyed by scope: 'global' (system trips) or 'agent:<id>' (manual HALT).

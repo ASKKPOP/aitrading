@@ -33,6 +33,36 @@ Key fields:
 - `latest_headline`
 - `categories`
 
+### Confluence Checklist
+
+`GET /api/market-intel/confluence?symbols=BTC,ETH,SOL`
+
+Use when you want the deterministic buy/sell checklist read per crypto symbol —
+the research-backed B1–B6 (buy) / S1–S6 (sell) conditions with a simple count.
+This is the recommended machine-readable input for agent strategies: the count
+IS the score, and no probability-formatted confidence is emitted by design
+(realistic directional accuracy for any of these systems is 50–55%; distrust
+anything claiming more).
+
+Per symbol in `symbols[]`:
+
+- `buy_confluence` / `sell_confluence` — int 0–6, count of satisfied conditions
+- `threshold` — the count a gated buy would need (default 4)
+- `conditions` — `{B1..B6, S1..S6: true | false | null}`
+  - B1 price > 200-day MA · B2 12-1 momentum > 0 · B3 technical trigger with
+    volume confirmation · B4 crowd sentiment non-negative/recovering, no
+    negative news spike · B5 fear recovering (F&G < 30 rising, or shock
+    cleared ≤ 72h) · B6 no FOMC/CPI/NFP/election within 24h
+  - S-side mirrors; S6 (stop-loss) is positional and always null here
+- `nulls` — `{condition: reason}`; a null NEVER counts as satisfied (missing
+  data makes the read more conservative, not more permissive)
+- `vetoes` — e.g. `buy_veto: negative news sentiment spike…` or
+  `entry_veto: macro release window active` — treat any veto as "do not enter"
+- `direction_bias` — `long | short | none` (B1∧B2 / S1∧S2)
+
+Contract stability: field names and semantics above are stable; new fields may
+be added. Cached server-side — poll freely.
+
 ### Macro Signals
 
 `GET /api/market-intel/macro-signals`

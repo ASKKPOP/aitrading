@@ -55,11 +55,26 @@ class WeightTests(unittest.TestCase):
 
 
 class FuseSymbolTests(unittest.TestCase):
+    def setUp(self) -> None:
+        # The Phase-1 confluence block inside fuse_symbol fetches StockTwits /
+        # event data — stub it out so unit tests stay offline and fast.
+        self._confluence_patch = patch(
+            "confluence.evaluate_confluence",
+            return_value={"buy_confluence": 0, "sell_confluence": 0,
+                          "conditions": {}, "nulls": {}, "vetoes": [],
+                          "direction_bias": "none"})
+        self._confluence_patch.start()
+        self.addCleanup(self._confluence_patch.stop)
+
     def _fuse(self, quant, sentiment, psych):
         from signal_fusion import fuse_symbol
+        # Patch _psych_component too: fuse_symbol(psych=None) would otherwise
+        # fetch the REAL dev DB's psych snapshot, making these tests depend on
+        # whatever the local server recorded last (observed flake 2026-07-16).
         with patch("signal_fusion._quant_component", return_value=quant), \
-             patch("signal_fusion._sentiment_component", return_value=sentiment):
-            return fuse_symbol("BTC", psych=psych)
+             patch("signal_fusion._sentiment_component", return_value=sentiment), \
+             patch("signal_fusion._psych_component", return_value=psych):
+            return fuse_symbol("BTC")
 
     def test_weighted_fusion_math(self):
         # 0.5·0.8 + 0.3·0.5 + 0.2·(−0.5) = 0.45

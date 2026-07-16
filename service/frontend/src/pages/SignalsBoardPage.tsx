@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { tr, type Language } from '../i18n'
 
 // Signals Board (signal-collection plan Phase 5): every number on this page is
 // a real collected value from the psych feed, scanner, and fusion APIs — no
@@ -32,6 +32,16 @@ interface ScannerPayload {
   created_at: string | null
 }
 
+interface ConfluenceRead {
+  buy_confluence: number
+  sell_confluence: number
+  threshold: number
+  conditions: Record<string, boolean | null>
+  nulls: Record<string, string>
+  vetoes: string[]
+  direction_bias: string
+}
+
 interface FusedSignal {
   symbol: string
   score: number
@@ -41,7 +51,34 @@ interface FusedSignal {
   matched_triggers: string[]
   missing: string[]
   current_price: number | null
+  confluence?: ConfluenceRead | null
   components?: { quant?: { open_interest_usd?: number | null; long_short_ratio?: number | null } | null }
+}
+
+function ConfluenceCell({ c, language }: { c: ConfluenceRead | null | undefined; language: Language }) {
+  if (!c) return <span style={{ color: 'var(--text-muted)' }}>—</span>
+  const buyKeys = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6']
+  const buyMet = c.buy_confluence >= c.threshold
+  const dot = (k: string) => {
+    const v = c.conditions[k]
+    const color = v === true ? 'var(--success)' : v === false ? 'var(--error)' : 'var(--text-muted)'
+    const title = v == null ? `${k}: ${c.nulls[k] ?? 'n/a'}` : `${k}: ${v ? 'ok' : 'no'}`
+    return <span key={k} title={title} style={{ color, fontSize: 13 }}>{v == null ? '·' : '●'}</span>
+  }
+  return (
+    <div>
+      <div style={{ fontWeight: 700, color: buyMet ? 'var(--success)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+        {c.buy_confluence}/6
+        <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)' }}> · {tr(language, { ko: '매도', en: 'sell', ja: '売り', th: 'ขาย', vi: 'bán' })} {c.sell_confluence}/6</span>
+      </div>
+      <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>{buyKeys.map(dot)}</div>
+      {c.vetoes.length > 0 && (
+        <div style={{ fontSize: 10.5, color: 'var(--error)', marginTop: 2 }}>
+          ⛔ {tr(language, { ko: '거부권 발동', en: 'veto active', ja: '拒否権発動', th: 'ยับยั้ง', vi: 'phủ quyết' })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function Tile({ label, value, sub, accent }: {
@@ -258,7 +295,7 @@ export function SignalsBoardPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
           <thead>
             <tr>
-              <th style={th}>{tr(language, { ko: '코인', en: 'Coin', ja: 'コイン', th: 'เหรียญ', vi: 'Coin' })}</th><th style={th}>{tr(language, { ko: '시그널', en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu' })}</th><th style={th}>{tr(language, { ko: '근거', en: 'Reason', ja: '根拠', th: 'เหตุผล', vi: 'Lý do' })}</th>
+              <th style={th}>{tr(language, { ko: '코인', en: 'Coin', ja: 'コイン', th: 'เหรียญ', vi: 'Coin' })}</th><th style={th}>{tr(language, { ko: '시그널', en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu' })}</th><th style={th}>{tr(language, { ko: '컨플루언스', en: 'Confluence', ja: 'コンフルエンス', th: 'คอนฟลูเอนซ์', vi: 'Hợp lưu' })}</th><th style={th}>{tr(language, { ko: '근거', en: 'Reason', ja: '根拠', th: 'เหตุผล', vi: 'Lý do' })}</th>
               <th style={th}>{tr(language, { ko: '트리거', en: 'Trigger', ja: 'トリガー', th: 'ทริกเกอร์', vi: 'Trigger' })}</th><th style={th}>{tr(language, { ko: '신뢰도', en: 'Conf.', ja: '信頼度', th: 'ความเชื่อมั่น', vi: 'Độ tin cậy' })}</th>
             </tr>
           </thead>
@@ -281,6 +318,7 @@ export function SignalsBoardPage() {
                   )}
                 </td>
                 <td style={td}><SignalBadge signal={s.signal} /></td>
+                <td style={td}><ConfluenceCell c={s.confluence} language={language} /></td>
                 <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 380 }}>
                   {s.evidence.length ? s.evidence.slice(0, 3).join('; ') : '—'}
                   {s.missing.length > 0 && (
@@ -296,7 +334,7 @@ export function SignalsBoardPage() {
               </tr>
             ))}
             {(fusion ?? []).length === 0 && (
-              <tr><td style={td} colSpan={5}>{tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}</td></tr>
+              <tr><td style={td} colSpan={6}>{tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}</td></tr>
             )}
           </tbody>
         </table>

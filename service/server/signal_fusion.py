@@ -102,6 +102,13 @@ def _quant_component(symbol: str) -> Optional[dict[str, Any]]:
         "long_short_ratio": analysis.get("long_short_ratio"),
         "current_price": analysis.get("current_price"),
         "trend_status": analysis.get("trend_status"),
+        # long-window direction features (parameter-upgrade Phase 0.2) — also
+        # exactly the fields the confluence engine reads from `analysis`
+        "signal_score": analysis.get("signal_score"),
+        "volume_ratio": analysis.get("volume_ratio"),
+        "price_above_ma200": analysis.get("price_above_ma200"),
+        "momentum_12_1_pct": analysis.get("momentum_12_1_pct"),
+        "sigma_daily_pct": analysis.get("sigma_daily_pct"),
         "evidence": (analysis.get("bullish_factors") or [])[:2]
                     + (analysis.get("risk_factors") or [])[:2],
     }
@@ -247,10 +254,20 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
     except Exception:  # noqa: BLE001
         pass
 
+    # Confluence checklist (parameter-upgrade Phase 1) — count-based B1–B6/
+    # S1–S6 read, display/API only until the Phase-4 flip. Fail-soft.
+    confluence_block = None
+    try:
+        from confluence import evaluate_confluence
+        confluence_block = evaluate_confluence(symbol, "crypto", analysis=quant)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("fusion confluence unavailable for %s: %s", symbol, exc)
+
     return {
         "symbol": symbol,
         "score": round(score, 3),
         "signal": signal,
+        "confluence": confluence_block,
         "confidence": round(min(0.95, 0.5 + abs(score) / 2), 2) if available else 0.0,
         "weights": {k: round(weights[k], 3) for k in weights},
         "components": {
