@@ -88,7 +88,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <header class="doc"><div class="wrap">
   <div class="kicker">Sooppiy · Full Pipeline Guide</div>
   <h1>AI 자동매매 전체 단계 — 완전 가이드</h1>
-  <div class="meta">2026-07-15 · 코드 기준(main, PR #2 머지) · 모든 수치는 실제 구현값 · sooppiy.com 가동 중</div>
+  <div class="meta">2026-07-16 · 코드 기준(main, 시그널 확장 반영) · 모든 수치는 실제 구현값 · sooppiy.com 가동 중</div>
 </div></header>
 
 <!-- ═══════════════ 0. 한눈에 보기 ═══════════════ -->
@@ -127,19 +127,19 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
-      <text x="102" y="68" text-anchor="middle" class="sv-s">캔들·펀딩비·베이시스·거래량</text>
+      <text x="102" y="68" text-anchor="middle" class="sv-s">캔들·펀딩·OI·롱숏·청산</text>
       <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
       <text x="290" y="68" text-anchor="middle" class="sv-s">공포·탐욕 지수 + 이력</text>
       <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits</text>
-      <text x="478" y="68" text-anchor="middle" class="sv-s">군중 감성·멘션 속도</text>
+      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits · Polymarket</text>
+      <text x="478" y="68" text-anchor="middle" class="sv-s">군중 감성·예측시장 Δodds</text>
       <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="666" y="53" text-anchor="middle" class="sv-t">Polymarket</text>
-      <text x="666" y="68" text-anchor="middle" class="sv-s">예측시장 확률(Δodds)</text>
+      <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue · Upbit</text>
+      <text x="666" y="68" text-anchor="middle" class="sv-s">ETF 실흐름·김치 프리미엄</text>
       <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
       <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
-      <text x="856" y="68" text-anchor="middle" class="sv-s">뉴스·매크로·펀더멘털</text>
+      <text x="856" y="68" text-anchor="middle" class="sv-s">뉴스·매크로·DXY</text>
     </g>
 
     <path d="M102 80 V108" class="sv-line" marker-end="url(#ar)"/>
@@ -157,15 +157,15 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1h</text>
       <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
       <text x="362" y="130" text-anchor="middle" class="sv-t">STEP 3 · 정량(퀀트)</text>
-      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·MA·σ·펀딩·베이시스</text>
+      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·σ·펀딩·베이시스·OI·롱숏</text>
       <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · 온디맨드</text>
       <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
       <text x="598" y="130" text-anchor="middle" class="sv-t">STEP 4 · 심리 피드</text>
-      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·감성 스파이크·쇼크 추정</text>
+      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·감성 스파이크·실제 청산</text>
       <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1h</text>
       <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
       <text x="834" y="130" text-anchor="middle" class="sv-t">뉴스 · 매크로 인텔</text>
-      <text x="834" y="145" text-anchor="middle" class="sv-s">뉴스 감성·ETF 흐름·매크로</text>
+      <text x="834" y="145" text-anchor="middle" class="sv-s">뉴스 감성·ETF 실흐름·이벤트 캘린더</text>
       <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · 주기 갱신</text>
     </g>
 
@@ -236,7 +236,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <div class="kpi-row">
     <div class="kpi"><div class="lb">체결 방식</div><div class="vl">페이퍼 전용</div><div class="hint">실계좌 주문 코드 자체가 비활성</div></div>
     <div class="kpi"><div class="lb">리스크 게이트</div><div class="vl">3중 검사</div><div class="hint">켈리 → 한도 → 브레이커</div></div>
-    <div class="kpi"><div class="lb">테스트</div><div class="vl">708 통과</div><div class="hint">신규 위상 테스트 126개 포함</div></div>
+    <div class="kpi"><div class="lb">테스트</div><div class="vl">859 통과</div><div class="hint">시그널 확장·가이드 테스트 포함</div></div>
     <div class="kpi"><div class="lb">백그라운드 태스크</div><div class="vl">21개</div><div class="hint">risk_watcher·psych·scanner 포함</div></div>
   </div>
 </div></section>
@@ -254,9 +254,13 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><b>Polymarket</b></td><td>예측시장 확률과 24h 변화(Δodds)</td><td>STEP 4·6</td><td>기대(anticipation) 신호의 원천</td></tr>
       <tr><td><b>Alpha Vantage</b></td><td>뉴스+감성 점수, 주가, ETF 흐름</td><td>STEP 6, 뉴스 인텔</td><td>demo 키로도 기본 동작</td></tr>
       <tr><td><b>FRED · FinnHub</b></td><td>매크로 지표, 기업 뉴스(선택)</td><td>STEP 6</td><td>키 있을 때만 자동 합류</td></tr>
+      <tr><td><b>OKX(확장)</b></td><td>미결제약정(OI), 롱/숏 비율, 실제 청산 주문</td><td>STEP 3·4</td><td>무키 공개 엔드포인트 실측 검증</td></tr>
+      <tr><td><b>SoSoValue</b></td><td>BTC 현물 ETF 일간·누적 달러 흐름(실데이터)</td><td>STEP 6, 뉴스 인텔</td><td><code>SOSOVALUE_API_KEY</code> 필요(무료 티어)</td></tr>
+      <tr><td><b>Upbit · FRED</b></td><td>김치 프리미엄(업비트 vs OKX·USD/KRW), 달러지수(DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
+      <tr><td><b>이벤트 캘린더</b></td><td>FOMC·CPI·고용지표 일정(정적, DST 반영)</td><td>STEP 7·8</td><td><code>EVENT_GUARD_ENABLED</code>로 진입 차단 옵션</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>정직성 원칙:</b> 청산(liquidation)·고래(on-chain whale) 데이터는 유료 소스뿐입니다. 그래서 변동성 σ + 거래량 비율로 만든 <b>"쇼크 추정치(estimated: true)"</b>로 대체하고, UI에 반드시 "추정"이라 표기합니다. 고래 추적은 Phase 6(유료 소스 도입 시)로 명시적 보류 — 인터페이스 스텁(<code>fetch_whale_signals</code>)은 이미 배선되어 있어 소스만 꽂으면 됩니다.</div>
+  <div class="note red"><b>정직성 원칙:</b> 청산(liquidation) 데이터는 이제 OKX 공개 청산 피드에서 <b>실측(estimated: false, liq_source: okx)</b>으로 수집합니다. 피드 장애 시에만 변동성 σ + 거래량 프록시로 대체하고, 그 경우 UI에 "추정"이라 표기합니다. 고래(on-chain whale) 추적은 여전히 유료 소스뿐이라 Phase 6으로 명시적 보류 — 인터페이스 스텁(<code>fetch_whale_signals</code>)은 이미 배선되어 있어 소스만 꽂으면 됩니다.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
@@ -301,7 +305,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <tbody>
       <tr><td><b>공포·탐욕</b></td><td>지수값 + 분류 + 3일 변화량(Δ3d)</td><td>Δ3d ≥ <b>+10</b> = 공포 회복 → 매수 신호 성분</td></tr>
       <tr><td><b>감성 스파이크</b></td><td>뉴스 카테고리별 감성 평균의 z-score (우리 자신의 뉴스 스냅샷 이력 대비)</td><td>z ≤ <b>−2</b> 음의 스파이크 → 매도 성분 + 실험 이벤트 저널링</td></tr>
-      <tr><td><b>쇼크 추정</b></td><td>시간봉 σ + 거래량 비율 (청산 데이터의 정직한 프록시, <code>estimated: true</code>)</td><td>3σ 초과 → 브레이커/감축 신호</td></tr>
+      <tr><td><b>쇼크(실청산)</b></td><td>OKX 실제 청산 노셔널 1h 합계 (<code>estimated: false · liq_source: okx</code>) · 피드 장애 시 σ+거래량 프록시</td><td>임계(기본 $5M) 초과 → 브레이커/감축 신호</td></tr>
       <tr><td><b>기대(예측시장)</b></td><td>Polymarket 상위 마켓 확률, 직전 스냅샷과의 Δodds</td><td>Δodds ≥ <b>+0.05</b>/24h = 재평가 → 매수 성분</td></tr>
     </tbody>
   </table>
@@ -424,7 +428,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <!-- ═══════════════ STEP 7 ═══════════════ -->
 <section><div class="wrap">
   <h2><span class="no">STEP 7</span>자동매매 규칙 — 사용자가 정하는 것</h2>
-  <p class="sub">자동화의 범위와 강도는 전적으로 사용자 설정입니다. 60초마다 도는 자동화 틱이 "켜져 있고 + 주기가 도래한" 규칙만 실행합니다.</p>
+  <p class="sub">자동화의 범위와 강도는 전적으로 사용자 설정입니다. 60초마다 도는 자동화 틱이 "켜져 있고 + 주기가 도래한" 규칙만 실행합니다. UI는 3단계 모드를 제공합니다 — ① 간편(코인·위험 성향만 선택), ② 표준(추천 프리셋 조정), ③ 전문가(전체 파라미터 제어).</p>
   <table>
     <thead><tr><th>설정</th><th>범위 / 기본값</th><th>의미</th></tr></thead>
     <tbody>
@@ -599,7 +603,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QA 관점 — "무엇이 어떻게 검증되어 있나"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>테스트 708개 전체 통과</b> (신규 위상 테스트 126개 포함: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
+        <li><b>테스트 859개 전체 통과</b> (시그널 확장·가이드 라우트 테스트 포함: market_events·cross_market·sosovalue_etf·routes_guide·risk_engine·psych_feed·quant_crypto·scanner·signal_fusion).</li>
         <li><b>안전 불변식이 테스트로 고정:</b> simulator만 체결 · 매도는 보유 포지션 필수 · 장 마감 스킵 · real 계정 주문 불가 · 게이트는 축소/거부만 가능.</li>
         <li><b>fail-soft 전면 적용:</b> 외부 소스 실패 시 해당 성분만 빠지고(missing 배열에 명시) 나머지 스냅샷은 저장. 잘못된 env 가중치도 500 대신 기본값 폴백.</li>
         <li><b>단계 격리:</b> 5개 위상 모두 env 플래그 기본 off — 프로덕션 사고 시 플래그 하나로 해당 단계만 차단 가능.</li>
@@ -634,13 +638,16 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>STEP 4 심리 수집 루프</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
       <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>STEP 3 크립토 퀀트 경로</td><td>—</td></tr>
       <tr><td><code>SCANNER_ENABLED</code></td><td>STEP 2 스캐너 루프</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
+      <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>김치 프리미엄·DXY 크로스마켓 신호</td><td>—</td></tr>
+      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>매크로 이벤트 창 신규 진입 차단(기본 off)</td><td>—</td></tr>
+      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>실 ETF 흐름 소스 키(무료 티어)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
       <tr><td><code>FUSION_W_*</code></td><td>STEP 5 가중치 조정</td><td>심리는 0.3 하드캡 — 설정으로 초과 불가</td></tr>
     </tbody>
   </table>
 </div></section>
 
 <footer><div class="wrap">
-  Sooppiy · AI 자동매매 전체 단계 가이드 · 2026-07-15 · 본 문서의 모든 수치는 main 브랜치 코드의 실제 구현값이며, 라이브 값은 배포 당일 sooppiy.com 실측입니다. 관련 문서: <a href="/plan.html" style="color:var(--accent)">구현 계획</a> · <a href="/framework.html" style="color:var(--accent)">프레임워크 명세</a>
+  Sooppiy · AI 자동매매 전체 단계 가이드 · 2026-07-16 · 본 문서의 모든 수치는 main 브랜치 코드의 실제 구현값이며, 라이브 값은 배포 당일 sooppiy.com 실측입니다. 관련 문서: <a href="/plan.html" style="color:var(--accent)">구현 계획</a> · <a href="/framework.html" style="color:var(--accent)">프레임워크 명세</a>
 </div></footer>
 
 </body>

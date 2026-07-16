@@ -27,8 +27,8 @@
 
   /* Accent — signal blue */
   --accent-primary:   #2a78d6;
-  --accent-secondary: #5d95e0;
-  --accent-gradient:  linear-gradient(90deg, #2a78d6, #5d95e0);
+  --accent-secondary: #7a68d8;
+  --accent-gradient:  linear-gradient(90deg, #2a78d6, #7a68d8);
   --accent-contrast:  #ffffff;
 
   /* Signal palette */
@@ -78,27 +78,28 @@
   --topbar-h:  52px;
 }
 
-/* Dark variant — same mapping as the mock */
+/* Dark variant — cool blue-tinted neutrals + a warmer accent sweep so the
+   theme reads colorful instead of flat gray. */
 @media (prefers-color-scheme: dark) {
   :root,
   :root[data-theme='signal'] {
-    --bg-primary:   #0d0d0d;
-    --bg-secondary: #1a1a19;
-    --bg-tertiary:  #2c2c2a;
-    --bg-card:      #202020;
+    --bg-primary:   #0e1014;
+    --bg-secondary: #171a20;
+    --bg-tertiary:  #272c36;
+    --bg-card:      #1a1e26;
     --bg-hover:     rgba(57,135,229,0.14);
 
-    --vellum:    #202020;
-    --parchment: #1a1a19;
-    --sidebar-bg: #141413;
+    --vellum:    #1a1e26;
+    --parchment: #171a20;
+    --sidebar-bg: #12141a;
 
     --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #898781;
+    --text-secondary: #c4c6cf;
+    --text-muted:     #8b8e99;
 
     --accent-primary:   #3987e5;
-    --accent-secondary: #5d95e0;
-    --accent-gradient:  linear-gradient(90deg, #3987e5, #5d95e0);
+    --accent-secondary: #9085e9;
+    --accent-gradient:  linear-gradient(90deg, #3987e5, #9085e9);
     --accent-contrast:  #ffffff;
 
     --s-aqua:   #199e70;
@@ -115,11 +116,11 @@
     --up-soft:   rgba(12,163,12,0.16);
     --down-soft: rgba(224,82,82,0.16);
 
-    --border-color:  rgba(255,255,255,0.10);
-    --border-light:  rgba(57,135,229,0.30);
-    --border-strong: #383835;
-    --rule:          #2c2c2a;
-    --rule-2:        rgba(255,255,255,0.06);
+    --border-color:  rgba(164,182,228,0.14);
+    --border-light:  rgba(57,135,229,0.35);
+    --border-strong: #3a4150;
+    --rule:          #272c36;
+    --rule-2:        rgba(164,182,228,0.08);
 
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 3px 10px rgba(0,0,0,0.3);
     --shadow-md: 0 4px 14px rgba(0,0,0,0.45), 0 10px 28px rgba(0,0,0,0.35);
@@ -352,7 +353,7 @@ a {
   font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255,255,255,0.55);
+  color: #ffffff96;
   cursor: pointer;
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
@@ -398,6 +399,14 @@ a {
   padding: 28px 28px 40px;
   min-width: 0;
   overflow: hidden;
+}
+
+/* Page column — cap line length on wide monitors; pages were stretching
+   edge-to-edge which read as broken gaps on 2xl screens. */
+.page-container {
+  max-width: 1160px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Header */

@@ -88,7 +88,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <header class="doc"><div class="wrap">
   <div class="kicker">Sooppiy · Full Pipeline Guide</div>
   <h1>AI Automated Trading, End to End — The Complete Guide</h1>
-  <div class="meta">2026-07-15 · Code-accurate (main, PR #2 merged) · All figures are actual implementation values · Live on sooppiy.com</div>
+  <div class="meta">2026-07-16 · Code-accurate (main, signal expansion included) · All figures are actual implementation values · Live on sooppiy.com</div>
 </div></header>
 
 <!-- ═══════════════ 0. At a Glance ═══════════════ -->
@@ -127,19 +127,19 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
-      <text x="102" y="68" text-anchor="middle" class="sv-s">candles·funding·basis·volume</text>
+      <text x="102" y="68" text-anchor="middle" class="sv-s">candles·funding·OI·L/S·liquidations</text>
       <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
       <text x="290" y="68" text-anchor="middle" class="sv-s">Fear &amp; Greed index + history</text>
       <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits</text>
-      <text x="478" y="68" text-anchor="middle" class="sv-s">crowd sentiment·mention velocity</text>
+      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits · Polymarket</text>
+      <text x="478" y="68" text-anchor="middle" class="sv-s">crowd sentiment·Δodds</text>
       <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="666" y="53" text-anchor="middle" class="sv-t">Polymarket</text>
-      <text x="666" y="68" text-anchor="middle" class="sv-s">prediction-market odds (Δodds)</text>
+      <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue · Upbit</text>
+      <text x="666" y="68" text-anchor="middle" class="sv-s">real ETF flows·kimchi premium</text>
       <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
       <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
-      <text x="856" y="68" text-anchor="middle" class="sv-s">news·macro·fundamentals</text>
+      <text x="856" y="68" text-anchor="middle" class="sv-s">news·macro·DXY</text>
     </g>
 
     <path d="M102 80 V108" class="sv-line" marker-end="url(#ar)"/>
@@ -157,15 +157,15 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1h</text>
       <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
       <text x="362" y="130" text-anchor="middle" class="sv-t">STEP 3 · Quant</text>
-      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·MA·σ·funding·basis</text>
+      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·σ·funding·basis·OI·L/S</text>
       <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · on-demand</text>
       <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
       <text x="598" y="130" text-anchor="middle" class="sv-t">STEP 4 · Psychology Feed</text>
-      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·sentiment spikes·shock est.</text>
+      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·sentiment spikes·real liq.</text>
       <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1h</text>
       <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
       <text x="834" y="130" text-anchor="middle" class="sv-t">News · Macro Intel</text>
-      <text x="834" y="145" text-anchor="middle" class="sv-s">news sentiment·ETF flows·macro</text>
+      <text x="834" y="145" text-anchor="middle" class="sv-s">news sentiment·real ETF·event calendar</text>
       <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · periodic refresh</text>
     </g>
 
@@ -236,7 +236,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <div class="kpi-row">
     <div class="kpi"><div class="lb">Execution</div><div class="vl">Paper only</div><div class="hint">Real-account order code is disabled entirely</div></div>
     <div class="kpi"><div class="lb">Risk gate</div><div class="vl">Triple check</div><div class="hint">Kelly → limits → breaker</div></div>
-    <div class="kpi"><div class="lb">Tests</div><div class="vl">708 passing</div><div class="hint">Incl. 126 new phase tests</div></div>
+    <div class="kpi"><div class="lb">Tests</div><div class="vl">859 passing</div><div class="hint">Incl. signal-expansion &amp; guide tests</div></div>
     <div class="kpi"><div class="lb">Background tasks</div><div class="vl">21</div><div class="hint">Incl. risk_watcher·psych·scanner</div></div>
   </div>
 </div></section>
@@ -254,9 +254,13 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><b>Polymarket</b></td><td>Prediction-market odds and 24h change (Δodds)</td><td>STEP 4·6</td><td>Source of the anticipation signal</td></tr>
       <tr><td><b>Alpha Vantage</b></td><td>News + sentiment scores, stock prices, ETF flows</td><td>STEP 6, news intel</td><td>Basics work even on the demo key</td></tr>
       <tr><td><b>FRED · FinnHub</b></td><td>Macro indicators, company news (optional)</td><td>STEP 6</td><td>Auto-joins only when a key is present</td></tr>
+      <tr><td><b>OKX (extended)</b></td><td>Open interest, long/short ratio, real liquidation orders</td><td>STEP 3·4</td><td>Keyless public endpoints, live-verified</td></tr>
+      <tr><td><b>SoSoValue</b></td><td>BTC spot-ETF daily &amp; cumulative dollar flows (real data)</td><td>STEP 6, news intel</td><td>Needs <code>SOSOVALUE_API_KEY</code> (free tier)</td></tr>
+      <tr><td><b>Upbit · FRED</b></td><td>Kimchi premium (Upbit vs OKX · USD/KRW), dollar index (DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
+      <tr><td><b>Event calendar</b></td><td>FOMC·CPI·NFP schedule (static, DST-aware)</td><td>STEP 7·8</td><td>Optional entry blocking via <code>EVENT_GUARD_ENABLED</code></td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>Honesty principle:</b> Liquidation and on-chain whale data exist only behind paid sources. So we substitute a <b>"shock estimate (estimated: true)"</b> built from volatility σ + volume ratio, and the UI always labels it "estimated". Whale tracking is explicitly deferred to Phase 6 (when paid sources arrive) — the interface stub (<code>fetch_whale_signals</code>) is already wired, so a source just needs plugging in.</div>
+  <div class="note red"><b>Honesty principle:</b> Liquidation data is now collected <b>for real (estimated: false, liq_source: okx)</b> from OKX's public liquidation feed. Only when that feed is down do we fall back to the volatility σ + volume proxy, and the UI then labels it "estimated". On-chain whale data still exists only behind paid sources, so whale tracking remains explicitly deferred to Phase 6 — the interface stub (<code>fetch_whale_signals</code>) is already wired, so a source just needs plugging in.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
@@ -301,7 +305,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <tbody>
       <tr><td><b>Fear &amp; Greed</b></td><td>Index value + classification + 3-day change (Δ3d)</td><td>Δ3d ≥ <b>+10</b> = fear recovery → buy-signal component</td></tr>
       <tr><td><b>Sentiment spike</b></td><td>z-score of mean sentiment per news category (vs our own news-snapshot history)</td><td>z ≤ <b>−2</b> negative spike → sell component + experiment-event journaling</td></tr>
-      <tr><td><b>Shock estimate</b></td><td>Hourly σ + volume ratio (an honest proxy for liquidation data, <code>estimated: true</code>)</td><td>Above 3σ → breaker/reduce signal</td></tr>
+      <tr><td><b>Shock (real liq.)</b></td><td>OKX real liquidation notional, 1h sum (<code>estimated: false · liq_source: okx</code>) · σ+volume proxy only if the feed is down</td><td>Above threshold (default $5M) → breaker/reduce signal</td></tr>
       <tr><td><b>Anticipation (prediction market)</b></td><td>Polymarket top-market odds, Δodds vs the previous snapshot</td><td>Δodds ≥ <b>+0.05</b>/24h = repricing → buy component</td></tr>
     </tbody>
   </table>
@@ -424,7 +428,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <!-- ═══════════════ STEP 7 ═══════════════ -->
 <section><div class="wrap">
   <h2><span class="no">STEP 7</span>Automation Rules — What the User Decides</h2>
-  <p class="sub">The scope and intensity of automation are entirely user-configured. An automation tick runs every 60 seconds and executes only rules that are "enabled and due".</p>
+  <p class="sub">The scope and intensity of automation are entirely user-configured. An automation tick runs every 60 seconds and executes only rules that are "enabled and due". The UI offers three modes — ① Simple (pick coin &amp; risk appetite only), ② Standard (tune recommended presets), ③ Expert (full parameter control).</p>
   <table>
     <thead><tr><th>Setting</th><th>Range / default</th><th>Meaning</th></tr></thead>
     <tbody>
@@ -634,13 +638,16 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>STEP 4 psychology collection loop</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
       <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>STEP 3 crypto quant path</td><td>—</td></tr>
       <tr><td><code>SCANNER_ENABLED</code></td><td>STEP 2 scanner loop</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
+      <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>Kimchi-premium · DXY cross-market signals</td><td>—</td></tr>
+      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>Block new entries inside macro event windows (default off)</td><td>—</td></tr>
+      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>Real ETF-flow source key (free tier)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
       <tr><td><code>FUSION_W_*</code></td><td>STEP 5 weight tuning</td><td>psych hard-capped at 0.3 — config cannot exceed it</td></tr>
     </tbody>
   </table>
 </div></section>
 
 <footer><div class="wrap">
-  Sooppiy · AI Automated Trading Full-Pipeline Guide · 2026-07-15 · Every figure in this document is the actual implemented value in main-branch code; live values were observed on sooppiy.com on deploy day. Related docs: <a href="/plan.html" style="color:var(--accent)">Implementation Plan</a> · <a href="/framework.html" style="color:var(--accent)">Framework Spec</a>
+  Sooppiy · AI Automated Trading Full-Pipeline Guide · 2026-07-16 · Every figure in this document is the actual implemented value in main-branch code; live values were observed on sooppiy.com on deploy day. Related docs: <a href="/plan.html" style="color:var(--accent)">Implementation Plan</a> · <a href="/framework.html" style="color:var(--accent)">Framework Spec</a>
 </div></footer>
 
 </body>
