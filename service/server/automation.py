@@ -113,10 +113,27 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
         if side == "buy":
             if stop_loss is not None or take_profit is not None:
+                # NEVER LOOSEN an existing exit level: a re-buy previously
+                # overwrote a ratcheted trailing stop with the fresh fixed-pct
+                # level, destroying locked-in protection (panel risk lens).
+                # Computed in Python — SQLite MAX(a,b) vs MySQL GREATEST differ.
                 cursor.execute(
-                    """UPDATE positions SET stop_loss = ?, take_profit = ?
+                    """SELECT stop_loss, take_profit FROM positions
                        WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                    (stop_loss, take_profit, agent_id, market, symbol),
+                    (agent_id, market, symbol))
+                row = cursor.fetchone()
+                existing_sl = row["stop_loss"] if row else None
+                existing_tp = row["take_profit"] if row else None
+                new_sl = max(x for x in (existing_sl, stop_loss) if x is not None) \
+                    if (existing_sl is not None or stop_loss is not None) else None
+                new_tp = max(x for x in (existing_tp, take_profit) if x is not None) \
+                    if (existing_tp is not None or take_profit is not None) else None
+                cursor.execute(
+                    """UPDATE positions
+                       SET stop_loss = ?, take_profit = ?,
+                           exit_policy = COALESCE(exit_policy, 'v1')
+                       WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                    (new_sl, new_tp, agent_id, market, symbol),
                 )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
         else:
@@ -132,6 +149,43 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
 
 
 # ─────────────────────────── one rule ───────────────────────────
+
+def _time_stop_cooldown_blocks(agent_id: int, symbol: str, market: str,
+                               action: Optional[str]) -> Optional[str]:
+    """Skip reason when a recent time-stop exit puts this symbol in cooldown —
+    prevents the close→re-enter fee-bleed loop the time stop would otherwise
+    manufacture (0.2% round trip per cycle). Buys only; fail-open."""
+    if action != "buy":
+        return None
+    try:
+        import strategy_config as scfg
+        hours = scfg.time_stop_cooldown_hours()
+        if hours <= 0:
+            return None
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)) \
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT executed_at FROM signals
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND signal_type = 'automation' AND side = 'sell'
+                     AND content LIKE 'risk: time_stop%'
+                     AND executed_at >= ?
+                   ORDER BY executed_at DESC LIMIT 1""",
+                (agent_id, market, symbol, cutoff))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if row:
+            return (f"time-stop cooldown: {symbol} was time-stopped at "
+                    f"{row['executed_at']} (re-entry blocked {hours}h)")
+    except Exception:  # noqa: BLE001
+        logger.exception("time-stop cooldown check failed (fail-open)")
+    return None
+
 
 def _regime_blocks(regime_read: Optional[dict[str, Any]], action: Optional[str]) -> Optional[str]:
     """Skip reason when the enforced regime forbids this NEW BUY. Sells are
@@ -185,10 +239,10 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         # Confluence telemetry (Phase 1): record the deterministic condition
         # vector alongside every decision — display/journal only until the
         # Phase-4 flip turns it into a gate. Fail-soft.
+        technical = (analysis.get("technical") or {}).get("data") \
+            if isinstance(analysis.get("technical"), dict) else None
         try:
             from confluence import evaluate_confluence
-            technical = (analysis.get("technical") or {}).get("data") \
-                if isinstance(analysis.get("technical"), dict) else None
             result["confluence"] = evaluate_confluence(symbol, market, analysis=technical)
         except Exception as exc:  # noqa: BLE001
             logger.debug("confluence telemetry unavailable for %s: %s", symbol, exc)
@@ -227,6 +281,8 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             # reliable direction; skip new entries inside the release window.
             # Opt-in via EVENT_GUARD_ENABLED (default off).
             result["skip_reason"] = _event_guard_blocks()
+        elif _time_stop_cooldown_blocks(agent_id, symbol, market, action):
+            result["skip_reason"] = _time_stop_cooldown_blocks(agent_id, symbol, market, action)
         elif _regime_blocks(regime_read, action):
             # Phase 2 regime gate — active only when REGIME_FILTER_ENABLED
             # (Phase-4 flip). Blocks new buys in panic/euphoria/event regimes;
@@ -242,10 +298,13 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                 if multiplier != 1.0:
                     quantity *= multiplier
                     result["regime_size_multiplier"] = multiplier
-            # Risk gate (Phase 1): breaker → limits → Kelly. No-op unless
+            # Risk gate: breaker → limits → vol sizing → Kelly. No-op unless
             # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
+            # σ passed is the DAILY sigma (never sigma_24h_pct — hourly units).
             from risk_engine import evaluate_order
-            gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry))
+            sigma_daily = technical.get("sigma_daily_pct") if isinstance(technical, dict) else None
+            gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry),
+                                  sigma_daily_pct=sigma_daily)
             if not gate.allowed:
                 result["skip_reason"] = gate.reason
             else:

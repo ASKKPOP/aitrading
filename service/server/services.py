@@ -301,15 +301,15 @@ def _update_position_from_signal(
             # Create new long position
             if leader_id:
                 cursor.execute("""
-                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, leader_id)
-                    VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?, ?)
-                """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at, leader_id))
+                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, first_opened_at, leader_id)
+                    VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?, ?, ?)
+                """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at, executed_at, leader_id))
                 _logger.info("[Position] %s: created copied long position %s from leader %s", symbol, quantity, leader_id)
             else:
                 cursor.execute("""
-                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at)
-                    VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?)
-                """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at))
+                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, first_opened_at)
+                    VALUES (?, ?, ?, ?, ?, 'long', ?, ?, ?, ?)
+                """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at, executed_at))
                 _logger.info("[Position] %s: created long position %s", symbol, quantity)
 
     elif action_lower == "sell":
@@ -348,15 +348,15 @@ def _update_position_from_signal(
             # Create new short position (negative quantity for short)
             if leader_id:
                 cursor.execute("""
-                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, leader_id)
-                    VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?, ?)
-                """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at, leader_id))
+                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, first_opened_at, leader_id)
+                    VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?, ?, ?)
+                """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at, executed_at, leader_id))
                 _logger.info("[Position] %s: created copied short position %s from leader %s", symbol, quantity, leader_id)
             else:
                 cursor.execute("""
-                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at)
-                    VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?)
-                """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at))
+                    INSERT INTO positions (agent_id, symbol, market, token_id, outcome, side, quantity, entry_price, opened_at, first_opened_at)
+                    VALUES (?, ?, ?, ?, ?, 'short', ?, ?, ?, ?)
+                """, (agent_id, symbol, market, token_id, outcome, -quantity, price, executed_at, executed_at))
                 _logger.info("[Position] %s: created short position %s", symbol, quantity)
 
     elif action_lower == "cover":

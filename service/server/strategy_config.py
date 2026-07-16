@@ -122,3 +122,25 @@ def panic_breaker_minutes() -> int:
     """Auto-tripped per-market breaker expiry. Auto-resume clears ONLY rows
     tripped_by='auto' — a manual admin HALT is never auto-cleared."""
     return _env_int("PANIC_BREAKER_MINUTES", 60)
+
+
+# ── Risk & exits (Phase 3) ──────────────────────────────────────────────────
+
+def vol_sizing_enabled() -> bool:
+    """Phase-4 flip: volatility-based position sizing in the risk gate.
+    Default OFF. Requires sigma_daily (20d DAILY σ) — missing σ rejects buys."""
+    return _env_bool("VOL_SIZING_ENABLED", False)
+
+
+def risk_budget_pct() -> float:
+    """Per-position daily risk budget as % of equity: target notional =
+    equity × budget ÷ σ_daily. Worked example: $100k equity, budget 0.5%,
+    σ_daily 2.45% → target ≈ $20.4k (the v1 hourly-σ bug produced $100k)."""
+    return _env_float("RISK_BUDGET_PCT", 0.5)
+
+
+def time_stop_cooldown_hours() -> int:
+    """After a time-stop exit, block automated re-entry into the same
+    (agent, market, symbol) for this long — prevents a perpetual
+    close→re-enter fee bleed (0.2% round trip per cycle)."""
+    return _env_int("TIME_STOP_COOLDOWN_HOURS", 48)

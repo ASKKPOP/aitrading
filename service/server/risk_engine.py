@@ -50,7 +50,13 @@ DEFAULT_LIMITS = {
     "stop_loss_pct": 0.05,
     "take_profit_pct": 0.10,
     "use_kelly": 1,
+    # Phase-3 exit toolkit — per-agent opt-in, off by default. Applies only to
+    # positions stamped exit_policy='v1' (pre-existing rows are grandfathered).
+    "use_trailing": 0,
+    "trail_pct": 0.05,
+    "time_stop_days": 0,
 }
+_INT_LIMIT_KEYS = {"use_kelly", "use_trailing", "time_stop_days"}
 
 
 def risk_engine_enabled() -> bool:
@@ -78,13 +84,15 @@ def get_risk_limits(agent_id: int, cursor=None) -> dict[str, Any]:
     limits = dict(DEFAULT_LIMITS)
     limits["agent_id"] = agent_id
     if row:
+        row = dict(row)
         for key in DEFAULT_LIMITS:
-            if row[key] is not None:
+            if row.get(key) is not None:
                 limits[key] = row[key]
-        limits["updated_at"] = row["updated_at"]
+        limits["updated_at"] = row.get("updated_at")
     else:
         limits["updated_at"] = None
-    limits["use_kelly"] = int(limits["use_kelly"])
+    for key in _INT_LIMIT_KEYS:
+        limits[key] = int(limits[key])
     return limits
 
 
@@ -99,14 +107,14 @@ def put_risk_limits(agent_id: int, values: dict[str, Any]) -> dict[str, Any]:
     try:
         begin_write_transaction(cursor)
         cursor.execute("DELETE FROM risk_limits WHERE agent_id = ?", (agent_id,))
+        # Column list built from DEFAULT_LIMITS so newly added limit fields
+        # survive every PUT (a hardcoded list silently reset new columns).
+        keys = list(DEFAULT_LIMITS)
+        cast = [int(current[k]) if k in _INT_LIMIT_KEYS else float(current[k]) for k in keys]
         cursor.execute(
-            """INSERT INTO risk_limits
-               (agent_id, max_daily_loss_usd, max_symbol_exposure_usd,
-                stop_loss_pct, take_profit_pct, use_kelly, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (agent_id, float(current["max_daily_loss_usd"]),
-             float(current["max_symbol_exposure_usd"]), float(current["stop_loss_pct"]),
-             float(current["take_profit_pct"]), int(current["use_kelly"]), _now_iso()),
+            f"""INSERT INTO risk_limits (agent_id, {', '.join(keys)}, updated_at)
+                VALUES (?, {', '.join('?' for _ in keys)}, ?)""",
+            (agent_id, *cast, _now_iso()),
         )
         conn.commit()
     finally:
@@ -340,20 +348,26 @@ class GateDecision:
 
 
 def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
-                   quantity: float, price: float) -> GateDecision:
-    """Run an intended automation order through breaker → limits → Kelly.
-    Callers must treat a not-allowed decision as a skip (journal the reason)."""
+                   quantity: float, price: float,
+                   sigma_daily_pct: Optional[float] = None) -> GateDecision:
+    """Run an intended automation order through breaker → limits → vol sizing
+    → Kelly. Callers must treat a not-allowed decision as a skip (journal the
+    reason). sigma_daily_pct is the 20-day DAILY-return σ in % (never the
+    hourly sigma_24h_pct — ~√24 smaller; feeding it here oversizes ~5×)."""
     if not risk_engine_enabled():
         return GateDecision(allowed=True, quantity=quantity)
 
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Sells reduce risk — they pass the gate, including AUTO-tripped
-        # breakers (a panic auto-halt must not trap exits). Only a manual
-        # admin HALT stops them. Blocking exits under a daily-loss lockout
-        # would trap losing positions with no SL/TP registered.
-        if side != "buy":
+        # Gate by RISK DIRECTION, not by side name: buy/short OPEN risk (full
+        # gate); sell/cover REDUCE it. Reducing orders pass the gate, including
+        # AUTO-tripped breakers (a panic auto-halt must not trap exits) — only
+        # a manual admin HALT stops them. Blocking exits under a daily-loss
+        # lockout would trap losing positions with no SL/TP registered.
+        # (Previously any non-buy side bypassed everything, so a future 'short'
+        # would have opened risk ungated — verification-panel risk lens.)
+        if side in ("sell", "cover"):
             halted = _is_halted(cursor, agent_id, market, include_auto=False)
             if halted:
                 return GateDecision(allowed=False, quantity=0.0, reason=f"risk: {halted}")
@@ -382,11 +396,36 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
         )
         exposure = float(cursor.fetchone()["mv"] or 0.0)
 
-        # Kelly sizing first (plan flow ① — only ever shrinks), so the exposure
-        # check below sees the size that would actually be filled. The ½-Kelly
-        # cap is a POSITION cap: existing exposure in the symbol counts against
-        # it, so repeated ticks can't stack orders past the cap.
+        # Volatility sizing (Phase 3, VOL_SIZING_ENABLED): the research's L4 —
+        # position risk budget ÷ volatility. Per-POSITION budget: existing
+        # symbol exposure counts against the target, so repeated ticks can't
+        # stack past it. σ missing → reject (entry-null conservatism; the lazy
+        # fallback would silently produce a full-equity notional). Only ever
+        # shrinks the requested size. Kelly below may shrink further.
         adjustment = None
+        try:
+            import strategy_config as _scfg
+            vol_sizing_on = _scfg.vol_sizing_enabled()
+            risk_budget = _scfg.risk_budget_pct() / 100.0
+        except Exception:  # noqa: BLE001
+            vol_sizing_on, risk_budget = False, 0.005
+        if vol_sizing_on:
+            if sigma_daily_pct is None or sigma_daily_pct <= 0:
+                return GateDecision(
+                    allowed=False, quantity=0.0,
+                    reason="risk: vol sizing on but daily sigma unavailable — buy rejected")
+            equity_now = _equity(cursor, agent_id)
+            target_notional = equity_now * risk_budget / (sigma_daily_pct / 100.0)
+            headroom = target_notional - exposure
+            if headroom < MIN_ORDER_NOTIONAL_USD:
+                return GateDecision(
+                    allowed=False, quantity=0.0,
+                    reason=(f"risk: vol-sizing position target reached "
+                            f"(target ${target_notional:.2f}, held ${exposure:.2f})"))
+            if headroom < quantity * price:
+                adjustment = (f"vol-sizing: ${quantity * price:.2f} → ${headroom:.2f} "
+                              f"(σ_daily {sigma_daily_pct:.2f}%, budget {risk_budget * 100:.2f}%)")
+                quantity = headroom / price
         if int(limits["use_kelly"]) and stats["n_trades"] >= KELLY_MIN_TRADES:
             f_star = kelly_fraction(stats["win_rate"], stats["payoff_ratio"])
             if f_star is not None:
@@ -402,8 +441,9 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                             allowed=False, quantity=0.0,
                             reason=(f"risk: kelly position cap reached "
                                     f"(½f* headroom ${max(cap_notional, 0):.2f})"))
-                    adjustment = (f"kelly: size ${quantity * price:.2f} → ${cap_notional:.2f} "
+                    kelly_note = (f"kelly: size ${quantity * price:.2f} → ${cap_notional:.2f} "
                                   f"(½f*={0.5 * f_star:.3f}, minus ${exposure:.2f} held)")
+                    adjustment = f"{adjustment}; {kelly_note}" if adjustment else kelly_note
                     quantity = cap_notional / price
 
         # Per-symbol exposure cap (existing notional + this order, post-Kelly).
@@ -414,6 +454,12 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                 reason=(f"risk: symbol exposure limit "
                         f"(${exposure:.2f} held + ${quantity * price:.2f} order "
                         f"> ${max_exposure:.2f} cap)"))
+
+        if side != "buy":
+            # 'short' passes the risk checks above but the long-oriented SL/TP
+            # formulas don't apply; short exits also need executor 'cover'
+            # support, which doesn't exist yet (documented Phase-3 deferral).
+            return GateDecision(allowed=True, quantity=quantity, adjustment=adjustment)
 
         limits_sl = float(limits["stop_loss_pct"])
         limits_tp = float(limits["take_profit_pct"])
@@ -428,11 +474,56 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
 
 # ─────────────────────────── SL/TP watcher ───────────────────────────
 
+def _parse_position_ts(value: Optional[str]) -> Optional[datetime]:
+    """Position timestamps exist in two stored formats ('YYYY-MM-DDTHH:MM:SSZ'
+    and SQLite's 'YYYY-MM-DD HH:MM:SS') — parse both, assume UTC."""
+    if not value:
+        return None
+    raw = value.strip().replace("Z", "+00:00")
+    if " " in raw and "T" not in raw:
+        raw = raw.replace(" ", "T")
+    try:
+        dt = datetime.fromisoformat(raw)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _apply_trailing_stop(cursor, pos: dict[str, Any], price: float,
+                         limits: dict[str, Any]) -> bool:
+    """Ratchet the stop up once the position is in profit ≥ 1×trail; once
+    armed, clear take_profit so the trail manages the exit ('let winners
+    ride' — the fixed +10% TP otherwise guillotines every trend before the
+    trail can work). The ratchet NEVER lowers an existing stop. Returns
+    whether a write happened. Only exit_policy='v1' rows reach here."""
+    trail = float(limits.get("trail_pct") or 0)
+    if trail <= 0:
+        return False
+    entry = float(pos["entry_price"])
+    if entry <= 0 or price < entry * (1 + trail):
+        return False  # trail arms at +1×trail profit
+    candidate = price * (1 - trail)
+    existing = pos.get("stop_loss")
+    new_stop = max(candidate, float(existing)) if existing is not None else candidate
+    if existing is not None and new_stop <= float(existing) and pos.get("take_profit") is None:
+        return False  # nothing to change
+    cursor.execute(
+        "UPDATE positions SET stop_loss = ?, take_profit = NULL WHERE id = ?",
+        (new_stop, pos["id"]))
+    return True
+
+
 def run_sltp_watcher_tick() -> dict[str, Any]:
-    """Close long positions whose polled price crossed stop_loss/take_profit.
+    """Close long positions whose polled price crossed stop_loss/take_profit;
+    ratchet trailing stops; time-stop stale losers (Phase 3).
 
     Reads positions.current_price (maintained by the price-update loop) — no
     external calls. Exits bypass the gate: they only reduce risk.
+    Grandfathering: trailing and time stops act ONLY on positions stamped
+    exit_policy='v1' AND agents that opted in via risk_limits (use_trailing /
+    time_stop_days > 0). Pre-existing positions keep the old fixed SL/TP
+    behavior untouched. Effective granularity = the price-poll interval
+    (default 900s), not the 30s tick — a known limitation.
     """
     if not risk_engine_enabled():
         return {"checked": 0, "closed": 0}
@@ -442,16 +533,41 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
     try:
         cursor.execute(
             """SELECT id, agent_id, symbol, market, quantity, current_price,
-                      stop_loss, take_profit
+                      entry_price, stop_loss, take_profit, exit_policy,
+                      first_opened_at
                FROM positions
                WHERE quantity > 0 AND current_price IS NOT NULL
-                 AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL)""")
+                 AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL
+                      OR exit_policy = 'v1')""")
         rows = [dict(r) for r in cursor.fetchall()]
+
+        # Trailing-stop ratchet pass (before trigger checks, same tick).
+        trailed = 0
+        limits_cache: dict[int, dict[str, Any]] = {}
+        for pos in rows:
+            if pos.get("exit_policy") != "v1":
+                continue
+            agent_id = pos["agent_id"]
+            if agent_id not in limits_cache:
+                limits_cache[agent_id] = get_risk_limits(agent_id, cursor=cursor)
+            limits = limits_cache[agent_id]
+            if not int(limits.get("use_trailing") or 0):
+                continue
+            price = float(pos["current_price"])
+            if _apply_trailing_stop(cursor, pos, price, limits):
+                trailed += 1
+                pos["stop_loss"] = max(price * (1 - float(limits["trail_pct"])),
+                                       float(pos["stop_loss"])) \
+                    if pos.get("stop_loss") is not None else price * (1 - float(limits["trail_pct"]))
+                pos["take_profit"] = None
+        if trailed:
+            conn.commit()
     finally:
         conn.close()
 
     from automation import execute_paper_trade
 
+    now = datetime.now(timezone.utc)
     closed = 0
     for pos in rows:
         price = float(pos["current_price"])
@@ -460,6 +576,19 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             trigger = "stop_loss"
         elif pos["take_profit"] is not None and price >= float(pos["take_profit"]):
             trigger = "take_profit"
+        elif pos.get("exit_policy") == "v1":
+            # Time stop: losers older than time_stop_days are cut ("at ~55%
+            # accuracy, cutting losers fast IS the edge"); winners ride.
+            # Anchored to first_opened_at, which average-ins never reset.
+            limits = limits_cache.get(pos["agent_id"])
+            if limits is None:
+                limits = get_risk_limits(pos["agent_id"])
+            days = int(limits.get("time_stop_days") or 0)
+            opened = _parse_position_ts(pos.get("first_opened_at"))
+            if (days > 0 and opened is not None
+                    and price < float(pos["entry_price"])
+                    and (now - opened).days >= days):
+                trigger = "time_stop"
         if not trigger:
             continue
         signal_id, skip = execute_paper_trade(

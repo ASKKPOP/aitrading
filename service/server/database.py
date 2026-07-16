@@ -1136,6 +1136,21 @@ def init_database():
     except Exception:
         pass
 
+    # Phase-3 exit toolkit (parameter-upgrade plan): first_opened_at is set ONCE
+    # at position open and never reset by average-ins (opened_at is reset on
+    # every add-on, so a DCA'd loser would never age into the time stop);
+    # exit_policy tags positions opened under the new exit rules — the watcher's
+    # trailing/time stops apply ONLY to tagged rows (pre-existing positions are
+    # grandfathered untouched).
+    for _ddl in (
+        "ALTER TABLE positions ADD COLUMN first_opened_at TEXT",
+        "ALTER TABLE positions ADD COLUMN exit_policy TEXT",
+    ):
+        try:
+            cursor.execute(_ddl)
+        except Exception:
+            pass
+
     try:
         cursor.execute("ALTER TABLE positions ADD COLUMN token_id TEXT")
     except Exception:
@@ -1913,10 +1928,24 @@ def init_database():
             stop_loss_pct           REAL    NOT NULL DEFAULT 0.05,
             take_profit_pct         REAL    NOT NULL DEFAULT 0.10,
             use_kelly               INTEGER NOT NULL DEFAULT 1,
+            use_trailing            INTEGER NOT NULL DEFAULT 0,
+            trail_pct               REAL    NOT NULL DEFAULT 0.05,
+            time_stop_days          INTEGER NOT NULL DEFAULT 0,
             updated_at              TEXT,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )
     """)
+
+    # Phase-3 exit-toolkit columns for existing DBs (per-agent opt-in; 0 = off).
+    for _ddl in (
+        "ALTER TABLE risk_limits ADD COLUMN use_trailing INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE risk_limits ADD COLUMN trail_pct REAL NOT NULL DEFAULT 0.05",
+        "ALTER TABLE risk_limits ADD COLUMN time_stop_days INTEGER NOT NULL DEFAULT 0",
+    ):
+        try:
+            cursor.execute(_ddl)
+        except Exception:
+            pass
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS breaker_state (
             scope      TEXT PRIMARY KEY,

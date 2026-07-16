@@ -37,6 +37,10 @@ class RiskLimitsIn(BaseModel):
     stop_loss_pct: Optional[float] = None
     take_profit_pct: Optional[float] = None
     use_kelly: Optional[bool] = None
+    # Phase-3 exit toolkit (per-agent opt-in; 0/false disables)
+    use_trailing: Optional[bool] = None
+    trail_pct: Optional[float] = None
+    time_stop_days: Optional[int] = None
 
     @field_validator("max_daily_loss_usd", "max_symbol_exposure_usd")
     @classmethod
@@ -45,11 +49,18 @@ class RiskLimitsIn(BaseModel):
             raise ValueError("must be between 0 and 10,000,000 (0 disables the check)")
         return v
 
-    @field_validator("stop_loss_pct", "take_profit_pct")
+    @field_validator("stop_loss_pct", "take_profit_pct", "trail_pct")
     @classmethod
     def _pct(cls, v):
         if v is not None and (v < 0 or v >= 1):
             raise ValueError("must be 0 <= pct < 1 (0 disables)")
+        return v
+
+    @field_validator("time_stop_days")
+    @classmethod
+    def _days(cls, v):
+        if v is not None and (v < 0 or v > 365):
+            raise ValueError("must be between 0 and 365 (0 disables)")
         return v
 
 
@@ -76,8 +87,9 @@ def register_risk_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def update_limits(data: RiskLimitsIn, authorization: str = Header(None)):
         agent = _auth(authorization)
         values = data.model_dump(exclude_none=True)
-        if "use_kelly" in values:
-            values["use_kelly"] = 1 if values["use_kelly"] else 0
+        for flag in ("use_kelly", "use_trailing"):
+            if flag in values:
+                values[flag] = 1 if values[flag] else 0
         return {"limits": put_risk_limits(agent["id"], values)}
 
     @app.get("/api/risk/breaker")
