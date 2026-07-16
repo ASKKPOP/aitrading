@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Trading — Top 10 Decision Parameters</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue  — price & market data */
+    --series-2: #008300; /* green — microstructure / order book */
+    --series-3: #e87ba4; /* magenta — text & sentiment */
+    --series-4: #eda100; /* yellow — macro & fundamentals */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --seq-650: #104281;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #008300;
+      --series-3: #d55181;
+      --series-4: #c98500;
+      --seq-100: #0d366b;
+      --seq-250: #1c5cab;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+      --buy: #0ca30c;
+      --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 70ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 80ch; }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ranked bars */
+  .rankrow { display: grid; grid-template-columns: 34px 240px 1fr; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; position: relative; cursor: default; }
+  .rankrow:hover { background: color-mix(in oklab, var(--text-primary) 5%, transparent); }
+  .rk { font-size: 15px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .rname { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .rname small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .bartrack { position: relative; height: 18px; }
+  .bar { position: absolute; left: 0; top: 2px; height: 14px; border-radius: 0 4px 4px 0; }
+  .tier { position: absolute; top: 1px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  .tip { display: none; position: absolute; z-index: 5; left: 290px; top: calc(100% - 4px); background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 12px; width: min(460px, 60vw); font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .rankrow:hover .tip { display: block; }
+  .tip b { color: var(--text-primary); }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inbox { border: 1.5px solid; border-radius: 10px; padding: 12px; background: color-mix(in oklab, var(--surface-1) 92%, transparent); }
+  .inbox h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .inbox ul { list-style: none; }
+  .inbox li { font-size: 11.5px; color: var(--text-secondary); padding: 2px 0; }
+  .inbox li b.rkb { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+  .stage { border: 1px solid var(--border); background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); border-radius: 10px; padding: 14px 18px; text-align: center; }
+  .stage h4 { font-size: 13.5px; font-weight: 700; }
+  .stage p { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; max-width: 72ch; margin-left: auto; margin-right: auto; }
+  .stageno { display: inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dbox { border-radius: 10px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .dbox h4 { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; }
+  .dbox p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .dbuy { border-color: var(--buy); }
+  .dbuy h4 { color: var(--buy); }
+  .dsell { border-color: var(--sell); }
+  .dsell h4 { color: var(--sell); }
+  .dhold { border-color: var(--baseline); }
+  .dhold h4 { color: var(--text-secondary); }
+  .loopnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* horizon matrix */
+  table.hz { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .hz th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: center; }
+  .hz th.rowh { text-align: left; font-weight: 600; color: var(--text-primary); font-size: 12px; width: 240px; }
+  .hz td { border-radius: 6px; text-align: center; font-size: 11px; padding: 9px 6px; font-weight: 600; }
+  .hz .c3 { background: var(--seq-450); color: #fff; }
+  .hz .c2 { background: var(--seq-250); color: #0b0b0b; }
+  .hz .c1 { background: var(--seq-100); color: var(--text-primary); }
+  .hz .c0 { background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); color: var(--muted); font-weight: 400; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .hz .c2 { color: #fff; }
+    :root:where(:not([data-theme="light"])) .hz .c1 { color: #c3c2b7; }
+  }
+  .famchip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  footer.src a { color: inherit; }
+  @media (max-width: 720px) {
+    .inputs { grid-template-columns: 1fr 1fr; }
+    .rankrow { grid-template-columns: 26px 150px 1fr; }
+    .tip { left: 10px; width: calc(100vw - 60px); }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>AI Trading: Top 10 Buy/Sell Decision Parameters</h1>
+      <p class="sub">What signals AI and algorithmic trading systems actually feed into their models to decide when to buy and sell — ranked from a deep-research sweep of global academic literature and industry practice, with every claim adversarially fact-checked against primary sources.</p>
+      <span class="stamp">Deep research · 100+ sources verified · July 2026 · Not investment advice</span>
+    </header>
+
+    <!-- ============ 1. RANKING ============ -->
+    <section class="card">
+      <h2 class="sec">① The Top 10 Parameters, Ranked</h2>
+      <p class="secnote">Color shows the data family each parameter belongs to. Hover any row for what it measures and how AI models use it.</p>
+      <div class="legend" role="list">
+        <span><i class="chip" style="background:var(--series-1)"></i>Price &amp; market data</span>
+        <span><i class="chip" style="background:var(--series-2)"></i>Market microstructure</span>
+        <span><i class="chip" style="background:var(--series-3)"></i>Text &amp; sentiment</span>
+        <span><i class="chip" style="background:var(--series-4)"></i>Macro &amp; fundamentals</span>
+      </div>
+
+      <div class="rankrow"><div class="rk">1</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Price momentum / trend<small>12-month return (skip last month), industry momentum</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:100%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> whether price has been persistently rising or falling (trend continuation).<br><b>Why #1:</b> the most informative predictor family across every ML model class in the benchmark study (Gu–Kelly–Xiu, RFS 2020).<br><b>How AI uses it:</b> core return-forecast feature; simple rules use it directly ("price above SMA → buy").</div>
+      </div>
+      <div class="rankrow"><div class="rk">2</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Technical indicators<small>RSI, MACD, SMA/EMA, Stochastic, Williams %R</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:93%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> overbought/oversold conditions and trend strength via engineered price/volume transforms.<br><b>Why #2:</b> the most common ML input features across 138 surveyed studies (2,173 catalogued variables); ~66% of ML stock-prediction studies use them.<br><b>How AI uses it:</b> engineered features fed to classifiers/regressors.</div>
+      </div>
+      <div class="rankrow"><div class="rk">3</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Volume &amp; liquidity<small>Dollar volume, market cap, bid–ask spread</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:86%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> participation/conviction behind moves and how cheaply a position can be traded.<br><b>Why #3:</b> second tier of ML feature importance; ablation tests show performance degrades when volume features are removed.<br><b>How AI uses it:</b> predictor + tradability filter for position sizing.</div>
+      </div>
+      <div class="rankrow"><div class="rk">4</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Volatility &amp; risk<small>Return volatility, idiosyncratic vol, beta</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:79%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> dispersion of returns and systematic-risk exposure.<br><b>Why #4:</b> third tier of leading predictors in all ML model classes.<br><b>How AI uses it:</b> return predictor + position sizing / risk-adjusted signal weighting.</div>
+      </div>
+      <div class="rankrow"><div class="rk">5</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Raw OHLCV price series<small>Open, High, Low, Close, Volume</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:72%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> the unprocessed market record.<br><b>Why #5:</b> the baseline deep-learning input; at minute-level frequency raw price features outranked 13 technical indicators.<br><b>How AI uses it:</b> LSTM/CNN models ingest the raw series and learn representations end-to-end.</div>
+      </div>
+      <div class="rankrow"><div class="rk">6</div>
+        <div class="rname"><i class="chip" style="background:var(--series-2)"></i><span>Limit order book depth<small>10 levels of bids/asks = 40-feature input</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:65%;background:var(--series-2)"></div></div>
+        <div class="tip"><b>Measures:</b> real-time supply and demand — prices &amp; volumes waiting at each depth level.<br><b>Why #6:</b> orders behind the best bid/ask carry ~22% of price discovery; the dominant input at intraday/HFT horizons.<br><b>How AI uses it:</b> standard input for short-horizon deep models (DeepLOB) and execution algorithms.</div>
+      </div>
+      <div class="rankrow"><div class="rk">7</div>
+        <div class="rname"><i class="chip" style="background:var(--series-3)"></i><span>News &amp; social sentiment<small>News wires, X/Twitter, StockTwits, Reddit via NLP</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:58%;background:var(--series-3)"></div></div>
+        <div class="tip"><b>Measures:</b> aggregate market mood extracted by NLP models.<br><b>Why #7:</b> standard industry input; overnight sentiment predicts next-day S&amp;P 500 returns (~6bp per SD, Fed research).<br><b>How AI uses it:</b> converted to numeric sentiment scores per asset/day and merged with price features.</div>
+      </div>
+      <div class="rankrow"><div class="rk">8</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>Macroeconomic data<small>Rates, 10Y yield, PMI, GDP, uncertainty indices</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:51%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>Measures:</b> the discount-rate and growth environment.<br><b>Why #8:</b> one of the three canonical feature families; most useful for index-level and longer-horizon forecasts.<br><b>How AI uses it:</b> slow-moving conditioning features that shift the model's regime (risk-on/risk-off).</div>
+      </div>
+      <div class="rankrow"><div class="rk">9</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>Fundamental data<small>ROE, EPS, valuation ratios</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:44%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>Measures:</b> firm quality and value from financial statements.<br><b>Why #9:</b> canonical family but used in ~23% of studies vs ~66% for technicals; value is a return predictor "everywhere".<br><b>How AI uses it:</b> cross-sectional ranking at weekly–monthly horizons — buy cheap/quality, short expensive/weak.</div>
+      </div>
+      <div class="rankrow"><div class="rk">10</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Mean-reversion signals<small>Deviation from average, pairs spreads, 1-month reversal</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:37%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Measures:</b> how far price (or a spread between related assets) has stretched from its historical average.<br><b>Why #10:</b> the canonical counterpart to momentum; short-term reversal also ranks among top ML features.<br><b>How AI uses it:</b> pairs trading / stat-arb — buy the underpriced leg, sell the overpriced one.</div>
+      </div>
+
+      <p class="axisnote">Bar length reflects rank order (a composite of measured ML feature importance for ranks 1–4 and prevalence of use in the literature for ranks 5–10) — it is not a measured quantity. Sources: Gu–Kelly–Xiu (RFS 2020); Kumbure et al. (2022); Sezer et al. (2020).</p>
+    </section>
+
+    <!-- ============ 2. FLOW ============ -->
+    <section class="card">
+      <h2 class="sec">② Decision Flow: From Data to Buy/Sell</h2>
+      <p class="secnote">How a typical AI trading system turns the 10 parameters into an order. Numbers in brackets refer to the ranking above.</p>
+
+      <div class="flow">
+        <div class="inputs">
+          <div class="inbox" style="border-color:var(--series-1)">
+            <h4><i class="chip" style="background:var(--series-1)"></i>Price &amp; market data</h4>
+            <ul>
+              <li><b class="rkb">#1</b> Momentum / trend</li>
+              <li><b class="rkb">#2</b> Technical indicators</li>
+              <li><b class="rkb">#3</b> Volume &amp; liquidity</li>
+              <li><b class="rkb">#4</b> Volatility</li>
+              <li><b class="rkb">#5</b> Raw OHLCV</li>
+              <li><b class="rkb">#10</b> Mean reversion</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-2)">
+            <h4><i class="chip" style="background:var(--series-2)"></i>Microstructure</h4>
+            <ul>
+              <li><b class="rkb">#6</b> Order book depth</li>
+              <li>Bid/ask imbalance</li>
+              <li>Trade flow</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-3)">
+            <h4><i class="chip" style="background:var(--series-3)"></i>Text &amp; sentiment</h4>
+            <ul>
+              <li><b class="rkb">#7</b> News sentiment</li>
+              <li><b class="rkb">#7</b> Social media (X, Reddit)</li>
+              <li>NLP scoring (BERT, LSTM)</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-4)">
+            <h4><i class="chip" style="background:var(--series-4)"></i>Macro &amp; fundamentals</h4>
+            <ul>
+              <li><b class="rkb">#8</b> Rates, PMI, GDP</li>
+              <li><b class="rkb">#9</b> ROE, EPS, valuation</li>
+              <li>Uncertainty indices</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="arrow">▼<small>collect &amp; align by timestamp</small></div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 1</span>
+          <h4>Feature Engineering</h4>
+          <p>Compute indicator values, momentum windows (e.g., 12-month skip-month), normalize across stocks, score text into sentiment numbers, lag features to avoid look-ahead bias.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 2</span>
+          <h4>AI Model — Return Forecast</h4>
+          <p>Gradient-boosted trees / neural networks (LSTM, CNN) predict expected return or up/down probability per asset. Nonlinear models roughly double the out-of-sample Sharpe ratio vs linear regression (1.35 vs 0.61) on the same inputs.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 3</span>
+          <h4>Signal Generation</h4>
+          <p>Forecasts are ranked or thresholded: strong positive forecast → buy candidate; strong negative → sell/short candidate; weak signal → no trade.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 4</span>
+          <h4>Risk &amp; Position Sizing</h4>
+          <p>Volatility (#4) sets position size; liquidity (#3) caps order size; portfolio constraints and drawdown limits apply. A great signal in an untradable stock is discarded here.</p>
+        </div>
+
+        <div class="arrow">▼<small>send order</small></div>
+
+        <div class="decide">
+          <div class="dbox dbuy"><h4>BUY</h4><p>Execution algo works the order using order-book depth (#6) to minimize impact</p></div>
+          <div class="dbox dhold"><h4>HOLD / NO TRADE</h4><p>Signal below threshold, or trading cost exceeds expected edge</p></div>
+          <div class="dbox dsell"><h4>SELL / SHORT</h4><p>Exit on reversal signal, stop-loss, target hit, or negative forecast</p></div>
+        </div>
+
+        <div class="loopnote">↻ Outcomes feed back into the model — retraining and walk-forward validation close the loop.</div>
+      </div>
+    </section>
+
+    <!-- ============ 3. HORIZON MAP ============ -->
+    <section class="card">
+      <h2 class="sec">③ Which Parameter Matters at Which Horizon</h2>
+      <p class="secnote">Signal usefulness is horizon-dependent: order-book microstructure dominates at seconds–minutes, momentum and technicals at daily horizons, fundamentals and macro at weekly–monthly horizons. Cell shading and label show importance.</p>
+      <table class="hz">
+        <thead>
+          <tr>
+            <th class="rowh">Parameter family</th>
+            <th>HFT / Intraday<br>(seconds–minutes)</th>
+            <th>Short-term<br>(daily)</th>
+            <th>Medium–long<br>(weekly–monthly)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-2)"></i>Order book depth (#6)</th><td class="c3">Dominant</td><td class="c1">Minor</td><td class="c0">—</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Raw OHLCV (#5)</th><td class="c3">Dominant</td><td class="c2">Useful</td><td class="c1">Minor</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Technical indicators (#2)</th><td class="c1">Minor · overfit risk</td><td class="c3">Dominant</td><td class="c2">Useful</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Momentum &amp; reversal (#1, #10)</th><td class="c1">Minor</td><td class="c3">Dominant</td><td class="c3">Dominant</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Volume &amp; liquidity (#3)</th><td class="c2">Useful</td><td class="c2">Useful</td><td class="c2">Useful</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Volatility (#4)</th><td class="c2">Useful</td><td class="c2">Useful</td><td class="c2">Useful</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Sentiment (#7)</th><td class="c1">Minor</td><td class="c3">Dominant</td><td class="c1">Minor</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Fundamentals (#9)</th><td class="c0">—</td><td class="c1">Minor</td><td class="c3">Dominant</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Macro data (#8)</th><td class="c0">—</td><td class="c1">Minor</td><td class="c3">Dominant</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote">Qualitative synthesis of horizon-dependence evidence (Sezer et al. 2020; Prata et al. 2024; Rachev et al. 2025). "—" = rarely used at that horizon.</p>
+    </section>
+
+    <!-- ============ 4. VERIFIED SUCCESS RATES ============ -->
+    <section class="card">
+      <h2 class="sec">④ Verified Success Rates: Chart Patterns vs Human Psychology</h2>
+      <p class="secnote">Deep-research round 2: the famous "% success" numbers for each parameter, adversarially fact-checked against primary peer-reviewed sources. Popular folklore numbers are shown next to what the evidence actually supports. Both camps' headline numbers failed the test.</p>
+      <table class="hz" style="border-spacing:2px">
+        <thead>
+          <tr>
+            <th class="rowh">Parameter / signal</th>
+            <th>Folklore claim</th>
+            <th>Verified number (peer-reviewed)</th>
+            <th>Profitable stand-alone?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Head &amp; Shoulders</th><td class="c0">"80%+ success"</td><td class="c2">5–7%/yr hedged excess return (Savin 2007)</td><td class="c0">No — not on S&amp;P 500 stocks</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Double Bottom</th><td class="c0">"80%+ success"</td><td class="c1">NOT statistically significant on NYSE/AMEX (LMW 2000)</td><td class="c0">Unproven</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>10 classic chart patterns</th><td class="c0">"high reliability"</td><td class="c2">7/10 informative (NYSE) · 10/10 (Nasdaq) — information ≠ profit</td><td class="c0">Authors: no profit implied</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Golden cross / moving average</th><td class="c0">"high win rate"</td><td class="c3">53–54% win rate vs 49% after sell signals (Brock 1992)</td><td class="c0">Vanishes after costs &amp; data-snooping fix</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD alone</th><td class="c0">popular default</td><td class="c1">37–68% win rate, Sharpe 0.28–0.50 (preprint)</td><td class="c0">"Not a strong predictive tool"</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD + RSI combined</th><td class="c0">—</td><td class="c2">78–86% win rate — but no buy-and-hold benchmark, no costs</td><td class="c0">Unproven</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Technical analysis overall</th><td class="c0">"it works"</td><td class="c2">56/95 studies positive (59%) — but evidence inconclusive (Park &amp; Irwin 2007)</td><td class="c0">Inconclusive</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Twitter mood (Bollen 2011)</th><td class="c0">"87.6% accuracy"</td><td class="c1">Based on ~15 test days · FAILED replication: 0 out-of-sample power</td><td class="c0">Hedge fund closed 2012</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Social sentiment (realistic)</th><td class="c0">—</td><td class="c3">50–55% directional accuracy, 8 markets, ~3M tweets (2025)</td><td class="c0">Marginal</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Overnight news/social sentiment</th><td class="c0">—</td><td class="c2">~6bp next-day S&amp;P 500 per SD (Fed research)</td><td class="c0">Real but tiny</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Policy / war / FOMC / VIX effects</th><td class="c0">many claims</td><td class="c0">No quantified claim survived verification this round</td><td class="c0">Open question</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>Bottom line:</b> chart patterns are statistically informative but not proven profitable stand-alone; human-psychology signals add real but modest information (expect 50–55% directional accuracy, not 87.6%). The measured edge comes from combining many weak signals in a nonlinear model — not from any single parameter. Distrust any accuracy claim above ~60% that lacks out-of-sample, cost-adjusted, replicated evidence.</p>
+    </section>
+
+    <!-- ============ 5. FINAL HYBRID STRATEGY ============ -->
+    <section class="card">
+      <h2 class="sec">⑤ Final Hybrid Strategy: Deploying the Top 10 Parameters</h2>
+      <p class="secnote">The conclusion of all research rounds, unified into one strategy. <b>Psychology sets the regime (WHEN)</b>, <b>charts set the trigger (WHAT/at what price)</b>, <b>volume + sentiment confirm</b>, and <b>volatility sets the size</b>. This maps each Top-10 parameter to its place in the 4-layer stack. Trade only on confluence — 4 or more of 6 conditions agreeing.</p>
+      <table class="mx" style="width:100%; border-collapse:separate; border-spacing:2px">
+        <thead>
+          <tr>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Top-10 parameter</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Role in the hybrid strategy</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Buy/sell condition</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:11.5px">
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#1 Momentum / trend</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 2 — direction engine.</b> 12-1 momentum + 200-day MA set long/short bias (the most verified predictors)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B1·B2 / Sell S1·S2</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#2 Technical indicators / patterns</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 3 — trigger.</b> Pattern completion times the entry. Never standalone — 53–54% win rate at best; always requires volume confirmation</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B3 / Sell S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#3 Volume &amp; liquidity</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 3 — confirmation (mandatory).</b> Breakout without volume = trap, skip. Liquidity caps order size in Layer 4</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Confirms B3·S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#4 Volatility &amp; risk</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 4 — sizing.</b> Position size = risk budget ÷ volatility. Stops and volatility targets override every other signal</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Sell S6 (absolute rule)</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#5 Raw OHLCV</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Base data for every layer.</b> The raw material for momentum, indicators, patterns, and volatility</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Foundation</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-2)"></i>#6 Order book depth</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Execution stage.</b> After the decision, work the order to minimize market impact. Not used for prediction unless trading intraday</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Execution</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-3)"></i>#7 News &amp; social sentiment</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 regime + Layer 3 confirmation + veto power.</b> Overnight sentiment confirms (B4), euphoria extreme = contrarian sell (S4), sentiment collapsing on real news vetoes buy signals</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B4·B5 / Sell S4·S5 / Veto</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#8 Macro data</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 — event calendar.</b> No new entries within ±1 day of FOMC/CPI/elections. Used as a timing/risk filter only, not a return predictor</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B6 / Sell S5</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#9 Fundamentals</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 2 support — stock selection.</b> At weekly–monthly horizons, decides which names enter the candidate pool (cheap/quality first)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Candidate filter</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#10 Mean reversion</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Contrarian special.</b> VIX &gt; 30 + extreme fear + price stabilizing → half-size panic buy. Activates only at psychology extremes</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B5 (panic buy)</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>Execution summary:</b> ① VIX &amp; events set the mode (trend / contrarian / stand-aside) → ② momentum + MA set direction → ③ pattern + volume + sentiment confirm the trigger → ④ volatility sets size; the stop-loss is absolute. Act only at 4+ of 6 conditions. Realistic target accuracy is 55–58% — the edge comes from stacking signals, skipping event windows, and cutting losers early, not from prediction. See the "hybrid-strategy" artifact for the full checklists. Not investment advice.</p>
+    </section>
+
+    <footer class="src">
+      <b>Key sources:</b> Gu, Kelly &amp; Xiu (2020) <i>Review of Financial Studies</i> · Asness, Moskowitz &amp; Pedersen (2013) <i>Journal of Finance</i> · Kumbure et al. (2022) <i>Expert Systems with Applications</i> · Sezer et al. (2020) <i>Applied Soft Computing</i> · <i>Communications of the ACM</i> Algorithmic Trading Review · Prata et al. (2024) <i>Artificial Intelligence Review</i> · Dinh &amp; Kwon (2018) <i>Informatics</i> · Lo, Mamaysky &amp; Wang (2000) &amp; Brock et al. (1992) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Lachanski &amp; Pav (2017) <i>Econ Journal Watch</i>.
+      <br><b>Caveats:</b> ranks 1–4 follow measured ML feature importance (US data through 2016, gross returns); ranks 5–10 reflect prevalence of use. Gains concentrate in small caps and shrink after transaction costs. Proprietary hedge-fund feature sets are not publicly observable. This is a description of what systems use as inputs — not investment advice and not a claim of profitability.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

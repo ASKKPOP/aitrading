@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 트레이딩 — 매수/매도 의사결정 핵심 파라미터 TOP 10</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue  — 가격·시장 데이터 */
+    --series-2: #008300; /* green — 시장 미시구조 */
+    --series-3: #e87ba4; /* magenta — 텍스트·감성 */
+    --series-4: #eda100; /* yellow — 거시·펀더멘털 */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --seq-650: #104281;
+    --buy: #d03b3b;  /* 한국 관례: 매수=빨강 */
+    --sell: #2a78d6; /* 한국 관례: 매도=파랑 */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #008300;
+      --series-3: #d55181;
+      --series-4: #c98500;
+      --seq-100: #0d366b;
+      --seq-250: #1c5cab;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+      --buy: #e66767;
+      --sell: #3987e5;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 70ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 80ch; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  .rankrow { display: grid; grid-template-columns: 34px 250px 1fr; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; position: relative; cursor: default; }
+  .rankrow:hover { background: color-mix(in oklab, var(--text-primary) 5%, transparent); }
+  .rk { font-size: 15px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .rname { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .rname small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .bartrack { position: relative; height: 18px; }
+  .bar { position: absolute; left: 0; top: 2px; height: 14px; border-radius: 0 4px 4px 0; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  .tip { display: none; position: absolute; z-index: 5; left: 300px; top: calc(100% - 4px); background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 12px; width: min(460px, 60vw); font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .rankrow:hover .tip { display: block; }
+  .tip b { color: var(--text-primary); }
+
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inbox { border: 1.5px solid; border-radius: 10px; padding: 12px; background: color-mix(in oklab, var(--surface-1) 92%, transparent); }
+  .inbox h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .inbox ul { list-style: none; }
+  .inbox li { font-size: 11.5px; color: var(--text-secondary); padding: 2px 0; }
+  .inbox li b.rkb { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+  .stage { border: 1px solid var(--border); background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); border-radius: 10px; padding: 14px 18px; text-align: center; }
+  .stage h4 { font-size: 13.5px; font-weight: 700; }
+  .stage p { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; max-width: 72ch; margin-left: auto; margin-right: auto; }
+  .stageno { display: inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dbox { border-radius: 10px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .dbox h4 { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; }
+  .dbox p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .dbuy { border-color: var(--buy); }
+  .dbuy h4 { color: var(--buy); }
+  .dsell { border-color: var(--sell); }
+  .dsell h4 { color: var(--sell); }
+  .dhold { border-color: var(--baseline); }
+  .dhold h4 { color: var(--text-secondary); }
+  .loopnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  table.hz { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .hz th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: center; }
+  .hz th.rowh { text-align: left; font-weight: 600; color: var(--text-primary); font-size: 12px; width: 250px; }
+  .hz td { border-radius: 6px; text-align: center; font-size: 11px; padding: 9px 6px; font-weight: 600; }
+  .hz .c3 { background: var(--seq-450); color: #fff; }
+  .hz .c2 { background: var(--seq-250); color: #0b0b0b; }
+  .hz .c1 { background: var(--seq-100); color: var(--text-primary); }
+  .hz .c0 { background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); color: var(--muted); font-weight: 400; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .hz .c2 { color: #fff; }
+    :root:where(:not([data-theme="light"])) .hz .c1 { color: #c3c2b7; }
+  }
+  .famchip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .inputs { grid-template-columns: 1fr 1fr; }
+    .rankrow { grid-template-columns: 26px 160px 1fr; }
+    .tip { left: 10px; width: calc(100vw - 60px); }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>AI 트레이딩: 매수/매도 의사결정 핵심 파라미터 TOP 10</h1>
+      <p class="sub">AI·알고리즘 트레이딩 시스템이 실제로 매수/매도 시점을 결정할 때 모델에 입력하는 신호(파라미터)를 순위별로 정리했습니다. 전 세계 학술 문헌과 업계 사례를 딥 리서치로 조사하고, 모든 주장을 원전(1차 출처) 대조 검증을 거쳐 확인했습니다.</p>
+      <span class="stamp">딥 리서치 · 100+ 출처 검증 · 2026년 7월 · 투자 조언 아님</span>
+    </header>
+
+    <!-- ============ 1. 순위 ============ -->
+    <section class="card">
+      <h2 class="sec">① 핵심 파라미터 TOP 10 순위</h2>
+      <p class="secnote">색상은 각 파라미터가 속한 데이터 계열을 나타냅니다. 각 행에 마우스를 올리면 측정 대상과 AI 모델의 활용 방식이 표시됩니다.</p>
+      <div class="legend" role="list">
+        <span><i class="chip" style="background:var(--series-1)"></i>가격·시장 데이터</span>
+        <span><i class="chip" style="background:var(--series-2)"></i>시장 미시구조</span>
+        <span><i class="chip" style="background:var(--series-3)"></i>텍스트·감성</span>
+        <span><i class="chip" style="background:var(--series-4)"></i>거시·펀더멘털</span>
+      </div>
+
+      <div class="rankrow"><div class="rk">1</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>가격 모멘텀 / 추세<small>최근 1개월 제외 12개월 수익률, 업종 모멘텀</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:100%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 가격이 지속적으로 상승/하락하고 있는지(추세 지속성).<br><b>1위인 이유:</b> 벤치마크 연구(Gu–Kelly–Xiu, RFS 2020)에서 모든 ML 모델 유형에 걸쳐 가장 예측력이 높은 변수군.<br><b>AI 활용법:</b> 수익률 예측의 핵심 피처. 단순 전략은 직접 사용("가격이 이동평균 위 → 매수").</div>
+      </div>
+      <div class="rankrow"><div class="rk">2</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>기술적 지표<small>RSI, MACD, 이동평균(SMA/EMA), 스토캐스틱, Williams %R</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:93%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 과매수/과매도 상태와 추세 강도(가격·거래량 가공 지표).<br><b>2위인 이유:</b> 138편의 논문(입력변수 2,173개 목록화)에서 가장 많이 쓰인 ML 입력 피처. ML 주가예측 연구의 약 66%가 사용.<br><b>AI 활용법:</b> 가공 피처로 분류/회귀 모델에 입력.</div>
+      </div>
+      <div class="rankrow"><div class="rk">3</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>거래량·유동성<small>거래대금, 시가총액, 호가 스프레드</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:86%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 가격 움직임의 시장 참여도·확신도, 그리고 거래 비용(체결 용이성).<br><b>3위인 이유:</b> ML 피처 중요도 2위 그룹. 거래량 피처를 제거하면 신경망 성능이 저하됨이 실험으로 확인.<br><b>AI 활용법:</b> 예측 변수 + 포지션 규모를 제한하는 거래가능성 필터.</div>
+      </div>
+      <div class="rankrow"><div class="rk">4</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>변동성·리스크<small>수익률 변동성, 고유 변동성, 베타</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:79%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 수익률의 산포도와 시장(체계적) 리스크 노출.<br><b>4위인 이유:</b> 모든 ML 모델 유형에서 상위 예측 변수 3그룹에 포함.<br><b>AI 활용법:</b> 수익률 예측 변수 + 포지션 규모 결정/리스크 조정 가중치.</div>
+      </div>
+      <div class="rankrow"><div class="rk">5</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>원시 OHLCV 시계열<small>시가·고가·저가·종가·거래량</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:72%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 가공하지 않은 시장 기록 그 자체.<br><b>5위인 이유:</b> 딥러닝 모델의 기본 입력. 분 단위 초단기에서는 원시 가격 피처가 기술적 지표 13종보다 중요도가 높았음.<br><b>AI 활용법:</b> LSTM/CNN이 원시 시계열을 그대로 입력받아 표현을 스스로 학습.</div>
+      </div>
+      <div class="rankrow"><div class="rk">6</div>
+        <div class="rname"><i class="chip" style="background:var(--series-2)"></i><span>호가창(LOB) 심도<small>매수/매도 10호가 = 40개 피처 입력</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:65%;background:var(--series-2)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 실시간 수요·공급 — 각 호가 단계에 대기 중인 가격과 수량.<br><b>6위인 이유:</b> 최우선호가 뒤의 주문이 가격발견의 약 22%를 담당. 초단타/장중 구간에서 가장 지배적인 입력.<br><b>AI 활용법:</b> 단기 딥러닝 모델(DeepLOB)과 주문 집행 알고리즘의 표준 입력.</div>
+      </div>
+      <div class="rankrow"><div class="rk">7</div>
+        <div class="rname"><i class="chip" style="background:var(--series-3)"></i><span>뉴스·소셜 감성<small>뉴스, X(트위터), StockTwits, 레딧 → NLP 분석</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:58%;background:var(--series-3)"></div></div>
+        <div class="tip"><b>측정 대상:</b> NLP 모델로 추출한 시장 심리(감성) 총합.<br><b>7위인 이유:</b> 업계 표준 입력. 장외 시간(야간) 감성이 다음 날 S&amp;P 500 수익률을 예측(표준편차당 약 6bp, 연준 연구).<br><b>AI 활용법:</b> 종목별/일별 감성 점수로 수치화하여 가격 피처와 결합.</div>
+      </div>
+      <div class="rankrow"><div class="rk">8</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>거시경제 데이터<small>금리, 미국채 10년물, PMI, GDP, 불확실성 지수</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:51%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 할인율과 성장 환경(경기 국면).<br><b>8위인 이유:</b> 3대 표준 피처 계열 중 하나. 지수 단위·장기 예측에 특히 유용.<br><b>AI 활용법:</b> 느리게 변하는 조건 변수로 모델의 국면(리스크온/오프)을 전환.</div>
+      </div>
+      <div class="rankrow"><div class="rk">9</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>펀더멘털 데이터<small>ROE, EPS, 밸류에이션 비율</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:44%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 재무제표 기반 기업의 질과 가치.<br><b>9위인 이유:</b> 표준 피처 계열이지만 사용 비중은 기술적 지표(66%)보다 낮은 약 23%. 밸류는 "어디서나" 통하는 수익률 예측 변수.<br><b>AI 활용법:</b> 주간~월간 구간의 종목 간 상대 순위 — 저평가·우량주 매수, 고평가·부실주 매도.</div>
+      </div>
+      <div class="rankrow"><div class="rk">10</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>평균회귀 신호<small>평균 대비 이탈도, 페어 스프레드, 1개월 반전</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:37%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>측정 대상:</b> 가격(또는 관련 자산 간 스프레드)이 과거 평균에서 얼마나 벗어났는지.<br><b>10위인 이유:</b> 모멘텀과 짝을 이루는 양대 전략 축. 단기(1개월) 반전은 ML 피처 중요도 최상위권에도 포함.<br><b>AI 활용법:</b> 페어 트레이딩/통계적 차익거래 — 저평가된 쪽 매수, 고평가된 쪽 매도.</div>
+      </div>
+
+      <p class="axisnote">막대 길이는 순위(1~4위는 측정된 ML 피처 중요도, 5~10위는 문헌 내 사용 빈도의 종합)를 나타내며, 측정된 수치가 아닙니다. 출처: Gu–Kelly–Xiu (RFS 2020); Kumbure 외 (2022); Sezer 외 (2020).</p>
+    </section>
+
+    <!-- ============ 2. 플로우 ============ -->
+    <section class="card">
+      <h2 class="sec">② 의사결정 플로우: 데이터에서 매수/매도까지</h2>
+      <p class="secnote">일반적인 AI 트레이딩 시스템이 10가지 파라미터를 주문으로 바꾸는 과정입니다. 괄호 안 번호는 위 순위를 가리킵니다.</p>
+
+      <div class="flow">
+        <div class="inputs">
+          <div class="inbox" style="border-color:var(--series-1)">
+            <h4><i class="chip" style="background:var(--series-1)"></i>가격·시장 데이터</h4>
+            <ul>
+              <li><b class="rkb">#1</b> 모멘텀 / 추세</li>
+              <li><b class="rkb">#2</b> 기술적 지표</li>
+              <li><b class="rkb">#3</b> 거래량·유동성</li>
+              <li><b class="rkb">#4</b> 변동성</li>
+              <li><b class="rkb">#5</b> 원시 OHLCV</li>
+              <li><b class="rkb">#10</b> 평균회귀</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-2)">
+            <h4><i class="chip" style="background:var(--series-2)"></i>시장 미시구조</h4>
+            <ul>
+              <li><b class="rkb">#6</b> 호가창 심도</li>
+              <li>매수/매도 호가 불균형</li>
+              <li>체결 흐름</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-3)">
+            <h4><i class="chip" style="background:var(--series-3)"></i>텍스트·감성</h4>
+            <ul>
+              <li><b class="rkb">#7</b> 뉴스 감성</li>
+              <li><b class="rkb">#7</b> 소셜 미디어 (X, 레딧)</li>
+              <li>NLP 점수화 (BERT, LSTM)</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-4)">
+            <h4><i class="chip" style="background:var(--series-4)"></i>거시·펀더멘털</h4>
+            <ul>
+              <li><b class="rkb">#8</b> 금리, PMI, GDP</li>
+              <li><b class="rkb">#9</b> ROE, EPS, 밸류에이션</li>
+              <li>불확실성 지수</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="arrow">▼<small>수집 후 시점(타임스탬프) 정렬</small></div>
+
+        <div class="stage">
+          <span class="stageno">1단계</span>
+          <h4>피처 엔지니어링</h4>
+          <p>지표 계산, 모멘텀 윈도우 설정(예: 최근 1개월 제외 12개월), 종목 간 정규화, 텍스트의 감성 점수화, 미래참조(look-ahead) 편향 방지를 위한 시차 적용.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">2단계</span>
+          <h4>AI 모델 — 수익률 예측</h4>
+          <p>그래디언트 부스팅 트리 / 신경망(LSTM, CNN)이 종목별 기대수익률 또는 상승/하락 확률을 예측. 동일한 입력에서 비선형 모델은 선형 회귀 대비 표본외 샤프지수를 약 2배로 개선(1.35 vs 0.61).</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">3단계</span>
+          <h4>시그널 생성</h4>
+          <p>예측값을 순위화하거나 임계값과 비교: 강한 양(+)의 예측 → 매수 후보, 강한 음(−)의 예측 → 매도/공매도 후보, 약한 신호 → 거래 안 함.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">4단계</span>
+          <h4>리스크 관리·포지션 규모 결정</h4>
+          <p>변동성(#4)으로 포지션 크기를 정하고, 유동성(#3)으로 주문 규모를 제한. 포트폴리오 제약과 손실 한도 적용. 신호가 좋아도 거래 불가능한 종목은 여기서 걸러짐.</p>
+        </div>
+
+        <div class="arrow">▼<small>주문 전송</small></div>
+
+        <div class="decide">
+          <div class="dbox dbuy"><h4>매수</h4><p>집행 알고리즘이 호가창 심도(#6)를 활용해 시장 충격을 최소화하며 주문 체결</p></div>
+          <div class="dbox dhold"><h4>보유 / 관망</h4><p>신호가 임계값 미달이거나, 거래 비용이 기대 수익을 초과</p></div>
+          <div class="dbox dsell"><h4>매도 / 공매도</h4><p>반전 신호, 손절 라인, 목표가 도달, 또는 음(−)의 예측 시 청산</p></div>
+        </div>
+
+        <div class="loopnote">↻ 거래 결과는 모델에 피드백 — 재학습과 워크포워드 검증으로 루프가 완성됩니다.</div>
+      </div>
+    </section>
+
+    <!-- ============ 3. 투자기간 맵 ============ -->
+    <section class="card">
+      <h2 class="sec">③ 투자 기간(호라이즌)별 파라미터 중요도</h2>
+      <p class="secnote">신호의 유용성은 투자 기간에 따라 달라집니다. 초~분 단위에서는 호가창 미시구조가, 일 단위에서는 모멘텀·기술적 지표가, 주~월 단위에서는 펀더멘털·거시 데이터가 지배적입니다. 셀의 음영과 라벨이 중요도를 나타냅니다.</p>
+      <table class="hz">
+        <thead>
+          <tr>
+            <th class="rowh">파라미터 계열</th>
+            <th>초단타 / 장중<br>(초~분)</th>
+            <th>단기<br>(일 단위)</th>
+            <th>중장기<br>(주~월 단위)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-2)"></i>호가창 심도 (#6)</th><td class="c3">지배적</td><td class="c1">보조적</td><td class="c0">—</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>원시 OHLCV (#5)</th><td class="c3">지배적</td><td class="c2">유용</td><td class="c1">보조적</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>기술적 지표 (#2)</th><td class="c1">보조적 · 과적합 위험</td><td class="c3">지배적</td><td class="c2">유용</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>모멘텀·반전 (#1, #10)</th><td class="c1">보조적</td><td class="c3">지배적</td><td class="c3">지배적</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>거래량·유동성 (#3)</th><td class="c2">유용</td><td class="c2">유용</td><td class="c2">유용</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>변동성 (#4)</th><td class="c2">유용</td><td class="c2">유용</td><td class="c2">유용</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>감성 (#7)</th><td class="c1">보조적</td><td class="c3">지배적</td><td class="c1">보조적</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>펀더멘털 (#9)</th><td class="c0">—</td><td class="c1">보조적</td><td class="c3">지배적</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>거시 데이터 (#8)</th><td class="c0">—</td><td class="c1">보조적</td><td class="c3">지배적</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote">기간 의존성 근거의 정성적 종합 (Sezer 외 2020; Prata 외 2024; Rachev 외 2025). "—" = 해당 기간에서 거의 사용되지 않음.</p>
+    </section>
+
+    <!-- ============ 4. 검증된 성공률 ============ -->
+    <section class="card">
+      <h2 class="sec">④ 검증된 성공률: 차트 패턴 vs 인간 심리</h2>
+      <p class="secnote">딥 리서치 2차: 각 파라미터에 대해 널리 알려진 "성공률(%)" 주장을 동료검증(peer-review)된 원전과 대조 검증했습니다. 속설(folklore) 수치와 실제 증거가 뒷받침하는 수치를 나란히 표시합니다. 양 진영의 대표 수치 모두 검증을 통과하지 못했습니다.</p>
+      <table class="hz" style="border-spacing:2px">
+        <thead>
+          <tr>
+            <th class="rowh">파라미터 / 신호</th>
+            <th>속설(통념) 주장</th>
+            <th>검증된 수치 (동료검증 문헌)</th>
+            <th>단독 전략으로 수익?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>헤드 앤 숄더</th><td class="c0">"성공률 80%+"</td><td class="c2">헤지 기준 연 5–7% 초과수익 (Savin 2007)</td><td class="c0">아니오 — S&amp;P 500 종목에선 증거 없음</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>이중 바닥</th><td class="c0">"성공률 80%+"</td><td class="c1">NYSE/AMEX에서 통계적으로 유의하지 않음 (LMW 2000)</td><td class="c0">입증 안 됨</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>고전 차트 패턴 10종</th><td class="c0">"높은 신뢰도"</td><td class="c2">10종 중 7종 정보성 있음(NYSE) · 10종(나스닥) — 정보 ≠ 수익</td><td class="c0">저자들: 수익성 함의 없음</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>골든크로스 / 이동평균</th><td class="c0">"높은 승률"</td><td class="c3">매수 후 승률 53–54% vs 매도 후 49% (Brock 1992)</td><td class="c0">비용·데이터스누핑 보정 후 소멸</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD 단독</th><td class="c0">대중적 기본값</td><td class="c1">승률 37–68%, 샤프 0.28–0.50 (프리프린트)</td><td class="c0">"강한 예측 도구 아님"</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD + RSI 결합</th><td class="c0">—</td><td class="c2">승률 78–86% — 단, 단순보유 대비 비교·비용 반영 없음</td><td class="c0">입증 안 됨</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>기술적 분석 전반</th><td class="c0">"통한다"</td><td class="c2">95개 연구 중 56개(59%) 긍정 — 그러나 증거는 비결정적 (Park &amp; Irwin 2007)</td><td class="c0">결론 불충분</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>트위터 무드 (Bollen 2011)</th><td class="c0">"정확도 87.6%"</td><td class="c1">검증 표본 약 15거래일 · 재현 실패: 표본외 예측력 0</td><td class="c0">관련 헤지펀드 2012년 폐쇄</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>소셜 감성 (현실적 수치)</th><td class="c0">—</td><td class="c3">방향 예측 정확도 50–55%, 8개 시장, 트윗 약 300만 건 (2025)</td><td class="c0">미미한 수준</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>야간(장외) 뉴스·소셜 감성</th><td class="c0">—</td><td class="c2">표준편차당 다음 날 S&amp;P 500 약 6bp (연준 연구)</td><td class="c0">실재하나 매우 작음</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>정책 / 전쟁 / FOMC / VIX 효과</th><td class="c0">주장 다수</td><td class="c0">이번 검증에서 수치화된 주장이 하나도 통과하지 못함</td><td class="c0">미해결 과제</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>결론:</b> 차트 패턴은 통계적 정보는 담고 있으나 단독 전략으로서의 수익성은 입증되지 않았습니다. 인간 심리 신호(뉴스·소셜 감성)는 실재하지만 크기가 작은 정보를 더합니다(기대치는 87.6%가 아니라 방향 정확도 50–55%). 측정된 우위는 어느 한 파라미터가 아니라, 여러 약한 신호를 비선형 모델로 결합하는 데서 나옵니다. 표본외·비용반영·재현 검증이 없는 60% 이상의 정확도 주장은 신뢰하지 마세요.</p>
+    </section>
+
+    <!-- ============ 5. 최종 하이브리드 전략 ============ -->
+    <section class="card">
+      <h2 class="sec">⑤ 최종 하이브리드 전략: TOP 10 파라미터의 실전 배치</h2>
+      <p class="secnote">모든 리서치의 결론을 하나의 전략으로 통합한 최종 프레임워크입니다. <b>심리가 국면(언제)</b>을 정하고, <b>차트가 트리거(무엇을·어느 가격에)</b>를 정하며, <b>거래량+감성이 확인</b>하고, <b>변동성이 규모</b>를 정합니다. 위 TOP 10 파라미터 각각이 4단 레이어 중 어디에 배치되는지 보여줍니다. 6개 조건 중 4개 이상 일치(컨플루언스)할 때만 매매합니다.</p>
+      <table class="mx" style="width:100%; border-collapse:separate; border-spacing:2px">
+        <thead>
+          <tr>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">TOP 10 파라미터</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">하이브리드 전략에서의 역할</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">매수/매도 조건</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:11.5px">
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#1 모멘텀 / 추세</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 2 — 방향 엔진.</b> 12-1 모멘텀 + 200일 이동평균으로 롱/숏 편향 결정 (가장 검증된 예측 변수)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매수 B1·B2 / 매도 S1·S2</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#2 기술적 지표 / 패턴</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 3 — 트리거.</b> 패턴 완성 시점이 진입 타이밍. 단독 사용 금지 — 승률 53–54%에 불과, 반드시 거래량 확인 동반</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매수 B3 / 매도 S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#3 거래량·유동성</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 3 — 확인(필수).</b> 거래량 없는 돌파 = 함정, 건너뜀. 유동성은 레이어 4에서 주문 규모 상한</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">B3·S3의 확인 조건</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#4 변동성·리스크</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 4 — 규모 결정.</b> 포지션 규모 = 리스크 예산 ÷ 변동성. 손절·변동성 목표는 모든 신호에 우선</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매도 S6 (절대 규칙)</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#5 원시 OHLCV</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>전 레이어의 기초 데이터.</b> 모멘텀·지표·패턴·변동성 계산의 원료</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">전체 기반</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-2)"></i>#6 호가창 심도</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>주문 집행 단계.</b> 매수/매도 결정 후 시장 충격 최소화하며 체결. 단타가 아니라면 예측용으로는 사용하지 않음</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">체결 최적화</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-3)"></i>#7 뉴스·소셜 감성</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 1 국면 + 레이어 3 확인 + 비토권.</b> 야간 감성으로 확인(B4), 유포리아 극단은 역발상 매도(S4), 실제 악재로 감성 붕괴 시 매수신호 거부(비토)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매수 B4·B5 / 매도 S4·S5 / 비토</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#8 거시경제 데이터</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 1 — 이벤트 캘린더.</b> FOMC/CPI/선거 ±1일 신규 진입 금지. 수익 예측이 아닌 타이밍·리스크 필터로만 사용</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매수 B6 / 매도 S5</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#9 펀더멘털</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>레이어 2 보조 — 종목 선별.</b> 주~월 단위에서 어떤 종목을 후보군에 넣을지 결정 (저평가·우량 우선)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">후보군 필터</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#10 평균회귀</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>역발상 스페셜.</b> VIX &gt; 30 + 공포 극단 + 가격 안정화 → 절반 규모 패닉 매수. 심리 극단에서만 발동</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">매수 B5 (패닉 매수)</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>실행 규칙 요약:</b> ① VIX·이벤트로 모드 결정(추세/역발상/관망) → ② 모멘텀+이동평균으로 방향 → ③ 패턴+거래량+감성으로 트리거 확인 → ④ 변동성으로 규모, 손절은 절대 규칙. 6개 조건 중 4개 이상일 때만 행동. 현실적 목표 정확도는 55–58%이며, 우위는 예측력이 아니라 신호 중첩·이벤트 회피·손실 조기 차단에서 나옵니다. 상세 체크리스트는 "하이브리드 전략" 아티팩트 참조. 투자 조언이 아닙니다.</p>
+    </section>
+
+    <footer class="src">
+      <b>주요 출처:</b> Gu, Kelly &amp; Xiu (2020) <i>Review of Financial Studies</i> · Asness, Moskowitz &amp; Pedersen (2013) <i>Journal of Finance</i> · Kumbure 외 (2022) <i>Expert Systems with Applications</i> · Sezer 외 (2020) <i>Applied Soft Computing</i> · <i>Communications of the ACM</i> 알고리즘 트레이딩 리뷰 · Prata 외 (2024) <i>Artificial Intelligence Review</i> · Dinh &amp; Kwon (2018) <i>Informatics</i> · Lo, Mamaysky &amp; Wang (2000)·Brock 외 (1992) <i>Journal of Finance</i> · Savin 외 (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Lachanski &amp; Pav (2017) <i>Econ Journal Watch</i>.
+      <br><b>유의사항:</b> 1~4위는 측정된 ML 피처 중요도(2016년까지의 미국 데이터, 거래비용 차감 전 수익률) 기준이며, 5~10위는 사용 빈도 기준입니다. 성과는 소형주에 집중되고 거래비용 차감 후 감소합니다. 헤지펀드의 실제(비공개) 피처 구성은 관찰 불가합니다. 본 자료는 시스템이 어떤 입력을 사용하는지에 대한 설명이며, 투자 조언이나 수익성 보장이 아닙니다. 매수/매도 색상은 한국 관례(상승=빨강, 하락=파랑)를 따랐습니다.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,242 @@
+{
+  "generated_at": "2026-07-16T13:36:29Z",
+  "pre_registered": {
+    "primary_config": {
+      "confluence_min": 4,
+      "volume_confirm_min": 1.5
+    },
+    "tuning_grid_size": 6,
+    "folds": [
+      [
+        "F1",
+        "2021-07-01",
+        "2022-12-31"
+      ],
+      [
+        "F2",
+        "2023-01-01",
+        "2024-03-31"
+      ],
+      [
+        "F3",
+        "2024-04-01",
+        "2025-06-30"
+      ],
+      [
+        "F4",
+        "2025-07-01",
+        "2026-07-15"
+      ]
+    ],
+    "purge_days": 14,
+    "criteria": "≥400 pooled OOS trades; Wilson90 LB(win) > 0.50; bootstrap90 LB(PF) > 1.0; worst-asset maxDD ≤ 30%"
+  },
+  "scope_note": "B4 null throughout (no sentiment archive); B3 degraded (MA/RSI/volume only); B5 F&G leg only; S5 null — the backtested gate is STRICTER than and different from the live gate; only evaluated conditions earn default-on.",
+  "primary": {
+    "per_fold": {
+      "F1": {
+        "window": "2021-07-01 → 2022-12-31",
+        "trades": 19,
+        "wins": 7,
+        "win_rate": 0.3684,
+        "wilson_lb_90": 0.2424,
+        "profit_factor": 1.8176,
+        "pf_bootstrap_lb_90": 0.8251,
+        "worst_asset_max_dd_pct": 2.07,
+        "per_asset": {
+          "BTC": 2,
+          "ETH": 7,
+          "SOL": 10
+        }
+      },
+      "F2": {
+        "window": "2023-01-01 → 2024-03-31",
+        "trades": 6,
+        "wins": 2,
+        "win_rate": 0.3333,
+        "wilson_lb_90": 0.1477,
+        "profit_factor": 0.6876,
+        "pf_bootstrap_lb_90": 0.123,
+        "worst_asset_max_dd_pct": 2.63,
+        "per_asset": {
+          "BTC": 2,
+          "ETH": 1,
+          "SOL": 3
+        }
+      },
+      "F3": {
+        "window": "2024-04-01 → 2025-06-30",
+        "trades": 7,
+        "wins": 5,
+        "win_rate": 0.7143,
+        "wilson_lb_90": 0.4725,
+        "profit_factor": 6.5288,
+        "pf_bootstrap_lb_90": 2.1525,
+        "worst_asset_max_dd_pct": 1.58,
+        "per_asset": {
+          "BTC": 3,
+          "ETH": 2,
+          "SOL": 2
+        }
+      },
+      "F4": {
+        "window": "2025-07-01 → 2026-07-15",
+        "trades": 6,
+        "wins": 0,
+        "win_rate": 0.0,
+        "wilson_lb_90": 0.0,
+        "profit_factor": 0.0,
+        "pf_bootstrap_lb_90": null,
+        "worst_asset_max_dd_pct": 2.18,
+        "per_asset": {
+          "BTC": 2,
+          "ETH": 2,
+          "SOL": 2
+        }
+      }
+    },
+    "pooled": {
+      "trades": 38,
+      "wins": 14,
+      "win_rate": 0.3684,
+      "wilson_lb_90": 0.2755,
+      "profit_factor": 1.1318,
+      "pf_bootstrap_lb_90": 0.6437,
+      "worst_asset_max_dd_pct": 2.18
+    },
+    "calibration_by_confluence": {
+      "4": {
+        "n": 38,
+        "hit_rate": 0.3684,
+        "wilson_lb_90": 0.2755
+      }
+    },
+    "condition_agreement": {
+      "B1": {
+        "B1": 1.0,
+        "B2": 0.709,
+        "B3": 0.519,
+        "B5": 0.391,
+        "B6": 0.493
+      },
+      "B2": {
+        "B1": 0.709,
+        "B2": 1.0,
+        "B3": 0.4,
+        "B5": 0.365,
+        "B6": 0.591
+      },
+      "B3": {
+        "B1": 0.519,
+        "B2": 0.4,
+        "B3": 1.0,
+        "B5": 0.84,
+        "B6": 0.097
+      },
+      "B5": {
+        "B1": 0.391,
+        "B2": 0.365,
+        "B3": 0.84,
+        "B5": 1.0,
+        "B6": 0.197
+      },
+      "B6": {
+        "B1": 0.493,
+        "B2": 0.591,
+        "B3": 0.097,
+        "B5": 0.197,
+        "B6": 1.0
+      }
+    },
+    "exit_reasons": {
+      "stop_loss": 15,
+      "time_stop": 3,
+      "trail_stop": 20
+    }
+  },
+  "go_no_go": {
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "checks": {
+      "min_trades_400": false,
+      "wilson_lb_gt_050": false,
+      "pf_bootstrap_lb_gt_1": false,
+      "max_dd_le_30pct": true
+    },
+    "oos_trades": 38
+  },
+  "walk_forward": {
+    "F1": {
+      "window": "2021-07-01 → 2022-12-31",
+      "tuned_config": {
+        "confluence_min": 3,
+        "volume_confirm_min": 1.5
+      },
+      "train_pf": 2.701,
+      "train_trades": 62,
+      "trades": 85,
+      "wins": 29,
+      "win_rate": 0.3412,
+      "wilson_lb_90": 0.2788,
+      "profit_factor": 1.4578,
+      "pf_bootstrap_lb_90": 0.9045,
+      "worst_asset_max_dd_pct": 6.52
+    },
+    "F2": {
+      "window": "2023-01-01 → 2024-03-31",
+      "tuned_config": {
+        "confluence_min": 3,
+        "volume_confirm_min": 2.0
+      },
+      "train_pf": 1.825,
+      "train_trades": 153,
+      "trades": 40,
+      "wins": 18,
+      "win_rate": 0.45,
+      "wilson_lb_90": 0.3531,
+      "profit_factor": 1.8209,
+      "pf_bootstrap_lb_90": 1.0394,
+      "worst_asset_max_dd_pct": 8.34
+    },
+    "F3": {
+      "window": "2024-04-01 → 2025-06-30",
+      "tuned_config": {
+        "confluence_min": 3,
+        "volume_confirm_min": 2.0
+      },
+      "train_pf": 1.8,
+      "train_trades": 193,
+      "trades": 75,
+      "wins": 27,
+      "win_rate": 0.36,
+      "wilson_lb_90": 0.2927,
+      "profit_factor": 0.6931,
+      "pf_bootstrap_lb_90": 0.4266,
+      "worst_asset_max_dd_pct": 11.52
+    },
+    "F4": {
+      "window": "2025-07-01 → 2026-07-15",
+      "tuned_config": {
+        "confluence_min": 3,
+        "volume_confirm_min": 2.0
+      },
+      "train_pf": 1.351,
+      "train_trades": 267,
+      "trades": 30,
+      "wins": 11,
+      "win_rate": 0.3667,
+      "wilson_lb_90": 0.2636,
+      "profit_factor": 0.7859,
+      "pf_bootstrap_lb_90": 0.394,
+      "worst_asset_max_dd_pct": 7.05
+    }
+  },
+  "sensitivity_min3": {
+    "trades": 237,
+    "wins": 88,
+    "win_rate": 0.3713,
+    "wilson_lb_90": 0.3321,
+    "profit_factor": 1.1465,
+    "pf_bootstrap_lb_90": 0.8838,
+    "worst_asset_max_dd_pct": 8.97
+  }
+}

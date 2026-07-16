@@ -210,6 +210,10 @@ Remaining — genuinely yours:
 
 Convergent independent confirmations (highest-confidence findings): migration arithmetic error (agents 1, 2, 3, 6 — resolved by eliminating the migration), backtest/live condition-history mismatch (2, 3, 5), hourly-σ unit bug (2, 4), frontend/API/schema default stranding (2, 6), opened_at reset (2, 4).
 
+### Phase-4 outcome (2026-07-16, executed overnight)
+
+All five phases implemented and merged (commits `f46ab32`…); 854+ tests green. The pre-registered go/no-go returned **INSUFFICIENT_EVIDENCE** (38 pooled OOS trades at the faithful ≥4/6 gate vs the 400-trade floor; Wilson90 LB 0.276; PF bootstrap LB 0.644; sensitivity ≥3/5 row: 237 trades, PF LB 0.884 — still < 1.0). **The flip package did not ship; every execution gate remains default-off.** The risk stack's capital-preservation value was confirmed (worst-asset max DD 2.2% vs B&H −38…−47% in the 2025–26 bear fold). Full report: [docs/research/parameters/3-phase4-backtest-report.md](../research/parameters/3-phase4-backtest-report.md). Re-evaluation is live-forward via the Phase-1 telemetry per §4. The statistics agent's Finding 2 (vacuous evidence at realistic trade counts) was decisive — the criteria it forced are what prevented an unjustified flip.
+
 ## 9. Appendix — contrarian panic-buy (deferred spec, research-faithful)
 
 For a later phase, after Phase 4 exists and only with its own validation: trigger = fear extreme **fading** (F&G < 20 with delta_3d > 0, or shock cleared per shock_history) AND price stabilized above short MA (MA5) AND volume climax passed (volume_ratio declining from its spike peak) → mean-reversion **buy at half size**, its own env gate, never via the trend checklist (B1/B2/B4 are false by definition in a panic — requiring them makes the rule dead code, which is how v1 had it).
