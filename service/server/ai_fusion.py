@@ -84,8 +84,17 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
         from cross_market import build_cross_market_payload, cross_market_enabled
         if cross_market_enabled():
             cm = build_cross_market_payload() or {}
+            # The kimchi premium is measured on BTC (Upbit KRW-BTC vs OKX
+            # BTC-USDT) and read as a market-wide Korean-retail-demand gauge,
+            # so it rides along for every symbol. Unlabelled, that put ~$63k
+            # BTC prices inside an ETH snapshot — the D5 verifier flagged it
+            # 'suspect' (high) on 2026-07-17, correctly: nothing said whose
+            # prices those were. Say what it measures instead of stripping it.
             snapshot["cross_market"] = {"kimchi": cm.get("kimchi"), "dxy": cm.get("dxy"),
-                                        "as_of": cm.get("as_of")}
+                                        "as_of": cm.get("as_of"),
+                                        "measured_on": "BTCUSDT",
+                                        "scope": "market-wide (Korean retail demand gauge; "
+                                                 "its prices are BTC's, not this symbol's)"}
     except Exception:  # noqa: BLE001
         pass
     try:

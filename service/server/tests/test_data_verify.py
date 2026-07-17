@@ -392,6 +392,34 @@ class FusionIntegrationTests(unittest.TestCase):
         self.assertEqual(second["data_verification"]["status"], "ok")
 
 
+class CrossMarketLabellingTests(unittest.TestCase):
+    """The kimchi premium is BTC-measured but rides on every symbol. Live D5
+    flagged that as suspect/high on 2026-07-17 — correctly, since nothing said
+    whose prices they were."""
+
+    def _snapshot_cm(self):
+        import ai_fusion
+        payload = {"kimchi": {"premium_pct": -0.19, "upbit_usd_equiv": 63175.0,
+                              "global_usd": 63273.0},
+                   "dxy": None, "as_of": "2026-07-17T12:00:00Z"}
+        with patch("cross_market.cross_market_enabled", return_value=True), \
+             patch("cross_market.build_cross_market_payload", return_value=payload):
+            snap = ai_fusion.build_factor_snapshot("ETHUSDT", None, None, None)
+        return snap.get("cross_market")
+
+    def test_kimchi_block_declares_what_it_measures(self):
+        cm = self._snapshot_cm()
+        self.assertEqual(cm["measured_on"], "BTCUSDT")
+        self.assertIn("BTC", cm["scope"])
+        self.assertEqual(cm["kimchi"]["upbit_usd_equiv"], 63175.0)   # data intact
+
+    def test_label_travels_with_a_non_btc_symbol(self):
+        """The label exists precisely because the symbol is not BTC."""
+        cm = self._snapshot_cm()
+        self.assertIsNotNone(cm.get("measured_on"))
+        self.assertIsNotNone(cm.get("as_of"))
+
+
 class EtfSnapshotHygieneTests(unittest.TestCase):
     """The vestigial-counts bug found in live prod data on 2026-07-17."""
 
