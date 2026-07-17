@@ -753,6 +753,31 @@ async def psych_feed_loop():
         await asyncio.sleep(refresh_interval)
 
 
+async def watch_loop():
+    """Personal watch functions (Plan 06 C3).
+
+    Every WATCH_INTERVAL seconds (default 5min), evaluate each enabled user
+    watch against live metrics and fire alerts on crossings. Cheap: metric
+    values are cached per tick, and each watch has its own cooldown. Always
+    on — a user with no watches makes this a no-op query.
+    """
+    from watch_engine import run_watch_tick
+
+    interval = _env_int("WATCH_INTERVAL", 300, minimum=60)
+
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(run_watch_tick)
+            if result.get("fired"):
+                print(f"[Watches] checked={result['checked']} fired={result['fired']}")
+        except Exception as e:
+            print(f"[Watches Error] {e}")
+
+        await asyncio.sleep(interval)
+
+
 async def factor_snapshot_loop():
     """Background task for factor snapshots (parameter-upgrade plan Phase 0.4).
 
@@ -1435,6 +1460,7 @@ BACKGROUND_TASK_REGISTRY = {
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
     "factor_snapshots": factor_snapshot_loop,
+    "watches": watch_loop,
 }
 
 
@@ -1479,6 +1505,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "scanner":                 "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
+    # personal watch functions — user metric conditions -> alerts (Plan 06 C3)
+    "watches":                 "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

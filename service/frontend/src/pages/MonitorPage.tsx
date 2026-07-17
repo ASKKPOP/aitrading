@@ -16,6 +16,11 @@ export function MonitorPage({ token }: Props) {
   const [positions, setPositions] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
   const [decisions, setDecisions] = useState<any[]>([])
+  const [watches, setWatches] = useState<any[]>([])
+  const [metrics, setMetrics] = useState<string[]>([])
+  const [needsSymbol, setNeedsSymbol] = useState<string[]>([])
+  const [wDraft, setWDraft] = useState({ name: '', metric: 'price', symbol: 'BTCUSDT', comparator: 'below', threshold: 60000, cooldown_min: 60 })
+  const [wErr, setWErr] = useState('')
 
   const auth = { Authorization: `Bearer ${token}` }
 
@@ -33,7 +38,39 @@ export function MonitorPage({ token }: Props) {
     setPositions(await grab('/positions', 'positions'))
     setAlerts(await grab('/alerts?limit=20', 'alerts'))
     setDecisions(await grab('/automation/agent-decisions?limit=10', 'decisions'))
+    try {
+      const r = await fetch(`${API_BASE}/watches`, { headers: auth })
+      if (r.ok) {
+        const d = await r.json()
+        setWatches(d.watches || [])
+        setMetrics(d.metrics || [])
+        setNeedsSymbol(d.needs_symbol || [])
+      }
+    } catch { /* transient */ }
   }, [token])
+
+  async function saveWatch() {
+    setWErr('')
+    try {
+      const body: any = { ...wDraft, name: wDraft.name.trim() || `${wDraft.metric} ${wDraft.comparator} ${wDraft.threshold}` }
+      if (!needsSymbol.includes(wDraft.metric)) body.symbol = null
+      const r = await fetch(`${API_BASE}/watches`, {
+        method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : 'Could not save watch')
+      setWDraft({ ...wDraft, name: '' })
+      await load()
+    } catch (e: any) { setWErr(e.message) }
+  }
+
+  async function removeWatch(id: number) {
+    try {
+      await fetch(`${API_BASE}/watches/${id}`, { method: 'DELETE', headers: auth })
+      await load()
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     load()
@@ -49,6 +86,13 @@ export function MonitorPage({ token }: Props) {
     positions: tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '保有ポジション', th: 'สถานะที่เปิด', vi: 'Vị thế đang mở' }),
     alerts: tr(language, { ko: '알림', en: 'Alerts', ja: '通知', th: 'การแจ้งเตือน', vi: 'Cảnh báo' }),
     decisions: tr(language, { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (Agent mode)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI', vi: 'Quyết định AI' }),
+    watches: tr(language, { ko: '내 감시 조건', en: 'My watches', ja: '監視条件', th: 'เงื่อนไขเฝ้าดู', vi: 'Điều kiện theo dõi' }),
+    watchHint: tr(language, { ko: '조건이 충족되면 알림이 발송됩니다 (인앱 · 이메일/SMS는 설정에서 옵트인).', en: 'An alert fires when the condition crosses (in-app; email/SMS via Settings opt-in).', ja: '条件を満たすと通知します（アプリ内・メール/SMSは設定で有効化）。', th: 'แจ้งเตือนเมื่อเงื่อนไขถึงเกณฑ์ (ในแอป; อีเมล/SMS เปิดในตั้งค่า)', vi: 'Cảnh báo khi điều kiện vượt ngưỡng (trong app; email/SMS bật ở Cài đặt).' }),
+    watchAdd: tr(language, { ko: '조건 추가', en: 'Add watch', ja: '条件を追加', th: 'เพิ่มเงื่อนไข', vi: 'Thêm điều kiện' }),
+    watchName: tr(language, { ko: '이름 (선택)', en: 'Name (optional)', ja: '名前（任意）', th: 'ชื่อ (ไม่บังคับ)', vi: 'Tên (tùy chọn)' }),
+    above: tr(language, { ko: '초과', en: 'above', ja: '超過', th: 'สูงกว่า', vi: 'trên' }),
+    below: tr(language, { ko: '미만', en: 'below', ja: '未満', th: 'ต่ำกว่า', vi: 'dưới' }),
+    now: tr(language, { ko: '현재', en: 'now', ja: '現在', th: 'ตอนนี้', vi: 'hiện tại' }),
     none: tr(language, { ko: '없음', en: 'None', ja: 'なし', th: 'ไม่มี', vi: 'Không có' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
   }
@@ -61,6 +105,7 @@ export function MonitorPage({ token }: Props) {
   const card: any = { background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }
   const h3: any = { fontSize: 14, fontWeight: 700, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary)' }
   const empty = <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{T.none}</div>
+  const inp: any = { padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 12.5 }
   const pill = (bg: string, c: string, label: string) => (
     <span style={{ background: bg, color: c, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>{label}</span>
   )
@@ -157,6 +202,46 @@ export function MonitorPage({ token }: Props) {
           })}
         </div>
       )}
+
+      {/* personal watch functions */}
+      <div style={card}>
+        <div style={h3}>{T.watches}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>{T.watchHint}</div>
+        {watches.map(w => (
+          <div key={w.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--border-color)', fontSize: 12.5, flexWrap: 'wrap' }}>
+            <b>{w.name}</b>
+            <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+              {w.metric}{w.symbol ? ` ${w.symbol}` : ''} {w.comparator === 'above' ? T.above : T.below} {Number(w.threshold).toLocaleString()}
+            </span>
+            {w.current_value != null && (
+              <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                ({T.now} {Number(w.current_value).toLocaleString(undefined, { maximumFractionDigits: 2 })})
+              </span>
+            )}
+            {!w.enabled && pill('var(--bg-secondary)', 'var(--text-muted)', 'off')}
+            <button onClick={() => removeWatch(w.id)} style={{ marginLeft: 'auto', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '3px 9px', cursor: 'pointer' }}>×</button>
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
+          <input placeholder={T.watchName} value={wDraft.name} onChange={e => setWDraft({ ...wDraft, name: e.target.value })}
+            style={{ ...inp, width: 130 }} />
+          <select value={wDraft.metric} onChange={e => setWDraft({ ...wDraft, metric: e.target.value })} style={inp}>
+            {metrics.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          {needsSymbol.includes(wDraft.metric) && (
+            <input value={wDraft.symbol} onChange={e => setWDraft({ ...wDraft, symbol: e.target.value.toUpperCase() })}
+              style={{ ...inp, width: 100 }} />
+          )}
+          <select value={wDraft.comparator} onChange={e => setWDraft({ ...wDraft, comparator: e.target.value })} style={inp}>
+            <option value="above">{T.above}</option>
+            <option value="below">{T.below}</option>
+          </select>
+          <input type="number" value={wDraft.threshold} onChange={e => setWDraft({ ...wDraft, threshold: +e.target.value })}
+            style={{ ...inp, width: 110 }} />
+          <button onClick={saveWatch} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}>+ {T.watchAdd}</button>
+          {wErr && <span style={{ color: 'var(--error,#d03b3b)', fontSize: 12 }}>⚠️ {wErr}</span>}
+        </div>
+      </div>
 
       {/* alerts */}
       <div style={card}>

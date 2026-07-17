@@ -1911,6 +1911,29 @@ def init_database():
         ON automation_configs(agent_id, enabled)
     """)
 
+    # Plan 06 C3 — personal watch functions: user-defined metric conditions
+    # that fire alerts when they cross a threshold.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_watches (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id      INTEGER NOT NULL,
+            name          TEXT    NOT NULL,
+            metric        TEXT    NOT NULL,
+            symbol        TEXT,
+            comparator    TEXT    NOT NULL,
+            threshold     REAL    NOT NULL,
+            enabled       INTEGER NOT NULL DEFAULT 1,
+            cooldown_min  INTEGER NOT NULL DEFAULT 60,
+            last_fired_at TEXT,
+            created_at    TEXT    NOT NULL,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_watches_agent
+        ON user_watches(agent_id, enabled)
+    """)
+
     # Plan 06 C3 — alert journal (doubles as the in-app alert feed)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS alert_log (
