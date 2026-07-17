@@ -141,10 +141,12 @@ PROMPT_HEADER = (
     "Return 'suspect' ONLY when a concern would change a trading decision. Sparse "
     "data is NOT suspect on its own — the fusion step already handles missing "
     "inputs. False alarms cost real trades, so do not reach.\n"
-    "Respond with ONLY a JSON object:\n"
+    "Respond with ONLY a JSON object. Keep every 'issue' under 20 words and report at "
+    "most 3 concerns — a verdict that overruns its budget is discarded unparsed, so "
+    "brevity is not a style note.\n"
     '{"status":"ok|suspect",'
-    '"concerns":[{"field":"which field(s)","issue":"what is wrong","severity":"low|high"}],'
-    '"reason":"1-2 sentences"}\n\n'
+    '"concerns":[{"field":"which field(s)","issue":"what is wrong, <20 words","severity":"low|high"}],'
+    '"reason":"1 sentence"}\n\n'
 )
 
 
@@ -191,7 +193,10 @@ def verify_snapshot(snapshot: dict[str, Any]) -> Optional[dict[str, Any]]:
         f"{json.dumps(facts, ensure_ascii=False, default=str)}\n\n"
         f"RAW SNAPSHOT:\n{json.dumps(snapshot, ensure_ascii=False, default=str)[:5000]}\n"
     )
-    parsed = _parse(generate_text(prompt, max_tokens=400, temperature=0.1, tier=tier) or "")
+    # 900, not 400: a verbose model overruns a tight budget, the JSON is cut
+    # mid-string and the whole verdict is discarded as unparseable. Caught by
+    # live prod testing on 2026-07-17 — canned short replies never hit it.
+    parsed = _parse(generate_text(prompt, max_tokens=900, temperature=0.1, tier=tier) or "")
     if not parsed:
         return None
 

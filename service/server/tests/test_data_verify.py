@@ -125,6 +125,33 @@ class VerifyTests(unittest.TestCase):
             out, _ = self._run(bad)
             self.assertIsNone(out, f"expected fail-open for {bad!r}")
 
+    def test_truncated_reply_fails_open(self):
+        """Live prod, 2026-07-17: a verbose model hit max_tokens and the JSON
+        was cut mid-string. Must fail open, never half-parse."""
+        truncated = '```json\n{"status": "suspect", "concerns": [{"field": "whales", "issue": "All whale metr'
+        out, _ = self._run(truncated)
+        self.assertIsNone(out)
+
+    def test_fenced_json_is_parsed(self):
+        """The model wraps replies in ```json fences — that is not a failure."""
+        out, _ = self._run(f"```json\n{OK_REPLY}\n```")
+        self.assertEqual(out["status"], "ok")
+
+    def test_token_budget_fits_a_realistic_verbose_reply(self):
+        """Guards the regression directly: the budget must clear a full
+        3-concern verdict written at the verbose end of the model's range."""
+        verbose = json.dumps({
+            "status": "suspect",
+            "concerns": [{"field": f"field_{i}", "issue": "w " * 20, "severity": "low"}
+                         for i in range(3)],
+            "reason": "s " * 25,
+        })
+        # ~4 chars/token is the standard rough conversion for English JSON.
+        self.assertLess(len(verbose) / 4, 900,
+                        "max_tokens=900 must clear a full verbose verdict")
+        out, _ = self._run(verbose)
+        self.assertEqual(len(out["concerns"]), 3)
+
     def test_cheap_tier_by_default_and_configurable(self):
         _, gen = self._run(OK_REPLY)
         self.assertEqual(gen.call_args.kwargs["tier"], "brief")
