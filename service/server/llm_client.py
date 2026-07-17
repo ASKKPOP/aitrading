@@ -114,7 +114,7 @@ _PROVIDERS: dict[str, ProviderSpec] = {
 # an entry use their single default_model for both tiers.
 # Env overrides: LLM_MODEL (both tiers) > LLM_MODEL_BRIEF / LLM_MODEL_DECISION.
 _TIER_MODELS: dict[str, dict[str, str]] = {
-    "anthropic": {"brief": "claude-haiku-4-5", "decision": "claude-sonnet-5"},
+    "anthropic": {"brief": "claude-haiku-4-5", "decision": "claude-opus-4-8"},
     "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o"},
 }
 _TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION"}
@@ -234,6 +234,12 @@ def active_provider_source() -> Optional[str]:
     """Where the active provider came from: user | rule | server | auto."""
     ap = resolve_provider()
     return ap.source if ap else None
+
+
+def active_provider_model(tier: str = "decision") -> Optional[str]:
+    """The model the given tier would run right now (for payload telemetry)."""
+    ap = resolve_provider(tier=tier)
+    return ap.model if ap else None
 
 
 def generate_text(

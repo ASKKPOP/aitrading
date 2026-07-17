@@ -507,6 +507,7 @@ def _run_analysis_inner(symbol: str, market: str, lang: str) -> dict[str, Any]:
         "as_of": _now_iso(),
         "llm_provider": _provider_label(),
         "llm_provider_source": _provider_source_label(),
+        "llm_model": _provider_model_label(),
         "analysts": {
             "news": {"brief": briefs["news"], "data": news},
             "sentiment": {"brief": briefs["sentiment"], "data": sentiment},
@@ -529,5 +530,13 @@ def _provider_source_label() -> Optional[str]:
     try:
         from llm_client import active_provider_source
         return active_provider_source()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _provider_model_label() -> Optional[str]:
+    try:
+        from llm_client import active_provider_model
+        return active_provider_model(tier="decision")
     except Exception:  # noqa: BLE001
         return None

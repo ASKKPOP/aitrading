@@ -92,7 +92,7 @@ class TierModelTests(unittest.TestCase):
 
     def test_anthropic_tiers(self):
         self.assertEqual(resolve_provider(tier="brief").model, "claude-haiku-4-5")
-        self.assertEqual(resolve_provider(tier="decision").model, "claude-sonnet-5")
+        self.assertEqual(resolve_provider(tier="decision").model, "claude-opus-4-8")
 
     def test_llm_model_overrides_both_tiers(self):
         with patch.dict(os.environ, {"LLM_MODEL": "claude-opus-4-8"}):
@@ -102,7 +102,7 @@ class TierModelTests(unittest.TestCase):
     def test_tier_env_overrides_one_tier(self):
         with patch.dict(os.environ, {"LLM_MODEL_BRIEF": "claude-3-5-haiku-latest"}):
             self.assertEqual(resolve_provider(tier="brief").model, "claude-3-5-haiku-latest")
-            self.assertEqual(resolve_provider(tier="decision").model, "claude-sonnet-5")
+            self.assertEqual(resolve_provider(tier="decision").model, "claude-opus-4-8")
 
     def test_openai_tiers(self):
         with patch.dict(os.environ, {**_NO_LLM_ENV, "OPENAI_API_KEY": "sk-oai"}):
