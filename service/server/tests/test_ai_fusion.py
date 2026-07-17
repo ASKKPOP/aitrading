@@ -174,6 +174,34 @@ class FuseSymbolIntegrationTests(unittest.TestCase):
              patch("ai_fusion.fuse_with_ai", return_value=ai_return):
             return signal_fusion.fuse_symbol("BTCUSDT")
 
+    def test_verification_and_age_survive_the_handoff(self):
+        """Both are produced upstream and were dropped by fuse_symbol — the
+        verdict costs a real model call, and the age is what tells a reader a
+        cached verdict from a fresh one. Nothing asserted they arrived.
+        """
+        ai = {"signal": "hold", "score": 0.05, "confidence": 0.35,
+              "ai_components": {}, "ai_weights": {}, "evidence": [], "rationale": "r",
+              "fusion_source": "ai", "llm_model": "claude-opus-4-8",
+              "cached_age_s": 42,
+              "data_verification": {"status": "suspect", "mode": "advisory",
+                                    "reason": "quant feed stale", "applied": False}}
+        out = self._fuse(ai)
+        self.assertEqual(out["data_verification"]["status"], "suspect")
+        self.assertEqual(out["data_verification"]["reason"], "quant feed stale")
+        self.assertEqual(out["cached_age_s"], 42)
+
+    def test_fresh_verdict_reports_zero_age_not_missing(self):
+        """cached_age_s=0 must reach the caller; a falsy value must not be
+        confused with 'absent' on the way through."""
+        ai = {"signal": "buy", "score": 0.5, "confidence": 0.6,
+              "ai_components": {}, "ai_weights": {}, "evidence": [], "rationale": "r",
+              "fusion_source": "ai", "llm_model": "m", "cached_age_s": 0,
+              "data_verification": {"status": "ok", "mode": "advisory",
+                                    "reason": "", "applied": False}}
+        out = self._fuse(ai)
+        self.assertEqual(out["cached_age_s"], 0)
+        self.assertEqual(out["data_verification"]["status"], "ok")
+
     def test_ai_replaces_rule_and_keeps_it_visible(self):
         ai = {"signal": "buy", "score": 0.55, "confidence": 0.72,
               "ai_components": {"quant": 0.6}, "ai_weights": {"quant": 0.7},

@@ -311,6 +311,13 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
                 "ai_components": ai.get("ai_components"), "ai_weights": ai.get("ai_weights"),
                 "rationale": ai.get("rationale"),
                 "evidence": (ai.get("evidence") or []) + evidence,
+                # D5's verdict on the inputs and the age of the AI read itself.
+                # Both are produced upstream — data_verification costs a real
+                # model call — and were being dropped here, so callers could
+                # neither see a 'suspect' input nor tell a cached verdict from
+                # a fresh one.
+                "data_verification": ai.get("data_verification"),
+                "cached_age_s": ai.get("cached_age_s"),
                 "note": "AI-fused: the model weighed the factor snapshot itself; "
                         "psychology-only reads are still forced to hold",
             })
