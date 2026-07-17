@@ -22,6 +22,20 @@ from utils import _extract_token
 
 ALLOWED_PROVIDERS = ("", "openai", "gemini", "grok", "qwen", "glm", "local", "openrouter", "anthropic")
 
+# Plan 06 C2/B2 — first-class risk levels. Choosing one on a rule ALSO writes
+# the matching exit profile into the agent's risk_limits (SL/TP/trailing/time
+# stop), so UI presets finally propagate to the risk engine. Per-agent (not
+# per-rule): the most recent risk_level applied wins, and the response echoes
+# the applied limits so the UI can show them.
+RISK_LEVEL_PRESETS: dict = {
+    "stable": {"stop_loss_pct": 0.03, "take_profit_pct": 0.06,
+               "use_trailing": 1, "trail_pct": 0.04, "time_stop_days": 5},
+    "balanced": {"stop_loss_pct": 0.05, "take_profit_pct": 0.10,
+                 "use_trailing": 1, "trail_pct": 0.05, "time_stop_days": 0},
+    "aggressive": {"stop_loss_pct": 0.08, "take_profit_pct": 0.15,
+                   "use_trailing": 0, "trail_pct": 0.05, "time_stop_days": 0},
+}
+
 
 class AutomationConfigIn(BaseModel):
     symbol: str
@@ -34,6 +48,15 @@ class AutomationConfigIn(BaseModel):
     account_type: str = "simulator"
     enabled: bool = True
     lang: str = "en"
+    risk_level: Optional[str] = None
+
+    @field_validator("risk_level")
+    @classmethod
+    def _risk_level(cls, v):
+        v = (v or "").strip().lower()
+        if v and v not in RISK_LEVEL_PRESETS:
+            raise ValueError(f"risk_level must be one of {list(RISK_LEVEL_PRESETS)} or empty")
+        return v or None
 
     @field_validator("symbol")
     @classmethod
@@ -101,6 +124,20 @@ def _auth(authorization: Optional[str]):
     return agent
 
 
+def _apply_risk_level(agent_id: int, risk_level: Optional[str]):
+    """B2: propagate a chosen risk level into the agent's risk_limits exit
+    profile. Returns the applied limits (or None when no level was chosen).
+    Fail-soft: a limits write problem must not fail rule creation."""
+    preset = RISK_LEVEL_PRESETS.get(risk_level or "")
+    if not preset:
+        return None
+    try:
+        from risk_engine import put_risk_limits
+        return put_risk_limits(agent_id, dict(preset))
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.get("/api/automation/configs")
@@ -127,17 +164,18 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             cursor.execute(
                 """INSERT INTO automation_configs
                    (agent_id, symbol, market, provider, interval_minutes, min_confidence,
-                    size_usd, auto_execute, account_type, enabled, lang)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    size_usd, auto_execute, account_type, enabled, lang, risk_level)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent["id"], data.symbol, data.market, data.provider, data.interval_minutes,
                  data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
-                 data.account_type, 1 if data.enabled else 0, data.lang),
+                 data.account_type, 1 if data.enabled else 0, data.lang, data.risk_level),
             )
             config_id = cursor.lastrowid
             conn.commit()
-            return {"id": config_id, "ok": True}
         finally:
             conn.close()
+        applied_limits = _apply_risk_level(agent["id"], data.risk_level)
+        return {"id": config_id, "ok": True, "risk_limits": applied_limits}
 
     @app.put("/api/automation/configs/{config_id}")
     async def update_config(config_id: int, data: AutomationConfigIn, authorization: str = Header(None)):
@@ -152,17 +190,19 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             begin_write_transaction(cursor)
             cursor.execute(
                 """UPDATE automation_configs SET symbol=?, market=?, provider=?, interval_minutes=?,
-                   min_confidence=?, size_usd=?, auto_execute=?, account_type=?, enabled=?, lang=?
+                   min_confidence=?, size_usd=?, auto_execute=?, account_type=?, enabled=?, lang=?,
+                   risk_level=?
                    WHERE id=? AND agent_id=?""",
                 (data.symbol, data.market, data.provider, data.interval_minutes,
                  data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
-                 data.account_type, 1 if data.enabled else 0, data.lang,
+                 data.account_type, 1 if data.enabled else 0, data.lang, data.risk_level,
                  config_id, agent["id"]),
             )
             conn.commit()
-            return {"ok": True}
         finally:
             conn.close()
+        applied_limits = _apply_risk_level(agent["id"], data.risk_level)
+        return {"ok": True, "risk_limits": applied_limits}
 
     @app.delete("/api/automation/configs/{config_id}")
     async def delete_config(config_id: int, authorization: str = Header(None)):

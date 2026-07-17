@@ -442,3 +442,41 @@ async def _broadcast_signal_to_followers(leader_id: int, signal_data: dict) -> i
     # In a real implementation, this would send WebSocket notifications
     # For now, we just return the count
     return len(followers)
+
+
+def llm_context_for_agent(agent_id: Optional[int]):
+    """Resolve the owning user's stored LLM settings for an agent.
+
+    Returns an llm_client.LlmContext (source='user') when the agent's owner has
+    an enabled 'llm' entry in user_api_settings, else None. Fail-soft: any DB
+    problem returns None and the server-env provider chain applies.
+    """
+    if not agent_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT s.api_key, s.config_json FROM user_api_settings s
+               JOIN agents a ON a.user_id = s.user_id
+               WHERE a.id = ? AND s.target = 'llm' AND s.enabled = 1""",
+            (agent_id,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+        if row is None:
+            return None
+        import json as _json
+        try:
+            config = _json.loads(row["config_json"] or "{}")
+        except (TypeError, ValueError):
+            config = {}
+        provider = (config.get("provider") or "").strip().lower() or None
+        model = (config.get("model") or "").strip() or None
+        api_key = (row["api_key"] or "").strip() or None
+        if not (provider or model or api_key):
+            return None
+        from llm_client import LlmContext
+        return LlmContext(provider=provider, model=model, api_key=api_key, source="user")
+    except Exception:  # noqa: BLE001 — settings lookup must never break analysis
+        return None

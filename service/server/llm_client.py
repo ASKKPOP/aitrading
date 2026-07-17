@@ -36,21 +36,42 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Per-call provider override (e.g. an automation rule that wants a specific
-# provider). Thread/async safe; falls back to env-based selection when unset.
-_provider_override: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "llm_provider_override", default=None
+# Per-call LLM context (an automation rule's provider choice and/or the owning
+# user's stored provider/model/API key). Thread/async safe; falls back to
+# env-based selection when unset.
+@dataclass(frozen=True)
+class LlmContext:
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    api_key: Optional[str] = None
+    source: str = "rule"  # 'user' (settings page) | 'rule' (automation config)
+
+
+_context_override: contextvars.ContextVar[Optional[LlmContext]] = contextvars.ContextVar(
+    "llm_context_override", default=None
 )
 
 
-def set_provider_override(name: Optional[str]):
-    """Set (or clear with None) the provider override for the current context.
+def set_llm_context(ctx: Optional[LlmContext]):
+    """Set (or clear with None) the LLM context for the current call chain.
     Returns the contextvars token so callers can reset."""
-    return _provider_override.set(name.strip().lower() if name else None)
+    if ctx is not None and ctx.provider:
+        ctx = LlmContext(provider=ctx.provider.strip().lower(), model=ctx.model,
+                         api_key=ctx.api_key, source=ctx.source)
+    return _context_override.set(ctx)
+
+
+def reset_llm_context(token) -> None:
+    _context_override.reset(token)
+
+
+def set_provider_override(name: Optional[str]):
+    """Back-compat wrapper: provider-only context (automation rules)."""
+    return set_llm_context(LlmContext(provider=name, source="rule") if name else None)
 
 
 def reset_provider_override(token) -> None:
-    _provider_override.reset(token)
+    reset_llm_context(token)
 
 
 @dataclass(frozen=True)
@@ -85,8 +106,18 @@ _PROVIDERS: dict[str, ProviderSpec] = {
         "llama3.1", kind="openai"),
     "anthropic": ProviderSpec(
         "anthropic", "ANTHROPIC_API_KEY", "https://api.anthropic.com", "ANTHROPIC_BASE_URL",
-        "claude-3-5-sonnet-latest", kind="anthropic"),
+        "claude-sonnet-5", kind="anthropic"),
 }
+
+# Task tiers: analyst briefs are summarization (cheap tier); the trader
+# decision and the verification pass need the strong tier. Providers without
+# an entry use their single default_model for both tiers.
+# Env overrides: LLM_MODEL (both tiers) > LLM_MODEL_BRIEF / LLM_MODEL_DECISION.
+_TIER_MODELS: dict[str, dict[str, str]] = {
+    "anthropic": {"brief": "claude-haiku-4-5", "decision": "claude-sonnet-5"},
+    "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o"},
+}
+_TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION"}
 
 # Accept a few friendly aliases for key env vars.
 _KEY_ALIASES: dict[str, tuple[str, ...]] = {
@@ -114,37 +145,77 @@ class ActiveProvider:
     api_key: str
     base_url: str
     model: str
+    source: str = "server"  # 'user' | 'rule' | 'server' | 'auto'
 
 
-def resolve_provider() -> Optional[ActiveProvider]:
-    """Return the active provider config, or None if no provider is usable."""
-    explicit = _provider_override.get() or os.getenv("LLM_PROVIDER", "").strip().lower()
-    model_override = os.getenv("LLM_MODEL", "").strip()
+def _tier_model(spec: ProviderSpec, tier: str) -> str:
+    """Model for a task tier: LLM_MODEL > LLM_MODEL_<TIER> > tier table > provider default."""
+    model = os.getenv("LLM_MODEL", "").strip()
+    if model:
+        return model
+    tier_env = _TIER_ENV.get(tier)
+    if tier_env:
+        model = os.getenv(tier_env, "").strip()
+        if model:
+            return model
+    tiered = _TIER_MODELS.get(spec.name, {}).get(tier)
+    if tiered:
+        return tiered
+    if spec.name == "openrouter":
+        return os.getenv("OPENROUTER_MODEL", "").strip() or spec.default_model
+    if spec.name == "local":
+        return os.getenv("LOCAL_LLM_MODEL", "").strip() or spec.default_model
+    return spec.default_model
 
-    def build(spec: ProviderSpec) -> Optional[ActiveProvider]:
-        key = _get_key(spec)
+
+def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
+    """Return the active provider config, or None if no provider is usable.
+
+    Resolution order — provider: context (user settings / rule) > LLM_PROVIDER
+    env > registry auto-detect. Key: the context's user key (when it belongs to
+    the resolved provider) > env key. Model: context model > LLM_MODEL >
+    LLM_MODEL_<TIER> > tier table > provider default."""
+    ctx = _context_override.get()
+    ctx_provider = (ctx.provider or "") if ctx else ""
+    env_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
+    explicit = ctx_provider or env_provider
+
+    def build(spec: ProviderSpec, source: str) -> Optional[ActiveProvider]:
+        key = ""
+        key_from_user = False
+        # A user's stored key applies only to the provider it was saved for.
+        if ctx and ctx.api_key and (not ctx_provider or ctx_provider == spec.name):
+            key = ctx.api_key.strip()
+            key_from_user = ctx.source == "user"
+        if not key:
+            key = _get_key(spec)
         if not key and spec.name != "local":
             return None
+        if spec.name == "local" and not key:
+            key = "local"
         base_url = os.getenv(spec.base_url_env, "").strip() or spec.default_base_url
-        model = model_override or spec.default_model
-        if spec.name == "openrouter" and not model_override:
-            model = os.getenv("OPENROUTER_MODEL", "").strip() or spec.default_model
-        if spec.name == "local" and not model_override:
-            model = os.getenv("LOCAL_LLM_MODEL", "").strip() or spec.default_model
-        return ActiveProvider(spec=spec, api_key=key, base_url=base_url, model=model)
+        model = ""
+        if ctx and ctx.model and (not ctx_provider or ctx_provider == spec.name):
+            model = ctx.model.strip()
+        if not model:
+            model = _tier_model(spec, tier)
+        if key_from_user:
+            source = "user"
+        return ActiveProvider(spec=spec, api_key=key, base_url=base_url, model=model, source=source)
 
     if explicit:
         spec = _PROVIDERS.get(explicit)
         if not spec:
-            logger.warning("Unknown LLM_PROVIDER=%r; supported: %s", explicit, ", ".join(_PROVIDERS))
+            logger.warning("Unknown LLM provider %r; supported: %s", explicit, ", ".join(_PROVIDERS))
             return None
-        return build(spec)
+        source = (ctx.source if ctx_provider and ctx else "server")
+        return build(spec, source)
 
     # Auto-detect: first provider (in registry order) with a key set.
     for spec in _PROVIDERS.values():
         if spec.name == "local":
             continue  # never auto-select local; require explicit LLM_PROVIDER=local
-        built = build(spec)
+        built = build(spec, "auto")
         if built:
             return built
     return None
@@ -159,16 +230,23 @@ def active_provider_name() -> Optional[str]:
     return ap.spec.name if ap else None
 
 
+def active_provider_source() -> Optional[str]:
+    """Where the active provider came from: user | rule | server | auto."""
+    ap = resolve_provider()
+    return ap.source if ap else None
+
+
 def generate_text(
     prompt: str,
     *,
     system: Optional[str] = None,
     max_tokens: int = 400,
     temperature: float = 0.4,
+    tier: str = "decision",
 ) -> Optional[str]:
     """Generate text with the active provider. Returns None on any failure so
     callers can fall back to their own deterministic summary."""
-    ap = resolve_provider()
+    ap = resolve_provider(tier=tier)
     if ap is None:
         return None
     try:

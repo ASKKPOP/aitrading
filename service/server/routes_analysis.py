@@ -38,7 +38,8 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
 
         try:
-            result = await asyncio.to_thread(run_analysis, symbol, market, lang)
+            result = await asyncio.to_thread(
+                run_analysis, symbol, market, lang, None, agent.get("id"))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:  # noqa: BLE001

@@ -55,8 +55,12 @@ DEFAULT_LIMITS = {
     "use_trailing": 0,
     "trail_pct": 0.05,
     "time_stop_days": 0,
+    # Plan 06 A1 — portfolio-level caps: aggregate deployed notional as % of
+    # equity, and max number of concurrently held positions. 0 disables.
+    "max_portfolio_exposure_pct": 60.0,
+    "max_concurrent_positions": 8,
 }
-_INT_LIMIT_KEYS = {"use_kelly", "use_trailing", "time_stop_days"}
+_INT_LIMIT_KEYS = {"use_kelly", "use_trailing", "time_stop_days", "max_concurrent_positions"}
 
 
 def risk_engine_enabled() -> bool:
@@ -454,6 +458,36 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                 reason=(f"risk: symbol exposure limit "
                         f"(${exposure:.2f} held + ${quantity * price:.2f} order "
                         f"> ${max_exposure:.2f} cap)"))
+
+        # Portfolio-level caps (Plan 06 A1) — bound AGGREGATE risk that the
+        # per-symbol cap can't see: total deployed notional as % of equity,
+        # and the number of concurrently held positions. 0 disables either.
+        max_port_pct = float(limits.get("max_portfolio_exposure_pct") or 0)
+        max_positions = int(limits.get("max_concurrent_positions") or 0)
+        if max_port_pct > 0 or max_positions > 0:
+            cursor.execute(
+                """SELECT COALESCE(SUM(quantity * COALESCE(current_price, entry_price)), 0) AS mv,
+                          COALESCE(SUM(CASE WHEN quantity > 0 THEN 1 ELSE 0 END), 0) AS n
+                   FROM positions WHERE agent_id = ?""",
+                (agent_id,),
+            )
+            prow = cursor.fetchone()
+            port_exposure = float(prow["mv"] or 0.0)
+            open_positions = int(prow["n"] or 0)
+            if max_positions > 0 and exposure <= 0 and open_positions >= max_positions:
+                return GateDecision(
+                    allowed=False, quantity=0.0,
+                    reason=(f"risk: max concurrent positions reached "
+                            f"({open_positions}/{max_positions})"))
+            if max_port_pct > 0:
+                equity_now = _equity(cursor, agent_id)
+                cap_usd = equity_now * max_port_pct / 100.0
+                if port_exposure + quantity * price > cap_usd:
+                    return GateDecision(
+                        allowed=False, quantity=0.0,
+                        reason=(f"risk: portfolio exposure limit "
+                                f"(${port_exposure:.2f} deployed + ${quantity * price:.2f} order "
+                                f"> ${cap_usd:.2f} = {max_port_pct:.0f}% of equity)"))
 
         if side != "buy":
             # 'short' passes the risk checks above but the long-oriented SL/TP

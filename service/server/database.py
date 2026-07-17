@@ -1145,6 +1145,11 @@ def init_database():
     for _ddl in (
         "ALTER TABLE positions ADD COLUMN first_opened_at TEXT",
         "ALTER TABLE positions ADD COLUMN exit_policy TEXT",
+        # Plan 06 A1 — portfolio-level caps (aggregate exposure & position count)
+        "ALTER TABLE risk_limits ADD COLUMN max_portfolio_exposure_pct REAL NOT NULL DEFAULT 60",
+        "ALTER TABLE risk_limits ADD COLUMN max_concurrent_positions INTEGER NOT NULL DEFAULT 8",
+        # Plan 06 C2 — first-class risk level on automation rules
+        "ALTER TABLE automation_configs ADD COLUMN risk_level TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -1880,6 +1885,7 @@ def init_database():
             account_type     TEXT    NOT NULL DEFAULT 'simulator',
             enabled          INTEGER NOT NULL DEFAULT 1,
             lang             TEXT    NOT NULL DEFAULT 'en',
+            risk_level       TEXT,
             last_run_at      TEXT,
             created_at       TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -1931,6 +1937,8 @@ def init_database():
             use_trailing            INTEGER NOT NULL DEFAULT 0,
             trail_pct               REAL    NOT NULL DEFAULT 0.05,
             time_stop_days          INTEGER NOT NULL DEFAULT 0,
+            max_portfolio_exposure_pct REAL NOT NULL DEFAULT 60,
+            max_concurrent_positions INTEGER NOT NULL DEFAULT 8,
             updated_at              TEXT,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )

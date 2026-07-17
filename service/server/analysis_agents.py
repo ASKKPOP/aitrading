@@ -169,7 +169,7 @@ def _brief(role: str, instructions: str, data: dict[str, Any], lang: str) -> str
         f"{lang_line} Be concrete and under 90 words. No disclaimers, no bullet lists.\n\n"
         f"Data (JSON):\n{json.dumps(data, ensure_ascii=False, default=str)[:6000]}\n"
     )
-    text = generate_text(prompt, max_tokens=220, temperature=0.4)
+    text = generate_text(prompt, max_tokens=220, temperature=0.4, tier="brief")
     return text or _fallback_brief(role, data)
 
 
@@ -322,29 +322,152 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang) -> dict
     return fallback
 
 
+# ─────────────────────────── verification pass ───────────────────────────
+
+VERIFY_VERDICTS = ("upheld", "weakened", "rejected")
+
+
+def _verify_mode() -> str:
+    """off | advisory | enforce — read at call time so tests/env can flip it."""
+    import os
+    mode = os.getenv("VERIFY_ENABLED", "advisory").strip().lower()
+    return mode if mode in ("off", "advisory", "enforce") else "advisory"
+
+
+def _parse_verification_json(text: str) -> Optional[dict[str, Any]]:
+    if not text:
+        return None
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        return None
+    try:
+        obj = json.loads(match.group(0))
+    except Exception:  # noqa: BLE001
+        return None
+    verdict = str(obj.get("verdict", "")).lower()
+    if verdict not in VERIFY_VERDICTS:
+        return None
+    try:
+        adj = float(obj.get("adjusted_confidence", 0.5))
+    except Exception:  # noqa: BLE001
+        adj = 0.5
+    return {"verdict": verdict,
+            "adjusted_confidence": max(0.0, min(1.0, adj)),
+            "reason": str(obj.get("reason") or "")[:500]}
+
+
+def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
+                     technical: dict[str, Any], decision: dict[str, Any],
+                     lang: str) -> Optional[dict[str, Any]]:
+    """Adversarial second pass: a strong-tier call that tries to REFUTE the
+    trader's decision. Returns {verdict, adjusted_confidence, reason} or None
+    (fail-open) when unconfigured/unparseable. VERIFY_PROVIDER optionally runs
+    the verifier on a different provider for cross-model agreement."""
+    if _verify_mode() == "off" or not llm_configured():
+        return None
+    import os
+    prompt = (
+        "You are an independent risk verifier. Your job is to try to REFUTE the trading "
+        f"decision below for {symbol} ({market}). Check: (1) do the analyst briefs actually "
+        "support the action, or is evidence mixed/contradictory? (2) is the confidence "
+        "consistent with the disagreement between analysts? (3) any veto conditions "
+        "(macro event risk, psychology-only signal, stale/absent data)?\n"
+        "Respond with ONLY a JSON object:\n"
+        '{"verdict":"upheld|weakened|rejected","adjusted_confidence":0.0-1.0,'
+        '"reason":"1-2 sentences"}\n'
+        "Use 'rejected' when the evidence does not support the action; 'weakened' when the "
+        "action is defensible but the confidence is too high; 'upheld' otherwise.\n\n"
+        f"PROPOSED DECISION: {json.dumps({k: decision.get(k) for k in ('action', 'confidence', 'rationale')}, ensure_ascii=False)}\n\n"
+        f"NEWS ANALYST:\n{briefs['news']}\n\n"
+        f"SENTIMENT ANALYST:\n{briefs['sentiment']}\n\n"
+        f"FUNDAMENTALS/MACRO ANALYST:\n{briefs['fundamentals_macro']}\n\n"
+        f"TECHNICAL ANALYST:\n{briefs['technical']}\n\n"
+        f"Current price: {technical.get('current_price')}\n"
+    )
+    verify_provider = os.getenv("VERIFY_PROVIDER", "").strip().lower() or None
+    token = None
+    if verify_provider:
+        from llm_client import LlmContext, set_llm_context
+        token = set_llm_context(LlmContext(provider=verify_provider, source="rule"))
+    try:
+        text = generate_text(prompt, max_tokens=300, temperature=0.2, tier="decision")
+    finally:
+        if token is not None:
+            from llm_client import reset_llm_context
+            reset_llm_context(token)
+    return _parse_verification_json(text or "")
+
+
+def _apply_verification(decision: dict[str, Any],
+                        verification: Optional[dict[str, Any]]) -> dict[str, Any]:
+    """Deterministic application of the verifier's verdict (enforce mode only):
+    rejected -> hold; weakened -> confidence = min(trader, adjusted); upheld -> unchanged.
+    Advisory mode attaches the verdict without changing the decision. Fail-open."""
+    mode = _verify_mode()
+    block = None
+    if verification is not None:
+        block = dict(verification)
+        block["mode"] = mode
+        block["applied"] = False
+        if mode == "enforce":
+            if verification["verdict"] == "rejected":
+                decision = dict(decision)
+                decision["action"] = "hold"
+                decision["confidence"] = min(float(decision.get("confidence") or 0.5),
+                                             verification["adjusted_confidence"])
+                block["applied"] = True
+            elif verification["verdict"] == "weakened":
+                decision = dict(decision)
+                decision["confidence"] = min(float(decision.get("confidence") or 0.5),
+                                             verification["adjusted_confidence"])
+                block["applied"] = True
+    if block is not None:
+        decision = dict(decision)
+        decision["verification"] = block
+    return decision
+
+
 # ─────────────────────────── orchestration ───────────────────────────
 
 def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
-                 provider: Optional[str] = None) -> dict[str, Any]:
+                 provider: Optional[str] = None,
+                 agent_id: Optional[int] = None) -> dict[str, Any]:
     """Run the full multi-agent pipeline for one symbol and return decision + report.
 
-    provider optionally forces a specific LLM provider for this run (used by
-    automation rules); None keeps the server-configured default."""
+    provider optionally forces a specific LLM provider for this run (automation
+    rules). agent_id resolves the owning user's stored LLM settings (provider,
+    model, API key) so a user's Settings-page choice actually powers their runs.
+    A rule provider that differs from the user's configured provider wins for
+    provider choice but cannot use the user's key."""
     symbol = (symbol or "").strip().upper()
     market = (market or "us-stock").strip().lower()
     if not symbol:
         raise ValueError("symbol is required")
 
-    override_token = None
-    if provider:
-        from llm_client import set_provider_override
-        override_token = set_provider_override(provider)
+    from llm_client import LlmContext, reset_llm_context, set_llm_context
+    rule_provider = (provider or "").strip().lower() or None
+    user_ctx = None
+    try:
+        from services import llm_context_for_agent
+        user_ctx = llm_context_for_agent(agent_id)
+    except Exception:  # noqa: BLE001 — settings lookup must never break analysis
+        user_ctx = None
+
+    ctx: Optional[LlmContext] = None
+    if user_ctx and rule_provider and user_ctx.provider and rule_provider != user_ctx.provider:
+        ctx = LlmContext(provider=rule_provider, source="rule")
+    elif user_ctx:
+        ctx = LlmContext(provider=rule_provider or user_ctx.provider,
+                         model=user_ctx.model, api_key=user_ctx.api_key, source="user")
+    elif rule_provider:
+        ctx = LlmContext(provider=rule_provider, source="rule")
+
+    token = set_llm_context(ctx) if ctx is not None else None
     try:
         return _run_analysis_inner(symbol, market, lang)
     finally:
-        if override_token is not None:
-            from llm_client import reset_provider_override
-            reset_provider_override(override_token)
+        if token is not None:
+            reset_llm_context(token)
 
 
 def _run_analysis_inner(symbol: str, market: str, lang: str) -> dict[str, Any]:
@@ -370,11 +493,20 @@ def _run_analysis_inner(symbol: str, market: str, lang: str) -> dict[str, Any]:
 
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang)
 
+    # Verification pass (advisory by default; enforce applies deterministically).
+    # Fail-open: verifier trouble never blocks the pipeline.
+    try:
+        verification = _verify_decision(symbol, market, briefs, technical, decision, lang)
+    except Exception:  # noqa: BLE001
+        verification = None
+    decision = _apply_verification(decision, verification)
+
     return {
         "symbol": symbol,
         "market": market,
         "as_of": _now_iso(),
         "llm_provider": _provider_label(),
+        "llm_provider_source": _provider_source_label(),
         "analysts": {
             "news": {"brief": briefs["news"], "data": news},
             "sentiment": {"brief": briefs["sentiment"], "data": sentiment},
@@ -389,5 +521,13 @@ def _provider_label() -> Optional[str]:
     try:
         from llm_client import active_provider_name
         return active_provider_name()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _provider_source_label() -> Optional[str]:
+    try:
+        from llm_client import active_provider_source
+        return active_provider_source()
     except Exception:  # noqa: BLE001
         return None

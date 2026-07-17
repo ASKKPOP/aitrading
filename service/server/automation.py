@@ -234,7 +234,8 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
 
     try:
         analysis = run_analysis(symbol, market, config.get("lang") or "en",
-                                provider=config.get("provider") or None)
+                                provider=config.get("provider") or None,
+                                agent_id=agent_id)
 
         # Confluence telemetry (Phase 1): record the deterministic condition
         # vector alongside every decision — display/journal only until the
@@ -264,6 +265,11 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         confidence = decision.get("confidence")
         report = (decision.get("report") or decision.get("rationale") or "")[:4000]
         entry = decision.get("entry")
+
+        # Verification telemetry (Plan 06 D3): journal the verifier's verdict
+        # with every run. In enforce mode the decision above already reflects it.
+        if decision.get("verification") is not None:
+            result["verify"] = decision["verification"]
 
         if not config.get("auto_execute"):
             result["skip_reason"] = "auto_execute off"
@@ -339,6 +345,8 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
             telemetry["confluence"] = result["confluence"]
         if result.get("regime") is not None:
             telemetry["regime"] = result["regime"]
+        if result.get("verify") is not None:
+            telemetry["verify"] = result["verify"]
         confluence_json = None
         if telemetry:
             try:

@@ -377,3 +377,117 @@ class AutomationGateIntegrationTests(RiskEngineTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortfolioCapTests(RiskEngineTestCase):
+    """Plan 06 A1 — aggregate portfolio exposure % and concurrent-position caps."""
+
+    def _gate(self, symbol="NEW", qty=1.0, price=100.0):
+        from risk_engine import evaluate_order
+        return evaluate_order(self.agent_id, symbol, "crypto", "buy", qty, price)
+
+    def test_portfolio_exposure_cap_rejects(self):
+        # equity = 100k cash + positions. Deploy ~59k, cap 60% → a 5k order breaches.
+        self._insert_position(symbol="BTC", qty=1.0, entry=59000.0, current=59000.0)
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_portfolio_exposure_pct": 60, "max_concurrent_positions": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = self._gate(symbol="ETH", qty=100.0, price=400.0)  # $40k order
+        self.assertFalse(gate.allowed)
+        self.assertIn("portfolio exposure limit", gate.reason)
+
+    def test_portfolio_exposure_cap_allows_within(self):
+        self._insert_position(symbol="BTC", qty=1.0, entry=10000.0, current=10000.0)
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_portfolio_exposure_pct": 60, "max_concurrent_positions": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = self._gate(symbol="ETH", qty=10.0, price=400.0)  # $4k on ~110k equity
+        self.assertTrue(gate.allowed)
+
+    def test_concurrent_positions_cap_rejects_new_symbol(self):
+        for i in range(3):
+            self._insert_position(symbol=f"C{i}", qty=1.0, entry=100.0, current=100.0)
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_concurrent_positions": 3, "max_portfolio_exposure_pct": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = self._gate(symbol="C99")
+        self.assertFalse(gate.allowed)
+        self.assertIn("max concurrent positions", gate.reason)
+
+    def test_concurrent_cap_allows_addon_to_held_symbol(self):
+        for i in range(3):
+            self._insert_position(symbol=f"C{i}", qty=1.0, entry=100.0, current=100.0)
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_concurrent_positions": 3, "max_portfolio_exposure_pct": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = self._gate(symbol="C1")  # already held → add-on allowed
+        self.assertTrue(gate.allowed)
+
+    def test_zero_disables_both_caps(self):
+        for i in range(5):
+            self._insert_position(symbol=f"C{i}", qty=1.0, entry=100.0, current=100.0)
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_concurrent_positions": 0, "max_portfolio_exposure_pct": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = self._gate(symbol="C99")
+        self.assertTrue(gate.allowed)
+
+    def test_defaults_present_in_limits_api(self):
+        resp = self.client.get("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"})
+        limits = resp.json()["limits"]
+        self.assertEqual(limits["max_portfolio_exposure_pct"], 60.0)
+        self.assertEqual(limits["max_concurrent_positions"], 8)
+
+
+class RiskLevelPropagationTests(RiskEngineTestCase):
+    """Plan 06 B2/C2 — rule risk_level expands into the agent's risk_limits."""
+
+    def _post_rule(self, risk_level=None):
+        body = {"symbol": "BTC", "market": "crypto", "interval_minutes": 60,
+                "min_confidence": 0.65, "size_usd": 500, "auto_execute": True,
+                "account_type": "simulator"}
+        if risk_level is not None:
+            body["risk_level"] = risk_level
+        return self.client.post("/api/automation/configs", json=body,
+                                headers={"Authorization": f"Bearer {self.token}"})
+
+    def test_stable_level_writes_exit_profile(self):
+        resp = self._post_rule("stable")
+        self.assertEqual(resp.status_code, 200, resp.text)
+        applied = resp.json()["risk_limits"]
+        self.assertAlmostEqual(applied["stop_loss_pct"], 0.03)
+        self.assertAlmostEqual(applied["take_profit_pct"], 0.06)
+        self.assertEqual(applied["use_trailing"], 1)
+        self.assertEqual(applied["time_stop_days"], 5)
+        # persisted, not just echoed
+        limits = self.client.get("/api/risk/limits",
+                                 headers={"Authorization": f"Bearer {self.token}"}).json()["limits"]
+        self.assertAlmostEqual(limits["stop_loss_pct"], 0.03)
+        self.assertEqual(limits["time_stop_days"], 5)
+
+    def test_aggressive_level_disables_trailing(self):
+        resp = self._post_rule("aggressive")
+        applied = resp.json()["risk_limits"]
+        self.assertAlmostEqual(applied["stop_loss_pct"], 0.08)
+        self.assertAlmostEqual(applied["take_profit_pct"], 0.15)
+        self.assertEqual(applied["use_trailing"], 0)
+
+    def test_no_level_leaves_limits_untouched(self):
+        before = self.client.get("/api/risk/limits",
+                                 headers={"Authorization": f"Bearer {self.token}"}).json()["limits"]
+        resp = self._post_rule(None)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.json()["risk_limits"])
+        after = self.client.get("/api/risk/limits",
+                                headers={"Authorization": f"Bearer {self.token}"}).json()["limits"]
+        self.assertEqual(before["stop_loss_pct"], after["stop_loss_pct"])
+
+    def test_invalid_level_rejected(self):
+        resp = self._post_rule("yolo")
+        self.assertEqual(resp.status_code, 422)
+
+    def test_risk_level_stored_on_rule(self):
+        self._post_rule("balanced")
+        configs = self.client.get("/api/automation/configs",
+                                  headers={"Authorization": f"Bearer {self.token}"}).json()["configs"]
+        self.assertEqual(configs[0]["risk_level"], "balanced")

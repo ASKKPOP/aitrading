@@ -41,6 +41,23 @@ class RiskLimitsIn(BaseModel):
     use_trailing: Optional[bool] = None
     trail_pct: Optional[float] = None
     time_stop_days: Optional[int] = None
+    # Plan 06 A1 — portfolio-level caps (0 disables)
+    max_portfolio_exposure_pct: Optional[float] = None
+    max_concurrent_positions: Optional[int] = None
+
+    @field_validator("max_portfolio_exposure_pct")
+    @classmethod
+    def _port_pct(cls, v):
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError("must be 0 <= pct <= 100 (0 disables)")
+        return v
+
+    @field_validator("max_concurrent_positions")
+    @classmethod
+    def _positions(cls, v):
+        if v is not None and (v < 0 or v > 200):
+            raise ValueError("must be between 0 and 200 (0 disables)")
+        return v
 
     @field_validator("max_daily_loss_usd", "max_symbol_exposure_usd")
     @classmethod

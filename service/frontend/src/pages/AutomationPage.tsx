@@ -14,7 +14,7 @@ import { tr } from '../i18n'
 type Rule = {
   id?: number; symbol: string; market: string; provider: string | null; interval_minutes: number;
   min_confidence: number; size_usd: number; auto_execute: boolean | number; account_type: string;
-  enabled?: boolean | number; last_run_at?: string | null;
+  enabled?: boolean | number; last_run_at?: string | null; risk_level?: string | null;
 }
 
 type UserMode = 'simple' | 'guided' | 'pro'
@@ -24,10 +24,12 @@ const DEFAULT_DRAFT: Rule = { symbol: 'BTC', market: 'crypto', provider: null, i
 
 // Simple-mode risk presets: conservative checks less often and demands more
 // conviction with smaller size; aggressive is the inverse. All simulator-only.
+// The server ALSO expands the chosen level into the agent's risk_limits exit
+// profile (sl/tp shown here so the user sees it before confirming).
 const RISK_PRESETS = {
-  stable:     { interval_minutes: 240, min_confidence: 0.75, size_usd: 200 },
-  balanced:   { interval_minutes: 60,  min_confidence: 0.65, size_usd: 500 },
-  aggressive: { interval_minutes: 30,  min_confidence: 0.55, size_usd: 1000 },
+  stable:     { interval_minutes: 240, min_confidence: 0.75, size_usd: 200,  sl: 3, tp: 6 },
+  balanced:   { interval_minutes: 60,  min_confidence: 0.65, size_usd: 500,  sl: 5, tp: 10 },
+  aggressive: { interval_minutes: 30,  min_confidence: 0.55, size_usd: 1000, sl: 8, tp: 15 },
 } as const
 type RiskKey = keyof typeof RISK_PRESETS
 
@@ -157,6 +159,7 @@ export function AutomationPage() {
       min_confidence: preset.min_confidence,
       size_usd: preset.size_usd,
       auto_execute: true, account_type: 'simulator',
+      risk_level: simpleRisk,
     })
   }
 
@@ -235,6 +238,9 @@ export function AutomationPage() {
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary,#8a8073)' }}>
                   {k === 'stable' ? T.riskStableDesc : k === 'balanced' ? T.riskBalancedDesc : T.riskAggressiveDesc}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted,#a89f92)', fontVariantNumeric: 'tabular-nums' }}>
+                  SL −{RISK_PRESETS[k].sl}% · TP +{RISK_PRESETS[k].tp}%
                 </span>
               </button>
             ))}
