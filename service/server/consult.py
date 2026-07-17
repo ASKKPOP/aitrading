@@ -78,12 +78,15 @@ def get_session(session_id: int, agent_id: int) -> Optional[dict[str, Any]]:
 
 
 def list_sessions(agent_id: int, limit: int = 20) -> list[dict[str, Any]]:
+    """Consultation sessions only — the global AI Assistant shares this table
+    but is its own surface and must not appear in the consultation list."""
+    from assistant import ASSISTANT_MARKET
     conn = get_db_connection()
     try:
         rows = conn.execute(
             """SELECT s.*, (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = s.id) AS n_messages
-               FROM chat_sessions s WHERE s.agent_id = ?
-               ORDER BY s.id DESC LIMIT ?""", (agent_id, limit)).fetchall()
+               FROM chat_sessions s WHERE s.agent_id = ? AND s.market != ?
+               ORDER BY s.id DESC LIMIT ?""", (agent_id, ASSISTANT_MARKET, limit)).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()

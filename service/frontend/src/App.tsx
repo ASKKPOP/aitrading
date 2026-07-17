@@ -29,6 +29,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'))
 const DocsPage = lazy(() => import('./pages/DocsPage'))
 const MonitorPage = lazy(() => import('./pages/MonitorPage'))
 const ConsultPage = lazy(() => import('./pages/ConsultPage'))
+const AssistantDock = lazy(() => import('./components/AssistantDock'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
@@ -511,6 +512,12 @@ function AppRouter({
 
         <TrendingSidebar />
       </main>
+
+      {/* AI Assistant — mounted once in the authed shell so it is reachable
+          from every page and keeps its conversation across navigation. */}
+      <Suspense fallback={null}>
+        <AssistantDock token={token} />
+      </Suspense>
     </div>
   )
 }

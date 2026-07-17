@@ -33,6 +33,11 @@ class ChatMessageRequest(BaseModel):
     message: str
 
 
+class AssistantMessageRequest(BaseModel):
+    message: str
+    lang: str = "en"
+
+
 def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.post("/api/analysis/run")
@@ -130,4 +135,41 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         from consult import delete_session
         if not delete_session(session_id, agent["id"]):
             raise HTTPException(status_code=404, detail="Session not found")
+        return {"ok": True}
+
+    # ── AI Assistant (Plan 06 C3) — global, knows the user's whole account ──
+
+    @app.get("/api/assistant")
+    async def read_assistant(authorization: str = Header(None)):
+        """The persistent assistant conversation for this agent."""
+        agent = _agent(authorization)
+        from assistant import get_or_create_session
+        from consult import get_messages
+        session = get_or_create_session(agent["id"])
+        return {"session": session, "messages": get_messages(session["id"])}
+
+    @app.get("/api/assistant/profile")
+    async def read_assistant_profile(authorization: str = Header(None)):
+        """The exact account snapshot the assistant sees (API keys excluded)."""
+        agent = _agent(authorization)
+        from assistant import build_user_profile
+        return {"profile": await asyncio.to_thread(build_user_profile, agent["id"])}
+
+    @app.post("/api/assistant/messages")
+    async def post_assistant_message(data: AssistantMessageRequest,
+                                     authorization: str = Header(None)):
+        agent = _agent(authorization)
+        from assistant import assistant_turn
+        try:
+            return await asyncio.to_thread(assistant_turn, agent["id"], data.message, data.lang)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=500, detail=f"Assistant failed: {exc}")
+
+    @app.delete("/api/assistant")
+    async def clear_assistant(authorization: str = Header(None)):
+        agent = _agent(authorization)
+        from assistant import clear_session
+        clear_session(agent["id"])
         return {"ok": True}
