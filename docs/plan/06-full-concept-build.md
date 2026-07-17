@@ -85,6 +85,14 @@ User sets ONLY: total budget cap ($), account (simulator), and a kill switch. Th
 | **IV — Personalized suite** | C3 (guidelines→schedule→monitoring→alerts/email→SMS→personal functions→chat) | ~8d |
 | **V — AI-native fusion** | D4, D5, then D3→enforce after review | ~3.5d |
 
+> **2026-07-17 status.** Phases I–V are implemented and deployed; suite at 1039 passing. Everything above is shipped **except**: C3 *Configuration* (named profiles), and `D3 → enforce`, which is still gated on ≥200 reviewed advisory verdicts — that telemetry cannot accumulate until `AI_FUSION_ENABLED=true`, which is an open cost decision (~$34/day worst case), so the flip is *blocked, not skipped*.
+>
+> Two additions made during Phase V, not in the original table:
+> - **D5b — per-feed age.** D5 shipped unable to verify staleness (the feeds' `as_of` stamps existed but were dropped in transit). Now measured per feed and judged against each feed's own cadence, read from the config that governs it. Verified live: an injected 3h-stale quant feed → `suspect`/high, 2/2; clean → `ok`, 2/2.
+> - **P-3 — measure deterministically, judge with AI.** Code computes the facts (ages, presence, ranges); the AI judges what they mean. An LLM asked to do timestamp arithmetic returns confident guesses, and false assurance is worse than no check.
+>
+> **Model tiering (2026-07-17):** brief = `claude-sonnet-5`, decision = `claude-opus-4-8`. Haiku was measured returning high-severity *false* faults 4/4 on real snapshots (read MA20 against MA200 as a contradiction); Opus was clean 4/4. Briefs feed the trader, so a cheap tier that misreads inputs is not a saving.
+
 Total ≈ 22 working days of sessions; phases ship independently and are each default-safe. Order rationale: Phase I unblocks everything AI (key bridge + tiering + verify) and closes the quick audit gaps; whale/data next so later AI layers see full inputs; Agent Mode before Personalized because C3 reuses its scheduling/alert plumbing; AI-native fusion last so its telemetry lands on a complete factor set.
 
 *All trading remains paper/simulator. Nothing in this plan enables real-money execution.*

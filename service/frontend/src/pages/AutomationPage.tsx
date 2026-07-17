@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import ConfigProfiles from '../components/ConfigProfiles'
 import { tr } from '../i18n'
 
 // Automation (Target 3) — user-configured AI auto-trading rules, backed by
@@ -252,6 +253,10 @@ export function AutomationPage() {
         <button style={chip(mode === 'pro')} onClick={() => setMode('pro')}>③ {T.modePro}</button>
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{modeDesc}</div>
+
+      {/* Named config profiles (Plan 06 C3) — collapsed by default so it does
+          not push the mode cards down for users who never save one. */}
+      <ConfigProfiles token={token} />
 
       {/* ── Mode 0: Agent (full delegation) ── */}
       {mode === 'agent' && (

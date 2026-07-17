@@ -2026,6 +2026,23 @@ def init_database():
     except Exception:
         pass
 
+    # Named config profiles (Plan 06 C3): a saved bundle of risk limits +
+    # trading guidelines the user can switch between or export. Storing a
+    # profile changes nothing live — only apply_profile writes, and it
+    # re-validates through the risk endpoint's own model on the way out.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS config_profiles (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     INTEGER NOT NULL,
+            name         TEXT    NOT NULL,
+            payload_json TEXT    NOT NULL,
+            created_at   TEXT,
+            updated_at   TEXT,
+            UNIQUE (agent_id, name),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
     # Risk engine (signal-collection plan Phase 1): per-agent limits consulted by
     # the automation gate, plus the circuit-breaker state machine. Breaker rows are
     # keyed by scope: 'global' (system trips) or 'agent:<id>' (manual HALT).
