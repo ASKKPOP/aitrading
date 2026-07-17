@@ -446,6 +446,18 @@ class EtfSnapshotHygieneTests(unittest.TestCase):
         self.assertEqual(etf["tracked_count"], 3)
         self.assertEqual(etf["net_score"], 2.9)
 
+    def test_headline_declares_it_speaks_for_btc(self):
+        """The headline is BTC-only while the eth block carries its own flows,
+        so 'inflow' can sit beside an ETH outflow. Live D5 noticed."""
+        etf = self._snapshot_etf({"direction": "inflow", "summary": "BTC ETFs took in $79M",
+                                  "eth": {"latest_net_inflow_usd": -28041314.0, "streak_days": -1}})
+        self.assertEqual(etf["headline_measured_on"], "BTC")
+        self.assertEqual(etf["eth"]["latest_net_inflow_usd"], -28041314.0)
+
+    def test_no_headline_no_label(self):
+        etf = self._snapshot_etf({"btc": {"as_of": "2026-07-16"}})
+        self.assertNotIn("headline_measured_on", etf)
+
 
 if __name__ == "__main__":
     unittest.main()

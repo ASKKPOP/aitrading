@@ -131,6 +131,13 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
                 keep.update({k: summary[k] for k in
                              ("inflow_count", "outflow_count", "tracked_count", "net_score")
                              if k in summary})
+            # The headline direction/summary come from BTC alone (sosovalue_etf:
+            # "BTC decides the headline direction; ETH rides along"), while the
+            # eth block carries its own flows — so the headline can say inflow
+            # while ETH shows an outflow. That is not a contradiction, but only
+            # if the payload says which asset the headline speaks for.
+            if keep.get("direction"):
+                keep["headline_measured_on"] = "BTC"
             snapshot["etf_flows"] = keep
     except Exception:  # noqa: BLE001
         pass
