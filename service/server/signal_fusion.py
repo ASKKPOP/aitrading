@@ -321,6 +321,17 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
                 "note": "AI-fused: the model weighed the factor snapshot itself; "
                         "psychology-only reads are still forced to hold",
             })
+        else:
+            # None with the flag ON is a FAILURE, not a configuration choice:
+            # generate_text swallows provider errors and returns None, so a
+            # transient model outage looked identical to "AI fusion is off".
+            # Those must not share a label — one is a decision, the other is
+            # something being wrong.
+            from ai_fusion import ai_fusion_enabled
+            if ai_fusion_enabled():
+                payload["fusion_source"] = "rule-fallback"
+                payload["note"] = ("AI fusion is enabled but returned nothing usable — "
+                                   "fixed weights used for this read")
     except Exception as exc:  # noqa: BLE001
         logger.debug("ai fusion unavailable for %s: %s", symbol, exc)
         payload["fusion_source"] = "rule-fallback"

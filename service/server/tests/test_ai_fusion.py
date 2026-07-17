@@ -217,15 +217,25 @@ class FuseSymbolIntegrationTests(unittest.TestCase):
         self.assertIn("rule_fusion", out)
         self.assertIsInstance(out["rule_fusion"]["score"], float)
 
-    def test_fallback_is_labeled_rule_not_ai(self):
-        """When AI is unavailable the payload must say 'rule' — never 'ai'."""
-        out = self._fuse(None)
+    def test_fusion_off_is_labeled_rule(self):
+        """Flag off: 'rule' is the honest label — nothing failed."""
+        with patch.dict(os.environ, {"AI_FUSION_ENABLED": "false"}):
+            out = self._fuse(None)
         self.assertEqual(out["fusion_source"], "rule")
         self.assertNotIn("llm_model", out)
         self.assertNotIn("rule_fusion", out)
-        # the deterministic weighted score still works
         self.assertIsInstance(out["score"], float)
         self.assertIn(out["signal"], ("buy", "sell", "hold"))
+
+    def test_enabled_but_unusable_is_labeled_fallback_not_rule(self):
+        """Flag ON + None = the model failed. generate_text swallows provider
+        errors and returns None, so this is what a real outage looks like — it
+        must NOT wear the same label as 'AI fusion is off'."""
+        with patch.dict(os.environ, {"AI_FUSION_ENABLED": "true"}):
+            out = self._fuse(None)
+        self.assertEqual(out["fusion_source"], "rule-fallback")
+        self.assertIn("enabled but returned nothing usable", out["note"])
+        self.assertIn(out["signal"], ("buy", "sell", "hold"))   # still tradeable
 
     def test_ai_exception_falls_back_labeled(self):
         import signal_fusion
