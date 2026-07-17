@@ -152,10 +152,14 @@ class VerifyTests(unittest.TestCase):
         out, _ = self._run(verbose)
         self.assertEqual(len(out["concerns"]), 3)
 
-    def test_cheap_tier_by_default_and_configurable(self):
+    def test_decision_tier_by_default_and_configurable(self):
+        """Default is Opus: measured live, Haiku invented high-severity faults
+        that would block good trades in enforce mode."""
         _, gen = self._run(OK_REPLY)
+        self.assertEqual(gen.call_args.kwargs["tier"], "decision")
+        _, gen = self._run(OK_REPLY, env={"DATA_VERIFY_TIER": "brief"})
         self.assertEqual(gen.call_args.kwargs["tier"], "brief")
-        _, gen = self._run(OK_REPLY, env={"DATA_VERIFY_TIER": "decision"})
+        _, gen = self._run(OK_REPLY, env={"DATA_VERIFY_TIER": "nonsense"})
         self.assertEqual(gen.call_args.kwargs["tier"], "decision")
 
     def test_unknown_severity_defaults_to_low(self):

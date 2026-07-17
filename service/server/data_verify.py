@@ -63,10 +63,20 @@ def data_verify_mode() -> str:
 
 
 def data_verify_tier() -> str:
-    """Judging measured facts is a bounded task, so this defaults to the cheap
-    tier. Set DATA_VERIFY_TIER=decision to spend Opus on it."""
-    tier = os.getenv("DATA_VERIFY_TIER", "brief").strip().lower()
-    return tier if tier in ("brief", "decision") else "brief"
+    """Decision tier (Opus), and the cheap tier is a false economy here.
+
+    Measured live on prod, same BTCUSDT snapshot, 2 runs each (2026-07-17):
+    Haiku returned 'suspect' with two HIGH-severity concerns both times, and
+    both were wrong — it read "price above MA20" against price_above_ma200 as
+    a contradiction (different indicators; ordinary in a downtrend bounce),
+    and it called missing sentiment disqualifying despite the prompt saying
+    sparse data is not suspect on its own. Opus returned 'ok' both times and
+    filed the one real oddity (-44.74% momentum) as low severity.
+    A verifier that invents high-severity faults blocks good trades in
+    enforce mode — worse than no verifier. DATA_VERIFY_TIER=brief is
+    available for cost, but it is not fit for enforce."""
+    tier = os.getenv("DATA_VERIFY_TIER", "decision").strip().lower()
+    return tier if tier in ("brief", "decision") else "decision"
 
 
 def _age_days(iso_date: Any) -> Optional[int]:
@@ -138,9 +148,14 @@ PROMPT_HEADER = (
     "  * anomaly — values that are technically in range but implausible together\n"
     "  * disqualifying absence — a source whose absence makes this specific verdict "
     "unsafe (not merely incomplete: missing data is normal)\n"
-    "Return 'suspect' ONLY when a concern would change a trading decision. Sparse "
-    "data is NOT suspect on its own — the fusion step already handles missing "
-    "inputs. False alarms cost real trades, so do not reach.\n"
+    "Return 'suspect' ONLY when a concern would change a trading decision. False "
+    "alarms cost real trades, so do not reach. Specifically NOT suspect:\n"
+    "  * sparse or missing data — the fusion step already handles absent inputs\n"
+    "  * different indicators disagreeing. MA20, MA60 and MA200 are distinct "
+    "measures: price above MA20 while below MA200 is an ordinary pullback/bounce, "
+    "not a contradiction. Only flag two fields that measure THE SAME thing and "
+    "disagree.\n"
+    "  * a market simply looking unusual — you verify the data, not the trade\n"
     "Respond with ONLY a JSON object. Keep every 'issue' under 20 words and report at "
     "most 3 concerns — a verdict that overruns its budget is discarded unparsed, so "
     "brevity is not a style note.\n"
