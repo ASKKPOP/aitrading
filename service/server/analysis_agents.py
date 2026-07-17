@@ -329,7 +329,12 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         f"{lang_line}\n"
         + _guidelines_block(guidelines) +
         "Weigh disagreement, size risk, and be decisive. Respond with ONLY a JSON object:\n"
-        '{"action":"buy|sell|hold","confidence":0.0-1.0,"entry":number|null,'
+        # 'entry' is asked for as the desk's VIEW and is recorded as
+        # suggested_entry; execution always fills at the live price (P-1).
+        # Saying so keeps the model from treating it as an order instruction.
+        '{"action":"buy|sell|hold","confidence":0.0-1.0,'
+        '"entry":number|null (your suggested level — commentary only; the fill '
+        'is executed at the live market price regardless),'
         '"target":number|null,"stop":number|null,"rationale":"1-2 sentences",'
         '"report":"a 4-6 sentence markdown report synthesizing the analysts"}\n\n'
         f"NEWS ANALYST:\n{briefs['news']}\n\n"
@@ -341,10 +346,21 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
     text = generate_text(prompt, max_tokens=900, temperature=0.3)
     parsed = _parse_decision_json(text or "")
     if parsed:
-        # LLMs sometimes return entry: null — fall back to the live price so
-        # downstream execution always has a valid entry.
-        if not parsed.get("entry"):
-            parsed["entry"] = technical.get("current_price")
+        # P-1: the model does NOT author the execution price.
+        #
+        # Every risk limit is denominated in price — automation sizes with
+        # `size_usd / entry` and the gate checks `quantity * price` — so both
+        # sides use the same number and always reconcile to exactly size_usd.
+        # Let the model set it and it sets the denominator of the entire risk
+        # stack: an entry of 60 instead of 60,000 opens 1000x the position
+        # while every cap still reports ALLOWED. No malice needed; LLMs slip
+        # units routinely. (Audit 2026-07-17, 4/4 QA confirmed.)
+        #
+        # So its price is commentary, kept for the report, and execution always
+        # uses the live one.
+        suggested = parsed.get("entry")
+        parsed["suggested_entry"] = suggested if isinstance(suggested, (int, float)) else None
+        parsed["entry"] = technical.get("current_price")
         if not parsed.get("report"):
             parsed["report"] = parsed.get("rationale", "")
         return parsed
