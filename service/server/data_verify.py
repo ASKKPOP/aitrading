@@ -79,9 +79,13 @@ def data_verify_tier() -> str:
     high-severity faults blocks good trades in enforce mode — worse than no
     verifier.
 
-    'brief' now resolves to Sonnet, so that measurement no longer describes
-    this tier and Sonnet has NOT been measured on this task. Treat brief as
-    unproven here until it is."""
+    'brief' is Sonnet since 2026-07-17 and was measured on the same task:
+    it caught an injected 3h-stale quant feed 2/2 with the right reasoning
+    ("~180x past cadence"), and never produced a false HIGH. It is less
+    settled than Opus on the status label — 1 of 2 clean runs said 'suspect'
+    while raising only LOW concerns — which enforcement ignores, since it
+    requires suspect AND a high-severity concern. So brief is a usable
+    economy here; decision is the steadier read."""
     tier = os.getenv("DATA_VERIFY_TIER", "decision").strip().lower()
     return tier if tier in ("brief", "decision") else "decision"
 
