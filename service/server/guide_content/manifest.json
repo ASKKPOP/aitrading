@@ -29,6 +29,11 @@
       "group": "backtest-report",
       "ko": "백테스트 결과",
       "en": "Backtest Result"
+    },
+    {
+      "group": "ops-keys",
+      "ko": "API 키 (관리자)",
+      "en": "API Keys (owner)"
     }
   ],
   "docs": [
@@ -103,6 +108,13 @@
       "lang": "ko",
       "group": "backtest-report",
       "title": "Phase-4 전략 백테스트 — Go/No-Go 결과"
+    },
+    {
+      "key": "api-keys-en",
+      "lang": "en",
+      "group": "ops-keys",
+      "title": "API Keys Reference",
+      "owner_only": true
     }
   ]
 }

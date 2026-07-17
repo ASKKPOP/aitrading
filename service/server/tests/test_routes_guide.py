@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -87,5 +88,79 @@ class GuideRoutesTests(unittest.TestCase):
             self.assertGreater(len(r.text), 500, f"{doc['key']} suspiciously small")
 
 
+class OwnerOnlyDocTests(unittest.TestCase):
+    """The API-key reference lists which secrets are set — owner-email only.
+    A non-owner must not see it in the listing OR fetch it directly."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+        # an agent (never an owner — agents have no email)
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "reader", "password": "pw123", "initial_balance": 1000.0})
+        self.agent_token = r.json()["token"]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _user_token(self, email):
+        from database import get_db_connection
+        from services import _create_user_session
+        conn = get_db_connection(); cur = conn.cursor()
+        cur.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (email, "x"))
+        uid = cur.lastrowid
+        conn.commit(); conn.close()
+        return _create_user_session(uid)
+
+    def _h(self, tok):
+        return {"Authorization": f"Bearer {tok}"}
+
+    def test_owner_only_doc_hidden_from_non_owner_listing(self):
+        for tok in (self.agent_token, self._user_token("someone@else.com")):
+            keys = [d["key"] for d in self.client.get("/api/guide/docs", headers=self._h(tok)).json()["docs"]]
+            self.assertNotIn("api-keys-en", keys)
+
+    def test_owner_only_doc_404s_for_non_owner(self):
+        for tok in (self.agent_token, self._user_token("nope@else.com")):
+            r = self.client.get("/api/guide/doc/api-keys-en", headers=self._h(tok))
+            self.assertEqual(r.status_code, 404)   # 404 not 403 — do not confirm it exists
+
+    def test_owner_sees_and_fetches_it(self):
+        tok = self._user_token("info@askkpop.com")
+        keys = [d["key"] for d in self.client.get("/api/guide/docs", headers=self._h(tok)).json()["docs"]]
+        self.assertIn("api-keys-en", keys)
+        r = self.client.get("/api/guide/doc/api-keys-en", headers=self._h(tok))
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("API Keys Reference", r.text)
+
+    def test_owner_email_match_is_case_insensitive(self):
+        tok = self._user_token("Info@AskKpop.com")
+        r = self.client.get("/api/guide/doc/api-keys-en", headers=self._h(tok))
+        self.assertEqual(r.status_code, 200)
+
+    def test_allowlist_is_env_configurable(self):
+        with unittest.mock.patch.dict(os.environ, {"DOCS_OWNER_EMAILS": "boss@x.com"}):
+            owner = self.client.get("/api/guide/doc/api-keys-en",
+                                    headers=self._h(self._user_token("boss@x.com")))
+            self.assertEqual(owner.status_code, 200)
+            # the default owner is no longer privileged under the override
+            other = self.client.get("/api/guide/doc/api-keys-en",
+                                    headers=self._h(self._user_token("info@askkpop.com")))
+            self.assertEqual(other.status_code, 404)
+
+    def test_the_doc_never_contains_actual_secret_values(self):
+        """Belt and braces: the page shows status/length, never a real key."""
+        tok = self._user_token("info@askkpop.com")
+        r = self.client.get("/api/guide/doc/api-keys-en", headers=self._h(tok))
+        # no long base64-ish/hex secret blobs in the served page
+        import re
+        self.assertIsNone(re.search(r"\b[A-Za-z0-9_\-]{40,}\b", r.text),
+                          "a 40+ char token-like string leaked into the owner doc")
+
+
 if __name__ == "__main__":
+    import unittest.mock  # noqa: E402
     unittest.main()
