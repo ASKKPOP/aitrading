@@ -352,15 +352,19 @@ export function SignalsBoardPage() {
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
           accent={events?.event_window ? 'var(--error)' : undefined}
         />
+        {/* Keep the recognized "Kimchi" name where traders know it (ko/en/ja);
+            add "Korea" context for th/vi where the bare transliteration is
+            opaque. It is a market-wide signal (Korean retail demand), not a
+            Korea-only readout — relevant to every region. */}
         <Tile
-          label={tr(language, { ko: '김치 프리미엄', en: 'Kimchi Premium', ja: 'キムチプレミアム', th: 'พรีเมียมกิมจิ', vi: 'Kimchi Premium' })}
+          label={tr(language, { ko: '김치 프리미엄', en: 'Kimchi Premium', ja: 'キムチプレミアム', th: 'พรีเมียมเกาหลี (Kimchi)', vi: 'Chênh lệch Hàn Quốc (Kimchi)' })}
           value={cross?.kimchi ? `${cross.kimchi.premium_pct >= 0 ? '+' : ''}${cross.kimchi.premium_pct.toFixed(2)}%` : '—'}
           sub={cross?.kimchi
             ? (cross.kimchi.verdict === 'overheated'
               ? tr(language, { ko: '국내 과열 — 컨트래리언 주의', en: 'local overheating — contrarian caution', ja: '国内過熱 — 逆張り警戒', th: 'ร้อนแรงในประเทศ — ระวังสวนทาง', vi: 'quá nóng nội địa — thận trọng ngược chiều' })
               : cross.kimchi.verdict === 'discount'
                 ? tr(language, { ko: '디스카운트 — 한국 수요 위축', en: 'discount — Korean demand contraction', ja: 'ディスカウント — 韓国需要縮小', th: 'ส่วนลด — อุปสงค์เกาหลีหด', vi: 'chiết khấu — nhu cầu Hàn Quốc giảm' })
-                : tr(language, { ko: 'Upbit 대비 글로벌 스프레드', en: 'Upbit vs global spread', ja: 'Upbit対グローバル', th: 'Upbit เทียบทั่วโลก', vi: 'Upbit so với toàn cầu' }))
+                : tr(language, { ko: '한국 거래소 vs 글로벌 — 한국 개인 수요 지표', en: 'Korean exchange vs global — a gauge of Korean retail demand', ja: '韓国取引所 vs グローバル — 韓国個人需要の指標', th: 'ตลาดเกาหลี vs ทั่วโลก — วัดอุปสงค์รายย่อยเกาหลี', vi: 'Sàn Hàn Quốc vs toàn cầu — thước đo nhu cầu bán lẻ Hàn Quốc' }))
             : cross?.available === false
               ? tr(language, { ko: '비활성화됨 (CROSS_MARKET_ENABLED)', en: 'disabled (CROSS_MARKET_ENABLED)', ja: '無効 (CROSS_MARKET_ENABLED)', th: 'ปิดอยู่ (CROSS_MARKET_ENABLED)', vi: 'tắt (CROSS_MARKET_ENABLED)' })
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
