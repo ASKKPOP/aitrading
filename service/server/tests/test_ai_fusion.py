@@ -89,13 +89,25 @@ class AiFusionTests(unittest.TestCase):
         self.assertEqual(out["score"], -1.0)
         self.assertEqual(out["confidence"], 0.0)
 
-    def test_psych_only_forced_hold(self):
-        """The model may not trade on psychology alone — structural rule."""
+    def test_psych_only_is_never_put_to_the_model(self):
+        """The invariant is now enforced by NOT ASKING: with psychology alone
+        the verdict is 'hold' whatever a model would say, so it is not
+        consulted — it cannot argue past a rule it is never shown. Previously
+        we called the model and overrode a 'buy' afterwards; same outcome, two
+        Opus calls cheaper, and the rule is no longer negotiable.
+        The resulting hold is asserted in PublicEndpointAbuseTests via
+        fuse_symbol (the caller's rule path), which is where it now lives.
+        """
         out = self._run(json.dumps({"signal": "buy", "score": 0.9, "confidence": 0.9,
                                     "components": {}, "weights_used": {}}),
                         quant=None, sentiment=None, psych=PSYCH)
-        self.assertEqual(out["signal"], "hold")
-        self.assertTrue(any("forced hold" in e for e in out["evidence"]))
+        self.assertIsNone(out)
+
+    def test_a_single_usable_component_still_reaches_the_model(self):
+        """The guard must be narrow: psych + sentiment is not psych-alone."""
+        out = self._run(AI_REPLY, quant=None, sentiment=SENTIMENT, psych=PSYCH)
+        self.assertIsNotNone(out)
+        self.assertEqual(out["fusion_source"], "ai")
 
     def test_unusable_replies_return_none(self):
         self.assertIsNone(self._run("no json here"))
@@ -161,6 +173,70 @@ class CacheTests(unittest.TestCase):
             out = ai_fusion.fuse_with_ai("ETHUSDT", QUANT, SENTIMENT, PSYCH)
         self.assertEqual(gen.call_args.kwargs["tier"], "brief")
         self.assertEqual(out["llm_model"], "claude-haiku-4-5")
+
+
+class PublicEndpointAbuseTests(unittest.TestCase):
+    """The fusion endpoint is public and unauthenticated, so callers decide how
+    many symbols exist. Live: a made-up symbol bought 2 Opus calls and ~21s of
+    a worker (audit 2026-07-17, 4/4 QA)."""
+
+    def setUp(self):
+        ai_fusion._AI_CACHE.clear()
+        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true",
+                                            "DATA_VERIFY_MODE": "off"})
+        self._env.start()
+
+    def tearDown(self):
+        self._env.stop()
+        ai_fusion._AI_CACHE.clear()
+
+    def test_nothing_to_fuse_costs_no_model_call(self):
+        """quant=None + sentiment=None is structurally forced to hold, so the
+        model cannot change the answer — do not pay it."""
+        with patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text") as gen:
+            out = ai_fusion.fuse_with_ai("ZZQQ9", None, None, PSYCH)
+        self.assertIsNone(out)
+        self.assertEqual(gen.call_count, 0)      # the money pump is closed
+
+    def test_a_real_symbol_still_calls_the_model(self):
+        with patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=AI_REPLY) as gen, \
+             patch("llm_client.active_provider_model", return_value="m"):
+            out = ai_fusion.fuse_with_ai("BTCUSDT", QUANT, None, PSYCH)
+        self.assertEqual(gen.call_count, 1)
+        self.assertEqual(out["fusion_source"], "ai")
+
+    def test_skipping_is_labelled_rule_not_fallback(self):
+        """Deliberately not calling the model is a choice, not a failure."""
+        import signal_fusion
+        with patch.object(signal_fusion, "_quant_component", return_value=None), \
+             patch.object(signal_fusion, "_sentiment_component", return_value=None), \
+             patch.object(signal_fusion, "_psych_component", return_value=PSYCH):
+            out = signal_fusion.fuse_symbol("ZZQQ9")
+        self.assertEqual(out["fusion_source"], "rule")
+        self.assertEqual(out["signal"], "hold")   # structurally forced anyway
+
+    def test_cache_is_bounded_against_novel_symbols(self):
+        """A loop over junk symbols must not grow the cache forever."""
+        with patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=AI_REPLY), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            for i in range(ai_fusion._AI_CACHE_MAX + 25):
+                ai_fusion.fuse_with_ai(f"SYM{i}", QUANT, None, PSYCH)
+        self.assertLessEqual(len(ai_fusion._AI_CACHE), ai_fusion._AI_CACHE_MAX)
+
+    def test_eviction_drops_the_oldest_first(self):
+        with patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=AI_REPLY), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            for i in range(ai_fusion._AI_CACHE_MAX + 5):
+                ai_fusion.fuse_with_ai(f"S{i}", QUANT, None, PSYCH)
+        self.assertNotIn("S0", ai_fusion._AI_CACHE)                       # oldest gone
+        self.assertIn(f"S{ai_fusion._AI_CACHE_MAX + 4}", ai_fusion._AI_CACHE)  # newest kept
 
 
 class FuseSymbolIntegrationTests(unittest.TestCase):

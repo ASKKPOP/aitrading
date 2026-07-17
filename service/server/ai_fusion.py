@@ -44,6 +44,11 @@ VALID_SIGNALS = ("buy", "sell", "hold")
 # seconds. Tunable per deployment.
 _AI_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
+# The cache is keyed by symbol on a PUBLIC endpoint, so its size is decided by
+# callers, not by us. Bounded and evicted oldest-first: a loop over novel
+# symbols must not grow it forever. Comfortably above any real watchlist.
+_AI_CACHE_MAX = 64
+
 
 def ai_fusion_enabled() -> bool:
     return os.getenv("AI_FUSION_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
@@ -201,6 +206,18 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
     if not ai_fusion_enabled() or not llm_configured():
         return None
 
+    # THE STRUCTURAL INVARIANT, enforced by not asking: psychology alone never
+    # trades. With no quant and no sentiment the verdict is 'hold' whatever the
+    # model answers, so the model is not consulted — it cannot argue its way
+    # past a rule it is never shown. The caller's rule path produces the hold.
+    #
+    # This also closes a real cost vector: the fusion endpoint is public and
+    # unauthenticated, and a made-up symbol (quant=None, sentiment=None) bought
+    # two Opus calls and ~21s of a threadpool worker — an anonymous loop over
+    # junk symbols was a money pump. (Audit 2026-07-17, 4/4 QA confirmed.)
+    if quant is None and sentiment is None:
+        return None
+
     # Serve a recent AI verdict rather than paying for a frontier call on every
     # 30s dashboard poll. Cached entries carry the age they were served at, so
     # a reader can see the verdict is a minute old rather than assume it is live.
@@ -222,12 +239,6 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
     confidence = _clamp(parsed.get("confidence"), 0.0, 1.0, 0.5)
 
     # Structural invariant (safety, not judgment): psychology never trades alone.
-    usable = [k for k, v in (("quant", quant), ("sentiment", sentiment)) if v is not None]
-    if not usable and signal != "hold":
-        signal = "hold"
-        parsed.setdefault("evidence", []).append(
-            "forced hold: psychology-only evidence never trades alone (structural rule)")
-
     components = parsed.get("components") if isinstance(parsed.get("components"), dict) else {}
     weights_used = parsed.get("weights_used") if isinstance(parsed.get("weights_used"), dict) else {}
     evidence = [str(e)[:200] for e in (parsed.get("evidence") or [])][:8]
@@ -257,4 +268,6 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
         logger.warning("data verification failed for %s: %s", symbol, exc)
 
     _AI_CACHE[symbol] = (time.time(), result)
+    while len(_AI_CACHE) > _AI_CACHE_MAX:
+        _AI_CACHE.pop(min(_AI_CACHE, key=lambda k: _AI_CACHE[k][0]), None)
     return {**result, "cached_age_s": 0}

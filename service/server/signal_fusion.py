@@ -337,7 +337,12 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
             # Those must not share a label — one is a decision, the other is
             # something being wrong.
             from ai_fusion import ai_fusion_enabled
-            if ai_fusion_enabled():
+            # ...unless there was nothing to fuse in the first place. With no
+            # quant and no sentiment the verdict is structurally forced to
+            # 'hold', so the model is deliberately not called — that is a
+            # choice, not a failure, and must not wear the failure label.
+            had_material = quant is not None or sentiment is not None
+            if ai_fusion_enabled() and had_material:
                 payload["fusion_source"] = "rule-fallback"
                 payload["note"] = ("AI fusion is enabled but returned nothing usable — "
                                    "fixed weights used for this read")
