@@ -50,7 +50,8 @@ class FlagTests(unittest.TestCase):
 class AiFusionTests(unittest.TestCase):
     def setUp(self):
         ai_fusion._AI_CACHE.clear()   # module-level cache is process-global
-        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true"})
+        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true",
+                                            "DATA_VERIFY_MODE": "off"})
         self._env.start()
 
     def tearDown(self):
@@ -107,7 +108,10 @@ class CacheTests(unittest.TestCase):
 
     def setUp(self):
         ai_fusion._AI_CACHE.clear()
-        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true"})
+        # D5's verifier is a second model call; these tests are about the
+        # fusion cache alone, so hold it off (D5 has its own suite).
+        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true",
+                                            "DATA_VERIFY_MODE": "off"})
         self._env.start()
 
     def tearDown(self):

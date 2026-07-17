@@ -104,8 +104,20 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
     try:
         from market_intel import get_etf_flows_payload
         etf = get_etf_flows_payload()
-        if etf.get("summary"):
-            snapshot["etf_flows"] = etf["summary"]
+        summary = etf.get("summary") or {}
+        if summary:
+            # The real (SoSoValue) summary is merged OVER the estimated proxy,
+            # which leaves the proxy's per-ETF counts behind at zero when its
+            # rows came back empty. Passing those on shows the model
+            # "direction: inflow" beside "net_score: 0" — a contradiction that
+            # isn't real. Send the counts only when they describe real rows.
+            keep = {k: v for k, v in summary.items()
+                    if k not in ("inflow_count", "outflow_count", "tracked_count", "net_score")}
+            if summary.get("tracked_count"):
+                keep.update({k: summary[k] for k in
+                             ("inflow_count", "outflow_count", "tracked_count", "net_score")
+                             if k in summary})
+            snapshot["etf_flows"] = keep
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -198,7 +210,7 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
     weights_used = parsed.get("weights_used") if isinstance(parsed.get("weights_used"), dict) else {}
     evidence = [str(e)[:200] for e in (parsed.get("evidence") or [])][:8]
 
-    result = {
+    result: dict[str, Any] = {
         "signal": signal,
         "score": round(score, 3),
         "confidence": round(confidence, 2),
@@ -212,5 +224,15 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
         "llm_model": active_provider_model(tier=tier),
         "fused_at": _now_iso(),
     }
+
+    # D5: verify the inputs the verdict was built from. Runs inside the cache
+    # so it costs once per TTL alongside the fusion call, not once per poll.
+    # Fail-open — a verifier that errors must not sink a usable verdict.
+    try:
+        from data_verify import apply_verification, verify_snapshot
+        result = apply_verification(result, verify_snapshot(snapshot))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("data verification failed for %s: %s", symbol, exc)
+
     _AI_CACHE[symbol] = (time.time(), result)
     return {**result, "cached_age_s": 0}
