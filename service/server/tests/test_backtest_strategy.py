@@ -215,3 +215,49 @@ class StatisticsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PooledDrawdownTests(unittest.TestCase):
+    """summarize()'s worst-asset max DD feeds the max-DD go/no-go gate. It must
+    reflect the worst DD across ALL folds, not just the last one per symbol.
+
+    Bug (found by the 2026-07-17 doc-vs-code scan): per_asset was keyed by
+    symbol, so pooling 4 folds of the same 3 symbols overwrote all but the last
+    fold, and pooled_dd = max(per_asset) reported the LAST fold's worst DD. A
+    40% drawdown in fold 1 vanished behind a 2% drawdown in fold 4.
+    """
+
+    def _result(self, symbol, values):
+        from backtest_strategy import SimResult
+        days = [(f"2020-01-{i+1:02d}", v) for i, v in enumerate(values)]
+        return SimResult(symbol=symbol, start=days[0][0], end=days[-1][0],
+                         initial_cash=values[0], final_value=values[-1],
+                         daily_values=days)
+
+    def test_pooled_dd_is_the_worst_across_all_folds_not_the_last(self):
+        from backtest_strategy import summarize
+        # BTC fold-1: 100 -> 60 (40% DD). BTC fold-2 (same symbol): 100 -> 98 (2% DD).
+        deep = self._result("BTCUSDT", [100, 60, 80])       # 40% drawdown
+        shallow = self._result("BTCUSDT", [100, 98, 99])    # 2% drawdown
+        pooled = summarize([deep, shallow])["pooled"]["worst_asset_max_dd_pct"]
+        self.assertGreaterEqual(pooled, 39.0,
+                                "the 40% fold-1 drawdown must not be hidden by fold-2's 2%")
+
+    def test_order_does_not_change_the_worst(self):
+        from backtest_strategy import summarize
+        deep = self._result("BTCUSDT", [100, 60, 80])
+        shallow = self._result("BTCUSDT", [100, 98, 99])
+        a = summarize([deep, shallow])["pooled"]["worst_asset_max_dd_pct"]
+        b = summarize([shallow, deep])["pooled"]["worst_asset_max_dd_pct"]
+        self.assertEqual(a, b)   # collision-order independence — the whole point
+
+    def test_multi_symbol_multi_fold_takes_the_global_worst(self):
+        from backtest_strategy import summarize
+        results = [
+            self._result("BTCUSDT", [100, 90, 95]),   # 10%
+            self._result("ETHUSDT", [100, 55, 70]),   # 45% — the true worst
+            self._result("BTCUSDT", [100, 97, 99]),   # 3%  (later BTC fold)
+            self._result("ETHUSDT", [100, 92, 96]),   # 8%  (later ETH fold)
+        ]
+        pooled = summarize(results)["pooled"]["worst_asset_max_dd_pct"]
+        self.assertGreaterEqual(pooled, 44.0)

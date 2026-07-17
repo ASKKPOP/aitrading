@@ -125,6 +125,12 @@
       <h1>Hybrid Strategy: Chart Patterns × Human Psychology</h1>
       <p class="sub">A buy/sell decision framework that mixes both sides according to what the verified research actually supports: <b>psychology sets the regime</b> (when to trade, how much risk), <b>charts set the trigger</b> (what and at what price), <b>volume + sentiment confirm</b>, and <b>volatility sets the size</b>. No single signal is trusted — you act only on confluence.</p>
       <span class="stamp">Built from 2 rounds of verified deep research · July 2026 · Educational — not investment advice</span>
+      <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12.5px;line-height:1.6">
+        <b>How this framework maps to the crypto implementation.</b> This page describes the research-backed strategy; the running system adapts it for crypto.
+        <b>VIX → the crypto Fear &amp; Greed index (F&amp;G)</b> — an inverted scale: panic is <b>F&amp;G &lt; 20</b> (not VIX &gt; 30), calm is <b>F&amp;G &gt; 30</b>. There is no VIX for crypto (<code>regime.py</code>, <code>strategy_config.py</code>).
+        <b>Named chart patterns (double bottom, H&amp;S) → a composite technical score</b> (RSI · MA · funding · basis · long/short) confirmed by volume — the engine has no candlestick-pattern detector (<code>confluence.py</code> B3/S3).
+        <b>Overnight-return sentiment → StockTwits crowd tilt.</b> The B1–B6 / S1–S6 names below are the real engine condition labels.
+      </div>
     </header>
 
     <!-- ① CONCEPT -->
