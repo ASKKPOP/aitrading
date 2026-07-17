@@ -71,25 +71,22 @@ def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.get("/api/guide/docs")
     async def guide_docs(authorization: str = Header(None)):
+        # The whole guide is owner-only: a logged-in non-owner is forbidden,
+        # so nothing about the docs (not even the listing) is exposed.
         _require_login(authorization)
-        manifest = _load_manifest()
         if not _is_owner(authorization):
-            # Owner-only docs are hidden from the listing entirely, and their
-            # group with them if nothing else remains in it.
-            docs = [d for d in manifest.get("docs", []) if not d.get("owner_only")]
-            shown_groups = {d.get("group") for d in docs}
-            groups = [g for g in manifest.get("groups", []) if g.get("group") in shown_groups]
-            return {"groups": groups, "docs": docs}
-        return manifest
+            raise HTTPException(status_code=403, detail="Owner only")
+        return _load_manifest()
 
     @app.get("/api/guide/doc/{key}")
     async def guide_doc(key: str, authorization: str = Header(None)):
         _require_login(authorization)
+        # Non-owners get 404 (not 403) so no document key — including whether
+        # this one exists — is ever confirmed to a non-owner.
+        if not _is_owner(authorization):
+            raise HTTPException(status_code=404, detail="Unknown document")
         manifest = _load_manifest()
-        doc = next((d for d in manifest["docs"] if d["key"] == key), None)
-        # Owner-only docs 404 for everyone else — a 403 would confirm the doc
-        # exists, so non-owners see the same response as for an unknown key.
-        if doc is None or (doc.get("owner_only") and not _is_owner(authorization)):
+        if not any(d["key"] == key for d in manifest["docs"]):
             raise HTTPException(status_code=404, detail="Unknown document")
         path = _CONTENT_DIR / f"{key}.html"   # keys come from the manifest, never the path
         if not path.exists():
