@@ -480,3 +480,25 @@ def llm_context_for_agent(agent_id: Optional[int]):
         return LlmContext(provider=provider, model=model, api_key=api_key, source="user")
     except Exception:  # noqa: BLE001 — settings lookup must never break analysis
         return None
+
+
+def guidelines_for_agent(agent_id: Optional[int]) -> Optional[str]:
+    """The owning user's freeform trading guidelines for prompt injection
+    (Plan 06 C3). Guidelines may tighten behavior but can never loosen the
+    deterministic risk gates — those run downstream regardless of prompts.
+    Fail-soft: any problem returns None."""
+    if not agent_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT u.trading_guidelines FROM users u
+               JOIN agents a ON a.user_id = u.id WHERE a.id = ?""",
+            (agent_id,))
+        row = cursor.fetchone()
+        conn.close()
+        text = (row["trading_guidelines"] or "").strip() if row else ""
+        return text[:2000] or None
+    except Exception:  # noqa: BLE001
+        return None

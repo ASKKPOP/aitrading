@@ -1158,6 +1158,8 @@ def init_database():
         # Plan 06 C1 — Agent Mode: full-delegation rules with a budget cap
         "ALTER TABLE automation_configs ADD COLUMN mode TEXT NOT NULL DEFAULT 'manual'",
         "ALTER TABLE automation_configs ADD COLUMN budget_usd REAL",
+        # Plan 06 C3 — Personalized mode: freeform user trading guidelines
+        "ALTER TABLE users ADD COLUMN trading_guidelines TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -1904,6 +1906,25 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_automation_configs_agent
         ON automation_configs(agent_id, enabled)
+    """)
+
+    # Plan 06 C3 — alert journal (doubles as the in-app alert feed)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alert_log (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id      INTEGER NOT NULL,
+            user_id       INTEGER,
+            kind          TEXT    NOT NULL,
+            title         TEXT    NOT NULL,
+            body          TEXT,
+            channels_json TEXT,
+            dedupe_key    TEXT,
+            created_at    TEXT    NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_alert_log_agent
+        ON alert_log(agent_id, created_at)
     """)
 
     # Plan 06 C1 — Agent Mode decision journal: every parameter set the AI

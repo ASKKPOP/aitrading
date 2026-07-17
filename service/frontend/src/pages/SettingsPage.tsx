@@ -41,6 +41,9 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
 }) {
   const { language, setLanguage } = useLanguage()
   const [targets, setTargets] = useState<ApiTarget[]>([])
+  const [guidelines, setGuidelines] = useState('')
+  const [alertPrefs, setAlertPrefs] = useState<{ email_enabled: boolean; sms_enabled: boolean; phone: string }>(
+    { email_enabled: false, sms_enabled: false, phone: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savedMsg, setSavedMsg] = useState('')
@@ -57,6 +60,14 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       if (!res.ok) throw new Error(`${res.status}`)
       const data = await res.json()
       setTargets(data.targets || [])
+      const alertsTarget = (data.targets || []).find((t: ApiTarget) => t.target === 'alerts')
+      if (alertsTarget?.config) {
+        setAlertPrefs({
+          email_enabled: String(alertsTarget.config.email_enabled).toLowerCase() === 'true',
+          sms_enabled: String(alertsTarget.config.sms_enabled).toLowerCase() === 'true',
+          phone: alertsTarget.config.phone || '',
+        })
+      }
       setError('')
     } catch {
       setError(tr(language, { ko: '설정을 불러오지 못했습니다', en: 'Failed to load settings', ja: '設定を読み込めませんでした', th: 'โหลดการตั้งค่าไม่สำเร็จ', vi: 'Không tải được cài đặt' }))
@@ -67,9 +78,46 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
 
   useEffect(() => { load() }, [userToken])
 
+  useEffect(() => {
+    // Personalized-mode guidelines (Plan 06 C3)
+    fetch(`${API_BASE}/users/guidelines`, { headers: auth() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setGuidelines(d.guidelines || '') })
+      .catch(() => { /* transient */ })
+  }, [userToken])
+
   const flash = (msg: string) => {
     setSavedMsg(msg)
     setTimeout(() => setSavedMsg(''), 2500)
+  }
+
+  const saveAlertPrefs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/users/settings/api/alerts`, {
+        method: 'PUT', headers: auth(),
+        body: JSON.stringify({ config: {
+          email_enabled: String(alertPrefs.email_enabled),
+          sms_enabled: String(alertPrefs.sms_enabled),
+          phone: alertPrefs.phone,
+        } }),
+      })
+      if (!res.ok) throw new Error(`${res.status}`)
+      flash(tr(language, { ko: '알림 설정이 저장되었습니다', en: 'Alert settings saved', ja: '通知設定を保存しました', th: 'บันทึกการแจ้งเตือนแล้ว', vi: 'Đã lưu cài đặt cảnh báo' }))
+    } catch {
+      flash(tr(language, { ko: '저장 실패', en: 'Save failed', ja: '保存失敗', th: 'บันทึกล้มเหลว', vi: 'Lưu thất bại' }))
+    }
+  }
+
+  const saveGuidelines = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/users/guidelines`, {
+        method: 'PUT', headers: auth(), body: JSON.stringify({ guidelines }),
+      })
+      if (!res.ok) throw new Error(`${res.status}`)
+      flash(tr(language, { ko: '지침이 저장되었습니다', en: 'Guidelines saved', ja: '指針を保存しました', th: 'บันทึกแนวทางแล้ว', vi: 'Đã lưu chỉ dẫn' }))
+    } catch {
+      flash(tr(language, { ko: '저장 실패', en: 'Save failed', ja: '保存失敗', th: 'บันทึกล้มเหลว', vi: 'Lưu thất bại' }))
+    }
   }
 
   const saveTarget = async (t: ApiTarget) => {
@@ -220,6 +268,65 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         </div>
       </div>
 
+      {/* ── AI trading guidelines (Personalized mode) ───── */}
+      {sectionTitle({ ko: 'AI 지침 — 개인화 모드', en: 'AI Guidelines — Personalized mode', ja: 'AI指針 — パーソナライズ', th: 'แนวทาง AI — โหมดส่วนบุคคล', vi: 'Chỉ dẫn AI — chế độ cá nhân hóa' })}
+      <div className="card" style={{ padding: '14px 16px' }}>
+        <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          {tr(language, {
+            ko: '자유 형식 지침이 모든 AI 분석·결정·검증 프롬프트에 주입됩니다. 지침은 AI를 더 신중하게 만들 수 있지만, 리스크 한도·브레이커·예산 상한을 완화할 수는 없습니다. (최대 2,000자)',
+            en: 'Freeform guidelines injected into every AI analysis, decision and verification prompt. Guidelines can make the AI more cautious — they can never loosen risk limits, breakers or budget caps. (Max 2,000 chars)',
+            ja: '自由形式の指針が全てのAI分析・決定・検証プロンプトに注入されます。指針はAIを慎重にできますが、リスク制限は緩められません。(最大2,000文字)',
+            th: 'แนวทางแบบอิสระถูกแทรกในทุกพรอมป์ต์ของ AI ทำให้ AI ระมัดระวังขึ้นได้ แต่ผ่อนคลายลิมิตความเสี่ยงไม่ได้ (สูงสุด 2,000 ตัวอักษร)',
+            vi: 'Chỉ dẫn tự do được đưa vào mọi prompt phân tích, quyết định và kiểm chứng của AI. Chỉ dẫn có thể khiến AI thận trọng hơn — không bao giờ nới lỏng giới hạn rủi ro. (Tối đa 2.000 ký tự)',
+          })}
+        </div>
+        <textarea
+          value={guidelines}
+          onChange={e => setGuidelines(e.target.value.slice(0, 2000))}
+          rows={5}
+          placeholder={tr(language, { ko: '예: 주말에는 신규 진입을 피하고, 알트코인보다 BTC·ETH를 선호하며, 손실 중인 포지션에 물타기하지 마세요.', en: 'e.g. Avoid new entries on weekends, prefer BTC/ETH over alts, never average down on losing positions.', ja: '例: 週末の新規エントリーを避け、アルトよりBTC・ETHを優先、損失ポジションのナンピン禁止。', th: 'เช่น หลีกเลี่ยงการเข้าใหม่ช่วงสุดสัปดาห์ ชอบ BTC/ETH มากกว่าเหรียญเล็ก', vi: 'VD: Tránh vào lệnh cuối tuần, ưu tiên BTC/ETH, không trung bình giá lệnh lỗ.' })}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+          <button onClick={saveGuidelines} className="btn btn-primary" style={{ fontSize: '12px', padding: '7px 16px', cursor: 'pointer' }}>
+            {tr(language, { ko: '지침 저장', en: 'Save guidelines', ja: '指針を保存', th: 'บันทึกแนวทาง', vi: 'Lưu chỉ dẫn' })}
+          </button>
+          <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{guidelines.length}/2000</span>
+        </div>
+      </div>
+
+      {/* ── Alerts (email · SMS) ─────────────────────────── */}
+      {sectionTitle({ ko: '알림 — 이메일 · SMS', en: 'Alerts — Email · SMS', ja: '通知 — メール · SMS', th: 'การแจ้งเตือน — อีเมล · SMS', vi: 'Cảnh báo — Email · SMS' })}
+      <div className="card" style={{ padding: '14px 16px' }}>
+        <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+          {tr(language, {
+            ko: '체결·손절/익절·브레이커 알림입니다. 인앱 알림은 항상 기록되며, 이메일·SMS는 여기서 켭니다 (시간당 외부 발송 제한 있음).',
+            en: 'Alerts for fills, SL/TP closes and breaker halts. In-app alerts are always journaled; enable email/SMS here (external sends are rate-limited hourly).',
+            ja: '約定・SL/TP・ブレーカーの通知。アプリ内通知は常に記録され、メール・SMSはここで有効化 (時間あたり制限あり)。',
+            th: 'แจ้งเตือนการเทรด SL/TP และเบรกเกอร์ การแจ้งในแอปบันทึกเสมอ เปิดอีเมล/SMS ที่นี่ (จำกัดต่อชั่วโมง)',
+            vi: 'Cảnh báo khớp lệnh, SL/TP và breaker. Cảnh báo trong app luôn được ghi; bật email/SMS tại đây (giới hạn theo giờ).',
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={alertPrefs.email_enabled}
+              onChange={e => setAlertPrefs(p => ({ ...p, email_enabled: e.target.checked }))} />
+            {tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email' })} ({userInfo?.email || '—'})
+          </label>
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={alertPrefs.sms_enabled}
+              onChange={e => setAlertPrefs(p => ({ ...p, sms_enabled: e.target.checked }))} />
+            SMS
+          </label>
+          <input type="tel" value={alertPrefs.phone} placeholder="+821012345678"
+            onChange={e => setAlertPrefs(p => ({ ...p, phone: e.target.value.trim() }))}
+            style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, width: 170 }} />
+          <button onClick={saveAlertPrefs} className="btn btn-primary" style={{ fontSize: '12px', padding: '7px 16px', cursor: 'pointer' }}>
+            {tr(language, { ko: '알림 설정 저장', en: 'Save alert settings', ja: '通知設定を保存', th: 'บันทึกการแจ้งเตือน', vi: 'Lưu cài đặt cảnh báo' })}
+          </button>
+        </div>
+      </div>
+
       {/* ── API configuration per target ────────────────── */}
       {sectionTitle({ ko: 'API 구성 — 데이터 · AI 소스별 설정', en: 'API Configuration — per data / AI target', ja: 'API構成 — データ · AIソース別設定', th: 'การกำหนดค่า API — แยกตามแหล่งข้อมูล/AI', vi: 'Cấu hình API — theo nguồn dữ liệu/AI' })}
       <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
@@ -235,7 +342,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       {loading && <div className="card" style={{ padding: '16px' }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...' })}</div>}
       {error && <div className="card" style={{ padding: '16px', color: 'var(--error, #d03b3b)' }}>{error}</div>}
 
-      {targets.map(t => {
+      {targets.filter(t => t.target !== 'alerts').map(t => {
         const draft = draftOf(t)
         return (
           <div key={t.target} className="card" style={{ padding: '14px 16px', marginBottom: '10px', opacity: t.enabled ? 1 : 0.55 }}>

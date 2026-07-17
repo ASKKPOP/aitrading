@@ -117,6 +117,13 @@ def register_risk_routes(app: FastAPI, ctx: RouteContext) -> None:
         from calibration import get_calibration
         return get_calibration()
 
+    @app.get("/api/alerts")
+    async def read_alerts(limit: int = 30, authorization: str = Header(None)):
+        """In-app alert feed (Plan 06 C3) — alert_log for this agent."""
+        agent = _auth(authorization)
+        from alerts import recent_alerts
+        return {"alerts": recent_alerts(agent["id"], limit=limit)}
+
     @app.get("/api/risk/breaker")
     async def read_breaker(authorization: str = Header(None)):
         agent = _auth(authorization)

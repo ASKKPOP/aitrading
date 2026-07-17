@@ -183,6 +183,13 @@ def trip_breaker(reason: str, agent_id: Optional[int] = None, *,
     if scope is None:
         scope = f"agent:{agent_id}" if agent_id is not None else "global"
     logger.warning("breaker HALT (%s, by=%s): %s", scope, tripped_by, reason)
+    if agent_id is not None:
+        try:
+            from alerts import send_alert
+            send_alert(agent_id, "breaker", f"Circuit breaker HALT ({scope})",
+                       f"Trading halted: {reason}", dedupe_key=f"breaker:{scope}")
+        except Exception:  # noqa: BLE001
+            logger.debug("breaker alert failed for %s", scope)
     return _set_breaker(scope, "halted", reason, tripped_by=tripped_by, expires_at=expires_at)
 
 
@@ -668,6 +675,15 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             closed += 1
             logger.info("SL/TP watcher closed position %s (%s %s @ %s, %s)",
                         pos["id"], pos["symbol"], pos["market"], price, trigger)
+            try:
+                from alerts import send_alert
+                send_alert(pos["agent_id"], "position_closed",
+                           f"{trigger.replace('_', ' ')} — {pos['symbol']}",
+                           (f"Watcher closed {pos['symbol']} ({pos['market']}) at "
+                            f"${price:.2f} ({trigger})"),
+                           dedupe_key=f"close:{signal_id}")
+            except Exception:  # noqa: BLE001
+                logger.debug("close alert failed for position %s", pos["id"])
         else:
             logger.warning("SL/TP watcher failed to close position %s: %s", pos["id"], skip)
     return {"checked": len(rows), "closed": closed}

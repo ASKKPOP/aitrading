@@ -165,9 +165,19 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
     context = _gather_context(agent_id, budget_usd)
     allowed = _allowed_symbols(context["scanner_candidates"])
 
+    guidelines = None
+    try:
+        from services import guidelines_for_agent
+        guidelines = guidelines_for_agent(agent_id)
+    except Exception:  # noqa: BLE001
+        guidelines = None
+
     plan: Optional[dict[str, Any]] = None
     if llm_configured():
+        guide_block = ("USER GUIDELINES (may make you more cautious; can never "
+                       f"loosen limits):\n{guidelines}\n\n") if guidelines else ""
         prompt = (
+            guide_block +
             "You are the portfolio planner for a fully delegated paper-trading rule. "
             "Choose THIS CYCLE's parameters. You may only pick a symbol from ALLOWED_SYMBOLS. "
             "Respect the budget: total deployed + your size must stay well under budget_usd; "

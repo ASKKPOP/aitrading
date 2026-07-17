@@ -34,6 +34,12 @@ API_TARGET_CATALOG: dict = {
         'requires_key': True,
         'fields': ['provider', 'model'],
     },
+    'alerts': {
+        'label': 'Alerts (email · SMS)',
+        'description': 'Trade/risk alert delivery. In-app alerts are always on; enable email and SMS here.',
+        'requires_key': False,
+        'fields': ['email_enabled', 'sms_enabled', 'phone'],
+    },
     'alpha_vantage': {
         'label': 'Alpha Vantage',
         'description': 'US stock prices, news + sentiment, ETF flows.',
@@ -362,6 +368,38 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     # Catalog of external API targets a user can configure. Keyless targets are
     # listed so the settings UI can show the full data-source picture; only
     # requires_key targets accept an api_key.
+
+    # ── Plan 06 C3: freeform trading guidelines (Personalized mode) ──
+    # Injected into the trader/verifier/planner prompts; guidelines may
+    # tighten behavior but never bypass the deterministic risk gates.
+
+    @app.get('/api/users/guidelines')
+    async def get_guidelines(authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        conn = get_db_connection()
+        row = conn.execute('SELECT trading_guidelines FROM users WHERE id = ?',
+                           (user['id'],)).fetchone()
+        conn.close()
+        return {'guidelines': (row['trading_guidelines'] or '') if row else ''}
+
+    @app.put('/api/users/guidelines')
+    async def put_guidelines(data: dict, authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        text = str(data.get('guidelines') or '').strip()
+        if len(text) > 2000:
+            raise HTTPException(status_code=400, detail='guidelines must be <= 2000 characters')
+        conn = get_db_connection()
+        conn.execute('UPDATE users SET trading_guidelines = ? WHERE id = ?',
+                     (text or None, user['id']))
+        conn.commit()
+        conn.close()
+        return {'ok': True, 'length': len(text)}
 
     @app.get('/api/users/settings')
     async def get_user_settings(authorization: str = Header(None)):

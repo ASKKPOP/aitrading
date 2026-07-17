@@ -423,6 +423,16 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                     if gate.adjustment:
                         logger.info("risk gate adjusted order (config %s): %s",
                                     config_id, gate.adjustment)
+                    # Alert (Plan 06 C3) — in-app always; email/SMS per user prefs.
+                    try:
+                        from alerts import send_alert
+                        send_alert(agent_id, "trade_executed",
+                                   f"{action.upper()} {symbol}",
+                                   (f"Automation executed {action} {gate.quantity:.6f} "
+                                    f"{symbol} @ ${float(entry):.2f} (confidence {confidence})"),
+                                   dedupe_key=f"exec:{signal_id}")
+                    except Exception:  # noqa: BLE001
+                        logger.debug("trade alert failed for signal %s", signal_id)
                 else:
                     result["skip_reason"] = skip
     except Exception as exc:  # noqa: BLE001
