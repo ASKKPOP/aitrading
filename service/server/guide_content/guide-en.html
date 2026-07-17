@@ -88,7 +88,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <header class="doc"><div class="wrap">
   <div class="kicker">Sooppiy · Full Pipeline Guide</div>
   <h1>AI Automated Trading, End to End — The Complete Guide</h1>
-  <div class="meta">2026-07-16 · Code-accurate (main, signal expansion included) · All figures are actual implementation values · Live on sooppiy.com</div>
+  <div class="meta">2026-07-17 · Code-accurate (main, signal expansion included) · All figures are actual implementation values · Live on sooppiy.com</div>
 </div></header>
 
 <!-- ═══════════════ 0. At a Glance ═══════════════ -->
@@ -183,7 +183,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="60" y="268" width="360" height="66" rx="9" class="sv-acc"/>
       <text x="240" y="288" text-anchor="middle" class="sv-t">STEP 5 · Signal Fusion</text>
-      <text x="240" y="304" text-anchor="middle" class="sv-s">0.5·quant + 0.3·sentiment + 0.2·psych (psych cap 0.3)</text>
+      <text x="240" y="304" text-anchor="middle" class="sv-s">AI-weighted (fallback 0.5/0.3/0.2 · psych cap 0.3)</text>
       <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py · GET /api/market-intel/fusion</text>
       <rect x="540" y="268" width="360" height="66" rx="9" class="sv-acc"/>
       <text x="720" y="288" text-anchor="middle" class="sv-t">STEP 6 · AI 4-Analysts + Trader Debate</text>
@@ -236,7 +236,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <div class="kpi-row">
     <div class="kpi"><div class="lb">Execution</div><div class="vl">Paper only</div><div class="hint">Real-account order code is disabled entirely</div></div>
     <div class="kpi"><div class="lb">Risk gate</div><div class="vl">Triple check</div><div class="hint">Kelly → limits → breaker</div></div>
-    <div class="kpi"><div class="lb">Tests</div><div class="vl">859 passing</div><div class="hint">Incl. signal-expansion &amp; guide tests</div></div>
+    <div class="kpi"><div class="lb">Tests</div><div class="vl">1,111 passing</div><div class="hint">Incl. signal-expansion &amp; guide tests</div></div>
     <div class="kpi"><div class="lb">Background tasks</div><div class="vl">21</div><div class="hint">Incl. risk_watcher·psych·scanner</div></div>
   </div>
 </div></section>
@@ -316,8 +316,8 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <!-- ═══════════════ STEP 5 ═══════════════ -->
 <section><div class="wrap">
   <h2><span class="no">STEP 5</span>Signal Fusion — Three Families, One Score</h2>
-  <p class="sub">The three signal families — quant, sentiment, psychology — are weight-summed into one score per symbol. Read-only (GET); this step itself never places an order.</p>
-  <div class="formula">fused = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;(each component clamped to −1 ~ +1; missing components are excluded and weights re-normalized)</div>
+  <p class="sub">The three signal families — quant, sentiment, psychology — are fused into one score per symbol. When AI fusion is on (the default in production), the model weighs the full factor snapshot itself and returns its own component weights; the fixed weighted sum below is the deterministic <b>fallback</b>, used when the model is unavailable. Each result is labelled with its source (AI / rule / rule-fallback). Read-only (GET); this step never places an order.</p>
+  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;(components clamped −1 ~ +1; missing ones excluded and re-normalized). On BOTH paths: psychology never trades alone, and its weight can never exceed 0.3 — an AI verdict declaring otherwise is discarded.</div>
 
   <div class="diagram">
   <svg viewBox="0 0 940 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal fusion">
@@ -372,7 +372,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><span class="tag warn">Reduce</span></td><td>Volatility shock (liquidation proxy)</td><td>|return| &gt; 3σ → breaker candidate</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>The psychology cap is structural.</b> The psychology weight is hard-capped in code so no configuration can push it past 0.3 (<code>PSYCH_WEIGHT_MAX</code>). "No psychology-driven trading" is not a guideline — it is a constraint made outright impossible.</div>
+  <div class="note red"><b>The psychology cap is structural.</b> Two guarantees hold on both the AI and the fixed-weight paths. First, <b>psychology never trades alone</b>: with no quant and no sentiment the verdict is forced to hold by construction — the model is not even consulted, so it cannot argue past the rule. Second, the psychology weight can never exceed 0.3 (<code>PSYCH_WEIGHT_MAX</code>): the fixed-weight path re-normalizes any excess away; the AI path discards a verdict that declares a psych weight above the cap and falls back to the deterministic score. "No psychology-driven trading" is a constraint, not a guideline.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 6 ═══════════════ -->
@@ -604,7 +604,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QA's view — "What is verified, and how"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>All 708 tests passing</b> (including 126 new phase tests: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
+        <li><b>All 1,111 tests passing</b> (including 126 new phase tests: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
         <li><b>Safety invariants pinned by tests:</b> only simulator fills · sells require a held position · closed-market skip · no orders on real accounts · the gate can only shrink/reject.</li>
         <li><b>Fail-soft applied throughout:</b> when an external source fails, only that component drops (named in the missing array) and the rest of the snapshot saves. Bad env weights fall back to defaults instead of a 500.</li>
         <li><b>Stage isolation:</b> all 5 phases default to env-flag off — in a production incident, one flag shuts off just that stage.</li>
