@@ -109,6 +109,10 @@ def _quant_component(symbol: str) -> Optional[dict[str, Any]]:
         "price_above_ma200": analysis.get("price_above_ma200"),
         "momentum_12_1_pct": analysis.get("momentum_12_1_pct"),
         "sigma_daily_pct": analysis.get("sigma_daily_pct"),
+        # Forwarded so the D5 verifier can age this read (Plan 06 D5b). The
+        # feed builds it fresh per call today, but that is a property of the
+        # feed, not a promise — carry the stamp rather than assume.
+        "as_of": analysis.get("as_of"),
         "evidence": (analysis.get("bullish_factors") or [])[:2]
                     + (analysis.get("risk_factors") or [])[:2],
     }
@@ -166,10 +170,14 @@ def _psych_component() -> Optional[dict[str, Any]]:
     shocks = [s for s in psych.get("shock", []) if s.get("shock")]
     return {
         "value": _clamp(value),
-        "fear_greed": {k: fng.get(k) for k in ("value", "classification", "delta_3d")},
+        # F&G's as_of is the VENDOR's print time (updates daily); the payload's
+        # created_at is when we assembled the read. Both are forwarded for D5b:
+        # they age differently, and the gap between them is itself information.
+        "fear_greed": {k: fng.get(k) for k in ("value", "classification", "delta_3d", "as_of")},
         "negative_spikes": negative_spikes,
         "odds_reratings": odds_up[:3],
         "shocks": shocks,
+        "as_of": psych.get("created_at"),
         "evidence": evidence or ["psych feed live, no strong reads"],
     }
 

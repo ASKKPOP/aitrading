@@ -90,6 +90,11 @@ def fetch_fear_greed(limit: int = FNG_HISTORY_DAYS) -> dict[str, Any]:
         "value": current["value"],
         "classification": current["classification"],
         "delta_3d": delta_3d,
+        # The vendor's own print time, not ours. F&G updates once daily, so a
+        # reader (and the D5 verifier) cannot tell a fresh read from a
+        # day-old one without it — we were fetching it and dropping it.
+        "as_of": datetime.fromtimestamp(current["timestamp"], timezone.utc)
+                         .strftime("%Y-%m-%dT%H:%M:%SZ"),
         "history": history,
         "source": "alternative.me",
     }

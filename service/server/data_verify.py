@@ -23,11 +23,15 @@ Modes mirror VERIFY_ENABLED: off | advisory | enforce, default advisory, so
 verdicts can be reviewed in telemetry before they start blocking trades.
 Fail-open throughout: an unavailable verifier never blocks a decision.
 
-KNOWN GAP (2026-07-17): per-feed staleness is NOT verifiable today. quant,
-psych and cross_market do not stamp their own payloads, so nothing here can
-tell a live funding rate from one cached an hour ago. Only the ETF print
-carries a real date. Feed-level `as_of` stamping is the prerequisite; until
-it lands, absence/contradiction/anomaly are the honest scope.
+Staleness (D5b, 2026-07-17): each feed's age is measured and passed to the
+model, judged against that feed's own cadence — quant is fetched live per
+call, psych is cached ~120s, and the Fear & Greed vendor prints once daily,
+so one "too old" threshold would be wrong for all three. Feeds without a
+timestamp are reported in `age_unknown` rather than omitted: silence would
+read as freshness.
+
+REMAINING GAP: whale/ETF/calibration blocks are aged only by the ETF print
+date; the rest carry no per-block stamp yet.
 """
 
 from __future__ import annotations
@@ -89,6 +93,23 @@ def _age_days(iso_date: Any) -> Optional[int]:
     return (datetime.now(timezone.utc).date() - d).days
 
 
+def _age_seconds(iso_ts: Any) -> Optional[int]:
+    """Seconds since an ISO timestamp (D5b). None when unparseable or in the
+    future — a negative age means a clock problem, not fresh data, and saying
+    'unknown' is honest where a negative number would read as very fresh."""
+    text = str(iso_ts).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:                      # feeds store naive UTC
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    age = int((datetime.now(timezone.utc) - parsed).total_seconds())
+    return age if age >= 0 else None
+
+
 def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     """The deterministic half: facts only, no interpretation. Every value here
     is something code can be right about."""
@@ -107,10 +128,24 @@ def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             out_of_range.append({"field": field, "value": value,
                                  "possible_range": [lo, hi if hi != float("inf") else None]})
 
+    # D5b: per-feed age. Feeds that carry no stamp are reported as unknown
+    # rather than omitted — "we cannot tell how old this is" is a fact the
+    # model should weigh, and silence would read as freshness.
+    ages: dict[str, Any] = {}
+    for key, block in (("quant", quant), ("psych", psych),
+                       ("cross_market", snapshot.get("cross_market") or {})):
+        if snapshot.get(key):
+            ages[key] = _age_seconds((block or {}).get("as_of"))
+    fg_block = psych.get("fear_greed") or {}
+    if fg_block:
+        ages["fear_greed_vendor_print"] = _age_seconds(fg_block.get("as_of"))
+
     facts: dict[str, Any] = {
         "sources_present": present,
         "sources_missing": missing,
         "out_of_range": out_of_range,
+        "age_seconds": ages,
+        "age_unknown": sorted(k for k, v in ages.items() if v is None),
     }
 
     etf = snapshot.get("etf_flows") or {}
@@ -143,6 +178,12 @@ PROMPT_HEADER = (
     "enough to decide on.\n"
     "You get MEASURED FACTS (computed in code — treat these as true) and the RAW "
     "SNAPSHOT. Judge what the facts mean. Look for:\n"
+    "  * staleness — age_seconds is each feed's age. Judge it against that feed's "
+    "own cadence, not a single rule: quant is fetched live per call (minutes = "
+    "wrong); psych is cached ~120s (minutes = normal); the Fear & Greed vendor "
+    "prints once daily (up to ~24h = normal, beyond that = stale). A feed listed "
+    "in age_unknown carries no timestamp — say so, but unknown age is not by "
+    "itself a fault.\n"
     "  * contradiction — two fields that cannot both be right, or a headline that "
     "disagrees with the numbers under it\n"
     "  * anomaly — values that are technically in range but implausible together\n"

@@ -13,7 +13,7 @@ import json
 import os
 import sys
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -89,6 +89,56 @@ class MeasureTests(unittest.TestCase):
         f = data_verify.measure_snapshot({})
         self.assertEqual(f["sources_present"], [])
         self.assertEqual(len(f["sources_missing"]), 7)
+
+
+class AgeTests(unittest.TestCase):
+    """D5b: ages are computed, never asked of the model."""
+
+    def _iso(self, seconds_ago):
+        return (datetime.now(timezone.utc)
+                - timedelta(seconds=seconds_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def test_age_is_measured_from_the_feed_stamp(self):
+        snap = {**SNAPSHOT, "quant": {**SNAPSHOT["quant"], "as_of": self._iso(90)}}
+        age = data_verify.measure_snapshot(snap)["age_seconds"]["quant"]
+        self.assertAlmostEqual(age, 90, delta=2)
+
+    def test_missing_stamp_is_reported_unknown_not_omitted(self):
+        """Silence would read as freshness — the model must be told we can't tell."""
+        f = data_verify.measure_snapshot(SNAPSHOT)   # quant has no as_of
+        self.assertIsNone(f["age_seconds"]["quant"])
+        self.assertIn("quant", f["age_unknown"])
+
+    def test_absent_feed_is_not_aged_at_all(self):
+        """cross_market is absent — it should not appear as 'unknown age'."""
+        f = data_verify.measure_snapshot(SNAPSHOT)
+        self.assertNotIn("cross_market", f["age_seconds"])
+
+    def test_future_timestamp_is_unknown_not_negative(self):
+        """A clock skew must not read as impossibly fresh data."""
+        future = (datetime.now(timezone.utc) + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        snap = {**SNAPSHOT, "quant": {**SNAPSHOT["quant"], "as_of": future}}
+        self.assertIsNone(data_verify.measure_snapshot(snap)["age_seconds"]["quant"])
+
+    def test_naive_timestamps_are_treated_as_utc(self):
+        """Feeds store naive UTC strings; a naive stamp must not crash or skew."""
+        naive = (datetime.now(timezone.utc) - timedelta(seconds=60)).strftime("%Y-%m-%d %H:%M:%S")
+        snap = {**SNAPSHOT, "psych": {**SNAPSHOT["psych"], "as_of": naive}}
+        age = data_verify.measure_snapshot(snap)["age_seconds"]["psych"]
+        self.assertAlmostEqual(age, 60, delta=2)
+
+    def test_vendor_print_age_is_separate_from_our_read(self):
+        """F&G prints daily; our read is fresh. Conflating them hides staleness."""
+        snap = {**SNAPSHOT,
+                "psych": {"as_of": self._iso(30),
+                          "fear_greed": {"value": 27, "as_of": self._iso(80_000)}}}
+        ages = data_verify.measure_snapshot(snap)["age_seconds"]
+        self.assertAlmostEqual(ages["psych"], 30, delta=2)
+        self.assertAlmostEqual(ages["fear_greed_vendor_print"], 80_000, delta=2)
+
+    def test_unparseable_stamp_is_unknown(self):
+        snap = {**SNAPSHOT, "quant": {**SNAPSHOT["quant"], "as_of": "yesterday-ish"}}
+        self.assertIsNone(data_verify.measure_snapshot(snap)["age_seconds"]["quant"])
 
 
 class VerifyTests(unittest.TestCase):
