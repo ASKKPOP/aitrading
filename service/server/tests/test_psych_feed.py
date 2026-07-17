@@ -21,7 +21,10 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+import importlib
+
 import database
+import psych_feed
 from routes import create_app
 
 
@@ -224,8 +227,11 @@ class PayloadTests(PsychFeedTestCase):
 
     def test_refresh_and_payload_roundtrip_with_odds_deltas(self):
         from psych_feed import get_psych_payload
-        self._refresh(anticipation=[{"slug": "m1", "title": "M1", "odds": {"Yes": 0.61}}])
-        self._refresh(anticipation=[{"slug": "m1", "title": "M1", "odds": {"Yes": 0.68}}])
+        # A crypto-relevant market: the anticipation feed now filters topics,
+        # so an arbitrary fixture title would be (correctly) discarded.
+        btc = {"slug": "m1", "title": "Will Bitcoin hit $100,000?"}
+        self._refresh(anticipation=[{**btc, "odds": {"Yes": 0.61}}])
+        self._refresh(anticipation=[{**btc, "odds": {"Yes": 0.68}}])
         payload = get_psych_payload()
         self.assertTrue(payload["available"])
         self.assertEqual(payload["fear_greed"]["value"], 25)
@@ -284,3 +290,76 @@ class SentimentAnalystIntegrationTests(PsychFeedTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnticipationRelevanceTests(unittest.TestCase):
+    """Polymarket's top-volume list is whatever the world bets on. Unfiltered,
+    it fed the CRYPTO anticipation signal — live on 2026-07-17 that was
+    Ethiopian elections, the FIFA World Cup and a League of Legends match,
+    and a >=0.05 swing on the LoL match added +0.25 to the psych component
+    and printed itself as a trade rationale on the board.
+    """
+
+    REAL_NOISE = [   # verbatim from the live prod feed
+        "Will Belete Molla be the next Prime Minister of Ethiopia?",
+        "Will Argentina win the 2026 FIFA World Cup?",
+        "Exact Score: Spain 2 - 3 Argentina?",
+        "LoL: Hanwha Life Esports vs T1 (BO3) - Esports World Cup Playoffs",
+        "Will Iran's head of state change by December 31?",
+    ]
+    REAL_RELEVANT = [
+        "Will Bitcoin hit $100,000 by December 31?",
+        "Will the SEC approve a Solana ETF in 2026?",
+        "Fed decision in September?",
+        "Will CPI come in above 3%?",
+        "Will Ethereum flip Bitcoin?",
+        "XRP lawsuit ruling before July?",
+    ]
+
+    def test_real_noise_markets_are_rejected(self):
+        for title in self.REAL_NOISE:
+            self.assertFalse(psych_feed.is_relevant_market(title),
+                             f"must not feed a crypto signal: {title}")
+
+    def test_real_crypto_and_macro_markets_are_kept(self):
+        for title in self.REAL_RELEVANT:
+            self.assertTrue(psych_feed.is_relevant_market(title),
+                            f"must be kept: {title}")
+
+    def test_matching_is_case_insensitive_and_reads_the_slug(self):
+        self.assertTrue(psych_feed.is_relevant_market("WILL BITCOIN CRASH?"))
+        self.assertTrue(psych_feed.is_relevant_market("will-the-fed-cut-rates"))
+
+    def test_empty_or_missing_text_is_not_relevant(self):
+        for junk in (None, "", "   "):
+            self.assertFalse(psych_feed.is_relevant_market(junk))
+
+    def test_topics_are_configurable(self):
+        with patch.dict(os.environ, {"ANTICIPATION_TOPICS": "bitcoin"}):
+            importlib.reload(psych_feed)
+            self.assertTrue(psych_feed.is_relevant_market("Bitcoin to 100k?"))
+            self.assertFalse(psych_feed.is_relevant_market("Will the Fed cut rates?"))
+        importlib.reload(psych_feed)   # restore defaults for other tests
+
+    def test_gather_filters_the_live_shaped_payload(self):
+        """End-to-end on the real response shape: noise out, crypto in."""
+        raw = [
+            {"question": q, "slug": f"s{i}", "outcomes": '["Yes","No"]',
+             "outcomePrices": '["0.4","0.6"]', "volume24hr": 9_000_000 - i}
+            for i, q in enumerate(self.REAL_NOISE)
+        ] + [
+            {"question": "Will Bitcoin hit $100,000 by December 31?", "slug": "btc100k",
+             "outcomes": '["Yes","No"]', "outcomePrices": '["0.35","0.65"]', "volume24hr": 10}
+        ]
+        with patch("price_fetcher._polymarket_get_json", return_value=raw):
+            out = psych_feed._gather_anticipation()
+        self.assertEqual([m["slug"] for m in out], ["btc100k"])
+
+    def test_no_relevant_market_returns_empty_not_noise(self):
+        """Nothing relevant live -> anticipation reports missing. Substituting
+        an unrelated market would be worse than having no signal."""
+        raw = [{"question": q, "slug": f"s{i}", "outcomes": '["Yes","No"]',
+                "outcomePrices": '["0.4","0.6"]', "volume24hr": 9_000_000}
+               for i, q in enumerate(self.REAL_NOISE)]
+        with patch("price_fetcher._polymarket_get_json", return_value=raw):
+            self.assertEqual(psych_feed._gather_anticipation(), [])

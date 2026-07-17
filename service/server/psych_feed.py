@@ -30,6 +30,7 @@ import json
 import logging
 import math
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -49,7 +50,33 @@ SHOCK_VOLUME_RATIO = 2.0       # last-hour volume ≥ 2× 24h average
 LIQ_SHOCK_NOTIONAL_USD = float(os.getenv("LIQ_SHOCK_NOTIONAL_USD", "5000000") or 5_000_000)
 SPIKE_Z = 2.0                  # |z| ≥ 2 is a sentiment spike
 SPIKE_MIN_POINTS = 5           # snapshots needed before z-scores mean anything
-ANTICIPATION_MARKETS = 10
+ANTICIPATION_MARKETS = 10      # how many relevant markets we keep
+ANTICIPATION_POOL = 250        # how many top-volume markets we sift to find them
+
+# Topics whose odds can plausibly move crypto: the assets themselves, the
+# regulatory decisions that reprice them, and the macro prints that set the
+# risk backdrop. Anything else (elections abroad, sport, esports) is noise
+# for this platform, however heavily traded. Overridable per deployment.
+ANTICIPATION_TOPICS = tuple(
+    t.strip().lower()
+    for t in os.getenv(
+        "ANTICIPATION_TOPICS",
+        "bitcoin,btc,ethereum,eth,solana,xrp,ripple,dogecoin,crypto,coinbase,binance,"
+        "stablecoin,defi,altcoin,etf,sec,cftc,regulation,lawsuit,"
+        "fed,fomc,interest rate,rate cut,rate hike,cpi,inflation,recession,powell,"
+        "treasury,tariff,strategic reserve",
+    ).split(",")
+    if t.strip()
+)
+
+# Matched on WORD BOUNDARIES, not as substrings. The tickers are short enough
+# to hide inside ordinary words: plain `"eth" in text` matches "Ethiopia" —
+# which is exactly how the live Ethiopian-election markets would have survived
+# this filter. Likewise "sec" in "second", "fed" in "federal". Hyphens in slugs
+# ("will-the-fed-cut-rates") count as boundaries, so \b handles those too.
+_ANTICIPATION_PATTERNS = tuple(
+    re.compile(rf"\b{re.escape(t)}\b") for t in ANTICIPATION_TOPICS
+)
 PSYCH_HISTORY_LIMIT = 500
 
 _CACHE_KEY = "sooppiy:psych:payload"
@@ -340,20 +367,45 @@ def _gather_shock_proxies() -> list[dict[str, Any]]:
 
 # ─────────────────────────── anticipation (Polymarket odds) ───────────────────────────
 
+def is_relevant_market(text: Any) -> bool:
+    """Could this prediction market plausibly move crypto?
+
+    Polymarket's top-volume markets are whatever the world is betting on —
+    live that was Ethiopian elections, the FIFA World Cup and a League of
+    Legends match. Unfiltered, those fed the CRYPTO anticipation signal: a
+    ±0.05 swing on an esports match added +0.25 to the psych component and
+    printed "odds re-rating LoL: Hanwha Life vs T1" as a trade rationale on
+    the board. That is noise laundered into a reason to trade.
+
+    The mockup specifies event-relevant odds tied to the asset ("XRP 규제 판결
+    기대감, 배당률 0.61→0.68"), so relevance is the spec, not a refinement.
+    """
+    haystack = str(text or "").lower()
+    return any(p.search(haystack) for p in _ANTICIPATION_PATTERNS)
+
+
 def _gather_anticipation() -> list[dict[str, Any]]:
-    """Snapshot top Polymarket markets with their outcome prices (odds)."""
+    """Snapshot the top CRYPTO/MACRO-relevant Polymarket markets with their odds.
+
+    Fetches a wider pool than it keeps, because relevance filtering discards
+    most of the top-volume list. If nothing relevant is live, returns [] —
+    anticipation then reports as missing, which is honest. Substituting an
+    unrelated market would not be.
+    """
     from price_fetcher import _parse_string_array, _polymarket_get_json, POLYMARKET_GAMMA_BASE_URL
 
     if not POLYMARKET_GAMMA_BASE_URL:
         return []
     url = f"{POLYMARKET_GAMMA_BASE_URL.rstrip('/')}/markets"
     raw = _polymarket_get_json(url, params={
-        "limit": str(ANTICIPATION_MARKETS), "order": "volume24hr",
+        "limit": str(ANTICIPATION_POOL), "order": "volume24hr",
         "ascending": "false", "active": "true", "closed": "false",
     })
     markets = []
     for m in raw if isinstance(raw, list) else []:
         if not isinstance(m, dict):
+            continue
+        if not is_relevant_market(f"{m.get('question') or ''} {m.get('title') or ''} {m.get('slug') or ''}"):
             continue
         outcomes = _parse_string_array(m.get("outcomes"))
         prices = _parse_string_array(m.get("outcomePrices"))
@@ -371,6 +423,8 @@ def _gather_anticipation() -> list[dict[str, Any]]:
             "volume_24hr": m.get("volume24hr"),
             "odds": odds,
         })
+        if len(markets) >= ANTICIPATION_MARKETS:
+            break
     return markets
 
 
