@@ -59,6 +59,14 @@ interface FusedSignal {
   current_price: number | null
   confluence?: ConfluenceRead | null
   components?: { quant?: { open_interest_usd?: number | null; long_short_ratio?: number | null } | null }
+  // Plan 06 D4/D5: who produced this verdict, and did the inputs check out.
+  // The API has always labelled this; the board did not show it, which left
+  // D4's promise — never pass a rule score off as an AI one — kept only in
+  // the payload and not where anyone reads it.
+  fusion_source?: 'ai' | 'rule' | 'rule-fallback'
+  llm_model?: string
+  cached_age_s?: number
+  data_verification?: { status: 'ok' | 'suspect'; reason?: string; applied?: boolean } | null
 }
 
 function ConfluenceCell({ c, language }: { c: ConfluenceRead | null | undefined; language: Language }) {
@@ -129,6 +137,40 @@ function SignalBadge({ signal }: { signal: string }) {
   const color = signal === 'buy' ? 'var(--success)' : signal === 'sell' ? 'var(--error)' : 'var(--text-muted)'
   const mark = signal === 'buy' ? '▲' : signal === 'sell' ? '▼' : '■'
   return <span style={{ color, fontWeight: 700 }}>{mark} {signal.toUpperCase()}</span>
+}
+
+// Who produced this verdict (Plan 06 D4) and whether its inputs verified
+// (D5). 'rule-fallback' is deliberately louder than 'rule': plain rule means
+// the AI path is off by configuration, while a fallback means it was meant to
+// run and could not — the reader should be able to tell those apart at a
+// glance rather than reading a rule score as an AI one.
+function SourceBadge({ s, language }: { s: FusedSignal; language: Language }) {
+  const src = s.fusion_source || 'rule'
+  const dv = s.data_verification
+  const pill = (bg: string, fg: string, text: string, title: string) => (
+    <span title={title} style={{
+      fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
+      background: bg, color: fg, whiteSpace: 'nowrap',
+    }}>{text}</span>
+  )
+  const age = s.cached_age_s != null && s.cached_age_s > 0
+    ? tr(language, { ko: `, ${s.cached_age_s}초 전 판정`, en: `, verdict ${s.cached_age_s}s old`, ja: `, ${s.cached_age_s}秒前の判定`, th: `, ผลเมื่อ ${s.cached_age_s} วิ.ที่แล้ว`, vi: `, phán quyết ${s.cached_age_s}s trước` })
+    : ''
+  return (
+    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+      {src === 'ai' && pill('rgba(88,166,255,0.16)', '#58a6ff', 'AI',
+        `${tr(language, { ko: 'AI가 가중치를 정해 종합', en: 'Fused by the AI, which chose the weights', ja: 'AIが重みを決めて統合', th: 'AI รวมสัญญาณและเลือกน้ำหนักเอง', vi: 'AI tự chọn trọng số và tổng hợp' })}${s.llm_model ? ` — ${s.llm_model}` : ''}${age}`)}
+      {src === 'rule' && pill('rgba(139,148,158,0.16)', 'var(--text-muted)',
+        tr(language, { ko: '규칙', en: 'rule', ja: 'ルール', th: 'กฎ', vi: 'quy tắc' }),
+        tr(language, { ko: '고정 가중치로 계산 — AI 종합은 꺼져 있습니다', en: 'Fixed-weight calculation — AI fusion is off', ja: '固定加重で計算 — AI統合はオフ', th: 'คำนวณด้วยน้ำหนักคงที่ — AI fusion ปิดอยู่', vi: 'Tính theo trọng số cố định — AI fusion đang tắt' }))}
+      {src === 'rule-fallback' && pill('rgba(210,153,34,0.18)', '#d29922',
+        tr(language, { ko: '규칙(대체)', en: 'rule (fallback)', ja: 'ルール(代替)', th: 'กฎ (สำรอง)', vi: 'quy tắc (dự phòng)' }),
+        tr(language, { ko: 'AI 종합이 실패해 고정 가중치로 대체되었습니다', en: 'AI fusion was unavailable — fell back to fixed weights', ja: 'AI統合が使えず固定加重に代替', th: 'AI fusion ใช้ไม่ได้ — ใช้น้ำหนักคงที่แทน', vi: 'AI fusion không khả dụng — quay về trọng số cố định' }))}
+      {dv?.status === 'suspect' && pill('rgba(210,153,34,0.18)', '#d29922',
+        `⚠ ${tr(language, { ko: '입력 의심', en: 'inputs suspect', ja: '入力に疑い', th: 'อินพุตน่าสงสัย', vi: 'đầu vào đáng ngờ' })}`,
+        dv.reason || '')}
+    </div>
+  )
 }
 
 interface MacroEvent {
@@ -368,7 +410,10 @@ export function SignalsBoardPage() {
                     </div>
                   )}
                 </td>
-                <td style={td}><SignalBadge signal={s.signal} /></td>
+                <td style={td}>
+                  <SignalBadge signal={s.signal} />
+                  <SourceBadge s={s} language={language} />
+                </td>
                 <td style={td}><ConfluenceCell c={s.confluence} language={language} /></td>
                 <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 380 }}>
                   {s.evidence.length ? s.evidence.slice(0, 3).join('; ') : '—'}
