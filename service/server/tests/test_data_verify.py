@@ -140,6 +140,33 @@ class AgeTests(unittest.TestCase):
         snap = {**SNAPSHOT, "quant": {**SNAPSHOT["quant"], "as_of": "yesterday-ish"}}
         self.assertIsNone(data_verify.measure_snapshot(snap)["age_seconds"]["quant"])
 
+    def test_expected_age_comes_from_the_governing_config(self):
+        """psych's cadence IS PSYCH_REFRESH_INTERVAL — hardcoding it would rot
+        the moment an operator retunes the loop."""
+        with patch.dict(os.environ, {"PSYCH_REFRESH_INTERVAL": "600"}):
+            exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertEqual(exp["psych"], 720)          # 600 + 120s payload cache
+        with patch.dict(os.environ, {"PSYCH_REFRESH_INTERVAL": "3600"}):
+            exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertEqual(exp["psych"], 3720)
+
+    def test_expected_age_survives_a_bad_interval_value(self):
+        for bad in ("not-a-number", "5"):            # garbage, and below the floor
+            with patch.dict(os.environ, {"PSYCH_REFRESH_INTERVAL": bad}):
+                exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+            self.assertGreaterEqual(exp["psych"], 420)
+
+    def test_hourly_psych_snapshot_is_within_its_expectation(self):
+        """The live case that exposed the wrong cadence: a 48-minute-old psych
+        read is NORMAL (hourly loop), and must not look stale."""
+        exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertLess(2905, exp["psych"])
+        self.assertGreater(2905, exp["quant"])       # ...but broken for a live quote
+
+    def test_vendor_print_expectation_is_daily(self):
+        exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertEqual(exp["fear_greed_vendor_print"], 86_400)
+
 
 class VerifyTests(unittest.TestCase):
     def _run(self, reply, env=None):

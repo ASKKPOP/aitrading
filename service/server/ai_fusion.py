@@ -83,7 +83,8 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
         from cross_market import build_cross_market_payload, cross_market_enabled
         if cross_market_enabled():
             cm = build_cross_market_payload() or {}
-            snapshot["cross_market"] = {"kimchi": cm.get("kimchi"), "dxy": cm.get("dxy")}
+            snapshot["cross_market"] = {"kimchi": cm.get("kimchi"), "dxy": cm.get("dxy"),
+                                        "as_of": cm.get("as_of")}
     except Exception:  # noqa: BLE001
         pass
     try:

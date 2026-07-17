@@ -110,6 +110,31 @@ def _age_seconds(iso_ts: Any) -> Optional[int]:
     return age if age >= 0 else None
 
 
+def _expected_ages() -> dict[str, int]:
+    """What each feed's age SHOULD be, read from the config that governs it.
+
+    An age means nothing without its cadence: 2,900s is broken for a live
+    quote and unremarkable for an hourly snapshot. These were prose in the
+    prompt until 2026-07-17, which was wrong twice over — it claimed psych was
+    "~120s" (that is only the Redis cache on the payload; the data is written
+    by the hourly PSYCH_REFRESH_INTERVAL loop), and it would silently rot the
+    moment an operator retuned the interval. Read the config instead.
+    """
+    try:
+        psych_interval = max(300, int(os.getenv("PSYCH_REFRESH_INTERVAL", "3600")))
+    except ValueError:
+        psych_interval = 3600
+    return {
+        # fetched live per call, straight from OKX
+        "quant": 60,
+        "cross_market": 60,
+        # written by the psych worker loop, then Redis-cached ~120s on read
+        "psych": psych_interval + 120,
+        # the vendor prints once a day; we cannot be fresher than it is
+        "fear_greed_vendor_print": 86_400,
+    }
+
+
 def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     """The deterministic half: facts only, no interpretation. Every value here
     is something code can be right about."""
@@ -146,6 +171,7 @@ def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         "out_of_range": out_of_range,
         "age_seconds": ages,
         "age_unknown": sorted(k for k, v in ages.items() if v is None),
+        "expected_max_age_seconds": _expected_ages(),
     }
 
     etf = snapshot.get("etf_flows") or {}
@@ -178,12 +204,12 @@ PROMPT_HEADER = (
     "enough to decide on.\n"
     "You get MEASURED FACTS (computed in code — treat these as true) and the RAW "
     "SNAPSHOT. Judge what the facts mean. Look for:\n"
-    "  * staleness — age_seconds is each feed's age. Judge it against that feed's "
-    "own cadence, not a single rule: quant is fetched live per call (minutes = "
-    "wrong); psych is cached ~120s (minutes = normal); the Fear & Greed vendor "
-    "prints once daily (up to ~24h = normal, beyond that = stale). A feed listed "
-    "in age_unknown carries no timestamp — say so, but unknown age is not by "
-    "itself a fault.\n"
+    "  * staleness — compare age_seconds against expected_max_age_seconds for the "
+    "SAME feed. Each feed has its own cadence (a live quote and an hourly "
+    "snapshot cannot share one threshold), so an age within its expectation is "
+    "normal no matter how large it looks. Flag a feed meaningfully past its own "
+    "expectation. A feed in age_unknown carries no timestamp — worth saying, but "
+    "unknown age is not by itself a fault.\n"
     "  * contradiction — two fields that cannot both be right, or a headline that "
     "disagrees with the numbers under it\n"
     "  * anomaly — values that are technically in range but implausible together\n"
