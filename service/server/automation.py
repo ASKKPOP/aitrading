@@ -27,7 +27,7 @@ from database import begin_write_transaction, get_db_connection
 logger = logging.getLogger(__name__)
 
 VALID_MARKETS = ("crypto", "us-stock")
-EXECUTABLE_ACTIONS = ("buy", "sell")
+EXECUTABLE_ACTIONS = ("buy", "sell", "short", "cover")
 
 
 def _now_iso() -> str:
@@ -81,6 +81,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     try:
         begin_write_transaction(cursor)
 
+        short_entry: Optional[float] = None
         if side == "sell":
             pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
             current_qty = float(pos["quantity"]) if pos else 0.0
@@ -91,7 +92,24 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             trade_value = price * quantity
             fee = trade_value * TRADE_FEE_RATE
 
-        if side == "buy":
+        if side == "cover":
+            # Close (part of) a short book (negative quantity rows).
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            current_qty = float(pos["quantity"]) if pos else 0.0
+            if current_qty >= 0:
+                conn.rollback()
+                return None, "no short position to cover"
+            quantity = min(quantity, -current_qty)
+            trade_value = price * quantity
+            fee = trade_value * TRADE_FEE_RATE
+            short_entry = float(pos["entry_price"] or 0)
+            if short_entry <= 0:
+                conn.rollback()
+                return None, "short position entry price missing"
+
+        if side in ("buy", "short"):
+            # Shorts escrow the notional as collateral — same debit as a buy
+            # (matches the manual signal executor's cash model).
             cursor.execute("SELECT cash FROM agents WHERE id = ?", (agent_id,))
             row = cursor.fetchone()
             cash = row["cash"] if row else 0
@@ -111,6 +129,28 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
              content, int(datetime.now(timezone.utc).timestamp()), now, now),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
+        if side == "short" and (stop_loss is not None or take_profit is not None):
+            # Short exits are inverted (SL above entry / TP below). NEVER
+            # LOOSEN mirrored: a lower stop and a lower target are tighter
+            # for a short, so re-shorts take min() of existing vs new.
+            cursor.execute(
+                """SELECT stop_loss, take_profit FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                (agent_id, market, symbol))
+            row = cursor.fetchone()
+            existing_sl = row["stop_loss"] if row else None
+            existing_tp = row["take_profit"] if row else None
+            new_sl = min(x for x in (existing_sl, stop_loss) if x is not None) \
+                if (existing_sl is not None or stop_loss is not None) else None
+            new_tp = min(x for x in (existing_tp, take_profit) if x is not None) \
+                if (existing_tp is not None or take_profit is not None) else None
+            cursor.execute(
+                """UPDATE positions
+                   SET stop_loss = ?, take_profit = ?,
+                       exit_policy = COALESCE(exit_policy, 'v1')
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                (new_sl, new_tp, agent_id, market, symbol),
+            )
         if side == "buy":
             if stop_loss is not None or take_profit is not None:
                 # NEVER LOOSEN an existing exit level: a re-buy previously
@@ -136,6 +176,12 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                     (new_sl, new_tp, agent_id, market, symbol),
                 )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+        elif side == "short":
+            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+        elif side == "cover":
+            # Return collateral + short P&L: entry×qty escrow + (entry−price)×qty
+            cover_credit = ((2 * short_entry) - price) * quantity - fee
+            cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (cover_credit, agent_id))
         else:
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
         conn.commit()
@@ -248,6 +294,18 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         except Exception as exc:  # noqa: BLE001
             logger.debug("confluence telemetry unavailable for %s: %s", symbol, exc)
 
+        # Live calibration prior (Plan 06 A2): the realized hit rate at this
+        # confluence count, from production telemetry. Advisory — journaled
+        # alongside the decision, never changes execution.
+        try:
+            from calibration import calibration_prior
+            prior = calibration_prior(
+                (result.get("confluence") or {}).get("buy_confluence"))
+            if prior is not None:
+                result["calibration_prior"] = prior
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("calibration prior unavailable: %s", exc)
+
         # Regime read (Phase 2): advisory journal always; a hard entry gate
         # only when REGIME_FILTER_ENABLED (Phase-4 flip). Exits never gated.
         regime_read = None
@@ -347,6 +405,8 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
             telemetry["regime"] = result["regime"]
         if result.get("verify") is not None:
             telemetry["verify"] = result["verify"]
+        if result.get("calibration_prior") is not None:
+            telemetry["calibration_prior"] = result["calibration_prior"]
         confluence_json = None
         if telemetry:
             try:

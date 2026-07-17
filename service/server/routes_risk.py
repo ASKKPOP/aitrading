@@ -109,6 +109,14 @@ def register_risk_routes(app: FastAPI, ctx: RouteContext) -> None:
                 values[flag] = 1 if values[flag] else 0
         return {"limits": put_risk_limits(agent["id"], values)}
 
+    @app.get("/api/risk/calibration")
+    async def read_calibration(authorization: str = Header(None)):
+        """Live confluence→hit-rate table built from run telemetry (Plan 06 A2).
+        Advisory only — see calibration.py for the attribution rule."""
+        _auth(authorization)
+        from calibration import get_calibration
+        return get_calibration()
+
     @app.get("/api/risk/breaker")
     async def read_breaker(authorization: str = Header(None)):
         agent = _auth(authorization)

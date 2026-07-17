@@ -393,8 +393,10 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                 reason=(f"risk: daily loss limit hit "
                         f"(realized today ${stats['realized_today']:.2f} ≤ -${max_daily:.2f})"))
 
+        # ABS(quantity): a short adds risk exposure exactly like a long —
+        # signed sums would let shorts *offset* the caps (Plan 06 A3).
         cursor.execute(
-            """SELECT COALESCE(SUM(quantity * COALESCE(current_price, entry_price)), 0) AS mv
+            """SELECT COALESCE(SUM(ABS(quantity) * COALESCE(current_price, entry_price)), 0) AS mv
                FROM positions WHERE agent_id = ? AND market = ? AND symbol = ?""",
             (agent_id, market, symbol),
         )
@@ -466,8 +468,8 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
         max_positions = int(limits.get("max_concurrent_positions") or 0)
         if max_port_pct > 0 or max_positions > 0:
             cursor.execute(
-                """SELECT COALESCE(SUM(quantity * COALESCE(current_price, entry_price)), 0) AS mv,
-                          COALESCE(SUM(CASE WHEN quantity > 0 THEN 1 ELSE 0 END), 0) AS n
+                """SELECT COALESCE(SUM(ABS(quantity) * COALESCE(current_price, entry_price)), 0) AS mv,
+                          COALESCE(SUM(CASE WHEN quantity != 0 THEN 1 ELSE 0 END), 0) AS n
                    FROM positions WHERE agent_id = ?""",
                 (agent_id,),
             )
@@ -489,14 +491,19 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                                 f"(${port_exposure:.2f} deployed + ${quantity * price:.2f} order "
                                 f"> ${cap_usd:.2f} = {max_port_pct:.0f}% of equity)"))
 
-        if side != "buy":
-            # 'short' passes the risk checks above but the long-oriented SL/TP
-            # formulas don't apply; short exits also need executor 'cover'
-            # support, which doesn't exist yet (documented Phase-3 deferral).
-            return GateDecision(allowed=True, quantity=quantity, adjustment=adjustment)
-
         limits_sl = float(limits["stop_loss_pct"])
         limits_tp = float(limits["take_profit_pct"])
+        if side == "short":
+            # Inverted exits (Plan 06 A3): stop ABOVE entry, target BELOW.
+            # Executor 'cover' support closes these; watcher handles triggers.
+            return GateDecision(
+                allowed=True, quantity=quantity, adjustment=adjustment,
+                stop_loss=price * (1 + limits_sl) if limits_sl > 0 else None,
+                take_profit=price * (1 - limits_tp) if limits_tp > 0 else None,
+            )
+        if side != "buy":
+            return GateDecision(allowed=True, quantity=quantity, adjustment=adjustment)
+
         return GateDecision(
             allowed=True, quantity=quantity, adjustment=adjustment,
             stop_loss=price * (1 - limits_sl) if limits_sl > 0 else None,
@@ -525,22 +532,34 @@ def _parse_position_ts(value: Optional[str]) -> Optional[datetime]:
 
 def _apply_trailing_stop(cursor, pos: dict[str, Any], price: float,
                          limits: dict[str, Any]) -> bool:
-    """Ratchet the stop up once the position is in profit ≥ 1×trail; once
-    armed, clear take_profit so the trail manages the exit ('let winners
-    ride' — the fixed +10% TP otherwise guillotines every trend before the
-    trail can work). The ratchet NEVER lowers an existing stop. Returns
-    whether a write happened. Only exit_policy='v1' rows reach here."""
+    """Ratchet the stop toward price once the position is in profit ≥ 1×trail;
+    once armed, clear take_profit so the trail manages the exit ('let winners
+    ride' — the fixed TP otherwise guillotines every trend before the trail
+    can work). The ratchet NEVER loosens an existing stop (longs: never lower;
+    shorts: never raise). Returns whether a write happened. Only
+    exit_policy='v1' rows reach here."""
     trail = float(limits.get("trail_pct") or 0)
     if trail <= 0:
         return False
     entry = float(pos["entry_price"])
-    if entry <= 0 or price < entry * (1 + trail):
-        return False  # trail arms at +1×trail profit
-    candidate = price * (1 - trail)
+    if entry <= 0:
+        return False
     existing = pos.get("stop_loss")
-    new_stop = max(candidate, float(existing)) if existing is not None else candidate
-    if existing is not None and new_stop <= float(existing) and pos.get("take_profit") is None:
-        return False  # nothing to change
+    if float(pos["quantity"]) < 0:
+        # Short: profit = price falling. Arms at −1×trail; stop trails ABOVE.
+        if price > entry * (1 - trail):
+            return False
+        candidate = price * (1 + trail)
+        new_stop = min(candidate, float(existing)) if existing is not None else candidate
+        if existing is not None and new_stop >= float(existing) and pos.get("take_profit") is None:
+            return False
+    else:
+        if price < entry * (1 + trail):
+            return False  # trail arms at +1×trail profit
+        candidate = price * (1 - trail)
+        new_stop = max(candidate, float(existing)) if existing is not None else candidate
+        if existing is not None and new_stop <= float(existing) and pos.get("take_profit") is None:
+            return False  # nothing to change
     cursor.execute(
         "UPDATE positions SET stop_loss = ?, take_profit = NULL WHERE id = ?",
         (new_stop, pos["id"]))
@@ -570,7 +589,7 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                       entry_price, stop_loss, take_profit, exit_policy,
                       first_opened_at
                FROM positions
-               WHERE quantity > 0 AND current_price IS NOT NULL
+               WHERE quantity != 0 AND current_price IS NOT NULL
                  AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL
                       OR exit_policy = 'v1')""")
         rows = [dict(r) for r in cursor.fetchall()]
@@ -590,9 +609,15 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             price = float(pos["current_price"])
             if _apply_trailing_stop(cursor, pos, price, limits):
                 trailed += 1
-                pos["stop_loss"] = max(price * (1 - float(limits["trail_pct"])),
-                                       float(pos["stop_loss"])) \
-                    if pos.get("stop_loss") is not None else price * (1 - float(limits["trail_pct"]))
+                trail_pct = float(limits["trail_pct"])
+                if float(pos["quantity"]) < 0:
+                    candidate = price * (1 + trail_pct)
+                    pos["stop_loss"] = min(candidate, float(pos["stop_loss"])) \
+                        if pos.get("stop_loss") is not None else candidate
+                else:
+                    candidate = price * (1 - trail_pct)
+                    pos["stop_loss"] = max(candidate, float(pos["stop_loss"])) \
+                        if pos.get("stop_loss") is not None else candidate
                 pos["take_profit"] = None
         if trailed:
             conn.commit()
@@ -605,12 +630,20 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
     closed = 0
     for pos in rows:
         price = float(pos["current_price"])
+        is_short = float(pos["quantity"]) < 0
         trigger = None
-        if pos["stop_loss"] is not None and price <= float(pos["stop_loss"]):
-            trigger = "stop_loss"
-        elif pos["take_profit"] is not None and price >= float(pos["take_profit"]):
-            trigger = "take_profit"
-        elif pos.get("exit_policy") == "v1":
+        if is_short:
+            # Inverted triggers: stop above (price rose), target below (fell).
+            if pos["stop_loss"] is not None and price >= float(pos["stop_loss"]):
+                trigger = "stop_loss"
+            elif pos["take_profit"] is not None and price <= float(pos["take_profit"]):
+                trigger = "take_profit"
+        else:
+            if pos["stop_loss"] is not None and price <= float(pos["stop_loss"]):
+                trigger = "stop_loss"
+            elif pos["take_profit"] is not None and price >= float(pos["take_profit"]):
+                trigger = "take_profit"
+        if trigger is None and pos.get("exit_policy") == "v1":
             # Time stop: losers older than time_stop_days are cut ("at ~55%
             # accuracy, cutting losers fast IS the edge"); winners ride.
             # Anchored to first_opened_at, which average-ins never reset.
@@ -619,15 +652,17 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                 limits = get_risk_limits(pos["agent_id"])
             days = int(limits.get("time_stop_days") or 0)
             opened = _parse_position_ts(pos.get("first_opened_at"))
-            if (days > 0 and opened is not None
-                    and price < float(pos["entry_price"])
+            losing = (price > float(pos["entry_price"])) if is_short \
+                else (price < float(pos["entry_price"]))
+            if (days > 0 and opened is not None and losing
                     and (now - opened).days >= days):
                 trigger = "time_stop"
         if not trigger:
             continue
         signal_id, skip = execute_paper_trade(
-            pos["agent_id"], pos["symbol"], pos["market"], "sell",
-            float(pos["quantity"]), price,
+            pos["agent_id"], pos["symbol"], pos["market"],
+            "cover" if is_short else "sell",
+            abs(float(pos["quantity"])), price,
             content=f"risk: {trigger} triggered at {price} (SL/TP watcher)")
         if signal_id:
             closed += 1

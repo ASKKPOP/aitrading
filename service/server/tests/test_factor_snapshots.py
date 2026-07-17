@@ -66,12 +66,60 @@ class FactorSnapshotTests(unittest.TestCase):
             result = record_factor_snapshots(("BTC",))
 
         self.assertEqual(result["written"], 1)
-        self.assertEqual(len(result["errors"]), 2)  # funding + oi (oi fetch fails first inside try)
+        # funding + oi + basis (Plan 06 A5 added the basis leg, which also
+        # depends on the failing ticker fetch)
+        self.assertEqual(len(result["errors"]), 3)
         row = self._rows()[0]
         self.assertIsNone(row["funding_rate"])
         self.assertIsNone(row["open_interest_usd"])
         self.assertAlmostEqual(row["long_short_ratio"], 0.9)
         self.assertIsNone(row["stocktwits_tilt"])
+
+
+class ExtendedFactorColumnTests(FactorSnapshotTests):
+    """Plan 06 A5 — basis, kimchi, ETF flow, whale flow columns."""
+
+    def test_new_columns_recorded(self):
+        from factor_snapshots import record_factor_snapshots
+        with patch("crypto_feed.fetch_funding_rate", return_value={"funding_rate": 0.0001}), \
+             patch("crypto_feed.fetch_open_interest", return_value={"open_interest_ccy": 100.0}), \
+             patch("crypto_feed.fetch_ticker", return_value={"last_price": 60000.0}), \
+             patch("crypto_feed.fetch_spot_ticker", return_value={"last_price": 59700.0}), \
+             patch("crypto_feed.fetch_long_short_ratio", return_value={"long_short_ratio": 1.1}), \
+             patch("analysis_sources.fetch_stocktwits_sentiment", return_value=None), \
+             patch("factor_snapshots._global_factors",
+                   return_value={"kimchi": 2.5, "etf": 181000000.0,
+                                 "whale_btc": 14000000.0, "whale_eth": -3000000.0}):
+            result = record_factor_snapshots(("BTC", "ETH", "SOL"))
+        self.assertEqual(result["written"], 3)
+        rows = {r["symbol"]: r for r in self._rows()}
+        # basis = (60000-59700)/59700*100
+        self.assertAlmostEqual(rows["BTC"]["basis_pct"], 0.5025, places=3)
+        self.assertAlmostEqual(rows["BTC"]["kimchi_premium_pct"], 2.5)
+        self.assertAlmostEqual(rows["BTC"]["etf_flow_usd"], 181000000.0)
+        self.assertAlmostEqual(rows["BTC"]["whale_net_flow_usd"], 14000000.0)
+        # globals only land on their symbol rows
+        self.assertIsNone(rows["ETH"]["kimchi_premium_pct"])
+        self.assertIsNone(rows["ETH"]["etf_flow_usd"])
+        self.assertAlmostEqual(rows["ETH"]["whale_net_flow_usd"], -3000000.0)
+        self.assertIsNone(rows["SOL"]["whale_net_flow_usd"])
+
+    def test_global_factor_failures_are_null(self):
+        from factor_snapshots import record_factor_snapshots
+        with patch("crypto_feed.fetch_funding_rate", return_value={"funding_rate": 0.0001}), \
+             patch("crypto_feed.fetch_open_interest", return_value={"open_interest_ccy": 100.0}), \
+             patch("crypto_feed.fetch_ticker", return_value={"last_price": 60000.0}), \
+             patch("crypto_feed.fetch_spot_ticker", side_effect=Exception("spot down")), \
+             patch("crypto_feed.fetch_long_short_ratio", return_value={"long_short_ratio": 1.1}), \
+             patch("analysis_sources.fetch_stocktwits_sentiment", return_value=None), \
+             patch("factor_snapshots._global_factors",
+                   return_value={"kimchi": None, "etf": None, "whale_btc": None, "whale_eth": None}):
+            result = record_factor_snapshots(("BTC",))
+        self.assertEqual(result["written"], 1)
+        row = self._rows()[0]
+        self.assertIsNone(row["basis_pct"])
+        self.assertIsNone(row["kimchi_premium_pct"])
+        self.assertIsNone(row["whale_net_flow_usd"])
 
 
 if __name__ == "__main__":

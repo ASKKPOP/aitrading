@@ -1150,6 +1150,11 @@ def init_database():
         "ALTER TABLE risk_limits ADD COLUMN max_concurrent_positions INTEGER NOT NULL DEFAULT 8",
         # Plan 06 C2 — first-class risk level on automation rules
         "ALTER TABLE automation_configs ADD COLUMN risk_level TEXT",
+        # Plan 06 A5 — deeper factor history: basis, kimchi, ETF flow, whale flow
+        "ALTER TABLE factor_snapshots ADD COLUMN basis_pct REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN kimchi_premium_pct REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN etf_flow_usd REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN whale_net_flow_usd REAL",
     ):
         try:
             cursor.execute(_ddl)
@@ -2008,6 +2013,10 @@ def init_database():
             long_short_ratio  REAL,
             stocktwits_tilt   REAL,
             stocktwits_n      INTEGER,
+            basis_pct         REAL,
+            kimchi_premium_pct REAL,
+            etf_flow_usd      REAL,
+            whale_net_flow_usd REAL,
             created_at        TEXT NOT NULL
         )
     """)
