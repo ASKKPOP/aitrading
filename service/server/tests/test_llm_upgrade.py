@@ -168,7 +168,7 @@ class UserSettingsBridgeTests(unittest.TestCase):
         import analysis_agents
         seen = {}
 
-        def fake_inner(symbol, market, lang):
+        def fake_inner(symbol, market, lang, **kwargs):
             ap = resolve_provider()
             seen["provider"] = ap.spec.name if ap else None
             seen["key"] = ap.api_key if ap else None
@@ -186,7 +186,7 @@ class UserSettingsBridgeTests(unittest.TestCase):
         import analysis_agents
         seen = {}
 
-        def fake_inner(symbol, market, lang):
+        def fake_inner(symbol, market, lang, **kwargs):
             ap = resolve_provider()
             seen["resolved"] = ap  # None expected: gemini has no key anywhere
             return {"decision": {"action": "hold", "confidence": 0.5}}
