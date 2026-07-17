@@ -128,6 +128,106 @@
   }
 }
 
+/* ── Claude theme — claude.ai dark: warm charcoal, ivory ink, coral accent.
+   Forced dark; the complete var set (higher specificity than the bare :root
+   in the prefers-color-scheme block) means OS dark mode can't leak in. ── */
+:root[data-theme='claude'] {
+  --bg-primary:   #262624;   /* claude content bg */
+  --bg-secondary: #1f1e1d;
+  --bg-tertiary:  #35342f;
+  --bg-card:      #30302e;   /* lifted surface */
+  --bg-hover:     rgba(217,119,87,0.12);
+
+  --vellum:    #30302e;
+  --parchment: #262624;
+  --sidebar-bg: #1f1e1d;
+  --sidebar-hover: rgba(255,255,255,0.055);
+  --sidebar-active: rgba(217,119,87,0.22);
+
+  --text-primary:   #f5f4ee;   /* ivory */
+  --text-secondary: #c2c0b6;
+  --text-muted:     #8a887e;
+
+  --accent-primary:   #d97757;   /* claude crail */
+  --accent-secondary: #c15f3c;
+  --accent-gradient:  linear-gradient(90deg, #d97757, #c15f3c);
+  --accent-contrast:  #ffffff;
+
+  --s-aqua:   #4a9d7f;
+  --s-yellow: #d9a441;
+  --s-violet: #a88bd0;
+
+  --success: #4a9d7f;
+  --error:   #d4674f;
+  --warning: #d9a441;
+  --info:    #d97757;
+
+  --up:        #4a9d7f;
+  --down:      #d4674f;
+  --up-soft:   rgba(74,157,127,0.16);
+  --down-soft: rgba(212,103,79,0.16);
+
+  --border-color:  rgba(255,255,255,0.09);
+  --border-light:  rgba(217,119,87,0.30);
+  --border-strong: #4a4844;
+  --rule:          #35342f;
+  --rule-2:        rgba(255,255,255,0.05);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35), 0 3px 10px rgba(0,0,0,0.28);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.4), 0 10px 28px rgba(0,0,0,0.32);
+  --shadow-lg: 0 12px 44px rgba(0,0,0,0.55);
+}
+
+/* ── Light theme — claude.ai light: warm cream/paper, warm-dark ink, coral.
+   Forced light regardless of OS; complete var set so the dark media query
+   cannot override it. ── */
+:root[data-theme='light'] {
+  --bg-primary:   #faf9f5;   /* warm cream */
+  --bg-secondary: #f0eee6;
+  --bg-tertiary:  #e8e6dc;
+  --bg-card:      #ffffff;
+  --bg-hover:     rgba(217,119,87,0.08);
+
+  --vellum:    #ffffff;
+  --parchment: #f0eee6;
+  --sidebar-bg: #262624;   /* warm dark sidebar to match the pair */
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active: rgba(217,119,87,0.26);
+
+  --text-primary:   #1f1e1d;
+  --text-secondary: #57544d;
+  --text-muted:     #85817a;
+
+  --accent-primary:   #c15f3c;   /* darker coral for light-bg contrast */
+  --accent-secondary: #a34e30;
+  --accent-gradient:  linear-gradient(90deg, #c15f3c, #d97757);
+  --accent-contrast:  #ffffff;
+
+  --s-aqua:   #1f8f63;
+  --s-yellow: #b8801f;
+  --s-violet: #6f5bb5;
+
+  --success: #1f7a45;
+  --error:   #c0402e;
+  --warning: #b8801f;
+  --info:    #c15f3c;
+
+  --up:        #1f7a45;
+  --down:      #c0402e;
+  --up-soft:   rgba(31,122,69,0.12);
+  --down-soft: rgba(192,64,46,0.12);
+
+  --border-color:  rgba(31,30,29,0.11);
+  --border-light:  rgba(193,95,60,0.28);
+  --border-strong: #cfccc0;
+  --rule:          #e8e6dc;
+  --rule-2:        rgba(31,30,29,0.06);
+
+  --shadow-sm: 0 1px 2px rgba(31,30,29,0.05), 0 3px 10px rgba(31,30,29,0.04);
+  --shadow-md: 0 4px 14px rgba(31,30,29,0.07), 0 10px 28px rgba(31,30,29,0.05);
+  --shadow-lg: 0 12px 44px rgba(31,30,29,0.12);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -428,7 +528,7 @@ a {
   font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.04em;
-  color: var(--accent-contrast);
+  color: var(--text-primary);
 }
 
 .header-subtitle {
