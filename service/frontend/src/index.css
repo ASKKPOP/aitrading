@@ -298,8 +298,15 @@ a {
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .logo-icon {
-  display: none; /* replaced by logo-mark */
+  display: block;
+  flex-shrink: 0;
 }
 
 .logo-mark {

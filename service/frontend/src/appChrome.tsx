@@ -175,7 +175,10 @@ export function Sidebar({
       <div className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="logo-mark">Sooppiy</div>
+        <div className="logo-row">
+          <img className="logo-icon" src="/logo.svg" alt="" width={22} height={22} />
+          <div className="logo-mark">Sooppiy</div>
+        </div>
         <div className="logo-tagline">AI · analyze · automate</div>
       </div>
 

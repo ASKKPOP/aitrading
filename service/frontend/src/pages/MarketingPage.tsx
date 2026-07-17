@@ -655,7 +655,7 @@ export function MarketingPage() {
       {/* ── topbar ── */}
       <header style={{ position: 'sticky', top: 0, zIndex: 20, background: V.card, borderBottom: `1px solid ${V.line}` }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 62 }}>
-          <span style={{ width: 26, height: 26, borderRadius: '50%', background: V.accent, color: V.accentOn, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>s</span>
+          <img src="/logo.svg" alt="" width={34} height={34} style={{ display: 'block' }} />
           <span style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px' }}>
             {Object.entries(LANGS).map(([code, label]) => (
@@ -991,6 +991,7 @@ export function MarketingPage() {
       <footer style={{ padding: '32px 0 48px' }}>
         <div style={{ ...wrap, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <img src="/logo.svg" alt="" width={28} height={28} style={{ display: 'block' }} />
             <span style={{ fontFamily: V.display, fontSize: 18, fontWeight: 700 }}>Sooppiy</span>
             <span style={{ fontFamily: V.mono, fontSize: 11, color: V.faint }}>AI · ANALYZE · AUTOMATE</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, fontSize: 13 }}>
