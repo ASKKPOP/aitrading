@@ -175,6 +175,66 @@ class CacheTests(unittest.TestCase):
         self.assertEqual(out["llm_model"], "claude-haiku-4-5")
 
 
+class PsychCapTests(unittest.TestCase):
+    """The Signals Board tells users the psych weight is structurally capped.
+    That was true only of the rule path — the AI's score is used directly and
+    cannot be decomposed, so nothing stopped a psychology-led AI verdict.
+    (Audit 2026-07-17, 4/4 QA: false-user-claim.)
+
+    The box is now enforced on the model's own declaration: say psychology led,
+    and the verdict is discarded.
+    """
+
+    def setUp(self):
+        ai_fusion._AI_CACHE.clear()
+        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true",
+                                            "DATA_VERIFY_MODE": "off"})
+        self._env.start()
+
+    def tearDown(self):
+        self._env.stop()
+        ai_fusion._AI_CACHE.clear()
+
+    def _reply(self, psych_weight):
+        return json.dumps({"signal": "buy", "score": 0.9, "confidence": 0.9,
+                           "components": {"quant": 0.1, "psych": 0.9},
+                           "weights_used": {"quant": 1 - psych_weight, "psych": psych_weight},
+                           "evidence": ["e"], "rationale": "r"})
+
+    def _run(self, psych_weight):
+        with patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=self._reply(psych_weight)), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            return ai_fusion.fuse_with_ai("BTCUSDT", QUANT, SENTIMENT, PSYCH)
+
+    def test_psychology_led_verdict_is_discarded(self):
+        from signal_fusion import PSYCH_WEIGHT_MAX
+        self.assertIsNone(self._run(0.9))
+        self.assertIsNone(self._run(PSYCH_WEIGHT_MAX + 0.01))
+
+    def test_a_verdict_inside_the_cap_stands(self):
+        from signal_fusion import PSYCH_WEIGHT_MAX
+        out = self._run(PSYCH_WEIGHT_MAX)          # exactly at the cap is allowed
+        self.assertIsNotNone(out)
+        self.assertEqual(out["fusion_source"], "ai")
+
+    def test_the_model_still_chooses_freely_below_the_cap(self):
+        """The box constrains one wall, not the whole room."""
+        out = self._run(0.1)
+        self.assertEqual(out["ai_weights"]["quant"], 0.9)
+
+    def test_a_discarded_verdict_falls_back_labelled(self):
+        """Rejecting the AI must not silently pass a rule score off as an AI one."""
+        import signal_fusion
+        with patch.object(signal_fusion, "_quant_component", return_value=QUANT), \
+             patch.object(signal_fusion, "_sentiment_component", return_value=SENTIMENT), \
+             patch.object(signal_fusion, "_psych_component", return_value=PSYCH), \
+             patch("ai_fusion.fuse_with_ai", return_value=None):
+            out = signal_fusion.fuse_symbol("BTCUSDT")
+        self.assertEqual(out["fusion_source"], "rule-fallback")
+
+
 class PublicEndpointAbuseTests(unittest.TestCase):
     """The fusion endpoint is public and unauthenticated, so callers decide how
     many symbols exist. Live: a made-up symbol bought 2 Opus calls and ~21s of

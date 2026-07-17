@@ -165,7 +165,9 @@ PROMPT_HEADER = (
     "Be conservative when factors conflict or when key data is absent.\n"
     "HARD RULES you cannot override: (1) psychology alone never justifies a "
     "trade — if the only usable evidence is psychological, the verdict is "
-    "'hold'; (2) score is -1..1 and confidence is 0..1.\n"
+    "'hold'; (2) score is -1..1 and confidence is 0..1; (3) psychology may "
+    "never LEAD the score — its weight must not exceed 0.3, and a verdict that "
+    "declares otherwise is discarded. Weigh the other factors as you see fit.\n"
     "Respond with ONLY a JSON object:\n"
     '{"signal":"buy|sell|hold","score":-1..1,"confidence":0..1,'
     '"components":{"quant":-1..1,"sentiment":-1..1,"psych":-1..1},'
@@ -237,6 +239,24 @@ def fuse_with_ai(symbol: str, quant: Optional[dict[str, Any]],
     signal = str(parsed["signal"]).lower()
     score = _clamp(parsed.get("score"), -1.0, 1.0, 0.0)
     confidence = _clamp(parsed.get("confidence"), 0.0, 1.0, 0.5)
+
+    # The box the model may not redefine: psychology never LEADS the score.
+    # The rule path enforces this by construction (PSYCH_WEIGHT_MAX
+    # re-normalizes at signal_fusion.py:69); the AI path could not, because the
+    # model's score is used directly and cannot be decomposed. So we enforce it
+    # on the model's own declaration — a verdict that says psychology led is
+    # discarded, and the deterministic path answers instead.
+    #
+    # This is honesty as much as safety: the Signals Board tells users the
+    # psych weight is structurally capped, and until now that was true only of
+    # the rule path. (Audit 2026-07-17, 4/4 QA.)
+    from signal_fusion import PSYCH_WEIGHT_MAX
+    declared = parsed.get("weights_used") if isinstance(parsed.get("weights_used"), dict) else {}
+    declared_psych = _clamp(declared.get("psych"), 0.0, 1.0, 0.0)
+    if declared_psych > PSYCH_WEIGHT_MAX:
+        logger.warning("ai fusion for %s declared psych weight %.2f > %.2f — discarded",
+                       symbol, declared_psych, PSYCH_WEIGHT_MAX)
+        return None
 
     # Structural invariant (safety, not judgment): psychology never trades alone.
     components = parsed.get("components") if isinstance(parsed.get("components"), dict) else {}
