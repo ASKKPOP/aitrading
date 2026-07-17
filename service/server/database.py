@@ -1911,6 +1911,36 @@ def init_database():
         ON automation_configs(agent_id, enabled)
     """)
 
+    # Plan 06 C3 — consultation chat: stateful advisory conversations that can
+    # hand off into an automation rule.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id   INTEGER NOT NULL,
+            symbol     TEXT,
+            market     TEXT NOT NULL DEFAULT 'crypto',
+            title      TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role       TEXT NOT NULL,
+            content    TEXT NOT NULL,
+            llm_model  TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+        ON chat_messages(session_id, id)
+    """)
+
     # Plan 06 C3 — personal watch functions: user-defined metric conditions
     # that fire alerts when they cross a threshold.
     cursor.execute("""
