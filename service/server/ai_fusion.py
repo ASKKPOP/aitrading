@@ -58,7 +58,8 @@ def ai_fusion_ttl() -> int:
 
 def ai_fusion_tier() -> str:
     """Which model tier fuses. 'decision' (Opus) reasons best about conflicting
-    factors; 'brief' (Haiku) is ~20× cheaper if fusion runs hot."""
+    factors — which is the whole job here; 'brief' (Sonnet since 2026-07-17)
+    is the cheaper fallback if fusion ever runs hot."""
     tier = os.getenv("AI_FUSION_TIER", "decision").strip().lower()
     return tier if tier in ("brief", "decision") else "decision"
 

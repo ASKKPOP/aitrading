@@ -109,12 +109,18 @@ _PROVIDERS: dict[str, ProviderSpec] = {
         "claude-sonnet-5", kind="anthropic"),
 }
 
-# Task tiers: analyst briefs are summarization (cheap tier); the trader
-# decision and the verification pass need the strong tier. Providers without
-# an entry use their single default_model for both tiers.
+# Task tiers: analyst briefs are the cheaper tier; the trader decision and the
+# verification passes need the strong tier. Providers without an entry use
+# their single default_model for both tiers.
 # Env overrides: LLM_MODEL (both tiers) > LLM_MODEL_BRIEF / LLM_MODEL_DECISION.
+#
+# Anthropic brief = Sonnet, not Haiku (Henry's call, 2026-07-17, and the D5
+# measurements back it): Haiku produced high-severity false faults on real
+# snapshots 4/4 — it read MA20 vs MA200 as a contradiction and called absent
+# sentiment disqualifying. Briefs feed the trader, so a brief that misreads
+# the data is not a saving.
 _TIER_MODELS: dict[str, dict[str, str]] = {
-    "anthropic": {"brief": "claude-haiku-4-5", "decision": "claude-opus-4-8"},
+    "anthropic": {"brief": "claude-sonnet-5", "decision": "claude-opus-4-8"},
     "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o"},
 }
 _TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION"}

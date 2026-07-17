@@ -91,7 +91,9 @@ class TierModelTests(unittest.TestCase):
         self._patch.stop()
 
     def test_anthropic_tiers(self):
-        self.assertEqual(resolve_provider(tier="brief").model, "claude-haiku-4-5")
+        """Sonnet + Opus. Briefs feed the trader, so the cheap tier is not a
+        saving if it misreads the data (measured: Haiku did, 4/4)."""
+        self.assertEqual(resolve_provider(tier="brief").model, "claude-sonnet-5")
         self.assertEqual(resolve_provider(tier="decision").model, "claude-opus-4-8")
 
     def test_llm_model_overrides_both_tiers(self):

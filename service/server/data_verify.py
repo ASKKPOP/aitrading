@@ -69,16 +69,19 @@ def data_verify_mode() -> str:
 def data_verify_tier() -> str:
     """Decision tier (Opus), and the cheap tier is a false economy here.
 
-    Measured live on prod, same BTCUSDT snapshot, 2 runs each (2026-07-17):
-    Haiku returned 'suspect' with two HIGH-severity concerns both times, and
-    both were wrong — it read "price above MA20" against price_above_ma200 as
-    a contradiction (different indicators; ordinary in a downtrend bounce),
-    and it called missing sentiment disqualifying despite the prompt saying
-    sparse data is not suspect on its own. Opus returned 'ok' both times and
-    filed the one real oddity (-44.74% momentum) as low severity.
-    A verifier that invents high-severity faults blocks good trades in
-    enforce mode — worse than no verifier. DATA_VERIFY_TIER=brief is
-    available for cost, but it is not fit for enforce."""
+    Measured live on prod, same BTCUSDT snapshot, 4 runs per tier (2026-07-17,
+    when 'brief' was Haiku): Haiku returned 'suspect' with two HIGH-severity
+    concerns every run, all wrong — it read "price above MA20" against
+    price_above_ma200 as a contradiction (different indicators; ordinary in a
+    downtrend bounce), and called missing sentiment disqualifying despite the
+    prompt ruling sparse data out. Opus returned 'ok' 4/4 and filed the one
+    real oddity (-44.74% momentum) as low severity. A verifier that invents
+    high-severity faults blocks good trades in enforce mode — worse than no
+    verifier.
+
+    'brief' now resolves to Sonnet, so that measurement no longer describes
+    this tier and Sonnet has NOT been measured on this task. Treat brief as
+    unproven here until it is."""
     tier = os.getenv("DATA_VERIFY_TIER", "decision").strip().lower()
     return tier if tier in ("brief", "decision") else "decision"
 
