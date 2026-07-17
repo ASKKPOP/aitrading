@@ -290,6 +290,11 @@ def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature) -> 
     return content.strip() if isinstance(content, str) else None
 
 
+# Models observed to reject `temperature`, learned on the first 400 and
+# remembered for the life of the process (see _generate_anthropic).
+_NO_TEMPERATURE_MODELS: set[str] = set()
+
+
 def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional[str]:
     import anthropic  # lazy import
 
@@ -301,14 +306,23 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional
     }
     if system:
         kwargs["system"] = system
-    try:
-        msg = client.messages.create(temperature=temperature, **kwargs)
-    except anthropic.BadRequestError as exc:
-        # Claude 5-family models reject the temperature parameter
-        # ("`temperature` is deprecated for this model") — retry without it.
-        if "temperature" not in str(exc):
-            raise
+
+    # Claude 5-family models reject `temperature` ("deprecated for this
+    # model"). The retry below handles that, but retrying on EVERY call means
+    # every request pays a wasted round-trip first: prod logs showed 400s and
+    # 200s exactly 1:1, i.e. ~2x the latency on a 20s+ fusion path. So we
+    # remember which models refuse it and stop asking. Learned at runtime
+    # rather than hardcoded, because a model list here would rot.
+    if ap.model in _NO_TEMPERATURE_MODELS:
         msg = client.messages.create(**kwargs)
+    else:
+        try:
+            msg = client.messages.create(temperature=temperature, **kwargs)
+        except anthropic.BadRequestError as exc:
+            if "temperature" not in str(exc):
+                raise
+            _NO_TEMPERATURE_MODELS.add(ap.model)
+            msg = client.messages.create(**kwargs)
     parts = [b.text for b in msg.content if getattr(b, "type", None) == "text"]
     text = "\n".join(parts).strip()
     return text or None
