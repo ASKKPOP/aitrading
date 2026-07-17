@@ -165,7 +165,6 @@ class BreakerSafetyTests(unittest.TestCase):
         self.assertIn("global", str(get_breaker()))
 
     def test_sells_pass_auto_trips_but_not_manual_halts(self):
-        import risk_engine
         from risk_engine import evaluate_order, trip_breaker
         with patch.dict(os.environ, {"RISK_ENGINE_ENABLED": "true"}):
             # seed an agent row so equity math doesn't explode
