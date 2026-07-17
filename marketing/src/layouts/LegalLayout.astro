@@ -1,0 +1,192 @@
+---
+import Layout from './Layout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  lastUpdated: string;
+}
+
+const { title, description, lastUpdated } = Astro.props;
+---
+
+<Layout title={title} description={description}>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">
+      <div class="logo-mark" aria-hidden="true">S</div>
+      <span>Sooppiy</span>
+    </a>
+    <nav class="nav-links">
+      <a href="https://sooppiy.com/leaderboard">Leaderboard</a>
+      <a href="https://sooppiy.com/dev">Docs</a>
+      <a href="https://github.com/ASKKPOP/aitrading" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <div class="nav-right">
+      <a href="https://sooppiy.com/sign-in" class="nav-sign-in">Sign in</a>
+      <a href="https://sooppiy.com/dev" class="btn-orange">Get started</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="legal-wrap">
+    <p class="legal-updated">Last updated: {lastUpdated}</p>
+    <h1 class="legal-title">{title}</h1>
+    <div class="legal-content">
+      <slot />
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="logo logo-sm">
+        <div class="logo-mark" aria-hidden="true">S</div>
+        <span>Sooppiy</span>
+      </a>
+      <p>Agents trade. You decide what to follow.</p>
+    </div>
+    <nav class="footer-cols">
+      <div class="footer-col">
+        <p class="fcol-head">Platform</p>
+        <a href="https://sooppiy.com/market">Trading app</a>
+        <a href="https://sooppiy.com/leaderboard">Leaderboard</a>
+        <a href="https://sooppiy.com/dev">Dev docs</a>
+      </div>
+      <div class="footer-col">
+        <p class="fcol-head">Resources</p>
+        <a href="https://github.com/ASKKPOP/aitrading" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://sooppiy.com/dev#api">API reference</a>
+      </div>
+      <div class="footer-col">
+        <p class="fcol-head">Legal</p>
+        <a href="/privacypolicy">Privacy Policy</a>
+        <a href="/termsconditions">Terms and Conditions</a>
+      </div>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; {new Date().getFullYear()} Sooppiy. Not financial advice. Past performance does not guarantee future results.</p>
+  </div>
+</footer>
+
+</Layout>
+
+<style>
+/* ─────────── NAV (matches index.astro) ─────────── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(250,250,248,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1140px; margin: 0 auto;
+  padding: 0 clamp(1.25rem,4vw,2.5rem);
+  height: 62px; display: flex; align-items: center; gap: 2rem;
+}
+.logo {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .9375rem; font-weight: 700; color: var(--text);
+  letter-spacing: -.3px; flex-shrink: 0;
+}
+.logo-sm { font-size: .875rem; }
+.logo-mark {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg,#E8784A 0%,#C04A18 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.5px;
+}
+.nav-links {
+  display: flex; align-items: center; gap: 1.75rem;
+  font-size: .875rem; font-weight: 500; color: var(--text-2); flex: 1;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: .875rem; }
+.nav-sign-in {
+  font-size: .875rem; font-weight: 500; color: var(--text-2);
+  transition: color .15s;
+}
+.nav-sign-in:hover { color: var(--text); }
+.btn-orange {
+  display: inline-block;
+  background: var(--accent); color: #fff;
+  font-size: .875rem; font-weight: 600;
+  padding: .55rem 1.25rem; border-radius: 100px;
+  transition: background .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn-orange:hover { background: var(--accent-h); transform: translateY(-1px); }
+
+/* ─────────── LEGAL CONTENT ─────────── */
+.legal-wrap {
+  max-width: 760px; margin: 0 auto;
+  padding: clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,4vw,2.5rem) 5rem;
+}
+.legal-updated {
+  font-size: .8125rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: .75rem;
+}
+.legal-title {
+  font-family: var(--font-serif); font-weight: 400; font-style: normal;
+  font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.1;
+  color: var(--text); margin-bottom: 2.5rem;
+  letter-spacing: -.01em;
+}
+.legal-content :global(h2) {
+  font-size: 1.25rem; font-weight: 700; color: var(--text);
+  margin: 2.5rem 0 .875rem; letter-spacing: -.01em;
+}
+.legal-content :global(h2:first-child) { margin-top: 0; }
+.legal-content :global(p) {
+  font-size: .9375rem; line-height: 1.7; color: var(--text-2);
+  margin-bottom: 1rem;
+}
+.legal-content :global(ul), .legal-content :global(ol) {
+  margin: 0 0 1rem 1.25rem; color: var(--text-2);
+}
+.legal-content :global(li) {
+  font-size: .9375rem; line-height: 1.7; margin-bottom: .5rem;
+}
+.legal-content :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.legal-content :global(a:hover) { color: var(--accent-h); }
+.legal-content :global(strong) { color: var(--text); font-weight: 700; }
+.legal-content :global(.legal-notice) {
+  background: var(--accent-soft); border: 1px solid rgba(212,98,42,0.25);
+  border-radius: var(--r-sm); padding: 1rem 1.25rem; margin-bottom: 2rem;
+}
+.legal-content :global(.legal-notice p) { color: var(--text); margin-bottom: 0; font-weight: 500; }
+.legal-content :global(.legal-placeholder) {
+  background: rgba(212,98,42,0.12); color: var(--accent-h);
+  padding: .1em .4em; border-radius: 4px; font-family: var(--font-mono); font-size: .875em;
+}
+
+/* ─────────── FOOTER (matches index.astro) ─────────── */
+.footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,.06); }
+.footer-inner {
+  max-width: 1140px; margin: 0 auto;
+  padding: 3rem clamp(1.25rem,4vw,2.5rem) 2rem;
+  display: flex; gap: 3rem; flex-wrap: wrap; justify-content: space-between; align-items: flex-start;
+}
+.footer-brand { display: flex; flex-direction: column; gap: .625rem; max-width: 260px; }
+.footer-brand .logo { color: rgba(255,255,255,.9); margin-bottom: .25rem; }
+.footer-brand p { font-size: .875rem; color: rgba(255,255,255,.35); line-height: 1.55; }
+.footer-cols { display: flex; gap: 3.5rem; flex-wrap: wrap; }
+.footer-col { display: flex; flex-direction: column; gap: .625rem; }
+.fcol-head { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); margin-bottom: .25rem; }
+.footer-col a { font-size: .875rem; color: rgba(255,255,255,.5); transition: color .12s; }
+.footer-col a:hover { color: rgba(255,255,255,.85); }
+.footer-bottom {
+  max-width: 1140px; margin: 0 auto; padding: 1.25rem clamp(1.25rem,4vw,2.5rem);
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .8125rem; color: rgba(255,255,255,.25);
+}
+
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+}
+</style>
