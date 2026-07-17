@@ -285,12 +285,18 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional
     kwargs = {
         "model": ap.model,
         "max_tokens": max_tokens,
-        "temperature": temperature,
         "messages": [{"role": "user", "content": prompt}],
     }
     if system:
         kwargs["system"] = system
-    msg = client.messages.create(**kwargs)
+    try:
+        msg = client.messages.create(temperature=temperature, **kwargs)
+    except anthropic.BadRequestError as exc:
+        # Claude 5-family models reject the temperature parameter
+        # ("`temperature` is deprecated for this model") — retry without it.
+        if "temperature" not in str(exc):
+            raise
+        msg = client.messages.create(**kwargs)
     parts = [b.text for b in msg.content if getattr(b, "type", None) == "text"]
     text = "\n".join(parts).strip()
     return text or None

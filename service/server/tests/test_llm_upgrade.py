@@ -270,3 +270,51 @@ class VerificationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnthropicTemperatureRetryTests(unittest.TestCase):
+    """Claude 5-family models reject `temperature`; the client retries without it."""
+
+    def _run(self, first_error: str | None):
+        import types
+        calls = []
+
+        class FakeBadRequestError(Exception):
+            pass
+
+        class FakeMessages:
+            def create(self, **kwargs):
+                calls.append(kwargs)
+                if "temperature" in kwargs and first_error:
+                    raise FakeBadRequestError(first_error)
+                block = types.SimpleNamespace(type="text", text="ok")
+                return types.SimpleNamespace(content=[block])
+
+        class FakeClient:
+            def __init__(self, api_key):
+                self.messages = FakeMessages()
+
+        fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
+        from llm_client import _generate_anthropic, ActiveProvider, _PROVIDERS
+        ap = ActiveProvider(spec=_PROVIDERS["anthropic"], api_key="k",
+                            base_url="https://api.anthropic.com", model="claude-sonnet-5")
+        with patch.dict(sys.modules, {"anthropic": fake_mod}):
+            out = _generate_anthropic(ap, "hi", None, 100, 0.3)
+        return out, calls
+
+    def test_retries_without_temperature(self):
+        out, calls = self._run("`temperature` is deprecated for this model.")
+        self.assertEqual(out, "ok")
+        self.assertEqual(len(calls), 2)
+        self.assertIn("temperature", calls[0])
+        self.assertNotIn("temperature", calls[1])
+
+    def test_no_retry_when_accepted(self):
+        out, calls = self._run(None)
+        self.assertEqual(out, "ok")
+        self.assertEqual(len(calls), 1)
+
+    def test_other_errors_propagate(self):
+        with self.assertRaises(Exception) as cm:
+            self._run("model not found")
+        self.assertIn("model not found", str(cm.exception))
