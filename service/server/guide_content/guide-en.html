@@ -236,8 +236,8 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <div class="kpi-row">
     <div class="kpi"><div class="lb">Execution</div><div class="vl">Paper only</div><div class="hint">Real-account order code is disabled entirely</div></div>
     <div class="kpi"><div class="lb">Risk gate</div><div class="vl">Triple check</div><div class="hint">Kelly → limits → breaker</div></div>
-    <div class="kpi"><div class="lb">Tests</div><div class="vl">1,111 passing</div><div class="hint">Incl. signal-expansion &amp; guide tests</div></div>
-    <div class="kpi"><div class="lb">Background tasks</div><div class="vl">21</div><div class="hint">Incl. risk_watcher·psych·scanner</div></div>
+    <div class="kpi"><div class="lb">Tests</div><div class="vl">1,100+ passing</div><div class="hint">Incl. signal-expansion &amp; guide tests</div></div>
+    <div class="kpi"><div class="lb">Background tasks</div><div class="vl">23</div><div class="hint">Incl. risk_watcher·psych·scanner</div></div>
   </div>
 </div></section>
 
@@ -307,7 +307,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><b>Fear &amp; Greed</b></td><td>Index value + classification + 3-day change (Δ3d)</td><td>Δ3d ≥ <b>+10</b> = fear recovery → buy-signal component</td></tr>
       <tr><td><b>Sentiment spike</b></td><td>z-score of mean sentiment per news category (vs our own news-snapshot history)</td><td>z ≤ <b>−2</b> negative spike → sell component + experiment-event journaling</td></tr>
       <tr><td><b>Shock (real liq.)</b></td><td>OKX real liquidation notional, 1h sum (<code>estimated: false · liq_source: okx</code>) · σ+volume proxy only if the feed is down</td><td>Above threshold (default $5M) → breaker/reduce signal</td></tr>
-      <tr><td><b>Anticipation (prediction market)</b></td><td>Polymarket top-market odds, Δodds vs the previous snapshot</td><td>Δodds ≥ <b>+0.05</b>/24h = repricing → buy component</td></tr>
+      <tr><td><b>Anticipation (prediction market)</b></td><td>Polymarket odds for crypto/macro-relevant markets only (topic-filtered), one signed Δodds per market vs the previous snapshot</td><td>Δodds ≥ <b>+0.05</b>/24h = repricing → buy component</td></tr>
     </tbody>
   </table>
   <div class="note">Observed: F&amp;G <b>25 · Extreme Fear</b>, Δ3d −1 — right now the data itself confirms a "recovery trigger not fired" state.</div>
@@ -412,7 +412,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M815 82 V120 H470 M470 120 V138" class="sv-line" marker-end="url(#ar3)"/>
     <rect x="290" y="140" width="360" height="56" rx="10" class="sv-warn"/>
     <text x="470" y="162" text-anchor="middle" class="sv-t">Trader + Risk Team Debate</text>
-    <text x="470" y="180" text-anchor="middle" class="sv-s">rebut·synthesize the four briefs (ANALYSIS_DEBATE_ROUNDS)</text>
+    <text x="470" y="180" text-anchor="middle" class="sv-s">synthesize the four briefs into one decision (single LLM call)</text>
     <path d="M470 196 V222" class="sv-goodline" marker-end="url(#ar3g)"/>
     <rect x="270" y="224" width="400" height="30" rx="8" class="sv-good"/>
     <text x="470" y="244" text-anchor="middle" class="sv-t">Decision: BUY / SELL / HOLD + confidence (0~1) + written report</text>
@@ -502,8 +502,8 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <rect x="468" y="18" width="212" height="86" rx="10" class="sv-warn"/>
     <text x="574" y="40" text-anchor="middle" class="sv-t">② Limit Checks</text>
     <text x="574" y="58" text-anchor="middle" class="sv-s">daily realized loss ≤ $1,000 (UTC)</text>
-    <text x="574" y="74" text-anchor="middle" class="sv-s">per-symbol exposure ≤ $10,000</text>
-    <text x="574" y="92" text-anchor="middle" class="sv-m">per-agent tuning via PUT /api/risk/limits</text>
+    <text x="574" y="72" text-anchor="middle" class="sv-s">per-symbol ≤ $10,000 · portfolio ≤ 60% equity · ≤ 8 positions</text>
+    <text x="574" y="90" text-anchor="middle" class="sv-m">portfolio caps default-on · tune via PUT /api/risk/limits</text>
     <path d="M680 56 H716" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="718" y="18" width="202" height="86" rx="10" class="sv-warn"/>
@@ -604,7 +604,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QA's view — "What is verified, and how"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>All 1,111 tests passing</b> (including 126 new phase tests: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
+        <li><b>1,100+ tests passing</b> (including 126 new phase tests: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
         <li><b>Safety invariants pinned by tests:</b> only simulator fills · sells require a held position · closed-market skip · no orders on real accounts · the gate can only shrink/reject.</li>
         <li><b>Fail-soft applied throughout:</b> when an external source fails, only that component drops (named in the missing array) and the rest of the snapshot saves. Bad env weights fall back to defaults instead of a 500.</li>
         <li><b>Stage isolation:</b> all 5 phases default to env-flag off — in a production incident, one flag shuts off just that stage.</li>
