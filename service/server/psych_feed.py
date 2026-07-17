@@ -428,16 +428,43 @@ def _gather_anticipation() -> list[dict[str, Any]]:
     return markets
 
 
+def _canonical_outcome(odds: dict[str, Any]) -> Optional[str]:
+    """The one outcome whose movement carries the market's meaning.
+
+    A binary market says the same thing twice: P(Yes) falling 0.10 IS P(No)
+    rising 0.10. Emitting both rows made the anticipation signal
+    mathematically incapable of being bearish — the consumer tests
+    `delta >= +0.05` one-sidedly, so ANY movement always produced the bullish
+    row and a +0.25 bump. Proven live: 'Will BTC be above $60k?' with Yes
+    collapsing 0.70 -> 0.55 fired BULLISH via the No side.
+    (Audit 2026-07-17, 4/4 QA.)
+
+    'Yes' is the canonical side where it exists — that is the side the
+    question is asked from. Otherwise fall back to the first outcome, which is
+    arbitrary but at least consistent between snapshots.
+    """
+    if not odds:
+        return None
+    for key in odds:
+        if str(key).strip().lower() == "yes":
+            return key
+    return next(iter(odds))
+
+
 def compute_odds_deltas(latest: list[dict[str, Any]],
                         previous: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Δodds per market outcome between two anticipation snapshots (matched by slug)."""
+    """Signed Δodds per MARKET (not per outcome) between two anticipation
+    snapshots, matched by slug. One row per market, from its canonical side,
+    so the sign means something."""
     prev_by_slug = {m["slug"]: m for m in previous if m.get("slug")}
     deltas = []
     for market in latest:
         prev = prev_by_slug.get(market.get("slug"))
         if not prev:
             continue
-        for outcome, price in (market.get("odds") or {}).items():
+        outcome = _canonical_outcome(market.get("odds") or {})
+        if outcome is not None:
+            price = (market.get("odds") or {})[outcome]
             old = (prev.get("odds") or {}).get(outcome)
             if old is None or old <= 0:
                 continue

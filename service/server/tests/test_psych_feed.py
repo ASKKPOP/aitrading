@@ -363,3 +363,65 @@ class AnticipationRelevanceTests(unittest.TestCase):
                for i, q in enumerate(self.REAL_NOISE)]
         with patch("price_fetcher._polymarket_get_json", return_value=raw):
             self.assertEqual(psych_feed._gather_anticipation(), [])
+
+
+class OddsDeltaSignTests(unittest.TestCase):
+    """A binary market says the same thing twice: P(Yes) falling 0.10 IS P(No)
+    rising 0.10. Emitting both rows made the anticipation signal mathematically
+    incapable of being bearish, because the consumer tests `delta >= +0.05`
+    one-sidedly — ANY movement produced a bullish row and a +0.25 bump.
+    (Audit 2026-07-17, 4/4 QA; proven live on 'Will BTC be above $60k?'.)
+    """
+
+    BULL_MIN = 0.05   # signal_fusion.ODDS_RERATING_MIN
+
+    def _fires_bullish(self, deltas):
+        return [d for d in deltas if d.get("delta", 0) >= self.BULL_MIN]
+
+    def test_a_yes_collapse_is_not_bullish(self):
+        prev = [{"slug": "m", "odds": {"Yes": 0.70, "No": 0.30}}]
+        now = [{"slug": "m", "odds": {"Yes": 0.55, "No": 0.45}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 1)                       # one row per MARKET
+        self.assertEqual(d[0]["outcome"], "Yes")
+        self.assertAlmostEqual(d[0]["delta"], -0.15, places=4)
+        self.assertEqual(self._fires_bullish(d), [])      # the bug, closed
+
+    def test_a_yes_rally_is_bullish(self):
+        prev = [{"slug": "m", "odds": {"Yes": 0.55, "No": 0.45}}]
+        now = [{"slug": "m", "odds": {"Yes": 0.70, "No": 0.30}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertAlmostEqual(d[0]["delta"], 0.15, places=4)
+        self.assertTrue(self._fires_bullish(d))           # this one should
+
+    def test_one_row_per_market_not_per_outcome(self):
+        prev = [{"slug": "a", "odds": {"Yes": 0.5, "No": 0.5}},
+                {"slug": "b", "odds": {"Yes": 0.2, "No": 0.8}}]
+        now = [{"slug": "a", "odds": {"Yes": 0.6, "No": 0.4}},
+               {"slug": "b", "odds": {"Yes": 0.1, "No": 0.9}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 2)
+        self.assertEqual(sorted(x["slug"] for x in d), ["a", "b"])
+
+    def test_yes_is_canonical_regardless_of_key_order_or_case(self):
+        self.assertEqual(psych_feed._canonical_outcome({"No": 0.4, "YES": 0.6}), "YES")
+        self.assertEqual(psych_feed._canonical_outcome({"No": 0.4, "yes": 0.6}), "yes")
+
+    def test_non_binary_market_falls_back_to_a_stable_first_outcome(self):
+        odds = {"Trump": 0.5, "Biden": 0.3, "Other": 0.2}
+        self.assertEqual(psych_feed._canonical_outcome(odds), "Trump")
+        prev = [{"slug": "m", "odds": odds}]
+        now = [{"slug": "m", "odds": {"Trump": 0.62, "Biden": 0.2, "Other": 0.18}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[0]["outcome"], "Trump")
+
+    def test_empty_odds_is_skipped_not_crashed(self):
+        self.assertIsNone(psych_feed._canonical_outcome({}))
+        self.assertEqual(psych_feed.compute_odds_deltas([{"slug": "m", "odds": {}}],
+                                                        [{"slug": "m", "odds": {}}]), [])
+
+    def test_unmatched_market_yields_nothing(self):
+        self.assertEqual(psych_feed.compute_odds_deltas(
+            [{"slug": "new", "odds": {"Yes": 0.5}}],
+            [{"slug": "old", "odds": {"Yes": 0.5}}]), [])
