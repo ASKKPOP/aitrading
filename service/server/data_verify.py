@@ -30,8 +30,10 @@ so one "too old" threshold would be wrong for all three. Feeds without a
 timestamp are reported in `age_unknown` rather than omitted: silence would
 read as freshness.
 
-REMAINING GAP: whale/ETF/calibration blocks are aged only by the ETF print
-date; the rest carry no per-block stamp yet.
+Every block in the snapshot now carries an age: quant, psych, cross_market,
+whales and live_calibration each forward their feed's own stamp, and the ETF
+print keeps its vendor date. In each case the stamp already existed and was
+being dropped in transit rather than never taken.
 """
 
 from __future__ import annotations
@@ -131,6 +133,16 @@ def _expected_ages() -> dict[str, int]:
         psych_interval = max(300, int(os.getenv("PSYCH_REFRESH_INTERVAL", "3600")))
     except ValueError:
         psych_interval = 3600
+
+    def _module_ttl(module: str, default: int) -> int:
+        """A feed's own cache TTL is its cadence — ask the module that owns it
+        rather than restating the number here, where it would drift."""
+        try:
+            mod = __import__(module)
+            return int(getattr(mod, "_CACHE_TTL_SECONDS", default))
+        except Exception:  # noqa: BLE001
+            return default
+
     return {
         # fetched live per call, straight from OKX
         "quant": 60,
@@ -139,6 +151,9 @@ def _expected_ages() -> dict[str, int]:
         "psych": psych_interval + 120,
         # the vendor prints once a day; we cannot be fresher than it is
         "fear_greed_vendor_print": 86_400,
+        # each of these rebuilds on its own cache TTL (+slack for the fetch)
+        "whales": _module_ttl("whale_feed", 120) + 60,
+        "live_calibration": _module_ttl("calibration", 600) + 60,
     }
 
 
@@ -164,10 +179,11 @@ def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     # rather than omitted — "we cannot tell how old this is" is a fact the
     # model should weigh, and silence would read as freshness.
     ages: dict[str, Any] = {}
-    for key, block in (("quant", quant), ("psych", psych),
-                       ("cross_market", snapshot.get("cross_market") or {})):
-        if snapshot.get(key):
-            ages[key] = _age_seconds((block or {}).get("as_of"))
+    for key in ("quant", "psych", "cross_market", "whales", "live_calibration"):
+        block = snapshot.get(key)
+        if block:
+            ages[key] = _age_seconds((block or {}).get("as_of")
+                                     if isinstance(block, dict) else None)
     fg_block = psych.get("fear_greed") or {}
     if fg_block:
         ages["fear_greed_vendor_print"] = _age_seconds(fg_block.get("as_of"))

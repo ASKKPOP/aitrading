@@ -100,7 +100,10 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
         from whale_feed import get_whale_payload
         w = get_whale_payload()
         if w.get("available"):
-            snapshot["whales"] = w.get("totals")
+            # Carry the feed's own stamp (D5b). Whale totals are all-zero both
+            # when nothing moved and when the feed is broken — without an age,
+            # those two read identically to the verifier.
+            snapshot["whales"] = {**(w.get("totals") or {}), "as_of": w.get("created_at")}
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -126,7 +129,8 @@ def build_factor_snapshot(symbol: str, quant: Optional[dict[str, Any]],
         from calibration import get_calibration
         cal = get_calibration()
         if cal.get("available"):
-            snapshot["live_calibration"] = cal["buckets"]
+            snapshot["live_calibration"] = {"buckets": cal["buckets"],
+                                            "as_of": cal.get("generated_at")}
     except Exception:  # noqa: BLE001
         pass
     return snapshot

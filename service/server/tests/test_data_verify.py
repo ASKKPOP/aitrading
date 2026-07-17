@@ -167,6 +167,45 @@ class AgeTests(unittest.TestCase):
         exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
         self.assertEqual(exp["fear_greed_vendor_print"], 86_400)
 
+    def test_whale_and_calibration_blocks_are_aged(self):
+        """Both stamp themselves; the snapshot was dropping the stamps."""
+        snap = {**SNAPSHOT,
+                "whales": {"btc_transfer_usd": 0, "as_of": self._iso(45)},
+                "live_calibration": {"buckets": {}, "as_of": self._iso(300)}}
+        ages = data_verify.measure_snapshot(snap)["age_seconds"]
+        self.assertAlmostEqual(ages["whales"], 45, delta=2)
+        self.assertAlmostEqual(ages["live_calibration"], 300, delta=2)
+
+    def test_whale_all_zero_still_measured_with_a_stamp_present(self):
+        """An age must not break the zero-check: idle feed vs broken feed is
+        exactly what the age disambiguates."""
+        snap = {**SNAPSHOT,
+                "whales": {"btc_transfer_usd": 0, "eth_net_flow_usd": 0,
+                           "as_of": self._iso(10)}}
+        f = data_verify.measure_snapshot(snap)
+        self.assertTrue(f["whales_all_zero"])       # the string must not count
+        self.assertAlmostEqual(f["age_seconds"]["whales"], 10, delta=2)
+
+    def test_feed_cadences_track_their_owning_module(self):
+        """Restating a TTL here would drift the day someone retunes the feed.
+
+        The module's real TTL must be CHANGED to prove this: asserting against
+        its current value passes just as happily on a hardcoded literal that
+        happens to match (my first version of this test did exactly that).
+        """
+        import calibration
+        import whale_feed
+        with patch.object(whale_feed, "_CACHE_TTL_SECONDS", 999), \
+             patch.object(calibration, "_CACHE_TTL_SECONDS", 777):
+            exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertEqual(exp["whales"], 1059)            # 999 + 60
+        self.assertEqual(exp["live_calibration"], 837)   # 777 + 60
+
+    def test_missing_module_ttl_falls_back(self):
+        with patch.object(__import__("whale_feed"), "_CACHE_TTL_SECONDS", "junk"):
+            exp = data_verify.measure_snapshot(SNAPSHOT)["expected_max_age_seconds"]
+        self.assertEqual(exp["whales"], 180)        # 120 default + 60
+
 
 class VerifyTests(unittest.TestCase):
     def _run(self, reply, env=None):
