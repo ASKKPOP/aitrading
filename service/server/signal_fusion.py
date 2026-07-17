@@ -263,7 +263,7 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
     except Exception as exc:  # noqa: BLE001
         logger.debug("fusion confluence unavailable for %s: %s", symbol, exc)
 
-    return {
+    payload = {
         "symbol": symbol,
         "score": round(score, 3),
         "signal": signal,
@@ -281,9 +281,36 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
         "evidence": evidence,
         "current_price": (quant or {}).get("current_price"),
         "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "fusion_source": "rule",
         "note": "psych weight structurally capped at "
                 f"{PSYCH_WEIGHT_MAX} — psychology never trades alone",
     }
+
+    # AI-native fusion (Plan 06 D4) is the PRIMARY path when enabled: the model
+    # weighs the full factor snapshot itself instead of the fixed 0.5/0.3/0.2.
+    # The deterministic result above stays as the fail-soft fallback and every
+    # payload says which one produced it (`fusion_source`) — a rule-based score
+    # is never passed off as an AI one.
+    try:
+        from ai_fusion import fuse_with_ai
+        ai = fuse_with_ai(symbol, quant, sentiment, psych)
+        if ai:
+            payload["rule_fusion"] = {"score": payload["score"], "signal": payload["signal"],
+                                      "confidence": payload["confidence"]}
+            payload.update({
+                "score": ai["score"], "signal": ai["signal"], "confidence": ai["confidence"],
+                "fusion_source": "ai", "llm_model": ai.get("llm_model"),
+                "ai_components": ai.get("ai_components"), "ai_weights": ai.get("ai_weights"),
+                "rationale": ai.get("rationale"),
+                "evidence": (ai.get("evidence") or []) + evidence,
+                "note": "AI-fused: the model weighed the factor snapshot itself; "
+                        "psychology-only reads are still forced to hold",
+            })
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("ai fusion unavailable for %s: %s", symbol, exc)
+        payload["fusion_source"] = "rule-fallback"
+
+    return payload
 
 
 def fuse_symbols(symbols: list[str]) -> list[dict[str, Any]]:
