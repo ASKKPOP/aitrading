@@ -194,6 +194,18 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         conn.close()
 
 
+def _agent_budget_blocks(config: dict[str, Any], entry: float) -> Optional[str]:
+    """Agent-mode budget check wrapper (fail-closed: an error blocks the buy —
+    a budget cap that silently fails open would defeat full delegation)."""
+    try:
+        from agent_planner import budget_blocks
+        order_usd = float(config.get("size_usd") or 0)
+        return budget_blocks(config["agent_id"], float(config.get("budget_usd") or 0), order_usd)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("agent-mode budget check failed: %s", exc)
+        return f"agent-mode budget check unavailable: {exc}"
+
+
 # ─────────────────────────── one rule ───────────────────────────
 
 def _time_stop_cooldown_blocks(agent_id: int, symbol: str, market: str,
@@ -257,6 +269,33 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     market = config["market"]
 
     result: dict[str, Any] = {"config_id": config_id, "executed": False, "skip_reason": None}
+
+    # Agent Mode (Plan 06 C1): the planner picks this cycle's parameters
+    # (symbol/size/cadence/confidence/risk level) inside deterministic bounds.
+    # The user's budget cap is enforced later, pre-gate. Fail-soft: a planner
+    # problem falls back to the rule's stored parameters.
+    if (config.get("mode") or "manual") == "agent":
+        try:
+            from agent_planner import plan_agent_cycle
+            plan = plan_agent_cycle(config)
+            symbol = plan["symbol"]
+            config = dict(config)
+            config["min_confidence"] = plan["min_confidence"]
+            config["size_usd"] = plan["size_usd"]
+            result["agent_plan"] = plan
+            # cadence: persist the planner's interval so the due-check uses it
+            if plan["interval_minutes"] != config.get("interval_minutes"):
+                try:
+                    _conn = get_db_connection()
+                    _conn.execute(
+                        "UPDATE automation_configs SET interval_minutes = ? WHERE id = ?",
+                        (plan["interval_minutes"], config_id))
+                    _conn.commit()
+                    _conn.close()
+                except Exception:  # noqa: BLE001
+                    logger.debug("agent-mode interval persist failed for %s", config_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("agent-mode planner failed for config %s: %s", config_id, exc)
 
     # Scanner option (Phase 4): a rule whose symbol is 'SCANNER' analyzes the
     # which-coin scanner's current top candidate instead of a fixed symbol.
@@ -354,6 +393,10 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["skip_reason"] = _regime_blocks(regime_read, action)
         elif not entry or entry <= 0:
             result["skip_reason"] = "no valid price in decision"
+        elif (config.get("mode") or "manual") == "agent" and action == "buy" and (
+                _budget_reason := _agent_budget_blocks(config, float(entry))):
+            # Deterministic budget cap — the planner proposes, this disposes.
+            result["skip_reason"] = _budget_reason
         else:
             quantity = float(config.get("size_usd") or 0) / float(entry)
             if (action == "buy" and regime_read is not None
@@ -407,6 +450,8 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
             telemetry["verify"] = result["verify"]
         if result.get("calibration_prior") is not None:
             telemetry["calibration_prior"] = result["calibration_prior"]
+        if result.get("agent_plan") is not None:
+            telemetry["agent_plan"] = result["agent_plan"]
         confluence_json = None
         if telemetry:
             try:

@@ -15,9 +15,10 @@ type Rule = {
   id?: number; symbol: string; market: string; provider: string | null; interval_minutes: number;
   min_confidence: number; size_usd: number; auto_execute: boolean | number; account_type: string;
   enabled?: boolean | number; last_run_at?: string | null; risk_level?: string | null;
+  mode?: string; budget_usd?: number | null;
 }
 
-type UserMode = 'simple' | 'guided' | 'pro'
+type UserMode = 'agent' | 'simple' | 'guided' | 'pro'
 const MODE_KEY = 'sooppiy_automation_mode'
 
 const DEFAULT_DRAFT: Rule = { symbol: 'BTC', market: 'crypto', provider: null, interval_minutes: 60, min_confidence: 0.65, size_usd: 500, auto_execute: false, account_type: 'simulator' }
@@ -40,7 +41,7 @@ export function AutomationPage() {
   const { language } = useLanguage()
   const [mode, setMode] = useState<UserMode>(() => {
     const saved = localStorage.getItem(MODE_KEY)
-    return saved === 'simple' || saved === 'guided' || saved === 'pro' ? saved : 'simple'
+    return saved === 'agent' || saved === 'simple' || saved === 'guided' || saved === 'pro' ? saved : 'simple'
   })
   useEffect(() => { localStorage.setItem(MODE_KEY, mode) }, [mode])
 
@@ -49,6 +50,8 @@ export function AutomationPage() {
   const [draft, setDraft] = useState<Rule>({ ...DEFAULT_DRAFT })
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
+  const [agentBudget, setAgentBudget] = useState<number>(5000)
+  const [decisions, setDecisions] = useState<any[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -77,6 +80,14 @@ export function AutomationPage() {
     modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản' }),
     modeGuided: tr(language, { ko: '표준', en: 'Guided', ja: '標準', th: 'มาตรฐาน', vi: 'Tiêu chuẩn' }),
     modePro: tr(language, { ko: '전문가', en: 'Pro', ja: 'プロ', th: 'มืออาชีพ', vi: 'Chuyên nghiệp' }),
+    modeAgent: tr(language, { ko: '완전 위임', en: 'Agent', ja: '完全委任', th: 'มอบหมายเต็มรูปแบบ', vi: 'Ủy quyền hoàn toàn' }),
+    modeAgentDesc: tr(language, { ko: '예산만 정하세요 — 종목·크기·주기·위험 수준을 AI가 매 사이클 결정하고, 모든 결정이 기록됩니다', en: 'Set only a budget — the AI decides symbol, size, cadence and risk each cycle, and every decision is journaled', ja: '予算だけ設定 — 銘柄・サイズ・周期・リスクをAIが毎サイクル決定し、全決定を記録', th: 'ตั้งแค่งบประมาณ — AI ตัดสินใจเหรียญ ขนาด รอบ และความเสี่ยงทุกรอบ พร้อมบันทึกทุกการตัดสินใจ', vi: 'Chỉ đặt ngân sách — AI quyết định mã, khối lượng, chu kỳ và rủi ro mỗi chu kỳ, mọi quyết định được ghi lại' }),
+    budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)' }),
+    budgetHint: tr(language, { ko: 'AI가 배치할 수 있는 총 노출 한도 — 한 포지션은 예산의 25% 이하', en: 'Total exposure the AI may deploy — one position stays ≤ 25% of budget', ja: 'AIが展開できる総エクスポージャー上限 — 1ポジションは予算の25%以下', th: 'วงเงินรวมที่ AI ใช้ได้ — หนึ่งสถานะ ≤ 25% ของงบ', vi: 'Tổng mức AI được triển khai — một vị thế ≤ 25% ngân sách' }),
+    startAgent: tr(language, { ko: 'AI에게 위임 시작', en: 'Start delegation', ja: '委任を開始', th: 'เริ่มมอบหมาย', vi: 'Bắt đầu ủy quyền' }),
+    agentDecisions: tr(language, { ko: 'AI 결정 로그', en: 'AI decision log', ja: 'AI決定ログ', th: 'บันทึกการตัดสินใจของ AI', vi: 'Nhật ký quyết định AI' }),
+    noDecisions: tr(language, { ko: '아직 결정이 없습니다 — 첫 사이클에서 기록됩니다.', en: 'No decisions yet — the first cycle will journal one.', ja: 'まだ決定はありません — 最初のサイクルで記録されます。', th: 'ยังไม่มีการตัดสินใจ — รอบแรกจะบันทึก', vi: 'Chưa có quyết định — chu kỳ đầu sẽ ghi lại.' }),
+    agentKillNote: tr(language, { ko: '킬 스위치: 규칙을 제거하면 즉시 중단됩니다. 리스크 게이트·브레이커·예산 상한은 AI가 우회할 수 없습니다.', en: 'Kill switch: removing the rule stops it instantly. The risk gate, breakers and budget cap cannot be bypassed by the AI.', ja: 'キルスイッチ: ルール削除で即停止。リスクゲート・ブレーカー・予算上限はAIが回避できません。', th: 'สวิตช์หยุด: ลบกฎแล้วหยุดทันที AI ข้ามประตูความเสี่ยง เบรกเกอร์ และเพดานงบไม่ได้', vi: 'Công tắc dừng: xóa quy tắc là dừng ngay. AI không thể vượt cổng rủi ro, breaker và trần ngân sách.' }),
     modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại' }),
     modeGuidedDesc: tr(language, { ko: '핵심 설정을 직접 조정하되, 추천값이 함께 표시됩니다', en: 'Adjust the key settings yourself, with recommendations shown', ja: '主要設定を自分で調整 — 推奨値つき', th: 'ปรับการตั้งค่าหลักเอง พร้อมค่าแนะนำ', vi: 'Tự chỉnh các thiết lập chính, kèm giá trị đề xuất' }),
     modeProDesc: tr(language, { ko: '모든 설정을 직접 제어합니다 — AI 제공자, 시장, 계정 유형까지', en: 'Full control over every setting — AI provider, market, account type', ja: '全設定をフルコントロール', th: 'ควบคุมทุกการตั้งค่า', vi: 'Toàn quyền kiểm soát mọi thiết lập' }),
@@ -127,6 +138,8 @@ export function AutomationPage() {
       const cfg = await cfgRes.json(); const run = await runRes.json()
       if (cfgRes.ok) setRules(cfg.configs || [])
       if (runRes.ok) setRuns(run.runs || [])
+      const decRes = await fetch(`${API_BASE}/automation/agent-decisions?limit=10`, { headers: authHeaders })
+      if (decRes.ok) setDecisions((await decRes.json()).decisions || [])
     } catch { /* transient */ }
   }
 
@@ -163,6 +176,15 @@ export function AutomationPage() {
     })
   }
 
+  function addAgent() {
+    postRule({
+      symbol: 'AGENT', market: 'crypto', provider: null,
+      interval_minutes: 60, min_confidence: 0.65, size_usd: 500,
+      auto_execute: true, account_type: 'simulator',
+      mode: 'agent', budget_usd: agentBudget,
+    } as Rule)
+  }
+
   async function remove(id?: number) {
     if (!id) return
     try {
@@ -193,7 +215,7 @@ export function AutomationPage() {
       <div className="empty-state"><div className="empty-icon">⚙</div><div className="empty-title">{T.login}</div></div></div>
   }
 
-  const modeDesc = mode === 'simple' ? T.modeSimpleDesc : mode === 'guided' ? T.modeGuidedDesc : T.modeProDesc
+  const modeDesc = mode === 'agent' ? T.modeAgentDesc : mode === 'simple' ? T.modeSimpleDesc : mode === 'guided' ? T.modeGuidedDesc : T.modeProDesc
 
   return (
     <div>
@@ -206,11 +228,54 @@ export function AutomationPage() {
 
       {/* ── Mode selector ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+        <button style={chip(mode === 'agent')} onClick={() => setMode('agent')}>⓪ {T.modeAgent}</button>
         <button style={chip(mode === 'simple')} onClick={() => setMode('simple')}>① {T.modeSimple}</button>
         <button style={chip(mode === 'guided')} onClick={() => setMode('guided')}>② {T.modeGuided}</button>
         <button style={chip(mode === 'pro')} onClick={() => setMode('pro')}>③ {T.modePro}</button>
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{modeDesc}</div>
+
+      {/* ── Mode 0: Agent (full delegation) ── */}
+      {mode === 'agent' && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+              {T.budgetLabel}
+              <input type="number" min={100} max={1000000} value={agentBudget}
+                onChange={e => setAgentBudget(Number(e.target.value))}
+                style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', width: 160 }} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted,#a89f92)' }}>💡 {T.budgetHint}</span>
+            </label>
+            <button onClick={addAgent} disabled={busy || agentBudget < 100}
+              style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
+              🤖 {T.startAgent}
+            </button>
+            {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.agentKillNote}</div>
+
+          <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '18px 0 8px' }}>{T.agentDecisions}</div>
+          {decisions.length === 0
+            ? <div style={{ fontSize: 13, color: 'var(--text-muted,#a89f92)' }}>{T.noDecisions}</div>
+            : decisions.map(d => {
+              let p: any = {}
+              try { p = JSON.parse(d.params_json || '{}') } catch { /* display raw */ }
+              return (
+                <div key={d.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-color)', fontSize: 12.5 }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
+                    <b>{p.symbol}</b>
+                    <span>${p.size_usd}</span>
+                    <span>{p.interval_minutes}m</span>
+                    <span>≥{p.min_confidence}</span>
+                    <span>{p.risk_level}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>{d.planner === 'llm' ? (d.llm_model || 'AI') : 'fallback'} · {(d.decided_at || '').slice(5, 16).replace('T', ' ')}</span>
+                  </div>
+                  {d.rationale && <div style={{ color: 'var(--text-secondary,#8a8073)', marginTop: 3 }}>{d.rationale}</div>}
+                </div>
+              )
+            })}
+        </div>
+      )}
 
       {/* ── Mode 1: Simple ── */}
       {mode === 'simple' && (
@@ -305,7 +370,7 @@ export function AutomationPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {rules.map((r) => (
             <div key={r.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <b style={{ fontSize: 15 }}>{r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
+              <b style={{ fontSize: 15 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
               <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
                 {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {r.account_type}
               </span>

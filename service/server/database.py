@@ -1155,6 +1155,9 @@ def init_database():
         "ALTER TABLE factor_snapshots ADD COLUMN kimchi_premium_pct REAL",
         "ALTER TABLE factor_snapshots ADD COLUMN etf_flow_usd REAL",
         "ALTER TABLE factor_snapshots ADD COLUMN whale_net_flow_usd REAL",
+        # Plan 06 C1 — Agent Mode: full-delegation rules with a budget cap
+        "ALTER TABLE automation_configs ADD COLUMN mode TEXT NOT NULL DEFAULT 'manual'",
+        "ALTER TABLE automation_configs ADD COLUMN budget_usd REAL",
     ):
         try:
             cursor.execute(_ddl)
@@ -1891,6 +1894,8 @@ def init_database():
             enabled          INTEGER NOT NULL DEFAULT 1,
             lang             TEXT    NOT NULL DEFAULT 'en',
             risk_level       TEXT,
+            mode             TEXT    NOT NULL DEFAULT 'manual',
+            budget_usd       REAL,
             last_run_at      TEXT,
             created_at       TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -1899,6 +1904,22 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_automation_configs_agent
         ON automation_configs(agent_id, enabled)
+    """)
+
+    # Plan 06 C1 — Agent Mode decision journal: every parameter set the AI
+    # planner chose for a full-delegation rule, with its rationale.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_mode_decisions (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id   INTEGER NOT NULL,
+            agent_id    INTEGER NOT NULL,
+            decided_at  TEXT    NOT NULL,
+            params_json TEXT    NOT NULL,
+            rationale   TEXT,
+            llm_model   TEXT,
+            planner     TEXT    NOT NULL DEFAULT 'llm',
+            FOREIGN KEY (config_id) REFERENCES automation_configs(id)
+        )
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS automation_runs (
