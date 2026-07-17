@@ -109,6 +109,15 @@ def _quant_component(symbol: str) -> Optional[dict[str, Any]]:
         "price_above_ma200": analysis.get("price_above_ma200"),
         "momentum_12_1_pct": analysis.get("momentum_12_1_pct"),
         "sigma_daily_pct": analysis.get("sigma_daily_pct"),
+        # Computed by quant_crypto and previously dropped here, so the model
+        # never saw them. Each is a TOP-10 decision parameter in the research
+        # doc (docs/research/parameters/2-ai-trading-parameters-ko.html):
+        #   #10 mean-reversion — 1-month reversal, ranked top-tier ML feature
+        #   #1/#2 trend structure — the MA50/MA200 cross state
+        #   #4  volatility — the 24h read; sigma_daily_pct alone is the 20d one
+        "reversal_1m_pct": analysis.get("reversal_1m_pct"),
+        "golden_cross_state": analysis.get("golden_cross_state"),
+        "sigma_24h_pct": analysis.get("sigma_24h_pct"),
         # Forwarded so the D5 verifier can age this read (Plan 06 D5b). The
         # feed builds it fresh per call today, but that is a property of the
         # feed, not a promise — carry the stamp rather than assume.
