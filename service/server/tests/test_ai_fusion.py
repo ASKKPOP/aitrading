@@ -49,13 +49,19 @@ class FlagTests(unittest.TestCase):
 
 class AiFusionTests(unittest.TestCase):
     def setUp(self):
+        ai_fusion._AI_CACHE.clear()   # module-level cache is process-global
         self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true"})
         self._env.start()
 
     def tearDown(self):
         self._env.stop()
+        ai_fusion._AI_CACHE.clear()
 
     def _run(self, reply, quant=QUANT, sentiment=SENTIMENT, psych=PSYCH):
+        ai_fusion._AI_CACHE.clear()   # each case asserts on a fresh verdict
+        return self._run_cached(reply, quant, sentiment, psych)
+
+    def _run_cached(self, reply, quant=QUANT, sentiment=SENTIMENT, psych=PSYCH):
         with patch.object(ai_fusion, "build_factor_snapshot", return_value={"symbol": "BTCUSDT"}), \
              patch("llm_client.llm_configured", return_value=True), \
              patch("llm_client.generate_text", return_value=reply), \
@@ -94,6 +100,63 @@ class AiFusionTests(unittest.TestCase):
         self.assertIsNone(self._run("no json here"))
         self.assertIsNone(self._run(json.dumps({"signal": "moon", "score": 0.5})))
         self.assertIsNone(self._run(""))
+
+
+class CacheTests(unittest.TestCase):
+    """Cost control: a frontier call must not fire on every 30s dashboard poll."""
+
+    def setUp(self):
+        ai_fusion._AI_CACHE.clear()
+        self._env = patch.dict(os.environ, {"AI_FUSION_ENABLED": "true"})
+        self._env.start()
+
+    def tearDown(self):
+        self._env.stop()
+        ai_fusion._AI_CACHE.clear()
+
+    def _fuse(self):
+        with patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=AI_REPLY) as gen, \
+             patch("llm_client.active_provider_model", return_value="claude-opus-4-8"):
+            out = ai_fusion.fuse_with_ai("BTCUSDT", QUANT, SENTIMENT, PSYCH)
+            return out, gen
+
+    def test_second_call_is_cached(self):
+        out1, gen1 = self._fuse()
+        self.assertEqual(gen1.call_count, 1)
+        self.assertEqual(out1["cached_age_s"], 0)
+        out2, gen2 = self._fuse()
+        self.assertEqual(gen2.call_count, 0)          # no second model call
+        self.assertEqual(out2["signal"], out1["signal"])
+        self.assertIn("cached_age_s", out2)           # age is disclosed, not hidden
+
+    def test_expired_cache_refetches(self):
+        self._fuse()
+        stamp, payload = ai_fusion._AI_CACHE["BTCUSDT"]
+        ai_fusion._AI_CACHE["BTCUSDT"] = (stamp - ai_fusion.ai_fusion_ttl() - 1, payload)
+        _, gen = self._fuse()
+        self.assertEqual(gen.call_count, 1)
+
+    def test_ttl_and_tier_are_configurable(self):
+        with patch.dict(os.environ, {"AI_FUSION_TTL": "300"}):
+            self.assertEqual(ai_fusion.ai_fusion_ttl(), 300)
+        with patch.dict(os.environ, {"AI_FUSION_TTL": "5"}):
+            self.assertEqual(ai_fusion.ai_fusion_ttl(), 60)     # floor
+        with patch.dict(os.environ, {"AI_FUSION_TIER": "brief"}):
+            self.assertEqual(ai_fusion.ai_fusion_tier(), "brief")
+        with patch.dict(os.environ, {"AI_FUSION_TIER": "nonsense"}):
+            self.assertEqual(ai_fusion.ai_fusion_tier(), "decision")
+
+    def test_cheap_tier_is_honored(self):
+        with patch.dict(os.environ, {"AI_FUSION_TIER": "brief"}), \
+             patch.object(ai_fusion, "build_factor_snapshot", return_value={}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value=AI_REPLY) as gen, \
+             patch("llm_client.active_provider_model", return_value="claude-haiku-4-5"):
+            out = ai_fusion.fuse_with_ai("ETHUSDT", QUANT, SENTIMENT, PSYCH)
+        self.assertEqual(gen.call_args.kwargs["tier"], "brief")
+        self.assertEqual(out["llm_model"], "claude-haiku-4-5")
 
 
 class FuseSymbolIntegrationTests(unittest.TestCase):
