@@ -450,17 +450,29 @@ a {
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 20px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
   position: relative;
 }
 
-/* Auto-inject 2px terracotta stripe on every card via ::before */
+/* Auto-inject 2px terracotta stripe on every card via ::before.
+   Absolutely positioned so it always spans the full width at the very top,
+   independent of the card's padding or display mode. */
 .card::before {
   content: '';
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background: var(--accent-gradient);
-  flex-shrink: 0;
+}
+
+/* Full-bleed cards manage their own insets: a .card-header carries its own
+   padding + full-width divider, and a .table-container spans edge to edge. */
+.card:has(> .card-header),
+.card:has(> .table-container) {
+  padding: 0;
 }
 
 .card-stripe {
