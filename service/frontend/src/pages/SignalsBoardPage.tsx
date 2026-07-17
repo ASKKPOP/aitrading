@@ -23,6 +23,12 @@ interface PsychPayload {
   shock: { symbol: string; sigma_multiple: number; volume_ratio: number; shock: boolean; estimated: boolean; liq_notional_usd_1h?: number; long_liq_usd_1h?: number; short_liq_usd_1h?: number }[]
   shock_note?: string
   odds_deltas: { title: string; outcome: string; odds_from: number; odds_to: number; delta_pct: number }[]
+  whales?: {
+    available: boolean
+    count?: number
+    events: { chain: string; symbol: string; direction: string; usd_value: number; exchange?: string }[]
+    totals: { btc_transfer_usd?: number; eth_exchange_in_usd?: number; eth_exchange_out_usd?: number; eth_net_flow_usd?: number }
+  }
   created_at: string | null
 }
 
@@ -317,6 +323,20 @@ export function SignalsBoardPage() {
               ? tr(language, { ko: '비활성화됨 (CROSS_MARKET_ENABLED)', en: 'disabled (CROSS_MARKET_ENABLED)', ja: '無効 (CROSS_MARKET_ENABLED)', th: 'ปิดอยู่ (CROSS_MARKET_ENABLED)', vi: 'tắt (CROSS_MARKET_ENABLED)' })
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
           accent={cross?.kimchi && Math.abs(cross.kimchi.premium_pct) >= 3 ? 'var(--error)' : undefined}
+        />
+        <Tile
+          label={tr(language, { ko: '고래 활동', en: 'Whale Activity', ja: 'クジラ活動', th: 'กิจกรรมวาฬ', vi: 'Hoạt động cá voi' })}
+          value={psych?.whales?.available ? String(psych.whales.count ?? psych.whales.events?.length ?? 0) : '—'}
+          sub={psych?.whales?.available
+            ? (psych.whales.totals?.eth_net_flow_usd
+              ? ((psych.whales.totals.eth_net_flow_usd ?? 0) > 0
+                ? tr(language, { ko: `ETH 순유입 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 매도 압력`, en: `ETH net inflow $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → sell pressure`, ja: `ETH純流入 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 売り圧力`, th: `ETH ไหลเข้าสุทธิ $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → แรงขาย`, vi: `ETH ròng vào $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → áp lực bán` })
+                : tr(language, { ko: `ETH 순유출 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 축적`, en: `ETH net outflow $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → accumulation`, ja: `ETH純流出 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 蓄積`, th: `ETH ไหลออกสุทธิ $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → สะสม`, vi: `ETH ròng ra $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → tích lũy` }))
+              : tr(language, { ko: '온체인 대형 이체 (실데이터)', en: 'large on-chain transfers (real data)', ja: 'オンチェーン大口送金（実データ）', th: 'โอนออนเชนขนาดใหญ่ (ข้อมูลจริง)', vi: 'chuyển on-chain lớn (dữ liệu thật)' }))
+            : psych?.whales?.available === false
+              ? tr(language, { ko: '비활성화됨 (WHALE_FEED_ENABLED)', en: 'disabled (WHALE_FEED_ENABLED)', ja: '無効 (WHALE_FEED_ENABLED)', th: 'ปิดอยู่ (WHALE_FEED_ENABLED)', vi: 'tắt (WHALE_FEED_ENABLED)' })
+              : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          accent={(psych?.whales?.totals?.eth_net_flow_usd ?? 0) > 0 ? 'var(--warning)' : undefined}
         />
       </div>
 

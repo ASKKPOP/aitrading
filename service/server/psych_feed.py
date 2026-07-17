@@ -500,11 +500,19 @@ def get_psych_payload() -> dict[str, Any]:
         "fear_greed": json.loads(latest["fng_json"]) if latest["fng_json"] else None,
         "spikes": json.loads(latest["spikes_json"] or "[]"),
         "shock": json.loads(latest["shock_json"] or "[]"),
-        "shock_note": "estimated proxy (volatility σ + volume) — not real liquidation data",
+        "shock_note": ("real liquidation data (OKX) when available; "
+                       "volatility-σ proxy only as fail-soft fallback (see per-entry 'estimated')"),
         "anticipation": anticipation,
         "odds_deltas": odds_deltas,
         "created_at": latest["created_at"],
     }
+    # Plan 06 B1 — real whale activity rides along on the psych payload so the
+    # signals board gets it without another endpoint. Fail-soft.
+    try:
+        from whale_feed import get_whale_payload
+        payload["whales"] = get_whale_payload()
+    except Exception:  # noqa: BLE001
+        payload["whales"] = {"available": False, "events": [], "totals": {}}
     try:
         from cache import set_json
         set_json(_CACHE_KEY, payload, ttl_seconds=_CACHE_TTL_SECONDS)

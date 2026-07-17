@@ -258,9 +258,10 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><b>SoSoValue</b></td><td>BTC spot-ETF daily &amp; cumulative dollar flows (real data)</td><td>STEP 6, news intel</td><td>Needs <code>SOSOVALUE_API_KEY</code> (free tier)</td></tr>
       <tr><td><b>Upbit · FRED</b></td><td>Kimchi premium (Upbit vs OKX · USD/KRW), dollar index (DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
       <tr><td><b>Event calendar</b></td><td>FOMC·CPI·NFP schedule (static, DST-aware)</td><td>STEP 7·8</td><td>Optional entry blocking via <code>EVENT_GUARD_ENABLED</code></td></tr>
+      <tr><td><b>blockchain.info · Etherscan</b></td><td>Whale tracking: large BTC transfers (mempool), ETH exchange hot-wallet flows (real direction)</td><td>STEP 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC keyless</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>Honesty principle:</b> Liquidation data is now collected <b>for real (estimated: false, liq_source: okx)</b> from OKX's public liquidation feed. Only when that feed is down do we fall back to the volatility σ + volume proxy, and the UI then labels it "estimated". On-chain whale data still exists only behind paid sources, so whale tracking remains explicitly deferred to Phase 6 — the interface stub (<code>fetch_whale_signals</code>) is already wired, so a source just needs plugging in.</div>
+  <div class="note red"><b>Honesty principle:</b> Liquidation data is now collected <b>for real (estimated: false, liq_source: okx)</b> from OKX's public liquidation feed. Only when that feed is down do we fall back to the volatility σ + volume proxy, and the UI then labels it "estimated". On-chain whale tracking is now collected for real from free sources too — large BTC transfers (blockchain.info mempool, keyless) + ETH exchange hot-wallet flows (Etherscan; inflow = sell pressure / outflow = accumulation, direction measured). <code>WHALE_FEED_ENABLED</code> · threshold <code>WHALE_MIN_USD</code> (default $5M). The old deferral note is obsolete — the interface stub (<code>fetch_whale_signals</code>) is already wired, so a source just needs plugging in.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
@@ -641,6 +642,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>Kimchi-premium · DXY cross-market signals</td><td>—</td></tr>
       <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>Block new entries inside macro event windows (default off)</td><td>—</td></tr>
       <tr><td><code>SOSOVALUE_API_KEY</code></td><td>Real ETF-flow source key (free tier)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
+      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>Whale tracking (BTC mempool · ETH exchange wallets)</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
       <tr><td><code>FUSION_W_*</code></td><td>STEP 5 weight tuning</td><td>psych hard-capped at 0.3 — config cannot exceed it</td></tr>
     </tbody>
   </table>

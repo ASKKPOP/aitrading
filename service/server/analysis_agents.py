@@ -98,6 +98,22 @@ def _gather_news(symbol: str, market: str) -> dict[str, Any]:
     return out
 
 
+def _whale_context(symbol: str) -> Optional[dict[str, Any]]:
+    """Whale events relevant to this symbol (BTC/ETH only today). Fail-soft."""
+    try:
+        from whale_feed import get_whale_payload
+        payload = get_whale_payload()
+        if not payload.get("available"):
+            return None
+        base = symbol.replace("USDT", "").replace("USD", "")
+        events = [e for e in payload["events"] if e["chain"] == base][:5]
+        if not events and base not in ("BTC", "ETH"):
+            return None
+        return {"events": events, "totals": payload["totals"]}
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {"from_news": news.get("sentiment_breakdown", {})}
     try:
@@ -123,6 +139,10 @@ def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[st
             }
     except Exception:  # noqa: BLE001
         pass
+    # Plan 06 B1 — real whale flows for BTC/ETH (exchange in/out + large transfers)
+    whales = _whale_context(symbol)
+    if whales:
+        out["whales"] = whales
     return out
 
 

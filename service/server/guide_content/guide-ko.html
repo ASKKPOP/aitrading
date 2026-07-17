@@ -258,9 +258,10 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><b>SoSoValue</b></td><td>BTC 현물 ETF 일간·누적 달러 흐름(실데이터)</td><td>STEP 6, 뉴스 인텔</td><td><code>SOSOVALUE_API_KEY</code> 필요(무료 티어)</td></tr>
       <tr><td><b>Upbit · FRED</b></td><td>김치 프리미엄(업비트 vs OKX·USD/KRW), 달러지수(DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
       <tr><td><b>이벤트 캘린더</b></td><td>FOMC·CPI·고용지표 일정(정적, DST 반영)</td><td>STEP 7·8</td><td><code>EVENT_GUARD_ENABLED</code>로 진입 차단 옵션</td></tr>
+      <tr><td><b>blockchain.info · Etherscan</b></td><td>고래 추적: BTC 대형 이체(멤풀), ETH 거래소 핫월렛 유출입(방향 실측)</td><td>STEP 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC는 무키</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>정직성 원칙:</b> 청산(liquidation) 데이터는 이제 OKX 공개 청산 피드에서 <b>실측(estimated: false, liq_source: okx)</b>으로 수집합니다. 피드 장애 시에만 변동성 σ + 거래량 프록시로 대체하고, 그 경우 UI에 "추정"이라 표기합니다. 고래(on-chain whale) 추적은 여전히 유료 소스뿐이라 Phase 6으로 명시적 보류 — 인터페이스 스텁(<code>fetch_whale_signals</code>)은 이미 배선되어 있어 소스만 꽂으면 됩니다.</div>
+  <div class="note red"><b>정직성 원칙:</b> 청산(liquidation) 데이터는 이제 OKX 공개 청산 피드에서 <b>실측(estimated: false, liq_source: okx)</b>으로 수집합니다. 피드 장애 시에만 변동성 σ + 거래량 프록시로 대체하고, 그 경우 UI에 "추정"이라 표기합니다. 고래(on-chain whale) 추적도 이제 무료 소스로 실측 수집합니다 — BTC 대형 이체(blockchain.info 멤풀, 무키) + ETH 거래소 핫월렛 유출입(Etherscan, 유입=매도 압력/유출=축적 방향 실측). <code>WHALE_FEED_ENABLED</code> · 임계 <code>WHALE_MIN_USD</code>(기본 $5M).</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
@@ -641,6 +642,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>김치 프리미엄·DXY 크로스마켓 신호</td><td>—</td></tr>
       <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>매크로 이벤트 창 신규 진입 차단(기본 off)</td><td>—</td></tr>
       <tr><td><code>SOSOVALUE_API_KEY</code></td><td>실 ETF 흐름 소스 키(무료 티어)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
+      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>고래 추적(BTC 멤풀·ETH 거래소 월렛)</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
       <tr><td><code>FUSION_W_*</code></td><td>STEP 5 가중치 조정</td><td>심리는 0.3 하드캡 — 설정으로 초과 불가</td></tr>
     </tbody>
   </table>

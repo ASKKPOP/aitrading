@@ -182,13 +182,19 @@ def compute_new_listings(current: list[str], previous: list[str]) -> list[str]:
     return sorted(set(current) - set(previous)) if previous else []
 
 
-# ─────────────────────────── whale interface (Phase 6 stub) ───────────────────────────
+# ─────────────────────────── whale signals (Plan 06 B1 — real) ───────────────────────────
 
 def fetch_whale_signals() -> list[dict[str, Any]]:
-    """On-chain whale flows need a paid source (Hashdive-class API) — deferred
-    to Phase 6. Interface: [{"symbol", "direction": "in|out", "usd_value",
-    "reason"}]. Returns [] until a provider is wired in."""
-    return []
+    """Real on-chain whale flows: BTC mempool large transfers (blockchain.info,
+    keyless) + ETH exchange hot-wallet moves (Etherscan). Gated by
+    WHALE_FEED_ENABLED; fail-soft to []. Interface: [{"symbol",
+    "direction": "in|out|transfer", "usd_value", "reason"}]."""
+    try:
+        from whale_feed import whale_scanner_signals
+        return whale_scanner_signals()
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("whale signals unavailable: %s", exc)
+        return []
 
 
 # ─────────────────────────── candidate assembly ───────────────────────────
