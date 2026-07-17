@@ -129,6 +129,7 @@ export function Sidebar({
       items: [
         { path: '/analyst', icon: '🧠', label: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }), requiresAuth: true },
         { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
+        { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' }), requiresAuth: false },
       ]
     },
     {

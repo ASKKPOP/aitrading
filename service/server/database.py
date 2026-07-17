@@ -1160,6 +1160,8 @@ def init_database():
         "ALTER TABLE automation_configs ADD COLUMN budget_usd REAL",
         # Plan 06 C3 — Personalized mode: freeform user trading guidelines
         "ALTER TABLE users ADD COLUMN trading_guidelines TEXT",
+        # Plan 06 C3 — per-rule trading schedule (days/hours/timezone window)
+        "ALTER TABLE automation_configs ADD COLUMN schedule_json TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -1898,6 +1900,7 @@ def init_database():
             risk_level       TEXT,
             mode             TEXT    NOT NULL DEFAULT 'manual',
             budget_usd       REAL,
+            schedule_json    TEXT,
             last_run_at      TEXT,
             created_at       TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (agent_id) REFERENCES agents(id)

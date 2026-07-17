@@ -511,6 +511,14 @@ def run_automation_tick() -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     due = []
     for cfg in rows:
+        # Trading-window schedule (Plan 06 C3): out-of-window rules are not due.
+        # Fail-soft — a broken schedule degrades to always-on, never freezes.
+        try:
+            from schedule import in_window, schedule_from_config
+            if not in_window(schedule_from_config(cfg), now):
+                continue
+        except Exception:  # noqa: BLE001
+            pass
         last = cfg.get("last_run_at")
         if not last:
             due.append(cfg)

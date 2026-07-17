@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json as _json
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
@@ -53,6 +54,8 @@ class AutomationConfigIn(BaseModel):
     # cadence/confidence each cycle inside a user budget.
     mode: str = "manual"
     budget_usd: Optional[float] = None
+    # Plan 06 C3 — trading-window schedule (days/hours/timezone)
+    schedule: Optional[dict] = None
 
     @field_validator("risk_level")
     @classmethod
@@ -76,6 +79,17 @@ class AutomationConfigIn(BaseModel):
         if v is not None and (v < 100 or v > 1_000_000):
             raise ValueError("budget_usd must be between 100 and 1,000,000")
         return v
+
+    @field_validator("schedule")
+    @classmethod
+    def _schedule(cls, v):
+        if v is None:
+            return None
+        from schedule import parse_schedule
+        try:
+            return parse_schedule(v)
+        except ValueError as exc:
+            raise ValueError(str(exc))
 
     @field_validator("symbol")
     @classmethod
@@ -194,12 +208,13 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
                 """INSERT INTO automation_configs
                    (agent_id, symbol, market, provider, interval_minutes, min_confidence,
                     size_usd, auto_execute, account_type, enabled, lang, risk_level,
-                    mode, budget_usd)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    mode, budget_usd, schedule_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent["id"], data.symbol, data.market, data.provider, data.interval_minutes,
                  data.min_confidence, data.size_usd, 1 if auto_execute else 0,
                  account_type, 1 if data.enabled else 0, data.lang, data.risk_level,
-                 data.mode, data.budget_usd),
+                 data.mode, data.budget_usd,
+                 _json.dumps(data.schedule) if data.schedule else None),
             )
             config_id = cursor.lastrowid
             conn.commit()
@@ -222,12 +237,13 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             cursor.execute(
                 """UPDATE automation_configs SET symbol=?, market=?, provider=?, interval_minutes=?,
                    min_confidence=?, size_usd=?, auto_execute=?, account_type=?, enabled=?, lang=?,
-                   risk_level=?, mode=?, budget_usd=?
+                   risk_level=?, mode=?, budget_usd=?, schedule_json=?
                    WHERE id=? AND agent_id=?""",
                 (data.symbol, data.market, data.provider, data.interval_minutes,
                  data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
                  data.account_type, 1 if data.enabled else 0, data.lang, data.risk_level,
                  data.mode, data.budget_usd,
+                 _json.dumps(data.schedule) if data.schedule else None,
                  config_id, agent["id"]),
             )
             conn.commit()

@@ -16,6 +16,7 @@ type Rule = {
   min_confidence: number; size_usd: number; auto_execute: boolean | number; account_type: string;
   enabled?: boolean | number; last_run_at?: string | null; risk_level?: string | null;
   mode?: string; budget_usd?: number | null;
+  schedule?: { days: number[]; start_hour: number; end_hour: number; tz: string };
 }
 
 type UserMode = 'agent' | 'simple' | 'guided' | 'pro'
@@ -52,6 +53,9 @@ export function AutomationPage() {
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
   const [agentBudget, setAgentBudget] = useState<number>(5000)
   const [decisions, setDecisions] = useState<any[]>([])
+  const [schedOn, setSchedOn] = useState(false)
+  const [sched, setSched] = useState<{ days: number[]; start_hour: number; end_hour: number; tz: string }>(
+    { days: [], start_hour: 9, end_hour: 22, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -108,7 +112,21 @@ export function AutomationPage() {
     recSize: tr(language, { ko: '모의 자본의 5% 이하로 시작하세요', en: 'Start at ≤5% of your simulated capital', ja: 'シミュレーション資金の5%以下で開始', th: 'เริ่มที่ ≤5% ของทุนจำลอง', vi: 'Bắt đầu ở mức ≤5% vốn mô phỏng' }),
     recSymbol: tr(language, { ko: 'BTC·ETH는 데이터가 가장 풍부합니다. SCANNER = AI 자동 선택', en: 'BTC·ETH have the richest data. SCANNER = AI auto-pick', ja: 'BTC・ETHはデータが最も豊富。SCANNER = AI自動選択', th: 'BTC·ETH ข้อมูลครบที่สุด SCANNER = AI เลือกให้', vi: 'BTC·ETH có dữ liệu phong phú nhất. SCANNER = AI tự chọn' }),
     proHint: tr(language, { ko: '이벤트 가드(EVENT_GUARD_ENABLED)가 켜져 있으면 FOMC·CPI·고용지표 발표 전후 1시간 동안 신규 진입이 차단됩니다.', en: 'With the event guard (EVENT_GUARD_ENABLED) on, new entries are blocked ±1h around FOMC/CPI/jobs releases.', ja: 'イベントガード有効時、FOMC・CPI・雇用統計の前後1時間は新規エントリーを停止します。', th: 'เมื่อเปิด event guard จะบล็อกการเข้าใหม่ ±1 ชม. รอบ FOMC/CPI/การจ้างงาน', vi: 'Khi bật event guard, chặn lệnh mới ±1h quanh FOMC/CPI/việc làm.' }),
+    scheduleLabel: tr(language, { ko: '거래 시간대 (선택)', en: 'Trading schedule (optional)', ja: '取引スケジュール（任意）', th: 'ตารางเทรด (ไม่บังคับ)', vi: 'Lịch giao dịch (tùy chọn)' }),
+    scheduleHint: tr(language, { ko: '지정한 요일·시간대에만 규칙이 실행됩니다. 비워두면 항상 실행됩니다.', en: 'The rule only runs on the chosen days & hours. Leave off to run always.', ja: '指定した曜日・時間帯のみ実行。オフなら常時実行。', th: 'กฎทำงานเฉพาะวัน/เวลาที่เลือก ปิดไว้ = ทำงานตลอด', vi: 'Quy tắc chỉ chạy vào ngày/giờ đã chọn. Tắt = luôn chạy.' }),
+    scheduleFrom: tr(language, { ko: '시작', en: 'From', ja: '開始', th: 'จาก', vi: 'Từ' }),
+    scheduleTo: tr(language, { ko: '종료', en: 'To', ja: '終了', th: 'ถึง', vi: 'Đến' }),
   }
+
+  const DOW = [
+    tr(language, { ko: '월', en: 'Mon', ja: '月', th: 'จ', vi: 'T2' }),
+    tr(language, { ko: '화', en: 'Tue', ja: '火', th: 'อ', vi: 'T3' }),
+    tr(language, { ko: '수', en: 'Wed', ja: '水', th: 'พ', vi: 'T4' }),
+    tr(language, { ko: '목', en: 'Thu', ja: '木', th: 'พฤ', vi: 'T5' }),
+    tr(language, { ko: '금', en: 'Fri', ja: '金', th: 'ศ', vi: 'T6' }),
+    tr(language, { ko: '토', en: 'Sat', ja: '土', th: 'ส', vi: 'T7' }),
+    tr(language, { ko: '일', en: 'Sun', ja: '日', th: 'อา', vi: 'CN' }),
+  ]
 
   // Backend skip_reason strings arrive in English; localize the known set,
   // fall back to the raw text for anything new (e.g. risk-gate detail).
@@ -352,12 +370,37 @@ export function AutomationPage() {
             {fld(T.size, <input style={inp} type="number" value={draft.size_usd} onChange={e => setDraft({ ...draft, size_usd: +e.target.value })} />)}
             {fld(T.account, <select style={inp} value={draft.account_type} onChange={e => setDraft({ ...draft, account_type: e.target.value })}><option value="simulator">simulator</option><option value="real">real</option></select>)}
           </div>
+          {/* schedule editor (Plan 06 C3) */}
+          <div style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <input type="checkbox" checked={schedOn} onChange={e => setSchedOn(e.target.checked)} /> {T.scheduleLabel}
+            </label>
+            {schedOn && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {DOW.map((d, i) => (
+                    <button key={i} onClick={() => setSched(s => ({ ...s, days: s.days.includes(i) ? s.days.filter(x => x !== i) : [...s.days, i] }))}
+                      style={{ padding: '5px 11px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer',
+                        border: sched.days.includes(i) ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                        background: sched.days.includes(i) ? 'rgba(57,135,229,0.14)' : 'transparent',
+                        color: sched.days.includes(i) ? 'var(--accent-primary)' : 'inherit' }}>{d}</button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12.5, flexWrap: 'wrap' }}>
+                  <span>{T.scheduleFrom} <input type="number" min={0} max={23} value={sched.start_hour} onChange={e => setSched(s => ({ ...s, start_hour: +e.target.value }))} style={{ ...inp, width: 62, padding: '6px 8px' }} />:00</span>
+                  <span>{T.scheduleTo} <input type="number" min={0} max={24} value={sched.end_hour} onChange={e => setSched(s => ({ ...s, end_hour: +e.target.value }))} style={{ ...inp, width: 62, padding: '6px 8px' }} />:00</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{sched.tz}</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6 }}>💡 {T.scheduleHint}</div>
+              </div>
+            )}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <input type="checkbox" checked={!!draft.auto_execute} onChange={e => setDraft({ ...draft, auto_execute: e.target.checked })} /> {T.autoEx}
             </label>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
-            <button onClick={() => postRule(draft)} disabled={busy} style={{ marginLeft: 'auto', padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>+ {T.add}</button>
+            <button onClick={() => postRule({ ...draft, schedule: schedOn ? sched : undefined } as Rule)} disabled={busy} style={{ marginLeft: 'auto', padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>+ {T.add}</button>
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted,#a89f92)', lineHeight: 1.5 }}>ⓘ {T.proHint}</div>
         </div>

@@ -27,6 +27,7 @@ const MarketPage = lazy(() => import('./pages/MarketPage'))
 const SignalsBoardPage = lazy(() => import('./pages/SignalsBoardPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const DocsPage = lazy(() => import('./pages/DocsPage'))
+const MonitorPage = lazy(() => import('./pages/MonitorPage'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
@@ -460,6 +461,7 @@ function AppRouter({
               <Route path="/backtest" element={<BacktestPage token={token} />} />
               <Route path="/financial-events" element={<FinancialEventsPage />} />
               <Route path="/signals-board" element={<SignalsBoardPage />} />
+              <Route path="/monitor" element={<MonitorPage token={token} />} />
               <Route path="/docs" element={<DocsPage token={token} userToken={userToken} />} />
               <Route path="/docs/:slug" element={<DocsPage token={token} userToken={userToken} />} />
                   <Route path="/strategies" element={<StrategiesPage />} />
