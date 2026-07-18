@@ -70,8 +70,8 @@ def create_session(agent_id: int, symbol: Optional[str], market: str = "crypto",
 def get_session(session_id: int, agent_id: int) -> Optional[dict[str, Any]]:
     conn = get_db_connection()
     try:
-        row = conn.execute("SELECT * FROM chat_sessions WHERE id = ? AND agent_id = ?",
-                           (session_id, agent_id)).fetchone()
+        row = conn.cursor().execute("SELECT * FROM chat_sessions WHERE id = ? AND agent_id = ?",
+                                    (session_id, agent_id)).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
@@ -83,7 +83,7 @@ def list_sessions(agent_id: int, limit: int = 20) -> list[dict[str, Any]]:
     from assistant import ASSISTANT_MARKET
     conn = get_db_connection()
     try:
-        rows = conn.execute(
+        rows = conn.cursor().execute(
             """SELECT s.*, (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = s.id) AS n_messages
                FROM chat_sessions s WHERE s.agent_id = ? AND s.market != ?
                ORDER BY s.id DESC LIMIT ?""", (agent_id, ASSISTANT_MARKET, limit)).fetchall()
@@ -95,7 +95,7 @@ def list_sessions(agent_id: int, limit: int = 20) -> list[dict[str, Any]]:
 def get_messages(session_id: int, limit: int = 100) -> list[dict[str, Any]]:
     conn = get_db_connection()
     try:
-        rows = conn.execute(
+        rows = conn.cursor().execute(
             "SELECT * FROM chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT ?",
             (session_id, limit)).fetchall()
         return [dict(r) for r in rows]
@@ -179,7 +179,7 @@ def build_context(agent_id: int, symbol: Optional[str], market: str) -> dict[str
         pass
     try:
         conn = get_db_connection()
-        rows = conn.execute(
+        rows = conn.cursor().execute(
             """SELECT symbol, quantity, entry_price, current_price FROM positions
                WHERE agent_id = ? AND quantity != 0""", (agent_id,)).fetchall()
         conn.close()
