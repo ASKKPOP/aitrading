@@ -43,6 +43,8 @@ export const useTheme = () => {
 }
 
 export const API_BASE = '/api'
+// Points -> cash conversion. Must match EXCHANGE_RATE in service/server/routes_users.py.
+export const POINTS_EXCHANGE_RATE = 1000
 export const REFRESH_INTERVAL = parseInt(import.meta.env.VITE_REFRESH_INTERVAL || '300000', 10)
 export const NOTIFICATION_POLL_INTERVAL = 60 * 1000
 export const FIVE_MINUTES_MS = 5 * 60 * 1000

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { API_BASE, MARKETS, marketLabel, useLanguage } from './appShared'
+import { SymbolSelect } from './components/SymbolSelect'
 import { LOCALE_BY_LANGUAGE, tr, type Language } from './i18n'
 
 type ChallengePageProps = {
@@ -421,11 +422,12 @@ export function ChallengePage({ token }: ChallengePageProps) {
                 <option key={market.value} value={market.value}>{marketLabel(market.value, language)}</option>
               ))}
             </select>
-            <input
+            <SymbolSelect
               className="form-input"
+              market={createForm.market}
               value={createForm.symbol}
-              onChange={(event) => setCreateForm({ ...createForm, symbol: event.target.value.toUpperCase() })}
-              placeholder="BTC"
+              onChange={(symbol) => setCreateForm({ ...createForm, symbol })}
+              placeholder={tr(language, { ko: '종목 선택', en: 'Select symbol', ja: '銘柄を選択', th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })}
             />
             <select
               className="form-input"

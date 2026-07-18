@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import ConfigProfiles from '../components/ConfigProfiles'
+import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 
 // Automation (Target 3) — user-configured AI auto-trading rules, backed by
@@ -381,7 +382,7 @@ export function AutomationPage() {
       {mode === 'pro' && (
         <div className="card" style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12 }}>
-            {fld(T.symbol, <input style={inp} value={draft.symbol} onChange={e => setDraft({ ...draft, symbol: e.target.value.toUpperCase() })} />)}
+            {fld(T.symbol, <SymbolSelect style={inp} market={draft.market} value={draft.symbol} onChange={symbol => setDraft({ ...draft, symbol })} />)}
             {fld(T.market, <select style={inp} value={draft.market} onChange={e => setDraft({ ...draft, market: e.target.value })}><option value="crypto">crypto</option><option value="us-stock">us-stock</option></select>)}
             {fld(T.provider, <select style={inp} value={draft.provider || ''} onChange={e => setDraft({ ...draft, provider: e.target.value || null })}><option value="">{T.serverDefault}</option>{['openai', 'gemini', 'grok', 'qwen', 'glm', 'local', 'anthropic'].map(p => <option key={p} value={p}>{p}</option>)}</select>)}
             {fld(T.interval, <input style={inp} type="number" min={5} value={draft.interval_minutes} onChange={e => setDraft({ ...draft, interval_minutes: +e.target.value })} />)}

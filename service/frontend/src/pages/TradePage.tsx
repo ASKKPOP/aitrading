@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { API_BASE, isUSMarketOpen, getCurrentETTime, useLanguage } from '../appShared'
+import { API_BASE, POINTS_EXCHANGE_RATE, isUSMarketOpen, getCurrentETTime, useLanguage } from '../appShared'
 import { tr } from '../i18n'
+import { SymbolSelect } from '../components/SymbolSelect'
 
 // Trade Page - Place Order
 export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string, agentInfo?: any, onTradeSuccess?: () => void }) {
@@ -129,8 +130,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
       const availableCash = agentInfo?.cash || 0
       if (availableCash < totalRequired) {
         const points = agentInfo?.points || 0
-        const exchangeRate = 0.01 // 100 points = $1
-        const exchangeableCash = points * exchangeRate
+        const exchangeableCash = points * POINTS_EXCHANGE_RATE
         const fee = tradeValue * feeRate
         alert(tr(language, { ko: `현금이 부족합니다! 필요: $${totalRequired.toFixed(2)} (거래: $${tradeValue.toFixed(2)} + 수수료: $${fee.toFixed(2)}), 가용: $${availableCash.toFixed(2)}\n\n보유 포인트 ${points}개로 $${exchangeableCash.toFixed(2)}를 교환할 수 있습니다\n먼저 "포인트 교환" 페이지로 이동하세요`, en: `Insufficient cash! Required: $${totalRequired.toFixed(2)} (trade: $${tradeValue.toFixed(2)} + fee: $${fee.toFixed(2)}), Available: $${availableCash.toFixed(2)}\n\nYou have ${points} points, can exchange for $${exchangeableCash.toFixed(2)}\nPlease go to "Points Exchange" page first`, ja: `現金が不足しています！必要: $${totalRequired.toFixed(2)} (取引: $${tradeValue.toFixed(2)} + 手数料: $${fee.toFixed(2)})、利用可能: $${availableCash.toFixed(2)}\n\n${points} ポイントを保有しており、$${exchangeableCash.toFixed(2)} と交換できます\nまず「ポイント交換」ページへ移動してください`, th: `เงินสดไม่เพียงพอ! ต้องการ: $${totalRequired.toFixed(2)} (เทรด: $${tradeValue.toFixed(2)} + ค่าธรรมเนียม: $${fee.toFixed(2)}), ใช้ได้: $${availableCash.toFixed(2)}\n\nคุณมี ${points} คะแนน แลกได้ $${exchangeableCash.toFixed(2)}\nกรุณาไปหน้า "แลกคะแนน" ก่อน`, vi: `Không đủ tiền! Yêu cầu: $${totalRequired.toFixed(2)} (giao dịch: $${tradeValue.toFixed(2)} + phí: $${fee.toFixed(2)}), Khả dụng: $${availableCash.toFixed(2)}\n\nBạn có ${points} điểm, có thể đổi $${exchangeableCash.toFixed(2)}\nVui lòng đến trang "Đổi điểm" trước` }))
         return
@@ -277,15 +277,15 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
         <div className="form-group">
           <label className="form-label">{t.trade.symbol}</label>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
+            <SymbolSelect
               className="form-input"
+              market={market}
               value={symbol}
-              onChange={e => {
-                setSymbol(e.target.value)
+              onChange={s => {
+                setSymbol(s)
                 setCurrentPrice(null)
               }}
-              placeholder={tr(language, { ko: '예: BTC, AAPL, TSLA', en: 'e.g., BTC, AAPL, TSLA', ja: '例: BTC, AAPL, TSLA', th: 'เช่น BTC, AAPL, TSLA', vi: 'VD: BTC, AAPL, TSLA' })}
+              placeholder={tr(language, { ko: '종목 선택', en: 'Select symbol', ja: '銘柄を選択', th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })}
               required
               style={{ flex: 1 }}
             />
