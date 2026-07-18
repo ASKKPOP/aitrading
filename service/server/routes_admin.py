@@ -69,7 +69,12 @@ def _require_admin(authorization: Optional[str]) -> dict[str, Any]:
 def _count(cursor, sql: str, params: tuple = ()) -> int:
     cursor.execute(sql, params)
     row = cursor.fetchone()
-    return int(row[0] if not hasattr(row, "keys") else list(row)[0]) if row else 0
+    if not row:
+        return 0
+    # MySQL (DictCursor) rows are dicts — iterate values, not keys. SQLite
+    # Rows index positionally.
+    value = next(iter(row.values())) if isinstance(row, dict) else row[0]
+    return int(value)
 
 
 def _delete_agent_cascade(cursor, agent_id: int) -> dict[str, int]:
