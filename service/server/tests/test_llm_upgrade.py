@@ -301,7 +301,7 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
                 return types.SimpleNamespace(content=[block])
 
         class FakeClient:
-            def __init__(self, api_key):
+            def __init__(self, api_key, base_url=None):
                 self.messages = FakeMessages()
 
         fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
@@ -311,6 +311,37 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
         with patch.dict(sys.modules, {"anthropic": fake_mod}):
             out = _generate_anthropic(ap, "hi", None, 100, 0.3)
         return out, calls
+
+    def test_client_gets_the_resolved_base_url(self):
+        """The SDK reads ANTHROPIC_BASE_URL from the process env on its own, so a
+        stray export in the launching shell would silently redirect every call.
+        Passing the resolved base_url explicitly is what keeps ap.base_url
+        authoritative — this pins that it is actually handed to the client."""
+        import types
+        seen = {}
+
+        class FakeBadRequestError(Exception):
+            pass
+
+        class FakeMessages:
+            def create(self, **kwargs):
+                block = types.SimpleNamespace(type="text", text="ok")
+                return types.SimpleNamespace(content=[block])
+
+        class FakeClient:
+            def __init__(self, api_key, base_url=None):
+                seen["base_url"] = base_url
+                self.messages = FakeMessages()
+
+        fake_mod = types.SimpleNamespace(Anthropic=FakeClient,
+                                         BadRequestError=FakeBadRequestError)
+        from llm_client import _generate_anthropic, ActiveProvider, _PROVIDERS
+        ap = ActiveProvider(spec=_PROVIDERS["anthropic"], api_key="k",
+                            base_url="https://resolved.example.com",
+                            model="claude-sonnet-5")
+        with patch.dict(sys.modules, {"anthropic": fake_mod}):
+            _generate_anthropic(ap, "hi", None, 100, 0.3)
+        self.assertEqual(seen["base_url"], "https://resolved.example.com")
 
     def test_retries_without_temperature(self):
         out, calls = self._run("`temperature` is deprecated for this model.")
@@ -354,7 +385,7 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
                 return types.SimpleNamespace(content=[block])
 
         class FakeClient:
-            def __init__(self, api_key):
+            def __init__(self, api_key, base_url=None):
                 self.messages = FakeMessages()
 
         fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
