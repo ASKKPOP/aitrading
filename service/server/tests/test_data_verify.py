@@ -463,3 +463,30 @@ class EtfSnapshotHygieneTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EtfBlockAgeTests(unittest.TestCase):
+    """D5b per-block age must cover etf_flows like every other feed.
+
+    etf_flows carried only the vendor's print date (etf_print_age_days) and was
+    absent from both the age_seconds loop and the expected-cadence map, so a
+    stalled ETF snapshot looked identical to a fresh one.
+    """
+
+    def test_etf_flows_is_aged_like_other_blocks(self):
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        snap = {**SNAPSHOT, "etf_flows": {"direction": "inflow", "as_of": stamp}}
+        facts = data_verify.measure_snapshot(snap)
+        self.assertIn("etf_flows", facts["age_seconds"])
+        self.assertIsNotNone(facts["age_seconds"]["etf_flows"])
+        self.assertNotIn("etf_flows", facts["age_unknown"])
+
+    def test_etf_flows_has_an_expected_cadence(self):
+        """An age is meaningless without the cadence it is judged against."""
+        facts = data_verify.measure_snapshot(SNAPSHOT)
+        self.assertIn("etf_flows", facts["expected_max_age_seconds"])
+
+    def test_missing_stamp_is_reported_unknown_not_omitted(self):
+        snap = {**SNAPSHOT, "etf_flows": {"direction": "inflow"}}
+        facts = data_verify.measure_snapshot(snap)
+        self.assertIn("etf_flows", facts["age_unknown"])

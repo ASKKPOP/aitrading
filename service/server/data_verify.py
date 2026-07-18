@@ -154,7 +154,18 @@ def _expected_ages() -> dict[str, int]:
         # each of these rebuilds on its own cache TTL (+slack for the fetch)
         "whales": _module_ttl("whale_feed", 120) + 60,
         "live_calibration": _module_ttl("calibration", 600) + 60,
+        # rebuilt by the ETF worker loop on ETF_FLOW_REFRESH_INTERVAL. This is
+        # how old OUR capture is; the vendor's own print date is reported
+        # separately as etf_print_age_days (it prints once a day).
+        "etf_flows": _etf_interval() + 60,
     }
+
+
+def _etf_interval() -> int:
+    try:
+        return max(300, int(os.getenv("ETF_FLOW_REFRESH_INTERVAL", "3600")))
+    except ValueError:
+        return 3600
 
 
 def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -179,7 +190,7 @@ def measure_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     # rather than omitted — "we cannot tell how old this is" is a fact the
     # model should weigh, and silence would read as freshness.
     ages: dict[str, Any] = {}
-    for key in ("quant", "psych", "cross_market", "whales", "live_calibration"):
+    for key in ("quant", "psych", "cross_market", "whales", "live_calibration", "etf_flows"):
         block = snapshot.get(key)
         if block:
             ages[key] = _age_seconds((block or {}).get("as_of")
