@@ -98,6 +98,23 @@ class TestNotificationPrefs(_Base):
         self.assertEqual(self.client.get("/api/notifications/settings").status_code, 401)
         self.assertEqual(self.client.get("/api/notifications").status_code, 401)
 
+    def test_disabled_alerts_target_does_not_re_optin_email(self):
+        # Regression: a member who turned the 'alerts' target OFF must not have
+        # its email_enabled inherited as a per-category default. _load_target
+        # filters on enabled = 1, matching the pre-refactor s.enabled = 1 join.
+        self.client.put("/api/users/settings/api/alerts", headers=self.member,
+                        json={"config": {"email_enabled": "true", "sms_enabled": "true",
+                                         "phone": "+821012345678"}})
+        # Now disable the whole alerts target.
+        self.client.put("/api/users/settings/api/alerts", headers=self.member,
+                        json={"enabled": False})
+        cats = {c["key"]: c for c in
+                self.client.get("/api/notifications/settings",
+                                headers=self.member).json()["categories"]}
+        self.assertFalse(cats["trade"]["email"])
+        self.assertFalse(cats["risk"]["email"])
+        self.assertFalse(cats["trade"]["sms"])
+
 
 class TestNotificationFeed(_Base):
     def test_notify_appears_in_feed_and_marks_read(self):
@@ -317,6 +334,63 @@ class TestBroadcast(_Base):
         r = self.client.post("/api/admin/notifications/broadcast", headers=self.admin,
                              json={"title": "  "})
         self.assertEqual(r.status_code, 400)
+
+    def test_broadcast_link_is_sanitized_to_internal_paths(self):
+        # Stored-XSS guard: a hostile link must never reach the feed. Only a
+        # single-leading-slash in-app path survives; everything else is dropped.
+        cases = {
+            "javascript:alert(1)": None,
+            "//evil.example.com/x": None,
+            "https://evil.example.com/y": None,
+            "/support": "/support",
+        }
+        for i, (link, expected) in enumerate(cases.items()):
+            r = self.client.post("/api/admin/notifications/broadcast", headers=self.admin,
+                                 json={"title": f"n{i}", "user_id": self.user_id, "link": link})
+            self.assertEqual(r.status_code, 200)
+        feed = self.client.get("/api/notifications?limit=100", headers=self.member).json()
+        by_title = {n["title"]: n["link"] for n in feed["notifications"]}
+        for i, (link, expected) in enumerate(cases.items()):
+            self.assertEqual(by_title[f"n{i}"], expected, f"link {link!r} not sanitized")
+
+
+class TestSetPrefsRace(_Base):
+    def test_concurrent_first_write_recovers_from_unique_collision(self):
+        # Mirrors the support_threads race (commit 73f4573): simulate the losing
+        # writer by inserting the 'notifications' row from a second connection
+        # right after set_prefs would SELECT-miss. set_prefs must recover, not 500.
+        import json as _json
+        import notifications
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO user_api_settings
+               (user_id, target, api_key, config_json, enabled, updated_at)
+               VALUES (?, 'notifications', NULL, ?, 1, ?)""",
+            (self.user_id, _json.dumps({"trade": {"enabled": True, "email": True, "sms": False}}),
+             "2026-07-18T00:00:00Z"))
+        conn.commit()
+        conn.close()
+        # A brand-new patch on a DIFFERENT category must merge onto the winner's
+        # row, not clobber it or raise.
+        merged = notifications.set_prefs(self.user_id, {"risk": {"enabled": False}})
+        self.assertFalse(merged["risk"]["enabled"])
+        self.assertTrue(merged["trade"]["email"])  # winner's write preserved
+
+    def test_mark_read_beyond_500_ids_marks_all(self):
+        # 600 unread ids in one call must all be marked — the IN clause is
+        # chunked at 500, not truncated (which would silently drop 100).
+        import notifications
+        for i in range(600):
+            notifications.notify(self.user_id, "announcement", f"n{i}", "")
+        conn = database.get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT id FROM user_notifications WHERE user_id = ? ORDER BY id", (self.user_id,))
+        every = [r["id"] for r in c.fetchall()]
+        conn.close()
+        self.assertEqual(len(every), 600)
+        self.assertEqual(notifications.mark_read(self.user_id, every), 600)
+        self.assertEqual(notifications.unread_count(self.user_id), 0)
 
     def test_broadcast_is_audited(self):
         self.client.post("/api/admin/notifications/broadcast", headers=self.admin,
