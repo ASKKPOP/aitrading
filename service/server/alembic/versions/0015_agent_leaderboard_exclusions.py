@@ -19,9 +19,9 @@ def upgrade() -> None:
         "agent_leaderboard_exclusions",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
         sa.Column("agent_id", sa.Integer, sa.ForeignKey("agents.id"), nullable=False, unique=True),
-        sa.Column("reason", sa.Text, nullable=True),
+        sa.Column("reason", sa.Text(16777215), nullable=True),
         sa.Column("active", sa.Integer, server_default="1"),
-        sa.Column("created_at", sa.Text, nullable=True),
+        sa.Column("created_at", sa.Text(16777215), nullable=True),
     )
 
 

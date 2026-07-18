@@ -153,7 +153,8 @@ def _backfill_polymarket_position_metadata() -> None:
         """)
         rows = cursor.fetchall()
         if not rows:
-            conn.close()
+            # `finally` closes the connection; an explicit close here would
+            # double-close it — a no-op on SQLite but a pymysql "Already closed".
             return
 
         updated = 0
@@ -957,6 +958,7 @@ def _record_profit_history_once() -> int:
         cursor = conn.cursor()
         # Single INSERT...SELECT CTE — compatible with SQLite 3.35+ and MySQL 8.0+
         cursor.execute("""
+            INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
             WITH agent_values AS (
                 SELECT
                     a.id AS agent_id,
@@ -991,7 +993,6 @@ def _record_profit_history_once() -> int:
                     cash + position_value - (? + deposited) AS raw_profit
                 FROM agent_values
             )
-            INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
             SELECT
                 agent_id,
                 total_value,

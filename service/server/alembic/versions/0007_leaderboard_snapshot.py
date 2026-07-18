@@ -26,7 +26,7 @@ def upgrade() -> None:
             metric                  VARCHAR(32) NOT NULL,
             `rank`                  INTEGER NOT NULL,
             agent_id                INTEGER NOT NULL,
-            name                    TEXT    NOT NULL,
+            name                    MEDIUMTEXT    NOT NULL,
             deposited               NUMERIC(20,8) DEFAULT 0,
             profit                  NUMERIC(20,8) DEFAULT 0,
             profit_percent          NUMERIC(20,8) DEFAULT 0,
@@ -49,7 +49,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_leaderboard_snapshot_metric_rank
+        CREATE INDEX idx_leaderboard_snapshot_metric_rank
         ON leaderboard_snapshot(metric, `rank`)
     """)
 

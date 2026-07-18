@@ -139,7 +139,7 @@ sooppiying/
 | Cache | Redis (optional) |
 | Metrics | Prometheus + prometheus-fastapi-instrumentator |
 | Email | Resend |
-| Deploy | Fly.io (Dockerfile + fly.toml included) |
+| Deploy | Docker image on AWS EC2 behind an ALB; nginx serves the built SPA |
 | CI | GitHub Actions — lint, test, type-check, security audit |
 
 ---
@@ -166,7 +166,7 @@ sooppiying/
 - Transactional email (Resend) for verification codes
 - Polymarket browse + position detail
 - Alembic schema migrations for PostgreSQL (44 tables, 62 indexes)
-- Dockerfile + fly.toml for deployment
+- Dockerfile for deployment
 - GitHub Actions CI: pytest, ruff, tsc/vite build, pip-audit, npm audit, gitleaks
 
 ---

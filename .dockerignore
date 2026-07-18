@@ -23,7 +23,7 @@ service/frontend/.next
 service/server/data/
 service/server/logs/
 
-# Local config — secrets must come from env vars / Fly secrets
+# Local config — secrets must come from env vars / the deploy host's .env
 .env
 .env.*
 !.env.example
