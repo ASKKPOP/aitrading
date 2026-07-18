@@ -111,13 +111,17 @@ def upgrade() -> None:
         )
     """)
 
+    # Alias every column: MySQL derives the subquery's column names from the
+    # first SELECT's literals, and 'junior' vs 'Junior' collide case-insensitively
+    # (error 1060 "Duplicate column name").
     op.execute("""
         INSERT INTO subscription_plans (code, name, price_usd, contact_only, sort_order)
-        SELECT * FROM (
-            SELECT 'junior', 'Junior', 60.0, 0, 1 UNION ALL
-            SELECT 'pro', 'Pro', 250.0, 0, 2 UNION ALL
-            SELECT 'professional', 'Professional', 500.0, 0, 3 UNION ALL
-            SELECT 'enterprise', 'Enterprise', 0.0, 1, 4
+        SELECT code, name, price_usd, contact_only, sort_order FROM (
+            SELECT 'junior' AS code, 'Junior' AS name, 60.0 AS price_usd,
+                   0 AS contact_only, 1 AS sort_order
+            UNION ALL SELECT 'pro', 'Pro', 250.0, 0, 2
+            UNION ALL SELECT 'professional', 'Professional', 500.0, 0, 3
+            UNION ALL SELECT 'enterprise', 'Enterprise', 0.0, 1, 4
         ) AS seed
         WHERE NOT EXISTS (SELECT 1 FROM subscription_plans)
     """)
