@@ -119,11 +119,18 @@ _PROVIDERS: dict[str, ProviderSpec] = {
 # snapshots 4/4 — it read MA20 vs MA200 as a contradiction and called absent
 # sentiment disqualifying. Briefs feed the trader, so a brief that misreads
 # the data is not a saving.
+#
+# The 'assistant' tier is the user-facing chat dock. It runs Sonnet rather than
+# the decision tier's Opus (Henry's call, 2026-07-18): the assistant explains
+# an account it is already handed in full and never places orders, so it does
+# not need the trader's reasoning depth — and it answers a human who is waiting.
 _TIER_MODELS: dict[str, dict[str, str]] = {
-    "anthropic": {"brief": "claude-sonnet-5", "decision": "claude-opus-4-8"},
-    "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o"},
+    "anthropic": {"brief": "claude-sonnet-5", "decision": "claude-opus-4-8",
+                  "assistant": "claude-sonnet-5"},
+    "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o", "assistant": "gpt-4o-mini"},
 }
-_TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION"}
+_TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION",
+             "assistant": "LLM_MODEL_ASSISTANT"}
 
 # Accept a few friendly aliases for key env vars.
 _KEY_ALIASES: dict[str, tuple[str, ...]] = {
@@ -298,7 +305,11 @@ _NO_TEMPERATURE_MODELS: set[str] = set()
 def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional[str]:
     import anthropic  # lazy import
 
-    client = anthropic.Anthropic(api_key=ap.api_key)
+    # Pass the resolved base_url explicitly, like the OpenAI-compatible path does.
+    # Without it the SDK falls back to reading ANTHROPIC_BASE_URL from the process
+    # env itself; that happens to match ap.base_url today, but relying on it means
+    # a context-supplied base_url would be silently ignored. Make ap.base_url win.
+    client = anthropic.Anthropic(api_key=ap.api_key, base_url=ap.base_url)
     kwargs = {
         "model": ap.model,
         "max_tokens": max_tokens,

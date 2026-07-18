@@ -87,6 +87,26 @@ class AssistantTestCase(unittest.TestCase):
             """INSERT INTO alert_log (agent_id, user_id, kind, title, body, channels_json, created_at)
                VALUES (?, ?, 'custom', 'Watch: Extreme fear', 'fired', '["inapp"]', '2026-07-17T01:00:00Z')""",
             (self.agent_id, self.user_id))
+        # member/support data: membership (seeded 'pro' plan), points, follow, trade
+        cur.execute(
+            """INSERT INTO user_subscriptions (user_id, plan_code, status, method, amount_usd,
+               started_at, expires_at) VALUES (?, 'pro', 'active', 'manual', 49.0,
+               '2026-07-01T00:00:00Z', '2026-08-01T00:00:00Z')""", (self.user_id,))
+        cur.execute(
+            """INSERT INTO points_transactions (user_id, amount, type, description)
+               VALUES (?, -100, 'spend', 'Signal boost')""", (self.user_id,))
+        cur.execute(
+            """INSERT INTO agents (name, cash, points, created_at)
+               VALUES ('leader-agent', 100000, 0, '2026-01-01T00:00:00Z')""")
+        self.leader_id = cur.lastrowid
+        cur.execute(
+            """INSERT INTO subscriptions (leader_id, follower_id, status)
+               VALUES (?, ?, 'active')""", (self.leader_id, self.agent_id))
+        cur.execute(
+            """INSERT INTO signals (signal_id, agent_id, message_type, market, signal_type,
+               symbol, side, entry_price, quantity, timestamp, executed_at, created_at)
+               VALUES (900001, ?, 'operation', 'crypto', 'trade', 'BTC', 'buy', 60000, 0.5,
+               1751328000, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z')""", (self.agent_id,))
         conn.commit()
         conn.close()
 
@@ -111,6 +131,17 @@ class ProfileTests(AssistantTestCase):
         self.assertIn("performance", p)
         self.assertIn("risk_limits", p)
         self.assertIn("breaker", p)
+
+    def test_profile_has_member_support_sections(self):
+        """Full member info for support: membership, points, follows, trades."""
+        p = assistant.build_user_profile(self.agent_id)
+        self.assertEqual(p["membership"]["current"]["plan_code"], "pro")
+        self.assertEqual(p["membership"]["current"]["status"], "active")
+        self.assertEqual(p["membership"]["current"]["plan_name"], "Pro")
+        self.assertEqual(p["recent_points"][0]["amount"], -100)
+        self.assertEqual(p["copy_trading"]["following"][0]["leader"], "leader-agent")
+        self.assertEqual(p["recent_trades"][0]["symbol"], "BTC")
+        self.assertEqual(p["recent_trades"][0]["side"], "buy")
 
     def test_pnl_math_long_and_short(self):
         p = assistant.build_user_profile(self.agent_id)
@@ -163,17 +194,17 @@ class TurnTests(AssistantTestCase):
 
         with patch("llm_client.llm_configured", return_value=True), \
              patch("llm_client.generate_text", side_effect=fake_gen), \
-             patch("llm_client.active_provider_model", return_value="claude-opus-4-8"):
+             patch("llm_client.active_provider_model", return_value="claude-sonnet-5"):
             r = self.client.post("/api/assistant/messages", headers=self.headers,
                                  json={"message": "How am I doing?", "lang": "ko"})
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["llm_model"], "claude-opus-4-8")
-        # the prompt carried the account + language, on the strong tier
+        self.assertEqual(r.json()["llm_model"], "claude-sonnet-5")
+        # the prompt carried the account + language, on the assistant tier
         self.assertIn("owner", captured["prompt"])
         self.assertIn("Never trade weekends.", captured["prompt"])
         self.assertIn("USER LANGUAGE: ko", captured["prompt"])
         self.assertIn("never execute", captured["system"])
-        self.assertEqual(captured["tier"], "decision")
+        self.assertEqual(captured["tier"], "assistant")
         self.assertNotIn(SECRET_KEY, captured["prompt"])   # key never reaches the model
         # persisted
         msgs = self.client.get("/api/assistant", headers=self.headers).json()["messages"]
@@ -192,15 +223,64 @@ class TurnTests(AssistantTestCase):
                                    headers=self.headers).json()["sessions"]
         self.assertTrue(all(s["market"] != assistant.ASSISTANT_MARKET for s in sessions))
 
-    def test_clear_conversation(self):
+    def test_clear_starts_fresh_but_history_is_kept(self):
+        """'Clear' now starts a new conversation; the old one is never deleted."""
         with patch("llm_client.llm_configured", return_value=True), \
              patch("llm_client.generate_text", return_value="hi"), \
              patch("llm_client.active_provider_model", return_value="m"):
             self.client.post("/api/assistant/messages", headers=self.headers,
                              json={"message": "hello"})
-        self.assertEqual(len(self.client.get("/api/assistant", headers=self.headers).json()["messages"]), 2)
+        old = self.client.get("/api/assistant", headers=self.headers).json()["session"]
         self.assertEqual(self.client.delete("/api/assistant", headers=self.headers).status_code, 200)
+        # active conversation is fresh…
         self.assertEqual(self.client.get("/api/assistant", headers=self.headers).json()["messages"], [])
+        # …but the old one still exists with its messages intact
+        r = self.client.get(f"/api/assistant/sessions/{old['id']}", headers=self.headers)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual([m["role"] for m in r.json()["messages"]], ["user", "assistant"])
+
+    def test_history_list_titles_and_counts(self):
+        with patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value="hi"), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            self.client.post("/api/assistant/messages", headers=self.headers,
+                             json={"message": "What is my membership status?"})
+            self.client.delete("/api/assistant", headers=self.headers)
+            self.client.post("/api/assistant/messages", headers=self.headers,
+                             json={"message": "Review my risk settings"})
+        sessions = self.client.get("/api/assistant/sessions",
+                                   headers=self.headers).json()["sessions"]
+        self.assertEqual(len(sessions), 2)
+        # newest first, titled after the first question, counting both roles
+        self.assertEqual(sessions[0]["title"], "Review my risk settings")
+        self.assertEqual(sessions[1]["title"], "What is my membership status?")
+        self.assertEqual(sessions[0]["message_count"], 2)
+        self.assertEqual(sessions[1]["preview"], "What is my membership status?")
+
+    def test_new_session_reuses_empty_current(self):
+        """Clearing twice must not pile up blank sessions."""
+        self.client.get("/api/assistant", headers=self.headers)
+        self.client.delete("/api/assistant", headers=self.headers)
+        self.client.delete("/api/assistant", headers=self.headers)
+        sessions = self.client.get("/api/assistant/sessions",
+                                   headers=self.headers).json()["sessions"]
+        self.assertEqual(len(sessions), 1)
+
+    def test_history_is_private_to_the_member(self):
+        with patch("llm_client.llm_configured", return_value=True), \
+             patch("llm_client.generate_text", return_value="hi"), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            self.client.post("/api/assistant/messages", headers=self.headers,
+                             json={"message": "secret question"})
+        mine = self.client.get("/api/assistant", headers=self.headers).json()["session"]
+        other = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "intruder", "password": "pw123", "initial_balance": 1000.0}).json()
+        other_headers = {"Authorization": f"Bearer {other['token']}"}
+        r = self.client.get(f"/api/assistant/sessions/{mine['id']}", headers=other_headers)
+        self.assertEqual(r.status_code, 404)
+        listed = self.client.get("/api/assistant/sessions", headers=other_headers).json()["sessions"]
+        self.assertNotIn(mine["id"], [s["id"] for s in listed])
 
     def test_no_llm_honest(self):
         with patch.dict(os.environ, _NO_LLM_ENV):
