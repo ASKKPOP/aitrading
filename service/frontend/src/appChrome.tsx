@@ -20,6 +20,12 @@ export type NotificationCounts = {
   experiment: number
 }
 
+// Member-scoped badges: unread notifications and unread support replies.
+export type MemberCounts = {
+  unread: number
+  support: number
+}
+
 function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage()
 
@@ -92,6 +98,7 @@ export function Sidebar({
   userInfo,
   onUserLogout,
   notificationCounts,
+  memberCounts = { unread: 0, support: 0 },
   onMarkCategoryRead,
   isOpen = false,
   onClose,
@@ -103,6 +110,7 @@ export function Sidebar({
   userInfo?: any
   onUserLogout?: () => void
   notificationCounts: NotificationCounts
+  memberCounts?: MemberCounts
   onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
   isOpen?: boolean
   onClose?: () => void
@@ -166,6 +174,18 @@ export function Sidebar({
       ]
     },
   ]
+
+  // Notification centre and the support conversation are member-account
+  // features — they need a user session, not an agent token.
+  if (userToken) {
+    navSections.push({
+      label: tr(language, { ko: '내 계정', en: 'My Account', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản' }),
+      items: [
+        { path: '/notifications', icon: '🔔', label: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' }), requiresAuth: false, badge: memberCounts.unread },
+        { path: '/support', icon: '💬', label: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' }), requiresAuth: false, badge: memberCounts.support },
+      ]
+    })
+  }
 
   const allNavItems = navSections.flatMap(s => s.items)
 
