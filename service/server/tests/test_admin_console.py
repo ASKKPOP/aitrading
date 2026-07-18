@@ -256,7 +256,7 @@ class PlanManagementTests(_Base):
         r = self.client.delete("/api/admin/plans/temp", headers=self.admin)
         self.assertEqual(r.status_code, 200)
         # A plan with subscription history refuses deletion.
-        session = self._make_user()
+        self._make_user()
         self.client.post("/api/admin/subscriptions/grant",
                          json={"email": "member@x.com", "plan_code": "junior"},
                          headers=self.admin)
