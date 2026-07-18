@@ -280,11 +280,9 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
     time (prod logs: 400s and 200s exactly 1:1, ~2x latency on a 20s+ path)."""
 
     def setUp(self):
-        import llm_client
         llm_client._NO_TEMPERATURE_MODELS.clear()
 
     def tearDown(self):
-        import llm_client
         llm_client._NO_TEMPERATURE_MODELS.clear()
 
     def _run(self, first_error: str | None):
@@ -343,7 +341,6 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
         """A model that accepts temperature must not be penalised by one that
         does not."""
         import types
-        import llm_client
         llm_client._NO_TEMPERATURE_MODELS.add("claude-sonnet-5")
         calls = []
 
