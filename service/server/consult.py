@@ -148,8 +148,10 @@ def build_context(agent_id: int, symbol: Optional[str], market: str) -> dict[str
             from quant_crypto import build_crypto_analysis, quant_crypto_enabled
             if quant_crypto_enabled():
                 a = build_crypto_analysis(symbol) or {}
+                # Names must match what build_crypto_analysis emits — it is
+                # "rsi_14", and asking for "rsi" handed the advisor a null.
                 ctx["quant"] = {k: a.get(k) for k in
-                                ("current_price", "rsi", "signal", "signal_score",
+                                ("current_price", "rsi_14", "signal", "signal_score",
                                  "sigma_daily_pct", "funding_rate", "basis_pct")}
         except Exception:  # noqa: BLE001
             pass

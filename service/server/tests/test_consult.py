@@ -210,3 +210,33 @@ class ProposeRuleTests(ConsultTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContextQuantWiringTests(ConsultTestCase):
+    """build_context must pull the field quant_crypto actually emits.
+
+    It asked for "rsi"; build_crypto_analysis emits "rsi_14", so the advisor
+    was handed rsi=None on every crypto consult.
+    """
+
+    FAKE_ANALYSIS = {
+        "current_price": 64000.0, "rsi_14": 61.5, "signal": "buy", "signal_score": 2,
+        "sigma_daily_pct": 2.1, "funding_rate": 0.0001, "basis_pct": 0.3,
+    }
+
+    def test_rsi_reaches_the_advisor(self):
+        with patch("quant_crypto.quant_crypto_enabled", return_value=True), \
+             patch("quant_crypto.build_crypto_analysis", return_value=self.FAKE_ANALYSIS):
+            ctx = consult.build_context(self.agent_id, "BTCUSDT", "crypto")
+        quant = ctx.get("quant") or {}
+        self.assertEqual(quant.get("rsi_14"), 61.5)
+        self.assertNotIn(None, [quant.get("current_price"), quant.get("signal")])
+
+    def test_every_requested_quant_key_exists_upstream(self):
+        """Guard against re-introducing a name that quant_crypto never emits."""
+        with patch("quant_crypto.quant_crypto_enabled", return_value=True), \
+             patch("quant_crypto.build_crypto_analysis", return_value=self.FAKE_ANALYSIS):
+            ctx = consult.build_context(self.agent_id, "BTCUSDT", "crypto")
+        quant = ctx.get("quant") or {}
+        missing = [k for k, v in quant.items() if v is None]
+        self.assertEqual(missing, [], f"context keys absent from quant_crypto: {missing}")
