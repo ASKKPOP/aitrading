@@ -29,6 +29,13 @@ const CATEGORY_META: Record<string, { icon: string; color: string; label: { ko: 
 
 const fmtTime = (v: string) => String(v || '').replace('T', ' ').replace('Z', '').slice(0, 16)
 
+// Only in-app paths may become a react-router <Link to>. A raw 'javascript:' or
+// '//host' string renders as a real <a href> (React only warns), so a hostile
+// link must never reach <Link>. The backend already sanitizes on write; this is
+// defence-in-depth for any row that predates that or arrives another way.
+const safeLink = (link: string | null): string | null =>
+  link && link.startsWith('/') && !link.startsWith('//') ? link : null
+
 export default function NotificationsPage({ userToken }: { userToken: string }) {
   const { language } = useLanguage()
   const [items, setItems] = useState<Notification[]>([])
@@ -57,19 +64,21 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
 
   useEffect(() => { load(filter) }, [userToken, filter])
 
-  const markAll = async () => {
-    await fetch(`${API_BASE}/notifications/read`, {
-      method: 'POST', headers: auth(), body: JSON.stringify({ all: true }),
-    })
-    await load(filter)
+  const markRead = async (body: { all: true } | { ids: number[] }) => {
+    try {
+      const res = await fetch(`${API_BASE}/notifications/read`, {
+        method: 'POST', headers: auth(), body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setError('')
+      await load(filter)
+    } catch {
+      setError(tr(language, { ko: '읽음 표시에 실패했습니다', en: 'Failed to mark read', ja: '既読にできませんでした', th: 'ทำเครื่องหมายอ่านไม่สำเร็จ', vi: 'Không đánh dấu đã đọc được' }))
+    }
   }
 
-  const markOne = async (id: number) => {
-    await fetch(`${API_BASE}/notifications/read`, {
-      method: 'POST', headers: auth(), body: JSON.stringify({ ids: [id] }),
-    })
-    await load(filter)
-  }
+  const markAll = () => markRead({ all: true })
+  const markOne = (id: number) => markRead({ ids: [id] })
 
   const meta = (category: string) =>
     CATEGORY_META[category] || { icon: '•', color: 'var(--text-muted)', label: { ko: category, en: category, ja: category, th: category, vi: category } }
@@ -146,8 +155,8 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   {fmtTime(n.created_at)}
                 </span>
-                {n.link && (
-                  <Link to={n.link} style={{ fontSize: 11.5, color: 'var(--accent-primary)' }}>
+                {safeLink(n.link) && (
+                  <Link to={safeLink(n.link)!} style={{ fontSize: 11.5, color: 'var(--accent-primary)' }}>
                     {tr(language, { ko: '열기', en: 'Open', ja: '開く', th: 'เปิด', vi: 'Mở' })} →
                   </Link>
                 )}

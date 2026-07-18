@@ -432,6 +432,21 @@ class DatabaseConnection:
     def cursor(self):
         return DatabaseCursor(self._connection.cursor(), self._backend)
 
+    def execute(self, sql: str, params: Optional[Sequence[Any]] = None):
+        """Run one statement, returning the cursor — sqlite3's convenience shim.
+
+        Defined explicitly because __getattr__ below would otherwise forward this
+        to the driver connection, and pymysql's has no execute(). That made every
+        conn.execute() call site work on SQLite and raise AttributeError on MySQL.
+        Routing through cursor() also keeps _adapt_sql_for_mysql in the path, so
+        '?' placeholders, % literals and reserved words are still rewritten.
+        """
+        return self.cursor().execute(sql, params)
+
+    def executemany(self, sql: str, seq_of_params: Iterable[Sequence[Any]]):
+        """Batch counterpart to execute(); same reason for existing."""
+        return self.cursor().executemany(sql, seq_of_params)
+
     def commit(self):
         self._connection.commit()
 

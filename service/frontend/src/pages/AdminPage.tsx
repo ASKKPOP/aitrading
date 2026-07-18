@@ -283,10 +283,12 @@ export function AdminPage() {
 
   useEffect(() => { refresh(tab) }, [tab, token, subFilter, lbMetric])
 
-  async function act(path: string, opts: RequestInit, then: Tab) {
+  // Returns true only when the write succeeded — callers must not clear a typed
+  // reply/broadcast composer on failure, or the admin loses what they wrote.
+  async function act(path: string, opts: RequestInit, then: Tab): Promise<boolean> {
     setError('')
-    try { await call(path, opts); await refresh(then) }
-    catch (e: any) { if (e?.message !== '401') setError(String(e?.message || e)) }
+    try { await call(path, opts); await refresh(then); return true }
+    catch (e: any) { if (e?.message !== '401') setError(String(e?.message || e)); return false }
   }
 
   // ── Login screen ──
@@ -788,9 +790,9 @@ export function AdminPage() {
                     ko: '모든 회원에게 이 공지를 보낼까요?',
                     en: 'Send this announcement to every member?',
                   }))) return
-                  await act('notifications/broadcast',
+                  const ok = await act('notifications/broadcast',
                     { method: 'POST', body: JSON.stringify(broadcast) }, 'support')
-                  setBroadcast({ title: '', body: '' })
+                  if (ok) setBroadcast({ title: '', body: '' })
                 }}>
                 {tr(language, { ko: '발송', en: 'Send' })}
               </button>
@@ -887,10 +889,12 @@ export function AdminPage() {
                       style={{ ...inputStyle, flex: 1, resize: 'vertical', fontFamily: 'inherit' }} />
                     <button style={primaryBtn} disabled={!reply.trim()} onClick={async () => {
                       const id = activeThread.thread.id
-                      await act(`support/threads/${id}/reply`,
+                      const ok = await act(`support/threads/${id}/reply`,
                         { method: 'POST', body: JSON.stringify({ body: reply }) }, 'support')
+                      if (!ok) return  // keep the typed reply so the admin can retry
                       setReply('')
-                      setActiveThread(await call(`support/threads/${id}`))
+                      try { setActiveThread(await call(`support/threads/${id}`)) }
+                      catch { /* refresh() already re-rendered the list; thread reload is best-effort */ }
                     }}>
                       {tr(language, { ko: '답변 전송', en: 'Send reply' })}
                     </button>

@@ -82,9 +82,32 @@ def _truthy(value: Any) -> bool:
     return str(value).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _safe_link(link: Optional[str]) -> Optional[str]:
+    """Only in-app paths may reach the feed's <Link to>.
+
+    The frontend renders link straight into react-router's <Link to>, which for
+    'javascript:...' or '//host' emits a raw <a href> (React only warns). Since
+    broadcast accepts a free-form link from admins, restrict it to a single
+    leading '/' (not '//', which is protocol-relative). Anything else is dropped.
+    """
+    if not link:
+        return None
+    link = link.strip()
+    if link.startswith("/") and not link.startswith("//"):
+        return link[:255]
+    return None
+
+
 def _load_target(cursor, user_id: int, target: str) -> dict[str, Any]:
+    # enabled = 1 filter matters for the legacy 'alerts' target: a member who
+    # turned that target OFF (PUT .../api/alerts {enabled:false}) must not have
+    # its email_enabled/sms_enabled config inherited — that was the historical
+    # off switch (the pre-refactor alerts._alert_prefs joined on s.enabled = 1).
+    # The 'notifications' target is always written enabled = 1, so this is a
+    # no-op for it.
     cursor.execute(
-        "SELECT config_json FROM user_api_settings WHERE user_id = ? AND target = ?",
+        "SELECT config_json FROM user_api_settings "
+        "WHERE user_id = ? AND target = ? AND enabled = 1",
         (user_id, target))
     row = cursor.fetchone()
     if row is None:
@@ -128,38 +151,62 @@ def get_prefs(user_id: int, cursor=None) -> dict[str, dict[str, bool]]:
     return prefs
 
 
+def _apply_patch(merged: dict[str, dict[str, bool]],
+                 patch: dict[str, dict[str, Any]]) -> dict[str, dict[str, bool]]:
+    for category, switches in (patch or {}).items():
+        if category not in CATEGORY_CATALOG or not isinstance(switches, dict):
+            continue
+        for key in ("enabled", "email", "sms"):
+            if key in switches:
+                merged[category][key] = bool(switches[key])
+    return merged
+
+
 def set_prefs(user_id: int, patch: dict[str, dict[str, Any]]) -> dict[str, dict[str, bool]]:
     """Merge a partial preference patch. Unknown categories/keys are ignored."""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        merged = get_prefs(user_id, cursor)
-        for category, switches in (patch or {}).items():
-            if category not in CATEGORY_CATALOG or not isinstance(switches, dict):
-                continue
-            for key in ("enabled", "email", "sms"):
-                if key in switches:
-                    merged[category][key] = bool(switches[key])
-
-        payload = json.dumps(merged)
+        merged = _apply_patch(get_prefs(user_id, cursor), patch)
         now = _now_iso()
         begin_write_transaction(cursor)
         cursor.execute(
             "SELECT id FROM user_api_settings WHERE user_id = ? AND target = ?",
             (user_id, PREFS_TARGET))
         row = cursor.fetchone()
-        if row is None:
+        if row is not None:
+            cursor.execute(
+                "UPDATE user_api_settings SET config_json = ?, updated_at = ? WHERE id = ?",
+                (json.dumps(merged), now, row["id"]))
+            conn.commit()
+            return merged
+        try:
             cursor.execute(
                 """INSERT INTO user_api_settings
                    (user_id, target, api_key, config_json, enabled, updated_at)
                    VALUES (?, ?, NULL, ?, 1, ?)""",
-                (user_id, PREFS_TARGET, payload, now))
-        else:
+                (user_id, PREFS_TARGET, json.dumps(merged), now))
+            conn.commit()
+            return merged
+        except Exception:  # noqa: BLE001 — concurrent first-write lost the UNIQUE race
+            # Same recovery as _get_or_create_thread (commit 73f4573): the SELECT
+            # missed on the pre-race snapshot, so the INSERT collides on
+            # UNIQUE(user_id, target). Roll back to reset the MySQL read view,
+            # re-read the winner's row, re-apply this patch on top of it, UPDATE.
+            conn.rollback()
+            cursor.execute(
+                "SELECT id FROM user_api_settings WHERE user_id = ? AND target = ?",
+                (user_id, PREFS_TARGET))
+            row = cursor.fetchone()
+            if row is None:
+                raise  # genuine INSERT failure, not the duplicate-key race
+            merged = _apply_patch(get_prefs(user_id, cursor), patch)
+            begin_write_transaction(cursor)
             cursor.execute(
                 "UPDATE user_api_settings SET config_json = ?, updated_at = ? WHERE id = ?",
-                (payload, now, row["id"]))
-        conn.commit()
-        return merged
+                (json.dumps(merged), _now_iso(), row["id"]))
+            conn.commit()
+            return merged
     finally:
         conn.close()
 
@@ -262,7 +309,7 @@ def notify(user_id: Optional[int], category: str, title: str, body: str = "",
                    (user_id, category, title, body, link, channels_json, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (user_id, category, title[:200], (body or "")[:2000],
-                 link[:255] if link else link,
+                 _safe_link(link),
                  json.dumps(channels), _now_iso()))
             conn.commit()
         finally:
@@ -309,12 +356,19 @@ def mark_read(user_id: int, ids: Optional[list[int]] = None) -> int:
     try:
         begin_write_transaction(cursor)
         if ids:
-            ids = ids[:500]  # bound the IN clause (SQLite host-param limit / abuse)
-            placeholders = ",".join("?" for _ in ids)
-            cursor.execute(
-                f"""UPDATE user_notifications SET read_at = ?
-                    WHERE user_id = ? AND read_at IS NULL AND id IN ({placeholders})""",
-                [_now_iso(), user_id, *ids])
+            affected = 0
+            # Chunk the IN clause (SQLite host-param limit) instead of dropping
+            # ids past the first 500 — every id the caller passed gets marked.
+            for start in range(0, len(ids), 500):
+                chunk = ids[start:start + 500]
+                placeholders = ",".join("?" for _ in chunk)
+                cursor.execute(
+                    f"""UPDATE user_notifications SET read_at = ?
+                        WHERE user_id = ? AND read_at IS NULL AND id IN ({placeholders})""",
+                    [_now_iso(), user_id, *chunk])
+                affected += cursor.rowcount
+            conn.commit()
+            return max(0, affected)
         else:
             cursor.execute(
                 "UPDATE user_notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL",
