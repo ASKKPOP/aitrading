@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { Link } from 'react-router-dom'
 
+import NotificationSettings from '../components/NotificationSettings'
 import { API_BASE, useLanguage } from '../appShared'
 import { LANGUAGES, tr } from '../i18n'
 
@@ -51,6 +52,9 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
   const [drafts, setDrafts] = useState<Record<string, { api_key: string; provider: string; model: string }>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [customModel, setCustomModel] = useState<Record<string, boolean>>({})
+  // Bumped after the phone number is saved so the notification switches
+  // re-read it — the SMS toggle stays disabled until a number exists.
+  const [notifKey, setNotifKey] = useState(0)
 
   const auth = () => ({ 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' })
 
@@ -102,6 +106,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         } }),
       })
       if (!res.ok) throw new Error(`${res.status}`)
+      setNotifKey(k => k + 1)
       flash(tr(language, { ko: '알림 설정이 저장되었습니다', en: 'Alert settings saved', ja: '通知設定を保存しました', th: 'บันทึกการแจ้งเตือนแล้ว', vi: 'Đã lưu cài đặt cảnh báo' }))
     } catch {
       flash(tr(language, { ko: '저장 실패', en: 'Save failed', ja: '保存失敗', th: 'บันทึกล้มเหลว', vi: 'Lưu thất bại' }))
@@ -295,34 +300,33 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         </div>
       </div>
 
-      {/* ── Alerts (email · SMS) ─────────────────────────── */}
-      {sectionTitle({ ko: '알림 — 이메일 · SMS', en: 'Alerts — Email · SMS', ja: '通知 — メール · SMS', th: 'การแจ้งเตือน — อีเมล · SMS', vi: 'Cảnh báo — Email · SMS' })}
-      <div className="card" style={{ padding: '14px 16px' }}>
-        <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-          {tr(language, {
-            ko: '체결·손절/익절·브레이커 알림입니다. 인앱 알림은 항상 기록되며, 이메일·SMS는 여기서 켭니다 (시간당 외부 발송 제한 있음).',
-            en: 'Alerts for fills, SL/TP closes and breaker halts. In-app alerts are always journaled; enable email/SMS here (external sends are rate-limited hourly).',
-            ja: '約定・SL/TP・ブレーカーの通知。アプリ内通知は常に記録され、メール・SMSはここで有効化 (時間あたり制限あり)。',
-            th: 'แจ้งเตือนการเทรด SL/TP และเบรกเกอร์ การแจ้งในแอปบันทึกเสมอ เปิดอีเมล/SMS ที่นี่ (จำกัดต่อชั่วโมง)',
-            vi: 'Cảnh báo khớp lệnh, SL/TP và breaker. Cảnh báo trong app luôn được ghi; bật email/SMS tại đây (giới hạn theo giờ).',
-          })}
+      {/* ── Notifications (per category, iOS-style switches) ── */}
+      {sectionTitle({ ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' })}
+      <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+        {tr(language, {
+          ko: '알림 종류별로 켜고 끄고, 각각 이메일·SMS 전송을 선택할 수 있습니다. 받은 알림은 알림함에서 볼 수 있습니다.',
+          en: 'Switch each kind of notification on or off, and choose email/SMS delivery per kind. Everything you receive is listed in your notification centre.',
+          ja: '通知の種類ごとにオン・オフし、メール・SMS配信を選べます。受信した通知は通知センターで確認できます。',
+          th: 'เปิด/ปิดการแจ้งเตือนแต่ละประเภท และเลือกส่งทางอีเมล/SMS แยกกัน ดูทั้งหมดได้ในศูนย์แจ้งเตือน',
+          vi: 'Bật/tắt từng loại thông báo và chọn gửi email/SMS riêng. Tất cả hiển thị trong trung tâm thông báo.',
+        })}
+        {' '}
+        <Link to="/notifications" style={{ color: 'var(--accent-primary)' }}>
+          {tr(language, { ko: '알림함 열기', en: 'Open notification centre', ja: '通知センターを開く', th: 'เปิดศูนย์แจ้งเตือน', vi: 'Mở trung tâm thông báo' })} →
+        </Link>
+      </div>
+      <NotificationSettings key={notifKey} userToken={userToken} />
+
+      <div className="card" style={{ padding: '14px 16px', marginTop: '10px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          {tr(language, { ko: 'SMS 수신 전화번호', en: 'Phone number for SMS', ja: 'SMS受信の電話番号', th: 'เบอร์โทรสำหรับ SMS', vi: 'Số điện thoại nhận SMS' })}
         </div>
-        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
-            <input type="checkbox" checked={alertPrefs.email_enabled}
-              onChange={e => setAlertPrefs(p => ({ ...p, email_enabled: e.target.checked }))} />
-            {tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email' })} ({userInfo?.email || '—'})
-          </label>
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
-            <input type="checkbox" checked={alertPrefs.sms_enabled}
-              onChange={e => setAlertPrefs(p => ({ ...p, sms_enabled: e.target.checked }))} />
-            SMS
-          </label>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input type="tel" value={alertPrefs.phone} placeholder="+821012345678"
             onChange={e => setAlertPrefs(p => ({ ...p, phone: e.target.value.trim() }))}
-            style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, width: 170 }} />
+            style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, width: 190 }} />
           <button onClick={saveAlertPrefs} className="btn btn-primary" style={{ fontSize: '12px', padding: '7px 16px', cursor: 'pointer' }}>
-            {tr(language, { ko: '알림 설정 저장', en: 'Save alert settings', ja: '通知設定を保存', th: 'บันทึกการแจ้งเตือน', vi: 'Lưu cài đặt cảnh báo' })}
+            {tr(language, { ko: '전화번호 저장', en: 'Save phone number', ja: '電話番号を保存', th: 'บันทึกเบอร์โทร', vi: 'Lưu số điện thoại' })}
           </button>
         </div>
       </div>

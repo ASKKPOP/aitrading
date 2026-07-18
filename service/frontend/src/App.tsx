@@ -5,6 +5,7 @@ import {
   API_BASE,
   LanguageContext,
   LoginPage,
+  type MemberCounts,
   type NotificationCounts,
   NOTIFICATION_POLL_INTERVAL,
   RegisterPage,
@@ -41,6 +42,8 @@ const AccountsPage = lazy(() => import('./pages/AccountsPage'))
 const AssetsPage = lazy(() => import('./pages/AssetsPage'))
 const MarketingPage = lazy(() => import('./pages/MarketingPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const SupportPage = lazy(() => import('./pages/SupportPage'))
 const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.SpotPage })))
 const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
 const SubscribePage = lazy(() => import('./pages/SubscribePage'))
@@ -104,6 +107,9 @@ function App() {
   const [agentInfo, setAgentInfo] = useState<any>(null)
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
   const [notificationCounts, setNotificationCounts] = useState<NotificationCounts>({ discussion: 0, strategy: 0, experiment: 0 })
+  // Member-scoped badges (notification centre + support chat) — user session,
+  // separate from the agent-scoped discussion/strategy/experiment counts.
+  const [memberCounts, setMemberCounts] = useState<MemberCounts>({ unread: 0, support: 0 })
 
   const t = getT(language)
 
@@ -245,6 +251,25 @@ function App() {
     return () => clearInterval(interval)
   }, [token])
 
+  const fetchMemberSummary = async () => {
+    if (!userToken) return
+    try {
+      const res = await fetch(`${API_BASE}/notifications/summary`, {
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      setMemberCounts({ unread: data.unread || 0, support: data.support_unread || 0 })
+    } catch { /* transient */ }
+  }
+
+  useEffect(() => {
+    if (!userToken) { setMemberCounts({ unread: 0, support: 0 }); return }
+    fetchMemberSummary()
+    const interval = setInterval(fetchMemberSummary, NOTIFICATION_POLL_INTERVAL)
+    return () => clearInterval(interval)
+  }, [userToken])
+
   useEffect(() => {
     if (!agentInfo?.id) return
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -300,6 +325,7 @@ function App() {
             logout={logout}
             fetchAgentInfo={fetchAgentInfo}
             notificationCounts={notificationCounts}
+            memberCounts={memberCounts}
             markCategoryRead={markCategoryRead}
             userToken={userToken}
             userInfo={userInfo}
@@ -327,6 +353,7 @@ function AppRouter({
   logout,
   fetchAgentInfo,
   notificationCounts,
+  memberCounts,
   markCategoryRead,
   userToken,
   userInfo,
@@ -339,6 +366,7 @@ function AppRouter({
   logout: () => void
   fetchAgentInfo: () => Promise<void>
   notificationCounts: NotificationCounts
+  memberCounts: MemberCounts
   markCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
   userToken: string | null
   userInfo: any
@@ -376,6 +404,8 @@ function AppRouter({
       '/experiments':      'Sooppiy · Experiments',
       '/research-exports': 'Sooppiy · Research Exports',
       '/financial-events': 'Sooppiy · Financial Events',
+      '/notifications':    'Sooppiy · Notifications',
+      '/support':          'Sooppiy · Support',
       '/dev':              'Sooppiy · For Developers',
       '/login':            'Sooppiy · Login',
       '/register':         'Sooppiy · Register',
@@ -454,6 +484,7 @@ function AppRouter({
         userInfo={userInfo}
         onUserLogout={userLogout}
         notificationCounts={notificationCounts}
+        memberCounts={memberCounts}
         onMarkCategoryRead={markCategoryRead}
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
@@ -512,6 +543,18 @@ function AppRouter({
                 path="/my-trading"
                 element={userToken
                   ? <MyTradingPage userToken={userToken} onSignOut={userLogout} />
+                  : <Navigate to="/sign-in" replace />}
+              />
+              <Route
+                path="/notifications"
+                element={userToken
+                  ? <NotificationsPage userToken={userToken} />
+                  : <Navigate to="/sign-in" replace />}
+              />
+              <Route
+                path="/support"
+                element={userToken
+                  ? <SupportPage userToken={userToken} />
                   : <Navigate to="/sign-in" replace />}
               />
               <Route

@@ -2433,6 +2433,59 @@ def init_database():
     except Exception:
         pass
 
+    # ── Member notification centre + support chat ──────────────────────────
+    # The in-app feed every member sees; per-category switches live in
+    # user_api_settings under target 'notifications' (see notifications.py).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_notifications (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id       INTEGER NOT NULL,
+            category      TEXT    NOT NULL,
+            title         TEXT    NOT NULL,
+            body          TEXT,
+            link          TEXT,
+            channels_json TEXT,
+            read_at       TEXT,
+            created_at    TEXT    NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_notifications_user
+        ON user_notifications(user_id, id)
+    """)
+
+    # One support conversation per member — member ⇄ administrator.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS support_threads (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id         INTEGER NOT NULL UNIQUE,
+            subject         TEXT,
+            status          TEXT    NOT NULL DEFAULT 'open',
+            user_unread     INTEGER NOT NULL DEFAULT 0,
+            admin_unread    INTEGER NOT NULL DEFAULT 0,
+            last_message_at TEXT,
+            created_at      TEXT    NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            thread_id   INTEGER NOT NULL,
+            sender      TEXT    NOT NULL,
+            admin_id    INTEGER,
+            admin_email TEXT,
+            body        TEXT    NOT NULL,
+            created_at  TEXT    NOT NULL,
+            FOREIGN KEY (thread_id) REFERENCES support_threads(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_support_messages_thread
+        ON support_messages(thread_id, id)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

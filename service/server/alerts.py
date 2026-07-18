@@ -27,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+from notifications import ALERT_KIND_CATEGORY, notify
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +89,13 @@ def _send_sms(to_number: str, body: str) -> bool:
 
 # ─────────────────────────── prefs & limits ───────────────────────────
 
-def _alert_prefs(agent_id: int, cursor) -> dict[str, Any]:
-    """Owning user's alert preferences + contact points."""
+def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
+    """Owning user's alert preferences + contact points.
+
+    The phone number stays on the 'alerts' settings target (contact info),
+    but whether email/SMS fire is the member's per-category notification
+    switch — one place governs delivery (notifications.py).
+    """
     cursor.execute(
         """SELECT u.id AS user_id, u.email, s.config_json
            FROM agents a
@@ -100,16 +106,20 @@ def _alert_prefs(agent_id: int, cursor) -> dict[str, Any]:
     row = cursor.fetchone()
     if row is None:
         return {"user_id": None, "email": None, "email_enabled": False,
-                "sms_enabled": False, "phone": None}
+                "sms_enabled": False, "phone": None, "enabled": False}
     try:
         config = json.loads(row["config_json"] or "{}")
     except (TypeError, ValueError):
         config = {}
+
+    from notifications import channel_prefs
+    switches = channel_prefs(row["user_id"], category, cursor)
     return {
         "user_id": row["user_id"],
         "email": row["email"],
-        "email_enabled": str(config.get("email_enabled", "")).lower() in ("1", "true", "yes", "on"),
-        "sms_enabled": str(config.get("sms_enabled", "")).lower() in ("1", "true", "yes", "on"),
+        "enabled": switches["enabled"],
+        "email_enabled": switches["email"],
+        "sms_enabled": switches["sms"],
         "phone": (config.get("phone") or "").strip() or None,
     }
 
@@ -147,11 +157,12 @@ def send_alert(agent_id: int, kind: str, title: str, body: str,
         if dedupe_key and _is_duplicate(dedupe_key, cursor):
             conn.close()
             return {"skipped": "duplicate", "channels": []}
-        prefs = _alert_prefs(agent_id, cursor)
+        category = ALERT_KIND_CATEGORY.get(kind, "watch")
+        prefs = _alert_prefs(agent_id, cursor, category)
         channels.append("inapp")
 
         limited = prefs["user_id"] is not None and _external_rate_limited(prefs["user_id"], cursor)
-        if not limited:
+        if not limited and prefs["enabled"]:
             if prefs["email_enabled"] and prefs["email"]:
                 try:
                     if _send_email(prefs["email"], f"[Sooppiy] {title}", body):
@@ -174,6 +185,9 @@ def send_alert(agent_id: int, kind: str, title: str, body: str,
              json.dumps(channels), dedupe_key, _now_iso()))
         conn.commit()
         conn.close()
+        # Mirror into the member notification centre. external=False: email and
+        # SMS already went out above, under this same category's switches.
+        notify(prefs["user_id"], category, title, body, external=False)
         return {"channels": channels, "rate_limited": limited}
     except Exception as exc:  # noqa: BLE001
         logger.exception("send_alert failed (agent %s, kind %s): %s", agent_id, kind, exc)

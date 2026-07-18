@@ -39,6 +39,7 @@ from routes_oauth import register_oauth_routes
 from routes_reputation import register_reputation_routes
 from routes_risk import register_risk_routes
 from routes_strategies import register_strategy_routes
+from routes_support import register_support_routes
 from routes_tournaments import register_tournament_routes
 
 
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     register_admin_auth_routes(app, ctx)
     register_admin_manage_routes(app, ctx)
     register_subscription_routes(app, ctx)
+    register_support_routes(app, ctx)
     register_trading_routes(app, ctx)
     register_experiment_routes(app, ctx)
     register_research_routes(app, ctx)
