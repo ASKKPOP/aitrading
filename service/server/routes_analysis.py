@@ -274,33 +274,9 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=f"Assistant failed: {exc}")
 
-    @app.get("/api/assistant/sessions")
-    async def list_assistant_sessions(authorization: str = Header(None)):
-        """Every past conversation this member had with the assistant."""
-        agent = _agent(authorization)
-        from assistant import list_sessions
-        return {"sessions": list_sessions(agent["id"])}
-
-    @app.get("/api/assistant/sessions/{session_id}")
-    async def read_assistant_session(session_id: int, authorization: str = Header(None)):
-        agent = _agent(authorization)
-        from assistant import get_session_messages
-        messages = get_session_messages(agent["id"], session_id)
-        if messages is None:
-            raise HTTPException(status_code=404, detail="Session not found")
-        return {"messages": messages}
-
-    @app.post("/api/assistant/sessions")
-    async def new_assistant_session(authorization: str = Header(None)):
-        """Start a fresh conversation; all previous ones are kept."""
-        agent = _agent(authorization)
-        from assistant import start_new_session
-        return {"session": start_new_session(agent["id"])}
-
     @app.delete("/api/assistant")
     async def clear_assistant(authorization: str = Header(None)):
-        """History is never deleted: 'clear' now just starts a new conversation."""
         agent = _agent(authorization)
-        from assistant import start_new_session
-        start_new_session(agent["id"])
+        from assistant import clear_session
+        clear_session(agent["id"])
         return {"ok": True}
