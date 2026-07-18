@@ -491,7 +491,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
   if (enabled) {
     return (
       <AuthShell title={tr(language, { ko: '2단계 인증 활성화됨 ✓', en: 'Two-factor enabled ✓', ja: '2段階認証を有効化 ✓', th: 'เปิดใช้งานสองขั้นตอนแล้ว ✓', vi: 'Đã bật xác thực hai lớp ✓' })} subtitle={tr(language, { ko: '다음 로그인부터 6자리 코드를 요청합니다.', en: "From your next sign-in, we'll ask for a 6-digit code.", ja: '次回のログインから6桁のコードを求めます。', th: 'ตั้งแต่การเข้าสู่ระบบครั้งถัดไป เราจะขอรหัส 6 หลัก', vi: 'Từ lần đăng nhập tới, chúng tôi sẽ yêu cầu mã 6 chữ số.' })}>
-        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', padding: 12, borderRadius: 6, marginBottom: 16, fontSize: 13 }}>
+        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: 12, borderRadius: 6, marginBottom: 16, fontSize: 13 }}>
           <strong>{tr(language, { ko: '이 백업 코드를 저장하세요', en: 'Save these backup codes', ja: 'これらのバックアップコードを保存してください', th: 'บันทึกรหัสสำรองเหล่านี้', vi: 'Lưu các mã dự phòng này' })}</strong>{tr(language, { ko: ' 안전한 곳에. 인증 앱에 접근할 수 없을 때 각 코드는 한 번씩 사용할 수 있습니다.', en: ' somewhere safe. Each one can be used once if you lose access to your authenticator app.', ja: ' 安全な場所に。認証アプリにアクセスできなくなった場合、各コードは一度ずつ使用できます。', th: ' ไว้ในที่ปลอดภัย แต่ละรหัสใช้ได้ครั้งเดียวหากคุณเข้าถึงแอปยืนยันตัวตนไม่ได้', vi: ' ở nơi an toàn. Mỗi mã dùng được một lần nếu bạn mất quyền truy cập ứng dụng xác thực.' })}
         </div>
         <div style={{
@@ -530,6 +530,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: 12,
             background: '#f1f5f9',
+            color: '#0f172a',
             padding: 10,
             borderRadius: 6,
             marginBottom: 12,

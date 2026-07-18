@@ -505,7 +505,9 @@ a {
   flex: 1;
   padding: 28px 28px 40px;
   min-width: 0;
-  overflow: hidden;
+  /* clip (not hidden): hidden makes this a scroll container, which kills
+     position: sticky for the right sidebar. clip clips without doing that. */
+  overflow: clip;
 }
 
 /* Page column — cap line length on wide monitors; pages were stretching
