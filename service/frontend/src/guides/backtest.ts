@@ -269,7 +269,7 @@ export const backtestGuide: PageGuide = {
           '승격을 누르면 내 전략 목록이 열립니다. 전략을 하나 고르고 확인하면 이 백테스트 결과가 그 전략의 검증 근거로 연결됩니다.',
           '샤프가 0보다 클 때만 전략이 검증됨으로 표시됩니다. 그렇지 않으면 업데이트는 되지만 검증 배지는 붙지 않고 경고 문구가 나옵니다.',
           '이미 검증된 전략은 선택 목록에서 이름 옆에 체크 표시가 붙어 구분됩니다.',
-          '기록에서 불러온 결과에는 원래의 에이전트 ID가 복원되지 않습니다. 하단 프로필 링크를 쓰려면 파라미터에 에이전트 ID를 넣고 직접 실행하세요.',
+          '기록에서 결과를 불러오면 원래 실행한 에이전트 ID가 함께 복원되므로, 하단의 프로필 링크가 그 에이전트를 정확히 가리킵니다.',
         ],
         en: [
           'Run History only appears when you are logged in and have at least one saved run. Each row carries the run number, status, window, symbol and total return.',
@@ -277,7 +277,7 @@ export const backtestGuide: PageGuide = {
           'Promote opens your strategy list. Pick a strategy and confirm, and this backtest result becomes that strategy\'s validation evidence.',
           'A strategy is only marked validated when Sharpe is above zero. Otherwise it still updates, but no validated badge is attached and a warning is shown instead.',
           'Strategies that are already validated appear in the picker with a check mark beside their name.',
-          'A result loaded from history does not restore the original agent ID. To use the profile link at the bottom, enter the agent ID in the parameters and run it yourself.',
+          'Loading a result from history restores the agent it was run for, so the profile link at the bottom points at that agent.',
         ],
         ja: [
           '実行履歴はログイン中かつ保存済みの実行が1件以上ある場合のみ表示されます。各行に実行番号・状態・期間・シンボル・トータルリターンが並びます。',
@@ -285,7 +285,7 @@ export const backtestGuide: PageGuide = {
           '「昇格」を押すと自分のストラテジー一覧が開きます。ストラテジーを1つ選んで確認すると、このバックテスト結果がそのストラテジーの検証根拠として紐づきます。',
           'シャープ比が0を超えている場合のみ、ストラテジーは検証済みとしてマークされます。そうでない場合も更新はされますが、検証バッジは付かず警告が表示されます。',
           'すでに検証済みのストラテジーは、選択リストで名前の横にチェックマークが付いて区別されます。',
-          '履歴から読み込んだ結果には元のエージェントIDが復元されません。下部のプロフィールリンクを使うには、パラメーターにエージェントIDを入力して自分で実行してください。',
+          '履歴から結果を読み込むと実行時のエージェントIDも復元されるため、下部のプロフィールリンクはそのエージェントを正しく指します。',
         ],
         th: [
           'ประวัติการรันจะปรากฏเมื่อคุณล็อกอินและมีการรันที่บันทึกไว้อย่างน้อยหนึ่งรายการ แต่ละแถวมีหมายเลขการรัน สถานะ ช่วงเวลา สัญลักษณ์ และผลตอบแทนรวม',
@@ -293,7 +293,7 @@ export const backtestGuide: PageGuide = {
           'ปุ่มโปรโมตจะเปิดรายการกลยุทธ์ของคุณ เลือกกลยุทธ์แล้วยืนยัน ผลแบ็คเทสต์นี้จะกลายเป็นหลักฐานการตรวจสอบของกลยุทธ์นั้น',
           'กลยุทธ์จะถูกทำเครื่องหมายว่าผ่านการตรวจสอบก็ต่อเมื่อค่าชาร์ปมากกว่าศูนย์ มิฉะนั้นระบบยังอัปเดตให้แต่จะไม่ติดป้ายผ่านการตรวจสอบ และจะแสดงคำเตือนแทน',
           'กลยุทธ์ที่ผ่านการตรวจสอบแล้วจะมีเครื่องหมายถูกอยู่ข้างชื่อในรายการให้เลือก',
-          'ผลลัพธ์ที่โหลดจากประวัติจะไม่กู้คืนรหัสเอเจนต์เดิม หากต้องการใช้ลิงก์โปรไฟล์ด้านล่าง ให้กรอกรหัสเอเจนต์ในพารามิเตอร์แล้วรันเอง',
+          'การโหลดผลลัพธ์จากประวัติจะกู้คืนรหัสเอเจนต์ที่ใช้รันด้วย ลิงก์โปรไฟล์ด้านล่างจึงชี้ไปยังเอเจนต์นั้นอย่างถูกต้อง',
         ],
         vi: [
           'Lịch sử chạy chỉ hiện khi bạn đã đăng nhập và có ít nhất một lần chạy được lưu. Mỗi dòng gồm số hiệu lần chạy, trạng thái, khoảng thời gian, mã và lợi nhuận tổng.',
@@ -301,7 +301,7 @@ export const backtestGuide: PageGuide = {
           'Nút Thăng cấp mở danh sách chiến lược của bạn. Chọn một chiến lược và xác nhận, kết quả backtest này sẽ trở thành bằng chứng thẩm định cho chiến lược đó.',
           'Chiến lược chỉ được đánh dấu đã thẩm định khi Sharpe lớn hơn 0. Nếu không, nó vẫn được cập nhật nhưng không gắn huy hiệu và sẽ hiện cảnh báo.',
           'Những chiến lược đã thẩm định sẽ có dấu tích cạnh tên trong danh sách chọn.',
-          'Kết quả tải từ lịch sử không khôi phục ID agent gốc. Muốn dùng liên kết hồ sơ ở cuối trang, hãy nhập ID đại lý vào tham số và tự chạy lại.',
+          'Tải kết quả từ lịch sử sẽ khôi phục cả ID agent đã chạy, nên liên kết hồ sơ ở cuối trang trỏ đúng tới agent đó.',
         ],
       },
     },
