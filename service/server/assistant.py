@@ -39,12 +39,17 @@ MAX_MESSAGE_CHARS = 2000
 ASSISTANT_MARKET = "assistant"      # marks the singleton session in chat_sessions
 
 SYSTEM_PROMPT = (
-    "You are the user's personal AI assistant on Sooppiy, a PAPER-TRADING research "
-    "platform. You can see their whole account: positions, performance, automation "
-    "rules, risk limits, guidelines, watches, alerts and settings.\n"
+    "You are the user's personal AI assistant AND customer-support agent on Sooppiy, "
+    "a PAPER-TRADING research platform. You can see their whole account: identity, "
+    "membership plan and payment status, points history, positions, trade history, "
+    "performance, copy-trading follows, automation rules, risk limits, guidelines, "
+    "watches, alerts and settings.\n"
+    "You handle support questions too: membership/billing status, points, how to use "
+    "any feature, why something happened. Answer from the member's own data.\n"
     "You ADVISE and EXPLAIN; you never execute. You cannot place orders or change "
     "settings — when something needs doing, tell the user exactly where to do it "
-    "(e.g. 'Automation → 완전 위임', 'Settings → AI 지침', 'Monitoring → 내 감시 조건').\n"
+    "(e.g. 'Automation → 완전 위임', 'Settings → AI 지침', 'Monitoring → 내 감시 조건', "
+    "'Subscribe → 멤버십').\n"
     "Ground every claim in the account data you were given. If the data does not "
     "support an answer, say so plainly. Never invent numbers, never promise returns, "
     "and be honest that all trading here is simulated. Answer in the user's language. "
@@ -208,6 +213,67 @@ def build_user_profile(agent_id: int) -> dict[str, Any]:
                 profile["settings"] = settings
         except Exception:  # noqa: BLE001
             pass
+
+        # membership — paid plan + payment status, the top support question
+        try:
+            rows = cursor.execute(
+                """SELECT s.plan_code, p.name AS plan_name, s.status, s.method,
+                          s.amount_usd, s.started_at, s.expires_at, s.created_at
+                   FROM user_subscriptions s
+                   LEFT JOIN subscription_plans p ON p.code = s.plan_code
+                   JOIN agents a ON a.user_id = s.user_id
+                   WHERE a.id = ? ORDER BY s.id DESC LIMIT 5""",
+                (agent_id,)).fetchall()
+            if rows:
+                profile["membership"] = {"current": dict(rows[0]),
+                                         "history": [dict(r) for r in rows[1:]]}
+        except Exception:  # noqa: BLE001
+            pass
+
+        # points history — "where did my points go?"
+        try:
+            rows = cursor.execute(
+                """SELECT t.amount, t.type, t.description, t.created_at
+                   FROM points_transactions t JOIN agents a ON a.user_id = t.user_id
+                   WHERE a.id = ? ORDER BY t.id DESC LIMIT 8""",
+                (agent_id,)).fetchall()
+            if rows:
+                profile["recent_points"] = [dict(r) for r in rows]
+        except Exception:  # noqa: BLE001
+            pass
+
+        # copy trading — who they follow, who follows them
+        try:
+            rows = cursor.execute(
+                """SELECT l.name AS leader, s.status, s.created_at
+                   FROM subscriptions s JOIN agents l ON l.id = s.leader_id
+                   WHERE s.follower_id = ? ORDER BY s.id DESC LIMIT 10""",
+                (agent_id,)).fetchall()
+            followers = cursor.execute(
+                """SELECT COUNT(*) AS n FROM subscriptions
+                   WHERE leader_id = ? AND status = 'active'""",
+                (agent_id,)).fetchone()
+            if rows or (followers and followers["n"]):
+                profile["copy_trading"] = {
+                    "following": [dict(r) for r in rows],
+                    "follower_count": followers["n"] if followers else 0,
+                }
+        except Exception:  # noqa: BLE001
+            pass
+
+        # trade history — recent executed trades (same source trade_stats replays)
+        try:
+            rows = cursor.execute(
+                """SELECT symbol, market, side, entry_price, quantity, executed_at
+                   FROM signals
+                   WHERE agent_id = ? AND executed_at IS NOT NULL
+                     AND side IN ('buy', 'sell', 'short', 'cover')
+                   ORDER BY executed_at DESC, id DESC LIMIT 10""",
+                (agent_id,)).fetchall()
+            if rows:
+                profile["recent_trades"] = [dict(r) for r in rows]
+        except Exception:  # noqa: BLE001
+            pass
     finally:
         conn.close()
 
@@ -233,14 +299,17 @@ def build_user_profile(agent_id: int) -> dict[str, Any]:
     return profile
 
 
-# ─────────────────────────── singleton session ───────────────────────────
+# ─────────────────────────── sessions (history kept forever) ───────────────────────────
+# The NEWEST assistant session is the active conversation. "Clearing" starts a
+# fresh session; older ones are never deleted and stay browsable — full history
+# management for the user.
 
 def get_or_create_session(agent_id: int) -> dict[str, Any]:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         row = cursor.execute(
-            "SELECT * FROM chat_sessions WHERE agent_id = ? AND market = ? ORDER BY id ASC LIMIT 1",
+            "SELECT * FROM chat_sessions WHERE agent_id = ? AND market = ? ORDER BY id DESC LIMIT 1",
             (agent_id, ASSISTANT_MARKET)).fetchone()
         if row:
             return dict(row)
@@ -257,15 +326,73 @@ def get_or_create_session(agent_id: int) -> dict[str, Any]:
         conn.close()
 
 
-def clear_session(agent_id: int) -> bool:
-    session = get_or_create_session(agent_id)
+def start_new_session(agent_id: int) -> dict[str, Any]:
+    """Start a fresh conversation, preserving all previous ones. If the current
+    session is still empty, reuse it instead of piling up blanks."""
+    current = get_or_create_session(agent_id)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        n = cursor.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE session_id = ?",
+                           (current["id"],)).fetchone()["n"]
+        if not n:
+            return current
         begin_write_transaction(cursor)
-        cursor.execute("DELETE FROM chat_messages WHERE session_id = ?", (session["id"],))
+        cursor.execute(
+            """INSERT INTO chat_sessions (agent_id, symbol, market, title, created_at, updated_at)
+               VALUES (?, NULL, ?, 'AI Assistant', ?, ?)""",
+            (agent_id, ASSISTANT_MARKET, _now_iso(), _now_iso()))
+        session_id = cursor.lastrowid
         conn.commit()
-        return True
+        row = cursor.execute("SELECT * FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
+        return dict(row)
+    finally:
+        conn.close()
+
+
+def list_sessions(agent_id: int) -> list[dict[str, Any]]:
+    """All of this member's assistant conversations, newest first, with a
+    message count and first-question preview for the history panel."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        rows = cursor.execute(
+            """SELECT id, title, created_at, updated_at FROM chat_sessions
+               WHERE agent_id = ? AND market = ? ORDER BY id DESC LIMIT 100""",
+            (agent_id, ASSISTANT_MARKET)).fetchall()
+        sessions = []
+        for r in rows:
+            n = cursor.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE session_id = ?",
+                               (r["id"],)).fetchone()["n"]
+            first = cursor.execute(
+                """SELECT content FROM chat_messages
+                   WHERE session_id = ? AND role = 'user' ORDER BY id ASC LIMIT 1""",
+                (r["id"],)).fetchone()
+            sessions.append({
+                "id": r["id"], "title": r["title"], "created_at": r["created_at"],
+                "updated_at": r["updated_at"], "message_count": n,
+                "preview": (first["content"][:80] if first else None),
+            })
+        return sessions
+    finally:
+        conn.close()
+
+
+def get_session_messages(agent_id: int, session_id: int) -> list[dict[str, Any]] | None:
+    """Messages of one PAST (or current) conversation — only if it belongs to
+    this member. Returns None when it doesn't (caller 404s)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        owner = cursor.execute(
+            "SELECT id FROM chat_sessions WHERE id = ? AND agent_id = ? AND market = ?",
+            (session_id, agent_id, ASSISTANT_MARKET)).fetchone()
+        if not owner:
+            return None
+        rows = cursor.execute(
+            "SELECT * FROM chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT 500",
+            (session_id,)).fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 
@@ -282,7 +409,19 @@ def assistant_turn(agent_id: int, user_message: str, lang: str = "en") -> dict[s
         raise ValueError("message is required")
 
     session = get_or_create_session(agent_id)
+    is_first = not get_messages(session["id"], limit=1)
     _add_message(session["id"], "user", user_message)
+    if is_first:
+        # title the conversation after its first question so history is scannable
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            cursor.execute("UPDATE chat_sessions SET title = ? WHERE id = ?",
+                           (user_message[:60], session["id"]))
+            conn.commit()
+        finally:
+            conn.close()
 
     if not llm_configured():
         reply = ("The assistant is unavailable right now (no AI model configured on this "
@@ -299,18 +438,18 @@ def assistant_turn(agent_id: int, user_message: str, lang: str = "en") -> dict[s
     prompt = (
         f"USER LANGUAGE: {lang}\n\n"
         f"THIS USER'S FULL ACCOUNT (JSON):\n"
-        f"{json.dumps(profile, ensure_ascii=False, default=str)[:12000]}\n\n"
+        f"{json.dumps(profile, ensure_ascii=False, default=str)[:16000]}\n\n"
         + (f"CONVERSATION SO FAR:\n{transcript}\n\n" if transcript else "")
         + f"USER: {user_message}\n\nReply as their assistant."
     )
     reply = generate_text(prompt, system=SYSTEM_PROMPT, max_tokens=800,
-                          temperature=0.4, tier="decision")
+                          temperature=0.4, tier="assistant")
     if not reply:
         reply = ("I couldn't reach the model just now — please try again. Nothing in your "
                  "account was changed.")
         _add_message(session["id"], "assistant", reply, llm_model=None)
         return {"reply": reply, "llm_model": None, "available": False}
 
-    model = active_provider_model(tier="decision")
+    model = active_provider_model(tier="assistant")
     _add_message(session["id"], "assistant", reply, llm_model=model)
     return {"reply": reply, "llm_model": model, "available": True}

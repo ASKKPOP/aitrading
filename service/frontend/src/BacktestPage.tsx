@@ -69,6 +69,7 @@ interface BacktestResult {
 
 interface RunSummary {
   run_id: number
+  agent_id: number
   status: 'pending' | 'running' | 'completed' | 'failed'
   config: {
     start_at: string
@@ -203,7 +204,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
         if (run.status === 'completed') {
           stopPolling()
           setLoading(false)
-          if (run.result) setResult({ agent_id: Number(agentId) || 0, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
+          if (run.result) setResult({ agent_id: run.agent_id, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
           void loadRuns()
         } else if (run.status === 'failed') {
           stopPolling()
@@ -279,7 +280,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
   // ── Load a historical run into the result view ────────────────────────────
   const loadRunResult = (run: RunSummary) => {
     if (!run.result) return
-    setResult({ agent_id: 0, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
+    setResult({ agent_id: run.agent_id, start_at: run.config.start_at, end_at: run.config.end_at, ...run.result })
     setCurrentRunId(run.run_id)
     setRunStatus(run.status)
   }
