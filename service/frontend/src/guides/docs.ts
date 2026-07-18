@@ -1,0 +1,249 @@
+import type { PageGuide } from './types'
+
+export const docsGuide: PageGuide = {
+  title: {
+    ko: '가이드 · 리서치 문서',
+    en: 'Guide & Research Docs',
+    ja: 'ガイド・リサーチ文書',
+    th: 'คู่มือและเอกสารวิจัย',
+    vi: 'Hướng dẫn & tài liệu nghiên cứu',
+  },
+  summary: {
+    ko: '플랫폼 가이드와 리서치 리포트를 모아 둔 회원 전용 문서 열람 페이지입니다. 상단 버튼으로 문서를 고르면 본문이 바로 아래에 펼쳐집니다.',
+    en: 'A members-only reading page that collects the platform guide and research reports. Pick a document with the buttons at the top and it renders right below.',
+    ja: 'プラットフォームのガイドとリサーチレポートを集めた会員限定の文書閲覧ページです。上部のボタンで文書を選ぶと、本文がすぐ下に表示されます。',
+    th: 'หน้าอ่านเอกสารสำหรับสมาชิกเท่านั้น รวมคู่มือแพลตฟอร์มและรายงานวิจัย เลือกเอกสารด้วยปุ่มด้านบนแล้วเนื้อหาจะแสดงอยู่ด้านล่างทันที',
+    vi: 'Trang đọc tài liệu chỉ dành cho thành viên, gom hướng dẫn nền tảng và các báo cáo nghiên cứu. Chọn tài liệu bằng các nút phía trên và nội dung hiện ngay bên dưới.',
+  },
+  sections: [
+    {
+      heading: {
+        ko: '페이지 구성',
+        en: 'What is on the page',
+        ja: 'ページの構成',
+        th: 'สิ่งที่อยู่บนหน้านี้',
+        vi: 'Trang này có gì',
+      },
+      bullets: {
+        ko: [
+          '맨 위에 제목과 "회원 전용 문서입니다."라는 안내가 있습니다.',
+          '그 아래 알약 모양 버튼 줄이 문서 목록이며, 현재 보고 있는 문서는 강조 색으로 표시됩니다.',
+          '버튼 아래 넓은 영역에 선택한 문서 본문이 그대로 렌더링됩니다.',
+          '문서를 불러오는 동안에는 로딩 스피너가 돕니다.',
+          '문서 높이에 맞춰 표시 영역이 자동으로 늘어나므로, 안쪽에 별도 스크롤이 생기지 않습니다.',
+        ],
+        en: [
+          'The title sits at the top, with the note "Members-only documents." beneath it.',
+          'Below that, a row of pill buttons is the document list; the one you are reading is highlighted.',
+          'The wide area under the buttons renders the selected document itself.',
+          'While a document loads, a spinner is shown.',
+          'The display area grows to match the document height, so there is no separate inner scrollbar.',
+        ],
+        ja: [
+          '最上部にタイトルと「会員限定の文書です。」という案内があります。',
+          'その下のピル型ボタンの列が文書一覧で、いま読んでいる文書は強調表示されます。',
+          'ボタンの下の広い領域に、選択した文書の本文がそのまま表示されます。',
+          '文書の読み込み中はローディングスピナーが回ります。',
+          '文書の高さに合わせて表示領域が自動的に伸びるため、内側に別のスクロールバーは出ません。',
+        ],
+        th: [
+          'ด้านบนสุดคือหัวข้อ พร้อมข้อความ "เอกสารสำหรับสมาชิกเท่านั้น" อยู่ใต้ลงมา',
+          'ถัดลงมาคือแถวปุ่มทรงแคปซูลซึ่งเป็นรายการเอกสาร ปุ่มของเอกสารที่กำลังอ่านจะถูกเน้นสี',
+          'พื้นที่กว้างใต้ปุ่มจะแสดงเนื้อหาของเอกสารที่เลือก',
+          'ระหว่างที่โหลดเอกสารจะมีสปินเนอร์หมุนอยู่',
+          'พื้นที่แสดงผลจะขยายตามความสูงของเอกสาร จึงไม่มีแถบเลื่อนซ้อนอยู่ด้านใน',
+        ],
+        vi: [
+          'Tiêu đề nằm trên cùng, kèm dòng chú thích "Tài liệu chỉ dành cho thành viên." bên dưới.',
+          'Tiếp theo là một hàng nút hình viên thuốc — đó là danh sách tài liệu; tài liệu bạn đang đọc được làm nổi.',
+          'Khu vực rộng dưới các nút hiển thị chính nội dung tài liệu đã chọn.',
+          'Trong lúc tải tài liệu, một vòng quay chờ sẽ hiện ra.',
+          'Khu vực hiển thị tự giãn theo chiều cao tài liệu nên không có thanh cuộn riêng bên trong.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '문서 고르기',
+        en: 'Choosing a document',
+        ja: '文書の選び方',
+        th: 'การเลือกเอกสาร',
+        vi: 'Chọn tài liệu',
+      },
+      bullets: {
+        ko: [
+          '버튼을 누르면 주소가 /docs/문서이름 형태로 바뀌고 해당 문서가 열립니다.',
+          '따라서 특정 문서의 링크를 그대로 공유하거나 북마크할 수 있습니다.',
+          '주소에 문서 이름이 없거나 알 수 없는 이름이면 기본 가이드 문서가 열립니다.',
+          '버튼 목록은 서버가 내려 주는 문서 목록에서 만들어지므로, 제공되는 문서가 늘거나 줄면 버튼도 함께 바뀝니다.',
+          '한 번 연 문서는 화면에 저장해 두기 때문에, 버튼을 오가며 다시 볼 때는 즉시 표시됩니다.',
+        ],
+        en: [
+          'Pressing a button changes the URL to /docs/<document> and opens that document.',
+          'That means you can share or bookmark a link to a specific document.',
+          'If the URL has no document name, or an unknown one, the default guide document opens.',
+          'The button list is built from the document list the server returns, so it changes as documents are added or removed.',
+          'A document you have already opened is kept in memory, so switching back to it displays instantly.',
+        ],
+        ja: [
+          'ボタンを押すとURLが /docs/文書名 に変わり、その文書が開きます。',
+          'そのため特定の文書へのリンクをそのまま共有・ブックマークできます。',
+          'URLに文書名が無い、または不明な名前の場合は既定のガイド文書が開きます。',
+          'ボタン一覧はサーバーが返す文書リストから作られるため、提供文書が増減すればボタンも変わります。',
+          '一度開いた文書は保持されるので、ボタンを行き来して戻ったときはすぐに表示されます。',
+        ],
+        th: [
+          'กดปุ่มแล้ว URL จะเปลี่ยนเป็น /docs/<ชื่อเอกสาร> และเปิดเอกสารนั้น',
+          'จึงสามารถแชร์หรือบุ๊กมาร์กลิงก์ไปยังเอกสารเฉพาะได้',
+          'ถ้า URL ไม่มีชื่อเอกสาร หรือเป็นชื่อที่ไม่รู้จัก จะเปิดเอกสารคู่มือเริ่มต้น',
+          'รายการปุ่มสร้างจากรายการเอกสารที่เซิร์ฟเวอร์ส่งมา จึงเปลี่ยนตามเอกสารที่เพิ่มหรือถูกนำออก',
+          'เอกสารที่เคยเปิดแล้วจะถูกเก็บไว้ เมื่อสลับกลับมาจึงแสดงทันที',
+        ],
+        vi: [
+          'Bấm một nút sẽ đổi URL thành /docs/<tên tài liệu> và mở tài liệu đó.',
+          'Nhờ vậy bạn có thể chia sẻ hoặc lưu dấu trang liên kết tới một tài liệu cụ thể.',
+          'Nếu URL không có tên tài liệu hoặc tên không nhận diện được, tài liệu hướng dẫn mặc định sẽ mở.',
+          'Danh sách nút được dựng từ danh sách tài liệu do máy chủ trả về, nên thay đổi khi tài liệu được thêm hoặc gỡ.',
+          'Tài liệu bạn đã mở được giữ trong bộ nhớ, nên khi quay lại nó hiển thị ngay lập tức.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '언어와 접근 권한',
+        en: 'Language and access',
+        ja: '言語とアクセス権',
+        th: 'ภาษาและสิทธิ์เข้าถึง',
+        vi: 'Ngôn ngữ và quyền truy cập',
+      },
+      bullets: {
+        ko: [
+          '문서 본문은 한국어와 영어 두 가지로 준비되어 있습니다.',
+          'UI 언어를 한국어로 두면 한국어 문서를, 그 외 언어에서는 영어 문서를 읽게 됩니다.',
+          '영어 문서로 대체되는 경우 버튼 아래에 그 사실을 알리는 짧은 안내가 표시됩니다.',
+          '문서 목록과 본문 모두 로그인 토큰으로 요청하므로, 로그인 상태여야 열립니다.',
+          '문서 안의 표나 그림은 원본 문서 그대로 표시됩니다.',
+        ],
+        en: [
+          'Document bodies are prepared in Korean and English.',
+          'With the UI language set to Korean you read the Korean document; in any other language you read the English one.',
+          'When the English document is substituted, a short note explaining that appears below the buttons.',
+          'Both the document list and the document body are requested with your login token, so you must be signed in.',
+          'Tables and figures inside a document are shown exactly as they are in the original.',
+        ],
+        ja: [
+          '文書の本文は韓国語と英語の2種類で用意されています。',
+          'UI言語を韓国語にしていれば韓国語の文書を、それ以外の言語では英語の文書を読むことになります。',
+          '英語の文書に置き換わる場合、ボタンの下にその旨を知らせる短い案内が表示されます。',
+          '文書一覧も本文もログイントークン付きで要求するため、ログイン状態である必要があります。',
+          '文書内の表や図は、元の文書のまま表示されます。',
+        ],
+        th: [
+          'เนื้อหาเอกสารจัดเตรียมไว้เป็นภาษาเกาหลีและอังกฤษ',
+          'ถ้าตั้งภาษาอินเทอร์เฟซเป็นเกาหลี จะได้อ่านฉบับภาษาเกาหลี ส่วนภาษาอื่นจะได้อ่านฉบับภาษาอังกฤษ',
+          'เมื่อระบบใช้ฉบับภาษาอังกฤษแทน จะมีข้อความสั้น ๆ แจ้งไว้ใต้ปุ่ม',
+          'ทั้งรายการเอกสารและตัวเนื้อหาถูกร้องขอด้วยโทเค็นการเข้าสู่ระบบ จึงต้องเข้าสู่ระบบก่อน',
+          'ตารางและรูปภาพภายในเอกสารจะแสดงตามต้นฉบับทุกประการ',
+        ],
+        vi: [
+          'Nội dung tài liệu được chuẩn bị bằng tiếng Hàn và tiếng Anh.',
+          'Nếu ngôn ngữ giao diện là tiếng Hàn, bạn đọc bản tiếng Hàn; với các ngôn ngữ khác, bạn đọc bản tiếng Anh.',
+          'Khi bản tiếng Anh được dùng thay thế, một ghi chú ngắn giải thích điều đó hiện dưới các nút.',
+          'Cả danh sách tài liệu lẫn nội dung đều được yêu cầu kèm token đăng nhập, nên bạn phải đăng nhập.',
+          'Bảng biểu và hình ảnh trong tài liệu hiển thị đúng như trong bản gốc.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '다음에 할 일',
+        en: 'What to do next',
+        ja: '次にすること',
+        th: 'ทำอะไรต่อ',
+        vi: 'Bước tiếp theo',
+      },
+      bullets: {
+        ko: [
+          '처음이라면 기본 가이드 문서부터 읽고 플랫폼 구조를 익히세요.',
+          '리서치 리포트는 순서대로 읽을 필요 없이 관심 있는 것부터 골라 봐도 됩니다.',
+          '자주 참고하는 문서는 주소를 북마크해 두면 바로 열 수 있습니다.',
+          '문서에서 본 개념은 시그널 보드나 금융 이벤트 페이지의 실제 수치와 맞춰 보면 이해가 빠릅니다.',
+        ],
+        en: [
+          'If this is your first visit, start with the default guide document to learn how the platform is put together.',
+          'Research reports do not need to be read in order — pick whichever interests you.',
+          'Bookmark the URL of documents you refer to often so you can jump straight to them.',
+          'Concepts you read here land faster when you match them against the live figures on the signals board or the financial events page.',
+        ],
+        ja: [
+          '初めてなら、まず既定のガイド文書を読んでプラットフォームの構造をつかみましょう。',
+          'リサーチレポートは順番に読む必要はなく、興味のあるものから選んで構いません。',
+          'よく参照する文書はURLをブックマークしておくとすぐ開けます。',
+          '文書で読んだ概念は、シグナルボードや金融イベントページの実際の数値と突き合わせると理解が早まります。',
+        ],
+        th: [
+          'ถ้าเข้ามาครั้งแรก ให้เริ่มจากเอกสารคู่มือเริ่มต้นเพื่อเข้าใจโครงสร้างของแพลตฟอร์ม',
+          'รายงานวิจัยไม่จำเป็นต้องอ่านตามลำดับ เลือกอ่านเรื่องที่สนใจได้เลย',
+          'บุ๊กมาร์ก URL ของเอกสารที่อ้างอิงบ่อย เพื่อเปิดได้ทันที',
+          'แนวคิดที่อ่านที่นี่จะเข้าใจเร็วขึ้นเมื่อนำไปเทียบกับตัวเลขจริงบนบอร์ดสัญญาณหรือหน้าเหตุการณ์การเงิน',
+        ],
+        vi: [
+          'Nếu đây là lần đầu, hãy bắt đầu với tài liệu hướng dẫn mặc định để nắm cấu trúc nền tảng.',
+          'Các báo cáo nghiên cứu không cần đọc theo thứ tự — chọn cái nào bạn quan tâm cũng được.',
+          'Lưu dấu trang URL của những tài liệu bạn hay tra cứu để mở thẳng khi cần.',
+          'Các khái niệm đọc ở đây sẽ dễ hiểu hơn khi bạn đối chiếu với số liệu thực trên bảng tín hiệu hoặc trang sự kiện tài chính.',
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: {
+        ko: '"문서를 불러오지 못했습니다"가 뜹니다.',
+        en: 'It says "Could not load the document".',
+        ja: '「文書を読み込めませんでした」と出ます。',
+        th: 'ขึ้นว่า "โหลดเอกสารไม่สำเร็จ"',
+        vi: 'Hiện dòng "Không tải được tài liệu".',
+      },
+      a: {
+        ko: '문서는 회원 전용이라 유효한 로그인 토큰이 필요합니다. 로그아웃 상태이거나 세션이 만료됐으면 이 오류가 납니다. 안내대로 다시 로그인한 뒤 페이지를 새로 여세요. 요청한 문서 자체가 없을 때도 같은 메시지가 표시됩니다.',
+        en: 'Documents are members-only and need a valid login token, so this appears when you are signed out or your session expired. Sign in again as the message suggests and reopen the page. The same message also shows when the requested document does not exist.',
+        ja: '文書は会員限定で有効なログイントークンが必要です。ログアウト状態やセッション切れのときにこのエラーが出ます。案内どおり再ログインしてページを開き直してください。要求した文書自体が存在しない場合も同じメッセージが出ます。',
+        th: 'เอกสารเป็นของสมาชิกเท่านั้นและต้องมีโทเค็นเข้าสู่ระบบที่ใช้ได้ ข้อความนี้จึงขึ้นเมื่อคุณออกจากระบบหรือเซสชันหมดอายุ ให้เข้าสู่ระบบใหม่ตามคำแนะนำแล้วเปิดหน้าอีกครั้ง ข้อความเดียวกันนี้ยังขึ้นเมื่อไม่มีเอกสารที่ร้องขออยู่จริง',
+        vi: 'Tài liệu chỉ dành cho thành viên và cần token đăng nhập hợp lệ, nên thông báo này xuất hiện khi bạn đã đăng xuất hoặc phiên hết hạn. Hãy đăng nhập lại theo hướng dẫn rồi mở lại trang. Thông báo tương tự cũng hiện khi tài liệu được yêu cầu không tồn tại.',
+      },
+    },
+    {
+      q: {
+        ko: '버튼이 하나도 보이지 않습니다.',
+        en: 'No buttons are showing at all.',
+        ja: 'ボタンが1つも表示されません。',
+        th: 'ไม่เห็นปุ่มเลยสักอัน',
+        vi: 'Không thấy nút nào cả.',
+      },
+      a: {
+        ko: '버튼 줄은 서버에서 받은 문서 목록으로 만들어집니다. 목록 요청이 실패했거나 아직 도착하지 않았다면 버튼이 비어 있을 수 있습니다. 로그인 상태를 확인하고 페이지를 새로고침해 보세요.',
+        en: 'The button row is built from the document list fetched from the server. If that request failed or has not arrived yet, the row can be empty. Check that you are signed in and refresh the page.',
+        ja: 'ボタンの列はサーバーから受け取った文書リストで作られます。リストの取得が失敗した、またはまだ届いていない場合は空になることがあります。ログイン状態を確認してページを再読み込みしてください。',
+        th: 'แถวปุ่มสร้างจากรายการเอกสารที่ดึงจากเซิร์ฟเวอร์ ถ้าคำขอนั้นล้มเหลวหรือยังมาไม่ถึง แถวอาจว่างได้ ตรวจว่าคุณเข้าสู่ระบบอยู่แล้วรีเฟรชหน้า',
+        vi: 'Hàng nút được dựng từ danh sách tài liệu lấy về từ máy chủ. Nếu yêu cầu đó thất bại hoặc chưa về kịp, hàng nút có thể trống. Hãy kiểm tra bạn đã đăng nhập và làm mới trang.',
+      },
+    },
+    {
+      q: {
+        ko: '일본어 · 태국어 · 베트남어 문서는 없나요?',
+        en: 'Are there Japanese, Thai or Vietnamese documents?',
+        ja: '日本語・タイ語・ベトナム語の文書はありませんか？',
+        th: 'มีเอกสารภาษาญี่ปุ่น ไทย หรือเวียดนามไหม?',
+        vi: 'Có tài liệu tiếng Nhật, Thái hay Việt không?',
+      },
+      a: {
+        ko: '문서 본문은 현재 한국어와 영어로만 제공됩니다. 다른 UI 언어를 쓰고 있으면 영어 문서가 대신 열리고, 버튼 아래에 그 사실을 알리는 안내가 표시됩니다. 화면의 메뉴와 버튼은 선택한 언어 그대로 유지됩니다.',
+        en: 'Document bodies are currently available in Korean and English only. On any other UI language the English document is shown instead, with a note under the buttons saying so. The surrounding menus and buttons stay in your chosen language.',
+        ja: '文書の本文は現在、韓国語と英語のみで提供されています。他のUI言語では英語の文書が代わりに開き、ボタンの下にその旨の案内が出ます。画面のメニューやボタンは選択した言語のままです。',
+        th: 'เนื้อหาเอกสารขณะนี้มีเฉพาะภาษาเกาหลีและอังกฤษ หากใช้ภาษาอินเทอร์เฟซอื่นจะแสดงฉบับภาษาอังกฤษแทน พร้อมข้อความแจ้งใต้ปุ่ม ส่วนเมนูและปุ่มรอบ ๆ ยังคงเป็นภาษาที่คุณเลือก',
+        vi: 'Nội dung tài liệu hiện chỉ có tiếng Hàn và tiếng Anh. Với các ngôn ngữ giao diện khác, bản tiếng Anh sẽ hiển thị thay thế, kèm ghi chú bên dưới các nút. Menu và nút xung quanh vẫn giữ ngôn ngữ bạn đã chọn.',
+      },
+    },
+  ],
+}

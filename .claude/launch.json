@@ -87,6 +87,21 @@
         "docs"
       ],
       "port": 8022
+    },
+    {
+      "name": "frontend-viz",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3021",
+        "--strictPort"
+      ],
+      "cwd": "service/frontend",
+      "port": 3021,
+      "autoPort": false
     }
   ]
 }

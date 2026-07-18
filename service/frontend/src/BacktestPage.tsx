@@ -13,6 +13,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, MARKETS, useLanguage } from './appShared'
+import { SymbolSelect } from './components/SymbolSelect'
 import { tr } from './i18n'
 
 interface BacktestSummary {
@@ -404,11 +405,12 @@ export function BacktestPage({ token }: { token?: string | null }) {
               <option key={m.value} value={m.value}>{m.labels[language]}</option>
             ))}
           </select>
-          <input
-            className="form-input"
+          <SymbolSelect
+            className="form-select"
+            market={market}
             placeholder={tr(language, { ko: '종목 (선택)', en: 'Symbol (optional)', ja: 'シンボル（任意）', th: 'สัญลักษณ์ (ไม่บังคับ)', vi: 'Mã (tuỳ chọn)' })}
             value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
+            onChange={setSymbol}
           />
           <button
             className="btn btn-primary"

@@ -3,6 +3,10 @@
 POST /api/analysis/run          { symbol, market, lang }  -> { decision, report, analysts }
 POST /api/analysis/run/stream   same body -> SSE stream of per-step progress events,
                                 ending with {"event":"result", ...} (or {"event":"error"}).
+POST /api/analysis/jobs         same body -> { job_id, status } — runs server-side,
+                                detached from the connection (survives page close).
+GET  /api/analysis/jobs/current -> { job } — the caller's newest job with step
+                                events, result and gate verdict (see analysis_jobs.py).
 """
 
 from __future__ import annotations
@@ -74,6 +78,14 @@ def _load_own_config(agent_id: int, config_id: int) -> Optional[dict]:
 
 
 def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
+
+    # Any job still marked 'running' at process start belongs to a dead
+    # process (jobs live in daemon threads) — flip them to error once.
+    try:
+        from analysis_jobs import mark_stale_jobs
+        mark_stale_jobs()
+    except Exception:  # noqa: BLE001 — table may not exist yet on first boot
+        pass
 
     @app.post("/api/analysis/run")
     async def run_analysis_endpoint(data: AnalysisRequest, authorization: str = Header(None)):
@@ -170,6 +182,41 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache",
                                           "X-Accel-Buffering": "no"})
+
+    # ── Server-side jobs — the run survives the page being closed ──
+
+    @app.post("/api/analysis/jobs")
+    async def start_analysis_job(data: AnalysisRequest,
+                                 authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        symbol = (data.symbol or "").strip()
+        if not symbol:
+            raise HTTPException(status_code=400, detail="symbol is required")
+        if len(symbol) > 32:  # analysis_jobs.symbol is VARCHAR(32) on MySQL
+            raise HTTPException(status_code=400, detail="symbol too long (max 32 chars)")
+        market = (data.market or "us-stock").strip().lower()
+        if market not in ("crypto", "us-stock"):
+            raise HTTPException(status_code=400, detail="market must be crypto or us-stock")
+        lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
+
+        import analysis_jobs
+        return await asyncio.to_thread(
+            analysis_jobs.start_job, agent["id"], symbol, market, lang,
+            data.provider, data.config_id)
+
+    @app.get("/api/analysis/jobs/current")
+    async def read_current_analysis_job(authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        import analysis_jobs
+        job = await asyncio.to_thread(analysis_jobs.get_current_job, agent["id"])
+        return {"job": job}
 
     # ── Consultation chat (Plan 06 C3) — advisory only; never executes ──
 

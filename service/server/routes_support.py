@@ -25,6 +25,7 @@ it in the console.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -70,11 +71,23 @@ def _get_or_create_thread(cursor, user_id: int) -> dict[str, Any]:
     if row is not None:
         return dict(row)
     now = _now_iso()
-    cursor.execute(
-        """INSERT INTO support_threads
-           (user_id, subject, status, user_unread, admin_unread, last_message_at, created_at)
-           VALUES (?, NULL, 'open', 0, 0, NULL, ?)""",
-        (user_id, now))
+    try:
+        cursor.execute(
+            """INSERT INTO support_threads
+               (user_id, subject, status, user_unread, admin_unread, last_message_at, created_at)
+               VALUES (?, NULL, 'open', 0, 0, NULL, ?)""",
+            (user_id, now))
+    except Exception:  # noqa: BLE001 — concurrent first-touch lost the UNIQUE race
+        # On MySQL REPEATABLE READ the open transaction still sees the
+        # pre-race snapshot, so end it before re-reading the winner's row.
+        # Safe: both callers invoke this before any other write on the
+        # connection, so the rollback discards nothing else.
+        cursor.connection.rollback()
+        cursor.execute("SELECT * FROM support_threads WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row is None:
+            raise  # genuine INSERT failure, not the duplicate-key race
+        return dict(row)
     cursor.execute("SELECT * FROM support_threads WHERE user_id = ?", (user_id,))
     return dict(cursor.fetchone())
 
@@ -197,7 +210,8 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
                 """INSERT INTO support_messages (thread_id, sender, body, created_at)
                    VALUES (?, 'user', ?, ?)""",
                 (thread['id'], body, now))
-            subject = (data.subject or thread['subject'] or body[:60]).strip()
+            # VARCHAR(255) on MySQL prod (0019) — clamp or the UPDATE 500s.
+            subject = (data.subject or thread['subject'] or body[:60]).strip()[:255]
             cursor.execute(
                 """UPDATE support_threads
                    SET admin_unread = admin_unread + 1, last_message_at = ?,
@@ -294,8 +308,9 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
 
-        notifications.notify(thread['user_id'], 'support',
-                             'Support replied', body[:300], link='/support')
+        # Off the event loop — notify() may do a blocking SendGrid/Twilio call.
+        await asyncio.to_thread(notifications.notify, thread['user_id'], 'support',
+                                'Support replied', body[:300], link='/support')
         audit(admin, 'support.reply', f'thread:{thread_id}', body[:200])
         return {'success': True, 'messages': messages}
 
@@ -341,10 +356,15 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
 
         # Members who switched announcements off are skipped inside notify().
-        delivered = sum(
-            1 for uid in user_ids
-            if notifications.notify(uid, 'announcement', title, data.body,
-                                    link=data.link).get('channels'))
+        # The whole fan-out runs off the event loop: notify() opens its own DB
+        # connections and may make blocking SendGrid/Twilio calls per member.
+        def _fan_out() -> int:
+            return sum(
+                1 for uid in user_ids
+                if notifications.notify(uid, 'announcement', title, data.body,
+                                        link=data.link).get('channels'))
+
+        delivered = await asyncio.to_thread(_fan_out)
         audit(admin, 'notifications.broadcast',
               f'users:{len(user_ids)}', f'{title} → delivered {delivered}')
         return {'success': True, 'targeted': len(user_ids), 'delivered': delivered}

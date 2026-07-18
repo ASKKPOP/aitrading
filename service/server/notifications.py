@@ -261,7 +261,8 @@ def notify(user_id: Optional[int], category: str, title: str, body: str = "",
                 """INSERT INTO user_notifications
                    (user_id, category, title, body, link, channels_json, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, category, title[:200], (body or "")[:2000], link,
+                (user_id, category, title[:200], (body or "")[:2000],
+                 link[:255] if link else link,
                  json.dumps(channels), _now_iso()))
             conn.commit()
         finally:
@@ -308,6 +309,7 @@ def mark_read(user_id: int, ids: Optional[list[int]] = None) -> int:
     try:
         begin_write_transaction(cursor)
         if ids:
+            ids = ids[:500]  # bound the IN clause (SQLite host-param limit / abuse)
             placeholders = ",".join("?" for _ in ids)
             cursor.execute(
                 f"""UPDATE user_notifications SET read_at = ?

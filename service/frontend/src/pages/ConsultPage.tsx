@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
+import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 
 // Consultation chat (Plan 06 C3) — Personalized mode's advisory loop.
@@ -151,7 +152,7 @@ export function ConsultPage({ token }: Props) {
       <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>{T.subtitle}</div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-        <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} style={{ ...inp, width: 120 }} />
+        <SymbolSelect variant="pair" value={symbol} onChange={setSymbol} style={{ ...inp, width: 140 }} />
         <button onClick={newSession} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>+ {T.newChat}</button>
         {sessions.slice(0, 6).map(s => (
           <button key={s.id} onClick={() => openSession(s.id)}

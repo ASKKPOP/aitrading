@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
-from notifications import ALERT_KIND_CATEGORY, notify
+from notifications import ALERT_KIND_CATEGORY, channel_prefs, notify
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,6 @@ def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
     except (TypeError, ValueError):
         config = {}
 
-    from notifications import channel_prefs
     switches = channel_prefs(row["user_id"], category, cursor)
     return {
         "user_id": row["user_id"],

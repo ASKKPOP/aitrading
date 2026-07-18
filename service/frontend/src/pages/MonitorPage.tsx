@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 
 // Personalized monitoring dashboard (Plan 06 C3): one board composing the
@@ -229,8 +230,8 @@ export function MonitorPage({ token }: Props) {
             {metrics.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           {needsSymbol.includes(wDraft.metric) && (
-            <input value={wDraft.symbol} onChange={e => setWDraft({ ...wDraft, symbol: e.target.value.toUpperCase() })}
-              style={{ ...inp, width: 100 }} />
+            <SymbolSelect variant="pair" value={wDraft.symbol} onChange={symbol => setWDraft({ ...wDraft, symbol })}
+              style={{ ...inp, width: 120 }} />
           )}
           <select value={wDraft.comparator} onChange={e => setWDraft({ ...wDraft, comparator: e.target.value })} style={inp}>
             <option value="above">{T.above}</option>

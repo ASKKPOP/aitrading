@@ -329,5 +329,41 @@ class TestBroadcast(_Base):
         self.assertEqual(len(rows), 1)
 
 
+class TestNegativePaths(_Base):
+    def test_member_cannot_mark_another_members_notifications_read(self):
+        import notifications
+        notifications.notify(self.user_id, "announcement", "For A only", external=False)
+        r = self.client.get("/api/notifications", headers=self.member)
+        target_id = r.json()["notifications"][0]["id"]
+
+        _, other = self._make_user("intruder@x.com", "intruderpass1")
+        r = self.client.post("/api/notifications/read",
+                             json={"ids": [target_id]}, headers=other)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["marked"], 0)
+        r = self.client.get("/api/notifications/summary", headers=self.member)
+        self.assertEqual(r.json()["unread"], 1)
+
+    def test_support_endpoints_require_auth(self):
+        self.assertEqual(self.client.get("/api/support/thread").status_code, 401)
+        self.assertEqual(
+            self.client.post("/api/support/messages", json={"body": "hi"}).status_code, 401)
+
+    def test_long_message_and_subject_are_truncated(self):
+        r = self.client.post("/api/support/messages",
+                             json={"body": "x" * 5000, "subject": "s" * 400},
+                             headers=self.member)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json()["messages"][-1]["body"]), 4000)
+        r = self.client.get("/api/support/thread", headers=self.member)
+        self.assertLessEqual(len(r.json()["thread"]["subject"]), 255)
+
+    def test_broadcast_to_unknown_member_is_404(self):
+        r = self.client.post("/api/admin/notifications/broadcast",
+                             json={"title": "Hello", "user_id": 999999},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()

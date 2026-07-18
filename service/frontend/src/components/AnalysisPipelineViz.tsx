@@ -116,6 +116,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
   const stepsRef = useRef(steps)
   stepsRef.current = steps
   const failedRef = useRef(false)
+  const kickRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -145,10 +146,11 @@ export function AnalysisPipelineViz({ steps, labels }: {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) // premultiplied alpha
 
     let raf = 0
+    let scheduled = false
     const t0 = performance.now()
 
     const frame = () => {
-      raf = requestAnimationFrame(frame)
+      scheduled = false
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const W = Math.max(1, Math.round(canvas.clientWidth * dpr))
       const H = Math.max(1, Math.round(canvas.clientHeight * dpr))
@@ -218,10 +220,24 @@ export function AnalysisPipelineViz({ steps, labels }: {
       gl.enableVertexAttribArray(pLoc.glow)
       gl.vertexAttribPointer(pLoc.glow, 1, gl.FLOAT, false, 28, 24)
       gl.drawArrays(gl.POINTS, 0, pts.length / 7)
+
+      // Animate only while a step is running; otherwise this frame is the
+      // final static render and the loop parks until the next steps update.
+      if (Object.values(stepsRef.current).some(s => s.status === 'running')) {
+        scheduled = true
+        raf = requestAnimationFrame(frame)
+      }
     }
-    raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    const kick = () => {
+      if (!scheduled) { scheduled = true; raf = requestAnimationFrame(frame) }
+    }
+    kickRef.current = kick
+    kick()
+    return () => { kickRef.current = null; cancelAnimationFrame(raf) }
   }, [])
+
+  // Re-render (and resume animating) whenever the step map changes.
+  useEffect(() => { kickRef.current?.() }, [steps])
 
   const durationOf = (info?: StepInfo) => {
     if (!info?.startedAt || !info?.endedAt) return null
@@ -370,6 +386,101 @@ export function useAnalysisStream(token: string | null) {
   }
 
   return { loading, result, error, steps, log, gates, run }
+}
+
+// ── Background-job runner (Analyst page) ──
+// The pipeline executes server-side (POST /api/analysis/jobs) in a daemon
+// thread detached from this tab; we poll GET /api/analysis/jobs/current so
+// the member can leave the page mid-run and re-attach when they come back.
+
+export type RunInfo = { id: number; symbol: string; market: string; created_at?: string }
+
+export function useAnalysisRun(token: string | null) {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState('')
+  const [steps, setSteps] = useState<Record<string, StepInfo>>({})
+  const [log, setLog] = useState<LogEntry[]>([])
+  const [runInfo, setRunInfo] = useState<RunInfo | null>(null)
+  const genRef = useRef(0) // bump to cancel any in-flight poll loop
+
+  const authHeaders = () => ({ 'Authorization': `Bearer ${token}` })
+
+  // Rebuild the full monitor state from the job's persisted event list.
+  function applyJob(job: any): string {
+    const next: Record<string, StepInfo> =
+      Object.fromEntries(PIPELINE_STEPS.map(s => [s, { status: 'pending', runs: 0 }]))
+    const entries: LogEntry[] = []
+    for (const evt of job.events || []) {
+      const t = Date.parse(evt.ts || '') || undefined
+      const cur: StepInfo = next[evt.step] || { status: 'pending', runs: 0 }
+      if (evt.status === 'start') {
+        cur.status = 'running'; cur.runs += 1; cur.startedAt = t; cur.endedAt = undefined
+      } else if (evt.status === 'done') { cur.status = 'done'; cur.endedAt = t }
+      else if (evt.status === 'error') { cur.status = 'error'; cur.endedAt = t }
+      next[evt.step] = cur
+      const extras = Object.entries(evt)
+        .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k))
+        .map(([k, v]) => `${k}=${v}`).join(' ')
+      entries.push({ ts: evt.ts, step: evt.step, status: evt.status, detail: extras || undefined })
+    }
+    setSteps(next); setLog(entries)
+    setRunInfo({ id: job.job_id, symbol: job.symbol, market: job.market, created_at: job.created_at })
+    setResult(job.result || null)
+    setError(job.status === 'error' ? (job.error || 'Analysis failed') : '')
+    setLoading(job.status === 'running')
+    return job.status
+  }
+
+  async function poll(gen: number) {
+    for (;;) {
+      if (gen !== genRef.current) return
+      try {
+        const res = await fetch(`${API_BASE}/analysis/jobs/current`, { headers: authHeaders() })
+        if (res.status === 401 || res.status === 403) {
+          if (gen === genRef.current) setLoading(false)
+          return
+        }
+        if (res.ok) {
+          const data = await res.json()
+          if (gen !== genRef.current) return
+          if (!data.job) { setLoading(false); return }
+          if (applyJob(data.job) !== 'running') return
+        }
+        // other statuses (5xx during a deploy, etc.) — keep polling
+      } catch { /* transient network error — keep polling */ }
+      await new Promise(r => setTimeout(r, 2000))
+    }
+  }
+
+  async function run(symbol: string, market: string, lang: string) {
+    if (!token) return
+    const gen = ++genRef.current
+    setLoading(true); setError(''); setResult(null); setLog([])
+    setSteps(Object.fromEntries(PIPELINE_STEPS.map(s => [s, { status: 'pending', runs: 0 }])))
+    try {
+      const res = await fetch(`${API_BASE}/analysis/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ symbol, market, lang }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error((data as any).detail || 'Analysis failed')
+      poll(gen)
+    } catch (e: any) {
+      if (gen === genRef.current) { setError(e.message || 'Analysis failed'); setLoading(false) }
+    }
+  }
+
+  // On mount: re-attach to the member's most recent job (live or finished).
+  useEffect(() => {
+    if (!token) return
+    const gen = ++genRef.current
+    poll(gen)
+    return () => { genRef.current++ }
+  }, [token])
+
+  return { loading, result, error, steps, log, runInfo, run }
 }
 
 // ── Shared monitor panel: WebGL2 graph + timestamped step log ──

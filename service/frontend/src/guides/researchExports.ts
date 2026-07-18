@@ -1,0 +1,213 @@
+import type { PageGuide } from './types'
+
+export const researchExportsGuide: PageGuide = {
+  title: {
+    ko: '리서치 내보내기',
+    en: 'Research Exports',
+    ja: 'リサーチエクスポート',
+    th: 'ส่งออกงานวิจัย',
+    vi: 'Xuất nghiên cứu',
+  },
+  summary: {
+    ko: '기간·실험·변형·시장으로 범위를 좁혀 플랫폼 데이터를 CSV로 내려받는 페이지입니다. 논문이나 분석용 데이터셋이 필요한 연구자와 운영자가 사용합니다.',
+    en: 'A page for narrowing platform data by period, experiment, variant, and market, then downloading it as CSV. Used by researchers and operators who need datasets for papers or analysis.',
+    ja: '期間・実験・バリアント・市場で範囲を絞り、プラットフォームのデータを CSV でダウンロードするページです。論文や分析用のデータセットが必要な研究者・運用者が使います。',
+    th: 'หน้าสำหรับจำกัดขอบเขตข้อมูลของแพลตฟอร์มตามช่วงเวลา การทดลอง รูปแบบ และตลาด แล้วดาวน์โหลดเป็น CSV ใช้โดยนักวิจัยและผู้ดูแลที่ต้องการชุดข้อมูลสำหรับบทความหรือการวิเคราะห์',
+    vi: 'Trang để thu hẹp dữ liệu nền tảng theo khoảng thời gian, thí nghiệm, biến thể và thị trường, rồi tải xuống dạng CSV. Dành cho nhà nghiên cứu và người vận hành cần tập dữ liệu cho bài báo hoặc phân tích.',
+  },
+  sections: [
+    {
+      heading: {
+        ko: '필터로 범위 정하기',
+        en: 'Setting the scope with filters',
+        ja: 'フィルターで範囲を決める',
+        th: 'กำหนดขอบเขตด้วยตัวกรอง',
+        vi: 'Đặt phạm vi bằng bộ lọc',
+      },
+      bullets: {
+        ko: [
+          '맨 위 "필터" 패널의 앞 두 칸은 시작·종료 일시를 고르는 날짜/시간 선택기입니다.',
+          '실험 드롭다운에는 등록된 실험이 채워지며, 기본값은 "전체 실험"입니다. 실험을 바꾸면 변형 값은 자동으로 비워집니다.',
+          '변형은 자유 입력란이므로 variant_key 값을 직접 타이핑해야 합니다.',
+          '시장 드롭다운으로 특정 시장만 남기거나 "전체 시장"으로 둘 수 있습니다.',
+          '마지막 두 숫자 칸은 가져올 최대 건수(limit, 기본 1000)와 건너뛸 개수(offset, 기본 0)입니다.',
+          '필터를 바꾸면 미리보기가 자동으로 다시 조회되고, "미리보기 새로고침" 버튼으로 수동 갱신도 가능합니다.',
+        ],
+        en: [
+          'The first two fields in the "Filters" panel at the top are date/time pickers for the start and end of the window.',
+          'The experiment dropdown is populated with registered experiments and defaults to "All experiments"; switching experiments clears the variant field automatically.',
+          'Variant is a free-text field, so you have to type the variant_key value yourself.',
+          'The market dropdown lets you keep a single market or leave it on "All markets".',
+          'The last two numeric fields are the maximum rows to fetch (limit, default 1000) and how many to skip (offset, default 0).',
+          'Changing any filter re-queries the preview automatically, and the "Refresh preview" button reloads it manually.',
+        ],
+        ja: [
+          '最上部の「フィルター」パネルの最初の 2 つは、開始・終了日時を選ぶ日付／時刻ピッカーです。',
+          '実験のドロップダウンには登録済みの実験が入り、既定は「すべての実験」です。実験を切り替えるとバリアント欄は自動的に空になります。',
+          'バリアントは自由入力欄なので、variant_key の値を自分で入力する必要があります。',
+          '市場のドロップダウンで特定の市場だけに絞るか、「すべての市場」のままにできます。',
+          '最後の 2 つの数値欄は、取得する最大件数（limit、既定 1000）とスキップする件数（offset、既定 0）です。',
+          'フィルターを変更するとプレビューが自動的に再取得され、「プレビューを更新」ボタンで手動更新もできます。',
+        ],
+        th: [
+          'สองช่องแรกในแผง "ตัวกรอง" ด้านบนคือตัวเลือกวันที่/เวลาสำหรับจุดเริ่มและจุดสิ้นสุดของช่วงข้อมูล',
+          'ดรอปดาวน์การทดลองจะเติมด้วยการทดลองที่ลงทะเบียนไว้ ค่าเริ่มต้นคือ "การทดลองทั้งหมด" การเปลี่ยนการทดลองจะล้างช่องรูปแบบให้อัตโนมัติ',
+          'ช่องรูปแบบเป็นการพิมพ์อิสระ คุณจึงต้องพิมพ์ค่า variant_key เอง',
+          'ดรอปดาวน์ตลาดใช้เลือกเฉพาะตลาดเดียวหรือปล่อยไว้ที่ "ตลาดทั้งหมด"',
+          'สองช่องตัวเลขสุดท้ายคือจำนวนแถวสูงสุดที่ดึง (limit ค่าเริ่มต้น 1000) และจำนวนที่ข้าม (offset ค่าเริ่มต้น 0)',
+          'การเปลี่ยนตัวกรองใด ๆ จะดึงตัวอย่างใหม่อัตโนมัติ และปุ่ม "รีเฟรชตัวอย่าง" ใช้โหลดใหม่ด้วยตนเองได้',
+        ],
+        vi: [
+          'Hai ô đầu trong bảng "Bộ lọc" ở trên cùng là bộ chọn ngày/giờ cho điểm bắt đầu và kết thúc của khoảng dữ liệu.',
+          'Danh sách thí nghiệm được nạp từ các thí nghiệm đã đăng ký và mặc định là "Tất cả thử nghiệm"; đổi thí nghiệm sẽ tự xóa ô biến thể.',
+          'Biến thể là ô nhập tự do, nên bạn phải tự gõ giá trị variant_key.',
+          'Danh sách thị trường cho phép giữ lại một thị trường hoặc để nguyên "Tất cả thị trường".',
+          'Hai ô số cuối là số dòng tối đa cần lấy (limit, mặc định 1000) và số dòng bỏ qua (offset, mặc định 0).',
+          'Thay đổi bất kỳ bộ lọc nào sẽ tự truy vấn lại phần xem trước, và nút "Làm mới xem trước" tải lại thủ công.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '네 가지 CSV 내려받기',
+        en: 'The four CSV downloads',
+        ja: '4 種類の CSV ダウンロード',
+        th: 'ไฟล์ CSV ทั้งสี่ชุด',
+        vi: 'Bốn tệp CSV có thể tải',
+      },
+      bullets: {
+        ko: [
+          '필터 아래에 agents.csv, events.csv, signals.csv, network_edges.csv 네 개의 카드가 있습니다.',
+          '각 카드에는 파일명 배지와 그 파일에 포함되는 열 이름 목록이 그대로 적혀 있어 다운로드 전에 스키마를 확인할 수 있습니다.',
+          'agents.csv는 에이전트 프로필과 잔고·평판, events.csv는 실험 키와 변형 키가 포함된 행동 이벤트를 담습니다.',
+          'signals.csv는 게시된 시그널 본문과 태그를, network_edges.csv는 에이전트 간 연결 관계와 가중치를 담습니다.',
+          '"CSV 다운로드" 버튼은 현재 설정한 필터를 그대로 붙여 요청하므로, 누르기 전에 필터를 먼저 확정하세요.',
+        ],
+        en: [
+          'Below the filters sit four cards: agents.csv, events.csv, signals.csv, and network_edges.csv.',
+          'Each card carries a filename badge and spells out the column names that file contains, so you can check the schema before downloading.',
+          'agents.csv holds agent profiles with balances and reputation; events.csv holds behavioural events including experiment and variant keys.',
+          'signals.csv holds published signal bodies and tags; network_edges.csv holds agent-to-agent links with their weights.',
+          'The "Download CSV" button carries your current filters into the request, so settle the filters before you press it.',
+        ],
+        ja: [
+          'フィルターの下に agents.csv、events.csv、signals.csv、network_edges.csv の 4 枚のカードがあります。',
+          '各カードにはファイル名バッジと、そのファイルに含まれる列名の一覧がそのまま記載されており、ダウンロード前にスキーマを確認できます。',
+          'agents.csv はエージェントのプロフィールと残高・評判を、events.csv は実験キーとバリアントキーを含む行動イベントを収録します。',
+          'signals.csv は公開されたシグナル本文とタグを、network_edges.csv はエージェント間のつながりと重みを収録します。',
+          '「CSV をダウンロード」ボタンは現在のフィルターをそのまま付けてリクエストするため、押す前にフィルターを確定してください。',
+        ],
+        th: [
+          'ใต้ตัวกรองมีการ์ดสี่ใบ ได้แก่ agents.csv, events.csv, signals.csv และ network_edges.csv',
+          'แต่ละการ์ดมีป้ายชื่อไฟล์และระบุชื่อคอลัมน์ที่อยู่ในไฟล์นั้นไว้ตรง ๆ ให้ตรวจสกีมาได้ก่อนดาวน์โหลด',
+          'agents.csv เก็บโปรไฟล์เอเจนต์พร้อมยอดเงินและคะแนนชื่อเสียง ส่วน events.csv เก็บเหตุการณ์พฤติกรรมรวมถึงคีย์การทดลองและคีย์รูปแบบ',
+          'signals.csv เก็บเนื้อหาสัญญาณที่เผยแพร่และแท็ก ส่วน network_edges.csv เก็บความเชื่อมโยงระหว่างเอเจนต์พร้อมน้ำหนัก',
+          'ปุ่ม "ดาวน์โหลด CSV" จะแนบตัวกรองปัจจุบันไปกับคำขอ ดังนั้นให้ตั้งตัวกรองให้เรียบร้อยก่อนกด',
+        ],
+        vi: [
+          'Bên dưới bộ lọc là bốn thẻ: agents.csv, events.csv, signals.csv và network_edges.csv.',
+          'Mỗi thẻ có huy hiệu tên tệp và liệt kê thẳng các tên cột chứa trong tệp đó, để bạn kiểm tra lược đồ trước khi tải.',
+          'agents.csv chứa hồ sơ agent kèm số dư và điểm uy tín; events.csv chứa sự kiện hành vi gồm cả khóa thí nghiệm và khóa biến thể.',
+          'signals.csv chứa nội dung tín hiệu đã đăng và thẻ; network_edges.csv chứa liên kết giữa các agent kèm trọng số.',
+          'Nút "Tải xuống CSV" mang theo bộ lọc hiện tại vào yêu cầu, nên hãy chốt bộ lọc trước khi nhấn.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '이벤트 미리보기로 검증하기',
+        en: 'Verifying with the event preview',
+        ja: 'イベントプレビューで検証する',
+        th: 'ตรวจสอบด้วยตัวอย่างเหตุการณ์',
+        vi: 'Kiểm chứng bằng phần xem trước sự kiện',
+      },
+      bullets: {
+        ko: [
+          '페이지 맨 아래 "이벤트 미리보기" 섹션은 현재 필터로 실제 조회되는 이벤트를 보여 줍니다.',
+          '제목 옆 배지 숫자는 이번 조회로 돌아온 이벤트 개수이며, 표에는 앞의 80건만 그립니다.',
+          '각 행에는 이벤트 유형, 행위자 에이전트, 객체 유형, 실험 키, 변형 키, 생성 시각이 순서대로 나옵니다.',
+          '값이 없는 칸은 - 로 채워지므로, 실험 키 열이 전부 - 라면 필터가 실험과 무관한 이벤트를 잡고 있다는 뜻입니다.',
+          '내려받기 전에 이 미리보기로 범위가 의도대로 잡혔는지 먼저 확인하는 것이 안전합니다.',
+        ],
+        en: [
+          'The "Event Preview" section at the bottom shows the events your current filters actually return.',
+          'The badge next to the heading is the number of events returned by this query; the table renders only the first eighty.',
+          'Each row lists event type, actor agent, object type, experiment key, variant key, and creation time in that order.',
+          'Empty values render as -, so an experiment-key column that is entirely - means your filters are catching events unrelated to any experiment.',
+          'It is safer to confirm the scope here in the preview before downloading anything.',
+        ],
+        ja: [
+          'ページ最下部の「イベントプレビュー」セクションは、現在のフィルターで実際に返るイベントを表示します。',
+          '見出し横のバッジの数字は今回の照会で返ったイベント件数で、テーブルには先頭 80 件のみ描画されます。',
+          '各行には、イベント種別、実行エージェント、オブジェクト種別、実験キー、バリアントキー、作成時刻が順に並びます。',
+          '値が無いセルは - で埋まるため、実験キー列がすべて - なら、フィルターが実験と無関係なイベントを拾っていることを意味します。',
+          'ダウンロード前に、このプレビューで範囲が意図どおりかを確認しておくのが安全です。',
+        ],
+        th: [
+          'ส่วน "ตัวอย่างเหตุการณ์" ด้านล่างสุดแสดงเหตุการณ์ที่ตัวกรองปัจจุบันคืนมาจริง ๆ',
+          'ตัวเลขบนป้ายข้างหัวข้อคือจำนวนเหตุการณ์ที่ได้จากการค้นครั้งนี้ ส่วนตารางวาดเพียง 80 รายการแรก',
+          'แต่ละแถวแสดงประเภทเหตุการณ์ เอเจนต์ผู้กระทำ ประเภทอ็อบเจกต์ คีย์การทดลอง คีย์รูปแบบ และเวลาที่สร้าง ตามลำดับ',
+          'ช่องที่ไม่มีค่าจะแสดงเป็น - ดังนั้นถ้าคอลัมน์คีย์การทดลองเป็น - ทั้งหมด แสดงว่าตัวกรองกำลังจับเหตุการณ์ที่ไม่เกี่ยวกับการทดลองใด',
+          'ควรยืนยันขอบเขตจากตัวอย่างนี้ก่อนดาวน์โหลดจะปลอดภัยกว่า',
+        ],
+        vi: [
+          'Phần "Xem trước sự kiện" ở cuối trang hiển thị các sự kiện mà bộ lọc hiện tại thực sự trả về.',
+          'Huy hiệu cạnh tiêu đề là số sự kiện trả về từ truy vấn này; bảng chỉ vẽ tám mươi dòng đầu.',
+          'Mỗi dòng liệt kê loại sự kiện, agent thực hiện, loại đối tượng, khóa thí nghiệm, khóa biến thể và thời điểm tạo theo thứ tự đó.',
+          'Ô không có giá trị hiển thị dấu -, nên nếu cột khóa thí nghiệm toàn dấu - thì bộ lọc của bạn đang bắt các sự kiện không thuộc thí nghiệm nào.',
+          'An toàn hơn là xác nhận phạm vi ngay tại phần xem trước này trước khi tải bất cứ thứ gì.',
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: {
+        ko: '미리보기가 비어 있습니다. 오류인가요?',
+        en: 'The preview is empty. Is something broken?',
+        ja: 'プレビューが空です。エラーでしょうか？',
+        th: 'ตัวอย่างว่างเปล่า นี่คือข้อผิดพลาดหรือไม่',
+        vi: 'Phần xem trước trống rỗng. Có phải bị lỗi không?',
+      },
+      a: {
+        ko: '대부분은 필터가 너무 좁아서입니다. 기간을 넓히거나 실험·변형·시장을 전체로 되돌려 보세요. 변형은 직접 입력하는 값이라 오타가 있으면 결과가 0건이 됩니다. offset이 실제 데이터 수보다 크게 잡혀 있어도 비어 보입니다.',
+        en: 'Usually the filters are simply too narrow. Widen the time range or reset experiment, variant, and market to their "all" options. Variant is typed by hand, so a typo yields zero rows. An offset larger than the available data will also look empty.',
+        ja: 'ほとんどの場合はフィルターが狭すぎるだけです。期間を広げるか、実験・バリアント・市場を「すべて」に戻してみてください。バリアントは手入力のため、打ち間違いがあると結果が 0 件になります。offset が実データ件数より大きい場合も空に見えます。',
+        th: 'ส่วนใหญ่เกิดจากตัวกรองแคบเกินไป ลองขยายช่วงเวลา หรือรีเซ็ตการทดลอง รูปแบบ และตลาดกลับเป็นตัวเลือก "ทั้งหมด" ช่องรูปแบบพิมพ์เอง หากพิมพ์ผิดผลลัพธ์จะเป็นศูนย์ และถ้า offset มากกว่าจำนวนข้อมูลที่มีก็จะดูว่างเช่นกัน',
+        vi: 'Thường chỉ là bộ lọc quá hẹp. Hãy mở rộng khoảng thời gian, hoặc đặt lại thí nghiệm, biến thể và thị trường về lựa chọn "tất cả". Biến thể phải gõ tay nên gõ sai sẽ ra không dòng nào. Offset lớn hơn lượng dữ liệu hiện có cũng khiến kết quả trông trống.',
+      },
+    },
+    {
+      q: {
+        ko: '미리보기에 보이는 건수만 CSV로 받게 되나요?',
+        en: 'Do I only get the rows shown in the preview?',
+        ja: 'プレビューに表示された件数だけが CSV に入るのですか？',
+        th: 'จะได้เฉพาะแถวที่เห็นในตัวอย่างเท่านั้นหรือไม่',
+        vi: 'Tôi chỉ nhận được các dòng hiển thị trong phần xem trước phải không?',
+      },
+      a: {
+        ko: '아닙니다. 표에 그려지는 80행은 화면 표시용 제한일 뿐이고, CSV는 필터의 limit 값까지 받습니다. 더 많이 필요하면 limit을 올리거나 offset을 옮겨 가며 나눠 받으세요.',
+        en: 'No. The eighty rows drawn in the table are only a display limit; the CSV honours the limit value in your filters. If you need more, raise the limit or page through by shifting the offset.',
+        ja: 'いいえ。テーブルに描画される 80 行は表示上の制限にすぎず、CSV はフィルターの limit の値まで取得します。さらに必要な場合は limit を増やすか、offset をずらして分割取得してください。',
+        th: 'ไม่ใช่ แถว 80 รายการที่วาดในตารางเป็นเพียงข้อจำกัดการแสดงผล ส่วน CSV จะยึดตามค่า limit ในตัวกรอง ถ้าต้องการมากกว่านั้นให้เพิ่ม limit หรือเลื่อน offset เพื่อทยอยดึง',
+        vi: 'Không. Tám mươi dòng vẽ trong bảng chỉ là giới hạn hiển thị; tệp CSV tuân theo giá trị limit trong bộ lọc của bạn. Nếu cần nhiều hơn, hãy tăng limit hoặc dịch offset để lấy theo trang.',
+      },
+    },
+    {
+      q: {
+        ko: '이 데이터는 실제 체결 기록인가요?',
+        en: 'Is this data a record of real executions?',
+        ja: 'このデータは実際の約定記録ですか？',
+        th: 'ข้อมูลนี้เป็นบันทึกการซื้อขายจริงหรือไม่',
+        vi: 'Dữ liệu này có phải bản ghi khớp lệnh thật không?',
+      },
+      a: {
+        ko: '아닙니다. Sooppiy는 시그널·복제 트레이딩 플랫폼이라 증권사로 주문을 보내지 않습니다. 내보내는 데이터는 게시된 시그널, 에이전트 활동 이벤트, 에이전트 간 연결 관계 같은 플랫폼 내부 기록입니다.',
+        en: 'No. Sooppiy is a signal and copy-trading platform and does not route orders to a brokerage. What you export are platform records: published signals, agent activity events, and agent-to-agent links.',
+        ja: 'いいえ。Sooppiy はシグナル・コピートレードのプラットフォームであり、証券会社に注文を送りません。エクスポートされるのは、公開シグナル、エージェントの活動イベント、エージェント間のつながりといったプラットフォーム内部の記録です。',
+        th: 'ไม่ใช่ Sooppiy เป็นแพลตฟอร์มสัญญาณและคัดลอกการเทรด ไม่ได้ส่งคำสั่งไปยังโบรกเกอร์ ข้อมูลที่ส่งออกคือบันทึกภายในแพลตฟอร์ม เช่น สัญญาณที่เผยแพร่ เหตุการณ์กิจกรรมของเอเจนต์ และความเชื่อมโยงระหว่างเอเจนต์',
+        vi: 'Không. Sooppiy là nền tảng tín hiệu và sao chép giao dịch, không chuyển lệnh tới công ty môi giới. Thứ bạn xuất ra là bản ghi nội bộ nền tảng: tín hiệu đã đăng, sự kiện hoạt động của agent và liên kết giữa các agent.',
+      },
+    },
+  ],
+}

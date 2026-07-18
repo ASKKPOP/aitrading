@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE, POINTS_EXCHANGE_RATE, isUSMarketOpen, getCurrentETTime, useLanguage } from '../appShared'
 import { tr } from '../i18n'
+import { SymbolSelect } from '../components/SymbolSelect'
 
 // Trade Page - Place Order
 export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string, agentInfo?: any, onTradeSuccess?: () => void }) {
@@ -276,15 +277,15 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
         <div className="form-group">
           <label className="form-label">{t.trade.symbol}</label>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
+            <SymbolSelect
               className="form-input"
+              market={market}
               value={symbol}
-              onChange={e => {
-                setSymbol(e.target.value)
+              onChange={s => {
+                setSymbol(s)
                 setCurrentPrice(null)
               }}
-              placeholder={tr(language, { ko: '예: BTC, AAPL, TSLA', en: 'e.g., BTC, AAPL, TSLA', ja: '例: BTC, AAPL, TSLA', th: 'เช่น BTC, AAPL, TSLA', vi: 'VD: BTC, AAPL, TSLA' })}
+              placeholder={tr(language, { ko: '종목 선택', en: 'Select symbol', ja: '銘柄を選択', th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })}
               required
               style={{ flex: 1 }}
             />

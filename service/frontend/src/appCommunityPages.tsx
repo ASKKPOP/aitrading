@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, COMMUNITY_FEED_PAGE_SIZE, MARKETS, useLanguage } from './appShared'
+import { SymbolSelect } from './components/SymbolSelect'
 import { tr } from './i18n'
 
 function AuthShell({
@@ -714,13 +715,30 @@ export function StrategiesPage() {
             </div>
             <div className="form-group">
               <label className="form-label">{t.strategies.symbols}</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="BTC, ETH"
-                value={formData.symbols}
-                onChange={e => setFormData({ ...formData, symbols: e.target.value })}
-              />
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                {formData.symbols.split(',').map(s => s.trim()).filter(Boolean).map(s => (
+                  <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, border: '1px solid var(--border-color)', fontSize: 13 }}>
+                    {s}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, symbols: formData.symbols.split(',').map(x => x.trim()).filter(x => x && x !== s).join(', ') })}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                    >×</button>
+                  </span>
+                ))}
+                <SymbolSelect
+                  className="form-input"
+                  style={{ width: 180 }}
+                  market={formData.market}
+                  value=""
+                  onChange={symbol => {
+                    if (!symbol) return
+                    const current = formData.symbols.split(',').map(x => x.trim()).filter(Boolean)
+                    if (!current.includes(symbol)) setFormData({ ...formData, symbols: [...current, symbol].join(', ') })
+                  }}
+                  placeholder={tr(language, { ko: '종목 추가', en: 'Add symbol', ja: '銘柄を追加', th: 'เพิ่มสัญลักษณ์', vi: 'Thêm mã' })}
+                />
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">{t.strategies.tags}</label>

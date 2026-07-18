@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLanguage } from '../appShared'
-import { AnalysisMonitorPanel, useAnalysisStream } from '../components/AnalysisPipelineViz'
+import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
+import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 
 // AI Analyst — runs the multi-agent analysis engine (Target 2):
 // News + Sentiment + Fundamentals/Macro + Technical -> Trader/Risk -> decision + report.
-// The run streams per-step progress (SSE) into a live WebGL2 pipeline monitor.
+// The run executes server-side (background job) and per-step progress feeds a
+// live WebGL2 pipeline monitor — leaving the page and coming back re-attaches.
 export function AnalystPage() {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
   const { language } = useLanguage()
   const [symbol, setSymbol] = useState('BTC')
   const [market, setMarket] = useState('crypto')
-  const { loading, result, error, steps, log, run: runStream } = useAnalysisStream(token)
+  const { loading, result, error, steps, log, runInfo, run: runStream } = useAnalysisRun(token)
+
+  // Re-attached to an existing job (e.g. returning mid-run): mirror its
+  // symbol/market in the controls so the monitor matches what they show.
+  useEffect(() => {
+    if (runInfo) { setSymbol(runInfo.symbol); setMarket(runInfo.market) }
+  }, [runInfo?.id])
 
   const T = {
     title: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }),
@@ -61,8 +69,8 @@ export function AnalystPage() {
       <div className="card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 18 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           {T.symbol}
-          <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())}
-            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', width: 120 }} />
+          <SymbolSelect market={market} value={symbol} onChange={setSymbol}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)', color: 'var(--text-primary,inherit)', width: 140 }} />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           {T.market}

@@ -27,6 +27,19 @@ from routes_shared import (
     utc_now_iso_z,
 )
 
+# Curated US tickers for the frontend symbol dropdowns. Alpha Vantage accepts
+# any US ticker, but the UI is selection-only, so this list IS the tradable
+# stock universe shown to users.
+US_STOCK_SYMBOLS: tuple[str, ...] = (
+    'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AVGO', 'BRK.B',
+    'LLY', 'JPM', 'V', 'MA', 'UNH', 'XOM', 'CVX', 'COST', 'HD', 'PG', 'WMT',
+    'NFLX', 'JNJ', 'ABBV', 'PFE', 'MRK', 'BAC', 'CRM', 'ORCL', 'KO', 'PEP',
+    'AMD', 'INTC', 'QCOM', 'TMO', 'CSCO', 'ADBE', 'MCD', 'SBUX', 'NKE', 'IBM',
+    'GE', 'CAT', 'BA', 'DIS', 'VZ', 'T', 'F', 'GM', 'PLTR', 'UBER',
+    'COIN', 'HOOD', 'MSTR', 'SNOW', 'SHOP', 'PYPL', 'SOFI', 'RIVN', 'LCID',
+    'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'GLD', 'SLV', 'TLT',
+)
+
 
 def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     def _cached_market_payload(cache_key: str, builder):
@@ -212,6 +225,27 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     # ─── Bybit perpetual futures ────────────────────────────────────────────
 
+    @app.get('/api/markets/symbols')
+    async def market_symbols():
+        """Symbol option lists for the frontend's selection-only symbol fields.
+
+        crypto: Hyperliquid-listed coins (majors from TOP_20_PAIRS first),
+        crypto_pairs: OKX USDT pairs (watch/consult endpoints expect pair form),
+        stock: curated US tickers.
+        """
+        def _build():
+            from price_fetcher import _get_hyperliquid_available_symbols
+            majors = [p.removesuffix('USDT') for p in TOP_20_PAIRS]
+            listed = _get_hyperliquid_available_symbols() or set()
+            rest = sorted(s for s in listed if s not in set(majors))
+            return {
+                'crypto': majors + rest,
+                'crypto_pairs': list(TOP_20_PAIRS),
+                'stock': list(US_STOCK_SYMBOLS),
+            }
+
+        return await run_in_threadpool(_cached_market_payload, 'symbol-options', _build)
+
     @app.get('/api/markets/crypto/tickers')
     async def crypto_tickers():
         """List top 20 USDT-margined perpetual futures with live OKX prices."""
@@ -224,13 +258,20 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get('/api/markets/crypto/ticker')
     async def crypto_ticker(symbol: str = Query(..., description="USDT-margined symbol e.g. BTCUSDT")):
         """Single USDT-margined perpetual ticker from OKX."""
+        # The marketing page (and any open dashboard) polls this every 15s per
+        # visitor — short shared cache so N visitors cost one OKX call per window.
+        sym = symbol.upper()
+        redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:ticker:{sym}'
+        cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, 10)
+        if isinstance(cached, dict):
+            return cached
         try:
-            ticker = fetch_ticker(symbol.upper())
+            ticker = await run_in_threadpool(fetch_ticker, sym)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc))
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc))
-        return ticker
+        return set_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, ticker, 10)
 
     @app.get('/api/markets/crypto/orderbook')
     async def crypto_orderbook(

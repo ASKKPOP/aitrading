@@ -1,0 +1,306 @@
+import type { PageGuide } from './types'
+
+export const myTradingGuide: PageGuide = {
+  title: {
+    ko: '내 트레이딩',
+    en: 'My Trading',
+    ja: 'マイトレード',
+    th: 'การเทรดของฉัน',
+    vi: 'Giao dịch của tôi',
+  },
+  summary: {
+    ko: '로그인한 본인의 계정 상태와 포지션, 팔로우 중인 에이전트, 전략을 한 화면에 모아 보는 개인 대시보드입니다. 로그인한 회원이라면 누구나 자신의 현황을 확인할 때 사용합니다.',
+    en: 'A private dashboard that gathers your account status, positions, followed agents, and strategies on one screen. Any signed-in member uses it to check where they stand.',
+    ja: 'ログイン中のアカウント状況、ポジション、フォロー中のエージェント、戦略を 1 画面にまとめた個人ダッシュボードです。ログイン済みの会員が自分の状況を確認するために使います。',
+    th: 'แดชบอร์ดส่วนตัวที่รวมสถานะบัญชี ตำแหน่ง เอเจนต์ที่ติดตาม และกลยุทธ์ไว้ในหน้าเดียว สมาชิกที่เข้าสู่ระบบแล้วใช้ดูสถานะของตัวเอง',
+    vi: 'Bảng điều khiển cá nhân gom trạng thái tài khoản, vị thế, agent đang theo dõi và chiến lược của bạn vào một màn hình. Mọi thành viên đã đăng nhập đều dùng nó để xem tình hình của mình.',
+  },
+  sections: [
+    {
+      heading: {
+        ko: '계정 헤더에서 확인할 것',
+        en: 'What the account header shows',
+        ja: 'アカウントヘッダーの見方',
+        th: 'สิ่งที่ส่วนหัวบัญชีแสดง',
+        vi: 'Phần đầu tài khoản hiển thị gì',
+      },
+      bullets: {
+        ko: [
+          '맨 위 어두운 카드에 로그인한 계정의 이메일 주소가 크게 표시됩니다.',
+          '그 아래 "포인트" 값은 플랫폼 활동으로 쌓인 현재 포인트 잔액입니다.',
+          '2FA가 켜져 있으면 남은 백업 코드 개수가 초록색으로 표시되고, 꺼져 있으면 "2FA 활성화" 링크가 대신 나타납니다.',
+          '오른쪽 위 "로그아웃" 버튼을 누르면 토큰이 삭제되고 로그인 페이지로 이동합니다.',
+        ],
+        en: [
+          'The dark card at the top shows the email address of the signed-in account in large type.',
+          'The "Points" value beneath it is your current points balance earned through platform activity.',
+          'If 2FA is on, the number of remaining backup codes appears in green; if it is off, an "Enable 2FA" link appears instead.',
+          'The "Sign out" button in the top right clears your token and returns you to the sign-in page.',
+        ],
+        ja: [
+          '最上部の暗いカードに、ログイン中アカウントのメールアドレスが大きく表示されます。',
+          'その下の「ポイント」は、プラットフォーム上の活動で貯まった現在のポイント残高です。',
+          '2FA が有効なら残りのバックアップコード数が緑色で表示され、無効なら代わりに「2FA を有効化」リンクが表示されます。',
+          '右上の「ログアウト」ボタンを押すとトークンが消去され、サインインページに戻ります。',
+        ],
+        th: [
+          'การ์ดสีเข้มด้านบนสุดแสดงอีเมลของบัญชีที่เข้าสู่ระบบด้วยตัวอักษรขนาดใหญ่',
+          'ค่า "คะแนน" ด้านล่างคือยอดคะแนนปัจจุบันที่สะสมจากกิจกรรมบนแพลตฟอร์ม',
+          'ถ้าเปิด 2FA ไว้ จะเห็นจำนวนรหัสสำรองที่เหลือเป็นสีเขียว ถ้ายังไม่เปิดจะเห็นลิงก์ "เปิดใช้งาน 2FA" แทน',
+          'ปุ่ม "ออกจากระบบ" มุมขวาบนจะล้างโทเค็นและพากลับไปหน้าเข้าสู่ระบบ',
+        ],
+        vi: [
+          'Thẻ màu tối trên cùng hiển thị địa chỉ email của tài khoản đang đăng nhập bằng cỡ chữ lớn.',
+          'Giá trị "Điểm" bên dưới là số điểm hiện tại tích lũy từ hoạt động trên nền tảng.',
+          'Nếu đã bật 2FA, số mã dự phòng còn lại hiện màu xanh; nếu chưa bật, thay vào đó là liên kết "Bật 2FA".',
+          'Nút "Đăng xuất" ở góc trên bên phải xóa token và đưa bạn về trang đăng nhập.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '포지션 섹션 읽는 법',
+        en: 'Reading the Positions section',
+        ja: 'ポジションセクションの読み方',
+        th: 'อ่านส่วนตำแหน่ง',
+        vi: 'Đọc phần Vị thế',
+      },
+      bullets: {
+        ko: [
+          '섹션 제목 옆 괄호 숫자가 현재 열려 있는 포지션 총 개수이며, 표에는 최대 10건까지만 보여줍니다.',
+          '표 열은 종목 · 시장 · 방향 · 수량 · 진입 · 현재 순서이고, 방향이 long이면 초록색, short이면 붉은색으로 표시됩니다.',
+          '"현재" 열은 시세를 주기적으로 조회해 채워 넣는 값입니다. 아직 가격을 못 가져왔으면 — 로 표시됩니다.',
+          '전체 목록과 상세 내역은 오른쪽 "전체 보기 →" 링크를 눌러 포지션 페이지에서 확인하세요.',
+          '포지션이 하나도 없으면 리더보드에서 에이전트를 팔로우하라는 안내 문구가 대신 나타납니다.',
+        ],
+        en: [
+          'The number in brackets next to the heading is your total open positions; the table itself shows at most ten.',
+          'Columns run Symbol · Market · Side · Qty · Entry · Current, with long shown in green and short in red.',
+          'The "Current" column is filled in from periodically polled prices. If no price has been retrieved yet it shows —.',
+          'Use the "View all →" link on the right to open the positions page for the full list and details.',
+          'If you have no positions at all, a prompt to follow an agent from the leaderboard appears instead.',
+        ],
+        ja: [
+          '見出し横の括弧内の数字が現在の建玉総数で、テーブルには最大 10 件までしか表示されません。',
+          '列は 銘柄・市場・方向・数量・エントリー・現在 の順で、long は緑、short は赤で表示されます。',
+          '「現在」列は定期的に取得した価格で埋められます。まだ価格を取得できていない場合は — と表示されます。',
+          '全件と詳細は右側の「すべて表示 →」リンクからポジションページで確認してください。',
+          'ポジションが 1 件もない場合は、リーダーボードでエージェントをフォローするよう促す案内が代わりに表示されます。',
+        ],
+        th: [
+          'ตัวเลขในวงเล็บข้างหัวข้อคือจำนวนตำแหน่งที่เปิดอยู่ทั้งหมด ส่วนตารางแสดงได้สูงสุด 10 รายการ',
+          'คอลัมน์เรียงเป็น สัญลักษณ์ · ตลาด · ทิศทาง · จำนวน · เข้า · ปัจจุบัน โดย long เป็นสีเขียวและ short เป็นสีแดง',
+          'คอลัมน์ "ปัจจุบัน" เติมจากราคาที่ดึงมาเป็นระยะ ถ้ายังไม่ได้ราคาจะแสดงเป็น —',
+          'กดลิงก์ "ดูทั้งหมด →" ทางขวาเพื่อเปิดหน้าตำแหน่งสำหรับรายการเต็มและรายละเอียด',
+          'ถ้าไม่มีตำแหน่งเลย จะเห็นข้อความชวนให้ไปติดตามเอเจนต์จากลีดเดอร์บอร์ดแทน',
+        ],
+        vi: [
+          'Số trong ngoặc cạnh tiêu đề là tổng vị thế đang mở; bảng chỉ hiển thị tối đa mười dòng.',
+          'Các cột lần lượt là Mã · Thị trường · Hướng · SL · Vào · Hiện tại, long hiển thị màu xanh và short màu đỏ.',
+          'Cột "Hiện tại" được điền từ giá lấy định kỳ. Nếu chưa lấy được giá, ô sẽ hiện dấu —.',
+          'Dùng liên kết "Xem tất cả →" bên phải để mở trang vị thế xem danh sách đầy đủ và chi tiết.',
+          'Nếu bạn chưa có vị thế nào, thay vào đó là lời nhắc theo dõi một agent từ bảng xếp hạng.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '팔로잉 — 복제 대상 관리',
+        en: 'Following — your copy targets',
+        ja: 'フォロー中 — コピー対象の管理',
+        th: 'กำลังติดตาม — เป้าหมายที่คัดลอก',
+        vi: 'Đang theo dõi — mục tiêu sao chép',
+      },
+      bullets: {
+        ko: [
+          '"팔로잉" 섹션은 현재 시그널을 복제하고 있는 제공자(에이전트) 목록으로, 최대 8명까지 표시합니다.',
+          '이름 옆 퍼센트는 해당 제공자의 누적 수익률이며, 양수는 초록색 음수는 붉은색입니다.',
+          '이름 대신 "제공자 #12" 형태로 보이면 아직 표시 이름이 등록되지 않은 계정입니다.',
+          '팔로우할 대상을 새로 찾으려면 오른쪽 "에이전트 찾기 →" 링크로 리더보드에 들어가세요.',
+          '팔로우는 해당 에이전트의 시그널을 미러링한다는 뜻이지, 실제 증권사에 주문이 나간다는 뜻이 아닙니다.',
+        ],
+        en: [
+          'The "Following" section lists the providers (agents) whose signals you are currently mirroring, up to eight of them.',
+          'The percentage next to a name is that provider\'s cumulative return — green when positive, red when negative.',
+          'If you see "Provider #12" instead of a name, that account has not registered a display name yet.',
+          'To find new agents to follow, use the "Find agents →" link on the right to open the leaderboard.',
+          'Following means mirroring that agent\'s signals — it does not send an order to a real brokerage.',
+        ],
+        ja: [
+          '「フォロー中」セクションには、現在シグナルをコピーしているプロバイダー（エージェント）が最大 8 件表示されます。',
+          '名前の横のパーセントはそのプロバイダーの累積リターンで、プラスは緑、マイナスは赤で表示されます。',
+          '名前ではなく「プロバイダー #12」と表示される場合は、まだ表示名を登録していないアカウントです。',
+          '新しくフォローする相手を探すには、右側の「エージェントを探す →」リンクからリーダーボードへ進みます。',
+          'フォローとはそのエージェントのシグナルをミラーすることであり、実際の証券会社に注文が出るわけではありません。',
+        ],
+        th: [
+          'ส่วน "กำลังติดตาม" แสดงผู้ให้บริการ (เอเจนต์) ที่คุณกำลังคัดลอกสัญญาณอยู่ สูงสุด 8 ราย',
+          'เปอร์เซ็นต์ข้างชื่อคือผลตอบแทนสะสมของผู้ให้บริการรายนั้น สีเขียวคือบวก สีแดงคือลบ',
+          'ถ้าเห็นเป็น "ผู้ให้บริการ #12" แทนชื่อ แสดงว่าบัญชีนั้นยังไม่ได้ตั้งชื่อที่แสดง',
+          'หากต้องการหาเอเจนต์ใหม่เพื่อติดตาม ให้กดลิงก์ "ค้นหาเอเจนต์ →" ทางขวาเพื่อเปิดลีดเดอร์บอร์ด',
+          'การติดตามหมายถึงการมิเรอร์สัญญาณของเอเจนต์นั้น ไม่ใช่การส่งคำสั่งไปยังโบรกเกอร์จริง',
+        ],
+        vi: [
+          'Phần "Đang theo dõi" liệt kê các nhà cung cấp (agent) mà bạn đang sao chép tín hiệu, tối đa tám mục.',
+          'Tỷ lệ phần trăm cạnh tên là lợi nhuận tích lũy của nhà cung cấp đó — xanh khi dương, đỏ khi âm.',
+          'Nếu bạn thấy "Nhà cung cấp #12" thay vì tên, tài khoản đó chưa đăng ký tên hiển thị.',
+          'Để tìm agent mới, dùng liên kết "Tìm agent →" bên phải để mở bảng xếp hạng.',
+          'Theo dõi nghĩa là sao chép tín hiệu của agent đó — không phải gửi lệnh đến một công ty môi giới thật.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '전략 목록과 백테스트 배지',
+        en: 'Strategies and the backtest badge',
+        ja: '戦略リストとバックテストバッジ',
+        th: 'รายการกลยุทธ์และป้ายแบ็คเทสต์',
+        vi: 'Danh sách chiến lược và huy hiệu backtest',
+      },
+      bullets: {
+        ko: [
+          '"전략" 섹션에는 본인이 등록한 전략이 최대 8개까지 이름순으로 표시됩니다.',
+          '이름 옆 "✓ 백테스트 검증됨" 배지는 해당 전략이 백테스트를 통과했음을 뜻합니다.',
+          '백테스트 기록이 있으면 마지막 샤프 지수가 소수점 두 자리까지 함께 표시됩니다.',
+          '샤프 값이 비어 있으면 아직 백테스트를 한 번도 돌리지 않은 전략입니다.',
+          '오른쪽 "전체 →" 링크로 전략 페이지에 들어가면 전체 목록과 편집 화면을 볼 수 있습니다.',
+        ],
+        en: [
+          'The "Strategies" section lists up to eight of your own registered strategies.',
+          'A "✓ backtest-validated" badge next to a name means that strategy passed a backtest.',
+          'If a backtest has been run, the most recent Sharpe ratio is shown alongside, to two decimal places.',
+          'A missing Sharpe value means the strategy has never been backtested.',
+          'The "All →" link on the right opens the strategies page with the full list and editing screens.',
+        ],
+        ja: [
+          '「戦略」セクションには、自分が登録した戦略が最大 8 件表示されます。',
+          '名前の横の「✓ バックテスト検証済み」バッジは、その戦略がバックテストを通過したことを意味します。',
+          'バックテストの記録があれば、直近のシャープレシオが小数点以下 2 桁まで併記されます。',
+          'シャープ値が空欄なら、まだ一度もバックテストを実行していない戦略です。',
+          '右側の「すべて →」リンクから戦略ページに入ると、全件と編集画面を確認できます。',
+        ],
+        th: [
+          'ส่วน "กลยุทธ์" แสดงกลยุทธ์ที่คุณลงทะเบียนไว้สูงสุด 8 รายการ',
+          'ป้าย "✓ ผ่านการตรวจสอบแบ็คเทสต์" ข้างชื่อหมายความว่ากลยุทธ์นั้นผ่านการแบ็คเทสต์แล้ว',
+          'ถ้ามีการรันแบ็คเทสต์ จะแสดงค่าชาร์ปล่าสุดทศนิยมสองตำแหน่งกำกับไว้ด้วย',
+          'ถ้าไม่มีค่าชาร์ป แสดงว่ากลยุทธ์นั้นยังไม่เคยผ่านการแบ็คเทสต์เลย',
+          'ลิงก์ "ทั้งหมด →" ทางขวาจะเปิดหน้ากลยุทธ์ที่มีรายการเต็มและหน้าจอแก้ไข',
+        ],
+        vi: [
+          'Phần "Chiến lược" liệt kê tối đa tám chiến lược bạn đã đăng ký.',
+          'Huy hiệu "✓ đã kiểm định backtest" cạnh tên nghĩa là chiến lược đó đã vượt qua backtest.',
+          'Nếu đã chạy backtest, chỉ số Sharpe gần nhất hiển thị kèm theo với hai chữ số thập phân.',
+          'Không có giá trị Sharpe nghĩa là chiến lược đó chưa từng được backtest.',
+          'Liên kết "Tất cả →" bên phải mở trang chiến lược với danh sách đầy đủ và màn hình chỉnh sửa.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '손익 내역과 다음 단계',
+        en: 'P&L history and next steps',
+        ja: '損益履歴と次のステップ',
+        th: 'ประวัติกำไรขาดทุนและขั้นตอนถัดไป',
+        vi: 'Lịch sử lãi lỗ và bước tiếp theo',
+      },
+      bullets: {
+        ko: [
+          '"손익 내역" 섹션은 이 페이지에서 차트를 그리지 않고, 리더보드 프로필로 연결하는 안내만 담고 있습니다.',
+          '"차트 열기 →"를 누르면 상세 수익 곡선을 볼 수 있는 리더보드 화면으로 이동합니다.',
+          '처음 시작하는 경우 권장 순서는 2FA 활성화 → 리더보드에서 에이전트 팔로우 → 포지션이 쌓이는지 확인입니다.',
+          '각 섹션은 페이지를 열 때 한 번에 불러오므로, 값이 갱신되지 않으면 브라우저 새로고침을 하세요.',
+        ],
+        en: [
+          'The "P&L history" section does not draw a chart here — it only points you to your leaderboard profile.',
+          'Clicking "Open chart →" takes you to the leaderboard screen where the detailed profit curve lives.',
+          'If you are just starting, the recommended order is: enable 2FA → follow an agent from the leaderboard → watch positions accumulate.',
+          'All sections load once when the page opens, so refresh the browser if the numbers look stale.',
+        ],
+        ja: [
+          '「損益履歴」セクションはこのページ上でチャートを描画せず、リーダーボードのプロフィールへ案内するだけです。',
+          '「チャートを開く →」を押すと、詳細な収益カーブがあるリーダーボード画面へ移動します。',
+          '始めたばかりなら、2FA を有効化 → リーダーボードでエージェントをフォロー → ポジションが増えるか確認、の順がおすすめです。',
+          '各セクションはページを開いた時に一度だけ読み込むため、数値が古いと感じたらブラウザを再読み込みしてください。',
+        ],
+        th: [
+          'ส่วน "ประวัติกำไรขาดทุน" ไม่ได้วาดกราฟในหน้านี้ แต่ชี้ไปยังโปรไฟล์ลีดเดอร์บอร์ดของคุณ',
+          'กด "เปิดกราฟ →" เพื่อไปยังหน้าลีดเดอร์บอร์ดที่มีเส้นกราฟกำไรโดยละเอียด',
+          'ถ้าเพิ่งเริ่มต้น ลำดับที่แนะนำคือ เปิด 2FA → ติดตามเอเจนต์จากลีดเดอร์บอร์ด → ดูว่าตำแหน่งเริ่มสะสมหรือไม่',
+          'ทุกส่วนโหลดครั้งเดียวตอนเปิดหน้า ดังนั้นถ้าตัวเลขดูเก่าให้รีเฟรชเบราว์เซอร์',
+        ],
+        vi: [
+          'Phần "Lịch sử lãi/lỗ" không vẽ biểu đồ ở đây — nó chỉ dẫn bạn tới hồ sơ bảng xếp hạng.',
+          'Nhấn "Mở biểu đồ →" để đến màn hình bảng xếp hạng, nơi có đường cong lợi nhuận chi tiết.',
+          'Nếu bạn mới bắt đầu, thứ tự nên làm là: bật 2FA → theo dõi một agent trên bảng xếp hạng → xem vị thế tích lũy dần.',
+          'Mọi phần chỉ tải một lần khi mở trang, nên hãy làm mới trình duyệt nếu các con số có vẻ cũ.',
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: {
+        ko: '왜 로그인 페이지로 튕겨 나가나요?',
+        en: 'Why did I get bounced to the sign-in page?',
+        ja: 'なぜサインインページに戻されるのですか？',
+        th: 'ทำไมถึงถูกดีดกลับไปหน้าเข้าสู่ระบบ',
+        vi: 'Vì sao tôi bị đưa về trang đăng nhập?',
+      },
+      a: {
+        ko: '이 페이지는 로그인이 필수입니다. 토큰이 없거나 만료·해지된 경우 자동으로 로그아웃 처리되고 로그인 화면으로 이동합니다. 다시 로그인하면 그대로 돌아올 수 있습니다.',
+        en: 'This page requires a signed-in session. If your token is missing, expired, or revoked, you are signed out automatically and sent to the sign-in screen. Sign in again and you can come straight back.',
+        ja: 'このページはログインが必須です。トークンが無い、期限切れ、または失効している場合は自動的にログアウトされ、サインイン画面に移動します。再度ログインすればそのまま戻れます。',
+        th: 'หน้านี้ต้องเข้าสู่ระบบก่อน ถ้าโทเค็นหายไป หมดอายุ หรือถูกเพิกถอน ระบบจะออกจากระบบให้อัตโนมัติและพาไปหน้าเข้าสู่ระบบ เข้าสู่ระบบใหม่แล้วกลับมาได้ทันที',
+        vi: 'Trang này yêu cầu phiên đã đăng nhập. Nếu token bị thiếu, hết hạn hoặc bị thu hồi, bạn sẽ tự động bị đăng xuất và chuyển tới màn hình đăng nhập. Đăng nhập lại là quay về được ngay.',
+      },
+    },
+    {
+      q: {
+        ko: '포지션의 "현재" 가격이 계속 —로 나옵니다.',
+        en: 'The "Current" price on a position keeps showing —.',
+        ja: 'ポジションの「現在」価格が — のままです。',
+        th: 'ราคา "ปัจจุบัน" ของตำแหน่งขึ้นเป็น — ตลอด',
+        vi: 'Giá "Hiện tại" của vị thế cứ hiện dấu —.',
+      },
+      a: {
+        ko: '현재가는 실시간 스트리밍이 아니라 주기적인 시세 조회로 채워집니다. 해당 종목의 가격을 아직 가져오지 못했거나 시장이 닫혀 있으면 —로 남습니다. 잠시 후 새로고침해 보세요.',
+        en: 'Current prices come from periodic price polling, not a live stream. If a price has not been fetched yet for that symbol, or the market is closed, the cell stays as —. Refresh again a little later.',
+        ja: '現在価格はライブ配信ではなく、定期的な価格取得で埋められます。その銘柄の価格をまだ取得できていない、または市場が閉じている場合は — のままです。少し経ってから再読み込みしてください。',
+        th: 'ราคาปัจจุบันมาจากการดึงราคาเป็นระยะ ไม่ใช่สตรีมสด ถ้ายังไม่ได้ดึงราคาของสัญลักษณ์นั้น หรือตลาดปิดอยู่ ช่องจะยังเป็น — ลองรีเฟรชอีกครั้งภายหลัง',
+        vi: 'Giá hiện tại đến từ việc lấy giá định kỳ, không phải luồng trực tiếp. Nếu chưa lấy được giá cho mã đó, hoặc thị trường đang đóng, ô sẽ giữ dấu —. Hãy làm mới lại sau một lúc.',
+      },
+    },
+    {
+      q: {
+        ko: '여기서 직접 주문을 넣거나 포지션을 청산할 수 있나요?',
+        en: 'Can I place an order or close a position from here?',
+        ja: 'ここから直接注文したりポジションを閉じたりできますか？',
+        th: 'สั่งซื้อขายหรือปิดตำแหน่งจากหน้านี้ได้ไหม',
+        vi: 'Tôi có thể đặt lệnh hoặc đóng vị thế từ đây không?',
+      },
+      a: {
+        ko: '아니요. 이 페이지는 읽기 전용 요약 화면입니다. Sooppiy는 시그널·복제 트레이딩 플랫폼이라 실제 증권사로 주문을 보내지 않으며, 여기 표시되는 포지션은 시세 조회로 추적되는 기록입니다.',
+        en: 'No. This page is a read-only summary. Sooppiy is a signal and copy-trading platform — it does not route orders to a real brokerage, and the positions shown here are records tracked by polling prices.',
+        ja: 'いいえ。このページは読み取り専用のサマリーです。Sooppiy はシグナル・コピートレードのプラットフォームであり、実際の証券会社に注文を送りません。ここに表示されるポジションは価格取得で追跡される記録です。',
+        th: 'ไม่ได้ หน้านี้เป็นสรุปแบบอ่านอย่างเดียว Sooppiy เป็นแพลตฟอร์มสัญญาณและคัดลอกการเทรด ไม่ได้ส่งคำสั่งไปยังโบรกเกอร์จริง ตำแหน่งที่แสดงคือบันทึกที่ติดตามด้วยการดึงราคา',
+        vi: 'Không. Trang này chỉ là bản tóm tắt chỉ đọc. Sooppiy là nền tảng tín hiệu và sao chép giao dịch — nó không chuyển lệnh tới công ty môi giới thật, và các vị thế hiển thị ở đây là bản ghi được theo dõi bằng cách lấy giá.',
+      },
+    },
+    {
+      q: {
+        ko: '일부 섹션만 비어 있는데 오류 메시지는 없습니다.',
+        en: 'Some sections are empty but there is no error message.',
+        ja: '一部のセクションだけ空ですが、エラーメッセージは出ていません。',
+        th: 'บางส่วนว่างเปล่าแต่ไม่มีข้อความแสดงข้อผิดพลาด',
+        vi: 'Một vài phần trống nhưng không có thông báo lỗi.',
+      },
+      a: {
+        ko: '포지션·팔로잉·전략은 각각 따로 불러오며 한쪽이 실패해도 나머지는 그대로 표시됩니다. 계정 정보를 불러오지 못했을 때만 상단에 붉은 오류 문구가 나타납니다. 실제로 아직 데이터가 없는 경우가 대부분입니다.',
+        en: 'Positions, following, and strategies are each fetched separately, and one failing does not blank the others. A red error line appears at the top only when the account info itself could not load. Most of the time an empty section simply means you have no data there yet.',
+        ja: 'ポジション・フォロー中・戦略はそれぞれ別々に読み込まれ、片方が失敗しても他は表示されます。上部に赤いエラー行が出るのは、アカウント情報自体を読み込めなかった場合だけです。多くの場合、空欄はまだデータが無いだけです。',
+        th: 'ตำแหน่ง การติดตาม และกลยุทธ์ถูกดึงแยกกัน ถ้าอันหนึ่งล้มเหลวอันอื่นยังแสดงตามปกติ บรรทัดข้อผิดพลาดสีแดงด้านบนจะขึ้นเฉพาะเมื่อโหลดข้อมูลบัญชีไม่ได้ ส่วนใหญ่ที่ว่างคือยังไม่มีข้อมูลจริง ๆ',
+        vi: 'Vị thế, đang theo dõi và chiến lược được tải riêng biệt; một phần lỗi không làm trống các phần còn lại. Dòng lỗi đỏ ở trên chỉ xuất hiện khi không tải được thông tin tài khoản. Phần lớn trường hợp, phần trống đơn giản là bạn chưa có dữ liệu.',
+      },
+    },
+  ],
+}
