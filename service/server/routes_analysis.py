@@ -1,15 +1,19 @@
 """Analysis routes — run the multi-agent trading-analysis engine on demand.
 
-POST /api/analysis/run   { symbol, market, lang }  -> { decision, report, analysts }
+POST /api/analysis/run          { symbol, market, lang }  -> { decision, report, analysts }
+POST /api/analysis/run/stream   same body -> SSE stream of per-step progress events,
+                                ending with {"event":"result", ...} (or {"event":"error"}).
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, field_validator
 
 from analysis_agents import run_analysis
 from routes_shared import RouteContext
@@ -21,6 +25,23 @@ class AnalysisRequest(BaseModel):
     symbol: str
     market: str = "us-stock"
     lang: str = "en"
+    # Optional LLM-provider override for this run (used by the Automation page
+    # test-run so a rule's provider choice powers its preview). Same allowed
+    # set as automation rules; empty/None -> the user's configured provider.
+    provider: Optional[str] = None
+    # Optional automation rule id (must belong to the caller). When set, the
+    # stream also emits a {"event":"gates"} verdict: would the worker's
+    # execution gates have placed this trade? Preview only — nothing executes.
+    config_id: Optional[int] = None
+
+    @field_validator("provider")
+    @classmethod
+    def _provider(cls, v):
+        from routes_automation import ALLOWED_PROVIDERS
+        v = (v or "").strip().lower()
+        if v not in ALLOWED_PROVIDERS:
+            raise ValueError(f"provider must be one of {[p for p in ALLOWED_PROVIDERS if p]} or empty")
+        return v or None
 
 
 class ChatStartRequest(BaseModel):
@@ -36,6 +57,20 @@ class ChatMessageRequest(BaseModel):
 class AssistantMessageRequest(BaseModel):
     message: str
     lang: str = "en"
+
+
+def _load_own_config(agent_id: int, config_id: int) -> Optional[dict]:
+    """The caller's automation rule, or None when absent / not theirs."""
+    from database import get_db_connection
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM automation_configs WHERE id = ? AND agent_id = ?",
+                       (config_id, agent_id))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 
 def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -55,7 +90,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         try:
             result = await asyncio.to_thread(
-                run_analysis, symbol, market, lang, None, agent.get("id"))
+                run_analysis, symbol, market, lang, data.provider, agent.get("id"))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:  # noqa: BLE001
@@ -63,6 +98,78 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         result["requested_by"] = agent.get("name")
         return result
+
+    @app.post("/api/analysis/run/stream")
+    async def run_analysis_stream_endpoint(data: AnalysisRequest,
+                                           authorization: str = Header(None)):
+        """Same pipeline as /api/analysis/run, but streams per-step progress as
+        Server-Sent Events so the UI can show the pipeline working live.
+        Events: {"event":"step", "step":..., "status":"start|done|error", ...}
+        then a final {"event":"result", "result": {...}} or {"event":"error"}."""
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        symbol = (data.symbol or "").strip()
+        if not symbol:
+            raise HTTPException(status_code=400, detail="symbol is required")
+        market = (data.market or "us-stock").strip().lower()
+        lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
+
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def progress(evt: dict) -> None:
+            # Called from worker threads inside the pipeline.
+            loop.call_soon_threadsafe(queue.put_nowait, evt)
+
+        def sse(payload: dict) -> str:
+            return f"data: {json.dumps(payload, ensure_ascii=False, default=str)}\n\n"
+
+        async def stream():
+            task = asyncio.create_task(asyncio.to_thread(
+                run_analysis, symbol, market, lang, data.provider, agent.get("id"),
+                progress=progress))
+            try:
+                while True:
+                    get = asyncio.ensure_future(queue.get())
+                    done, _ = await asyncio.wait({get, task},
+                                                 return_when=asyncio.FIRST_COMPLETED)
+                    if get in done:
+                        yield sse({"event": "step", **get.result()})
+                        continue
+                    get.cancel()
+                    while not queue.empty():  # drain events raced with completion
+                        yield sse({"event": "step", **queue.get_nowait()})
+                    try:
+                        result = task.result()
+                        result["requested_by"] = agent.get("name")
+                        # Automation test-run: report whether the worker's
+                        # execution gates would have placed this trade.
+                        # Fail-soft — a preview problem never hides the result.
+                        if data.config_id:
+                            try:
+                                config = await asyncio.to_thread(
+                                    _load_own_config, agent["id"], data.config_id)
+                                if config is not None:
+                                    from automation import preview_rule_execution
+                                    gates = await asyncio.to_thread(
+                                        preview_rule_execution, config, result)
+                                    yield sse({"event": "gates", **gates})
+                            except Exception:  # noqa: BLE001
+                                pass
+                        yield sse({"event": "result", "result": result})
+                    except Exception as exc:  # noqa: BLE001
+                        yield sse({"event": "error", "detail": str(exc)})
+                    return
+            finally:
+                if not task.done():
+                    task.cancel()
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache",
+                                          "X-Accel-Buffering": "no"})
 
     # ── Consultation chat (Plan 06 C3) — advisory only; never executes ──
 
@@ -167,9 +274,33 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=f"Assistant failed: {exc}")
 
+    @app.get("/api/assistant/sessions")
+    async def list_assistant_sessions(authorization: str = Header(None)):
+        """Every past conversation this member had with the assistant."""
+        agent = _agent(authorization)
+        from assistant import list_sessions
+        return {"sessions": list_sessions(agent["id"])}
+
+    @app.get("/api/assistant/sessions/{session_id}")
+    async def read_assistant_session(session_id: int, authorization: str = Header(None)):
+        agent = _agent(authorization)
+        from assistant import get_session_messages
+        messages = get_session_messages(agent["id"], session_id)
+        if messages is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"messages": messages}
+
+    @app.post("/api/assistant/sessions")
+    async def new_assistant_session(authorization: str = Header(None)):
+        """Start a fresh conversation; all previous ones are kept."""
+        agent = _agent(authorization)
+        from assistant import start_new_session
+        return {"session": start_new_session(agent["id"])}
+
     @app.delete("/api/assistant")
     async def clear_assistant(authorization: str = Header(None)):
+        """History is never deleted: 'clear' now just starts a new conversation."""
         agent = _agent(authorization)
-        from assistant import clear_session
-        clear_session(agent["id"])
+        from assistant import start_new_session
+        start_new_session(agent["id"])
         return {"ok": True}

@@ -258,10 +258,147 @@ def _regime_blocks(regime_read: Optional[dict[str, Any]], action: Optional[str])
     return f"regime '{regime_read.get('regime')}' blocks new buys ({reasons})"
 
 
+def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
+                             market: str, action: Optional[str],
+                             confidence: Optional[float], entry: Any,
+                             regime_read: Optional[dict[str, Any]] = None,
+                             technical: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """The worker's pre-trade gate chain, side-effect free — shared by run_rule
+    and the test-run preview so the two can never drift. Returns
+      {skip_reason, gate, regime_size_multiplier}
+    skip_reason None => the order may proceed to execution; gate is the
+    risk-engine verdict (with sized quantity + SL/TP) when it was consulted."""
+    from routes_shared import is_market_open
+
+    out: dict[str, Any] = {"skip_reason": None, "gate": None, "regime_size_multiplier": None}
+    if not config.get("auto_execute"):
+        out["skip_reason"] = "auto_execute off"
+    elif config.get("account_type") != "simulator":
+        # Live execution is intentionally not wired — record and skip.
+        out["skip_reason"] = "real account execution disabled in this build"
+    elif action not in EXECUTABLE_ACTIONS:
+        out["skip_reason"] = f"decision is '{action}'"
+    elif (confidence or 0) < float(config.get("min_confidence") or 0):
+        out["skip_reason"] = f"confidence {confidence} below threshold {config.get('min_confidence')}"
+    elif not is_market_open(market):
+        out["skip_reason"] = "market closed"
+    elif _event_guard_blocks():
+        # Card 07 — scheduled macro releases spike volatility without a
+        # reliable direction; skip new entries inside the release window.
+        # Opt-in via EVENT_GUARD_ENABLED (default off).
+        out["skip_reason"] = _event_guard_blocks()
+    elif _time_stop_cooldown_blocks(agent_id, symbol, market, action):
+        out["skip_reason"] = _time_stop_cooldown_blocks(agent_id, symbol, market, action)
+    elif _regime_blocks(regime_read, action):
+        # Phase 2 regime gate — active only when REGIME_FILTER_ENABLED
+        # (Phase-4 flip). Blocks new buys in panic/euphoria/event regimes;
+        # never blocks sells.
+        out["skip_reason"] = _regime_blocks(regime_read, action)
+    elif not entry or entry <= 0:
+        out["skip_reason"] = "no valid price in decision"
+    elif (config.get("mode") or "manual") == "agent" and action == "buy" and (
+            _budget_reason := _agent_budget_blocks(config, float(entry))):
+        # Deterministic budget cap — the planner proposes, this disposes.
+        out["skip_reason"] = _budget_reason
+    else:
+        quantity = float(config.get("size_usd") or 0) / float(entry)
+        if (action == "buy" and regime_read is not None
+                and regime_read.get("enforced")):
+            multiplier = float(regime_read.get("size_multiplier") or 1.0)
+            if multiplier != 1.0:
+                quantity *= multiplier
+                out["regime_size_multiplier"] = multiplier
+        # Risk gate: breaker → limits → vol sizing → Kelly. No-op unless
+        # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
+        # σ passed is the DAILY sigma (never sigma_24h_pct — hourly units).
+        from risk_engine import evaluate_order
+        sigma_daily = technical.get("sigma_daily_pct") if isinstance(technical, dict) else None
+        gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry),
+                              sigma_daily_pct=sigma_daily)
+        out["gate"] = gate
+        if not gate.allowed:
+            out["skip_reason"] = gate.reason
+    return out
+
+
+def _execution_feasibility(agent_id: int, symbol: str, market: str, side: str,
+                           quantity: float, price: float) -> Optional[str]:
+    """Read-only mirror of execute_paper_trade's cash/position preconditions,
+    for the test-run preview. Returns a skip reason or None."""
+    from fees import TRADE_FEE_RATE
+    from routes_shared import get_position_snapshot
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if side == "sell":
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            if not pos or float(pos["quantity"]) <= 0:
+                return "no long position to sell"
+        elif side == "cover":
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            if not pos or float(pos["quantity"]) >= 0:
+                return "no short position to cover"
+        elif side in ("buy", "short"):
+            cursor.execute("SELECT cash FROM agents WHERE id = ?", (agent_id,))
+            row = cursor.fetchone()
+            cash = row["cash"] if row else 0
+            need = price * quantity * (1 + TRADE_FEE_RATE)
+            if cash < need:
+                return f"insufficient cash (${cash:.2f} < ${need:.2f})"
+        return None
+    finally:
+        conn.close()
+
+
+def preview_rule_execution(config: dict[str, Any], analysis: dict[str, Any]) -> dict[str, Any]:
+    """'Would this have executed?' — the worker's gate chain applied to an
+    already-computed analysis plus a read-only feasibility check. Never places
+    a trade and never writes. Powers the Automation test-run verdict."""
+    agent_id = config["agent_id"]
+    symbol = (analysis.get("symbol") or config.get("symbol") or "").upper()
+    market = analysis.get("market") or config.get("market") or "crypto"
+
+    _analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
+    _tech_block = (_analysts or {}).get("technical")
+    technical = _tech_block.get("data") if isinstance(_tech_block, dict) else None
+
+    regime_read = None
+    if market == "crypto":
+        try:
+            from regime import evaluate_market_regime
+            regime_read = evaluate_market_regime()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("regime read unavailable in preview: %s", exc)
+
+    decision = analysis.get("decision") or {}
+    action = decision.get("action")
+    confidence = decision.get("confidence")
+    entry = decision.get("entry")
+
+    gates = evaluate_execution_gates(config, agent_id, symbol, market, action,
+                                     confidence, entry, regime_read, technical)
+    out: dict[str, Any] = {"would_execute": False, "skip_reason": gates["skip_reason"],
+                           "action": action, "confidence": confidence}
+    gate = gates.get("gate")
+    if gates["skip_reason"] is None and gate is not None:
+        feasibility = _execution_feasibility(agent_id, symbol, market, action,
+                                             gate.quantity, float(entry))
+        if feasibility:
+            out["skip_reason"] = feasibility
+        else:
+            out["would_execute"] = True
+            out["quantity"] = gate.quantity
+            out["stop_loss"] = gate.stop_loss
+            out["take_profit"] = gate.take_profit
+            if gate.adjustment:
+                out["adjustment"] = gate.adjustment
+    return out
+
+
 def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     """Run one automation rule: analysis -> (maybe) execute -> record the run."""
     from analysis_agents import run_analysis
-    from routes_shared import is_market_open
 
     config_id = config["id"]
     agent_id = config["agent_id"]
@@ -373,73 +510,34 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         if decision.get("verification") is not None:
             result["verify"] = decision["verification"]
 
-        if not config.get("auto_execute"):
-            result["skip_reason"] = "auto_execute off"
-        elif config.get("account_type") != "simulator":
-            # Live execution is intentionally not wired — record and skip.
-            result["skip_reason"] = "real account execution disabled in this build"
-        elif action not in EXECUTABLE_ACTIONS:
-            result["skip_reason"] = f"decision is '{action}'"
-        elif (confidence or 0) < float(config.get("min_confidence") or 0):
-            result["skip_reason"] = f"confidence {confidence} below threshold {config.get('min_confidence')}"
-        elif not is_market_open(market):
-            result["skip_reason"] = "market closed"
-        elif _event_guard_blocks():
-            # Card 07 — scheduled macro releases spike volatility without a
-            # reliable direction; skip new entries inside the release window.
-            # Opt-in via EVENT_GUARD_ENABLED (default off).
-            result["skip_reason"] = _event_guard_blocks()
-        elif _time_stop_cooldown_blocks(agent_id, symbol, market, action):
-            result["skip_reason"] = _time_stop_cooldown_blocks(agent_id, symbol, market, action)
-        elif _regime_blocks(regime_read, action):
-            # Phase 2 regime gate — active only when REGIME_FILTER_ENABLED
-            # (Phase-4 flip). Blocks new buys in panic/euphoria/event regimes;
-            # never blocks sells.
-            result["skip_reason"] = _regime_blocks(regime_read, action)
-        elif not entry or entry <= 0:
-            result["skip_reason"] = "no valid price in decision"
-        elif (config.get("mode") or "manual") == "agent" and action == "buy" and (
-                _budget_reason := _agent_budget_blocks(config, float(entry))):
-            # Deterministic budget cap — the planner proposes, this disposes.
-            result["skip_reason"] = _budget_reason
+        gates = evaluate_execution_gates(config, agent_id, symbol, market, action,
+                                         confidence, entry, regime_read, technical)
+        if gates.get("regime_size_multiplier") is not None:
+            result["regime_size_multiplier"] = gates["regime_size_multiplier"]
+        gate = gates.get("gate")
+        if gates["skip_reason"] is not None or gate is None:
+            result["skip_reason"] = gates["skip_reason"]
         else:
-            quantity = float(config.get("size_usd") or 0) / float(entry)
-            if (action == "buy" and regime_read is not None
-                    and regime_read.get("enforced")):
-                multiplier = float(regime_read.get("size_multiplier") or 1.0)
-                if multiplier != 1.0:
-                    quantity *= multiplier
-                    result["regime_size_multiplier"] = multiplier
-            # Risk gate: breaker → limits → vol sizing → Kelly. No-op unless
-            # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
-            # σ passed is the DAILY sigma (never sigma_24h_pct — hourly units).
-            from risk_engine import evaluate_order
-            sigma_daily = technical.get("sigma_daily_pct") if isinstance(technical, dict) else None
-            gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry),
-                                  sigma_daily_pct=sigma_daily)
-            if not gate.allowed:
-                result["skip_reason"] = gate.reason
+            signal_id, skip = execute_paper_trade(
+                agent_id, symbol, market, action, gate.quantity, float(entry),
+                stop_loss=gate.stop_loss, take_profit=gate.take_profit)
+            if signal_id:
+                result["executed"] = True
+                if gate.adjustment:
+                    logger.info("risk gate adjusted order (config %s): %s",
+                                config_id, gate.adjustment)
+                # Alert (Plan 06 C3) — in-app always; email/SMS per user prefs.
+                try:
+                    from alerts import send_alert
+                    send_alert(agent_id, "trade_executed",
+                               f"{action.upper()} {symbol}",
+                               (f"Automation executed {action} {gate.quantity:.6f} "
+                                f"{symbol} @ ${float(entry):.2f} (confidence {confidence})"),
+                               dedupe_key=f"exec:{signal_id}")
+                except Exception:  # noqa: BLE001
+                    logger.debug("trade alert failed for signal %s", signal_id)
             else:
-                signal_id, skip = execute_paper_trade(
-                    agent_id, symbol, market, action, gate.quantity, float(entry),
-                    stop_loss=gate.stop_loss, take_profit=gate.take_profit)
-                if signal_id:
-                    result["executed"] = True
-                    if gate.adjustment:
-                        logger.info("risk gate adjusted order (config %s): %s",
-                                    config_id, gate.adjustment)
-                    # Alert (Plan 06 C3) — in-app always; email/SMS per user prefs.
-                    try:
-                        from alerts import send_alert
-                        send_alert(agent_id, "trade_executed",
-                                   f"{action.upper()} {symbol}",
-                                   (f"Automation executed {action} {gate.quantity:.6f} "
-                                    f"{symbol} @ ${float(entry):.2f} (confidence {confidence})"),
-                                   dedupe_key=f"exec:{signal_id}")
-                    except Exception:  # noqa: BLE001
-                        logger.debug("trade alert failed for signal %s", signal_id)
-                else:
-                    result["skip_reason"] = skip
+                result["skip_reason"] = skip
     except Exception as exc:  # noqa: BLE001
         logger.exception("automation rule %s failed: %s", config_id, exc)
         result["skip_reason"] = f"error: {exc}"

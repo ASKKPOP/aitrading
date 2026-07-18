@@ -18,17 +18,32 @@ and merged in when their keys are present; missing sources are simply skipped.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from llm_client import generate_text, llm_configured
 
 logger = logging.getLogger(__name__)
 
 VALID_ACTIONS = ("buy", "sell", "hold")
+
+# Progress callback: receives {"step": str, "status": "start"|"done"|"error", "ts": iso, ...}.
+# Used by the streaming endpoint to show the pipeline live; must never break the run.
+ProgressFn = Callable[[dict[str, Any]], None]
+
+
+def _emit(progress: Optional[ProgressFn], step: str, status: str, **extra: Any) -> None:
+    if progress is None:
+        return
+    try:
+        progress({"step": step, "status": status, "ts": _now_iso(), **extra})
+    except Exception:  # noqa: BLE001 — a broken listener must not kill analysis
+        pass
 
 
 def _now_iso() -> str:
@@ -481,7 +496,8 @@ def _apply_verification(decision: dict[str, Any],
 
 def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
                  provider: Optional[str] = None,
-                 agent_id: Optional[int] = None) -> dict[str, Any]:
+                 agent_id: Optional[int] = None,
+                 progress: Optional[ProgressFn] = None) -> dict[str, Any]:
     """Run the full multi-agent pipeline for one symbol and return decision + report.
 
     provider optionally forces a specific LLM provider for this run (automation
@@ -521,45 +537,92 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
 
     token = set_llm_context(ctx) if ctx is not None else None
     try:
-        return _run_analysis_inner(symbol, market, lang, guidelines=guidelines)
+        return _run_analysis_inner(symbol, market, lang, guidelines=guidelines,
+                                   progress=progress)
     finally:
         if token is not None:
             reset_llm_context(token)
 
 
+def _timed_step(progress: Optional[ProgressFn], step: str, fn, *args):
+    """Run one pipeline step, emitting start/done (or error) around it."""
+    _emit(progress, step, "start")
+    try:
+        out = fn(*args)
+    except Exception as exc:  # noqa: BLE001
+        _emit(progress, step, "error", detail=str(exc)[:200])
+        raise
+    _emit(progress, step, "done")
+    return out
+
+
+def _submit_step(pool: ThreadPoolExecutor, progress: Optional[ProgressFn],
+                 step: str, fn, *args):
+    """Submit a step to the pool with a copy of the current context, so the
+    per-run LLM context (user provider/model/key) survives the thread hop."""
+    ctx = contextvars.copy_context()
+    return pool.submit(ctx.run, _timed_step, progress, step, fn, *args)
+
+
 def _run_analysis_inner(symbol: str, market: str, lang: str,
-                        guidelines: Optional[str] = None) -> dict[str, Any]:
-    technical = _gather_technical(symbol, market)
-    news = _gather_news(symbol, market)
-    sentiment = _gather_sentiment(symbol, market, news)
-    fundamentals = _gather_fundamentals_macro(symbol, market)
+                        guidelines: Optional[str] = None,
+                        progress: Optional[ProgressFn] = None) -> dict[str, Any]:
+    # Data gathering: technical / news / fundamentals are independent and run
+    # concurrently; sentiment needs the news breakdown so it starts after news.
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        f_technical = _submit_step(pool, progress, "gather:technical",
+                                   _gather_technical, symbol, market)
+        f_news = _submit_step(pool, progress, "gather:news",
+                              _gather_news, symbol, market)
+        f_fundamentals = _submit_step(pool, progress, "gather:fundamentals_macro",
+                                      _gather_fundamentals_macro, symbol, market)
+        news = f_news.result()
+        f_sentiment = _submit_step(pool, progress, "gather:sentiment",
+                                   _gather_sentiment, symbol, market, news)
+        technical = f_technical.result()
+        fundamentals = f_fundamentals.result()
+        sentiment = f_sentiment.result()
 
-    briefs = {
-        "news": _brief("News Analyst",
-                       "Summarize what today's news implies for this asset (company, global, macro, government).",
-                       news, lang),
-        "sentiment": _brief("Sentiment Analyst",
-                            "Judge crowd/social sentiment and whether it is a tailwind or a contrarian warning.",
-                            sentiment, lang),
-        "fundamentals_macro": _brief("Fundamentals & Macro Analyst",
-                                     "Read the macro regime and prediction-market odds; is the backdrop supportive?",
-                                     fundamentals, lang),
-        "technical": _brief("Technical Analyst",
-                           "Read trend, momentum, and key support/resistance; what is price telling us?",
-                           technical, lang),
+    # Analyst briefs: four independent LLM calls, run concurrently.
+    brief_specs = {
+        "news": ("News Analyst",
+                 "Summarize what today's news implies for this asset (company, global, macro, government).",
+                 news),
+        "sentiment": ("Sentiment Analyst",
+                      "Judge crowd/social sentiment and whether it is a tailwind or a contrarian warning.",
+                      sentiment),
+        "fundamentals_macro": ("Fundamentals & Macro Analyst",
+                               "Read the macro regime and prediction-market odds; is the backdrop supportive?",
+                               fundamentals),
+        "technical": ("Technical Analyst",
+                      "Read trend, momentum, and key support/resistance; what is price telling us?",
+                      technical),
     }
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        brief_futures = {
+            role: _submit_step(pool, progress, f"brief:{role}",
+                               _brief, title, instructions, data, lang)
+            for role, (title, instructions, data) in brief_specs.items()
+        }
+        briefs = {role: f.result() for role, f in brief_futures.items()}
 
+    _emit(progress, "decision", "start")
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                                      guidelines=guidelines)
+    _emit(progress, "decision", "done",
+          action=decision.get("action"), confidence=decision.get("confidence"))
 
     # Verification pass (advisory by default; enforce applies deterministically).
     # Fail-open: verifier trouble never blocks the pipeline.
+    _emit(progress, "verify", "start")
     try:
         verification = _verify_decision(symbol, market, briefs, technical, decision, lang,
                                         guidelines=guidelines)
     except Exception:  # noqa: BLE001
         verification = None
     decision = _apply_verification(decision, verification)
+    _emit(progress, "verify", "done",
+          verdict=(verification or {}).get("verdict") or "skipped")
 
     return {
         "symbol": symbol,
