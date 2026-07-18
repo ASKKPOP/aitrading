@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
@@ -89,6 +89,8 @@ export function AdminPage() {
   const [subs, setSubs] = useState<any | null>(null)
   const [subFilter, setSubFilter] = useState('')
   const [contracts, setContracts] = useState<any | null>(null)
+  const [planList, setPlanList] = useState<any[]>([])
+  const [grant, setGrant] = useState({ email: '', plan_code: 'junior', days: '30', note: '' })
   const [assets, setAssets] = useState<any | null>(null)
   const [positions, setPositions] = useState<any | null>(null)
   const [autoStats, setAutoStats] = useState<any | null>(null)
@@ -134,6 +136,13 @@ export function AdminPage() {
     approve: tr(language, { ko: '승인', en: 'Approve' }),
     reject: tr(language, { ko: '거절', en: 'Reject' }),
     extend30: tr(language, { ko: '+30일', en: '+30 days' }),
+    cancelSub: tr(language, { ko: '해지', en: 'Cancel' }),
+    cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.' }),
+    grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)' }),
+    grantBtn: tr(language, { ko: '부여', en: 'Grant' }),
+    grantDays: tr(language, { ko: '일수', en: 'Days' }),
+    grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)' }),
+    grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.' }),
     status: tr(language, { ko: '상태', en: 'Status' }),
     plan: tr(language, { ko: '플랜', en: 'Plan' }),
     method: tr(language, { ko: '결제수단', en: 'Method' }),
@@ -175,10 +184,15 @@ export function AdminPage() {
   const hdr = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   async function call(path: string, opts: RequestInit = {}) {
+    const used = token
     const r = await fetch(`${API_BASE}/admin/${path}`, { headers: hdr, ...opts })
     if (r.status === 401) {
-      localStorage.removeItem(ADMIN_TOKEN_KEY)
-      setToken(''); setMe(null); setError(T.sessionExpired)
+      // Only kill the session when the 401 belongs to the CURRENT token — a
+      // stale in-flight request resolving late must not log out a fresh login.
+      if (localStorage.getItem(ADMIN_TOKEN_KEY) === used) {
+        localStorage.removeItem(ADMIN_TOKEN_KEY)
+        setToken(''); setMe(null); setError(T.sessionExpired)
+      }
       throw new Error('401')
     }
     if (!r.ok) {
@@ -228,6 +242,10 @@ export function AdminPage() {
       if (which === 'subscriptions') {
         setSubs(await call(`subscriptions?status=${encodeURIComponent(subFilter)}&limit=100`))
         setContracts(await call('contracts?limit=100'))
+        if (!planList.length) {
+          const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
+          setPlanList(p.plans || [])
+        }
       }
       if (which === 'assets') setAssets(await call('stats/assets'))
       if (which === 'positions') setPositions(await call('stats/positions'))
@@ -432,6 +450,31 @@ export function AdminPage() {
       {/* ── Subscriptions ── */}
       {tab === 'subscriptions' && (
         <>
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.grantTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.grantReplaces}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input placeholder={T.email} value={grant.email}
+                onChange={e => setGrant(p => ({ ...p, email: e.target.value }))} style={{ ...inputStyle, width: 220 }} />
+              <select value={grant.plan_code} onChange={e => setGrant(p => ({ ...p, plan_code: e.target.value }))} style={inputStyle}>
+                {(planList.length ? planList : [{ code: 'junior' }, { code: 'pro' }, { code: 'professional' }, { code: 'enterprise' }]).map((p: any) => (
+                  <option key={p.code} value={p.code}>{p.name || p.code}{p.price_usd ? ` ($${p.price_usd})` : ''}</option>
+                ))}
+              </select>
+              <input placeholder={T.grantDays} value={grant.days} inputMode="numeric"
+                onChange={e => setGrant(p => ({ ...p, days: e.target.value }))} style={{ ...inputStyle, width: 80 }} />
+              <input placeholder={T.grantNote} value={grant.note}
+                onChange={e => setGrant(p => ({ ...p, note: e.target.value }))} style={{ ...inputStyle, width: 200 }} />
+              <button style={primaryBtn} disabled={!grant.email.trim() || !(parseInt(grant.days, 10) > 0)}
+                onClick={() => {
+                  act('subscriptions/grant', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: grant.email.trim(), plan_code: grant.plan_code, days: parseInt(grant.days, 10) || 30, note: grant.note }),
+                  }, 'subscriptions')
+                  setGrant(p => ({ ...p, email: '', note: '' }))
+                }}>{T.grantBtn}</button>
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             {['', 'pending', 'active', 'rejected', 'expired'].map(s => (
               <button key={s || 'all'} style={chip(subFilter === s)} onClick={() => setSubFilter(s)}>
@@ -461,7 +504,13 @@ export function AdminPage() {
                         }}>{T.reject}</button>
                       </>}
                       {(s.status === 'active' || s.status === 'expired') &&
-                        <button style={actionBtn} onClick={() => act(`subscriptions/${s.id}/extend`, { method: 'POST', body: JSON.stringify({ days: 30 }) }, 'subscriptions')}>{T.extend30}</button>}
+                        <button style={actionBtn} onClick={() => act(`subscriptions/${s.id}/extend`, { method: 'POST', body: JSON.stringify({ days: 30 }) }, 'subscriptions')}>{T.extend30}</button>}{' '}
+                      {s.status === 'active' &&
+                        <button style={dangerBtn} onClick={() => {
+                          if (!window.confirm(T.cancelConfirm)) return
+                          const note = window.prompt(T.grantNote) || ''
+                          act(`subscriptions/${s.id}/cancel`, { method: 'POST', body: JSON.stringify({ note }) }, 'subscriptions')
+                        }}>{T.cancelSub}</button>}
                     </td>
                   </tr>
                 ))}
@@ -652,8 +701,8 @@ export function AdminPage() {
               <thead><tr><th style={th}>ID</th><th style={th}>Title</th><th style={th}>{T.agent}</th><th style={th}>{T.replies}</th><th style={th}>{T.created}</th><th style={th}></th></tr></thead>
               <tbody>
                 {(discussions?.discussions || []).map((d: any) => (
-                  <>
-                    <tr key={d.signal_id}>
+                  <Fragment key={d.signal_id}>
+                    <tr>
                       <td style={td}>{d.signal_id}</td>
                       <td style={{ ...td, maxWidth: 340 }}>
                         <div style={{ fontWeight: 600 }}>{d.title || '(untitled)'}</div>
@@ -673,7 +722,7 @@ export function AdminPage() {
                       <td style={td}><button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`discussions/${d.signal_id}`, { method: 'DELETE' }, 'discussions')}>{T.del}</button></td>
                     </tr>
                     {replies[d.signal_id] && (
-                      <tr key={`${d.signal_id}-replies`}>
+                      <tr>
                         <td style={td} colSpan={6}>
                           {(replies[d.signal_id] || []).map((r: any) => (
                             <div key={r.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0 4px 24px', fontSize: 13 }}>
@@ -687,7 +736,7 @@ export function AdminPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
                 {!(discussions?.discussions || []).length && <tr><td style={td} colSpan={6}>{T.noData}</td></tr>}
               </tbody>

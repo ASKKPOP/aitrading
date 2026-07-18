@@ -143,6 +143,60 @@ class SubscriptionFlowTests(_Base):
         r = self.client.get("/api/admin/contracts", headers=self.admin)
         self.assertEqual(r.json()["total"], 1)
 
+    def test_manual_grant_and_replace(self):
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        # Grant by email with no prior payment request.
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "member@x.com", "plan_code": "pro", "days": 45},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["replaced"], 0)
+        r = self.client.get("/api/subscriptions/me", headers=user_h)
+        self.assertEqual(r.json()["status"], "active")
+        self.assertEqual(r.json()["subscription"]["plan_code"], "pro")
+        # Granting again replaces the active row (plan change) — enterprise is
+        # allowed here: manual grant is how contracts activate.
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "member@x.com", "plan_code": "enterprise",
+                                   "days": 365, "note": "contract #1"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["replaced"], 1)
+        r = self.client.get("/api/subscriptions/me", headers=user_h)
+        self.assertEqual(r.json()["subscription"]["plan_code"], "enterprise")
+        # Comped grants are not revenue.
+        r = self.client.get("/api/admin/analytics", headers=self.admin)
+        revenue = sum(m["revenue"] for m in r.json()["revenue_by_month"])
+        self.assertEqual(revenue, 0)
+        # Unknown member / plan.
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "ghost@x.com", "plan_code": "pro"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 404)
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "member@x.com", "plan_code": "gold"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 404)
+
+    def test_cancel_active_subscription(self):
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        self.client.post("/api/admin/subscriptions/grant",
+                         json={"email": "member@x.com", "plan_code": "junior"},
+                         headers=self.admin)
+        r = self.client.get("/api/admin/subscriptions?status=active", headers=self.admin)
+        sub_id = r.json()["subscriptions"][0]["id"]
+        r = self.client.post(f"/api/admin/subscriptions/{sub_id}/cancel",
+                             json={"note": "refunded"}, headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        r = self.client.get("/api/subscriptions/me", headers=user_h)
+        self.assertEqual(r.json()["status"], "none")
+        # Cancelling twice fails cleanly.
+        r = self.client.post(f"/api/admin/subscriptions/{sub_id}/cancel",
+                             json={"note": ""}, headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+
     def test_paypal_unconfigured_503(self):
         session = self._make_user()
         user_h = {"Authorization": f"Bearer {session['token']}"}

@@ -7,9 +7,11 @@ Member management
 
 Paid membership
   GET  /api/admin/subscriptions                 list (filter by status)
+  POST /api/admin/subscriptions/grant           manually give a member a plan
   POST /api/admin/subscriptions/{id}/approve    pending → active (30 days)
   POST /api/admin/subscriptions/{id}/reject     pending → rejected
   POST /api/admin/subscriptions/{id}/extend     push expires_at out N days
+  POST /api/admin/subscriptions/{id}/cancel     active/pending → cancelled
   GET  /api/admin/contracts                     enterprise contract requests
   POST /api/admin/contracts/{id}/status         new / contacted / closed
 
@@ -68,6 +70,14 @@ class MemberStatusBody(BaseModel):
 
 
 class SubscriptionDecisionBody(BaseModel):
+    note: str = ""
+
+
+class SubscriptionGrantBody(BaseModel):
+    email: str = ""
+    user_id: int = 0
+    plan_code: str
+    days: int = 30
     note: str = ""
 
 
@@ -197,6 +207,55 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         return {"subscriptions": subs, "total": total, "by_status": by_status}
 
+    @app.post('/api/admin/subscriptions/grant')
+    async def admin_subscription_grant(body: SubscriptionGrantBody,
+                                       authorization: str = Header(None)):
+        """Manually give a member a plan — comps, grandfathered accounts, and
+        enterprise contracts (the one path that may grant contact-only plans).
+        Replaces any pending/active subscription; amount 0 (not revenue)."""
+        admin = require_admin(authorization)
+        days = max(1, min(body.days, 3650))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            if body.user_id:
+                cursor.execute("SELECT id, email FROM users WHERE id = ?", (body.user_id,))
+            elif body.email.strip():
+                cursor.execute("SELECT id, email FROM users WHERE email = ?",
+                               (body.email.strip().lower(),))
+            else:
+                raise HTTPException(status_code=400, detail="email or user_id required")
+            user = cursor.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="Member not found")
+            cursor.execute(
+                "SELECT code FROM subscription_plans WHERE code = ? AND active = 1",
+                (body.plan_code,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Unknown plan")
+            now = _now()
+            cursor.execute(
+                "UPDATE user_subscriptions SET status = 'cancelled', decided_by = ?, "
+                "decided_at = ?, note = 'replaced by manual grant' "
+                "WHERE user_id = ? AND status IN ('pending', 'active')",
+                (admin["id"], _iso(now), user["id"]),
+            )
+            replaced = cursor.rowcount
+            cursor.execute(
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, amount_usd, "
+                "started_at, expires_at, decided_by, decided_at, note) "
+                "VALUES (?, ?, 'active', 'manual', 0, ?, ?, ?, ?, ?)",
+                (user["id"], body.plan_code, _iso(now), _iso(now + timedelta(days=days)),
+                 admin["id"], _iso(now), body.note[:1000]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "subscription.grant", f"user:{user['id']}",
+              f"email={user['email']} plan={body.plan_code} days={days} replaced={replaced}")
+        return {"ok": True, "status": "active", "user_id": user["id"],
+                "expires_at": _iso(now + timedelta(days=days)), "replaced": replaced}
+
     @app.post('/api/admin/subscriptions/{sub_id}/approve')
     async def admin_subscription_approve(sub_id: int, body: SubscriptionDecisionBody,
                                          authorization: str = Header(None)):
@@ -289,6 +348,33 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         audit(admin, "subscription.extend", f"subscription:{sub_id}",
               f"user={row['user_id']} days={days}")
         return {"ok": True, "status": "active"}
+
+    @app.post('/api/admin/subscriptions/{sub_id}/cancel')
+    async def admin_subscription_cancel(sub_id: int, body: SubscriptionDecisionBody,
+                                        authorization: str = Header(None)):
+        admin = require_admin(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id, user_id, plan_code, status FROM user_subscriptions WHERE id = ?",
+                (sub_id,))
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Subscription not found")
+            if row["status"] not in ("active", "pending"):
+                raise HTTPException(status_code=400, detail=f"Cannot cancel a {row['status']} subscription")
+            cursor.execute(
+                "UPDATE user_subscriptions SET status = 'cancelled', decided_by = ?, "
+                "decided_at = ?, note = ? WHERE id = ?",
+                (admin["id"], utc_now_iso_z(), body.note[:1000], sub_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "subscription.cancel", f"subscription:{sub_id}",
+              f"user={row['user_id']} plan={row['plan_code']} note={body.note[:200]}")
+        return {"ok": True, "status": "cancelled"}
 
     @app.get('/api/admin/contracts')
     async def admin_contracts(limit: int = 50, offset: int = 0,
