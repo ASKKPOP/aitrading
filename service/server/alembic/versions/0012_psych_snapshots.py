@@ -18,7 +18,7 @@ def upgrade() -> None:
         sa.Column("spikes_json", sa.Text, nullable=True),
         sa.Column("shock_json", sa.Text, nullable=True),
         sa.Column("anticipation_json", sa.Text, nullable=True),
-        sa.Column("created_at", sa.Text, nullable=False),
+        sa.Column("created_at", sa.String(64), nullable=False),
     )
     op.create_index("idx_psych_snapshots_created", "psych_snapshots", ["created_at"])
 

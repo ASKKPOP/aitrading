@@ -17,7 +17,7 @@ def upgrade() -> None:
         sa.Column("candidates_json", sa.Text, nullable=True),
         sa.Column("mentions_json", sa.Text, nullable=True),
         sa.Column("instruments_json", sa.Text, nullable=True),
-        sa.Column("created_at", sa.Text, nullable=False),
+        sa.Column("created_at", sa.String(64), nullable=False),
     )
     op.create_index("idx_scanner_snapshots_created", "scanner_snapshots", ["created_at"])
 

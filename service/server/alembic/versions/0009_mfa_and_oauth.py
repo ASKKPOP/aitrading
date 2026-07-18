@@ -42,7 +42,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_oauth_identities_user
+        CREATE INDEX idx_oauth_identities_user
         ON oauth_identities(user_id, provider)
     """)
 

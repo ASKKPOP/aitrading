@@ -37,7 +37,7 @@ def upgrade() -> None:
             id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id        INTEGER NOT NULL REFERENCES agents(id),
             broker          TEXT    NOT NULL,
-            execution_mode  TEXT    NOT NULL DEFAULT 'paper',
+            execution_mode  VARCHAR(32)    NOT NULL DEFAULT 'paper',
             credentials_enc TEXT,
             is_active       INTEGER NOT NULL DEFAULT 1,
             created_at      TEXT DEFAULT ({_NOW}),
@@ -45,7 +45,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_broker_accounts_agent
+        CREATE INDEX idx_broker_accounts_agent
         ON broker_accounts(agent_id, is_active)
     """)
 
@@ -55,25 +55,25 @@ def upgrade() -> None:
             id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id         INTEGER NOT NULL REFERENCES agents(id),
             symbol           TEXT    NOT NULL,
-            market           TEXT    NOT NULL DEFAULT 'us-stock',
+            market           VARCHAR(32)    NOT NULL DEFAULT 'us-stock',
             side             TEXT    NOT NULL,
             quantity         NUMERIC(20,8) NOT NULL,
             price            NUMERIC(20,8) NOT NULL,
-            status           TEXT    NOT NULL DEFAULT 'pending',
-            execution_mode   TEXT    NOT NULL DEFAULT 'paper',
-            broker           TEXT    NOT NULL DEFAULT 'paper',
+            status           VARCHAR(32)    NOT NULL DEFAULT 'pending',
+            execution_mode   VARCHAR(32)    NOT NULL DEFAULT 'paper',
+            broker           VARCHAR(32)    NOT NULL DEFAULT 'paper',
             broker_order_id  TEXT,
             error_message    TEXT,
             signal_id        INTEGER REFERENCES signals(signal_id),
             leader_id        INTEGER,
             token_id         TEXT,
             outcome          TEXT,
-            created_at       TEXT DEFAULT ({_NOW}),
+            created_at VARCHAR(64) DEFAULT ({_NOW}),
             filled_at        TEXT
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_broker_orders_agent_created
+        CREATE INDEX idx_broker_orders_agent_created
         ON broker_orders(agent_id, created_at)
     """)
 
@@ -98,7 +98,7 @@ def upgrade() -> None:
             id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id     INTEGER NOT NULL REFERENCES agents(id),
             broker       TEXT    NOT NULL,
-            tcs_version  TEXT    NOT NULL DEFAULT 'v1',
+            tcs_version  VARCHAR(32)    NOT NULL DEFAULT 'v1',
             ip_address   TEXT,
             user_agent   TEXT,
             created_at   TEXT DEFAULT ({_NOW})
@@ -122,7 +122,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_strategies_agent
+        CREATE INDEX idx_strategies_agent
         ON strategies(agent_id, is_active)
     """)
 

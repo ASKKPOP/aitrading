@@ -45,6 +45,14 @@ _MYSQL_RETRYABLE_ERRNOS = {
     1205,  # ER_LOCK_WAIT_TIMEOUT
     1213,  # ER_LOCK_DEADLOCK
 }
+# Column identifiers that are MySQL reserved words. The app's hand-written SQL
+# leaves them bare (fine on SQLite); on MySQL they must be backticked or every
+# query touching them is a syntax error. These are the only three that collide
+# (verified against the full MySQL 8.0 reserved-word list). Migrations backtick
+# them in their DDL directly; runtime queries are handled by the adapter below.
+_RESERVED_COLUMN_IDENTIFIERS = frozenset({"read", "rank", "signal"})
+# SQLite `INSERT ... DEFAULT VALUES` → MySQL `INSERT ... () VALUES ()`.
+_DEFAULT_VALUES_PATTERN = re.compile(r"\bDEFAULT\s+VALUES\b", flags=re.IGNORECASE)
 
 
 def using_mysql() -> bool:
@@ -211,6 +219,111 @@ def _replace_sqlite_datetime_functions_mysql(sql: str) -> str:
     return sql
 
 
+def _backtick_reserved_columns(sql: str) -> str:
+    """Backtick bare reserved-word column identifiers (read/rank/signal).
+
+    Rewrites those identifiers ONLY when they appear outside string literals,
+    comments, and existing backtick-quoted identifiers. Matching is whole-word
+    (the scanner consumes a full ``[A-Za-z0-9_]+`` token), so ``signal_id``,
+    ``signals``, and ``read_at`` tokenize as single non-matching words and are
+    left untouched. Because the adapter only ever sees SQL strings, this can
+    never touch Python code such as ``.read()``.
+    """
+    result: list[str] = []
+    i = 0
+    n = len(sql)
+    in_single = in_double = in_backtick = in_line_comment = in_block_comment = False
+
+    while i < n:
+        char = sql[i]
+        next_char = sql[i + 1] if i + 1 < n else ""
+
+        if in_line_comment:
+            result.append(char)
+            if char == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            result.append(char)
+            if char == "*" and next_char == "/":
+                result.append(next_char)
+                i += 2
+                in_block_comment = False
+            else:
+                i += 1
+            continue
+        if in_single:
+            result.append(char)
+            if char == "'":
+                if next_char == "'":
+                    result.append(next_char)
+                    i += 2
+                    continue
+                in_single = False
+            i += 1
+            continue
+        if in_double:
+            result.append(char)
+            if char == '"':
+                if next_char == '"':
+                    result.append(next_char)
+                    i += 2
+                    continue
+                in_double = False
+            i += 1
+            continue
+        if in_backtick:
+            result.append(char)
+            if char == "`":
+                in_backtick = False
+            i += 1
+            continue
+
+        if char == "-" and next_char == "-":
+            result.append(char + next_char)
+            i += 2
+            in_line_comment = True
+            continue
+        if char == "/" and next_char == "*":
+            result.append(char + next_char)
+            i += 2
+            in_block_comment = True
+            continue
+        if char == "'":
+            in_single = True
+            result.append(char)
+            i += 1
+            continue
+        if char == '"':
+            in_double = True
+            result.append(char)
+            i += 1
+            continue
+        if char == "`":
+            in_backtick = True
+            result.append(char)
+            i += 1
+            continue
+
+        if char.isalpha() or char == "_":
+            j = i
+            while j < n and (sql[j].isalnum() or sql[j] == "_"):
+                j += 1
+            word = sql[i:j]
+            if word.lower() in _RESERVED_COLUMN_IDENTIFIERS:
+                result.append("`" + word + "`")
+            else:
+                result.append(word)
+            i = j
+            continue
+
+        result.append(char)
+        i += 1
+
+    return "".join(result)
+
+
 def _adapt_sql_for_mysql(sql: str) -> str:
     adapted = sql
     # INTEGER PRIMARY KEY AUTOINCREMENT → INT AUTO_INCREMENT PRIMARY KEY
@@ -218,6 +331,10 @@ def _adapt_sql_for_mysql(sql: str) -> str:
     # Note: MySQL accepts REAL (alias for DOUBLE); no substitution needed.
     # ALTER TABLE ... ADD COLUMN (no IF NOT EXISTS — try/except in init_database handles dups)
     adapted = _ALTER_ADD_COLUMN_PATTERN.sub(r"ALTER TABLE \1 ADD COLUMN ", adapted)
+    # SQLite `DEFAULT VALUES` → MySQL `() VALUES ()`
+    adapted = _DEFAULT_VALUES_PATTERN.sub("() VALUES ()", adapted)
+    # Backtick reserved-word column identifiers (read/rank/signal)
+    adapted = _backtick_reserved_columns(adapted)
     # Replace sqlite datetime functions
     adapted = _replace_sqlite_datetime_functions_mysql(adapted)
     # Escape literal % signs BEFORE adding %s placeholders

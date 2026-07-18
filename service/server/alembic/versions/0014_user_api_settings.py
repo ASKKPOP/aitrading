@@ -14,7 +14,7 @@ def upgrade() -> None:
         "user_api_settings",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("target", sa.Text, nullable=False),
+        sa.Column("target", sa.String(64), nullable=False),
         sa.Column("api_key", sa.Text, nullable=True),
         sa.Column("config_json", sa.Text, nullable=True),
         sa.Column("enabled", sa.Integer, server_default="1"),

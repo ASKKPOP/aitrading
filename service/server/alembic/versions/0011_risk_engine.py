@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.create_table(
         "breaker_state",
         sa.Column("scope", sa.String(64), primary_key=True),
-        sa.Column("state", sa.Text, nullable=False, server_default="normal"),
+        sa.Column("state", sa.String(32), nullable=False, server_default="normal"),
         sa.Column("reason", sa.Text, nullable=True),
         sa.Column("tripped_at", sa.Text, nullable=True),
         sa.Column("updated_at", sa.Text, nullable=True),

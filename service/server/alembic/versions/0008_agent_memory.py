@@ -35,7 +35,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_agent_memory_agent_created
+        CREATE INDEX idx_agent_memory_agent_created
         ON agent_memory(agent_id, created_at)
     """)
 

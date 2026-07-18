@@ -49,7 +49,7 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_leaderboard_snapshot_metric_rank
+        CREATE INDEX idx_leaderboard_snapshot_metric_rank
         ON leaderboard_snapshot(metric, `rank`)
     """)
 

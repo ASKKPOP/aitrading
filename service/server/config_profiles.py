@@ -25,7 +25,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from database import get_db_connection
+from database import get_db_connection, using_mysql
 
 logger = logging.getLogger(__name__)
 
@@ -133,12 +133,22 @@ def save_profile(agent_id: int, name: Any, payload: Optional[dict[str, Any]] = N
             if count >= MAX_PROFILES_PER_AGENT:
                 raise ProfileError(f"profile limit reached ({MAX_PROFILES_PER_AGENT})")
         now = _now_iso()
-        cursor.execute(
-            """INSERT INTO config_profiles (agent_id, name, payload_json, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?)
-               ON CONFLICT(agent_id, name) DO UPDATE SET
-                   payload_json = excluded.payload_json, updated_at = excluded.updated_at""",
-            (agent_id, clean, json.dumps(stored, ensure_ascii=False), now, now))
+        # Upsert on (agent_id, name). MySQL and SQLite spell this differently.
+        if using_mysql():
+            upsert = (
+                "INSERT INTO config_profiles (agent_id, name, payload_json, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON DUPLICATE KEY UPDATE"
+                "     payload_json = VALUES(payload_json), updated_at = VALUES(updated_at)"
+            )
+        else:
+            upsert = (
+                "INSERT INTO config_profiles (agent_id, name, payload_json, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON CONFLICT(agent_id, name) DO UPDATE SET"
+                "     payload_json = excluded.payload_json, updated_at = excluded.updated_at"
+            )
+        cursor.execute(upsert, (agent_id, clean, json.dumps(stored, ensure_ascii=False), now, now))
         conn.commit()
         row = cursor.execute(
             "SELECT id, created_at, updated_at FROM config_profiles WHERE agent_id = ? AND name = ?",
