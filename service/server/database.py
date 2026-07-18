@@ -2486,6 +2486,32 @@ def init_database():
         ON support_messages(thread_id, id)
     """)
 
+    # ── Server-side analysis pipeline jobs ─────────────────────────────────
+    # An Analyst/Automation page run persists here so it survives the page
+    # being closed; the newest row per agent is "current" (see analysis_jobs.py).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS analysis_jobs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id    INTEGER NOT NULL,
+            symbol      TEXT    NOT NULL,
+            market      TEXT    NOT NULL,
+            lang        TEXT    NOT NULL DEFAULT 'en',
+            provider    TEXT,
+            config_id   INTEGER,
+            status      TEXT    NOT NULL DEFAULT 'running',
+            events_json TEXT,
+            result_json TEXT,
+            gates_json  TEXT,
+            error       TEXT,
+            created_at  TEXT    NOT NULL,
+            finished_at TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_analysis_jobs_agent
+        ON analysis_jobs(agent_id, id)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

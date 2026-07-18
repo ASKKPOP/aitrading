@@ -372,6 +372,95 @@ export function useAnalysisStream(token: string | null) {
   return { loading, result, error, steps, log, gates, run }
 }
 
+// ── Background-job runner (Analyst page) ──
+// The pipeline executes server-side (POST /api/analysis/jobs) in a daemon
+// thread detached from this tab; we poll GET /api/analysis/jobs/current so
+// the member can leave the page mid-run and re-attach when they come back.
+
+export type RunInfo = { id: number; symbol: string; market: string; created_at?: string }
+
+export function useAnalysisRun(token: string | null) {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState('')
+  const [steps, setSteps] = useState<Record<string, StepInfo>>({})
+  const [log, setLog] = useState<LogEntry[]>([])
+  const [runInfo, setRunInfo] = useState<RunInfo | null>(null)
+  const genRef = useRef(0) // bump to cancel any in-flight poll loop
+
+  const authHeaders = () => ({ 'Authorization': `Bearer ${token}` })
+
+  // Rebuild the full monitor state from the job's persisted event list.
+  function applyJob(job: any): string {
+    const next: Record<string, StepInfo> =
+      Object.fromEntries(PIPELINE_STEPS.map(s => [s, { status: 'pending', runs: 0 }]))
+    const entries: LogEntry[] = []
+    for (const evt of job.events || []) {
+      const t = Date.parse(evt.ts || '') || undefined
+      const cur: StepInfo = next[evt.step] || { status: 'pending', runs: 0 }
+      if (evt.status === 'start') {
+        cur.status = 'running'; cur.runs += 1; cur.startedAt = t; cur.endedAt = undefined
+      } else if (evt.status === 'done') { cur.status = 'done'; cur.endedAt = t }
+      else if (evt.status === 'error') { cur.status = 'error'; cur.endedAt = t }
+      next[evt.step] = cur
+      const extras = Object.entries(evt)
+        .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k))
+        .map(([k, v]) => `${k}=${v}`).join(' ')
+      entries.push({ ts: evt.ts, step: evt.step, status: evt.status, detail: extras || undefined })
+    }
+    setSteps(next); setLog(entries)
+    setRunInfo({ id: job.job_id, symbol: job.symbol, market: job.market, created_at: job.created_at })
+    setResult(job.result || null)
+    setError(job.status === 'error' ? (job.error || 'Analysis failed') : '')
+    setLoading(job.status === 'running')
+    return job.status
+  }
+
+  async function poll(gen: number) {
+    for (;;) {
+      if (gen !== genRef.current) return
+      try {
+        const res = await fetch(`${API_BASE}/analysis/jobs/current`, { headers: authHeaders() })
+        if (!res.ok) { if (gen === genRef.current) setLoading(false); return }
+        const data = await res.json()
+        if (gen !== genRef.current) return
+        if (!data.job) { setLoading(false); return }
+        if (applyJob(data.job) !== 'running') return
+      } catch { /* transient network error — keep polling */ }
+      await new Promise(r => setTimeout(r, 2000))
+    }
+  }
+
+  async function run(symbol: string, market: string, lang: string) {
+    if (!token) return
+    const gen = ++genRef.current
+    setLoading(true); setError(''); setResult(null); setLog([])
+    setSteps(Object.fromEntries(PIPELINE_STEPS.map(s => [s, { status: 'pending', runs: 0 }])))
+    try {
+      const res = await fetch(`${API_BASE}/analysis/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ symbol, market, lang }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error((data as any).detail || 'Analysis failed')
+      poll(gen)
+    } catch (e: any) {
+      if (gen === genRef.current) { setError(e.message || 'Analysis failed'); setLoading(false) }
+    }
+  }
+
+  // On mount: re-attach to the member's most recent job (live or finished).
+  useEffect(() => {
+    if (!token) return
+    const gen = ++genRef.current
+    poll(gen)
+    return () => { genRef.current++ }
+  }, [token])
+
+  return { loading, result, error, steps, log, runInfo, run }
+}
+
 // ── Shared monitor panel: WebGL2 graph + timestamped step log ──
 
 export function AnalysisMonitorPanel({ language, steps, log }: {
