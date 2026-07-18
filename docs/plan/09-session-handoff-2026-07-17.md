@@ -114,17 +114,34 @@ guide-vs-code deep scan) found and fixed real issues. Notable fixes, all live:
 
 ## 5. Next work
 
+### ✅ Done 2026-07-18 — all five "actionable now" items shipped and deployed
+
+Suite **1119 → 1133 passing**; every fix written test-first against the old code, watched fail,
+then mutation-tested. Live on sooppiy.com.
+
+| Was | Outcome |
+|---|---|
+| 3σ shock chart had no endpoint | `psych_feed.shock_series(hours, symbol)` + `GET /api/market-intel/shock-history` + a σ chart on the board with the 3σ threshold dashed across it and breaches dotted. Added **alongside** `shock_history()` — its filtered contract is what confluence B5 and the regime filter depend on (`18c3328`) |
+| Events tile showed only the next release | Macro Event Calendar section: full upcoming list + recent prints (`071dc09`) |
+| Consult asked for `"rsi"` | quant emits `rsi_14`; fixed, plus a guard test that fails if any requested context key is absent upstream (the other six were correct) (`2b5f8d3`) |
+| `sigma_daily_pct` never reached the gate | **Root cause was bigger than "vol sizing is dead code".** `run_analysis` nests payloads under `analysts`; `automation.py` read a top-level `analysis["technical"]` that never existed, so `technical` was **always None**. Hence σ never reached the gate (which rejects on missing σ → vol sizing was *unusable*, not mis-tuned), **and** `evaluate_confluence` got `analysis=None` — refetching for crypto, running with no technical data for us-stock. One line fixed both. A pre-existing test encoded the wrong shape and so passed while the bug was live; corrected (`7c2ab7b`) |
+| Per-block `as_of` | `etf_flows` was in **neither** the age loop nor the cadence map, so a stalled capture read as fresh. Now stamped by `ai_fusion` (our capture time, distinct from the vendor print date), aged in `data_verify`, reported in `age_unknown` when missing, with a cadence from `ETF_FLOW_REFRESH_INTERVAL` (`2894899`). Whales/calibration/cross_market already carried `as_of` |
+
+Also that day: **PR #4 (MySQL) and PR #3 (legal pages) merged** — `main` had been behind
+production, which was running unmerged MySQL code. CI was red on 8 ruff F401/F811 errors
+(7 pre-existing on main); cleared. Removed every Fly.io reference — **this project does not use
+a PaaS**; deployment is Docker on EC2 (the MySQL runbook's Fly steps were wrong, and its
+"cutover not yet executed" status was stale: prod has been on **MySQL 8.0.46** with real data).
+Corrected `CLAUDE.md`'s "PostgreSQL in production" → MySQL.
+
 ### Actionable now (no blocker — pick these up)
-1. **3σ shock/volatility chart** (mockup gap): `psych_feed.shock_history()` exists but no
-   endpoint/chart renders it. Add a route + a board chart. Data is real (OKX liquidations).
-2. **Events tile shows only the next event** — the calendar has `recent` + a full list; surface
-   the hot-issues list the mockup promised (low).
-3. **Consult chat asks for `"rsi"`** — a key `quant_crypto` never emits, so the advisor sees
-   null. Confirmed by the overnight audit; wire the real field (medium).
-4. **`sigma_daily_pct` never reaches the risk gate** — vol-sizing is dead code; turning it on
-   reportedly rejects 100% of buys. Investigate before enabling (medium).
-5. **Whale/ETF/calibration** blocks: only the ETF print is date-aged; add per-block `as_of` if
-   you extend staleness checks (low, my own noted debt).
+- **Privacy Policy describes copy-trading** — "agents you follow or copy", "copy-trading,
+  leaderboards". That feature was deliberately removed in the AI-auto-trading repositioning, so
+  the live legal text describes something the product does not do. Legal wording is Henry's
+  call, not a unilateral edit (flagged 2026-07-18, still open).
+- **The Signals Board loads via `Promise.all`** — one rejecting fetch leaves every tile on
+  "collecting…". Non-ok responses are handled, but a network-level reject is all-or-nothing;
+  `allSettled` would degrade per-source instead (noticed while verifying, low).
 
 ### Blocked on Henry (a decision or a key — do NOT do these unprompted)
 - **Flip `VERIFY_ENABLED=enforce`** — gated on ≥200 reviewed advisory verdicts. Verdicts ARE
