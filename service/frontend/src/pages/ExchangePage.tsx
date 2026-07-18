@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { API_BASE, useLanguage } from '../appShared'
+import { API_BASE, POINTS_EXCHANGE_RATE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
 // Exchange Page - Points to Cash
@@ -72,7 +72,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
     setLoading(false)
   }
 
-  const exchangeRate = 1000 // 1 point = 1000 USD
+  const exchangeRate = POINTS_EXCHANGE_RATE
 
   return (
     <div className="page-container">
