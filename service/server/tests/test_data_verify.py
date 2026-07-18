@@ -13,7 +13,7 @@ import json
 import os
 import sys
 import unittest
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -72,7 +72,9 @@ class MeasureTests(unittest.TestCase):
         self.assertEqual([c["field"] for c in f["out_of_range"]], ["current_price"])
 
     def test_etf_age_is_computed_not_guessed(self):
-        two_days = (date.today() - timedelta(days=2)).isoformat()
+        # UTC basis: measure_snapshot ages against a UTC "now", so a local
+        # date.today() here goes off-by-one across the UTC/local day boundary.
+        two_days = (datetime.now(timezone.utc).date() - timedelta(days=2)).isoformat()
         snap = {**SNAPSHOT, "etf_flows": {"btc": {"as_of": two_days}}}
         self.assertEqual(data_verify.measure_snapshot(snap)["etf_print_age_days"], 2)
 
