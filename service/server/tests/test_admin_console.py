@@ -205,6 +205,65 @@ class SubscriptionFlowTests(_Base):
         self.assertEqual(r.status_code, 503)
 
 
+class PlanManagementTests(_Base):
+    def test_create_edit_deactivate_plan(self):
+        # Create a new tier; it appears on the public subscribe page.
+        r = self.client.post("/api/admin/plans",
+                             json={"code": "starter", "name": "Starter",
+                                   "price_usd": 25, "sort_order": 0},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.get("/api/subscriptions/plans")
+        codes = [p["code"] for p in r.json()["plans"]]
+        self.assertIn("starter", codes)
+        # Members can subscribe to it.
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        r = self.client.post("/api/subscriptions/bank-transfer",
+                             json={"plan_code": "starter", "reference": "W-1"}, headers=user_h)
+        self.assertEqual(r.status_code, 200)
+        # Price edit sticks.
+        r = self.client.patch("/api/admin/plans/starter",
+                              json={"price_usd": 35}, headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        r = self.client.get("/api/subscriptions/plans")
+        starter = next(p for p in r.json()["plans"] if p["code"] == "starter")
+        self.assertEqual(starter["price_usd"], 35)
+        # Deactivating hides it from the public page and blocks new subscribes.
+        r = self.client.patch("/api/admin/plans/starter",
+                              json={"active": 0}, headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        r = self.client.get("/api/subscriptions/plans")
+        self.assertNotIn("starter", [p["code"] for p in r.json()["plans"]])
+        # Admin view still shows it, with subscriber_rows counted.
+        r = self.client.get("/api/admin/plans", headers=self.admin)
+        starter = next(p for p in r.json()["plans"] if p["code"] == "starter")
+        self.assertEqual(starter["active"], 0)
+        self.assertEqual(starter["subscriber_rows"], 1)
+
+    def test_validation_and_delete_rules(self):
+        r = self.client.post("/api/admin/plans",
+                             json={"code": "Bad Code!", "name": "X"}, headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post("/api/admin/plans",
+                             json={"code": "junior", "name": "Dup"}, headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post("/api/admin/plans",
+                             json={"code": "temp", "name": "Temp", "price_usd": 10},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        # Unreferenced plan deletes cleanly.
+        r = self.client.delete("/api/admin/plans/temp", headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        # A plan with subscription history refuses deletion.
+        session = self._make_user()
+        self.client.post("/api/admin/subscriptions/grant",
+                         json={"email": "member@x.com", "plan_code": "junior"},
+                         headers=self.admin)
+        r = self.client.delete("/api/admin/plans/junior", headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+
+
 class MemberManagementTests(_Base):
     def test_suspend_blocks_login_and_kills_sessions(self):
         session = self._make_user()

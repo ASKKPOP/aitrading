@@ -90,7 +90,9 @@ export function AdminPage() {
   const [subFilter, setSubFilter] = useState('')
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
+  const [adminPlans, setAdminPlans] = useState<any[]>([])
   const [grant, setGrant] = useState({ email: '', plan_code: 'junior', days: '30', note: '' })
+  const [newPlan, setNewPlan] = useState({ code: '', name: '', price: '', sort: '10' })
   const [assets, setAssets] = useState<any | null>(null)
   const [positions, setPositions] = useState<any | null>(null)
   const [autoStats, setAutoStats] = useState<any | null>(null)
@@ -143,6 +145,18 @@ export function AdminPage() {
     grantDays: tr(language, { ko: '일수', en: 'Days' }),
     grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)' }),
     grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.' }),
+    planMgmt: tr(language, { ko: '플랜 관리', en: 'Plan management' }),
+    planMgmtHint: tr(language, { ko: '가격·이름 변경은 신규 결제부터 적용됩니다. 구독 이력이 있는 플랜은 삭제 대신 비활성화하세요.', en: 'Price/name changes apply to new payments. Plans with history deactivate instead of delete.' }),
+    planAdd: tr(language, { ko: '플랜 추가', en: 'Add plan' }),
+    planCode: tr(language, { ko: '코드 (예: gold)', en: 'Code (e.g. gold)' }),
+    planName: tr(language, { ko: '이름', en: 'Name' }),
+    planPrice: tr(language, { ko: '월 $', en: '$/month' }),
+    planSort: tr(language, { ko: '순서', en: 'Sort' }),
+    editName: tr(language, { ko: '이름 변경', en: 'Rename' }),
+    editPrice: tr(language, { ko: '가격 변경', en: 'Set price' }),
+    planOff: tr(language, { ko: '비활성', en: 'Deactivate' }),
+    planOn: tr(language, { ko: '활성', en: 'Activate' }),
+    subscriberRows: tr(language, { ko: '구독 이력', en: 'History' }),
     status: tr(language, { ko: '상태', en: 'Status' }),
     plan: tr(language, { ko: '플랜', en: 'Plan' }),
     method: tr(language, { ko: '결제수단', en: 'Method' }),
@@ -242,10 +256,9 @@ export function AdminPage() {
       if (which === 'subscriptions') {
         setSubs(await call(`subscriptions?status=${encodeURIComponent(subFilter)}&limit=100`))
         setContracts(await call('contracts?limit=100'))
-        if (!planList.length) {
-          const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
-          setPlanList(p.plans || [])
-        }
+        setAdminPlans((await call('plans')).plans || [])
+        const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
+        setPlanList(p.plans || [])
       }
       if (which === 'assets') setAssets(await call('stats/assets'))
       if (which === 'positions') setPositions(await call('stats/positions'))
@@ -517,6 +530,60 @@ export function AdminPage() {
                 {!(subs?.subscriptions || []).length && <tr><td style={td} colSpan={9}>{T.noData}</td></tr>}
               </tbody>
             </table>
+          </div>
+
+          <div style={sectionTitle}>{T.planMgmt}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.planMgmtHint}</div>
+          <div style={{ ...tableCard, marginBottom: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+              <thead><tr><th style={th}>{T.planCode}</th><th style={th}>{T.planName}</th><th style={th}>{T.planPrice}</th><th style={th}>{T.planSort}</th><th style={th}>{T.subscriberRows}</th><th style={th}>{T.status}</th><th style={th}></th></tr></thead>
+              <tbody>
+                {adminPlans.map((p: any) => (
+                  <tr key={p.code}>
+                    <td style={{ ...td, fontWeight: 600 }}>{p.code}{p.contact_only ? ' 📞' : ''}</td>
+                    <td style={td}>{p.name}</td>
+                    <td style={td}>{p.contact_only ? '—' : fmtMoney(p.price_usd)}</td>
+                    <td style={td}>{p.sort_order}</td>
+                    <td style={td}>{p.subscriber_rows}</td>
+                    <td style={{ ...td, color: p.active ? '#22c55e' : 'var(--text-muted,#8a8073)' }}>{p.active ? 'active' : 'off'}</td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                      <button style={actionBtn} onClick={() => {
+                        const name = window.prompt(T.editName, p.name)
+                        if (name) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ name }) }, 'subscriptions')
+                      }}>{T.editName}</button>{' '}
+                      {!p.contact_only && <><button style={actionBtn} onClick={() => {
+                        const price = window.prompt(T.editPrice, String(p.price_usd))
+                        if (price !== null && !isNaN(parseFloat(price))) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ price_usd: parseFloat(price) }) }, 'subscriptions')
+                      }}>{T.editPrice}</button>{' '}</>}
+                      {p.active
+                        ? <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 0 }) }, 'subscriptions')}>{T.planOff}</button>
+                        : <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 1 }) }, 'subscriptions')}>{T.planOn}</button>}{' '}
+                      {!p.subscriber_rows && <button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`plans/${p.code}`, { method: 'DELETE' }, 'subscriptions')}>{T.del}</button>}
+                    </td>
+                  </tr>
+                ))}
+                {!adminPlans.length && <tr><td style={td} colSpan={7}>{T.noData}</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+            <input placeholder={T.planCode} value={newPlan.code}
+              onChange={e => setNewPlan(p => ({ ...p, code: e.target.value }))} style={{ ...inputStyle, width: 140 }} />
+            <input placeholder={T.planName} value={newPlan.name}
+              onChange={e => setNewPlan(p => ({ ...p, name: e.target.value }))} style={{ ...inputStyle, width: 160 }} />
+            <input placeholder={T.planPrice} value={newPlan.price} inputMode="decimal"
+              onChange={e => setNewPlan(p => ({ ...p, price: e.target.value }))} style={{ ...inputStyle, width: 90 }} />
+            <input placeholder={T.planSort} value={newPlan.sort} inputMode="numeric"
+              onChange={e => setNewPlan(p => ({ ...p, sort: e.target.value }))} style={{ ...inputStyle, width: 70 }} />
+            <button style={primaryBtn}
+              disabled={!newPlan.code.trim() || !newPlan.name.trim() || isNaN(parseFloat(newPlan.price))}
+              onClick={() => {
+                act('plans', {
+                  method: 'POST',
+                  body: JSON.stringify({ code: newPlan.code.trim(), name: newPlan.name.trim(), price_usd: parseFloat(newPlan.price) || 0, sort_order: parseInt(newPlan.sort, 10) || 0 }),
+                }, 'subscriptions')
+                setNewPlan({ code: '', name: '', price: '', sort: '10' })
+              }}>{T.planAdd}</button>
           </div>
 
           <div style={sectionTitle}>{T.contracts}</div>

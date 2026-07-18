@@ -6,6 +6,10 @@ Member management
   POST /api/admin/members/{user_id}/status      suspend / reactivate
 
 Paid membership
+  GET  /api/admin/plans                         all plans (incl. inactive)
+  POST /api/admin/plans                         create a plan
+  PATCH  /api/admin/plans/{code}                edit name/price/active/sort
+  DELETE /api/admin/plans/{code}                delete (only if unreferenced)
   GET  /api/admin/subscriptions                 list (filter by status)
   POST /api/admin/subscriptions/grant           manually give a member a plan
   POST /api/admin/subscriptions/{id}/approve    pending → active (30 days)
@@ -38,6 +42,7 @@ Date bucketing uses substr(created_at, 1, 10) which works on both SQLite
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -79,6 +84,22 @@ class SubscriptionGrantBody(BaseModel):
     plan_code: str
     days: int = 30
     note: str = ""
+
+
+class PlanCreateBody(BaseModel):
+    code: str
+    name: str
+    price_usd: float = 0
+    contact_only: int = 0
+    sort_order: int = 0
+
+
+class PlanPatchBody(BaseModel):
+    name: Optional[str] = None
+    price_usd: Optional[float] = None
+    contact_only: Optional[int] = None
+    active: Optional[int] = None
+    sort_order: Optional[int] = None
 
 
 class SubscriptionExtendBody(BaseModel):
@@ -172,6 +193,119 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {"ok": True, "status": body.status}
 
     # ────────────────────────── paid membership ──────────────────────────
+
+    @app.get('/api/admin/plans')
+    async def admin_plans(authorization: str = Header(None)):
+        require_admin(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id, code, name, price_usd, contact_only, active, sort_order, "
+                "(SELECT COUNT(*) FROM user_subscriptions s WHERE s.plan_code = subscription_plans.code) AS subscriber_rows "
+                "FROM subscription_plans ORDER BY sort_order, id")
+            plans = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+        return {"plans": plans}
+
+    @app.post('/api/admin/plans')
+    async def admin_plan_create(body: PlanCreateBody, authorization: str = Header(None)):
+        admin = require_admin(authorization)
+        code = body.code.strip().lower()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,30}", code):
+            raise HTTPException(status_code=400,
+                                detail="Code must be lowercase letters/digits/dashes (max 31 chars)")
+        name = body.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name required")
+        if body.price_usd < 0:
+            raise HTTPException(status_code=400, detail="Price cannot be negative")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM subscription_plans WHERE code = ?", (code,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="Plan code already exists")
+            cursor.execute(
+                "INSERT INTO subscription_plans (code, name, price_usd, contact_only, sort_order) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (code, name[:128], float(body.price_usd), 1 if body.contact_only else 0,
+                 int(body.sort_order)),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "plan.create", f"plan:{code}",
+              f"name={name} price={body.price_usd} contact_only={body.contact_only}")
+        return {"ok": True, "code": code}
+
+    @app.patch('/api/admin/plans/{code}')
+    async def admin_plan_patch(code: str, body: PlanPatchBody,
+                               authorization: str = Header(None)):
+        admin = require_admin(authorization)
+        sets: list[str] = []
+        params: list[Any] = []
+        changes: list[str] = []
+        if body.name is not None:
+            if not body.name.strip():
+                raise HTTPException(status_code=400, detail="Name cannot be empty")
+            sets.append("name = ?"); params.append(body.name.strip()[:128])
+            changes.append(f"name={body.name.strip()[:60]}")
+        if body.price_usd is not None:
+            if body.price_usd < 0:
+                raise HTTPException(status_code=400, detail="Price cannot be negative")
+            sets.append("price_usd = ?"); params.append(float(body.price_usd))
+            changes.append(f"price={body.price_usd}")
+        if body.contact_only is not None:
+            sets.append("contact_only = ?"); params.append(1 if body.contact_only else 0)
+            changes.append(f"contact_only={1 if body.contact_only else 0}")
+        if body.active is not None:
+            sets.append("active = ?"); params.append(1 if body.active else 0)
+            changes.append(f"active={1 if body.active else 0}")
+        if body.sort_order is not None:
+            sets.append("sort_order = ?"); params.append(int(body.sort_order))
+            changes.append(f"sort={int(body.sort_order)}")
+        if not sets:
+            raise HTTPException(status_code=400, detail="Nothing to update")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM subscription_plans WHERE code = ?", (code,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Plan not found")
+            cursor.execute(
+                f"UPDATE subscription_plans SET {', '.join(sets)} WHERE code = ?",
+                (*params, code))
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "plan.update", f"plan:{code}", " ".join(changes))
+        return {"ok": True}
+
+    @app.delete('/api/admin/plans/{code}')
+    async def admin_plan_delete(code: str, authorization: str = Header(None)):
+        """Delete a plan nobody ever subscribed to; otherwise deactivate instead —
+        subscription rows reference plan_code and history must stay readable."""
+        admin = require_admin(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM subscription_plans WHERE code = ?", (code,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Plan not found")
+            cursor.execute(
+                "SELECT COUNT(*) AS c FROM user_subscriptions WHERE plan_code = ?", (code,))
+            if int(cursor.fetchone()["c"]):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Plan has subscription history — deactivate it instead of deleting")
+            cursor.execute("DELETE FROM subscription_plans WHERE code = ?", (code,))
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "plan.delete", f"plan:{code}")
+        return {"ok": True}
 
     @app.get('/api/admin/subscriptions')
     async def admin_subscriptions(status: str = "", limit: int = 50, offset: int = 0,
