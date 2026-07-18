@@ -78,7 +78,16 @@ def _get_or_create_thread(cursor, user_id: int) -> dict[str, Any]:
                VALUES (?, NULL, 'open', 0, 0, NULL, ?)""",
             (user_id, now))
     except Exception:  # noqa: BLE001 — concurrent first-touch lost the UNIQUE race
-        pass
+        # On MySQL REPEATABLE READ the open transaction still sees the
+        # pre-race snapshot, so end it before re-reading the winner's row.
+        # Safe: both callers invoke this before any other write on the
+        # connection, so the rollback discards nothing else.
+        cursor.connection.rollback()
+        cursor.execute("SELECT * FROM support_threads WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row is None:
+            raise  # genuine INSERT failure, not the duplicate-key race
+        return dict(row)
     cursor.execute("SELECT * FROM support_threads WHERE user_id = ?", (user_id,))
     return dict(cursor.fetchone())
 
