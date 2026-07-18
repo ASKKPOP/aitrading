@@ -181,6 +181,69 @@ def shock_history(hours: int = 72) -> list[dict[str, Any]]:
     return out
 
 
+def shock_series(hours: int = 72, symbol: Optional[str] = None) -> dict[str, Any]:
+    """Every stored σ reading in the window, for charting — not just the
+    flagged ones.
+
+    shock_history() drops rows where shock is False because its callers
+    (confluence B5, the regime filter) only care about breaches. A chart needs
+    the opposite: the whole σ-multiple line, so the 3σ threshold has something
+    to be crossed. Kept separate rather than widening shock_history, whose
+    filtered contract those two callers depend on.
+
+    Returns {"available", "threshold_sigma", "threshold_volume_ratio",
+             "series": {SYMBOL: [{created_at, sigma_multiple, volume_ratio,
+                                  latest_return_pct, shock}, ...]}}
+    oldest-first per symbol.
+    """
+    from datetime import timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max(1, hours))
+              ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    want = (symbol or "").strip().upper() or None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT shock_json, created_at FROM psych_snapshots
+               WHERE created_at >= ? ORDER BY created_at ASC, id ASC""",
+            (cutoff,))
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
+
+    series: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        try:
+            readings = json.loads(row["shock_json"] or "[]")
+        except ValueError:
+            continue
+        for r in readings:
+            if not isinstance(r, dict):
+                continue
+            sym = str(r.get("symbol") or "").upper()
+            if not sym or (want and sym != want):
+                continue
+            series.setdefault(sym, []).append({
+                "created_at": row["created_at"],
+                "sigma_multiple": r.get("sigma_multiple"),
+                "volume_ratio": r.get("volume_ratio"),
+                "latest_return_pct": r.get("latest_return_pct"),
+                "shock": bool(r.get("shock")),
+            })
+
+    return {
+        "available": bool(series),
+        "hours": max(1, hours),
+        "threshold_sigma": SHOCK_SIGMA_MULTIPLE,
+        "threshold_volume_ratio": SHOCK_VOLUME_RATIO,
+        # The shock read is a liquidation PROXY on free data — say so wherever
+        # it is charted, or a σ spike reads as measured liquidation volume.
+        "estimated": True,
+        "series": series,
+    }
+
+
 # ─────────────────────────── sentiment spikes ───────────────────────────
 
 def _news_sentiment_series() -> dict[str, list[dict[str, Any]]]:

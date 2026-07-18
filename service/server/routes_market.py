@@ -99,6 +99,15 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         from psych_feed import get_psych_payload
         return await run_in_threadpool(get_psych_payload)
 
+    @app.get('/api/market-intel/shock-history')
+    async def market_intel_shock_history(hours: int = 72, symbol: str = ""):
+        # The σ series behind the shock tile. shock_history() keeps only
+        # breaches (its confluence/regime callers want those); a chart needs
+        # the whole line, so this reads the wider series.
+        from psych_feed import shock_series
+        hours = max(1, min(int(hours or 72), 720))
+        return await run_in_threadpool(shock_series, hours, symbol or None)
+
     @app.get('/api/scanner/candidates')
     async def scanner_candidates():
         from scanner import get_scanner_payload

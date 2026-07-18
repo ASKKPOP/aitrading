@@ -133,6 +133,46 @@ function FngSparkline({ history }: { history: FearGreed['history'] }) {
   )
 }
 
+interface ShockSeriesPayload {
+  available: boolean
+  hours: number
+  threshold_sigma: number
+  threshold_volume_ratio: number
+  estimated: boolean
+  series: Record<string, { created_at: string; sigma_multiple: number | null; volume_ratio: number | null; latest_return_pct: number | null; shock: boolean }[]>
+}
+
+/** σ-multiple over time with the shock threshold drawn across it. Points that
+ *  breached are marked, so "3σ" is visible as a line rather than a count. */
+function ShockChart({ points, threshold, label }: {
+  points: { created_at: string; sigma_multiple: number | null; shock: boolean }[]
+  threshold: number
+  label: string
+}) {
+  const vals = points.map(p => (typeof p.sigma_multiple === 'number' ? p.sigma_multiple : 0))
+  if (vals.length < 2) return null
+  const w = 520, h = 90, padY = 8
+  // Always include the threshold in range, or a calm series hides the line.
+  const max = Math.max(threshold * 1.15, ...vals)
+  const y = (v: number) => h - padY - (v / max) * (h - padY * 2)
+  const x = (i: number) => (i / (vals.length - 1)) * w
+  const path = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const thresholdY = y(threshold)
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg width={w} height={h} style={{ display: 'block', minWidth: 320, width: '100%' }}
+           viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-label={`${label} sigma multiple`}>
+        <line x1={0} y1={thresholdY} x2={w} y2={thresholdY}
+              stroke="var(--error)" strokeWidth={1} strokeDasharray="4 3" opacity={0.8} />
+        <path d={path} fill="none" stroke="var(--accent-primary)" strokeWidth={1.6} />
+        {points.map((p, i) => p.shock ? (
+          <circle key={i} cx={x(i)} cy={y(vals[i])} r={3} fill="var(--error)" />
+        ) : null)}
+      </svg>
+    </div>
+  )
+}
+
 function SignalBadge({ signal }: { signal: string }) {
   const color = signal === 'buy' ? 'var(--success)' : signal === 'sell' ? 'var(--error)' : 'var(--text-muted)'
   const mark = signal === 'buy' ? '▲' : signal === 'sell' ? '▼' : '■'
@@ -212,6 +252,7 @@ export function SignalsBoardPage() {
   const [events, setEvents] = useState<EventsPayload | null>(null)
   const [cross, setCross] = useState<CrossPayload | null>(null)
   const [regime, setRegime] = useState<RegimePayload | null>(null)
+  const [shockHist, setShockHist] = useState<ShockSeriesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadingRef = useRef(false)
@@ -222,13 +263,14 @@ export function SignalsBoardPage() {
     if (loadingRef.current || document.hidden) return
     loadingRef.current = true
     try {
-      const [psychRes, scannerRes, fusionRes, eventsRes, crossRes, regimeRes] = await Promise.all([
+      const [psychRes, scannerRes, fusionRes, eventsRes, crossRes, regimeRes, shockRes] = await Promise.all([
         fetch(`${API_BASE}/market-intel/psych`),
         fetch(`${API_BASE}/scanner/candidates`),
         fetch(`${API_BASE}/market-intel/fusion?symbols=${FUSION_SYMBOLS}`),
         fetch(`${API_BASE}/market-intel/events`),
         fetch(`${API_BASE}/market-intel/cross`),
         fetch(`${API_BASE}/market-intel/regime`),
+        fetch(`${API_BASE}/market-intel/shock-history?hours=72`),
       ])
       if (psychRes.ok) setPsych(await psychRes.json())
       if (scannerRes.ok) setScanner(await scannerRes.json())
@@ -236,6 +278,7 @@ export function SignalsBoardPage() {
       if (eventsRes.ok) setEvents(await eventsRes.json())
       if (crossRes.ok) setCross(await crossRes.json())
       if (regimeRes.ok) setRegime(await regimeRes.json())
+      if (shockRes.ok) setShockHist(await shockRes.json())
       if (!psychRes.ok && !scannerRes.ok && !fusionRes.ok) throw new Error('all sources failed')
       setError(null)
     } catch {
@@ -258,6 +301,10 @@ export function SignalsBoardPage() {
 
   const fng = psych?.fear_greed ?? null
   const cryptoSpike = psych?.spikes?.find(s => s.category === 'crypto') ?? psych?.spikes?.[0] ?? null
+  // Chart the symbols with enough points to draw a line.
+  const shockSymbols = Object.keys(shockHist?.series ?? {})
+    .filter(s => (shockHist!.series[s] ?? []).length >= 2)
+    .sort()
   const upcomingEvents = events?.next ?? []
   const recentEvents = events?.recent ?? []
   const nextEvent = upcomingEvents[0] ?? null
@@ -458,6 +505,45 @@ export function SignalsBoardPage() {
             <span style={{ color: 'var(--text-secondary)' }}>{c.reasons.join(' · ')}</span>
           </div>
         ))}
+      </div>
+
+      {/* 3σ shock history — the tile counts current breaches; this is the σ
+          line they came from, with the threshold drawn so a calm market reads
+          as "well below 3σ" rather than just "0". */}
+      <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px' }}>{tr(language, { ko: '변동성 쇼크 (3σ) 추이', en: 'Volatility Shock (3σ) History', ja: 'ボラティリティショック (3σ) 推移', th: 'ประวัติช็อกความผันผวน (3σ)', vi: 'Lịch sử sốc biến động (3σ)' })}</h3>
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 12, padding: '12px 16px', marginBottom: 24 }}>
+        {shockSymbols.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            {tr(language, { ko: '수집 중… (심리 스냅샷이 쌓이면 표시됩니다)', en: 'collecting… (appears once psych snapshots accumulate)', ja: '収集中…（心理スナップショットが蓄積すると表示）', th: 'กำลังเก็บ… (แสดงเมื่อมีสแนปช็อตสะสม)', vi: 'Đang thu thập… (hiện khi có đủ ảnh chụp tâm lý)' })}
+          </div>
+        ) : shockSymbols.map(sym => {
+          const pts = shockHist!.series[sym] ?? []
+          const breaches = pts.filter(p => p.shock).length
+          const latest = pts.length ? pts[pts.length - 1].sigma_multiple : null
+          return (
+            <div key={sym} style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', fontSize: 13, marginBottom: 2 }}>
+                <span style={{ fontWeight: 700 }}>{sym}</span>
+                <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {tr(language, { ko: '최근', en: 'latest', ja: '最新', th: 'ล่าสุด', vi: 'mới nhất' })} {typeof latest === 'number' ? `${latest.toFixed(2)}σ` : '—'}
+                </span>
+                <span style={{ color: breaches > 0 ? 'var(--error)' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {tr(language, { ko: '돌파', en: 'breaches', ja: '突破', th: 'ทะลุ', vi: 'vượt ngưỡng' })} {breaches}
+                </span>
+              </div>
+              <ShockChart points={pts} threshold={shockHist!.threshold_sigma} label={sym} />
+            </div>
+          )
+        })}
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
+          {tr(language, {
+            ko: `점선 = ${shockHist?.threshold_sigma ?? 3}σ 임계값 · 붉은 점 = 쇼크 판정(σ 배수와 거래량 비율 동시 충족) · 최근 ${shockHist?.hours ?? 72}시간 · 실제 청산 데이터가 없을 때는 추정 프록시입니다`,
+            en: `dashed = ${shockHist?.threshold_sigma ?? 3}σ threshold · red dots = shock (σ multiple AND volume ratio both met) · last ${shockHist?.hours ?? 72}h · an estimated proxy when real liquidation data is unavailable`,
+            ja: `破線 = ${shockHist?.threshold_sigma ?? 3}σ 閾値 · 赤点 = ショック判定 · 直近${shockHist?.hours ?? 72}時間 · 実清算データがない場合は推定プロキシ`,
+            th: `เส้นประ = เกณฑ์ ${shockHist?.threshold_sigma ?? 3}σ · จุดแดง = ช็อก · ${shockHist?.hours ?? 72} ชม.ล่าสุด · เป็นพรอกซีประมาณเมื่อไม่มีข้อมูลจริง`,
+            vi: `nét đứt = ngưỡng ${shockHist?.threshold_sigma ?? 3}σ · chấm đỏ = sốc · ${shockHist?.hours ?? 72}h gần nhất · là proxy ước tính khi thiếu dữ liệu thanh lý thực`,
+          })}
+        </div>
       </div>
 
       {/* Macro calendar — the tile above shows only the next release; the
