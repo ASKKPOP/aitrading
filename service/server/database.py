@@ -6,6 +6,7 @@ Database Module
 
 from __future__ import annotations
 
+import decimal
 import os
 import re
 import sqlite3
@@ -45,6 +46,14 @@ _MYSQL_RETRYABLE_ERRNOS = {
     1205,  # ER_LOCK_WAIT_TIMEOUT
     1213,  # ER_LOCK_DEADLOCK
 }
+# Column identifiers that are MySQL reserved words. The app's hand-written SQL
+# leaves them bare (fine on SQLite); on MySQL they must be backticked or every
+# query touching them is a syntax error. These are the only three that collide
+# (verified against the full MySQL 8.0 reserved-word list). Migrations backtick
+# them in their DDL directly; runtime queries are handled by the adapter below.
+_RESERVED_COLUMN_IDENTIFIERS = frozenset({"read", "rank", "signal"})
+# SQLite `INSERT ... DEFAULT VALUES` → MySQL `INSERT ... () VALUES ()`.
+_DEFAULT_VALUES_PATTERN = re.compile(r"\bDEFAULT\s+VALUES\b", flags=re.IGNORECASE)
 
 
 def using_mysql() -> bool:
@@ -211,6 +220,111 @@ def _replace_sqlite_datetime_functions_mysql(sql: str) -> str:
     return sql
 
 
+def _backtick_reserved_columns(sql: str) -> str:
+    """Backtick bare reserved-word column identifiers (read/rank/signal).
+
+    Rewrites those identifiers ONLY when they appear outside string literals,
+    comments, and existing backtick-quoted identifiers. Matching is whole-word
+    (the scanner consumes a full ``[A-Za-z0-9_]+`` token), so ``signal_id``,
+    ``signals``, and ``read_at`` tokenize as single non-matching words and are
+    left untouched. Because the adapter only ever sees SQL strings, this can
+    never touch Python code such as ``.read()``.
+    """
+    result: list[str] = []
+    i = 0
+    n = len(sql)
+    in_single = in_double = in_backtick = in_line_comment = in_block_comment = False
+
+    while i < n:
+        char = sql[i]
+        next_char = sql[i + 1] if i + 1 < n else ""
+
+        if in_line_comment:
+            result.append(char)
+            if char == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            result.append(char)
+            if char == "*" and next_char == "/":
+                result.append(next_char)
+                i += 2
+                in_block_comment = False
+            else:
+                i += 1
+            continue
+        if in_single:
+            result.append(char)
+            if char == "'":
+                if next_char == "'":
+                    result.append(next_char)
+                    i += 2
+                    continue
+                in_single = False
+            i += 1
+            continue
+        if in_double:
+            result.append(char)
+            if char == '"':
+                if next_char == '"':
+                    result.append(next_char)
+                    i += 2
+                    continue
+                in_double = False
+            i += 1
+            continue
+        if in_backtick:
+            result.append(char)
+            if char == "`":
+                in_backtick = False
+            i += 1
+            continue
+
+        if char == "-" and next_char == "-":
+            result.append(char + next_char)
+            i += 2
+            in_line_comment = True
+            continue
+        if char == "/" and next_char == "*":
+            result.append(char + next_char)
+            i += 2
+            in_block_comment = True
+            continue
+        if char == "'":
+            in_single = True
+            result.append(char)
+            i += 1
+            continue
+        if char == '"':
+            in_double = True
+            result.append(char)
+            i += 1
+            continue
+        if char == "`":
+            in_backtick = True
+            result.append(char)
+            i += 1
+            continue
+
+        if char.isalpha() or char == "_":
+            j = i
+            while j < n and (sql[j].isalnum() or sql[j] == "_"):
+                j += 1
+            word = sql[i:j]
+            if word.lower() in _RESERVED_COLUMN_IDENTIFIERS:
+                result.append("`" + word + "`")
+            else:
+                result.append(word)
+            i = j
+            continue
+
+        result.append(char)
+        i += 1
+
+    return "".join(result)
+
+
 def _adapt_sql_for_mysql(sql: str) -> str:
     adapted = sql
     # INTEGER PRIMARY KEY AUTOINCREMENT → INT AUTO_INCREMENT PRIMARY KEY
@@ -218,6 +332,10 @@ def _adapt_sql_for_mysql(sql: str) -> str:
     # Note: MySQL accepts REAL (alias for DOUBLE); no substitution needed.
     # ALTER TABLE ... ADD COLUMN (no IF NOT EXISTS — try/except in init_database handles dups)
     adapted = _ALTER_ADD_COLUMN_PATTERN.sub(r"ALTER TABLE \1 ADD COLUMN ", adapted)
+    # SQLite `DEFAULT VALUES` → MySQL `() VALUES ()`
+    adapted = _DEFAULT_VALUES_PATTERN.sub("() VALUES ()", adapted)
+    # Backtick reserved-word column identifiers (read/rank/signal)
+    adapted = _backtick_reserved_columns(adapted)
     # Replace sqlite datetime functions
     adapted = _replace_sqlite_datetime_functions_mysql(adapted)
     # Escape literal % signs BEFORE adding %s placeholders
@@ -260,13 +378,32 @@ class DatabaseCursor:
         self._cursor.executemany(sql, [tuple(p) for p in seq_of_params])
         return self
 
+    @staticmethod
+    def _demote_decimals(row):
+        """MySQL returns NUMERIC/DECIMAL columns as decimal.Decimal; the codebase
+        was written for SQLite (REAL → float) and freely mixes them in arithmetic
+        (float += Decimal → TypeError) and JSON. Convert Decimal → float on the way
+        out so MySQL rows behave exactly like SQLite rows."""
+        if row is None:
+            return None
+        return {
+            key: (float(value) if isinstance(value, decimal.Decimal) else value)
+            for key, value in row.items()
+        }
+
     def fetchone(self):
+        if self._backend == "mysql":
+            return self._demote_decimals(self._cursor.fetchone())
         return self._cursor.fetchone()
 
     def fetchall(self):
+        if self._backend == "mysql":
+            return [self._demote_decimals(row) for row in self._cursor.fetchall()]
         return self._cursor.fetchall()
 
     def __iter__(self):
+        if self._backend == "mysql":
+            return (self._demote_decimals(row) for row in self._cursor)
         return iter(self._cursor)
 
     def __getattr__(self, name: str):
@@ -368,14 +505,14 @@ def get_database_status() -> dict[str, Any]:
         cursor = conn.cursor()
         if using_mysql():
             cursor.execute(
-                "SELECT DATABASE() AS database_name, USER() AS current_user,"
+                "SELECT DATABASE() AS database_name, USER() AS db_user,"
                 " @@hostname AS server_host, @@port AS server_port"
             )
             row = cursor.fetchone()
             return {
                 "backend": get_database_backend_name(),
                 "database_name": row["database_name"],
-                "current_user": row["current_user"],
+                "current_user": row["db_user"],
                 "server_host": row["server_host"],
                 "server_port": row["server_port"],
             }
@@ -1150,6 +1287,18 @@ def init_database():
         "ALTER TABLE risk_limits ADD COLUMN max_concurrent_positions INTEGER NOT NULL DEFAULT 8",
         # Plan 06 C2 — first-class risk level on automation rules
         "ALTER TABLE automation_configs ADD COLUMN risk_level TEXT",
+        # Plan 06 A5 — deeper factor history: basis, kimchi, ETF flow, whale flow
+        "ALTER TABLE factor_snapshots ADD COLUMN basis_pct REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN kimchi_premium_pct REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN etf_flow_usd REAL",
+        "ALTER TABLE factor_snapshots ADD COLUMN whale_net_flow_usd REAL",
+        # Plan 06 C1 — Agent Mode: full-delegation rules with a budget cap
+        "ALTER TABLE automation_configs ADD COLUMN mode TEXT NOT NULL DEFAULT 'manual'",
+        "ALTER TABLE automation_configs ADD COLUMN budget_usd REAL",
+        # Plan 06 C3 — Personalized mode: freeform user trading guidelines
+        "ALTER TABLE users ADD COLUMN trading_guidelines TEXT",
+        # Plan 06 C3 — per-rule trading schedule (days/hours/timezone window)
+        "ALTER TABLE automation_configs ADD COLUMN schedule_json TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -1886,6 +2035,9 @@ def init_database():
             enabled          INTEGER NOT NULL DEFAULT 1,
             lang             TEXT    NOT NULL DEFAULT 'en',
             risk_level       TEXT,
+            mode             TEXT    NOT NULL DEFAULT 'manual',
+            budget_usd       REAL,
+            schedule_json    TEXT,
             last_run_at      TEXT,
             created_at       TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -1894,6 +2046,94 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_automation_configs_agent
         ON automation_configs(agent_id, enabled)
+    """)
+
+    # Plan 06 C3 — consultation chat: stateful advisory conversations that can
+    # hand off into an automation rule.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id   INTEGER NOT NULL,
+            symbol     TEXT,
+            market     TEXT NOT NULL DEFAULT 'crypto',
+            title      TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role       TEXT NOT NULL,
+            content    TEXT NOT NULL,
+            llm_model  TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+        ON chat_messages(session_id, id)
+    """)
+
+    # Plan 06 C3 — personal watch functions: user-defined metric conditions
+    # that fire alerts when they cross a threshold.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_watches (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id      INTEGER NOT NULL,
+            name          TEXT    NOT NULL,
+            metric        TEXT    NOT NULL,
+            symbol        TEXT,
+            comparator    TEXT    NOT NULL,
+            threshold     REAL    NOT NULL,
+            enabled       INTEGER NOT NULL DEFAULT 1,
+            cooldown_min  INTEGER NOT NULL DEFAULT 60,
+            last_fired_at TEXT,
+            created_at    TEXT    NOT NULL,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_watches_agent
+        ON user_watches(agent_id, enabled)
+    """)
+
+    # Plan 06 C3 — alert journal (doubles as the in-app alert feed)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alert_log (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id      INTEGER NOT NULL,
+            user_id       INTEGER,
+            kind          TEXT    NOT NULL,
+            title         TEXT    NOT NULL,
+            body          TEXT,
+            channels_json TEXT,
+            dedupe_key    TEXT,
+            created_at    TEXT    NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_alert_log_agent
+        ON alert_log(agent_id, created_at)
+    """)
+
+    # Plan 06 C1 — Agent Mode decision journal: every parameter set the AI
+    # planner chose for a full-delegation rule, with its rationale.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_mode_decisions (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id   INTEGER NOT NULL,
+            agent_id    INTEGER NOT NULL,
+            decided_at  TEXT    NOT NULL,
+            params_json TEXT    NOT NULL,
+            rationale   TEXT,
+            llm_model   TEXT,
+            planner     TEXT    NOT NULL DEFAULT 'llm',
+            FOREIGN KEY (config_id) REFERENCES automation_configs(id)
+        )
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS automation_runs (
@@ -1922,6 +2162,23 @@ def init_database():
         cursor.execute("ALTER TABLE automation_runs ADD COLUMN confluence_json TEXT")
     except Exception:
         pass
+
+    # Named config profiles (Plan 06 C3): a saved bundle of risk limits +
+    # trading guidelines the user can switch between or export. Storing a
+    # profile changes nothing live — only apply_profile writes, and it
+    # re-validates through the risk endpoint's own model on the way out.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS config_profiles (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     INTEGER NOT NULL,
+            name         TEXT    NOT NULL,
+            payload_json TEXT    NOT NULL,
+            created_at   TEXT,
+            updated_at   TEXT,
+            UNIQUE (agent_id, name),
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
 
     # Risk engine (signal-collection plan Phase 1): per-agent limits consulted by
     # the automation gate, plus the circuit-breaker state machine. Breaker rows are
@@ -2008,6 +2265,10 @@ def init_database():
             long_short_ratio  REAL,
             stocktwits_tilt   REAL,
             stocktwits_n      INTEGER,
+            basis_pct         REAL,
+            kimchi_premium_pct REAL,
+            etf_flow_usd      REAL,
+            whale_net_flow_usd REAL,
             created_at        TEXT NOT NULL
         )
     """)

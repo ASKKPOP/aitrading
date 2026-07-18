@@ -450,9 +450,11 @@ def summarize(results: list[SimResult]) -> dict[str, Any]:
     n = len(pnls)
 
     per_asset = {}
+    all_max_dds = []   # every result's DD — NOT collapsed by symbol (see pooled_dd)
     for r in results:
         closed = [t for t in r.trades if t.exit_reason != "end_of_data"]
         dd = max_drawdown([v for _, v in r.daily_values])
+        all_max_dds.append(round(dd, 2))
         sharpe = sharpe_ratio(daily_equity_returns(r.daily_values), periods_per_year=365)
         per_asset[r.symbol] = {
             "window": f"{r.start} → {r.end}",
@@ -491,7 +493,11 @@ def summarize(results: list[SimResult]) -> dict[str, Any]:
 
     gross_win = sum(p for p in pnls if p > 0)
     gross_loss = sum(-p for p in pnls if p <= 0)
-    pooled_dd = max(per_asset[s]["max_drawdown_pct"] for s in per_asset) if per_asset else None
+    # Worst drawdown across EVERY result. Must not be derived from per_asset:
+    # that dict is keyed by symbol, so pooling N folds of the same 3 symbols
+    # collapses to only the last fold, under-reporting the true worst DD (it
+    # fed the max-DD go/no-go gate). Take the max over all results directly.
+    pooled_dd = max(all_max_dds) if all_max_dds else None
 
     return {
         "pooled": {

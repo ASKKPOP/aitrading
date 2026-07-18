@@ -109,6 +109,19 @@ def _quant_component(symbol: str) -> Optional[dict[str, Any]]:
         "price_above_ma200": analysis.get("price_above_ma200"),
         "momentum_12_1_pct": analysis.get("momentum_12_1_pct"),
         "sigma_daily_pct": analysis.get("sigma_daily_pct"),
+        # Computed by quant_crypto and previously dropped here, so the model
+        # never saw them. Each is a TOP-10 decision parameter in the research
+        # doc (docs/research/parameters/2-ai-trading-parameters-ko.html):
+        #   #10 mean-reversion — 1-month reversal, ranked top-tier ML feature
+        #   #1/#2 trend structure — the MA50/MA200 cross state
+        #   #4  volatility — the 24h read; sigma_daily_pct alone is the 20d one
+        "reversal_1m_pct": analysis.get("reversal_1m_pct"),
+        "golden_cross_state": analysis.get("golden_cross_state"),
+        "sigma_24h_pct": analysis.get("sigma_24h_pct"),
+        # Forwarded so the D5 verifier can age this read (Plan 06 D5b). The
+        # feed builds it fresh per call today, but that is a property of the
+        # feed, not a promise — carry the stamp rather than assume.
+        "as_of": analysis.get("as_of"),
         "evidence": (analysis.get("bullish_factors") or [])[:2]
                     + (analysis.get("risk_factors") or [])[:2],
     }
@@ -166,10 +179,14 @@ def _psych_component() -> Optional[dict[str, Any]]:
     shocks = [s for s in psych.get("shock", []) if s.get("shock")]
     return {
         "value": _clamp(value),
-        "fear_greed": {k: fng.get(k) for k in ("value", "classification", "delta_3d")},
+        # F&G's as_of is the VENDOR's print time (updates daily); the payload's
+        # created_at is when we assembled the read. Both are forwarded for D5b:
+        # they age differently, and the gap between them is itself information.
+        "fear_greed": {k: fng.get(k) for k in ("value", "classification", "delta_3d", "as_of")},
         "negative_spikes": negative_spikes,
         "odds_reratings": odds_up[:3],
         "shocks": shocks,
+        "as_of": psych.get("created_at"),
         "evidence": evidence or ["psych feed live, no strong reads"],
     }
 
@@ -263,7 +280,7 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
     except Exception as exc:  # noqa: BLE001
         logger.debug("fusion confluence unavailable for %s: %s", symbol, exc)
 
-    return {
+    payload = {
         "symbol": symbol,
         "score": round(score, 3),
         "signal": signal,
@@ -281,9 +298,59 @@ def fuse_symbol(symbol: str, psych: Optional[dict[str, Any]] = None) -> dict[str
         "evidence": evidence,
         "current_price": (quant or {}).get("current_price"),
         "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "fusion_source": "rule",
         "note": "psych weight structurally capped at "
                 f"{PSYCH_WEIGHT_MAX} — psychology never trades alone",
     }
+
+    # AI-native fusion (Plan 06 D4) is the PRIMARY path when enabled: the model
+    # weighs the full factor snapshot itself instead of the fixed 0.5/0.3/0.2.
+    # The deterministic result above stays as the fail-soft fallback and every
+    # payload says which one produced it (`fusion_source`) — a rule-based score
+    # is never passed off as an AI one.
+    try:
+        from ai_fusion import fuse_with_ai
+        ai = fuse_with_ai(symbol, quant, sentiment, psych)
+        if ai:
+            payload["rule_fusion"] = {"score": payload["score"], "signal": payload["signal"],
+                                      "confidence": payload["confidence"]}
+            payload.update({
+                "score": ai["score"], "signal": ai["signal"], "confidence": ai["confidence"],
+                "fusion_source": "ai", "llm_model": ai.get("llm_model"),
+                "ai_components": ai.get("ai_components"), "ai_weights": ai.get("ai_weights"),
+                "rationale": ai.get("rationale"),
+                "evidence": (ai.get("evidence") or []) + evidence,
+                # D5's verdict on the inputs and the age of the AI read itself.
+                # Both are produced upstream — data_verification costs a real
+                # model call — and were being dropped here, so callers could
+                # neither see a 'suspect' input nor tell a cached verdict from
+                # a fresh one.
+                "data_verification": ai.get("data_verification"),
+                "cached_age_s": ai.get("cached_age_s"),
+                "note": "AI-fused: the model weighed the factor snapshot itself; "
+                        "psychology-only reads are still forced to hold",
+            })
+        else:
+            # None with the flag ON is a FAILURE, not a configuration choice:
+            # generate_text swallows provider errors and returns None, so a
+            # transient model outage looked identical to "AI fusion is off".
+            # Those must not share a label — one is a decision, the other is
+            # something being wrong.
+            from ai_fusion import ai_fusion_enabled
+            # ...unless there was nothing to fuse in the first place. With no
+            # quant and no sentiment the verdict is structurally forced to
+            # 'hold', so the model is deliberately not called — that is a
+            # choice, not a failure, and must not wear the failure label.
+            had_material = quant is not None or sentiment is not None
+            if ai_fusion_enabled() and had_material:
+                payload["fusion_source"] = "rule-fallback"
+                payload["note"] = ("AI fusion is enabled but returned nothing usable — "
+                                   "fixed weights used for this read")
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("ai fusion unavailable for %s: %s", symbol, exc)
+        payload["fusion_source"] = "rule-fallback"
+
+    return payload
 
 
 def fuse_symbols(symbols: list[str]) -> list[dict[str, Any]]:

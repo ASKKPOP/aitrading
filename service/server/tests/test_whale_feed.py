@@ -14,7 +14,7 @@ if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
 import whale_feed
-from whale_feed import (EXCHANGE_ETH_WALLETS, fetch_btc_whale_txs, fetch_eth_whale_txs,
+from whale_feed import (fetch_btc_whale_txs, fetch_eth_whale_txs,
                         get_whale_payload, whale_scanner_signals)
 
 BINANCE_14 = "0x28c6c06298d514db089934071355e5743bf21d60"

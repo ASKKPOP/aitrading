@@ -59,6 +59,14 @@ interface FusedSignal {
   current_price: number | null
   confluence?: ConfluenceRead | null
   components?: { quant?: { open_interest_usd?: number | null; long_short_ratio?: number | null } | null }
+  // Plan 06 D4/D5: who produced this verdict, and did the inputs check out.
+  // The API has always labelled this; the board did not show it, which left
+  // D4's promise — never pass a rule score off as an AI one — kept only in
+  // the payload and not where anyone reads it.
+  fusion_source?: 'ai' | 'rule' | 'rule-fallback'
+  llm_model?: string
+  cached_age_s?: number
+  data_verification?: { status: 'ok' | 'suspect'; reason?: string; applied?: boolean } | null
 }
 
 function ConfluenceCell({ c, language }: { c: ConfluenceRead | null | undefined; language: Language }) {
@@ -129,6 +137,40 @@ function SignalBadge({ signal }: { signal: string }) {
   const color = signal === 'buy' ? 'var(--success)' : signal === 'sell' ? 'var(--error)' : 'var(--text-muted)'
   const mark = signal === 'buy' ? '▲' : signal === 'sell' ? '▼' : '■'
   return <span style={{ color, fontWeight: 700 }}>{mark} {signal.toUpperCase()}</span>
+}
+
+// Who produced this verdict (Plan 06 D4) and whether its inputs verified
+// (D5). 'rule-fallback' is deliberately louder than 'rule': plain rule means
+// the AI path is off by configuration, while a fallback means it was meant to
+// run and could not — the reader should be able to tell those apart at a
+// glance rather than reading a rule score as an AI one.
+function SourceBadge({ s, language }: { s: FusedSignal; language: Language }) {
+  const src = s.fusion_source || 'rule'
+  const dv = s.data_verification
+  const pill = (bg: string, fg: string, text: string, title: string) => (
+    <span title={title} style={{
+      fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
+      background: bg, color: fg, whiteSpace: 'nowrap',
+    }}>{text}</span>
+  )
+  const age = s.cached_age_s != null && s.cached_age_s > 0
+    ? tr(language, { ko: `, ${s.cached_age_s}초 전 판정`, en: `, verdict ${s.cached_age_s}s old`, ja: `, ${s.cached_age_s}秒前の判定`, th: `, ผลเมื่อ ${s.cached_age_s} วิ.ที่แล้ว`, vi: `, phán quyết ${s.cached_age_s}s trước` })
+    : ''
+  return (
+    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+      {src === 'ai' && pill('rgba(88,166,255,0.16)', '#58a6ff', 'AI',
+        `${tr(language, { ko: 'AI가 가중치를 정해 종합', en: 'Fused by the AI, which chose the weights', ja: 'AIが重みを決めて統合', th: 'AI รวมสัญญาณและเลือกน้ำหนักเอง', vi: 'AI tự chọn trọng số và tổng hợp' })}${s.llm_model ? ` — ${s.llm_model}` : ''}${age}`)}
+      {src === 'rule' && pill('rgba(139,148,158,0.16)', 'var(--text-muted)',
+        tr(language, { ko: '규칙', en: 'rule', ja: 'ルール', th: 'กฎ', vi: 'quy tắc' }),
+        tr(language, { ko: '고정 가중치로 계산 — AI 종합은 꺼져 있습니다', en: 'Fixed-weight calculation — AI fusion is off', ja: '固定加重で計算 — AI統合はオフ', th: 'คำนวณด้วยน้ำหนักคงที่ — AI fusion ปิดอยู่', vi: 'Tính theo trọng số cố định — AI fusion đang tắt' }))}
+      {src === 'rule-fallback' && pill('rgba(210,153,34,0.18)', '#d29922',
+        tr(language, { ko: '규칙(대체)', en: 'rule (fallback)', ja: 'ルール(代替)', th: 'กฎ (สำรอง)', vi: 'quy tắc (dự phòng)' }),
+        tr(language, { ko: 'AI 종합이 실패해 고정 가중치로 대체되었습니다', en: 'AI fusion was unavailable — fell back to fixed weights', ja: 'AI統合が使えず固定加重に代替', th: 'AI fusion ใช้ไม่ได้ — ใช้น้ำหนักคงที่แทน', vi: 'AI fusion không khả dụng — quay về trọng số cố định' }))}
+      {dv?.status === 'suspect' && pill('rgba(210,153,34,0.18)', '#d29922',
+        `⚠ ${tr(language, { ko: '입력 의심', en: 'inputs suspect', ja: '入力に疑い', th: 'อินพุตน่าสงสัย', vi: 'đầu vào đáng ngờ' })}`,
+        dv.reason || '')}
+    </div>
+  )
 }
 
 interface MacroEvent {
@@ -310,15 +352,19 @@ export function SignalsBoardPage() {
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
           accent={events?.event_window ? 'var(--error)' : undefined}
         />
+        {/* Keep the recognized "Kimchi" name where traders know it (ko/en/ja);
+            add "Korea" context for th/vi where the bare transliteration is
+            opaque. It is a market-wide signal (Korean retail demand), not a
+            Korea-only readout — relevant to every region. */}
         <Tile
-          label={tr(language, { ko: '김치 프리미엄', en: 'Kimchi Premium', ja: 'キムチプレミアム', th: 'พรีเมียมกิมจิ', vi: 'Kimchi Premium' })}
+          label={tr(language, { ko: '김치 프리미엄', en: 'Kimchi Premium', ja: 'キムチプレミアム', th: 'พรีเมียมเกาหลี (Kimchi)', vi: 'Chênh lệch Hàn Quốc (Kimchi)' })}
           value={cross?.kimchi ? `${cross.kimchi.premium_pct >= 0 ? '+' : ''}${cross.kimchi.premium_pct.toFixed(2)}%` : '—'}
           sub={cross?.kimchi
             ? (cross.kimchi.verdict === 'overheated'
               ? tr(language, { ko: '국내 과열 — 컨트래리언 주의', en: 'local overheating — contrarian caution', ja: '国内過熱 — 逆張り警戒', th: 'ร้อนแรงในประเทศ — ระวังสวนทาง', vi: 'quá nóng nội địa — thận trọng ngược chiều' })
               : cross.kimchi.verdict === 'discount'
                 ? tr(language, { ko: '디스카운트 — 한국 수요 위축', en: 'discount — Korean demand contraction', ja: 'ディスカウント — 韓国需要縮小', th: 'ส่วนลด — อุปสงค์เกาหลีหด', vi: 'chiết khấu — nhu cầu Hàn Quốc giảm' })
-                : tr(language, { ko: 'Upbit 대비 글로벌 스프레드', en: 'Upbit vs global spread', ja: 'Upbit対グローバル', th: 'Upbit เทียบทั่วโลก', vi: 'Upbit so với toàn cầu' }))
+                : tr(language, { ko: '한국 거래소 vs 글로벌 — 한국 개인 수요 지표', en: 'Korean exchange vs global — a gauge of Korean retail demand', ja: '韓国取引所 vs グローバル — 韓国個人需要の指標', th: 'ตลาดเกาหลี vs ทั่วโลก — วัดอุปสงค์รายย่อยเกาหลี', vi: 'Sàn Hàn Quốc vs toàn cầu — thước đo nhu cầu bán lẻ Hàn Quốc' }))
             : cross?.available === false
               ? tr(language, { ko: '비활성화됨 (CROSS_MARKET_ENABLED)', en: 'disabled (CROSS_MARKET_ENABLED)', ja: '無効 (CROSS_MARKET_ENABLED)', th: 'ปิดอยู่ (CROSS_MARKET_ENABLED)', vi: 'tắt (CROSS_MARKET_ENABLED)' })
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
@@ -368,7 +414,10 @@ export function SignalsBoardPage() {
                     </div>
                   )}
                 </td>
-                <td style={td}><SignalBadge signal={s.signal} /></td>
+                <td style={td}>
+                  <SignalBadge signal={s.signal} />
+                  <SourceBadge s={s} language={language} />
+                </td>
                 <td style={td}><ConfluenceCell c={s.confluence} language={language} /></td>
                 <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 380 }}>
                   {s.evidence.length ? s.evidence.slice(0, 3).join('; ') : '—'}
@@ -409,7 +458,13 @@ export function SignalsBoardPage() {
       </div>
 
       <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-        {tr(language, { ko: '융합 점수 = 가중 퀀트 × 심리(감성) × 심리(psychology) (심리 가중치는 구조적으로 상한이 있어 — 심리만으로는 절대 거래하지 않습니다). 쇼크 수치는 실제 청산 데이터(OKX) 기반이며, 피드 장애 시에만 변동성 σ 프록시로 대체됩니다. 모든 거래는 모의입니다.', en: 'Fused score = weighted quant × sentiment × psychology (psych weight structurally capped — psychology never trades alone). Shock figures are based on real liquidation data (OKX), falling back to a volatility-σ proxy only if the feed is down. All trading is simulated.', ja: '融合スコア = 加重クオンツ × センチメント × 心理 (心理の重みは構造的に上限あり — 心理だけでは決して取引しません)。ショック数値は実際の清算データ (OKX) に基づき、フィード障害時のみボラティリティσプロキシに切り替わります。すべての取引はシミュレーションです。', th: 'คะแนนรวม = ควอนต์ถ่วงน้ำหนัก × อารมณ์ × จิตวิทยา (น้ำหนักจิตวิทยาถูกจำกัดเชิงโครงสร้าง — จิตวิทยาไม่เทรดลำพัง) ตัวเลขช็อกอิงข้อมูลการล้างพอร์ตจริง (OKX) และใช้พรอกซี σ เฉพาะเมื่อฟีดล่ม การเทรดทั้งหมดเป็นการจำลอง', vi: 'Điểm tổng hợp = quant có trọng số × cảm tính × tâm lý (trọng số tâm lý bị giới hạn cấu trúc — tâm lý không bao giờ giao dịch một mình). Số liệu sốc dựa trên dữ liệu thanh lý thực (OKX), chỉ chuyển sang proxy σ khi nguồn cấp gián đoạn. Tất cả giao dịch đều được mô phỏng.' })}
+        {/* Says which engine produced the score, because both run: the AI
+            weighs the factors itself (badge: AI) and the fixed-weight path is
+            the fallback (badge: 규칙). The two guarantees below hold on BOTH
+            paths — psychology never trades alone, and never leads the score —
+            which is what "capped" must mean now that the model picks its own
+            weights. Claiming a fixed 0.5/0.3/0.2 split would be false. */}
+        {tr(language, { ko: '융합 점수는 AI가 팩터 스냅샷 전체를 보고 직접 가중치를 정해 산출합니다(배지: AI). AI를 쓸 수 없으면 고정 가중치 방식으로 대체하며 배지에 표시됩니다(규칙 / 규칙(대체)). 두 경로 모두에서: 심리만으로는 절대 거래하지 않고, 심리가 점수를 주도할 수 없습니다(가중치 상한 0.3 — 초과를 선언한 AI 판정은 폐기). 쇼크 수치는 실제 청산 데이터(OKX) 기반이며, 피드 장애 시에만 변동성 σ 프록시로 대체됩니다. 모든 거래는 모의입니다.', en: 'The fused score is produced by the AI weighing the full factor snapshot itself (badge: AI). If the AI is unavailable the fixed-weight path takes over and the badge says so (rule / rule fallback). On BOTH paths: psychology never trades alone, and psychology can never lead the score (weight capped at 0.3 — an AI verdict declaring otherwise is discarded). Shock figures are based on real liquidation data (OKX), falling back to a volatility-σ proxy only if the feed is down. All trading is simulated.', ja: '融合スコアはAIがファクター全体を見て自ら重みを決めて算出します（バッジ: AI）。AIが使えない場合は固定加重に切り替わり、バッジに表示されます（ルール / ルール(代替)）。どちらの経路でも心理だけでは取引せず、心理がスコアを主導することはありません（重み上限0.3）。ショック数値は実際の清算データ (OKX) に基づきます。すべての取引はシミュレーションです。', th: 'คะแนนรวมมาจาก AI ที่ชั่งน้ำหนักปัจจัยเองทั้งหมด (ป้าย: AI) หาก AI ใช้ไม่ได้จะกลับไปใช้น้ำหนักคงที่และแสดงบนป้าย ทั้งสองเส้นทาง: จิตวิทยาไม่เทรดลำพัง และไม่นำคะแนน (จำกัดน้ำหนัก 0.3) ตัวเลขช็อกอิงข้อมูลการล้างพอร์ตจริง (OKX) การเทรดทั้งหมดเป็นการจำลอง', vi: 'Điểm tổng hợp do AI tự chọn trọng số trên toàn bộ ảnh chụp yếu tố (nhãn: AI). Nếu AI không khả dụng, hệ thống quay về trọng số cố định và nhãn sẽ nói rõ. Trên cả hai đường: tâm lý không bao giờ giao dịch một mình và không bao giờ dẫn dắt điểm số (giới hạn trọng số 0.3). Số liệu sốc dựa trên dữ liệu thanh lý thực (OKX). Tất cả giao dịch đều được mô phỏng.' })}
         {psych?.created_at && <> · {tr(language, { ko: '심리 기준', en: 'psych as of', ja: '心理データ基準', th: 'จิตวิทยา ณ', vi: 'tâm lý tính đến' })} {psych.created_at}</>}
         {scanner?.created_at && <> · {tr(language, { ko: '스캔 기준', en: 'scan as of', ja: 'スキャン基準', th: 'สแกน ณ', vi: 'quét tính đến' })} {scanner.created_at}</>}
       </p>

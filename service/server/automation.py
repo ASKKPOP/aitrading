@@ -27,7 +27,7 @@ from database import begin_write_transaction, get_db_connection
 logger = logging.getLogger(__name__)
 
 VALID_MARKETS = ("crypto", "us-stock")
-EXECUTABLE_ACTIONS = ("buy", "sell")
+EXECUTABLE_ACTIONS = ("buy", "sell", "short", "cover")
 
 
 def _now_iso() -> str:
@@ -81,6 +81,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     try:
         begin_write_transaction(cursor)
 
+        short_entry: Optional[float] = None
         if side == "sell":
             pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
             current_qty = float(pos["quantity"]) if pos else 0.0
@@ -91,7 +92,24 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             trade_value = price * quantity
             fee = trade_value * TRADE_FEE_RATE
 
-        if side == "buy":
+        if side == "cover":
+            # Close (part of) a short book (negative quantity rows).
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            current_qty = float(pos["quantity"]) if pos else 0.0
+            if current_qty >= 0:
+                conn.rollback()
+                return None, "no short position to cover"
+            quantity = min(quantity, -current_qty)
+            trade_value = price * quantity
+            fee = trade_value * TRADE_FEE_RATE
+            short_entry = float(pos["entry_price"] or 0)
+            if short_entry <= 0:
+                conn.rollback()
+                return None, "short position entry price missing"
+
+        if side in ("buy", "short"):
+            # Shorts escrow the notional as collateral — same debit as a buy
+            # (matches the manual signal executor's cash model).
             cursor.execute("SELECT cash FROM agents WHERE id = ?", (agent_id,))
             row = cursor.fetchone()
             cash = row["cash"] if row else 0
@@ -111,6 +129,28 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
              content, int(datetime.now(timezone.utc).timestamp()), now, now),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
+        if side == "short" and (stop_loss is not None or take_profit is not None):
+            # Short exits are inverted (SL above entry / TP below). NEVER
+            # LOOSEN mirrored: a lower stop and a lower target are tighter
+            # for a short, so re-shorts take min() of existing vs new.
+            cursor.execute(
+                """SELECT stop_loss, take_profit FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                (agent_id, market, symbol))
+            row = cursor.fetchone()
+            existing_sl = row["stop_loss"] if row else None
+            existing_tp = row["take_profit"] if row else None
+            new_sl = min(x for x in (existing_sl, stop_loss) if x is not None) \
+                if (existing_sl is not None or stop_loss is not None) else None
+            new_tp = min(x for x in (existing_tp, take_profit) if x is not None) \
+                if (existing_tp is not None or take_profit is not None) else None
+            cursor.execute(
+                """UPDATE positions
+                   SET stop_loss = ?, take_profit = ?,
+                       exit_policy = COALESCE(exit_policy, 'v1')
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                (new_sl, new_tp, agent_id, market, symbol),
+            )
         if side == "buy":
             if stop_loss is not None or take_profit is not None:
                 # NEVER LOOSEN an existing exit level: a re-buy previously
@@ -136,6 +176,12 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                     (new_sl, new_tp, agent_id, market, symbol),
                 )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+        elif side == "short":
+            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+        elif side == "cover":
+            # Return collateral + short P&L: entry×qty escrow + (entry−price)×qty
+            cover_credit = ((2 * short_entry) - price) * quantity - fee
+            cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (cover_credit, agent_id))
         else:
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
         conn.commit()
@@ -146,6 +192,18 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         return None, str(exc)
     finally:
         conn.close()
+
+
+def _agent_budget_blocks(config: dict[str, Any], entry: float) -> Optional[str]:
+    """Agent-mode budget check wrapper (fail-closed: an error blocks the buy —
+    a budget cap that silently fails open would defeat full delegation)."""
+    try:
+        from agent_planner import budget_blocks
+        order_usd = float(config.get("size_usd") or 0)
+        return budget_blocks(config["agent_id"], float(config.get("budget_usd") or 0), order_usd)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("agent-mode budget check failed: %s", exc)
+        return f"agent-mode budget check unavailable: {exc}"
 
 
 # ─────────────────────────── one rule ───────────────────────────
@@ -212,6 +270,33 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
 
     result: dict[str, Any] = {"config_id": config_id, "executed": False, "skip_reason": None}
 
+    # Agent Mode (Plan 06 C1): the planner picks this cycle's parameters
+    # (symbol/size/cadence/confidence/risk level) inside deterministic bounds.
+    # The user's budget cap is enforced later, pre-gate. Fail-soft: a planner
+    # problem falls back to the rule's stored parameters.
+    if (config.get("mode") or "manual") == "agent":
+        try:
+            from agent_planner import plan_agent_cycle
+            plan = plan_agent_cycle(config)
+            symbol = plan["symbol"]
+            config = dict(config)
+            config["min_confidence"] = plan["min_confidence"]
+            config["size_usd"] = plan["size_usd"]
+            result["agent_plan"] = plan
+            # cadence: persist the planner's interval so the due-check uses it
+            if plan["interval_minutes"] != config.get("interval_minutes"):
+                try:
+                    _conn = get_db_connection()
+                    _conn.execute(
+                        "UPDATE automation_configs SET interval_minutes = ? WHERE id = ?",
+                        (plan["interval_minutes"], config_id))
+                    _conn.commit()
+                    _conn.close()
+                except Exception:  # noqa: BLE001
+                    logger.debug("agent-mode interval persist failed for %s", config_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("agent-mode planner failed for config %s: %s", config_id, exc)
+
     # Scanner option (Phase 4): a rule whose symbol is 'SCANNER' analyzes the
     # which-coin scanner's current top candidate instead of a fixed symbol.
     if symbol == "SCANNER":
@@ -247,6 +332,18 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["confluence"] = evaluate_confluence(symbol, market, analysis=technical)
         except Exception as exc:  # noqa: BLE001
             logger.debug("confluence telemetry unavailable for %s: %s", symbol, exc)
+
+        # Live calibration prior (Plan 06 A2): the realized hit rate at this
+        # confluence count, from production telemetry. Advisory — journaled
+        # alongside the decision, never changes execution.
+        try:
+            from calibration import calibration_prior
+            prior = calibration_prior(
+                (result.get("confluence") or {}).get("buy_confluence"))
+            if prior is not None:
+                result["calibration_prior"] = prior
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("calibration prior unavailable: %s", exc)
 
         # Regime read (Phase 2): advisory journal always; a hard entry gate
         # only when REGIME_FILTER_ENABLED (Phase-4 flip). Exits never gated.
@@ -296,6 +393,10 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             result["skip_reason"] = _regime_blocks(regime_read, action)
         elif not entry or entry <= 0:
             result["skip_reason"] = "no valid price in decision"
+        elif (config.get("mode") or "manual") == "agent" and action == "buy" and (
+                _budget_reason := _agent_budget_blocks(config, float(entry))):
+            # Deterministic budget cap — the planner proposes, this disposes.
+            result["skip_reason"] = _budget_reason
         else:
             quantity = float(config.get("size_usd") or 0) / float(entry)
             if (action == "buy" and regime_read is not None
@@ -322,6 +423,16 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                     if gate.adjustment:
                         logger.info("risk gate adjusted order (config %s): %s",
                                     config_id, gate.adjustment)
+                    # Alert (Plan 06 C3) — in-app always; email/SMS per user prefs.
+                    try:
+                        from alerts import send_alert
+                        send_alert(agent_id, "trade_executed",
+                                   f"{action.upper()} {symbol}",
+                                   (f"Automation executed {action} {gate.quantity:.6f} "
+                                    f"{symbol} @ ${float(entry):.2f} (confidence {confidence})"),
+                                   dedupe_key=f"exec:{signal_id}")
+                    except Exception:  # noqa: BLE001
+                        logger.debug("trade alert failed for signal %s", signal_id)
                 else:
                     result["skip_reason"] = skip
     except Exception as exc:  # noqa: BLE001
@@ -347,6 +458,10 @@ def _record_run(config_id: int, agent_id: int, result: dict[str, Any],
             telemetry["regime"] = result["regime"]
         if result.get("verify") is not None:
             telemetry["verify"] = result["verify"]
+        if result.get("calibration_prior") is not None:
+            telemetry["calibration_prior"] = result["calibration_prior"]
+        if result.get("agent_plan") is not None:
+            telemetry["agent_plan"] = result["agent_plan"]
         confluence_json = None
         if telemetry:
             try:
@@ -396,6 +511,14 @@ def run_automation_tick() -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     due = []
     for cfg in rows:
+        # Trading-window schedule (Plan 06 C3): out-of-window rules are not due.
+        # Fail-soft — a broken schedule degrades to always-on, never freezes.
+        try:
+            from schedule import in_window, schedule_from_config
+            if not in_window(schedule_from_config(cfg), now):
+                continue
+        except Exception:  # noqa: BLE001
+            pass
         last = cfg.get("last_run_at")
         if not last:
             due.append(cfg)

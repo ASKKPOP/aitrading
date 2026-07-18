@@ -36,13 +36,13 @@ def upgrade() -> None:
             user_id           INTEGER NOT NULL REFERENCES users(id),
             provider          VARCHAR(32) NOT NULL,
             provider_user_id  VARCHAR(255) NOT NULL,
-            email             TEXT,
+            email             MEDIUMTEXT,
             created_at        VARCHAR(64) NOT NULL DEFAULT ({_NOW}),
             UNIQUE KEY uq_oauth_provider_id (provider, provider_user_id)
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_oauth_identities_user
+        CREATE INDEX idx_oauth_identities_user
         ON oauth_identities(user_id, provider)
     """)
 

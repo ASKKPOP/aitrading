@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json as _json
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
@@ -49,6 +50,12 @@ class AutomationConfigIn(BaseModel):
     enabled: bool = True
     lang: str = "en"
     risk_level: Optional[str] = None
+    # Plan 06 C1 — Agent Mode (full delegation): the AI plans symbol/size/
+    # cadence/confidence each cycle inside a user budget.
+    mode: str = "manual"
+    budget_usd: Optional[float] = None
+    # Plan 06 C3 — trading-window schedule (days/hours/timezone)
+    schedule: Optional[dict] = None
 
     @field_validator("risk_level")
     @classmethod
@@ -57,6 +64,32 @@ class AutomationConfigIn(BaseModel):
         if v and v not in RISK_LEVEL_PRESETS:
             raise ValueError(f"risk_level must be one of {list(RISK_LEVEL_PRESETS)} or empty")
         return v or None
+
+    @field_validator("mode")
+    @classmethod
+    def _mode(cls, v):
+        v = (v or "manual").strip().lower()
+        if v not in ("manual", "agent"):
+            raise ValueError("mode must be manual or agent")
+        return v
+
+    @field_validator("budget_usd")
+    @classmethod
+    def _budget(cls, v):
+        if v is not None and (v < 100 or v > 1_000_000):
+            raise ValueError("budget_usd must be between 100 and 1,000,000")
+        return v
+
+    @field_validator("schedule")
+    @classmethod
+    def _schedule(cls, v):
+        if v is None:
+            return None
+        from schedule import parse_schedule
+        try:
+            return parse_schedule(v)
+        except ValueError as exc:
+            raise ValueError(str(exc))
 
     @field_validator("symbol")
     @classmethod
@@ -157,6 +190,16 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post("/api/automation/configs")
     async def create_config(data: AutomationConfigIn, authorization: str = Header(None)):
         agent = _auth(authorization)
+        # Agent-mode invariants: a budget is required, execution is on (that is
+        # the point of delegation), and only the simulator account is allowed.
+        auto_execute = data.auto_execute
+        account_type = data.account_type
+        if data.mode == "agent":
+            if not data.budget_usd:
+                raise HTTPException(status_code=400,
+                                    detail="agent mode requires budget_usd (100..1,000,000)")
+            auto_execute = True
+            account_type = "simulator"
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
@@ -164,11 +207,14 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             cursor.execute(
                 """INSERT INTO automation_configs
                    (agent_id, symbol, market, provider, interval_minutes, min_confidence,
-                    size_usd, auto_execute, account_type, enabled, lang, risk_level)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    size_usd, auto_execute, account_type, enabled, lang, risk_level,
+                    mode, budget_usd, schedule_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent["id"], data.symbol, data.market, data.provider, data.interval_minutes,
-                 data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
-                 data.account_type, 1 if data.enabled else 0, data.lang, data.risk_level),
+                 data.min_confidence, data.size_usd, 1 if auto_execute else 0,
+                 account_type, 1 if data.enabled else 0, data.lang, data.risk_level,
+                 data.mode, data.budget_usd,
+                 _json.dumps(data.schedule) if data.schedule else None),
             )
             config_id = cursor.lastrowid
             conn.commit()
@@ -191,11 +237,13 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             cursor.execute(
                 """UPDATE automation_configs SET symbol=?, market=?, provider=?, interval_minutes=?,
                    min_confidence=?, size_usd=?, auto_execute=?, account_type=?, enabled=?, lang=?,
-                   risk_level=?
+                   risk_level=?, mode=?, budget_usd=?, schedule_json=?
                    WHERE id=? AND agent_id=?""",
                 (data.symbol, data.market, data.provider, data.interval_minutes,
                  data.min_confidence, data.size_usd, 1 if data.auto_execute else 0,
                  data.account_type, 1 if data.enabled else 0, data.lang, data.risk_level,
+                 data.mode, data.budget_usd,
+                 _json.dumps(data.schedule) if data.schedule else None,
                  config_id, agent["id"]),
             )
             conn.commit()
@@ -218,6 +266,29 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             if not deleted:
                 raise HTTPException(status_code=404, detail="Rule not found")
             return {"ok": True}
+        finally:
+            conn.close()
+
+    @app.get("/api/automation/agent-decisions")
+    async def list_agent_decisions(config_id: Optional[int] = None, limit: int = 30,
+                                   authorization: str = Header(None)):
+        """Agent-mode decision feed: what the planner chose each cycle and why."""
+        agent = _auth(authorization)
+        limit = max(1, min(limit, 100))
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            if config_id:
+                cursor.execute(
+                    """SELECT * FROM agent_mode_decisions
+                       WHERE agent_id = ? AND config_id = ?
+                       ORDER BY id DESC LIMIT ?""",
+                    (agent["id"], config_id, limit))
+            else:
+                cursor.execute(
+                    "SELECT * FROM agent_mode_decisions WHERE agent_id = ? ORDER BY id DESC LIMIT ?",
+                    (agent["id"], limit))
+            return {"decisions": [dict(r) for r in cursor.fetchall()]}
         finally:
             conn.close()
 

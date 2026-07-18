@@ -21,7 +21,10 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+import importlib
+
 import database
+import psych_feed
 from routes import create_app
 
 
@@ -224,8 +227,11 @@ class PayloadTests(PsychFeedTestCase):
 
     def test_refresh_and_payload_roundtrip_with_odds_deltas(self):
         from psych_feed import get_psych_payload
-        self._refresh(anticipation=[{"slug": "m1", "title": "M1", "odds": {"Yes": 0.61}}])
-        self._refresh(anticipation=[{"slug": "m1", "title": "M1", "odds": {"Yes": 0.68}}])
+        # A crypto-relevant market: the anticipation feed now filters topics,
+        # so an arbitrary fixture title would be (correctly) discarded.
+        btc = {"slug": "m1", "title": "Will Bitcoin hit $100,000?"}
+        self._refresh(anticipation=[{**btc, "odds": {"Yes": 0.61}}])
+        self._refresh(anticipation=[{**btc, "odds": {"Yes": 0.68}}])
         payload = get_psych_payload()
         self.assertTrue(payload["available"])
         self.assertEqual(payload["fear_greed"]["value"], 25)
@@ -284,3 +290,138 @@ class SentimentAnalystIntegrationTests(PsychFeedTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnticipationRelevanceTests(unittest.TestCase):
+    """Polymarket's top-volume list is whatever the world bets on. Unfiltered,
+    it fed the CRYPTO anticipation signal — live on 2026-07-17 that was
+    Ethiopian elections, the FIFA World Cup and a League of Legends match,
+    and a >=0.05 swing on the LoL match added +0.25 to the psych component
+    and printed itself as a trade rationale on the board.
+    """
+
+    REAL_NOISE = [   # verbatim from the live prod feed
+        "Will Belete Molla be the next Prime Minister of Ethiopia?",
+        "Will Argentina win the 2026 FIFA World Cup?",
+        "Exact Score: Spain 2 - 3 Argentina?",
+        "LoL: Hanwha Life Esports vs T1 (BO3) - Esports World Cup Playoffs",
+        "Will Iran's head of state change by December 31?",
+    ]
+    REAL_RELEVANT = [
+        "Will Bitcoin hit $100,000 by December 31?",
+        "Will the SEC approve a Solana ETF in 2026?",
+        "Fed decision in September?",
+        "Will CPI come in above 3%?",
+        "Will Ethereum flip Bitcoin?",
+        "XRP lawsuit ruling before July?",
+    ]
+
+    def test_real_noise_markets_are_rejected(self):
+        for title in self.REAL_NOISE:
+            self.assertFalse(psych_feed.is_relevant_market(title),
+                             f"must not feed a crypto signal: {title}")
+
+    def test_real_crypto_and_macro_markets_are_kept(self):
+        for title in self.REAL_RELEVANT:
+            self.assertTrue(psych_feed.is_relevant_market(title),
+                            f"must be kept: {title}")
+
+    def test_matching_is_case_insensitive_and_reads_the_slug(self):
+        self.assertTrue(psych_feed.is_relevant_market("WILL BITCOIN CRASH?"))
+        self.assertTrue(psych_feed.is_relevant_market("will-the-fed-cut-rates"))
+
+    def test_empty_or_missing_text_is_not_relevant(self):
+        for junk in (None, "", "   "):
+            self.assertFalse(psych_feed.is_relevant_market(junk))
+
+    def test_topics_are_configurable(self):
+        with patch.dict(os.environ, {"ANTICIPATION_TOPICS": "bitcoin"}):
+            importlib.reload(psych_feed)
+            self.assertTrue(psych_feed.is_relevant_market("Bitcoin to 100k?"))
+            self.assertFalse(psych_feed.is_relevant_market("Will the Fed cut rates?"))
+        importlib.reload(psych_feed)   # restore defaults for other tests
+
+    def test_gather_filters_the_live_shaped_payload(self):
+        """End-to-end on the real response shape: noise out, crypto in."""
+        raw = [
+            {"question": q, "slug": f"s{i}", "outcomes": '["Yes","No"]',
+             "outcomePrices": '["0.4","0.6"]', "volume24hr": 9_000_000 - i}
+            for i, q in enumerate(self.REAL_NOISE)
+        ] + [
+            {"question": "Will Bitcoin hit $100,000 by December 31?", "slug": "btc100k",
+             "outcomes": '["Yes","No"]', "outcomePrices": '["0.35","0.65"]', "volume24hr": 10}
+        ]
+        with patch("price_fetcher._polymarket_get_json", return_value=raw):
+            out = psych_feed._gather_anticipation()
+        self.assertEqual([m["slug"] for m in out], ["btc100k"])
+
+    def test_no_relevant_market_returns_empty_not_noise(self):
+        """Nothing relevant live -> anticipation reports missing. Substituting
+        an unrelated market would be worse than having no signal."""
+        raw = [{"question": q, "slug": f"s{i}", "outcomes": '["Yes","No"]',
+                "outcomePrices": '["0.4","0.6"]', "volume24hr": 9_000_000}
+               for i, q in enumerate(self.REAL_NOISE)]
+        with patch("price_fetcher._polymarket_get_json", return_value=raw):
+            self.assertEqual(psych_feed._gather_anticipation(), [])
+
+
+class OddsDeltaSignTests(unittest.TestCase):
+    """A binary market says the same thing twice: P(Yes) falling 0.10 IS P(No)
+    rising 0.10. Emitting both rows made the anticipation signal mathematically
+    incapable of being bearish, because the consumer tests `delta >= +0.05`
+    one-sidedly — ANY movement produced a bullish row and a +0.25 bump.
+    (Audit 2026-07-17, 4/4 QA; proven live on 'Will BTC be above $60k?'.)
+    """
+
+    BULL_MIN = 0.05   # signal_fusion.ODDS_RERATING_MIN
+
+    def _fires_bullish(self, deltas):
+        return [d for d in deltas if d.get("delta", 0) >= self.BULL_MIN]
+
+    def test_a_yes_collapse_is_not_bullish(self):
+        prev = [{"slug": "m", "odds": {"Yes": 0.70, "No": 0.30}}]
+        now = [{"slug": "m", "odds": {"Yes": 0.55, "No": 0.45}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 1)                       # one row per MARKET
+        self.assertEqual(d[0]["outcome"], "Yes")
+        self.assertAlmostEqual(d[0]["delta"], -0.15, places=4)
+        self.assertEqual(self._fires_bullish(d), [])      # the bug, closed
+
+    def test_a_yes_rally_is_bullish(self):
+        prev = [{"slug": "m", "odds": {"Yes": 0.55, "No": 0.45}}]
+        now = [{"slug": "m", "odds": {"Yes": 0.70, "No": 0.30}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertAlmostEqual(d[0]["delta"], 0.15, places=4)
+        self.assertTrue(self._fires_bullish(d))           # this one should
+
+    def test_one_row_per_market_not_per_outcome(self):
+        prev = [{"slug": "a", "odds": {"Yes": 0.5, "No": 0.5}},
+                {"slug": "b", "odds": {"Yes": 0.2, "No": 0.8}}]
+        now = [{"slug": "a", "odds": {"Yes": 0.6, "No": 0.4}},
+               {"slug": "b", "odds": {"Yes": 0.1, "No": 0.9}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 2)
+        self.assertEqual(sorted(x["slug"] for x in d), ["a", "b"])
+
+    def test_yes_is_canonical_regardless_of_key_order_or_case(self):
+        self.assertEqual(psych_feed._canonical_outcome({"No": 0.4, "YES": 0.6}), "YES")
+        self.assertEqual(psych_feed._canonical_outcome({"No": 0.4, "yes": 0.6}), "yes")
+
+    def test_non_binary_market_falls_back_to_a_stable_first_outcome(self):
+        odds = {"Trump": 0.5, "Biden": 0.3, "Other": 0.2}
+        self.assertEqual(psych_feed._canonical_outcome(odds), "Trump")
+        prev = [{"slug": "m", "odds": odds}]
+        now = [{"slug": "m", "odds": {"Trump": 0.62, "Biden": 0.2, "Other": 0.18}}]
+        d = psych_feed.compute_odds_deltas(now, prev)
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[0]["outcome"], "Trump")
+
+    def test_empty_odds_is_skipped_not_crashed(self):
+        self.assertIsNone(psych_feed._canonical_outcome({}))
+        self.assertEqual(psych_feed.compute_odds_deltas([{"slug": "m", "odds": {}}],
+                                                        [{"slug": "m", "odds": {}}]), [])
+
+    def test_unmatched_market_yields_nothing(self):
+        self.assertEqual(psych_feed.compute_odds_deltas(
+            [{"slug": "new", "odds": {"Yes": 0.5}}],
+            [{"slug": "old", "odds": {"Yes": 0.5}}]), [])

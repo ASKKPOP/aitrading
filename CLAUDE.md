@@ -80,7 +80,7 @@ A **signal and copy-trading platform**, not a broker execution engine. Agents re
 
 - **Backend:** FastAPI + Python 3.12 (3.10+ required — codebase uses `X | None` syntax).
 - **Frontend:** React 18 + Vite 5 + TypeScript.
-- **DB:** SQLite by default (`service/server/data/sooppiy.db`), PostgreSQL in production (set `DATABASE_URL`).
+- **DB:** SQLite by default (`service/server/data/sooppiy.db`), **MySQL 8 in production** (set `DATABASE_URL`, e.g. `mysql+pymysql://…`). There is no Postgres driver in `requirements.txt`.
 - **Cache:** Redis (optional).
 - **Market data:** Alpha Vantage (stocks), Hyperliquid (crypto), Polymarket (prediction).
 

@@ -307,7 +307,19 @@ def _parse_decision_json(text: str) -> Optional[dict[str, Any]]:
     return obj
 
 
-def _trader_risk_decision(symbol, market, briefs, technical, news, lang) -> dict[str, Any]:
+def _guidelines_block(guidelines: Optional[str]) -> str:
+    """User guidelines injected into decision-tier prompts (Plan 06 C3).
+    They may make the AI more conservative; they cannot loosen anything —
+    the deterministic risk gates run downstream regardless."""
+    if not guidelines:
+        return ""
+    return ("USER GUIDELINES (follow them where they make you MORE cautious; "
+            "they can never override risk limits or execution gates):\n"
+            f"{guidelines}\n\n")
+
+
+def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
+                          guidelines: Optional[str] = None) -> dict[str, Any]:
     if not llm_configured():
         return _rule_based_decision(technical, news)
     lang_line = "Write the rationale and report in Thai." if lang == "th" else "Write the rationale and report in English."
@@ -315,8 +327,14 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang) -> dict
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
         f"decide whether to BUY, SELL, or HOLD {symbol} ({market}).\n"
         f"{lang_line}\n"
+        + _guidelines_block(guidelines) +
         "Weigh disagreement, size risk, and be decisive. Respond with ONLY a JSON object:\n"
-        '{"action":"buy|sell|hold","confidence":0.0-1.0,"entry":number|null,'
+        # 'entry' is asked for as the desk's VIEW and is recorded as
+        # suggested_entry; execution always fills at the live price (P-1).
+        # Saying so keeps the model from treating it as an order instruction.
+        '{"action":"buy|sell|hold","confidence":0.0-1.0,'
+        '"entry":number|null (your suggested level — commentary only; the fill '
+        'is executed at the live market price regardless),'
         '"target":number|null,"stop":number|null,"rationale":"1-2 sentences",'
         '"report":"a 4-6 sentence markdown report synthesizing the analysts"}\n\n'
         f"NEWS ANALYST:\n{briefs['news']}\n\n"
@@ -328,10 +346,21 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang) -> dict
     text = generate_text(prompt, max_tokens=900, temperature=0.3)
     parsed = _parse_decision_json(text or "")
     if parsed:
-        # LLMs sometimes return entry: null — fall back to the live price so
-        # downstream execution always has a valid entry.
-        if not parsed.get("entry"):
-            parsed["entry"] = technical.get("current_price")
+        # P-1: the model does NOT author the execution price.
+        #
+        # Every risk limit is denominated in price — automation sizes with
+        # `size_usd / entry` and the gate checks `quantity * price` — so both
+        # sides use the same number and always reconcile to exactly size_usd.
+        # Let the model set it and it sets the denominator of the entire risk
+        # stack: an entry of 60 instead of 60,000 opens 1000x the position
+        # while every cap still reports ALLOWED. No malice needed; LLMs slip
+        # units routinely. (Audit 2026-07-17, 4/4 QA confirmed.)
+        #
+        # So its price is commentary, kept for the report, and execution always
+        # uses the live one.
+        suggested = parsed.get("entry")
+        parsed["suggested_entry"] = suggested if isinstance(suggested, (int, float)) else None
+        parsed["entry"] = technical.get("current_price")
         if not parsed.get("report"):
             parsed["report"] = parsed.get("rationale", "")
         return parsed
@@ -378,7 +407,7 @@ def _parse_verification_json(text: str) -> Optional[dict[str, Any]]:
 
 def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
                      technical: dict[str, Any], decision: dict[str, Any],
-                     lang: str) -> Optional[dict[str, Any]]:
+                     lang: str, guidelines: Optional[str] = None) -> Optional[dict[str, Any]]:
     """Adversarial second pass: a strong-tier call that tries to REFUTE the
     trader's decision. Returns {verdict, adjusted_confidence, reason} or None
     (fail-open) when unconfigured/unparseable. VERIFY_PROVIDER optionally runs
@@ -387,6 +416,7 @@ def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
         return None
     import os
     prompt = (
+        _guidelines_block(guidelines) +
         "You are an independent risk verifier. Your job is to try to REFUTE the trading "
         f"decision below for {symbol} ({market}). Check: (1) do the analyst briefs actually "
         "support the action, or is evidence mixed/contradictory? (2) is the confidence "
@@ -482,15 +512,23 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
     elif rule_provider:
         ctx = LlmContext(provider=rule_provider, source="rule")
 
+    guidelines = None
+    try:
+        from services import guidelines_for_agent
+        guidelines = guidelines_for_agent(agent_id)
+    except Exception:  # noqa: BLE001
+        guidelines = None
+
     token = set_llm_context(ctx) if ctx is not None else None
     try:
-        return _run_analysis_inner(symbol, market, lang)
+        return _run_analysis_inner(symbol, market, lang, guidelines=guidelines)
     finally:
         if token is not None:
             reset_llm_context(token)
 
 
-def _run_analysis_inner(symbol: str, market: str, lang: str) -> dict[str, Any]:
+def _run_analysis_inner(symbol: str, market: str, lang: str,
+                        guidelines: Optional[str] = None) -> dict[str, Any]:
     technical = _gather_technical(symbol, market)
     news = _gather_news(symbol, market)
     sentiment = _gather_sentiment(symbol, market, news)
@@ -511,12 +549,14 @@ def _run_analysis_inner(symbol: str, market: str, lang: str) -> dict[str, Any]:
                            technical, lang),
     }
 
-    decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang)
+    decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
+                                     guidelines=guidelines)
 
     # Verification pass (advisory by default; enforce applies deterministically).
     # Fail-open: verifier trouble never blocks the pipeline.
     try:
-        verification = _verify_decision(symbol, market, briefs, technical, decision, lang)
+        verification = _verify_decision(symbol, market, briefs, technical, decision, lang,
+                                        guidelines=guidelines)
     except Exception:  # noqa: BLE001
         verification = None
     decision = _apply_verification(decision, verification)

@@ -117,9 +117,14 @@ export function Sidebar({
     icon: string
     label: string
     requiresAuth: boolean
+    ownerOnly?: boolean
     badge?: number
     category?: 'discussion' | 'strategy' | 'experiment'
   }
+
+  // Owner gate — mirrors the backend DOCS_OWNER_EMAILS default. Owner-only nav
+  // items are hidden from everyone else; the backend enforces access too.
+  const isOwner = (userInfo?.email || '').trim().toLowerCase() === 'info@askkpop.com'
 
   // Grouped nav sections — organized around this project's three targets:
   // AI analysis (Target 2), automation (Target 3), and simulation/trading (Target 1).
@@ -129,6 +134,8 @@ export function Sidebar({
       items: [
         { path: '/analyst', icon: '🧠', label: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }), requiresAuth: true },
         { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
+        { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' }), requiresAuth: false },
+        { path: '/consult', icon: '💬', label: tr(language, { ko: 'AI 상담', en: 'Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI' }), requiresAuth: false },
       ]
     },
     {
@@ -154,7 +161,7 @@ export function Sidebar({
       label: tr(language, { ko: '리서치', en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
       items: [
         { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
-        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn' }), requiresAuth: false },
+        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn' }), requiresAuth: true, ownerOnly: true },
         { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
       ]
     },
@@ -216,7 +223,7 @@ export function Sidebar({
         {navSections.map((section) => (
           <div key={section.label}>
             <div className="nav-section-title">{section.label}</div>
-            {section.items.map((item) => (
+            {section.items.filter((item) => !item.ownerOnly || isOwner).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}

@@ -30,6 +30,7 @@ from routes_backtest import register_backtest_routes
 from routes_execution import register_execution_routes
 from routes_auth import register_auth_routes
 from routes_guide import register_guide_routes
+from routes_watches import register_watch_routes
 from routes_memory import register_memory_routes
 from routes_oauth import register_oauth_routes
 from routes_reputation import register_reputation_routes
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
     register_reputation_routes(app, ctx)
     register_auth_routes(app, ctx)
     register_guide_routes(app, ctx)
+    register_watch_routes(app, ctx)
     register_oauth_routes(app, ctx)
     register_misc_routes(app)   # must be last — contains /{path:path} SPA fallback
     return app

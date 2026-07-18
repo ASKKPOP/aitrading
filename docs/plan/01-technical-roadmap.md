@@ -39,7 +39,7 @@ Grounded in a read of `CLAUDE.md`, the 13 backend route modules, `database.py`, 
 
 ### Production-readiness gaps
 
-- **Secrets.** `.env.example` (57 lines) mixes intervals/URLs with secrets like `ALPHA_VANTAGE_API_KEY`. Move secrets to a provider (1Password Connect, Doppler, AWS SSM, or Fly secrets); keep `.env.example` as a *names-only* template. Add a pre-commit hook that scans for high-entropy strings.
+- **Secrets.** `.env.example` (57 lines) mixes intervals/URLs with secrets like `ALPHA_VANTAGE_API_KEY`. Move secrets to a provider (1Password Connect, Doppler, or AWS SSM / Secrets Manager); keep `.env.example` as a *names-only* template. Add a pre-commit hook that scans for high-entropy strings.
 - **Config layering.** Replace ad-hoc `os.getenv` (scattered; `tasks.py:32-51` already started `_env_bool`/`_env_int`/`_env_csv_set`) with a single `pydantic-settings` `Settings` object that fails-fast at startup. Layer: defaults → `.env` → env → secrets provider.
 - **Observability.** Today: one rotating file (`main.py:21-34`), `print()` calls, no metrics, no traces. Move to: **logs** via `structlog` JSON to stdout; **metrics** via `prometheus-fastapi-instrumentator` (p50/p95 per route, signal-publish rate, price-fetch failure rate per provider, WS count); **traces** via OpenTelemetry — the hot path signal publish → position update → cache invalidation needs spans.
 - **Error handling.** Replace bare `try/except: pass` (e.g. `routes_agent.py:118`) with typed exceptions and a global handler returning `{"error": {"code", "message", "request_id"}}`. Add `request_id` middleware alongside `add_process_time_header` at `routes.py:37-41`.
@@ -67,11 +67,20 @@ There is no `.github/` directory today. Ship in week 1:
 - `.github/workflows/security.yml` — `pip-audit`, `npm audit --audit-level=high`, `gitleaks` for secret scanning, weekly Dependabot.
 - `.github/workflows/deploy.yml` — on tag `v*`, build Docker image, push to GHCR, deploy to the target platform.
 
-### Deployment topology — recommendation: **Fly.io**
+### Deployment topology — actual: **AWS EC2 + Docker**
 
-Three reasons: (1) it natively supports the two-process model Sooppiy already has (API + worker) via `[processes]` in `fly.toml`; (2) Postgres + Redis as managed add-ons with predictable pricing; (3) global Anycast for the API while keeping the worker in one region near Postgres avoids the read/write split complexity of Cloud Run. Cloud Run is the close runner-up if the team is already in GCP. Render works but its background-worker pricing is harsher. Railway is fine for staging only.
+What runs today (verified 2026-07-17): a single EC2 host runs the app as Docker
+containers — `sooppiy-backend` (FastAPI on `127.0.0.1:8101`) and `sooppiy-worker`
+(the singleton background worker, kept single-instance by the file lock at
+`worker.py:38-51`). An AWS ALB terminates TLS for `sooppiy.com` / `api.sooppiy.com`
+and the host's nginx serves the built SPA from `/usr/share/nginx/sooppiy` while
+proxying `/api` to the backend container. The database is **MySQL 8**; Redis is
+optional.
 
-Topology: `app` (FastAPI, autoscaled), `worker` (single-instance with the file lock at `worker.py:38-51` keeping it singleton), Postgres add-on, Upstash Redis. Frontend on Cloudflare Pages or Vercel pointing to `https://api.sooppiy.com`.
+Scaling path when one host is no longer enough: move the same image to ECS
+Fargate (or an ASG) behind the existing ALB, with RDS MySQL and ElastiCache —
+the two-process split (API vs worker) already maps cleanly onto separate task
+definitions, and `SOOPPIY_WORKER_ROLE` can split the worker further per role.
 
 ---
 
@@ -237,7 +246,7 @@ Effort sizing: **S** ≤ 3 days, **M** ≤ 2 weeks, **L** ≤ 6 weeks. Sequencin
 | 1.4 | Alembic baseline + migrate to NUMERIC for money + TIMESTAMPTZ | L | 1.1 | Data migration risk on `cash`, `entry_price`, `current_price` |
 | 1.5 | Redis-backed rate limits, WebSocket pub/sub, verification codes | M | 1.2 | WebSocket reconnect storms during cutover |
 | 1.6 | Real transactional email + magic-link auth + token scopes | M | 1.5 | Email deliverability config; token migration |
-| 1.7 | Dockerize API + worker; deploy to Fly.io (staging + prod) | M | 1.3 | Cold-start tuning; secret rotation drills |
+| 1.7 | Dockerize API + worker; deploy to AWS EC2 (staging + prod) | M | 1.3 | Cold-start tuning; secret rotation drills |
 | 1.8 | Hash and rotate stored agent tokens; audit log table | S | 1.4 | Breaking change for existing agents — needs grace period |
 
 **Exit criteria:** green CI, prod metrics dashboard, two-region failover drill passing, zero plaintext secrets in repo.

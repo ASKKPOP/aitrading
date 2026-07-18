@@ -30,6 +30,7 @@ import json
 import logging
 import math
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -49,7 +50,33 @@ SHOCK_VOLUME_RATIO = 2.0       # last-hour volume ≥ 2× 24h average
 LIQ_SHOCK_NOTIONAL_USD = float(os.getenv("LIQ_SHOCK_NOTIONAL_USD", "5000000") or 5_000_000)
 SPIKE_Z = 2.0                  # |z| ≥ 2 is a sentiment spike
 SPIKE_MIN_POINTS = 5           # snapshots needed before z-scores mean anything
-ANTICIPATION_MARKETS = 10
+ANTICIPATION_MARKETS = 10      # how many relevant markets we keep
+ANTICIPATION_POOL = 250        # how many top-volume markets we sift to find them
+
+# Topics whose odds can plausibly move crypto: the assets themselves, the
+# regulatory decisions that reprice them, and the macro prints that set the
+# risk backdrop. Anything else (elections abroad, sport, esports) is noise
+# for this platform, however heavily traded. Overridable per deployment.
+ANTICIPATION_TOPICS = tuple(
+    t.strip().lower()
+    for t in os.getenv(
+        "ANTICIPATION_TOPICS",
+        "bitcoin,btc,ethereum,eth,solana,xrp,ripple,dogecoin,crypto,coinbase,binance,"
+        "stablecoin,defi,altcoin,etf,sec,cftc,regulation,lawsuit,"
+        "fed,fomc,interest rate,rate cut,rate hike,cpi,inflation,recession,powell,"
+        "treasury,tariff,strategic reserve",
+    ).split(",")
+    if t.strip()
+)
+
+# Matched on WORD BOUNDARIES, not as substrings. The tickers are short enough
+# to hide inside ordinary words: plain `"eth" in text` matches "Ethiopia" —
+# which is exactly how the live Ethiopian-election markets would have survived
+# this filter. Likewise "sec" in "second", "fed" in "federal". Hyphens in slugs
+# ("will-the-fed-cut-rates") count as boundaries, so \b handles those too.
+_ANTICIPATION_PATTERNS = tuple(
+    re.compile(rf"\b{re.escape(t)}\b") for t in ANTICIPATION_TOPICS
+)
 PSYCH_HISTORY_LIMIT = 500
 
 _CACHE_KEY = "sooppiy:psych:payload"
@@ -90,6 +117,11 @@ def fetch_fear_greed(limit: int = FNG_HISTORY_DAYS) -> dict[str, Any]:
         "value": current["value"],
         "classification": current["classification"],
         "delta_3d": delta_3d,
+        # The vendor's own print time, not ours. F&G updates once daily, so a
+        # reader (and the D5 verifier) cannot tell a fresh read from a
+        # day-old one without it — we were fetching it and dropping it.
+        "as_of": datetime.fromtimestamp(current["timestamp"], timezone.utc)
+                         .strftime("%Y-%m-%dT%H:%M:%SZ"),
         "history": history,
         "source": "alternative.me",
     }
@@ -335,20 +367,45 @@ def _gather_shock_proxies() -> list[dict[str, Any]]:
 
 # ─────────────────────────── anticipation (Polymarket odds) ───────────────────────────
 
+def is_relevant_market(text: Any) -> bool:
+    """Could this prediction market plausibly move crypto?
+
+    Polymarket's top-volume markets are whatever the world is betting on —
+    live that was Ethiopian elections, the FIFA World Cup and a League of
+    Legends match. Unfiltered, those fed the CRYPTO anticipation signal: a
+    ±0.05 swing on an esports match added +0.25 to the psych component and
+    printed "odds re-rating LoL: Hanwha Life vs T1" as a trade rationale on
+    the board. That is noise laundered into a reason to trade.
+
+    The mockup specifies event-relevant odds tied to the asset ("XRP 규제 판결
+    기대감, 배당률 0.61→0.68"), so relevance is the spec, not a refinement.
+    """
+    haystack = str(text or "").lower()
+    return any(p.search(haystack) for p in _ANTICIPATION_PATTERNS)
+
+
 def _gather_anticipation() -> list[dict[str, Any]]:
-    """Snapshot top Polymarket markets with their outcome prices (odds)."""
+    """Snapshot the top CRYPTO/MACRO-relevant Polymarket markets with their odds.
+
+    Fetches a wider pool than it keeps, because relevance filtering discards
+    most of the top-volume list. If nothing relevant is live, returns [] —
+    anticipation then reports as missing, which is honest. Substituting an
+    unrelated market would not be.
+    """
     from price_fetcher import _parse_string_array, _polymarket_get_json, POLYMARKET_GAMMA_BASE_URL
 
     if not POLYMARKET_GAMMA_BASE_URL:
         return []
     url = f"{POLYMARKET_GAMMA_BASE_URL.rstrip('/')}/markets"
     raw = _polymarket_get_json(url, params={
-        "limit": str(ANTICIPATION_MARKETS), "order": "volume24hr",
+        "limit": str(ANTICIPATION_POOL), "order": "volume24hr",
         "ascending": "false", "active": "true", "closed": "false",
     })
     markets = []
     for m in raw if isinstance(raw, list) else []:
         if not isinstance(m, dict):
+            continue
+        if not is_relevant_market(f"{m.get('question') or ''} {m.get('title') or ''} {m.get('slug') or ''}"):
             continue
         outcomes = _parse_string_array(m.get("outcomes"))
         prices = _parse_string_array(m.get("outcomePrices"))
@@ -366,19 +423,48 @@ def _gather_anticipation() -> list[dict[str, Any]]:
             "volume_24hr": m.get("volume24hr"),
             "odds": odds,
         })
+        if len(markets) >= ANTICIPATION_MARKETS:
+            break
     return markets
+
+
+def _canonical_outcome(odds: dict[str, Any]) -> Optional[str]:
+    """The one outcome whose movement carries the market's meaning.
+
+    A binary market says the same thing twice: P(Yes) falling 0.10 IS P(No)
+    rising 0.10. Emitting both rows made the anticipation signal
+    mathematically incapable of being bearish — the consumer tests
+    `delta >= +0.05` one-sidedly, so ANY movement always produced the bullish
+    row and a +0.25 bump. Proven live: 'Will BTC be above $60k?' with Yes
+    collapsing 0.70 -> 0.55 fired BULLISH via the No side.
+    (Audit 2026-07-17, 4/4 QA.)
+
+    'Yes' is the canonical side where it exists — that is the side the
+    question is asked from. Otherwise fall back to the first outcome, which is
+    arbitrary but at least consistent between snapshots.
+    """
+    if not odds:
+        return None
+    for key in odds:
+        if str(key).strip().lower() == "yes":
+            return key
+    return next(iter(odds))
 
 
 def compute_odds_deltas(latest: list[dict[str, Any]],
                         previous: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Δodds per market outcome between two anticipation snapshots (matched by slug)."""
+    """Signed Δodds per MARKET (not per outcome) between two anticipation
+    snapshots, matched by slug. One row per market, from its canonical side,
+    so the sign means something."""
     prev_by_slug = {m["slug"]: m for m in previous if m.get("slug")}
     deltas = []
     for market in latest:
         prev = prev_by_slug.get(market.get("slug"))
         if not prev:
             continue
-        for outcome, price in (market.get("odds") or {}).items():
+        outcome = _canonical_outcome(market.get("odds") or {})
+        if outcome is not None:
+            price = (market.get("odds") or {})[outcome]
             old = (prev.get("odds") or {}).get(outcome)
             if old is None or old <= 0:
                 continue

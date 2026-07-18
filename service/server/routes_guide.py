@@ -16,6 +16,7 @@ agent claw token, via the standard Authorization: Bearer header.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -27,6 +28,13 @@ from services import _get_agent_by_token
 from utils import _extract_token
 
 _CONTENT_DIR = Path(__file__).resolve().parent / "guide_content"
+
+
+def _owner_emails() -> set[str]:
+    """Emails allowed to see owner-only docs (e.g. the API-key reference, which
+    lists which secrets are set). Env-overridable; defaults to the org owner."""
+    raw = os.getenv("DOCS_OWNER_EMAILS", "info@askkpop.com")
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
 def _load_manifest() -> dict:
@@ -47,16 +55,36 @@ def _require_login(authorization: Optional[str]) -> None:
     raise HTTPException(status_code=401, detail="Login required")
 
 
+def _is_owner(authorization: Optional[str]) -> bool:
+    """True only for a USER token whose email is on the owner allowlist. Agent
+    tokens have no email, so they are never owners."""
+    token = _extract_token(authorization)
+    if not token:
+        return False
+    from services import _get_user_by_token
+    user = _get_user_by_token(token)
+    email = (user or {}).get("email", "") if user else ""
+    return bool(email) and email.strip().lower() in _owner_emails()
+
+
 def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.get("/api/guide/docs")
     async def guide_docs(authorization: str = Header(None)):
+        # The whole guide is owner-only: a logged-in non-owner is forbidden,
+        # so nothing about the docs (not even the listing) is exposed.
         _require_login(authorization)
+        if not _is_owner(authorization):
+            raise HTTPException(status_code=403, detail="Owner only")
         return _load_manifest()
 
     @app.get("/api/guide/doc/{key}")
     async def guide_doc(key: str, authorization: str = Header(None)):
         _require_login(authorization)
+        # Non-owners get 404 (not 403) so no document key — including whether
+        # this one exists — is ever confirmed to a non-owner.
+        if not _is_owner(authorization):
+            raise HTTPException(status_code=404, detail="Unknown document")
         manifest = _load_manifest()
         if not any(d["key"] == key for d in manifest["docs"]):
             raise HTTPException(status_code=404, detail="Unknown document")

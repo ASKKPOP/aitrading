@@ -203,3 +203,50 @@ class FusionApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class QuantForwardingTests(unittest.TestCase):
+    """The TOP-10 decision parameters must reach the model.
+
+    quant_crypto computes reversal_1m_pct, golden_cross_state and sigma_24h_pct
+    and _quant_component used to drop all three, so the AI never saw
+    mean-reversion (#10), the MA-cross trend state (#1/#2) or the 24h
+    volatility read (#4). Found live on 2026-07-17: BTC's reversal_1m_pct was
+    -3.9 in the analysis and absent from the snapshot.
+    """
+
+    ANALYSIS = {
+        "signal_score": 1, "rsi_14": 48.6, "current_price": 63146.4,
+        "volume_ratio": 0.44, "price_above_ma200": False,
+        "momentum_12_1_pct": -44.74, "sigma_daily_pct": 1.902,
+        "reversal_1m_pct": -3.901, "golden_cross_state": "death_cross",
+        "sigma_24h_pct": 0.347, "trend_status": "mixed",
+        "bullish_factors": [], "risk_factors": [],
+        "as_of": "2026-07-17T12:00:00Z",
+    }
+
+    def _component(self, analysis):
+        import signal_fusion
+        with patch("quant_crypto.quant_crypto_enabled", return_value=True), \
+             patch("quant_crypto.build_crypto_analysis", return_value=analysis):
+            return signal_fusion._quant_component("BTCUSDT")
+
+    def test_top10_parameters_reach_the_snapshot(self):
+        c = self._component(self.ANALYSIS)
+        self.assertEqual(c["reversal_1m_pct"], -3.901)      # #10 mean-reversion
+        self.assertEqual(c["golden_cross_state"], "death_cross")  # #1/#2 trend
+        self.assertEqual(c["sigma_24h_pct"], 0.347)         # #4 volatility (24h)
+        self.assertEqual(c["sigma_daily_pct"], 1.902)       # #4 volatility (20d)
+
+    def test_absent_values_pass_through_as_none_not_dropped(self):
+        """A feed that returns nothing must read as None, not vanish — the
+        verifier treats an absent key differently from a null."""
+        thin = {**self.ANALYSIS, "reversal_1m_pct": None, "golden_cross_state": None}
+        c = self._component(thin)
+        self.assertIn("reversal_1m_pct", c)
+        self.assertIsNone(c["reversal_1m_pct"])
+        self.assertIn("golden_cross_state", c)
+
+
+if __name__ == "__main__":
+    unittest.main()

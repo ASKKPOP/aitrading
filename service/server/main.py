@@ -62,6 +62,12 @@ if using_mysql():
     from alembic.config import Config as _AlembicConfig
     from alembic import command as _alembic_command
     _alembic_cfg = _AlembicConfig(os.path.join(os.path.dirname(__file__), "alembic.ini"))
+    # script_location in alembic.ini is relative ("alembic"); resolve it to an
+    # absolute path so `upgrade` works regardless of the process CWD (at boot the
+    # CWD is /app, not service/server).
+    _alembic_cfg.set_main_option(
+        "script_location", os.path.join(os.path.dirname(__file__), "alembic")
+    )
     _alembic_command.upgrade(_alembic_cfg, "head")
 else:
     init_database()

@@ -8,10 +8,12 @@ interface LanguageContextType {
   t: ReturnType<typeof getT>
 }
 
-export type ThemeMode = 'signal'
+export type ThemeMode = 'signal' | 'claude' | 'light'
 
 export const THEMES: { value: ThemeMode; label: string; dotColor: string }[] = [
   { value: 'signal', label: 'Signal', dotColor: '#2a78d6' },
+  { value: 'claude', label: 'Claude', dotColor: '#d97757' },
+  { value: 'light',  label: 'Light',  dotColor: '#f5f4ee' },
 ]
 
 export const DEFAULT_THEME: ThemeMode = 'signal'

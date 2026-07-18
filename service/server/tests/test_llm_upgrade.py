@@ -91,7 +91,9 @@ class TierModelTests(unittest.TestCase):
         self._patch.stop()
 
     def test_anthropic_tiers(self):
-        self.assertEqual(resolve_provider(tier="brief").model, "claude-haiku-4-5")
+        """Sonnet + Opus. Briefs feed the trader, so the cheap tier is not a
+        saving if it misreads the data (measured: Haiku did, 4/4)."""
+        self.assertEqual(resolve_provider(tier="brief").model, "claude-sonnet-5")
         self.assertEqual(resolve_provider(tier="decision").model, "claude-opus-4-8")
 
     def test_llm_model_overrides_both_tiers(self):
@@ -168,7 +170,7 @@ class UserSettingsBridgeTests(unittest.TestCase):
         import analysis_agents
         seen = {}
 
-        def fake_inner(symbol, market, lang):
+        def fake_inner(symbol, market, lang, **kwargs):
             ap = resolve_provider()
             seen["provider"] = ap.spec.name if ap else None
             seen["key"] = ap.api_key if ap else None
@@ -186,7 +188,7 @@ class UserSettingsBridgeTests(unittest.TestCase):
         import analysis_agents
         seen = {}
 
-        def fake_inner(symbol, market, lang):
+        def fake_inner(symbol, market, lang, **kwargs):
             ap = resolve_provider()
             seen["resolved"] = ap  # None expected: gemini has no key anywhere
             return {"decision": {"action": "hold", "confidence": 0.5}}
@@ -273,7 +275,15 @@ if __name__ == "__main__":
 
 
 class AnthropicTemperatureRetryTests(unittest.TestCase):
-    """Claude 5-family models reject `temperature`; the client retries without it."""
+    """Claude 5-family models reject `temperature`; the client retries without
+    it, and REMEMBERS — retrying on every call cost a wasted round-trip each
+    time (prod logs: 400s and 200s exactly 1:1, ~2x latency on a 20s+ path)."""
+
+    def setUp(self):
+        llm_client._NO_TEMPERATURE_MODELS.clear()
+
+    def tearDown(self):
+        llm_client._NO_TEMPERATURE_MODELS.clear()
 
     def _run(self, first_error: str | None):
         import types
@@ -318,3 +328,39 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
         with self.assertRaises(Exception) as cm:
             self._run("model not found")
         self.assertIn("model not found", str(cm.exception))
+
+    def test_the_refusal_is_remembered_so_the_next_call_costs_one_trip(self):
+        """The whole point: learn once, not once per request."""
+        _, first = self._run("`temperature` is deprecated for this model.")
+        self.assertEqual(len(first), 2)          # learns on the first call
+        _, second = self._run("`temperature` is deprecated for this model.")
+        self.assertEqual(len(second), 1)         # and never asks again
+        self.assertNotIn("temperature", second[0])
+
+    def test_memory_is_per_model_not_global(self):
+        """A model that accepts temperature must not be penalised by one that
+        does not."""
+        import types
+        llm_client._NO_TEMPERATURE_MODELS.add("claude-sonnet-5")
+        calls = []
+
+        class FakeBadRequestError(Exception):
+            pass
+
+        class FakeMessages:
+            def create(self, **kwargs):
+                calls.append(kwargs)
+                block = types.SimpleNamespace(type="text", text="ok")
+                return types.SimpleNamespace(content=[block])
+
+        class FakeClient:
+            def __init__(self, api_key):
+                self.messages = FakeMessages()
+
+        fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
+        from llm_client import _generate_anthropic, ActiveProvider, _PROVIDERS
+        ap = ActiveProvider(spec=_PROVIDERS["anthropic"], api_key="k",
+                            base_url="https://api.anthropic.com", model="some-other-model")
+        with patch.dict(sys.modules, {"anthropic": fake_mod}):
+            _generate_anthropic(ap, "hi", None, 100, 0.3)
+        self.assertIn("temperature", calls[0])   # unknown model still tries

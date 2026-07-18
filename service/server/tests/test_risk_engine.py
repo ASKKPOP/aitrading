@@ -491,3 +491,70 @@ class RiskLevelPropagationTests(RiskEngineTestCase):
         configs = self.client.get("/api/automation/configs",
                                   headers={"Authorization": f"Bearer {self.token}"}).json()["configs"]
         self.assertEqual(configs[0]["risk_level"], "balanced")
+
+
+class ShortSideTests(RiskEngineTestCase):
+    """Plan 06 A3 — short/cover executor, inverted SL/TP, watcher legs."""
+
+    def test_short_open_and_cover_cash_math(self):
+        from automation import execute_paper_trade
+        from fees import TRADE_FEE_RATE
+        start = self._cash()
+        sig1, skip1 = execute_paper_trade(self.agent_id, "BTC", "crypto", "short", 1.0, 100.0)
+        self.assertIsNotNone(sig1, skip1)
+        pos = self._position()
+        self.assertEqual(float(pos["quantity"]), -1.0)
+        self.assertAlmostEqual(self._cash(), start - 100.0 - 100.0 * TRADE_FEE_RATE, places=6)
+        # cover at 90 → profit 10; credit = (2*100 - 90)*1 - fee(90)
+        sig2, skip2 = execute_paper_trade(self.agent_id, "BTC", "crypto", "cover", 1.0, 90.0)
+        self.assertIsNotNone(sig2, skip2)
+        self.assertIsNone(self._position())
+        expected = start - 100.0 - 100.0 * TRADE_FEE_RATE + (200.0 - 90.0) - 90.0 * TRADE_FEE_RATE
+        self.assertAlmostEqual(self._cash(), expected, places=6)
+
+    def test_cover_without_short_skips(self):
+        from automation import execute_paper_trade
+        sig, skip = execute_paper_trade(self.agent_id, "BTC", "crypto", "cover", 1.0, 100.0)
+        self.assertIsNone(sig)
+        self.assertIn("no short position", skip)
+
+    def test_gate_stamps_inverted_exits_for_short(self):
+        from risk_engine import evaluate_order
+        gate = evaluate_order(self.agent_id, "BTC", "crypto", "short", 1.0, 100.0)
+        self.assertTrue(gate.allowed)
+        self.assertAlmostEqual(gate.stop_loss, 105.0)     # 5% above
+        self.assertAlmostEqual(gate.take_profit, 90.0)    # 10% below
+
+    def test_watcher_covers_short_on_stop(self):
+        from risk_engine import run_sltp_watcher_tick
+        self._insert_position(symbol="BTC", qty=-1.0, entry=100.0, current=106.0,
+                              stop_loss=105.0, take_profit=90.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 1)
+        self.assertIsNone(self._position())
+
+    def test_watcher_covers_short_on_target(self):
+        from risk_engine import run_sltp_watcher_tick
+        self._insert_position(symbol="BTC", qty=-1.0, entry=100.0, current=89.0,
+                              stop_loss=105.0, take_profit=90.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 1)
+        self.assertIsNone(self._position())
+
+    def test_watcher_leaves_healthy_short_alone(self):
+        from risk_engine import run_sltp_watcher_tick
+        self._insert_position(symbol="BTC", qty=-1.0, entry=100.0, current=99.0,
+                              stop_loss=105.0, take_profit=90.0)
+        result = run_sltp_watcher_tick()
+        self.assertEqual(result["closed"], 0)
+        self.assertIsNotNone(self._position())
+
+    def test_short_counts_toward_portfolio_exposure(self):
+        from risk_engine import evaluate_order
+        self._insert_position(symbol="ETH", qty=-10.0, entry=5900.0, current=5900.0)  # $59k short
+        self.client.put("/api/risk/limits", headers={"Authorization": f"Bearer {self.token}"},
+                        json={"max_portfolio_exposure_pct": 60, "max_concurrent_positions": 0,
+                              "max_symbol_exposure_usd": 0, "use_kelly": False})
+        gate = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 100.0, 400.0)  # $40k order
+        self.assertFalse(gate.allowed)
+        self.assertIn("portfolio exposure limit", gate.reason)

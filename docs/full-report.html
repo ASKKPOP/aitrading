@@ -174,7 +174,7 @@
       <tr><td>News/macro data depth</td><td><span class="pill warn">key-gated</span></td><td>Free FinnHub + FRED keys in <code>.env</code> unlock richer news + real macro series (fields already wired)</td></tr>
       <tr><td>LLM key</td><td><span class="pill warn">not set</span></td><td>Without one, analysis uses deterministic fallbacks — add any provider key for real AI debate</td></tr>
       <tr><td>Production DB</td><td><span class="pill off">SQLite (dev)</span></td><td>Postgres/RDS path exists in the repo; add Alembic migration for the two new tables before Postgres deploy</td></tr>
-      <tr><td>AWS deploy</td><td><span class="pill off">after v1 sign-off</span></td><td>Same container → ECS Fargate + RDS + Secrets Manager + HTTPS ALB (or the repo's existing Fly.io path)</td></tr>
+      <tr><td>AWS deploy</td><td><span class="pill off">after v1 sign-off</span></td><td>Same container → ECS Fargate + RDS + Secrets Manager + HTTPS ALB (today: Docker on EC2 behind an ALB)</td></tr>
       <tr><td>Old pages still routed</td><td><span class="pill warn">minor</span></td><td>Challenges/Team Missions/Experiments etc. are menu-hidden but URLs still work; prune or keep as you prefer</td></tr>
     </table>
   </div>

@@ -224,7 +224,7 @@ Big restated CTA above the footer: "**Open the app**" + small "or read the docs"
 - Static-only build, unlimited bandwidth on the free tier, $5/mo Pro if needed — vs Vercel's $20/mo with metered bandwidth and per-seat pricing. (DanubeData comparison, DevToolReviews)
 - Global edge network is essential for JP/TH/VI latency.
 - We don't need Vercel-specific Next features.
-- Trading app can live elsewhere (Fly.io, Render, or Vercel for its dynamic needs) — separating concerns means we don't overpay for the marketing surface's static bandwidth.
+- Trading app stays where it is (Docker on AWS EC2 behind an ALB) — separating concerns means we don't overpay for the marketing surface's static bandwidth.
 
 ### Domain plan
 - `sooppiy.com` → marketing (Astro on Cloudflare Pages)

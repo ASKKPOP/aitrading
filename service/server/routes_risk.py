@@ -109,6 +109,75 @@ def register_risk_routes(app: FastAPI, ctx: RouteContext) -> None:
                 values[flag] = 1 if values[flag] else 0
         return {"limits": put_risk_limits(agent["id"], values)}
 
+    # ── named config profiles (Plan 06 C3) ──────────────────────────────
+    # These live beside the limits they write. Saving or importing a profile
+    # never touches the live setup; only /apply does, and it re-validates
+    # through RiskLimitsIn above — a profile cannot carry a limit the PUT
+    # endpoint would have rejected.
+
+    @app.get("/api/risk/profiles")
+    async def list_config_profiles(authorization: str = Header(None)):
+        agent = _auth(authorization)
+        from config_profiles import capture_current, list_profiles
+        return {"profiles": list_profiles(agent["id"]),
+                "current": capture_current(agent["id"])}
+
+    @app.post("/api/risk/profiles")
+    async def save_config_profile(data: dict, authorization: str = Header(None)):
+        """Save the live setup under a name, or an explicit limits/guidelines
+        bundle when one is supplied."""
+        agent = _auth(authorization)
+        from config_profiles import ProfileError, save_profile
+        body = None
+        if "limits" in data or "guidelines" in data:
+            body = {"limits": data.get("limits") or {}, "guidelines": data.get("guidelines")}
+        try:
+            return {"profile": save_profile(agent["id"], data.get("name"), body)}
+        except ProfileError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/risk/profiles/{profile_id}/apply")
+    async def apply_config_profile(profile_id: int, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        from config_profiles import ProfileError, apply_profile
+        try:
+            return apply_profile(agent["id"], profile_id)
+        except ProfileError as exc:
+            status = 404 if "not found" in str(exc) else 400
+            raise HTTPException(status_code=status, detail=str(exc)) from exc
+
+    @app.delete("/api/risk/profiles/{profile_id}")
+    async def delete_config_profile(profile_id: int, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        from config_profiles import delete_profile
+        if not delete_profile(agent["id"], profile_id):
+            raise HTTPException(status_code=404, detail="profile not found")
+        return {"deleted": profile_id}
+
+    @app.post("/api/risk/profiles/import")
+    async def import_config_profile(data: dict, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        from config_profiles import ProfileError, import_profile
+        try:
+            return {"profile": import_profile(agent["id"], data)}
+        except ProfileError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/risk/calibration")
+    async def read_calibration(authorization: str = Header(None)):
+        """Live confluence→hit-rate table built from run telemetry (Plan 06 A2).
+        Advisory only — see calibration.py for the attribution rule."""
+        _auth(authorization)
+        from calibration import get_calibration
+        return get_calibration()
+
+    @app.get("/api/alerts")
+    async def read_alerts(limit: int = 30, authorization: str = Header(None)):
+        """In-app alert feed (Plan 06 C3) — alert_log for this agent."""
+        agent = _auth(authorization)
+        from alerts import recent_alerts
+        return {"alerts": recent_alerts(agent["id"], limit=limit)}
+
     @app.get("/api/risk/breaker")
     async def read_breaker(authorization: str = Header(None)):
         agent = _auth(authorization)

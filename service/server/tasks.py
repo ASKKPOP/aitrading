@@ -153,7 +153,8 @@ def _backfill_polymarket_position_metadata() -> None:
         """)
         rows = cursor.fetchall()
         if not rows:
-            conn.close()
+            # `finally` closes the connection; an explicit close here would
+            # double-close it — a no-op on SQLite but a pymysql "Already closed".
             return
 
         updated = 0
@@ -753,6 +754,31 @@ async def psych_feed_loop():
         await asyncio.sleep(refresh_interval)
 
 
+async def watch_loop():
+    """Personal watch functions (Plan 06 C3).
+
+    Every WATCH_INTERVAL seconds (default 5min), evaluate each enabled user
+    watch against live metrics and fire alerts on crossings. Cheap: metric
+    values are cached per tick, and each watch has its own cooldown. Always
+    on — a user with no watches makes this a no-op query.
+    """
+    from watch_engine import run_watch_tick
+
+    interval = _env_int("WATCH_INTERVAL", 300, minimum=60)
+
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(run_watch_tick)
+            if result.get("fired"):
+                print(f"[Watches] checked={result['checked']} fired={result['fired']}")
+        except Exception as e:
+            print(f"[Watches Error] {e}")
+
+        await asyncio.sleep(interval)
+
+
 async def factor_snapshot_loop():
     """Background task for factor snapshots (parameter-upgrade plan Phase 0.4).
 
@@ -932,6 +958,7 @@ def _record_profit_history_once() -> int:
         cursor = conn.cursor()
         # Single INSERT...SELECT CTE — compatible with SQLite 3.35+ and MySQL 8.0+
         cursor.execute("""
+            INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
             WITH agent_values AS (
                 SELECT
                     a.id AS agent_id,
@@ -966,7 +993,6 @@ def _record_profit_history_once() -> int:
                     cash + position_value - (? + deposited) AS raw_profit
                 FROM agent_values
             )
-            INSERT INTO profit_history (agent_id, total_value, cash, position_value, profit, recorded_at)
             SELECT
                 agent_id,
                 total_value,
@@ -1435,6 +1461,7 @@ BACKGROUND_TASK_REGISTRY = {
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
     "factor_snapshots": factor_snapshot_loop,
+    "watches": watch_loop,
 }
 
 
@@ -1479,6 +1506,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "scanner":                 "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
+    # personal watch functions — user metric conditions -> alerts (Plan 06 C3)
+    "watches":                 "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

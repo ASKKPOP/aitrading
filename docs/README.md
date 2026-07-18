@@ -11,7 +11,9 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 3 | [research/03-signal-expansion-gap-analysis.md](research/03-signal-expansion-gap-analysis.md) | Signal cards 07–16 vs the platform: what existed, what was built (macro calendar, OI/long-short, kimchi premium/DXY), what needs paid keys, and the priority queue. | ~1,200 |
 | 3 | [plan/01-technical-roadmap.md](plan/01-technical-roadmap.md) | The codebase as it actually is, what hurts to extend, and a 4-phase roadmap (foundations → broker execution → backtesting → scale). | ~3,800 |
 | 4 | [plan/02-deployment-readiness.md](plan/02-deployment-readiness.md) | What stands between local Docker dev and a real deploy. | ~700 |
-| 5 | **[plan/03-session-handoff.md](plan/03-session-handoff.md)** | **START HERE if resuming/continuing.** Full session handoff: what was built, the deploy runbook, dual-auth architecture, test accounts, verified-working list, and outstanding work. | ~2,000 |
+| 5 | **[plan/09-session-handoff-2026-07-17.md](plan/09-session-handoff-2026-07-17.md)** | **START HERE if resuming/continuing (newest).** Current state, deploy runbook, prod flags/models/keys, what this session did, next work (actionable vs blocked-on-Henry), and the P-1 safety invariants. Supersedes plan/03. | ~2,000 |
+| 5b | [plan/03-session-handoff.md](plan/03-session-handoff.md) | Earlier (2026-07-16) handoff — dual-auth architecture, test accounts, deploy runbook. Superseded by plan/09 but still useful background. | ~2,000 |
+| 5c | [plan/07-overnight-audit-2026-07-17.md](plan/07-overnight-audit-2026-07-17.md) · [plan/08-api-keys-reference.md](plan/08-api-keys-reference.md) | The 5-agent audit record, and the API-keys reference (status + how to get each). | — |
 | 6 | [plan/04-ai-model-parameter-upgrade.md](plan/04-ai-model-parameter-upgrade.md) | Deep analysis of `research/parameters/*` vs the decision engine, and the 5-phase modification plan (confluence engine, regime filter, vol sizing, validated flip). v2 — adversarially verified by a 6-agent panel (2026-07-16). | ~3,500 |
 
 ### Design documents (HTML)

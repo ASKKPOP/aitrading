@@ -109,12 +109,18 @@ _PROVIDERS: dict[str, ProviderSpec] = {
         "claude-sonnet-5", kind="anthropic"),
 }
 
-# Task tiers: analyst briefs are summarization (cheap tier); the trader
-# decision and the verification pass need the strong tier. Providers without
-# an entry use their single default_model for both tiers.
+# Task tiers: analyst briefs are the cheaper tier; the trader decision and the
+# verification passes need the strong tier. Providers without an entry use
+# their single default_model for both tiers.
 # Env overrides: LLM_MODEL (both tiers) > LLM_MODEL_BRIEF / LLM_MODEL_DECISION.
+#
+# Anthropic brief = Sonnet, not Haiku (Henry's call, 2026-07-17, and the D5
+# measurements back it): Haiku produced high-severity false faults on real
+# snapshots 4/4 — it read MA20 vs MA200 as a contradiction and called absent
+# sentiment disqualifying. Briefs feed the trader, so a brief that misreads
+# the data is not a saving.
 _TIER_MODELS: dict[str, dict[str, str]] = {
-    "anthropic": {"brief": "claude-haiku-4-5", "decision": "claude-opus-4-8"},
+    "anthropic": {"brief": "claude-sonnet-5", "decision": "claude-opus-4-8"},
     "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o"},
 }
 _TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION"}
@@ -284,6 +290,11 @@ def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature) -> 
     return content.strip() if isinstance(content, str) else None
 
 
+# Models observed to reject `temperature`, learned on the first 400 and
+# remembered for the life of the process (see _generate_anthropic).
+_NO_TEMPERATURE_MODELS: set[str] = set()
+
+
 def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional[str]:
     import anthropic  # lazy import
 
@@ -295,14 +306,23 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional
     }
     if system:
         kwargs["system"] = system
-    try:
-        msg = client.messages.create(temperature=temperature, **kwargs)
-    except anthropic.BadRequestError as exc:
-        # Claude 5-family models reject the temperature parameter
-        # ("`temperature` is deprecated for this model") — retry without it.
-        if "temperature" not in str(exc):
-            raise
+
+    # Claude 5-family models reject `temperature` ("deprecated for this
+    # model"). The retry below handles that, but retrying on EVERY call means
+    # every request pays a wasted round-trip first: prod logs showed 400s and
+    # 200s exactly 1:1, i.e. ~2x the latency on a 20s+ fusion path. So we
+    # remember which models refuse it and stop asking. Learned at runtime
+    # rather than hardcoded, because a model list here would rot.
+    if ap.model in _NO_TEMPERATURE_MODELS:
         msg = client.messages.create(**kwargs)
+    else:
+        try:
+            msg = client.messages.create(temperature=temperature, **kwargs)
+        except anthropic.BadRequestError as exc:
+            if "temperature" not in str(exc):
+                raise
+            _NO_TEMPERATURE_MODELS.add(ap.model)
+            msg = client.messages.create(**kwargs)
     parts = [b.text for b in msg.content if getattr(b, "type", None) == "text"]
     text = "\n".join(parts).strip()
     return text or None

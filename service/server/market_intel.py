@@ -1240,11 +1240,13 @@ def _prune_market_news_history(cursor) -> None:
             DELETE FROM market_news_snapshots
             WHERE category = ?
               AND id NOT IN (
-                SELECT id
-                FROM market_news_snapshots
-                WHERE category = ?
-                ORDER BY created_at DESC, id DESC
-                LIMIT ?
+                SELECT id FROM (
+                  SELECT id
+                  FROM market_news_snapshots
+                  WHERE category = ?
+                  ORDER BY created_at DESC, id DESC
+                  LIMIT ?
+                ) AS keep
               )
             """,
             (category, category, MARKET_NEWS_HISTORY_PER_CATEGORY),
@@ -1335,10 +1337,12 @@ def _prune_macro_signal_history(cursor) -> None:
         """
         DELETE FROM macro_signal_snapshots
         WHERE id NOT IN (
-            SELECT id
-            FROM macro_signal_snapshots
-            ORDER BY created_at DESC, id DESC
-            LIMIT ?
+            SELECT id FROM (
+                SELECT id
+                FROM macro_signal_snapshots
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            ) AS keep
         )
         """,
         (MACRO_SIGNAL_HISTORY_LIMIT,),
@@ -1350,10 +1354,12 @@ def _prune_etf_flow_history(cursor) -> None:
         """
         DELETE FROM etf_flow_snapshots
         WHERE id NOT IN (
-            SELECT id
-            FROM etf_flow_snapshots
-            ORDER BY created_at DESC, id DESC
-            LIMIT ?
+            SELECT id FROM (
+                SELECT id
+                FROM etf_flow_snapshots
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            ) AS keep
         )
         """,
         (ETF_FLOW_HISTORY_LIMIT,),
@@ -1369,11 +1375,13 @@ def _prune_stock_analysis_history(cursor) -> None:
             DELETE FROM stock_analysis_snapshots
             WHERE symbol = ?
               AND id NOT IN (
-                SELECT id
-                FROM stock_analysis_snapshots
-                WHERE symbol = ?
-                ORDER BY created_at DESC, id DESC
-                LIMIT ?
+                SELECT id FROM (
+                  SELECT id
+                  FROM stock_analysis_snapshots
+                  WHERE symbol = ?
+                  ORDER BY created_at DESC, id DESC
+                  LIMIT ?
+                ) AS keep
               )
             """,
             (symbol, symbol, STOCK_ANALYSIS_HISTORY_LIMIT),
