@@ -15,7 +15,7 @@ const ADMIN_TOKEN_KEY = 'sooppiy_admin_token'
 
 type Tab =
   | 'dashboard' | 'members' | 'subscriptions' | 'assets' | 'positions'
-  | 'automation' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
+  | 'automation' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
 
 const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border-color,#2a2a28)', borderRadius: 12, padding: '16px 18px' }
 const tableCard: any = { ...card, padding: 0, overflowX: 'auto' }
@@ -97,6 +97,10 @@ export function AdminPage() {
   const [positions, setPositions] = useState<any | null>(null)
   const [autoStats, setAutoStats] = useState<any | null>(null)
   const [autoRules, setAutoRules] = useState<any | null>(null)
+  const [threads, setThreads] = useState<any | null>(null)
+  const [activeThread, setActiveThread] = useState<any | null>(null)
+  const [reply, setReply] = useState('')
+  const [broadcast, setBroadcast] = useState({ title: '', body: '' })
   const [discussions, setDiscussions] = useState<any | null>(null)
   const [replies, setReplies] = useState<Record<number, any[]>>({})
   const [leaderboard, setLeaderboard] = useState<any | null>(null)
@@ -123,6 +127,7 @@ export function AdminPage() {
     tabAssets: tr(language, { ko: '자산 통계', en: 'Assets' }),
     tabPositions: tr(language, { ko: '포지션 통계', en: 'Positions' }),
     tabAutomation: tr(language, { ko: '자동화 통계', en: 'Automation' }),
+    tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts' }),
     tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions' }),
     tabLeaderboard: tr(language, { ko: '리더보드 관리', en: 'Leaderboard' }),
     tabAdmins: tr(language, { ko: '관리자 계정', en: 'Admins' }),
@@ -266,6 +271,7 @@ export function AdminPage() {
         setAutoStats(await call('stats/automation'))
         setAutoRules(await call('automation?limit=100'))
       }
+      if (which === 'support') setThreads(await call('support/threads?limit=200'))
       if (which === 'discussions') setDiscussions(await call(`discussions?q=${encodeURIComponent(dq)}&limit=100`))
       if (which === 'leaderboard') setLeaderboard(await call(`leaderboard?metric=${lbMetric}&limit=100`))
       if (which === 'admins') setAdmins(await call('admins'))
@@ -303,6 +309,7 @@ export function AdminPage() {
   const tabs: [Tab, string][] = [
     ['dashboard', T.tabDashboard], ['members', T.tabMembers], ['subscriptions', T.tabSubs],
     ['assets', T.tabAssets], ['positions', T.tabPositions], ['automation', T.tabAutomation],
+    ['support', T.tabSupport],
     ['discussions', T.tabDiscussions], ['leaderboard', T.tabLeaderboard],
     ...(me?.role === 'superadmin' ? [['admins', T.tabAdmins] as [Tab, string]] : []),
     ['audit', T.tabAudit],
@@ -751,6 +758,146 @@ export function AdminPage() {
                 {!(autoRules?.rules || []).length && <tr><td style={td} colSpan={7}>{T.noData}</td></tr>}
               </tbody>
             </table>
+          </div>
+        </>
+      )}
+
+      {/* ── Support conversations + announcements ── */}
+      {tab === 'support' && (
+        <>
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={sectionTitle}>
+              {tr(language, { ko: '공지 발송 — 전체 회원 알림', en: 'Broadcast — announcement to every member' })}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
+              {tr(language, {
+                ko: '회원의 알림함에 공지가 표시됩니다. 공지 알림을 끈 회원은 자동으로 제외됩니다.',
+                en: "Lands in each member's notification centre. Members who switched announcements off are skipped automatically.",
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input placeholder={tr(language, { ko: '제목', en: 'Title' })} value={broadcast.title}
+                onChange={e => setBroadcast(b => ({ ...b, title: e.target.value }))}
+                style={{ ...inputStyle, width: 240 }} />
+              <input placeholder={tr(language, { ko: '내용 (선택)', en: 'Body (optional)' })} value={broadcast.body}
+                onChange={e => setBroadcast(b => ({ ...b, body: e.target.value }))}
+                style={{ ...inputStyle, flex: 1, minWidth: 240 }} />
+              <button style={primaryBtn} disabled={!broadcast.title.trim()}
+                onClick={async () => {
+                  if (!confirm(tr(language, {
+                    ko: '모든 회원에게 이 공지를 보낼까요?',
+                    en: 'Send this announcement to every member?',
+                  }))) return
+                  await act('notifications/broadcast',
+                    { method: 'POST', body: JSON.stringify(broadcast) }, 'support')
+                  setBroadcast({ title: '', body: '' })
+                }}>
+                {tr(language, { ko: '발송', en: 'Send' })}
+              </button>
+            </div>
+          </div>
+
+          <div style={sectionTitle}>
+            {tr(language, { ko: '회원 문의', en: 'Member conversations' })}
+            {threads?.unread_total > 0 && (
+              <span style={{ marginLeft: 8, color: '#c26a45' }}>
+                · {threads.unread_total} {tr(language, { ko: '건 대기', en: 'waiting' })}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,1fr) minmax(320px,1.4fr)', gap: 12, alignItems: 'start' }}>
+            <div style={tableCard}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr>
+                  <th style={th}>{T.member}</th>
+                  <th style={th}>{T.status}</th>
+                  <th style={th}>{tr(language, { ko: '최근', en: 'Last' })}</th>
+                </tr></thead>
+                <tbody>
+                  {(threads?.threads || []).map((t: any) => (
+                    <tr key={t.id} onClick={async () => {
+                      setReply('')
+                      setActiveThread(await call(`support/threads/${t.id}`))
+                      await refresh('support')
+                    }} style={{ cursor: 'pointer', background: activeThread?.thread?.id === t.id ? 'rgba(194,106,69,0.10)' : undefined }}>
+                      <td style={td}>
+                        {t.user_email}
+                        {t.admin_unread > 0 && (
+                          <span style={{ marginLeft: 6, background: '#c26a45', color: '#fff', borderRadius: 999, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>
+                            {t.admin_unread}
+                          </span>
+                        )}
+                        <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)' }}>{t.subject || '—'}</div>
+                      </td>
+                      <td style={{ ...td, color: t.status === 'open' ? '#22c55e' : 'var(--text-muted,#8a8073)' }}>{t.status}</td>
+                      <td style={{ ...td, fontSize: 11 }}>{fmtTime(t.last_message_at)}</td>
+                    </tr>
+                  ))}
+                  {!(threads?.threads || []).length && (
+                    <tr><td style={td} colSpan={3}>{T.noData}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={card}>
+              {!activeThread && (
+                <div style={{ color: 'var(--text-muted,#8a8073)', fontSize: 13 }}>
+                  {tr(language, { ko: '왼쪽에서 대화를 선택하세요.', en: 'Pick a conversation on the left.' })}
+                </div>
+              )}
+              {activeThread && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 14 }}>{activeThread.thread.user_email}</strong>
+                    <button style={actionBtn} onClick={async () => {
+                      const next = activeThread.thread.status === 'open' ? 'closed' : 'open'
+                      await act(`support/threads/${activeThread.thread.id}/status`,
+                        { method: 'POST', body: JSON.stringify({ status: next }) }, 'support')
+                      setActiveThread(await call(`support/threads/${activeThread.thread.id}`))
+                    }}>
+                      {activeThread.thread.status === 'open'
+                        ? tr(language, { ko: '문의 종료', en: 'Close thread' })
+                        : tr(language, { ko: '다시 열기', en: 'Reopen' })}
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: 340, overflowY: 'auto', marginBottom: 10 }}>
+                    {activeThread.messages.map((m: any) => (
+                      <div key={m.id} style={{ display: 'flex', justifyContent: m.sender === 'admin' ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+                        <div style={{ maxWidth: '80%' }}>
+                          <div style={{
+                            padding: '8px 12px', borderRadius: 12, fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap',
+                            background: m.sender === 'admin' ? 'var(--accent-primary,#c26a45)' : 'var(--bg-primary,#0f0f0e)',
+                            color: m.sender === 'admin' ? '#fff' : 'inherit',
+                            border: m.sender === 'admin' ? 'none' : '1px solid var(--border-color,#2a2a28)',
+                          }}>{m.body}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted,#8a8073)', marginTop: 2, textAlign: m.sender === 'admin' ? 'right' : 'left' }}>
+                            {m.sender === 'admin' ? (m.admin_email || 'admin') : activeThread.thread.user_email} · {fmtTime(m.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!activeThread.messages.length && (
+                      <div style={{ color: 'var(--text-muted,#8a8073)', fontSize: 13 }}>{T.noData}</div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                    <textarea value={reply} onChange={e => setReply(e.target.value.slice(0, 4000))} rows={3}
+                      placeholder={tr(language, { ko: '답변을 입력하세요…', en: 'Write a reply…' })}
+                      style={{ ...inputStyle, flex: 1, resize: 'vertical', fontFamily: 'inherit' }} />
+                    <button style={primaryBtn} disabled={!reply.trim()} onClick={async () => {
+                      const id = activeThread.thread.id
+                      await act(`support/threads/${id}/reply`,
+                        { method: 'POST', body: JSON.stringify({ body: reply }) }, 'support')
+                      setReply('')
+                      setActiveThread(await call(`support/threads/${id}`))
+                    }}>
+                      {tr(language, { ko: '답변 전송', en: 'Send reply' })}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </>
       )}
