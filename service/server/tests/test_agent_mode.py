@@ -156,9 +156,10 @@ class AgentModeRunTests(AgentModeTestCase):
     def test_run_rule_applies_plan_and_journals(self):
         import agent_planner
         import automation
+        # Mirrors run_analysis: per-analyst payloads live under "analysts".
         fake_analysis = {"decision": {"action": "hold", "confidence": 0.6,
                                       "entry": 100.0, "report": "r"},
-                         "technical": {"data": {}}}
+                         "analysts": {"technical": {"brief": "t", "data": {}}}}
         plan = {"symbol": "ETHUSDT", "interval_minutes": 30, "min_confidence": 0.7,
                 "size_usd": 1000.0, "risk_level": "balanced",
                 "rationale": "test", "planner": "llm"}

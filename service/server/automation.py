@@ -325,8 +325,13 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         # Confluence telemetry (Phase 1): record the deterministic condition
         # vector alongside every decision — display/journal only until the
         # Phase-4 flip turns it into a gate. Fail-soft.
-        technical = (analysis.get("technical") or {}).get("data") \
-            if isinstance(analysis.get("technical"), dict) else None
+        # run_analysis nests the per-analyst payloads under "analysts" — reading
+        # a top-level "technical" always yielded None, which starved both the
+        # confluence telemetry below and the risk gate's sigma (vol sizing then
+        # rejected every buy).
+        _analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
+        _tech_block = _analysts.get("technical")
+        technical = _tech_block.get("data") if isinstance(_tech_block, dict) else None
         try:
             from confluence import evaluate_confluence
             result["confluence"] = evaluate_confluence(symbol, market, analysis=technical)
