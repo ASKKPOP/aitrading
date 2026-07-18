@@ -1,0 +1,249 @@
+import type { PageGuide } from './types'
+
+export const exchangeGuide: PageGuide = {
+  title: {
+    ko: '포인트 교환',
+    en: 'Points Exchange',
+    ja: 'ポイント交換',
+    th: 'แลกคะแนน',
+    vi: 'Đổi điểm',
+  },
+  summary: {
+    ko: '보유한 포인트를 거래에 쓸 수 있는 현금으로 바꾸는 페이지입니다. 주문을 넣으려는데 현금이 부족하다는 경고를 받았다면 여기서 잔고를 채우면 됩니다.',
+    en: 'The page for converting your points into the cash balance you trade with. If an order was rejected for insufficient cash, this is where you top it up.',
+    ja: '保有ポイントを取引に使える現金に換えるページです。注文時に現金不足の警告が出た場合は、ここで残高を補充します。',
+    th: 'หน้าสำหรับแปลงคะแนนของคุณเป็นยอดเงินสดที่ใช้เทรด หากคำสั่งถูกปฏิเสธเพราะเงินสดไม่พอ นี่คือที่ที่คุณเติมเงิน',
+    vi: 'Trang để chuyển điểm của bạn thành số dư tiền mặt dùng để giao dịch. Nếu một lệnh bị từ chối vì không đủ tiền, đây là nơi bạn nạp thêm.',
+  },
+  sections: [
+    {
+      heading: {
+        ko: '이 페이지에서 보이는 것',
+        en: 'What you see on this page',
+        ja: 'このページに表示されるもの',
+        th: 'สิ่งที่คุณเห็นบนหน้านี้',
+        vi: 'Những gì bạn thấy trên trang này',
+      },
+      bullets: {
+        ko: [
+          '맨 위에 카드 두 개가 나란히 있습니다. 왼쪽은 현재 포인트, 오른쪽은 현재 현금 잔고입니다.',
+          '그 아래 회색 박스에 교환 비율이 적혀 있습니다. 1 포인트 = 1,000 USD입니다.',
+          '같은 박스 안에 지금 보유한 전체 포인트를 모두 바꿨을 때 받게 될 금액이 함께 계산되어 나옵니다.',
+          '그 아래는 교환할 포인트 수를 입력하는 칸 하나와 제출 버튼뿐인 단순한 폼입니다.',
+          '두 카드의 숫자는 페이지에 들어올 때, 그리고 교환에 성공할 때마다 다시 불러와집니다.',
+        ],
+        en: [
+          'Two cards sit side by side at the top: current points on the left, current cash balance on the right.',
+          'Below them a grey box states the exchange rate — 1 point = 1,000 USD.',
+          'The same box also computes what your entire current point balance would be worth if you converted all of it.',
+          'Under that is a simple form: one input for how many points to exchange, and a submit button.',
+          'The two card figures reload when you open the page and again after every successful exchange.',
+        ],
+        ja: [
+          '上部にカードが 2 枚並びます。左が現在のポイント、右が現在の現金残高です。',
+          'その下のグレーのボックスに交換レートが記載されています。1 ポイント = 1,000 USD です。',
+          '同じボックス内に、現在の保有ポイントをすべて交換した場合に受け取れる金額も計算されて表示されます。',
+          'その下は、交換するポイント数を入力する欄と送信ボタンだけのシンプルなフォームです。',
+          '2 枚のカードの数値は、ページを開いたときと交換に成功するたびに再読み込みされます。',
+        ],
+        th: [
+          'มีการ์ดสองใบเรียงกันด้านบน: คะแนนปัจจุบันทางซ้าย ยอดเงินสดปัจจุบันทางขวา',
+          'ด้านล่างมีกล่องสีเทาระบุอัตราแลกเปลี่ยน — 1 คะแนน = 1,000 USD',
+          'กล่องเดียวกันยังคำนวณด้วยว่าคะแนนทั้งหมดที่คุณมีจะมีมูลค่าเท่าใดหากแลกทั้งหมด',
+          'ถัดลงมาเป็นฟอร์มเรียบง่าย: ช่องกรอกจำนวนคะแนนที่จะแลก และปุ่มส่ง',
+          'ตัวเลขบนการ์ดทั้งสองจะโหลดใหม่เมื่อคุณเปิดหน้านี้ และอีกครั้งหลังการแลกสำเร็จทุกครั้ง',
+        ],
+        vi: [
+          'Hai thẻ nằm cạnh nhau ở trên cùng: điểm hiện tại bên trái, số dư tiền mặt hiện tại bên phải.',
+          'Bên dưới, một hộp xám nêu tỷ lệ đổi — 1 điểm = 1.000 USD.',
+          'Cũng trong hộp đó, hệ thống tính luôn toàn bộ số điểm hiện có của bạn sẽ đổi được bao nhiêu.',
+          'Phía dưới là một biểu mẫu đơn giản: một ô nhập số điểm muốn đổi và một nút gửi.',
+          'Số liệu trên hai thẻ được tải lại khi bạn mở trang và sau mỗi lần đổi thành công.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '교환하는 방법',
+        en: 'How to exchange',
+        ja: '交換の手順',
+        th: 'วิธีแลกคะแนน',
+        vi: 'Cách đổi điểm',
+      },
+      bullets: {
+        ko: [
+          '입력 칸에 바꿀 포인트 수를 적습니다. 최소 1 포인트부터이고, 보유 포인트를 넘는 값은 입력해도 제출되지 않습니다.',
+          '값을 입력하는 즉시 아래에 "받게 될 항목" 미리보기가 나타나 실제로 받을 달러 금액을 초록색으로 보여줍니다.',
+          '금액을 확인했으면 제출 버튼을 누릅니다. 처리 중에는 버튼이 "교환 중..."으로 바뀝니다.',
+          '성공하면 완료 알림이 뜨고 입력 칸이 비워지며, 위쪽 두 카드가 새 잔고로 갱신됩니다.',
+          '이 교환은 소수점 없이 정수 포인트 단위로만 처리됩니다.',
+        ],
+        en: [
+          'Type how many points to convert. The minimum is 1, and any value above your balance will not submit.',
+          'As soon as you type, a "You will receive" preview appears below showing the dollar amount in green.',
+          'When the number looks right, press submit. While it processes the button reads "Exchanging...".',
+          'On success you get a confirmation, the input clears, and the two cards at the top refresh with your new balances.',
+          'Exchanges are processed in whole points only — no decimals.',
+        ],
+        ja: [
+          '交換したいポイント数を入力欄に記入します。最小は 1 ポイントで、保有量を超える値は送信できません。',
+          '入力すると同時に下に「受け取り」プレビューが表示され、実際に受け取るドル額が緑色で示されます。',
+          '金額を確認したら送信ボタンを押します。処理中はボタンが「交換中...」に変わります。',
+          '成功すると完了通知が出て入力欄がクリアされ、上部の 2 枚のカードが新しい残高に更新されます。',
+          '交換は小数を含まない整数ポイント単位でのみ処理されます。',
+        ],
+        th: [
+          'พิมพ์จำนวนคะแนนที่ต้องการแปลง ขั้นต่ำคือ 1 และค่าที่เกินยอดคงเหลือของคุณจะส่งไม่ได้',
+          'ทันทีที่พิมพ์ ตัวอย่าง "คุณจะได้รับ" จะปรากฏด้านล่างพร้อมจำนวนดอลลาร์เป็นสีเขียว',
+          'เมื่อตัวเลขถูกต้อง ให้กดส่ง ระหว่างประมวลผลปุ่มจะแสดง "กำลังแลก..."',
+          'เมื่อสำเร็จจะมีการยืนยัน ช่องกรอกจะถูกล้าง และการ์ดสองใบด้านบนจะรีเฟรชเป็นยอดใหม่',
+          'การแลกประมวลผลเป็นจำนวนคะแนนเต็มเท่านั้น ไม่มีทศนิยม',
+        ],
+        vi: [
+          'Nhập số điểm muốn chuyển. Tối thiểu là 1, và giá trị vượt quá số dư của bạn sẽ không gửi được.',
+          'Ngay khi bạn gõ, phần xem trước "Bạn sẽ nhận" hiện bên dưới với số tiền đô-la màu xanh.',
+          'Khi con số đã đúng, nhấn gửi. Trong lúc xử lý, nút hiển thị "Đang đổi...".',
+          'Khi thành công sẽ có xác nhận, ô nhập được xóa, và hai thẻ trên cùng làm mới với số dư mới.',
+          'Việc đổi chỉ xử lý theo số điểm nguyên — không có số thập phân.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '알아둘 점',
+        en: 'Things to know',
+        ja: '注意点',
+        th: 'สิ่งที่ควรทราบ',
+        vi: 'Những điều cần biết',
+      },
+      bullets: {
+        ko: [
+          '교환은 한 방향으로만 이루어집니다. 포인트를 현금으로 바꿀 수는 있지만 현금을 포인트로 되돌릴 수는 없습니다.',
+          '여기서 말하는 현금은 플랫폼 내부의 모의 거래 잔고이며, 실제 화폐가 아니고 출금할 수 없습니다.',
+          '입력 칸의 최댓값은 보유 포인트로 제한되어 있고, 그보다 큰 값을 넣으면 제출 버튼이 비활성화됩니다.',
+          '포인트가 0이면 교환할 것이 없으므로, 먼저 플랫폼 활동으로 포인트를 모아야 합니다.',
+          '교환에 실패하면 서버가 보낸 사유가 알림으로 표시됩니다.',
+        ],
+        en: [
+          'The exchange is one-way: points convert into cash, but cash cannot be converted back into points.',
+          'The cash here is the platform\'s paper-trading balance. It is not real currency and cannot be withdrawn.',
+          'The input is capped at your point balance, and entering more than that disables the submit button.',
+          'With zero points there is nothing to exchange — earn points through platform activity first.',
+          'If an exchange fails, the reason returned by the server is shown in an alert.',
+        ],
+        ja: [
+          '交換は一方向のみです。ポイントを現金に換えることはできますが、現金をポイントに戻すことはできません。',
+          'ここでの現金はプラットフォーム内の模擬取引用残高です。実際の通貨ではなく出金もできません。',
+          '入力欄の上限は保有ポイントに制限されており、それを超える値を入れると送信ボタンが無効になります。',
+          'ポイントが 0 の場合は交換するものがないため、まずプラットフォーム上の活動でポイントを貯める必要があります。',
+          '交換に失敗した場合、サーバーから返された理由が通知として表示されます。',
+        ],
+        th: [
+          'การแลกเป็นทางเดียว: คะแนนแปลงเป็นเงินสดได้ แต่เงินสดแปลงกลับเป็นคะแนนไม่ได้',
+          'เงินสดที่นี่คือยอดคงเหลือสำหรับเทรดจำลองของแพลตฟอร์ม ไม่ใช่เงินจริงและถอนไม่ได้',
+          'ช่องกรอกถูกจำกัดที่ยอดคะแนนของคุณ และการใส่มากกว่านั้นจะปิดใช้งานปุ่มส่ง',
+          'หากมีคะแนนเป็นศูนย์ก็ไม่มีอะไรให้แลก — ต้องสะสมคะแนนจากกิจกรรมบนแพลตฟอร์มก่อน',
+          'หากการแลกล้มเหลว เหตุผลที่เซิร์ฟเวอร์ส่งกลับจะแสดงเป็นการแจ้งเตือน',
+        ],
+        vi: [
+          'Việc đổi là một chiều: điểm chuyển thành tiền mặt, nhưng tiền mặt không đổi ngược lại thành điểm.',
+          'Tiền mặt ở đây là số dư giao dịch giả lập của nền tảng. Nó không phải tiền thật và không thể rút.',
+          'Ô nhập bị giới hạn ở số điểm bạn có, và nhập nhiều hơn sẽ vô hiệu hóa nút gửi.',
+          'Với 0 điểm thì không có gì để đổi — hãy tích điểm qua hoạt động trên nền tảng trước.',
+          'Nếu việc đổi thất bại, lý do máy chủ trả về sẽ hiện trong một thông báo.',
+        ],
+      },
+    },
+    {
+      heading: {
+        ko: '교환한 다음에 할 일',
+        en: 'What to do next',
+        ja: '交換後にすること',
+        th: 'สิ่งที่ควรทำต่อ',
+        vi: 'Việc cần làm tiếp theo',
+      },
+      bullets: {
+        ko: [
+          '오른쪽 카드의 현금 금액이 늘어났는지 확인한 뒤 주문 페이지로 돌아가세요.',
+          '아까 거절당한 주문이 있다면 다시 시도하기 전에 "가격 가져오기"를 눌러 시세를 새로 받아야 합니다.',
+          '필요 금액을 계산할 때는 거래대금의 0.1% 수수료가 더해진다는 점을 감안해 조금 여유 있게 교환하세요.',
+          '암호화폐를 거래할 계획이라면 현물이나 선물 터미널의 "사용 가능" 줄에서도 늘어난 잔고를 확인할 수 있습니다.',
+        ],
+        en: [
+          'Check that the cash figure on the right card went up, then head back to the order page.',
+          'If you had an order rejected earlier, press "Get Price" again to refresh the quote before retrying.',
+          'When working out how much you need, remember the 0.1% trading fee is added on top — exchange with a little headroom.',
+          'If you plan to trade crypto, the higher balance also shows up in the "Available" row on the Spot and Futures terminals.',
+        ],
+        ja: [
+          '右のカードの現金額が増えたことを確認してから注文ページに戻ってください。',
+          '先ほど却下された注文がある場合、再試行の前に「価格を取得」を押して価格を取り直す必要があります。',
+          '必要額を計算する際は約定代金の 0.1% の手数料が上乗せされる点を考慮し、少し余裕を持って交換してください。',
+          '暗号通貨を取引する予定なら、現物・先物ターミナルの「利用可能」の行でも増えた残高を確認できます。',
+        ],
+        th: [
+          'ตรวจว่ายอดเงินสดบนการ์ดขวาเพิ่มขึ้นแล้ว จากนั้นกลับไปที่หน้าวางคำสั่ง',
+          'หากก่อนหน้านี้มีคำสั่งถูกปฏิเสธ ให้กด "รับราคา" อีกครั้งเพื่อรีเฟรชราคาก่อนลองใหม่',
+          'เมื่อคำนวณจำนวนที่ต้องใช้ อย่าลืมว่ามีค่าธรรมเนียม 0.1% บวกเพิ่ม — ควรแลกเผื่อไว้เล็กน้อย',
+          'หากวางแผนเทรดคริปโต ยอดคงเหลือที่เพิ่มขึ้นจะแสดงในแถว "พร้อมใช้" บนเทอร์มินัล Spot และ Futures ด้วย',
+        ],
+        vi: [
+          'Kiểm tra số tiền mặt trên thẻ bên phải đã tăng, rồi quay lại trang đặt lệnh.',
+          'Nếu trước đó bạn có lệnh bị từ chối, hãy nhấn "Lấy giá" lại để làm mới báo giá trước khi thử lại.',
+          'Khi tính số tiền cần, nhớ rằng phí giao dịch 0,1% được cộng thêm — hãy đổi dư ra một chút.',
+          'Nếu định giao dịch crypto, số dư tăng lên cũng hiện ở dòng "Khả dụng" trên terminal Spot và Futures.',
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: {
+        ko: '제출 버튼이 눌리지 않습니다.',
+        en: 'The submit button will not press.',
+        ja: '送信ボタンが押せません。',
+        th: 'ปุ่มส่งกดไม่ได้',
+        vi: 'Nút gửi không nhấn được.',
+      },
+      a: {
+        ko: '입력 칸이 비어 있거나, 입력한 값이 보유 포인트보다 많으면 버튼이 비활성화됩니다. 위쪽 왼쪽 카드의 포인트 수를 확인하고 그 이하의 값을 넣으세요. 교환이 진행 중일 때도 잠시 눌리지 않습니다.',
+        en: 'The button disables when the input is empty or when the amount exceeds your point balance. Check the points figure on the left card and enter a value at or below it. It is also briefly disabled while an exchange is processing.',
+        ja: '入力欄が空の場合、または入力値が保有ポイントを超える場合にボタンが無効になります。左のカードのポイント数を確認し、それ以下の値を入力してください。交換処理中も一時的に押せなくなります。',
+        th: 'ปุ่มจะถูกปิดใช้งานเมื่อช่องกรอกว่าง หรือเมื่อจำนวนเกินยอดคะแนนของคุณ ตรวจตัวเลขคะแนนบนการ์ดซ้ายแล้วใส่ค่าที่ไม่เกินนั้น และจะถูกปิดชั่วครู่ระหว่างกำลังประมวลผลการแลกด้วย',
+        vi: 'Nút bị vô hiệu khi ô nhập trống hoặc khi số lượng vượt quá số điểm của bạn. Xem con số điểm trên thẻ bên trái và nhập giá trị bằng hoặc nhỏ hơn. Nút cũng bị vô hiệu tạm thời khi đang xử lý việc đổi.',
+      },
+    },
+    {
+      q: {
+        ko: '바꾼 현금을 실제로 출금할 수 있나요?',
+        en: 'Can I withdraw the cash I received?',
+        ja: '交換した現金は実際に出金できますか？',
+        th: 'ฉันถอนเงินสดที่ได้รับออกมาได้ไหม?',
+        vi: 'Tôi có thể rút số tiền mặt nhận được không?',
+      },
+      a: {
+        ko: '없습니다. 이 현금은 플랫폼 안에서 모의 거래의 잔고 역할만 하는 숫자입니다. 실제 자금이 아니며 은행이나 거래소로 이체되지 않습니다. 오직 주문 규모를 정하는 데만 쓰입니다.',
+        en: 'No. This cash is only a number that acts as your paper-trading balance inside the platform. It is not real money and never moves to a bank or an exchange. It exists solely to size your orders.',
+        ja: 'できません。この現金はプラットフォーム内で模擬取引の残高として機能する数値にすぎません。実際の資金ではなく、銀行や取引所へ送金されることもありません。注文規模を決めるためだけに使われます。',
+        th: 'ไม่ได้ เงินสดนี้เป็นเพียงตัวเลขที่ทำหน้าที่เป็นยอดคงเหลือสำหรับเทรดจำลองภายในแพลตฟอร์ม ไม่ใช่เงินจริงและไม่เคยโอนไปธนาคารหรือตลาดแลกเปลี่ยน มีไว้เพื่อกำหนดขนาดคำสั่งเท่านั้น',
+        vi: 'Không. Số tiền này chỉ là một con số đóng vai trò số dư giao dịch giả lập bên trong nền tảng. Nó không phải tiền thật và không bao giờ chuyển tới ngân hàng hay sàn giao dịch. Nó chỉ tồn tại để xác định cỡ lệnh của bạn.',
+      },
+    },
+    {
+      q: {
+        ko: '실수로 너무 많이 바꿨습니다. 되돌릴 수 있나요?',
+        en: 'I exchanged too much by mistake. Can I undo it?',
+        ja: '誤って交換しすぎました。取り消せますか？',
+        th: 'ฉันแลกมากเกินไปโดยไม่ตั้งใจ ยกเลิกได้ไหม?',
+        vi: 'Tôi lỡ đổi quá nhiều. Có hoàn tác được không?',
+      },
+      a: {
+        ko: '이 페이지에는 되돌리기 기능이 없습니다. 교환은 포인트에서 현금으로 가는 한 방향이며 반대 방향 폼이 존재하지 않습니다. 제출 전에 "받게 될 항목" 미리보기 금액을 꼭 확인하세요.',
+        en: 'There is no undo on this page. The exchange runs one way, from points to cash, and no reverse form exists. Always check the "You will receive" preview before submitting.',
+        ja: 'このページに取り消し機能はありません。交換はポイントから現金への一方向で、逆方向のフォームは存在しません。送信前に「受け取り」プレビューの金額を必ず確認してください。',
+        th: 'หน้านี้ไม่มีการยกเลิก การแลกเป็นทางเดียวจากคะแนนไปเงินสด และไม่มีฟอร์มย้อนกลับ ควรตรวจตัวอย่าง "คุณจะได้รับ" ก่อนส่งเสมอ',
+        vi: 'Trang này không có hoàn tác. Việc đổi chạy một chiều, từ điểm sang tiền mặt, và không có biểu mẫu ngược lại. Hãy luôn kiểm tra phần xem trước "Bạn sẽ nhận" trước khi gửi.',
+      },
+    },
+  ],
+}

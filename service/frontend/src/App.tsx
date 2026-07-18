@@ -19,6 +19,8 @@ import {
   HamburgerButton,
 } from './AppPages'
 
+import { GuideButton } from './components/GuideButton'
+
 // Route-level pages are lazy-loaded to enable bundle code-splitting.
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const DevPage = lazy(() => import('./pages/DevPage'))
@@ -30,6 +32,7 @@ const DocsPage = lazy(() => import('./pages/DocsPage'))
 const MonitorPage = lazy(() => import('./pages/MonitorPage'))
 const ConsultPage = lazy(() => import('./pages/ConsultPage'))
 const AssistantDock = lazy(() => import('./components/AssistantDock'))
+const GuidePanel = lazy(() => import('./components/GuidePanel'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
@@ -347,6 +350,7 @@ function AppRouter({
 }) {
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   // Agent-gated route: with a user session present, the agent token is being
   // auto-linked (POST /api/users/agent) — render a spinner instead of
@@ -463,7 +467,10 @@ function AppRouter({
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <HamburgerButton isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(o => !o)} />
-            <TopbarControls />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <TopbarControls />
+              <GuideButton onClick={() => setGuideOpen(true)} />
+            </div>
           </div>
 
           <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
@@ -535,6 +542,12 @@ function AppRouter({
 
         <TrendingSidebar />
       </main>
+
+      {/* Per-page guide — the topbar button opens this drawer, which resolves
+          its content from the route registry in ./guides. */}
+      <Suspense fallback={null}>
+        <GuidePanel open={guideOpen} onClose={() => setGuideOpen(false)} />
+      </Suspense>
 
       {/* AI Assistant — mounted once in the authed shell so it is reachable
           from every page and keeps its conversation across navigation. */}
