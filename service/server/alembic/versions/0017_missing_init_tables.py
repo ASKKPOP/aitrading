@@ -33,9 +33,9 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS automation_configs (
             id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id         INTEGER NOT NULL,
-            symbol           TEXT    NOT NULL,
+            symbol           MEDIUMTEXT    NOT NULL,
             market           VARCHAR(32) NOT NULL DEFAULT 'crypto',
-            provider         TEXT,
+            provider         MEDIUMTEXT,
             interval_minutes INTEGER NOT NULL DEFAULT 60,
             min_confidence   REAL    NOT NULL DEFAULT 0.65,
             size_usd         REAL    NOT NULL DEFAULT 500,
@@ -43,10 +43,10 @@ def upgrade() -> None:
             account_type     VARCHAR(32) NOT NULL DEFAULT 'simulator',
             enabled          INTEGER NOT NULL DEFAULT 1,
             lang             VARCHAR(16) NOT NULL DEFAULT 'en',
-            risk_level       TEXT,
+            risk_level       MEDIUMTEXT,
             mode             VARCHAR(32) NOT NULL DEFAULT 'manual',
             budget_usd       REAL,
-            schedule_json    TEXT,
+            schedule_json    MEDIUMTEXT,
             last_run_at      VARCHAR(64),
             created_at       VARCHAR(64) DEFAULT ({_NOW}),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -59,13 +59,13 @@ def upgrade() -> None:
             config_id       INTEGER NOT NULL,
             agent_id        INTEGER NOT NULL,
             ran_at          VARCHAR(64) DEFAULT ({_NOW}),
-            action          TEXT,
+            action          MEDIUMTEXT,
             confidence      REAL,
             executed        INTEGER NOT NULL DEFAULT 0,
-            skip_reason     TEXT,
+            skip_reason     MEDIUMTEXT,
             signal_id       INTEGER,
-            report          TEXT,
-            confluence_json TEXT,
+            report          MEDIUMTEXT,
+            confluence_json MEDIUMTEXT,
             FOREIGN KEY (config_id) REFERENCES automation_configs(id)
         )
     """)
@@ -76,9 +76,9 @@ def upgrade() -> None:
             config_id   INTEGER NOT NULL,
             agent_id    INTEGER NOT NULL,
             decided_at  VARCHAR(64) NOT NULL,
-            params_json TEXT    NOT NULL,
-            rationale   TEXT,
-            llm_model   TEXT,
+            params_json MEDIUMTEXT    NOT NULL,
+            rationale   MEDIUMTEXT,
+            llm_model   MEDIUMTEXT,
             planner     VARCHAR(32) NOT NULL DEFAULT 'llm',
             FOREIGN KEY (config_id) REFERENCES automation_configs(id)
         )
@@ -91,9 +91,9 @@ def upgrade() -> None:
             agent_id     INTEGER NOT NULL,
             strategy_id  INTEGER,
             status       VARCHAR(32) NOT NULL DEFAULT 'pending',
-            config       TEXT    NOT NULL,
-            result       TEXT,
-            error_msg    TEXT,
+            config       MEDIUMTEXT    NOT NULL,
+            result       MEDIUMTEXT,
+            error_msg    MEDIUMTEXT,
             created_at   VARCHAR(64) DEFAULT ({_NOW}),
             started_at   VARCHAR(64),
             completed_at VARCHAR(64),
@@ -107,9 +107,9 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS chat_sessions (
             id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id   INTEGER NOT NULL,
-            symbol     TEXT,
+            symbol     MEDIUMTEXT,
             market     VARCHAR(32) NOT NULL DEFAULT 'crypto',
-            title      TEXT,
+            title      MEDIUMTEXT,
             created_at VARCHAR(64) NOT NULL,
             updated_at VARCHAR(64),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -121,8 +121,8 @@ def upgrade() -> None:
             id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             session_id INTEGER NOT NULL,
             role       VARCHAR(16) NOT NULL,
-            content    TEXT NOT NULL,
-            llm_model  TEXT,
+            content    MEDIUMTEXT NOT NULL,
+            llm_model  MEDIUMTEXT,
             created_at VARCHAR(64) NOT NULL,
             FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
         )
@@ -134,7 +134,7 @@ def upgrade() -> None:
             id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id     INTEGER NOT NULL,
             name         VARCHAR(191) NOT NULL,
-            payload_json TEXT    NOT NULL,
+            payload_json MEDIUMTEXT    NOT NULL,
             created_at   VARCHAR(64),
             updated_at   VARCHAR(64),
             UNIQUE KEY uq_config_profiles_agent_name (agent_id, name),
@@ -164,7 +164,7 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS regime_snapshots (
             id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             regime      VARCHAR(32) NOT NULL,
-            detail_json TEXT,
+            detail_json MEDIUMTEXT,
             created_at  VARCHAR(64) NOT NULL
         )
     """)
@@ -188,9 +188,9 @@ def upgrade() -> None:
             agent_id      INTEGER NOT NULL,
             user_id       INTEGER,
             kind          VARCHAR(64) NOT NULL,
-            title         TEXT    NOT NULL,
-            body          TEXT,
-            channels_json TEXT,
+            title         MEDIUMTEXT    NOT NULL,
+            body          MEDIUMTEXT,
+            channels_json MEDIUMTEXT,
             dedupe_key    VARCHAR(191),
             created_at    VARCHAR(64) NOT NULL
         )
@@ -202,7 +202,7 @@ def upgrade() -> None:
             agent_id      INTEGER NOT NULL,
             name VARCHAR(255)    NOT NULL,
             metric        VARCHAR(64) NOT NULL,
-            symbol        TEXT,
+            symbol        MEDIUMTEXT,
             comparator    VARCHAR(8) NOT NULL,
             threshold     REAL    NOT NULL,
             enabled       INTEGER NOT NULL DEFAULT 1,

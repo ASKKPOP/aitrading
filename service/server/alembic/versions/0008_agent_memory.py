@@ -26,9 +26,9 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS agent_memory (
             id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id    INTEGER NOT NULL REFERENCES agents(id),
-            content     TEXT    NOT NULL,
+            content     MEDIUMTEXT    NOT NULL,
             embedding   LONGTEXT,
-            metadata    TEXT,
+            metadata    MEDIUMTEXT,
             created_at  VARCHAR(64) NOT NULL DEFAULT ({_NOW}),
             expires_at  VARCHAR(64),
             size_bytes  INTEGER NOT NULL DEFAULT 0

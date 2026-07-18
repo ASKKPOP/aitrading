@@ -24,12 +24,12 @@ def upgrade() -> None:
         sa.Column("position_count", sa.Integer, nullable=False, server_default="0"),
         # Long JSON stays TEXT; MySQL literal TEXT defaults are illegal, so use the
         # parenthesised expression-default form (valid on MySQL 8.0.13+).
-        sa.Column("positions_json", sa.Text, nullable=False, server_default=sa.text("('[]')")),
-        sa.Column("last_signal_at", sa.Text, nullable=True),
+        sa.Column("positions_json", sa.Text(16777215), nullable=False, server_default=sa.text("('[]')")),
+        sa.Column("last_signal_at", sa.Text(16777215), nullable=True),
         sa.Column("latest_signal_id", sa.Integer, nullable=True),
-        sa.Column("latest_signal_type", sa.Text, nullable=True),
+        sa.Column("latest_signal_type", sa.Text(16777215), nullable=True),
         sa.Column("total_for_filter", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("refreshed_at", sa.Text, nullable=False),
+        sa.Column("refreshed_at", sa.Text(16777215), nullable=False),
         sa.PrimaryKeyConstraint("message_type", "market", "rank"),
     )
     op.create_index(

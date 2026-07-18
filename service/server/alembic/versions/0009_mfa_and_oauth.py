@@ -36,7 +36,7 @@ def upgrade() -> None:
             user_id           INTEGER NOT NULL REFERENCES users(id),
             provider          VARCHAR(32) NOT NULL,
             provider_user_id  VARCHAR(255) NOT NULL,
-            email             TEXT,
+            email             MEDIUMTEXT,
             created_at        VARCHAR(64) NOT NULL DEFAULT ({_NOW}),
             UNIQUE KEY uq_oauth_provider_id (provider, provider_user_id)
         )

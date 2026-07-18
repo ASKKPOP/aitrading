@@ -36,12 +36,12 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS broker_accounts (
             id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id        INTEGER NOT NULL REFERENCES agents(id),
-            broker          TEXT    NOT NULL,
+            broker          MEDIUMTEXT    NOT NULL,
             execution_mode  VARCHAR(32)    NOT NULL DEFAULT 'paper',
-            credentials_enc TEXT,
+            credentials_enc MEDIUMTEXT,
             is_active       INTEGER NOT NULL DEFAULT 1,
-            created_at      TEXT DEFAULT ({_NOW}),
-            updated_at      TEXT DEFAULT ({_NOW})
+            created_at      MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at      MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
     op.execute("""
@@ -54,22 +54,22 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS broker_orders (
             id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id         INTEGER NOT NULL REFERENCES agents(id),
-            symbol           TEXT    NOT NULL,
+            symbol           MEDIUMTEXT    NOT NULL,
             market           VARCHAR(32)    NOT NULL DEFAULT 'us-stock',
-            side             TEXT    NOT NULL,
+            side             MEDIUMTEXT    NOT NULL,
             quantity         NUMERIC(20,8) NOT NULL,
             price            NUMERIC(20,8) NOT NULL,
             status           VARCHAR(32)    NOT NULL DEFAULT 'pending',
             execution_mode   VARCHAR(32)    NOT NULL DEFAULT 'paper',
             broker           VARCHAR(32)    NOT NULL DEFAULT 'paper',
-            broker_order_id  TEXT,
-            error_message    TEXT,
+            broker_order_id  MEDIUMTEXT,
+            error_message    MEDIUMTEXT,
             signal_id        INTEGER REFERENCES signals(signal_id),
             leader_id        INTEGER,
-            token_id         TEXT,
-            outcome          TEXT,
+            token_id         MEDIUMTEXT,
+            outcome          MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW}),
-            filled_at        TEXT
+            filled_at        MEDIUMTEXT
         )
     """)
     op.execute("""
@@ -82,13 +82,13 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS position_reconciliations (
             id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id        INTEGER NOT NULL REFERENCES agents(id),
-            symbol          TEXT    NOT NULL,
+            symbol          MEDIUMTEXT    NOT NULL,
             paper_qty       NUMERIC(20,8),
             broker_qty      NUMERIC(20,8),
             drift           NUMERIC(20,8),
             paper_order_id  INTEGER REFERENCES broker_orders(id),
-            broker          TEXT,
-            recorded_at     TEXT DEFAULT ({_NOW})
+            broker          MEDIUMTEXT,
+            recorded_at     MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -97,11 +97,11 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS broker_live_optins (
             id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id     INTEGER NOT NULL REFERENCES agents(id),
-            broker       TEXT    NOT NULL,
+            broker       MEDIUMTEXT    NOT NULL,
             tcs_version  VARCHAR(32)    NOT NULL DEFAULT 'v1',
-            ip_address   TEXT,
-            user_agent   TEXT,
-            created_at   TEXT DEFAULT ({_NOW})
+            ip_address   MEDIUMTEXT,
+            user_agent   MEDIUMTEXT,
+            created_at   MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -110,15 +110,15 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS strategies (
             id                    INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id              INTEGER NOT NULL REFERENCES agents(id),
-            name                  TEXT    NOT NULL,
-            description           TEXT,
-            config                TEXT,
+            name                  MEDIUMTEXT    NOT NULL,
+            description           MEDIUMTEXT,
+            config                MEDIUMTEXT,
             is_active             INTEGER NOT NULL DEFAULT 1,
             backtest_validated    INTEGER NOT NULL DEFAULT 0,
             last_backtest_sharpe  REAL,
-            last_backtest_at      TEXT,
-            created_at            TEXT DEFAULT ({_NOW}),
-            updated_at            TEXT DEFAULT ({_NOW})
+            last_backtest_at      MEDIUMTEXT,
+            created_at            MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at            MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
     op.execute("""

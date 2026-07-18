@@ -6,6 +6,7 @@ Database Module
 
 from __future__ import annotations
 
+import decimal
 import os
 import re
 import sqlite3
@@ -377,13 +378,32 @@ class DatabaseCursor:
         self._cursor.executemany(sql, [tuple(p) for p in seq_of_params])
         return self
 
+    @staticmethod
+    def _demote_decimals(row):
+        """MySQL returns NUMERIC/DECIMAL columns as decimal.Decimal; the codebase
+        was written for SQLite (REAL → float) and freely mixes them in arithmetic
+        (float += Decimal → TypeError) and JSON. Convert Decimal → float on the way
+        out so MySQL rows behave exactly like SQLite rows."""
+        if row is None:
+            return None
+        return {
+            key: (float(value) if isinstance(value, decimal.Decimal) else value)
+            for key, value in row.items()
+        }
+
     def fetchone(self):
+        if self._backend == "mysql":
+            return self._demote_decimals(self._cursor.fetchone())
         return self._cursor.fetchone()
 
     def fetchall(self):
+        if self._backend == "mysql":
+            return [self._demote_decimals(row) for row in self._cursor.fetchall()]
         return self._cursor.fetchall()
 
     def __iter__(self):
+        if self._backend == "mysql":
+            return (self._demote_decimals(row) for row in self._cursor)
         return iter(self._cursor)
 
     def __getattr__(self, name: str):
@@ -485,14 +505,14 @@ def get_database_status() -> dict[str, Any]:
         cursor = conn.cursor()
         if using_mysql():
             cursor.execute(
-                "SELECT DATABASE() AS database_name, USER() AS current_user,"
+                "SELECT DATABASE() AS database_name, USER() AS db_user,"
                 " @@hostname AS server_host, @@port AS server_port"
             )
             row = cursor.fetchone()
             return {
                 "backend": get_database_backend_name(),
                 "database_name": row["database_name"],
-                "current_user": row["current_user"],
+                "current_user": row["db_user"],
                 "server_host": row["server_host"],
                 "server_port": row["server_port"],
             }

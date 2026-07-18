@@ -18,15 +18,15 @@ def upgrade() -> None:
         sa.Column("stop_loss_pct", sa.Float, nullable=False, server_default="0.05"),
         sa.Column("take_profit_pct", sa.Float, nullable=False, server_default="0.10"),
         sa.Column("use_kelly", sa.Integer, nullable=False, server_default="1"),
-        sa.Column("updated_at", sa.Text, nullable=True),
+        sa.Column("updated_at", sa.Text(16777215), nullable=True),
     )
     op.create_table(
         "breaker_state",
         sa.Column("scope", sa.String(64), primary_key=True),
         sa.Column("state", sa.String(32), nullable=False, server_default="normal"),
-        sa.Column("reason", sa.Text, nullable=True),
-        sa.Column("tripped_at", sa.Text, nullable=True),
-        sa.Column("updated_at", sa.Text, nullable=True),
+        sa.Column("reason", sa.Text(16777215), nullable=True),
+        sa.Column("tripped_at", sa.Text(16777215), nullable=True),
+        sa.Column("updated_at", sa.Text(16777215), nullable=True),
     )
     op.add_column("positions", sa.Column("stop_loss", sa.Float, nullable=True))
     op.add_column("positions", sa.Column("take_profit", sa.Float, nullable=True))

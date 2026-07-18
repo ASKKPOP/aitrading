@@ -26,17 +26,17 @@ def upgrade() -> None:
             name VARCHAR(255) UNIQUE NOT NULL,
             token VARCHAR(255),
             token_hash VARCHAR(191),
-            token_expires_at TEXT,
-            password_hash TEXT,
-            password_reset_token TEXT,
-            password_reset_expires_at TEXT,
-            wallet_address TEXT,
+            token_expires_at MEDIUMTEXT,
+            password_hash MEDIUMTEXT,
+            password_reset_token MEDIUMTEXT,
+            password_reset_expires_at MEDIUMTEXT,
+            wallet_address MEDIUMTEXT,
             points INTEGER DEFAULT 0,
             cash REAL DEFAULT 100000.0,
             deposited REAL DEFAULT 0.0,
             reputation_score INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -44,11 +44,11 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS agent_messages (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            type TEXT NOT NULL,
-            content TEXT,
-            data TEXT,
+            type MEDIUMTEXT NOT NULL,
+            content MEDIUMTEXT,
+            data MEDIUMTEXT,
             `read` INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -56,12 +56,12 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS agent_tasks (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            type TEXT NOT NULL,
+            type MEDIUMTEXT NOT NULL,
             status VARCHAR(191) DEFAULT 'pending',
-            input_data TEXT,
-            result_data TEXT,
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            input_data MEDIUMTEXT,
+            result_data MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -69,13 +69,13 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS listings (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             seller_id INTEGER NOT NULL REFERENCES agents(id),
-            category TEXT NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
+            category MEDIUMTEXT NOT NULL,
+            title MEDIUMTEXT NOT NULL,
+            description MEDIUMTEXT,
             price REAL NOT NULL,
             status VARCHAR(191) DEFAULT 'active',
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -88,8 +88,8 @@ def upgrade() -> None:
             price REAL NOT NULL,
             status VARCHAR(191) DEFAULT 'pending_delivery',
             escrow_status VARCHAR(191) DEFAULT 'held',
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -98,7 +98,7 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER UNIQUE NOT NULL REFERENCES agents(id),
             status VARCHAR(191) DEFAULT 'active',
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -107,9 +107,9 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             order_id INTEGER NOT NULL REFERENCES orders(id),
             arbitrator_id INTEGER NOT NULL REFERENCES arbitrators(id),
-            vote TEXT NOT NULL,
-            reason TEXT,
-            created_at TEXT DEFAULT ({_NOW})
+            vote MEDIUMTEXT NOT NULL,
+            reason MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -117,12 +117,12 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS users (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            wallet_address TEXT,
+            password_hash MEDIUMTEXT NOT NULL,
+            wallet_address MEDIUMTEXT,
             points INTEGER DEFAULT 0,
-            verification_code TEXT,
-            code_expires_at TEXT,
-            created_at TEXT DEFAULT ({_NOW})
+            verification_code MEDIUMTEXT,
+            code_expires_at MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -131,9 +131,9 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
             amount INTEGER NOT NULL,
-            type TEXT NOT NULL,
-            description TEXT,
-            created_at TEXT DEFAULT ({_NOW})
+            type MEDIUMTEXT NOT NULL,
+            description MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -142,8 +142,8 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
             token VARCHAR(255) UNIQUE NOT NULL,
-            expires_at TEXT NOT NULL,
-            created_at TEXT DEFAULT ({_NOW})
+            expires_at MEDIUMTEXT NOT NULL,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -153,7 +153,7 @@ def upgrade() -> None:
             client_ip VARCHAR(191) NOT NULL,
             action VARCHAR(191) NOT NULL,
             count INTEGER DEFAULT 0,
-            window_start TEXT NOT NULL,
+            window_start MEDIUMTEXT NOT NULL,
             UNIQUE(client_ip, action)
         )
     """)
@@ -165,23 +165,23 @@ def upgrade() -> None:
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             message_type VARCHAR(191) NOT NULL,
             market VARCHAR(191) NOT NULL,
-            signal_type TEXT,
-            symbol TEXT,
+            signal_type MEDIUMTEXT,
+            symbol MEDIUMTEXT,
             token_id VARCHAR(191),
-            outcome TEXT,
+            outcome MEDIUMTEXT,
             accepted_reply_id INTEGER,
-            symbols TEXT,
-            side TEXT,
+            symbols MEDIUMTEXT,
+            side MEDIUMTEXT,
             entry_price REAL,
             exit_price REAL,
             quantity REAL,
             pnl REAL,
-            title TEXT,
-            content TEXT,
-            tags TEXT,
+            title MEDIUMTEXT,
+            content MEDIUMTEXT,
+            tags MEDIUMTEXT,
             timestamp INTEGER NOT NULL,
             created_at VARCHAR(64) NOT NULL,
-            executed_at TEXT
+            executed_at MEDIUMTEXT
         )
     """)
 
@@ -190,9 +190,9 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             signal_id INTEGER NOT NULL REFERENCES signals(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            content TEXT NOT NULL,
+            content MEDIUMTEXT NOT NULL,
             accepted INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -202,7 +202,7 @@ def upgrade() -> None:
             leader_id INTEGER NOT NULL REFERENCES agents(id),
             follower_id INTEGER NOT NULL REFERENCES agents(id),
             status VARCHAR(191) DEFAULT 'active',
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -214,19 +214,19 @@ def upgrade() -> None:
             symbol VARCHAR(191) NOT NULL,
             market VARCHAR(191) NOT NULL DEFAULT 'us-stock',
             token_id VARCHAR(191),
-            outcome TEXT,
-            side TEXT NOT NULL,
+            outcome MEDIUMTEXT,
+            side MEDIUMTEXT NOT NULL,
             quantity REAL NOT NULL,
             entry_price REAL NOT NULL,
             current_price REAL,
-            opened_at TEXT NOT NULL
+            opened_at MEDIUMTEXT NOT NULL
         )
     """)
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS signal_sequence (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -235,18 +235,18 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             position_id INTEGER NOT NULL REFERENCES positions(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            symbol TEXT NOT NULL,
-            token_id TEXT NOT NULL,
-            outcome TEXT,
+            symbol MEDIUMTEXT NOT NULL,
+            token_id MEDIUMTEXT NOT NULL,
+            outcome MEDIUMTEXT,
             quantity REAL NOT NULL,
             entry_price REAL NOT NULL,
             settlement_price REAL NOT NULL,
             proceeds REAL NOT NULL,
-            market_slug TEXT,
-            resolved_outcome TEXT,
-            resolved_at TEXT,
+            market_slug MEDIUMTEXT,
+            resolved_outcome MEDIUMTEXT,
+            resolved_at MEDIUMTEXT,
             settled_at VARCHAR(64) DEFAULT ({_NOW}),
-            source_data TEXT
+            source_data MEDIUMTEXT
         )
     """)
 
@@ -262,7 +262,7 @@ def upgrade() -> None:
             market VARCHAR(191),
             experiment_key VARCHAR(255),
             variant_key VARCHAR(191),
-            metadata_json TEXT,
+            metadata_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -271,15 +271,15 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS experiments (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             experiment_key VARCHAR(255) UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
+            title MEDIUMTEXT NOT NULL,
+            description MEDIUMTEXT,
             status VARCHAR(191) DEFAULT 'draft',
             unit_type VARCHAR(191) DEFAULT 'agent',
-            variants_json TEXT,
-            start_at TEXT,
-            end_at TEXT,
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            variants_json MEDIUMTEXT,
+            start_at MEDIUMTEXT,
+            end_at MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -290,9 +290,9 @@ def upgrade() -> None:
             unit_type VARCHAR(191) NOT NULL,
             unit_id INTEGER NOT NULL,
             variant_key VARCHAR(191) NOT NULL,
-            assignment_reason TEXT,
-            metadata_json TEXT,
-            created_at TEXT DEFAULT ({_NOW}),
+            assignment_reason MEDIUMTEXT,
+            metadata_json MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
             UNIQUE(experiment_key, unit_type, unit_id)
         )
     """)
@@ -302,15 +302,15 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             amount INTEGER NOT NULL,
-            reason TEXT NOT NULL,
+            reason MEDIUMTEXT NOT NULL,
             source_type VARCHAR(191),
             source_id VARCHAR(191),
             experiment_key VARCHAR(255),
-            variant_key TEXT,
+            variant_key MEDIUMTEXT,
             status VARCHAR(191) DEFAULT 'posted',
-            metadata_json TEXT,
+            metadata_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW}),
-            reversed_at TEXT
+            reversed_at MEDIUMTEXT
         )
     """)
 
@@ -318,24 +318,24 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS challenges (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             challenge_key VARCHAR(255) UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
+            title MEDIUMTEXT NOT NULL,
+            description MEDIUMTEXT,
             market VARCHAR(191) NOT NULL,
-            symbol TEXT,
-            challenge_type TEXT NOT NULL,
+            symbol MEDIUMTEXT,
+            challenge_type MEDIUMTEXT NOT NULL,
             status VARCHAR(191) DEFAULT 'upcoming',
             scoring_method VARCHAR(191) DEFAULT 'return-only',
             initial_capital REAL DEFAULT 100000.0,
             max_position_pct REAL DEFAULT 100.0,
             max_drawdown_pct REAL DEFAULT 100.0,
-            start_at TEXT NOT NULL,
+            start_at MEDIUMTEXT NOT NULL,
             end_at VARCHAR(64) NOT NULL,
-            settled_at TEXT,
-            rules_json TEXT,
+            settled_at MEDIUMTEXT,
+            rules_json MEDIUMTEXT,
             experiment_key VARCHAR(255),
             created_by_agent_id INTEGER REFERENCES agents(id),
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -345,15 +345,15 @@ def upgrade() -> None:
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             status VARCHAR(191) DEFAULT 'joined',
-            variant_key TEXT,
-            joined_at TEXT DEFAULT ({_NOW}),
+            variant_key MEDIUMTEXT,
+            joined_at MEDIUMTEXT DEFAULT ({_NOW}),
             starting_cash REAL DEFAULT 100000.0,
             ending_value REAL,
             return_pct REAL,
             max_drawdown REAL,
             trade_count INTEGER DEFAULT 0,
             `rank` INTEGER,
-            disqualified_reason TEXT,
+            disqualified_reason MEDIUMTEXT,
             UNIQUE(challenge_id, agent_id)
         )
     """)
@@ -364,9 +364,9 @@ def upgrade() -> None:
             challenge_id INTEGER NOT NULL REFERENCES challenges(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             signal_id INTEGER,
-            submission_type TEXT NOT NULL,
-            content TEXT,
-            prediction_json TEXT,
+            submission_type MEDIUMTEXT NOT NULL,
+            content MEDIUMTEXT,
+            prediction_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -378,12 +378,12 @@ def upgrade() -> None:
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             source_signal_id INTEGER NOT NULL,
             market VARCHAR(191) NOT NULL,
-            symbol TEXT NOT NULL,
-            side TEXT NOT NULL,
+            symbol MEDIUMTEXT NOT NULL,
+            side MEDIUMTEXT NOT NULL,
             price REAL NOT NULL,
             quantity REAL NOT NULL,
             executed_at VARCHAR(64) NOT NULL,
-            created_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -398,8 +398,8 @@ def upgrade() -> None:
             quality_score REAL,
             final_score REAL,
             `rank` INTEGER,
-            metrics_json TEXT,
-            settled_at TEXT DEFAULT ({_NOW})
+            metrics_json MEDIUMTEXT,
+            settled_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -409,16 +409,16 @@ def upgrade() -> None:
             signal_id INTEGER NOT NULL,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             market VARCHAR(191),
-            symbol TEXT,
-            direction TEXT,
+            symbol MEDIUMTEXT,
+            direction MEDIUMTEXT,
             target_price REAL,
             target_probability REAL,
             confidence REAL,
-            horizon_start_at TEXT,
-            horizon_end_at TEXT,
-            invalid_if TEXT,
-            evidence_json TEXT,
-            extracted_by TEXT,
+            horizon_start_at MEDIUMTEXT,
+            horizon_end_at MEDIUMTEXT,
+            invalid_if MEDIUMTEXT,
+            evidence_json MEDIUMTEXT,
+            extracted_by MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -434,8 +434,8 @@ def upgrade() -> None:
             novelty_score REAL DEFAULT 0,
             review_score REAL DEFAULT 0,
             overall_score REAL DEFAULT 0,
-            model_version TEXT,
-            metadata_json TEXT,
+            model_version MEDIUMTEXT,
+            metadata_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -445,7 +445,7 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             window_key VARCHAR(191) NOT NULL,
-            window_start_at TEXT NOT NULL,
+            window_start_at MEDIUMTEXT NOT NULL,
             window_end_at VARCHAR(64) NOT NULL,
             return_pct REAL DEFAULT 0,
             max_drawdown REAL DEFAULT 0,
@@ -458,8 +458,8 @@ def upgrade() -> None:
             adoption_count INTEGER DEFAULT 0,
             quality_score_avg REAL DEFAULT 0,
             risk_violation_count INTEGER DEFAULT 0,
-            metadata_json TEXT,
-            created_at TEXT DEFAULT ({_NOW})
+            metadata_json MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -471,7 +471,7 @@ def upgrade() -> None:
             edge_type VARCHAR(191) NOT NULL,
             signal_id INTEGER,
             weight REAL DEFAULT 1,
-            metadata_json TEXT,
+            metadata_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -480,23 +480,23 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS team_missions (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             mission_key VARCHAR(255) UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
+            title MEDIUMTEXT NOT NULL,
+            description MEDIUMTEXT,
             market VARCHAR(191) NOT NULL,
-            symbol TEXT,
-            mission_type TEXT NOT NULL,
+            symbol MEDIUMTEXT,
+            mission_type MEDIUMTEXT NOT NULL,
             status VARCHAR(191) DEFAULT 'upcoming',
             team_size_min INTEGER DEFAULT 2,
             team_size_max INTEGER DEFAULT 5,
             assignment_mode VARCHAR(191) DEFAULT 'random',
-            required_roles_json TEXT,
-            start_at TEXT NOT NULL,
+            required_roles_json MEDIUMTEXT,
+            start_at MEDIUMTEXT NOT NULL,
             submission_due_at VARCHAR(64) NOT NULL,
-            settled_at TEXT,
-            rules_json TEXT,
+            settled_at MEDIUMTEXT,
+            rules_json MEDIUMTEXT,
             experiment_key VARCHAR(255),
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -508,9 +508,9 @@ def upgrade() -> None:
             name VARCHAR(255) NOT NULL,
             status VARCHAR(191) DEFAULT 'forming',
             formation_method VARCHAR(191) DEFAULT 'manual',
-            variant_key TEXT,
-            created_at TEXT DEFAULT ({_NOW}),
-            updated_at TEXT DEFAULT ({_NOW})
+            variant_key MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW}),
+            updated_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -520,8 +520,8 @@ def upgrade() -> None:
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             status VARCHAR(191) DEFAULT 'joined',
-            variant_key TEXT,
-            joined_at TEXT DEFAULT ({_NOW}),
+            variant_key MEDIUMTEXT,
+            joined_at MEDIUMTEXT DEFAULT ({_NOW}),
             UNIQUE(mission_id, agent_id)
         )
     """)
@@ -531,9 +531,9 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            role TEXT,
+            role MEDIUMTEXT,
             status VARCHAR(191) DEFAULT 'active',
-            joined_at TEXT DEFAULT ({_NOW}),
+            joined_at MEDIUMTEXT DEFAULT ({_NOW}),
             UNIQUE(team_id, agent_id)
         )
     """)
@@ -544,9 +544,9 @@ def upgrade() -> None:
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
             signal_id INTEGER,
-            message_type TEXT NOT NULL,
-            content TEXT,
-            metadata_json TEXT,
+            message_type MEDIUMTEXT NOT NULL,
+            content MEDIUMTEXT,
+            metadata_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -557,9 +557,9 @@ def upgrade() -> None:
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_id INTEGER NOT NULL REFERENCES teams(id),
             submitted_by_agent_id INTEGER NOT NULL REFERENCES agents(id),
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            prediction_json TEXT,
+            title MEDIUMTEXT NOT NULL,
+            content MEDIUMTEXT NOT NULL,
+            prediction_json MEDIUMTEXT,
             confidence REAL,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
@@ -571,12 +571,12 @@ def upgrade() -> None:
             mission_id INTEGER NOT NULL REFERENCES team_missions(id),
             team_id INTEGER NOT NULL REFERENCES teams(id),
             agent_id INTEGER NOT NULL REFERENCES agents(id),
-            source_type TEXT NOT NULL,
-            source_id TEXT,
+            source_type MEDIUMTEXT NOT NULL,
+            source_id MEDIUMTEXT,
             contribution_type VARCHAR(191) NOT NULL,
             contribution_score REAL DEFAULT 0,
-            metadata_json TEXT,
-            created_at TEXT DEFAULT ({_NOW})
+            metadata_json MEDIUMTEXT,
+            created_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -591,8 +591,8 @@ def upgrade() -> None:
             consensus_gain REAL,
             final_score REAL,
             `rank` INTEGER,
-            metrics_json TEXT,
-            settled_at TEXT DEFAULT ({_NOW})
+            metrics_json MEDIUMTEXT,
+            settled_at MEDIUMTEXT DEFAULT ({_NOW})
         )
     """)
 
@@ -601,8 +601,8 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             category VARCHAR(191) NOT NULL,
             snapshot_key VARCHAR(191) NOT NULL,
-            items_json TEXT NOT NULL,
-            summary_json TEXT NOT NULL,
+            items_json MEDIUMTEXT NOT NULL,
+            summary_json MEDIUMTEXT NOT NULL,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -611,12 +611,12 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS macro_signal_snapshots (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             snapshot_key VARCHAR(191) NOT NULL,
-            verdict TEXT NOT NULL,
+            verdict MEDIUMTEXT NOT NULL,
             bullish_count INTEGER NOT NULL DEFAULT 0,
             total_count INTEGER NOT NULL DEFAULT 0,
-            signals_json TEXT NOT NULL,
-            meta_json TEXT NOT NULL,
-            source_json TEXT NOT NULL,
+            signals_json MEDIUMTEXT NOT NULL,
+            meta_json MEDIUMTEXT NOT NULL,
+            source_json MEDIUMTEXT NOT NULL,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -625,8 +625,8 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS etf_flow_snapshots (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             snapshot_key VARCHAR(191) NOT NULL,
-            summary_json TEXT NOT NULL,
-            etfs_json TEXT NOT NULL,
+            summary_json MEDIUMTEXT NOT NULL,
+            etfs_json MEDIUMTEXT NOT NULL,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -636,19 +636,19 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             symbol VARCHAR(191) NOT NULL,
             market VARCHAR(191) NOT NULL,
-            analysis_id TEXT NOT NULL,
+            analysis_id MEDIUMTEXT NOT NULL,
             current_price REAL NOT NULL,
             currency VARCHAR(191) DEFAULT 'USD',
-            `signal` TEXT NOT NULL,
+            `signal` MEDIUMTEXT NOT NULL,
             signal_score REAL NOT NULL,
-            trend_status TEXT NOT NULL,
-            support_levels_json TEXT NOT NULL,
-            resistance_levels_json TEXT NOT NULL,
-            bullish_factors_json TEXT NOT NULL,
-            risk_factors_json TEXT NOT NULL,
-            summary_text TEXT NOT NULL,
-            analysis_json TEXT NOT NULL,
-            news_json TEXT,
+            trend_status MEDIUMTEXT NOT NULL,
+            support_levels_json MEDIUMTEXT NOT NULL,
+            resistance_levels_json MEDIUMTEXT NOT NULL,
+            bullish_factors_json MEDIUMTEXT NOT NULL,
+            risk_factors_json MEDIUMTEXT NOT NULL,
+            summary_text MEDIUMTEXT NOT NULL,
+            analysis_json MEDIUMTEXT NOT NULL,
+            news_json MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)
@@ -670,8 +670,8 @@ def upgrade() -> None:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             agent_id INTEGER REFERENCES agents(id),
             action VARCHAR(191) NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT,
+            ip_address MEDIUMTEXT,
+            user_agent MEDIUMTEXT,
             created_at VARCHAR(64) DEFAULT ({_NOW})
         )
     """)

@@ -13,11 +13,11 @@ def upgrade() -> None:
     op.create_table(
         "psych_snapshots",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("snapshot_key", sa.Text, nullable=False),
-        sa.Column("fng_json", sa.Text, nullable=True),
-        sa.Column("spikes_json", sa.Text, nullable=True),
-        sa.Column("shock_json", sa.Text, nullable=True),
-        sa.Column("anticipation_json", sa.Text, nullable=True),
+        sa.Column("snapshot_key", sa.Text(16777215), nullable=False),
+        sa.Column("fng_json", sa.Text(16777215), nullable=True),
+        sa.Column("spikes_json", sa.Text(16777215), nullable=True),
+        sa.Column("shock_json", sa.Text(16777215), nullable=True),
+        sa.Column("anticipation_json", sa.Text(16777215), nullable=True),
         sa.Column("created_at", sa.String(64), nullable=False),
     )
     op.create_index("idx_psych_snapshots_created", "psych_snapshots", ["created_at"])
