@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
-import { resolveGuide } from '../guides'
+import { matchGuideRoute, resolveGuide, type PageGuide } from '../guides'
 
 // Per-page user guide.
 //
@@ -11,6 +11,10 @@ import { resolveGuide } from '../guides'
 // button sits top-right on every page. The content is looked up from the route
 // registry in ../guides, which means adding a guide for a new page is a data
 // change, not a component change.
+//
+// Guides load on demand: each route's content is its own chunk, fetched the
+// first time that page's guide is opened rather than shipping every guide in
+// every language up front.
 
 const T = {
   guide: { ko: '가이드', en: 'Guide', ja: 'ガイド', th: 'คู่มือ', vi: 'Hướng dẫn' },
@@ -23,12 +27,45 @@ const T = {
     th: 'ยังไม่มีคู่มือสำหรับหน้านี้',
     vi: 'Chưa có hướng dẫn cho trang này.',
   },
+  loading: {
+    ko: '가이드를 불러오는 중…',
+    en: 'Loading the guide…',
+    ja: 'ガイドを読み込み中…',
+    th: 'กำลังโหลดคู่มือ…',
+    vi: 'Đang tải hướng dẫn…',
+  },
+  failed: {
+    ko: '가이드를 불러오지 못했습니다. 창을 닫았다 다시 열어 주세요.',
+    en: 'Could not load the guide. Close and reopen the panel to retry.',
+    ja: 'ガイドを読み込めませんでした。パネルを閉じて開き直してください。',
+    th: 'โหลดคู่มือไม่สำเร็จ ปิดแล้วเปิดแผงใหม่เพื่อลองอีกครั้ง',
+    vi: 'Không tải được hướng dẫn. Đóng và mở lại bảng để thử lại.',
+  },
 }
 
 export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { language } = useLanguage()
   const { pathname } = useLocation()
-  const guide = resolveGuide(pathname)
+
+  // A route with no registered guide is known synchronously, so the empty
+  // state renders immediately instead of flashing a loading line first.
+  const routeKey = matchGuideRoute(pathname)
+  const [guide, setGuide] = useState<PageGuide | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    if (!open || !routeKey) return
+    let cancelled = false
+    setFailed(false)
+    resolveGuide(pathname)
+      .then(g => { if (!cancelled) setGuide(g) })
+      .catch(() => { if (!cancelled) setFailed(true) })
+    return () => { cancelled = true }
+  }, [open, pathname, routeKey])
+
+  // Drop stale content when navigating, so the previous page's guide is never
+  // shown under the new page's title while the new chunk is in flight.
+  useEffect(() => { setGuide(null) }, [routeKey])
 
   // Escape closes the panel, matching the drawer convention elsewhere.
   useEffect(() => {
@@ -75,7 +112,11 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
           {!guide && (
             <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              {tr(language, T.none)}
+              {!routeKey
+                ? tr(language, T.none)
+                : failed
+                  ? tr(language, T.failed)
+                  : tr(language, T.loading)}
             </div>
           )}
 
