@@ -184,6 +184,7 @@ interface MacroEvent {
 interface EventsPayload {
   available: boolean
   next: MacroEvent[]
+  recent: MacroEvent[]
   event_window: { title: string; minutes_to_release: number } | null
 }
 
@@ -257,7 +258,9 @@ export function SignalsBoardPage() {
 
   const fng = psych?.fear_greed ?? null
   const cryptoSpike = psych?.spikes?.find(s => s.category === 'crypto') ?? psych?.spikes?.[0] ?? null
-  const nextEvent = events?.next?.[0] ?? null
+  const upcomingEvents = events?.next ?? []
+  const recentEvents = events?.recent ?? []
+  const nextEvent = upcomingEvents[0] ?? null
   const shockAlerts = (psych?.shock ?? []).filter(s => s.shock)
   const liqRows = (psych?.shock ?? []).filter(s => s.liq_notional_usd_1h != null)
   const liqTotal1h = liqRows.length ? liqRows.reduce((a, s) => a + (s.liq_notional_usd_1h || 0), 0) : null
@@ -453,6 +456,39 @@ export function SignalsBoardPage() {
             <span style={{ fontWeight: 700, minWidth: 90 }}>{c.symbol}</span>
             <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{tr(language, { ko: '점수', en: 'score', ja: 'スコア', th: 'คะแนน', vi: 'điểm' })} {c.score}</span>
             <span style={{ color: 'var(--text-secondary)' }}>{c.reasons.join(' · ')}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Macro calendar — the tile above shows only the next release; the
+          payload already carries the full upcoming list plus what just
+          printed, which is the hot-issue context a desk actually reads. */}
+      <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px' }}>{tr(language, { ko: '거시 이벤트 일정', en: 'Macro Event Calendar', ja: 'マクロイベント日程', th: 'ปฏิทินเหตุการณ์มหภาค', vi: 'Lịch sự kiện vĩ mô' })}</h3>
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 12, padding: '4px 0', marginBottom: 24 }}>
+        {upcomingEvents.length === 0 && recentEvents.length === 0 && (
+          <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
+            {tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+          </div>
+        )}
+        {upcomingEvents.map((e: any) => {
+          const imminent = typeof e.hours_until === 'number' && e.hours_until <= 24
+          return (
+            <div key={`u-${e.title}-${e.at}`} style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--border-color)', fontSize: 13, alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 700, minWidth: 62, fontVariantNumeric: 'tabular-nums', color: imminent ? 'var(--error)' : undefined }}>
+                {e.days_until >= 1 ? `D-${Math.ceil(e.days_until)}` : `${Math.round(e.hours_until)}h`}
+              </span>
+              <span style={{ flex: 1 }}>{e.title}</span>
+              <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{String(e.at).slice(0, 10)}</span>
+            </div>
+          )
+        })}
+        {recentEvents.map((e: any) => (
+          <div key={`r-${e.title}-${e.at}`} style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--border-color)', fontSize: 13, alignItems: 'baseline', opacity: 0.6 }}>
+            <span style={{ fontWeight: 700, minWidth: 62, fontVariantNumeric: 'tabular-nums' }}>
+              {tr(language, { ko: '발표됨', en: 'printed', ja: '発表済', th: 'ประกาศแล้ว', vi: 'đã công bố' })}
+            </span>
+            <span style={{ flex: 1 }}>{e.title}</span>
+            <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{String(e.at).slice(0, 10)}</span>
           </div>
         ))}
       </div>
