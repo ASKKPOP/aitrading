@@ -2453,6 +2453,12 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_user_notifications_user
         ON user_notifications(user_id, id)
     """)
+    # Unread-badge polls hit COUNT(*) WHERE user_id = ? AND read_at IS NULL
+    # every 60s per member — resolve it from an index, not a row scan.
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_notifications_unread
+        ON user_notifications(user_id, read_at)
+    """)
 
     # One support conversation per member — member ⇄ administrator.
     cursor.execute("""

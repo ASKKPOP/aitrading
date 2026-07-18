@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from analysis_agents import run_analysis
-from database import get_db_connection
+from database import begin_write_transaction, get_db_connection, using_mysql
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,8 @@ STALE_MINUTES = 15
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    # Same format as notifications.py / alerts.py so stored timestamps stay uniform.
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _load_config(agent_id: int, config_id: int) -> Optional[dict]:
@@ -116,10 +117,16 @@ def start_job(agent_id: int, symbol: str, market: str, lang: str,
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # Single-flight guard: serialize the check-then-insert so two
+        # concurrent POSTs cannot both start a pipeline run. SQLite: BEGIN
+        # IMMEDIATE takes the write lock up front; MySQL: FOR UPDATE makes
+        # the check a locking read (gap lock blocks the racing insert).
+        begin_write_transaction(cursor)
         cursor.execute(
             """SELECT id, created_at FROM analysis_jobs
                WHERE agent_id = ? AND status = 'running'
-               ORDER BY id DESC LIMIT 1""",
+               ORDER BY id DESC LIMIT 1"""
+            + (" FOR UPDATE" if using_mysql() else ""),
             (agent_id,))
         running = cursor.fetchone()
         if running:

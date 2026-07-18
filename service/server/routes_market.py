@@ -235,7 +235,7 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         """
         def _build():
             from price_fetcher import _get_hyperliquid_available_symbols
-            majors = [p[:-4] for p in TOP_20_PAIRS]
+            majors = [p.removesuffix('USDT') for p in TOP_20_PAIRS]
             listed = _get_hyperliquid_available_symbols() or set()
             rest = sorted(s for s in listed if s not in set(majors))
             return {

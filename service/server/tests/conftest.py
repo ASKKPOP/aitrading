@@ -17,3 +17,10 @@ os.environ["RISK_ENGINE_ENABLED"] = "false"
 os.environ["PSYCH_FEED_ENABLED"] = "false"
 os.environ["QUANT_CRYPTO_ENABLED"] = "false"
 os.environ["SCANNER_ENABLED"] = "false"
+
+# Notification-delivery tests exercise alerts/notifications with external=True;
+# blank the provider credentials so no machine's .env can make a test send a
+# real SendGrid email or Twilio SMS.
+for _key in ("SENDGRID_API_KEY", "ALERT_FROM_EMAIL",
+             "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"):
+    os.environ[_key] = ""

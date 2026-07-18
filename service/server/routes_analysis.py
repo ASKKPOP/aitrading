@@ -196,7 +196,11 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         symbol = (data.symbol or "").strip()
         if not symbol:
             raise HTTPException(status_code=400, detail="symbol is required")
+        if len(symbol) > 32:  # analysis_jobs.symbol is VARCHAR(32) on MySQL
+            raise HTTPException(status_code=400, detail="symbol too long (max 32 chars)")
         market = (data.market or "us-stock").strip().lower()
+        if market not in ("crypto", "us-stock"):
+            raise HTTPException(status_code=400, detail="market must be crypto or us-stock")
         lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
 
         import analysis_jobs

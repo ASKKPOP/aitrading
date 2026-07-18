@@ -116,6 +116,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
   const stepsRef = useRef(steps)
   stepsRef.current = steps
   const failedRef = useRef(false)
+  const kickRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -145,10 +146,11 @@ export function AnalysisPipelineViz({ steps, labels }: {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) // premultiplied alpha
 
     let raf = 0
+    let scheduled = false
     const t0 = performance.now()
 
     const frame = () => {
-      raf = requestAnimationFrame(frame)
+      scheduled = false
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const W = Math.max(1, Math.round(canvas.clientWidth * dpr))
       const H = Math.max(1, Math.round(canvas.clientHeight * dpr))
@@ -218,10 +220,24 @@ export function AnalysisPipelineViz({ steps, labels }: {
       gl.enableVertexAttribArray(pLoc.glow)
       gl.vertexAttribPointer(pLoc.glow, 1, gl.FLOAT, false, 28, 24)
       gl.drawArrays(gl.POINTS, 0, pts.length / 7)
+
+      // Animate only while a step is running; otherwise this frame is the
+      // final static render and the loop parks until the next steps update.
+      if (Object.values(stepsRef.current).some(s => s.status === 'running')) {
+        scheduled = true
+        raf = requestAnimationFrame(frame)
+      }
     }
-    raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    const kick = () => {
+      if (!scheduled) { scheduled = true; raf = requestAnimationFrame(frame) }
+    }
+    kickRef.current = kick
+    kick()
+    return () => { kickRef.current = null; cancelAnimationFrame(raf) }
   }, [])
+
+  // Re-render (and resume animating) whenever the step map changes.
+  useEffect(() => { kickRef.current?.() }, [steps])
 
   const durationOf = (info?: StepInfo) => {
     if (!info?.startedAt || !info?.endedAt) return null
@@ -421,11 +437,17 @@ export function useAnalysisRun(token: string | null) {
       if (gen !== genRef.current) return
       try {
         const res = await fetch(`${API_BASE}/analysis/jobs/current`, { headers: authHeaders() })
-        if (!res.ok) { if (gen === genRef.current) setLoading(false); return }
-        const data = await res.json()
-        if (gen !== genRef.current) return
-        if (!data.job) { setLoading(false); return }
-        if (applyJob(data.job) !== 'running') return
+        if (res.status === 401 || res.status === 403) {
+          if (gen === genRef.current) setLoading(false)
+          return
+        }
+        if (res.ok) {
+          const data = await res.json()
+          if (gen !== genRef.current) return
+          if (!data.job) { setLoading(false); return }
+          if (applyJob(data.job) !== 'running') return
+        }
+        // other statuses (5xx during a deploy, etc.) — keep polling
       } catch { /* transient network error — keep polling */ }
       await new Promise(r => setTimeout(r, 2000))
     }
