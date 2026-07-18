@@ -10,7 +10,6 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -20,8 +19,6 @@ if str(SERVER_DIR) not in sys.path:
 
 import database
 from routes import create_app
-
-ADMIN = {"Authorization": "Bearer test-admin-token"}
 
 
 def _register_agent(client: TestClient, name: str) -> tuple[int, str]:
@@ -38,12 +35,17 @@ class _Base(unittest.TestCase):
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
         database.init_database()
-        self.env = patch.dict(os.environ, {"ADMIN_TOKEN": "test-admin-token"})
-        self.env.start()
         self.client = TestClient(create_app())
+        # Admin sessions: real email+password accounts (admin_auth.py).
+        from admin_auth import create_admin
+        create_admin("admin@test.com", "testpass123", "superadmin")
+        r = self.client.post("/api/admin/login",
+                             json={"email": "admin@test.com", "password": "testpass123"})
+        assert r.status_code == 200, r.text
+        global ADMIN
+        ADMIN = {"Authorization": f"Bearer {r.json()['token']}"}
 
     def tearDown(self):
-        self.env.stop()
         self.tmp.cleanup()
 
 
@@ -56,10 +58,10 @@ class AdminAuthTests(_Base):
         r = self.client.get("/api/admin/overview", headers={"Authorization": "Bearer nope"})
         self.assertEqual(r.status_code, 401)
 
-    def test_disabled_when_env_unset_503(self):
-        with patch.dict(os.environ, {"ADMIN_TOKEN": ""}):
-            r = self.client.get("/api/admin/overview", headers=ADMIN)
-        self.assertEqual(r.status_code, 503)
+    def test_bad_login_401(self):
+        r = self.client.post("/api/admin/login",
+                             json={"email": "admin@test.com", "password": "wrong-password"})
+        self.assertEqual(r.status_code, 401)
 
 
 class AdminReadTests(_Base):

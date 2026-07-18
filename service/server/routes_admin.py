@@ -10,11 +10,9 @@ Everything an operator needs in one gated surface:
   GET    /api/admin/transactions        money movements: trades + points ledger
   GET    /api/admin/automation          all automation rules + recent runs
 
-Auth: static bearer token from ADMIN_TOKEN in .env (same env-first pattern
-as every other credential). When ADMIN_TOKEN is unset the whole surface is
-disabled (503) — safe default. There is no admin UI account system; the
-token IS the admin identity, so use a long random value and rotate by
-editing .env + recreating the container.
+Auth: admin session tokens from admin_auth.py — admins log in with email +
+password (POST /api/admin/login, see routes_admin_auth.py) and every write
+action is recorded in admin_audit_log. The old shared ADMIN_TOKEN is gone.
 """
 from __future__ import annotations
 
@@ -24,6 +22,7 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, Header, HTTPException
 
+from admin_auth import audit, require_admin as _require_admin_session
 from database import get_db_connection
 from routes_shared import RouteContext, utc_now_iso_z
 
@@ -63,17 +62,8 @@ _AGENT_CONTENT_TABLES: tuple[tuple[str, str], ...] = (
 )
 
 
-def _admin_token() -> str:
-    return os.getenv("ADMIN_TOKEN", "").strip()
-
-
-def _require_admin(authorization: Optional[str]) -> None:
-    token = _admin_token()
-    if not token:
-        raise HTTPException(status_code=503, detail="Admin API disabled (ADMIN_TOKEN not set)")
-    supplied = (authorization or "").removeprefix("Bearer ").strip()
-    if not supplied or supplied != token:
-        raise HTTPException(status_code=401, detail="Invalid admin token")
+def _require_admin(authorization: Optional[str]) -> dict[str, Any]:
+    return _require_admin_session(authorization)
 
 
 def _count(cursor, sql: str, params: tuple = ()) -> int:
@@ -165,7 +155,7 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.delete('/api/admin/agents/{agent_id}')
     async def admin_delete_agent(agent_id: int, authorization: str = Header(None)):
-        _require_admin(authorization)
+        admin = _require_admin(authorization)
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
@@ -178,6 +168,7 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         logger.info("admin deleted agent %s (%s): %s", agent_id, row["name"], deleted)
+        audit(admin, "agent.delete", f"agent:{agent_id}", f"name={row['name']}")
         return {"ok": True, "deleted": deleted}
 
     @app.get('/api/admin/users')
@@ -191,6 +182,10 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
             cursor.execute(
                 """
                 SELECT u.id, u.email, u.created_at, COALESCE(u.mfa_enabled, 0) AS mfa_enabled,
+                       COALESCE(u.status, 'active') AS status,
+                       (SELECT s.plan_code FROM user_subscriptions s
+                        WHERE s.user_id = u.id AND s.status = 'active'
+                        ORDER BY s.id DESC LIMIT 1) AS plan_code,
                        a.id AS agent_id, a.name AS agent_name
                 FROM users u
                 LEFT JOIN agents a ON a.user_id = u.id
@@ -206,7 +201,7 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.delete('/api/admin/users/{user_id}')
     async def admin_delete_user(user_id: int, authorization: str = Header(None)):
-        _require_admin(authorization)
+        admin = _require_admin(authorization)
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
@@ -233,6 +228,7 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         logger.info("admin deleted user %s (%s): %s", user_id, row["email"], deleted)
+        audit(admin, "user.delete", f"user:{user_id}", f"email={row['email']}")
         return {"ok": True, "deleted": deleted}
 
     @app.get('/api/admin/transactions')

@@ -43,6 +43,8 @@ const MarketingPage = lazy(() => import('./pages/MarketingPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.SpotPage })))
 const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
+const SubscribePage = lazy(() => import('./pages/SubscribePage'))
+const ContractPage = lazy(() => import('./pages/ContractPage'))
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { BacktestPage } from './BacktestPage'
@@ -413,6 +415,8 @@ function AppRouter({
           <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
           <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+          {/* Enterprise contact is public — no account needed to ask for a contract. */}
+          <Route path="/contract" element={<ContractPage />} />
           {/* Guest browsing: the leaderboard is public by design ("view profit
               curves and top agent performance without logging in"). */}
           <Route path="/leaderboard" element={<div className="page-container" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}><LeaderboardPage token={null} /></div>} />
@@ -420,6 +424,21 @@ function AppRouter({
           <Route path="/docs" element={<Navigate to="/login" replace />} />
           <Route path="/docs/:slug" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
+  // Membership gate: a signed-in human user without an active subscription is
+  // held on the subscribe/contract pages until payment clears (login response
+  // and /users/me expose subscription_status; see routes_subscriptions.py).
+  if (userToken && userInfo && userInfo.subscription_status !== 'active') {
+    return (
+      <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
+        <Routes>
+          <Route path="/subscribe" element={<SubscribePage userToken={userToken} onSignOut={userLogout} />} />
+          <Route path="/contract" element={<ContractPage userToken={userToken} />} />
+          <Route path="*" element={<Navigate to="/subscribe" replace />} />
         </Routes>
       </Suspense>
     )
@@ -479,6 +498,10 @@ function AppRouter({
               <Route path="/trade" element={agentGate(<TradePage token={token!} agentInfo={agentInfo} onTradeSuccess={fetchAgentInfo} />)} />
               <Route path="/exchange" element={agentGate(<ExchangePage token={token!} onExchangeSuccess={fetchAgentInfo} />)} />
               <Route path="/agent/:id" element={<AgentProfilePage />} />
+
+              {/* Membership pages stay reachable for active subscribers. */}
+              <Route path="/subscribe" element={<SubscribePage userToken={userToken} onSignOut={userLogout} />} />
+              <Route path="/contract" element={<ContractPage userToken={userToken} />} />
 
               {/* Phase 5 — public-user auth (humans) */}
               <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />

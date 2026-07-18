@@ -219,6 +219,13 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not row or not verify_password(data.password, row['password_hash']):
             raise HTTPException(status_code=401, detail='Invalid credentials')
 
+        # Suspended members cannot sign in (admin console member management).
+        try:
+            if row['status'] == 'suspended':
+                raise HTTPException(status_code=403, detail='Account suspended')
+        except (KeyError, IndexError):
+            pass
+
         # Phase 5: if the user has MFA enabled, defer the session until
         # they prove the second factor. The client gets a short-lived
         # mfa_token to trade for a real session via /api/auth/mfa/verify.
@@ -235,7 +242,18 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             }
 
         token = _create_user_session(row['id'])
-        return {'token': token, 'user_id': row['id'], 'email': row['email']}
+        # Membership gate: the frontend routes users without an active
+        # subscription to /subscribe (see routes_subscriptions.py).
+        from routes_subscriptions import get_subscription_state
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            sub = get_subscription_state(cursor, row['id'])
+            conn.commit()
+        finally:
+            conn.close()
+        return {'token': token, 'user_id': row['id'], 'email': row['email'],
+                'subscription_status': sub['status']}
 
     @app.get('/api/users/me')
     async def get_user_info(authorization: str = Header(None)):
@@ -244,11 +262,22 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not user:
             raise HTTPException(status_code=401, detail='Invalid token')
 
+        from routes_subscriptions import get_subscription_state
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            sub = get_subscription_state(cursor, user['id'])
+            conn.commit()
+        finally:
+            conn.close()
         return {
             'id': user['id'],
             'email': user['email'],
             'wallet_address': user.get('wallet_address'),
             'points': user.get('points', 0),
+            'status': user.get('status', 'active'),
+            'subscription_status': sub['status'],
+            'subscription': sub['subscription'],
         }
 
     @app.get('/api/users/points')

@@ -2320,6 +2320,119 @@ def init_database():
     except Exception:
         pass
 
+    # ── Admin console: real admin identities (replaces the shared ADMIN_TOKEN) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            email         TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role          TEXT NOT NULL DEFAULT 'operator',
+            status        TEXT NOT NULL DEFAULT 'active',
+            created_at    TEXT DEFAULT (datetime('now')),
+            last_login_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_tokens (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id   INTEGER NOT NULL,
+            token      TEXT UNIQUE NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (admin_id) REFERENCES admin_users(id)
+        )
+    """)
+
+    # Every admin write action lands here — who did what, to what, when.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_audit_log (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id    INTEGER,
+            admin_email TEXT,
+            action      TEXT NOT NULL,
+            target      TEXT,
+            detail      TEXT,
+            created_at  TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_admin_audit_created
+        ON admin_audit_log(created_at)
+    """)
+
+    # ── Paid membership: plans + per-user subscriptions + enterprise contracts ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subscription_plans (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            code         TEXT UNIQUE NOT NULL,
+            name         TEXT NOT NULL,
+            price_usd    REAL NOT NULL DEFAULT 0,
+            contact_only INTEGER NOT NULL DEFAULT 0,
+            active       INTEGER NOT NULL DEFAULT 1,
+            sort_order   INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_subscriptions (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL,
+            plan_code  TEXT NOT NULL,
+            status     TEXT NOT NULL DEFAULT 'pending',
+            method     TEXT,
+            reference  TEXT,
+            amount_usd REAL,
+            started_at TEXT,
+            expires_at TEXT,
+            decided_by INTEGER,
+            decided_at TEXT,
+            note       TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user
+        ON user_subscriptions(user_id, status)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contract_requests (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER,
+            name       TEXT,
+            email      TEXT NOT NULL,
+            company    TEXT,
+            phone      TEXT,
+            message    TEXT,
+            status     TEXT NOT NULL DEFAULT 'new',
+            handled_by INTEGER,
+            handled_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    # Seed the four plans once (idempotent).
+    cursor.execute("SELECT COUNT(*) AS c FROM subscription_plans")
+    _row = cursor.fetchone()
+    if not int(_row["c"] if hasattr(_row, "keys") else _row[0]):
+        cursor.executemany(
+            "INSERT INTO subscription_plans (code, name, price_usd, contact_only, sort_order) VALUES (?, ?, ?, ?, ?)",
+            [
+                ("junior", "Junior", 60.0, 0, 1),
+                ("pro", "Pro", 250.0, 0, 2),
+                ("professional", "Professional", 500.0, 0, 3),
+                ("enterprise", "Enterprise", 0.0, 1, 4),
+            ],
+        )
+
+    # Member status for suspend/ban (admin console member management).
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'")
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

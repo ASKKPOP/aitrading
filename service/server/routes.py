@@ -13,6 +13,9 @@ from fastapi.responses import JSONResponse
 
 from config import CORS_ORIGINS
 from routes_admin import register_admin_routes
+from routes_admin_auth import register_admin_auth_routes
+from routes_admin_manage import register_admin_manage_routes
+from routes_subscriptions import register_subscription_routes
 from routes_agent import register_agent_routes
 from routes_analysis import register_analysis_routes
 from routes_automation import register_automation_routes
@@ -76,6 +79,9 @@ def create_app() -> FastAPI:
     register_automation_routes(app, ctx)
     register_risk_routes(app, ctx)
     register_admin_routes(app, ctx)
+    register_admin_auth_routes(app, ctx)
+    register_admin_manage_routes(app, ctx)
+    register_subscription_routes(app, ctx)
     register_trading_routes(app, ctx)
     register_experiment_routes(app, ctx)
     register_research_routes(app, ctx)
