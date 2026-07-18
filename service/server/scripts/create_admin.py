@@ -16,7 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from database import get_db_connection, init_database  # noqa: E402
+from database import get_db_connection, init_database, using_mysql  # noqa: E402
 from utils import hash_password  # noqa: E402
 
 
@@ -34,7 +34,10 @@ def main() -> None:
         print("Password must be at least 8 characters")
         sys.exit(1)
 
-    init_database()
+    # SQLite self-migrates via init_database(); MySQL schema comes from
+    # alembic (main.py has the same guard — SQLite DDL breaks on MySQL).
+    if not using_mysql():
+        init_database()
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
