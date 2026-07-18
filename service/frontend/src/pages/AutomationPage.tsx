@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import { AnalysisMonitorPanel, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import ConfigProfiles from '../components/ConfigProfiles'
 import { tr } from '../i18n'
 
@@ -59,6 +60,10 @@ export function AutomationPage() {
     { days: [], start_hour: 9, end_hour: 22, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  // Per-rule test run: streams the same analysis pipeline a scheduled run uses
+  // (analysis only — the worker's execution gates are NOT part of a test run).
+  const [testRuleId, setTestRuleId] = useState<number | null>(null)
+  const testRun = useAnalysisStream(token)
 
   const T = {
     title: tr(language, { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }),
@@ -117,6 +122,15 @@ export function AutomationPage() {
     scheduleHint: tr(language, { ko: '지정한 요일·시간대에만 규칙이 실행됩니다. 비워두면 항상 실행됩니다.', en: 'The rule only runs on the chosen days & hours. Leave off to run always.', ja: '指定した曜日・時間帯のみ実行。オフなら常時実行。', th: 'กฎทำงานเฉพาะวัน/เวลาที่เลือก ปิดไว้ = ทำงานตลอด', vi: 'Quy tắc chỉ chạy vào ngày/giờ đã chọn. Tắt = luôn chạy.' }),
     scheduleFrom: tr(language, { ko: '시작', en: 'From', ja: '開始', th: 'จาก', vi: 'Từ' }),
     scheduleTo: tr(language, { ko: '종료', en: 'To', ja: '終了', th: 'ถึง', vi: 'Đến' }),
+    testRun: tr(language, { ko: '지금 테스트 실행', en: 'Test run now', ja: '今すぐテスト実行', th: 'ทดสอบตอนนี้', vi: 'Chạy thử ngay' }),
+    testRunning: tr(language, { ko: '실행 중…', en: 'Running…', ja: '実行中…', th: 'กำลังทำงาน…', vi: 'Đang chạy…' }),
+    testRunNote: tr(language, { ko: '테스트 실행은 이 규칙의 파이프라인을 즉시 실행해 보여줍니다 — 분석만 하며 주문은 실행하지 않습니다.', en: 'A test run executes this rule\'s pipeline right now — analysis only, no order is placed.', ja: 'テスト実行はこのルールのパイプラインを即時実行します — 分析のみで注文は出しません。', th: 'การทดสอบรันไปป์ไลน์ของกฎทันที — วิเคราะห์เท่านั้น ไม่ส่งคำสั่งซื้อขาย', vi: 'Chạy thử thực thi pipeline của quy tắc ngay — chỉ phân tích, không đặt lệnh.' }),
+    testDecision: tr(language, { ko: '결정', en: 'Decision', ja: '判断', th: 'การตัดสินใจ', vi: 'Quyết định' }),
+    testConfidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy' }),
+    wouldExecute: tr(language, { ko: '체결됐을 것', en: 'would execute', ja: '執行される見込み', th: 'จะดำเนินการ', vi: 'sẽ thực hiện' }),
+    wouldSkip: tr(language, { ko: '체결 안 됨', en: 'would skip', ja: '見送りになる', th: 'จะข้าม', vi: 'sẽ bỏ qua' }),
+    gateVerdict: tr(language, { ko: '실행 게이트 판정', en: 'Execution-gate verdict', ja: '執行ゲート判定', th: 'ผลตัดสินประตูดำเนินการ', vi: 'Phán quyết cổng thực thi' }),
+    qty: tr(language, { ko: '수량', en: 'qty', ja: '数量', th: 'จำนวน', vi: 'KL' }),
   }
 
   const DOW = [
@@ -416,19 +430,64 @@ export function AutomationPage() {
         <div className="card" style={{ color: 'var(--text-secondary,#8a8073)' }}>{T.empty}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {rules.map((r) => (
-            <div key={r.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <b style={{ fontSize: 15 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
-                {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {r.account_type}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
-                {r.auto_execute ? 'auto' : 'analysis only'}
-              </span>
-              {r.last_run_at && <span style={{ fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>last: {String(r.last_run_at).replace('T', ' ').slice(0, 16)}</span>}
-              <button onClick={() => remove(r.id)} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.remove}</button>
-            </div>
-          ))}
+          {rules.map((r) => {
+            const testable = r.mode !== 'agent' && r.symbol !== 'SCANNER' && r.symbol !== 'AGENT'
+            const testing = testRuleId === r.id
+            return (
+              <div key={r.id}>
+                <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                  <b style={{ fontSize: 15 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
+                    {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {r.account_type}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
+                    {r.auto_execute ? 'auto' : 'analysis only'}
+                  </span>
+                  {r.last_run_at && <span style={{ fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>last: {String(r.last_run_at).replace('T', ' ').slice(0, 16)}</span>}
+                  {testable && (
+                    <button onClick={() => { setTestRuleId(r.id ?? null); testRun.run(r.symbol, r.market, language, r.provider, r.id) }}
+                      disabled={testRun.loading}
+                      style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: testRun.loading ? 'default' : 'pointer', fontSize: 12, opacity: testRun.loading ? 0.6 : 1 }}>
+                      {testRun.loading && testing ? T.testRunning : `▶ ${T.testRun}`}
+                    </button>
+                  )}
+                  <button onClick={() => remove(r.id)} style={{ marginLeft: testable ? 0 : 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.remove}</button>
+                </div>
+                {testing && (testRun.log.length > 0 || testRun.error) && (
+                  <div className="card" style={{ marginTop: 8 }}>
+                    <AnalysisMonitorPanel language={language} steps={testRun.steps} log={testRun.log} />
+                    {testRun.error && <div style={{ color: '#f0663f', marginTop: 10, fontSize: 13 }}>⚠️ {testRun.error}</div>}
+                    {testRun.result && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                        <b style={{ textTransform: 'uppercase', fontSize: 15, color: testRun.result.decision?.action === 'buy' ? '#3fb950' : testRun.result.decision?.action === 'sell' ? '#f0663f' : '#e3a008' }}>
+                          {testRun.result.decision?.action}
+                        </b>
+                        <span style={{ fontSize: 13 }}>{T.testConfidence}: <b>{Math.round((testRun.result.decision?.confidence ?? 0) * 100)}%</b></span>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>{testRun.result.llm_provider || T.serverDefault}</span>
+                      </div>
+                    )}
+                    {testRun.gates && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)' }}>{T.gateVerdict}:</span>
+                        {testRun.gates.would_execute ? (
+                          <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'rgba(63,185,80,0.16)', color: '#3fb950' }}>
+                            ✓ {T.wouldExecute} — {T.qty} {Number(testRun.gates.quantity).toFixed(6)}
+                            {testRun.gates.stop_loss != null && ` · SL $${Number(testRun.gates.stop_loss).toFixed(2)}`}
+                            {testRun.gates.take_profit != null && ` · TP $${Number(testRun.gates.take_profit).toFixed(2)}`}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'rgba(138,128,115,0.18)', color: '#8a8073' }}>
+                            ⊘ {T.wouldSkip} — {skipLabel(testRun.gates.skip_reason)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 10 }}>ⓘ {T.testRunNote}</div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

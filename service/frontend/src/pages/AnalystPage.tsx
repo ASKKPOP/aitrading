@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { API_BASE, useLanguage } from '../appShared'
+import { useLanguage } from '../appShared'
+import { AnalysisMonitorPanel, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import { tr } from '../i18n'
 
 // AI Analyst — runs the multi-agent analysis engine (Target 2):
 // News + Sentiment + Fundamentals/Macro + Technical -> Trader/Risk -> decision + report.
+// The run streams per-step progress (SSE) into a live WebGL2 pipeline monitor.
 export function AnalystPage() {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
   const { language } = useLanguage()
   const [symbol, setSymbol] = useState('BTC')
   const [market, setMarket] = useState('crypto')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState('')
+  const { loading, result, error, steps, log, run: runStream } = useAnalysisStream(token)
 
   const T = {
     title: tr(language, { ko: 'AI 애널리스트', en: 'AI Analyst', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' }),
@@ -36,21 +36,7 @@ export function AnalystPage() {
     technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
   }
 
-  async function run() {
-    if (!token) return
-    setLoading(true); setError(''); setResult(null)
-    try {
-      const res = await fetch(`${API_BASE}/analysis/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ symbol, market, lang: language }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Analysis failed')
-      setResult(data)
-    } catch (e: any) { setError(e.message || 'Analysis failed') }
-    setLoading(false)
-  }
+  function run() { runStream(symbol, market, language) }
 
   const decisionColor = (a?: string) => a === 'buy' ? '#3fb950' : a === 'sell' ? '#f0663f' : '#e3a008'
 
@@ -91,6 +77,12 @@ export function AnalystPage() {
           {loading ? T.running : T.run}
         </button>
       </div>
+
+      {log.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <AnalysisMonitorPanel language={language} steps={steps} log={log} />
+        </div>
+      )}
 
       {error && <div className="card" style={{ borderColor: '#f0663f', color: '#f0663f', marginBottom: 18 }}>⚠️ {error}</div>}
 
