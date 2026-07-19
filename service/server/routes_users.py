@@ -15,6 +15,7 @@ from routes_models import (
     UserApiSettingRequest,
     UserLoginRequest,
     UserRegisterRequest,
+    UserResetPasswordRequest,
     UserSendCodeRequest,
 )
 from routes_shared import RouteContext
@@ -207,6 +208,80 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         _delete_code(data.email, ctx)
 
         return {'success': True, 'token': token, 'user_id': user_id}
+
+    @app.post('/api/users/forgot-password')
+    async def forgot_password(data: UserSendCodeRequest):
+        # Same code store as registration, under a 'reset:' namespace so a
+        # signup code can never reset a password (and vice versa).
+        store_key = f'reset:{data.email}'
+        now = datetime.now(timezone.utc)
+        existing = _load_code(store_key, ctx)
+        if existing:
+            last_sent_at = existing.get('last_sent_at')
+            if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                raise HTTPException(status_code=429, detail='Please wait before requesting another code')
+
+        code = f'{secrets.randbelow(1_000_000):06d}'
+        # Store the entry even when no account matches so the cooldown 429
+        # cannot be used to probe which emails are registered.
+        _store_code(store_key, {
+            'code': code,
+            'expires_at': now + timedelta(minutes=5),
+            'attempts': 0,
+            'last_sent_at': now,
+        }, ctx)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (data.email,))
+        account_exists = cursor.fetchone() is not None
+        conn.close()
+
+        if account_exists:
+            if not send_verification_code_email(data.email, code):
+                # Fallback: log code when Resend is not configured (local dev).
+                _logger.info('[Email] Password-reset code for %s: %s', data.email, code)
+        return {'success': True, 'message': 'If an account exists, a code was sent'}
+
+    @app.post('/api/users/reset-password')
+    async def reset_password(data: UserResetPasswordRequest):
+        store_key = f'reset:{data.email}'
+        stored = _load_code(store_key, ctx)
+        if stored is None:
+            raise HTTPException(status_code=400, detail='No code sent')
+
+        if stored['expires_at'] < datetime.now(timezone.utc):
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=400, detail='Code expired')
+
+        stored['attempts'] = stored.get('attempts', 0) + 1
+        _store_code(store_key, stored, ctx)  # persist the attempt count
+        if stored['attempts'] > MAX_CODE_ATTEMPTS:
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=429, detail='Too many attempts. Request a new code.')
+
+        if not hmac.compare_digest(str(stored['code']), str(data.code or '')):
+            raise HTTPException(status_code=400, detail='Invalid code')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (data.email,))
+        row = cursor.fetchone()
+        if row is None:
+            conn.close()
+            _delete_code(store_key, ctx)
+            # Generic detail: don't reveal whether the email is registered.
+            raise HTTPException(status_code=400, detail='Invalid code')
+
+        cursor.execute('UPDATE users SET password_hash = ? WHERE id = ?',
+                       (hash_password(data.new_password), row['id']))
+        # Sign out existing sessions — a reset implies the old credential
+        # may be compromised.
+        cursor.execute('DELETE FROM user_tokens WHERE user_id = ?', (row['id'],))
+        conn.commit()
+        conn.close()
+        _delete_code(store_key, ctx)
+        return {'success': True, 'message': 'Password updated'}
 
     @app.post('/api/users/login')
     async def user_login(data: UserLoginRequest):

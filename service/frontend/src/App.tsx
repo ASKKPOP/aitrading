@@ -58,6 +58,7 @@ import { TeamMissionsPage } from './TeamMissionsPage'
 import { Language, getT, DEFAULT_LANGUAGE, LANGUAGES } from './i18n'
 import { THEMES, DEFAULT_THEME } from './appShared'
 import {
+  ForgotPasswordPage,
   GoogleCallbackPage,
   MfaSetupPage,
   SignInPage,
@@ -447,6 +448,7 @@ function AppRouter({
           <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
           <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
           <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
           {/* Enterprise contact is public — no account needed to ask for a contract. */}
           <Route path="/contract" element={<ContractPage />} />
@@ -546,6 +548,7 @@ function AppRouter({
               {/* Phase 5 — public-user auth (humans) */}
               <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
               <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/auth/mfa/setup" element={<MfaSetupPage userToken={userToken} />} />
               <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
               <Route

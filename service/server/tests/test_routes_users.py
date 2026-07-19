@@ -178,5 +178,140 @@ class UserRouteTests(unittest.TestCase):
         self.assertIn("points", resp.json())
 
 
+class PasswordResetTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    _NEW_PASSWORD = "brand-new-pass"
+
+    def _forgot(self, email: str = _EMAIL) -> None:
+        with patch("secrets.randbelow", return_value=_FIXED_CODE):
+            resp = self.client.post("/api/users/forgot-password", json={"email": email})
+        assert resp.status_code == 200, resp.text
+
+    # --- /api/users/forgot-password ---
+
+    def test_forgot_password_unknown_email_still_succeeds(self) -> None:
+        resp = self.client.post(
+            "/api/users/forgot-password", json={"email": "nobody@example.com"}
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json().get("success"))
+
+    def test_forgot_password_cooldown_same_for_unknown_email(self) -> None:
+        # The cooldown 429 must not reveal whether the email is registered.
+        self.client.post("/api/users/forgot-password", json={"email": "nobody@example.com"})
+        resp = self.client.post("/api/users/forgot-password", json={"email": "nobody@example.com"})
+        self.assertEqual(resp.status_code, 429)
+
+    def test_forgot_password_cooldown_enforced(self) -> None:
+        _register_user(self.client)
+        self.client.post("/api/users/forgot-password", json={"email": _EMAIL})
+        resp = self.client.post("/api/users/forgot-password", json={"email": _EMAIL})
+        self.assertEqual(resp.status_code, 429)
+
+    # --- /api/users/reset-password ---
+
+    def test_reset_password_success_and_login(self) -> None:
+        _register_user(self.client)
+        self._forgot()
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+        # Old password no longer works; new one does.
+        old = self.client.post("/api/users/login", json={"email": _EMAIL, "password": _PASSWORD})
+        self.assertEqual(old.status_code, 401)
+        new = self.client.post(
+            "/api/users/login", json={"email": _EMAIL, "password": self._NEW_PASSWORD}
+        )
+        self.assertEqual(new.status_code, 200, new.text)
+
+    def test_reset_password_invalidates_existing_sessions(self) -> None:
+        user = _register_user(self.client)
+        self._forgot()
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 200)
+        me = self.client.get(
+            "/api/users/me", headers={"Authorization": f"Bearer {user['token']}"}
+        )
+        self.assertEqual(me.status_code, 401)
+
+    def test_reset_password_wrong_code_rejected(self) -> None:
+        _register_user(self.client)
+        self._forgot()
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": "000000", "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_without_code_rejected(self) -> None:
+        _register_user(self.client)
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_short_password_rejected(self) -> None:
+        _register_user(self.client)
+        self._forgot()
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": "short"},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_signup_code_cannot_reset_password(self) -> None:
+        # A registration code lives in a different namespace than reset codes.
+        _register_user(self.client)
+        _send_code(self.client)  # registration-namespace code
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_unknown_email_rejected_generically(self) -> None:
+        # No account: the code was stored but never delivered; even with the
+        # right code the reset must fail with the generic 'Invalid code'.
+        self._forgot("nobody@example.com")
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": "nobody@example.com", "code": _FIXED_CODE_STR,
+                  "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["detail"], "Invalid code")
+
+    def test_reset_password_attempts_capped(self) -> None:
+        _register_user(self.client)
+        self._forgot()
+        for _ in range(5):  # MAX_CODE_ATTEMPTS wrong tries
+            resp = self.client.post(
+                "/api/users/reset-password",
+                json={"email": _EMAIL, "code": "000000", "new_password": self._NEW_PASSWORD},
+            )
+            self.assertEqual(resp.status_code, 400)
+        resp = self.client.post(
+            "/api/users/reset-password",
+            json={"email": _EMAIL, "code": _FIXED_CODE_STR, "new_password": self._NEW_PASSWORD},
+        )
+        self.assertEqual(resp.status_code, 429)
+
+
 if __name__ == "__main__":
     unittest.main()
