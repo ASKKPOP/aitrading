@@ -89,6 +89,23 @@
       "port": 8022
     },
     {
+      "name": "frontend-3012",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3012",
+        "--strictPort"
+      ],
+      "cwd": "service/frontend",
+      "port": 3012,
+      "env": {
+        "VITE_PROXY_TARGET": "http://127.0.0.1:8011"
+      }
+    },
+    {
       "name": "frontend-viz",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
