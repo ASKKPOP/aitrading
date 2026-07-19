@@ -25,10 +25,12 @@ logger = logging.getLogger(__name__)
 PLAN_LIMITS: dict[Optional[str], dict[str, Any]] = {
     None: {"max_concurrent_runs": 0, "max_bet_usd": 0.0,
            "sms_allowed": False, "daily_llm_ticks": 0},
+    # SMS enabled on ALL paid tiers (Henry, 2026-07-19); unlinked/no-plan
+    # stays SMS-off. Run/bet caps below remain placeholders pending numbers.
     "junior": {"max_concurrent_runs": 1, "max_bet_usd": 100.0,
-               "sms_allowed": False, "daily_llm_ticks": 100},
+               "sms_allowed": True, "daily_llm_ticks": 100},
     "pro": {"max_concurrent_runs": 3, "max_bet_usd": 1_000.0,
-            "sms_allowed": False, "daily_llm_ticks": 300},
+            "sms_allowed": True, "daily_llm_ticks": 300},
     "professional": {"max_concurrent_runs": 10, "max_bet_usd": 10_000.0,
                      "sms_allowed": True, "daily_llm_ticks": 1_000},
     "enterprise": {"max_concurrent_runs": 25, "max_bet_usd": 100_000.0,
