@@ -286,7 +286,124 @@ def create_run(agent_id: int, settings: dict, start_condition: dict,
 
 
 class StartConflict(Exception):
-    """Raised when exclusivity or a conflicting writer blocks a start."""
+    """Raised when exclusivity or a conflicting writer blocks a start.
+    `conflicts` (when present) is the list_start_conflicts() dict so the API
+    can tell the client exactly what is resolvable."""
+
+    def __init__(self, message: str, conflicts: Optional[dict] = None):
+        super().__init__(message)
+        self.conflicts = conflicts or {}
+
+
+def list_start_conflicts(cursor, agent_id: int, market: str, symbol: str) -> dict:
+    """User-resolvable conflicts blocking a run start on agent+market+symbol:
+    the shared open position (if any) and enabled auto-executing automation
+    rules. Shape: {"position": {...}|None, "rule_ids": [int, ...]}."""
+    cursor.execute(
+        """SELECT id, side, quantity, entry_price, current_price FROM positions
+           WHERE agent_id = ? AND market = ? AND symbol = ? AND quantity != 0""",
+        (agent_id, market, symbol),
+    )
+    row = cursor.fetchone()
+    position = None
+    if row:
+        row = dict(row)
+        position = {
+            "id": row["id"], "side": row["side"],
+            "quantity": float(row["quantity"]),
+            "entry_price": float(row["entry_price"] or 0),
+            "current_price": (float(row["current_price"])
+                              if row["current_price"] is not None else None),
+        }
+    cursor.execute(
+        """SELECT id FROM automation_configs
+           WHERE agent_id = ? AND market = ? AND symbol = ?
+             AND enabled = 1 AND auto_execute = 1""",
+        (agent_id, market, symbol),
+    )
+    rule_ids = [r["id"] for r in cursor.fetchall()]
+    return {"position": position, "rule_ids": rule_ids}
+
+
+def resolve_start_conflicts(run_id: int, agent_id: int) -> dict:
+    """One-click, explicitly-consented resolution of a draft run's start
+    conflicts: disable enabled auto-executing automation rules on the tuple
+    FIRST (so nothing re-opens the book), then close the shared open position
+    at the current mark via the canonical simulator exit path. The position is
+    closed into the shared ledger (no run attribution — it predates the run).
+    Returns {"closed_position": bool, "disabled_rule_ids": [...]}."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        run = cursor.fetchone()
+        if not run:
+            raise LookupError("run not found")
+        run = dict(run)
+        if run["status"] != STATUS_DRAFT:
+            raise ValueError(f"only a draft run can start (status={run['status']})")
+        market, symbol = run["market"], run["symbol"]
+        conflicts = list_start_conflicts(cursor, agent_id, market, symbol)
+    finally:
+        conn.close()
+
+    disabled: list[int] = []
+    if conflicts["rule_ids"]:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            placeholders = ",".join("?" * len(conflicts["rule_ids"]))
+            cursor.execute(
+                f"""UPDATE automation_configs SET enabled = 0
+                    WHERE id IN ({placeholders}) AND agent_id = ?""",
+                (*conflicts["rule_ids"], agent_id),
+            )
+            conn.commit()
+            disabled = list(conflicts["rule_ids"])
+        finally:
+            conn.close()
+
+    closed = False
+    pos = conflicts["position"]
+    if pos:
+        price = pos["current_price"]
+        if price is None:
+            try:
+                from price_fetcher import get_price_from_market
+                price = get_price_from_market(symbol, None, market)
+            except Exception:  # noqa: BLE001
+                price = None
+        if price is None:
+            raise StartConflict(
+                "cannot close the open position — no current price for "
+                f"{symbol} ({market})", conflicts)
+        from automation import execute_paper_trade
+        qty = pos["quantity"]
+        side = "cover" if qty < 0 else "sell"
+        signal_id, skip = execute_paper_trade(
+            agent_id, symbol, market, side, abs(qty), float(price),
+            content=f"position closed to start trading run #{run_id}")
+        if signal_id:
+            closed = True
+        elif skip in ("no long position to sell", "no short position to cover"):
+            closed = True  # already flat (concurrent close) — that's the goal
+        else:
+            raise StartConflict(
+                f"could not close the open position: {skip}", conflicts)
+
+    if disabled or closed:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            _emit_event(cursor, run_id, "conflicts_resolved",
+                        {"closed_position": closed, "disabled_rule_ids": disabled})
+            conn.commit()
+        finally:
+            conn.close()
+    return {"closed_position": closed, "disabled_rule_ids": disabled}
 
 
 class EntitlementDenied(Exception):
@@ -328,26 +445,16 @@ def start_run(run_id: int, agent_id: int) -> dict:
             raise EntitlementDenied(deny)
 
         market, symbol = run["market"], run["symbol"]
-        cursor.execute(
-            """SELECT id FROM positions
-               WHERE agent_id = ? AND market = ? AND symbol = ? AND quantity != 0""",
-            (agent_id, market, symbol),
-        )
-        if cursor.fetchone():
+        conflicts = list_start_conflicts(cursor, agent_id, market, symbol)
+        if conflicts["position"]:
             raise StartConflict(
                 "an open position already exists for this symbol — close it first "
-                "(runs never adopt shared positions; attribution would be wrong)")
-        cursor.execute(
-            """SELECT id FROM automation_configs
-               WHERE agent_id = ? AND market = ? AND symbol = ?
-                 AND enabled = 1 AND auto_execute = 1""",
-            (agent_id, market, symbol),
-        )
-        conflict = cursor.fetchone()
-        if conflict:
+                "(runs never adopt shared positions; attribution would be wrong)",
+                conflicts)
+        if conflicts["rule_ids"]:
             raise StartConflict(
-                f"auto-executing automation rule #{conflict['id']} targets the same "
-                "symbol — disable it first")
+                f"auto-executing automation rule #{conflicts['rule_ids'][0]} targets "
+                "the same symbol — disable it first", conflicts)
 
         start_condition = json.loads(run["start_condition_json"] or '{"type":"manual"}')
         target = STATUS_RUNNING if start_condition.get("type") == "manual" else STATUS_ARMED

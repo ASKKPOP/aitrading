@@ -176,6 +176,30 @@ def _deny_auto_execute_without_plan(agent_id: int) -> None:
         raise HTTPException(status_code=403, detail=deny)
 
 
+def _deny_rule_conflicting_active_run(agent_id: int, market: str, symbol: str) -> None:
+    """Mirror of trading_runs.start_run guard #3: a run start is blocked by an
+    enabled auto-executing rule on its tuple, so enabling such a rule while a
+    run is ACTIVE on the tuple must be blocked too — otherwise the rule trades
+    into the run's book mid-flight and run P&L attribution becomes fiction."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id FROM trading_runs
+               WHERE agent_id = ? AND market = ? AND symbol = ?
+                 AND active_key IS NOT NULL""",
+            (agent_id, market, symbol),
+        )
+        row = cursor.fetchone()
+    finally:
+        conn.close()
+    if row:
+        raise HTTPException(
+            status_code=409,
+            detail=f"trading run #{row['id']} is active on {symbol} ({market}) — "
+                   "stop it before enabling an auto-executing rule on this symbol")
+
+
 def _apply_risk_level(agent_id: int, risk_level: Optional[str]):
     """B2: propagate a chosen risk level into the agent's risk_limits exit
     profile. Returns the applied limits (or None when no level was chosen).
@@ -221,6 +245,8 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             account_type = "simulator"
         if auto_execute:
             _deny_auto_execute_without_plan(agent["id"])
+            if data.enabled:
+                _deny_rule_conflicting_active_run(agent["id"], data.market, data.symbol)
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
@@ -249,6 +275,8 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
         agent = _auth(authorization)
         if data.auto_execute or data.mode == "agent":
             _deny_auto_execute_without_plan(agent["id"])
+        if (data.auto_execute or data.mode == "agent") and data.enabled:
+            _deny_rule_conflicting_active_run(agent["id"], data.market, data.symbol)
         conn = get_db_connection()
         try:
             cursor = conn.cursor()

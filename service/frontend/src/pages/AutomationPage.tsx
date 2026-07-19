@@ -115,8 +115,13 @@ export function AutomationPage() {
       if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'could not create run')
       const start = await fetch(`${API_BASE}/runs/${data.id}/start`, { method: 'POST', headers: authHeaders })
       if (!start.ok) {
+        // A structured 409 carries {message, conflicts} — surface the honest
+        // reason; the draft stays in the runs grid below, where its Start
+        // button offers one-click conflict resolution.
         const detail = (await start.json().catch(() => null))?.detail
-        throw new Error(typeof detail === 'string' ? detail : 'could not start run')
+        setRunsReload(n => n + 1)
+        const msg = typeof detail === 'string' ? detail : detail?.message
+        throw new Error(msg || 'could not start run')
       }
       setRunsReload(n => n + 1)
       runsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })

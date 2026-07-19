@@ -51,6 +51,12 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
   const [selected, setSelected] = useState<number | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [err, setErr] = useState('')
+  // Structured start conflict (409 with resolvable position/rules) — rendered
+  // as a modal offering one-click "close position + disable rules, then start".
+  const [conflict, setConflict] = useState<{
+    runId: number; message: string
+    conflicts: { position: any; rule_ids: number[] }
+  } | null>(null)
 
   const auth = useMemo(() => ({ 'Content-Type': 'application/json',
     Authorization: `Bearer ${token}` }), [token])
@@ -115,7 +121,16 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
         method: 'POST', headers: auth,
         body: body ? JSON.stringify(body) : undefined,
       })
-      if (!r.ok) setErr((await r.json()).detail || `${action} failed`)
+      if (!r.ok) {
+        const detail = (await r.json()).detail
+        if (r.status === 409 && detail && typeof detail === 'object' && detail.conflicts
+            && (detail.conflicts.position || detail.conflicts.rule_ids?.length)) {
+          setConflict({ runId: id, message: detail.message, conflicts: detail.conflicts })
+        } else {
+          const msg = typeof detail === 'object' ? detail?.message : detail
+          setErr(msg || `${action} failed`)
+        }
+      }
       await load()
     } catch { setErr('network error') }
   }
@@ -179,7 +194,12 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
 
       {showCreate && (
         <CreateRunForm token={token}
-          onDone={(startError) => { setShowCreate(false); if (startError) setErr(startError); load() }}
+          onDone={(startError, conflictInfo) => {
+            setShowCreate(false)
+            if (conflictInfo) setConflict(conflictInfo)
+            else if (startError) setErr(startError)
+            load()
+          }}
           onCancel={() => setShowCreate(false)} language={language} />
       )}
 
@@ -229,6 +249,62 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
           tick={tickByRun[selected]}
           onClose={() => setSelected(null)}
           onAct={act} onDelete={del} language={language} />
+      )}
+
+      {conflict && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div style={{ width: 'min(440px, calc(100% - 32px))', background: 'var(--bg-card,#fff)',
+            border: '1px solid var(--border-color,rgba(0,0,0,0.15))', borderRadius: 12,
+            padding: 20 }}>
+            <strong style={{ fontSize: 15 }}>
+              {tr(language, { ko: '시작 차단 — 해결 가능한 충돌', en: 'Start blocked — resolvable conflicts',
+                ja: '開始ブロック — 解決可能な競合', th: 'เริ่มไม่ได้ — ความขัดแย้งที่แก้ได้',
+                vi: 'Bị chặn — xung đột có thể xử lý' })}
+            </strong>
+            <ul style={{ margin: '12px 0', paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+              {conflict.conflicts.position && (
+                <li>{tr(language, {
+                  ko: `이 심볼에 열린 포지션이 있습니다 (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
+                  en: `An open position exists on this symbol (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
+                  ja: `このシンボルに未決済ポジションがあります (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
+                  th: `มีสถานะเปิดอยู่ (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
+                  vi: `Đang có vị thế mở (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})` })}</li>
+              )}
+              {conflict.conflicts.rule_ids?.length > 0 && (
+                <li>{tr(language, {
+                  ko: `자동실행 automation 규칙 ${conflict.conflicts.rule_ids.length}개가 같은 심볼에 켜져 있습니다`,
+                  en: `${conflict.conflicts.rule_ids.length} auto-executing automation rule(s) enabled on this symbol`,
+                  ja: `同一シンボルで自動実行ルールが${conflict.conflicts.rule_ids.length}件有効です`,
+                  th: `กฎอัตโนมัติ ${conflict.conflicts.rule_ids.length} ข้อเปิดอยู่บนสัญลักษณ์นี้`,
+                  vi: `${conflict.conflicts.rule_ids.length} quy tắc tự động đang bật trên mã này` })}</li>
+              )}
+            </ul>
+            <p className="muted" style={{ fontSize: 12, margin: '0 0 14px' }}>
+              {tr(language, {
+                ko: '런의 손익 귀속을 정확히 유지하려면 런은 항상 빈 포지션에서 시작해야 합니다. 아래 버튼 하나로 포지션을 현재가에 청산하고 규칙을 끈 뒤 바로 시작합니다.',
+                en: 'Runs must start flat so run P&L attribution stays honest. One click closes the position at the current mark, disables the rules, and starts the run.',
+                ja: 'ランの損益帰属を正確に保つため、ランはフラットな状態から開始する必要があります。ワンクリックで現在値でクローズし、ルールを無効化して開始します。',
+                th: 'รันต้องเริ่มจากสถานะว่างเพื่อให้ P&L ถูกต้อง คลิกเดียวเพื่อปิดสถานะ ปิดกฎ แล้วเริ่มรัน',
+                vi: 'Phiên phải bắt đầu không vị thế để P&L chính xác. Một cú nhấp sẽ đóng vị thế theo giá hiện tại, tắt quy tắc và bắt đầu.' })}
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setConflict(null)}>
+                {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                const id = conflict.runId
+                setConflict(null)
+                act(id, 'start', { resolve_conflicts: true })
+              }}>
+                {tr(language, {
+                  ko: '청산·규칙 해제 후 시작', en: 'Close & disable, then start',
+                  ja: 'クローズ＆無効化して開始', th: 'ปิดสถานะและกฎ แล้วเริ่ม',
+                  vi: 'Đóng & tắt, rồi bắt đầu' })}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -370,7 +446,12 @@ function summarize(e: any): string {
 }
 
 function CreateRunForm({ token, onDone, onCancel, language }: {
-  token: string; onDone: (startError?: string) => void; onCancel: () => void; language: Language
+  token: string
+  onDone: (startError?: string, conflictInfo?: {
+    runId: number; message: string
+    conflicts: { position: any; rule_ids: number[] }
+  }) => void
+  onCancel: () => void; language: Language
 }) {
   const [f, setF] = useState({
     symbol: 'BTC', market: 'crypto', market_type: 'spot',
@@ -399,7 +480,10 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
         }),
       })
       const d = await r.json()
-      if (!r.ok) { setErr(d.detail || 'create failed'); setBusy(false); return }
+      if (!r.ok) {
+        const msg = typeof d.detail === 'object' ? d.detail?.message : d.detail
+        setErr(msg || 'create failed'); setBusy(false); return
+      }
       const runId = d.id
       if (f.report_frequency !== 'off' || f.notify_on_trade) {
         await fetch(`${API_BASE}/runs/${runId}/reporting`, {
@@ -408,18 +492,27 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
             notify_on_trade: f.notify_on_trade }),
         })
       }
-      // One step: start immediately. A refused start (e.g. an open position or
-      // a conflicting auto-execute rule on the symbol) leaves the draft in the
-      // grid with its own Start button; the reason surfaces at section level.
+      // One step: start immediately. A structured 409 (open position and/or a
+      // conflicting auto-execute rule) bubbles up so the section can offer
+      // one-click resolution; any other refusal leaves the draft in the grid
+      // with the reason surfaced at section level.
       let startError: string | undefined
+      let conflictInfo
       try {
         const s = await fetch(`${API_BASE}/runs/${runId}/start`, { method: 'POST', headers: auth })
         if (!s.ok) {
           const detail = (await s.json().catch(() => null))?.detail
-          startError = typeof detail === 'string' ? detail : 'start failed'
+          if (s.status === 409 && detail && typeof detail === 'object' && detail.conflicts
+              && (detail.conflicts.position || detail.conflicts.rule_ids?.length)) {
+            conflictInfo = { runId, message: detail.message, conflicts: detail.conflicts }
+          } else if (typeof detail === 'string') {
+            startError = detail
+          } else {
+            startError = detail?.message || 'start failed'
+          }
         }
       } catch { startError = 'network error' }
-      onDone(startError)
+      onDone(startError, conflictInfo)
     } catch { setErr('network error'); setBusy(false) }
   }
 

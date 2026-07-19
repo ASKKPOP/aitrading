@@ -135,6 +135,10 @@ class RunIn(BaseModel):
         return 1.0
 
 
+class StartIn(BaseModel):
+    resolve_conflicts: bool = False
+
+
 class StopIn(BaseModel):
     flatten: bool = True
 
@@ -261,20 +265,31 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {"run": _public(_run_or_404(run_id, agent["id"]))}
 
     @app.post("/api/runs/{run_id}/start")
-    async def start_run(run_id: int, authorization: str = Header(None)):
+    async def start_run(run_id: int, data: StartIn = None,  # type: ignore[assignment]
+                        authorization: str = Header(None)):
         agent = _auth(authorization)
         _run_or_404(run_id, agent["id"])
+        resolved = None
         try:
+            if data is not None and data.resolve_conflicts:
+                resolved = trading_runs.resolve_start_conflicts(run_id, agent["id"])
             run = trading_runs.start_run(run_id, agent["id"])
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except trading_runs.StartConflict as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
+            # detail is structured so the client can offer one-click resolution
+            # ({"message": str, "conflicts": {"position": ..., "rule_ids": [...]}}).
+            raise HTTPException(status_code=409,
+                                detail={"message": str(exc),
+                                        "conflicts": exc.conflicts})
         except LookupError:
             raise HTTPException(status_code=404, detail="Run not found")
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        return {"ok": True, "run": _public(run)}
+        out = {"ok": True, "run": _public(run)}
+        if resolved is not None:
+            out["resolved"] = resolved
+        return out
 
     @app.post("/api/runs/{run_id}/pause")
     async def pause_run(run_id: int, authorization: str = Header(None)):

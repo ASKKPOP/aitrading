@@ -247,7 +247,10 @@ class TradingRunsTests(unittest.TestCase):
         run_id = self._create().json()["id"]
         resp = self.client.post(f"/api/runs/{run_id}/start", headers=self._h(self.token_a))
         self.assertEqual(resp.status_code, 409)
-        self.assertIn("position", resp.json()["detail"])
+        detail = resp.json()["detail"]
+        self.assertIn("position", detail["message"])
+        self.assertIsNotNone(detail["conflicts"]["position"])
+        self.assertEqual(detail["conflicts"]["position"]["quantity"], 1.0)
 
     def test_auto_executing_rule_blocks_start(self):
         resp = self.client.post(
@@ -256,10 +259,101 @@ class TradingRunsTests(unittest.TestCase):
                   "size_usd": 100.0},
             headers=self._h(self.token_a))
         self.assertEqual(resp.status_code, 200, resp.text)
+        rule_id = resp.json()["id"]
         run_id = self._create().json()["id"]
         resp = self.client.post(f"/api/runs/{run_id}/start", headers=self._h(self.token_a))
         self.assertEqual(resp.status_code, 409)
-        self.assertIn("automation rule", resp.json()["detail"])
+        detail = resp.json()["detail"]
+        self.assertIn("automation rule", detail["message"])
+        self.assertEqual(detail["conflicts"]["rule_ids"], [rule_id])
+
+    def test_resolve_conflicts_closes_position_disables_rules_and_starts(self):
+        # A stale shared long AND an enabled auto-exec rule on the tuple —
+        # the exact trap where "close it first" alone can never succeed
+        # (the rule re-opens the book). One consented call resolves both.
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                """INSERT INTO positions (agent_id, market, symbol, side, quantity,
+                                          entry_price, current_price, opened_at)
+                   VALUES (?, 'crypto', 'BTC', 'buy', 1.0, 100.0, 120.0, datetime('now'))""",
+                (self.agent_a,))
+            conn.commit()
+        finally:
+            conn.close()
+        resp = self.client.post(
+            "/api/automation/configs",
+            json={"symbol": "BTC", "market": "crypto", "auto_execute": True,
+                  "size_usd": 100.0},
+            headers=self._h(self.token_a))
+        rule_id = resp.json()["id"]
+        run_id = self._create().json()["id"]
+
+        resp = self.client.post(f"/api/runs/{run_id}/start",
+                                json={"resolve_conflicts": True},
+                                headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        body = resp.json()
+        self.assertEqual(body["run"]["status"], "running")
+        self.assertTrue(body["resolved"]["closed_position"])
+        self.assertEqual(body["resolved"]["disabled_rule_ids"], [rule_id])
+
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """SELECT quantity FROM positions
+                   WHERE agent_id = ? AND market = 'crypto' AND symbol = 'BTC'""",
+                (self.agent_a,))
+            row = cur.fetchone()
+            self.assertEqual(float(row["quantity"]) if row else 0.0, 0.0)
+            cur.execute("SELECT enabled FROM automation_configs WHERE id = ?", (rule_id,))
+            self.assertEqual(cur.fetchone()["enabled"], 0)
+            cur.execute(
+                "SELECT id FROM run_events WHERE run_id = ? AND event_type = 'conflicts_resolved'",
+                (run_id,))
+            self.assertIsNotNone(cur.fetchone())
+        finally:
+            conn.close()
+
+    def test_resolve_conflicts_noop_when_clean(self):
+        run_id = self._create().json()["id"]
+        resp = self.client.post(f"/api/runs/{run_id}/start",
+                                json={"resolve_conflicts": True},
+                                headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()["resolved"],
+                         {"closed_position": False, "disabled_rule_ids": []})
+
+    def test_enabling_auto_exec_rule_blocked_while_run_active(self):
+        # Mirror guard: without it a rule enabled mid-run trades into the
+        # run's book and corrupts attribution.
+        run_id = self._create().json()["id"]
+        resp = self.client.post(f"/api/runs/{run_id}/start", headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        resp = self.client.post(
+            "/api/automation/configs",
+            json={"symbol": "BTC", "market": "crypto", "auto_execute": True,
+                  "size_usd": 100.0},
+            headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 409)
+        self.assertIn("is active", resp.json()["detail"])
+        # A non-auto-executing (analysis-only) rule is still fine.
+        resp = self.client.post(
+            "/api/automation/configs",
+            json={"symbol": "BTC", "market": "crypto", "auto_execute": False,
+                  "size_usd": 100.0},
+            headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        # ...and so is an auto-exec rule on a different symbol.
+        resp = self.client.post(
+            "/api/automation/configs",
+            json={"symbol": "ETH", "market": "crypto", "auto_execute": True,
+                  "size_usd": 100.0},
+            headers=self._h(self.token_a))
+        self.assertEqual(resp.status_code, 200, resp.text)
 
     # ── ownership / authz ──────────────────────────────────────────────
 
