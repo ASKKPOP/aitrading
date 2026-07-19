@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { API_BASE, useLanguage } from '../appShared'
+import { API_BASE, formatLocalDateTime, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
 // Accounts — connect the trading gateway that automation rules route through.
@@ -72,6 +72,12 @@ export function AccountsPage() {
     needIbkr: tr(language, { ko: '게이트웨이 URL과 계좌 번호를 모두 입력하세요.', en: 'Enter both the gateway URL and the account id.', ja: 'ゲートウェイURLと口座番号の両方を入力してください。', th: 'กรอกทั้ง URL เกตเวย์และรหัสบัญชี', vi: 'Nhập cả URL cổng và mã tài khoản.' }),
     healthOk: tr(language, { ko: '세션 정상 — 주문을 받을 수 있습니다', en: 'session healthy — ready to accept orders', ja: 'セッション正常 — 発注可能', th: 'เซสชันปกติ — พร้อมรับคำสั่ง', vi: 'phiên bình thường — sẵn sàng nhận lệnh' }),
     healthBad: tr(language, { ko: '게이트웨이가 주문을 받지 못합니다 — live 규칙이 체결되지 않습니다', en: 'gateway cannot accept orders — live rules will not fill', ja: 'ゲートウェイが発注不可 — liveルールは約定しません', th: 'เกตเวย์รับคำสั่งไม่ได้ — กฎ live จะไม่ทำงาน', vi: 'cổng không nhận lệnh — quy tắc live sẽ không khớp' }),
+    healthNeutral: tr(language, { ko: '자격 증명 저장됨 — 이 브로커는 세션 점검 대상이 아닙니다', en: 'credentials on file — this broker has no session to check', ja: '認証情報を保存済み — このブローカーはセッション点検対象外です', th: 'บันทึกข้อมูลรับรองแล้ว — โบรกเกอร์นี้ไม่มีเซสชันให้ตรวจ', vi: 'đã lưu thông tin xác thực — broker này không có phiên để kiểm tra' }),
+    detailAuthed: tr(language, { ko: '세션 인증됨', en: 'session authenticated', ja: 'セッション認証済み', th: 'เซสชันยืนยันแล้ว', vi: 'phiên đã xác thực' }),
+    detailNotAuthed: tr(language, { ko: '게이트웨이 세션이 인증되지 않았습니다 — Client Portal Gateway에 다시 로그인하세요', en: 'gateway session is not authenticated — log in to the Client Portal Gateway again', ja: 'ゲートウェイセッションが未認証です — Client Portal Gateway に再ログインしてください', th: 'เซสชันเกตเวย์ยังไม่ยืนยัน — ล็อกอิน Client Portal Gateway อีกครั้ง', vi: 'phiên cổng chưa xác thực — đăng nhập lại Client Portal Gateway' }),
+    detailCompeting: tr(language, { ko: '다른 세션이 이 계좌를 점유하고 있습니다', en: 'another session is competing for this account', ja: '別のセッションがこの口座を占有しています', th: 'มีเซสชันอื่นแย่งใช้บัญชีนี้', vi: 'một phiên khác đang tranh chấp tài khoản này' }),
+    detailQuote: tr(language, { ko: '게이트웨이 응답', en: 'gateway says', ja: 'ゲートウェイ応答', th: 'เกตเวย์แจ้ง', vi: 'cổng báo' }),
+    errGatewayScheme: tr(language, { ko: '게이트웨이 URL은 http:// 또는 https:// 로 시작해야 합니다', en: 'gateway URL must start with http:// or https://', ja: 'ゲートウェイURLは http:// または https:// で始まる必要があります', th: 'URL เกตเวย์ต้องขึ้นต้นด้วย http:// หรือ https://', vi: 'URL cổng phải bắt đầu bằng http:// hoặc https://' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
     ordersTitle: tr(language, { ko: '브로커 주문 내역', en: 'Broker orders', ja: 'ブローカー注文履歴', th: 'ประวัติคำสั่งโบรกเกอร์', vi: 'Lệnh tại broker' }),
     ordersHint: tr(language, { ko: '요청 수량과 브로커가 확인한 체결 수량을 함께 표시합니다 — 두 값이 다르면 주문이 드리프트 목록에도 나타납니다.', en: 'Shows the requested size next to the broker-confirmed fill — when they differ the order also appears in the drift list.', ja: '要求数量とブローカー確認済み約定数量を並べて表示 — 差異があればドリフト一覧にも表示されます。', th: 'แสดงขนาดที่ขอเทียบกับที่โบรกเกอร์ยืนยัน — ถ้าต่างกันจะปรากฏในรายการดริฟต์ด้วย', vi: 'Hiển thị khối lượng yêu cầu cạnh khối lượng broker xác nhận — nếu khác nhau, lệnh cũng xuất hiện trong danh sách lệch.' }),
@@ -79,6 +85,28 @@ export function AccountsPage() {
     driftHint: tr(language, { ko: '플랫폼 원장과 브로커의 실제 결과가 달랐던 경우입니다. 원장은 자동으로 수정되지 않으니 브로커 계좌를 확인하고 직접 정정하세요.', en: 'Cases where the platform ledger and the broker’s actual outcome disagreed. The ledger is never auto-corrected — review your broker account and fix manually.', ja: 'プラットフォーム台帳とブローカーの実際の結果が食い違ったケースです。台帳は自動修正されません — ブローカー口座を確認し手動で修正してください。', th: 'กรณีที่บัญชีแพลตฟอร์มกับผลจริงของโบรกเกอร์ไม่ตรงกัน บัญชีจะไม่ถูกแก้อัตโนมัติ — ตรวจสอบและแก้ไขเอง', vi: 'Trường hợp sổ nền tảng và kết quả thực tế của broker khác nhau. Sổ không tự sửa — hãy kiểm tra tài khoản broker và tự chỉnh.' }),
     reqQty: tr(language, { ko: '요청', en: 'req', ja: '要求', th: 'ขอ', vi: 'yêu cầu' }),
     fillQty: tr(language, { ko: '체결', en: 'filled', ja: '約定', th: 'สำเร็จ', vi: 'khớp' }),
+  }
+
+  // Health `detail` is either one of OUR fixed strings (localize it) or
+  // broker/network passthrough text we can't translate — for the latter, keep
+  // the original words but frame them so a non-English reader knows it's a quote
+  // rather than an untranslated label.
+  function localizeDetail(detail?: string | null): string {
+    if (!detail) return ''
+    if (detail === 'session authenticated') return T.detailAuthed
+    if (detail.startsWith('gateway session is not authenticated')) return T.detailNotAuthed
+    if (detail.startsWith('another session is competing')) return T.detailCompeting
+    if (detail === 'broker has no session to check; credentials are on file') return ''
+    return language === 'en' ? detail : `${T.detailQuote}: ${detail}`
+  }
+
+  // Our own validation messages get localized; broker/pydantic passthrough is
+  // framed as a quote so a non-English reader isn't shown a bare English string.
+  function localizeConnectError(raw: string): string {
+    if (raw.includes('gateway_url must start with')) return T.errGatewayScheme
+    if (raw.includes('requires gateway_url and account_id')) return T.needIbkr
+    if (/requires api_key and api_secret/.test(raw)) return T.needBoth
+    return language === 'en' ? raw : `${T.detailQuote}: ${raw}`
   }
 
   const loadAccounts = useCallback(() => {
@@ -146,7 +174,8 @@ export function AccountsPage() {
       if (!res.ok) {
         const b = await res.json().catch(() => null)
         const d = b?.detail
-        setError(typeof d === 'string' ? d : (Array.isArray(d) ? d.map((e: any) => e?.msg).join('; ') : 'Could not connect gateway'))
+        const raw = typeof d === 'string' ? d : (Array.isArray(d) ? d.map((e: any) => e?.msg).join('; ') : 'Could not connect gateway')
+        setError(localizeConnectError(raw))
         return
       }
       // Then record consent — automation refuses to route live without it.
@@ -258,18 +287,29 @@ export function AccountsPage() {
           </button>
 
           {/* A lapsed session looks exactly like a quiet market from outside,
-              so say it plainly rather than leaving it to the run history. */}
-          {health?.checked && (
-            <div style={{
-              marginTop: 14, padding: '9px 11px', borderRadius: 8, fontSize: 12.5, lineHeight: 1.5,
-              background: health.ok ? 'rgba(63,185,80,0.12)' : 'rgba(240,102,63,0.12)',
-              border: `1px solid ${health.ok ? 'rgba(63,185,80,0.4)' : 'rgba(240,102,63,0.45)'}`,
-              color: health.ok ? '#3fb950' : '#f0663f',
-            }}>
-              {health.ok ? '✓ ' : '⚠️ '}{health.ok ? T.healthOk : T.healthBad}
-              {health.detail && <div style={{ marginTop: 4, opacity: 0.85 }}>{health.detail}</div>}
-            </div>
-          )}
+              so say it plainly. Three states: checked+ok (green), checked+bad
+              (red), and configured-but-not-checkable — key-pair brokers have no
+              session to probe, so show a neutral "credentials on file" instead
+              of no feedback at all. */}
+          {health?.configured && (() => {
+            const neutral = !health.checked           // alpaca/binance: nothing to probe
+            const tone = neutral ? 'neutral' : (health.ok ? 'ok' : 'bad')
+            const c = tone === 'ok' ? { bg: 'rgba(63,185,80,0.12)', br: 'rgba(63,185,80,0.4)', fg: '#3fb950', icon: '✓ ' }
+              : tone === 'bad' ? { bg: 'rgba(240,102,63,0.12)', br: 'rgba(240,102,63,0.45)', fg: '#f0663f', icon: '⚠️ ' }
+              : { bg: 'rgba(90,120,160,0.12)', br: 'rgba(90,120,160,0.4)', fg: 'var(--text-secondary,#8a8073)', icon: 'ⓘ ' }
+            const headline = tone === 'ok' ? T.healthOk : tone === 'bad' ? T.healthBad : T.healthNeutral
+            // health.detail is either our own known message (localized below) or
+            // broker/network passthrough text we can't translate — keep the raw
+            // words but frame them so a non-English user knows it's a quote.
+            const detail = localizeDetail(health.detail)
+            return (
+              <div style={{ marginTop: 14, padding: '9px 11px', borderRadius: 8, fontSize: 12.5, lineHeight: 1.5,
+                background: c.bg, border: `1px solid ${c.br}`, color: c.fg }}>
+                {c.icon}{headline}
+                {detail && <div style={{ marginTop: 4, opacity: 0.85 }}>{detail}</div>}
+              </div>
+            )
+          })()}
 
           <div style={{ marginTop: 16, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)' }}>{T.connected}</div>
           {accounts.length === 0 ? (
@@ -281,7 +321,7 @@ export function AccountsPage() {
                   <b>{a.broker}</b>
                   {a.is_active ? <span style={{ ...badge('#3fb950'), fontSize: 10 }}>active</span> : null}
                   <span style={{ marginLeft: 'auto', color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>
-                    {String(a.updated_at || '').replace('T', ' ').slice(0, 16)}
+                    {formatLocalDateTime(a.updated_at, language)}
                   </span>
                 </div>
               ))}
@@ -311,7 +351,7 @@ export function AccountsPage() {
                   </span>
                   <span style={{ color: statusColor, fontWeight: 600, fontSize: 12 }}>{o.status}</span>
                   <span style={{ marginLeft: 'auto', color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>
-                    {String(o.created_at || '').replace('T', ' ').slice(0, 16)}
+                    {formatLocalDateTime(o.created_at, language)}
                   </span>
                 </div>
               )
@@ -336,7 +376,7 @@ export function AccountsPage() {
                 <span style={{ color: '#f0663f', fontWeight: 600, fontSize: 12 }}>{r.status}</span>
                 {r.error_message && <span style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>{String(r.error_message).slice(0, 60)}</span>}
                 <span style={{ marginLeft: 'auto', color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>
-                  {String(r.recorded_at || '').replace('T', ' ').slice(0, 16)}
+                  {formatLocalDateTime(r.recorded_at, language)}
                 </span>
               </div>
             ))}

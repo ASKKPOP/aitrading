@@ -83,6 +83,19 @@ export function formatIntelTimestamp(timestamp: string | null | undefined, langu
   return `${formatted} ET`
 }
 
+/** A stored UTC timestamp rendered in the viewer's OWN timezone (no forced ET,
+ *  unlike formatIntelTimestamp which is for market-data snapshots). Used by the
+ *  broker order / drift lists so a KST user sees KST, not raw UTC. */
+export function formatLocalDateTime(timestamp: string | null | undefined, language: Language) {
+  if (!timestamp) return ''
+  const parsed = parseRecordedAt(timestamp)
+  if (!parsed) return String(timestamp)
+  return parsed.toLocaleString(LOCALE_BY_LANGUAGE[language], {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  })
+}
+
 export function formatIntelNumber(value: number | null | undefined, digits = 2) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return 'N/A'
