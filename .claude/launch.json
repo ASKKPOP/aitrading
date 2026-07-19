@@ -106,6 +106,39 @@
       }
     },
     {
+      "name": "backend-8031",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "--app-dir",
+        "service/server",
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8031"
+      ],
+      "port": 8031
+    },
+    {
+      "name": "frontend-3031",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3031",
+        "--strictPort"
+      ],
+      "cwd": "service/frontend",
+      "port": 3031,
+      "env": {
+        "VITE_PROXY_TARGET": "http://127.0.0.1:8031"
+      }
+    },
+    {
       "name": "frontend-viz",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

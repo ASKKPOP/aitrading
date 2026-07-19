@@ -4,6 +4,7 @@ import { AnalysisMonitorPanel, useAnalysisRun, useAnalysisStream } from '../comp
 import ConfigProfiles from '../components/ConfigProfiles'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
+import { RunsLiveSection } from './RunsLivePage'
 
 // Automation (Target 3) — user-configured AI auto-trading rules, backed by
 // /api/automation/configs. The server worker runs each enabled rule on its
@@ -95,12 +96,32 @@ export function AutomationPage() {
     if (analyze.runInfo) { setAnSymbol(analyze.runInfo.symbol); setAnMarket(analyze.runInfo.market) }
   }, [analyze.runInfo?.id])
 
-  // "Automate this" — seed the rule draft from the finished analysis. Guided
-  // mode only offers a fixed crypto list, so anything else lands in Pro.
-  function automateFromAnalysis(symbol: string, market: string) {
-    setDraft(d => ({ ...d, symbol, market }))
-    setMode(market === 'crypto' && ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'].includes(symbol) ? 'guided' : 'pro')
-    ruleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // One step (분석 → 자동매매): create a live trading run for the analyzed
+  // symbol and start it immediately — no separate rule form. Balanced
+  // defaults; full control stays in the runs section's create form.
+  const [runStartBusy, setRunStartBusy] = useState(false)
+  const [runStartErr, setRunStartErr] = useState('')
+  const [runsReload, setRunsReload] = useState(0)
+  const runsSectionRef = useRef<HTMLDivElement | null>(null)
+
+  async function startRunFromAnalysis(symbol: string, market: string) {
+    setRunStartBusy(true); setRunStartErr('')
+    try {
+      const res = await fetch(`${API_BASE}/runs`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({ symbol, market, market_type: 'spot', max_bet_usd: 500, interval_minutes: 60, min_confidence: 0.65 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'could not create run')
+      const start = await fetch(`${API_BASE}/runs/${data.id}/start`, { method: 'POST', headers: authHeaders })
+      if (!start.ok) {
+        const detail = (await start.json().catch(() => null))?.detail
+        throw new Error(typeof detail === 'string' ? detail : 'could not start run')
+      }
+      setRunsReload(n => n + 1)
+      runsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } catch (e: any) { setRunStartErr(e.message) }
+    setRunStartBusy(false)
   }
 
   const T = {
@@ -180,7 +201,7 @@ export function AutomationPage() {
     analystRunning: tr(language, { ko: '애널리스트들이 토론 중…', en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…' }),
     analystBriefs: tr(language, { ko: '애널리스트 브리프', en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích' }),
     analystNone: tr(language, { ko: '결정론적 (LLM 키 미설정)', en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM' }),
-    automateThis: tr(language, { ko: '이 설정으로 자동화', en: 'Automate this', ja: 'この設定で自動化', th: 'ตั้งเป็นอัตโนมัติ', vi: 'Tự động hóa thiết lập này' }),
+    startRunNow: tr(language, { ko: '이 설정으로 자동매매 시작', en: 'Start auto-trading with this', ja: 'この設定で自動売買開始', th: 'เริ่มเทรดอัตโนมัติด้วยค่านี้', vi: 'Bắt đầu tự động với thiết lập này' }),
     analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
   }
 
@@ -326,6 +347,12 @@ export function AutomationPage() {
         </div>
       </div>
 
+      {/* ── Live trading runs (merged from the old /runs/live page) — the
+          primary surface: one step creates AND starts a server-side run. ── */}
+      <div ref={runsSectionRef} style={{ marginBottom: 22 }}>
+        <RunsLiveSection token={token} embedded reloadKey={runsReload} />
+      </div>
+
       {/* ── One-off AI Analyst (merged from the old /analyst page) ── */}
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '0 0 8px' }}>🧠 {T.analystSection}</div>
       <div className="card" style={{ marginBottom: 18 }}>
@@ -365,11 +392,13 @@ export function AutomationPage() {
               <div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>
                 {T.testConfidence}: <b>{Math.round((analyze.result.decision?.confidence ?? 0) * 100)}%</b> · {T.provider}: {analyze.result.llm_provider || T.analystNone}
               </div>
-              <button onClick={() => automateFromAnalysis(analyze.result.symbol, analyze.result.market)}
-                style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: 8, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                ⚙ {T.automateThis}
+              <button onClick={() => startRunFromAnalysis(analyze.result.symbol, analyze.result.market)}
+                disabled={runStartBusy}
+                style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: 8, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 13, cursor: runStartBusy ? 'default' : 'pointer', opacity: runStartBusy ? 0.6 : 1 }}>
+                ▶ {T.startRunNow}
               </button>
             </div>
+            {runStartErr && <div style={{ color: '#f0663f', marginTop: 10, fontSize: 12.5 }}>⚠️ {runStartErr}</div>}
             {analyze.result.decision?.report && (
               <p style={{ marginTop: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{analyze.result.decision.report}</p>
             )}

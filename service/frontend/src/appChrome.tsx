@@ -142,7 +142,6 @@ export function Sidebar({
       items: [
         { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
         { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' }), requiresAuth: false },
-        { path: '/runs/live', icon: '📈', label: tr(language, { ko: '실시간 런', en: 'Live Runs', ja: 'ライブラン', th: 'รันสด', vi: 'Phiên trực tiếp' }), requiresAuth: true },
         { path: '/consult', icon: '💬', label: tr(language, { ko: 'AI 상담', en: 'Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI' }), requiresAuth: false },
       ]
     },

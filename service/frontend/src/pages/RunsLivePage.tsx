@@ -38,7 +38,13 @@ function ageLabel(ts: string | undefined, lang: Language): string {
   return `${Math.round(secs / 3600)}h`
 }
 
-export function RunsLivePage({ token }: Props) {
+// The whole live-runs experience (grid + create + detail drawer), embeddable:
+// /automation renders it as its primary section (embedded), while the old
+// /runs/live route now redirects there. `reloadKey` lets a parent force a
+// reload after it creates a run out-of-band.
+export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
+  token?: string | null; embedded?: boolean; reloadKey?: number
+}) {
   const { language } = useLanguage()
   const [runs, setRuns] = useState<Run[]>([])
   const [equityByRun, setEquityByRun] = useState<Record<number, number[]>>({})
@@ -57,7 +63,7 @@ export function RunsLivePage({ token }: Props) {
     } catch { /* transient */ }
   }, [token, auth])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, reloadKey])
   useEffect(() => {
     const id = setInterval(load, 20000)  // low-frequency reconcile; WS carries live
     return () => clearInterval(id)
@@ -144,11 +150,14 @@ export function RunsLivePage({ token }: Props) {
   }
 
   return (
-    <div className="page" style={{ padding: '20px 24px' }}>
+    <div className={embedded ? undefined : 'page'}
+      style={embedded ? undefined : { padding: '20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22 }}>{T.title}</h1>
+          {embedded
+            ? <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)' }}>📈 {T.title}</div>
+            : <h1 style={{ margin: 0, fontSize: 22 }}>{T.title}</h1>}
           <p className="muted" style={{ margin: '4px 0 0', maxWidth: 680, fontSize: 13 }}>
             {T.subtitle}
           </p>
@@ -169,7 +178,8 @@ export function RunsLivePage({ token }: Props) {
       {err && <div style={{ color: '#d03b3b', marginTop: 10, fontSize: 13 }}>{err}</div>}
 
       {showCreate && (
-        <CreateRunForm token={token} onDone={() => { setShowCreate(false); load() }}
+        <CreateRunForm token={token}
+          onDone={(startError) => { setShowCreate(false); if (startError) setErr(startError); load() }}
           onCancel={() => setShowCreate(false)} language={language} />
       )}
 
@@ -220,6 +230,14 @@ export function RunsLivePage({ token }: Props) {
           onClose={() => setSelected(null)}
           onAct={act} onDelete={del} language={language} />
       )}
+    </div>
+  )
+}
+
+export function RunsLivePage({ token }: Props) {
+  return (
+    <div className="page" style={{ padding: '20px 24px' }}>
+      <RunsLiveSection token={token} />
     </div>
   )
 }
@@ -352,7 +370,7 @@ function summarize(e: any): string {
 }
 
 function CreateRunForm({ token, onDone, onCancel, language }: {
-  token: string; onDone: () => void; onCancel: () => void; language: Language
+  token: string; onDone: (startError?: string) => void; onCancel: () => void; language: Language
 }) {
   const [f, setF] = useState({
     symbol: 'BTC', market: 'crypto', market_type: 'spot',
@@ -390,7 +408,18 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
             notify_on_trade: f.notify_on_trade }),
         })
       }
-      onDone()
+      // One step: start immediately. A refused start (e.g. an open position or
+      // a conflicting auto-execute rule on the symbol) leaves the draft in the
+      // grid with its own Start button; the reason surfaces at section level.
+      let startError: string | undefined
+      try {
+        const s = await fetch(`${API_BASE}/runs/${runId}/start`, { method: 'POST', headers: auth })
+        if (!s.ok) {
+          const detail = (await s.json().catch(() => null))?.detail
+          startError = typeof detail === 'string' ? detail : 'start failed'
+        }
+      } catch { startError = 'network error' }
+      onDone(startError)
     } catch { setErr('network error'); setBusy(false) }
   }
 
@@ -457,7 +486,7 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       </p>
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button className="btn btn-primary" disabled={busy} onClick={submit}>
-          {tr(language, { ko: '런 생성', en: 'Create run', ja: '作成', th: 'สร้าง', vi: 'Tạo' })}</button>
+          {tr(language, { ko: '▶ 런 생성 + 시작', en: '▶ Create & start', ja: '▶ 作成して開始', th: '▶ สร้างและเริ่ม', vi: '▶ Tạo & bắt đầu' })}</button>
         <button className="btn" onClick={onCancel}>
           {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}</button>
       </div>

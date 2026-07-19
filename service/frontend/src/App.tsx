@@ -31,7 +31,6 @@ const SignalsBoardPage = lazy(() => import('./pages/SignalsBoardPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const DocsPage = lazy(() => import('./pages/DocsPage'))
 const MonitorPage = lazy(() => import('./pages/MonitorPage'))
-const RunsLivePage = lazy(() => import('./pages/RunsLivePage'))
 const ConsultPage = lazy(() => import('./pages/ConsultPage'))
 const AssistantDock = lazy(() => import('./components/AssistantDock'))
 const GuidePanel = lazy(() => import('./components/GuidePanel'))
@@ -408,7 +407,6 @@ function AppRouter({
       '/experiments':      'Sooppiy · Experiments',
       '/research-exports': 'Sooppiy · Research Exports',
       '/financial-events': 'Sooppiy · Financial Events',
-      '/runs/live':        'Sooppiy · Live Runs',
       '/notifications':    'Sooppiy · Notifications',
       '/support':          'Sooppiy · Support',
       '/dev':              'Sooppiy · For Developers',
@@ -522,7 +520,8 @@ function AppRouter({
               <Route path="/financial-events" element={<FinancialEventsPage />} />
               <Route path="/signals-board" element={<SignalsBoardPage />} />
               <Route path="/monitor" element={<MonitorPage token={token} />} />
-              <Route path="/runs/live" element={agentGate(<RunsLivePage token={token} />)} />
+              {/* live runs merged into /automation — keep old links working */}
+              <Route path="/runs/live" element={<Navigate to="/automation" replace />} />
               <Route path="/consult" element={<ConsultPage token={token} />} />
               <Route path="/docs" element={<DocsPage token={token} userToken={userToken} />} />
               <Route path="/docs/:slug" element={<DocsPage token={token} userToken={userToken} />} />
