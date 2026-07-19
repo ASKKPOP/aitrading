@@ -37,6 +37,8 @@ export function AccountsPage() {
   const [allowSelfSigned, setAllowSelfSigned] = useState(false)
   const [acceptedTcs, setAcceptedTcs] = useState(false)
   const [health, setHealth] = useState<any>(null)
+  const [orders, setOrders] = useState<any[]>([])
+  const [drift, setDrift] = useState<any[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -71,6 +73,12 @@ export function AccountsPage() {
     healthOk: tr(language, { ko: '세션 정상 — 주문을 받을 수 있습니다', en: 'session healthy — ready to accept orders', ja: 'セッション正常 — 発注可能', th: 'เซสชันปกติ — พร้อมรับคำสั่ง', vi: 'phiên bình thường — sẵn sàng nhận lệnh' }),
     healthBad: tr(language, { ko: '게이트웨이가 주문을 받지 못합니다 — live 규칙이 체결되지 않습니다', en: 'gateway cannot accept orders — live rules will not fill', ja: 'ゲートウェイが発注不可 — liveルールは約定しません', th: 'เกตเวย์รับคำสั่งไม่ได้ — กฎ live จะไม่ทำงาน', vi: 'cổng không nhận lệnh — quy tắc live sẽ không khớp' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    ordersTitle: tr(language, { ko: '브로커 주문 내역', en: 'Broker orders', ja: 'ブローカー注文履歴', th: 'ประวัติคำสั่งโบรกเกอร์', vi: 'Lệnh tại broker' }),
+    ordersHint: tr(language, { ko: '요청 수량과 브로커가 확인한 체결 수량을 함께 표시합니다 — 두 값이 다르면 주문이 드리프트 목록에도 나타납니다.', en: 'Shows the requested size next to the broker-confirmed fill — when they differ the order also appears in the drift list.', ja: '要求数量とブローカー確認済み約定数量を並べて表示 — 差異があればドリフト一覧にも表示されます。', th: 'แสดงขนาดที่ขอเทียบกับที่โบรกเกอร์ยืนยัน — ถ้าต่างกันจะปรากฏในรายการดริฟต์ด้วย', vi: 'Hiển thị khối lượng yêu cầu cạnh khối lượng broker xác nhận — nếu khác nhau, lệnh cũng xuất hiện trong danh sách lệch.' }),
+    driftTitle: tr(language, { ko: '드리프트 기록', en: 'Drift records', ja: 'ドリフト記録', th: 'บันทึกดริฟต์', vi: 'Bản ghi lệch' }),
+    driftHint: tr(language, { ko: '플랫폼 원장과 브로커의 실제 결과가 달랐던 경우입니다. 원장은 자동으로 수정되지 않으니 브로커 계좌를 확인하고 직접 정정하세요.', en: 'Cases where the platform ledger and the broker’s actual outcome disagreed. The ledger is never auto-corrected — review your broker account and fix manually.', ja: 'プラットフォーム台帳とブローカーの実際の結果が食い違ったケースです。台帳は自動修正されません — ブローカー口座を確認し手動で修正してください。', th: 'กรณีที่บัญชีแพลตฟอร์มกับผลจริงของโบรกเกอร์ไม่ตรงกัน บัญชีจะไม่ถูกแก้อัตโนมัติ — ตรวจสอบและแก้ไขเอง', vi: 'Trường hợp sổ nền tảng và kết quả thực tế của broker khác nhau. Sổ không tự sửa — hãy kiểm tra tài khoản broker và tự chỉnh.' }),
+    reqQty: tr(language, { ko: '요청', en: 'req', ja: '要求', th: 'ขอ', vi: 'yêu cầu' }),
+    fillQty: tr(language, { ko: '체결', en: 'filled', ja: '約定', th: 'สำเร็จ', vi: 'khớp' }),
   }
 
   const loadAccounts = useCallback(() => {
@@ -85,6 +93,16 @@ export function AccountsPage() {
       .then(r => r.ok ? r.json() : null)
       .then(setHealth)
       .catch(() => setHealth(null))
+    // Broker order + drift history — empty for simulator-only accounts, and
+    // the sections below render nothing in that case.
+    fetch(`${API_BASE}/execution/orders?limit=20`, { headers: authHeaders })
+      .then(r => r.ok ? r.json() : { orders: [] })
+      .then(d => setOrders(d.orders || []))
+      .catch(() => {})
+    fetch(`${API_BASE}/execution/reconciliations?limit=20`, { headers: authHeaders })
+      .then(r => r.ok ? r.json() : { reconciliations: [] })
+      .then(d => setDrift((d.reconciliations || []).filter((r: any) => r.status !== 'ok')))
+      .catch(() => {})
   }, [token])
 
   useEffect(() => {
@@ -268,6 +286,60 @@ export function AccountsPage() {
           )}
         </div>
       </div>
+
+      {/* Broker order history — invisible until a gateway has actually been
+          used, so simulator-only accounts see nothing extra here. */}
+      {orders.length > 0 && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)' }}>{T.ordersTitle}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', margin: '6px 0 10px', lineHeight: 1.5 }}>{T.ordersHint}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {orders.map(o => {
+              const statusColor = o.status === 'filled' ? '#3fb950'
+                : (o.status === 'rejected' || o.status === 'cancelled') ? '#f0663f'
+                : o.status === 'partial_fill' ? '#e3b341' : 'var(--text-secondary,#8a8073)'
+              return (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', flexWrap: 'wrap' }}>
+                  <b>{o.symbol}</b>
+                  <span style={{ color: o.side === 'buy' || o.side === 'cover' ? '#3fb950' : '#f0663f', fontWeight: 600 }}>{o.side}</span>
+                  <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 5, background: 'rgba(138,128,115,0.15)', color: 'var(--text-secondary,#8a8073)' }}>{o.broker} · {o.execution_mode}</span>
+                  <span style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 12 }}>
+                    {T.reqQty} {Number(o.quantity)}{o.filled_qty != null && ` · ${T.fillQty} ${Number(o.filled_qty)}`}
+                  </span>
+                  <span style={{ color: statusColor, fontWeight: 600, fontSize: 12 }}>{o.status}</span>
+                  <span style={{ marginLeft: 'auto', color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>
+                    {String(o.created_at || '').replace('T', ' ').slice(0, 16)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Drift — the ledger and the broker disagreed; deliberately loud. */}
+      {drift.length > 0 && (
+        <div className="card" style={{ marginTop: 14, border: '1px solid rgba(240,102,63,0.45)' }}>
+          <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: '#f0663f' }}>⚠ {T.driftTitle}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', margin: '6px 0 10px', lineHeight: 1.5 }}>{T.driftHint}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {drift.map(r => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', flexWrap: 'wrap' }}>
+                <b>{r.symbol}</b>
+                <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 5, background: 'rgba(138,128,115,0.15)', color: 'var(--text-secondary,#8a8073)' }}>{r.broker}</span>
+                <span style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 12 }}>
+                  ledger {Number(r.paper_qty)} ≠ broker {r.broker_qty == null ? '—' : Number(r.broker_qty)}
+                </span>
+                <span style={{ color: '#f0663f', fontWeight: 600, fontSize: 12 }}>{r.status}</span>
+                {r.error_message && <span style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>{String(r.error_message).slice(0, 60)}</span>}
+                <span style={{ marginLeft: 'auto', color: 'var(--text-secondary,#8a8073)', fontSize: 11.5 }}>
+                  {String(r.recorded_at || '').replace('T', ' ').slice(0, 16)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
