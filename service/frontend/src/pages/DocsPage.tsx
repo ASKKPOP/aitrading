@@ -13,6 +13,7 @@ const SLUG_TO_GROUP: Record<string, string> = {
   'chart-vs-human-psychology': 'psych-report',
   'framework': 'framework',
   'backtest-report': 'backtest-report',
+  'architecture': 'architecture',
 }
 const GROUP_TO_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SLUG_TO_GROUP).map(([s, g]) => [g, s]))

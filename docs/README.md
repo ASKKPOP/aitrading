@@ -23,6 +23,7 @@ All HTML documents live under [design/](design/) — this is the standing conven
 
 | Document | What it is |
 |---|---|
+| [12-system-architecture-report.html](12-system-architecture-report.html) | **System Architecture & Technical Flow** — the full-stack technical reference: process topology (API vs worker), 292-endpoint API surface, the 3-principal auth model, all 28 background daemons with intervals, the AI auto-trading gate chain, order-execution routing, the 87-table data layer, both frontends, deployment topology, and 12 ranked findings. 8 hand-authored SVG diagrams. Written for service managers and engineers. Generated 2026-07-19 from a full source scan. |
 | [design/ai-trading-guide.html](design/ai-trading-guide.html) | **Full AI-trading pipeline guide** — 10 steps, 5 SVG diagrams, trader/CEO/QA views. Live at sooppiy.com/guide.html. |
 | [design/implementation-plan.html](design/implementation-plan.html) | Signal-collection implementation plan (5 phases, verified sources, per-phase acceptance). Live at sooppiy.com/plan.html. |
 | [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. Live at sooppiy.com/framework.html. |

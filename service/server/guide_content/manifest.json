@@ -39,6 +39,11 @@
       "group": "ops-keys",
       "ko": "API 키 (관리자)",
       "en": "API Keys (owner)"
+    },
+    {
+      "group": "architecture",
+      "ko": "시스템 아키텍처 (관리자)",
+      "en": "System Architecture (owner)"
     }
   ],
   "docs": [
@@ -125,6 +130,13 @@
       "lang": "en",
       "group": "ops-keys",
       "title": "API Keys Reference",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-en",
+      "lang": "en",
+      "group": "architecture",
+      "title": "System Architecture & Technical Flow",
       "owner_only": true
     }
   ]

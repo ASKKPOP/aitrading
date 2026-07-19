@@ -52,6 +52,8 @@ SOURCES: list[dict] = [
      "kind": "md", "lang": "ko", "group": "backtest-report", "title": "Phase-4 전략 백테스트 — Go/No-Go 결과"},
     {"key": "api-keys-en", "src": "design/api-keys-reference-en.html", "kind": "html", "lang": "en",
      "group": "ops-keys", "title": "API Keys Reference", "owner_only": True},
+    {"key": "architecture-en", "src": "12-system-architecture-report.html", "kind": "html", "lang": "en",
+     "group": "architecture", "title": "System Architecture & Technical Flow", "owner_only": True},
 ]
 
 GROUPS = [
@@ -63,6 +65,7 @@ GROUPS = [
     {"group": "psych-report", "ko": "차트 vs 심리 리포트", "en": "Charts vs Psychology"},
     {"group": "backtest-report", "ko": "백테스트 결과", "en": "Backtest Result"},
     {"group": "ops-keys", "ko": "API 키 (관리자)", "en": "API Keys (owner)"},
+    {"group": "architecture", "ko": "시스템 아키텍처 (관리자)", "en": "System Architecture (owner)"},
 ]
 
 _MD_SHELL = """<!doctype html>
