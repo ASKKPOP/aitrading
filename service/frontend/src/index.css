@@ -1337,10 +1337,6 @@ a {
 :root[data-theme='light'] .landing-swarm-card,
 :root[data-theme='light'] .landing-access-card,
 :root[data-theme='light'] .landing-interaction-card,
-:root[data-theme='light'] .auth-stage,
-:root[data-theme='light'] .auth-panel-copy,
-:root[data-theme='light'] .auth-panel-form,
-:root[data-theme='light'] .auth-card-terminal,
 :root[data-theme='light'] .landing-command-line,
 :root[data-theme='light'] .landing-agent-chip,
 :root[data-theme='light'] .control-pill-group,
@@ -1353,11 +1349,8 @@ a {
 :root[data-theme='light'] .landing-title,
 :root[data-theme='light'] .landing-section-title,
 :root[data-theme='light'] .landing-board-value,
-:root[data-theme='light'] .auth-hero-title,
-:root[data-theme='light'] .auth-title,
 :root[data-theme='light'] .landing-feature-title,
-:root[data-theme='light'] .landing-journey-title,
-:root[data-theme='light'] .auth-copy-value {
+:root[data-theme='light'] .landing-journey-title {
   color: #181614;
 }
 
@@ -1366,8 +1359,6 @@ a {
 :root[data-theme='light'] .landing-feature-description,
 :root[data-theme='light'] .landing-journey-copy,
 :root[data-theme='light'] .landing-bullet-item,
-:root[data-theme='light'] .auth-hero-copy,
-:root[data-theme='light'] .auth-subtitle,
 :root[data-theme='light'] .landing-market-item,
 :root[data-theme='light'] .landing-ticker-row,
 :root[data-theme='light'] .landing-command-line code {
@@ -1375,7 +1366,6 @@ a {
 }
 
 :root[data-theme='light'] .landing-kicker,
-:root[data-theme='light'] .auth-kicker,
 :root[data-theme='light'] .landing-section-kicker,
 :root[data-theme='light'] .landing-command-label,
 :root[data-theme='light'] .landing-swarm-label,
@@ -1501,12 +1491,18 @@ a {
 }
 
 .landing-board-card,
-.auth-copy-card,
 .landing-feature-card {
   padding: 18px;
   border-radius: 18px;
   background: rgba(17, 24, 31, 0.82);
   border: 1px solid rgba(120, 138, 154, 0.14);
+}
+
+/* Auth copy tiles are boxless — they sit directly on the WebGL backdrop,
+   separated by a hairline rule instead of a card. */
+.auth-copy-card {
+  padding: 0 0 0 14px;
+  border-left: 1px solid rgba(222, 188, 127, 0.22);
 }
 
 .landing-board-label,
@@ -1766,35 +1762,55 @@ a {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  position: relative;
+  /* The auth screens own their backdrop in every theme: the copy is light-on-
+     dark, and the boxes that used to guarantee that contrast are gone. Also
+     the fallback when WebGL2 is unavailable and the canvas stays hidden. */
+  background: #080c11;
+}
+
+/* WebGL2 backdrop (components/AuthBackground.tsx). Fixed so it covers the
+   viewport regardless of how tall the auth content runs. */
+.auth-bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  /* Revealed by AuthBackground.tsx after the first real-size draw, so a
+     pre-layout frame never flashes an opaque sheet over the page. */
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
 .auth-stage {
+  position: relative;
+  z-index: 1;
   width: min(1180px, 100%);
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(380px, 0.85fr);
-  border-radius: 28px;
-  overflow: hidden;
-  border: 1px solid rgba(222, 188, 127, 0.12);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
-  background: rgba(9, 13, 18, 0.92);
+  gap: clamp(24px, 4vw, 64px);
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .auth-panel {
   padding: clamp(28px, 4vw, 42px);
 }
 
-.auth-panel-copy {
-  background:
-    linear-gradient(160deg, rgba(13, 21, 28, 0.98), rgba(10, 16, 22, 0.92)),
-    linear-gradient(90deg, rgba(230, 170, 79, 0.08), transparent 46%);
-  border-right: 1px solid rgba(222, 188, 127, 0.08);
+.auth-panel-copy,
+.auth-panel-form {
+  background: none;
+  border: none;
 }
 
 .auth-panel-form {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, rgba(12, 17, 23, 0.98), rgba(9, 13, 18, 0.94));
 }
 
 .auth-hero-title {
@@ -1816,30 +1832,27 @@ a {
 }
 
 .auth-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 40px;
+  padding: 0;
 }
 
 .auth-card-terminal {
-  width: min(460px, 100%);
-  background: linear-gradient(180deg, rgba(14, 19, 24, 0.98), rgba(8, 12, 16, 0.98));
-  border: 1px solid rgba(224, 191, 135, 0.12);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  width: min(440px, 100%);
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
-.auth-terminal-bar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 22px;
+/* Boxless fields: translucent so the backdrop reads through, with the focus
+   ring carrying the affordance the card border used to. */
+.auth-card .form-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(222, 188, 127, 0.18);
+  backdrop-filter: blur(6px);
 }
 
-.auth-terminal-bar span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(220, 181, 109, 0.85);
+.auth-card .form-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(222, 188, 127, 0.5);
 }
 
 .auth-title {

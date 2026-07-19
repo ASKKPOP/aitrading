@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, COMMUNITY_FEED_PAGE_SIZE, MARKETS, useLanguage } from './appShared'
+import AuthBackground from './components/AuthBackground'
 import { SymbolSelect } from './components/SymbolSelect'
 import { tr } from './i18n'
 
@@ -32,6 +33,7 @@ function AuthShell({
 
   return (
     <div className="auth-shell">
+      <AuthBackground />
       <div className="auth-stage">
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
@@ -76,11 +78,6 @@ function AuthShell({
 
         <div className="auth-panel auth-panel-form">
           <div className="auth-card auth-card-terminal">
-            <div className="auth-terminal-bar">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
             <h2 className="auth-title">{title}</h2>
             <p className="auth-subtitle">{subtitle}</p>
 
