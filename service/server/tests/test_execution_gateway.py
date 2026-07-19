@@ -441,3 +441,98 @@ class TestGatewayFailureAlert(_GatewayTestCase):
                                       "BTC", "crypto", "buy", 0.01, 50_000.0,
                                       None, None, {})
         alert.assert_not_called()
+
+
+class TestKeepalive(_GatewayTestCase):
+    """The IBKR session keepalive sweep (worker task gateway_keepalive)."""
+
+    def _add_ibkr(self, agent_id=None):
+        from execution.crypto import encrypt_credentials
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO broker_accounts
+               (agent_id, broker, execution_mode, credentials_enc, is_active, created_at, updated_at)
+               VALUES (?,?,?,?,1,?,?)""",
+            (agent_id or self.agent_id, "ibkr", "live",
+             encrypt_credentials({"gateway_url": "https://gw/v1/api", "account_id": "DU1"}),
+             utc_now_iso_z(), utc_now_iso_z()),
+        )
+        conn.commit()
+        conn.close()
+
+    def test_no_ibkr_accounts_is_a_free_noop(self):
+        from unittest.mock import patch
+        from execution.gateway import keepalive_tick
+        _add_broker_account(self.agent_id, broker="alpaca", creds=True)  # not ibkr
+        with patch("execution.gateway._run_coro") as rc:
+            out = keepalive_tick()
+        self.assertEqual(out, {"accounts": 0, "alive": 0, "revived": 0, "dead": 0})
+        rc.assert_not_called()
+
+    def test_healthy_session_counts_alive_and_never_alerts(self):
+        from unittest.mock import patch
+        from execution.gateway import keepalive_tick
+        self._add_ibkr()
+        seq = iter([True, {"ok": True, "reachable": True}])
+        with patch("execution.gateway._run_coro", side_effect=lambda c: next(seq)), \
+             patch("alerts.send_alert") as alert:
+            out = keepalive_tick()
+        self.assertEqual((out["alive"], out["dead"]), (1, 0))
+        alert.assert_not_called()
+
+    def test_lapsed_session_revived_by_reauth_does_not_alert(self):
+        from unittest.mock import patch
+        from execution.gateway import keepalive_tick
+        self._add_ibkr()
+        seq = iter([
+            True,                                        # tickle
+            {"ok": False, "reachable": True},            # status: lapsed
+            True,                                        # reauthenticate
+            {"ok": True, "reachable": True},             # status: back
+        ])
+        with patch("execution.gateway._run_coro", side_effect=lambda c: next(seq)), \
+             patch("alerts.send_alert") as alert:
+            out = keepalive_tick()
+        self.assertEqual((out["alive"], out["revived"], out["dead"]), (1, 1, 0))
+        alert.assert_not_called()
+
+    def test_dead_session_alerts_the_owner_once_per_day(self):
+        from unittest.mock import patch
+        from execution.gateway import keepalive_tick
+        self._add_ibkr()
+        def seq_factory():
+            return iter([
+                True,                                              # tickle
+                {"ok": False, "reachable": True, "detail": "not authenticated"},
+                False,                                             # reauth fails
+            ])
+        seq = seq_factory()
+        with patch("execution.gateway._run_coro", side_effect=lambda c: next(seq)), \
+             patch("alerts.send_alert") as alert:
+            out = keepalive_tick()
+        self.assertEqual(out["dead"], 1)
+        alert.assert_called_once()
+        self.assertEqual(alert.call_args[0][1], "gateway_down")
+        # per-day dedupe key so a dead-all-day session is one alert, not 24+
+        self.assertIn("gateway_session:", alert.call_args[1]["dedupe_key"])
+
+    def test_one_broken_account_does_not_stop_the_sweep(self):
+        from unittest.mock import patch
+        from execution.gateway import keepalive_tick
+        other = _create_agent("gw-agent-2")
+        self._add_ibkr()
+        self._add_ibkr(agent_id=other)
+        calls = {"n": 0}
+        def flaky(coro):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("boom")             # first account explodes
+            # remaining calls serve the second account: tickle then status
+            return True if calls["n"] == 2 else {"ok": True, "reachable": True}
+        with patch("execution.gateway._run_coro", side_effect=flaky), \
+             patch("alerts.send_alert"):
+            out = keepalive_tick()
+        self.assertEqual(out["accounts"], 2)
+        self.assertEqual(out["alive"], 1, "second account still processed")
+        self.assertEqual(out["dead"], 1)

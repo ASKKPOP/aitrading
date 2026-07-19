@@ -686,6 +686,34 @@ async def automation_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def gateway_keepalive_loop():
+    """Keep IBKR Client Portal sessions alive (execution/gateway.py).
+
+    CPAPI drops an idle session after a few minutes; without a periodic tickle
+    a live IBKR rule on an hourly interval finds a dead gateway at every tick.
+    Sweeps active ibkr broker_accounts every GATEWAY_KEEPALIVE_INTERVAL seconds
+    (default 60): tickle → status → reauthenticate if lapsed → alert the owner
+    (once per day) if still dead. No-ops instantly when no IBKR account exists,
+    so the task is free for every deployment that hasn't connected one.
+    """
+    from execution.gateway import keepalive_tick
+
+    tick_interval = _env_int("GATEWAY_KEEPALIVE_INTERVAL", 60, minimum=30)
+    await asyncio.sleep(15)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(keepalive_tick)
+            if result.get("accounts"):
+                print(f"[Gateway Keepalive] accounts={result['accounts']} "
+                      f"alive={result['alive']} revived={result['revived']} "
+                      f"dead={result['dead']}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[Gateway Keepalive Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def trading_run_loop():
     """Background task for Trading Runs (Plan 10).
 
@@ -1537,6 +1565,7 @@ BACKGROUND_TASK_REGISTRY = {
     "etf_flows": refresh_etf_flow_snapshots_loop,
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
+    "gateway_keepalive": gateway_keepalive_loop,
     "trading_runs": trading_run_loop,
     "run_reports": report_scheduler_loop,
     "subscription_enforcer": subscription_enforcer_loop,
@@ -1581,6 +1610,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "stock_analysis":          "research",
     # automation — executes user-configured AI trading rules (Target 3)
     "automation":              "settlement",
+    # IBKR session keepalive — tickle/reauth so live gateways stay usable
+    "gateway_keepalive":       "settlement",
     # trading runs — Plan 10 run lifecycle scheduler (dedicated executor for
     # LLM cycles; gated by AUTO_TRADING_ENABLED)
     "trading_runs":            "settlement",

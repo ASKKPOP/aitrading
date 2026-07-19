@@ -249,6 +249,20 @@ class IBKRBroker(Broker):
             out["detail"] = "another session is competing for this account"
         return out
 
+    async def tickle(self) -> bool:
+        """CPAPI's keepalive. The gateway drops an idle session after a few
+        minutes; a periodic tickle is how every CPAPI client keeps it alive.
+        Returns True when the gateway acknowledged."""
+        if not self._has_credentials():
+            return False
+        try:
+            async with self._client() as client:
+                resp = await client.post(f"{self._base}/tickle", json={})
+            return resp.status_code == 200
+        except httpx.RequestError as exc:
+            _logger.debug("[IBKRBroker] tickle failed: %s", exc)
+            return False
+
     async def reauthenticate(self) -> bool:
         """Ask the gateway to refresh a lapsed session. Only works while the
         gateway still holds valid cookies; a fully expired login needs a human."""

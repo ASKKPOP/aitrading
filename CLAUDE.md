@@ -74,7 +74,7 @@ An independent agent-native trading platform. Sooppiy is a standalone product.
 
 ### What this project actually is
 
-A **signal and copy-trading platform**, not a broker execution engine. Agents register, publish signals (strategies, operations, discussions), and followers mirror trades. Positions are tracked by polling prices via `price_fetcher.py`, not by routing orders to real brokers. Read this twice — feature work that assumes real execution will be wrong by default.
+A **signal and copy-trading platform** first. Agents register, publish signals (strategies, operations, discussions), and followers mirror trades. Positions are tracked by polling prices via `price_fetcher.py`; the internal simulated ledger is the default for everything. Since 2026-07-19 a real execution layer exists (`service/server/execution/` — see extension area 2), but it is opt-in per automation rule (`account_type: live`) and gated behind gateway credentials + consent. Feature work should still assume the simulated ledger unless it is explicitly about live routing.
 
 ### Stack
 
@@ -120,7 +120,7 @@ cd service/frontend && npm run dev                    # frontend on :3000 (proxi
 ### Extension areas (current direction)
 
 1. **Custom AI agents / strategies** — `routes_agent.py`, `routes_signals.py`, `services.py`. Agents auth with `claw_` bearer tokens.
-2. **Brokers / markets** — `price_fetcher.py` is the single integration point for market data. Real order-routing to IBKR/Alpaca/etc. would be a new subsystem; none exists today.
+2. **Brokers / markets** — `price_fetcher.py` is the single integration point for market data. Real order-routing EXISTS: `service/server/execution/` (router + Alpaca, Binance, IBKR-CPAPI adapters, AES-GCM credential storage). Automation rules route by `account_type` (simulator | shadow | live) via `execution/gateway.py`; live requires a connected gateway + per-broker T&Cs consent and needs `EXECUTION_ENCRYPTION_KEY` set.
 3. **Frontend** — most pages live in `service/frontend/src/AppPages.tsx` and `appCommunityPages.tsx`. Recharts for charts.
 4. **Backtesting** — does not exist. Greenfield. Build under `service/server/backtest.py`, expose via `routes_research.py`, use `price_fetcher` for historical data.
 

@@ -176,6 +176,77 @@ def gateway_health(agent_id: int) -> dict[str, Any]:
     return out
 
 
+def keepalive_tick() -> dict[str, Any]:
+    """One pass of the IBKR session keepalive (worker task gateway_keepalive).
+
+    CPAPI drops an idle session after a few minutes, so a live IBKR rule on an
+    hourly interval would find a dead gateway at every tick without this. For
+    each ACTIVE ibkr account: tickle → check → (if lapsed) reauthenticate →
+    re-check → alert the owner if still dead. Alerting is once per day per
+    agent — a session that stays dead all day is one problem, not 24.
+
+    Only IBKR is touched; key/secret brokers have no session to keep alive.
+    Returns counters for the worker log line.
+    """
+    from database import get_db_connection
+    from execution.base import ExecutionMode
+
+    out = {"accounts": 0, "alive": 0, "revived": 0, "dead": 0}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT * FROM broker_accounts
+               WHERE broker = 'ibkr' AND is_active = 1"""
+        )
+        rows = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    for account in rows:
+        out["accounts"] += 1
+        if not _has_usable_credentials(account):
+            continue
+        try:
+            mode = ExecutionMode(account.get("execution_mode") or "shadow")
+        except ValueError:
+            mode = ExecutionMode.SHADOW
+        adapter = _broker_for(account, mode)
+        try:
+            _run_coro(adapter.tickle())
+            status = _run_coro(adapter.session_status())
+            if not status.get("ok") and status.get("reachable"):
+                # Lapsed but the gateway still holds cookies — try a refresh.
+                if _run_coro(adapter.reauthenticate()):
+                    status = _run_coro(adapter.session_status())
+                    if status.get("ok"):
+                        out["revived"] += 1
+            if status.get("ok"):
+                out["alive"] += 1
+                continue
+            out["dead"] += 1
+            _alert_session_down(account["agent_id"], status.get("detail") or "gateway session down")
+        except Exception:  # noqa: BLE001 — one bad account must not stop the sweep
+            out["dead"] += 1
+            _logger.exception("keepalive failed for agent %s", account.get("agent_id"))
+    return out
+
+
+def _alert_session_down(agent_id: int, detail: str) -> None:
+    """Once-per-day alert that the IBKR gateway can no longer take orders."""
+    try:
+        from datetime import datetime, timezone
+        from alerts import send_alert
+        day = datetime.now(timezone.utc).strftime("%Y%m%d")
+        send_alert(agent_id, "gateway_down",
+                   "Your IBKR gateway session is down",
+                   f"{detail} — live and shadow IBKR orders will not fill until "
+                   "you log in to the Client Portal Gateway again.",
+                   dedupe_key=f"gateway_session:{agent_id}:{day}")
+    except Exception:  # noqa: BLE001
+        _logger.debug("session-down alert failed for agent %s", agent_id)
+
+
 def _run_coro(coro):
     """Run an async broker call from the synchronous automation worker.
 

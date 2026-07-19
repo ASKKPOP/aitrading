@@ -380,3 +380,28 @@ class TestErrorText(unittest.TestCase):
             result = _run(broker.submit_order(_order()))
         self.assertEqual(result.status, OrderStatus.REJECTED)
         self.assertIn("expired", result.error_message)
+
+
+class TestTickle(unittest.TestCase):
+    def test_tickle_posts_to_the_keepalive_endpoint(self):
+        from execution.ibkr import IBKRBroker
+        calls: list = []
+        broker = IBKRBroker(gateway_url="https://gw/v1/api", account_id="DU1")
+        with patch.object(broker, "_client",
+                          return_value=_FakeClient({"/tickle": _FakeResponse(200, {})}, calls)):
+            ok = _run(broker.tickle())
+        self.assertTrue(ok)
+        self.assertTrue(any("/tickle" in c[1] for c in calls))
+
+    def test_tickle_is_false_when_unconfigured_or_unreachable(self):
+        import httpx
+        from execution.ibkr import IBKRBroker
+        self.assertFalse(_run(IBKRBroker().tickle()))
+
+        class _Boom:
+            async def __aenter__(self): return self
+            async def __aexit__(self, *a): return False
+            async def post(self, *a, **k): raise httpx.ConnectError("refused")
+        broker = IBKRBroker(gateway_url="https://gw/v1/api", account_id="DU1")
+        with patch.object(broker, "_client", return_value=_Boom()):
+            self.assertFalse(_run(broker.tickle()))
