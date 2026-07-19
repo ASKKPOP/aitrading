@@ -126,6 +126,13 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         from scanner import get_scanner_payload
         return await run_in_threadpool(get_scanner_payload)
 
+    @app.get('/api/social/sentiment')
+    async def social_sentiment():
+        """Latest per-symbol social tilt (Plan 11 F5). Facebook covers SEA, X
+        covers everywhere else; {'available': False} until the first cycle."""
+        from social_feed import get_social_payload
+        return await run_in_threadpool(get_social_payload)
+
     @app.get('/api/market-intel/events')
     async def market_intel_events():
         # Card 07 — static macro calendar; pure computation, no cache needed.

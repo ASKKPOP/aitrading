@@ -974,6 +974,39 @@ async def scanner_loop():
         await asyncio.sleep(scan_interval)
 
 
+async def social_feed_loop():
+    """Background task for the social collection service (Plan 11 F5).
+
+    Every SOCIAL_REFRESH_INTERVAL seconds (default 30 min), collect public
+    posts about the tracked symbols — Facebook for South-East Asia, X
+    elsewhere — score their polarity, snapshot the per-symbol tilt, and prune
+    raw posts past SOCIAL_RAW_RETENTION_DAYS (default 7). No-op unless
+    SOCIAL_FEED_ENABLED. See social_feed.py.
+    """
+    from social_feed import refresh_social_snapshot, social_feed_enabled
+
+    refresh_interval = _env_int("SOCIAL_REFRESH_INTERVAL", 1800, minimum=300)
+
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            if social_feed_enabled():
+                result = await asyncio.to_thread(refresh_social_snapshot)
+                print(
+                    "[Social Feed] snapshot stored: "
+                    f"symbols={len(result.get('symbols') or {})} "
+                    f"fetched={result.get('posts_fetched', 0)} "
+                    f"stored={result.get('posts_stored', 0)} "
+                    f"pruned={result.get('posts_pruned', 0)} "
+                    f"errors={result.get('errors') or 'none'}"
+                )
+        except Exception as e:
+            print(f"[Social Feed Error] {e}")
+
+        await asyncio.sleep(refresh_interval)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1602,6 +1635,7 @@ BACKGROUND_TASK_REGISTRY = {
     "risk_watcher": risk_watcher_loop,
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
+    "social_feed": social_feed_loop,
     "factor_snapshots": factor_snapshot_loop,
     "watches": watch_loop,
 }
@@ -1657,6 +1691,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "psych_feed":              "research",
     # scanner — which-coin candidates: volume surge, mentions, listings (Phase 4)
     "scanner":                 "research",
+    # social feed — FB (SEA) / X (elsewhere) posts -> per-symbol tilt (Plan 11 F5)
+    "social_feed":             "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
     # personal watch functions — user metric conditions -> alerts (Plan 06 C3)

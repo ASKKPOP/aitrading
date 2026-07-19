@@ -2662,6 +2662,48 @@ def init_database():
         ON signals(client_order_id)
     """)
 
+    # ── Plan 11 F5: social collection — raw posts + derived snapshots ────────
+    # Raw posts are pruned to SOCIAL_RAW_RETENTION_DAYS (default 7) each cycle;
+    # unique(platform, post_id) makes overlapping 30-minute windows idempotent.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS social_posts (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform        TEXT NOT NULL,
+            region          TEXT NOT NULL,
+            topic           TEXT NOT NULL,
+            post_id         TEXT NOT NULL,
+            author          TEXT,
+            text            TEXT,
+            engagement_json TEXT,
+            posted_at       TEXT,
+            created_at      TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_social_posts_platform_post
+        ON social_posts(platform, post_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_social_posts_topic_created
+        ON social_posts(topic, created_at)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_social_posts_created
+        ON social_posts(created_at)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS social_snapshots (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_key TEXT NOT NULL,
+            summary_json TEXT,
+            created_at   TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_social_snapshots_key_created
+        ON social_snapshots(snapshot_key, created_at)
+    """)
+
     # ── Plan 11 F2: LLM usage metering — one row per generate_text call ──────
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS llm_usage (

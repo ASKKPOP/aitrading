@@ -138,6 +138,14 @@ def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[st
             out["stocktwits"] = st
     except Exception:  # noqa: BLE001
         pass
+    # Social feed (Plan 11 F5): crowd tilt from Facebook (SEA) / X (elsewhere).
+    try:
+        from social_feed import social_sentiment_for
+        social = social_sentiment_for(symbol)
+        if social:
+            out["social"] = social
+    except Exception:  # noqa: BLE001
+        pass
     # Psych feed (Phase 2): F&G index, sentiment-spike z-scores, odds deltas.
     try:
         from psych_feed import get_psych_payload
