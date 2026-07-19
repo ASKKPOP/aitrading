@@ -6,6 +6,130 @@ import { API_BASE, COMMUNITY_FEED_PAGE_SIZE, MARKETS, useLanguage } from './appS
 import AuthBackground from './components/AuthBackground'
 import { SymbolSelect } from './components/SymbolSelect'
 import { tr } from './i18n'
+import type { Language } from './i18n'
+
+// "At a glance" pipeline section for the auth pages, drawn in the same visual
+// language as the docs guide's "§0 한눈에 보기 — 10단계 파이프라인": a strip of
+// STEP chips + a compact SVG flow. Login shows the workspace loop a returning
+// member re-enters; register shows the signup-to-live-broker journey.
+function AuthGlance({ mode, language }: { mode: 'login' | 'register'; language: Language }) {
+  // SVG text styles (mirrors the guide's .sv-t / .sv-s / .sv-lb)
+  const t: any = { fontSize: 12, fontWeight: 600, fill: 'var(--text-primary,#e8e2d8)', fontFamily: 'system-ui,"Apple SD Gothic Neo",sans-serif' }
+  const s: any = { fontSize: 10.5, fontWeight: 500, fill: 'var(--text-secondary,#8a8073)', fontFamily: 'system-ui,"Apple SD Gothic Neo",sans-serif' }
+  const box = { fill: 'var(--bg-secondary,rgba(255,255,255,0.03))', stroke: 'var(--border-color,#3a3a3a)', strokeWidth: 1 }
+  const acc = { fill: 'rgba(194,106,69,0.12)', stroke: 'var(--accent-primary,#c26a45)', strokeWidth: 1 }
+  const line = { stroke: 'var(--text-muted,#a89f92)', strokeWidth: 1.4, fill: 'none' }
+  const accline = { stroke: 'var(--accent-primary,#c26a45)', strokeWidth: 1.6, fill: 'none', strokeDasharray: '5 4' }
+
+  const chip = (no: string, label: string) => (
+    <div key={no + label} style={{ flex: '1 1 88px', background: 'var(--bg-secondary,rgba(255,255,255,0.03))', border: '1px solid var(--border-color,#3a3a3a)', borderRadius: 10, padding: '9px 8px', textAlign: 'center' as const }}>
+      <b style={{ display: 'block', fontSize: 11, color: 'var(--accent-primary,#c26a45)', fontVariantNumeric: 'tabular-nums' }}>{no}</b>
+      <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{label}</span>
+    </div>
+  )
+
+  const heading = mode === 'login'
+    ? tr(language, { ko: '한눈에 보기 — 로그인 후 워크플로', en: 'At a glance — your workflow after sign-in', ja: 'ひと目でわかる — ログイン後のワークフロー', th: 'ดูภาพรวม — เวิร์กโฟลว์หลังเข้าสู่ระบบ', vi: 'Nhìn nhanh — quy trình sau khi đăng nhập' })
+    : tr(language, { ko: '한눈에 보기 — 가입부터 실계좌까지', en: 'At a glance — from signup to live trading', ja: 'ひと目でわかる — 登録から実口座まで', th: 'ดูภาพรวม — จากสมัครถึงบัญชีจริง', vi: 'Nhìn nhanh — từ đăng ký đến tài khoản thật' })
+
+  const STEP = (n: number) => `STEP ${n}`
+
+  const chips = mode === 'login'
+    ? [
+        chip(STEP(1), tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าระบบ', vi: 'Đăng nhập' })),
+        chip(STEP(2), tr(language, { ko: 'AI 분석', en: 'AI analysis', ja: 'AI分析', th: 'วิเคราะห์ AI', vi: 'Phân tích AI' })),
+        chip(STEP(3), tr(language, { ko: '자동매매', en: 'Auto-trade', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động' })),
+        chip(STEP(4), tr(language, { ko: '리스크 게이트', en: 'Risk gate', ja: 'リスクゲート', th: 'ประตูความเสี่ยง', vi: 'Cổng rủi ro' })),
+        chip(STEP(5), tr(language, { ko: '체결·알림', en: 'Fills & alerts', ja: '約定・通知', th: 'คำสั่ง·แจ้งเตือน', vi: 'Khớp lệnh·báo' })),
+      ]
+    : [
+        chip(STEP(1), tr(language, { ko: '1분 가입', en: '1-min signup', ja: '1分登録', th: 'สมัคร 1 นาที', vi: 'Đăng ký 1 phút' })),
+        chip(STEP(2), tr(language, { ko: '웰컴 자본', en: 'Welcome capital', ja: 'ウェルカム資金', th: 'ทุนต้อนรับ', vi: 'Vốn chào mừng' })),
+        chip(STEP(3), tr(language, { ko: 'AI 분석', en: 'AI analysis', ja: 'AI分析', th: 'วิเคราะห์ AI', vi: 'Phân tích AI' })),
+        chip(STEP(4), tr(language, { ko: '자동매매', en: 'Auto-trade', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động' })),
+        chip(STEP(5), tr(language, { ko: '실계좌 (선택)', en: 'Live (optional)', ja: '実口座（任意）', th: 'บัญชีจริง (เลือกได้)', vi: 'Thật (tùy chọn)' })),
+      ]
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-secondary,#8a8073)', marginBottom: 10 }}>{heading}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>{chips}</div>
+
+      {mode === 'login' ? (
+        <svg viewBox="0 0 560 216" width="100%" role="img" aria-label={heading} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ag-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="var(--text-muted,#a89f92)" />
+            </marker>
+            <marker id="ag-arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="var(--accent-primary,#c26a45)" />
+            </marker>
+          </defs>
+          {/* band 1: sign in → analysis → automation */}
+          <rect x="16" y="10" width="160" height="48" rx="9" style={box} />
+          <text x="96" y="30" textAnchor="middle" style={t}>{tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}</text>
+          <text x="96" y="46" textAnchor="middle" style={s}>{tr(language, { ko: '규칙은 계속 실행 중', en: 'rules kept running', ja: 'ルールは稼働中', th: 'กฎยังทำงานอยู่', vi: 'quy tắc vẫn chạy' })}</text>
+          <rect x="200" y="10" width="160" height="48" rx="9" style={acc} />
+          <text x="280" y="30" textAnchor="middle" style={t}>{tr(language, { ko: 'AI 애널리스트', en: 'AI Analysts', ja: 'AIアナリスト', th: 'นักวิเคราะห์ AI', vi: 'Nhà phân tích AI' })}</text>
+          <text x="280" y="46" textAnchor="middle" style={s}>{tr(language, { ko: '4명 분석 → 결정·리포트', en: '4 briefs → decision', ja: '4名分析→判断', th: '4 คน → ผลตัดสิน', vi: '4 người → quyết định' })}</text>
+          <rect x="384" y="10" width="160" height="48" rx="9" style={acc} />
+          <text x="464" y="30" textAnchor="middle" style={t}>{tr(language, { ko: '자동매매 규칙', en: 'Auto-trade rules', ja: '自動売買ルール', th: 'กฎเทรดอัตโนมัติ', vi: 'Quy tắc tự động' })}</text>
+          <text x="464" y="46" textAnchor="middle" style={s}>{tr(language, { ko: '24/7 서버 실행', en: 'runs 24/7 server-side', ja: 'サーバーで24時間実行', th: 'ทำงาน 24/7', vi: 'chạy 24/7' })}</text>
+          <path d="M176 34 H198" style={line} markerEnd="url(#ag-ar)" />
+          <path d="M360 34 H382" style={line} markerEnd="url(#ag-ar)" />
+          {/* band 2: gate ← fills ← alerts (flow right-to-left) */}
+          <path d="M464 58 V84" style={line} markerEnd="url(#ag-ar)" />
+          <rect x="384" y="86" width="160" height="48" rx="9" style={box} />
+          <text x="464" y="106" textAnchor="middle" style={t}>{tr(language, { ko: '리스크 게이트', en: 'Risk gate', ja: 'リスクゲート', th: 'ประตูความเสี่ยง', vi: 'Cổng rủi ro' })}</text>
+          <text x="464" y="122" textAnchor="middle" style={s}>{tr(language, { ko: '한도·이벤트·브레이커', en: 'limits · events · breakers', ja: '上限・イベント・遮断', th: 'วงเงิน·เหตุการณ์·เบรกเกอร์', vi: 'hạn mức · sự kiện' })}</text>
+          <rect x="200" y="86" width="160" height="48" rx="9" style={box} />
+          <text x="280" y="106" textAnchor="middle" style={t}>{tr(language, { ko: '체결', en: 'Fills', ja: '約定', th: 'คำสั่งซื้อขาย', vi: 'Khớp lệnh' })}</text>
+          <text x="280" y="122" textAnchor="middle" style={s}>{tr(language, { ko: '모의 기본 · 실계좌 선택', en: 'simulated · live optional', ja: '模擬が既定・実口座任意', th: 'จำลอง · จริงเลือกได้', vi: 'mô phỏng · thật tùy chọn' })}</text>
+          <rect x="16" y="86" width="160" height="48" rx="9" style={box} />
+          <text x="96" y="106" textAnchor="middle" style={t}>{tr(language, { ko: '알림·기록', en: 'Alerts & journal', ja: '通知・記録', th: 'แจ้งเตือน·บันทึก', vi: 'Thông báo · nhật ký' })}</text>
+          <text x="96" y="122" textAnchor="middle" style={s}>{tr(language, { ko: '이메일·SMS·인앱', en: 'email · SMS · in-app', ja: 'メール・SMS・アプリ', th: 'อีเมล·SMS·ในแอป', vi: 'email · SMS · trong app' })}</text>
+          <path d="M384 110 H362" style={line} markerEnd="url(#ag-ar)" />
+          <path d="M200 110 H178" style={line} markerEnd="url(#ag-ar)" />
+          {/* growth loop back to analysis */}
+          <rect x="16" y="160" width="528" height="42" rx="9" style={{ ...box, strokeDasharray: '5 4' }} />
+          <text x="280" y="185" textAnchor="middle" style={t}>{tr(language, { ko: '성장 루프 — 결과를 복기하고 규칙을 개선해 다시 분석으로', en: 'Growth loop — review results, refine rules, analyze again', ja: '成長ループ — 結果を振り返り、ルールを改善して再分析', th: 'วงจรเติบโต — ทบทวนผล ปรับกฎ แล้ววิเคราะห์ใหม่', vi: 'Vòng phát triển — xem lại, tinh chỉnh, phân tích lại' })}</text>
+          <path d="M96 134 V158" style={line} markerEnd="url(#ag-ar)" />
+          <path d="M188 160 V46 H196" style={accline} markerEnd="url(#ag-arA)" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 560 236" width="100%" role="img" aria-label={heading} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ag-ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="var(--text-muted,#a89f92)" />
+            </marker>
+          </defs>
+          {/* band 1: signup → welcome capital */}
+          <rect x="16" y="10" width="252" height="52" rx="9" style={box} />
+          <text x="142" y="30" textAnchor="middle" style={t}>{tr(language, { ko: 'STEP 1 · 1분 가입', en: 'STEP 1 · 1-minute signup', ja: 'STEP 1 · 1分登録', th: 'STEP 1 · สมัคร 1 นาที', vi: 'STEP 1 · Đăng ký 1 phút' })}</text>
+          <text x="142" y="48" textAnchor="middle" style={s}>{tr(language, { ko: '이름 + 이메일 + 비밀번호', en: 'name + email + password', ja: '名前＋メール＋パスワード', th: 'ชื่อ + อีเมล + รหัสผ่าน', vi: 'tên + email + mật khẩu' })}</text>
+          <rect x="292" y="10" width="252" height="52" rx="9" style={acc} />
+          <text x="418" y="30" textAnchor="middle" style={t}>{tr(language, { ko: 'STEP 2 · 웰컴 자본', en: 'STEP 2 · Welcome capital', ja: 'STEP 2 · ウェルカム資金', th: 'STEP 2 · ทุนต้อนรับ', vi: 'STEP 2 · Vốn chào mừng' })}</text>
+          <text x="418" y="48" textAnchor="middle" style={s}>{tr(language, { ko: '모의 자금 $100,000 즉시 지급', en: '$100,000 simulated — instant', ja: '模擬資金 $100,000 を即付与', th: 'เงินจำลอง $100,000 ทันที', vi: '$100.000 mô phỏng — ngay' })}</text>
+          <path d="M268 36 H290" style={line} markerEnd="url(#ag-ar2)" />
+          {/* band 2: AI analysis → automation */}
+          <path d="M418 62 V76 H142 V86" style={line} markerEnd="url(#ag-ar2)" />
+          <rect x="16" y="88" width="252" height="52" rx="9" style={acc} />
+          <text x="142" y="108" textAnchor="middle" style={t}>{tr(language, { ko: 'STEP 3 · AI 애널리스트', en: 'STEP 3 · AI Analysts', ja: 'STEP 3 · AIアナリスト', th: 'STEP 3 · นักวิเคราะห์ AI', vi: 'STEP 3 · Nhà phân tích AI' })}</text>
+          <text x="142" y="126" textAnchor="middle" style={s}>{tr(language, { ko: '4명이 분석·토론 → 결정·리포트', en: '4 analysts debate → decision + report', ja: '4名が分析・討議→判断とレポート', th: '4 คนถกเถียง → ผลตัดสิน + รายงาน', vi: '4 người tranh luận → quyết định' })}</text>
+          <rect x="292" y="88" width="252" height="52" rx="9" style={acc} />
+          <text x="418" y="108" textAnchor="middle" style={t}>{tr(language, { ko: 'STEP 4 · 자동매매 규칙', en: 'STEP 4 · Auto-trade rules', ja: 'STEP 4 · 自動売買ルール', th: 'STEP 4 · กฎเทรดอัตโนมัติ', vi: 'STEP 4 · Quy tắc tự động' })}</text>
+          <text x="418" y="126" textAnchor="middle" style={s}>{tr(language, { ko: '규칙을 만들면 24/7 서버 실행', en: 'create a rule — runs 24/7', ja: 'ルールを作れば24時間実行', th: 'สร้างกฎ — ทำงาน 24/7', vi: 'tạo quy tắc — chạy 24/7' })}</text>
+          <path d="M268 114 H290" style={line} markerEnd="url(#ag-ar2)" />
+          {/* band 3: optional live upgrade */}
+          <path d="M418 140 V164" style={line} markerEnd="url(#ag-ar2)" />
+          <rect x="16" y="166" width="528" height="52" rx="9" style={{ ...box, strokeDasharray: '5 4' }} />
+          <text x="280" y="186" textAnchor="middle" style={t}>{tr(language, { ko: 'STEP 5 · 준비되면 — 실계좌 브로커 연결 (선택)', en: 'STEP 5 · When ready — connect a live broker (optional)', ja: 'STEP 5 · 準備ができたら — 実口座ブローカー接続（任意）', th: 'STEP 5 · เมื่อพร้อม — เชื่อมโบรกเกอร์จริง (เลือกได้)', vi: 'STEP 5 · Khi sẵn sàng — kết nối môi giới thật (tùy chọn)' })}</text>
+          <text x="280" y="204" textAnchor="middle" style={s}>{tr(language, { ko: '그 전까지 실제 돈은 한 푼도 들어가지 않습니다', en: 'until then, not a cent of real money is involved', ja: 'それまで実際のお金は一切かかりません', th: 'ก่อนหน้านั้นไม่ใช้เงินจริงแม้แต่บาทเดียว', vi: 'trước đó không dùng một đồng tiền thật nào' })}</text>
+        </svg>
+      )}
+    </div>
+  )
+}
 
 function AuthShell({
   mode,
@@ -60,37 +184,7 @@ function AuthShell({
                   vi: 'Đăng ký và nhận ngay $100.000 vốn mô phỏng. Giao việc cho các nhà phân tích AI, tạo quy tắc giao dịch tự động, theo dõi tín hiệu và thảo luận — bắt đầu không cần tiền thật, và kết nối tài khoản môi giới thật khi bạn sẵn sàng.'
                 })}
           </p>
-          {mode === 'login' ? (
-            <div className="auth-copy-grid">
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: '이어하기', en: 'Welcome back', ja: 'おかえりなさい', th: 'กลับมาต่อ', vi: 'Chào mừng trở lại' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: '자동매매 규칙은 24/7 계속 실행 중', en: 'Your auto-trading rules kept running 24/7', ja: '自動売買ルールは24時間稼働中', th: 'กฎเทรดอัตโนมัติของคุณทำงานต่อเนื่อง 24/7', vi: 'Quy tắc giao dịch tự động của bạn vẫn chạy 24/7' })}</div>
-              </div>
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: 'AI 데스크', en: 'AI desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: 'AI 애널리스트 + 자동매매 + 시그널', en: 'AI Analyst + auto-trading + signals', ja: 'AIアナリスト + 自動売買 + シグナル', th: 'นักวิเคราะห์ AI + เทรดอัตโนมัติ + สัญญาณ', vi: 'Nhà phân tích AI + giao dịch tự động + tín hiệu' })}</div>
-              </div>
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: '성장 루프', en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: '분석 → 자동매매 → 알림 → 개선', en: 'Analyze → Auto-trade → Alerts → Improve', ja: '分析 → 自動売買 → 通知 → 改善', th: 'วิเคราะห์ → เทรดอัตโนมัติ → แจ้งเตือน → ปรับปรุง', vi: 'Phân tích → Giao dịch tự động → Thông báo → Cải thiện' })}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="auth-copy-grid">
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: '웰컴 자본', en: 'Welcome capital', ja: 'ウェルカム資金', th: 'ทุนต้อนรับ', vi: 'Vốn chào mừng' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: '모의 자금 $100,000 즉시 지급', en: '$100,000 simulated — yours instantly', ja: 'シミュレーション資金 $100,000 を即時付与', th: 'เงินจำลอง $100,000 รับทันที', vi: '$100.000 vốn mô phỏng — nhận ngay' })}</div>
-              </div>
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: '1분 가입', en: '1-minute signup', ja: '1分で登録', th: 'สมัครใน 1 นาที', vi: 'Đăng ký 1 phút' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: '이름 + 이메일 + 비밀번호면 끝', en: 'Name + email + password — done', ja: '名前＋メール＋パスワードで完了', th: 'ชื่อ + อีเมล + รหัสผ่าน — เสร็จ', vi: 'Tên + email + mật khẩu — xong' })}</div>
-              </div>
-              <div className="auth-copy-card">
-                <div className="auth-copy-label">{tr(language, { ko: '준비되면', en: 'When ready', ja: '準備ができたら', th: 'เมื่อพร้อม', vi: 'Khi sẵn sàng' })}</div>
-                <div className="auth-copy-value">{tr(language, { ko: '실계좌 브로커 연결로 업그레이드', en: 'Upgrade to a live broker connection', ja: '実口座ブローカー接続へアップグレード', th: 'อัปเกรดเชื่อมต่อโบรกเกอร์จริง', vi: 'Nâng cấp kết nối môi giới thật' })}</div>
-              </div>
-            </div>
-          )}
+          <AuthGlance mode={mode} language={language} />
         </div>
 
         <div className="auth-panel auth-panel-form">
