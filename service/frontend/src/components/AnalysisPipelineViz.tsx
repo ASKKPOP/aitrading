@@ -10,8 +10,10 @@ import { Language, tr } from '../i18n'
 //   gather:news|sentiment|fundamentals_macro|technical  (run concurrently)
 //   brief:news|sentiment|fundamentals_macro|technical   (run concurrently)
 //   decision -> verify
-// Card states: pending (dim), running (pulsing amber + flowing edge),
-// done (green + duration), error (red).
+// Card states: pending (dim), running (pulsing accent + flowing edge),
+// done (accent + duration), error (red). No green anywhere — the guide
+// diagrams reserve color for accent/critical only, and the diagram is
+// width-capped so boxes stay at the guide's compact scale on wide screens.
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error'
 export type StepInfo = { status: StepStatus; runs: number; startedAt?: number; endedAt?: number }
@@ -31,19 +33,20 @@ const ROLES = ['news', 'sentiment', 'fundamentals_macro', 'technical'] as const
 const ST_COLOR: Record<StepStatus, string> = {
   pending: 'var(--g-baseline)',
   running: 'var(--g-accent)',
-  done: 'var(--g-good)',
+  done: 'var(--g-accent)',
   error: 'var(--g-crit)',
 }
 
-// Geometry (viewBox 960 wide, box sizes/radii per the guide diagrams).
+// Geometry (viewBox 960 wide, box sizes/radii per the guide diagrams —
+// rows slimmed to the guide's height:width proportion).
 const COL_X = [12, 252, 492, 732]          // 4 role columns
 const COL_W = 216
 const cx = (i: number) => COL_X[i] + COL_W / 2
-const GATHER_Y = 26, BRIEF_Y = 132, ROW_H = 58
-const BUS_Y = 222
-const DEC = { x: 290, y: 250, w: 380, h: 66 }
-const VER = { x: 360, y: 354, w: 240, h: 58 }
-const VIEW_H = 424
+const GATHER_Y = 22, BRIEF_Y = 116, ROW_H = 46
+const BUS_Y = 196
+const DEC = { x: 290, y: 222, w: 380, h: 52 }
+const VER = { x: 360, y: 312, w: 240, h: 46 }
+const VIEW_H = 372
 
 function StepCard({ x, y, w, h, title, stepId, info, labels }: {
   x: number; y: number; w: number; h: number
@@ -63,18 +66,18 @@ function StepCard({ x, y, w, h, title, stepId, info, labels }: {
   const midX = x + w / 2
   return (
     <g className={`plv-card plv-${status}`}>
-      <rect x={x} y={y} width={w} height={h} rx={9} className="plv-box" />
-      <text x={midX} y={y + 20} textAnchor="middle" className="plv-t"
+      <rect x={x} y={y} width={w} height={h} rx={8} className="plv-box" />
+      <text x={midX} y={y + 16} textAnchor="middle" className="plv-t"
         opacity={status === 'pending' ? 0.55 : 1}>
         {title}
         {(info?.runs ?? 0) > 1 && <tspan fill="var(--g-accent)"> ×{info!.runs}</tspan>}
       </text>
       {statusLine && (
-        <text x={midX} y={y + 35} textAnchor="middle" className="plv-s" fill={ST_COLOR[status]}>
+        <text x={midX} y={y + 29} textAnchor="middle" className="plv-s" fill={ST_COLOR[status]}>
           {statusLine}
         </text>
       )}
-      <text x={midX} y={y + h - 9} textAnchor="middle" className="plv-m">{stepId}</text>
+      <text x={midX} y={y + h - 7} textAnchor="middle" className="plv-m">{stepId}</text>
     </g>
   )
 }
@@ -100,7 +103,6 @@ export function AnalysisPipelineViz({ steps, labels }: {
   )
   const markerFor = (color: string) =>
     color === ST_COLOR.running ? 'url(#plv-ar-run)'
-    : color === ST_COLOR.done ? 'url(#plv-ar-done)'
     : color === ST_COLOR.error ? 'url(#plv-ar-err)'
     : 'url(#plv-ar)'
 
@@ -117,7 +119,9 @@ export function AnalysisPipelineViz({ steps, labels }: {
     <div className="plv-wrap" style={{ width: '100%', borderRadius: 14,
                   border: '1px solid var(--g-border)', background: 'var(--g-card)',
                   padding: 14, overflowX: 'auto' }}>
-      <svg viewBox={`0 0 960 ${VIEW_H}`} style={{ display: 'block', minWidth: 680, width: '100%', height: 'auto' }}
+      <svg viewBox={`0 0 960 ${VIEW_H}`}
+        style={{ display: 'block', minWidth: 680, width: '100%', maxWidth: 980,
+                 margin: '0 auto', height: 'auto' }}
         xmlns="http://www.w3.org/2000/svg" role="img" aria-label={labels.__pipeline}>
         <style>{`
           /* Guide palette (docs/design/ai-trading-guide.html :root) — dark by
@@ -125,24 +129,22 @@ export function AnalysisPipelineViz({ steps, labels }: {
           .plv-wrap {
             --g-card:#202020; --g-surface:#1a1a19; --g-border:rgba(255,255,255,0.10);
             --g-baseline:#383835; --g-ink:#fff; --g-ink2:#c3c2b7; --g-muted:#898781;
-            --g-accent:#3987e5; --g-good:#0ca30c; --g-good-ink:#0ca30c;
-            --g-crit:#d03b3b; --g-yellow:#c98500;
+            --g-accent:#3987e5; --g-crit:#d03b3b; --g-yellow:#c98500;
           }
           :root[data-theme='light'] .plv-wrap {
             --g-card:#ffffff; --g-surface:#f1f0ec; --g-border:rgba(11,11,11,0.10);
             --g-baseline:#c3c2b7; --g-ink:#0b0b0b; --g-ink2:#52514e; --g-muted:#898781;
-            --g-accent:#2a78d6; --g-good:#0ca30c; --g-good-ink:#006300;
-            --g-crit:#d03b3b; --g-yellow:#eda100;
+            --g-accent:#2a78d6; --g-crit:#d03b3b; --g-yellow:#eda100;
           }
-          .plv-t { font: 600 12px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; fill: var(--g-ink); }
-          .plv-s { font: 500 10.5px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; }
-          .plv-m { font: 600 10px ui-monospace,"SF Mono",Menlo,monospace; fill: var(--g-muted); }
+          .plv-t { font: 600 11.5px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; fill: var(--g-ink); }
+          .plv-s { font: 500 10px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; }
+          .plv-m { font: 600 9.5px ui-monospace,"SF Mono",Menlo,monospace; fill: var(--g-muted); }
           .plv-pending .plv-box { fill: var(--g-surface); stroke: var(--g-border); stroke-width: 1; }
           .plv-running .plv-box { fill: color-mix(in srgb, var(--g-accent) 12%, var(--g-card)); stroke: var(--g-accent); stroke-width: 1.6;
                                   animation: plv-pulse 1.4s ease-in-out infinite; }
-          .plv-done .plv-box { fill: color-mix(in srgb, var(--g-good) 12%, var(--g-card)); stroke: var(--g-good); stroke-width: 1.6; }
+          .plv-done .plv-box { fill: color-mix(in srgb, var(--g-accent) 8%, var(--g-card)); stroke: var(--g-accent); stroke-width: 1.2; }
           .plv-error .plv-box { fill: color-mix(in srgb, var(--g-crit) 10%, var(--g-card)); stroke: var(--g-crit); stroke-width: 1.6; }
-          .plv-done .plv-s { fill: var(--g-good-ink); }
+          .plv-done .plv-s { fill: var(--g-accent); }
           .plv-flow { animation: plv-dash 0.9s linear infinite; }
           @keyframes plv-pulse { 0%,100% { stroke-opacity: 1 } 50% { stroke-opacity: 0.35 } }
           @keyframes plv-dash { to { stroke-dashoffset: -11 } }
@@ -150,7 +152,6 @@ export function AnalysisPipelineViz({ steps, labels }: {
         <defs>
           {marker('plv-ar', 'var(--g-baseline)')}
           {marker('plv-ar-run', ST_COLOR.running)}
-          {marker('plv-ar-done', ST_COLOR.done)}
           {marker('plv-ar-err', ST_COLOR.error)}
         </defs>
 
@@ -432,7 +433,7 @@ export function AnalysisMonitorPanel({ language, steps, log }: {
               <span style={{ width: 14, textAlign: 'center' }}>
                 {e.status === 'start' ? '▶' : e.status === 'done' ? '✓' : '✗'}
               </span>
-              <span style={{ color: e.status === 'error' ? '#f0663f' : e.status === 'done' ? '#3fb950' : 'var(--text-primary,inherit)' }}>
+              <span style={{ color: e.status === 'error' ? '#f0663f' : e.status === 'done' ? '#3987e5' : 'var(--text-primary,inherit)' }}>
                 {labels[e.step] || e.step} — {e.status === 'start' ? labels.__start : e.status === 'done' ? labels.__done : labels.__error}
               </span>
               {e.detail && <span style={{ color: 'var(--text-secondary,#8a8073)' }}>{e.detail}</span>}
