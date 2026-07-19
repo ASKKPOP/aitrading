@@ -54,7 +54,10 @@ const RISK_PRESETS = {
 } as const
 type RiskKey = keyof typeof RISK_PRESETS
 
-const SIMPLE_COINS = ['BTC', 'ETH', 'SOL', 'SCANNER'] as const
+// Simple-mode universe: the market's current top-5 by volume/popularity
+// (Plan 11 F1, /api/markets/top-symbols); this static list is the fallback
+// until the fetch lands (or when it fails).
+const SIMPLE_COINS_FALLBACK = ['BTC', 'ETH', 'SOL']
 
 export function AutomationPage() {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
@@ -65,9 +68,23 @@ export function AutomationPage() {
   })
   useEffect(() => { localStorage.setItem(MODE_KEY, mode) }, [mode])
 
+  // Top-5 tradable universe for simple mode (fail-soft to the static fallback).
+  useEffect(() => {
+    fetch(`${API_BASE}/markets/top-symbols`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const coins = (d?.symbols || [])
+          .map((s: any) => String(s.symbol || '').replace(/USDT$/, ''))
+          .filter(Boolean)
+        if (coins.length) setTopCoins(coins.slice(0, 5))
+      })
+      .catch(() => { /* keep fallback */ })
+  }, [])
+
   const [rules, setRules] = useState<Rule[]>([])
   const [runs, setRuns] = useState<any[]>([])
   const [draft, setDraft] = useState<Rule>({ ...DEFAULT_DRAFT })
+  const [topCoins, setTopCoins] = useState<string[]>(SIMPLE_COINS_FALLBACK)
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
   const [agentBudget, setAgentBudget] = useState<number>(5000)
@@ -171,6 +188,7 @@ export function AutomationPage() {
     modeProDesc: tr(language, { ko: '모든 설정을 직접 제어합니다 — AI 제공자, 시장, 계정 유형까지', en: 'Full control over every setting — AI provider, market, account type', ja: '全設定をフルコントロール', th: 'ควบคุมทุกการตั้งค่า', vi: 'Toàn quyền kiểm soát mọi thiết lập' }),
     coinAuto: tr(language, { ko: 'AI 자동 선택', en: 'AI auto-pick', ja: 'AI自動選択', th: 'AI เลือกให้', vi: 'AI tự chọn' }),
     coinAutoHint: tr(language, { ko: '스캐너가 거래량 급증·신규 상장에서 후보를 고릅니다', en: 'The scanner picks candidates from volume surges & new listings', ja: 'スキャナーが出来高急増・新規上場から選択', th: 'สแกนเนอร์เลือกจากปริมาณพุ่งและเหรียญใหม่', vi: 'Máy quét chọn từ khối lượng tăng vọt & niêm yết mới' }),
+    topFiveHint: tr(language, { ko: '지금 거래량·관심도 상위 5개 종목입니다', en: 'The current top-5 symbols by volume & popularity', ja: '現在の出来高・注目度トップ5銘柄です', th: '5 อันดับเหรียญยอดนิยมตามปริมาณซื้อขายตอนนี้', vi: '5 mã hàng đầu theo khối lượng & mức quan tâm hiện tại' }),
     riskLabel: tr(language, { ko: '위험 성향', en: 'Risk level', ja: 'リスク', th: 'ระดับความเสี่ยง', vi: 'Mức rủi ro' }),
     riskStable: tr(language, { ko: '안정', en: 'Stable', ja: '安定', th: 'มั่นคง', vi: 'Ổn định' }),
     riskBalanced: tr(language, { ko: '균형', en: 'Balanced', ja: 'バランス', th: 'สมดุล', vi: 'Cân bằng' }),
@@ -484,13 +502,14 @@ export function AutomationPage() {
       {mode === 'simple' && (
         <div className="card" style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.symbol}</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {SIMPLE_COINS.map(c => (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            {[...topCoins, 'SCANNER'].map(c => (
               <button key={c} style={chip(simpleCoin === c)} onClick={() => setSimpleCoin(c)}>
                 {c === 'SCANNER' ? `🔍 ${T.coinAuto}` : c}
               </button>
             ))}
           </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 16 }}>{T.topFiveHint}</div>
           {simpleCoin === 'SCANNER' && (
             <div style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)', marginBottom: 12 }}>💡 {T.coinAutoHint}</div>
           )}

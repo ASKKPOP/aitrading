@@ -42,12 +42,19 @@ def _now_iso() -> str:
 
 
 def _allowed_symbols(candidates: list[dict[str, Any]]) -> list[str]:
-    """Universe the planner may pick from: scanner candidates + majors."""
-    symbols = [c.get("symbol") for c in candidates if c.get("symbol")]
+    """Universe the planner may pick from: the market's top-5 by volume and
+    popularity (Plan 11 F1). Falls back to scanner candidates + majors."""
+    try:
+        from top_symbols import get_top_symbols
+        symbols = [t["symbol"] for t in get_top_symbols()]
+    except Exception:  # noqa: BLE001
+        symbols = []
+    if not symbols:
+        symbols = [c.get("symbol") for c in candidates if c.get("symbol")]
     for s in PLAN_BOUNDS["fallback_symbols"]:
         if s not in symbols:
             symbols.append(s)
-    return symbols[:12]
+    return symbols[:5]
 
 
 def _gather_context(agent_id: int, budget_usd: float) -> dict[str, Any]:

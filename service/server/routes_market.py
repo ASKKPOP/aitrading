@@ -246,6 +246,23 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         return await run_in_threadpool(_cached_market_payload, 'symbol-options', _build)
 
+    @app.get('/api/markets/top-symbols')
+    async def market_top_symbols(limit: int = 5):
+        """Top symbols by 24h volume + popularity (Plan 11 F1) — the universe
+        offered to full-delegation and simple automation modes."""
+        safe_limit = max(1, min(limit, 10))
+
+        def _build():
+            from top_symbols import get_top_symbols
+            items = get_top_symbols(safe_limit)
+            return {'symbols': items, 'count': len(items)}
+
+        try:
+            return await run_in_threadpool(
+                _cached_market_payload, f'top-symbols:limit={safe_limit}', _build)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
     @app.get('/api/markets/crypto/tickers')
     async def crypto_tickers():
         """List top 20 USDT-margined perpetual futures with live OKX prices."""
