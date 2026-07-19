@@ -281,13 +281,21 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
+            cursor.execute("SELECT id FROM automation_configs WHERE id = ? AND agent_id = ?",
+                           (config_id, agent["id"]))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Rule not found")
             begin_write_transaction(cursor)
+            # Child rows first: automation_runs and agent_mode_decisions carry
+            # FKs to automation_configs with no ON DELETE CASCADE, so MySQL
+            # (prod) rejects deleting a rule that has ever run (error 1451).
+            cursor.execute("DELETE FROM agent_mode_decisions WHERE config_id = ? AND agent_id = ?",
+                           (config_id, agent["id"]))
+            cursor.execute("DELETE FROM automation_runs WHERE config_id = ? AND agent_id = ?",
+                           (config_id, agent["id"]))
             cursor.execute("DELETE FROM automation_configs WHERE id = ? AND agent_id = ?",
                            (config_id, agent["id"]))
-            deleted = cursor.rowcount
             conn.commit()
-            if not deleted:
-                raise HTTPException(status_code=404, detail="Rule not found")
             return {"ok": True}
         finally:
             conn.close()
