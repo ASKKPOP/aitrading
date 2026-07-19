@@ -131,7 +131,7 @@ export function TrendingSidebar() {
     // Outer wrapper stays in normal flow (stretched to the row height) so the
     // spacer can push the sticky block down to the page's first box without a
     // margin — a top margin on a sticky element breaks its pinning range.
-    <div ref={rootRef} style={{ width: '280px', flexShrink: 0 }}>
+    <div ref={rootRef} className="trending-rail" style={{ width: '280px', flexShrink: 0 }}>
       <div style={{ height: topOffset }} />
       <div style={{ position: 'sticky', top: '24px' }}>
       {/* Agent Count */}

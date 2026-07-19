@@ -592,6 +592,12 @@ a {
   .mobile-only-chrome { display: none; }
 }
 
+/* The 280px trending rail has no room on a phone — it would squeeze the page
+   column to nothing. Hide it there; the same data lives on /market. */
+@media (max-width: 768px) {
+  .trending-rail { display: none; }
+}
+
 /* Sidebar */
 .sidebar {
   width: var(--sidebar-w);

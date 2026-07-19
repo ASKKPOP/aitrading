@@ -36,6 +36,16 @@ from utils import _extract_token
 INITIAL_CAPITAL = 100000.0
 
 
+def _row_value(row, key: str):
+    """Read an optional column from a DB row. Columns added by later migrations
+    may be absent on a stale schema, and sqlite3.Row raises rather than
+    returning None for an unknown key."""
+    try:
+        return row[key]
+    except (KeyError, IndexError):
+        return None
+
+
 def profit_percent_for_display(profit: float, deposited: float) -> float:
     base_capital = INITIAL_CAPITAL + (deposited or 0)
     if base_capital <= 0:
@@ -697,6 +707,10 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'entry_price': row['entry_price'],
                 'current_price': current_price,
                 'pnl': pnl,
+                # Exit protection set by the risk gate / automation — the
+                # positions view shows it per row (Plan 11 F3a).
+                'stop_loss': _row_value(row, 'stop_loss'),
+                'take_profit': _row_value(row, 'take_profit'),
                 'source': source,
                 'opened_at': row['opened_at'],
             })
@@ -706,6 +720,34 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         payload = {'positions': positions, 'cash': agent.get('cash', 100000.0)}
         ctx.positions_cache[agent['id']] = (now_ts, payload)
         return payload
+
+    @app.get('/api/positions/trades')
+    async def get_my_trades(limit: int = 50, authorization: str = Header(None)):
+        """The authed agent's executed trades — the 거래 내역 tab of the
+        positions view (Plan 11 F3a). Operation signals are this platform's
+        fill log; broker_orders covers the live/shadow order lifecycle."""
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        safe_limit = max(1, min(limit, 200))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT signal_id, symbol, market, token_id, outcome, side,
+                      entry_price, exit_price, quantity, pnl, created_at, executed_at
+               FROM signals
+               WHERE agent_id = ? AND message_type = 'operation'
+               ORDER BY created_at DESC LIMIT ?""",
+            (agent['id'], safe_limit))
+        rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+
+        for item in rows:
+            if item.get('market') == 'polymarket':
+                decorate_polymarket_item(item, fetch_remote=False)
+        return {'trades': rows, 'count': len(rows)}
 
     @app.get('/api/agents/{agent_id}/positions')
     async def get_agent_positions(agent_id: int):
