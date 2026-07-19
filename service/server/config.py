@@ -8,12 +8,36 @@ os.getenv()-based config — no other files need to change.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV_FILE = Path(__file__).parent.parent.parent / ".env"
+
+
+def _export_env_file(path: Path) -> None:
+    """Mirror .env into os.environ (setdefault — real process env always wins).
+
+    pydantic-settings reads the env file only for fields declared on Settings,
+    but most feature flags are read with os.getenv() at call time all over the
+    codebase (SOOPPIY_API_BACKGROUND_TASKS, AUTO_TRADING_ENABLED,
+    RISK_ENGINE_ENABLED, every LLM key…). In prod, docker --env-file injects
+    them as real process env; in local dev nothing did, so those flags
+    silently stayed unset — background loops off, automation never ticking.
+    setdefault keeps prod/docker behaviour byte-identical."""
+    try:
+        from dotenv import dotenv_values
+        for key, value in dotenv_values(path).items():
+            if value is not None:
+                os.environ.setdefault(key, value)
+    except Exception:  # noqa: BLE001 — a malformed .env must not block startup
+        pass
+
+
+if _ENV_FILE.exists():
+    _export_env_file(_ENV_FILE)
 
 
 class Settings(BaseSettings):
