@@ -291,6 +291,9 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '로그인 중…', en: 'Signing in…', ja: 'ログイン中…', th: 'กำลังเข้าสู่ระบบ…', vi: 'Đang đăng nhập…' }) : tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
           </button>
           <OAuthButtons providers={providers} />
+          <div style={{ marginTop: 12, fontSize: 13, textAlign: 'center' }}>
+            <Link to="/forgot-password" style={{ color: 'var(--text-muted, #6b7280)' }}>{tr(language, { ko: '비밀번호를 잊으셨나요?', en: 'Forgot password?', ja: 'パスワードをお忘れですか？', th: 'ลืมรหัสผ่าน?', vi: 'Quên mật khẩu?' })}</Link>
+          </div>
           <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
             {tr(language, { ko: '처음이신가요?', en: 'New here?', ja: 'はじめての方はこちら', th: 'เพิ่งเข้ามาใช่ไหม?', vi: 'Lần đầu ở đây?' })} <Link to="/sign-up" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '계정 만들기', en: 'Create an account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' })}</Link>
             {' · '}
@@ -419,6 +422,122 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
             {loading ? tr(language, { ko: '생성 중…', en: 'Creating…', ja: '作成中…', th: 'กำลังสร้าง…', vi: 'Đang tạo…' }) : tr(language, { ko: '계정 만들기', en: 'Create account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' })}
           </button>
           <button type="button" onClick={() => setStep('email')}
+            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+            {tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác' })}
+          </button>
+        </form>
+      )}
+    </AuthShell>
+  )
+}
+
+
+// ═══ ForgotPasswordPage ═══════════════════════════════════════════════════
+
+export function ForgotPasswordPage() {
+  const navigate = useNavigate()
+  const { language } = useLanguage()
+  const [step, setStep] = useState<'email' | 'reset' | 'done'>('email')
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function sendResetCode(e: React.FormEvent) {
+    e.preventDefault()
+    setError(''); setLoading(true)
+    try {
+      const r = await fetch(`${API_BASE}/users/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!r.ok) {
+        setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '코드를 보낼 수 없습니다', en: 'Could not send code', ja: 'コードを送信できませんでした', th: 'ไม่สามารถส่งรหัสได้', vi: 'Không thể gửi mã' })))
+        return
+      }
+      setStep('reset')
+    } catch (err) {
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault()
+    setError(''); setLoading(true)
+    try {
+      const r = await fetch(`${API_BASE}/users/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, new_password: newPassword }),
+      })
+      if (!r.ok) {
+        setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '비밀번호를 변경할 수 없습니다', en: 'Could not reset password', ja: 'パスワードをリセットできませんでした', th: 'ไม่สามารถรีเซ็ตรหัสผ่านได้', vi: 'Không thể đặt lại mật khẩu' })))
+        return
+      }
+      setStep('done')
+    } catch (err) {
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (step === 'done') {
+    return (
+      <AuthShell
+        title={tr(language, { ko: '비밀번호 변경 완료 ✓', en: 'Password updated ✓', ja: 'パスワードを更新しました ✓', th: 'อัปเดตรหัสผ่านแล้ว ✓', vi: 'Đã cập nhật mật khẩu ✓' })}
+        subtitle={tr(language, { ko: '새 비밀번호로 로그인하세요.', en: 'Sign in with your new password.', ja: '新しいパスワードでログインしてください。', th: 'เข้าสู่ระบบด้วยรหัสผ่านใหม่', vi: 'Đăng nhập bằng mật khẩu mới của bạn.' })}
+      >
+        <button onClick={() => navigate('/sign-in')} style={buttonStyle}>
+          {tr(language, { ko: '로그인으로 이동', en: 'Go to sign in', ja: 'ログインへ', th: 'ไปที่หน้าเข้าสู่ระบบ', vi: 'Đến trang đăng nhập' })}
+        </button>
+      </AuthShell>
+    )
+  }
+
+  return (
+    <AuthShell
+      title={tr(language, { ko: '비밀번호 재설정', en: 'Reset your password', ja: 'パスワードをリセット', th: 'รีเซ็ตรหัสผ่านของคุณ', vi: 'Đặt lại mật khẩu của bạn' })}
+      subtitle={step === 'email'
+        ? tr(language, { ko: '가입한 이메일로 6자리 코드를 보내드립니다.', en: "Enter your account email and we'll send a 6-digit code.", ja: 'アカウントのメールアドレスに6桁のコードを送信します。', th: 'กรอกอีเมลบัญชีของคุณ แล้วเราจะส่งรหัส 6 หลักให้', vi: 'Nhập email tài khoản và chúng tôi sẽ gửi mã 6 chữ số.' })
+        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 새 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a new password.`, ja: `${email} に送信したコードを入力し、新しいパスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่านใหม่`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu mới.` })}
+    >
+      {step === 'email' ? (
+        <form onSubmit={sendResetCode}>
+          <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email' })} value={email}
+            onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
+          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
+            {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã' })}
+          </button>
+          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+            <Link to="/sign-in" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '로그인으로 돌아가기', en: 'Back to sign in', ja: 'ログインに戻る', th: 'กลับไปหน้าเข้าสู่ระบบ', vi: 'Quay lại đăng nhập' })}</Link>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={submitReset}>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder={tr(language, { ko: '6자리 코드', en: '6-digit code', ja: '6桁のコード', th: 'รหัส 6 หลัก', vi: 'Mã 6 chữ số' })}
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            required
+            style={{ ...inputStyle, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', textAlign: 'center' }}
+            autoComplete="one-time-code"
+          />
+          <input type="password" placeholder={tr(language, { ko: '새 비밀번호 (최소 8자)', en: 'New password (min 8 chars)', ja: '新しいパスワード (8文字以上)', th: 'รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)', vi: 'Mật khẩu mới (tối thiểu 8 ký tự)' })} value={newPassword}
+            onChange={e => setNewPassword(e.target.value)} required minLength={8} style={inputStyle}
+            autoComplete="new-password" />
+          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
+            {loading ? tr(language, { ko: '변경 중…', en: 'Resetting…', ja: 'リセット中…', th: 'กำลังรีเซ็ต…', vi: 'Đang đặt lại…' }) : tr(language, { ko: '비밀번호 변경', en: 'Reset password', ja: 'パスワードをリセット', th: 'รีเซ็ตรหัสผ่าน', vi: 'Đặt lại mật khẩu' })}
+          </button>
+          <button type="button" onClick={() => { setStep('email'); setCode(''); setNewPassword(''); setError('') }}
             style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
             {tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác' })}
           </button>
