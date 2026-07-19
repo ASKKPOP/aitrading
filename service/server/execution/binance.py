@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+import os
 import time
 from urllib.parse import urlencode
 
@@ -27,8 +28,10 @@ from execution.base import Broker, Order, OrderStatus
 
 _logger = logging.getLogger(__name__)
 
-_TESTNET_BASE = "https://testnet.binance.vision/api/v3"
-_LIVE_BASE    = "https://api.binance.com/api/v3"
+# Endpoints come from the environment (single .env) with the official hosts
+# as fallback so a missing var can never silently point at the wrong venue.
+_TESTNET_BASE = os.getenv("BINANCE_TESTNET_BASE_URL", "https://testnet.binance.vision/api/v3").rstrip("/")
+_LIVE_BASE    = os.getenv("BINANCE_LIVE_BASE_URL", "https://api.binance.com/api/v3").rstrip("/")
 
 _SIDE_MAP = {
     "buy":   "BUY",

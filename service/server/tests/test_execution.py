@@ -349,3 +349,34 @@ class TestIBKRBrokerUnconfigured(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBrokerEndpointsFromEnv(unittest.TestCase):
+    """Broker base URLs come from the environment (single .env), with the
+    official hosts only as fallback — never hardcoded-only."""
+
+    def test_alpaca_bases_respect_env(self):
+        import importlib, os
+        os.environ["ALPACA_PAPER_BASE_URL"] = "https://mock-paper.test/v2/"
+        os.environ["ALPACA_LIVE_BASE_URL"] = "https://mock-live.test/v2"
+        try:
+            import execution.alpaca as a
+            importlib.reload(a)
+            self.assertEqual(a._PAPER_BASE, "https://mock-paper.test/v2")  # rstrip
+            self.assertEqual(a._LIVE_BASE, "https://mock-live.test/v2")
+        finally:
+            del os.environ["ALPACA_PAPER_BASE_URL"]
+            del os.environ["ALPACA_LIVE_BASE_URL"]
+            importlib.reload(a)
+
+    def test_binance_bases_respect_env_and_default_without_it(self):
+        import importlib, os
+        import execution.binance as b
+        self.assertEqual(b._LIVE_BASE, "https://api.binance.com/api/v3")
+        os.environ["BINANCE_LIVE_BASE_URL"] = "https://mock-binance.test/api/v3"
+        try:
+            importlib.reload(b)
+            self.assertEqual(b._LIVE_BASE, "https://mock-binance.test/api/v3")
+        finally:
+            del os.environ["BINANCE_LIVE_BASE_URL"]
+            importlib.reload(b)

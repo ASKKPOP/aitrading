@@ -19,6 +19,7 @@ returns OrderStatus.REJECTED with a clear error message — safe to use in dev.
 from __future__ import annotations
 
 import logging
+import os
 
 import httpx
 
@@ -26,8 +27,10 @@ from execution.base import Broker, Order, OrderStatus
 
 _logger = logging.getLogger(__name__)
 
-_PAPER_BASE = "https://paper-api.alpaca.markets/v2"
-_LIVE_BASE  = "https://api.alpaca.markets/v2"
+# Endpoints come from the environment (single .env) with the official hosts
+# as fallback so a missing var can never silently point at the wrong venue.
+_PAPER_BASE = os.getenv("ALPACA_PAPER_BASE_URL", "https://paper-api.alpaca.markets/v2").rstrip("/")
+_LIVE_BASE  = os.getenv("ALPACA_LIVE_BASE_URL", "https://api.alpaca.markets/v2").rstrip("/")
 
 # Map Sooppiy sides to Alpaca order sides.
 _SIDE_MAP = {
