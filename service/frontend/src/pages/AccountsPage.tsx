@@ -132,16 +132,10 @@ export function AccountsPage() {
     if (!acceptedTcs) { setError(T.tcsRequired); return }
     setBusy(true)
     try {
-      // Consent first: automation refuses to route live without this record, so
-      // creating the account without it would leave an unusable gateway.
-      const tcs = await fetch(`${API_BASE}/execution/tcs-accept`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ broker, tcs_version: 'v1' }),
-      })
-      if (!tcs.ok) {
-        const b = await tcs.json().catch(() => null)
-        setError(b?.detail || 'Could not record consent'); return
-      }
+      // Create the account FIRST. Recording consent before it means a rejected
+      // account (e.g. a bad gateway_url 400s) still leaves an immutable consent
+      // record for a broker the user never connected. The account is created in
+      // paper mode, so it is harmless if the consent step later fails.
       const payload = isIbkr
         ? { broker, gateway_url: gatewayUrl.trim(), account_id: accountId.trim(),
             allow_self_signed: allowSelfSigned }
@@ -154,6 +148,15 @@ export function AccountsPage() {
         const d = b?.detail
         setError(typeof d === 'string' ? d : (Array.isArray(d) ? d.map((e: any) => e?.msg).join('; ') : 'Could not connect gateway'))
         return
+      }
+      // Then record consent — automation refuses to route live without it.
+      const tcs = await fetch(`${API_BASE}/execution/tcs-accept`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({ broker, tcs_version: 'v1' }),
+      })
+      if (!tcs.ok) {
+        const b = await tcs.json().catch(() => null)
+        setError(b?.detail || 'Could not record consent'); return
       }
       // Drop the secrets from component state the moment they are stored.
       setApiKey(''); setApiSecret(''); setAccountId(''); setAcceptedTcs(false)

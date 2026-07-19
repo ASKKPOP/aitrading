@@ -18,7 +18,11 @@ from routes_shared import utc_now_iso_z
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    # A fresh loop per call, not the deprecated get_event_loop(): production
+    # code paths call asyncio.run() which closes the thread's current loop, so
+    # get_event_loop() would raise "no current event loop" depending on test
+    # ordering. Matches the newer execution test files.
+    return asyncio.new_event_loop().run_until_complete(coro)
 
 
 def _create_agent(name: str = "exec-agent", cash: float = 100_000.0) -> int:

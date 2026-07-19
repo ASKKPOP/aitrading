@@ -262,7 +262,7 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
             """SELECT id, agent_id, symbol, side, quantity, broker,
                       broker_order_id, execution_mode
                FROM broker_orders
-               WHERE status = 'submitted' AND broker != 'paper'
+               WHERE status IN ('submitted', 'partial_fill') AND broker != 'paper'
                      AND broker_order_id IS NOT NULL
                ORDER BY id LIMIT ?""",
             (limit,),
@@ -291,29 +291,45 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
         # as submission, or the lookup asks the wrong venue about the order.
         adapter = _broker_for(account, mode if mode in (ExecutionMode.LIVE,)
                               else ExecutionMode.SHADOW)
+        # EVERYTHING that reads the broker's answer stays inside this try. A
+        # malformed payload from ONE broker must never abort the sweep and
+        # starve every later order in the batch of reconciliation.
         try:
             status = _run_coro(adapter.get_order_status(row["broker_order_id"],
                                                         symbol=row["symbol"]))
+            if not status:
+                out["lookup_failed"] += 1
+                continue
+
+            final = status.get("status")
+            if not isinstance(final, OrderStatus):
+                # Adapter contract violation — treat as "couldn't read it" and
+                # leave the row for the next sweep rather than settling wrong.
+                out["lookup_failed"] += 1
+                _logger.warning("order %s: broker status not an OrderStatus (%r)",
+                                row["id"], final)
+                continue
+            if final in (OrderStatus.SUBMITTED, OrderStatus.PENDING):
+                out["still_open"] += 1
+                continue
+
+            filled_qty = _coerce_float(status.get("filled_qty"))
         except Exception:  # noqa: BLE001 — one bad lookup must not stop the sweep
-            status = None
-            _logger.exception("order status lookup failed for broker_order %s", row["id"])
-        if not status:
             out["lookup_failed"] += 1
+            _logger.exception("order status lookup failed for broker_order %s", row["id"])
             continue
 
-        final = status["status"]
-        if final in (OrderStatus.SUBMITTED, OrderStatus.PENDING):
-            out["still_open"] += 1
-            continue
-
-        filled_qty = status.get("filled_qty")
+        # A PARTIAL_FILL is not really terminal: keep it pollable so an eventual
+        # full fill is still recorded. It is scanned back in via the query's
+        # partial_fill clause, and drift dedup (per order id) prevents re-spam.
+        still_working = final is OrderStatus.PARTIAL_FILL
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
                 """UPDATE broker_orders
                    SET status = ?, filled_qty = ?, filled_at = ?
-                   WHERE id = ? AND status = 'submitted'""",
+                   WHERE id = ? AND status IN ('submitted', 'partial_fill')""",
                 (final.value, filled_qty,
                  utc_now_iso_z() if final is OrderStatus.FILLED else None,
                  row["id"]),
@@ -321,7 +337,10 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
             conn.commit()
         finally:
             conn.close()
-        out["settled"] += 1
+        if still_working:
+            out["still_open"] += 1
+        else:
+            out["settled"] += 1
 
         # Material divergence from what the ledger assumed at submit time?
         requested = float(row["quantity"] or 0)
@@ -337,18 +356,33 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
     return out
 
 
+def _coerce_float(value: Any) -> Optional[float]:
+    """Broker payloads report quantities as float, str, or omit them; normalise
+    to float or None so the ledger and drift math never choke on a string."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _alert_order_drift(agent_id: int, row: dict[str, Any], final: str,
                        filled_qty: Optional[float], requested: float) -> None:
     """The broker's final answer disagrees with what the ledger assumed."""
     try:
         from alerts import send_alert
+        # filled_qty can be None on a partial the broker didn't quantify — the
+        # alert MUST still fire (this is the divergence-surfacing mechanism), so
+        # never let string formatting of None swallow it.
+        filled_txt = "an unknown amount" if filled_qty is None else f"{filled_qty:g}"
         if final in ("cancelled", "rejected"):
             body = (f"{row['symbol']}: your {row['side']} order was {final} by the "
                     f"broker AFTER submission — the platform recorded it at the "
                     f"requested size ({requested:g}). Review the position on your "
                     "broker and correct manually if needed.")
         else:
-            body = (f"{row['symbol']}: broker confirmed {filled_qty:g} of the "
+            body = (f"{row['symbol']}: broker confirmed {filled_txt} of the "
                     f"requested {requested:g} {row['side']} — the platform ledger "
                     "recorded the requested size. Review and correct manually.")
         send_alert(agent_id, "order_drift",
@@ -359,7 +393,12 @@ def _alert_order_drift(agent_id: int, row: dict[str, Any], final: str,
 
 
 def _alert_session_down(agent_id: int, detail: str) -> None:
-    """Once-per-day alert that the IBKR gateway can no longer take orders."""
+    """Alert that the IBKR gateway can no longer take orders.
+
+    alerts._is_duplicate suppresses within a 1-HOUR window, so the day-scoped
+    key means a gateway that stays dead re-alerts roughly hourly — a deliberate
+    reminder cadence, not a single daily ping. (Do not read this as once-a-day.)
+    """
     try:
         from datetime import datetime, timezone
         from alerts import send_alert
@@ -376,18 +415,24 @@ def _alert_session_down(agent_id: int, detail: str) -> None:
 def _run_coro(coro):
     """Run an async broker call from the synchronous automation worker.
 
-    The worker has no running loop of its own, so asyncio.run is correct here.
-    If some caller ever does have one, fall back to a private loop rather than
-    raising — a broker round-trip must never take down a rule evaluation.
+    The worker has no running loop of its own. Decide up front whether one is
+    running rather than catching RuntimeError from asyncio.run — a RuntimeError
+    raised BY the coroutine itself would otherwise be mistaken for "no loop" and
+    trigger a retry of an already-consumed coroutine, masking the real error.
     """
     try:
-        return asyncio.run(coro)
+        asyncio.get_running_loop()
     except RuntimeError:
-        loop = asyncio.new_event_loop()
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
+        # No running loop (the normal worker case) — asyncio.run is correct and
+        # any exception from the coroutine propagates unwrapped to the caller.
+        return asyncio.run(coro)
+    # A loop is already running on this thread; use a private one so we never
+    # reuse a consumed coroutine or fight the outer loop.
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 def _broker_for(account: dict[str, Any], mode: ExecutionMode):

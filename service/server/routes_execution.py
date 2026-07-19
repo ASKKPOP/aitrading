@@ -239,8 +239,10 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
         if status:
             q += " AND status=?"
             params.append(status)
+        # Clamp both ends: a negative LIMIT is "unlimited" in SQLite and a
+        # negative OFFSET errors — never let a query string decide page size.
         q += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-        params += [min(limit, 200), offset]
+        params += [max(1, min(limit, 200)), max(0, offset)]
         cursor.execute(q, params)
         rows = cursor.fetchall()
         conn.close()

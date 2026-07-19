@@ -292,3 +292,131 @@ class TestAdapterStatusParsing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMalformedBrokerPayloads(_ReconcilerTestCase):
+    """Regression: a single off-spec broker response must never abort the sweep
+    or silently swallow a drift alert (QA-found, 2026-07-19)."""
+
+    def _tick_many(self, answers_by_symbol):
+        """Sweep where get_order_status returns a per-symbol scripted answer."""
+        from execution.gateway import reconcile_orders_tick
+
+        class _Stub:
+            broker_name = "alpaca"
+            async def get_order_status(self, broker_order_id, symbol=""):
+                return answers_by_symbol.get(symbol)
+        with patch("execution.gateway._broker_for", return_value=_Stub()), \
+             patch("alerts.send_alert") as alert:
+            out = reconcile_orders_tick()
+        return out, alert
+
+    def test_string_filled_qty_does_not_abort_the_sweep(self):
+        """A broker returning filled_qty as a string must be coerced, not crash
+        the batch and starve every later order of reconciliation."""
+        from execution.base import OrderStatus
+        self._add_account()
+        bad = self._add_order(broker_order_id="BAD", qty=10.0)   # answered with a string
+        good = self._add_order(broker_order_id="GOOD", qty=5.0)  # must still be reached
+        out, _ = self._tick_many({
+            "AAPL": {"status": OrderStatus.FILLED, "filled_qty": "10.0", "avg_price": None},
+        })
+        # Both orders share symbol AAPL here, so both get the same answer — the
+        # point is the STRING doesn't raise. Both settle to filled.
+        self.assertEqual(out["settled"], 2)
+        self.assertEqual(self._order_row(bad)["status"], "filled")
+        self.assertEqual(self._order_row(good)["status"], "filled")
+
+    def test_missing_status_key_is_treated_as_lookup_failed(self):
+        self._add_account()
+        oid = self._add_order()
+        out, alert = self._tick_many({"AAPL": {"filled_qty": 3.0}})  # no 'status'
+        self.assertEqual(out["lookup_failed"], 1)
+        self.assertEqual(self._order_row(oid)["status"], "submitted", "left for next sweep")
+        alert.assert_not_called()
+
+    def test_one_bad_order_does_not_starve_the_next(self):
+        """The bug: reading the payload outside the per-row try aborted the whole
+        batch. A raising lookup on order A must not skip order B."""
+        from execution.base import OrderStatus
+        self._add_account()
+
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("""INSERT INTO broker_orders (agent_id,symbol,market,side,quantity,price,status,execution_mode,broker,broker_order_id,created_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                    (self.agent_id,"ZZZ","us-stock","buy",1,1.0,"submitted","live","alpaca","Z1",utc_now_iso_z()))
+        conn.commit(); conn.close()
+
+        from execution.gateway import reconcile_orders_tick
+        class _Stub:
+            broker_name = "alpaca"
+            async def get_order_status(self, broker_order_id, symbol=""):
+                if symbol == "AAPL":
+                    raise RuntimeError("broker exploded on this one")
+                return {"status": OrderStatus.FILLED, "filled_qty": 1.0, "avg_price": None}
+        self._add_order(broker_order_id="A1")  # AAPL, raises
+        with patch("execution.gateway._broker_for", return_value=_Stub()), \
+             patch("alerts.send_alert"):
+            out = reconcile_orders_tick()
+        self.assertEqual(out["lookup_failed"], 1, "the raising order")
+        self.assertEqual(out["settled"], 1, "the other order still processed")
+
+    def test_partial_fill_with_none_qty_still_alerts(self):
+        """The silent-divergence bug: f'{None:g}' raised TypeError swallowed by
+        the bare except, so drift was counted but the owner never alerted."""
+        from execution.base import OrderStatus
+        self._add_account()
+        self._add_order(qty=10.0)
+        out, alert = self._tick({"status": OrderStatus.PARTIAL_FILL,
+                                 "filled_qty": None, "avg_price": None})
+        self.assertEqual(out["drift"], 1)
+        alert.assert_called_once()
+        self.assertEqual(alert.call_args[0][1], "order_drift")
+        self.assertIn("unknown amount", alert.call_args[0][3])
+
+    def test_partial_fill_is_repolled_then_completes(self):
+        """A partial is not terminal: it stays scannable and a later full fill
+        is recorded."""
+        from execution.base import OrderStatus
+        self._add_account()
+        oid = self._add_order(qty=10.0)
+        # First sweep: partial.
+        self._tick({"status": OrderStatus.PARTIAL_FILL, "filled_qty": 4.0, "avg_price": None})
+        self.assertEqual(self._order_row(oid)["status"], "partial_fill")
+        # Second sweep must still see it (scan includes partial_fill) and settle.
+        out, _ = self._tick({"status": OrderStatus.FILLED, "filled_qty": 10.0, "avg_price": None})
+        self.assertEqual(out["settled"], 1)
+        row = self._order_row(oid)
+        self.assertEqual(row["status"], "filled")
+        self.assertAlmostEqual(float(row["filled_qty"]), 10.0)
+
+
+class TestZeroFillLedger(_ReconcilerTestCase):
+    def test_live_zero_fill_does_not_overstate_position(self):
+        """automation._execute_for_account_type: a 0.0 broker fill is falsy but
+        must NOT fall back to the requested size."""
+        from unittest.mock import patch as _patch
+        from execution.base import Order, OrderStatus
+        from automation import _execute_for_account_type
+        self._add_account()
+        # broker "filled" 0 — degenerate but must not write requested 10.
+        filled = Order(agent_id=self.agent_id, symbol="AAPL", market="us-stock",
+                       side="buy", quantity=10.0, price=190.0)
+        filled.status = OrderStatus.FILLED
+        filled.filled_qty = 0.0
+        filled.broker = "alpaca"
+        # Consent so live is allowed through the routing helper.
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("""INSERT INTO broker_live_optins (agent_id,broker,tcs_version,ip_address,user_agent,created_at)
+                       VALUES (?,?,?,?,?,?)""",
+                    (self.agent_id,"alpaca","v1","1.1.1.1","t",utc_now_iso_z()))
+        conn.commit(); conn.close()
+        with _patch("execution.gateway.submit_live", return_value=filled):
+            signal_id, skip = _execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "AAPL", "us-stock",
+                "buy", 10.0, 190.0, None, None, {})
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("SELECT COALESCE(SUM(quantity),0) AS q FROM positions WHERE agent_id=? AND symbol='AAPL'",
+                    (self.agent_id,))
+        qty = float(dict(cur.fetchone())["q"]); conn.close()
+        self.assertEqual(qty, 0.0, "a 0.0 fill must not write the requested 10")

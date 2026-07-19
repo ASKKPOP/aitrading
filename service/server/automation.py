@@ -299,9 +299,11 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
             _alert_gateway_failure(agent_id, symbol, reason)
             return None, f"gateway rejected order: {reason}"
         # Broker filled: mirror into the ledger so the UI and SL/TP watcher
-        # see the position. Quantity comes from the broker when it reported a
-        # partial, so the ledger matches what actually executed.
-        filled = order.filled_qty if order.filled_qty else quantity
+        # see the position. Quantity comes from the broker when it reported one
+        # (`is not None`, not truthiness — a genuine 0.0 fill must NOT fall back
+        # to the requested size and overstate the position); only default to the
+        # requested size when the broker gave no fill quantity at all.
+        filled = order.filled_qty if order.filled_qty is not None else quantity
         return execute_paper_trade(agent_id, symbol, market, side, filled, price,
                                    stop_loss=stop_loss, take_profit=take_profit)
 

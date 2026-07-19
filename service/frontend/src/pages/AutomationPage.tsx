@@ -90,6 +90,8 @@ export function AutomationPage() {
     account: tr(language, { ko: '계정', en: 'Account', ja: '口座', th: 'บัญชี', vi: 'Tài khoản' }),
     autoEx: tr(language, { ko: '자동 실행', en: 'Auto-execute', ja: '自動執行', th: 'ดำเนินการอัตโนมัติ', vi: 'Tự động thực hiện' }),
     liveMoney: tr(language, { ko: '실제 자금', en: 'REAL MONEY', ja: '実資金', th: 'เงินจริง', vi: 'TIỀN THẬT' }),
+    badgeAuto: tr(language, { ko: '자동', en: 'auto', ja: '自動', th: 'อัตโนมัติ', vi: 'tự động' }),
+    badgeAnalysis: tr(language, { ko: '분석 전용', en: 'analysis only', ja: '分析のみ', th: 'วิเคราะห์เท่านั้น', vi: 'chỉ phân tích' }),
     add: tr(language, { ko: '규칙 추가', en: 'Add rule', ja: 'ルールを追加', th: 'เพิ่มกฎ', vi: 'Thêm quy tắc' }),
     remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa' }),
     yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn' }),
@@ -458,7 +460,7 @@ export function AutomationPage() {
                     {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {normalizeAccountType(r.account_type)}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
-                    {r.auto_execute ? 'auto' : 'analysis only'}
+                    {r.auto_execute ? T.badgeAuto : T.badgeAnalysis}
                   </span>
                   {/* Real money is on the line here — never let it read the
                       same as a simulated rule at a glance. */}
