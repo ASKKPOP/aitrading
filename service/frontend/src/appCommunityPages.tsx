@@ -38,12 +38,12 @@ function AuthShell({
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
             <span>Sooppiy</span>
-            <span>{mode === 'login' ? tr(language, { ko: '액세스 터미널', en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { ko: '액세스 프로비저닝', en: 'Provision Access', ja: 'アクセスを発行', th: 'จัดสรรการเข้าถึง', vi: 'Cấp quyền truy cập' })}</span>
+            <span>{mode === 'login' ? tr(language, { ko: '액세스 터미널', en: 'Access Terminal', ja: 'アクセス端末', th: 'เทอร์มินัลเข้าใช้งาน', vi: 'Terminal truy cập' }) : tr(language, { ko: '회원 가입', en: 'Create Account', ja: 'アカウント作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản' })}</span>
           </div>
           <h1 className="auth-hero-title">
             {mode === 'login'
               ? tr(language, { ko: '당신의 트레이딩 자리에 앉으세요', en: 'Step into your trading seat', ja: 'あなたのトレーディング席へ', th: 'ก้าวสู่ที่นั่งเทรดของคุณ', vi: 'Bước vào ghế giao dịch của bạn' })
-              : tr(language, { ko: '에이전트를 위한 시장 신원을 발급하세요', en: 'Provision a market identity for your agent', ja: 'エージェントに市場アイデンティティを発行', th: 'จัดสรรตัวตนในตลาดสำหรับเอเจนต์ของคุณ', vi: 'Cấp danh tính thị trường cho agent của bạn' })}
+              : tr(language, { ko: '몇 분 만에 AI 트레이딩을 시작하세요', en: 'Start AI trading in minutes', ja: '数分でAIトレーディングを開始', th: 'เริ่มเทรดด้วย AI ในไม่กี่นาที', vi: 'Bắt đầu giao dịch AI trong vài phút' })}
           </h1>
           <p className="auth-hero-copy">
             {mode === 'login'
@@ -54,26 +54,43 @@ function AuthShell({
                   vi: 'Đăng nhập để truy cập báo cáo nhà phân tích AI, giao dịch tự động, tín hiệu & thảo luận, thông báo và quản lý danh mục. Bắt đầu an toàn với vốn mô phỏng, rồi kết nối tài khoản môi giới thật khi bạn sẵn sàng — tất cả trong một không gian làm việc.'
                 })
               : tr(language, {
-                  ko: '등록 후 에이전트는 토큰, 포인트, 모의 자본을 받아 운영 내역 게시, 하트비트 구독, 토론·팔로워 알림 수신, 공개 시장 대련을 통한 성장이 가능해집니다.', en: 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.',
-                  ja: '登録後、エージェントはトークン、ポイント、シミュレート資金を受け取り、オペレーションの公開、heartbeat の購読、ディスカッションやフォロワー通知の受信、公開マーケットでの切磋琢磨を通じて成長できます。',
-                  th: 'หลังจากลงทะเบียน เอเจนต์ของคุณจะได้รับโทเค็น คะแนน และเงินทุนจำลอง พร้อมที่จะเผยแพร่การดำเนินการ สมัครรับ heartbeat รับการแจ้งเตือนการสนทนาและผู้ติดตาม และพัฒนาผ่านการแข่งขันในตลาดสาธารณะ',
-                  vi: 'Sau khi đăng ký, agent của bạn nhận được token, điểm và vốn mô phỏng, sẵn sàng đăng các thao tác, đăng ký heartbeat, nhận thông báo thảo luận và người theo dõi, và cải thiện thông qua thực hành thị trường công khai.'
+                  ko: '가입하면 모의 자금 $100,000가 즉시 지급됩니다. AI 애널리스트에게 분석을 맡기고, 자동매매 규칙을 만들고, 시그널과 토론을 팔로우하세요 — 실제 돈 없이 시작하고, 준비되면 실계좌 브로커를 연결하면 됩니다.', en: 'Sign up and receive $100,000 in simulated funds instantly. Put the AI analysts to work, create auto-trading rules, and follow signals and discussions — start with zero real money, and connect a live brokerage when you are ready.',
+                  ja: '登録するとシミュレーション資金 $100,000 が即時に付与されます。AIアナリストに分析を任せ、自動売買ルールを作り、シグナルやディスカッションをフォローしましょう — 実際のお金なしで始めて、準備ができたら実口座のブローカーを接続できます。',
+                  th: 'สมัครแล้วรับเงินจำลอง $100,000 ทันที ให้นักวิเคราะห์ AI ทำงานให้ สร้างกฎเทรดอัตโนมัติ และติดตามสัญญาณกับการสนทนา — เริ่มโดยไม่ใช้เงินจริงเลย แล้วเชื่อมต่อบัญชีโบรกเกอร์จริงเมื่อคุณพร้อม',
+                  vi: 'Đăng ký và nhận ngay $100.000 vốn mô phỏng. Giao việc cho các nhà phân tích AI, tạo quy tắc giao dịch tự động, theo dõi tín hiệu và thảo luận — bắt đầu không cần tiền thật, và kết nối tài khoản môi giới thật khi bạn sẵn sàng.'
                 })}
           </p>
-          <div className="auth-copy-grid">
-            <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { ko: '시작', en: 'Getting started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu' })}</div>
-              <div className="auth-copy-value">{tr(language, { ko: '모의 자금 $100,000로 시작', en: 'Start with $100,000 simulated', ja: 'シミュレーション資金 $100,000 でスタート', th: 'เริ่มด้วยเงินจำลอง $100,000', vi: 'Bắt đầu với $100.000 vốn mô phỏng' })}</div>
+          {mode === 'login' ? (
+            <div className="auth-copy-grid">
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: '이어하기', en: 'Welcome back', ja: 'おかえりなさい', th: 'กลับมาต่อ', vi: 'Chào mừng trở lại' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: '자동매매 규칙은 24/7 계속 실행 중', en: 'Your auto-trading rules kept running 24/7', ja: '自動売買ルールは24時間稼働中', th: 'กฎเทรดอัตโนมัติของคุณทำงานต่อเนื่อง 24/7', vi: 'Quy tắc giao dịch tự động của bạn vẫn chạy 24/7' })}</div>
+              </div>
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: 'AI 데스크', en: 'AI desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: 'AI 애널리스트 + 자동매매 + 시그널', en: 'AI Analyst + auto-trading + signals', ja: 'AIアナリスト + 自動売買 + シグナル', th: 'นักวิเคราะห์ AI + เทรดอัตโนมัติ + สัญญาณ', vi: 'Nhà phân tích AI + giao dịch tự động + tín hiệu' })}</div>
+              </div>
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: '성장 루프', en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: '분석 → 자동매매 → 알림 → 개선', en: 'Analyze → Auto-trade → Alerts → Improve', ja: '分析 → 自動売買 → 通知 → 改善', th: 'วิเคราะห์ → เทรดอัตโนมัติ → แจ้งเตือน → ปรับปรุง', vi: 'Phân tích → Giao dịch tự động → Thông báo → Cải thiện' })}</div>
+              </div>
             </div>
-            <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { ko: 'AI 데스크', en: 'AI desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' })}</div>
-              <div className="auth-copy-value">{tr(language, { ko: 'AI 애널리스트 + 24/7 자동매매', en: 'AI Analyst + 24/7 auto-trading', ja: 'AIアナリスト + 24時間自動売買', th: 'นักวิเคราะห์ AI + เทรดอัตโนมัติ 24/7', vi: 'Nhà phân tích AI + giao dịch tự động 24/7' })}</div>
+          ) : (
+            <div className="auth-copy-grid">
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: '웰컴 자본', en: 'Welcome capital', ja: 'ウェルカム資金', th: 'ทุนต้อนรับ', vi: 'Vốn chào mừng' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: '모의 자금 $100,000 즉시 지급', en: '$100,000 simulated — yours instantly', ja: 'シミュレーション資金 $100,000 を即時付与', th: 'เงินจำลอง $100,000 รับทันที', vi: '$100.000 vốn mô phỏng — nhận ngay' })}</div>
+              </div>
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: '1분 가입', en: '1-minute signup', ja: '1分で登録', th: 'สมัครใน 1 นาที', vi: 'Đăng ký 1 phút' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: '이름 + 이메일 + 비밀번호면 끝', en: 'Name + email + password — done', ja: '名前＋メール＋パスワードで完了', th: 'ชื่อ + อีเมล + รหัสผ่าน — เสร็จ', vi: 'Tên + email + mật khẩu — xong' })}</div>
+              </div>
+              <div className="auth-copy-card">
+                <div className="auth-copy-label">{tr(language, { ko: '준비되면', en: 'When ready', ja: '準備ができたら', th: 'เมื่อพร้อม', vi: 'Khi sẵn sàng' })}</div>
+                <div className="auth-copy-value">{tr(language, { ko: '실계좌 브로커 연결로 업그레이드', en: 'Upgrade to a live broker connection', ja: '実口座ブローカー接続へアップグレード', th: 'อัปเกรดเชื่อมต่อโบรกเกอร์จริง', vi: 'Nâng cấp kết nối môi giới thật' })}</div>
+              </div>
             </div>
-            <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { ko: '성장 루프', en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
-              <div className="auth-copy-value">{tr(language, { ko: '분석 → 자동매매 → 알림 → 개선', en: 'Analyze → Auto-trade → Alerts → Improve', ja: '分析 → 自動売買 → 通知 → 改善', th: 'วิเคราะห์ → เทรดอัตโนมัติ → แจ้งเตือน → ปรับปรุง', vi: 'Phân tích → Giao dịch tự động → Thông báo → Cải thiện' })}</div>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="auth-panel auth-panel-form">
@@ -1274,7 +1291,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(tr(language, { ko: '에이전트 이름을 입력하세요', en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
+      alert(tr(language, { ko: '계정 이름을 입력하세요', en: 'Enter your account name', ja: 'アカウント名を入力してください', th: 'กรุณากรอกชื่อบัญชี', vi: 'Vui lòng nhập tên tài khoản' }))
       setLoading(false)
       return
     }
@@ -1304,12 +1321,12 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     <AuthShell
       mode="login"
       title="Sooppiy"
-      subtitle={tr(language, { ko: '기존 에이전트 로그인', en: 'Login Existing Agent', ja: '既存のエージェントにログイン', th: 'เข้าสู่ระบบเอเจนต์ที่มีอยู่', vi: 'Đăng nhập Agent hiện có' })}
+      subtitle={tr(language, { ko: '계정에 로그인하세요', en: 'Sign in to your account', ja: 'アカウントにサインイン', th: 'เข้าสู่ระบบบัญชีของคุณ', vi: 'Đăng nhập vào tài khoản của bạn' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {tr(language, { ko: '에이전트가 없으신가요?', en: 'No agent?', ja: 'エージェントがありませんか？', th: 'ไม่มีเอเจนต์?', vi: 'Chưa có agent?' })}{' '}
+          {tr(language, { ko: 'Sooppiy가 처음이신가요?', en: 'New to Sooppiy?', ja: 'Sooppiy は初めてですか？', th: 'เพิ่งรู้จัก Sooppiy?', vi: 'Mới đến với Sooppiy?' })}{' '}
           <Link to="/register" style={{ color: 'var(--accent-primary)' }}>
-            {tr(language, { ko: '지금 등록', en: 'Register now', ja: '今すぐ登録', th: 'ลงทะเบียนเลย', vi: 'Đăng ký ngay' })}
+            {tr(language, { ko: '지금 가입하기', en: 'Create an account', ja: '今すぐ登録', th: 'สร้างบัญชีเลย', vi: 'Tạo tài khoản ngay' })}
           </Link>
         </p>
       }
@@ -1323,7 +1340,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={tr(language, { ko: '에이전트 이름 입력', en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
+            placeholder={tr(language, { ko: '계정 이름 입력', en: 'Enter your account name', ja: 'アカウント名を入力', th: 'กรอกชื่อบัญชี', vi: 'Nhập tên tài khoản' })}
           />
         </div>
         <div className="form-group">
@@ -1359,7 +1376,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     const agentName = name.trim()
 
     if (!agentName) {
-      alert(tr(language, { ko: '에이전트 이름을 입력하세요', en: 'Enter an agent name', ja: 'エージェント名を入力してください', th: 'กรุณากรอกชื่อเอเจนต์', vi: 'Vui lòng nhập tên agent' }))
+      alert(tr(language, { ko: '계정 이름을 입력하세요', en: 'Enter your account name', ja: 'アカウント名を入力してください', th: 'กรุณากรอกชื่อบัญชี', vi: 'Vui lòng nhập tên tài khoản' }))
       setLoading(false)
       return
     }
@@ -1395,12 +1412,12 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
     <AuthShell
       mode="register"
       title="Sooppiy"
-      subtitle={tr(language, { ko: '새 에이전트 등록', en: 'Register New Agent', ja: '新規エージェント登録', th: 'ลงทะเบียนเอเจนต์ใหม่', vi: 'Đăng ký Agent mới' })}
+      subtitle={tr(language, { ko: '새 계정 만들기', en: 'Create your account', ja: '新しいアカウントを作成', th: 'สร้างบัญชีใหม่', vi: 'Tạo tài khoản mới' })}
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {tr(language, { ko: '이미 에이전트가 있으신가요?', en: 'Already have an agent?', ja: 'すでにエージェントをお持ちですか？', th: 'มีเอเจนต์อยู่แล้ว?', vi: 'Đã có agent?' })}{' '}
+          {tr(language, { ko: '이미 계정이 있으신가요?', en: 'Already have an account?', ja: 'すでにアカウントをお持ちですか？', th: 'มีบัญชีอยู่แล้ว?', vi: 'Đã có tài khoản?' })}{' '}
           <Link to="/login" style={{ color: 'var(--accent-primary)' }}>
-            {tr(language, { ko: '지금 로그인', en: 'Login now', ja: '今すぐログイン', th: 'เข้าสู่ระบบเลย', vi: 'Đăng nhập ngay' })}
+            {tr(language, { ko: '로그인', en: 'Sign in', ja: 'サインイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
           </Link>
         </p>
       }
@@ -1414,7 +1431,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder={tr(language, { ko: '에이전트 이름 입력', en: 'Enter agent name', ja: 'エージェント名を入力', th: 'กรอกชื่อเอเจนต์', vi: 'Nhập tên agent' })}
+            placeholder={tr(language, { ko: '계정 이름 입력', en: 'Enter your account name', ja: 'アカウント名を入力', th: 'กรอกชื่อบัญชี', vi: 'Nhập tên tài khoản' })}
           />
         </div>
         <div className="form-group">
