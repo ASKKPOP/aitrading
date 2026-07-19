@@ -86,6 +86,24 @@ class PlannerClampTests(AgentModeTestCase):
         self.assertEqual(plan["symbol"], "SOLUSDT")  # scanner top candidate first
         self.assertLessEqual(plan["size_usd"], 2500.0)
 
+    def test_top_symbols_universe_wins_over_scanner(self):
+        """Plan 11 F1: a fully-delegated rule trades the market's top-5 by
+        volume/popularity; scanner candidates are only the fallback."""
+        import agent_planner
+        allowed = agent_planner._allowed_symbols(
+            [{"symbol": "SOLUSDT"}], ["KAITOUSDT", "ZECUSDT"])
+        self.assertEqual(allowed[:2], ["KAITOUSDT", "ZECUSDT"])
+        self.assertNotIn("SOLUSDT", allowed[:2])
+        self.assertLessEqual(len(allowed), 5)
+        # majors still pad the universe so a plan is always possible
+        self.assertIn("BTCUSDT", allowed)
+
+    def test_allowed_symbols_falls_back_when_top_symbols_unavailable(self):
+        import agent_planner
+        allowed = agent_planner._allowed_symbols([{"symbol": "SOLUSDT"}], [])
+        self.assertEqual(allowed[0], "SOLUSDT")
+        self.assertLessEqual(len(allowed), 5)
+
     def test_decisions_are_journaled(self):
         import agent_planner
         with patch.dict(os.environ, _NO_LLM_ENV), \

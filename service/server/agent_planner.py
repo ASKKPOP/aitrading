@@ -41,14 +41,13 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _allowed_symbols(candidates: list[dict[str, Any]]) -> list[str]:
+def _allowed_symbols(candidates: list[dict[str, Any]],
+                     top_symbols: Optional[list[str]] = None) -> list[str]:
     """Universe the planner may pick from: the market's top-5 by volume and
-    popularity (Plan 11 F1). Falls back to scanner candidates + majors."""
-    try:
-        from top_symbols import get_top_symbols
-        symbols = [t["symbol"] for t in get_top_symbols()]
-    except Exception:  # noqa: BLE001
-        symbols = []
+    popularity (Plan 11 F1), else scanner candidates, always padded with the
+    majors. top_symbols comes from _gather_context — all network I/O lives
+    there, so this stays pure and testable."""
+    symbols = list(top_symbols or [])
     if not symbols:
         symbols = [c.get("symbol") for c in candidates if c.get("symbol")]
     for s in PLAN_BOUNDS["fallback_symbols"]:
@@ -66,6 +65,13 @@ def _gather_context(agent_id: int, budget_usd: float) -> dict[str, Any]:
         ctx["scanner_candidates"] = (scan.get("candidates") or [])[:8]
     except Exception:  # noqa: BLE001
         ctx["scanner_candidates"] = []
+    # Top-5 by 24h volume + mention popularity (Plan 11 F1) — the universe a
+    # fully-delegated rule may trade.
+    try:
+        from top_symbols import get_top_symbols
+        ctx["top_symbols"] = [t["symbol"] for t in get_top_symbols()]
+    except Exception:  # noqa: BLE001
+        ctx["top_symbols"] = []
     try:
         from psych_feed import get_psych_payload
         psych = get_psych_payload()
@@ -170,7 +176,7 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
     agent_id = config["agent_id"]
     budget_usd = float(config.get("budget_usd") or 0)
     context = _gather_context(agent_id, budget_usd)
-    allowed = _allowed_symbols(context["scanner_candidates"])
+    allowed = _allowed_symbols(context["scanner_candidates"], context.get("top_symbols"))
 
     guidelines = None
     try:

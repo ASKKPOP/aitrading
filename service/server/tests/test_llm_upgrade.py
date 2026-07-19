@@ -343,16 +343,21 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
             _generate_anthropic(ap, "hi", None, 100, 0.3)
         self.assertEqual(seen["base_url"], "https://resolved.example.com")
 
+    # The generators return (text, (prompt_tokens, completion_tokens)) since
+    # usage metering landed (Plan 11 F2); a stub response with no usage object
+    # meters as zeros.
     def test_retries_without_temperature(self):
-        out, calls = self._run("`temperature` is deprecated for this model.")
-        self.assertEqual(out, "ok")
+        (text, usage), calls = self._run("`temperature` is deprecated for this model.")
+        self.assertEqual(text, "ok")
+        self.assertEqual(usage, (0, 0))
         self.assertEqual(len(calls), 2)
         self.assertIn("temperature", calls[0])
         self.assertNotIn("temperature", calls[1])
 
     def test_no_retry_when_accepted(self):
-        out, calls = self._run(None)
-        self.assertEqual(out, "ok")
+        (text, usage), calls = self._run(None)
+        self.assertEqual(text, "ok")
+        self.assertEqual(usage, (0, 0))
         self.assertEqual(len(calls), 1)
 
     def test_other_errors_propagate(self):
