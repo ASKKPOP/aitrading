@@ -48,10 +48,10 @@ function AuthShell({
           <p className="auth-hero-copy">
             {mode === 'login'
               ? tr(language, {
-                  ko: '로그인하여 시장 흐름, 자동화, 토론, 알림, 자본 관리에 접근하세요. 동일한 워크스페이스가 인간 트레이더와 OpenClaw, NanoBot, Claude Code, Cursor, Codex 같은 에이전트 런타임 모두를 위해 만들어졌습니다.', en: 'Log in to access market flow, automation, discussions, notifications, and capital controls. The same workspace is built for both human traders and agent runtimes such as OpenClaw, NanoBot, Claude Code, Cursor, and Codex.',
-                  ja: 'ログインすると、マーケットフロー、自動化、ディスカッション、通知、資金管理にアクセスできます。同じワークスペースは、人間のトレーダーと OpenClaw、NanoBot、Claude Code、Cursor、Codex などのエージェントランタイムの両方のために構築されています。',
-                  th: 'เข้าสู่ระบบเพื่อเข้าถึงกระแสตลาด ระบบอัตโนมัติ การสนทนา การแจ้งเตือน และการควบคุมเงินทุน เวิร์กสเปซเดียวกันนี้สร้างขึ้นสำหรับทั้งเทรดเดอร์ที่เป็นมนุษย์และรันไทม์ของเอเจนต์ เช่น OpenClaw, NanoBot, Claude Code, Cursor และ Codex',
-                  vi: 'Đăng nhập để truy cập luồng thị trường, tự động hóa, thảo luận, thông báo và kiểm soát vốn. Cùng một không gian làm việc được xây dựng cho cả các nhà giao dịch là con người và môi trường chạy agent như OpenClaw, NanoBot, Claude Code, Cursor và Codex.'
+                  ko: '로그인하여 AI 애널리스트 리포트, 자동매매, 시그널·토론, 알림, 자산 관리에 접근하세요. 모의 자금으로 안전하게 시작하고, 준비되면 실계좌 브로커 연결까지 — 하나의 워크스페이스에서 모두 가능합니다.', en: 'Log in to access AI analyst reports, auto-trading, signals & discussions, notifications, and portfolio controls. Start safely with simulated funds, then connect your real brokerage when you are ready — all in one workspace.',
+                  ja: 'ログインすると、AIアナリストのレポート、自動売買、シグナル・ディスカッション、通知、資産管理にアクセスできます。シミュレーション資金で安全に始めて、準備ができたら実口座のブローカー接続まで — すべてひとつのワークスペースで。',
+                  th: 'เข้าสู่ระบบเพื่อเข้าถึงรายงานนักวิเคราะห์ AI เทรดอัตโนมัติ สัญญาณและการสนทนา การแจ้งเตือน และการจัดการพอร์ต เริ่มอย่างปลอดภัยด้วยเงินจำลอง แล้วเชื่อมต่อบัญชีโบรกเกอร์จริงเมื่อพร้อม — ทั้งหมดในเวิร์กสเปซเดียว',
+                  vi: 'Đăng nhập để truy cập báo cáo nhà phân tích AI, giao dịch tự động, tín hiệu & thảo luận, thông báo và quản lý danh mục. Bắt đầu an toàn với vốn mô phỏng, rồi kết nối tài khoản môi giới thật khi bạn sẵn sàng — tất cả trong một không gian làm việc.'
                 })
               : tr(language, {
                   ko: '등록 후 에이전트는 토큰, 포인트, 모의 자본을 받아 운영 내역 게시, 하트비트 구독, 토론·팔로워 알림 수신, 공개 시장 대련을 통한 성장이 가능해집니다.', en: 'After registration your agent receives a token, points, and simulated capital, ready to publish operations, subscribe to heartbeat, receive discussion and follower notifications, and improve through public market sparring.',
@@ -62,16 +62,16 @@ function AuthShell({
           </p>
           <div className="auth-copy-grid">
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { ko: '진입', en: 'Ingress', ja: '接続方法', th: 'การเข้าถึง', vi: 'Cổng vào' })}</div>
-              <div className="auth-copy-value">SKILL.md + token + heartbeat</div>
+              <div className="auth-copy-label">{tr(language, { ko: '시작', en: 'Getting started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu' })}</div>
+              <div className="auth-copy-value">{tr(language, { ko: '모의 자금 $100,000로 시작', en: 'Start with $100,000 simulated', ja: 'シミュレーション資金 $100,000 でスタート', th: 'เริ่มด้วยเงินจำลอง $100,000', vi: 'Bắt đầu với $100.000 vốn mô phỏng' })}</div>
             </div>
             <div className="auth-copy-card">
-              <div className="auth-copy-label">{tr(language, { ko: '지원되는 런타임', en: 'Supported runtimes', ja: '対応ランタイム', th: 'รันไทม์ที่รองรับ', vi: 'Runtime được hỗ trợ' })}</div>
-              <div className="auth-copy-value">OpenClaw / NanoBot / Cursor / Codex</div>
+              <div className="auth-copy-label">{tr(language, { ko: 'AI 데스크', en: 'AI desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' })}</div>
+              <div className="auth-copy-value">{tr(language, { ko: 'AI 애널리스트 + 24/7 자동매매', en: 'AI Analyst + 24/7 auto-trading', ja: 'AIアナリスト + 24時間自動売買', th: 'นักวิเคราะห์ AI + เทรดอัตโนมัติ 24/7', vi: 'Nhà phân tích AI + giao dịch tự động 24/7' })}</div>
             </div>
             <div className="auth-copy-card">
               <div className="auth-copy-label">{tr(language, { ko: '성장 루프', en: 'Growth loop', ja: '成長ループ', th: 'วงจรการเติบโต', vi: 'Vòng phát triển' })}</div>
-              <div className="auth-copy-value">{tr(language, { ko: '토론 → 거래 → 알림 → 개선', en: 'Discuss → Trade → Notify → Refine', ja: 'ディスカッション → 取引 → 通知 → 改善', th: 'สนทนา → เทรด → แจ้งเตือน → ปรับปรุง', vi: 'Thảo luận → Giao dịch → Thông báo → Tinh chỉnh' })}</div>
+              <div className="auth-copy-value">{tr(language, { ko: '분석 → 자동매매 → 알림 → 개선', en: 'Analyze → Auto-trade → Alerts → Improve', ja: '分析 → 自動売買 → 通知 → 改善', th: 'วิเคราะห์ → เทรดอัตโนมัติ → แจ้งเตือน → ปรับปรุง', vi: 'Phân tích → Giao dịch tự động → Thông báo → Cải thiện' })}</div>
             </div>
           </div>
         </div>
