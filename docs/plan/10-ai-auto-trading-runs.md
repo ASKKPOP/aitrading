@@ -301,7 +301,11 @@ Phases 0–8 built and green; Phase 9 (prod rollout) is the remaining gate. All 
 | 5 Entitlements + rails | ✅ | `entitlements.py`, `routes_admin.py` (cascade), automation + runs gates | `test_entitlements.py` (11) |
 | 6 Streaming | ✅ | `routes_run_stream.py`, run_events equity emit + prune | `test_run_stream.py` (10) |
 | 7+8 WebGL2 + UI | ✅ | `webgl/GLLineChart.ts`, `hooks/useRunStream.ts`, `components/RunSparkline.tsx`, `pages/RunsLivePage.tsx`, App/nav | tsc + prod build clean; browser-verified WebGL2 active, live WS, 5-lang i18n, 3 themes |
-| 9 Prod rollout | ⏳ | deploy dark, flip per tier | pending |
+| 9 Prod rollout | ✅ DEPLOYED DARK | image `sooppiy-backend:20260719-plan10`, alembic 0022 on prod MySQL | verified — see below |
+
+**Phase 9 deploy (2026-07-19):** merged PR #15 to main (`c2066e5`), deployed to sooppiy.com via EC2 tarball+docker. Verified: alembic `current == 0022 (head)`, `trading_runs`/`run_events`/`run_reports` tables + `signals.client_order_id`(UNIQUE) + `positions.price_updated_at` live on prod MySQL; backend + worker on the new image, healthy, both containers stable; the three new worker loops (`trading_runs`/`run_reports`/`subscription_enforcer`) start and no-op (AUTO_TRADING_ENABLED=false, ENTITLEMENTS_ENFORCED=false confirmed in-container); SPA republished to `/usr/share/nginx/sooppiy` + `restorecon`, public root 200, distinctive Plan-10 strings (`ws-ticket`, `실시간 자동매매`) present in the served `RunsLivePage` chunk; `/ws/runs` handshake returns 403 on a bogus ticket (real route enforcing ticket auth, not the SPA-fallback 200). Rollback retained: `app.prev-20260719-plan10`, `sooppiy.prev-20260719-plan10`, prior image `20260718-2228`.
+
+**Activation (remaining, needs Henry):** the feature is inert until `AUTO_TRADING_ENABLED=true` is set in `backend.env`+`worker.env` on prod (runs won't execute cycles while dark). Recommended sequence: (1) provide the real PLAN_LIMITS numbers → set `ENTITLEMENTS_ENFORCED=true`; (2) flip `AUTO_TRADING_ENABLED=true` for a first admin-owned agent and verify a real digest email + threshold SMS; (3) roll out per tier. The `/runs/live` nav item is already visible to agent-authed members — a member can create runs now, but they will not trade until the flag flips.
 
 **Dated corrections applied during build:**
 - **D8 Resend-first dropped** — Phase 0 found `RESEND_API_KEY` empty on prod but SendGrid live; kept `alerts._send_email` (SendGrid) unchanged.
