@@ -844,6 +844,17 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
     return None
 
 
+def _position_quantity(agent_id: int, market: str, symbol: str) -> float:
+    """Signed position quantity (negative = short book), 0.0 when flat."""
+    from routes_shared import get_position_snapshot
+    conn = get_db_connection()
+    try:
+        pos = get_position_snapshot(conn.cursor(), agent_id, market, symbol, None)
+        return float(pos["quantity"]) if pos else 0.0
+    finally:
+        conn.close()
+
+
 def run_cycle(run_id: int) -> dict:
     """One full cycle: claim -> pre-gates -> analysis -> gates -> trade.
     Sync; called on the dedicated executor. Never raises."""
@@ -882,6 +893,19 @@ def run_cycle(run_id: int) -> dict:
                              {"cycle": seq, "action": action, "confidence": confidence,
                               "entry": entry,
                               "report": (decision.get("report") or "")[:1000]})
+
+        # Futures v1 (Plan 10 D5): the desk decides direction (buy/sell); the
+        # futures book translates it. A bearish call with no long to reduce
+        # OPENS a short; a bullish call while short COVERS the book instead of
+        # buying on top of a negative row. Without this mapping no decision
+        # path ever emits 'short', so a futures run could never trade. Spot
+        # runs are untouched — a spot 'sell' still only reduces a long.
+        if (run.get("market_type") or "spot") == "futures" and action in ("buy", "sell"):
+            pos_qty = _position_quantity(run["agent_id"], run["market"], run["symbol"])
+            if action == "sell" and pos_qty <= 0:
+                action = "short"
+            elif action == "buy" and pos_qty < 0:
+                action = "cover"
 
         from automation import evaluate_execution_gates, execute_paper_trade
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
