@@ -50,6 +50,8 @@ SOURCES: list[dict] = [
      "kind": "md", "lang": "en", "group": "backtest-report", "title": "Phase-4 Strategy Backtest — Go/No-Go Result"},
     {"key": "backtest-report-ko", "src": "research/parameters/3-phase4-backtest-report-ko.md",
      "kind": "md", "lang": "ko", "group": "backtest-report", "title": "Phase-4 전략 백테스트 — Go/No-Go 결과"},
+    {"key": "api-keys-en", "src": "design/api-keys-reference-en.html", "kind": "html", "lang": "en",
+     "group": "ops-keys", "title": "API Keys Reference", "owner_only": True},
 ]
 
 GROUPS = [
@@ -60,6 +62,7 @@ GROUPS = [
     {"group": "framework", "ko": "프레임워크 체크리스트", "en": "Framework Checklists"},
     {"group": "psych-report", "ko": "차트 vs 심리 리포트", "en": "Charts vs Psychology"},
     {"group": "backtest-report", "ko": "백테스트 결과", "en": "Backtest Result"},
+    {"group": "ops-keys", "ko": "API 키 (관리자)", "en": "API Keys (owner)"},
 ]
 
 _MD_SHELL = """<!doctype html>
@@ -120,7 +123,10 @@ def build() -> dict:
             out_path.write_text(
                 _MD_SHELL.format(lang=doc["lang"], title=doc["title"], body=body),
                 encoding="utf-8")
-        manifest["docs"].append({k: doc[k] for k in ("key", "lang", "group", "title")})
+        entry = {k: doc[k] for k in ("key", "lang", "group", "title")}
+        if doc.get("owner_only"):
+            entry["owner_only"] = True
+        manifest["docs"].append(entry)
         print(f"built {out_path.name} ({out_path.stat().st_size} bytes)")
 
     (OUT / "manifest.json").write_text(

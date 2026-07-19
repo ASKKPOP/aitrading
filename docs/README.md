@@ -28,6 +28,7 @@ All HTML documents live under [design/](design/) — this is the standing conven
 | [design/signal-framework.html](design/signal-framework.html) | The AI trading-signal collection framework the plan implements. Live at sooppiy.com/framework.html. |
 | [design/theme-preview.html](design/theme-preview.html) | Signal design-system reference (tokens, type scale, components). |
 | [design/parameter-upgrade-result.html](design/parameter-upgrade-result.html) | **Parameter-upgrade implementation result** — full visual report: session pipeline, 4-layer architecture diagram, automation-tick flow, verification-panel charts, Phase-4 backtest evidence (PF per fold, capital preservation, exit mix, agreement heatmap), deployed-state table. |
+| [design/api-keys-reference-en.html](design/api-keys-reference-en.html) | **API Keys Reference (owner-only)** — source for the `api-keys-en` guide doc (served only to `DOCS_OWNER_EMAILS`). Companion to [plan/08-api-keys-reference.md](plan/08-api-keys-reference.md). Rebuild with `service/server/build_guide_content.py` after editing. |
 
 ## The five decisions to anchor on
 

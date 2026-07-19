@@ -4,6 +4,13 @@
 **2회의 검증된 딥 리서치(200+ 에이전트, 1차 출처 팩트체크)로 구축 · 2026년 7월**
 **⚠️ 교육용 프레임워크이며 투자 자문이 아닙니다. 현실적 기대치: 방향 적중률 50–55% — 엣지는 단일 신호가 아니라 컨플루언스(중첩) + 리스크 관리에서 나옵니다.**
 
+<div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
+<b>이 프레임워크가 실제 크립토 구현에 대응되는 방식.</b> 이 체크리스트는 연구 전략을 서술하며, 실제 시스템은 크립토에 맞게 적응합니다.
+<b>VIX → 크립토 공포·탐욕 지수(F&amp;G)</b>, 반전된 척도 — 패닉은 <b>F&amp;G &lt; 20</b>(VIX &gt; 30 아님), 평온은 <b>F&amp;G &gt; 30</b>; 크립토에는 VIX가 없습니다(<code>regime.py</code>, <code>strategy_config.py</code>).
+<b>명명된 차트 패턴(쌍바닥, 헤드앤숄더) → 복합 기술 점수</b>(RSI · MA · 펀딩 · 베이시스 · 롱숏)를 거래량으로 확인 — 캔들 패턴 감지기는 없습니다(<code>confluence.py</code> B3/S3).
+<b>오버나이트 수익률 감성 → StockTwits 군중 심리</b>(B4). B1–B6 / S1–S6 명칭은 실제 엔진 조건 라벨입니다.
+</div>
+
 ---
 
 ## 1. 리서치가 증명한 핵심 원리

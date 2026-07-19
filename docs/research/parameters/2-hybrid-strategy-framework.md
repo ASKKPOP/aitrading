@@ -4,6 +4,13 @@
 **Built from two rounds of verified deep research (200+ agents, primary-source fact-checked) · July 2026**
 **⚠️ Educational framework, not investment advice. Realistic expectation: 50–55% directional accuracy — the edge comes from confluence + risk management, not any single signal.**
 
+<div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
+<b>How this framework maps to the crypto implementation.</b> This checklist states the research strategy; the running system adapts it for crypto.
+<b>VIX → the crypto Fear &amp; Greed index (F&amp;G)</b>, an inverted scale — panic is <b>F&amp;G &lt; 20</b> (not VIX &gt; 30), calm is <b>F&amp;G &gt; 30</b>; there is no VIX for crypto (<code>regime.py</code>, <code>strategy_config.py</code>).
+<b>Named chart patterns (double bottom, H&amp;S) → a composite technical score</b> (RSI · MA · funding · basis · long/short) confirmed by volume — no candlestick-pattern detector exists (<code>confluence.py</code> B3/S3).
+<b>Overnight-return sentiment → StockTwits crowd tilt</b> (B4). The B1–B6 / S1–S6 names are the real engine condition labels.
+</div>
+
 ---
 
 ## 1. The core principle the research proved
