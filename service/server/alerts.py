@@ -36,7 +36,10 @@ RATE_LIMIT_PER_HOUR = int(os.getenv("ALERTS_RATE_LIMIT", "10") or 10)
 
 ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected", "custom",
                # Trading Runs (Plan 10 D8)
-               "run_report", "run_threshold", "run_stopped")
+               "run_report", "run_threshold", "run_stopped",
+               # Live execution: the user's broker gateway stopped accepting
+               # orders. Silence here means a live rule quietly stops trading.
+               "gateway_down")
 
 # run_stopped is the one alert that matters (a run halted on losses) — it gets
 # its own reserved hourly budget so digests/thresholds can never starve it.

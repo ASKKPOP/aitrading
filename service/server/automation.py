@@ -2,14 +2,23 @@
 
 Executes user-configured rules: on each tick, every enabled + due rule runs the
 multi-agent analysis (analysis_agents.run_analysis). If the rule has auto_execute
-on, the decision is BUY or SELL, and confidence >= min_confidence, a paper trade
-is executed on the agent's SIMULATOR account (signals row + position + cash —
-same ledger as a manual trade, signal_type 'automation').
+on, the decision is BUY or SELL, and confidence >= min_confidence, the fill is
+routed by the rule's account_type (see execution/gateway.py):
+
+  simulator — platform ledger only (signals row + position + cash, same ledger
+              as a manual trade, signal_type 'automation').
+  shadow    — platform ledger is authoritative (run by simulation); when a
+              gateway is configured the order is also sent to the broker's
+              SANDBOX and the fill drift is journalled. No real money.
+  live      — the real order goes to the user's configured trading gateway and
+              the broker is authoritative; the ledger mirrors what filled.
 
 Safety invariants:
-  - Only account_type='simulator' rules ever execute. 'real' rules run the
-    analysis and record the decision, but never place orders (live execution is
-    intentionally not wired in this build).
+  - live requires a configured gateway with usable credentials. Without one the
+    rule is REFUSED with a message, never silently simulated — a fake fill that
+    looks real is worse than no fill.
+  - In live, the platform ledger is written only after the broker accepted the
+    order, so a rejected order never produces a platform position.
   - us-stock rules skip execution while the US market is closed (analysis still
     runs; the run is recorded with a skip_reason).
   - A sell only executes against an existing long position; a buy requires cash.
@@ -239,6 +248,79 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         conn.close()
 
 
+def _alert_gateway_failure(agent_id: int, symbol: str, reason: str) -> None:
+    """Tell the user their LIVE rule did not reach the market.
+
+    A live rule that silently stops filling looks identical to a quiet market
+    from the outside, so this is the difference between "no signal today" and
+    "your broker session expired six hours ago". Deduped per hour so a rule on
+    a short interval cannot spam.
+    """
+    try:
+        from alerts import send_alert
+        hour = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+        send_alert(agent_id, "gateway_down",
+                   "Live order did not reach your broker",
+                   f"{symbol}: {reason}",
+                   dedupe_key=f"gateway_down:{agent_id}:{hour}")
+    except Exception:  # noqa: BLE001 — alerting must never break trading
+        logger.debug("gateway failure alert failed for agent %s", agent_id)
+
+
+def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str,
+                              market: str, side: str, quantity: float, price: float,
+                              stop_loss: Any, take_profit: Any,
+                              result: dict[str, Any]) -> tuple[Optional[int], Optional[str]]:
+    """Land a fill according to the rule's account_type.
+
+      simulator — platform ledger only (unchanged behaviour).
+      shadow    — platform ledger is authoritative, i.e. run by simulation.
+                  When a gateway is configured the same order also goes to the
+                  broker's SANDBOX and the drift is journalled. No real money.
+      live      — the real order goes to the gateway FIRST. The broker is
+                  authoritative, so the ledger is only written once the order
+                  actually reached the broker; a rejection produces no position.
+
+    Returns (signal_id, skip_reason) exactly like execute_paper_trade.
+    """
+    from execution.base import OrderStatus
+    from execution.gateway import LIVE, SHADOW, normalize_account_type, submit_live, submit_shadow
+
+    mode = normalize_account_type(config.get("account_type"))
+    result["execution_mode"] = mode
+
+    if mode == LIVE:
+        order = submit_live(agent_id, symbol, market, side, quantity, price)
+        result["broker"] = order.broker
+        result["broker_order_id"] = order.broker_order_id
+        if order.status not in (OrderStatus.FILLED, OrderStatus.SUBMITTED):
+            # Nothing reached the market — do not write a platform position.
+            reason = order.error_message or order.status.value
+            _alert_gateway_failure(agent_id, symbol, reason)
+            return None, f"gateway rejected order: {reason}"
+        # Broker filled: mirror into the ledger so the UI and SL/TP watcher
+        # see the position. Quantity comes from the broker when it reported a
+        # partial, so the ledger matches what actually executed.
+        filled = order.filled_qty if order.filled_qty else quantity
+        return execute_paper_trade(agent_id, symbol, market, side, filled, price,
+                                   stop_loss=stop_loss, take_profit=take_profit)
+
+    signal_id, skip = execute_paper_trade(agent_id, symbol, market, side, quantity,
+                                          price, stop_loss=stop_loss,
+                                          take_profit=take_profit)
+    if mode == SHADOW and signal_id:
+        # Best-effort comparison leg; never affects the completed simulation.
+        try:
+            shadow = submit_shadow(agent_id, symbol, market, side, quantity, price,
+                                   ledger_quantity=quantity, signal_id=signal_id)
+            if shadow is not None:
+                result["shadow_broker"] = shadow.broker
+                result["shadow_status"] = shadow.status.value
+        except Exception:  # noqa: BLE001
+            logger.exception("shadow leg failed for agent %s", agent_id)
+    return signal_id, skip
+
+
 def _entitlement_blocks(agent_id: int) -> Optional[str]:
     """In-loop entitlement check on its own short connection (fail-closed:
     an unverifiable plan blocks auto-execution — spend prevention)."""
@@ -255,6 +337,20 @@ def _entitlement_blocks(agent_id: int) -> Optional[str]:
             conn.close()
     except Exception:  # noqa: BLE001
         return "entitlement check unavailable"
+
+
+def _gateway_blocks(agent_id: int, account_type: Optional[str]) -> Optional[str]:
+    """Refusal reason for a live rule with no usable trading gateway.
+
+    Fail-closed: if the gateway cannot be inspected we refuse rather than fall
+    through, because the alternative is routing real money on an unverified
+    configuration."""
+    try:
+        from execution.gateway import live_refusal_reason
+        return live_refusal_reason(agent_id, account_type)
+    except Exception:  # noqa: BLE001
+        logger.exception("gateway check failed for agent %s", agent_id)
+        return "trading gateway check unavailable"
 
 
 def _agent_budget_blocks(config: dict[str, Any], entry: float) -> Optional[str]:
@@ -336,9 +432,13 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
     out: dict[str, Any] = {"skip_reason": None, "gate": None, "regime_size_multiplier": None}
     if not config.get("auto_execute"):
         out["skip_reason"] = "auto_execute off"
-    elif config.get("account_type") != "simulator":
-        # Live execution is intentionally not wired — record and skip.
-        out["skip_reason"] = "real account execution disabled in this build"
+    elif (_gateway_deny := _gateway_blocks(agent_id, config.get("account_type"))):
+        # account_type decides where the fill lands (execution/gateway.py):
+        # simulator and shadow always have somewhere to go; live is refused
+        # unless the user has actually configured a trading gateway. Never
+        # downgrade live to simulation — a fake fill that looks real is worse
+        # than no fill.
+        out["skip_reason"] = _gateway_deny
     elif (_ent_deny := _entitlement_blocks(agent_id)):
         # Plan 10 D9: in-loop entitlement gate — a lapsed subscription stops
         # existing auto-executing rules too, not just new ones. Env-gated
@@ -586,9 +686,9 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
         if gates["skip_reason"] is not None or gate is None:
             result["skip_reason"] = gates["skip_reason"]
         else:
-            signal_id, skip = execute_paper_trade(
-                agent_id, symbol, market, action, gate.quantity, float(entry),
-                stop_loss=gate.stop_loss, take_profit=gate.take_profit)
+            signal_id, skip = _execute_for_account_type(
+                config, agent_id, symbol, market, action, gate.quantity,
+                float(entry), gate.stop_loss, gate.take_profit, result)
             if signal_id:
                 result["executed"] = True
                 if gate.adjustment:

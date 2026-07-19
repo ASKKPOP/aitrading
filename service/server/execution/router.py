@@ -134,6 +134,13 @@ def _record_reconciliation(
 # Broker factory
 # ---------------------------------------------------------------------------
 
+def _truthy(value) -> bool:
+    """Stored credential flags arrive as JSON, so accept bool or string."""
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def _build_real_broker(account: dict) -> Broker:
     """Build the real broker for an account row.  Falls back to PaperBroker on error."""
     from execution.paper import PaperBroker
@@ -166,8 +173,16 @@ def _build_real_broker(account: dict) -> Broker:
             testnet=(mode != "live"),
         )
     if broker_name == "ibkr":
+        # CPAPI has no key/secret — the gateway session is the credential, so
+        # the stored blob carries the gateway URL and account id instead.
         from execution.ibkr import IBKRBroker
-        return IBKRBroker()
+        mode = account.get("execution_mode", "shadow")
+        return IBKRBroker(
+            gateway_url=creds.get("gateway_url", ""),
+            account_id=creds.get("account_id", ""),
+            paper=(mode != "live"),
+            verify_tls=not _truthy(creds.get("allow_self_signed")),
+        )
 
     return PaperBroker()
 

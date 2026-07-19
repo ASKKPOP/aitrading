@@ -139,10 +139,14 @@ class AutomationConfigIn(BaseModel):
     @field_validator("account_type")
     @classmethod
     def _account(cls, v: str) -> str:
+        """simulator | shadow | live decides where a fill lands. 'real' is the
+        pre-gateway spelling of live and is normalized so existing clients and
+        stored rules keep working."""
+        from execution.gateway import ACCOUNT_TYPES, normalize_account_type
         v = (v or "").strip().lower()
-        if v not in ("simulator", "real"):
-            raise ValueError("account_type must be simulator or real")
-        return v
+        if v not in ACCOUNT_TYPES and v != "real":
+            raise ValueError(f"account_type must be one of {', '.join(ACCOUNT_TYPES)}")
+        return normalize_account_type(v)
 
     @field_validator("lang")
     @classmethod

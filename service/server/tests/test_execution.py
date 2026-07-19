@@ -331,8 +331,12 @@ class TestBinanceBrokerNoCredentials(unittest.TestCase):
         self.assertEqual(result, [])
 
 
-class TestIBKRBrokerStub(unittest.TestCase):
-    def test_submit_always_rejects(self):
+class TestIBKRBrokerUnconfigured(unittest.TestCase):
+    """IBKR is implemented against the Client Portal Web API (see
+    tests/test_execution_ibkr.py for the behavioural suite). Without a gateway
+    URL and account id there is nothing to talk to, so it still rejects."""
+
+    def test_submit_rejects_without_a_gateway(self):
         from execution.ibkr import IBKRBroker
         from execution.base import Order, OrderStatus
         broker = IBKRBroker()
@@ -340,7 +344,7 @@ class TestIBKRBrokerStub(unittest.TestCase):
                       side="buy", quantity=1, price=100.0)
         result = _run(broker.submit_order(order))
         self.assertEqual(result.status, OrderStatus.REJECTED)
-        self.assertIn("not yet implemented", result.error_message)
+        self.assertIn("not configured", result.error_message)
 
 
 if __name__ == "__main__":

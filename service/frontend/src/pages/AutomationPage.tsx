@@ -25,6 +25,17 @@ type Rule = {
 type UserMode = 'agent' | 'simple' | 'guided' | 'pro'
 const MODE_KEY = 'sooppiy_automation_mode'
 
+// Where a fill lands. Mirrors execution/gateway.py — keep the two in step.
+//   simulator — platform ledger only, never contacts a broker
+//   shadow    — runs by simulation; also mirrors to the broker's sandbox when
+//               a gateway is connected, so you can compare real fills safely
+//   live      — the real order goes to your configured trading gateway
+const ACCOUNT_TYPES = ['simulator', 'shadow', 'live'] as const
+
+// Rules created before the gateway landed store 'real'; show them as live.
+const normalizeAccountType = (v: string | null | undefined): string =>
+  v === 'real' ? 'live' : (ACCOUNT_TYPES as readonly string[]).includes(v || '') ? (v as string) : 'simulator'
+
 const DEFAULT_DRAFT: Rule = { symbol: 'BTC', market: 'crypto', provider: null, interval_minutes: 60, min_confidence: 0.65, size_usd: 500, auto_execute: false, account_type: 'simulator' }
 
 // Simple-mode risk presets: conservative checks less often and demands more
@@ -78,6 +89,7 @@ export function AutomationPage() {
     size: tr(language, { ko: '포지션 크기 ($)', en: 'Position size ($)', ja: 'ポジションサイズ', th: 'ขนาดโพซิชัน ($)', vi: 'Kích thước lệnh ($)' }),
     account: tr(language, { ko: '계정', en: 'Account', ja: '口座', th: 'บัญชี', vi: 'Tài khoản' }),
     autoEx: tr(language, { ko: '자동 실행', en: 'Auto-execute', ja: '自動執行', th: 'ดำเนินการอัตโนมัติ', vi: 'Tự động thực hiện' }),
+    liveMoney: tr(language, { ko: '실제 자금', en: 'REAL MONEY', ja: '実資金', th: 'เงินจริง', vi: 'TIỀN THẬT' }),
     add: tr(language, { ko: '규칙 추가', en: 'Add rule', ja: 'ルールを追加', th: 'เพิ่มกฎ', vi: 'Thêm quy tắc' }),
     remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa' }),
     yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn' }),
@@ -85,7 +97,7 @@ export function AutomationPage() {
     history: tr(language, { ko: '최근 실행', en: 'Recent runs', ja: '実行履歴', th: 'ประวัติล่าสุด', vi: 'Lần chạy gần đây' }),
     noRuns: tr(language, { ko: '아직 실행 기록이 없습니다 — 워커가 매분 예정된 규칙을 확인합니다.', en: 'No runs yet — the worker checks due rules every minute.', ja: 'まだ実行はありません。', th: 'ยังไม่มีการทำงาน — ระบบตรวจทุกนาที', vi: 'Chưa có lần chạy nào.' }),
     executed: tr(language, { ko: '체결됨', en: 'executed', ja: '執行', th: 'ดำเนินการแล้ว', vi: 'đã thực hiện' }),
-    realNote: tr(language, { ko: '실계좌의 규칙은 분석만 실행합니다 — 이 빌드에서는 라이브 주문 실행이 비활성화되어 있습니다.', en: 'Rules on the real account run analysis only — live order execution is disabled in this build.', ja: '実口座ルールは分析のみ実行します。', th: 'กฎบัญชีจริงจะวิเคราะห์เท่านั้น — ไม่มีการส่งคำสั่งจริงในเวอร์ชันนี้', vi: 'Quy tắc tài khoản thật chỉ phân tích.' }),
+    realNote: tr(language, { ko: '계정 설정이 체결 위치를 정합니다 — simulator는 모의, shadow는 모의로 실행하며 브로커 샌드박스에 대조 주문, live는 계좌 페이지에서 연결한 게이트웨이로 실제 주문을 보냅니다.', en: 'The account setting decides where a fill lands — simulator is simulated, shadow runs by simulation with a comparison order to the broker sandbox, and live sends a real order through the gateway you connected on the Accounts page.', ja: '口座設定が約定先を決めます — simulator は模擬、shadow は模擬実行＋サンドボックス照合、live は接続したゲートウェイに実発注します。', th: 'การตั้งค่าบัญชีกำหนดจุดที่คำสั่งไปถึง — simulator จำลอง, shadow จำลองพร้อมส่งคำสั่งเทียบไปแซนด์บ็อกซ์, live ส่งคำสั่งจริงผ่านเกตเวย์', vi: 'Thiết lập tài khoản quyết định nơi khớp lệnh — simulator mô phỏng, shadow mô phỏng kèm lệnh đối chiếu tới sandbox, live gửi lệnh thật qua cổng đã kết nối.' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
     // ── mode system ──
     modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản' }),
@@ -149,7 +161,11 @@ export function AutomationPage() {
   const skipLabel = (reason?: string | null): string => {
     if (!reason) return '—'
     if (reason === 'auto_execute off') return tr(language, { ko: '자동 실행 꺼짐', en: 'auto-execute off', ja: '自動執行オフ', th: 'ปิดการดำเนินการอัตโนมัติ', vi: 'tắt tự động thực hiện' })
-    if (reason.startsWith('real account')) return tr(language, { ko: '실계좌 — 이 빌드에서는 분석만 실행', en: 'real account — analysis only in this build', ja: '実口座 — 分析のみ', th: 'บัญชีจริง — วิเคราะห์เท่านั้น', vi: 'tài khoản thật — chỉ phân tích' })
+    if (reason.startsWith('live trading selected but no trading gateway')) return tr(language, { ko: '라이브를 선택했지만 거래 게이트웨이가 설정되지 않았습니다 — 실거래를 하려면 계좌 페이지에서 브로커를 연결하세요', en: 'live selected but no trading gateway configured — connect a broker on the Accounts page to trade for real', ja: 'ライブ選択中ですが取引ゲートウェイが未設定です — 実取引には口座ページでブローカーを接続してください', th: 'เลือก live แต่ยังไม่ได้ตั้งค่าเกตเวย์ — เชื่อมต่อโบรกเกอร์ในหน้าบัญชีเพื่อเทรดจริง', vi: 'đã chọn live nhưng chưa cấu hình cổng giao dịch — kết nối broker ở trang Tài khoản để giao dịch thật' })
+    if (reason.startsWith('live trading selected but the connected gateway')) return tr(language, { ko: '연결된 게이트웨이에 사용 가능한 API 자격 증명이 없습니다 — 브로커를 다시 연결하세요', en: 'connected gateway has no usable API credentials — reconnect the broker', ja: '接続中のゲートウェイに有効なAPI認証情報がありません — 再接続してください', th: 'เกตเวย์ที่เชื่อมต่อไม่มีข้อมูลรับรอง API ที่ใช้ได้ — เชื่อมต่อโบรกเกอร์ใหม่', vi: 'cổng đã kết nối không có thông tin API dùng được — kết nối lại broker' })
+    if (reason.startsWith('live trading selected but the live-trading terms')) return tr(language, { ko: '실거래 약관에 동의하지 않았습니다 — 계좌 페이지에서 동의하세요', en: 'live-trading terms not accepted — accept them on the Accounts page', ja: '実取引の規約が未同意です — 口座ページで同意してください', th: 'ยังไม่ยอมรับข้อกำหนดการเทรดจริง — ยอมรับในหน้าบัญชี', vi: 'chưa chấp nhận điều khoản giao dịch thật — chấp nhận ở trang Tài khoản' })
+    if (reason.startsWith('gateway rejected order')) return tr(language, { ko: `게이트웨이가 주문을 거부했습니다 — ${reason.replace('gateway rejected order: ', '')}`, en: reason, ja: `ゲートウェイが注文を拒否 — ${reason.replace('gateway rejected order: ', '')}`, th: `เกตเวย์ปฏิเสธคำสั่ง — ${reason.replace('gateway rejected order: ', '')}`, vi: `cổng từ chối lệnh — ${reason.replace('gateway rejected order: ', '')}` })
+    if (reason.startsWith('trading gateway check')) return tr(language, { ko: '게이트웨이 확인 불가 — 안전을 위해 체결하지 않았습니다', en: 'gateway check unavailable — refused for safety', ja: 'ゲートウェイ確認不可 — 安全のため見送り', th: 'ตรวจสอบเกตเวย์ไม่ได้ — ข้ามเพื่อความปลอดภัย', vi: 'không kiểm tra được cổng — bỏ qua để an toàn' })
     const dm = reason.match(/^decision is '(.+)'$/)
     if (dm) return tr(language, { ko: `결정이 '${dm[1]}' — 체결 조건 아님`, en: `decision is '${dm[1]}'`, ja: `判断が'${dm[1]}'のため見送り`, th: `ผลตัดสินคือ '${dm[1]}'`, vi: `quyết định là '${dm[1]}'` })
     const cm = reason.match(/^confidence (.+) below threshold (.+)$/)
@@ -388,7 +404,7 @@ export function AutomationPage() {
             {fld(T.interval, <input style={inp} type="number" min={5} value={draft.interval_minutes} onChange={e => setDraft({ ...draft, interval_minutes: +e.target.value })} />)}
             {fld(T.minConf, <input style={inp} type="number" step="0.05" min="0" max="1" value={draft.min_confidence} onChange={e => setDraft({ ...draft, min_confidence: +e.target.value })} />)}
             {fld(T.size, <input style={inp} type="number" value={draft.size_usd} onChange={e => setDraft({ ...draft, size_usd: +e.target.value })} />)}
-            {fld(T.account, <select style={inp} value={draft.account_type} onChange={e => setDraft({ ...draft, account_type: e.target.value })}><option value="simulator">simulator</option><option value="real">real</option></select>)}
+            {fld(T.account, <select style={inp} value={normalizeAccountType(draft.account_type)} onChange={e => setDraft({ ...draft, account_type: e.target.value })}>{ACCOUNT_TYPES.map(a => <option key={a} value={a}>{a}</option>)}</select>)}
           </div>
           {/* schedule editor (Plan 06 C3) */}
           <div style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
@@ -439,11 +455,18 @@ export function AutomationPage() {
                 <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                   <b style={{ fontSize: 15 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
-                    {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {r.account_type}
+                    {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {normalizeAccountType(r.account_type)}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
                     {r.auto_execute ? 'auto' : 'analysis only'}
                   </span>
+                  {/* Real money is on the line here — never let it read the
+                      same as a simulated rule at a glance. */}
+                  {r.auto_execute && normalizeAccountType(r.account_type) === 'live' && (
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(240,102,63,0.18)', color: '#f0663f' }}>
+                      ⚠ {T.liveMoney}
+                    </span>
+                  )}
                   {r.last_run_at && <span style={{ fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>last: {String(r.last_run_at).replace('T', ' ').slice(0, 16)}</span>}
                   {testable && (
                     <button onClick={() => { setTestRuleId(r.id ?? null); testRun.run(r.symbol, r.market, language, r.provider, r.id) }}

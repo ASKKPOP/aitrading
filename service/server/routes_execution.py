@@ -26,9 +26,15 @@ from routes_shared import RouteContext, utc_now_iso_z
 # ── Request / response models ─────────────────────────────────────────────────
 
 class CreateBrokerAccountRequest(BaseModel):
+    """Alpaca and Binance authenticate with a key/secret pair. IBKR does not —
+    its Client Portal Gateway holds the session, so it takes the gateway URL and
+    the account id instead. One model, validated per broker."""
     broker: str
-    api_key: str
-    api_secret: str
+    api_key: str = ""
+    api_secret: str = ""
+    gateway_url: str = ""
+    account_id: str = ""
+    allow_self_signed: bool = False
 
     @field_validator("broker")
     @classmethod
@@ -36,6 +42,22 @@ class CreateBrokerAccountRequest(BaseModel):
         if v not in AVAILABLE_BROKERS:
             raise ValueError(f"broker must be one of {AVAILABLE_BROKERS}")
         return v
+
+    def credentials(self) -> dict:
+        """The blob to encrypt at rest, shaped for this broker."""
+        if self.broker == "ibkr":
+            if not self.gateway_url.strip() or not self.account_id.strip():
+                raise ValueError("ibkr requires gateway_url and account_id")
+            if not self.gateway_url.strip().lower().startswith(("http://", "https://")):
+                raise ValueError("gateway_url must start with http:// or https://")
+            return {
+                "gateway_url": self.gateway_url.strip(),
+                "account_id": self.account_id.strip(),
+                "allow_self_signed": self.allow_self_signed,
+            }
+        if not self.api_key.strip() or not self.api_secret.strip():
+            raise ValueError(f"{self.broker} requires api_key and api_secret")
+        return {"key": self.api_key.strip(), "secret": self.api_secret.strip()}
 
 
 class SetExecutionModeRequest(BaseModel):
@@ -68,7 +90,10 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post("/api/execution/accounts", status_code=201)
     def create_broker_account(req: Request, body: CreateBrokerAccountRequest):
         agent = _require_agent(req)
-        creds_enc = encrypt_credentials({"key": body.api_key, "secret": body.api_secret})
+        try:
+            creds_enc = encrypt_credentials(body.credentials())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         conn = database.get_db_connection()
         cursor = conn.cursor()
@@ -109,6 +134,18 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
         rows = cursor.fetchall()
         conn.close()
         return {"accounts": [dict(r) for r in rows]}
+
+    # ── GET /api/execution/health ─────────────────────────────────────────────
+    @app.get("/api/execution/health")
+    def gateway_health_check(req: Request):
+        """Live readiness of the agent's gateway.
+
+        Credentials on file is not the same as the venue accepting orders —
+        IBKR sessions expire — so this probes rather than trusting the row.
+        """
+        agent = _require_agent(req)
+        from execution.gateway import gateway_health
+        return gateway_health(agent["id"])
 
     # ── PUT /api/execution/accounts/{account_id}/mode ─────────────────────────
     @app.put("/api/execution/accounts/{account_id}/mode")
