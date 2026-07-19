@@ -457,7 +457,7 @@ def llm_context_for_agent(agent_id: Optional[int]):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT s.api_key, s.config_json FROM user_api_settings s
+            """SELECT s.api_key, s.config_json, s.user_id FROM user_api_settings s
                JOIN agents a ON a.user_id = s.user_id
                WHERE a.id = ? AND s.target = 'llm' AND s.enabled = 1""",
             (agent_id,),
@@ -477,8 +477,24 @@ def llm_context_for_agent(agent_id: Optional[int]):
         if not (provider or model or api_key):
             return None
         from llm_client import LlmContext
-        return LlmContext(provider=provider, model=model, api_key=api_key, source="user")
+        return LlmContext(provider=provider, model=model, api_key=api_key, source="user",
+                          user_id=row["user_id"], agent_id=agent_id)
     except Exception:  # noqa: BLE001 — settings lookup must never break analysis
+        return None
+
+
+def user_id_for_agent(agent_id: Optional[int]) -> Optional[int]:
+    """The owning user's id for an agent (usage metering). Fail-soft: None."""
+    if not agent_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM agents WHERE id = ?", (agent_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return row["user_id"] if row else None
+    except Exception:  # noqa: BLE001
         return None
 
 

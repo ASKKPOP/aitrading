@@ -543,6 +543,31 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             })
         return {'user_id': user['id'], 'targets': targets}
 
+    @app.get('/api/users/settings/llm-usage')
+    async def get_llm_usage(authorization: str = Header(None)):
+        """Current-month AI usage + estimated cost for the caller (Plan 11 F2).
+        Owners (DOCS_OWNER_EMAILS, default info@askkpop.com) additionally get
+        the system-wide aggregate."""
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        from llm_usage import usage_summary
+        from llm_client import active_provider_name, active_provider_model
+
+        out = {'user': usage_summary(user_id=user['id'])}
+        try:
+            out['active'] = {'provider': active_provider_name(),
+                             'model': active_provider_model('decision')}
+        except Exception:  # noqa: BLE001 — provider probing must not break the page
+            out['active'] = None
+
+        from routes_guide import _owner_emails
+        if (user.get('email') or '').strip().lower() in _owner_emails():
+            out['system'] = usage_summary(user_id=None)
+        return out
+
     @app.put('/api/users/settings/api/{target}')
     async def put_user_api_setting(target: str, data: UserApiSettingRequest,
                                    authorization: str = Header(None)):

@@ -519,14 +519,29 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
     except Exception:  # noqa: BLE001 — settings lookup must never break analysis
         user_ctx = None
 
+    # Metering identity (Plan 11 F2): every branch carries user/agent ids so
+    # llm_usage rows attribute to the run's owner even without user settings.
+    owner_user_id = user_ctx.user_id if user_ctx else None
+    if owner_user_id is None and agent_id:
+        try:
+            from services import user_id_for_agent
+            owner_user_id = user_id_for_agent(agent_id)
+        except Exception:  # noqa: BLE001
+            owner_user_id = None
+
     ctx: Optional[LlmContext] = None
     if user_ctx and rule_provider and user_ctx.provider and rule_provider != user_ctx.provider:
-        ctx = LlmContext(provider=rule_provider, source="rule")
+        ctx = LlmContext(provider=rule_provider, source="rule",
+                         user_id=owner_user_id, agent_id=agent_id)
     elif user_ctx:
         ctx = LlmContext(provider=rule_provider or user_ctx.provider,
-                         model=user_ctx.model, api_key=user_ctx.api_key, source="user")
+                         model=user_ctx.model, api_key=user_ctx.api_key, source="user",
+                         user_id=owner_user_id, agent_id=agent_id)
     elif rule_provider:
-        ctx = LlmContext(provider=rule_provider, source="rule")
+        ctx = LlmContext(provider=rule_provider, source="rule",
+                         user_id=owner_user_id, agent_id=agent_id)
+    elif agent_id:
+        ctx = LlmContext(source="rule", user_id=owner_user_id, agent_id=agent_id)
 
     guidelines = None
     try:

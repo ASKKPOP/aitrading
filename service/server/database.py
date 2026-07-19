@@ -2662,6 +2662,31 @@ def init_database():
         ON signals(client_order_id)
     """)
 
+    # ── Plan 11 F2: LLM usage metering — one row per generate_text call ──────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS llm_usage (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id           INTEGER,
+            agent_id          INTEGER,
+            provider          TEXT NOT NULL,
+            model             TEXT NOT NULL,
+            tier              TEXT NOT NULL,
+            key_source        TEXT NOT NULL DEFAULT 'system',
+            prompt_tokens     INTEGER NOT NULL DEFAULT 0,
+            completion_tokens INTEGER NOT NULL DEFAULT 0,
+            cost_usd          REAL NOT NULL DEFAULT 0,
+            created_at        TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_user_created
+        ON llm_usage(user_id, created_at)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_created
+        ON llm_usage(created_at)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

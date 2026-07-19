@@ -45,6 +45,9 @@ class LlmContext:
     model: Optional[str] = None
     api_key: Optional[str] = None
     source: str = "rule"  # 'user' (settings page) | 'rule' (automation config)
+    # Usage-metering identity (Plan 11 F2): whose analysis triggered the call.
+    user_id: Optional[int] = None
+    agent_id: Optional[int] = None
 
 
 _context_override: contextvars.ContextVar[Optional[LlmContext]] = contextvars.ContextVar(
@@ -57,7 +60,8 @@ def set_llm_context(ctx: Optional[LlmContext]):
     Returns the contextvars token so callers can reset."""
     if ctx is not None and ctx.provider:
         ctx = LlmContext(provider=ctx.provider.strip().lower(), model=ctx.model,
-                         api_key=ctx.api_key, source=ctx.source)
+                         api_key=ctx.api_key, source=ctx.source,
+                         user_id=ctx.user_id, agent_id=ctx.agent_id)
     return _context_override.set(ctx)
 
 
@@ -270,14 +274,48 @@ def generate_text(
         return None
     try:
         if ap.spec.kind == "anthropic":
-            return _generate_anthropic(ap, prompt, system, max_tokens, temperature)
-        return _generate_openai_compatible(ap, prompt, system, max_tokens, temperature)
+            text, usage = _generate_anthropic(ap, prompt, system, max_tokens, temperature)
+        else:
+            text, usage = _generate_openai_compatible(ap, prompt, system, max_tokens, temperature)
     except Exception as exc:  # noqa: BLE001 - provider errors must not crash callers
         logger.warning("LLM generation failed (provider=%s): %s", ap.spec.name, exc)
         return None
+    _record_usage(ap, tier, usage)
+    return text
 
 
-def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature) -> Optional[str]:
+def _record_usage(ap: ActiveProvider, tier: str, usage: tuple[int, int]) -> None:
+    """Meter one call (Plan 11 F2). Fail-soft — never breaks the caller."""
+    try:
+        from llm_usage import record_usage
+        ctx = _context_override.get()
+        record_usage(
+            provider=ap.spec.name, model=ap.model, tier=tier,
+            key_source="user" if ap.source == "user" else "system",
+            user_id=ctx.user_id if ctx else None,
+            agent_id=ctx.agent_id if ctx else None,
+            prompt_tokens=usage[0], completion_tokens=usage[1])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("LLM usage metering failed: %s", exc)
+
+
+def _usage_tokens(usage) -> tuple[int, int]:
+    """(prompt_tokens, completion_tokens) from an SDK usage object; 0s when absent."""
+    if usage is None:
+        return (0, 0)
+    prompt = getattr(usage, "prompt_tokens", None)
+    if prompt is None:
+        prompt = getattr(usage, "input_tokens", None)
+    completion = getattr(usage, "completion_tokens", None)
+    if completion is None:
+        completion = getattr(usage, "output_tokens", None)
+    try:
+        return (int(prompt or 0), int(completion or 0))
+    except (TypeError, ValueError):
+        return (0, 0)
+
+
+def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature):
     from openai import OpenAI  # lazy import
 
     client = OpenAI(api_key=ap.api_key, base_url=ap.base_url)
@@ -291,10 +329,11 @@ def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature) -> 
         max_tokens=max_tokens,
         temperature=temperature,
     )
+    usage = _usage_tokens(getattr(resp, "usage", None))
     if not resp.choices:
-        return None
+        return None, usage
     content = resp.choices[0].message.content
-    return content.strip() if isinstance(content, str) else None
+    return (content.strip() if isinstance(content, str) else None), usage
 
 
 # Models observed to reject `temperature`, learned on the first 400 and
@@ -302,7 +341,7 @@ def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature) -> 
 _NO_TEMPERATURE_MODELS: set[str] = set()
 
 
-def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional[str]:
+def _generate_anthropic(ap, prompt, system, max_tokens, temperature):
     import anthropic  # lazy import
 
     # Pass the resolved base_url explicitly, like the OpenAI-compatible path does.
@@ -336,4 +375,4 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature) -> Optional
             msg = client.messages.create(**kwargs)
     parts = [b.text for b in msg.content if getattr(b, "type", None) == "text"]
     text = "\n".join(parts).strip()
-    return text or None
+    return (text or None), _usage_tokens(getattr(msg, "usage", None))

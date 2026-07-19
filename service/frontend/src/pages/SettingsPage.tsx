@@ -58,6 +58,17 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
 
   const auth = () => ({ 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' })
 
+  // AI usage metering (Plan 11 F2): current-month tokens + estimated cost.
+  // `system` is present only for owner accounts (DOCS_OWNER_EMAILS).
+  const [usage, setUsage] = useState<any>(null)
+  useEffect(() => {
+    fetch(`${API_BASE}/users/settings/llm-usage`, { headers: auth() })
+      .then(r => (r.ok ? r.json() : null))
+      .then(setUsage)
+      .catch(() => setUsage(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userToken])
+
   const load = async () => {
     try {
       const res = await fetch(`${API_BASE}/users/settings`, { headers: auth() })
@@ -330,6 +341,55 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
           </button>
         </div>
       </div>
+
+      {/* ── AI model usage (Plan 11 F2) ────────────────── */}
+      {sectionTitle({ ko: 'AI 모델 사용량 — 월 누적 예상 비용', en: 'AI Model Usage — monthly estimated cost', ja: 'AIモデル使用量 — 月間推定コスト', th: 'การใช้โมเดล AI — ค่าใช้จ่ายโดยประมาณต่อเดือน', vi: 'Mức dùng mô hình AI — chi phí ước tính hàng tháng' })}
+      {usage && (
+        <div className="card" style={{ padding: '14px 16px', marginBottom: '10px' }}>
+          {usage.active?.provider && (
+            <div style={{ fontSize: '12.5px', marginBottom: '8px' }}>
+              {tr(language, { ko: '현재 활성 모델', en: 'Active model', ja: '現在のモデル', th: 'โมเดลที่ใช้งาน', vi: 'Mô hình đang dùng' })}:{' '}
+              <b>{usage.active.provider} · {usage.active.model}</b>
+            </div>
+          )}
+          {[{ key: 'user', data: usage.user }, ...(usage.system ? [{ key: 'system', data: usage.system }] : [])].map(({ key, data }) => (
+            <div key={key} style={{ marginBottom: key === 'user' && usage.system ? '12px' : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary)' }}>
+                  {key === 'user'
+                    ? tr(language, { ko: '내 사용량 (이번 달)', en: 'My usage (this month)', ja: '自分の使用量（今月）', th: 'การใช้ของฉัน (เดือนนี้)', vi: 'Mức dùng của tôi (tháng này)' })
+                    : tr(language, { ko: '시스템 전체 (관리자 전용)', en: 'System-wide (owner only)', ja: 'システム全体（管理者のみ）', th: 'ทั้งระบบ (เจ้าของเท่านั้น)', vi: 'Toàn hệ thống (chủ sở hữu)' })}
+                </span>
+                <b style={{ fontSize: '16px' }}>≈ ${Number(data?.total_cost_usd || 0).toFixed(2)}</b>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {Number(data?.total_calls || 0).toLocaleString()} {tr(language, { ko: '회 호출', en: 'calls', ja: '回', th: 'ครั้ง', vi: 'lần gọi' })}
+                </span>
+              </div>
+              {(data?.models || []).length > 0 && (
+                <div style={{ marginTop: '6px', fontSize: '12px', fontVariantNumeric: 'tabular-nums' }}>
+                  {(data.models as any[]).map((m, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '3px 0', borderTop: i ? '1px solid var(--border-color)' : 'none', color: 'var(--text-secondary)' }}>
+                      <span style={{ minWidth: '180px', color: 'var(--text-primary)' }}>{m.provider} · {m.model}</span>
+                      <span>{Number(m.calls).toLocaleString()}×</span>
+                      <span>{tr(language, { ko: '입력', en: 'in', ja: '入力', th: 'เข้า', vi: 'vào' })} {Number(m.prompt_tokens).toLocaleString()}</span>
+                      <span>{tr(language, { ko: '출력', en: 'out', ja: '出力', th: 'ออก', vi: 'ra' })} {Number(m.completion_tokens).toLocaleString()}</span>
+                      <span style={{ marginLeft: 'auto' }}>≈ ${Number(m.cost_usd).toFixed(3)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(data?.models || []).length === 0 && (
+                <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {tr(language, { ko: '이번 달 사용 내역이 아직 없습니다', en: 'No usage recorded this month yet', ja: '今月の使用履歴はまだありません', th: 'ยังไม่มีการใช้งานเดือนนี้', vi: 'Chưa có sử dụng tháng này' })}
+                </div>
+              )}
+            </div>
+          ))}
+          <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted, #a89f92)' }}>
+            {tr(language, { ko: '토큰 수 기준 추정치입니다. 실제 청구액은 각 제공사 콘솔을 확인하세요.', en: 'Estimated from token counts — check the provider console for actual billing.', ja: 'トークン数からの推定です。実際の請求は各プロバイダのコンソールで確認してください。', th: 'ประมาณจากจำนวนโทเคน — ตรวจสอบยอดจริงที่คอนโซลผู้ให้บริการ', vi: 'Ước tính theo số token — kiểm tra hóa đơn thật ở console nhà cung cấp.' })}
+          </div>
+        </div>
+      )}
 
       {/* ── API configuration per target ────────────────── */}
       {sectionTitle({ ko: 'API 구성 — 데이터 · AI 소스별 설정', en: 'API Configuration — per data / AI target', ja: 'API構成 — データ · AIソース別設定', th: 'การกำหนดค่า API — แยกตามแหล่งข้อมูล/AI', vi: 'Cấu hình API — theo nguồn dữ liệu/AI' })}
