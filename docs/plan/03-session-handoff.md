@@ -48,41 +48,88 @@ Commits on `main`, oldest→newest of this arc:
 ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202
 ```
 - Box: CentOS Stream 10, Docker, **system nginx on :80** routing by domain (`/etc/nginx/conf.d/`). **SELinux enforcing** — always `restorecon` after copying web files.
-- Backend container: **`sooppiy-backend`** (image `sooppiy-backend:test`) on **`127.0.0.1:8101`** → nginx proxies `/api`.
+- Backend container: **`sooppiy-backend`** on **`127.0.0.1:8101`** → nginx proxies `/api`. Managed by **docker compose** (`~/sooppiy/docker-compose.yml`, `--profile prod`), image pinned by `SOOPPIY_IMAGE` in `~/sooppiy/.env` to a dated tag. The `sooppiy-worker` container uses the **same** image variable.
 - Frontend: **static files** served by nginx from **`/usr/share/nginx/sooppiy/`** (NOT from the container). `plan.html`, `framework.html`, `guide.html` also live here.
-- Deploy source dir on server: **`~/sooppiy/app`**, with **`~/sooppiy/app/.env`** (has the signal-phase flags; `ENVIRONMENT=development` there but dev-login is off).
+- Deploy source dir on server: **`~/sooppiy/app`**. The env file is **`~/sooppiy/.env`** — one level UP, next to `docker-compose.yml`, loaded automatically by compose. (`~/sooppiy/app/.env` does not exist; older revisions of this doc claimed it did.)
 - Docker volume **`sooppiy_data`** holds the SQLite DB at `/app/service/server/data/sooppiy.db`.
 
 ### Full deploy (backend or full-stack change)
+
+**Updated 2026-07-19 after a brief backend outage caused by the old version of this section.**
+The old runbook used a raw `docker run` with `--env-file ~/sooppiy/app/.env` — **that file does not
+exist**. Prod moved to **docker compose**, and the env file lives at **`~/sooppiy/.env`** (next to
+`docker-compose.yml`, read automatically by compose). Doing `docker rm -f sooppiy-backend` and then a
+`docker run` pointing at the missing env file leaves production **down**.
+
+Three facts that drive the procedure below:
+
+- **Orchestration is compose:** `cd ~/sooppiy && docker compose --profile prod up -d backend worker`.
+- **The image tag is pinned in `~/sooppiy/.env` as `SOOPPIY_IMAGE`** (a dated tag, e.g.
+  `sooppiy-backend:20260719-archdoc`). Nothing references `sooppiy-backend:test` — building that tag
+  has **no effect**. Build a new dated tag and point `SOOPPIY_IMAGE` at it.
+- **Backend and worker share `SOOPPIY_IMAGE`**, so they must be recreated **together** or they end up
+  running different code.
+
 ```bash
 cd /Users/desirey/Programming/src/ai-trade
+TAG="$(date +%Y%m%d)-<slug>"          # e.g. 20260719-archdoc
 git archive --format=tar.gz -o /tmp/sooppiy-deploy.tar.gz HEAD
 scp -i ~/shell/sierrabiolab/sierrabiolab-aws.pem /tmp/sooppiy-deploy.tar.gz ec2-user@52.9.147.202:/tmp/
-ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
+ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 "
   set -e
+  TAG='$TAG'
   cd ~/sooppiy
-  cp app/.env /tmp/sooppiy.env.bak            # PRESERVE the server .env
+  # ~/sooppiy/.env is OUTSIDE app/ — wiping app/ does not touch it. Back it up anyway.
+  cp .env /tmp/sooppiy.env.bak
   rm -rf app && mkdir app
   tar xzf /tmp/sooppiy-deploy.tar.gz -C app
-  cp /tmp/sooppiy.env.bak app/.env
-  cd app && docker build -t sooppiy-backend:test .
-  docker rm -f sooppiy-backend
-  docker run -d --name sooppiy-backend --restart unless-stopped \
-    -p 127.0.0.1:8101:8001 \
-    --env-file ~/sooppiy/app/.env \
-    -e SOOPPIY_API_BACKGROUND_TASKS=true \
-    -v sooppiy_data:/app/service/server/data \
-    sooppiy-backend:test
-  # refresh the static SPA from the freshly built image:
-  rm -rf /tmp/fe-dist && mkdir /tmp/fe-dist
-  cid=$(docker create sooppiy-backend:test)
-  docker cp "$cid":/app/service/frontend/dist/. /tmp/fe-dist/
-  docker rm "$cid"
+
+  # 1. build the new dated image
+  docker build -t \"sooppiy-backend:\$TAG\" app
+
+  # 2. repoint SOOPPIY_IMAGE, then recreate backend AND worker together
+  sed -i \"s|^SOOPPIY_IMAGE=.*|SOOPPIY_IMAGE=sooppiy-backend:\$TAG|\" ~/sooppiy/.env
+  grep '^SOOPPIY_IMAGE=' ~/sooppiy/.env      # confirm before proceeding
+  docker compose --profile prod up -d backend worker
+
+  # 3. publish the SPA from the freshly built image
+  #    rm -rf FIRST: if /tmp/fe-dist already exists, 'docker cp' nests the build at
+  #    /tmp/fe-dist/dist/ and leaves stale top-level files -> old bundle ships to nginx.
+  rm -rf /tmp/fe-dist && mkdir -p /tmp/fe-dist
+  cid=\$(docker create \"sooppiy-backend:\$TAG\")
+  docker cp \"\$cid\":/app/service/frontend/dist/. /tmp/fe-dist/    # trailing /. matters
+  docker rm \"\$cid\"
   sudo rm -rf /usr/share/nginx/sooppiy/assets
   sudo cp -r /tmp/fe-dist/. /usr/share/nginx/sooppiy/
-  sudo restorecon -R /usr/share/nginx/sooppiy
-'
+  sudo restorecon -R /usr/share/nginx/sooppiy                     # SELinux — still mandatory
+"
 ```
+
+#### Verify the deploy actually landed
+
+Run all three. Any mismatch means the deploy is half-applied — fix it before walking away.
+
+```bash
+ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
+  TAG=$(grep "^SOOPPIY_IMAGE=" ~/sooppiy/.env | cut -d= -f2)
+
+  # 1. live bundle == bundle inside the image (catches the docker cp nesting trap)
+  ls /usr/share/nginx/sooppiy/assets | grep -i docspage
+  cid=$(docker create "$TAG"); docker cp "$cid":/app/service/frontend/dist/assets /tmp/verify-assets
+  docker rm "$cid"; ls /tmp/verify-assets | grep -i docspage; rm -rf /tmp/verify-assets
+  # the two hashed filenames must be identical
+
+  # 2. backend and worker on the SAME image tag
+  docker compose -f ~/sooppiy/docker-compose.yml --profile prod ps
+  docker inspect --format "{{.Name}} {{.Config.Image}}" sooppiy-backend sooppiy-worker
+'
+# 3. functional endpoint check (from anywhere)
+curl -s -o /dev/null -w '%{http_code}\n' https://api.sooppiy.com/api/health
+curl -s https://sooppiy.com/ | grep -o 'assets/index-[^"]*\.js'   # must match step 1's hash
+```
+
+Note that nginx has an SPA fallback: a 200 on an arbitrary path proves nothing. Check a real API
+endpoint and compare bundle hashes, not status codes.
 
 ### Frontend-only change (faster)
 ```bash
@@ -106,7 +153,8 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
 - **App behavior:** the same SPA build detects `hostname.startsWith('administr.')` and renders
   ONLY the manager console (token gate → 개요/사용자·에이전트/거래·자금/AI 자동화).
   `/admin` does NOT exist on the main domain.
-- **Auth:** `ADMIN_TOKEN` in `~/sooppiy/app/.env` (unset = admin API 503-disabled).
+- **Auth:** `admin_users` email/password with 12h sessions in `admin_tokens` (`service/server/admin_auth.py`).
+  The old `ADMIN_TOKEN` env var is **dead** — setting it does nothing.
 - **On frontend deploys, also refresh the admin site:**
   ```bash
   rm -rf ~/sooppiy/admin-site/* && tar xzf /tmp/fe-dist.tar.gz -C ~/sooppiy/admin-site
@@ -117,8 +165,14 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
   `docker restart sooppiy-admin`. Extract *in place* as above, or restart after a swap.
 
 ### Deploy gotchas (learned the hard way)
-- **`docker restart` does NOT reload `--env-file`.** You must `docker rm -f` + `docker run` to pick up `.env` changes.
-- **Always back up & restore `~/sooppiy/app/.env`** before wiping `app/` — it holds the signal-phase flags and any real keys.
+- **`docker restart` does NOT reload env changes.** After editing `~/sooppiy/.env`, run
+  `docker compose --profile prod up -d backend worker` to recreate the containers.
+- **The env file is `~/sooppiy/.env`, not `~/sooppiy/app/.env`.** It sits outside `app/`, so wiping
+  `app/` is safe — but back it up anyway, it holds the signal-phase flags, `SOOPPIY_IMAGE`, and real keys.
+- **Never leave backend and worker on different image tags** — they share `SOOPPIY_IMAGE`; recreate both.
+- **`docker cp` into an existing directory nests the copy** (`/tmp/fe-dist/dist/`) and leaves stale
+  top-level files, which then get published — a NEW api serving an OLD bundle, with no error anywhere.
+  Always `rm -rf` the destination first and use a trailing `/.` on the source path.
 - **`restorecon` is mandatory** after copying to `/usr/share/nginx/sooppiy` (SELinux) or files 403.
 - **rsync is not on the server** — use tar-over-ssh / scp.
 - **Browser caching bites verification:** after a frontend deploy the browser may keep an old `index.html` → loads a stale JS bundle → "old broken behavior" persists. **Hard-refresh (Cmd+Shift+R).** Confirm the live bundle with `curl -s https://sooppiy.com/ | grep -o 'assets/index-[^"]*\.js'`.
@@ -144,7 +198,7 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
 - `service/server/routes_agent.py` — agent auth (`selfRegister`, `login`, token issuance).
 - Signal phases: `risk_engine.py`, `psych_feed.py`, `quant_crypto.py`, `scanner.py`, `signal_fusion.py`.
 
-### Signal-phase env flags (set in `~/sooppiy/app/.env` on the server — all default OFF in code)
+### Signal-phase env flags (set in `~/sooppiy/.env` on the server — all default OFF in code)
 ```
 RISK_ENGINE_ENABLED=true   RISK_WATCHER_INTERVAL=30
 PSYCH_FEED_ENABLED=true    PSYCH_REFRESH_INTERVAL=3600
