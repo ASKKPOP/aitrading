@@ -40,7 +40,6 @@ const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
 const ExchangePage = lazy(() => import('./pages/ExchangePage'))
 const AgentProfilePage = lazy(() => import('./pages/AgentProfilePage'))
-const AnalystPage = lazy(() => import('./pages/AnalystPage'))
 const AutomationPage = lazy(() => import('./pages/AutomationPage'))
 const AccountsPage = lazy(() => import('./pages/AccountsPage'))
 const AssetsPage = lazy(() => import('./pages/AssetsPage'))
@@ -530,7 +529,8 @@ function AppRouter({
                   <Route path="/strategies" element={<StrategiesPage />} />
               <Route path="/discussions" element={<DiscussionsPage />} />
               <Route path="/positions" element={<PositionsPage />} />
-              <Route path="/analyst" element={agentGate(<AnalystPage />)} />
+              {/* AI Analyst merged into Automation (one-off "analyze now" panel). */}
+              <Route path="/analyst" element={<Navigate to="/automation" replace />} />
               <Route path="/automation" element={agentGate(<AutomationPage />)} />
               <Route path="/accounts" element={agentGate(<AccountsPage />)} />
               <Route path="/assets" element={agentGate(<AssetsPage />)} />

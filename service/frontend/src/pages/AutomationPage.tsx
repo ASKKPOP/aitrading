@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { AnalysisMonitorPanel, useAnalysisStream } from '../components/AnalysisPipelineViz'
+import { AnalysisMonitorPanel, useAnalysisRun, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import ConfigProfiles from '../components/ConfigProfiles'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
@@ -9,6 +9,10 @@ import { tr } from '../i18n'
 // /api/automation/configs. The server worker runs each enabled rule on its
 // interval: multi-agent analysis -> decision -> auto paper-trade (simulator)
 // when action + confidence meet the rule. Run history from /api/automation/runs.
+//
+// Also hosts the one-off "AI Analyst" panel (formerly its own /analyst page):
+// run the multi-agent analysis once, read the decision + report + briefs, then
+// optionally turn that symbol/market into a rule via the "Automate this" CTA.
 //
 // Three user modes (persisted in localStorage):
 //   simple — pick a coin + risk preset, one button (everything else defaulted)
@@ -71,11 +75,33 @@ export function AutomationPage() {
   const [sched, setSched] = useState<{ days: number[]; start_hour: number; end_hour: number; tz: string }>(
     { days: [], start_hour: 9, end_hour: 22, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })
   const [error, setError] = useState('')
+  const [removeError, setRemoveError] = useState('')
   const [busy, setBusy] = useState(false)
   // Per-rule test run: streams the same analysis pipeline a scheduled run uses
   // (analysis only — the worker's execution gates are NOT part of a test run).
   const [testRuleId, setTestRuleId] = useState<number | null>(null)
   const testRun = useAnalysisStream(token)
+
+  // One-off AI Analyst run (server-side background job — leaving the page and
+  // coming back re-attaches). Never places an order.
+  const [anSymbol, setAnSymbol] = useState('BTC')
+  const [anMarket, setAnMarket] = useState('crypto')
+  const analyze = useAnalysisRun(token)
+  const ruleFormRef = useRef<HTMLDivElement | null>(null)
+
+  // Re-attached to an existing job (e.g. returning mid-run): mirror its
+  // symbol/market in the controls so the monitor matches what it shows.
+  useEffect(() => {
+    if (analyze.runInfo) { setAnSymbol(analyze.runInfo.symbol); setAnMarket(analyze.runInfo.market) }
+  }, [analyze.runInfo?.id])
+
+  // "Automate this" — seed the rule draft from the finished analysis. Guided
+  // mode only offers a fixed crypto list, so anything else lands in Pro.
+  function automateFromAnalysis(symbol: string, market: string) {
+    setDraft(d => ({ ...d, symbol, market }))
+    setMode(market === 'crypto' && ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'].includes(symbol) ? 'guided' : 'pro')
+    ruleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const T = {
     title: tr(language, { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }),
@@ -94,6 +120,7 @@ export function AutomationPage() {
     badgeAnalysis: tr(language, { ko: '분석 전용', en: 'analysis only', ja: '分析のみ', th: 'วิเคราะห์เท่านั้น', vi: 'chỉ phân tích' }),
     add: tr(language, { ko: '규칙 추가', en: 'Add rule', ja: 'ルールを追加', th: 'เพิ่มกฎ', vi: 'Thêm quy tắc' }),
     remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa' }),
+    removeFailed: tr(language, { ko: '규칙 제거에 실패했습니다 — 잠시 후 다시 시도하세요', en: 'Failed to remove the rule — try again shortly', ja: 'ルールの削除に失敗しました — しばらくして再試行してください', th: 'ลบกฎไม่สำเร็จ — ลองใหม่อีกครั้ง', vi: 'Xóa quy tắc thất bại — thử lại sau' }),
     yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn' }),
     empty: tr(language, { ko: '아직 규칙이 없습니다. 위에서 추가하세요.', en: 'No rules yet. Add one above.', ja: 'ルールはまだありません。', th: 'ยังไม่มีกฎ', vi: 'Chưa có quy tắc.' }),
     history: tr(language, { ko: '최근 실행', en: 'Recent runs', ja: '実行履歴', th: 'ประวัติล่าสุด', vi: 'Lần chạy gần đây' }),
@@ -146,6 +173,22 @@ export function AutomationPage() {
     wouldSkip: tr(language, { ko: '체결 안 됨', en: 'would skip', ja: '見送りになる', th: 'จะข้าม', vi: 'sẽ bỏ qua' }),
     gateVerdict: tr(language, { ko: '실행 게이트 판정', en: 'Execution-gate verdict', ja: '執行ゲート判定', th: 'ผลตัดสินประตูดำเนินการ', vi: 'Phán quyết cổng thực thi' }),
     qty: tr(language, { ko: '수량', en: 'qty', ja: '数量', th: 'จำนวน', vi: 'KL' }),
+    // ── one-off AI Analyst panel ──
+    analystSection: tr(language, { ko: 'AI 애널리스트 — 지금 분석', en: 'AI Analyst — analyze now', ja: 'AIアナリスト — 今すぐ分析', th: 'นักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Nhà phân tích AI — phân tích ngay' }),
+    analystSubtitle: tr(language, { ko: '네 명의 AI 애널리스트가 결정과 리포트를 두고 토론합니다 — 일회성 분석이며 주문은 실행되지 않습니다', en: 'Four AI analysts debate a decision + report — a one-off analysis, no order is placed', ja: '4人のAIアナリストが討議 — 1回限りの分析で、注文は出しません', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ — วิเคราะห์ครั้งเดียว ไม่ส่งคำสั่งซื้อขาย', vi: 'Bốn nhà phân tích AI tranh luận — phân tích một lần, không đặt lệnh' }),
+    analystRun: tr(language, { ko: '분석 실행', en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích' }),
+    analystRunning: tr(language, { ko: '애널리스트들이 토론 중…', en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…' }),
+    analystBriefs: tr(language, { ko: '애널리스트 브리프', en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích' }),
+    analystNone: tr(language, { ko: '결정론적 (LLM 키 미설정)', en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM' }),
+    automateThis: tr(language, { ko: '이 설정으로 자동화', en: 'Automate this', ja: 'この設定で自動化', th: 'ตั้งเป็นอัตโนมัติ', vi: 'Tự động hóa thiết lập này' }),
+    analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
+  }
+
+  const roleLabels: Record<string, string> = {
+    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức' }),
+    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý' }),
+    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô' }),
+    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
   }
 
   const DOW = [
@@ -239,10 +282,15 @@ export function AutomationPage() {
 
   async function remove(id?: number) {
     if (!id) return
+    setRemoveError('')
     try {
-      await fetch(`${API_BASE}/automation/configs/${id}`, { method: 'DELETE', headers: authHeaders })
+      const res = await fetch(`${API_BASE}/automation/configs/${id}`, { method: 'DELETE', headers: authHeaders })
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => null))?.detail
+        setRemoveError(typeof detail === 'string' ? detail : `${T.removeFailed} (HTTP ${res.status})`)
+      }
       await refresh()
-    } catch { /* ignore */ }
+    } catch { setRemoveError(T.removeFailed) }
   }
 
   // --bg-input is not defined in index.css; use the theme vars that are, so
@@ -278,8 +326,73 @@ export function AutomationPage() {
         </div>
       </div>
 
+      {/* ── One-off AI Analyst (merged from the old /analyst page) ── */}
+      <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '0 0 8px' }}>🧠 {T.analystSection}</div>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 12 }}>{T.analystSubtitle}</div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+            {T.symbol}
+            <SymbolSelect market={anMarket} value={anSymbol} onChange={setAnSymbol} style={{ ...inp, width: 140 }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+            {T.market}
+            <select value={anMarket} onChange={e => setAnMarket(e.target.value)} style={inp}>
+              <option value="crypto">crypto</option>
+              <option value="us-stock">us-stock</option>
+            </select>
+          </label>
+          <button onClick={() => analyze.run(anSymbol, anMarket, language)} disabled={analyze.loading}
+            style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: analyze.loading ? 'default' : 'pointer', opacity: analyze.loading ? 0.6 : 1 }}>
+            {analyze.loading ? T.analystRunning : T.analystRun}
+          </button>
+        </div>
+
+        {analyze.log.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <AnalysisMonitorPanel language={language} steps={analyze.steps} log={analyze.log} />
+          </div>
+        )}
+        {analyze.error && <div style={{ color: '#f0663f', marginTop: 12, fontSize: 13 }}>⚠️ {analyze.error}</div>}
+
+        {analyze.result && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 16 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, textTransform: 'uppercase', color: analyze.result.decision?.action === 'buy' ? '#3fb950' : analyze.result.decision?.action === 'sell' ? '#f0663f' : '#e3a008' }}>
+                {analyze.result.decision?.action}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{analyze.result.symbol} · {analyze.result.market}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>
+                {T.testConfidence}: <b>{Math.round((analyze.result.decision?.confidence ?? 0) * 100)}%</b> · {T.provider}: {analyze.result.llm_provider || T.analystNone}
+              </div>
+              <button onClick={() => automateFromAnalysis(analyze.result.symbol, analyze.result.market)}
+                style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: 8, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                ⚙ {T.automateThis}
+              </button>
+            </div>
+            {analyze.result.decision?.report && (
+              <p style={{ marginTop: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{analyze.result.decision.report}</p>
+            )}
+            {analyze.result.analysts && (
+              <>
+                <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '14px 0 10px' }}>{T.analystBriefs}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 14 }}>
+                  {Object.entries(analyze.result.analysts).map(([role, v]: any) => (
+                    <div key={role} style={{ border: '1px solid var(--border-color,#d3c8b6)', borderRadius: 10, padding: 14 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>{roleLabels[role] || role}</div>
+                      <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--text-secondary,#5f574c)', whiteSpace: 'pre-wrap' }}>{v.brief}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.analystDisclaimer}</div>
+          </>
+        )}
+      </div>
+
       {/* ── Mode selector ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+      <div ref={ruleFormRef} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
         <button style={chip(mode === 'agent')} onClick={() => setMode('agent')}>⓪ {T.modeAgent}</button>
         <button style={chip(mode === 'simple')} onClick={() => setMode('simple')}>① {T.modeSimple}</button>
         <button style={chip(mode === 'guided')} onClick={() => setMode('guided')}>② {T.modeGuided}</button>
@@ -445,6 +558,7 @@ export function AutomationPage() {
       )}
 
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '0 0 10px' }}>{T.yourRules}</div>
+      {removeError && <div style={{ color: '#f0663f', fontSize: 12.5, marginBottom: 10 }}>⚠️ {removeError}</div>}
       {rules.length === 0 ? (
         <div className="card" style={{ color: 'var(--text-secondary,#8a8073)' }}>{T.empty}</div>
       ) : (

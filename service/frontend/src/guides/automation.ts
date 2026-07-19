@@ -11,6 +11,46 @@ export const automationGuide: PageGuide = {
   },
   sections: [
     {
+      heading: { ko: 'AI 애널리스트 — 일회성 분석 실행', en: 'AI Analyst — running a one-off analysis', ja: 'AIアナリスト — 1回限りの分析', th: 'นักวิเคราะห์ AI — วิเคราะห์ครั้งเดียว', vi: 'Nhà phân tích AI — phân tích một lần' },
+      bullets: {
+        ko: [
+          '페이지 맨 위의 AI 애널리스트 패널에서 종목과 시장을 고르고 「분석 실행」을 누르면, 네 명의 AI 애널리스트(뉴스·심리·펀더멘털&매크로·기술적 분석)가 각자 브리프를 쓰고 트레이더와 리스크 담당이 이를 종합해 매수·매도·관망 결정과 리포트를 내놓습니다.',
+          '일회성 분석입니다 — 주문은 절대 실행되지 않으며, 규칙을 만들 때까지 아무것도 자동으로 거래되지 않습니다.',
+          '실행은 서버에서 백그라운드로 진행되므로 페이지를 떠났다가 돌아와도 진행 중인 분석에 다시 연결됩니다. 완료까지 수십 초가 걸릴 수 있고, 파이프라인 모니터에서 진행 상황을 볼 수 있습니다.',
+          '리포트는 현재 UI 언어로 작성됩니다. 다른 언어로 받고 싶다면 언어를 먼저 바꾼 뒤 실행하세요.',
+          '결과가 마음에 들면 「이 설정으로 자동화」 버튼을 누르세요 — 해당 종목·시장이 아래 규칙 폼에 미리 채워져, 같은 분석을 일정에 따라 반복 실행하는 규칙으로 바로 만들 수 있습니다.',
+        ],
+        en: [
+          'In the AI Analyst panel at the top of the page, pick a symbol and market and press Run analysis: four AI analysts (News, Sentiment, Fundamentals & Macro, Technical) each write a brief, then a trader and a risk reviewer combine them into a buy/sell/hold decision plus a report.',
+          'It is a one-off analysis — no order is ever placed, and nothing trades automatically until you create a rule.',
+          'The run executes server-side in the background, so leaving the page and coming back re-attaches to an in-progress analysis. It can take tens of seconds; the pipeline monitor shows progress.',
+          'The report is written in your current UI language. To get it in another language, switch language first, then run.',
+          'If you like the result, press Automate this — the symbol and market are pre-filled into the rule form below, so you can turn the same analysis into a scheduled, repeating rule right away.',
+        ],
+        ja: [
+          'ページ最上部のAIアナリストパネルでシンボルとマーケットを選び「分析する」を押すと、4人のAIアナリスト（ニュース・センチメント・ファンダメンタル&マクロ・テクニカル）がそれぞれブリーフを書き、トレーダーとリスク担当が統合して買い・売り・様子見の判断とレポートを出します。',
+          '1回限りの分析です — 注文は一切出されず、ルールを作るまで何も自動売買されません。',
+          '実行はサーバー側のバックグラウンドで進むため、ページを離れて戻っても進行中の分析に再接続されます。完了まで数十秒かかることがあり、パイプラインモニターで進行状況を確認できます。',
+          'レポートは現在のUI言語で書かれます。別の言語で受け取りたい場合は、先に言語を切り替えてから実行してください。',
+          '結果が気に入ったら「この設定で自動化」を押してください — そのシンボル・マーケットが下のルールフォームに事前入力され、同じ分析をスケジュールで繰り返すルールをすぐ作れます。',
+        ],
+        th: [
+          'ในแผงนักวิเคราะห์ AI ด้านบนสุดของหน้า เลือกสัญลักษณ์และตลาดแล้วกดวิเคราะห์: นักวิเคราะห์ AI สี่คน (ข่าว ความรู้สึก ปัจจัยพื้นฐานและมหภาค เทคนิค) ต่างเขียนสรุป จากนั้นเทรดเดอร์และผู้ตรวจความเสี่ยงจะรวมเป็นการตัดสินใจซื้อ/ขาย/ถือ พร้อมรายงาน',
+          'เป็นการวิเคราะห์ครั้งเดียว — ไม่มีการส่งคำสั่งซื้อขายใดๆ และจะไม่มีอะไรเทรดอัตโนมัติจนกว่าคุณจะสร้างกฎ',
+          'การรันทำงานฝั่งเซิร์ฟเวอร์ในพื้นหลัง ออกจากหน้าแล้วกลับมาก็เชื่อมต่อกับการวิเคราะห์ที่กำลังทำอยู่ได้ อาจใช้เวลาหลายสิบวินาที มอนิเตอร์ไปป์ไลน์แสดงความคืบหน้า',
+          'รายงานเขียนด้วยภาษาที่ตั้งไว้ในอินเทอร์เฟซปัจจุบัน หากต้องการภาษาอื่นให้เปลี่ยนภาษาก่อนแล้วจึงรัน',
+          'หากพอใจผลลัพธ์ กดตั้งเป็นอัตโนมัติ — สัญลักษณ์และตลาดจะถูกเติมลงฟอร์มกฎด้านล่างให้ล่วงหน้า เพื่อเปลี่ยนการวิเคราะห์เดียวกันเป็นกฎที่ทำงานซ้ำตามตารางได้ทันที',
+        ],
+        vi: [
+          'Trong bảng Nhà phân tích AI ở đầu trang, chọn mã và thị trường rồi nhấn Phân tích: bốn nhà phân tích AI (Tin tức, Tâm lý, Cơ bản & Vĩ mô, Kỹ thuật) mỗi người viết một tóm tắt, sau đó một trader và một người soát rủi ro kết hợp thành quyết định mua/bán/giữ kèm báo cáo.',
+          'Đây là phân tích một lần — không bao giờ đặt lệnh, và không có gì giao dịch tự động cho đến khi bạn tạo quy tắc.',
+          'Lần chạy thực thi nền ở phía máy chủ, nên rời trang rồi quay lại vẫn kết nối lại với phân tích đang chạy. Có thể mất hàng chục giây; màn hình pipeline hiển thị tiến độ.',
+          'Báo cáo được viết bằng ngôn ngữ giao diện hiện tại. Muốn nhận bằng ngôn ngữ khác, hãy đổi ngôn ngữ trước rồi chạy.',
+          'Nếu ưng kết quả, nhấn Tự động hóa thiết lập này — mã và thị trường được điền sẵn vào biểu mẫu quy tắc bên dưới, để biến chính phân tích đó thành quy tắc chạy lặp theo lịch ngay lập tức.',
+        ],
+      },
+    },
+    {
       heading: { ko: '페이지 구성과 4가지 모드', en: 'Page layout and the four modes', ja: '画面構成と4つのモード', th: 'โครงหน้าและ 4 โหมด', vi: 'Bố cục trang và bốn chế độ' },
       bullets: {
         ko: [

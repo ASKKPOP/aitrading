@@ -30,7 +30,6 @@ export const GUIDES: Record<string, GuideLoader> = {
 
   '/backtest': () => import('./backtest').then(m => m.backtestGuide),
   '/monitor': () => import('./monitor').then(m => m.monitorGuide),
-  '/analyst': () => import('./analyst').then(m => m.analystGuide),
   '/consult': () => import('./consult').then(m => m.consultGuide),
 
   '/automation': () => import('./automation').then(m => m.automationGuide),
