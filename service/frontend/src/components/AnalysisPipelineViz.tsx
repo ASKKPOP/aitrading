@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../appShared'
 import { Language, tr } from '../i18n'
 
-// Live WebGL2 visualization of the AI Analyst pipeline.
+// Live SVG flowchart of the AI Analyst pipeline, styled like the boxed
+// diagrams in docs/design/ai-trading-guide.html (§0 "10단계 파이프라인"):
+// rounded step cards with title + status line, arrow markers, and a bus that
+// converges the four briefs into the decision box.
 // Mirrors the real step events streamed from /api/analysis/run/stream:
 //   gather:news|sentiment|fundamentals_macro|technical  (run concurrently)
 //   brief:news|sentiment|fundamentals_macro|technical   (run concurrently)
 //   decision -> verify
-// Node states: pending (dim), running (pulsing amber), done (green), error (red).
-// Particles flow along an edge while its downstream step is running.
+// Card states: pending (dim), running (pulsing amber + flowing edge),
+// done (green + duration), error (red).
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error'
 export type StepInfo = { status: StepStatus; runs: number; startedAt?: number; endedAt?: number }
@@ -20,258 +23,156 @@ export const PIPELINE_STEPS = [
   'decision', 'verify',
 ] as const
 
-const NODES: { id: string; x: number; y: number }[] = [
-  { id: 'gather:news', x: 0.13, y: 0.14 },
-  { id: 'gather:sentiment', x: 0.13, y: 0.38 },
-  { id: 'gather:fundamentals_macro', x: 0.13, y: 0.62 },
-  { id: 'gather:technical', x: 0.13, y: 0.86 },
-  { id: 'brief:news', x: 0.44, y: 0.14 },
-  { id: 'brief:sentiment', x: 0.44, y: 0.38 },
-  { id: 'brief:fundamentals_macro', x: 0.44, y: 0.62 },
-  { id: 'brief:technical', x: 0.44, y: 0.86 },
-  { id: 'decision', x: 0.70, y: 0.5 },
-  { id: 'verify', x: 0.90, y: 0.5 },
-]
+const ROLES = ['news', 'sentiment', 'fundamentals_macro', 'technical'] as const
 
-const EDGES: [string, string][] = [
-  ['gather:news', 'gather:sentiment'],
-  ['gather:news', 'brief:news'],
-  ['gather:sentiment', 'brief:sentiment'],
-  ['gather:fundamentals_macro', 'brief:fundamentals_macro'],
-  ['gather:technical', 'brief:technical'],
-  ['brief:news', 'decision'],
-  ['brief:sentiment', 'decision'],
-  ['brief:fundamentals_macro', 'decision'],
-  ['brief:technical', 'decision'],
-  ['decision', 'verify'],
-]
-
-const COLORS: Record<StepStatus, [number, number, number]> = {
-  pending: [0.42, 0.39, 0.34],
-  running: [0.96, 0.65, 0.14],
-  done: [0.25, 0.73, 0.31],
-  error: [0.94, 0.40, 0.25],
+// Status colors — match the rest of the app (amber running, green done, red error).
+const ST_COLOR: Record<StepStatus, string> = {
+  pending: 'var(--border-color,#d3c8b6)',
+  running: '#e3a008',
+  done: '#3fb950',
+  error: '#f0663f',
 }
 
-const POINT_VS = `#version 300 es
-in vec2 a_pos; in float a_size; in vec3 a_color; in float a_glow;
-uniform vec2 u_res;
-out vec3 v_color; out float v_glow;
-void main() {
-  gl_Position = vec4((a_pos / u_res * 2.0 - 1.0) * vec2(1.0, -1.0), 0.0, 1.0);
-  gl_PointSize = a_size;
-  v_color = a_color; v_glow = a_glow;
-}`
+// Geometry (viewBox 960 wide, like the guide diagrams).
+const COL_X = [12, 252, 492, 732]          // 4 role columns
+const COL_W = 216
+const cx = (i: number) => COL_X[i] + COL_W / 2
+const GATHER_Y = 26, BRIEF_Y = 128, ROW_H = 56
+const BUS_Y = 216
+const DEC = { x: 290, y: 244, w: 380, h: 62 }
+const VER = { x: 360, y: 344, w: 240, h: 52 }
+const VIEW_H = 412
 
-const POINT_FS = `#version 300 es
-precision mediump float;
-in vec3 v_color; in float v_glow;
-out vec4 o;
-void main() {
-  vec2 p = gl_PointCoord * 2.0 - 1.0;
-  float d = length(p);
-  if (d > 1.0) discard;
-  float core = smoothstep(0.48, 0.40, d);
-  float ring = smoothstep(0.07, 0.0, abs(d - 0.60));
-  float halo = (1.0 - d) * (1.0 - d) * v_glow * 0.6;
-  float a = max(max(core, ring * 0.85), halo);
-  o = vec4(v_color * a, a);
-}`
+function StepCard({ x, y, w, h, title, info, labels, big }: {
+  x: number; y: number; w: number; h: number
+  title: string; info?: StepInfo; labels: Record<string, string>; big?: boolean
+}) {
+  const status = info?.status || 'pending'
+  const c = ST_COLOR[status]
+  const dur = info?.startedAt && info?.endedAt
+    ? (info.endedAt - info.startedAt >= 1000
+        ? `${((info.endedAt - info.startedAt) / 1000).toFixed(1)}s`
+        : `${Math.max(1, Math.round(info.endedAt - info.startedAt))}ms`)
+    : null
+  const statusLine =
+    status === 'running' ? labels.__running
+    : status === 'error' ? labels.__error
+    : status === 'done' ? (dur ? `✓ ${dur}` : `✓ ${labels.__done}`)
+    : null
+  const midX = x + w / 2
+  return (
+    <g className={`plv-card plv-${status}`}>
+      <rect x={x} y={y} width={w} height={h} rx={10}
+        fill={status === 'pending' ? 'var(--bg-secondary,#fff)' : `color-mix(in srgb, ${c} 12%, var(--bg-secondary,#fff))`}
+        stroke={c} strokeWidth={status === 'pending' ? 1 : 1.6} />
+      <text x={midX} y={y + (statusLine ? (big ? 26 : 24) : h / 2 + 4)} textAnchor="middle" className="plv-t"
+        opacity={status === 'pending' ? 0.55 : 1}>
+        {title}
+        {(info?.runs ?? 0) > 1 && <tspan fill="#e3a008"> ×{info!.runs}</tspan>}
+      </text>
+      {statusLine && (
+        <text x={midX} y={y + (big ? 46 : 42)} textAnchor="middle" className="plv-s" fill={c}>
+          {statusLine}
+        </text>
+      )}
+    </g>
+  )
+}
 
-const LINE_VS = `#version 300 es
-in vec2 a_pos; in vec4 a_color;
-uniform vec2 u_res;
-out vec4 v_color;
-void main() {
-  gl_Position = vec4((a_pos / u_res * 2.0 - 1.0) * vec2(1.0, -1.0), 0.0, 1.0);
-  v_color = a_color;
-}`
-
-const LINE_FS = `#version 300 es
-precision mediump float;
-in vec4 v_color;
-out vec4 o;
-void main() { o = vec4(v_color.rgb * v_color.a, v_color.a); }`
-
-function compile(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string): WebGLProgram | null {
-  const mk = (type: number, src: string) => {
-    const s = gl.createShader(type)!
-    gl.shaderSource(s, src); gl.compileShader(s)
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null
-    return s
-  }
-  const vs = mk(gl.VERTEX_SHADER, vsSrc); const fs = mk(gl.FRAGMENT_SHADER, fsSrc)
-  if (!vs || !fs) return null
-  const p = gl.createProgram()!
-  gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p)
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null
-  return p
+// Edge color: amber + flowing dashes while the downstream step runs,
+// green once the upstream is done and the flow moved on, dim otherwise.
+function edgeState(up?: StepInfo, down?: StepInfo): { color: string; flow: boolean } {
+  const su = up?.status || 'pending'; const sd = down?.status || 'pending'
+  if (sd === 'running') return { color: ST_COLOR.running, flow: true }
+  if (su === 'done' && (sd === 'done' || sd === 'error')) return { color: ST_COLOR[sd], flow: false }
+  return { color: 'var(--border-color,#d3c8b6)', flow: false }
 }
 
 export function AnalysisPipelineViz({ steps, labels }: {
   steps: Record<string, StepInfo>
   labels: Record<string, string>
 }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const stepsRef = useRef(steps)
-  stepsRef.current = steps
-  const failedRef = useRef(false)
-  const kickRef = useRef<(() => void) | null>(null)
+  const marker = (id: string, color: string) => (
+    <marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+      orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill={color} />
+    </marker>
+  )
+  const markerFor = (color: string) =>
+    color === ST_COLOR.running ? 'url(#plv-ar-run)'
+    : color === ST_COLOR.done ? 'url(#plv-ar-done)'
+    : color === ST_COLOR.error ? 'url(#plv-ar-err)'
+    : 'url(#plv-ar)'
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const gl = canvas.getContext('webgl2', { antialias: true, alpha: true })
-    if (!gl) { failedRef.current = true; return }
+  const edge = (key: string, d: string, state: { color: string; flow: boolean }, arrow = true) => (
+    <path key={key} d={d} fill="none" stroke={state.color} strokeWidth={state.flow ? 1.8 : 1.4}
+      className={state.flow ? 'plv-flow' : undefined}
+      strokeDasharray={state.flow ? '6 5' : undefined}
+      markerEnd={arrow ? markerFor(state.color) : undefined} />
+  )
 
-    const pointProg = compile(gl, POINT_VS, POINT_FS)
-    const lineProg = compile(gl, LINE_VS, LINE_FS)
-    if (!pointProg || !lineProg) { failedRef.current = true; return }
-
-    const pointBuf = gl.createBuffer()
-    const lineBuf = gl.createBuffer()
-    const pRes = gl.getUniformLocation(pointProg, 'u_res')
-    const lRes = gl.getUniformLocation(lineProg, 'u_res')
-    const pLoc = {
-      pos: gl.getAttribLocation(pointProg, 'a_pos'),
-      size: gl.getAttribLocation(pointProg, 'a_size'),
-      color: gl.getAttribLocation(pointProg, 'a_color'),
-      glow: gl.getAttribLocation(pointProg, 'a_glow'),
-    }
-    const lLoc = {
-      pos: gl.getAttribLocation(lineProg, 'a_pos'),
-      color: gl.getAttribLocation(lineProg, 'a_color'),
-    }
-    gl.enable(gl.BLEND)
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) // premultiplied alpha
-
-    let raf = 0
-    let scheduled = false
-    const t0 = performance.now()
-
-    const frame = () => {
-      scheduled = false
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const W = Math.max(1, Math.round(canvas.clientWidth * dpr))
-      const H = Math.max(1, Math.round(canvas.clientHeight * dpr))
-      if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H }
-      gl.viewport(0, 0, W, H)
-      gl.clearColor(0, 0, 0, 0)
-      gl.clear(gl.COLOR_BUFFER_BIT)
-
-      const t = (performance.now() - t0) / 1000
-      const st = stepsRef.current
-      const px = (n: { x: number; y: number }) => [n.x * W, n.y * H] as const
-      const nodeById: Record<string, { x: number; y: number }> = {}
-      NODES.forEach(n => { nodeById[n.id] = n })
-      const statusOf = (id: string): StepStatus => st[id]?.status || 'pending'
-
-      // ── edges ──
-      const lineData: number[] = []
-      for (const [a, b] of EDGES) {
-        const [ax, ay] = px(nodeById[a]); const [bx, by] = px(nodeById[b])
-        const sa = statusOf(a); const sb = statusOf(b)
-        let c: [number, number, number] = [0.55, 0.50, 0.42]; let alpha = 0.16
-        if (sb === 'running') { c = COLORS.running; alpha = 0.45 }
-        else if (sa === 'done' && (sb === 'done' || sb === 'error')) { c = COLORS[sb]; alpha = 0.35 }
-        lineData.push(ax, ay, c[0], c[1], c[2], alpha, bx, by, c[0], c[1], c[2], alpha)
-      }
-      gl.useProgram(lineProg)
-      gl.uniform2f(lRes, W, H)
-      gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf)
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lineData), gl.DYNAMIC_DRAW)
-      gl.enableVertexAttribArray(lLoc.pos)
-      gl.vertexAttribPointer(lLoc.pos, 2, gl.FLOAT, false, 24, 0)
-      gl.enableVertexAttribArray(lLoc.color)
-      gl.vertexAttribPointer(lLoc.color, 4, gl.FLOAT, false, 24, 8)
-      gl.drawArrays(gl.LINES, 0, lineData.length / 6)
-
-      // ── nodes + flow particles ── stride: pos(2) size(1) color(3) glow(1) = 7 floats
-      const pts: number[] = []
-      for (const n of NODES) {
-        const s = statusOf(n.id)
-        const [x, y] = px(n)
-        const c = COLORS[s]
-        let size = 15 * dpr; let glow = 0.05
-        if (s === 'running') { size = (21 + Math.sin(t * 6 + n.y * 9) * 3.5) * dpr; glow = 1 }
-        else if (s === 'done') { size = 18 * dpr; glow = 0.3 }
-        else if (s === 'error') { size = 19 * dpr; glow = 0.7 }
-        pts.push(x, y, size, c[0], c[1], c[2], glow)
-      }
-      for (const [a, b] of EDGES) {
-        if (statusOf(b) !== 'running') continue
-        const [ax, ay] = px(nodeById[a]); const [bx, by] = px(nodeById[b])
-        for (let i = 0; i < 3; i++) {
-          const f = (t * 0.55 + i / 3) % 1
-          pts.push(ax + (bx - ax) * f, ay + (by - ay) * f, 5.5 * dpr,
-                   COLORS.running[0], COLORS.running[1], COLORS.running[2], 1)
-        }
-      }
-      gl.useProgram(pointProg)
-      gl.uniform2f(pRes, W, H)
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuf)
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW)
-      gl.enableVertexAttribArray(pLoc.pos)
-      gl.vertexAttribPointer(pLoc.pos, 2, gl.FLOAT, false, 28, 0)
-      gl.enableVertexAttribArray(pLoc.size)
-      gl.vertexAttribPointer(pLoc.size, 1, gl.FLOAT, false, 28, 8)
-      gl.enableVertexAttribArray(pLoc.color)
-      gl.vertexAttribPointer(pLoc.color, 3, gl.FLOAT, false, 28, 12)
-      gl.enableVertexAttribArray(pLoc.glow)
-      gl.vertexAttribPointer(pLoc.glow, 1, gl.FLOAT, false, 28, 24)
-      gl.drawArrays(gl.POINTS, 0, pts.length / 7)
-
-      // Animate only while a step is running; otherwise this frame is the
-      // final static render and the loop parks until the next steps update.
-      if (Object.values(stepsRef.current).some(s => s.status === 'running')) {
-        scheduled = true
-        raf = requestAnimationFrame(frame)
-      }
-    }
-    const kick = () => {
-      if (!scheduled) { scheduled = true; raf = requestAnimationFrame(frame) }
-    }
-    kickRef.current = kick
-    kick()
-    return () => { kickRef.current = null; cancelAnimationFrame(raf) }
-  }, [])
-
-  // Re-render (and resume animating) whenever the step map changes.
-  useEffect(() => { kickRef.current?.() }, [steps])
-
-  const durationOf = (info?: StepInfo) => {
-    if (!info?.startedAt || !info?.endedAt) return null
-    const ms = info.endedAt - info.startedAt
-    return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.max(1, Math.round(ms))}ms`
-  }
-
+  const dec = steps['decision']; const ver = steps['verify']
   return (
-    <div style={{ position: 'relative', width: '100%', height: 260, borderRadius: 10,
-                  background: 'linear-gradient(160deg,#171411,#211c17)', overflow: 'hidden' }}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {NODES.map(n => {
-        const info = steps[n.id]
-        const status = info?.status || 'pending'
-        const dur = durationOf(info)
-        return (
-          <div key={n.id} style={{
-            position: 'absolute', left: `${n.x * 100}%`, top: `${n.y * 100}%`,
-            transform: n.id === 'decision' || n.id === 'verify'
-              ? 'translate(-50%, -290%)' : 'translate(-50%, 60%)',
-            fontSize: 10.5, lineHeight: 1.3, textAlign: 'center', pointerEvents: 'none',
-            color: status === 'pending' ? '#7d7466' : '#e8e0d2', whiteSpace: 'nowrap',
-            textShadow: '0 1px 3px rgba(0,0,0,.8)',
-          }}>
-            <div style={{ fontWeight: 600 }}>
-              {labels[n.id] || n.id}
-              {(info?.runs ?? 0) > 1 && <span style={{ color: '#f5a623' }}> ×{info!.runs}</span>}
-            </div>
-            {status === 'running' && <div style={{ color: '#f5a623' }}>{labels.__running || 'running'}</div>}
-            {status === 'done' && dur && <div style={{ color: '#6fbf73' }}>{dur}</div>}
-            {status === 'error' && <div style={{ color: '#f0663f' }}>{labels.__error || 'error'}</div>}
-          </div>
-        )
-      })}
+    <div style={{ width: '100%', borderRadius: 10, border: '1px solid var(--border-color,#d3c8b6)',
+                  background: 'var(--bg-primary,transparent)', overflowX: 'auto' }}>
+      <svg viewBox={`0 0 960 ${VIEW_H}`} style={{ display: 'block', minWidth: 680, width: '100%', height: 'auto' }}
+        xmlns="http://www.w3.org/2000/svg" role="img" aria-label={labels.__pipeline}>
+        <style>{`
+          .plv-t { font: 600 13px system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; fill: var(--text-primary,#2b2620); }
+          .plv-s { font: 500 11px system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; }
+          .plv-running rect { animation: plv-pulse 1.4s ease-in-out infinite; }
+          .plv-flow { animation: plv-dash 0.9s linear infinite; }
+          @keyframes plv-pulse { 0%,100% { stroke-opacity: 1 } 50% { stroke-opacity: 0.35 } }
+          @keyframes plv-dash { to { stroke-dashoffset: -11 } }
+        `}</style>
+        <defs>
+          {marker('plv-ar', 'var(--border-color,#d3c8b6)')}
+          {marker('plv-ar-run', ST_COLOR.running)}
+          {marker('plv-ar-done', ST_COLOR.done)}
+          {marker('plv-ar-err', ST_COLOR.error)}
+        </defs>
+
+        {/* band 1: gather */}
+        {ROLES.map((r, i) => (
+          <StepCard key={`g${r}`} x={COL_X[i]} y={GATHER_Y} w={COL_W} h={ROW_H}
+            title={labels[`gather:${r}`] || `gather:${r}`} info={steps[`gather:${r}`]} labels={labels} />
+        ))}
+
+        {/* gather -> brief */}
+        {ROLES.map((r, i) => edge(
+          `e-gb-${r}`,
+          `M${cx(i)} ${GATHER_Y + ROW_H} V${BRIEF_Y - 2}`,
+          edgeState(steps[`gather:${r}`], steps[`brief:${r}`]),
+        ))}
+
+        {/* band 2: brief */}
+        {ROLES.map((r, i) => (
+          <StepCard key={`b${r}`} x={COL_X[i]} y={BRIEF_Y} w={COL_W} h={ROW_H}
+            title={labels[`brief:${r}`] || `brief:${r}`} info={steps[`brief:${r}`]} labels={labels} />
+        ))}
+
+        {/* brief -> bus -> decision */}
+        {ROLES.map((r, i) => edge(
+          `e-bd-${r}`,
+          `M${cx(i)} ${BRIEF_Y + ROW_H} V${BUS_Y}`,
+          edgeState(steps[`brief:${r}`], dec), false,
+        ))}
+        <path d={`M${cx(0)} ${BUS_Y} H${cx(3)}`} fill="none"
+          stroke={dec?.status === 'running' ? ST_COLOR.running : 'var(--border-color,#d3c8b6)'} strokeWidth={1.4} />
+        {edge('e-bus-dec', `M480 ${BUS_Y} V${DEC.y - 2}`,
+          { color: dec?.status === 'running' ? ST_COLOR.running : dec?.status === 'done' ? ST_COLOR.done : dec?.status === 'error' ? ST_COLOR.error : 'var(--border-color,#d3c8b6)', flow: dec?.status === 'running' })}
+
+        {/* band 3: decision */}
+        <StepCard x={DEC.x} y={DEC.y} w={DEC.w} h={DEC.h} big
+          title={labels['decision'] || 'decision'} info={dec} labels={labels} />
+
+        {/* decision -> verify */}
+        {edge('e-dec-ver', `M480 ${DEC.y + DEC.h} V${VER.y - 2}`, edgeState(dec, ver))}
+
+        {/* band 4: verify */}
+        <StepCard x={VER.x} y={VER.y} w={VER.w} h={VER.h}
+          title={labels['verify'] || 'verify'} info={ver} labels={labels} />
+      </svg>
     </div>
   )
 }
@@ -483,7 +384,7 @@ export function useAnalysisRun(token: string | null) {
   return { loading, result, error, steps, log, runInfo, run }
 }
 
-// ── Shared monitor panel: WebGL2 graph + timestamped step log ──
+// ── Shared monitor panel: flowchart + timestamped step log ──
 
 export function AnalysisMonitorPanel({ language, steps, log }: {
   language: Language
