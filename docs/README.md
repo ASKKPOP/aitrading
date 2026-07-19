@@ -15,6 +15,7 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 5b | [plan/03-session-handoff.md](plan/03-session-handoff.md) | Earlier (2026-07-16) handoff — dual-auth architecture, test accounts, deploy runbook. Superseded by plan/09 but still useful background. | ~2,000 |
 | 5c | [plan/07-overnight-audit-2026-07-17.md](plan/07-overnight-audit-2026-07-17.md) · [plan/08-api-keys-reference.md](plan/08-api-keys-reference.md) | The 5-agent audit record, and the API-keys reference (status + how to get each). | — |
 | 6 | [plan/04-ai-model-parameter-upgrade.md](plan/04-ai-model-parameter-upgrade.md) | Deep analysis of `research/parameters/*` vs the decision engine, and the 5-phase modification plan (confluence engine, regime filter, vol sizing, validated flip). v2 — adversarially verified by a 6-agent panel (2026-07-16). | ~3,500 |
+| 7 | [plan/10-ai-auto-trading-runs.md](plan/10-ai-auto-trading-runs.md) | **AI Auto-Trading Runs** — per-run settings (max bet, symbol, spot/futures, start/stop events), server-side background execution, SMS/email P&L reporting, WebGL2 live monitoring. v2, verified by a 16-agent pipeline (5 scan / 3 plan / 3 verify / 5 QA, 67 findings folded in, 2026-07-18). Visual companion: [plan/10-ai-auto-trading-runs.html](plan/10-ai-auto-trading-runs.html). | ~4,500 |
 
 ### Design documents (HTML)
 

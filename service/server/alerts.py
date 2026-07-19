@@ -34,7 +34,13 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = 10
 RATE_LIMIT_PER_HOUR = int(os.getenv("ALERTS_RATE_LIMIT", "10") or 10)
 
-ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected", "custom")
+ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected", "custom",
+               # Trading Runs (Plan 10 D8)
+               "run_report", "run_threshold", "run_stopped")
+
+# run_stopped is the one alert that matters (a run halted on losses) — it gets
+# its own reserved hourly budget so digests/thresholds can never starve it.
+RUN_STOPPED_RESERVE_PER_HOUR = int(os.getenv("ALERTS_RUN_STOPPED_RESERVE", "3") or 3)
 
 
 def _now() -> datetime:
@@ -123,11 +129,21 @@ def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
     }
 
 
-def _external_rate_limited(user_id: int, cursor) -> bool:
+def _external_rate_limited(user_id: int, cursor, kind: str = "") -> bool:
+    """Hourly external-channel budget. run_stopped uses its OWN reserved
+    budget (and never consumes the general one) — otherwise a digest/threshold
+    burst silently drops the one alert that matters."""
     hour_ago = (_now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if kind == "run_stopped":
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM alert_log
+               WHERE user_id = ? AND created_at >= ? AND kind = 'run_stopped'
+                 AND (channels_json LIKE '%email%' OR channels_json LIKE '%sms%')""",
+            (user_id, hour_ago))
+        return int(cursor.fetchone()["n"] or 0) >= RUN_STOPPED_RESERVE_PER_HOUR
     cursor.execute(
         """SELECT COUNT(*) AS n FROM alert_log
-           WHERE user_id = ? AND created_at >= ?
+           WHERE user_id = ? AND created_at >= ? AND kind != 'run_stopped'
              AND (channels_json LIKE '%email%' OR channels_json LIKE '%sms%')""",
         (user_id, hour_ago))
     return int(cursor.fetchone()["n"] or 0) >= RATE_LIMIT_PER_HOUR
@@ -160,7 +176,8 @@ def send_alert(agent_id: int, kind: str, title: str, body: str,
         prefs = _alert_prefs(agent_id, cursor, category)
         channels.append("inapp")
 
-        limited = prefs["user_id"] is not None and _external_rate_limited(prefs["user_id"], cursor)
+        limited = prefs["user_id"] is not None and _external_rate_limited(
+            prefs["user_id"], cursor, kind)
         if not limited and prefs["enabled"]:
             if prefs["email_enabled"] and prefs["email"]:
                 try:
@@ -169,11 +186,28 @@ def send_alert(agent_id: int, kind: str, title: str, body: str,
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("alert email failed: %s", exc)
             if prefs["sms_enabled"] and prefs["phone"]:
+                # Plan 10 D9: SMS is tier-gated IN the send path (per-message
+                # cost). Fail-closed — no verifiable entitlement, no SMS.
+                # Own connection: the entitlement check may lazily expire a
+                # subscription (an UPDATE) and must not open an implicit
+                # transaction on THIS cursor ahead of begin_write_transaction.
+                from entitlements import sms_allowed_for_user
+                sms_ok = False
                 try:
-                    if _send_sms(prefs["phone"], f"[Sooppiy] {title} — {body}"):
-                        channels.append("sms")
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("alert sms failed: %s", exc)
+                    _conn_t = get_db_connection()
+                    try:
+                        sms_ok = sms_allowed_for_user(_conn_t.cursor(), prefs["user_id"])
+                        _conn_t.commit()
+                    finally:
+                        _conn_t.close()
+                except Exception:  # noqa: BLE001
+                    sms_ok = False
+                if sms_ok:
+                    try:
+                        if _send_sms(prefs["phone"], f"[Sooppiy] {title} — {body}"):
+                            channels.append("sms")
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("alert sms failed: %s", exc)
 
         begin_write_transaction(cursor)
         cursor.execute(

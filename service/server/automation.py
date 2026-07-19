@@ -57,12 +57,24 @@ def _event_guard_blocks() -> Optional[str]:
 def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                         quantity: float, price: float, content: str = "AI automation",
                         stop_loss: Optional[float] = None,
-                        take_profit: Optional[float] = None) -> tuple[Optional[int], Optional[str]]:
+                        take_profit: Optional[float] = None,
+                        run_id: Optional[int] = None,
+                        client_order_id: Optional[str] = None,
+                        fence=None) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
     On buys, stop_loss/take_profit (from the risk gate) are registered on the
     position row in the same transaction so the SL/TP watcher can act on them.
-    Returns (signal_id, None) on success or (None, reason) when skipped."""
+    Returns (signal_id, None) on success or (None, reason) when skipped.
+
+    Trading Runs (Plan 10): when run_id is given the signals row carries the
+    run attribution + fee, the position row is stamped with the owning run,
+    and a 'trade' run_event rides THIS transaction (a committed trade can
+    never be missing from the journal). client_order_id ("run:{id}:cyc:{seq}")
+    is checked pre-insert on this fresh connection AND enforced by a UNIQUE
+    index — exactly-once per cycle even across worker crashes. `fence` is an
+    optional callable(cursor) -> Optional[str] evaluated inside the
+    transaction; a non-None return aborts (zombie-claimant protection)."""
     from fees import TRADE_FEE_RATE
     from services import _reserve_signal_id, _update_position_from_signal
     from routes_shared import get_position_snapshot
@@ -80,6 +92,18 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     cursor = conn.cursor()
     try:
         begin_write_transaction(cursor)
+
+        if fence is not None:
+            fence_reason = fence(cursor)
+            if fence_reason:
+                conn.rollback()
+                return None, fence_reason
+        if client_order_id:
+            cursor.execute("SELECT id FROM signals WHERE client_order_id = ?",
+                           (client_order_id,))
+            if cursor.fetchone():
+                conn.rollback()
+                return None, "duplicate client_order_id (cycle already executed)"
 
         short_entry: Optional[float] = None
         if side == "sell":
@@ -122,13 +146,27 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             """
             INSERT INTO signals
             (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome,
-             side, entry_price, quantity, content, timestamp, created_at, executed_at)
-            VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
+             side, entry_price, quantity, content, timestamp, created_at, executed_at,
+             run_id, client_order_id, fee_usd)
+            VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (signal_id, agent_id, market, symbol, side, price, quantity,
-             content, int(datetime.now(timezone.utc).timestamp()), now, now),
+             content, int(datetime.now(timezone.utc).timestamp()), now, now,
+             run_id, client_order_id, fee),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
+        if run_id is not None and side in ("buy", "short"):
+            # Stamp run ownership on the (possibly just-created) position row so
+            # watcher closes attribute to this run even after stop-with-hold.
+            # The fill price doubles as a fresh mark (a just-traded position
+            # must not read as stale to the fail-closed stop evaluator).
+            cursor.execute(
+                """UPDATE positions
+                   SET run_id = COALESCE(run_id, ?),
+                       current_price = ?, price_updated_at = ?
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
+                (run_id, price, now, agent_id, market, symbol),
+            )
         if side == "short" and (stop_loss is not None or take_profit is not None):
             # Short exits are inverted (SL above entry / TP below). NEVER
             # LOOSEN mirrored: a lower stop and a lower target are tighter
@@ -184,6 +222,13 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (cover_credit, agent_id))
         else:
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
+        if run_id is not None:
+            # Trade event rides THIS transaction — never fail-soft (Plan 10 D6).
+            from trading_runs import _emit_event
+            _emit_event(cursor, run_id, "trade",
+                        {"signal_id": signal_id, "side": side, "symbol": symbol,
+                         "market": market, "quantity": quantity, "price": price,
+                         "fee_usd": fee, "client_order_id": client_order_id})
         conn.commit()
         return signal_id, None
     except Exception as exc:  # noqa: BLE001
@@ -192,6 +237,24 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         return None, str(exc)
     finally:
         conn.close()
+
+
+def _entitlement_blocks(agent_id: int) -> Optional[str]:
+    """In-loop entitlement check on its own short connection (fail-closed:
+    an unverifiable plan blocks auto-execution — spend prevention)."""
+    try:
+        from entitlements import check_auto_execute, enforcement_enabled
+        if not enforcement_enabled():
+            return None
+        conn = get_db_connection()
+        try:
+            deny = check_auto_execute(conn.cursor(), agent_id)
+            conn.commit()
+            return deny
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        return "entitlement check unavailable"
 
 
 def _agent_budget_blocks(config: dict[str, Any], entry: float) -> Optional[str]:
@@ -276,6 +339,11 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
     elif config.get("account_type") != "simulator":
         # Live execution is intentionally not wired — record and skip.
         out["skip_reason"] = "real account execution disabled in this build"
+    elif (_ent_deny := _entitlement_blocks(agent_id)):
+        # Plan 10 D9: in-loop entitlement gate — a lapsed subscription stops
+        # existing auto-executing rules too, not just new ones. Env-gated
+        # (ENTITLEMENTS_ENFORCED); returns None when enforcement is off.
+        out["skip_reason"] = _ent_deny
     elif action not in EXECUTABLE_ACTIONS:
         out["skip_reason"] = f"decision is '{action}'"
     elif (confidence or 0) < float(config.get("min_confidence") or 0):

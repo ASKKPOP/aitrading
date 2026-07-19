@@ -57,10 +57,16 @@ class TestNotificationPrefs(_Base):
         r = self.client.get("/api/notifications/settings", headers=self.member)
         self.assertEqual(r.status_code, 200)
         cats = {c["key"]: c for c in r.json()["categories"]}
-        self.assertEqual(set(cats), {"trade", "risk", "watch", "support", "announcement"})
+        self.assertEqual(set(cats), {"trade", "risk", "watch", "support", "announcement",
+                                     # Trading Runs (Plan 10 D8)
+                                     "auto_trading_reports", "auto_trading_safety"})
         self.assertTrue(all(c["enabled"] for c in cats.values()))
         self.assertFalse(cats["trade"]["email"])
         self.assertFalse(cats["trade"]["sms"])
+        # run categories default email ON (that is their point); SMS off
+        self.assertTrue(cats["auto_trading_reports"]["email"])
+        self.assertFalse(cats["auto_trading_reports"]["sms"])
+        self.assertTrue(cats["auto_trading_safety"]["email"])
 
     def test_legacy_alert_optin_seeds_trade_email_default(self):
         # A member who enabled email on the old Alerts card keeps email

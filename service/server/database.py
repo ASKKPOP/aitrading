@@ -2533,6 +2533,132 @@ def init_database():
         ON analysis_jobs(agent_id, id)
     """)
 
+    # ── Trading Runs (Plan 10) — AI auto-trading run lifecycle ─────────────
+    # A run is a DB state machine executed by the worker's scheduler loop.
+    # active_key emulates a partial unique index (set only while the run is
+    # active, NULL otherwise) so one-active-run-per-agent+market+symbol is a
+    # real DB constraint on both dialects, not a racy check-then-insert.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trading_runs (
+            id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id                INTEGER NOT NULL,
+            symbol                  TEXT    NOT NULL,
+            market                  TEXT    NOT NULL DEFAULT 'crypto',
+            market_type             TEXT    NOT NULL DEFAULT 'spot',
+            status                  TEXT    NOT NULL DEFAULT 'draft',
+            status_reason           TEXT,
+            active_key              TEXT,
+            config_snapshot_json    TEXT,
+            start_condition_json    TEXT,
+            stop_conditions_json    TEXT,
+            stop_flatten            INTEGER NOT NULL DEFAULT 1,
+            report_frequency        TEXT    NOT NULL DEFAULT 'off',
+            report_hour_local       INTEGER,
+            report_tz               TEXT,
+            notify_on_trade         INTEGER NOT NULL DEFAULT 0,
+            profit_threshold_pct    REAL,
+            loss_threshold_pct      REAL,
+            drawdown_threshold_pct  REAL,
+            last_report_at          TEXT,
+            max_trades_per_day      INTEGER NOT NULL DEFAULT 50,
+            consecutive_errors      INTEGER NOT NULL DEFAULT 0,
+            consecutive_infeasible  INTEGER NOT NULL DEFAULT 0,
+            paused_reason           TEXT,
+            started_at              TEXT,
+            stopped_at              TEXT,
+            last_cycle_at           TEXT,
+            cycle_seq               INTEGER NOT NULL DEFAULT 0,
+            last_event_seq          INTEGER NOT NULL DEFAULT 0,
+            claimed_by              TEXT,
+            claim_expires_at        TEXT,
+            realized_pnl_usd        REAL    NOT NULL DEFAULT 0,
+            created_at              TEXT    NOT NULL,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_trading_runs_active_key
+        ON trading_runs(active_key)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_trading_runs_agent
+        ON trading_runs(agent_id, status)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_trading_runs_status
+        ON trading_runs(status)
+    """)
+
+    # Append-only per-run journal: trade/state rows are written inside the
+    # trade/transition transaction; telemetry (equity, gate skips) is
+    # fail-soft. seq is producer-assigned and recovered from
+    # trading_runs.last_event_seq — never a stale in-memory counter.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS run_events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id     INTEGER NOT NULL,
+            seq        INTEGER NOT NULL,
+            event_type TEXT    NOT NULL,
+            ts         TEXT    NOT NULL,
+            payload    TEXT,
+            FOREIGN KEY (run_id) REFERENCES trading_runs(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_run_events_run_seq
+        ON run_events(run_id, seq)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_run_events_type_ts
+        ON run_events(event_type, ts)
+    """)
+
+    # Report delivery journal — the row is written BEFORE the external send
+    # (status pending -> sent) so a worker restart can neither double-send a
+    # digest nor permanently swallow a run_stopped alert (a sweep retries
+    # stale pending rows).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS run_reports (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id        INTEGER NOT NULL,
+            user_id       INTEGER,
+            kind          TEXT    NOT NULL,
+            period_start  TEXT,
+            period_end    TEXT,
+            pnl           REAL,
+            trades        INTEGER,
+            status        TEXT    NOT NULL DEFAULT 'pending',
+            sent_at       TEXT,
+            channels_json TEXT,
+            created_at    TEXT    NOT NULL,
+            FOREIGN KEY (run_id) REFERENCES trading_runs(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_run_reports_run
+        ON run_reports(run_id, created_at)
+    """)
+
+    # Run attribution + idempotency on the existing ledger tables.
+    # NOTE: SQLite cannot ADD COLUMN with an inline UNIQUE (and these ALTERs
+    # swallow errors), so client_order_id uniqueness comes from the separate
+    # index below — which does NOT swallow errors.
+    for _ddl in (
+        "ALTER TABLE signals ADD COLUMN run_id INTEGER",
+        "ALTER TABLE signals ADD COLUMN client_order_id TEXT",
+        "ALTER TABLE signals ADD COLUMN fee_usd REAL",
+        "ALTER TABLE positions ADD COLUMN run_id INTEGER",
+        "ALTER TABLE positions ADD COLUMN price_updated_at TEXT",
+    ):
+        try:
+            cursor.execute(_ddl)
+        except Exception:
+            pass
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_signals_client_order_id
+        ON signals(client_order_id)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

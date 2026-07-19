@@ -39,6 +39,7 @@ _AGENT_CONTENT_TABLES: tuple[tuple[str, str], ...] = (
     ("agent_tasks", "agent_id"),
     ("automation_configs", "agent_id"),
     ("automation_runs", "agent_id"),
+    ("trading_runs", "agent_id"),
     ("profit_history", "agent_id"),
     ("agent_reward_ledger", "agent_id"),
     ("signal_predictions", "agent_id"),
@@ -79,6 +80,18 @@ def _count(cursor, sql: str, params: tuple = ()) -> int:
 
 def _delete_agent_cascade(cursor, agent_id: int) -> dict[str, int]:
     deleted: dict[str, int] = {}
+    # run_events / run_reports key on run_id, not agent_id — clear them via
+    # the agent's runs BEFORE trading_runs itself goes (Plan 10 Phase 5).
+    for run_table in ("run_events", "run_reports"):
+        try:
+            cursor.execute(
+                f"""DELETE FROM {run_table} WHERE run_id IN
+                    (SELECT id FROM trading_runs WHERE agent_id = ?)""",
+                (agent_id,))
+            if cursor.rowcount:
+                deleted[f"{run_table}.run_id"] = cursor.rowcount
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("admin cascade %s.run_id failed: %s", run_table, exc)
     for table, column in _AGENT_CONTENT_TABLES:
         try:
             cursor.execute(f"DELETE FROM {table} WHERE {column} = ?", (agent_id,))

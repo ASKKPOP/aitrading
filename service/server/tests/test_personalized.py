@@ -118,10 +118,17 @@ class AlertEngineTests(PersonalizedTestCase):
         self.assertEqual(feed[0]["kind"], "trade_executed")
 
     def test_sms_channel_with_phone(self):
+        # Plan 10 D9: SMS is tier-gated inside the send path. Without a
+        # qualifying plan the switch+phone alone no longer produce SMS.
         import alerts
         self._set_prefs(email=False, sms=True, phone="+821012345678")
         with patch.object(alerts, "_send_sms", return_value=True) as mock_sms:
             out = alerts.send_alert(self.agent_id, "breaker", "HALT", "b")
+        self.assertNotIn("sms", out["channels"])
+        mock_sms.assert_not_called()
+        with patch.object(alerts, "_send_sms", return_value=True) as mock_sms, \
+                patch("entitlements.plan_code_for_user", return_value="professional"):
+            out = alerts.send_alert(self.agent_id, "breaker", "HALT-2", "b2")
         self.assertIn("sms", out["channels"])
         self.assertEqual(mock_sms.call_args[0][0], "+821012345678")
 

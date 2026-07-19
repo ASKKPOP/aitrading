@@ -26,8 +26,9 @@ it in the console.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from fastapi import FastAPI, Header, HTTPException
@@ -172,6 +173,90 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
                                 detail=f'Unknown categories: {sorted(unknown)}')
         notifications.set_prefs(user['id'], data.categories)
         return {'success': True, 'categories': notifications.catalog_for_user(user['id'])}
+
+    @app.post('/api/notifications/test')
+    async def send_test_notification(data: dict = None,  # type: ignore[assignment]
+                                     authorization: str = Header(None)):
+        """Prove the member's email/SMS channel works BEFORE a live trading
+        run depends on it (Plan 10 D8). Throttled with its own tight per-user
+        cap (journaled to alert_log kind 'custom' with a test dedupe prefix) —
+        an unthrottled test endpoint would be a free SMS-send primitive.
+        SMS remains tier-gated inside the send path regardless."""
+        user = _require_user(authorization)
+        channel = ((data or {}).get('channel') or 'email').strip().lower()
+        if channel not in ('email', 'sms'):
+            raise HTTPException(status_code=400, detail="channel must be 'email' or 'sms'")
+
+        from alerts import _send_email, _send_sms
+        from database import begin_write_transaction, get_db_connection
+        from entitlements import sms_allowed_for_user
+
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)
+                        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+            cursor.execute(
+                """SELECT COUNT(*) AS n FROM alert_log
+                   WHERE user_id = ? AND created_at >= ?
+                     AND dedupe_key LIKE 'notify-test:%'""",
+                (user['id'], hour_ago))
+            if int(cursor.fetchone()["n"] or 0) >= 3:
+                raise HTTPException(status_code=429,
+                                    detail='Test-send limit reached (3/hour)')
+            sent = False
+            detail = None
+            if channel == 'email':
+                email = user.get('email')
+                if not email:
+                    detail = 'no email on account'
+                else:
+                    try:
+                        sent = _send_email(email, '[Sooppiy] Notification test',
+                                           'This is a test of your Sooppiy email '
+                                           'notifications. Channel is working.')
+                        detail = None if sent else 'provider not configured or rejected'
+                    except Exception as exc:  # noqa: BLE001
+                        detail = str(exc)
+            else:
+                phone = notifications.sms_phone(user['id'])
+                # own connection: the entitlement check may run a lazy-expiry
+                # UPDATE and must not open a txn on this endpoint's cursor
+                conn_t = get_db_connection()
+                try:
+                    sms_ok = sms_allowed_for_user(conn_t.cursor(), user['id'])
+                    conn_t.commit()
+                finally:
+                    conn_t.close()
+                if not phone:
+                    detail = 'no phone number saved in Settings'
+                elif not sms_ok:
+                    detail = 'SMS is not included in your current plan'
+                else:
+                    try:
+                        sent = _send_sms(phone, '[Sooppiy] Notification test — '
+                                                'your SMS channel is working.')
+                        detail = None if sent else 'provider not configured or rejected'
+                    except Exception as exc:  # noqa: BLE001
+                        detail = str(exc)
+            cursor.execute("SELECT id FROM agents WHERE user_id = ? LIMIT 1",
+                           (user['id'],))
+            agent_row = cursor.fetchone()
+            begin_write_transaction(cursor)
+            cursor.execute(
+                """INSERT INTO alert_log
+                   (agent_id, user_id, kind, title, body, channels_json,
+                    dedupe_key, created_at)
+                   VALUES (?, ?, 'custom', ?, ?, ?, ?, ?)""",
+                (agent_row['id'] if agent_row else 0, user['id'],
+                 f'Notification test ({channel})',
+                 'delivered' if sent else f'failed: {detail}',
+                 json.dumps([channel] if sent else []),
+                 f"notify-test:{user['id']}:{_now_iso()}", _now_iso()))
+            conn.commit()
+        finally:
+            conn.close()
+        return {'success': bool(sent), 'channel': channel, 'detail': detail}
 
     # ───────────────────────── member: support chat ─────────────────────────
 
