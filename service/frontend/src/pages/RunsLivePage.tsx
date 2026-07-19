@@ -187,7 +187,7 @@ export function RunsLivePage({ token }: Props) {
           return (
             <div key={run.id}
               onClick={() => setSelected(run.id)}
-              style={{ background: 'var(--bg-card,#fff)', border: '1px solid var(--border,rgba(0,0,0,0.1))',
+              style={{ background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
                 borderRadius: 12, padding: 14, cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: 15 }}>{run.symbol}
@@ -256,8 +256,8 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, langu
     <div onClick={onClose} style={{ position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.45)', display: 'flex', justifyContent: 'flex-end', zIndex: 50 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px, 100%)',
-        height: '100%', overflowY: 'auto', background: 'var(--bg-body,#fff)',
-        borderLeft: '1px solid var(--border,rgba(0,0,0,0.1))', padding: 20 }}>
+        height: '100%', overflowY: 'auto', background: 'var(--bg-primary,#fff)',
+        borderLeft: '1px solid var(--border-color,rgba(0,0,0,0.1))', padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>
             {run ? `${run.symbol} · ${run.market}` : `Run #${runId}`}</h2>
@@ -288,7 +288,7 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, langu
         )}
 
         <div style={{ marginTop: 14, background: 'var(--bg-card,#fafafa)',
-          border: '1px solid var(--border,rgba(0,0,0,0.08))', borderRadius: 10, padding: 8 }}>
+          border: '1px solid var(--border-color,rgba(0,0,0,0.08))', borderRadius: 10, padding: 8 }}>
           <RunSparkline values={equity}
             color={(snap?.pnl?.total ?? 0) < 0 ? 'rgb(208,59,59)' : 'rgb(12,163,12)'}
             height={120} />
@@ -397,12 +397,12 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
   const lbl = (o: any) => tr(language, o)
   const field: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }
   const input: React.CSSProperties = { padding: '6px 8px', borderRadius: 6,
-    border: '1px solid var(--border,rgba(0,0,0,0.15))', background: 'var(--bg-card,#fff)',
-    color: 'var(--text-body,#111)' }
+    border: '1px solid var(--border-color,rgba(0,0,0,0.15))', background: 'var(--bg-card,#fff)',
+    color: 'var(--text-primary,#111)' }
 
   return (
     <div style={{ marginTop: 16, background: 'var(--bg-card,#fff)',
-      border: '1px solid var(--border,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }}>
+      border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }}>
       <div style={{ display: 'grid', gap: 12,
         gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <label style={field}>{lbl({ ko: '심볼', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
