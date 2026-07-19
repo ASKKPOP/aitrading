@@ -88,6 +88,7 @@ ALERT_KIND_CATEGORY = {
     "run_threshold": "auto_trading_safety",
     "run_stopped": "auto_trading_safety",
     "gateway_down": "auto_trading_safety",
+    "order_drift": "auto_trading_safety",
 }
 
 

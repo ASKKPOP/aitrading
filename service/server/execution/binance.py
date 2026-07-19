@@ -128,6 +128,55 @@ class BinanceBroker(Broker):
 
         return order
 
+    # Binance order states → our lifecycle. NEW / PARTIALLY_FILLED stay
+    # SUBMITTED-ish so the reconciler looks again next sweep.
+    _STATUS_MAP = {
+        "FILLED": OrderStatus.FILLED,
+        "PARTIALLY_FILLED": OrderStatus.PARTIAL_FILL,
+        "CANCELED": OrderStatus.CANCELLED,
+        "EXPIRED": OrderStatus.CANCELLED,
+        "EXPIRED_IN_MATCH": OrderStatus.CANCELLED,
+        "REJECTED": OrderStatus.REJECTED,
+    }
+
+    async def get_order_status(self, broker_order_id: str, symbol: str = ""):
+        """Binance keys order lookup by (symbol, orderId) — symbol is required."""
+        if not self._has_credentials() or not broker_order_id or not symbol:
+            return None
+        # Same normalisation as submit_order — the lookup must name the pair
+        # exactly as it was submitted or Binance reports "order does not exist".
+        pair = symbol.upper().replace("/", "").replace("-", "")
+        params = self._sign({"symbol": pair, "orderId": broker_order_id})
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{self._base}/order",
+                    params=params,
+                    headers={"X-MBX-APIKEY": self._key},
+                )
+        except httpx.RequestError as exc:
+            _logger.debug("[BinanceBroker] status lookup failed for %s: %s",
+                          broker_order_id, exc)
+            return None
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        status = self._STATUS_MAP.get(str(data.get("status", "")).upper(),
+                                      OrderStatus.SUBMITTED)
+        executed = data.get("executedQty")
+        quote = data.get("cummulativeQuoteQty")
+        avg = None
+        try:
+            if executed and float(executed) > 0 and quote:
+                avg = float(quote) / float(executed)
+        except (TypeError, ValueError, ZeroDivisionError):
+            avg = None
+        return {
+            "status": status,
+            "filled_qty": float(executed) if executed not in (None, "") else None,
+            "avg_price": avg,
+        }
+
     async def cancel_order(self, broker_order_id: str) -> bool:
         if not self._has_credentials():
             return False

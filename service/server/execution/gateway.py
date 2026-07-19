@@ -232,6 +232,132 @@ def keepalive_tick() -> dict[str, Any]:
     return out
 
 
+def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
+    """One pass of the broker-order reconciler (worker task order_reconciler).
+
+    A live/shadow order the broker answered with SUBMITTED has no final state
+    on our side: it may later fill, part-fill, or be cancelled by the market,
+    and the platform ledger — written at the requested size on submit — would
+    silently diverge. This sweep asks the broker what actually happened and:
+
+      - records the terminal status + broker-confirmed filled_qty on the
+        broker_orders row (the requested `quantity` is left untouched), and
+      - when the outcome materially differs from what the ledger assumed
+        (cancelled/rejected after submit, or a fill size mismatch), journals a
+        position_reconciliations drift row and alerts the owner (order_drift).
+
+    Deliberately NOT done here: mutating positions/cash. Correcting money math
+    post-hoc from a background sweep is how ledgers get corrupted twice; this
+    surfaces the divergence loudly and leaves the correction to a human.
+    """
+    from database import get_db_connection
+    from execution.base import ExecutionMode, OrderStatus
+    from routes_shared import utc_now_iso_z
+
+    out = {"checked": 0, "settled": 0, "still_open": 0, "drift": 0, "lookup_failed": 0}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, agent_id, symbol, side, quantity, broker,
+                      broker_order_id, execution_mode
+               FROM broker_orders
+               WHERE status = 'submitted' AND broker != 'paper'
+                     AND broker_order_id IS NOT NULL
+               ORDER BY id LIMIT ?""",
+            (limit,),
+        )
+        rows = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    accounts: dict[int, Optional[dict[str, Any]]] = {}
+    for row in rows:
+        out["checked"] += 1
+        agent_id = row["agent_id"]
+        if agent_id not in accounts:
+            accounts[agent_id] = active_broker_account(agent_id)
+        account = accounts[agent_id]
+        # The order remembers which venue it went to; the CURRENT account row
+        # may have changed broker since — only reconcile against the same one.
+        if not account or (account.get("broker") or "") != row["broker"]:
+            out["lookup_failed"] += 1
+            continue
+        try:
+            mode = ExecutionMode(row.get("execution_mode") or "shadow")
+        except ValueError:
+            mode = ExecutionMode.SHADOW
+        # LIVE stays LIVE and SHADOW stays sandbox — same endpoint-pinning rule
+        # as submission, or the lookup asks the wrong venue about the order.
+        adapter = _broker_for(account, mode if mode in (ExecutionMode.LIVE,)
+                              else ExecutionMode.SHADOW)
+        try:
+            status = _run_coro(adapter.get_order_status(row["broker_order_id"],
+                                                        symbol=row["symbol"]))
+        except Exception:  # noqa: BLE001 — one bad lookup must not stop the sweep
+            status = None
+            _logger.exception("order status lookup failed for broker_order %s", row["id"])
+        if not status:
+            out["lookup_failed"] += 1
+            continue
+
+        final = status["status"]
+        if final in (OrderStatus.SUBMITTED, OrderStatus.PENDING):
+            out["still_open"] += 1
+            continue
+
+        filled_qty = status.get("filled_qty")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """UPDATE broker_orders
+                   SET status = ?, filled_qty = ?, filled_at = ?
+                   WHERE id = ? AND status = 'submitted'""",
+                (final.value, filled_qty,
+                 utc_now_iso_z() if final is OrderStatus.FILLED else None,
+                 row["id"]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        out["settled"] += 1
+
+        # Material divergence from what the ledger assumed at submit time?
+        requested = float(row["quantity"] or 0)
+        mismatch = (
+            final in (OrderStatus.CANCELLED, OrderStatus.REJECTED)
+            or final is OrderStatus.PARTIAL_FILL
+            or (final is OrderStatus.FILLED and filled_qty is not None
+                and abs(filled_qty - requested) > max(1e-9, requested * 0.001))
+        )
+        if mismatch and mode is ExecutionMode.LIVE:
+            out["drift"] += 1
+            _alert_order_drift(agent_id, row, final.value, filled_qty, requested)
+    return out
+
+
+def _alert_order_drift(agent_id: int, row: dict[str, Any], final: str,
+                       filled_qty: Optional[float], requested: float) -> None:
+    """The broker's final answer disagrees with what the ledger assumed."""
+    try:
+        from alerts import send_alert
+        if final in ("cancelled", "rejected"):
+            body = (f"{row['symbol']}: your {row['side']} order was {final} by the "
+                    f"broker AFTER submission — the platform recorded it at the "
+                    f"requested size ({requested:g}). Review the position on your "
+                    "broker and correct manually if needed.")
+        else:
+            body = (f"{row['symbol']}: broker confirmed {filled_qty:g} of the "
+                    f"requested {requested:g} {row['side']} — the platform ledger "
+                    "recorded the requested size. Review and correct manually.")
+        send_alert(agent_id, "order_drift",
+                   "Broker fill differs from platform record", body,
+                   dedupe_key=f"order_drift:{row['id']}")
+    except Exception:  # noqa: BLE001
+        _logger.debug("order drift alert failed for broker_order %s", row.get("id"))
+
+
 def _alert_session_down(agent_id: int, detail: str) -> None:
     """Once-per-day alert that the IBKR gateway can no longer take orders."""
     try:

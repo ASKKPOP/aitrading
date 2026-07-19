@@ -125,6 +125,43 @@ class AlpacaBroker(Broker):
 
         return order
 
+    # Alpaca order states → our lifecycle. Everything not terminal maps to
+    # SUBMITTED so the reconciler simply looks again next sweep.
+    _STATUS_MAP = {
+        "filled": OrderStatus.FILLED,
+        "partially_filled": OrderStatus.PARTIAL_FILL,
+        "canceled": OrderStatus.CANCELLED,
+        "expired": OrderStatus.CANCELLED,
+        "rejected": OrderStatus.REJECTED,
+        "suspended": OrderStatus.REJECTED,
+    }
+
+    async def get_order_status(self, broker_order_id: str, symbol: str = ""):
+        if not self._has_credentials() or not broker_order_id:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{self._base}/orders/{broker_order_id}",
+                    headers=self._headers,
+                )
+        except httpx.RequestError as exc:
+            _logger.debug("[AlpacaBroker] status lookup failed for %s: %s",
+                          broker_order_id, exc)
+            return None
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        status = self._STATUS_MAP.get(str(data.get("status", "")).lower(),
+                                      OrderStatus.SUBMITTED)
+        filled = data.get("filled_qty")
+        avg = data.get("filled_avg_price")
+        return {
+            "status": status,
+            "filled_qty": float(filled) if filled not in (None, "") else None,
+            "avg_price": float(avg) if avg not in (None, "") else None,
+        }
+
     async def cancel_order(self, broker_order_id: str) -> bool:
         if not self._has_credentials():
             return False

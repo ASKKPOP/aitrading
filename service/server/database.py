@@ -1314,6 +1314,8 @@ def init_database():
         "ALTER TABLE users ADD COLUMN trading_guidelines TEXT",
         # Plan 06 C3 — per-rule trading schedule (days/hours/timezone window)
         "ALTER TABLE automation_configs ADD COLUMN schedule_json TEXT",
+        # Order reconciler — broker-confirmed final fill quantity
+        "ALTER TABLE broker_orders ADD COLUMN filled_qty NUMERIC(20,8)",
     ):
         try:
             cursor.execute(_ddl)
@@ -1758,6 +1760,7 @@ def init_database():
             outcome          TEXT,
             created_at       TEXT    DEFAULT (datetime('now')),
             filled_at        TEXT,
+            filled_qty       NUMERIC(20,8),
             FOREIGN KEY (agent_id)  REFERENCES agents(id),
             FOREIGN KEY (signal_id) REFERENCES signals(signal_id)
         )

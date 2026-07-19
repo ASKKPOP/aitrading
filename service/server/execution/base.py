@@ -101,6 +101,22 @@ class Broker(ABC):
         participate in the caller's open DB transaction.
         """
 
+    async def get_order_status(self, broker_order_id: str,
+                               symbol: str = "") -> Optional[dict]:
+        """Current broker-side state of a previously submitted order.
+
+        Optional capability (default None = "cannot look up"): the order
+        reconciler uses it to confirm the final state of SUBMITTED orders.
+        Implementations return
+            {"status": OrderStatus, "filled_qty": float|None,
+             "avg_price": float|None}
+        with status mapped onto the OrderStatus enum, or None when the lookup
+        itself failed (network, unknown id) — never raise for expected errors.
+        *symbol* is required by brokers whose lookup is keyed per instrument
+        (Binance); others may ignore it.
+        """
+        return None
+
     @abstractmethod
     async def cancel_order(self, broker_order_id: str) -> bool:
         """Cancel a pending/submitted order.  Returns True on success."""

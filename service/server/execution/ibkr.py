@@ -202,6 +202,52 @@ class IBKRBroker(Broker):
                      order.broker_order_id, status or "submitted")
         return order
 
+    # CPAPI order_status values → our lifecycle. Unknown states stay SUBMITTED
+    # so the reconciler simply looks again next sweep.
+    _STATUS_MAP = {
+        "filled": OrderStatus.FILLED,
+        "cancelled": OrderStatus.CANCELLED,
+        "canceled": OrderStatus.CANCELLED,
+        "inactive": OrderStatus.REJECTED,
+    }
+
+    async def get_order_status(self, broker_order_id: str, symbol: str = ""):
+        if not self._has_credentials() or not broker_order_id:
+            return None
+        try:
+            async with self._client() as client:
+                resp = await client.get(
+                    f"{self._base}/iserver/account/order/status/{broker_order_id}"
+                )
+        except httpx.RequestError as exc:
+            _logger.debug("[IBKRBroker] status lookup failed for %s: %s",
+                          broker_order_id, exc)
+            return None
+        if resp.status_code != 200:
+            return None
+        try:
+            data = resp.json()
+        except Exception:  # noqa: BLE001
+            return None
+        if not isinstance(data, dict):
+            return None
+        raw = str(data.get("order_status", "")).lower()
+        status = self._STATUS_MAP.get(raw, OrderStatus.SUBMITTED)
+        # Partially executed but still working: cum fill > 0 with a live status.
+        filled = data.get("cum_fill") or data.get("filled_quantity")
+        try:
+            filled = float(filled) if filled not in (None, "") else None
+        except (TypeError, ValueError):
+            filled = None
+        if status is OrderStatus.SUBMITTED and filled and filled > 0:
+            status = OrderStatus.PARTIAL_FILL
+        avg = data.get("average_price") or data.get("avg_price")
+        try:
+            avg = float(avg) if avg not in (None, "") else None
+        except (TypeError, ValueError):
+            avg = None
+        return {"status": status, "filled_qty": filled, "avg_price": avg}
+
     async def session_status(self) -> dict:
         """Is the Client Portal Gateway reachable and still authenticated?
 

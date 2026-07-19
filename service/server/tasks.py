@@ -714,6 +714,35 @@ async def gateway_keepalive_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def order_reconciler_loop():
+    """Confirm the final state of SUBMITTED broker orders (execution/gateway.py).
+
+    A live/shadow order the broker answered with SUBMITTED may later fill,
+    part-fill or be cancelled — the platform ledger was written at the
+    requested size and would silently diverge. Every ORDER_RECONCILE_INTERVAL
+    seconds (default 120) ask the broker, record the terminal status +
+    broker-confirmed filled_qty, and alert the owner (order_drift) on material
+    divergence. Never mutates positions/cash — detection, not correction.
+    No-ops instantly when no submitted non-paper orders exist.
+    """
+    from execution.gateway import reconcile_orders_tick
+
+    tick_interval = _env_int("ORDER_RECONCILE_INTERVAL", 120, minimum=30)
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            result = await asyncio.to_thread(reconcile_orders_tick)
+            if result.get("checked"):
+                print(f"[Order Reconciler] checked={result['checked']} "
+                      f"settled={result['settled']} still_open={result['still_open']} "
+                      f"drift={result['drift']} lookup_failed={result['lookup_failed']}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[Order Reconciler Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def trading_run_loop():
     """Background task for Trading Runs (Plan 10).
 
@@ -1566,6 +1595,7 @@ BACKGROUND_TASK_REGISTRY = {
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
     "gateway_keepalive": gateway_keepalive_loop,
+    "order_reconciler": order_reconciler_loop,
     "trading_runs": trading_run_loop,
     "run_reports": report_scheduler_loop,
     "subscription_enforcer": subscription_enforcer_loop,
@@ -1612,6 +1642,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "automation":              "settlement",
     # IBKR session keepalive — tickle/reauth so live gateways stay usable
     "gateway_keepalive":       "settlement",
+    # broker-order reconciler — confirm SUBMITTED orders' final fills
+    "order_reconciler":        "settlement",
     # trading runs — Plan 10 run lifecycle scheduler (dedicated executor for
     # LLM cycles; gated by AUTO_TRADING_ENABLED)
     "trading_runs":            "settlement",
