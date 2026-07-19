@@ -653,18 +653,35 @@ export function MarketingPage() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.ink, fontFamily: V.sans, lineHeight: 1.55 }}>
 
       {/* ── topbar ── */}
+      {/* Mobile: the row can't fit logo + wordmark + 5 lang pills + two auth buttons,
+          so below 700px we keep only 가입하기 (signup) and compact the rest. */}
+      <style>{`
+        .mkt-topbar-row { display: flex; align-items: center; gap: 12px; height: 62px; }
+        .mkt-auth { white-space: nowrap; flex-shrink: 0; }
+        @media (max-width: 700px) {
+          .mkt-topbar-row { gap: 8px; height: 54px; }
+          .mkt-login { display: none !important; }
+          .mkt-signup { font-size: 13px !important; padding: 7px 12px !important; }
+          .mkt-langs button { font-size: 10.5px !important; padding: 3px 5px !important; }
+          .mkt-wordmark { font-size: 17px !important; }
+          .mkt-logo { width: 32px; height: 32px; }
+        }
+        @media (max-width: 430px) {
+          .mkt-wordmark { display: none; }
+        }
+      `}</style>
       <header style={{ position: 'sticky', top: 0, zIndex: 20, background: V.card, borderBottom: `1px solid ${V.line}` }}>
-        <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 12, height: 62 }}>
-          <img src="/logo.svg" alt="" width={46} height={46} style={{ display: 'block' }} />
-          <span style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px' }}>
+        <div className="mkt-topbar-row" style={{ ...wrap }}>
+          <img src="/logo.svg" alt="" width={46} height={46} className="mkt-logo" style={{ display: 'block', flexShrink: 0 }} />
+          <span className="mkt-wordmark" style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
+          <span className="mkt-langs" style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px', flexShrink: 0 }}>
             {Object.entries(LANGS).map(([code, label]) => (
               <button key={code} onClick={() => setLanguage(code as any)}
                 style={{ background: language === code ? V.accent : 'none', color: language === code ? V.accentOn : V.mut, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 9px', borderRadius: 999, fontFamily: V.sans }}>{label}</button>
             ))}
           </span>
-          <Link to="/login" style={{ ...pillBtn, color: V.ink, padding: '9px 16px' }}>{T.login}</Link>
-          <Link to="/register" style={{ ...pillBtn, color: V.accentOn, background: V.accent, padding: '9px 18px' }}>{T.signup}</Link>
+          <Link to="/login" className="mkt-auth mkt-login" style={{ ...pillBtn, color: V.ink, padding: '9px 16px' }}>{T.login}</Link>
+          <Link to="/register" className="mkt-auth mkt-signup" style={{ ...pillBtn, color: V.accentOn, background: V.accent, padding: '9px 18px' }}>{T.signup}</Link>
         </div>
       </header>
 
