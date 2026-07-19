@@ -50,6 +50,18 @@ CATEGORY_CATALOG: dict[str, dict[str, Any]] = {
         "description": "Price and indicator watches you configured firing.",
         "default": {"enabled": True, "email": False, "sms": False},
     },
+    "auto_trading_reports": {
+        "label": "Auto-trading reports",
+        "description": "Scheduled P&L digests from your trading runs.",
+        # Digests are never SMS (per-message cost; Plan 10 D8) — the sms
+        # switch stays off and the safety category below carries SMS.
+        "default": {"enabled": True, "email": True, "sms": False},
+    },
+    "auto_trading_safety": {
+        "label": "Auto-trading safety",
+        "description": "Run stop events, profit/loss threshold triggers, and safety pauses.",
+        "default": {"enabled": True, "email": True, "sms": False},
+    },
     "support": {
         "label": "Support replies",
         "description": "Replies from the Sooppiy team in your support conversation.",
@@ -71,6 +83,10 @@ ALERT_KIND_CATEGORY = {
     "breaker": "risk",
     "verify_rejected": "risk",
     "custom": "watch",
+    # Trading Runs (Plan 10 D8)
+    "run_report": "auto_trading_reports",
+    "run_threshold": "auto_trading_safety",
+    "run_stopped": "auto_trading_safety",
 }
 
 
@@ -270,6 +286,18 @@ def _send_external(user_id: int, category: str, title: str, body: str,
         except Exception as exc:  # noqa: BLE001
             logger.warning("notification email failed (user %s): %s", user_id, exc)
     if switches.get("sms") and phone:
+        # Plan 10 D9: SMS is tier-gated in EVERY send path (per-message cost);
+        # fail-closed when the entitlement can't be verified.
+        conn2 = get_db_connection()
+        try:
+            from entitlements import sms_allowed_for_user
+            sms_ok = sms_allowed_for_user(conn2.cursor(), user_id)
+        except Exception:  # noqa: BLE001
+            sms_ok = False
+        finally:
+            conn2.close()
+        if not sms_ok:
+            return sent
         try:
             if _send_sms(phone, f"[Sooppiy] {title} — {body}"):
                 sent.append("sms")

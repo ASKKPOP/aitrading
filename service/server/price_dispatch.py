@@ -9,6 +9,7 @@ how token_id partitions Polymarket entries, etc.).
 from __future__ import annotations
 
 import math
+from datetime import datetime, timezone
 
 import database
 
@@ -38,12 +39,14 @@ def apply_price_update(
         cur.execute(
             """
             UPDATE positions
-            SET current_price = ?
+            SET current_price = ?, price_updated_at = ?
             WHERE symbol = ?
               AND market = ?
               AND COALESCE(token_id, '') = COALESCE(?, '')
             """,
-            (float(price), symbol, market, token_id or ""),
+            (float(price),
+             datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+             symbol, market, token_id or ""),
         )
         conn.commit()
         return int(cur.rowcount or 0)

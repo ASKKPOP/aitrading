@@ -1,0 +1,559 @@
+"""Trading Runs (Plan 10) — lifecycle state machine for AI auto-trading runs.
+
+A run is a DATABASE ROW, never an in-memory task: it survives deploys and
+crashes by construction. This module owns row CRUD, strict condition
+validation, state transitions, exclusivity, and the run_events journal
+writes that ride each transition's transaction. No loop code lives here
+(the scheduler is tasks.trading_run_loop, Phase 2).
+
+Lifecycle:
+
+    draft -> armed -> running <-> paused -> stopping -> stopped
+                         `--------------------------------^
+    (stopped with status_reason='positions_held' is the explicit terminal
+     for a flatten that stays blocked — a stop can never wedge in 'stopping')
+
+Conventions this module deliberately enforces (Plan 10 verification round):
+  * All timestamps are exactly "%Y-%m-%dT%H:%M:%SZ" — the codebase has a
+    second, microseconds ISO format, and lexicographic comparison across the
+    two mis-orders at the same second (fatal for claim_expires_at).
+  * Start/stop condition JSON is validated STRICTLY and malformed input
+    REJECTS — the opposite of schedule.in_window's fail-open convention,
+    because a start condition that silently degrades to "start now" moves
+    money.
+  * Exclusivity (one active run per agent+market+symbol) is a real UNIQUE
+    constraint on active_key, not a check-then-insert (which races under
+    concurrent starts).
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime, timezone
+from typing import Any, Optional
+
+from database import begin_write_transaction, get_db_connection
+
+logger = logging.getLogger(__name__)
+
+TS_FMT = "%Y-%m-%dT%H:%M:%SZ"
+
+VALID_RUN_MARKETS = ("crypto", "us-stock")
+VALID_MARKET_TYPES = ("spot", "futures")
+
+STATUS_DRAFT = "draft"
+STATUS_ARMED = "armed"
+STATUS_RUNNING = "running"
+STATUS_PAUSED = "paused"
+STATUS_STOPPING = "stopping"
+STATUS_STOPPED = "stopped"
+
+ACTIVE_STATUSES = (STATUS_ARMED, STATUS_RUNNING, STATUS_PAUSED, STATUS_STOPPING)
+
+# from -> allowed targets. Every write goes through _transition().
+_TRANSITIONS = {
+    STATUS_DRAFT: {STATUS_ARMED, STATUS_RUNNING},
+    STATUS_ARMED: {STATUS_RUNNING, STATUS_STOPPED},
+    STATUS_RUNNING: {STATUS_PAUSED, STATUS_STOPPING, STATUS_STOPPED},
+    STATUS_PAUSED: {STATUS_RUNNING, STATUS_STOPPING, STATUS_STOPPED},
+    STATUS_STOPPING: {STATUS_STOPPED},
+    STATUS_STOPPED: set(),
+}
+
+START_TYPES = ("manual", "at_time", "window", "price_cross")
+STOP_KEYS = ("at_time", "max_loss_usd", "profit_target_usd", "max_trades", "price_cross")
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).strftime(TS_FMT)
+
+
+def _parse_ts(value: str) -> datetime:
+    """Strict parse of the pinned timestamp format (raises ValueError)."""
+    return datetime.strptime(value, TS_FMT).replace(tzinfo=timezone.utc)
+
+
+# ── condition validation (strict; malformed REJECTS) ──────────────────────
+
+def _validate_price_cross(obj: Any) -> dict:
+    if not isinstance(obj, dict):
+        raise ValueError("price_cross must be an object")
+    direction = obj.get("direction")
+    price = obj.get("price")
+    if direction not in ("above", "below"):
+        raise ValueError("price_cross.direction must be 'above' or 'below'")
+    if not isinstance(price, (int, float)) or isinstance(price, bool) or price <= 0:
+        raise ValueError("price_cross.price must be a positive number")
+    extra = set(obj) - {"direction", "price"}
+    if extra:
+        raise ValueError(f"price_cross has unknown keys: {sorted(extra)}")
+    return {"direction": direction, "price": float(price)}
+
+
+def validate_start_condition(obj: Any) -> dict:
+    """Normalize/validate a start condition. Malformed input raises ValueError
+    — a broken start condition must never default to 'start now'."""
+    if obj is None:
+        return {"type": "manual"}
+    if not isinstance(obj, dict):
+        raise ValueError("start_condition must be an object")
+    ctype = obj.get("type")
+    if ctype not in START_TYPES:
+        raise ValueError(f"start_condition.type must be one of {START_TYPES}")
+    if ctype == "manual":
+        if set(obj) - {"type"}:
+            raise ValueError("manual start takes no extra keys")
+        return {"type": "manual"}
+    if ctype == "at_time":
+        at = obj.get("at")
+        if not isinstance(at, str):
+            raise ValueError("at_time start requires 'at' (ISO-8601 UTC, e.g. 2026-07-20T00:00:00Z)")
+        try:
+            _parse_ts(at)
+        except ValueError:
+            raise ValueError(f"at must match {TS_FMT}")
+        if at <= _now_iso():
+            raise ValueError("at_time start must be in the future")
+        return {"type": "at_time", "at": at}
+    if ctype == "window":
+        from schedule import parse_schedule
+        sched = obj.get("schedule")
+        if not isinstance(sched, dict):
+            raise ValueError("window start requires 'schedule' object")
+        parsed = parse_schedule(sched)  # raises ValueError on malformed
+        if parsed is None:
+            raise ValueError("window start schedule must not be empty")
+        return {"type": "window", "schedule": parsed}
+    # price_cross
+    return {"type": "price_cross", **_validate_price_cross({
+        "direction": obj.get("direction"), "price": obj.get("price")})}
+
+
+def validate_stop_conditions(obj: Any) -> dict:
+    """Normalize/validate stop conditions. Empty dict is allowed (per-run
+    safety rails are layered in separately)."""
+    if obj is None:
+        return {}
+    if not isinstance(obj, dict):
+        raise ValueError("stop_conditions must be an object")
+    extra = set(obj) - set(STOP_KEYS)
+    if extra:
+        raise ValueError(f"stop_conditions has unknown keys: {sorted(extra)}")
+    out: dict = {}
+    at = obj.get("at_time")
+    if at is not None:
+        if not isinstance(at, str):
+            raise ValueError("stop at_time must be a string")
+        try:
+            _parse_ts(at)
+        except ValueError:
+            raise ValueError(f"stop at_time must match {TS_FMT}")
+        out["at_time"] = at
+    for key in ("max_loss_usd", "profit_target_usd"):
+        v = obj.get(key)
+        if v is not None:
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
+                raise ValueError(f"{key} must be a positive number")
+            out[key] = float(v)
+    mt = obj.get("max_trades")
+    if mt is not None:
+        if not isinstance(mt, int) or isinstance(mt, bool) or mt <= 0:
+            raise ValueError("max_trades must be a positive integer")
+        out["max_trades"] = mt
+    pc = obj.get("price_cross")
+    if pc is not None:
+        out["price_cross"] = _validate_price_cross(pc)
+    return out
+
+
+def check_tighten_only(old: dict, new: dict) -> None:
+    """Raise ValueError unless `new` only tightens `old`. Removing a condition
+    loosens; adding one tightens; numeric bounds may only move toward an
+    earlier stop. price_cross is not editable while running (its tightness is
+    unknowable without a market read)."""
+    for key in old:
+        if key not in new:
+            raise ValueError(f"removing stop condition '{key}' would loosen the stop")
+    if "at_time" in old and new["at_time"] > old["at_time"]:
+        raise ValueError("stop at_time may only move earlier")
+    for key in ("max_loss_usd", "profit_target_usd", "max_trades"):
+        if key in old and new[key] > old[key]:
+            raise ValueError(f"{key} may only decrease")
+    if "price_cross" in old and new["price_cross"] != old["price_cross"]:
+        raise ValueError("price_cross stop cannot be changed while the run is active")
+    if "price_cross" in new and "price_cross" not in old:
+        raise ValueError("price_cross stop cannot be added while the run is active")
+
+
+# ── run_events journal (transition events ride the SAME transaction) ──────
+
+def _emit_event(cursor, run_id: int, event_type: str, payload: dict) -> int:
+    """Insert a run_events row inside the caller's open transaction and bump
+    trading_runs.last_event_seq in the same transaction (crash-safe seq
+    recovery: a reclaiming worker re-reads last_event_seq, never a stale
+    in-memory counter)."""
+    cursor.execute("SELECT last_event_seq FROM trading_runs WHERE id = ?", (run_id,))
+    row = cursor.fetchone()
+    seq = int(row["last_event_seq"] or 0) + 1 if row else 1
+    cursor.execute(
+        """INSERT INTO run_events (run_id, seq, event_type, ts, payload)
+           VALUES (?, ?, ?, ?, ?)""",
+        (run_id, seq, event_type, _now_iso(), json.dumps(payload)),
+    )
+    cursor.execute("UPDATE trading_runs SET last_event_seq = ? WHERE id = ?", (seq, run_id))
+    return seq
+
+
+def emit_telemetry_event(run_id: int, event_type: str, payload: dict) -> Optional[int]:
+    """Fail-soft standalone emitter for NON-critical telemetry (equity
+    snapshots, gate skips). Trade and state-change events must instead ride
+    their own transaction via _emit_event — a committed trade may never be
+    missing from the journal."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        seq = _emit_event(cursor, run_id, event_type, payload)
+        conn.commit()
+        return seq
+    except Exception:  # noqa: BLE001 — telemetry must never break trading paths
+        logger.warning("emit_telemetry_event failed (run %s, %s)", run_id, event_type,
+                       exc_info=True)
+        try:
+            if conn is not None:
+                conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return None
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+# ── row access ─────────────────────────────────────────────────────────────
+
+def get_run(run_id: int, agent_id: int) -> Optional[dict]:
+    """Fetch a run WITH the ownership predicate — every read path goes
+    through agent_id (cross-tenant reads 404 at the route layer)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def _active_key(agent_id: int, market: str, symbol: str) -> str:
+    return f"{agent_id}:{market}:{symbol}"
+
+
+# ── lifecycle operations ───────────────────────────────────────────────────
+
+def create_run(agent_id: int, settings: dict, start_condition: dict,
+               stop_conditions: dict, stop_flatten: bool) -> int:
+    """Insert a draft run. `settings` is the already-validated config payload
+    (max_bet_usd, run_budget_usd, interval_minutes, min_confidence, provider,
+    lang, leverage) — snapshotted verbatim at start time."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            """INSERT INTO trading_runs
+               (agent_id, symbol, market, market_type, status,
+                config_snapshot_json, start_condition_json, stop_conditions_json,
+                stop_flatten, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (agent_id, settings["symbol"], settings["market"], settings["market_type"],
+             STATUS_DRAFT, json.dumps(settings), json.dumps(start_condition),
+             json.dumps(stop_conditions), 1 if stop_flatten else 0, _now_iso()),
+        )
+        run_id = cursor.lastrowid
+        _emit_event(cursor, run_id, "run_status",
+                    {"from": None, "to": STATUS_DRAFT, "reason": "created"})
+        conn.commit()
+        return run_id
+    finally:
+        conn.close()
+
+
+class StartConflict(Exception):
+    """Raised when exclusivity or a conflicting writer blocks a start."""
+
+
+class EntitlementDenied(Exception):
+    """Raised when the owning user's plan does not allow the start (403)."""
+
+
+def start_run(run_id: int, agent_id: int) -> dict:
+    """draft -> armed|running. Enforces, inside one write transaction:
+      1. DB-level exclusivity — active_key UNIQUE (one active run per
+         agent+market+symbol; concurrent double-starts collide here);
+      2. no pre-existing position on the tuple (a shared averaged-basis
+         position row would make run P&L attribution fiction);
+      3. no enabled auto-executing automation rule on the tuple (same reason).
+    Manual start goes straight to running; every other start condition arms.
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("SELECT * FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        run = cursor.fetchone()
+        if not run:
+            raise LookupError("run not found")
+        run = dict(run)
+        if run["status"] != STATUS_DRAFT:
+            raise ValueError(f"only a draft run can start (status={run['status']})")
+
+        # Plan 10 D9: server-side tier gate (env-gated until PLAN_LIMITS is
+        # confirmed). Same gate family as the automation engine's — the two
+        # engines must never diverge on entitlements.
+        from entitlements import check_run_start
+        try:
+            cfg = json.loads(run.get("config_snapshot_json") or "{}")
+        except Exception:  # noqa: BLE001
+            cfg = {}
+        deny = check_run_start(cursor, agent_id, float(cfg.get("max_bet_usd") or 0))
+        if deny:
+            raise EntitlementDenied(deny)
+
+        market, symbol = run["market"], run["symbol"]
+        cursor.execute(
+            """SELECT id FROM positions
+               WHERE agent_id = ? AND market = ? AND symbol = ? AND quantity != 0""",
+            (agent_id, market, symbol),
+        )
+        if cursor.fetchone():
+            raise StartConflict(
+                "an open position already exists for this symbol — close it first "
+                "(runs never adopt shared positions; attribution would be wrong)")
+        cursor.execute(
+            """SELECT id FROM automation_configs
+               WHERE agent_id = ? AND market = ? AND symbol = ?
+                 AND enabled = 1 AND auto_execute = 1""",
+            (agent_id, market, symbol),
+        )
+        conflict = cursor.fetchone()
+        if conflict:
+            raise StartConflict(
+                f"auto-executing automation rule #{conflict['id']} targets the same "
+                "symbol — disable it first")
+
+        start_condition = json.loads(run["start_condition_json"] or '{"type":"manual"}')
+        target = STATUS_RUNNING if start_condition.get("type") == "manual" else STATUS_ARMED
+        now = _now_iso()
+        try:
+            cursor.execute(
+                """UPDATE trading_runs
+                   SET status = ?, status_reason = NULL, active_key = ?, started_at = ?
+                   WHERE id = ? AND status = ?""",
+                (target, _active_key(agent_id, market, symbol), now, run_id, STATUS_DRAFT),
+            )
+        except Exception as exc:  # noqa: BLE001 — UNIQUE(active_key) collision
+            raise StartConflict(
+                "another active run already owns this agent+market+symbol") from exc
+        if cursor.rowcount != 1:
+            raise StartConflict("run was started concurrently")
+        _emit_event(cursor, run_id, "run_status",
+                    {"from": STATUS_DRAFT, "to": target, "reason": "start"})
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+    finally:
+        conn.close()
+    return get_run(run_id, agent_id) or {}
+
+
+def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
+                reason: str, clear_active_key: bool = False,
+                extra_sets: str = "", extra_args: tuple = ()) -> dict:
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("SELECT * FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        run = cursor.fetchone()
+        if not run:
+            raise LookupError("run not found")
+        run = dict(run)
+        if run["status"] not in allowed_from:
+            raise ValueError(
+                f"cannot go {run['status']} -> {target} (allowed from {allowed_from})")
+        if target not in _TRANSITIONS[run["status"]]:
+            raise ValueError(f"illegal transition {run['status']} -> {target}")
+        sets = "status = ?, status_reason = ?"
+        args: list = [target, reason]
+        if clear_active_key:
+            sets += ", active_key = NULL, stopped_at = ?"
+            args.append(_now_iso())
+        if extra_sets:
+            sets += ", " + extra_sets
+            args.extend(extra_args)
+        cursor.execute(f"UPDATE trading_runs SET {sets} WHERE id = ? AND status = ?",
+                       (*args, run_id, run["status"]))
+        if cursor.rowcount != 1:
+            raise ValueError("run changed concurrently — retry")
+        _emit_event(cursor, run_id, "run_status",
+                    {"from": run["status"], "to": target, "reason": reason})
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+    finally:
+        conn.close()
+    return get_run(run_id, agent_id) or {}
+
+
+def pause_run(run_id: int, agent_id: int, reason: str = "user_pause") -> dict:
+    """Pause gates ENTRIES only — stop conditions and the clock keep
+    evaluating every scheduler scan (Plan 10 D3)."""
+    return _transition(run_id, agent_id, (STATUS_RUNNING,), STATUS_PAUSED, reason)
+
+
+def resume_run(run_id: int, agent_id: int) -> dict:
+    return _transition(run_id, agent_id, (STATUS_PAUSED,), STATUS_RUNNING, "user_resume")
+
+
+def request_stop(run_id: int, agent_id: int, flatten: bool) -> dict:
+    """User stop. An armed run (no entries yet) stops immediately. A
+    running/paused run with a run-owned open position moves to `stopping`
+    (the scheduler completes the flatten, Phase 3); with nothing to flatten
+    it stops immediately."""
+    run = get_run(run_id, agent_id)
+    if not run:
+        raise LookupError("run not found")
+    if run["status"] == STATUS_ARMED:
+        return _transition(run_id, agent_id, (STATUS_ARMED,), STATUS_STOPPED,
+                           "user_stop", clear_active_key=True)
+    if run["status"] in (STATUS_RUNNING, STATUS_PAUSED):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT id FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND run_id = ? AND quantity != 0""",
+                (agent_id, run["market"], run["symbol"], run_id),
+            )
+            has_position = cursor.fetchone() is not None
+        finally:
+            conn.close()
+        if has_position:
+            return _transition(
+                run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED), STATUS_STOPPING,
+                "user_stop", extra_sets="stop_flatten = ?, stopped_at = ?",
+                extra_args=(1 if flatten else 0, _now_iso()))
+        return _transition(run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED),
+                           STATUS_STOPPED, "user_stop", clear_active_key=True)
+    raise ValueError(f"cannot stop a {run['status']} run")
+
+
+def update_stop_conditions(run_id: int, agent_id: int, new_conditions: dict) -> dict:
+    """Free edit while draft; TIGHTEN-ONLY while active (a stop is a safety
+    device — mid-run edits may only make it fire earlier)."""
+    validated = validate_stop_conditions(new_conditions)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("SELECT * FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        run = cursor.fetchone()
+        if not run:
+            raise LookupError("run not found")
+        run = dict(run)
+        if run["status"] == STATUS_STOPPED:
+            raise ValueError("run is stopped")
+        if run["status"] != STATUS_DRAFT:
+            old = json.loads(run["stop_conditions_json"] or "{}")
+            check_tighten_only(old, validated)
+        cursor.execute(
+            "UPDATE trading_runs SET stop_conditions_json = ? WHERE id = ?",
+            (json.dumps(validated), run_id),
+        )
+        if run["status"] != STATUS_DRAFT:
+            _emit_event(cursor, run_id, "run_status",
+                        {"from": run["status"], "to": run["status"],
+                         "reason": "stop_conditions_tightened"})
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+    finally:
+        conn.close()
+    return get_run(run_id, agent_id) or {}
+
+
+def delete_run(run_id: int, agent_id: int) -> None:
+    """Only draft/stopped runs are deletable; their journal rows go with them."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            "SELECT status FROM trading_runs WHERE id = ? AND agent_id = ?",
+            (run_id, agent_id))
+        run = cursor.fetchone()
+        if not run:
+            raise LookupError("run not found")
+        if run["status"] not in (STATUS_DRAFT, STATUS_STOPPED):
+            raise ValueError("only draft or stopped runs can be deleted")
+        cursor.execute("DELETE FROM run_events WHERE run_id = ?", (run_id,))
+        cursor.execute("DELETE FROM run_reports WHERE run_id = ?", (run_id,))
+        cursor.execute("DELETE FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_runs(agent_id: int, limit: int = 50) -> list[dict]:
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM trading_runs WHERE agent_id = ? ORDER BY id DESC LIMIT ?",
+            (agent_id, max(1, min(limit, 200))))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def list_events(run_id: int, agent_id: int, after_seq: int = 0,
+                limit: int = 200) -> Optional[list[dict]]:
+    """Journal replay feed (ownership-checked; None = not the caller's run)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        if not cursor.fetchone():
+            return None
+        cursor.execute(
+            """SELECT seq, event_type, ts, payload FROM run_events
+               WHERE run_id = ? AND seq > ? ORDER BY seq ASC LIMIT ?""",
+            (run_id, after_seq, max(1, min(limit, 500))))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()

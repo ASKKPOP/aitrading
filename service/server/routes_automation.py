@@ -157,6 +157,21 @@ def _auth(authorization: Optional[str]):
     return agent
 
 
+def _deny_auto_execute_without_plan(agent_id: int) -> None:
+    """Plan 10 D9: the automation engine gets the SAME entitlement gate as
+    the runs engine — otherwise anyone rejected by run limits simply creates
+    an auto-executing rule here instead. Env-gated (ENTITLEMENTS_ENFORCED)."""
+    from entitlements import check_auto_execute
+    conn = get_db_connection()
+    try:
+        deny = check_auto_execute(conn.cursor(), agent_id)
+        conn.commit()
+    finally:
+        conn.close()
+    if deny:
+        raise HTTPException(status_code=403, detail=deny)
+
+
 def _apply_risk_level(agent_id: int, risk_level: Optional[str]):
     """B2: propagate a chosen risk level into the agent's risk_limits exit
     profile. Returns the applied limits (or None when no level was chosen).
@@ -200,6 +215,8 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
                                     detail="agent mode requires budget_usd (100..1,000,000)")
             auto_execute = True
             account_type = "simulator"
+        if auto_execute:
+            _deny_auto_execute_without_plan(agent["id"])
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
@@ -226,6 +243,8 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.put("/api/automation/configs/{config_id}")
     async def update_config(config_id: int, data: AutomationConfigIn, authorization: str = Header(None)):
         agent = _auth(authorization)
+        if data.auto_execute or data.mode == "agent":
+            _deny_auto_execute_without_plan(agent["id"])
         conn = get_db_connection()
         try:
             cursor = conn.cursor()

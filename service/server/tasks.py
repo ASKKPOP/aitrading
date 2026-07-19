@@ -605,8 +605,9 @@ async def update_position_prices():
 
             # Fetch prices in parallel, then write them back in one short transaction.
             results = await asyncio.gather(*[fetch_price(row) for row in candidates])
+            _price_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             updates = [
-                (item["price"], item["symbol"], item["db_market"], item["token_id"])
+                (item["price"], _price_ts, item["symbol"], item["db_market"], item["token_id"])
                 for item in results
                 if item["price"] is not None
             ]
@@ -629,7 +630,7 @@ async def update_position_prices():
                     cursor = conn.cursor()
                     cursor.executemany("""
                         UPDATE positions
-                        SET current_price = ?
+                        SET current_price = ?, price_updated_at = ?
                         WHERE symbol = ? AND market = ? AND COALESCE(token_id, '') = COALESCE(?, '')
                     """, updates)
                     conn.commit()
@@ -681,6 +682,85 @@ async def automation_loop():
                 )
         except Exception as e:
             print(f"[Automation Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
+async def trading_run_loop():
+    """Background task for Trading Runs (Plan 10).
+
+    Every RUN_TICK_INTERVAL seconds (default 30): control pass (arm runs whose
+    start condition fired, finish position-less stops) then dispatch due
+    cycles onto run_engine's DEDICATED executor — LLM-bound cycles must never
+    occupy the shared to_thread pool the SL/TP watcher depends on. Gated by
+    AUTO_TRADING_ENABLED (ships dark). See run_engine.py.
+    """
+    from run_engine import tick as run_engine_tick
+
+    tick_interval = _env_int("RUN_TICK_INTERVAL", 30, minimum=10)
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            result = await run_engine_tick()
+            if result.get("dispatched") or result.get("armed_started") \
+                    or result.get("stopping_finished"):
+                print(f"[TradingRuns] tick: {result}")
+        except Exception as e:
+            print(f"[TradingRuns Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
+async def report_scheduler_loop():
+    """Background task for Trading Runs reporting (Plan 10, Phase 4).
+
+    Every REPORT_TICK_INTERVAL seconds: queue+deliver due P&L digests
+    (journal-before-send, pending -> sent) and retry stale pending rows.
+    All external delivery goes through alerts.send_alert (rate limit +
+    dedupe + run_stopped reserve). Gated by AUTO_TRADING_ENABLED.
+    """
+    from run_engine import auto_trading_enabled
+    from run_reports import scheduler_tick
+
+    tick_interval = _env_int("REPORT_TICK_INTERVAL", 60, minimum=30)
+
+    await asyncio.sleep(15)
+
+    while True:
+        try:
+            if auto_trading_enabled():
+                result = await asyncio.to_thread(scheduler_tick)
+                if result.get("queued") or result.get("retried"):
+                    print(f"[RunReports] tick: {result}")
+        except Exception as e:
+            print(f"[RunReports Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
+async def subscription_enforcer_loop():
+    """Background task for Trading Runs entitlements (Plan 10, Phase 5).
+
+    Every SUBSCRIPTION_ENFORCER_INTERVAL seconds (default 600): pause running
+    runs whose owner's subscription lapsed (pause, never delete — resumable
+    on renewal). No-op unless AUTO_TRADING_ENABLED + ENTITLEMENTS_ENFORCED.
+    """
+    from run_engine import auto_trading_enabled, subscription_enforcer_tick
+
+    tick_interval = _env_int("SUBSCRIPTION_ENFORCER_INTERVAL", 600, minimum=60)
+
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            if auto_trading_enabled():
+                result = await asyncio.to_thread(subscription_enforcer_tick)
+                if result.get("paused"):
+                    print(f"[Entitlements] paused {result['paused']} lapsed run(s)")
+        except Exception as e:
+            print(f"[Entitlements Error] {e}")
 
         await asyncio.sleep(tick_interval)
 
@@ -1457,6 +1537,9 @@ BACKGROUND_TASK_REGISTRY = {
     "etf_flows": refresh_etf_flow_snapshots_loop,
     "stock_analysis": refresh_stock_analysis_snapshots_loop,
     "automation": automation_loop,
+    "trading_runs": trading_run_loop,
+    "run_reports": report_scheduler_loop,
+    "subscription_enforcer": subscription_enforcer_loop,
     "risk_watcher": risk_watcher_loop,
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
@@ -1498,6 +1581,13 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "stock_analysis":          "research",
     # automation — executes user-configured AI trading rules (Target 3)
     "automation":              "settlement",
+    # trading runs — Plan 10 run lifecycle scheduler (dedicated executor for
+    # LLM cycles; gated by AUTO_TRADING_ENABLED)
+    "trading_runs":            "settlement",
+    # trading-run P&L digests + delivery retry sweep (Plan 10 Phase 4)
+    "run_reports":             "settlement",
+    # pause runs whose owner's subscription lapsed (Plan 10 Phase 5)
+    "subscription_enforcer":   "settlement",
     # risk engine — closes positions at stop-loss/take-profit (Phase 1)
     "risk_watcher":            "settlement",
     # psych feed — crowd-psychology snapshots: F&G, spikes, shock, odds (Phase 2)

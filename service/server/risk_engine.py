@@ -594,7 +594,7 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
         cursor.execute(
             """SELECT id, agent_id, symbol, market, quantity, current_price,
                       entry_price, stop_loss, take_profit, exit_policy,
-                      first_opened_at
+                      first_opened_at, run_id
                FROM positions
                WHERE quantity != 0 AND current_price IS NOT NULL
                  AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL
@@ -670,7 +670,11 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             pos["agent_id"], pos["symbol"], pos["market"],
             "cover" if is_short else "sell",
             abs(float(pos["quantity"])), price,
-            content=f"risk: {trigger} triggered at {price} (SL/TP watcher)")
+            content=f"risk: {trigger} triggered at {price} (SL/TP watcher)",
+            # Plan 10 D4: run ownership lives on the position row, so a
+            # stopped-with-hold run still gets its final exit attributed
+            # (and the trade event journaled in the same transaction).
+            run_id=pos.get("run_id"))
         if signal_id:
             closed += 1
             logger.info("SL/TP watcher closed position %s (%s %s @ %s, %s)",
