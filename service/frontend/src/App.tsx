@@ -15,6 +15,7 @@ import {
   type ThemeMode,
   Toast,
   TopbarControls,
+  TopNav,
   TrendingSidebar,
   DiscussionsPage,
   HamburgerButton,
@@ -481,6 +482,19 @@ function AppRouter({
 
   return (
     <div className="app-container">
+      {/* Desktop chrome (>768px). The Sidebar below is the mobile drawer. */}
+      <TopNav
+        token={token}
+        agentInfo={agentInfo}
+        onLogout={logout}
+        userToken={userToken}
+        userInfo={userInfo}
+        onUserLogout={userLogout}
+        notificationCounts={notificationCounts}
+        memberCounts={memberCounts}
+        onMarkCategoryRead={markCategoryRead}
+      />
+
       <Sidebar
         token={token}
         agentInfo={agentInfo}
@@ -500,7 +514,9 @@ function AppRouter({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <HamburgerButton isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(o => !o)} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <TopbarControls />
+              {/* Theme/language live in the desktop top bar; keep them here for
+                  the mobile chrome only so they are not duplicated. */}
+              <span className="mobile-only-chrome"><TopbarControls /></span>
               <GuideButton onClick={() => setGuideOpen(true)} />
             </div>
           </div>

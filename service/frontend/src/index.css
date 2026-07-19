@@ -354,11 +354,242 @@ a {
   .theme-opt { padding: 6px 10px; }
 }
 
-/* Layout */
+/* Layout — desktop stacks a top bar over full-width content; below 769px the
+   top bar is hidden and the Sidebar drawer takes over (see media query). */
 .app-container {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg-primary);
+}
+
+/* ── Desktop top bar ───────────────────────────────────────────────── */
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 56px;
+  padding: 0 20px;
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.topnav-menu,
+.topnav-profile {
+  position: relative;
+}
+
+.topnav-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.66);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topnav-menu-btn:hover { background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.92); }
+.topnav-menu-btn.active { color: var(--accent-primary); }
+.topnav-caret { font-size: 9px; opacity: 0.7; }
+
+.topnav-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 208px;
+  padding: 6px;
+  background: var(--sidebar-bg);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  z-index: 600;
+}
+
+.topnav-dropdown--right { left: auto; right: 0; }
+
+.topnav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topnav-dropdown-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.topnav-dropdown-item.active { color: var(--accent-primary); }
+.topnav-signout { color: rgba(255, 255, 255, 0.45); }
+
+.topnav-profile-head {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  margin-bottom: 4px;
+}
+
+.topnav-profile-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 190px;
+}
+
+.topnav-profile-meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 2px;
+}
+
+.topnav-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topnav-icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+.topnav-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px 3px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.topnav-avatar-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+.topnav-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Inside a dropdown row the badge sits inline, not pinned to a corner. */
+.topnav-dropdown-item .topnav-badge { position: static; }
+
+.topnav-acct-switch {
+  display: flex;
+  gap: 5px;
+  padding: 4px 4px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.topnav-acct-opt {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topnav-acct-opt.active {
+  background: var(--accent-primary, #c26a45);
+  border-color: transparent;
+  color: #fff;
+}
+
+.topnav-lock {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  font-family: var(--font-mono);
+}
+
+.topnav-login { font-size: 12.5px; padding: 6px 14px; }
+
+/* The sidebar is mobile-only now; the top bar is the desktop chrome. */
+@media (min-width: 769px) {
+  .sidebar,
+  .sidebar-overlay { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .topnav { display: none; }
+}
+
+/* Chrome that only the mobile layout needs (the top bar carries it on desktop). */
+@media (min-width: 769px) {
+  .mobile-only-chrome { display: none; }
 }
 
 /* Sidebar */

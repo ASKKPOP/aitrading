@@ -77,66 +77,29 @@ export function TopbarControls() {
   )
 }
 
-export function HamburgerButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
-  return (
-    <button
-      className="hamburger-btn"
-      aria-label={isOpen ? 'Close menu' : 'Open menu'}
-      aria-expanded={isOpen}
-      onClick={onClick}
-    >
-      {isOpen ? '✕' : '☰'}
-    </button>
-  )
+export type NavItem = {
+  path: string
+  icon: string
+  label: string
+  requiresAuth: boolean
+  ownerOnly?: boolean
+  badge?: number
+  category?: 'discussion' | 'strategy' | 'experiment'
 }
 
-export function Sidebar({
-  token,
-  agentInfo,
-  onLogout,
-  userToken,
-  userInfo,
-  onUserLogout,
-  notificationCounts,
-  memberCounts = { unread: 0, support: 0 },
-  onMarkCategoryRead,
-  isOpen = false,
-  onClose,
-}: {
-  token: string | null
-  agentInfo: any
-  onLogout: () => void
-  userToken?: string | null
-  userInfo?: any
-  onUserLogout?: () => void
-  notificationCounts: NotificationCounts
-  memberCounts?: MemberCounts
-  onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
-  isOpen?: boolean
-  onClose?: () => void
-}) {
-  const location = useLocation()
-  const { t, language } = useLanguage()
-  const [showToken, setShowToken] = useState(false)
-  const [accountType, setAccountType] = useState<string>(() => localStorage.getItem('account_type') || 'simulator')
+// Owner gate — mirrors the backend DOCS_OWNER_EMAILS default. Owner-only nav
+// items are hidden from everyone else; the backend enforces access too.
+export const isOwnerEmail = (email?: string) =>
+  (email || '').trim().toLowerCase() === 'info@askkpop.com'
 
-  type NavItem = {
-    path: string
-    icon: string
-    label: string
-    requiresAuth: boolean
-    ownerOnly?: boolean
-    badge?: number
-    category?: 'discussion' | 'strategy' | 'experiment'
-  }
-
-  // Owner gate — mirrors the backend DOCS_OWNER_EMAILS default. Owner-only nav
-  // items are hidden from everyone else; the backend enforces access too.
-  const isOwner = (userInfo?.email || '').trim().toLowerCase() === 'info@askkpop.com'
-
-  // Grouped nav sections — organized around this project's three targets:
-  // AI analysis (Target 2), automation (Target 3), and simulation/trading (Target 1).
-  const navSections: Array<{ label: string; items: NavItem[] }> = [
+// Shared nav definition for both chromes: the desktop top bar and the mobile
+// sidebar drawer render the same items, so they cannot drift apart.
+// Grouped around this project's three targets: AI analysis (Target 2),
+// automation (Target 3), and simulation/trading (Target 1).
+export function buildNavSections(
+  language: any, t: any, notificationCounts: NotificationCounts,
+): Array<{ label: string; items: NavItem[] }> {
+  return [
     {
       label: tr(language, { ko: 'AI 데스크', en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' }),
       items: [
@@ -173,6 +136,255 @@ export function Sidebar({
       ]
     },
   ]
+}
+
+// The assistant dock listens for this so any chrome can open it.
+export const ASSISTANT_OPEN_EVENT = 'sooppiy:assistant-open'
+
+export function HamburgerButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
+  return (
+    <button
+      className="hamburger-btn"
+      aria-label={isOpen ? 'Close menu' : 'Open menu'}
+      aria-expanded={isOpen}
+      onClick={onClick}
+    >
+      {isOpen ? '✕' : '☰'}
+    </button>
+  )
+}
+
+function Badge({ count }: { count: number }) {
+  if (!count) return null
+  return (
+    <span className="topnav-badge">{count > 99 ? '99+' : count}</span>
+  )
+}
+
+// Desktop chrome: horizontal top bar. Menu groups sit on the left, the
+// account cluster (AI assistant, support, notifications, profile) on the
+// right. Hidden below 769px, where the Sidebar drawer takes over.
+export function TopNav({
+  token, agentInfo, onLogout, userToken, userInfo, onUserLogout,
+  notificationCounts, memberCounts = { unread: 0, support: 0 }, onMarkCategoryRead,
+}: {
+  token: string | null
+  agentInfo: any
+  onLogout: () => void
+  userToken?: string | null
+  userInfo?: any
+  onUserLogout?: () => void
+  notificationCounts: NotificationCounts
+  memberCounts?: MemberCounts
+  onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
+}) {
+  const location = useLocation()
+  const { t, language } = useLanguage()
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  // The account-type switcher used to live only in the sidebar, which is now
+  // mobile-only — it moves into this dropdown so desktop keeps the control.
+  const [accountType, setAccountType] = useState<string>(() => localStorage.getItem('account_type') || 'simulator')
+
+  const isOwner = isOwnerEmail(userInfo?.email)
+  const navSections = buildNavSections(language, t, notificationCounts)
+
+  // Any outside click or route change closes whichever dropdown is open.
+  useEffect(() => { setOpenMenu(null); setProfileOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!openMenu && !profileOpen) return
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement)?.closest?.('.topnav-menu, .topnav-profile')) {
+        setOpenMenu(null); setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [openMenu, profileOpen])
+
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`)
+
+  const label = {
+    assistant: tr(language, { ko: 'AI 어시스턴트', en: 'AI Assistant', ja: 'AIアシスタント', th: 'ผู้ช่วย AI', vi: 'Trợ lý AI' }),
+    support: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' }),
+    notifications: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' }),
+    profile: tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi' }),
+    settings: tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' }),
+    login: tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
+    lockHint: tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }),
+  }
+
+  const avatarChar = agentInfo?.name?.charAt(0)?.toUpperCase()
+    || (userInfo?.email || 'U').charAt(0).toUpperCase()
+
+  return (
+    <header className="topnav">
+      <Link to="/" className="topnav-brand">
+        <img src="/logo.svg" alt="" width={24} height={24} />
+        <span>Sooppiy</span>
+      </Link>
+
+      {/* ── left: menu groups ── */}
+      <nav className="topnav-left">
+        {navSections.map(section => {
+          const items = section.items.filter(i => !i.ownerOnly || isOwner)
+          if (!items.length) return null
+          const groupActive = items.some(i => isActive(i.path))
+          const isOpen = openMenu === section.label
+          return (
+            <div key={section.label} className="topnav-menu">
+              <button
+                className={`topnav-menu-btn${groupActive ? ' active' : ''}`}
+                aria-expanded={isOpen}
+                onClick={() => { setProfileOpen(false); setOpenMenu(isOpen ? null : section.label) }}
+              >
+                {section.label}
+                <span className="topnav-caret">▾</span>
+              </button>
+              {isOpen && (
+                <div className="topnav-dropdown">
+                  {items.map(item => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`topnav-dropdown-item${isActive(item.path) ? ' active' : ''}`}
+                      title={!token && item.requiresAuth ? label.lockHint : undefined}
+                      onClick={() => {
+                        if (item.category && (item.badge || 0) > 0) onMarkCategoryRead(item.category)
+                        setOpenMenu(null)
+                      }}
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      <Badge count={item.badge || 0} />
+                      {!token && item.requiresAuth && <span className="topnav-lock">lock</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+
+      {/* ── right: account cluster ── */}
+      <div className="topnav-right">
+        <TopbarControls />
+
+        {token && (
+          <button
+            className="topnav-icon-btn"
+            title={label.assistant}
+            aria-label={label.assistant}
+            onClick={() => window.dispatchEvent(new CustomEvent(ASSISTANT_OPEN_EVENT))}
+          >✨</button>
+        )}
+
+        {userToken && (
+          <>
+            <Link to="/support" className="topnav-icon-btn" title={label.support} aria-label={label.support}>
+              💬<Badge count={memberCounts.support} />
+            </Link>
+            <Link to="/notifications" className="topnav-icon-btn" title={label.notifications} aria-label={label.notifications}>
+              🔔<Badge count={memberCounts.unread} />
+            </Link>
+          </>
+        )}
+
+        {(token && agentInfo) || (userToken && userInfo) ? (
+          <div className="topnav-profile">
+            <button className="topnav-avatar-btn" aria-expanded={profileOpen}
+              onClick={() => { setOpenMenu(null); setProfileOpen(o => !o) }}>
+              <span className="agent-avatar-sm">{avatarChar}</span>
+              <span className="topnav-caret">▾</span>
+            </button>
+            {profileOpen && (
+              <div className="topnav-dropdown topnav-dropdown--right">
+                <div className="topnav-profile-head">
+                  <div className="topnav-profile-name">
+                    {agentInfo?.name || userInfo?.email}
+                  </div>
+                  <div className="topnav-profile-meta">
+                    {(agentInfo?.points ?? userInfo?.points ?? 0)} {t.common.points}
+                    {agentInfo?.cash !== undefined && ` · $${agentInfo.cash.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                  </div>
+                </div>
+                <div className="topnav-acct-switch">
+                  <button
+                    className={`topnav-acct-opt${accountType === 'simulator' ? ' active' : ''}`}
+                    title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
+                    onClick={() => { localStorage.setItem('account_type', 'simulator'); setAccountType('simulator') }}
+                  >◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}</button>
+                  <Link
+                    to="/accounts"
+                    className={`topnav-acct-opt${accountType === 'real' ? ' active' : ''}`}
+                    title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect an exchange', ja: '実口座', th: 'บัญชีจริง', vi: 'Tài khoản thật' })}
+                    onClick={() => setProfileOpen(false)}
+                  >● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}</Link>
+                </div>
+                {agentInfo?.id && (
+                  <Link to={`/agent/${agentInfo.id}`} className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
+                    <span className="nav-icon">◱</span>{tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ' })}
+                  </Link>
+                )}
+                {userToken && (
+                  <>
+                    <Link to="/my-trading" className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
+                      <span className="nav-icon">◱</span>{label.profile}
+                    </Link>
+                    <Link to="/settings" className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
+                      <span className="nav-icon">⚙</span>{label.settings}
+                    </Link>
+                  </>
+                )}
+                <button className="topnav-dropdown-item topnav-signout"
+                  onClick={() => { setProfileOpen(false); (token ? onLogout : onUserLogout)?.() }}>
+                  <span className="nav-icon">⏻</span>{t.common.logout}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link to="/login" className="btn btn-primary topnav-login">{label.login}</Link>
+        )}
+      </div>
+    </header>
+  )
+}
+
+export function Sidebar({
+  token,
+  agentInfo,
+  onLogout,
+  userToken,
+  userInfo,
+  onUserLogout,
+  notificationCounts,
+  memberCounts = { unread: 0, support: 0 },
+  onMarkCategoryRead,
+  isOpen = false,
+  onClose,
+}: {
+  token: string | null
+  agentInfo: any
+  onLogout: () => void
+  userToken?: string | null
+  userInfo?: any
+  onUserLogout?: () => void
+  notificationCounts: NotificationCounts
+  memberCounts?: MemberCounts
+  onMarkCategoryRead: (category: 'discussion' | 'strategy' | 'experiment') => void
+  isOpen?: boolean
+  onClose?: () => void
+}) {
+  const location = useLocation()
+  const { t, language } = useLanguage()
+  const [showToken, setShowToken] = useState(false)
+  const [accountType, setAccountType] = useState<string>(() => localStorage.getItem('account_type') || 'simulator')
+
+  const isOwner = isOwnerEmail(userInfo?.email)
+  const navSections = buildNavSections(language, t, notificationCounts)
 
   // Notification centre and the support conversation are member-account
   // features — they need a user session, not an agent token.

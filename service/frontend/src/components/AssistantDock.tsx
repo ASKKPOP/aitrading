@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import { ASSISTANT_OPEN_EVENT } from '../appChrome'
 import { tr } from '../i18n'
 
 // AI Assistant dock — mounted once inside the authenticated shell so it is
@@ -64,6 +65,13 @@ export function AssistantDock({ token }: Props) {
   ]
 
   useEffect(() => { localStorage.setItem(OPEN_KEY, open ? '1' : '0') }, [open])
+
+  // The desktop top bar's ✨ button opens the dock from anywhere.
+  useEffect(() => {
+    const openDock = () => setOpen(true)
+    window.addEventListener(ASSISTANT_OPEN_EVENT, openDock)
+    return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, openDock)
+  }, [])
   useEffect(() => { if (open && view === 'chat') endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, busy, open, view])
 
   // load the persistent conversation the first time the dock is opened
