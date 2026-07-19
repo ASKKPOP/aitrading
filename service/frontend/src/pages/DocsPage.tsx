@@ -7,6 +7,7 @@ import { tr } from '../i18n'
 // URL slugs are stable product names; manifest groups are the build keys.
 const SLUG_TO_GROUP: Record<string, string> = {
   'guide': 'guide',
+  'gateway': 'gateway',
   'strategy': 'hybrid',
   'ai-trading-parameters': 'top10',
   'chart-vs-human-psychology': 'psych-report',

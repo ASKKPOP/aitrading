@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — 실거래 게이트웨이 완전 가이드 (Live Trading Gateway Guide)</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.diagram .cap{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+svg text{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif}
+svg .box{fill:var(--card);stroke:var(--border)}
+svg .lbl{fill:var(--ink);font-size:12px;font-weight:700}
+svg .sm{fill:var(--ink-2);font-size:10.5px}
+svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="kicker">Sooppiy · Live Trading Gateway</div>
+  <h1>실거래 게이트웨이 완전 가이드</h1>
+  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · 3-agent QA 검증 후 작성 · English subtitles per section</div>
+  <p class="sub" style="margin-top:10px">
+    자동매매 규칙이 <b>모의(simulator)</b> → <b>그림자(shadow)</b> → <b>실거래(live)</b>로 이어지는 전체 경로:
+    무엇을 설정해야 하고, 주문이 어떤 관문을 지나며, 시스템이 무엇을 절대 하지 않는지를 한 문서로 설명합니다.
+  </p>
+</header>
+
+<!-- ═══ 1. 세 가지 모드 ═══ -->
+<section>
+  <h2><span class="no">01</span>세 가지 실행 모드 <span class="sub" style="display:inline">/ The three execution modes</span></h2>
+  <p class="sub">규칙(자동화 페이지)의 <code>계정(account)</code> 설정 하나가 체결이 어디에 착지하는지를 결정합니다. 다른 어떤 설정도 이를 바꾸지 못합니다.</p>
+
+  <table>
+    <tr><th>모드</th><th>체결 위치</th><th>실제 자금</th><th>필요 조건</th><th>용도</th></tr>
+    <tr>
+      <td><span class="tag hold">simulator</span></td>
+      <td>플랫폼 모의 원장만</td><td>없음</td><td>없음 (기본값)</td>
+      <td>전략 검증, 플랫폼 학습</td>
+    </tr>
+    <tr>
+      <td><span class="tag new">shadow</span></td>
+      <td>모의 원장(기준) + 브로커 <b>샌드박스</b>에 대조 주문</td><td>없음</td>
+      <td>게이트웨이 연결(선택 — 없으면 순수 모의)</td>
+      <td>실제 슬리피지·체결률을 무위험으로 비교</td>
+    </tr>
+    <tr>
+      <td><span class="tag crit">live</span></td>
+      <td>연결된 게이트웨이를 통해 <b>실제 브로커</b></td><td><b>있음</b></td>
+      <td>게이트웨이 연결 + 자격증명 + 실거래 약관 동의</td>
+      <td>실전 자동매매</td>
+    </tr>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- rule -->
+    <rect class="box" x="20" y="120" width="150" height="70" rx="12"/>
+    <text class="lbl" x="95" y="148" text-anchor="middle">자동화 규칙</text>
+    <text class="sm" x="95" y="166" text-anchor="middle">Automation rule</text>
+    <!-- gates -->
+    <rect class="box" x="215" y="120" width="150" height="70" rx="12" stroke="var(--accent)"/>
+    <text class="lbl" x="290" y="143" text-anchor="middle">실행 게이트 체인</text>
+    <text class="sm" x="290" y="160" text-anchor="middle">12-step gate chain</text>
+    <text class="sm" x="290" y="175" text-anchor="middle">(§4 참고)</text>
+    <!-- router -->
+    <rect class="box" x="410" y="120" width="140" height="70" rx="12" stroke="var(--violet)"/>
+    <text class="lbl" x="480" y="148" text-anchor="middle">account_type</text>
+    <text class="sm" x="480" y="166" text-anchor="middle">execution/gateway.py</text>
+    <!-- three lanes -->
+    <rect class="box" x="620" y="20" width="255" height="66" rx="12"/>
+    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → 모의 원장</text>
+    <text class="sm" x="747" y="63" text-anchor="middle">signals + positions + cash (내부 DB)</text>
+
+    <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
+    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → 원장 + 샌드박스</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">원장이 기준 · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="178" text-anchor="middle">드리프트는 position_reconciliations에 기록</text>
+
+    <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="747" y="254" text-anchor="middle">live → 실제 브로커 ⚠ 실자금</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">브로커가 기준 — 수락된 뒤에만 원장 기록</text>
+    <text class="sm" x="747" y="286" text-anchor="middle">거부 시 포지션 생성 없음</text>
+
+    <path class="arrow" d="M170,155 L213,155"/>
+    <path class="arrow" d="M365,155 L408,155"/>
+    <path class="arrow" d="M550,140 C590,110 590,70 618,55"/>
+    <path class="arrow" d="M550,155 L618,158"/>
+    <path class="arrow" d="M550,172 C590,205 590,245 618,262"/>
+    <text class="sm" x="580" y="45">simulator</text>
+    <text class="sm" x="572" y="147">shadow</text>
+    <text class="sm" x="588" y="280">live</text>
+  </svg>
+  <div class="cap">그림 1 — 규칙 하나가 게이트 체인을 통과한 뒤 account_type에 따라 세 경로 중 하나로 라우팅됩니다.</div>
+  </div>
+
+  <div class="note red"><b>절대 일어나지 않는 것:</b> 게이트웨이가 없는 live 규칙이 조용히 모의로 강등되는 일. live는 <b>명시적 사유와 함께 거부</b>되며 그 사유가 실행 기록에 남습니다 — 진짜처럼 보이는 가짜 체결이 최악이기 때문입니다.</div>
+</section>
+
+<!-- ═══ 2. 단계별 설정 ═══ -->
+<section>
+  <h2><span class="no">02</span>실거래까지 7단계 <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
+
+  <div class="steps-strip">
+    <div class="st"><b>STEP 1</b><span>브로커 키 발급</span></div>
+    <div class="st"><b>STEP 2</b><span>게이트웨이 연결</span></div>
+    <div class="st"><b>STEP 3</b><span>약관 동의</span></div>
+    <div class="st"><b>STEP 4</b><span>상태 확인</span></div>
+    <div class="st"><b>STEP 5</b><span>shadow 검증</span></div>
+    <div class="st"><b>STEP 6</b><span>live 전환</span></div>
+    <div class="st"><b>STEP 7</b><span>모니터링</span></div>
+  </div>
+
+  <h3>STEP 1 — 브로커에서 자격증명 준비 <span class="sub" style="display:inline">/ Prepare broker credentials</span></h3>
+  <table>
+    <tr><th>브로커</th><th>필요한 것</th><th>어디서</th><th>주의</th></tr>
+    <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (paper와 live 키는 별개)</td><td>거래 권한만. shadow는 자동으로 paper 엔드포인트 사용</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>계정 → API Management</td><td><b>출금 권한 절대 금지.</b> 거래(TRADE)만 체크. shadow는 testnet 사용</td></tr>
+    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + 계좌번호</td><td>IBKR이 배포하는 Client Portal Gateway를 직접 실행·로그인</td><td>API 키가 없음 — <b>게이트웨이 세션이 곧 자격증명.</b> 서버가 접근 가능한 주소여야 함. 계좌번호가 <code>D</code>로 시작하면 모의계좌(shadow는 모의계좌에서만 동작)</td></tr>
+  </table>
+
+  <h3>STEP 2 — 계좌 페이지에서 게이트웨이 연결 <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
+  <ul>
+    <li><b>계좌(Accounts)</b> 페이지 → <b>거래 게이트웨이</b> 카드에서 브로커 선택. 목록은 서버에서 불러옵니다(<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: 키+시크릿 입력. IBKR: 게이트웨이 URL + 계좌번호 입력(로컬 게이트웨이의 자체서명 인증서 옵션 있음).</li>
+    <li>키는 서버에서 <b>AES-GCM으로 암호화 저장</b>되며, 브라우저 localStorage에 남지 않고 저장 즉시 입력창에서 지워지며 다시 표시되지 않습니다.</li>
+  </ul>
+
+  <h3>STEP 3 — 실거래 약관 동의 <span class="sub" style="display:inline">/ Accept the live-trading terms</span></h3>
+  <ul>
+    <li>연결 버튼 위의 체크박스가 동의 절차입니다. 동의 없이는 연결 자체가 진행되지 않습니다.</li>
+    <li>동의는 <b>브로커별</b> 불변 기록(<code>broker_live_optins</code>)으로 남습니다 — Alpaca에 동의했어도 Binance live에는 별도 동의가 필요합니다.</li>
+  </ul>
+
+  <h3>STEP 4 — 상태 배너 확인 <span class="sub" style="display:inline">/ Check the health banner</span></h3>
+  <ul>
+    <li>연결 후 계좌 페이지 상단에 초록(정상)/빨강(불가) 배너가 뜹니다(<code>GET /api/execution/health</code>).</li>
+    <li>IBKR은 세션 상태(만료/경합)까지 표시됩니다. Alpaca/Binance는 세션 개념이 없어 자격증명 존재 여부만 확인합니다.</li>
+  </ul>
+
+  <h3>STEP 5 — shadow로 먼저 검증 <span class="sub" style="display:inline">/ Validate in shadow first</span></h3>
+  <ul>
+    <li>자동화 페이지(전문가 모드) → 규칙의 <b>계정 = shadow</b> + 자동 실행 ON.</li>
+    <li>모의 원장이 기준으로 유지되면서, 같은 주문이 브로커 <b>샌드박스</b>에도 나가 체결 차이가 <b>드리프트 기록</b>에 쌓입니다. 실제 자금 없이 슬리피지·체결률을 봅니다.</li>
+  </ul>
+
+  <h3>STEP 6 — live 전환 <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <ul>
+    <li>규칙의 <b>계정 = live</b>. 자동 실행이 켜진 live 규칙에는 목록에 빨간 <b>실제 자금(REAL MONEY)</b> 배지가 붙습니다.</li>
+    <li>이때부터 게이트 체인을 전부 통과한 결정만 실제 브로커로 나갑니다. 브로커가 수락한 뒤에만 플랫폼 원장이 기록됩니다.</li>
+  </ul>
+
+  <h3>STEP 7 — 모니터링 <span class="sub" style="display:inline">/ Monitor</span></h3>
+  <ul>
+    <li><b>자동화 페이지 실행 기록</b>: 매 틱의 결정·체결·스킵 사유.</li>
+    <li><b>계좌 페이지 브로커 주문 내역</b>: 요청 수량 vs 브로커 확인 체결 수량, 상태별 색상.</li>
+    <li><b>드리프트 기록(빨간 카드)</b>: 원장과 브로커가 어긋난 경우 — §5 참고.</li>
+    <li><b>알림</b>: 체결(trade_executed), 게이트웨이 다운(gateway_down), 주문 드리프트(order_drift) — 알림 설정의 이메일/SMS 채널을 따릅니다.</li>
+  </ul>
+</section>
+
+<!-- ═══ 3. 게이트 체인 ═══ -->
+<section>
+  <h2><span class="no">03</span>주문이 지나는 12개의 관문 <span class="sub" style="display:inline">/ The 12-step gate chain</span></h2>
+  <p class="sub">자동 실행이 켜진 규칙의 매 틱마다, 결정(buy/sell)이 실제로 체결되려면 아래 관문을 <b>순서대로 전부</b> 통과해야 합니다. 하나라도 막히면 그 사유가 실행 기록에 남고 주문은 나가지 않습니다.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- column of gates, 2 columns of 6 -->
+    <g>
+      <!-- left column -->
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① 자동 실행 ON?</text><text class="sm" x="45" y="59">auto_execute off → 스킵</text>
+      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② 게이트웨이 사용 가능? (live만)</text><text class="sm" x="45" y="145">연결·자격증명·약관 동의 3가지 모두</text>
+      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ 구독/이용권 유효?</text><text class="sm" x="45" y="231">ENTITLEMENTS_ENFORCED 시</text>
+      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ 결정이 buy/sell?</text><text class="sm" x="45" y="317">hold는 체결 대상 아님</text>
+      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ 신뢰도 ≥ 임계값?</text><text class="sm" x="45" y="403">규칙의 min_confidence</text>
+      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ 시장 개장?</text><text class="sm" x="45" y="489">us-stock 장 마감이면 스킵</text>
+      <!-- right column -->
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ 이벤트 가드</text><text class="sm" x="345" y="59">FOMC·CPI 발표 전후 1시간 차단(옵션)</text>
+      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ 타임스톱 쿨다운</text><text class="sm" x="345" y="145">같은 종목 재진입 대기</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ 레짐 필터</text><text class="sm" x="345" y="231">패닉/과열 구간 신규 매수 차단(옵션)</text>
+      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ 유효 가격?</text><text class="sm" x="345" y="317">결정에 진입가 필요</text>
+      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ 에이전트 예산 (agent 모드)</text><text class="sm" x="345" y="403">budget_usd 한도</text>
+      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ 리스크 엔진</text><text class="sm" x="345" y="489">브레이커→한도→변동성 사이징→SL/TP</text>
+    </g>
+    <!-- arrows down left col -->
+    <path class="arrow" d="M155,72 L155,104" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,158 L155,190" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,244 L155,276" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,330 L155,362" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,416 L155,448" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,502 C155,530 455,540 455,504" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,450 L455,418" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,364 L455,332" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,278 L455,246" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,192 L455,160" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,106 L455,74" marker-end="url(#arr2)"/>
+    <!-- execute -->
+    <rect x="660" y="230" width="210" height="90" rx="14" fill="color-mix(in srgb,var(--good) 12%,var(--card))" stroke="var(--good)"/>
+    <text class="lbl" x="765" y="266" text-anchor="middle">✓ 체결 실행</text>
+    <text class="sm" x="765" y="286" text-anchor="middle">account_type 라우팅 (§1)</text>
+    <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
+    <text class="sm" x="640" y="120">12/12 통과</text>
+  </svg>
+  <div class="cap">그림 2 — 실행 게이트 체인(evaluate_execution_gates). ⑫ 왼쪽 열 아래→오른쪽 열 위로 이어지며, 전부 통과해야 체결됩니다. 테스트 실행(▶)은 분석만 하며 이 체인을 거치지 않습니다.</div>
+  </div>
+
+  <div class="note">순서가 중요합니다: 자동 실행이 꺼진 규칙은 「자동 실행 꺼짐」으로 기록되지 게이트웨이 오류로 기록되지 않습니다. 스킵 사유를 읽으면 몇 번 관문에서 멈췄는지 바로 알 수 있습니다.</div>
+</section>
+
+<!-- ═══ 4. 주문 수명주기 ═══ -->
+<section>
+  <h2><span class="no">04</span>live 주문의 수명주기 <span class="sub" style="display:inline">/ Life of a live order</span></h2>
+  <p class="sub">브로커가 즉시 체결을 확정하지 않으면(SUBMITTED) <b>주문 리컨실러</b>가 2분마다 브로커에 결과를 물어 최종 상태를 확정합니다.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- lifelines -->
+    <text class="lbl" x="90" y="28" text-anchor="middle">워커 (규칙 틱)</text>
+    <text class="lbl" x="330" y="28" text-anchor="middle">게이트웨이 라우터</text>
+    <text class="lbl" x="570" y="28" text-anchor="middle">브로커</text>
+    <text class="lbl" x="800" y="28" text-anchor="middle">플랫폼 원장</text>
+    <line x1="90" y1="40" x2="90" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="330" y1="40" x2="330" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="570" y1="40" x2="570" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="800" y1="40" x2="800" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <!-- messages -->
+    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(수량, 가격)</text>
+    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">실주문 POST</text>
+    <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED 또는 SUBMITTED (또는 거부)</text>
+    <!-- branch: rejected -->
+    <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
+    <text class="sm" x="122" y="161">거부라면 → 원장 기록 <tspan font-weight="700">없음</tspan> + gateway_down 알림. 유령 포지션 금지.</text>
+    <!-- filled path -->
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">수락됨 → 체결 수량으로 원장 미러</text>
+    <!-- reconciler -->
+    <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
+    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">리컨실러</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">2분 주기</text>
+    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">SUBMITTED 주문 상태 조회</text>
+    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">최종 상태 + 실제 체결 수량</text>
+    <!-- outcomes -->
+    <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">완전 체결(일치)</tspan> → 상태만 기록, 조용히 종료 · <tspan font-weight="700" fill="#a16800">부분 체결</tspan> → filled_qty 기록 + order_drift 알림</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">사후 취소/거부</tspan> → order_drift 알림 + 드리프트 기록. <tspan font-weight="700">원장은 절대 자동 수정하지 않음</tspan> — 사람이 검토.</text>
+  </svg>
+  <div class="cap">그림 3 — 제출 → (즉시 또는 리컨실러 경유) 확정 → 어긋나면 시끄럽게 알림. 요청 수량(quantity)과 브로커 확인 수량(filled_qty)은 별도 컬럼이라 차이가 계속 보입니다.</div>
+  </div>
+
+  <div class="note red"><b>설계 원칙 — 탐지만, 수정은 사람:</b> 리컨실러는 포지션·현금을 절대 건드리지 않습니다. 백그라운드 작업이 돈 계산을 고치는 것은 원장을 두 번 망가뜨리는 길이라, 어긋남은 빨간 카드와 알림으로 크게 표시하고 정정은 사용자가 브로커 계좌를 확인한 뒤 직접 합니다.</div>
+</section>
+
+<!-- ═══ 5. IBKR 세션 유지 ═══ -->
+<section>
+  <h2><span class="no">05</span>IBKR 세션 keepalive <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
+  <p class="sub">IBKR Client Portal 세션은 몇 분만 유휴해도 끊깁니다. 워커가 60초마다 세션을 tickle하고, 끊기면 재인증을 시도하며, 복구 불가면 하루 1회 알립니다.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <rect class="box" x="30" y="80" width="170" height="70" rx="12" stroke="var(--good)"/>
+    <text class="lbl" x="115" y="108" text-anchor="middle">정상 (authenticated)</text>
+    <text class="sm" x="115" y="126" text-anchor="middle">60초마다 tickle로 유지</text>
+
+    <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
+    <text class="lbl" x="450" y="103" text-anchor="middle">세션 만료 (lapsed)</text>
+    <text class="sm" x="450" y="121" text-anchor="middle">게이트웨이는 살아있으나</text>
+    <text class="sm" x="450" y="136" text-anchor="middle">인증이 풀림</text>
+
+    <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="785" y="103" text-anchor="middle">복구 불가 (dead)</text>
+    <text class="sm" x="785" y="121" text-anchor="middle">gateway_down 알림 (일 1회)</text>
+    <text class="sm" x="785" y="136" text-anchor="middle">사람이 게이트웨이 재로그인</text>
+
+    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">유휴/타임아웃</text>
+    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate 성공 (자동 복구)</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">재인증 실패</text>
+    <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">사용자가 Client Portal Gateway에 다시 로그인</text>
+  </svg>
+  <div class="cap">그림 4 — 세션 상태 머신. 경합(competing) 세션도 dead로 취급합니다(다른 로그인이 계좌를 점유하면 주문이 거부되므로).</div>
+  </div>
+
+  <div class="note"><b>shadow 안전장치:</b> IBKR은 Alpaca/Binance와 달리 샌드박스 호스트가 따로 없고 <b>계좌</b>가 실자금 여부를 결정합니다. 그래서 shadow 모드에서 계좌번호가 모의계좌(<code>D</code> 접두사)가 아니면 어댑터가 <b>요청 자체를 전송하지 않고 거부</b>합니다.</div>
+</section>
+
+<!-- ═══ 6. 스킵 사유 사전 ═══ -->
+<section>
+  <h2><span class="no">06</span>스킵 사유 → 해결법 <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <table>
+    <tr><th>실행 기록의 사유</th><th>의미</th><th>해결</th></tr>
+    <tr><td>자동 실행 꺼짐</td><td>규칙이 분석 전용</td><td>규칙의 자동 실행 체크박스 ON</td></tr>
+    <tr><td>라이브를 선택했지만 거래 게이트웨이가 설정되지 않았습니다</td><td>연결된 브로커 계정 없음</td><td>계좌 페이지에서 게이트웨이 연결 (STEP 2)</td></tr>
+    <tr><td>연결된 게이트웨이에 사용 가능한 API 자격 증명이 없습니다</td><td>저장된 키가 없거나 복호화 불가(서버 키 교체 등)</td><td>브로커 재연결</td></tr>
+    <tr><td>실거래 약관에 동의하지 않았습니다</td><td>해당 브로커의 동의 기록 없음</td><td>계좌 페이지에서 동의 후 재연결 (STEP 3)</td></tr>
+    <tr><td>게이트웨이가 주문을 거부했습니다 — …</td><td>브로커가 주문을 거절(잔고 부족, 세션 만료 등 사유 병기)</td><td>사유 확인 — IBKR 401이면 게이트웨이 재로그인</td></tr>
+    <tr><td>결정이 hold</td><td>AI가 관망 판단</td><td>정상 — 조치 불필요</td></tr>
+    <tr><td>신뢰도 X — 임계값 Y 미달</td><td>확신 부족</td><td>대기(권장) 또는 min_confidence 하향</td></tr>
+    <tr><td>장 마감</td><td>미국장 폐장</td><td>정상 — 개장 시 재시도</td></tr>
+    <tr><td>refusing to place a shadow order on IBKR account …</td><td>IBKR 실계좌로 shadow 시도</td><td>모의계좌(DU…)로 연결하거나 shadow 대신 simulator 사용</td></tr>
+  </table>
+</section>
+
+<!-- ═══ 7. 안전 불변식 ═══ -->
+<section>
+  <h2><span class="no">07</span>시스템이 절대 하지 않는 것 <span class="sub" style="display:inline">/ Safety invariants (test-pinned)</span></h2>
+  <table>
+    <tr><th>불변식</th><th>이유</th><th>보장 방법</th></tr>
+    <tr><td>live를 조용히 모의로 강등하지 않음</td><td>가짜 체결이 진짜처럼 보이면 최악</td><td>게이트 ②에서 명시적 거부 + 사유 기록</td></tr>
+    <tr><td>shadow 주문이 실제 거래소에 닿지 않음</td><td>"모의 실행"이 실자금을 쓰면 안 됨</td><td>규칙 모드가 엔드포인트를 고정(저장된 계정 모드 무시), IBKR은 모의계좌 강제</td></tr>
+    <tr><td>브로커 거부 시 포지션 생성 없음</td><td>시장에 닿지 않은 주문의 유령 포지션 방지</td><td>live는 브로커 수락 후에만 원장 기록</td></tr>
+    <tr><td>리컨실러가 원장을 수정하지 않음</td><td>백그라운드 돈 계산 수정 = 이중 손상 위험</td><td>탐지·기록·알림만, 정정은 사람</td></tr>
+    <tr><td>브로커 키가 클라이언트로 돌아가지 않음</td><td>유출 면적 최소화</td><td>AES-GCM 저장, 조회 API는 메타데이터만 반환</td></tr>
+    <tr><td>암호화 키(EXECUTION_ENCRYPTION_KEY)는 write-once</td><td>교체 시 저장된 모든 자격증명 영구 무효</td><td>운영 절차 + 비밀번호 관리자 백업</td></tr>
+    <tr><td>live 실패는 침묵하지 않음</td><td>죽은 게이트웨이는 조용한 시장과 구분 불가</td><td>gateway_down/order_drift 알림 (시간·일 단위 중복 제거)</td></tr>
+  </table>
+  <div class="note green">위 불변식들은 자동 테스트(총 1,386개 중 실행 스택 ~100개)로 고정되어 있으며, 3-에이전트 QA(백엔드 적대 검증 · 프런트엔드 플로우 · 프로덕션 상태)로 재검증되었습니다.</div>
+</section>
+
+<!-- ═══ 8. 운영 참고 ═══ -->
+<section style="border-bottom:none">
+  <h2><span class="no">08</span>운영 참고 <span class="sub" style="display:inline">/ Operator notes</span></h2>
+  <table>
+    <tr><th>항목</th><th>값/위치</th><th>비고</th></tr>
+    <tr><td>환경 변수</td><td>프로덕션 <code>~/sooppiy/.env</code> 단일 파일 (mode 600)</td><td>파트별 주석 포함. 컨테이너는 재생성해야 반영</td></tr>
+    <tr><td>keepalive 주기</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (기본 60초)</td><td>IBKR 계정 없으면 무비용 no-op</td></tr>
+    <tr><td>리컨실 주기</td><td><code>ORDER_RECONCILE_INTERVAL</code> (기본 120초)</td><td>submitted 주문 없으면 무비용</td></tr>
+    <tr><td>브로커 엔드포인트</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>하드코딩 없음 — .env에서 주입</td></tr>
+    <tr><td>배포</td><td>태그 빌드 → .env의 <code>SOOPPIY_IMAGE</code> 수정 → <code>docker compose --profile prod up -d</code></td><td>compose 파일에 리터럴 값 0개</td></tr>
+    <tr><td>API 컨테이너</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>루프는 워커 전용 — true면 전부 이중 실행됨</td></tr>
+  </table>
+</section>
+
+<footer style="padding:26px 0 60px;color:var(--muted);font-size:12px">
+  Sooppiy · docs/design/live-trading-gateway-guide.html · 소스: service/server/execution/ · service/server/automation.py · 검증: 3-agent QA 2026-07-19
+</footer>
+
+</div>
+</body>
+</html>
