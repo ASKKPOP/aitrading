@@ -1,7 +1,12 @@
 # Plan 11 — Feature batch 2026-07-19
 
-Henry's 5-part request (2026-07-19). Implementation order chosen for risk: small → large.
-Each feature lands as its own commit on `main`; deploy to prod sooppiy.com at the end.
+Henry's request (2026-07-19), 5 parts + F6 added mid-session. Implementation order
+chosen for risk: small → large. Each feature landed as its own commit on `main`.
+
+**STATUS: all shipped and deployed 2026-07-19** — prod image `20260719-plan11`,
+main@0403b6d, alembic 0025. Verified live on sooppiy.com (see §Ship).
+F6 (desktop top bar) was requested after this plan was written; it is documented
+in the commit `7ffdc4c` rather than below.
 
 ## F3b — Mobile landing header fix (small)
 
