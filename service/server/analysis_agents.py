@@ -334,7 +334,8 @@ def _guidelines_block(guidelines: Optional[str]) -> str:
 
 
 def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
-                          guidelines: Optional[str] = None) -> dict[str, Any]:
+                          guidelines: Optional[str] = None,
+                          memory: str = "") -> dict[str, Any]:
     if not llm_configured():
         return _rule_based_decision(technical, news)
     lang_line = "Write the rationale and report in Thai." if lang == "th" else "Write the rationale and report in English."
@@ -342,6 +343,7 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
         f"decide whether to BUY, SELL, or HOLD {symbol} ({market}).\n"
         f"{lang_line}\n"
+        + memory
         + _guidelines_block(guidelines) +
         "Weigh disagreement, size risk, and be decisive. Respond with ONLY a JSON object:\n"
         # 'entry' is asked for as the desk's VIEW and is recorded as
@@ -422,7 +424,8 @@ def _parse_verification_json(text: str) -> Optional[dict[str, Any]]:
 
 def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
                      technical: dict[str, Any], decision: dict[str, Any],
-                     lang: str, guidelines: Optional[str] = None) -> Optional[dict[str, Any]]:
+                     lang: str, guidelines: Optional[str] = None,
+                     memory: str = "") -> Optional[dict[str, Any]]:
     """Adversarial second pass: a strong-tier call that tries to REFUTE the
     trader's decision. Returns {verdict, adjusted_confidence, reason} or None
     (fail-open) when unconfigured/unparseable. VERIFY_PROVIDER optionally runs
@@ -431,6 +434,7 @@ def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
         return None
     import os
     prompt = (
+        memory +
         _guidelines_block(guidelines) +
         "You are an independent risk verifier. Your job is to try to REFUTE the trading "
         f"decision below for {symbol} ({market}). Check: (1) do the analyst briefs actually "
@@ -553,7 +557,7 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
     token = set_llm_context(ctx) if ctx is not None else None
     try:
         return _run_analysis_inner(symbol, market, lang, guidelines=guidelines,
-                                   progress=progress)
+                                   progress=progress, agent_id=agent_id)
     finally:
         if token is not None:
             reset_llm_context(token)
@@ -581,7 +585,8 @@ def _submit_step(pool: ThreadPoolExecutor, progress: Optional[ProgressFn],
 
 def _run_analysis_inner(symbol: str, market: str, lang: str,
                         guidelines: Optional[str] = None,
-                        progress: Optional[ProgressFn] = None) -> dict[str, Any]:
+                        progress: Optional[ProgressFn] = None,
+                        agent_id: Optional[int] = None) -> dict[str, Any]:
     # Data gathering: technical / news / fundamentals are independent and run
     # concurrently; sentiment needs the news breakdown so it starts after news.
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -621,9 +626,17 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
         }
         briefs = {role: f.result() for role, f in brief_futures.items()}
 
+    # Desk memory (Plan 11 F4): durable lessons from this agent's earlier
+    # analyses, injected next to the user guidelines. Fail-soft to "".
+    try:
+        from analysis_memory import memory_block
+        memory = memory_block(agent_id, symbol)
+    except Exception:  # noqa: BLE001
+        memory = ""
+
     _emit(progress, "decision", "start")
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
-                                     guidelines=guidelines)
+                                     guidelines=guidelines, memory=memory)
     _emit(progress, "decision", "done",
           action=decision.get("action"), confidence=decision.get("confidence"))
 
@@ -632,12 +645,20 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
     _emit(progress, "verify", "start")
     try:
         verification = _verify_decision(symbol, market, briefs, technical, decision, lang,
-                                        guidelines=guidelines)
+                                        guidelines=guidelines, memory=memory)
     except Exception:  # noqa: BLE001
         verification = None
     decision = _apply_verification(decision, verification)
     _emit(progress, "verify", "done",
           verdict=(verification or {}).get("verdict") or "skipped")
+
+    # Write back what this run taught the desk. Fail-soft and non-blocking to
+    # the result: a memory-write problem must not fail an analysis.
+    try:
+        from analysis_memory import remember_analysis
+        remember_analysis(agent_id, symbol, market, briefs, decision)
+    except Exception:  # noqa: BLE001
+        pass
 
     return {
         "symbol": symbol,
