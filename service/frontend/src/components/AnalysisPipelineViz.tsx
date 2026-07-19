@@ -25,30 +25,31 @@ export const PIPELINE_STEPS = [
 
 const ROLES = ['news', 'sentiment', 'fundamentals_macro', 'technical'] as const
 
-// Status colors — match the rest of the app (amber running, green done, red error).
+// Guide palette tokens (docs/design/ai-trading-guide.html :root) — scoped to
+// the diagram via .plv-wrap custom props. Running = accent blue like the
+// guide's active-step boxes; done = --good; error = --critical.
 const ST_COLOR: Record<StepStatus, string> = {
-  pending: 'var(--border-color,#d3c8b6)',
-  running: '#e3a008',
-  done: '#3fb950',
-  error: '#f0663f',
+  pending: 'var(--g-baseline)',
+  running: 'var(--g-accent)',
+  done: 'var(--g-good)',
+  error: 'var(--g-crit)',
 }
 
-// Geometry (viewBox 960 wide, like the guide diagrams).
+// Geometry (viewBox 960 wide, box sizes/radii per the guide diagrams).
 const COL_X = [12, 252, 492, 732]          // 4 role columns
 const COL_W = 216
 const cx = (i: number) => COL_X[i] + COL_W / 2
-const GATHER_Y = 26, BRIEF_Y = 128, ROW_H = 56
-const BUS_Y = 216
-const DEC = { x: 290, y: 244, w: 380, h: 62 }
-const VER = { x: 360, y: 344, w: 240, h: 52 }
-const VIEW_H = 412
+const GATHER_Y = 26, BRIEF_Y = 132, ROW_H = 58
+const BUS_Y = 222
+const DEC = { x: 290, y: 250, w: 380, h: 66 }
+const VER = { x: 360, y: 354, w: 240, h: 58 }
+const VIEW_H = 424
 
-function StepCard({ x, y, w, h, title, info, labels, big }: {
+function StepCard({ x, y, w, h, title, stepId, info, labels }: {
   x: number; y: number; w: number; h: number
-  title: string; info?: StepInfo; labels: Record<string, string>; big?: boolean
+  title: string; stepId: string; info?: StepInfo; labels: Record<string, string>
 }) {
   const status = info?.status || 'pending'
-  const c = ST_COLOR[status]
   const dur = info?.startedAt && info?.endedAt
     ? (info.endedAt - info.startedAt >= 1000
         ? `${((info.endedAt - info.startedAt) / 1000).toFixed(1)}s`
@@ -56,36 +57,35 @@ function StepCard({ x, y, w, h, title, info, labels, big }: {
     : null
   const statusLine =
     status === 'running' ? labels.__running
-    : status === 'error' ? labels.__error
-    : status === 'done' ? (dur ? `✓ ${dur}` : `✓ ${labels.__done}`)
+    : status === 'error' ? `✗ ${labels.__error}`
+    : status === 'done' ? `✓ ${labels.__done}` + (dur ? ` · ${dur}` : '')
     : null
   const midX = x + w / 2
   return (
     <g className={`plv-card plv-${status}`}>
-      <rect x={x} y={y} width={w} height={h} rx={10}
-        fill={status === 'pending' ? 'var(--bg-secondary,#fff)' : `color-mix(in srgb, ${c} 12%, var(--bg-secondary,#fff))`}
-        stroke={c} strokeWidth={status === 'pending' ? 1 : 1.6} />
-      <text x={midX} y={y + (statusLine ? (big ? 26 : 24) : h / 2 + 4)} textAnchor="middle" className="plv-t"
+      <rect x={x} y={y} width={w} height={h} rx={9} className="plv-box" />
+      <text x={midX} y={y + 20} textAnchor="middle" className="plv-t"
         opacity={status === 'pending' ? 0.55 : 1}>
         {title}
-        {(info?.runs ?? 0) > 1 && <tspan fill="#e3a008"> ×{info!.runs}</tspan>}
+        {(info?.runs ?? 0) > 1 && <tspan fill="var(--g-accent)"> ×{info!.runs}</tspan>}
       </text>
       {statusLine && (
-        <text x={midX} y={y + (big ? 46 : 42)} textAnchor="middle" className="plv-s" fill={c}>
+        <text x={midX} y={y + 35} textAnchor="middle" className="plv-s" fill={ST_COLOR[status]}>
           {statusLine}
         </text>
       )}
+      <text x={midX} y={y + h - 9} textAnchor="middle" className="plv-m">{stepId}</text>
     </g>
   )
 }
 
-// Edge color: amber + flowing dashes while the downstream step runs,
-// green once the upstream is done and the flow moved on, dim otherwise.
+// Edge color: accent + flowing dashes while the downstream step runs (like
+// the guide's accent arrows), good/critical once resolved, baseline otherwise.
 function edgeState(up?: StepInfo, down?: StepInfo): { color: string; flow: boolean } {
   const su = up?.status || 'pending'; const sd = down?.status || 'pending'
   if (sd === 'running') return { color: ST_COLOR.running, flow: true }
   if (su === 'done' && (sd === 'done' || sd === 'error')) return { color: ST_COLOR[sd], flow: false }
-  return { color: 'var(--border-color,#d3c8b6)', flow: false }
+  return { color: 'var(--g-baseline)', flow: false }
 }
 
 export function AnalysisPipelineViz({ steps, labels }: {
@@ -105,7 +105,8 @@ export function AnalysisPipelineViz({ steps, labels }: {
     : 'url(#plv-ar)'
 
   const edge = (key: string, d: string, state: { color: string; flow: boolean }, arrow = true) => (
-    <path key={key} d={d} fill="none" stroke={state.color} strokeWidth={state.flow ? 1.8 : 1.4}
+    <path key={key} d={d} fill="none" stroke={state.color}
+      strokeWidth={state.color === 'var(--g-baseline)' ? 1.4 : 1.6}
       className={state.flow ? 'plv-flow' : undefined}
       strokeDasharray={state.flow ? '6 5' : undefined}
       markerEnd={arrow ? markerFor(state.color) : undefined} />
@@ -113,20 +114,41 @@ export function AnalysisPipelineViz({ steps, labels }: {
 
   const dec = steps['decision']; const ver = steps['verify']
   return (
-    <div style={{ width: '100%', borderRadius: 10, border: '1px solid var(--border-color,#d3c8b6)',
-                  background: 'var(--bg-primary,transparent)', overflowX: 'auto' }}>
+    <div className="plv-wrap" style={{ width: '100%', borderRadius: 14,
+                  border: '1px solid var(--g-border)', background: 'var(--g-card)',
+                  padding: 14, overflowX: 'auto' }}>
       <svg viewBox={`0 0 960 ${VIEW_H}`} style={{ display: 'block', minWidth: 680, width: '100%', height: 'auto' }}
         xmlns="http://www.w3.org/2000/svg" role="img" aria-label={labels.__pipeline}>
         <style>{`
-          .plv-t { font: 600 13px system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; fill: var(--text-primary,#2b2620); }
-          .plv-s { font: 500 11px system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; }
-          .plv-running rect { animation: plv-pulse 1.4s ease-in-out infinite; }
+          /* Guide palette (docs/design/ai-trading-guide.html :root) — dark by
+             default (app themes signal/claude), light values under light. */
+          .plv-wrap {
+            --g-card:#202020; --g-surface:#1a1a19; --g-border:rgba(255,255,255,0.10);
+            --g-baseline:#383835; --g-ink:#fff; --g-ink2:#c3c2b7; --g-muted:#898781;
+            --g-accent:#3987e5; --g-good:#0ca30c; --g-good-ink:#0ca30c;
+            --g-crit:#d03b3b; --g-yellow:#c98500;
+          }
+          :root[data-theme='light'] .plv-wrap {
+            --g-card:#ffffff; --g-surface:#f1f0ec; --g-border:rgba(11,11,11,0.10);
+            --g-baseline:#c3c2b7; --g-ink:#0b0b0b; --g-ink2:#52514e; --g-muted:#898781;
+            --g-accent:#2a78d6; --g-good:#0ca30c; --g-good-ink:#006300;
+            --g-crit:#d03b3b; --g-yellow:#eda100;
+          }
+          .plv-t { font: 600 12px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; fill: var(--g-ink); }
+          .plv-s { font: 500 10.5px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; }
+          .plv-m { font: 600 10px ui-monospace,"SF Mono",Menlo,monospace; fill: var(--g-muted); }
+          .plv-pending .plv-box { fill: var(--g-surface); stroke: var(--g-border); stroke-width: 1; }
+          .plv-running .plv-box { fill: color-mix(in srgb, var(--g-accent) 12%, var(--g-card)); stroke: var(--g-accent); stroke-width: 1.6;
+                                  animation: plv-pulse 1.4s ease-in-out infinite; }
+          .plv-done .plv-box { fill: color-mix(in srgb, var(--g-good) 12%, var(--g-card)); stroke: var(--g-good); stroke-width: 1.6; }
+          .plv-error .plv-box { fill: color-mix(in srgb, var(--g-crit) 10%, var(--g-card)); stroke: var(--g-crit); stroke-width: 1.6; }
+          .plv-done .plv-s { fill: var(--g-good-ink); }
           .plv-flow { animation: plv-dash 0.9s linear infinite; }
           @keyframes plv-pulse { 0%,100% { stroke-opacity: 1 } 50% { stroke-opacity: 0.35 } }
           @keyframes plv-dash { to { stroke-dashoffset: -11 } }
         `}</style>
         <defs>
-          {marker('plv-ar', 'var(--border-color,#d3c8b6)')}
+          {marker('plv-ar', 'var(--g-baseline)')}
           {marker('plv-ar-run', ST_COLOR.running)}
           {marker('plv-ar-done', ST_COLOR.done)}
           {marker('plv-ar-err', ST_COLOR.error)}
@@ -134,7 +156,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
 
         {/* band 1: gather */}
         {ROLES.map((r, i) => (
-          <StepCard key={`g${r}`} x={COL_X[i]} y={GATHER_Y} w={COL_W} h={ROW_H}
+          <StepCard key={`g${r}`} x={COL_X[i]} y={GATHER_Y} w={COL_W} h={ROW_H} stepId={`gather:${r}`}
             title={labels[`gather:${r}`] || `gather:${r}`} info={steps[`gather:${r}`]} labels={labels} />
         ))}
 
@@ -147,7 +169,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
 
         {/* band 2: brief */}
         {ROLES.map((r, i) => (
-          <StepCard key={`b${r}`} x={COL_X[i]} y={BRIEF_Y} w={COL_W} h={ROW_H}
+          <StepCard key={`b${r}`} x={COL_X[i]} y={BRIEF_Y} w={COL_W} h={ROW_H} stepId={`brief:${r}`}
             title={labels[`brief:${r}`] || `brief:${r}`} info={steps[`brief:${r}`]} labels={labels} />
         ))}
 
@@ -158,19 +180,19 @@ export function AnalysisPipelineViz({ steps, labels }: {
           edgeState(steps[`brief:${r}`], dec), false,
         ))}
         <path d={`M${cx(0)} ${BUS_Y} H${cx(3)}`} fill="none"
-          stroke={dec?.status === 'running' ? ST_COLOR.running : 'var(--border-color,#d3c8b6)'} strokeWidth={1.4} />
+          stroke={dec?.status === 'running' ? ST_COLOR.running : 'var(--g-baseline)'} strokeWidth={1.4} />
         {edge('e-bus-dec', `M480 ${BUS_Y} V${DEC.y - 2}`,
-          { color: dec?.status === 'running' ? ST_COLOR.running : dec?.status === 'done' ? ST_COLOR.done : dec?.status === 'error' ? ST_COLOR.error : 'var(--border-color,#d3c8b6)', flow: dec?.status === 'running' })}
+          { color: dec?.status === 'running' ? ST_COLOR.running : dec?.status === 'done' ? ST_COLOR.done : dec?.status === 'error' ? ST_COLOR.error : 'var(--g-baseline)', flow: dec?.status === 'running' })}
 
         {/* band 3: decision */}
-        <StepCard x={DEC.x} y={DEC.y} w={DEC.w} h={DEC.h} big
+        <StepCard x={DEC.x} y={DEC.y} w={DEC.w} h={DEC.h} stepId="decision"
           title={labels['decision'] || 'decision'} info={dec} labels={labels} />
 
         {/* decision -> verify */}
         {edge('e-dec-ver', `M480 ${DEC.y + DEC.h} V${VER.y - 2}`, edgeState(dec, ver))}
 
         {/* band 4: verify */}
-        <StepCard x={VER.x} y={VER.y} w={VER.w} h={VER.h}
+        <StepCard x={VER.x} y={VER.y} w={VER.w} h={VER.h} stepId="verify"
           title={labels['verify'] || 'verify'} info={ver} labels={labels} />
       </svg>
     </div>
