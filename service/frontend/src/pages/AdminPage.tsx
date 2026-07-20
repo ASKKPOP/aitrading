@@ -116,103 +116,109 @@ export function AdminPage() {
   const [exclusion, setExclusion] = useState({ agent_id: '', reason: '' })
 
   const T = {
-    title: tr(language, { ko: '관리자 콘솔', en: 'Manager Console' }),
-    email: tr(language, { ko: '이메일', en: 'Email' }),
-    password: tr(language, { ko: '비밀번호', en: 'Password' }),
-    signIn: tr(language, { ko: '로그인', en: 'Sign in' }),
-    signOut: tr(language, { ko: '로그아웃', en: 'Sign out' }),
-    loginHint: tr(language, { ko: '관리자 계정으로 로그인하세요. 첫 계정은 서버에서 scripts/create_admin.py로 생성합니다.', en: 'Sign in with an admin account. Bootstrap the first one with scripts/create_admin.py on the server.' }),
-    invalid: tr(language, { ko: '이메일 또는 비밀번호가 올바르지 않습니다', en: 'Invalid email or password' }),
-    sessionExpired: tr(language, { ko: '세션이 만료되었습니다 — 다시 로그인하세요', en: 'Session expired — sign in again' }),
-    tabDashboard: tr(language, { ko: '대시보드', en: 'Dashboard' }),
-    tabMembers: tr(language, { ko: '회원 관리', en: 'Members' }),
-    tabSubs: tr(language, { ko: '구독 관리', en: 'Subscriptions' }),
-    tabAssets: tr(language, { ko: '자산 통계', en: 'Assets' }),
-    tabPositions: tr(language, { ko: '포지션 통계', en: 'Positions' }),
-    tabAutomation: tr(language, { ko: '자동화 통계', en: 'Automation' }),
-    tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts' }),
-    tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions' }),
-    tabLeaderboard: tr(language, { ko: '리더보드 관리', en: 'Leaderboard' }),
-    tabAdmins: tr(language, { ko: '관리자 계정', en: 'Admins' }),
-    tabAudit: tr(language, { ko: '감사 로그', en: 'Audit' }),
-    noData: tr(language, { ko: '데이터 없음', en: 'No data' }),
-    search: tr(language, { ko: '검색', en: 'Search' }),
-    del: tr(language, { ko: '삭제', en: 'Delete' }),
-    delConfirm: tr(language, { ko: '정말 삭제할까요? 이 계정의 모든 데이터가 함께 삭제됩니다.', en: 'Really delete? All of this account\'s data is deleted with it.' }),
-    suspend: tr(language, { ko: '정지', en: 'Suspend' }),
-    activate: tr(language, { ko: '해제', en: 'Activate' }),
-    detail: tr(language, { ko: '상세', en: 'Detail' }),
-    close: tr(language, { ko: '닫기', en: 'Close' }),
-    approve: tr(language, { ko: '승인', en: 'Approve' }),
-    reject: tr(language, { ko: '거절', en: 'Reject' }),
-    extend30: tr(language, { ko: '+30일', en: '+30 days' }),
-    cancelSub: tr(language, { ko: '해지', en: 'Cancel' }),
-    cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.' }),
-    grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)' }),
-    grantBtn: tr(language, { ko: '부여', en: 'Grant' }),
-    usdtTitle: tr(language, { ko: 'USDT 입금 주소 등록', en: 'USDT receiving address' }),
+    title: tr(language, { ko: '관리자 콘솔', en: 'Manager Console', ja: '管理コンソール', th: 'คอนโซลผู้ดูแล', vi: 'Bảng quản trị' }),
+    email: tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email' }),
+    password: tr(language, { ko: '비밀번호', en: 'Password', ja: 'パスワード', th: 'รหัสผ่าน', vi: 'Mật khẩu' }),
+    signIn: tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
+    signOut: tr(language, { ko: '로그아웃', en: 'Sign out', ja: 'ログアウト', th: 'ออกจากระบบ', vi: 'Đăng xuất' }),
+    loginHint: tr(language, { ko: '관리자 계정으로 로그인하세요. 첫 계정은 서버에서 scripts/create_admin.py로 생성합니다.', en: 'Sign in with an admin account. Bootstrap the first one with scripts/create_admin.py on the server.', ja: '管理者アカウントでログインしてください。最初のアカウントはサーバー上で scripts/create_admin.py を実行して作成します。', th: 'เข้าสู่ระบบด้วยบัญชีผู้ดูแล บัญชีแรกสร้างด้วย scripts/create_admin.py บนเซิร์ฟเวอร์', vi: 'Đăng nhập bằng tài khoản quản trị. Tạo tài khoản đầu tiên bằng scripts/create_admin.py trên máy chủ.' }),
+    invalid: tr(language, { ko: '이메일 또는 비밀번호가 올바르지 않습니다', en: 'Invalid email or password', ja: 'メールアドレスまたはパスワードが正しくありません', th: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', vi: 'Email hoặc mật khẩu không đúng' }),
+    sessionExpired: tr(language, { ko: '세션이 만료되었습니다 — 다시 로그인하세요', en: 'Session expired — sign in again', ja: 'セッションが期限切れです — 再度ログインしてください', th: 'เซสชันหมดอายุ — เข้าสู่ระบบใหม่', vi: 'Phiên đã hết hạn — đăng nhập lại' }),
+    tabDashboard: tr(language, { ko: '대시보드', en: 'Dashboard', ja: 'ダッシュボード', th: 'แดชบอร์ด', vi: 'Bảng điều khiển' }),
+    tabMembers: tr(language, { ko: '회원 관리', en: 'Members', ja: '会員管理', th: 'จัดการสมาชิก', vi: 'Thành viên' }),
+    tabSubs: tr(language, { ko: '구독 관리', en: 'Subscriptions', ja: '購読管理', th: 'จัดการการสมัคร', vi: 'Đăng ký' }),
+    tabAssets: tr(language, { ko: '자산 통계', en: 'Assets', ja: '資産統計', th: 'สถิติสินทรัพย์', vi: 'Tài sản' }),
+    tabPositions: tr(language, { ko: '포지션 통계', en: 'Positions', ja: 'ポジション統計', th: 'สถิติสถานะ', vi: 'Vị thế' }),
+    tabAutomation: tr(language, { ko: '자동화 통계', en: 'Automation', ja: '自動化統計', th: 'สถิติระบบอัตโนมัติ', vi: 'Tự động hóa' }),
+    tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts', ja: '問い合わせ・通知', th: 'ซัพพอร์ต · การแจ้งเตือน', vi: 'Hỗ trợ · Thông báo' }),
+    tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions', ja: '議論管理', th: 'จัดการกระทู้', vi: 'Thảo luận' }),
+    tabLeaderboard: tr(language, { ko: '리더보드 관리', en: 'Leaderboard', ja: 'リーダーボード管理', th: 'จัดการลีดเดอร์บอร์ด', vi: 'Bảng xếp hạng' }),
+    tabAdmins: tr(language, { ko: '관리자 계정', en: 'Admins', ja: '管理者アカウント', th: 'บัญชีผู้ดูแล', vi: 'Quản trị viên' }),
+    tabAudit: tr(language, { ko: '감사 로그', en: 'Audit', ja: '監査ログ', th: 'บันทึกตรวจสอบ', vi: 'Nhật ký kiểm toán' }),
+    noData: tr(language, { ko: '데이터 없음', en: 'No data', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'Không có dữ liệu' }),
+    search: tr(language, { ko: '검색', en: 'Search', ja: '検索', th: 'ค้นหา', vi: 'Tìm kiếm' }),
+    del: tr(language, { ko: '삭제', en: 'Delete', ja: '削除', th: 'ลบ', vi: 'Xóa' }),
+    delConfirm: tr(language, { ko: '정말 삭제할까요? 이 계정의 모든 데이터가 함께 삭제됩니다.', en: 'Really delete? All of this account\'s data is deleted with it.', ja: '本当に削除しますか？このアカウントの全データも一緒に削除されます。', th: 'ลบจริงหรือไม่ ข้อมูลทั้งหมดของบัญชีนี้จะถูกลบไปด้วย', vi: 'Xóa thật chứ? Toàn bộ dữ liệu của tài khoản này sẽ bị xóa theo.' }),
+    suspend: tr(language, { ko: '정지', en: 'Suspend', ja: '停止', th: 'ระงับ', vi: 'Tạm ngưng' }),
+    activate: tr(language, { ko: '해제', en: 'Activate', ja: '解除', th: 'ปลดระงับ', vi: 'Kích hoạt' }),
+    detail: tr(language, { ko: '상세', en: 'Detail', ja: '詳細', th: 'รายละเอียด', vi: 'Chi tiết' }),
+    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng' }),
+    approve: tr(language, { ko: '승인', en: 'Approve', ja: '承認', th: 'อนุมัติ', vi: 'Duyệt' }),
+    reject: tr(language, { ko: '거절', en: 'Reject', ja: '却下', th: 'ปฏิเสธ', vi: 'Từ chối' }),
+    extend30: tr(language, { ko: '+30일', en: '+30 days', ja: '+30日', th: '+30 วัน', vi: '+30 ngày' }),
+    cancelSub: tr(language, { ko: '해지', en: 'Cancel', ja: '解約', th: 'ยกเลิก', vi: 'Hủy' }),
+    cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.', ja: 'この購読を解約しますか？会員は直ちに購読ページへ誘導されます。', th: 'ยกเลิกการสมัครนี้หรือไม่ สมาชิกจะถูกพาไปหน้าสมัครทันที', vi: 'Hủy đăng ký này? Thành viên sẽ bị chuyển ngay tới trang đăng ký.' }),
+    grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)', ja: '手動付与 — 決済なしでプランを割り当て（無償提供・既存会員・エンタープライズ契約）', th: 'ให้สิทธิ์เอง — กำหนดแพลนโดยไม่ต้องชำระเงิน (ให้ฟรี, สมาชิกเดิม, สัญญาองค์กร)', vi: 'Cấp thủ công — gán gói không cần thanh toán (tặng, thành viên cũ, hợp đồng doanh nghiệp)' }),
+    grantBtn: tr(language, { ko: '부여', en: 'Grant', ja: '付与', th: 'ให้สิทธิ์', vi: 'Cấp' }),
+    usdtTitle: tr(language, { ko: 'USDT 입금 주소 등록', en: 'USDT receiving address', ja: 'USDT入金アドレス', th: 'ที่อยู่รับ USDT', vi: 'Địa chỉ nhận USDT' }),
     usdtHint: tr(language, {
       ko: '구독자에게 이 주소로 송금하라고 안내합니다. 여기 저장한 값이 곧바로 결제 페이지에 표시되므로, 지갑에서 복사해 붙여넣고 저장 전에 반드시 확인하세요. 비워두면 결제 페이지에서 USDT 항목이 사라집니다.',
-      en: 'Subscribers are told to send real money to whatever is saved here, and it appears on the payment page immediately. Paste it straight from your wallet and check it before saving. Leaving it empty removes USDT from the payment page.' }),
-    usdtAddrPlaceholder: tr(language, { ko: '지갑에서 복사한 USDT 주소', en: 'USDT address, pasted from your wallet' }),
-    usdtSave: tr(language, { ko: '저장', en: 'Save' }),
+      en: 'Subscribers are told to send real money to whatever is saved here, and it appears on the payment page immediately. Paste it straight from your wallet and check it before saving. Leaving it empty removes USDT from the payment page.',
+      ja: 'ここに保存したアドレスへ送金するよう購読者に案内され、決済ページに即座に表示されます。ウォレットから直接コピーして貼り付け、保存前に必ず確認してください。空欄にすると決済ページからUSDTが消えます。',
+      th: 'ผู้สมัครจะถูกแจ้งให้โอนเงินจริงมายังที่อยู่ที่บันทึกไว้ที่นี่ และจะแสดงบนหน้าชำระเงินทันที คัดลอกจากกระเป๋าเงินโดยตรงและตรวจสอบก่อนบันทึก ถ้าเว้นว่างไว้ USDT จะหายไปจากหน้าชำระเงิน',
+      vi: 'Người đăng ký được hướng dẫn gửi tiền thật tới địa chỉ lưu ở đây, và nó hiện ngay trên trang thanh toán. Dán trực tiếp từ ví và kiểm tra trước khi lưu. Để trống sẽ gỡ USDT khỏi trang thanh toán.' }),
+    usdtAddrPlaceholder: tr(language, { ko: '지갑에서 복사한 USDT 주소', en: 'USDT address, pasted from your wallet', ja: 'ウォレットからコピーしたUSDTアドレス', th: 'ที่อยู่ USDT ที่คัดลอกจากกระเป๋าเงิน', vi: 'Địa chỉ USDT dán từ ví của bạn' }),
+    usdtSave: tr(language, { ko: '저장', en: 'Save', ja: '保存', th: 'บันทึก', vi: 'Lưu' }),
     usdtConfirm: tr(language, {
       ko: '이 주소로 구독자의 실제 자금이 입금됩니다. 지갑의 주소와 정확히 일치하는지 확인하셨습니까?',
-      en: 'Subscribers will send real funds to this address. Have you checked it character-for-character against your wallet?' }),
-    usdtLive: tr(language, { ko: '결제 페이지에 표시 중', en: 'Live on the payment page' }),
-    usdtFromEnv: tr(language, { ko: '.env 값 사용 중 (저장하면 대체됨)', en: 'currently from .env (saving replaces it)' }),
-    usdtUnset: tr(language, { ko: '주소 미등록 — 결제 페이지에 USDT가 표시되지 않습니다', en: 'No address set — USDT is not offered on the payment page' }),
-    grantDays: tr(language, { ko: '일수', en: 'Days' }),
-    grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)' }),
-    grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.' }),
-    planMgmt: tr(language, { ko: '플랜 관리', en: 'Plan management' }),
-    planMgmtHint: tr(language, { ko: '가격·이름 변경은 신규 결제부터 적용됩니다. 구독 이력이 있는 플랜은 삭제 대신 비활성화하세요.', en: 'Price/name changes apply to new payments. Plans with history deactivate instead of delete.' }),
-    planAdd: tr(language, { ko: '플랜 추가', en: 'Add plan' }),
-    planCode: tr(language, { ko: '코드 (예: gold)', en: 'Code (e.g. gold)' }),
-    planName: tr(language, { ko: '이름', en: 'Name' }),
-    planPrice: tr(language, { ko: '월 $', en: '$/month' }),
-    planSort: tr(language, { ko: '순서', en: 'Sort' }),
-    editName: tr(language, { ko: '이름 변경', en: 'Rename' }),
-    editPrice: tr(language, { ko: '가격 변경', en: 'Set price' }),
-    planOff: tr(language, { ko: '비활성', en: 'Deactivate' }),
-    planOn: tr(language, { ko: '활성', en: 'Activate' }),
-    subscriberRows: tr(language, { ko: '구독 이력', en: 'History' }),
-    status: tr(language, { ko: '상태', en: 'Status' }),
-    plan: tr(language, { ko: '플랜', en: 'Plan' }),
-    method: tr(language, { ko: '결제수단', en: 'Method' }),
-    reference: tr(language, { ko: '참조', en: 'Reference' }),
-    amount: tr(language, { ko: '금액', en: 'Amount' }),
-    created: tr(language, { ko: '생성일', en: 'Created' }),
-    expires: tr(language, { ko: '만료일', en: 'Expires' }),
-    member: tr(language, { ko: '회원', en: 'Member' }),
-    agent: tr(language, { ko: '에이전트', en: 'Agent' }),
-    contracts: tr(language, { ko: '엔터프라이즈 상담 요청', en: 'Enterprise contract requests' }),
-    contacted: tr(language, { ko: '연락함', en: 'Contacted' }),
-    closed: tr(language, { ko: '종료', en: 'Closed' }),
-    signups: tr(language, { ko: '일별 가입', en: 'Signups per day' }),
-    trades: tr(language, { ko: '일별 거래', en: 'Trades per day' }),
-    revenue: tr(language, { ko: '월별 매출', en: 'Revenue per month' }),
-    equityCurve: tr(language, { ko: '플랫폼 자산 추이 (30일)', en: 'Platform equity (30 days)' }),
-    topMembers: tr(language, { ko: '자산 상위 회원', en: 'Top members by equity' }),
-    runsPerDay: tr(language, { ko: '일별 자동화 실행 (14일)', en: 'Automation runs per day (14d)' }),
-    byAgent: tr(language, { ko: '에이전트별 실행 (30일)', en: 'Runs by agent (30d)' }),
-    skipReasons: tr(language, { ko: '결과 분포 (30일)', en: 'Outcome breakdown (30d)' }),
-    rules: tr(language, { ko: '자동화 규칙', en: 'Automation rules' }),
-    replies: tr(language, { ko: '답글', en: 'Replies' }),
-    exclude: tr(language, { ko: '리더보드 제외', en: 'Exclude' }),
-    include: tr(language, { ko: '제외 해제', en: 'Include' }),
-    refreshNow: tr(language, { ko: '지금 갱신', en: 'Refresh now' }),
-    exclusions: tr(language, { ko: '제외 목록', en: 'Exclusions' }),
-    reason: tr(language, { ko: '사유', en: 'Reason' }),
-    addAdmin: tr(language, { ko: '관리자 추가', en: 'Add admin' }),
-    role: tr(language, { ko: '역할', en: 'Role' }),
-    disable: tr(language, { ko: '비활성화', en: 'Disable' }),
-    enable: tr(language, { ko: '활성화', en: 'Enable' }),
-    resetPw: tr(language, { ko: '비밀번호 재설정', en: 'Reset password' }),
-    lastLogin: tr(language, { ko: '마지막 로그인', en: 'Last login' }),
-    action: tr(language, { ko: '작업', en: 'Action' }),
-    target: tr(language, { ko: '대상', en: 'Target' }),
-    time: tr(language, { ko: '시각', en: 'Time' }),
+      en: 'Subscribers will send real funds to this address. Have you checked it character-for-character against your wallet?',
+      ja: 'このアドレスに購読者の実際の資金が入金されます。ウォレットのアドレスと一字一句一致することを確認しましたか？',
+      th: 'เงินจริงของผู้สมัครจะถูกส่งไปยังที่อยู่นี้ คุณตรวจสอบตรงกันทุกตัวอักษรกับกระเป๋าเงินแล้วหรือยัง',
+      vi: 'Người đăng ký sẽ gửi tiền thật tới địa chỉ này. Bạn đã đối chiếu từng ký tự với ví chưa?' }),
+    usdtLive: tr(language, { ko: '결제 페이지에 표시 중', en: 'Live on the payment page', ja: '決済ページに表示中', th: 'แสดงอยู่บนหน้าชำระเงิน', vi: 'Đang hiển thị trên trang thanh toán' }),
+    usdtFromEnv: tr(language, { ko: '.env 값 사용 중 (저장하면 대체됨)', en: 'currently from .env (saving replaces it)', ja: '.env の値を使用中（保存すると置き換わります）', th: 'ใช้ค่าจาก .env อยู่ (บันทึกแล้วจะแทนที่)', vi: 'Đang dùng giá trị .env (lưu sẽ thay thế)' }),
+    usdtUnset: tr(language, { ko: '주소 미등록 — 결제 페이지에 USDT가 표시되지 않습니다', en: 'No address set — USDT is not offered on the payment page', ja: 'アドレス未登録 — 決済ページにUSDTは表示されません', th: 'ยังไม่ตั้งที่อยู่ — ไม่มี USDT บนหน้าชำระเงิน', vi: 'Chưa đặt địa chỉ — không hiển thị USDT trên trang thanh toán' }),
+    grantDays: tr(language, { ko: '일수', en: 'Days', ja: '日数', th: 'จำนวนวัน', vi: 'Số ngày' }),
+    grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)', ja: 'メモ（任意）', th: 'หมายเหตุ (ไม่บังคับ)', vi: 'Ghi chú (tùy chọn)' }),
+    grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.', ja: '既存の有効・保留中の購読は自動的に置き換えられます。', th: 'จะแทนที่การสมัครที่ใช้งานอยู่หรือรออยู่เดิม', vi: 'Thay thế mọi đăng ký đang hoạt động/chờ xử lý.' }),
+    planMgmt: tr(language, { ko: '플랜 관리', en: 'Plan management', ja: 'プラン管理', th: 'จัดการแพลน', vi: 'Quản lý gói' }),
+    planMgmtHint: tr(language, { ko: '가격·이름 변경은 신규 결제부터 적용됩니다. 구독 이력이 있는 플랜은 삭제 대신 비활성화하세요.', en: 'Price/name changes apply to new payments. Plans with history deactivate instead of delete.', ja: '価格・名称の変更は新規決済から適用されます。購読履歴のあるプランは削除せず無効化してください。', th: 'การเปลี่ยนราคา/ชื่อมีผลกับการชำระเงินใหม่ แพลนที่มีประวัติให้ปิดใช้งานแทนการลบ', vi: 'Đổi giá/tên áp dụng cho thanh toán mới. Gói đã có lịch sử thì vô hiệu hóa thay vì xóa.' }),
+    planAdd: tr(language, { ko: '플랜 추가', en: 'Add plan', ja: 'プラン追加', th: 'เพิ่มแพลน', vi: 'Thêm gói' }),
+    planCode: tr(language, { ko: '코드 (예: gold)', en: 'Code (e.g. gold)', ja: 'コード（例: gold）', th: 'โค้ด (เช่น gold)', vi: 'Mã (vd: gold)' }),
+    planName: tr(language, { ko: '이름', en: 'Name', ja: '名称', th: 'ชื่อ', vi: 'Tên' }),
+    planPrice: tr(language, { ko: '월 $', en: '$/month', ja: '月額 $', th: '$ / เดือน', vi: '$ / tháng' }),
+    planSort: tr(language, { ko: '순서', en: 'Sort', ja: '順序', th: 'ลำดับ', vi: 'Thứ tự' }),
+    editName: tr(language, { ko: '이름 변경', en: 'Rename', ja: '名称変更', th: 'เปลี่ยนชื่อ', vi: 'Đổi tên' }),
+    editPrice: tr(language, { ko: '가격 변경', en: 'Set price', ja: '価格変更', th: 'ตั้งราคา', vi: 'Đặt giá' }),
+    planOff: tr(language, { ko: '비활성', en: 'Deactivate', ja: '無効', th: 'ปิดใช้งาน', vi: 'Vô hiệu' }),
+    planOn: tr(language, { ko: '활성', en: 'Activate', ja: '有効', th: 'เปิดใช้งาน', vi: 'Kích hoạt' }),
+    subscriberRows: tr(language, { ko: '구독 이력', en: 'History', ja: '履歴', th: 'ประวัติ', vi: 'Lịch sử' }),
+    status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái' }),
+    plan: tr(language, { ko: '플랜', en: 'Plan', ja: 'プラン', th: 'แพลน', vi: 'Gói' }),
+    method: tr(language, { ko: '결제수단', en: 'Method', ja: '決済手段', th: 'ช่องทางชำระ', vi: 'Phương thức' }),
+    reference: tr(language, { ko: '참조', en: 'Reference', ja: '参照', th: 'อ้างอิง', vi: 'Tham chiếu' }),
+    amount: tr(language, { ko: '금액', en: 'Amount', ja: '金額', th: 'จำนวนเงิน', vi: 'Số tiền' }),
+    created: tr(language, { ko: '생성일', en: 'Created', ja: '作成日', th: 'วันที่สร้าง', vi: 'Ngày tạo' }),
+    expires: tr(language, { ko: '만료일', en: 'Expires', ja: '有効期限', th: 'วันหมดอายุ', vi: 'Ngày hết hạn' }),
+    member: tr(language, { ko: '회원', en: 'Member', ja: '会員', th: 'สมาชิก', vi: 'Thành viên' }),
+    agent: tr(language, { ko: '에이전트', en: 'Agent', ja: 'エージェント', th: 'เอเจนต์', vi: 'Agent' }),
+    contracts: tr(language, { ko: '엔터프라이즈 상담 요청', en: 'Enterprise contract requests', ja: 'エンタープライズ相談リクエスト', th: 'คำขอสัญญาองค์กร', vi: 'Yêu cầu hợp đồng doanh nghiệp' }),
+    contacted: tr(language, { ko: '연락함', en: 'Contacted', ja: '連絡済み', th: 'ติดต่อแล้ว', vi: 'Đã liên hệ' }),
+    closed: tr(language, { ko: '종료', en: 'Closed', ja: '終了', th: 'ปิดแล้ว', vi: 'Đã đóng' }),
+    signups: tr(language, { ko: '일별 가입', en: 'Signups per day', ja: '日別登録', th: 'สมัครต่อวัน', vi: 'Đăng ký mỗi ngày' }),
+    trades: tr(language, { ko: '일별 거래', en: 'Trades per day', ja: '日別取引', th: 'เทรดต่อวัน', vi: 'Giao dịch mỗi ngày' }),
+    revenue: tr(language, { ko: '월별 매출', en: 'Revenue per month', ja: '月別売上', th: 'รายได้ต่อเดือน', vi: 'Doanh thu mỗi tháng' }),
+    equityCurve: tr(language, { ko: '플랫폼 자산 추이 (30일)', en: 'Platform equity (30 days)', ja: 'プラットフォーム資産推移（30日）', th: 'มูลค่าสินทรัพย์แพลตฟอร์ม (30 วัน)', vi: 'Tài sản nền tảng (30 ngày)' }),
+    topMembers: tr(language, { ko: '자산 상위 회원', en: 'Top members by equity', ja: '資産上位会員', th: 'สมาชิกสินทรัพย์สูงสุด', vi: 'Thành viên tài sản cao nhất' }),
+    runsPerDay: tr(language, { ko: '일별 자동화 실행 (14일)', en: 'Automation runs per day (14d)', ja: '日別自動化実行（14日）', th: 'การรันอัตโนมัติต่อวัน (14 วัน)', vi: 'Lượt chạy tự động mỗi ngày (14 ngày)' }),
+    byAgent: tr(language, { ko: '에이전트별 실행 (30일)', en: 'Runs by agent (30d)', ja: 'エージェント別実行（30日）', th: 'การรันตามเอเจนต์ (30 วัน)', vi: 'Lượt chạy theo agent (30 ngày)' }),
+    skipReasons: tr(language, { ko: '결과 분포 (30일)', en: 'Outcome breakdown (30d)', ja: '結果分布（30日）', th: 'สัดส่วนผลลัพธ์ (30 วัน)', vi: 'Phân bố kết quả (30 ngày)' }),
+    rules: tr(language, { ko: '자동화 규칙', en: 'Automation rules', ja: '自動化ルール', th: 'กฎอัตโนมัติ', vi: 'Quy tắc tự động' }),
+    replies: tr(language, { ko: '답글', en: 'Replies', ja: '返信', th: 'การตอบกลับ', vi: 'Trả lời' }),
+    exclude: tr(language, { ko: '리더보드 제외', en: 'Exclude', ja: 'リーダーボード除外', th: 'ยกเว้นจากลีดเดอร์บอร์ด', vi: 'Loại khỏi bảng xếp hạng' }),
+    include: tr(language, { ko: '제외 해제', en: 'Include', ja: '除外解除', th: 'ยกเลิกการยกเว้น', vi: 'Đưa lại vào' }),
+    refreshNow: tr(language, { ko: '지금 갱신', en: 'Refresh now', ja: '今すぐ更新', th: 'รีเฟรชตอนนี้', vi: 'Làm mới ngay' }),
+    exclusions: tr(language, { ko: '제외 목록', en: 'Exclusions', ja: '除外リスト', th: 'รายการที่ยกเว้น', vi: 'Danh sách loại trừ' }),
+    reason: tr(language, { ko: '사유', en: 'Reason', ja: '理由', th: 'เหตุผล', vi: 'Lý do' }),
+    addAdmin: tr(language, { ko: '관리자 추가', en: 'Add admin', ja: '管理者追加', th: 'เพิ่มผู้ดูแล', vi: 'Thêm quản trị viên' }),
+    role: tr(language, { ko: '역할', en: 'Role', ja: '役割', th: 'บทบาท', vi: 'Vai trò' }),
+    disable: tr(language, { ko: '비활성화', en: 'Disable', ja: '無効化', th: 'ปิดใช้งาน', vi: 'Vô hiệu hóa' }),
+    enable: tr(language, { ko: '활성화', en: 'Enable', ja: '有効化', th: 'เปิดใช้งาน', vi: 'Bật' }),
+    resetPw: tr(language, { ko: '비밀번호 재설정', en: 'Reset password', ja: 'パスワード再設定', th: 'รีเซ็ตรหัสผ่าน', vi: 'Đặt lại mật khẩu' }),
+    lastLogin: tr(language, { ko: '마지막 로그인', en: 'Last login', ja: '最終ログイン', th: 'เข้าสู่ระบบล่าสุด', vi: 'Đăng nhập cuối' }),
+    action: tr(language, { ko: '작업', en: 'Action', ja: '操作', th: 'การกระทำ', vi: 'Hành động' }),
+    target: tr(language, { ko: '대상', en: 'Target', ja: '対象', th: 'เป้าหมาย', vi: 'Đối tượng' }),
+    time: tr(language, { ko: '시각', en: 'Time', ja: '時刻', th: 'เวลา', vi: 'Thời gian' }),
   }
 
   const hdr = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -358,14 +364,14 @@ export function AdminPage() {
       {tab === 'dashboard' && analytics && ov && (
         <>
           <StatCards items={[
-            [tr(language, { ko: '전체 회원', en: 'Total members' }), analytics.total_users],
-            [tr(language, { ko: '활성 구독', en: 'Active subscriptions' }), analytics.active_subscriptions],
-            [tr(language, { ko: '에이전트', en: 'Agents' }), ov.agents],
-            [tr(language, { ko: '거래', en: 'Trades' }), ov.trades],
-            [tr(language, { ko: '미결제 포지션', en: 'Open positions' }), ov.open_positions],
-            [tr(language, { ko: '자동화 규칙 (활성)', en: 'Automation rules (on)' }), `${ov.automation_rules} (${ov.automation_rules_enabled})`],
-            [tr(language, { ko: '토론', en: 'Discussions' }), ov.discussions],
-            [tr(language, { ko: '모의 자금 합계', en: 'Total sim cash' }), fmtMoney(ov.total_sim_cash)],
+            [tr(language, { ko: '전체 회원', en: 'Total members', ja: '総会員数', th: 'สมาชิกทั้งหมด', vi: 'Tổng thành viên' }), analytics.total_users],
+            [tr(language, { ko: '활성 구독', en: 'Active subscriptions', ja: '有効な購読', th: 'การสมัครที่ใช้งาน', vi: 'Đăng ký đang hoạt động' }), analytics.active_subscriptions],
+            [tr(language, { ko: '에이전트', en: 'Agents', ja: 'エージェント', th: 'เอเจนต์', vi: 'Agent' }), ov.agents],
+            [tr(language, { ko: '거래', en: 'Trades', ja: '取引', th: 'การเทรด', vi: 'Giao dịch' }), ov.trades],
+            [tr(language, { ko: '미결제 포지션', en: 'Open positions', ja: '未決済ポジション', th: 'สถานะที่เปิดอยู่', vi: 'Vị thế đang mở' }), ov.open_positions],
+            [tr(language, { ko: '자동화 규칙 (활성)', en: 'Automation rules (on)', ja: '自動化ルール（有効）', th: 'กฎอัตโนมัติ (เปิด)', vi: 'Quy tắc tự động (bật)' }), `${ov.automation_rules} (${ov.automation_rules_enabled})`],
+            [tr(language, { ko: '토론', en: 'Discussions', ja: '議論', th: 'กระทู้', vi: 'Thảo luận' }), ov.discussions],
+            [tr(language, { ko: '모의 자금 합계', en: 'Total sim cash', ja: 'シミュレーション資金合計', th: 'เงินจำลองรวม', vi: 'Tổng tiền mô phỏng' }), fmtMoney(ov.total_sim_cash)],
           ]} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 12 }}>
             <div><div style={sectionTitle}>{T.signups}</div>
@@ -375,7 +381,7 @@ export function AdminPage() {
             <div><div style={sectionTitle}>{T.revenue}</div>
               <TrendChart data={analytics.revenue_by_month} xKey="month" series={[['revenue', '#c26a45']]} kind="bar" /></div>
           </div>
-          <div style={sectionTitle}>{tr(language, { ko: '플랜별 구독 현황', en: 'Subscriptions by plan' })}</div>
+          <div style={sectionTitle}>{tr(language, { ko: '플랜별 구독 현황', en: 'Subscriptions by plan', ja: 'プラン別購読状況', th: 'การสมัครตามแพลน', vi: 'Đăng ký theo gói' })}</div>
           <div style={tableCard}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
               <thead><tr><th style={th}>{T.plan}</th><th style={th}>{T.status}</th><th style={th}>#</th></tr></thead>
@@ -432,7 +438,7 @@ export function AdminPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 12, marginTop: 12 }}>
                 <div>
-                  <div style={sectionTitle}>{tr(language, { ko: '구독 이력', en: 'Subscription history' })}</div>
+                  <div style={sectionTitle}>{tr(language, { ko: '구독 이력', en: 'Subscription history', ja: '購読履歴', th: 'ประวัติการสมัคร', vi: 'Lịch sử đăng ký' })}</div>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead><tr><th style={th}>{T.plan}</th><th style={th}>{T.status}</th><th style={th}>{T.method}</th><th style={th}>{T.expires}</th></tr></thead>
                     <tbody>
@@ -446,11 +452,11 @@ export function AdminPage() {
                   </table>
                 </div>
                 <div>
-                  <div style={sectionTitle}>{tr(language, { ko: '자산 추이', en: 'Equity history' })}</div>
+                  <div style={sectionTitle}>{tr(language, { ko: '자산 추이', en: 'Equity history', ja: '資産推移', th: 'ประวัติสินทรัพย์', vi: 'Lịch sử tài sản' })}</div>
                   <TrendChart data={memberDetail.equity_history || []} xKey="recorded_at" series={[['total_value', '#c26a45']]} />
                 </div>
               </div>
-              <div style={sectionTitle}>{tr(language, { ko: '보유 포지션', en: 'Open positions' })} ({(memberDetail.positions || []).length})</div>
+              <div style={sectionTitle}>{tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '未決済ポジション', th: 'สถานะที่เปิดอยู่', vi: 'Vị thế đang mở' })} ({(memberDetail.positions || []).length})</div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr><th style={th}>Symbol</th><th style={th}>Side</th><th style={th}>Qty</th><th style={th}>Entry</th><th style={th}>Now</th></tr></thead>
                 <tbody>
@@ -464,7 +470,7 @@ export function AdminPage() {
             </div>
           )}
 
-          <div style={sectionTitle}>{tr(language, { ko: '에이전트 계정', en: 'Agent accounts' })}</div>
+          <div style={sectionTitle}>{tr(language, { ko: '에이전트 계정', en: 'Agent accounts', ja: 'エージェントアカウント', th: 'บัญชีเอเจนต์', vi: 'Tài khoản agent' })}</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <input placeholder={T.search} value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && refresh('members')} style={{ ...inputStyle, width: 260 }} />
@@ -559,7 +565,7 @@ export function AdminPage() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             {['', 'pending', 'active', 'rejected', 'expired'].map(s => (
               <button key={s || 'all'} style={chip(subFilter === s)} onClick={() => setSubFilter(s)}>
-                {s || tr(language, { ko: '전체', en: 'All' })}
+                {s || tr(language, { ko: '전체', en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả' })}
                 {subs?.by_status && s ? ` (${subs.by_status[s] || 0})` : ''}
               </button>
             ))}
@@ -683,10 +689,10 @@ export function AdminPage() {
       {tab === 'assets' && assets && (
         <>
           <StatCards items={[
-            [tr(language, { ko: '현금 합계', en: 'Total cash' }), fmtMoney(assets.totals.cash)],
-            [tr(language, { ko: '입금 합계', en: 'Total deposited' }), fmtMoney(assets.totals.deposited)],
-            [tr(language, { ko: '포지션 가치', en: 'Position value' }), fmtMoney(assets.totals.position_value)],
-            [tr(language, { ko: '에이전트 수', en: 'Agents' }), assets.totals.agents],
+            [tr(language, { ko: '현금 합계', en: 'Total cash', ja: '現金合計', th: 'เงินสดรวม', vi: 'Tổng tiền mặt' }), fmtMoney(assets.totals.cash)],
+            [tr(language, { ko: '입금 합계', en: 'Total deposited', ja: '入金合計', th: 'ยอดฝากรวม', vi: 'Tổng đã nạp' }), fmtMoney(assets.totals.deposited)],
+            [tr(language, { ko: '포지션 가치', en: 'Position value', ja: 'ポジション評価額', th: 'มูลค่าสถานะ', vi: 'Giá trị vị thế' }), fmtMoney(assets.totals.position_value)],
+            [tr(language, { ko: '에이전트 수', en: 'Agents', ja: 'エージェント数', th: 'จำนวนเอเจนต์', vi: 'Số agent' }), assets.totals.agents],
           ]} />
           <div style={sectionTitle}>{T.equityCurve}</div>
           <TrendChart data={assets.equity_curve} xKey="day" series={[['total_value', '#c26a45'], ['profit', '#22c55e']]} />
@@ -714,9 +720,9 @@ export function AdminPage() {
       {tab === 'positions' && positions && (
         <>
           <StatCards items={[
-            [tr(language, { ko: '미결제 포지션', en: 'Open positions' }), positions.totals.open_positions],
-            [tr(language, { ko: '총 가치', en: 'Total value' }), fmtMoney(positions.totals.total_value)],
-            [tr(language, { ko: '미실현 손익', en: 'Unrealized PnL' }), fmtMoney(positions.totals.unrealized_pnl)],
+            [tr(language, { ko: '미결제 포지션', en: 'Open positions', ja: '未決済ポジション', th: 'สถานะที่เปิดอยู่', vi: 'Vị thế đang mở' }), positions.totals.open_positions],
+            [tr(language, { ko: '총 가치', en: 'Total value', ja: '総額', th: 'มูลค่ารวม', vi: 'Tổng giá trị' }), fmtMoney(positions.totals.total_value)],
+            [tr(language, { ko: '미실현 손익', en: 'Unrealized PnL', ja: '未実現損益', th: 'กำไรขาดทุนที่ยังไม่รับรู้', vi: 'Lãi/lỗ chưa thực hiện' }), fmtMoney(positions.totals.unrealized_pnl)],
           ]} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 12 }}>
             <div style={tableCard}>
@@ -744,7 +750,7 @@ export function AdminPage() {
               </table>
             </div>
           </div>
-          <div style={sectionTitle}>{tr(language, { ko: '대형 포지션', en: 'Largest positions' })}</div>
+          <div style={sectionTitle}>{tr(language, { ko: '대형 포지션', en: 'Largest positions', ja: '大口ポジション', th: 'สถานะขนาดใหญ่สุด', vi: 'Vị thế lớn nhất' })}</div>
           <div style={tableCard}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
               <thead><tr><th style={th}>Symbol</th><th style={th}>{T.agent}</th><th style={th}>{T.email}</th><th style={th}>Side</th><th style={th}>Qty</th><th style={th}>Entry</th><th style={th}>Now</th><th style={th}>PnL</th></tr></thead>
@@ -769,10 +775,10 @@ export function AdminPage() {
       {tab === 'automation' && autoStats && (
         <>
           <StatCards items={[
-            [tr(language, { ko: '규칙 (활성)', en: 'Rules (on)' }), `${autoStats.totals.rules} (${autoStats.totals.enabled})`],
-            [tr(language, { ko: '자동 실행 규칙', en: 'Auto-execute rules' }), autoStats.totals.auto_execute],
-            [tr(language, { ko: '실행 (30일)', en: 'Runs (30d)' }), autoStats.totals.runs_30d],
-            [tr(language, { ko: '실행률 (30일)', en: 'Execute rate (30d)' }), `${Math.round((autoStats.totals.execute_rate_30d || 0) * 100)}%`],
+            [tr(language, { ko: '규칙 (활성)', en: 'Rules (on)', ja: 'ルール（有効）', th: 'กฎ (เปิด)', vi: 'Quy tắc (bật)' }), `${autoStats.totals.rules} (${autoStats.totals.enabled})`],
+            [tr(language, { ko: '자동 실행 규칙', en: 'Auto-execute rules', ja: '自動実行ルール', th: 'กฎรันอัตโนมัติ', vi: 'Quy tắc tự thực thi' }), autoStats.totals.auto_execute],
+            [tr(language, { ko: '실행 (30일)', en: 'Runs (30d)', ja: '実行（30日）', th: 'การรัน (30 วัน)', vi: 'Lượt chạy (30 ngày)' }), autoStats.totals.runs_30d],
+            [tr(language, { ko: '실행률 (30일)', en: 'Execute rate (30d)', ja: '実行率（30日）', th: 'อัตราการรัน (30 วัน)', vi: 'Tỷ lệ thực thi (30 ngày)' }), `${Math.round((autoStats.totals.execute_rate_30d || 0) * 100)}%`],
           ]} />
           <div style={sectionTitle}>{T.runsPerDay}</div>
           <TrendChart data={autoStats.runs_by_day} xKey="day" series={[['runs', '#c26a45'], ['executed', '#22c55e']]} />
@@ -828,19 +834,22 @@ export function AdminPage() {
         <>
           <div style={{ ...card, marginBottom: 16 }}>
             <div style={sectionTitle}>
-              {tr(language, { ko: '공지 발송 — 전체 회원 알림', en: 'Broadcast — announcement to every member' })}
+              {tr(language, { ko: '공지 발송 — 전체 회원 알림', en: 'Broadcast — announcement to every member', ja: '一斉配信 — 全会員へのお知らせ', th: 'ประกาศ — แจ้งสมาชิกทุกคน', vi: 'Phát thông báo — gửi tới mọi thành viên' })}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
               {tr(language, {
                 ko: '회원의 알림함에 공지가 표시됩니다. 공지 알림을 끈 회원은 자동으로 제외됩니다.',
                 en: "Lands in each member's notification centre. Members who switched announcements off are skipped automatically.",
+                ja: '会員の通知センターに表示されます。お知らせ通知をオフにした会員は自動的に除外されます。',
+                th: 'จะแสดงในศูนย์แจ้งเตือนของสมาชิกแต่ละคน สมาชิกที่ปิดการแจ้งเตือนประกาศจะถูกข้ามอัตโนมัติ',
+                vi: 'Hiển thị trong trung tâm thông báo của từng thành viên. Thành viên đã tắt thông báo sẽ tự động bị bỏ qua.',
               })}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input placeholder={tr(language, { ko: '제목', en: 'Title' })} value={broadcast.title}
+              <input placeholder={tr(language, { ko: '제목', en: 'Title', ja: 'タイトル', th: 'หัวข้อ', vi: 'Tiêu đề' })} value={broadcast.title}
                 onChange={e => setBroadcast(b => ({ ...b, title: e.target.value }))}
                 style={{ ...inputStyle, width: 240 }} />
-              <input placeholder={tr(language, { ko: '내용 (선택)', en: 'Body (optional)' })} value={broadcast.body}
+              <input placeholder={tr(language, { ko: '내용 (선택)', en: 'Body (optional)', ja: '本文（任意）', th: 'เนื้อหา (ไม่บังคับ)', vi: 'Nội dung (tùy chọn)' })} value={broadcast.body}
                 onChange={e => setBroadcast(b => ({ ...b, body: e.target.value }))}
                 style={{ ...inputStyle, flex: 1, minWidth: 240 }} />
               <button style={primaryBtn} disabled={!broadcast.title.trim()}
@@ -848,21 +857,24 @@ export function AdminPage() {
                   if (!confirm(tr(language, {
                     ko: '모든 회원에게 이 공지를 보낼까요?',
                     en: 'Send this announcement to every member?',
+                    ja: 'このお知らせを全会員に送信しますか？',
+                    th: 'ส่งประกาศนี้ให้สมาชิกทุกคนหรือไม่',
+                    vi: 'Gửi thông báo này tới mọi thành viên?',
                   }))) return
                   const ok = await act('notifications/broadcast',
                     { method: 'POST', body: JSON.stringify(broadcast) }, 'support')
                   if (ok) setBroadcast({ title: '', body: '' })
                 }}>
-                {tr(language, { ko: '발송', en: 'Send' })}
+                {tr(language, { ko: '발송', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi' })}
               </button>
             </div>
           </div>
 
           <div style={sectionTitle}>
-            {tr(language, { ko: '회원 문의', en: 'Member conversations' })}
+            {tr(language, { ko: '회원 문의', en: 'Member conversations', ja: '会員問い合わせ', th: 'บทสนทนากับสมาชิก', vi: 'Hội thoại thành viên' })}
             {threads?.unread_total > 0 && (
               <span style={{ marginLeft: 8, color: '#c26a45' }}>
-                · {threads.unread_total} {tr(language, { ko: '건 대기', en: 'waiting' })}
+                · {threads.unread_total} {tr(language, { ko: '건 대기', en: 'waiting', ja: '件 待機中', th: 'รออยู่', vi: 'đang chờ' })}
               </span>
             )}
           </div>
@@ -872,7 +884,7 @@ export function AdminPage() {
                 <thead><tr>
                   <th style={th}>{T.member}</th>
                   <th style={th}>{T.status}</th>
-                  <th style={th}>{tr(language, { ko: '최근', en: 'Last' })}</th>
+                  <th style={th}>{tr(language, { ko: '최근', en: 'Last', ja: '最終', th: 'ล่าสุด', vi: 'Gần nhất' })}</th>
                 </tr></thead>
                 <tbody>
                   {(threads?.threads || []).map((t: any) => (
@@ -904,7 +916,7 @@ export function AdminPage() {
             <div style={card}>
               {!activeThread && (
                 <div style={{ color: 'var(--text-muted,#8a8073)', fontSize: 13 }}>
-                  {tr(language, { ko: '왼쪽에서 대화를 선택하세요.', en: 'Pick a conversation on the left.' })}
+                  {tr(language, { ko: '왼쪽에서 대화를 선택하세요.', en: 'Pick a conversation on the left.', ja: '左側から会話を選択してください。', th: 'เลือกบทสนทนาทางซ้าย', vi: 'Chọn một hội thoại ở bên trái.' })}
                 </div>
               )}
               {activeThread && (
@@ -918,8 +930,8 @@ export function AdminPage() {
                       setActiveThread(await call(`support/threads/${activeThread.thread.id}`))
                     }}>
                       {activeThread.thread.status === 'open'
-                        ? tr(language, { ko: '문의 종료', en: 'Close thread' })
-                        : tr(language, { ko: '다시 열기', en: 'Reopen' })}
+                        ? tr(language, { ko: '문의 종료', en: 'Close thread', ja: '問い合わせ終了', th: 'ปิดเธรด', vi: 'Đóng chủ đề' })
+                        : tr(language, { ko: '다시 열기', en: 'Reopen', ja: '再開', th: 'เปิดใหม่', vi: 'Mở lại' })}
                     </button>
                   </div>
                   <div style={{ maxHeight: 340, overflowY: 'auto', marginBottom: 10 }}>
@@ -944,7 +956,7 @@ export function AdminPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                     <textarea value={reply} onChange={e => setReply(e.target.value.slice(0, 4000))} rows={3}
-                      placeholder={tr(language, { ko: '답변을 입력하세요…', en: 'Write a reply…' })}
+                      placeholder={tr(language, { ko: '답변을 입력하세요…', en: 'Write a reply…', ja: '返信を入力…', th: 'เขียนคำตอบ…', vi: 'Viết trả lời…' })}
                       style={{ ...inputStyle, flex: 1, resize: 'vertical', fontFamily: 'inherit' }} />
                     <button style={primaryBtn} disabled={!reply.trim()} onClick={async () => {
                       const id = activeThread.thread.id
@@ -955,7 +967,7 @@ export function AdminPage() {
                       try { setActiveThread(await call(`support/threads/${id}`)) }
                       catch { /* refresh() already re-rendered the list; thread reload is best-effort */ }
                     }}>
-                      {tr(language, { ko: '답변 전송', en: 'Send reply' })}
+                      {tr(language, { ko: '답변 전송', en: 'Send reply', ja: '返信送信', th: 'ส่งคำตอบ', vi: 'Gửi trả lời' })}
                     </button>
                   </div>
                 </>
@@ -1073,7 +1085,7 @@ export function AdminPage() {
                   <tr key={i}>
                     <td style={{ ...td, fontWeight: 600 }}>{e.agent_name || e.agent_id}</td>
                     <td style={td}>{e.reason || '—'}</td>
-                    <td style={{ ...td, color: e.active ? '#ef4444' : 'var(--text-muted,#8a8073)' }}>{e.active ? tr(language, { ko: '제외됨', en: 'excluded' }) : tr(language, { ko: '해제됨', en: 'included' })}</td>
+                    <td style={{ ...td, color: e.active ? '#ef4444' : 'var(--text-muted,#8a8073)' }}>{e.active ? tr(language, { ko: '제외됨', en: 'excluded', ja: '除外済み', th: 'ถูกยกเว้น', vi: 'đã loại trừ' }) : tr(language, { ko: '해제됨', en: 'included', ja: '解除済み', th: 'ยกเลิกยกเว้นแล้ว', vi: 'đã đưa lại' })}</td>
                     <td style={td}>{fmtDate(e.created_at)}</td>
                     <td style={td}>{!!e.active && <button style={actionBtn} onClick={() => act(`leaderboard/exclusions/${e.agent_id}`, { method: 'DELETE' }, 'leaderboard')}>{T.include}</button>}</td>
                   </tr>
@@ -1143,7 +1155,7 @@ export function AdminPage() {
       {tab === 'audit' && (
         <div style={tableCard}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
-            <thead><tr><th style={th}>{T.time}</th><th style={th}>{T.email}</th><th style={th}>{T.action}</th><th style={th}>{T.target}</th><th style={th}>{tr(language, { ko: '내용', en: 'Detail' })}</th></tr></thead>
+            <thead><tr><th style={th}>{T.time}</th><th style={th}>{T.email}</th><th style={th}>{T.action}</th><th style={th}>{T.target}</th><th style={th}>{tr(language, { ko: '내용', en: 'Detail', ja: '内容', th: 'รายละเอียด', vi: 'Chi tiết' })}</th></tr></thead>
             <tbody>
               {(audit?.entries || []).map((e: any) => (
                 <tr key={e.id}>
