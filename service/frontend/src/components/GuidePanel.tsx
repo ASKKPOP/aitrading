@@ -86,6 +86,7 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
       <aside
         role="complementary"
         aria-label={tr(language, T.guide)}
+        className="app-drawer"
         style={{
           position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 70,
           width: 'min(460px, 100vw)', display: 'flex', flexDirection: 'column',

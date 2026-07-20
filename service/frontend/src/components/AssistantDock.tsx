@@ -154,7 +154,7 @@ export function AssistantDock({ token }: Props) {
   )
 
   return (
-    <div style={{
+    <div className="app-drawer" style={{
       position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 60,
       width: 'min(420px, 100vw)', display: 'flex', flexDirection: 'column',
       background: 'var(--bg-card)', borderLeft: '1px solid var(--border-color)',

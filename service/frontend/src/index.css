@@ -364,11 +364,16 @@ a {
 }
 
 /* ── Desktop top bar ───────────────────────────────────────────────── */
+/* Height lives in a variable because fixed overlays (assistant dock, guide
+   drawer, toasts) must clear the bar — the top bar paints above them, so a
+   drawer starting at top:0 hides its own close button behind it. */
+:root { --topnav-h: 56px; }
+
 .topnav {
   display: flex;
   align-items: center;
   gap: 18px;
-  height: 56px;
+  height: var(--topnav-h);
   padding: 0 20px;
   background: var(--sidebar-bg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.09);
@@ -577,6 +582,12 @@ a {
 
 .topnav-login { font-size: 12.5px; padding: 6px 14px; }
 
+/* Right-side drawers (assistant, guide) and corner toasts start below the top
+   bar so it never covers their controls. Mobile has no top bar, so they reset
+   to the viewport edge there. */
+.app-drawer { top: var(--topnav-h) !important; }
+.app-toast { top: calc(var(--topnav-h) + 12px) !important; }
+
 /* The sidebar is mobile-only now; the top bar is the desktop chrome. */
 @media (min-width: 769px) {
   .sidebar,
@@ -585,6 +596,8 @@ a {
 
 @media (max-width: 768px) {
   .topnav { display: none; }
+  .app-drawer { top: 0 !important; }
+  .app-toast { top: 18px !important; }
 }
 
 /* Chrome that only the mobile layout needs (the top bar carries it on desktop). */

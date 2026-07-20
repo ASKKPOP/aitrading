@@ -233,7 +233,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       </div>
 
       {savedMsg && (
-        <div style={{
+        <div className="app-toast" style={{
           position: 'fixed', top: '18px', right: '18px', zIndex: 50,
           background: 'var(--accent-primary)', color: '#fff', borderRadius: '10px',
           padding: '8px 16px', fontSize: '13px', fontWeight: 600,
