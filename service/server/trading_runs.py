@@ -28,6 +28,7 @@ Conventions this module deliberately enforces (Plan 10 verification round):
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -252,8 +253,36 @@ def get_run(run_id: int, agent_id: int) -> Optional[dict]:
         conn.close()
 
 
-def _active_key(agent_id: int, market: str, symbol: str) -> str:
-    return f"{agent_id}:{market}:{symbol}"
+def filter_key(market_type: Optional[str], cfg: dict) -> str:
+    """Short stable digest of what makes two runs on one symbol genuinely
+    different strategies: the instrument type plus the decision parameters
+    (how often it looks, how sure it must be, which model decides).
+
+    Runs matching on all four are duplicates — same symbol, same behaviour,
+    two books racing the same signal — and are still refused. Differ in any
+    one and both may run: they hold separate `positions` rows (run_id) so
+    P&L, stops and flatten stay attributable per run.
+    """
+    parts = (
+        (market_type or "spot").strip().lower(),
+        str(int(cfg.get("interval_minutes") or 60)),
+        f"{float(cfg.get('min_confidence') or 0):.4f}",
+        (cfg.get("provider") or "-").strip().lower(),
+    )
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()[:10]
+
+
+def _active_key(agent_id: int, market: str, symbol: str, fkey: str) -> str:
+    return f"{agent_id}:{market}:{symbol}:{fkey}"
+
+
+def run_filter_key(run: dict) -> str:
+    """filter_key() for a run row, tolerating an unparseable snapshot."""
+    try:
+        cfg = json.loads(run.get("config_snapshot_json") or "{}")
+    except Exception:  # noqa: BLE001
+        cfg = {}
+    return filter_key(run.get("market_type"), cfg)
 
 
 # ── lifecycle operations ───────────────────────────────────────────────────
@@ -298,11 +327,16 @@ class StartConflict(Exception):
 
 def list_start_conflicts(cursor, agent_id: int, market: str, symbol: str) -> dict:
     """User-resolvable conflicts blocking a run start on agent+market+symbol:
-    the shared open position (if any) and enabled auto-executing automation
-    rules. Shape: {"position": {...}|None, "rule_ids": [int, ...]}."""
+    the open position in the UNOWNED book (if any) and enabled auto-executing
+    automation rules. Shape: {"position": {...}|None, "rule_ids": [int, ...]}.
+
+    `run_id IS NULL` is deliberate: positions opened by other runs are their
+    own rows and never commingle with this one, so they are not a conflict.
+    Only the book that manual signals and automation rules write is."""
     cursor.execute(
         """SELECT id, side, quantity, entry_price, current_price FROM positions
-           WHERE agent_id = ? AND market = ? AND symbol = ? AND quantity != 0""",
+           WHERE agent_id = ? AND market = ? AND symbol = ? AND quantity != 0
+             AND run_id IS NULL""",
         (agent_id, market, symbol),
     )
     row = cursor.fetchone()
@@ -413,11 +447,15 @@ class EntitlementDenied(Exception):
 
 def start_run(run_id: int, agent_id: int) -> dict:
     """draft -> armed|running. Enforces, inside one write transaction:
-      1. DB-level exclusivity — active_key UNIQUE (one active run per
-         agent+market+symbol; concurrent double-starts collide here);
-      2. no pre-existing position on the tuple (a shared averaged-basis
-         position row would make run P&L attribution fiction);
-      3. no enabled auto-executing automation rule on the tuple (same reason).
+      1. DB-level exclusivity — active_key UNIQUE on
+         agent+market+symbol+filter_key. Several runs may share a symbol as
+         long as they are different strategies (see filter_key); an exact
+         duplicate collides here, as do concurrent double-starts;
+      2. no pre-existing position in the *unowned* book on the tuple (manual
+         or rule-owned; a run never adopts a book it did not open — other
+         runs' positions are their own rows and do not block);
+      3. no enabled auto-executing automation rule on the tuple (it trades
+         the unowned book this run would otherwise have to reconcile with).
     Manual start goes straight to running; every other start condition arms.
     """
     conn = get_db_connection()
@@ -449,8 +487,9 @@ def start_run(run_id: int, agent_id: int) -> dict:
         conflicts = list_start_conflicts(cursor, agent_id, market, symbol)
         if conflicts["position"]:
             raise StartConflict(
-                "an open position already exists for this symbol — close it first "
-                "(runs never adopt shared positions; attribution would be wrong)",
+                "an open position already exists for this symbol outside any run — "
+                "close it first (runs never adopt a book they did not open; "
+                "attribution would be wrong)",
                 conflicts)
         if conflicts["rule_ids"]:
             raise StartConflict(
@@ -465,11 +504,14 @@ def start_run(run_id: int, agent_id: int) -> dict:
                 """UPDATE trading_runs
                    SET status = ?, status_reason = NULL, active_key = ?, started_at = ?
                    WHERE id = ? AND status = ?""",
-                (target, _active_key(agent_id, market, symbol), now, run_id, STATUS_DRAFT),
+                (target, _active_key(agent_id, market, symbol, run_filter_key(run)),
+                 now, run_id, STATUS_DRAFT),
             )
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_key) collision
             raise StartConflict(
-                "another active run already owns this agent+market+symbol") from exc
+                "another active run on this symbol already uses these exact settings "
+                "— change the instrument type, interval, minimum confidence or AI "
+                "provider to run a second strategy alongside it") from exc
         if cursor.rowcount != 1:
             raise StartConflict("run was started concurrently")
         _emit_event(cursor, run_id, "run_status",
@@ -509,6 +551,14 @@ def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
         if clear_active_key:
             sets += ", active_key = NULL, stopped_at = ?"
             args.append(_now_iso())
+            # Release any position the run still holds (stop-with-hold) back to
+            # the unowned book. run_id on a position means "an ACTIVE run owns
+            # this"; leaving a finished run's stamp on it would hide the
+            # position from manual selling and from the automation rules,
+            # since both read `run_id IS NULL`.
+            cursor.execute(
+                "UPDATE positions SET run_id = NULL WHERE run_id = ? AND agent_id = ?",
+                (run_id, agent_id))
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)

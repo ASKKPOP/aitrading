@@ -87,7 +87,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     transaction; a non-None return aborts (zombie-claimant protection)."""
     from fees import TRADE_FEE_RATE
     from services import _reserve_signal_id, _update_position_from_signal
-    from routes_shared import get_position_snapshot
+    from routes_shared import get_position_snapshot, run_scope_sql
 
     if side not in EXECUTABLE_ACTIONS:
         return None, f"action '{side}' is not executable"
@@ -117,7 +117,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
 
         short_entry: Optional[float] = None
         if side == "sell":
-            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None, run_id)
             current_qty = float(pos["quantity"]) if pos else 0.0
             if current_qty <= 0:
                 conn.rollback()
@@ -128,7 +128,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
 
         if side == "cover":
             # Close (part of) a short book (negative quantity rows).
-            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None, run_id)
             current_qty = float(pos["quantity"]) if pos else 0.0
             if current_qty >= 0:
                 conn.rollback()
@@ -164,7 +164,11 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
              content, int(datetime.now(timezone.utc).timestamp()), now, now,
              run_id, client_order_id, fee),
         )
-        _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now, cursor=cursor)
+        _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now,
+                                     cursor=cursor, run_id=run_id)
+        # Every positions statement below is scoped to the same book this trade
+        # wrote — several runs may hold a position on one agent+market+symbol.
+        pos_scope, pos_scope_args = run_scope_sql(run_id)
         if run_id is not None and side in ("buy", "short"):
             # Stamp run ownership on the (possibly just-created) position row so
             # watcher closes attribute to this run even after stop-with-hold.
@@ -172,10 +176,9 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             # must not read as stale to the fail-closed stop evaluator).
             cursor.execute(
                 """UPDATE positions
-                   SET run_id = COALESCE(run_id, ?),
-                       current_price = ?, price_updated_at = ?
-                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                (run_id, price, now, agent_id, market, symbol),
+                   SET current_price = ?, price_updated_at = ?
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
+                (price, now, agent_id, market, symbol, *pos_scope_args),
             )
         if side == "short" and (stop_loss is not None or take_profit is not None):
             # Short exits are inverted (SL above entry / TP below). NEVER
@@ -183,8 +186,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             # for a short, so re-shorts take min() of existing vs new.
             cursor.execute(
                 """SELECT stop_loss, take_profit FROM positions
-                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                (agent_id, market, symbol))
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
+                (agent_id, market, symbol, *pos_scope_args))
             row = cursor.fetchone()
             existing_sl = row["stop_loss"] if row else None
             existing_tp = row["take_profit"] if row else None
@@ -196,8 +199,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 """UPDATE positions
                    SET stop_loss = ?, take_profit = ?,
                        exit_policy = COALESCE(exit_policy, 'v1')
-                   WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                (new_sl, new_tp, agent_id, market, symbol),
+                   WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
+                (new_sl, new_tp, agent_id, market, symbol, *pos_scope_args),
             )
         if side == "buy":
             if stop_loss is not None or take_profit is not None:
@@ -207,8 +210,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 # Computed in Python — SQLite MAX(a,b) vs MySQL GREATEST differ.
                 cursor.execute(
                     """SELECT stop_loss, take_profit FROM positions
-                       WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                    (agent_id, market, symbol))
+                       WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
+                    (agent_id, market, symbol, *pos_scope_args))
                 row = cursor.fetchone()
                 existing_sl = row["stop_loss"] if row else None
                 existing_tp = row["take_profit"] if row else None
@@ -220,8 +223,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                     """UPDATE positions
                        SET stop_loss = ?, take_profit = ?,
                            exit_policy = COALESCE(exit_policy, 'v1')
-                       WHERE agent_id = ? AND market = ? AND symbol = ?""",
-                    (new_sl, new_tp, agent_id, market, symbol),
+                       WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
+                    (new_sl, new_tp, agent_id, market, symbol, *pos_scope_args),
                 )
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
         elif side == "short":
@@ -503,11 +506,11 @@ def _execution_feasibility(agent_id: int, symbol: str, market: str, side: str,
     try:
         cursor = conn.cursor()
         if side == "sell":
-            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None, None)
             if not pos or float(pos["quantity"]) <= 0:
                 return "no long position to sell"
         elif side == "cover":
-            pos = get_position_snapshot(cursor, agent_id, market, symbol, None)
+            pos = get_position_snapshot(cursor, agent_id, market, symbol, None, None)
             if not pos or float(pos["quantity"]) >= 0:
                 return "no short position to cover"
         elif side in ("buy", "short"):

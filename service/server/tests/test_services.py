@@ -30,7 +30,8 @@ class UpdatePositionFromSignalTests(unittest.TestCase):
                 quantity REAL NOT NULL,
                 entry_price REAL NOT NULL,
                 current_price REAL,
-                opened_at TEXT NOT NULL
+                opened_at TEXT NOT NULL,
+                run_id INTEGER
             )
             """
         )
