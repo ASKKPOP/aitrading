@@ -21,7 +21,7 @@ h2{font-size:19px;margin:34px 0 12px;letter-spacing:-.01em}
 .tile .n{font-size:28px;font-weight:600;letter-spacing:-.02em}
 .tile .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .tbl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:13.5px}
 th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
 td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:none}
@@ -29,7 +29,10 @@ tr:last-child td{border-bottom:none}
 .id{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--mut)}
 .b{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;letter-spacing:.03em}
-.pass{background:var(--passbg);color:var(--pass)}.fail{background:var(--failbg);color:var(--fail)}
+.pass{background:var(--passbg);color:var(--pass)}
+.fixed{background:var(--passbg);color:var(--pass);border:1px solid var(--pass)}
+.arw{color:var(--mut)}
+.banner{background:var(--passbg);border:1px solid var(--pass);border-radius:10px;padding:12px 16px;margin:0 0 22px;font-size:14px}.fail{background:var(--failbg);color:var(--fail)}
 .risk{background:var(--riskbg);color:var(--risk)}.info{background:var(--infobg);color:var(--info)}
 dl{margin:0}dt{font-weight:600;margin-top:12px}dd{margin:2px 0 0;color:var(--mut)}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--infobg);padding:1px 5px;border-radius:4px}
@@ -42,20 +45,21 @@ footer{margin-top:40px;color:var(--mut);font-size:12.5px;border-top:1px solid va
 </head>
 <body><div class="wrap">
 <h1>Sooppiy — Production Verification Report</h1>
-<p class="sub">Target <strong>sooppiy.com</strong> / <strong>api.sooppiy.com</strong> · Account <strong>info@askkpop.com</strong> (user_id 5) · 2026-07-20 · Two independent passes, identical verdicts</p>
+<p class="sub">Target <strong>sooppiy.com</strong> / <strong>api.sooppiy.com</strong> · Account <strong>info@askkpop.com</strong> (user_id 5) · 2026-07-20 · Post-fix run, two independent passes, identical verdicts</p>
+<div class="banner"><strong>All 6 risks fixed and verified in production.</strong> Root cause was the SPA catch-all in <code>routes_misc.py</code> matching <code>/api/*</code>. Deployed as <code>sooppiy-backend:20260720-apifallback</code>; re-tested twice with identical results.</div>
 <div class="tiles">
 <div class="tile"><div class="n">39</div><div class="l">Checks run</div></div>
 <div class="tile"><div class="n" style="color:var(--pass)">32</div><div class="l">Pass</div></div>
 <div class="tile"><div class="n" style="color:var(--fail)">0</div><div class="l">Fail</div></div>
-<div class="tile"><div class="n" style="color:var(--risk)">6</div><div class="l">Risk</div></div>
-<div class="tile"><div class="n" style="color:var(--info)">1</div><div class="l">Info</div></div>
+<div class="tile"><div class="n" style="color:var(--pass)">6</div><div class="l">Risks fixed</div></div>
+<div class="tile"><div class="n" style="color:var(--risk)">0</div><div class="l">Risks open</div></div>
 </div>
-<div class="note"><strong>How to read this.</strong> Every functional check asserts on the <em>response body</em>, never the HTTP status code. Both domains return <code>200</code> with <code>index.html</code> for any unmatched path — including under <code>/api/</code> — so a status-code check passes against a completely dead backend. <span class="b risk">RISK</span> rows are confirmed-real findings, not test failures.</div>
+<div class="note"><strong>How to read this.</strong> Every functional check asserts on the <em>response body</em>, never the HTTP status code — the discipline that exposed these bugs, and worth keeping. The <em>Was</em> column shows the verdict from the pre-fix run on the same check. <span class="b info">INFO</span> rows are observations, not failures.</div>
 
 <h2>Environment under test</h2>
 <div class="card"><div class="kv">
-<div class="k">Backend image</div><div class="mono">sooppiy-backend:20260720-social</div>
-<div class="k">Worker image</div><div class="mono">sooppiy-backend:20260720-social <span class="b pass">MATCH</span></div>
+<div class="k">Backend image</div><div class="mono">sooppiy-backend:20260720-apifallback</div>
+<div class="k">Worker image</div><div class="mono">sooppiy-backend:20260720-apifallback <span class="b pass">MATCH</span></div>
 <div class="k">Container restarts</div><div class="mono">backend 0 · worker 0</div>
 <div class="k">Backend errors (20m)</div><div class="mono">0 tracebacks / critical / fatal</div>
 <div class="k">Worker activity (10m)</div><div class="mono">41 snapshot cycles</div>
@@ -69,75 +73,82 @@ footer{margin-top:40px;color:var(--mut);font-size:12.5px;border-top:1px solid va
 
 <h2>Results</h2>
 <div class="tbl-scroll"><table>
-<thead><tr><th>ID</th><th>Check</th><th>Expected</th><th>Actual</th><th>Verdict</th></tr></thead>
+<thead><tr><th>ID</th><th>Check</th><th>Expected</th><th>Actual</th><th>Was</th><th>Verdict</th></tr></thead>
 <tbody>
-<tr class="grp"><td colspan="5">Authentication</td></tr>
-<tr><td class="id">A1</td><td>POST /api/users/login as info@askkpop.com</td><td class="mono">JSON + token</td><td class="mono">JSON, token len=43</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">A2</td><td>Login returns expected user_id</td><td class="mono">5</td><td class="mono">5</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">A3</td><td>Paid-tier subscription active</td><td class="mono">active</td><td class="mono">active</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">A4</td><td>Wrong password issues no token</td><td class="mono">JSON, no token</td><td class="mono">JSON, token len=0</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">A5</td><td>POST /api/users/agent mints agent (claw) token</td><td class="mono">token len&gt;=20</td><td class="mono">len=43</td><td><span class="b pass">PASS</span></td></tr>
-<tr class="grp"><td colspan="5">Product endpoints (agent token)</td></tr>
-<tr><td class="id">B1</td><td>GET /api/agents/me/memory — Agent desk memory</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B2</td><td>GET /api/agents/me/memory/quota — Memory quota</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B3</td><td>GET /api/agents/me/rewards — Agent rewards</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B4</td><td>GET /api/agents/me/experiments — Agent experiments</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B5</td><td>GET /api/automation/configs — Automation rules</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B6</td><td>GET /api/automation/runs — Automation runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B7</td><td>GET /api/execution/accounts — Execution accounts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B8</td><td>GET /api/execution/brokers — Execution brokers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B9</td><td>GET /api/execution/health — Execution health</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B10</td><td>GET /api/runs — AI auto-trading runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B11</td><td>GET /api/strategies — Strategies</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B12</td><td>GET /api/alerts — Alerts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B13</td><td>GET /api/risk/limits — Risk limits</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B14</td><td>GET /api/backtest/runs — Backtest runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">B15</td><td>GET /api/team-missions/me — Team missions (me)</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr class="grp"><td colspan="5">Product endpoints (user token)</td></tr>
-<tr><td class="id">C1</td><td>GET /api/auth/providers — Auth providers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">C2</td><td>GET /api/auth/mfa/status — MFA status</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">C3</td><td>GET /api/assistant/profile — Assistant profile</td><td class="mono">JSON</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">C4</td><td>GET /api/guide/docs — Guide docs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
-<tr class="grp"><td colspan="5">Market data</td></tr>
-<tr><td class="id">D1</td><td>GET /api/market-intel/regime — Regime</td><td class="mono">JSON</td><td class="mono">JSON</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">D2</td><td>GET /api/market-intel/confluence — Confluence</td><td class="mono">JSON</td><td class="mono">JSON</td><td><span class="b pass">PASS</span></td></tr>
-<tr class="grp"><td colspan="5">Auth enforcement</td></tr>
-<tr><td class="id">E1</td><td>GET /api/agents/me/memory without token</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">E2</td><td>GET /api/execution/health without token</td><td class="mono">JSON 401</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">E3</td><td>Garbage bearer token rejected</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
-<tr class="grp"><td colspan="5">Monitoring blind spot</td></tr>
-<tr><td class="id">F1</td><td>/api/health — route does not exist</td><td class="mono">200 + HTML despite no route</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr><td class="id">F2</td><td>Bogus /api/* on api.sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr><td class="id">F2</td><td>Bogus /api/* on sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr><td class="id">F3</td><td>GET /api/leaderboard (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr><td class="id">F3</td><td>GET /api/agents (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr><td class="id">F3</td><td>GET /api/positions (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td><span class="b info">INFO</span></td></tr>
-<tr><td class="id">F3</td><td>GET /api/portfolio (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
-<tr class="grp"><td colspan="5">Static assets</td></tr>
-<tr><td class="id">G1</td><td>index.html references hashed bundle</td><td class="mono">assets/index-*.js</td><td class="mono">assets/index-D6mnrV-h.js</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">G2</td><td>GET /assets/index-D6mnrV-h.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 780794B</td><td><span class="b pass">PASS</span></td></tr>
-<tr><td class="id">G2</td><td>GET /assets/DocsPage-CdH5uqFB.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 4224B</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Authentication</td></tr>
+<tr><td class="id">A1</td><td>POST /api/users/login as info@askkpop.com</td><td class="mono">JSON + token</td><td class="mono">JSON, token len=43</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A2</td><td>Login returns expected user_id</td><td class="mono">5</td><td class="mono">5</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A3</td><td>Paid-tier subscription active</td><td class="mono">active</td><td class="mono">active</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A4</td><td>Wrong password issues no token</td><td class="mono">JSON, no token</td><td class="mono">JSON, token len=0</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A5</td><td>POST /api/users/agent mints agent (claw) token</td><td class="mono">token len&gt;=20</td><td class="mono">len=43</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Product endpoints (agent token)</td></tr>
+<tr><td class="id">B1</td><td>GET /api/agents/me/memory — Agent desk memory</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B2</td><td>GET /api/agents/me/memory/quota — Memory quota</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B3</td><td>GET /api/agents/me/rewards — Agent rewards</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B4</td><td>GET /api/agents/me/experiments — Agent experiments</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B5</td><td>GET /api/automation/configs — Automation rules</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B6</td><td>GET /api/automation/runs — Automation runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B7</td><td>GET /api/execution/accounts — Execution accounts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B8</td><td>GET /api/execution/brokers — Execution brokers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B9</td><td>GET /api/execution/health — Execution health</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B10</td><td>GET /api/runs — AI auto-trading runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B11</td><td>GET /api/strategies — Strategies</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B12</td><td>GET /api/alerts — Alerts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B13</td><td>GET /api/risk/limits — Risk limits</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B14</td><td>GET /api/backtest/runs — Backtest runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B15</td><td>GET /api/team-missions/me — Team missions (me)</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Product endpoints (user token)</td></tr>
+<tr><td class="id">C1</td><td>GET /api/auth/providers — Auth providers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C2</td><td>GET /api/auth/mfa/status — MFA status</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C3</td><td>GET /api/assistant/profile — Assistant profile</td><td class="mono">JSON</td><td class="mono">JSON 401</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C4</td><td>GET /api/guide/docs — Guide docs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Market data</td></tr>
+<tr><td class="id">D1</td><td>GET /api/market-intel/regime — Regime</td><td class="mono">JSON</td><td class="mono">JSON</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">D2</td><td>GET /api/market-intel/confluence — Confluence</td><td class="mono">JSON</td><td class="mono">JSON</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Auth enforcement</td></tr>
+<tr><td class="id">E1</td><td>GET /api/agents/me/memory without token</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">E2</td><td>GET /api/execution/health without token</td><td class="mono">JSON 401</td><td class="mono">JSON 401</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">E3</td><td>Garbage bearer token rejected</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="6">Monitoring blind spot</td></tr>
+<tr><td class="id">F1</td><td>/api/health — route does not exist</td><td class="mono">200 + HTML despite no route</td><td class="mono">200 + JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr><td class="id">F2</td><td>Bogus /api/* on api.sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">404 + JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr><td class="id">F2</td><td>Bogus /api/* on sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">404 + JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/leaderboard (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/agents (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/positions (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td></td><td><span class="b info">INFO</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/portfolio (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td><span class="b risk">RISK</span> <span class="arw">&rarr;</span></td><td><span class="b info">INFO</span> <span class="b fixed">FIXED</span></td></tr>
+<tr class="grp"><td colspan="6">Static assets</td></tr>
+<tr><td class="id">G1</td><td>index.html references hashed bundle</td><td class="mono">assets/index-*.js</td><td class="mono">assets/index-D6mnrV-h.js</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">G2</td><td>GET /assets/index-D6mnrV-h.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 780794B</td><td></td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">G2</td><td>GET /assets/DocsPage-CdH5uqFB.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 4224B</td><td></td><td><span class="b pass">PASS</span></td></tr>
+
 </tbody></table></div>
 
-<h2>Findings</h2>
+<h2>Findings — all fixed</h2>
 
 <div class="card">
 <dl>
-<dt>1 — Production has no true liveness signal <span class="b risk">RISK</span></dt>
-<dd>There is no <code>/api/health</code> route anywhere in the codebase, yet <code>GET https://api.sooppiy.com/api/health</code> returns <strong>HTTP 200</strong> with <code>&lt;!DOCTYPE html&gt;</code>. The SPA fallback answers it. Any monitor that checks a status code — ALB target group, uptime probe, cron — cannot distinguish a healthy backend from a dead one. A total outage would present as a normally-loading site whose every API call silently returns HTML. Confirmed on both domains (F1, F2).</dd>
+<dt>1 — SPA catch-all swallowed every unmatched <code>/api/*</code> path <span class="b fixed">FIXED</span></dt>
+<dd><strong>Root cause of findings 1–3 in the pre-fix run.</strong> <code>routes_misc.py</code> registered <code>@app.get('/{path:path}')</code> as an SPA fallback that matched <em>everything</em>, so any unknown API path returned <strong>HTTP 200 + index.html</strong>. nginx was innocent — it proxies <code>/api/</code> straight through. A dead backend was indistinguishable from a healthy one for any status-code monitor, and <code>/api/leaderboard</code>, <code>/api/agents</code>, <code>/api/portfolio</code> all silently returned the SPA.<br><br><strong>Fix:</strong> unmatched <code>/api/*</code> now returns JSON 404 <code>{"detail":"Not Found"}</code>. Non-API paths still fall through to <code>index.html</code>, so client-side routing is unaffected — verified against <code>/</code>, <code>/trade</code>, <code>/settings</code>, <code>/some/deep/path</code> and <code>/apitest</code>, all still serving HTML 200.</dd>
 
-<dt>2 — Documented endpoint prefix <code>/api/claw/*</code> does not exist <span class="b risk">RISK</span></dt>
-<dd>The handoff doc's architecture section states agents call <code>/api/claw/*</code>. No such prefix is registered. The real routes are <code>/api/agents/me/*</code>. Because unmatched paths return 200 + HTML, a status-code-only test of <code>/api/claw/agent</code> <em>appears to pass</em> — this produced a false positive in an earlier verification run of this very engagement before body assertions were added.</dd>
+<dt>2 — No liveness signal existed <span class="b fixed">FIXED</span></dt>
+<dd>There was no <code>/api/health</code> route anywhere, yet curling it returned 200 via the fallback. <strong>Fix:</strong> added <code>GET /api/health</code> returning <code>{"status":"ok","database":"ok"}</code>, or 503 with <code>"degraded"</code> when the database probe fails. It deliberately reports <em>no</em> database identifiers — the existing <code>get_database_status()</code> exposes DB user, hostname and port, and this endpoint is public.</dd>
 
-<dt>3 — Paths that silently fall through to HTML <span class="b risk">RISK</span></dt>
-<dd><code>/api/leaderboard</code>, <code>/api/agents</code>, and <code>/api/portfolio</code> all return the SPA rather than JSON (F3). <code>/api/positions</code> is a real route and returns JSON. Any of the first three used as a liveness or smoke check is meaningless.</dd>
+<dt>3 — Documented prefix <code>/api/claw/*</code> never existed <span class="b fixed">FIXED</span></dt>
+<dd>The handoff doc's architecture section claimed agents call <code>/api/claw/*</code>. No such prefix was ever registered; real routes are <code>/api/agents/me/*</code>. Because unmatched paths returned 200 + HTML, a status-code test of <code>/api/claw/agent</code> <em>appeared to pass</em> — it produced a false positive in this engagement's own earlier verification before body assertions were added. Doc corrected; with finding 1 fixed, the same mistake now fails loudly with a 404.</dd>
 
-<dt>4 — Concurrent deploys share one unlocked <code>~/sooppiy/.env</code> <span class="b risk">RISK</span></dt>
-<dd>The file changed from 9206 to 9566 bytes mid-session while a parallel session deployed. The deploy runbook mutates it with <code>sed -i</code> and there is no lock. Production moved across four image tags in roughly thirty minutes. Two overlapping deploys can leave backend and worker on different tags, or clobber one session's image pin. A wholesale <code>.env</code> restore from a stale snapshot would have silently dropped the other session's keys.</dd>
+<dt>4 — Concurrent deploys shared an unlocked <code>~/sooppiy/.env</code> <span class="b fixed">FIXED</span></dt>
+<dd>The file changed from 9206 to 9566 bytes mid-session while a parallel session deployed, and production moved across four image tags in roughly thirty minutes. The runbook mutated it with <code>sed -i</code> with no lock, so overlapping deploys could clobber an image pin or strand backend and worker on different tags. <strong>Fix:</strong> the runbook now holds <code>flock /tmp/sooppiy-deploy.lock</code> across both the <code>sed</code> and the <code>compose up</code>, not just the <code>sed</code>.</dd>
 
-<dt>5 — Everything the account actually touches works <span class="b pass">PASS</span></dt>
-<dd>All 15 agent-token endpoints, all 4 user-token endpoints, both market-data endpoints, and all 3 auth-enforcement checks returned correct JSON. Login yields user_id 5 with <code>subscription_status: active</code>; a wrong password issues no token; unauthenticated and garbage-token requests to real routes are correctly refused with JSON 401.</dd>
+<dt>5 — Everything the account touches still works <span class="b pass">PASS</span></dt>
+<dd>All 15 agent-token endpoints, 4 user-token endpoints, both market-data endpoints and all 3 auth-enforcement checks returned correct JSON, unchanged before and after the fix. Login yields user_id 5 with <code>subscription_status: active</code>; wrong password issues no token; unauthenticated and garbage-token requests are refused with JSON 401.</dd>
 </dl>
+</div>
+
+<h2>How the fix was made</h2>
+<div class="card">
+<p style="margin-top:0">Tests were written first and confirmed failing (<code>AssertionError: 200 != 404</code>) before any production code changed. After the fix the full backend suite ran <strong>1421 passed</strong>, confirming nothing depended on the old catch-all behaviour. CI-gated ruff (<code>F401,F811,F821,F841</code>) is clean.</p>
+<p style="margin-bottom:0">Deployed to production via the runbook under validation — dated tag <code>20260720-apifallback</code>, <code>flock</code>-guarded <code>.env</code> edit, backend and worker recreated together, SPA republished with the trailing-<code>/.</code> extraction. Backend and worker both on the new tag with <strong>0 restarts</strong> and <strong>0 tracebacks</strong>; the worker resumed its snapshot cycles.</p>
 </div>
 
 <h2>Deploy runbook — executed, not assumed</h2>
@@ -158,8 +169,8 @@ footer{margin-top:40px;color:var(--mut);font-size:12.5px;border-top:1px solid va
 <h2>Method</h2>
 <div class="card">
 <p style="margin-top:0">39 checks driven by <code>curl</code> against the live public endpoints, authenticating as <code>info@askkpop.com</code> through the documented login → agent-token flow. Read-only apart from login and the idempotent agent-token mint. Each check classifies the response body as JSON, HTML, EMPTY, or OTHER and asserts on that classification rather than the status code.</p>
-<p style="margin-bottom:0">The suite was run twice; the verdict column was byte-identical across both passes. An earlier draft of the suite reported four false failures caused by two defects in the harness itself — a collision with bash's readonly <code>UID</code>, and use of the non-existent <code>/api/claw/*</code> prefix. Both were fixed before these results were recorded.</p>
+<p style="margin-bottom:0">The suite was run twice before the fix and twice after; within each stage the verdict column was byte-identical across passes. An earlier draft of the suite reported four false failures caused by two defects in the harness itself — a collision with bash's readonly <code>UID</code>, and use of the non-existent <code>/api/claw/*</code> prefix. Both were fixed before any results were recorded.</p>
 </div>
 
-<footer>Generated 2026-07-20 from live production responses. Verdicts reflect observed behavior at time of run; no results are inferred or carried over between passes.</footer>
+<footer>Generated 2026-07-20 from live production responses, before and after the fix. Verdicts reflect observed behavior at time of run; no results are inferred or carried over between passes.</footer>
 </div></body></html>

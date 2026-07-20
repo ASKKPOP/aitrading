@@ -27,13 +27,13 @@ D2	Market data	GET /api/market-intel/confluence — Confluence	JSON	JSON	PASS
 E1	Auth enforcement	GET /api/agents/me/memory without token	JSON 401/403	JSON 401	PASS
 E2	Auth enforcement	GET /api/execution/health without token	JSON 401	JSON 401	PASS
 E3	Auth enforcement	Garbage bearer token rejected	JSON 401/403	JSON 401	PASS
-F1	Monitoring blind spot	/api/health — route does not exist	200 + HTML despite no route	200 + HTML	RISK
-F2	Monitoring blind spot	Bogus /api/* on api.sooppiy.com	200 + HTML	200 + HTML	RISK
-F2	Monitoring blind spot	Bogus /api/* on sooppiy.com	200 + HTML	200 + HTML	RISK
-F3	Monitoring blind spot	GET /api/leaderboard (path used in docs/tests)	HTML fallback	HTML	RISK
-F3	Monitoring blind spot	GET /api/agents (path used in docs/tests)	HTML fallback	HTML	RISK
+F1	Monitoring blind spot	/api/health — route does not exist	200 + HTML despite no route	200 + JSON	INFO
+F2	Monitoring blind spot	Bogus /api/* on api.sooppiy.com	200 + HTML	404 + JSON	INFO
+F2	Monitoring blind spot	Bogus /api/* on sooppiy.com	200 + HTML	404 + JSON	INFO
+F3	Monitoring blind spot	GET /api/leaderboard (path used in docs/tests)	HTML fallback	JSON	INFO
+F3	Monitoring blind spot	GET /api/agents (path used in docs/tests)	HTML fallback	JSON	INFO
 F3	Monitoring blind spot	GET /api/positions (path used in docs/tests)	HTML fallback	JSON	INFO
-F3	Monitoring blind spot	GET /api/portfolio (path used in docs/tests)	HTML fallback	HTML	RISK
+F3	Monitoring blind spot	GET /api/portfolio (path used in docs/tests)	HTML fallback	JSON	INFO
 G1	Static assets	index.html references hashed bundle	assets/index-*.js	assets/index-D6mnrV-h.js	PASS
 G2	Static assets	GET /assets/index-D6mnrV-h.js	200, >1KB	200, 780794B	PASS
 G2	Static assets	GET /assets/DocsPage-CdH5uqFB.js	200, >1KB	200, 4224B	PASS
