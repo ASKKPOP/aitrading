@@ -7,11 +7,13 @@ Routes Module
 import time
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import CORS_ORIGINS
+from i18n_errors import lang_from_request, translate
 from routes_admin import register_admin_routes
 from routes_admin_auth import register_admin_auth_routes
 from routes_admin_manage import register_admin_manage_routes
@@ -65,6 +67,31 @@ def create_app() -> FastAPI:
         response.headers['X-Request-ID'] = request_id
         response.headers['X-Process-Time'] = str(time.time() - start_time)
         return response
+
+    @app.exception_handler(HTTPException)
+    async def localized_http_exception_handler(request: Request, exc: HTTPException):
+        """Render `detail` in the caller's language before FastAPI serializes it.
+
+        Routes raise English; this is the one place that knows the request's
+        language, so it is the only place that translates.
+
+        `detail` is usually a string, but a few endpoints return a structured
+        payload the client acts on — the run-start conflict ships
+        {"message": ..., "conflicts": {...}} so the UI can offer to resolve
+        them. Those get their "message" translated and the rest left alone;
+        translating the machine-readable half would break the client.
+        """
+        detail = exc.detail
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            if isinstance(detail, str):
+                detail = translate(detail, lang)
+            elif isinstance(detail, dict) and isinstance(detail.get('message'), str):
+                detail = {**detail, 'message': translate(detail['message'], lang)}
+            if detail is not exc.detail:
+                exc = HTTPException(status_code=exc.status_code, detail=detail,
+                                    headers=exc.headers)
+        return await http_exception_handler(request, exc)
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):

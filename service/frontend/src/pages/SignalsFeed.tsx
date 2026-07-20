@@ -182,11 +182,11 @@ export function SignalsFeed({ token }: { token?: string | null }) {
   const getActionLabel = (action: string | undefined | null, lang: Language) => {
     if (!action) return ''
     const actionLower = action.toLowerCase()
-    if (actionLower === 'buy') return tr(lang, { en: 'Buy', ja: '買い', th: 'ซื้อ', vi: 'Mua' })
-    if (actionLower === 'sell') return tr(lang, { en: 'Sell', ja: '売り', th: 'ขาย', vi: 'Bán' })
-    if (actionLower === 'short') return tr(lang, { en: 'Short', ja: 'ショート', th: 'ขายชอร์ต', vi: 'Bán khống' })
-    if (actionLower === 'cover') return tr(lang, { en: 'Cover', ja: 'ショートカバー', th: 'ปิดชอร์ต', vi: 'Đóng khống' })
-    if (actionLower === 'long') return tr(lang, { en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Mua dài' })
+    if (actionLower === 'buy') return tr(lang, { ko: '매수', en: 'Buy', ja: '買い', th: 'ซื้อ', vi: 'Mua' })
+    if (actionLower === 'sell') return tr(lang, { ko: '매도', en: 'Sell', ja: '売り', th: 'ขาย', vi: 'Bán' })
+    if (actionLower === 'short') return tr(lang, { ko: '공매도', en: 'Short', ja: 'ショート', th: 'ขายชอร์ต', vi: 'Bán khống' })
+    if (actionLower === 'cover') return tr(lang, { ko: '숏 커버', en: 'Cover', ja: 'ショートカバー', th: 'ปิดชอร์ต', vi: 'Đóng khống' })
+    if (actionLower === 'long') return tr(lang, { ko: '롱', en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Mua dài' })
     return action.toUpperCase()
   }
 

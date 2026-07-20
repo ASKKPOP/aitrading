@@ -172,7 +172,8 @@ class RunIn(BaseModel):
     @field_validator("lang")
     @classmethod
     def _lang(cls, v: str) -> str:
-        return "th" if (v or "en").lower().startswith("th") else "en"
+        from analysis_agents import normalize_lang
+        return normalize_lang(v)
 
     @field_validator("leverage")
     @classmethod
@@ -271,9 +272,10 @@ def _public(run: dict) -> dict:
 
 def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
 
-    @app.post("/api/runs")
-    async def create_run(data: RunIn, authorization: str = Header(None)):
-        agent = _auth(authorization)
+    def _validated_config(data: RunIn) -> tuple[dict, dict, dict]:
+        """Cross-field checks a single field validator cannot do, plus the
+        settings snapshot. Shared by create and edit so an edited draft is
+        held to exactly the same bar as a new one."""
         if data.market_type == "futures" and data.market != "crypto":
             raise HTTPException(status_code=400,
                                 detail="futures market_type is crypto-only")
@@ -298,10 +300,35 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
             "min_confidence": data.min_confidence, "provider": data.provider,
             "lang": data.lang, "leverage": 1.0,
         }
+        return settings, start_condition, stop_conditions
+
+    @app.post("/api/runs")
+    async def create_run(data: RunIn, authorization: str = Header(None)):
+        agent = _auth(authorization)
+        settings, start_condition, stop_conditions = _validated_config(data)
         run_id = trading_runs.create_run(agent["id"], settings, start_condition,
                                          stop_conditions, data.stop_flatten)
         return {"id": run_id, "ok": True,
                 "run": _public(_run_or_404(run_id, agent["id"]))}
+
+    @app.put("/api/runs/{run_id}")
+    async def edit_run(run_id: int, data: RunIn, authorization: str = Header(None)):
+        """Re-configure a draft before it starts.
+
+        Same validation as create — the payload is a full replacement, not a
+        patch, so a draft can never end up in a state POST would have refused.
+        """
+        agent = _auth(authorization)
+        settings, start_condition, stop_conditions = _validated_config(data)
+        try:
+            trading_runs.update_draft_run(run_id, agent["id"], settings,
+                                          start_condition, stop_conditions,
+                                          data.stop_flatten)
+        except LookupError:
+            raise HTTPException(status_code=404, detail="run not found")
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return {"ok": True, "run": _public(_run_or_404(run_id, agent["id"]))}
 
     @app.get("/api/runs")
     async def list_runs(limit: int = 50, authorization: str = Header(None)):
