@@ -63,8 +63,10 @@ export function AutomationPage() {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
   const { language } = useLanguage()
   const [mode, setMode] = useState<UserMode>(() => {
+    // guided/pro are hidden from the picker; anyone holding a saved value for
+    // them falls back to simple so they don't land in a mode with no pill.
     const saved = localStorage.getItem(MODE_KEY)
-    return saved === 'agent' || saved === 'simple' || saved === 'guided' || saved === 'pro' ? saved : 'simple'
+    return saved === 'agent' || saved === 'simple' ? saved : 'simple'
   })
   useEffect(() => { localStorage.setItem(MODE_KEY, mode) }, [mode])
 
@@ -447,8 +449,8 @@ export function AutomationPage() {
       <div ref={ruleFormRef} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
         <button style={chip(mode === 'agent')} onClick={() => setMode('agent')}>⓪ {T.modeAgent}</button>
         <button style={chip(mode === 'simple')} onClick={() => setMode('simple')}>① {T.modeSimple}</button>
-        <button style={chip(mode === 'guided')} onClick={() => setMode('guided')}>② {T.modeGuided}</button>
-        <button style={chip(mode === 'pro')} onClick={() => setMode('pro')}>③ {T.modePro}</button>
+        {/* ② 표준 / ③ 전문가 are hidden from the picker; their form branches below
+            stay in place so the modes can be restored without rebuilding them. */}
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{modeDesc}</div>
 
