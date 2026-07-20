@@ -61,6 +61,48 @@ class MiscRoutesTests(unittest.TestCase):
         resp = self.client.get("/some/deep/path")
         self.assertEqual(resp.status_code, 200)
 
+    def test_unknown_api_path_returns_json_404_not_spa(self) -> None:
+        """An unmatched /api/* path must 404 as JSON.
+
+        Previously the SPA catch-all swallowed these and returned index.html
+        with HTTP 200, so a status-code health check could not tell a dead
+        backend from a healthy one.
+        """
+        resp = self.client.get("/api/definitely-not-a-route")
+        self.assertEqual(resp.status_code, 404)
+        self.assertIn("application/json", resp.headers.get("content-type", ""))
+        self.assertNotIn("<!DOCTYPE", resp.text)
+        self.assertIn("detail", resp.json())
+
+    def test_unknown_api_path_deep_returns_json_404(self) -> None:
+        resp = self.client.get("/api/nested/unknown/route")
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotIn("<!DOCTYPE", resp.text)
+
+    def test_health_returns_json_ok(self) -> None:
+        resp = self.client.get("/api/health")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("application/json", resp.headers.get("content-type", ""))
+        body = resp.json()
+        self.assertEqual(body.get("status"), "ok")
+        self.assertIn("database", body)
+
+    def test_health_is_not_the_spa(self) -> None:
+        resp = self.client.get("/api/health")
+        self.assertNotIn("<!DOCTYPE", resp.text)
+
+    def test_non_api_paths_still_serve_spa(self) -> None:
+        """Client-side routes must keep falling back to index.html."""
+        for path in ("/trade", "/settings", "/some/deep/path"):
+            with self.subTest(path=path):
+                resp = self.client.get(path)
+                self.assertEqual(resp.status_code, 200)
+
+    def test_apilike_prefix_is_not_treated_as_api(self) -> None:
+        """/apitest is a normal SPA route, not an API path."""
+        resp = self.client.get("/apitest")
+        self.assertEqual(resp.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

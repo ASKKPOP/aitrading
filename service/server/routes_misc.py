@@ -2,7 +2,9 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
+
+import database
 
 
 def _resolve_skill_path(skill_name: Optional[str] = None):
@@ -62,8 +64,31 @@ def register_misc_routes(app: FastAPI) -> None:
             return FileResponse(asset_path)
         return Response(status_code=404)
 
+    @app.get('/api/health')
+    async def health():
+        """Liveness probe. Returns JSON only — never the SPA.
+
+        Deliberately reports no database identifiers: this endpoint is public.
+        """
+        try:
+            conn = database.get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT 1')
+                cursor.fetchone()
+            finally:
+                conn.close()
+        except Exception:
+            return JSONResponse({'status': 'degraded', 'database': 'error'}, status_code=503)
+        return {'status': 'ok', 'database': 'ok'}
+
     @app.get('/{path:path}')
     async def serve_spa_fallback(path: str):
+        # An unmatched /api/* path must NOT fall through to index.html: a 200 +
+        # HTML response makes a dead backend indistinguishable from a healthy
+        # one for any status-code-based monitor.
+        if path == 'api' or path.startswith('api/'):
+            return JSONResponse({'detail': 'Not Found'}, status_code=404)
         index_path = Path(__file__).parent.parent / 'frontend' / 'dist' / 'index.html'
         if index_path.exists():
             return FileResponse(index_path)

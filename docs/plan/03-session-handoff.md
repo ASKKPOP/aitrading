@@ -87,10 +87,16 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 "
   # 1. build the new dated image
   docker build -t \"sooppiy-backend:\$TAG\" app
 
-  # 2. repoint SOOPPIY_IMAGE, then recreate backend AND worker together
-  sed -i \"s|^SOOPPIY_IMAGE=.*|SOOPPIY_IMAGE=sooppiy-backend:\$TAG|\" ~/sooppiy/.env
-  grep '^SOOPPIY_IMAGE=' ~/sooppiy/.env      # confirm before proceeding
-  docker compose --profile prod up -d backend worker
+  # 2. repoint SOOPPIY_IMAGE, then recreate backend AND worker together.
+  #    flock: parallel sessions deploy to this box and BOTH edit ~/sooppiy/.env.
+  #    Without the lock two overlapping deploys can clobber each other's image
+  #    pin or leave backend and worker on different tags. Hold it across the
+  #    sed AND the compose up, not just the sed.
+  flock /tmp/sooppiy-deploy.lock bash -c \"
+    sed -i 's|^SOOPPIY_IMAGE=.*|SOOPPIY_IMAGE=sooppiy-backend:\$TAG|' ~/sooppiy/.env
+    grep '^SOOPPIY_IMAGE=' ~/sooppiy/.env
+    cd ~/sooppiy && docker compose --profile prod up -d backend worker
+  \"
 
   # 3. publish the SPA from the freshly built image
   #    rm -rf FIRST: if /tmp/fe-dist already exists, 'docker cp' nests the build at
@@ -114,7 +120,7 @@ Observed 2026-07-19: a functional check fired ~6s after `up` returned an empty b
 5/5 once ready. Gate on the API before judging anything a failure:
 
 ```bash
-until curl -s --max-time 10 https://sooppiy.com/api/market-intel/regime | grep -q '^{'; do sleep 3; done
+until curl -s --max-time 10 https://sooppiy.com/api/health | grep -q '"status":"ok"'; do sleep 3; done
 ```
 
 ```bash
@@ -132,10 +138,11 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
   docker inspect --format "{{.Name}} {{.Config.Image}}" sooppiy-backend sooppiy-worker
 '
 # 3. functional endpoint check (from anywhere)
-#    /api/market-intel/regime is public and returns JSON. NEVER check status codes alone —
-#    see the SPA-fallback warning below. Assert the BODY is JSON.
-curl -s https://sooppiy.com/api/market-intel/regime | head -c 80
-#    -> must start with {"regime": ... . If it starts with <!DOCTYPE, the backend is NOT serving.
+curl -s https://sooppiy.com/api/health
+#    -> {"status":"ok","database":"ok"}   (503 + "degraded" = DB check failed)
+
+#    confirm the fallback fix is still live: unknown /api path must be a JSON 404, not the SPA
+curl -s -o /dev/null -w '%{http_code}\n' https://sooppiy.com/api/definitely-not-a-route   # -> 404
 
 #    deeper: real auth round-trip (proves DB + auth, not just routing)
 TOK=$(curl -s -X POST https://sooppiy.com/api/users/login -H 'Content-Type: application/json' \
@@ -145,18 +152,19 @@ echo "len=${#TOK}"   # ~43 chars. If this errors, login returned HTML = backend 
 curl -s https://sooppiy.com/ | grep -o 'assets/index-[^"]*\.js'   # must match step 1's hash
 ```
 
-> **⚠️ The SPA fallback makes status-code checks WORTHLESS — including on `/api/*` paths.**
-> Verified 2026-07-19: **both** `sooppiy.com` and `api.sooppiy.com` return **HTTP 200 with
-> `index.html`** for any unmatched path, and `/api/` is not exempt. Concretely:
-> `curl -o /dev/null -w '%{http_code}' https://api.sooppiy.com/api/health` prints **200** even
-> though **`/api/health` does not exist** — there is no health route in the codebase at all.
-> A totally dead backend would still return 200 there.
+> **FIXED 2026-07-20.** `/api/health` now exists and returns `{"status":"ok","database":"ok"}`
+> (503 + `"degraded"` if the DB check fails), and **unmatched `/api/*` paths now return a JSON
+> 404 instead of the SPA**. Both are safe to use as real probes.
 >
-> So: **assert on the response body, never the status code.** A real API response is JSON
-> (`{"regime":...}`) or a real JSON error (`{"detail":"Authorization required"}`, which
-> `/api/execution/health` returns with a genuine 401). If you get `<!DOCTYPE html`, nginx served
-> the SPA and the backend never answered. Note `/api/leaderboard` and `/api/agents` also fall
-> through to HTML — do not use them as liveness probes.
+> **History — why this mattered.** The SPA catch-all in `routes_misc.py`
+> (`@app.get('/{path:path}')`) previously swallowed *every* unmatched path including `/api/*`,
+> returning **HTTP 200 + `index.html`**. `curl -o /dev/null -w '%{http_code}'` against a
+> nonexistent `/api/health` printed **200**, so a totally dead backend was indistinguishable
+> from a healthy one. This produced real false positives: a status-code check of
+> `/api/claw/agent` "passed" against a prefix that has never existed.
+>
+> **Still assert on the body, not just the status.** It costs nothing and it catches the next
+> variant of this. A real response is JSON; `<!DOCTYPE html` means the backend never answered.
 
 ### Frontend-only change (faster)
 ```bash
