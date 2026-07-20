@@ -31,7 +31,6 @@ const MarketPage = lazy(() => import('./pages/MarketPage'))
 const SignalsBoardPage = lazy(() => import('./pages/SignalsBoardPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const DocsPage = lazy(() => import('./pages/DocsPage'))
-const MonitorPage = lazy(() => import('./pages/MonitorPage'))
 const ConsultPage = lazy(() => import('./pages/ConsultPage'))
 const AssistantDock = lazy(() => import('./components/AssistantDock'))
 const GuidePanel = lazy(() => import('./components/GuidePanel'))
@@ -541,7 +540,9 @@ function AppRouter({
               <Route path="/backtest" element={<BacktestPage token={token} />} />
               <Route path="/financial-events" element={<FinancialEventsPage />} />
               <Route path="/signals-board" element={<SignalsBoardPage />} />
-              <Route path="/monitor" element={<MonitorPage token={token} />} />
+              {/* Monitoring merged into /automation (Plan 12) — one page for
+                  set up, watch and adjust. Old links keep working. */}
+              <Route path="/monitor" element={<Navigate to="/automation" replace />} />
               {/* live runs merged into /automation — keep old links working */}
               <Route path="/runs/live" element={<Navigate to="/automation" replace />} />
               <Route path="/consult" element={<ConsultPage token={token} />} />

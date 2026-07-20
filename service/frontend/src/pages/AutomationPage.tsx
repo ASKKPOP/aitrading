@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisRun, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import ConfigProfiles from '../components/ConfigProfiles'
+import {
+  AlertsSection, PlainActivity, PositionsSection, RunHistorySection,
+  StatusBand, WatchesSection, useMonitorData,
+} from './MonitorSections'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
@@ -27,8 +31,17 @@ type Rule = {
   schedule?: { days: number[]; start_hour: number; end_hour: number; tz: string };
 }
 
-type UserMode = 'agent' | 'simple' | 'guided' | 'pro'
+// Three levels, matching how much control the user wants (Plan 12). Full
+// delegation used to be a fourth mode, but it is a DELEGATION choice, not a
+// complexity level — a beginner and an expert who both want the AI to pick
+// everything need the same screen. It is now a toggle inside Simple.
+type UserMode = 'simple' | 'guided' | 'pro'
 const MODE_KEY = 'sooppiy_automation_mode'
+const DELEGATE_KEY = 'sooppiy_automation_delegate'
+
+// A level hides CONFIGURATION surface, never money state: positions and fired
+// alerts show at every level, because a Simple user still owns those.
+const LEVEL_RANK: Record<UserMode, number> = { simple: 1, guided: 2, pro: 3 }
 
 // Where a fill lands. Mirrors execution/gateway.py — keep the two in step.
 //   simulator — platform ledger only, never contacts a broker
@@ -64,9 +77,19 @@ export function AutomationPage() {
   const { language } = useLanguage()
   const [mode, setMode] = useState<UserMode>(() => {
     const saved = localStorage.getItem(MODE_KEY)
-    return saved === 'agent' || saved === 'simple' || saved === 'guided' || saved === 'pro' ? saved : 'simple'
+    // 'agent' is the retired fourth mode — migrate it to Simple + delegation.
+    if (saved === 'agent') return 'simple'
+    return saved === 'simple' || saved === 'guided' || saved === 'pro' ? saved : 'simple'
   })
+  const [delegate, setDelegate] = useState<boolean>(() =>
+    localStorage.getItem(DELEGATE_KEY) === '1' || localStorage.getItem(MODE_KEY) === 'agent')
   useEffect(() => { localStorage.setItem(MODE_KEY, mode) }, [mode])
+  useEffect(() => { localStorage.setItem(DELEGATE_KEY, delegate ? '1' : '0') }, [delegate])
+  const atLeast = (level: UserMode) => LEVEL_RANK[mode] >= LEVEL_RANK[level]
+
+  // Monitoring state, polled once and shared by the band and every section so
+  // the two can never disagree (the old two-page split rendered them twice).
+  const monitor = useMonitorData(token)
 
   // Top-5 tradable universe for simple mode (fail-soft to the static fallback).
   useEffect(() => {
@@ -82,7 +105,6 @@ export function AutomationPage() {
   }, [])
 
   const [rules, setRules] = useState<Rule[]>([])
-  const [runs, setRuns] = useState<any[]>([])
   const [draft, setDraft] = useState<Rule>({ ...DEFAULT_DRAFT })
   const [topCoins, setTopCoins] = useState<string[]>(SIMPLE_COINS_FALLBACK)
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
@@ -270,13 +292,11 @@ export function AutomationPage() {
 
   async function refresh() {
     try {
-      const [cfgRes, runRes] = await Promise.all([
-        fetch(`${API_BASE}/automation/configs`, { headers: authHeaders }),
-        fetch(`${API_BASE}/automation/runs?limit=15`, { headers: authHeaders }),
-      ])
-      const cfg = await cfgRes.json(); const run = await runRes.json()
+      // Run history is fetched once by useMonitorData and rendered by the
+      // monitoring sections below — this page no longer fetches it twice.
+      const cfgRes = await fetch(`${API_BASE}/automation/configs`, { headers: authHeaders })
+      const cfg = await cfgRes.json()
       if (cfgRes.ok) setRules(cfg.configs || [])
-      if (runRes.ok) setRuns(run.runs || [])
       const decRes = await fetch(`${API_BASE}/automation/agent-decisions?limit=10`, { headers: authHeaders })
       if (decRes.ok) setDecisions((await decRes.json()).decisions || [])
     } catch { /* transient */ }
@@ -359,7 +379,9 @@ export function AutomationPage() {
       <div className="empty-state"><div className="empty-icon">⚙</div><div className="empty-title">{T.login}</div></div></div>
   }
 
-  const modeDesc = mode === 'agent' ? T.modeAgentDesc : mode === 'simple' ? T.modeSimpleDesc : mode === 'guided' ? T.modeGuidedDesc : T.modeProDesc
+  const modeDesc = mode === 'simple'
+    ? (delegate ? T.modeAgentDesc : T.modeSimpleDesc)
+    : mode === 'guided' ? T.modeGuidedDesc : T.modeProDesc
 
   return (
     <div>
@@ -369,6 +391,11 @@ export function AutomationPage() {
           <div style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 14 }}>{T.subtitle}</div>
         </div>
       </div>
+
+      {/* ── Live state, always visible (merged from the old /monitor page).
+          Whatever level you are on you can see whether anything is running and
+          what it is worth, without navigating away. ── */}
+      <StatusBand data={monitor} />
 
       {/* ── Live trading runs (merged from the old /runs/live page) — the
           primary surface: one step creates AND starts a server-side run. ── */}
@@ -445,19 +472,27 @@ export function AutomationPage() {
 
       {/* ── Mode selector ── */}
       <div ref={ruleFormRef} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-        <button style={chip(mode === 'agent')} onClick={() => setMode('agent')}>⓪ {T.modeAgent}</button>
         <button style={chip(mode === 'simple')} onClick={() => setMode('simple')}>① {T.modeSimple}</button>
         <button style={chip(mode === 'guided')} onClick={() => setMode('guided')}>② {T.modeGuided}</button>
         <button style={chip(mode === 'pro')} onClick={() => setMode('pro')}>③ {T.modePro}</button>
+        {/* Delegation is orthogonal to level: it changes WHO picks the symbol,
+            not how many controls you see. Offered where a beginner lands. */}
+        {mode === 'simple' && (
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 8, fontSize: 12.5, cursor: 'pointer', color: 'var(--text-secondary,#8a8073)' }}>
+            <input type="checkbox" checked={delegate} onChange={e => setDelegate(e.target.checked)} />
+            🤖 {T.modeAgent}
+          </label>
+        )}
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{modeDesc}</div>
 
       {/* Named config profiles (Plan 06 C3) — collapsed by default so it does
           not push the mode cards down for users who never save one. */}
-      <ConfigProfiles token={token} />
+      {/* Saved configurations presume you have configurations worth naming. */}
+      {atLeast('pro') && <ConfigProfiles token={token} />}
 
       {/* ── Mode 0: Agent (full delegation) ── */}
-      {mode === 'agent' && (
+      {mode === 'simple' && delegate && (
         <div className="card" style={{ marginBottom: 18 }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
@@ -499,7 +534,7 @@ export function AutomationPage() {
       )}
 
       {/* ── Mode 1: Simple ── */}
-      {mode === 'simple' && (
+      {mode === 'simple' && !delegate && (
         <div className="card" style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.symbol}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
@@ -684,23 +719,21 @@ export function AutomationPage() {
         </div>
       )}
 
-      <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '22px 0 10px' }}>{T.history}</div>
-      {runs.length === 0 ? (
-        <div className="card" style={{ color: 'var(--text-secondary,#8a8073)' }}>{T.noRuns}</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {runs.map((run) => (
-            <div key={run.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 16px' }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>{String(run.ran_at || '').replace('T', ' ').slice(0, 16)}</span>
-              <b style={{ textTransform: 'uppercase', fontSize: 13, color: run.action === 'buy' ? '#3fb950' : run.action === 'sell' ? '#f0663f' : '#e3a008' }}>{run.action || '—'}</b>
-              <span style={{ fontSize: 12 }}>{Math.round((run.confidence || 0) * 100)}%</span>
-              {run.executed
-                ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(63,185,80,0.16)', color: '#3fb950' }}>✓ {T.executed} #{run.signal_id}</span>
-                : <span style={{ fontSize: 11.5, color: 'var(--text-secondary,#8a8073)' }}>{skipLabel(run.skip_reason)}</span>}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── Monitoring, absorbed from the old /monitor page and shown at the
+          depth the level implies. Money state (positions, alerts) appears at
+          EVERY level; only the reading of it gets denser. ── */}
+      <div style={{ marginTop: 22 }}>
+        {mode === 'simple'
+          ? <PlainActivity data={monitor} />
+          : <RunHistorySection data={monitor} />}
+
+        <PositionsSection data={monitor} />
+        <AlertsSection data={monitor} />
+
+        {/* Watches ask you to name a metric and a threshold — that presumes
+            you know which metric matters, so it is a Pro-level control. */}
+        {atLeast('pro') && <WatchesSection token={token} />}
+      </div>
 
       <div style={{ marginTop: 18, fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', lineHeight: 1.55 }}>ℹ️ {T.realNote}</div>
     </div>
