@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -203,6 +204,85 @@ class SubscriptionFlowTests(_Base):
         r = self.client.post("/api/subscriptions/paypal/create-order",
                              json={"plan_code": "junior"}, headers=user_h)
         self.assertEqual(r.status_code, 503)
+
+
+class UsdtPaymentTests(_Base):
+    """USDT is the default rail: same pending -> admin-approve machinery as a
+    bank transfer, keyed on the on-chain transaction hash."""
+
+    ENV = {"USDT_ADDRESS": "TXk9Yk4testaddress0000000000000000", "USDT_NETWORK": "TRC20"}
+
+    def test_plans_expose_the_usdt_address_and_network(self):
+        with patch.dict(os.environ, self.ENV):
+            body = self.client.get("/api/subscriptions/plans").json()
+        self.assertTrue(body["usdt_available"])
+        self.assertEqual(body["usdt_address"], self.ENV["USDT_ADDRESS"])
+        self.assertEqual(body["usdt_network"], "TRC20")
+
+    def test_paypal_button_is_hidden_unless_explicitly_re_enabled(self):
+        configured = {"PAYPAL_CLIENT_ID": "id", "PAYPAL_CLIENT_SECRET": "secret"}
+        with patch.dict(os.environ, configured):
+            self.assertFalse(self.client.get("/api/subscriptions/plans").json()["paypal_available"])
+        with patch.dict(os.environ, {**configured, "PAYPAL_UI_ENABLED": "true"}):
+            self.assertTrue(self.client.get("/api/subscriptions/plans").json()["paypal_available"])
+
+    def test_usdt_submission_to_approval(self):
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        with patch.dict(os.environ, self.ENV):
+            r = self.client.post("/api/subscriptions/usdt",
+                                 json={"plan_code": "pro", "tx_hash": "0xdeadbeef"},
+                                 headers=user_h)
+            self.assertEqual(r.status_code, 200, r.text)
+            # a second pending USDT claim is refused, same as bank
+            r = self.client.post("/api/subscriptions/usdt",
+                                 json={"plan_code": "pro", "tx_hash": "0xfeedface"},
+                                 headers=user_h)
+            self.assertEqual(r.status_code, 400)
+
+        # the admin console sees it with method 'usdt' and the hash as reference
+        subs = self.client.get("/api/admin/subscriptions?status=pending",
+                               headers=self.admin).json()["subscriptions"]
+        self.assertEqual(subs[0]["method"], "usdt")
+        self.assertEqual(subs[0]["reference"], "0xdeadbeef")
+
+        r = self.client.post(f"/api/admin/subscriptions/{subs[0]['id']}/approve",
+                             json={"note": "confirmed on-chain"}, headers=self.admin)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.client.get("/api/subscriptions/me",
+                                         headers=user_h).json()["status"], "active")
+
+    def test_usdt_refused_when_no_address_is_configured(self):
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        with patch.dict(os.environ, {"USDT_ADDRESS": ""}):
+            r = self.client.post("/api/subscriptions/usdt",
+                                 json={"plan_code": "pro", "tx_hash": "0xabc"}, headers=user_h)
+        self.assertEqual(r.status_code, 503)
+
+    def test_empty_tx_hash_is_refused(self):
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        with patch.dict(os.environ, self.ENV):
+            r = self.client.post("/api/subscriptions/usdt",
+                                 json={"plan_code": "pro", "tx_hash": "   "}, headers=user_h)
+        self.assertEqual(r.status_code, 400)
+
+    def test_bank_transfer_still_works_alongside_usdt(self):
+        """The shared helper must not have changed the bank rail's behaviour."""
+        session = self._make_user()
+        user_h = {"Authorization": f"Bearer {session['token']}"}
+        with patch.dict(os.environ, self.ENV):
+            self.assertEqual(self.client.post(
+                "/api/subscriptions/usdt", json={"plan_code": "pro", "tx_hash": "0x1"},
+                headers=user_h).status_code, 200)
+        # a bank claim is a DIFFERENT method, so it is not the blocked duplicate
+        self.assertEqual(self.client.post(
+            "/api/subscriptions/bank-transfer", json={"plan_code": "pro", "reference": "W-1"},
+            headers=user_h).status_code, 200)
+        methods = {s["method"] for s in self.client.get(
+            "/api/admin/subscriptions?status=pending", headers=self.admin).json()["subscriptions"]}
+        self.assertEqual(methods, {"usdt", "bank"})
 
 
 class PlanManagementTests(_Base):
