@@ -921,16 +921,26 @@ def get_price_from_market(
         return None
 
 
-def _get_us_stock_price(symbol: str, executed_at: str) -> Optional[float]:
-    """获取美股价格"""
+def _get_us_stock_price(symbol: str, executed_at: Optional[str]) -> Optional[float]:
+    """获取美股价格 — executed_at=None means "price it now"."""
     # Alpha Vantage TIME_SERIES_INTRADAY 返回美国东部时间 (ET)
-    try:
-        # 先解析为 UTC
-        dt_utc = datetime.fromisoformat(executed_at.replace('Z', '')).replace(tzinfo=UTC)
-        # 转换为东部时间 (ET)
-        dt_et = dt_utc.astimezone(ET_TZ)
-    except ValueError:
-        return None
+    if executed_at is None:
+        # Every sibling provider treats a missing timestamp as the current price
+        # (yahoo takes Optional[str]; a hyperliquid candle miss falls through to
+        # the mid price), and callers rely on it: routes_runs._probe_price,
+        # run_engine and trading_runs all pass None to mean "now". This branch
+        # used to be absent, so None hit .replace() below and raised
+        # AttributeError — which the ValueError guard does not catch — making
+        # EVERY us-stock lookup fail regardless of API key or quota.
+        dt_et = datetime.now(UTC).astimezone(ET_TZ)
+    else:
+        try:
+            # 先解析为 UTC
+            dt_utc = datetime.fromisoformat(executed_at.replace('Z', '')).replace(tzinfo=UTC)
+            # 转换为东部时间 (ET)
+            dt_et = dt_utc.astimezone(ET_TZ)
+        except ValueError:
+            return None
 
     month = dt_et.strftime("%Y-%m")
 
