@@ -14,6 +14,10 @@ Sourcing rules:
     session reuse: both platforms' terms forbid it, and a scraper would break
     on every markup change anyway.
   * Missing credentials disable that platform quietly; the other still runs.
+  * A region whose primary platform has no credentials falls back to the
+    keyless public StockTwits stream, so the service produces real signal
+    before X (paid plan) and Facebook (app review) are set up. Disable with
+    SOCIAL_KEYLESS_FALLBACK=false to collect strictly from FB/X.
 
 Retention: raw posts are kept SOCIAL_RAW_RETENTION_DAYS (default 7) and pruned
 at the end of every cycle. The derived snapshots are small and kept longer so
@@ -98,6 +102,17 @@ def tracked_symbols() -> list[str]:
 
 
 # ── scoring ───────────────────────────────────────────────────────────────────
+
+def score_post(post: dict[str, Any]) -> int:
+    """Polarity for one post. A sentiment the author declared explicitly
+    (StockTwits Bullish/Bearish tags) beats inferring it from wording."""
+    declared = (post.get("declared_sentiment") or "").strip().lower()
+    if declared == "bullish":
+        return 1
+    if declared == "bearish":
+        return -1
+    return score_text(post.get("text") or "")
+
 
 def score_text(text: str) -> int:
     """+1 / 0 / -1 polarity for one post."""
@@ -189,7 +204,64 @@ def fetch_facebook_posts(symbol: str) -> list[dict[str, Any]]:
     return posts
 
 
-_COLLECTORS = {"x": fetch_x_posts, "facebook": fetch_facebook_posts}
+def fetch_stocktwits_posts(symbol: str) -> list[dict[str, Any]]:
+    """Public StockTwits stream — the keyless fallback.
+
+    X's API needs a paid plan and Facebook needs an app review, so until those
+    credentials exist a region would collect nothing at all. StockTwits is
+    public, needs no auth, and is already trusted elsewhere in this codebase
+    (scanner.py mention rates, analysis_sources.py sentiment). Its messages
+    also carry an explicit Bullish/Bearish tag, which beats keyword scoring
+    when present.
+    """
+    resp = requests.get(
+        f"https://api.stocktwits.com/api/2/streams/symbol/{symbol.upper()}.X.json",
+        timeout=SOCIAL_TIMEOUT, headers={"User-Agent": "Sooppiy/1.0"})
+    if resp.status_code != 200:
+        logger.warning("StockTwits stream failed for %s: HTTP %s", symbol, resp.status_code)
+        return []
+    posts = []
+    for item in (resp.json() or {}).get("messages") or []:
+        tag = ((item.get("entities") or {}).get("sentiment") or {}).get("basic")
+        posts.append({
+            "platform": "stocktwits",
+            "post_id": str(item.get("id")),
+            "author": ((item.get("user") or {}).get("username")),
+            "text": item.get("body") or "",
+            "engagement": (item.get("likes") or {}),
+            "posted_at": item.get("created_at"),
+            # 'Bullish' / 'Bearish' when the poster tagged it, else None
+            "declared_sentiment": tag,
+        })
+    return posts
+
+
+_COLLECTORS = {"x": fetch_x_posts, "facebook": fetch_facebook_posts,
+               "stocktwits": fetch_stocktwits_posts}
+
+# Credentials each platform needs before it can collect anything.
+_PLATFORM_CREDS = {
+    "x": ("X_BEARER_TOKEN",),
+    "facebook": ("FACEBOOK_ACCESS_TOKEN", "SOCIAL_FACEBOOK_PAGES"),
+    "stocktwits": (),  # public API, no credentials
+}
+
+
+def platform_configured(platform: str) -> bool:
+    return all(os.getenv(env, "").strip() for env in _PLATFORM_CREDS.get(platform, ()))
+
+
+def _keyless_fallback_enabled() -> bool:
+    return os.getenv("SOCIAL_KEYLESS_FALLBACK", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def platform_for_region(region: str) -> Optional[str]:
+    """The platform a region collects from: its configured primary, else the
+    keyless fallback, else None (nothing usable)."""
+    primary = REGION_PLATFORM.get(region)
+    if primary and platform_configured(primary):
+        return primary
+    return "stocktwits" if _keyless_fallback_enabled() else None
 
 
 # ── persistence ───────────────────────────────────────────────────────────────
@@ -254,8 +326,14 @@ def refresh_social_snapshot() -> dict[str, Any]:
         for symbol in symbols:
             scores: list[int] = []
             platforms: dict[str, int] = {}
+            done: set[str] = set()
             for region in regions:
-                platform = REGION_PLATFORM[region]
+                platform = platform_for_region(region)
+                # Regions whose primary is unconfigured share one fallback
+                # platform — collect it once, not once per region.
+                if not platform or platform in done:
+                    continue
+                done.add(platform)
                 try:
                     posts = _COLLECTORS[platform](symbol)
                 except Exception as exc:  # noqa: BLE001
@@ -266,7 +344,7 @@ def refresh_social_snapshot() -> dict[str, Any]:
                 fetched += len(posts)
                 stored += _store_posts(cursor, region, symbol, posts)
                 platforms[platform] = platforms.get(platform, 0) + len(posts)
-                scores.extend(score_text(p.get("text") or "") for p in posts)
+                scores.extend(score_post(p) for p in posts)
 
             if scores:
                 tilt = sum(scores) / len(scores)
