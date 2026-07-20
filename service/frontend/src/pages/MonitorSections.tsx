@@ -28,21 +28,36 @@ export type MonitorData = {
   runs: any[]
   rules: any[]
   activeRuns: number
+  /** True when the API rejected our credentials. Without this an auth failure
+   *  renders identically to a genuinely empty account — every counter reads 0
+   *  and the board looks broken rather than logged out. */
+  authFailed: boolean
 }
 
 const ACTIVE_RUN_STATUSES = new Set(['running', 'armed', 'paused', 'stopping'])
 
-/** Shared poller so the band and the detail sections never disagree. */
+/**
+ * Shared poller so the band and the detail sections never disagree.
+ *
+ * The token is read from storage at REQUEST time, not captured once. The old
+ * standalone /monitor page got a live token prop from App and re-rendered when
+ * auth changed; AutomationPage snapshots localStorage at mount, so a snapshot
+ * that goes stale made every monitoring call 401 and the whole board read as
+ * zeros — indistinguishable from "monitoring is gone".
+ */
 export function useMonitorData(token?: string | null, intervalMs = 20000): MonitorData {
-  const [data, setData] = useState<MonitorData>({ positions: [], alerts: [], runs: [], rules: [], activeRuns: 0 })
+  const [data, setData] = useState<MonitorData>({ positions: [], alerts: [], runs: [], rules: [], activeRuns: 0, authFailed: false })
 
   const load = useCallback(async () => {
-    if (!token) return
-    const auth = { Authorization: `Bearer ${token}` }
+    const live = localStorage.getItem('claw_token') || token
+    if (!live) return
+    const auth = { Authorization: `Bearer ${live}` }
+    let authFailed = false
     const grab = async (path: string, key: string) => {
       try {
         const r = await fetch(`${API_BASE}${path}`, { headers: auth })
         if (r.ok) return (await r.json())[key] || []
+        if (r.status === 401) authFailed = true
       } catch { /* transient — keep the last good value */ }
       return []
     }
@@ -54,7 +69,7 @@ export function useMonitorData(token?: string | null, intervalMs = 20000): Monit
       grab('/runs', 'runs'),
     ])
     const activeRuns = (liveRuns as any[]).filter(r => ACTIVE_RUN_STATUSES.has(r?.status)).length
-    setData({ positions, alerts, runs, rules, activeRuns })
+    setData({ positions, alerts, runs, rules, activeRuns, authFailed })
   }, [token])
 
   useEffect(() => {
@@ -94,6 +109,20 @@ export function StatusBand({ data }: { data: MonitorData }) {
       openPnl === 0 ? undefined : openPnl > 0 ? '#3fb950' : '#f0663f'],
     [T.alerts, String(data.alerts.length), undefined],
   ]
+
+  if (data.authFailed) {
+    return (
+      <div style={{ ...card, borderColor: '#c98500', color: '#c98500', fontSize: 13 }}>
+        ⚠️ {tr(language, {
+          ko: '세션이 만료되어 모니터링 데이터를 불러오지 못했습니다. 새로고침하거나 다시 로그인해 주세요.',
+          en: 'Session expired — monitoring data could not be loaded. Refresh the page or sign in again.',
+          ja: 'セッションが期限切れです。再読み込みまたは再ログインしてください。',
+          th: 'เซสชันหมดอายุ — โหลดข้อมูลไม่ได้ กรุณารีเฟรชหรือเข้าสู่ระบบใหม่',
+          vi: 'Phiên đã hết hạn — không tải được dữ liệu. Hãy tải lại hoặc đăng nhập lại.',
+        })}
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 10, marginBottom: 18 }}>
@@ -319,6 +348,60 @@ export function PlainActivity({ data }: { data: MonitorData }) {
             {r.executed && <span style={{ marginLeft: 'auto' }}>{pill('rgba(12,163,12,0.14)', '#3fb950', '✓')}</span>}
           </div>
         ))}
+    </div>
+  )
+}
+
+/**
+ * Full-delegation decisions with their rationale. The old /monitor page showed
+ * these unconditionally; the merge briefly buried them inside the delegation
+ * setup card, which hid them from anyone reviewing what the AI had decided.
+ */
+export function AgentDecisionsSection({ token }: { token?: string | null }) {
+  const { language } = useLanguage()
+  const [decisions, setDecisions] = useState<any[]>([])
+
+  useEffect(() => {
+    let stop = false
+    const load = async () => {
+      const live = localStorage.getItem('claw_token') || token
+      if (!live) return
+      try {
+        const r = await fetch(`${API_BASE}/automation/agent-decisions?limit=10`, {
+          headers: { Authorization: `Bearer ${live}` },
+        })
+        if (r.ok && !stop) setDecisions((await r.json()).decisions || [])
+      } catch { /* transient */ }
+    }
+    load()
+    const iv = setInterval(load, 30000)
+    return () => { stop = true; clearInterval(iv) }
+  }, [token])
+
+  if (decisions.length === 0) return null
+
+  const T = {
+    title: tr(language, { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (full delegation)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI', vi: 'Quyết định AI' }),
+  }
+  return (
+    <div style={card}>
+      <div style={h3}>{T.title}</div>
+      {decisions.map(d => {
+        let p: any = {}
+        try { p = JSON.parse(d.params_json || '{}') } catch { /* show what we can */ }
+        return (
+          <div key={d.id} style={{ padding: '7px 0', borderBottom: '1px solid var(--border-color)', fontSize: 12.5 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
+              <b>{p.symbol}</b><span>${p.size_usd}</span><span>{p.interval_minutes}m</span>
+              <span>≥{p.min_confidence}</span><span>{p.risk_level}</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
+                {d.planner === 'llm' ? (d.llm_model || 'AI') : 'fallback'}
+              </span>
+            </div>
+            {d.rationale && <div style={{ color: 'var(--text-secondary)', marginTop: 3 }}>{d.rationale}</div>}
+          </div>
+        )
+      })}
     </div>
   )
 }

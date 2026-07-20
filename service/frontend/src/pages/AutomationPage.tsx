@@ -3,8 +3,8 @@ import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisRun, useAnalysisStream } from '../components/AnalysisPipelineViz'
 import ConfigProfiles from '../components/ConfigProfiles'
 import {
-  AlertsSection, PlainActivity, PositionsSection, RunHistorySection,
-  StatusBand, WatchesSection, useMonitorData,
+  AgentDecisionsSection, AlertsSection, PlainActivity, PositionsSection,
+  RunHistorySection, StatusBand, WatchesSection, useMonitorData,
 } from './MonitorSections'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
@@ -73,7 +73,25 @@ type RiskKey = keyof typeof RISK_PRESETS
 const SIMPLE_COINS_FALLBACK = ['BTC', 'ETH', 'SOL']
 
 export function AutomationPage() {
-  const [token] = useState<string | null>(localStorage.getItem('claw_token'))
+  // Destructured without a setter this could never update: if the agent
+  // session is restored (or rotated) after mount, the page kept sending the
+  // stale value and every call 401'd for the rest of the session — the whole
+  // board silently read as empty. Keep it in step with storage instead.
+  const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
+  useEffect(() => {
+    const sync = () => {
+      const live = localStorage.getItem('claw_token')
+      setToken(prev => (prev === live ? prev : live))
+    }
+    window.addEventListener('focus', sync)
+    window.addEventListener('storage', sync)
+    const iv = setInterval(sync, 5000)
+    return () => {
+      window.removeEventListener('focus', sync)
+      window.removeEventListener('storage', sync)
+      clearInterval(iv)
+    }
+  }, [])
   const { language } = useLanguage()
   const [mode, setMode] = useState<UserMode>(() => {
     const saved = localStorage.getItem(MODE_KEY)
@@ -728,6 +746,8 @@ export function AutomationPage() {
           : <RunHistorySection data={monitor} />}
 
         <PositionsSection data={monitor} />
+        {/* Restored from the old /monitor board — self-hiding when empty. */}
+        <AgentDecisionsSection token={token} />
         <AlertsSection data={monitor} />
 
         {/* Watches ask you to name a metric and a threshold — that presumes
