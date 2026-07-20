@@ -132,11 +132,23 @@ class AlertEngineTests(PersonalizedTestCase):
         self.assertIn("sms", out["channels"])
         self.assertEqual(mock_sms.call_args[0][0], "+821012345678")
 
-    def test_no_optin_means_inapp_only(self):
+    def test_default_category_reaches_email_without_optin(self):
+        # One switch per category (notifications.py): a category left at its
+        # default ON delivers everywhere, so there is no in-app-only state.
         import alerts
         with patch.object(alerts, "_send_email", return_value=True) as mock_email:
             out = alerts.send_alert(self.agent_id, "custom", "t", "b")
-        self.assertEqual(out["channels"], ["inapp"])
+        self.assertIn("inapp", out["channels"])
+        self.assertIn("email", out["channels"])
+        mock_email.assert_called_once()
+
+    def test_category_switched_off_delivers_nothing(self):
+        import alerts
+        import notifications
+        notifications.set_prefs(self.user_id, {"watch": {"enabled": False}})
+        with patch.object(alerts, "_send_email", return_value=True) as mock_email:
+            out = alerts.send_alert(self.agent_id, "custom", "t", "b")
+        self.assertNotIn("email", out["channels"])
         mock_email.assert_not_called()
 
     def test_dedupe_within_hour(self):

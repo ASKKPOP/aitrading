@@ -1,18 +1,17 @@
 """Member notification centre — the in-app feed plus per-category preferences.
 
 Every notification a *member* (users row) can receive belongs to one of the
-categories in CATEGORY_CATALOG. Each category has three switches, mirroring
-the iOS Settings → Notifications layout:
+categories in CATEGORY_CATALOG. A category has a single switch:
 
-    enabled   master switch — off means nothing is delivered at all
-    email     also send to the member's account email
-    sms       also send to the phone stored on the 'alerts' settings target
+    enabled   on means deliver everywhere — feed, the member's account email,
+              and the phone stored on the 'alerts' settings target
+
+The payload still carries 'email' and 'sms' keys (delivery reads them), but
+they are derived from 'enabled', never stored independently: a member is one
+person, so splitting their channels only produced settings that disagreed.
 
 Preferences live in user_api_settings under target 'notifications'; a member
 who never touched the page has no row, so get_prefs() falls back to defaults.
-For the trade/risk categories the email/sms defaults are read from the older
-'alerts' target so members who opted in before this page existed keep their
-delivery unchanged.
 
 alerts.send_alert() (trade/risk/watch alerts) delegates its channel decision
 here and mirrors every alert into the feed, so the notification centre is the
@@ -38,39 +37,37 @@ CATEGORY_CATALOG: dict[str, dict[str, Any]] = {
     "trade": {
         "label": "Trade activity",
         "description": "Order fills and position closes from your automation rules.",
-        "default": {"enabled": True, "email": False, "sms": False},
+        "default": {"enabled": True},
     },
     "risk": {
         "label": "Risk & safety",
         "description": "Circuit-breaker halts and rejected pre-trade verifications.",
-        "default": {"enabled": True, "email": False, "sms": False},
+        "default": {"enabled": True},
     },
     "watch": {
         "label": "Watches",
         "description": "Price and indicator watches you configured firing.",
-        "default": {"enabled": True, "email": False, "sms": False},
+        "default": {"enabled": True},
     },
     "auto_trading_reports": {
         "label": "Auto-trading reports",
         "description": "Scheduled P&L digests from your trading runs.",
-        # Digests are never SMS (per-message cost; Plan 10 D8) — the sms
-        # switch stays off and the safety category below carries SMS.
-        "default": {"enabled": True, "email": True, "sms": False},
+        "default": {"enabled": True},
     },
     "auto_trading_safety": {
         "label": "Auto-trading safety",
         "description": "Run stop events, profit/loss threshold triggers, and safety pauses.",
-        "default": {"enabled": True, "email": True, "sms": False},
+        "default": {"enabled": True},
     },
     "support": {
         "label": "Support replies",
         "description": "Replies from the Sooppiy team in your support conversation.",
-        "default": {"enabled": True, "email": True, "sms": False},
+        "default": {"enabled": True},
     },
     "announcement": {
         "label": "Announcements",
         "description": "Platform announcements and service notices from Sooppiy.",
-        "default": {"enabled": True, "email": False, "sms": False},
+        "default": {"enabled": True},
     },
 }
 
@@ -96,10 +93,6 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _truthy(value: Any) -> bool:
-    return str(value).strip().lower() in ("1", "true", "yes", "on")
-
-
 def _safe_link(link: Optional[str]) -> Optional[str]:
     """Only in-app paths may reach the feed's <Link to>.
 
@@ -118,11 +111,10 @@ def _safe_link(link: Optional[str]) -> Optional[str]:
 
 def _load_target(cursor, user_id: int, target: str) -> dict[str, Any]:
     # enabled = 1 filter matters for the legacy 'alerts' target: a member who
-    # turned that target OFF (PUT .../api/alerts {enabled:false}) must not have
-    # its email_enabled/sms_enabled config inherited — that was the historical
-    # off switch (the pre-refactor alerts._alert_prefs joined on s.enabled = 1).
-    # The 'notifications' target is always written enabled = 1, so this is a
-    # no-op for it.
+    # turned that target OFF (PUT .../api/alerts {enabled:false}) has no SMS
+    # destination — that was the historical off switch (the pre-refactor
+    # alerts._alert_prefs joined on s.enabled = 1). The 'notifications' target
+    # is always written enabled = 1, so this is a no-op for it.
     cursor.execute(
         "SELECT config_json FROM user_api_settings "
         "WHERE user_id = ? AND target = ? AND enabled = 1",
@@ -138,6 +130,11 @@ def _load_target(cursor, user_id: int, target: str) -> dict[str, Any]:
 
 # ─────────────────────────── preferences ───────────────────────────
 
+def _switches(enabled: bool) -> dict[str, bool]:
+    """One switch drives every channel — see the module docstring."""
+    return {"enabled": enabled, "email": enabled, "sms": enabled}
+
+
 def get_prefs(user_id: int, cursor=None) -> dict[str, dict[str, bool]]:
     """Full per-category preference map, defaults filled in."""
     own_conn = cursor is None
@@ -147,25 +144,16 @@ def get_prefs(user_id: int, cursor=None) -> dict[str, dict[str, bool]]:
         cursor = conn.cursor()
     try:
         stored = _load_target(cursor, user_id, PREFS_TARGET)
-        legacy = _load_target(cursor, user_id, LEGACY_ALERT_TARGET)
-        legacy_email = _truthy(legacy.get("email_enabled"))
-        legacy_sms = _truthy(legacy.get("sms_enabled"))
     finally:
         if own_conn and conn is not None:
             conn.close()
 
     prefs: dict[str, dict[str, bool]] = {}
     for category, spec in CATEGORY_CATALOG.items():
-        default = dict(spec["default"])
-        # Members who opted into email/SMS before this page existed keep it.
-        if category in ("trade", "risk", "watch"):
-            default["email"] = legacy_email
-            default["sms"] = legacy_sms
         saved = stored.get(category) or {}
-        prefs[category] = {
-            key: bool(saved[key]) if key in saved else default[key]
-            for key in ("enabled", "email", "sms")
-        }
+        enabled = (bool(saved["enabled"]) if "enabled" in saved
+                   else spec["default"]["enabled"])
+        prefs[category] = _switches(enabled)
     return prefs
 
 
@@ -174,9 +162,11 @@ def _apply_patch(merged: dict[str, dict[str, bool]],
     for category, switches in (patch or {}).items():
         if category not in CATEGORY_CATALOG or not isinstance(switches, dict):
             continue
-        for key in ("enabled", "email", "sms"):
+        # 'email' and 'sms' are accepted as aliases of the master switch so a
+        # client still holding the old per-channel UI does not write a no-op.
+        for key in ("email", "sms", "enabled"):
             if key in switches:
-                merged[category][key] = bool(switches[key])
+                merged[category] = _switches(bool(switches[key]))
     return merged
 
 

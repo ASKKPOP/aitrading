@@ -4,17 +4,15 @@ import { API_BASE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
 // Per-category notification switches, laid out like iOS Settings →
-// Notifications: one grouped list, a master switch per category, and the
-// delivery channels revealed underneath only while the category is on.
-// Categories and their keys come from the backend (notifications.py).
+// Notifications: one grouped list, one switch per category. Email and SMS are
+// not split — a member is one person, so a category that is on reaches every
+// channel they have registered. Keys come from the backend (notifications.py).
 
 type Category = {
   key: string
   label: string
   description: string
   enabled: boolean
-  email: boolean
-  sms: boolean
 }
 
 export function Switch({ checked, onChange, disabled, label }: {
@@ -53,6 +51,8 @@ const LABELS: Record<string, { ko: string; en: string; ja: string; th: string; v
   trade: { ko: '거래 활동', en: 'Trade activity', ja: '取引アクティビティ', th: 'กิจกรรมการเทรด', vi: 'Hoạt động giao dịch' },
   risk: { ko: '리스크 · 안전', en: 'Risk & safety', ja: 'リスク・安全', th: 'ความเสี่ยงและความปลอดภัย', vi: 'Rủi ro & an toàn' },
   watch: { ko: '워치 알림', en: 'Watches', ja: 'ウォッチ', th: 'การเฝ้าดู', vi: 'Theo dõi' },
+  auto_trading_reports: { ko: '자동매매 리포트', en: 'Auto-trading reports', ja: '自動売買レポート', th: 'รายงานการเทรดอัตโนมัติ', vi: 'Báo cáo giao dịch tự động' },
+  auto_trading_safety: { ko: '자동매매 안전', en: 'Auto-trading safety', ja: '自動売買の安全', th: 'ความปลอดภัยการเทรดอัตโนมัติ', vi: 'An toàn giao dịch tự động' },
   support: { ko: '고객지원 답변', en: 'Support replies', ja: 'サポート返信', th: 'การตอบกลับจากฝ่ายสนับสนุน', vi: 'Phản hồi hỗ trợ' },
   announcement: { ko: '공지사항', en: 'Announcements', ja: 'お知らせ', th: 'ประกาศ', vi: 'Thông báo' },
 }
@@ -61,6 +61,8 @@ const DESCRIPTIONS: Record<string, { ko: string; en: string; ja: string; th: str
   trade: { ko: '자동매매 규칙의 체결과 포지션 종료.', en: 'Order fills and position closes from your automation rules.', ja: '自動売買ルールの約定とポジション決済。', th: 'การจับคู่คำสั่งและการปิดสถานะจากกฎอัตโนมัติ', vi: 'Khớp lệnh và đóng vị thế từ quy tắc tự động.' },
   risk: { ko: '서킷 브레이커 정지와 사전 검증 거부.', en: 'Circuit-breaker halts and rejected pre-trade verifications.', ja: 'サーキットブレーカー停止と事前検証の却下。', th: 'การหยุดเซอร์กิตเบรกเกอร์และการปฏิเสธการตรวจสอบ', vi: 'Dừng ngắt mạch và từ chối kiểm chứng trước lệnh.' },
   watch: { ko: '설정한 가격·지표 워치가 발동할 때.', en: 'Price and indicator watches you configured firing.', ja: '設定した価格・指標ウォッチの発動。', th: 'การเฝ้าดูราคาและตัวชี้วัดที่คุณตั้งไว้ทำงาน', vi: 'Theo dõi giá và chỉ báo bạn đã cấu hình kích hoạt.' },
+  auto_trading_reports: { ko: '트레이딩 런의 정기 손익 리포트.', en: 'Scheduled P&L digests from your trading runs.', ja: 'トレーディングランの定期損益レポート。', th: 'สรุปกำไรขาดทุนตามกำหนดเวลาจากรันการเทรด', vi: 'Báo cáo lãi/lỗ định kỳ từ các phiên giao dịch.' },
+  auto_trading_safety: { ko: '런 중단, 손익 임계값 발동, 안전 일시정지.', en: 'Run stop events, profit/loss threshold triggers, and safety pauses.', ja: 'ラン停止、損益しきい値の発動、安全一時停止。', th: 'การหยุดรัน การแตะเกณฑ์กำไรขาดทุน และการหยุดเพื่อความปลอดภัย', vi: 'Sự kiện dừng phiên, ngưỡng lãi/lỗ và tạm dừng an toàn.' },
   support: { ko: '고객지원 대화에 운영팀이 답장할 때.', en: 'Replies from the Sooppiy team in your support conversation.', ja: 'サポート会話での運営チームの返信。', th: 'การตอบกลับจากทีม Sooppiy ในการสนทนาสนับสนุน', vi: 'Phản hồi từ đội ngũ Sooppiy trong cuộc trò chuyện hỗ trợ.' },
   announcement: { ko: '플랫폼 공지와 서비스 안내.', en: 'Platform announcements and service notices from Sooppiy.', ja: 'プラットフォームのお知らせとサービス通知。', th: 'ประกาศแพลตฟอร์มและการแจ้งบริการ', vi: 'Thông báo nền tảng và thông báo dịch vụ.' },
 }
@@ -95,14 +97,14 @@ export default function NotificationSettings({ userToken }: { userToken: string 
   }, [userToken])
 
   // Optimistic: flip locally, persist, roll back on failure.
-  const patch = async (key: string, field: 'enabled' | 'email' | 'sms', value: boolean) => {
+  const patch = async (key: string, value: boolean) => {
     const previous = categories
-    setCategories(cs => cs.map(c => c.key === key ? { ...c, [field]: value } : c))
+    setCategories(cs => cs.map(c => c.key === key ? { ...c, enabled: value } : c))
     setBusy(true)
     try {
       const res = await fetch(`${API_BASE}/notifications/settings`, {
         method: 'PUT', headers: auth(),
-        body: JSON.stringify({ categories: { [key]: { [field]: value } } }),
+        body: JSON.stringify({ categories: { [key]: { enabled: value } } }),
       })
       if (!res.ok) throw new Error(String(res.status))
       setCategories((await res.json()).categories || [])
@@ -126,11 +128,12 @@ export default function NotificationSettings({ userToken }: { userToken: string 
     display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
     borderBottom: '1px solid var(--border-color, rgba(0,0,0,0.08))',
   }
-  const channelRow: any = {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '9px 16px 9px 30px', fontSize: 13,
-    borderBottom: '1px solid var(--border-color, rgba(0,0,0,0.06))',
-  }
+  // Where an enabled category lands. Shown once per row instead of a toggle
+  // per channel, so the destinations stay visible without being separable.
+  const destinations = [
+    email,
+    phone || tr(language, { ko: 'SMS — 아래에서 전화번호를 등록하세요', en: 'SMS — add a phone number below', ja: 'SMS — 下で電話番号を登録', th: 'SMS — เพิ่มเบอร์โทรด้านล่าง', vi: 'SMS — thêm số điện thoại bên dưới' }),
+  ].filter(Boolean).join(' · ')
 
   return (
     <div>
@@ -144,35 +147,15 @@ export default function NotificationSettings({ userToken }: { userToken: string 
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.5 }}>
                   {descOf(c)}
                 </div>
+                {c.enabled && destinations && (
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>
+                    {destinations}
+                  </div>
+                )}
               </div>
               <Switch checked={c.enabled} disabled={busy} label={labelOf(c)}
-                onChange={v => patch(c.key, 'enabled', v)} />
+                onChange={v => patch(c.key, v)} />
             </div>
-
-            {c.enabled && (
-              <div style={{ background: 'var(--bg-secondary, rgba(0,0,0,0.02))' }}>
-                <div style={channelRow}>
-                  <span>
-                    {tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email' })}
-                    {email && <span style={{ color: 'var(--text-muted)', marginLeft: 6, fontSize: 11.5 }}>{email}</span>}
-                  </span>
-                  <Switch checked={c.email} disabled={busy} label={`${labelOf(c)} email`}
-                    onChange={v => patch(c.key, 'email', v)} />
-                </div>
-                <div style={{ ...channelRow, borderBottom: 'none' }}>
-                  <span>
-                    SMS
-                    {phone
-                      ? <span style={{ color: 'var(--text-muted)', marginLeft: 6, fontSize: 11.5 }}>{phone}</span>
-                      : <span style={{ color: 'var(--text-muted)', marginLeft: 6, fontSize: 11.5 }}>
-                          {tr(language, { ko: '— 아래에서 전화번호를 등록하세요', en: '— add a phone number below', ja: '— 下で電話番号を登録', th: '— เพิ่มเบอร์โทรด้านล่าง', vi: '— thêm số điện thoại bên dưới' })}
-                        </span>}
-                  </span>
-                  <Switch checked={c.sms} disabled={busy || !phone} label={`${labelOf(c)} SMS`}
-                    onChange={v => patch(c.key, 'sms', v)} />
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
