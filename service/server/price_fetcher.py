@@ -26,11 +26,15 @@ except ImportError:
 # Alpha Vantage API configuration
 ALPHA_VANTAGE_API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY", "demo")
 
-# Yahoo's public chart endpoint answers 429 to the default requests User-Agent.
-_YAHOO_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-)
+# Yahoo's public chart endpoint fingerprints the User-Agent, and the exact string
+# matters far more than it looks. Measured from the production host, 2026-07-20:
+#   "Mozilla/5.0"                        -> 200, 12/12 with no delay between requests
+#   a full spoofed Chrome UA string      -> 429, 6/6, on the very first request
+#   requests' own default UA             -> 429, always
+# A detailed browser UA with no matching TLS fingerprint or headers reads as a
+# scraper; the bare token reads as a generic HTTP client and is served normally.
+# Do not "improve" this into a realistic-looking browser string — that breaks it.
+_YAHOO_USER_AGENT = "Mozilla/5.0"
 BASE_URL = "https://www.alphavantage.co/query"
 
 # Hyperliquid public info endpoint (no API key required for reads)

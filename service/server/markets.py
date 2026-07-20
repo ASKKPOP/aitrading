@@ -90,10 +90,7 @@ REGISTRY: dict[str, MarketSpec] = {
         tradeable=True,
         automatable=True,
         price_decimals=5,
-        # Yahoo throttles aggressively by IP, so forex stays off the synchronous trade
-        # path (same treatment as Alpha Vantage) and is priced by the background
-        # refresher, which fetches once per symbol per cycle.
-        server_priced=False,
+        server_priced=True,
     ),
 }
 

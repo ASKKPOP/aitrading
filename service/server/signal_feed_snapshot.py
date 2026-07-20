@@ -32,22 +32,18 @@ import json
 from typing import Any, Optional
 
 import database
+import markets
 
 # All (message_type, market) combinations pre-computed each refresh cycle.
 # market='' means no market filter ("all markets").
-FILTER_COMBOS: tuple[tuple[str, str], ...] = (
-    ("operation", ""),
-    ("operation", "us-stock"),
-    ("operation", "crypto"),
-    ("operation", "polymarket"),
-    ("strategy", ""),
-    ("strategy", "us-stock"),
-    ("strategy", "crypto"),
-    ("strategy", "polymarket"),
-    ("discussion", ""),
-    ("discussion", "us-stock"),
-    ("discussion", "crypto"),
-    ("discussion", "polymarket"),
+# Derived from the market registry so a new market gets a warm feed snapshot
+# automatically — this list was previously hardcoded and silently omitted forex.
+MESSAGE_TYPES: tuple[str, ...] = ("operation", "strategy", "discussion")
+
+FILTER_COMBOS: tuple[tuple[str, str], ...] = tuple(
+    (message_type, market)
+    for message_type in MESSAGE_TYPES
+    for market in ("",) + markets.tradeable_markets()
 )
 
 
