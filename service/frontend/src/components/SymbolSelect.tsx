@@ -5,10 +5,10 @@ import { API_BASE } from '../appShared'
 // dropdowns (no free-text input); options come from /api/markets/symbols
 // and, for polymarket, from /api/markets/polymarket.
 
-type SymbolLists = { crypto: string[]; crypto_pairs: string[]; stock: string[] }
+type SymbolLists = { crypto: string[]; crypto_pairs: string[]; stock: string[]; forex: string[] }
 type Option = { value: string; label: string }
 
-const EMPTY_LISTS: SymbolLists = { crypto: [], crypto_pairs: [], stock: [] }
+const EMPTY_LISTS: SymbolLists = { crypto: [], crypto_pairs: [], stock: [], forex: [] }
 let listsCache: SymbolLists | null = null
 let listsPromise: Promise<SymbolLists> | null = null
 
@@ -22,6 +22,7 @@ function loadLists(): Promise<SymbolLists> {
           crypto: Array.isArray(d.crypto) ? d.crypto : [],
           crypto_pairs: Array.isArray(d.crypto_pairs) ? d.crypto_pairs : [],
           stock: Array.isArray(d.stock) ? d.stock : [],
+          forex: Array.isArray(d.forex) ? d.forex : [],
         }
         return listsCache
       })
@@ -57,7 +58,7 @@ function loadPolymarketOptions(): Promise<Option[]> {
 }
 
 export function SymbolSelect({ market, variant, value, onChange, placeholder, className, style, required, disabled }: {
-  market?: string          // 'crypto' | 'us-stock' | 'polymarket' | '' (all) …
+  market?: string          // 'crypto' | 'us-stock' | 'polymarket' | 'forex' | '' (all) …
   variant?: 'pair'         // OKX USDT pair form (BTCUSDT) — watches/consult
   value: string
   onChange: (symbol: string) => void
@@ -79,6 +80,9 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
         if (!alive) return
         let symbols: string[]
         if (variant === 'pair') symbols = lists.crypto_pairs
+        // Exact match before the substring checks below — 'a-stock' would otherwise
+        // match .includes('stock') and be offered US tickers.
+        else if (m === 'forex') symbols = lists.forex
         else if (m.includes('crypto')) symbols = lists.crypto
         else if (m.includes('stock')) symbols = lists.stock
         else symbols = [...lists.crypto, ...lists.stock.filter(s => !lists.crypto.includes(s))]

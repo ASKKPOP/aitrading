@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+import markets
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +300,7 @@ def propose_rule(agent_id: int, session: dict[str, Any]) -> Optional[dict[str, A
     if risk not in PLAN_BOUNDS["risk_levels"]:
         risk = "balanced"
     market = str(raw.get("market") or session.get("market") or "crypto").lower()
-    if market not in ("crypto", "us-stock"):
+    if market not in markets.automatable_markets():
         market = "crypto"
     return {
         "symbol": symbol,

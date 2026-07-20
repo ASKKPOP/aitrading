@@ -109,7 +109,7 @@ export function ResearchExportsPage() {
           <select className="form-select" value={filters.market} onChange={(event) => setFilters({ ...filters, market: event.target.value })}>
             <option value="">{tr(language, { ko: '전체 시장', en: 'All markets', ja: 'すべての市場', th: 'ตลาดทั้งหมด', vi: 'Tất cả thị trường' })}</option>
             {MARKETS.filter((market) => market.value !== 'all').map((market) => (
-              <option key={market.value} value={market.value}>{market.labels[language]}</option>
+              <option key={market.value} value={market.value} disabled={!market.supported}>{market.labels[language]}</option>
             ))}
           </select>
           <input className="form-input" type="number" min="1" max="100000" value={filters.limit} onChange={(event) => setFilters({ ...filters, limit: event.target.value })} />

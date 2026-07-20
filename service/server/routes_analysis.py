@@ -23,6 +23,7 @@ from analysis_agents import run_analysis
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
+import markets
 
 
 class AnalysisRequest(BaseModel):
@@ -199,8 +200,9 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         if len(symbol) > 32:  # analysis_jobs.symbol is VARCHAR(32) on MySQL
             raise HTTPException(status_code=400, detail="symbol too long (max 32 chars)")
         market = (data.market or "us-stock").strip().lower()
-        if market not in ("crypto", "us-stock"):
-            raise HTTPException(status_code=400, detail="market must be crypto or us-stock")
+        if market not in markets.automatable_markets():
+            allowed = ", ".join(markets.automatable_markets())
+            raise HTTPException(status_code=400, detail=f"market must be one of: {allowed}")
         lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
 
         import analysis_jobs
@@ -240,8 +242,9 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400,
                                 detail=f"at most {MAX_SESSIONS_PER_AGENT} sessions — delete some first")
         market = (data.market or "crypto").strip().lower()
-        if market not in ("crypto", "us-stock"):
-            raise HTTPException(status_code=400, detail="market must be crypto or us-stock")
+        if market not in markets.automatable_markets():
+            allowed = ", ".join(markets.automatable_markets())
+            raise HTTPException(status_code=400, detail=f"market must be one of: {allowed}")
         session_id = create_session(agent["id"], data.symbol, market, data.title)
         return {"id": session_id, "ok": True}
 

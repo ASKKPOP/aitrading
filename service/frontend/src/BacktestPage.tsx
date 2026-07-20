@@ -402,7 +402,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
           <select className="form-select" value={market} onChange={(e) => setMarket(e.target.value)}>
             <option value="">{tr(language, { ko: '전체 시장', en: 'All markets', ja: 'すべての市場', th: 'ตลาดทั้งหมด', vi: 'Tất cả thị trường' })}</option>
             {MARKETS.filter((m) => m.value !== 'all').map((m) => (
-              <option key={m.value} value={m.value}>{m.labels[language]}</option>
+              <option key={m.value} value={m.value} disabled={!m.supported}>{m.labels[language]}</option>
             ))}
           </select>
           <SymbolSelect

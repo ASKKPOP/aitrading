@@ -14,13 +14,14 @@ import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
+import markets
 
 # Global trending cache (shared with routes)
 trending_cache: list = []
 _last_profit_history_prune_at: float = time.time()
 _profit_history_prune_task: Optional[asyncio.Task] = None
 _TRENDING_CACHE_KEY = "trending:top20"
-_SUPPORTED_PRICE_MARKETS = {"crypto", "polymarket", "us-stock"}
+_SUPPORTED_PRICE_MARKETS = markets.supported_markets()
 _PRICE_FAILURES: Dict[tuple[str, str, str, str], dict[str, float]] = {}
 _PRICE_FAILURE_CACHE_KEY_PREFIX = "position_price_failures"
 _POLYMARKET_SETTLEMENT_RECHECK_AFTER: Dict[tuple[str, str, str], float] = {}

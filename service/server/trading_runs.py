@@ -34,12 +34,13 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+import markets
 
 logger = logging.getLogger(__name__)
 
 TS_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
-VALID_RUN_MARKETS = ("crypto", "us-stock")
+VALID_RUN_MARKETS = markets.automatable_markets()
 VALID_MARKET_TYPES = ("spot", "futures")
 
 STATUS_DRAFT = "draft"
