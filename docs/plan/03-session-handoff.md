@@ -109,6 +109,14 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 "
 
 Run all three. Any mismatch means the deploy is half-applied — fix it before walking away.
 
+**Wait for readiness first.** The backend needs a few seconds after `compose up` before it answers.
+Observed 2026-07-19: a functional check fired ~6s after `up` returned an empty body, then passed
+5/5 once ready. Gate on the API before judging anything a failure:
+
+```bash
+until curl -s --max-time 10 https://sooppiy.com/api/market-intel/regime | grep -q '^{'; do sleep 3; done
+```
+
 ```bash
 ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
   TAG=$(grep "^SOOPPIY_IMAGE=" ~/sooppiy/.env | cut -d= -f2)
@@ -124,12 +132,31 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
   docker inspect --format "{{.Name}} {{.Config.Image}}" sooppiy-backend sooppiy-worker
 '
 # 3. functional endpoint check (from anywhere)
-curl -s -o /dev/null -w '%{http_code}\n' https://api.sooppiy.com/api/health
+#    /api/market-intel/regime is public and returns JSON. NEVER check status codes alone —
+#    see the SPA-fallback warning below. Assert the BODY is JSON.
+curl -s https://sooppiy.com/api/market-intel/regime | head -c 80
+#    -> must start with {"regime": ... . If it starts with <!DOCTYPE, the backend is NOT serving.
+
+#    deeper: real auth round-trip (proves DB + auth, not just routing)
+TOK=$(curl -s -X POST https://sooppiy.com/api/users/login -H 'Content-Type: application/json' \
+  -d '{"email":"info@askkpop.com","password":"test"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["token"])')
+echo "len=${#TOK}"   # ~43 chars. If this errors, login returned HTML = backend down.
+
 curl -s https://sooppiy.com/ | grep -o 'assets/index-[^"]*\.js'   # must match step 1's hash
 ```
 
-Note that nginx has an SPA fallback: a 200 on an arbitrary path proves nothing. Check a real API
-endpoint and compare bundle hashes, not status codes.
+> **⚠️ The SPA fallback makes status-code checks WORTHLESS — including on `/api/*` paths.**
+> Verified 2026-07-19: **both** `sooppiy.com` and `api.sooppiy.com` return **HTTP 200 with
+> `index.html`** for any unmatched path, and `/api/` is not exempt. Concretely:
+> `curl -o /dev/null -w '%{http_code}' https://api.sooppiy.com/api/health` prints **200** even
+> though **`/api/health` does not exist** — there is no health route in the codebase at all.
+> A totally dead backend would still return 200 there.
+>
+> So: **assert on the response body, never the status code.** A real API response is JSON
+> (`{"regime":...}`) or a real JSON error (`{"detail":"Authorization required"}`, which
+> `/api/execution/health` returns with a genuine 401). If you get `<!DOCTYPE html`, nginx served
+> the SPA and the backend never answered. Note `/api/leaderboard` and `/api/agents` also fall
+> through to HTML — do not use them as liveness probes.
 
 ### Frontend-only change (faster)
 ```bash
