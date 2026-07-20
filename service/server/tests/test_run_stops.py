@@ -246,8 +246,13 @@ class RunStopsTests(unittest.TestCase):
         self.assertEqual(row["status"], "stopped")
         self.assertEqual(row["status_reason"], "positions_held")
         pos = self._position()
-        self.assertEqual(pos["run_id"], run_id)
         self.assertAlmostEqual(float(pos["quantity"]), 5.0)
+        # The position stays open under the SL/TP watcher, but the finished run
+        # releases it back to the unowned book. `run_id` now means "an ACTIVE
+        # run owns this book" (sibling runs share a symbol and are told apart
+        # by it), and every non-run reader filters on `run_id IS NULL` — a
+        # lingering stamp would hide the position from the owner's own sell.
+        self.assertIsNone(pos["run_id"])
 
     def test_manual_halt_blocks_flatten_then_positions_held_after_timeout(self):
         run_id = self._run()

@@ -293,7 +293,10 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
             signal_id = _reserve_signal_id(cursor)
 
             if action_lower in ('sell', 'cover'):
-                pos = get_position_snapshot(cursor, agent_id, market, symbol, polymarket_token_id)
+                # None = the unowned book; a manual signal never trades a
+                # position an active run opened (that book is the run's).
+                pos = get_position_snapshot(cursor, agent_id, market, symbol,
+                                            polymarket_token_id, None)
                 current_qty = float(pos['quantity']) if pos else 0.0
                 position_entry_price = float(pos['entry_price']) if pos and pos['entry_price'] is not None else None
                 if action_lower == 'sell':
@@ -475,6 +478,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                             market,
                             symbol,
                             polymarket_token_id,
+                            None,
                         )
                         if action_lower == 'cover' and (not follower_position or follower_position['entry_price'] is None):
                             cursor.execute(f'ROLLBACK TO SAVEPOINT follower_{follower_id}')

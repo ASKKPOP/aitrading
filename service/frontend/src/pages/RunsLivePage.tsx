@@ -139,6 +139,20 @@ function reasonLabel(reason: string | undefined, lang: Language): string {
   return REASON_TEXT[reason] ? tr(lang, REASON_TEXT[reason]) : reason
 }
 
+// The run's strategy shape — the same four fields the server hashes into the
+// run's filter key. Two runs on one symbol are allowed precisely when this
+// line differs, so it is the card's answer to "how is this one different?".
+function strategyLabel(run: Run): string {
+  const cfg = (run as any).config || {}
+  const bits = [
+    run.market_type === 'futures' ? 'futures' : 'spot',
+    `${cfg.interval_minutes ?? 60}m`,
+    `≥${Math.round((cfg.min_confidence ?? 0.65) * 100)}%`,
+  ]
+  if (cfg.provider) bits.push(String(cfg.provider))
+  return bits.join(' · ')
+}
+
 function ageLabel(ts: string | undefined, lang: Language): string {
   if (!ts) return tr(lang, { ko: '대기', en: 'idle', ja: '待機', th: 'ว่าง', vi: 'chờ' })
   const secs = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000)
@@ -151,8 +165,16 @@ function ageLabel(ts: string | undefined, lang: Language): string {
 // /automation renders it as its primary section (embedded), while the old
 // /runs/live route now redirects there. `reloadKey` lets a parent force a
 // reload after it creates a run out-of-band.
-export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
+//
+// /automation drives the create modal from its own "Make by New Trading"
+// button, so it hides the section's button (`hideCreateButton`) and bumps
+// `openCreateSignal` to open the modal. The modal stays here on purpose — it
+// owns the structured-409 conflict flow, which the parent would otherwise have
+// to reimplement. `extraPanel` hangs additional creation UI off the same modal.
+export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
+  hideCreateButton = false, openCreateSignal = 0, extraPanel }: {
   token?: string | null; embedded?: boolean; reloadKey?: number
+  hideCreateButton?: boolean; openCreateSignal?: number; extraPanel?: React.ReactNode
 }) {
   const { language } = useLanguage()
   const [runs, setRuns] = useState<Run[]>([])
@@ -179,6 +201,8 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
   }, [token, auth])
 
   useEffect(() => { load() }, [load, reloadKey])
+  // Parent-driven open. 0 is the "never asked" value, so it never fires on mount.
+  useEffect(() => { if (openCreateSignal > 0) setShowCreate(true) }, [openCreateSignal])
   useEffect(() => {
     const id = setInterval(load, 20000)  // low-frequency reconcile; WS carries live
     return () => clearInterval(id)
@@ -302,9 +326,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
               background: connected ? '#0ca30c' : '#898781', display: 'inline-block' }} />
             {connected ? T.live : T.offline}
           </span>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            + {T.newRun}
-          </button>
+          {!hideCreateButton && (
+            <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+              + {T.newRun}
+            </button>
+          )}
         </div>
       </div>
 
@@ -326,6 +352,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
                 load()
               }}
               onCancel={() => setShowCreate(false)} language={language} />
+            {extraPanel}
           </div>
         </div>
       )}
@@ -362,6 +389,13 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
                   {reasonLabel(run.status_reason, language)}
                 </div>
               )}
+              {/* Several runs may share a symbol as long as they are different
+                  strategies, so the card has to say WHICH strategy this is —
+                  these are exactly the fields that tell them apart. */}
+              <div className="muted" style={{ fontSize: 11, marginTop: 4,
+                fontVariantNumeric: 'tabular-nums' }}>
+                {strategyLabel(run)}
+              </div>
               <div style={{ marginTop: 8 }}>
                 <RunSparkline values={equityByRun[run.id] || [0]}
                   color={pnl < 0 ? 'rgb(208,59,59)' : 'rgb(12,163,12)'} height={44} />
