@@ -10,8 +10,10 @@ enterprise = contact us). Three payment paths:
                configured network and submits the transaction hash; the
                subscription sits in 'pending' until an admin verifies the
                transfer on-chain and approves it in the manager console.
-               Needs USDT_ADDRESS (USDT_NETWORK defaults to TRC20). No funds
-               move through this service and no keys are held here.
+               The address and network are REGISTERED IN THE CONSOLE
+               (platform_settings), not .env, so they can be rotated without
+               a deploy; USDT_ADDRESS/USDT_NETWORK survive as fallbacks. No
+               funds move through this service and no keys are held here.
   * Bank     — user submits a transfer reference; same pending → approve path.
   * PayPal   — Orders API v2 redirect flow. Server creates the order and
                returns approve_url; PayPal redirects back to the frontend,
@@ -70,11 +72,17 @@ def _paypal_ui_enabled() -> bool:
 
 
 def _usdt_address() -> str:
-    return os.getenv("USDT_ADDRESS", "").strip()
+    """Registered in the manager console (platform_settings), NOT in .env — an
+    address that needs a deploy to rotate is an address nobody rotates. The
+    env var remains a fallback so a box configured before this existed keeps
+    serving until an admin saves a value."""
+    from platform_settings import get_setting
+    return get_setting("usdt_address")
 
 
 def _usdt_network() -> str:
-    return os.getenv("USDT_NETWORK", "TRC20").strip()
+    from platform_settings import get_setting
+    return get_setting("usdt_network")
 
 
 def _frontend_url() -> str:
