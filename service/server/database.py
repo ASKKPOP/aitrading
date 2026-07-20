@@ -2782,6 +2782,16 @@ def init_database():
         ON llm_usage(created_at)
     """)
 
+    # ── operator-editable settings (manager console, no deploy needed) ───────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS platform_settings (
+            setting_key   TEXT PRIMARY KEY,
+            setting_value TEXT,
+            updated_by    TEXT,
+            updated_at    TEXT NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")

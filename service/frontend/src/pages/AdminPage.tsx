@@ -88,6 +88,9 @@ export function AdminPage() {
   const [memberDetail, setMemberDetail] = useState<any | null>(null)
   const [subs, setSubs] = useState<any | null>(null)
   const [subFilter, setSubFilter] = useState('')
+  const [paySettings, setPaySettings] = useState<any>(null)
+  const [usdtAddr, setUsdtAddr] = useState('')
+  const [usdtNet, setUsdtNet] = useState('TRC20')
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
   const [adminPlans, setAdminPlans] = useState<any[]>([])
@@ -147,6 +150,18 @@ export function AdminPage() {
     cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.' }),
     grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)' }),
     grantBtn: tr(language, { ko: '부여', en: 'Grant' }),
+    usdtTitle: tr(language, { ko: 'USDT 입금 주소 등록', en: 'USDT receiving address' }),
+    usdtHint: tr(language, {
+      ko: '구독자에게 이 주소로 송금하라고 안내합니다. 여기 저장한 값이 곧바로 결제 페이지에 표시되므로, 지갑에서 복사해 붙여넣고 저장 전에 반드시 확인하세요. 비워두면 결제 페이지에서 USDT 항목이 사라집니다.',
+      en: 'Subscribers are told to send real money to whatever is saved here, and it appears on the payment page immediately. Paste it straight from your wallet and check it before saving. Leaving it empty removes USDT from the payment page.' }),
+    usdtAddrPlaceholder: tr(language, { ko: '지갑에서 복사한 USDT 주소', en: 'USDT address, pasted from your wallet' }),
+    usdtSave: tr(language, { ko: '저장', en: 'Save' }),
+    usdtConfirm: tr(language, {
+      ko: '이 주소로 구독자의 실제 자금이 입금됩니다. 지갑의 주소와 정확히 일치하는지 확인하셨습니까?',
+      en: 'Subscribers will send real funds to this address. Have you checked it character-for-character against your wallet?' }),
+    usdtLive: tr(language, { ko: '결제 페이지에 표시 중', en: 'Live on the payment page' }),
+    usdtFromEnv: tr(language, { ko: '.env 값 사용 중 (저장하면 대체됨)', en: 'currently from .env (saving replaces it)' }),
+    usdtUnset: tr(language, { ko: '주소 미등록 — 결제 페이지에 USDT가 표시되지 않습니다', en: 'No address set — USDT is not offered on the payment page' }),
     grantDays: tr(language, { ko: '일수', en: 'Days' }),
     grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)' }),
     grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.' }),
@@ -264,6 +279,10 @@ export function AdminPage() {
         setAdminPlans((await call('plans')).plans || [])
         const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
         setPlanList(p.plans || [])
+        const pay = await call('settings/payment')
+        setPaySettings(pay)
+        setUsdtAddr(pay?.usdt_address?.value || '')
+        setUsdtNet(pay?.usdt_network?.value || 'TRC20')
       }
       if (which === 'assets') setAssets(await call('stats/assets'))
       if (which === 'positions') setPositions(await call('stats/positions'))
@@ -472,6 +491,46 @@ export function AdminPage() {
       {/* ── Subscriptions ── */}
       {tab === 'subscriptions' && (
         <>
+          {/* USDT receiving address — registered here rather than in .env so it
+              can be rotated without a deploy. Subscribers are told to send real
+              money to whatever is saved here, so the field is deliberately
+              blunt about that. */}
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>₮ {T.usdtTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
+              {T.usdtHint}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={usdtNet} onChange={e => setUsdtNet(e.target.value)} style={inputStyle}>
+                {(paySettings?.networks || ['TRC20']).map((n: string) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <input placeholder={T.usdtAddrPlaceholder} value={usdtAddr}
+                onChange={e => setUsdtAddr(e.target.value)}
+                style={{ ...inputStyle, width: 380, fontFamily: 'ui-monospace, monospace' }} />
+              <button style={primaryBtn}
+                onClick={async () => {
+                  if (usdtAddr.trim() && !window.confirm(T.usdtConfirm)) return
+                  await act('settings/payment', {
+                    method: 'PUT',
+                    body: JSON.stringify({ usdt_address: usdtAddr.trim(), usdt_network: usdtNet }),
+                  }, 'subscriptions')
+                }}>{T.usdtSave}</button>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginTop: 8 }}>
+              {paySettings?.usdt_address?.value
+                ? <>✓ {T.usdtLive}
+                    {paySettings.usdt_address.source === 'env' && ` · ${T.usdtFromEnv}`}
+                    {paySettings.usdt_address.updated_by
+                      && ` · ${paySettings.usdt_address.updated_by}`}
+                    {paySettings.usdt_address.updated_at
+                      && ` · ${fmtDate(paySettings.usdt_address.updated_at)}`}
+                  </>
+                : <span style={{ color: '#eab308' }}>⚠️ {T.usdtUnset}</span>}
+            </div>
+          </div>
+
           <div style={{ ...card, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.grantTitle}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.grantReplaces}</div>

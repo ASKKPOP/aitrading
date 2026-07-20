@@ -285,6 +285,78 @@ class UsdtPaymentTests(_Base):
         self.assertEqual(methods, {"usdt", "bank"})
 
 
+class PaymentSettingsTests(_Base):
+    """The USDT receiving address is registered in the console, not .env."""
+
+    ADDR = "TXk9Yk4consoleaddress00000000000000"
+
+    def _save(self, address: str, network: str = "TRC20"):
+        return self.client.put("/api/admin/settings/payment",
+                               json={"usdt_address": address, "usdt_network": network},
+                               headers=self.admin)
+
+    def test_address_saved_in_console_reaches_the_subscribe_page(self):
+        self.assertFalse(self.client.get("/api/subscriptions/plans").json()["usdt_available"])
+        self.assertEqual(self._save(self.ADDR, "BEP20").status_code, 200)
+        body = self.client.get("/api/subscriptions/plans").json()
+        self.assertTrue(body["usdt_available"])
+        self.assertEqual(body["usdt_address"], self.ADDR)
+        self.assertEqual(body["usdt_network"], "BEP20")
+
+    def test_console_value_wins_over_the_env_fallback(self):
+        with patch.dict(os.environ, {"USDT_ADDRESS": "TEnvFallbackAddress0000000000000"}):
+            # nothing stored yet -> env serves
+            self.assertEqual(self.client.get("/api/subscriptions/plans").json()["usdt_address"],
+                             "TEnvFallbackAddress0000000000000")
+            self._save(self.ADDR)
+            # stored value takes precedence from then on
+            self.assertEqual(self.client.get("/api/subscriptions/plans").json()["usdt_address"],
+                             self.ADDR)
+
+    def test_settings_read_reports_where_the_value_came_from(self):
+        with patch.dict(os.environ, {"USDT_ADDRESS": "TEnvFallbackAddress0000000000000"}):
+            got = self.client.get("/api/admin/settings/payment", headers=self.admin).json()
+            self.assertEqual(got["usdt_address"]["source"], "env")
+        self._save(self.ADDR)
+        got = self.client.get("/api/admin/settings/payment", headers=self.admin).json()
+        self.assertEqual(got["usdt_address"]["source"], "console")
+        self.assertEqual(got["usdt_address"]["value"], self.ADDR)
+        self.assertEqual(got["usdt_address"]["updated_by"], "root@test.com")
+
+    def test_a_malformed_address_is_refused(self):
+        """A typo here sends subscribers' money to a stranger."""
+        for bad in ("short", "has spaces in it", "punctuation!!@#$", "x" * 200):
+            self.assertEqual(self._save(bad).status_code, 400, bad)
+        self.assertFalse(self.client.get("/api/subscriptions/plans").json()["usdt_available"])
+
+    def test_an_unsupported_network_is_refused(self):
+        r = self._save(self.ADDR, "DOGECHAIN")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("TRC20", r.json()["detail"])
+
+    def test_clearing_the_address_takes_usdt_off_the_page(self):
+        self._save(self.ADDR)
+        self.assertTrue(self.client.get("/api/subscriptions/plans").json()["usdt_available"])
+        self.assertEqual(self._save("").status_code, 200)
+        self.assertFalse(self.client.get("/api/subscriptions/plans").json()["usdt_available"])
+
+    def test_change_is_audited_with_masked_old_and_new_values(self):
+        self._save(self.ADDR)
+        entries = self.client.get("/api/admin/audit", headers=self.admin).json()["entries"]
+        row = next(e for e in entries if e["action"] == "settings.payment")
+        self.assertIn("TXk9Yk", row["detail"])          # masked, not the full string
+        self.assertNotIn(self.ADDR, row["detail"])
+        self.assertIn("was=(unset)", row["detail"])
+
+    def test_settings_require_an_admin(self):
+        self.assertEqual(self.client.get("/api/admin/settings/payment").status_code, 401)
+        self.assertEqual(self.client.put("/api/admin/settings/payment",
+                                         json={"usdt_address": self.ADDR}).status_code, 401)
+        # and an anonymous caller cannot read it through the public plans route
+        self.assertNotIn("usdt_address_updated_by",
+                         self.client.get("/api/subscriptions/plans").json())
+
+
 class PlanManagementTests(_Base):
     def test_create_edit_deactivate_plan(self):
         # Create a new tier; it appears on the public subscribe page.

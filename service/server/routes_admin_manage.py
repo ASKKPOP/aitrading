@@ -57,6 +57,19 @@ from routes_subscriptions import SUBSCRIPTION_DAYS
 
 logger = logging.getLogger("routes_admin_manage")
 
+# Networks we are willing to publish a deposit address for. Free-typing this
+# is how a subscriber ends up sending TRC20 funds to an ERC20 address.
+SUPPORTED_USDT_NETWORKS = ("TRC20", "ERC20", "BEP20", "SOL", "POLYGON")
+
+
+def _mask_address(value: str) -> str:
+    """Audit entries record which address was set without pasting the whole
+    string into the log on every edit."""
+    value = (value or "").strip()
+    if not value:
+        return ""
+    return value if len(value) <= 12 else f"{value[:6]}…{value[-4:]}"
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
@@ -113,6 +126,11 @@ class ContractStatusBody(BaseModel):
 class ExclusionBody(BaseModel):
     agent_id: int
     reason: str = ""
+
+
+class PaymentSettingsBody(BaseModel):
+    usdt_address: str = ""
+    usdt_network: str = "TRC20"
 
 
 def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -913,3 +931,44 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         result = refresh_leaderboard_snapshot()
         audit(admin, "leaderboard.refresh", detail=str(result)[:500])
         return {"ok": True, "result": result}
+
+    # ── payment settings (USDT receiving address) ────────────────────────────
+
+    @app.get('/api/admin/settings/payment')
+    async def admin_payment_settings(authorization: str = Header(None)):
+        require_admin(authorization)
+        from platform_settings import get_setting_meta
+        return {"usdt_address": get_setting_meta("usdt_address"),
+                "usdt_network": get_setting_meta("usdt_network"),
+                "networks": SUPPORTED_USDT_NETWORKS}
+
+    @app.put('/api/admin/settings/payment')
+    async def admin_payment_settings_save(body: PaymentSettingsBody,
+                                          authorization: str = Header(None)):
+        """Register the USDT receiving address. This is the address subscribers
+        are told to send money to, so a typo silently sends their funds to a
+        stranger — hence the format check and the audit entry naming the old
+        and new value. Saving an empty address is allowed and takes the USDT
+        option off the Subscribe page."""
+        admin = require_admin(authorization)
+        from platform_settings import get_setting, set_setting
+
+        address = body.usdt_address.strip()
+        if address and not re.fullmatch(r"[A-Za-z0-9]{20,80}", address):
+            raise HTTPException(
+                status_code=400,
+                detail="That does not look like a USDT address (20-80 letters and digits, "
+                       "no spaces or punctuation). Paste it directly from your wallet.")
+        network = body.usdt_network.strip().upper()
+        if network not in SUPPORTED_USDT_NETWORKS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Network must be one of: {', '.join(SUPPORTED_USDT_NETWORKS)}")
+
+        previous = get_setting("usdt_address")
+        set_setting("usdt_address", address, admin.get("email"))
+        set_setting("usdt_network", network, admin.get("email"))
+        audit(admin, "settings.payment", "usdt",
+              f"network={network} address={_mask_address(address) or '(cleared)'} "
+              f"was={_mask_address(previous) or '(unset)'}")
+        return {"ok": True, "usdt_address": address, "usdt_network": network}
