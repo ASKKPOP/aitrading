@@ -44,7 +44,7 @@ except ImportError:
     _PROMETHEUS_AVAILABLE = False
 
 from cache import get_cache_status
-from database import init_database, get_database_status, using_mysql
+from database import get_database_status, run_migrations
 from routes import create_app
 from routes_shared import api_access_log_enabled
 from tasks import (
@@ -57,20 +57,9 @@ if not api_access_log_enabled():
     logging.getLogger("uvicorn.access").disabled = True
     logging.getLogger("uvicorn.access").propagate = False
 
-# Initialize database
-if using_mysql():
-    from alembic.config import Config as _AlembicConfig
-    from alembic import command as _alembic_command
-    _alembic_cfg = _AlembicConfig(os.path.join(os.path.dirname(__file__), "alembic.ini"))
-    # script_location in alembic.ini is relative ("alembic"); resolve it to an
-    # absolute path so `upgrade` works regardless of the process CWD (at boot the
-    # CWD is /app, not service/server).
-    _alembic_cfg.set_main_option(
-        "script_location", os.path.join(os.path.dirname(__file__), "alembic")
-    )
-    _alembic_command.upgrade(_alembic_cfg, "head")
-else:
-    init_database()
+# Initialize database. run_migrations() serializes the alembic upgrade against
+# the worker container, which boots at the same time and would otherwise race it.
+run_migrations()
 
 # Create app
 app = create_app()

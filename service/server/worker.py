@@ -13,7 +13,7 @@ import signal
 import sys
 from contextlib import suppress
 
-from database import init_database, get_database_status, using_mysql
+from database import get_database_status, run_migrations
 from tasks import (
     DEFAULT_BACKGROUND_TASKS,
     WORKER_ROLES,
@@ -145,17 +145,9 @@ async def main() -> None:
         return
 
     try:
-        # Mirror main.py: MySQL schema is managed by alembic; init_database() is
-        # the SQLite-only path (its raw SQLite DDL is invalid on MySQL).
-        if using_mysql():
-            from alembic.config import Config as _AlembicConfig
-            from alembic import command as _alembic_command
-            _server_dir = os.path.dirname(__file__)
-            _cfg = _AlembicConfig(os.path.join(_server_dir, "alembic.ini"))
-            _cfg.set_main_option("script_location", os.path.join(_server_dir, "alembic"))
-            _alembic_command.upgrade(_cfg, "head")
-        else:
-            init_database()
+        # Serialized against the backend container, which boots at the same time
+        # and runs the same upgrade. See database.run_migrations().
+        run_migrations()
         logger.info("Worker database ready: %s", get_database_status())
 
         if os.getenv("SOOPPIY_BACKGROUND_TASKS") is None:

@@ -542,6 +542,59 @@ def get_database_status() -> dict[str, Any]:
         conn.close()
 
 
+MIGRATION_LOCK_NAME = "sooppiy_alembic_upgrade"
+MIGRATION_LOCK_TIMEOUT_SECONDS = 180
+
+
+def _alembic_upgrade_head() -> None:
+    import os
+
+    from alembic import command as alembic_command
+    from alembic.config import Config as AlembicConfig
+
+    server_dir = os.path.dirname(__file__)
+    cfg = AlembicConfig(os.path.join(server_dir, "alembic.ini"))
+    # script_location in alembic.ini is relative; resolve it so the upgrade
+    # works regardless of the process CWD (at boot the CWD is /app).
+    cfg.set_main_option("script_location", os.path.join(server_dir, "alembic"))
+    alembic_command.upgrade(cfg, "head")
+
+
+def run_migrations() -> None:
+    """Bring the schema up to head, serialized across processes.
+
+    The backend and the worker are separate containers built from the same
+    image, and the deploy runbook starts them together. Both call this at boot,
+    so on MySQL they would otherwise race the same DDL whenever a deploy
+    carries a migration. GET_LOCK is a server-side advisory lock, so it
+    coordinates across containers (a file lock would not).
+    """
+    if not using_mysql():
+        init_database()
+        return
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT GET_LOCK(?, ?) AS lock_result",
+            (MIGRATION_LOCK_NAME, MIGRATION_LOCK_TIMEOUT_SECONDS),
+        )
+        row = cursor.fetchone()
+        granted = row and row["lock_result"] == 1
+        if not granted:
+            raise RuntimeError(
+                f"Could not acquire migration lock '{MIGRATION_LOCK_NAME}' within "
+                f"{MIGRATION_LOCK_TIMEOUT_SECONDS}s — another process may be migrating."
+            )
+        try:
+            _alembic_upgrade_head()
+        finally:
+            cursor.execute("SELECT RELEASE_LOCK(?)", (MIGRATION_LOCK_NAME,))
+    finally:
+        conn.close()
+
+
 def init_database():
     """Initialize database schema."""
     conn = get_db_connection()
