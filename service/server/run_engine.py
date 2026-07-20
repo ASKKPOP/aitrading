@@ -608,6 +608,64 @@ def _control_active(run: dict, out: dict) -> None:
             _control_stopping(dict(fresh), out)
 
 
+# ── auto-restart after a goal-reached stop ────────────────────────────────
+# A run that finished its job is cloned and restarted with identical settings,
+# so the board never goes idle after a win.
+#
+# ONLY goal-reached reasons qualify, deliberately:
+#   * max_loss / synthetic_liquidation / stop_eval_failed are PROTECTIVE — a
+#     restart re-enters the setup that just lost money and turns a one-time
+#     loss cap into a repeating loss.
+#   * user_stop must stay stopped, or the Stop button resurrects its own run.
+#   * at_time / price_cross would re-fire on the very next scan (the deadline
+#     is still past, the price still beyond the line) — an instant stop loop.
+# That leaves the two reasons whose condition genuinely resets on a fresh run:
+# profit_target (P&L back to 0) and max_trades (trade count back to 0).
+_RESTARTABLE_STOP_REASONS = frozenset({
+    "stop_event:profit_target",
+    "stop_event:max_trades",
+})
+
+
+def _auto_restart_enabled() -> bool:
+    return os.getenv("RUN_AUTO_RESTART", "true").strip().lower() in ("1", "true", "yes")
+
+
+def _maybe_auto_restart(run: dict) -> None:
+    """Clone a goal-reached run and start the clone, carrying over settings,
+    start condition, stop conditions and the flatten flag verbatim.
+
+    Best-effort: any failure (entitlement denial, a conflicting rule, a
+    position that reappeared) leaves the original stopped — the safe
+    direction — and is logged rather than raised, because this runs inside
+    the control pass and must never wedge the scan."""
+    reason = run.get("status_reason") or ""
+    if reason not in _RESTARTABLE_STOP_REASONS or not _auto_restart_enabled():
+        return
+    try:
+        from trading_runs import create_run, start_run
+        settings = json.loads(run.get("config_snapshot_json") or "{}")
+        if not settings.get("symbol"):
+            return
+        new_id = create_run(
+            run["agent_id"], settings,
+            json.loads(run.get("start_condition_json") or '{"type": "manual"}'),
+            json.loads(run.get("stop_conditions_json") or "{}"),
+            bool(run.get("stop_flatten")),
+        )
+        start_run(new_id, run["agent_id"])
+    except Exception as exc:  # noqa: BLE001 — never break the control pass
+        logger.warning("auto-restart of run %s failed: %s", run["id"], exc)
+        return
+    emit_telemetry_event(run["id"], "alert",
+                         {"auto_restart_run_id": new_id, "stop_reason": reason})
+    _alert_run(run, "custom",
+               f"Run #{run['id']} reached its goal — restarted as #{new_id}",
+               f"{run['symbol']} ({run['market']}) hit {reason}; a new run with "
+               "the same settings is live.",
+               dedupe=f"run:{run['id']}:auto_restart")
+
+
 def _control_stopping(run: dict, out: dict) -> None:
     conn = get_db_connection()
     try:
@@ -627,6 +685,7 @@ def _control_stopping(run: dict, out: dict) -> None:
                               clear_active_key=True):
             out["stopping_finished"] += 1
             _cache_realized_pnl(run["id"], compute_run_pnl(run)["realized"])
+            _maybe_auto_restart(run)
         return
 
     if not run.get("stop_flatten"):
@@ -645,6 +704,7 @@ def _control_stopping(run: dict, out: dict) -> None:
             out["stopping_finished"] += 1
             # reconcile the display cache AFTER the flatten leg landed
             _cache_realized_pnl(run["id"], compute_run_pnl(run)["realized"])
+            _maybe_auto_restart(run)
         return
     # bounded retry, then the explicit terminal — a stop can never wedge
     stopping_since = run.get("stopped_at")

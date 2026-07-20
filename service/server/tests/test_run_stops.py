@@ -9,6 +9,7 @@ shorts, and SL/TP-watcher close attribution via positions.run_id.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
@@ -330,6 +331,86 @@ class RunStopsTests(unittest.TestCase):
             self.assertEqual(cur.fetchone()["n"], 2)  # entry + watcher close
         finally:
             conn.close()
+
+    # ── auto-restart after a goal-reached stop ─────────────────────────
+
+    def _runs_for_symbol(self, symbol="BTC"):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trading_runs WHERE agent_id = ? AND symbol = ? "
+                        "ORDER BY id", (self.agent_id, symbol))
+            return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def test_profit_target_stop_auto_restarts_with_identical_settings(self):
+        run_id = self._run(stop_conditions={"profit_target_usd": 10.0},
+                           interval_minutes=45, min_confidence=0.8)
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(105.0)
+        run_engine.control_pass()
+
+        runs = self._runs_for_symbol()
+        self.assertEqual(len(runs), 2, "goal-reached stop should spawn one successor")
+        old, new = runs
+        self.assertEqual(old["id"], run_id)
+        self.assertEqual(old["status"], "stopped")
+        self.assertEqual(old["status_reason"], "stop_event:profit_target")
+        # the successor is live and carries the ORIGINAL settings verbatim
+        self.assertEqual(new["status"], "running")
+        self.assertEqual(new["symbol"], old["symbol"])
+        self.assertEqual(new["market"], old["market"])
+        self.assertEqual(new["market_type"], old["market_type"])
+        self.assertEqual(json.loads(new["config_snapshot_json"]),
+                         json.loads(old["config_snapshot_json"]))
+        self.assertEqual(json.loads(new["stop_conditions_json"]),
+                         json.loads(old["stop_conditions_json"]))
+        self.assertEqual(new["stop_flatten"], old["stop_flatten"])
+        # and it starts clean — no inherited P&L or trades
+        self.assertEqual(run_engine.compute_run_pnl(new)["trades"], 0)
+
+    def test_max_trades_stop_auto_restarts(self):
+        run_id = self._run(stop_conditions={"max_trades": 2})
+        self._trade(run_id, "buy", 1.0, 100.0, "b1")
+        self._trade(run_id, "sell", 1.0, 100.0, "s1")
+        self._set_mark(100.0)
+        run_engine.control_pass()
+        runs = self._runs_for_symbol()
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]["status_reason"], "stop_event:max_trades")
+        self.assertEqual(runs[1]["status"], "running")
+
+    def test_max_loss_stop_never_auto_restarts(self):
+        """A protective stop must stay stopped — restarting re-enters the
+        setup that just lost money and turns the loss cap into a loop."""
+        run_id = self._run(stop_conditions={"max_loss_usd": 10.0})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(97.0)
+        run_engine.control_pass()
+        runs = self._runs_for_symbol()
+        self.assertEqual(len(runs), 1, "max_loss must not spawn a successor")
+        self.assertEqual(runs[0]["status_reason"], "stop_event:max_loss")
+
+    def test_user_stop_never_auto_restarts(self):
+        """Otherwise the Stop button resurrects its own run."""
+        run_id = self._run()
+        resp = self.client.post(f"/api/runs/{run_id}/stop", json={"flatten": True},
+                                headers=self._h())
+        self.assertEqual(resp.status_code, 200, resp.text)
+        run_engine.control_pass()
+        runs = self._runs_for_symbol()
+        self.assertEqual(len(runs), 1, "user_stop must not spawn a successor")
+        self.assertEqual(runs[0]["status"], "stopped")
+
+    def test_auto_restart_kill_switch_disables_it(self):
+        run_id = self._run(stop_conditions={"profit_target_usd": 10.0})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(105.0)
+        with patch.dict(os.environ, {"RUN_AUTO_RESTART": "false"}):
+            run_engine.control_pass()
+        self.assertEqual(len(self._runs_for_symbol()), 1)
+        self.assertEqual(self._row(run_id)["status"], "stopped")
 
 
 if __name__ == "__main__":
