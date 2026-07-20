@@ -290,7 +290,10 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         """Cross-field checks a single field validator cannot do, plus the
         settings snapshot. Shared by create and edit so an edited draft is
         held to exactly the same bar as a new one."""
-        if data.market_type == "futures" and data.market != "crypto":
+        # market_type is the crypto spot-vs-perpetual axis. The CME `futures`
+        # market is already a futures book by virtue of its market, so it may
+        # carry the flag redundantly; everything else may not.
+        if data.market_type == "futures" and data.market not in ("crypto", "futures"):
             raise HTTPException(status_code=400,
                                 detail="futures market_type is crypto-only")
         if data.run_budget_usd is not None and data.run_budget_usd < data.max_bet_usd:

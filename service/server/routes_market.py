@@ -3,6 +3,8 @@ from typing import Optional
 import json as _json
 import re
 
+import markets
+
 from fastapi import FastAPI, Header, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
@@ -52,6 +54,56 @@ FOREX_SYMBOLS: tuple[str, ...] = (
     'AUDJPY', 'AUDNZD', 'AUDCAD', 'AUDCHF',
     'CADJPY', 'CHFJPY', 'NZDJPY',
     'USDCNH', 'USDHKD', 'USDSGD', 'USDKRW', 'USDMXN', 'USDTRY', 'USDZAR',
+)
+
+# Tradable futures, as bare contract roots. Every entry must also appear in
+# markets.FUTURES_MULTIPLIERS — an unlisted root silently prices at 1.0, which
+# would under-report an ES trade by 50x. test_market_symbols guards that.
+# price_fetcher._yahoo_symbol() appends '=F' for the provider.
+FUTURES_SYMBOLS: tuple[str, ...] = (
+    'ES', 'MES', 'NQ', 'MNQ', 'YM', 'MYM', 'RTY', 'M2K',   # equity index
+    'CL', 'MCL', 'NG',                                      # energy
+    'GC', 'MGC', 'SI', 'HG',                                # metals
+    'ZB', 'ZN', 'ZF',                                       # rates
+    'ZC', 'ZS', 'ZW',                                       # grains
+)
+
+# Tradable A-shares, carrying the exchange suffix because a six-digit board
+# code alone is ambiguous between Shanghai (.SS) and Shenzhen (.SZ). These are
+# the mainland large caps Yahoo serves reliably; all quote in CNY.
+A_STOCK_SYMBOLS: tuple[str, ...] = (
+    '600519.SS',  # Kweichow Moutai
+    '601398.SS',  # ICBC
+    '601857.SS',  # PetroChina
+    '600036.SS',  # China Merchants Bank
+    '601288.SS',  # Agricultural Bank of China
+    '600900.SS',  # China Yangtze Power
+    '601988.SS',  # Bank of China
+    '600028.SS',  # Sinopec
+    '601628.SS',  # China Life
+    '600030.SS',  # CITIC Securities
+    '600276.SS',  # Jiangsu Hengrui Medicine
+    '601318.SS',  # Ping An Insurance
+    '600887.SS',  # Inner Mongolia Yili
+    '601899.SS',  # Zijin Mining
+    '600309.SS',  # Wanhua Chemical
+    '000001.SZ',  # Ping An Bank
+    '000002.SZ',  # China Vanke
+    '000333.SZ',  # Midea Group
+    '000651.SZ',  # Gree Electric
+    '000858.SZ',  # Wuliangye Yibin
+    '002594.SZ',  # BYD
+    '300750.SZ',  # CATL
+    '002415.SZ',  # Hikvision
+    '300059.SZ',  # East Money
+    '002475.SZ',  # Luxshare Precision
+)
+
+# Underlyings whose option chains are offered. Kept to the liquid names — an
+# illiquid chain is all zero-bid strikes, which prices at a stale last trade.
+OPTION_UNDERLYINGS: tuple[str, ...] = (
+    'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AMD', 'NFLX',
+    'SPY', 'QQQ', 'IWM', 'GLD', 'COIN', 'MSTR', 'PLTR', 'INTC', 'BAC',
 )
 
 
@@ -264,9 +316,62 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'crypto_pairs': list(TOP_20_PAIRS),
                 'stock': list(US_STOCK_SYMBOLS),
                 'forex': list(FOREX_SYMBOLS),
+                'futures': list(FUTURES_SYMBOLS),
+                'a_stock': list(A_STOCK_SYMBOLS),
+                'option_underlyings': list(OPTION_UNDERLYINGS),
             }
 
         return await run_in_threadpool(_cached_market_payload, 'symbol-options', _build)
+
+    @app.get('/api/markets/options/{underlying}')
+    async def market_option_chain(underlying: str, expiry: Optional[int] = None):
+        """Option chain for one underlying, for the strike/expiry picker.
+
+        `expiry` is a UNIX timestamp from this endpoint's own `expirations`
+        list; omitting it returns the nearest expiry. Contracts come back in
+        OCC form (AAPL260720C00205000), which is the symbol a position is
+        actually booked under.
+        """
+        root = (underlying or '').strip().upper()
+        if root not in OPTION_UNDERLYINGS:
+            raise HTTPException(status_code=404, detail=f'No option chain for {root}')
+
+        def _build():
+            from price_fetcher import _fetch_yahoo_option_chain, _option_contract_price
+            chain = _fetch_yahoo_option_chain(root, expiry)
+            if not chain:
+                raise HTTPException(status_code=503,
+                                    detail='Option chain temporarily unavailable')
+
+            def _row(contract: dict) -> dict:
+                return {
+                    'symbol': contract.get('contractSymbol'),
+                    'strike': contract.get('strike'),
+                    'bid': contract.get('bid'),
+                    'ask': contract.get('ask'),
+                    'last': contract.get('lastPrice'),
+                    # The mark a position would actually open at, so the picker
+                    # and the ledger cannot disagree about the price.
+                    'price': _option_contract_price(contract),
+                    'volume': contract.get('volume'),
+                    'open_interest': contract.get('openInterest'),
+                    'implied_volatility': contract.get('impliedVolatility'),
+                    'in_the_money': contract.get('inTheMoney'),
+                }
+
+            leg = (chain.get('options') or [{}])[0]
+            return {
+                'underlying': root,
+                'underlying_price': (chain.get('quote') or {}).get('regularMarketPrice'),
+                'expirations': chain.get('expirationDates') or [],
+                'expiry': leg.get('expirationDate') or expiry,
+                'contract_multiplier': markets.contract_multiplier('options'),
+                'calls': [_row(c) for c in leg.get('calls', [])],
+                'puts': [_row(p) for p in leg.get('puts', [])],
+            }
+
+        cache_key = f'option-chain:{root}:{expiry or "front"}'
+        return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
     @app.get('/api/markets/top-symbols')
     async def market_top_symbols(limit: int = 5):

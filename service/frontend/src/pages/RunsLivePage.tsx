@@ -798,6 +798,8 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
               market_type: e.target.value === 'crypto' ? f.market_type : 'spot' })}>
             <option value="crypto">crypto</option><option value="us-stock">us-stock</option>
             <option value="forex">forex</option>
+            <option value="futures">futures</option>
+            <option value="a-stock">a-stock</option>
           </select></label>
         <label style={field}>{lbl({ ko: '유형', en: 'Type', ja: 'タイプ', th: 'ชนิด', vi: 'Loại' })}
           <select style={input} value={f.market_type}

@@ -62,7 +62,33 @@ Contrary to first assumption, three of the four are **not** blocked on paid feed
 | 외환 forex | Yahoo v8 chart `EURUSD=X` | ✅ verified live, keyless |
 | 선물 futures | Yahoo v8 chart `ES=F` → CME, USD | ✅ verified live, keyless |
 | A주 a-stock | Yahoo v8 `600519.SS` → CNY/Shanghai; Sina `hq.sinajs.cn` | ✅ both verified live |
-| 옵션 options | Yahoo v7 options chain | ❌ `Invalid Crumb` — needs cookie+crumb handshake |
+| 옵션 options | Yahoo v7 options chain | ✅ **works — see 2.0 below** (was ❌ `Invalid Crumb`) |
+
+### 2.0 CORRECTED 2026-07-20 — the options chain is reachable, keylessly
+
+The `Invalid Crumb` above was read as a blocker. It is not; it is the documented
+handshake, and implementing it takes about thirty lines:
+
+1. `GET https://fc.yahoo.com` — 404s, but issues an `A3` session cookie.
+2. `GET /v1/test/getcrumb` with that cookie — returns a short opaque token.
+3. `GET /v7/finance/options/{underlying}?crumb=…` with cookie + crumb — 200.
+
+Measured from this machine 2026-07-20: AAPL returned 23 expirations and 53 calls /
+48 puts with strike, bid, ask, open interest and IV. Live through the app at
+`/api/markets/options/AAPL`.
+
+**Consequences:**
+- Phase 5 is **not** blocked on a paid feed, and the Alpha Vantage premium
+  recommendation in §2.1 no longer has options as its justification. The
+  remaining arguments for it (keyed forex, lifting the 25/day news cap) stand
+  on their own.
+- The crumb is session-scoped and cached for 30 minutes
+  (`price_fetcher._yahoo_crumb_pair`); a 401/403 forces one re-handshake and
+  retry. It is unofficial and can break — the same standing caveat as the v8
+  chart endpoint.
+- Out of hours every strike quotes bid 0 / ask 0, so the mark falls back from
+  mid to last trade. Marking to a zero mid would wipe an option position to
+  nothing overnight.
 
 ### 2.1 CORRECTED 2026-07-20 — it was never throttling, it was the User-Agent
 
@@ -193,13 +219,52 @@ which is the first market that actually needs a non-1.0 multiplier:
 
 Phases 2–4 are independent of each other and can ship separately once phase 1 lands.
 
+### 4.1 Phases 3–5 delivered 2026-07-20 — with two deviations from the plan above
+
+All three markets are enabled: `futures`, `a-stock` and `options` are `tradeable`,
+and every `개발 중` label is gone from `appShared.tsx`. Two things were built
+differently from §3.4, and both are deliberate.
+
+**Deviation 1 — the instrument-metadata columns were not added.**
+§3.4 called for `positions`/`signals` to gain `contract_multiplier` (phase 3) and
+`currency` (phase 4). A migration was written and then deleted. Both values are
+**pure functions of `(market, symbol)`**, which are already columns on every row:
+`markets.contract_multiplier('futures', 'ES')` is 50, `markets.position_currency`
+already derived forex settlement currency this exact way before this work. Adding
+denormalised columns meant threading them through ~8 insert sites for no
+behavioural gain. The one argument for booking them at trade time — an exchange
+respecifying a contract — is speculative, and the registry stays the single source
+of truth.
+
+Consequence to be aware of: if `FUTURES_MULTIPLIERS` is ever corrected, historical
+P&L restates. That is the accepted trade. If a contract is genuinely respecified,
+the fix is a symbol-with-vintage key, not a denormalised column.
+
+**Deviation 2 — futures backtests are fully funded, not margined.**
+`backtest.py` now multiplies every cash and P&L term through the contract
+multiplier, so mark-to-market is correct. But a contract reserves its **whole
+notional** rather than exchange initial margin, so the simulation under-states
+leverage: a run holds fewer contracts than a real margin account would. That is
+the safe direction for a backtest, but these are **not** margin-accurate results.
+A margin model is separate work and was not built.
+
+**Also resolved:** the `market_type` naming collision. `market_type` ('spot' |
+'futures') is the crypto spot-vs-perpetual axis and predates the CME market;
+`market='futures'` is now a market in its own right. Either makes a book
+short-capable, expressed once as `trading_runs.is_futures_book()`. Without it a
+CME run would carry `market_type='spot'` and could never open a short.
+
+**Options is tradeable but not automatable.** A rule cannot express "roll to the
+next expiry", so runs may not target an options contract even though a user can
+trade one by hand. The chain picker (underlying → expiry → strike) lives in
+`SymbolSelect`, because the booked symbol is an OCC contract nobody types.
+
 ---
 
 ## 5. Open decisions (need Henry)
 
-1. **Options — in or out?** It is roughly as much work as phases 2–4 combined, and it is the one
-   market with no verified free data source. Recommendation: ship 1–4, and **remove the 옵션 entry
-   from the dropdown** rather than leave a `개발 중` label sitting there.
+1. ~~**Options — in or out?**~~ **Resolved 2026-07-19: build it** (Henry). Shipped
+   2026-07-20; the "no verified free data source" premise was wrong, see §2.0.
 2. **Currency display.** A-share is CNY, forex has a quote currency per pair. Do we convert
    everything to USD for portfolio totals, or show native currency per position and skip a
    combined total? Recommendation: store native, convert to USD for aggregates only.
