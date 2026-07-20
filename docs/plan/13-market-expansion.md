@@ -2,7 +2,14 @@
 
 **Date:** 2026-07-19
 **Trigger:** The market dropdown ships four `개발 중` entries and two `(테스트)` entries. Placeholder labels should not be in a user-facing product — either the market is real, or it is not offered.
-**Status:** Draft — awaiting scope confirmation.
+**Status:** Decided 2026-07-19 — building Phase 0+1+2 now.
+
+**Decisions (Henry):**
+1. **Options: build it**, as phase 5 (last). The 옵션 entry stays in the dropdown.
+2. **Currency: native + USD aggregates.** Positions store their native currency; convert to USD
+   only for portfolio totals and leaderboards.
+3. **Delivery: Phase 0+1+2 in one pass** — bug fix, registry refactor, and forex enabled
+   end-to-end, reviewed together.
 
 ---
 
@@ -57,8 +64,38 @@ Contrary to first assumption, three of the four are **not** blocked on paid feed
 | A주 a-stock | Yahoo v8 `600519.SS` → CNY/Shanghai; Sina `hq.sinajs.cn` | ✅ both verified live |
 | 옵션 options | Yahoo v7 options chain | ❌ `Invalid Crumb` — needs cookie+crumb handshake |
 
-Caveat: Yahoo's endpoints are **unofficial**. No SLA, rate-limited, ToS grey area. Acceptable for a
-simulated ledger; must be replaced before any of these route to live execution.
+### 2.1 Measured 2026-07-19 — Yahoo throttling is severe
+
+Yahoo's chart endpoint is **far more aggressively rate-limited than it first appeared.** Measured
+from this machine after the provider was wired up:
+
+- The first handful of requests succeed, returning correct data (EURUSD → 1.1447).
+- After that, **a second request within the same minute returns HTTP 429**, and the penalty
+  persists for minutes.
+- Requests without a browser `User-Agent` are 429'd immediately, always.
+
+At roughly one request per minute, refreshing 30 forex pairs would take 30 minutes per cycle.
+**This is not a viable primary price source for a portfolio.** Two mitigations already landed:
+
+1. `forex.server_priced = False` — forex is off the synchronous trade path, priced only by the
+   background refresher (same treatment as Alpha Vantage).
+2. `retry_on_rate_limit=False` for the Yahoo provider — retrying a 429 tripled the offending
+   load and dug the hole deeper. It now goes straight to cooldown.
+
+Caveat on the measurement: this machine's IP was likely already penalized by the burst of probe
+requests during development. Production may see a different limit — **it must be measured there
+before forex is promoted past `(테스트)`.**
+
+Alpha Vantage is not an escape hatch on the free tier: **25 requests/day**, already consumed by
+news sentiment (see `docs/plan/08-api-keys-reference.md`).
+
+**Recommendation:** Alpha Vantage premium (~$50/mo) is the highest-leverage purchase available.
+One key would (a) give forex a keyed, SLA'd intraday feed, (b) unlock the options chain needed
+for phase 5, and (c) lift the 25/day cap currently forcing news sentiment to a 6-hour cadence.
+It is already the integrated `us-stock` provider, so no new adapter is required.
+
+Yahoo's endpoints are also **unofficial** — no SLA, ToS grey area. Acceptable for a simulated
+ledger; must be replaced before any of these route to live execution.
 
 Note: `ALPHA_VANTAGE_API_KEY=demo` locally, so even `us-stock` pricing returns `None` on dev machines.
 
@@ -102,12 +139,17 @@ than reimplementing it.
 
 ### 3.4 Schema
 
-New migration `0027_market_instrument_metadata`:
-- `positions`: `+ currency TEXT NOT NULL DEFAULT 'USD'`, `+ contract_multiplier REAL NOT NULL DEFAULT 1.0`
-- `signals`: same two columns
-- Options only (phase 3): `+ expiry DATE`, `+ strike REAL`, `+ right TEXT` (`C`/`P`)
+**Deferred to phase 3 — deliberately not built in phase 1.** The original plan put a
+`0027_market_instrument_metadata` migration here (`positions`/`signals` gaining `currency`
+and `contract_multiplier`). Forex does not need either: its multiplier is 1.0, and its
+settlement currency is a pure function of the pair (`markets.position_currency`). Adding
+columns that nothing writes and nothing reads is speculative, so they land with futures,
+which is the first market that actually needs a non-1.0 multiplier:
 
-Then thread `contract_multiplier` through `risk_engine.py:299,311` and `backtest.py:349`.
+- phase 3: `positions` / `signals` `+ contract_multiplier`, then thread it through
+  `risk_engine.py:299,311` and `backtest.py:349`.
+- phase 4: `+ currency` (first non-USD market).
+- phase 5: `+ expiry`, `+ strike`, `+ right` for options.
 
 ---
 

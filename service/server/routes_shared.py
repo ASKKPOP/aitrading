@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException, WebSocket
 from zoneinfo import ZoneInfo
 
+import markets
 from cache import get_redis_client
 from config import REDIS_PREFIX
 from database import get_db_connection
@@ -59,37 +60,14 @@ MARKET_INTEL_CACHE_KEY_PREFIX = 'market_intel'
 MARKET_INTEL_CACHE_TTL_SECONDS = 30
 
 MENTION_PATTERN = re.compile(r'@([A-Za-z0-9_\-]{2,64})')
-SUPPORTED_MARKETS = {'us-stock', 'crypto', 'polymarket'}
-MARKET_ALIASES = {
-    'binance': 'crypto',
-    'binance-spot': 'crypto',
-    'binance_spot': 'crypto',
-    'coinbase': 'crypto',
-    'coinbase-spot': 'crypto',
-    'coinbase_spot': 'crypto',
-    'hyperliquid': 'crypto',
-    'hl': 'crypto',
-    'kraken': 'crypto',
-    'okx': 'crypto',
-    'stock': 'us-stock',
-    'stocks': 'us-stock',
-    'us': 'us-stock',
-    'us stock': 'us-stock',
-    'us stocks': 'us-stock',
-    'us_stock': 'us-stock',
-    'us_stocks': 'us-stock',
-    'usstock': 'us-stock',
-    'nasdaq': 'us-stock',
-    'sp500': 'us-stock',
-    'etf': 'us-stock',
-    'equity': 'us-stock',
-    'equities': 'us-stock',
-}
+# Markets are declared once in markets.py; these names are kept as the historical
+# import surface for the rest of the backend.
+SUPPORTED_MARKETS = markets.supported_markets()
+MARKET_ALIASES = markets.MARKET_ALIASES
 
 
 def normalize_market(market: str | None) -> str:
-    normalized = (market or 'us-stock').strip().lower()
-    return MARKET_ALIASES.get(normalized, normalized)
+    return markets.normalize_market(market)
 
 
 def validate_market(market: str | None) -> str:
@@ -109,8 +87,7 @@ def api_access_log_enabled() -> bool:
 
 
 def should_fetch_server_trade_price(market: str) -> bool:
-    normalized_market = normalize_market(market)
-    if normalized_market in {'crypto', 'polymarket'}:
+    if markets.is_server_priced(market):
         return True
     return allow_sync_price_fetch_in_api()
 
@@ -488,19 +465,11 @@ def enforce_content_rate_limit(
 
 
 def is_us_market_open() -> bool:
-    et_tz = ZoneInfo('America/New_York')
-    now_et = datetime.now(et_tz)
-    day = now_et.weekday()
-    time_in_minutes = now_et.hour * 60 + now_et.minute
-    return day < 5 and 570 <= time_in_minutes < 960
+    return markets.is_session_open('nyse')
 
 
 def is_market_open(market: str) -> bool:
-    if market in ('crypto', 'polymarket'):
-        return True
-    if market == 'us-stock':
-        return is_us_market_open()
-    return True
+    return markets.is_market_open(market)
 
 
 def validate_executed_at(executed_at: str, market: str) -> tuple[bool, str]:
@@ -535,18 +504,19 @@ def validate_executed_at(executed_at: str, market: str) -> tuple[bool, str]:
 
         dt_et = dt_utc.astimezone(ZoneInfo('America/New_York'))
         day = dt_et.weekday()
-        time_in_minutes = dt_et.hour * 60 + dt_et.minute
 
-        if market == 'us-stock':
-            is_weekday = day < 5
-            is_market_hours = 570 <= time_in_minutes < 960
-            if not (is_weekday and is_market_hours):
-                day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        if not markets.is_market_open(market, dt_utc):
+            day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            if normalize_market(market) == 'us-stock':
                 return (
                     False,
                     f"US market is closed on {day_names[day]} at {dt_et.strftime('%H:%M')} ET. "
                     'Trading hours: Mon-Fri 9:30-16:00 ET',
                 )
+            return (
+                False,
+                f"{market} is closed on {day_names[day]} at {dt_et.strftime('%H:%M')} ET.",
+            )
 
         return True, ''
     except Exception as exc:

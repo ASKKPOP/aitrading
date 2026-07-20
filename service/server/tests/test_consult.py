@@ -78,7 +78,7 @@ class SessionTests(ConsultTestCase):
 
     def test_bad_market_rejected(self):
         r = self.client.post("/api/analysis/chat/sessions", headers=self.headers,
-                             json={"symbol": "BTC", "market": "forex"})
+                             json={"symbol": "BTC", "market": "not-a-market"})
         self.assertEqual(r.status_code, 400)
 
 
@@ -159,7 +159,7 @@ class ProposeRuleTests(ConsultTestCase):
     def test_draft_is_clamped(self):
         sid = self._session()
         self._seed_conversation(sid)
-        wild = json.dumps({"symbol": "btcusdt", "market": "forex", "interval_minutes": 1,
+        wild = json.dumps({"symbol": "btcusdt", "market": "not-a-market", "interval_minutes": 1,
                            "min_confidence": 0.05, "size_usd": 9_999_999,
                            "risk_level": "yolo", "rationale": "moon"})
         with patch("llm_client.llm_configured", return_value=True), \

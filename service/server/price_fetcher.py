@@ -15,6 +15,8 @@ from typing import Optional, Dict, Tuple, Any
 import re
 import time
 import json
+
+import markets
 try:
     from zoneinfo import ZoneInfo
     _ET_ZONEINFO = ZoneInfo("America/New_York")
@@ -23,6 +25,12 @@ except ImportError:
 
 # Alpha Vantage API configuration
 ALPHA_VANTAGE_API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY", "demo")
+
+# Yahoo's public chart endpoint answers 429 to the default requests User-Agent.
+_YAHOO_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
 BASE_URL = "https://www.alphavantage.co/query"
 
 # Hyperliquid public info endpoint (no API key required for reads)
@@ -114,6 +122,8 @@ def _request_json_with_retry(
     *,
     params: Optional[dict] = None,
     json_payload: Optional[dict] = None,
+    headers: Optional[dict] = None,
+    retry_on_rate_limit: bool = True,
 ) -> object:
     remaining = _provider_cooldown_remaining(provider)
     if remaining > 0:
@@ -125,9 +135,11 @@ def _request_json_with_retry(
     for attempt in range(attempts):
         try:
             if method == "POST":
-                resp = requests.post(url, json=json_payload, timeout=PRICE_FETCH_TIMEOUT_SECONDS)
+                resp = requests.post(url, json=json_payload, headers=headers,
+                                     timeout=PRICE_FETCH_TIMEOUT_SECONDS)
             else:
-                resp = requests.get(url, params=params, timeout=PRICE_FETCH_TIMEOUT_SECONDS)
+                resp = requests.get(url, params=params, headers=headers,
+                                    timeout=PRICE_FETCH_TIMEOUT_SECONDS)
 
             if resp.status_code in _RETRYABLE_STATUS_CODES:
                 resp.raise_for_status()
@@ -137,6 +149,11 @@ def _request_json_with_retry(
         except requests.HTTPError as exc:
             status_code = exc.response.status_code if exc.response is not None else None
             retryable = status_code in _RETRYABLE_STATUS_CODES
+            # Retrying a rate-limit response triples the offending load and digs the
+            # hole deeper. Providers that throttle by IP (Yahoo) opt out and go
+            # straight to cooldown.
+            if status_code == 429 and not retry_on_rate_limit:
+                retryable = False
             last_exc = exc
 
             if retryable and attempt < attempts - 1:
@@ -757,6 +774,84 @@ def _get_hyperliquid_candle_close(symbol: str, executed_at: str) -> Optional[flo
     return float(f"{closest:.6f}")
 
 
+def _yahoo_symbol(symbol: str, market: str) -> Optional[str]:
+    """Canonical Sooppiy symbol -> Yahoo ticker.
+
+    Forex pairs are stored in the concatenated six-letter form (EURUSD) and Yahoo
+    expects the `=X` suffix. Returns None when the symbol does not fit the market's
+    shape, so a malformed pair fails fast instead of querying an unrelated ticker.
+    """
+    cleaned = (symbol or "").strip().upper().replace("/", "")
+    if not cleaned:
+        return None
+    if market == "forex":
+        if len(cleaned) != 6 or not cleaned.isalpha():
+            return None
+        return f"{cleaned}=X"
+    return cleaned
+
+
+def _get_yahoo_chart_price(symbol: str, executed_at: Optional[str], market: str) -> Optional[float]:
+    """Spot or historical price from Yahoo's public chart endpoint.
+
+    Serves forex today; futures and A-shares reuse it in later phases (see
+    docs/plan/13-market-expansion.md). Yahoo rejects the default requests
+    User-Agent with HTTP 429, hence the browser header.
+    """
+    ticker = _yahoo_symbol(symbol, market)
+    if not ticker:
+        _price_log(f"[Price API] Invalid {market} symbol for Yahoo: {symbol}")
+        return None
+
+    dt = _parse_executed_at_to_utc(executed_at) if executed_at else None
+    # A 1m series only reaches ~7 days back; fall back to daily candles beyond that.
+    if dt is not None:
+        age_days = (datetime.now(timezone.utc) - dt).total_seconds() / 86400
+        interval, rng = ("1m", "5d") if age_days <= 5 else ("1d", "1y")
+    else:
+        interval, rng = "1m", "1d"
+
+    data = _request_json_with_retry(
+        "yahoo",
+        "GET",
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
+        params={"interval": interval, "range": rng},
+        headers={"User-Agent": _YAHOO_USER_AGENT},
+        retry_on_rate_limit=False,
+    )
+
+    try:
+        result = data["chart"]["result"][0]  # type: ignore[index]
+    except (TypeError, KeyError, IndexError):
+        _price_log(f"[Price API] Yahoo returned no result for {ticker}")
+        return None
+
+    # No target time -> use the live quote.
+    if dt is None:
+        price = (result.get("meta") or {}).get("regularMarketPrice")
+        return float(f"{float(price):.6f}") if price is not None else None
+
+    stamps = result.get("timestamp") or []
+    try:
+        closes = result["indicators"]["quote"][0]["close"]
+    except (TypeError, KeyError, IndexError):
+        return None
+
+    # Latest candle at or before the target time.
+    target_s = int(dt.timestamp())
+    closest = None
+    closest_ts = None
+    for ts, close in zip(stamps, closes):
+        if close is None or ts is None or int(ts) > target_s:
+            continue
+        if closest_ts is None or int(ts) > closest_ts:
+            closest_ts, closest = int(ts), float(close)
+
+    if closest is None:
+        return None
+    return float(f"{closest:.6f}")
+
+
 def get_price_from_market(
     symbol: str,
     executed_at: str,
@@ -783,19 +878,25 @@ def get_price_from_market(
         except Exception:
             market = (market or "").strip().lower()
 
-        if market == "crypto":
-            # Crypto pricing now uses Hyperliquid public endpoints.
+        # Provider is declared on the market spec (markets.py) rather than branched on
+        # the market name, so a new market only needs a registry entry plus a helper.
+        provider = markets.get_spec(market)
+        provider_key = provider.price_provider if provider else None
+
+        if provider_key == "hyperliquid":
             # Try historical candle (when executed_at is provided), then fall back to mid price.
             price = _get_hyperliquid_candle_close(symbol, executed_at) or _get_hyperliquid_mid_price(symbol)
-        elif market == "polymarket":
+        elif provider_key == "polymarket":
             # Polymarket pricing uses public Gamma + CLOB endpoints.
             # We use the current orderbook mid price (paper trading).
             price = _get_polymarket_mid_price(symbol, token_id=token_id, outcome=outcome)
-        elif market == "us-stock":
+        elif provider_key == "alphavantage":
             if not ALPHA_VANTAGE_API_KEY or ALPHA_VANTAGE_API_KEY == "demo":
                 _price_log("Warning: ALPHA_VANTAGE_API_KEY not set, using agent-provided price")
                 return None
             price = _get_us_stock_price(symbol, executed_at)
+        elif provider_key == "yahoo":
+            price = _get_yahoo_chart_price(symbol, executed_at, market)
         else:
             _price_log(f"[Price API] Unsupported market for server price fetch: {market}")
             return None

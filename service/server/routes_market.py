@@ -40,6 +40,18 @@ US_STOCK_SYMBOLS: tuple[str, ...] = (
     'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'GLD', 'SLV', 'TLT',
 )
 
+# Tradable forex pairs, in the canonical concatenated form (base+quote).
+# markets.position_currency() reads the trailing three characters as the settlement
+# currency, and price_fetcher._yahoo_symbol() appends '=X' for the provider.
+FOREX_SYMBOLS: tuple[str, ...] = (
+    'EURUSD', 'USDJPY', 'GBPUSD', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD',
+    'EURJPY', 'EURGBP', 'EURCHF', 'EURAUD', 'EURCAD',
+    'GBPJPY', 'GBPCHF', 'GBPAUD', 'GBPCAD',
+    'AUDJPY', 'AUDNZD', 'AUDCAD', 'AUDCHF',
+    'CADJPY', 'CHFJPY', 'NZDJPY',
+    'USDCNH', 'USDHKD', 'USDSGD', 'USDKRW', 'USDMXN', 'USDTRY', 'USDZAR',
+)
+
 
 def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     def _cached_market_payload(cache_key: str, builder):
@@ -249,6 +261,7 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'crypto': majors + rest,
                 'crypto_pairs': list(TOP_20_PAIRS),
                 'stock': list(US_STOCK_SYMBOLS),
+                'forex': list(FOREX_SYMBOLS),
             }
 
         return await run_in_threadpool(_cached_market_payload, 'symbol-options', _build)
