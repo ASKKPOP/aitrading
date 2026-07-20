@@ -32,10 +32,11 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+import markets
 
 logger = logging.getLogger(__name__)
 
-VALID_MARKETS = ("crypto", "us-stock")
+VALID_MARKETS = markets.automatable_markets()
 EXECUTABLE_ACTIONS = ("buy", "sell", "short", "cover")
 
 
