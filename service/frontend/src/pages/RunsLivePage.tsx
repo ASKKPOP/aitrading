@@ -43,12 +43,21 @@ const STATUS_TEXT: Record<string, Record<Language, string>> = {
 }
 
 const REASON_TEXT: Record<string, Record<Language, string>> = {
+  // NOT "you pressed Stop" — this reason only means a stop request arrived on
+  // the agent token, which is just as often a QA session or a script as it is
+  // the owner clicking the button. Say what actually happened, not who did it.
   user_stop: {
-    ko: '정지 버튼을 눌러 직접 멈췄습니다', en: 'You pressed Stop',
-    ja: '停止ボタンで手動停止しました', th: 'คุณกดปุ่มหยุดเอง', vi: 'Bạn đã nhấn nút Dừng' },
+    ko: '수동 정지 — 이 TRADING에 정지 요청이 들어왔습니다 (정지 버튼 또는 API)',
+    en: 'Stopped by hand — a Stop request arrived for this TRADING (button or API)',
+    ja: '手動停止 — この TRADING に停止リクエストが届きました（ボタンまたは API）',
+    th: 'หยุดด้วยมือ — มีคำขอหยุดส่งมาที่ TRADING นี้ (ปุ่มหรือ API)',
+    vi: 'Dừng thủ công — có yêu cầu Dừng gửi tới TRADING này (nút hoặc API)' },
   user_pause: {
-    ko: '직접 일시정지했습니다', en: 'You paused it',
-    ja: '手動で一時停止しました', th: 'คุณหยุดชั่วคราวเอง', vi: 'Bạn đã tạm dừng' },
+    ko: '수동 일시정지 — 일시정지 요청이 들어왔습니다',
+    en: 'Paused by hand — a Pause request arrived',
+    ja: '手動一時停止 — 一時停止リクエストが届きました',
+    th: 'หยุดชั่วคราวด้วยมือ — มีคำขอหยุดชั่วคราวส่งมา',
+    vi: 'Tạm dừng thủ công — có yêu cầu Tạm dừng' },
   'stop_event:profit_target': {
     ko: '목표 수익에 도달했습니다 — 같은 설정으로 새 TRADING이 자동 시작됩니다',
     en: 'Profit target reached — a new TRADING with the same settings starts automatically',
