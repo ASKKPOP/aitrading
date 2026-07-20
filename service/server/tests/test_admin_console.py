@@ -357,6 +357,64 @@ class PaymentSettingsTests(_Base):
                          self.client.get("/api/subscriptions/plans").json())
 
 
+class BankTransferSettingsTests(_Base):
+    """Bank destination details are console-registered like the USDT address.
+
+    Before this, they came only from BANK_TRANSFER_INFO, so a subscriber who
+    picked bank transfer was shown no account to send to and the operator had
+    no way to fix it without a deploy."""
+
+    ADDR = "TXk9Yk4consoleaddress00000000000000"
+    BANK = "Bank of America 123456789\nAccount holder: Sooppiy Inc."
+
+    def _save(self, **fields):
+        body = {"usdt_address": self.ADDR, "usdt_network": "TRC20", **fields}
+        return self.client.put("/api/admin/settings/payment", json=body, headers=self.admin)
+
+    def test_details_saved_in_console_reach_the_subscribe_page(self):
+        self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"], "")
+        self.assertEqual(self._save(bank_transfer_info=self.BANK).status_code, 200)
+        self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"],
+                         self.BANK)
+
+    def test_console_value_wins_over_the_env_fallback(self):
+        with patch.dict(os.environ, {"BANK_TRANSFER_INFO": "Old env bank line"}):
+            self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"],
+                             "Old env bank line")
+            self._save(bank_transfer_info=self.BANK)
+            self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"],
+                             self.BANK)
+
+    def test_omitting_the_field_leaves_saved_details_alone(self):
+        """The USDT form posts without this key; that must not wipe the bank
+        details. This is the regression the Optional default exists for."""
+        self._save(bank_transfer_info=self.BANK)
+        self.assertEqual(self._save().status_code, 200)          # no bank key at all
+        self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"],
+                         self.BANK)
+
+    def test_an_empty_string_clears_them(self):
+        self._save(bank_transfer_info=self.BANK)
+        self.assertEqual(self._save(bank_transfer_info="").status_code, 200)
+        self.assertEqual(self.client.get("/api/subscriptions/plans").json()["bank_transfer_info"], "")
+
+    def test_overlong_details_are_refused(self):
+        self.assertEqual(self._save(bank_transfer_info="x" * 2001).status_code, 400)
+
+    def test_the_account_number_is_not_written_to_the_audit_log(self):
+        self._save(bank_transfer_info=self.BANK)
+        entries = self.client.get("/api/admin/audit", headers=self.admin).json()["entries"]
+        row = next(e for e in entries if e["action"] == "settings.payment")
+        self.assertIn("bank_info=set", row["detail"])
+        self.assertNotIn("123456789", row["detail"])
+
+    def test_settings_read_reports_where_the_value_came_from(self):
+        self._save(bank_transfer_info=self.BANK)
+        got = self.client.get("/api/admin/settings/payment", headers=self.admin).json()
+        self.assertEqual(got["bank_transfer_info"]["source"], "console")
+        self.assertEqual(got["bank_transfer_info"]["value"], self.BANK)
+
+
 class PlanManagementTests(_Base):
     def test_create_edit_deactivate_plan(self):
         # Create a new tier; it appears on the public subscribe page.

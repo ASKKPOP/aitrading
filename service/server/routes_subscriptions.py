@@ -15,6 +15,8 @@ enterprise = contact us). Three payment paths:
                a deploy; USDT_ADDRESS/USDT_NETWORK survive as fallbacks. No
                funds move through this service and no keys are held here.
   * Bank     — user submits a transfer reference; same pending → approve path.
+               The destination details are REGISTERED IN THE CONSOLE too
+               (bank_transfer_info), with BANK_TRANSFER_INFO as the fallback.
   * PayPal   — Orders API v2 redirect flow. Server creates the order and
                returns approve_url; PayPal redirects back to the frontend,
                which calls capture. Subscription activates instantly.
@@ -83,6 +85,16 @@ def _usdt_address() -> str:
 def _usdt_network() -> str:
     from platform_settings import get_setting
     return get_setting("usdt_network")
+
+
+def _bank_info() -> str:
+    """Console-registered like the USDT address, and for the same reason: bank
+    details that need a deploy to change are details nobody keeps current.
+    BANK_TRANSFER_INFO stays a fallback. Empty means the bank rail shows no
+    destination, so subscribers have nowhere to send — the console is where
+    that gets fixed."""
+    from platform_settings import get_setting
+    return get_setting("bank_transfer_info")
 
 
 def _frontend_url() -> str:
@@ -199,7 +211,7 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             # paypal_available now means "show the PayPal button": configured
             # AND not hidden. The capture route stays reachable either way.
             "paypal_available": _paypal_configured() and _paypal_ui_enabled(),
-            "bank_transfer_info": os.getenv("BANK_TRANSFER_INFO", ""),
+            "bank_transfer_info": _bank_info(),
             "usdt_available": bool(_usdt_address()),
             "usdt_address": _usdt_address(),
             "usdt_network": _usdt_network(),

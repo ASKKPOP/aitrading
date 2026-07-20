@@ -131,6 +131,9 @@ class ExclusionBody(BaseModel):
 class PaymentSettingsBody(BaseModel):
     usdt_address: str = ""
     usdt_network: str = "TRC20"
+    # Optional, not "": a PUT that omits this field must leave the saved bank
+    # details alone rather than silently wiping them. Send "" to clear.
+    bank_transfer_info: str | None = None
 
 
 def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -940,6 +943,7 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         from platform_settings import get_setting_meta
         return {"usdt_address": get_setting_meta("usdt_address"),
                 "usdt_network": get_setting_meta("usdt_network"),
+                "bank_transfer_info": get_setting_meta("bank_transfer_info"),
                 "networks": SUPPORTED_USDT_NETWORKS}
 
     @app.put('/api/admin/settings/payment')
@@ -965,10 +969,22 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 status_code=400,
                 detail=f"Network must be one of: {', '.join(SUPPORTED_USDT_NETWORKS)}")
 
+        bank_info = None if body.bank_transfer_info is None else body.bank_transfer_info.strip()
+        if bank_info is not None and len(bank_info) > 2000:
+            raise HTTPException(
+                status_code=400,
+                detail="Bank transfer details must be under 2000 characters.")
+
         previous = get_setting("usdt_address")
         set_setting("usdt_address", address, admin.get("email"))
         set_setting("usdt_network", network, admin.get("email"))
+        if bank_info is not None:
+            set_setting("bank_transfer_info", bank_info, admin.get("email"))
+        # Bank details are free text and go out to subscribers verbatim, so the
+        # audit records only that they changed, not the account number itself.
         audit(admin, "settings.payment", "usdt",
               f"network={network} address={_mask_address(address) or '(cleared)'} "
-              f"was={_mask_address(previous) or '(unset)'}")
-        return {"ok": True, "usdt_address": address, "usdt_network": network}
+              f"was={_mask_address(previous) or '(unset)'} "
+              f"bank_info={'unchanged' if bank_info is None else ('set' if bank_info else '(cleared)')}")
+        return {"ok": True, "usdt_address": address, "usdt_network": network,
+                "bank_transfer_info": get_setting("bank_transfer_info")}
