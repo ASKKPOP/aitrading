@@ -210,7 +210,11 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 '
 
 ### Dual authentication (the source of most "menu doesn't work" bugs)
 - **Human users** authenticate with a `userToken` (`sooppiy_user_token` in localStorage; `/api/users/*`).
-- **Agents** authenticate with a `claw` token (`claw_token` in localStorage; `/api/claw/*`).
+- **Agents** authenticate with a `claw` token (`claw_token` in localStorage). Agent-scoped routes live
+  under **`/api/agents/me/*`** (memory, rewards, experiments) plus the shared `/api/automation/*`,
+  `/api/execution/*`, `/api/runs`, `/api/risk/*` families — **not** `/api/claw/*`. (Corrected
+  2026-07-20: `/api/claw/*` was never a registered prefix. Because unmatched paths return 200 + HTML,
+  a status-code-only test of `/api/claw/agent` *looks* like it passes — see the SPA-fallback warning.)
 - **Most menu pages are gated on the *agent* token**, so a human login alone opens almost nothing.
 - **Solution now in place:** every human account is linked to one auto-provisioned simulator agent via `agents.user_id`. On login the frontend calls `POST /api/users/agent`, which creates the agent on first use and returns a fresh claw token; `App.tsx` stores it so agent-gated pages work.
 - **Agent tokens rotate on every issue** (only the SHA-256 hash is stored, never plaintext). So calling `POST /api/users/agent` again invalidates the previous token. The frontend recovers from a stale token via the 401-relink in `fetchAgentInfo` (commit `5318e39`).

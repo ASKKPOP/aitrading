@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sooppiy — Production Verification Report (2026-07-20)</title>
+<style>
+:root{--bg:#f9f9f7;--card:#fff;--ink:#1a1a1a;--mut:#6b6b6b;--line:#e5e5e0;--acc:#2a78d6;
+--pass:#1a7f4b;--passbg:#e8f5ee;--fail:#b3261e;--failbg:#fdeceb;--risk:#8a5a00;--riskbg:#fdf3e0;--info:#4a4a4a;--infobg:#f0f0ee;}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--card:#1c1c1c;--ink:#ececec;--mut:#9a9a9a;--line:#2e2e2e;
+--passbg:#122a1d;--failbg:#2c1512;--riskbg:#2c2310;--infobg:#242424;--pass:#4ac585;--fail:#ef8a80;--risk:#e0b35c;--info:#b0b0b0;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:19px;margin:34px 0 12px;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 26px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:26px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile .n{font-size:28px;font-weight:600;letter-spacing:-.02em}
+.tile .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.tbl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.grp td{background:var(--infobg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.id{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--mut)}
+.b{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;letter-spacing:.03em}
+.pass{background:var(--passbg);color:var(--pass)}.fail{background:var(--failbg);color:var(--fail)}
+.risk{background:var(--riskbg);color:var(--risk)}.info{background:var(--infobg);color:var(--info)}
+dl{margin:0}dt{font-weight:600;margin-top:12px}dd{margin:2px 0 0;color:var(--mut)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--infobg);padding:1px 5px;border-radius:4px}
+.kv{display:grid;grid-template-columns:190px 1fr;gap:6px 14px;font-size:13.5px}
+.kv .k{color:var(--mut)}
+.note{border-left:3px solid var(--acc);padding:10px 14px;background:var(--infobg);border-radius:0 8px 8px 0;margin:14px 0}
+.warn{border-left-color:var(--risk)}
+footer{margin-top:40px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Sooppiy — Production Verification Report</h1>
+<p class="sub">Target <strong>sooppiy.com</strong> / <strong>api.sooppiy.com</strong> · Account <strong>info@askkpop.com</strong> (user_id 5) · 2026-07-20 · Two independent passes, identical verdicts</p>
+<div class="tiles">
+<div class="tile"><div class="n">39</div><div class="l">Checks run</div></div>
+<div class="tile"><div class="n" style="color:var(--pass)">32</div><div class="l">Pass</div></div>
+<div class="tile"><div class="n" style="color:var(--fail)">0</div><div class="l">Fail</div></div>
+<div class="tile"><div class="n" style="color:var(--risk)">6</div><div class="l">Risk</div></div>
+<div class="tile"><div class="n" style="color:var(--info)">1</div><div class="l">Info</div></div>
+</div>
+<div class="note"><strong>How to read this.</strong> Every functional check asserts on the <em>response body</em>, never the HTTP status code. Both domains return <code>200</code> with <code>index.html</code> for any unmatched path — including under <code>/api/</code> — so a status-code check passes against a completely dead backend. <span class="b risk">RISK</span> rows are confirmed-real findings, not test failures.</div>
+
+<h2>Environment under test</h2>
+<div class="card"><div class="kv">
+<div class="k">Backend image</div><div class="mono">sooppiy-backend:20260720-social</div>
+<div class="k">Worker image</div><div class="mono">sooppiy-backend:20260720-social <span class="b pass">MATCH</span></div>
+<div class="k">Container restarts</div><div class="mono">backend 0 · worker 0</div>
+<div class="k">Backend errors (20m)</div><div class="mono">0 tracebacks / critical / fatal</div>
+<div class="k">Worker activity (10m)</div><div class="mono">41 snapshot cycles</div>
+<div class="k">Database</div><div class="mono">backend=mysql</div>
+<div class="k">Live bundle</div><div class="mono">DocsPage-CdH5uqFB.js</div>
+<div class="k">Bundle in image</div><div class="mono">DocsPage-CdH5uqFB.js <span class="b pass">MATCH</span></div>
+<div class="k">Env file</div><div class="mono">~/sooppiy/.env — 9566 bytes</div>
+<div class="k">~/sooppiy/app/.env</div><div class="mono">does not exist (as documented)</div>
+<div class="k">Disk</div><div class="mono">11G / 48G (23%)</div>
+</div></div>
+
+<h2>Results</h2>
+<div class="tbl-scroll"><table>
+<thead><tr><th>ID</th><th>Check</th><th>Expected</th><th>Actual</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr class="grp"><td colspan="5">Authentication</td></tr>
+<tr><td class="id">A1</td><td>POST /api/users/login as info@askkpop.com</td><td class="mono">JSON + token</td><td class="mono">JSON, token len=43</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A2</td><td>Login returns expected user_id</td><td class="mono">5</td><td class="mono">5</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A3</td><td>Paid-tier subscription active</td><td class="mono">active</td><td class="mono">active</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A4</td><td>Wrong password issues no token</td><td class="mono">JSON, no token</td><td class="mono">JSON, token len=0</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">A5</td><td>POST /api/users/agent mints agent (claw) token</td><td class="mono">token len&gt;=20</td><td class="mono">len=43</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="5">Product endpoints (agent token)</td></tr>
+<tr><td class="id">B1</td><td>GET /api/agents/me/memory — Agent desk memory</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B2</td><td>GET /api/agents/me/memory/quota — Memory quota</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B3</td><td>GET /api/agents/me/rewards — Agent rewards</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B4</td><td>GET /api/agents/me/experiments — Agent experiments</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B5</td><td>GET /api/automation/configs — Automation rules</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B6</td><td>GET /api/automation/runs — Automation runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B7</td><td>GET /api/execution/accounts — Execution accounts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B8</td><td>GET /api/execution/brokers — Execution brokers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B9</td><td>GET /api/execution/health — Execution health</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B10</td><td>GET /api/runs — AI auto-trading runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B11</td><td>GET /api/strategies — Strategies</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B12</td><td>GET /api/alerts — Alerts</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B13</td><td>GET /api/risk/limits — Risk limits</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B14</td><td>GET /api/backtest/runs — Backtest runs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">B15</td><td>GET /api/team-missions/me — Team missions (me)</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="5">Product endpoints (user token)</td></tr>
+<tr><td class="id">C1</td><td>GET /api/auth/providers — Auth providers</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C2</td><td>GET /api/auth/mfa/status — MFA status</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C3</td><td>GET /api/assistant/profile — Assistant profile</td><td class="mono">JSON</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">C4</td><td>GET /api/guide/docs — Guide docs</td><td class="mono">JSON</td><td class="mono">JSON 200</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="5">Market data</td></tr>
+<tr><td class="id">D1</td><td>GET /api/market-intel/regime — Regime</td><td class="mono">JSON</td><td class="mono">JSON</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">D2</td><td>GET /api/market-intel/confluence — Confluence</td><td class="mono">JSON</td><td class="mono">JSON</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="5">Auth enforcement</td></tr>
+<tr><td class="id">E1</td><td>GET /api/agents/me/memory without token</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">E2</td><td>GET /api/execution/health without token</td><td class="mono">JSON 401</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">E3</td><td>Garbage bearer token rejected</td><td class="mono">JSON 401/403</td><td class="mono">JSON 401</td><td><span class="b pass">PASS</span></td></tr>
+<tr class="grp"><td colspan="5">Monitoring blind spot</td></tr>
+<tr><td class="id">F1</td><td>/api/health — route does not exist</td><td class="mono">200 + HTML despite no route</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr><td class="id">F2</td><td>Bogus /api/* on api.sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr><td class="id">F2</td><td>Bogus /api/* on sooppiy.com</td><td class="mono">200 + HTML</td><td class="mono">200 + HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/leaderboard (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/agents (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/positions (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">JSON</td><td><span class="b info">INFO</span></td></tr>
+<tr><td class="id">F3</td><td>GET /api/portfolio (path used in docs/tests)</td><td class="mono">HTML fallback</td><td class="mono">HTML</td><td><span class="b risk">RISK</span></td></tr>
+<tr class="grp"><td colspan="5">Static assets</td></tr>
+<tr><td class="id">G1</td><td>index.html references hashed bundle</td><td class="mono">assets/index-*.js</td><td class="mono">assets/index-D6mnrV-h.js</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">G2</td><td>GET /assets/index-D6mnrV-h.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 780794B</td><td><span class="b pass">PASS</span></td></tr>
+<tr><td class="id">G2</td><td>GET /assets/DocsPage-CdH5uqFB.js</td><td class="mono">200, &gt;1KB</td><td class="mono">200, 4224B</td><td><span class="b pass">PASS</span></td></tr>
+</tbody></table></div>
+
+<h2>Findings</h2>
+
+<div class="card">
+<dl>
+<dt>1 — Production has no true liveness signal <span class="b risk">RISK</span></dt>
+<dd>There is no <code>/api/health</code> route anywhere in the codebase, yet <code>GET https://api.sooppiy.com/api/health</code> returns <strong>HTTP 200</strong> with <code>&lt;!DOCTYPE html&gt;</code>. The SPA fallback answers it. Any monitor that checks a status code — ALB target group, uptime probe, cron — cannot distinguish a healthy backend from a dead one. A total outage would present as a normally-loading site whose every API call silently returns HTML. Confirmed on both domains (F1, F2).</dd>
+
+<dt>2 — Documented endpoint prefix <code>/api/claw/*</code> does not exist <span class="b risk">RISK</span></dt>
+<dd>The handoff doc's architecture section states agents call <code>/api/claw/*</code>. No such prefix is registered. The real routes are <code>/api/agents/me/*</code>. Because unmatched paths return 200 + HTML, a status-code-only test of <code>/api/claw/agent</code> <em>appears to pass</em> — this produced a false positive in an earlier verification run of this very engagement before body assertions were added.</dd>
+
+<dt>3 — Paths that silently fall through to HTML <span class="b risk">RISK</span></dt>
+<dd><code>/api/leaderboard</code>, <code>/api/agents</code>, and <code>/api/portfolio</code> all return the SPA rather than JSON (F3). <code>/api/positions</code> is a real route and returns JSON. Any of the first three used as a liveness or smoke check is meaningless.</dd>
+
+<dt>4 — Concurrent deploys share one unlocked <code>~/sooppiy/.env</code> <span class="b risk">RISK</span></dt>
+<dd>The file changed from 9206 to 9566 bytes mid-session while a parallel session deployed. The deploy runbook mutates it with <code>sed -i</code> and there is no lock. Production moved across four image tags in roughly thirty minutes. Two overlapping deploys can leave backend and worker on different tags, or clobber one session's image pin. A wholesale <code>.env</code> restore from a stale snapshot would have silently dropped the other session's keys.</dd>
+
+<dt>5 — Everything the account actually touches works <span class="b pass">PASS</span></dt>
+<dd>All 15 agent-token endpoints, all 4 user-token endpoints, both market-data endpoints, and all 3 auth-enforcement checks returned correct JSON. Login yields user_id 5 with <code>subscription_status: active</code>; a wrong password issues no token; unauthenticated and garbage-token requests to real routes are correctly refused with JSON 401.</dd>
+</dl>
+</div>
+
+<h2>Deploy runbook — executed, not assumed</h2>
+<div class="card">
+<p style="margin-top:0">The runbook in <code>docs/plan/03-session-handoff.md</code> was run end to end against production: built a dated tag, repointed <code>SOOPPIY_IMAGE</code>, recreated backend and worker via compose, republished the SPA, then rolled back. Both directions finished with 0 restarts, 0 tracebacks, and matching bundle hashes.</p>
+<p>The exercise was made safe by first proving the backend Python source in the live image was byte-identical to <code>origin/main</code> (SHA-1 of the sorted per-file digest list matched at <code>6da68d754812546b</code>), making the rebuild a code-level no-op.</p>
+<div class="kv" style="margin-top:14px">
+<div class="k">env at ~/sooppiy/.env</div><div class="mono">confirmed · app/.env absent</div>
+<div class="k">compose orchestration</div><div class="mono">confirmed · raw docker run obsolete</div>
+<div class="k">dated SOOPPIY_IMAGE pin</div><div class="mono">confirmed · :test referenced by nothing</div>
+<div class="k">backend+worker share var</div><div class="mono">confirmed · image: ${SOOPPIY_IMAGE} on both</div>
+<div class="k">docker cp nesting trap</div><div class="mono">reproduced in isolated tmp dir</div>
+<div class="k">.env survives rm -rf app</div><div class="mono">confirmed · unchanged at 9206 bytes</div>
+</div>
+<div class="note warn" style="margin-bottom:0"><strong>Still untested:</strong> a deploy carrying an actual Alembic schema migration. Rolling back to a prior image after a migration has applied is not a clean reverse, and the runbook does not cover it. Also untested: a build that genuinely changes the frontend bundle (this one reproduced identical hashes), and build failure after <code>rm -rf app</code>.</div>
+</div>
+
+<h2>Method</h2>
+<div class="card">
+<p style="margin-top:0">39 checks driven by <code>curl</code> against the live public endpoints, authenticating as <code>info@askkpop.com</code> through the documented login → agent-token flow. Read-only apart from login and the idempotent agent-token mint. Each check classifies the response body as JSON, HTML, EMPTY, or OTHER and asserts on that classification rather than the status code.</p>
+<p style="margin-bottom:0">The suite was run twice; the verdict column was byte-identical across both passes. An earlier draft of the suite reported four false failures caused by two defects in the harness itself — a collision with bash's readonly <code>UID</code>, and use of the non-existent <code>/api/claw/*</code> prefix. Both were fixed before these results were recorded.</p>
+</div>
+
+<footer>Generated 2026-07-20 from live production responses. Verdicts reflect observed behavior at time of run; no results are inferred or carried over between passes.</footer>
+</div></body></html>

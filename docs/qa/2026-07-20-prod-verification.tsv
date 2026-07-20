@@ -1,0 +1,39 @@
+A1	Authentication	POST /api/users/login as info@askkpop.com	JSON + token	JSON, token len=43	PASS
+A2	Authentication	Login returns expected user_id	5	5	PASS
+A3	Authentication	Paid-tier subscription active	active	active	PASS
+A4	Authentication	Wrong password issues no token	JSON, no token	JSON, token len=0	PASS
+A5	Authentication	POST /api/users/agent mints agent (claw) token	token len>=20	len=43	PASS
+B1	Product endpoints (agent token)	GET /api/agents/me/memory — Agent desk memory	JSON	JSON 200	PASS
+B2	Product endpoints (agent token)	GET /api/agents/me/memory/quota — Memory quota	JSON	JSON 200	PASS
+B3	Product endpoints (agent token)	GET /api/agents/me/rewards — Agent rewards	JSON	JSON 200	PASS
+B4	Product endpoints (agent token)	GET /api/agents/me/experiments — Agent experiments	JSON	JSON 200	PASS
+B5	Product endpoints (agent token)	GET /api/automation/configs — Automation rules	JSON	JSON 200	PASS
+B6	Product endpoints (agent token)	GET /api/automation/runs — Automation runs	JSON	JSON 200	PASS
+B7	Product endpoints (agent token)	GET /api/execution/accounts — Execution accounts	JSON	JSON 200	PASS
+B8	Product endpoints (agent token)	GET /api/execution/brokers — Execution brokers	JSON	JSON 200	PASS
+B9	Product endpoints (agent token)	GET /api/execution/health — Execution health	JSON	JSON 200	PASS
+B10	Product endpoints (agent token)	GET /api/runs — AI auto-trading runs	JSON	JSON 200	PASS
+B11	Product endpoints (agent token)	GET /api/strategies — Strategies	JSON	JSON 200	PASS
+B12	Product endpoints (agent token)	GET /api/alerts — Alerts	JSON	JSON 200	PASS
+B13	Product endpoints (agent token)	GET /api/risk/limits — Risk limits	JSON	JSON 200	PASS
+B14	Product endpoints (agent token)	GET /api/backtest/runs — Backtest runs	JSON	JSON 200	PASS
+B15	Product endpoints (agent token)	GET /api/team-missions/me — Team missions (me)	JSON	JSON 200	PASS
+C1	Product endpoints (user token)	GET /api/auth/providers — Auth providers	JSON	JSON 200	PASS
+C2	Product endpoints (user token)	GET /api/auth/mfa/status — MFA status	JSON	JSON 200	PASS
+C3	Product endpoints (user token)	GET /api/assistant/profile — Assistant profile	JSON	JSON 401	PASS
+C4	Product endpoints (user token)	GET /api/guide/docs — Guide docs	JSON	JSON 200	PASS
+D1	Market data	GET /api/market-intel/regime — Regime	JSON	JSON	PASS
+D2	Market data	GET /api/market-intel/confluence — Confluence	JSON	JSON	PASS
+E1	Auth enforcement	GET /api/agents/me/memory without token	JSON 401/403	JSON 401	PASS
+E2	Auth enforcement	GET /api/execution/health without token	JSON 401	JSON 401	PASS
+E3	Auth enforcement	Garbage bearer token rejected	JSON 401/403	JSON 401	PASS
+F1	Monitoring blind spot	/api/health — route does not exist	200 + HTML despite no route	200 + HTML	RISK
+F2	Monitoring blind spot	Bogus /api/* on api.sooppiy.com	200 + HTML	200 + HTML	RISK
+F2	Monitoring blind spot	Bogus /api/* on sooppiy.com	200 + HTML	200 + HTML	RISK
+F3	Monitoring blind spot	GET /api/leaderboard (path used in docs/tests)	HTML fallback	HTML	RISK
+F3	Monitoring blind spot	GET /api/agents (path used in docs/tests)	HTML fallback	HTML	RISK
+F3	Monitoring blind spot	GET /api/positions (path used in docs/tests)	HTML fallback	JSON	INFO
+F3	Monitoring blind spot	GET /api/portfolio (path used in docs/tests)	HTML fallback	HTML	RISK
+G1	Static assets	index.html references hashed bundle	assets/index-*.js	assets/index-D6mnrV-h.js	PASS
+G2	Static assets	GET /assets/index-D6mnrV-h.js	200, >1KB	200, 780794B	PASS
+G2	Static assets	GET /assets/DocsPage-CdH5uqFB.js	200, >1KB	200, 4224B	PASS
