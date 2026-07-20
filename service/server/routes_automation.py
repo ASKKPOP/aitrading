@@ -151,7 +151,8 @@ class AutomationConfigIn(BaseModel):
     @field_validator("lang")
     @classmethod
     def _lang(cls, v: str) -> str:
-        return "th" if (v or "en").lower().startswith("th") else "en"
+        from analysis_agents import normalize_lang
+        return normalize_lang(v)
 
 
 def _auth(authorization: Optional[str]):

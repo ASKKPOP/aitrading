@@ -315,6 +315,64 @@ def create_run(agent_id: int, settings: dict, start_condition: dict,
         conn.close()
 
 
+def update_draft_run(run_id: int, agent_id: int, settings: dict,
+                     start_condition: dict, stop_conditions: dict,
+                     stop_flatten: bool) -> None:
+    """Replace a draft's configuration wholesale.
+
+    Draft-only by design. A draft has never traded: no positions carry its
+    run_id, no active_key reserves its slot, so every field is still free to
+    change and there is nothing to reconcile. The moment a run starts, the
+    same edit would be rewriting the terms of a book that is already open —
+    which is why an active run gets only the tighten-only stop-conditions
+    endpoint instead.
+
+    Editing exists so that hitting the exclusivity refusal at start does not
+    cost the user the draft: they change the instrument type, interval,
+    confidence or provider here and start it alongside the existing run.
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("SELECT status FROM trading_runs WHERE id = ? AND agent_id = ?",
+                       (run_id, agent_id))
+        row = cursor.fetchone()
+        if not row:
+            raise LookupError("run not found")
+        status = dict(row)["status"]
+        if status != STATUS_DRAFT:
+            raise ValueError(f"only a draft run can be edited (status={status})")
+
+        cursor.execute(
+            """UPDATE trading_runs
+               SET symbol = ?, market = ?, market_type = ?,
+                   config_snapshot_json = ?, start_condition_json = ?,
+                   stop_conditions_json = ?, stop_flatten = ?
+               WHERE id = ? AND agent_id = ? AND status = ?""",
+            (settings["symbol"], settings["market"], settings["market_type"],
+             json.dumps(settings), json.dumps(start_condition),
+             json.dumps(stop_conditions), 1 if stop_flatten else 0,
+             run_id, agent_id, STATUS_DRAFT),
+        )
+        if cursor.rowcount != 1:
+            # Started or deleted between the SELECT and here.
+            raise ValueError("run changed concurrently — retry")
+        _emit_event(cursor, run_id, "run_config",
+                    {"reason": "edited", "symbol": settings["symbol"],
+                     "market": settings["market"],
+                     "market_type": settings["market_type"]})
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+    finally:
+        conn.close()
+
+
 class StartConflict(Exception):
     """Raised when exclusivity or a conflicting writer blocks a start.
     `conflicts` (when present) is the list_start_conflicts() dict so the API
