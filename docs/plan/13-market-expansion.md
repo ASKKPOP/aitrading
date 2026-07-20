@@ -64,7 +64,34 @@ Contrary to first assumption, three of the four are **not** blocked on paid feed
 | A주 a-stock | Yahoo v8 `600519.SS` → CNY/Shanghai; Sina `hq.sinajs.cn` | ✅ both verified live |
 | 옵션 options | Yahoo v7 options chain | ❌ `Invalid Crumb` — needs cookie+crumb handshake |
 
-### 2.1 Measured 2026-07-19 — Yahoo throttling is severe
+### 2.1 CORRECTED 2026-07-20 — it was never throttling, it was the User-Agent
+
+**The section below (2.2) is wrong and is kept only as a record of the mistake.**
+
+Measured from the production host on 2026-07-20, the deciding variable is the exact
+User-Agent string, not request volume:
+
+| User-Agent | Result |
+|---|---|
+| `Mozilla/5.0` | **200 — 12/12 with no delay between requests** |
+| Full spoofed Chrome UA | **429 — 6/6, on the very first request** |
+| `requests` default UA | 429, always |
+
+A detailed browser UA with no matching TLS fingerprint or headers reads as a scraper to
+Yahoo's edge; the bare `Mozilla/5.0` token reads as a generic HTTP client and is served
+normally. My original "throttled at ~1 req/min" reading came from A/B-ing nothing — I
+picked a realistic-looking Chrome UA, saw 429s, and attributed them to rate limiting.
+
+Consequences, all corrected in the follow-up commit:
+- `_YAHOO_USER_AGENT` is now `"Mozilla/5.0"`, with a comment warning not to "improve" it.
+- `forex.server_priced` is back to `True` — it was set `False` purely to work around a
+  problem that did not exist.
+- `retry_on_rate_limit=False` for Yahoo is **kept**. Retrying a genuine 429 is still wrong,
+  and the guard costs nothing.
+- The Alpha Vantage premium recommendation stands for **options** (phase 5), which still has
+  no free chain endpoint — but it is no longer needed for forex.
+
+### 2.2 SUPERSEDED — original (incorrect) reading, 2026-07-19
 
 Yahoo's chart endpoint is **far more aggressively rate-limited than it first appeared.** Measured
 from this machine after the provider was wired up:
