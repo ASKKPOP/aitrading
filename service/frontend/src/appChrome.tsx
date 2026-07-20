@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useLanguage, useTheme, THEMES } from './appShared'
+import { AiUsagePill } from './components/AiUsagePill'
 import { LANGUAGES, tr } from './i18n'
 
 export function Toast({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) {
@@ -270,6 +271,7 @@ export function TopNav({
 
       {/* ── right: account cluster ── */}
       <div className="topnav-right">
+        <AiUsagePill userToken={userToken} />
         <TopbarControls />
 
         {token && (

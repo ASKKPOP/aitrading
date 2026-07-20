@@ -408,6 +408,24 @@ a {
   flex-shrink: 0;
 }
 
+/* AI spend pill. The bar is already at its width limit around 1280px — the
+   nav needs ~349px and gets ~344px there — because the language switcher
+   renders five full-width buttons. Adding the pill unconditionally pushed the
+   nav 84px past its box and the menu items overlapped it. So the pill appears
+   only where there is real slack; its figures also live in Settings, which is
+   reachable at every width. Collapsing the language switcher into a single
+   dropdown would free ~400px and let this show everywhere. */
+.topnav-ai-pill {
+  position: relative;
+  display: none;
+}
+
+@media (min-width: 1400px) {
+  .topnav-ai-pill {
+    display: block;
+  }
+}
+
 .topnav-menu,
 .topnav-profile {
   position: relative;

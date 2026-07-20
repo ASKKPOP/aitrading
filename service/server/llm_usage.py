@@ -102,14 +102,58 @@ def _aggregate(cursor, since_iso: str, user_id: Optional[int]) -> dict[str, Any]
             "total_calls": total_calls}
 
 
+def _aggregate_by_service(cursor, since_iso: str, user_id: Optional[int]) -> list[dict]:
+    """Same window, grouped by `tier` — the service that made the call
+    (decision, brief, …) rather than the model that served it."""
+    where = "created_at >= ?"
+    params: list[Any] = [since_iso]
+    if user_id is not None:
+        where += " AND user_id = ?"
+        params.append(user_id)
+    cursor.execute(
+        f"""SELECT tier AS service, COUNT(*) AS calls,
+                   SUM(cost_usd) AS cost_usd
+            FROM llm_usage WHERE {where}
+            GROUP BY tier ORDER BY cost_usd DESC""", params)
+    return [{"service": r["service"], "calls": int(r["calls"] or 0),
+             "cost_usd": round(float(r["cost_usd"] or 0), 4)}
+            for r in (dict(x) for x in cursor.fetchall())]
+
+
+def _month_bounds(now: datetime) -> tuple[datetime, datetime]:
+    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    nxt = (start.replace(year=start.year + 1, month=1) if start.month == 12
+           else start.replace(month=start.month + 1))
+    return start, nxt
+
+
+def project_month_end(spent_usd: float, now: Optional[datetime] = None) -> float:
+    """Straight-line run-rate projection of this month's total spend.
+
+    Deliberately naive: spend-to-date scaled by the fraction of the month
+    elapsed. It is a run rate, not a forecast — it assumes the rest of the
+    month looks like the part already observed, so it swings wildly in the
+    first hours of a month. Callers label it as an estimate."""
+    now = now or datetime.now(timezone.utc)
+    start, nxt = _month_bounds(now)
+    elapsed = (now - start).total_seconds()
+    total = (nxt - start).total_seconds()
+    if elapsed < 3600:  # too little signal — don't extrapolate from minutes
+        return round(spent_usd, 4)
+    return round(spent_usd * (total / elapsed), 4)
+
+
 def usage_summary(user_id: Optional[int] = None) -> dict[str, Any]:
     """Current-calendar-month usage aggregates (UTC). user_id None = system-wide."""
-    month_start = datetime.now(timezone.utc).strftime("%Y-%m-01T00:00:00Z")
+    now = datetime.now(timezone.utc)
+    month_start = now.strftime("%Y-%m-01T00:00:00Z")
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
         out = _aggregate(cursor, month_start, user_id)
+        out["services"] = _aggregate_by_service(cursor, month_start, user_id)
     finally:
         conn.close()
     out["month_start"] = month_start
+    out["projected_cost_usd"] = project_month_end(out["total_cost_usd"], now)
     return out
