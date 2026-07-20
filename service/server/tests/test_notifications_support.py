@@ -53,47 +53,40 @@ class _Base(unittest.TestCase):
 
 
 class TestNotificationPrefs(_Base):
-    def test_defaults_are_all_enabled_in_app_only(self):
+    def test_defaults_are_all_enabled_on_every_channel(self):
         r = self.client.get("/api/notifications/settings", headers=self.member)
         self.assertEqual(r.status_code, 200)
         cats = {c["key"]: c for c in r.json()["categories"]}
         self.assertEqual(set(cats), {"trade", "risk", "watch", "support", "announcement",
                                      # Trading Runs (Plan 10 D8)
                                      "auto_trading_reports", "auto_trading_safety"})
-        self.assertTrue(all(c["enabled"] for c in cats.values()))
-        self.assertFalse(cats["trade"]["email"])
-        self.assertFalse(cats["trade"]["sms"])
-        # run categories default email ON (that is their point); SMS off
-        self.assertTrue(cats["auto_trading_reports"]["email"])
-        self.assertFalse(cats["auto_trading_reports"]["sms"])
-        self.assertTrue(cats["auto_trading_safety"]["email"])
-
-    def test_legacy_alert_optin_seeds_trade_email_default(self):
-        # A member who enabled email on the old Alerts card keeps email
-        # delivery for trade/risk/watch without re-opting in.
-        self.client.put("/api/users/settings/api/alerts", headers=self.member,
-                        json={"config": {"email_enabled": "true", "sms_enabled": "false",
-                                         "phone": "+821012345678"}})
-        cats = {c["key"]: c for c in
-                self.client.get("/api/notifications/settings",
-                                headers=self.member).json()["categories"]}
-        self.assertTrue(cats["trade"]["email"])
-        self.assertTrue(cats["risk"]["email"])
-        self.assertFalse(cats["trade"]["sms"])
-        # Admin-originated categories keep their own catalog defaults.
-        self.assertTrue(cats["support"]["email"])
+        # One switch per category: email and SMS always follow it.
+        for key, c in cats.items():
+            self.assertTrue(c["enabled"], key)
+            self.assertEqual((c["email"], c["sms"]), (True, True), key)
 
     def test_update_switches_persists(self):
         r = self.client.put("/api/notifications/settings", headers=self.member,
-                            json={"categories": {"trade": {"enabled": False, "email": True}}})
+                            json={"categories": {"trade": {"enabled": False}}})
         self.assertEqual(r.status_code, 200)
         cats = {c["key"]: c for c in
                 self.client.get("/api/notifications/settings",
                                 headers=self.member).json()["categories"]}
-        self.assertFalse(cats["trade"]["enabled"])
-        self.assertTrue(cats["trade"]["email"])
+        self.assertEqual((cats["trade"]["enabled"], cats["trade"]["email"],
+                          cats["trade"]["sms"]), (False, False, False))
         # Untouched categories are unchanged.
         self.assertTrue(cats["risk"]["enabled"])
+
+    def test_channel_keys_are_aliases_of_the_master_switch(self):
+        # A client still holding the old per-channel UI writes {"sms": ...};
+        # that must move the whole category, not create a split state.
+        self.client.put("/api/notifications/settings", headers=self.member,
+                        json={"categories": {"risk": {"sms": False}}})
+        cats = {c["key"]: c for c in
+                self.client.get("/api/notifications/settings",
+                                headers=self.member).json()["categories"]}
+        self.assertEqual((cats["risk"]["enabled"], cats["risk"]["email"],
+                          cats["risk"]["sms"]), (False, False, False))
 
     def test_unknown_category_rejected(self):
         r = self.client.put("/api/notifications/settings", headers=self.member,
@@ -104,22 +97,23 @@ class TestNotificationPrefs(_Base):
         self.assertEqual(self.client.get("/api/notifications/settings").status_code, 401)
         self.assertEqual(self.client.get("/api/notifications").status_code, 401)
 
-    def test_disabled_alerts_target_does_not_re_optin_email(self):
-        # Regression: a member who turned the 'alerts' target OFF must not have
-        # its email_enabled inherited as a per-category default. _load_target
-        # filters on enabled = 1, matching the pre-refactor s.enabled = 1 join.
+    def test_legacy_alerts_target_does_not_drive_category_switches(self):
+        # The old Alerts card's email_enabled/sms_enabled no longer seed
+        # anything — only the per-category master switch decides delivery. The
+        # target survives purely as the SMS phone destination.
+        import notifications
         self.client.put("/api/users/settings/api/alerts", headers=self.member,
-                        json={"config": {"email_enabled": "true", "sms_enabled": "true",
+                        json={"config": {"email_enabled": "false", "sms_enabled": "false",
                                          "phone": "+821012345678"}})
-        # Now disable the whole alerts target.
-        self.client.put("/api/users/settings/api/alerts", headers=self.member,
-                        json={"enabled": False})
+        self.client.put("/api/notifications/settings", headers=self.member,
+                        json={"categories": {"trade": {"enabled": False}}})
         cats = {c["key"]: c for c in
                 self.client.get("/api/notifications/settings",
                                 headers=self.member).json()["categories"]}
-        self.assertFalse(cats["trade"]["email"])
-        self.assertFalse(cats["risk"]["email"])
-        self.assertFalse(cats["trade"]["sms"])
+        self.assertFalse(cats["trade"]["email"])   # off because the master is off
+        self.assertTrue(cats["risk"]["email"])     # on despite email_enabled=false
+        self.assertTrue(cats["risk"]["sms"])
+        self.assertEqual(notifications.sms_phone(self.user_id), "+821012345678")
 
 
 class TestNotificationFeed(_Base):
@@ -373,7 +367,9 @@ class TestSetPrefsRace(_Base):
             """INSERT INTO user_api_settings
                (user_id, target, api_key, config_json, enabled, updated_at)
                VALUES (?, 'notifications', NULL, ?, 1, ?)""",
-            (self.user_id, _json.dumps({"trade": {"enabled": True, "email": True, "sms": False}}),
+            # trade OFF — the opposite of the catalog default, so the assertion
+            # below distinguishes "preserved" from "fell back to defaults".
+            (self.user_id, _json.dumps({"trade": {"enabled": False}}),
              "2026-07-18T00:00:00Z"))
         conn.commit()
         conn.close()
@@ -381,7 +377,7 @@ class TestSetPrefsRace(_Base):
         # row, not clobber it or raise.
         merged = notifications.set_prefs(self.user_id, {"risk": {"enabled": False}})
         self.assertFalse(merged["risk"]["enabled"])
-        self.assertTrue(merged["trade"]["email"])  # winner's write preserved
+        self.assertFalse(merged["trade"]["enabled"])  # winner's write preserved
 
     def test_mark_read_beyond_500_ids_marks_all(self):
         # 600 unread ids in one call must all be marked — the IN clause is

@@ -569,15 +569,38 @@ def invalidate_position_cache(ctx: RouteContext, agent_id: int | None = None) ->
     ctx.positions_cache.pop(agent_id, None)
 
 
-def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str, token_id: Optional[str]):
+# Sentinel for "any book" — the pre-run-scoping behaviour. Distinct from None,
+# which now means the *unowned* book (manual signals + automation rules).
+ANY_RUN = object()
+
+
+def run_scope_sql(run_id: Any) -> tuple[str, list]:
+    """WHERE fragment + params scoping a positions query to one book.
+
+    Several runs may hold a position on the same agent+market+symbol (they are
+    told apart by the run's filter key), so `positions` rows are per-book:
+    `run_id = N` is run N's book, `run_id IS NULL` is the unowned book that
+    manual signals and automation rules trade. Passing ANY_RUN keeps the old
+    unscoped behaviour and is only correct for aggregate reads.
+    """
+    if run_id is ANY_RUN:
+        return "", []
+    if run_id is None:
+        return " AND run_id IS NULL", []
+    return " AND run_id = ?", [run_id]
+
+
+def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str,
+                          token_id: Optional[str], run_id: Any = ANY_RUN):
+    scope, scope_args = run_scope_sql(run_id)
     if market == 'polymarket':
         cursor.execute(
             """
             SELECT quantity, entry_price
             FROM positions
             WHERE agent_id = ? AND market = ? AND token_id = ?
-            """,
-            (agent_id, market, token_id),
+            """ + scope,
+            (agent_id, market, token_id, *scope_args),
         )
     else:
         cursor.execute(
@@ -585,8 +608,8 @@ def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str, 
             SELECT quantity, entry_price
             FROM positions
             WHERE agent_id = ? AND symbol = ? AND market = ?
-            """,
-            (agent_id, symbol, market),
+            """ + scope,
+            (agent_id, symbol, market, *scope_args),
         )
     return cursor.fetchone()
 

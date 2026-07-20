@@ -43,6 +43,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+import trading_runs
 from database import begin_write_transaction, get_db_connection
 from trading_runs import (
     STATUS_ARMED,
@@ -442,6 +443,14 @@ def _simple_transition(run: dict, target: str, reason: str,
         if clear_active_key:
             sets += ", active_key = NULL, stopped_at = ?"
             args.append(_now_iso())
+            # Mirror of trading_runs._transition: release any position the run
+            # still holds back to the unowned book, so the owner can still
+            # close it by hand. `run_id` marks an ACTIVE run's book now that
+            # sibling runs share a symbol, and every non-run reader filters on
+            # `run_id IS NULL`.
+            cursor.execute(
+                "UPDATE positions SET run_id = NULL WHERE run_id = ? AND agent_id = ?",
+                (run["id"], run["agent_id"]))
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)
@@ -472,9 +481,11 @@ def control_pass() -> dict:
         stops or the clock); FAIL CLOSED on evaluation errors/stale marks
       * stopping: flatten (watcher-convention) or hold; bounded retry then
         the explicit stopped(positions_held) terminal
+    Every active run is first checked for its `active_key` (see
+    _guard_active_key) — a run that lost its exclusivity lock must not trade.
     Returns counters for logs."""
     out = {"armed_started": 0, "stopping_finished": 0, "stops_fired": 0,
-           "eval_failures": 0}
+           "eval_failures": 0, "keys_healed": 0, "keys_conflicted": 0}
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -487,6 +498,8 @@ def control_pass() -> dict:
 
     for run in runs:
         try:
+            if not _guard_active_key(run, out):
+                continue
             if run["status"] == STATUS_ARMED:
                 _control_armed(run, out)
             elif run["status"] in (STATUS_RUNNING, STATUS_PAUSED):
@@ -496,6 +509,104 @@ def control_pass() -> dict:
         except Exception:  # noqa: BLE001
             logger.warning("control pass failed for run %s", run["id"], exc_info=True)
     return out
+
+
+def _guard_active_key(run: dict, out: dict) -> bool:
+    """An active run MUST hold `active_key` — that UNIQUE row is the only
+    thing keeping one agent+market+symbol+filter_key to a single run. Runs
+    that differ in strategy shape may share a symbol (they hold separate
+    `positions` rows); two runs with the SAME shape would race one signal
+    with two books, so exactly one of them may hold the key.
+
+    `start_run` is the only writer and `-> stopped` the only clearer, so a
+    NULL key here means the row was written outside the state machine (a raw
+    DB edit, a half-applied migration, a restore). Reclaim the key when the
+    tuple is free; when another run already owns it this run is the genuine
+    duplicate and must stop trading. Returns False when the caller should
+    skip the run this scan.
+
+    `stopping` is exempt: it takes no entries and only flattens its own
+    run-owned position, so letting it finish is safer than stranding it.
+
+    A run that was already active when the filter key shipped holds the legacy
+    `agent:market:symbol` form. It is upgraded here rather than left alone:
+    a legacy key can never collide with a new-format one, so a genuinely
+    duplicate run would otherwise start alongside it. Migration 0027 does the
+    same rewrite in bulk — this covers databases that do not run alembic."""
+    if run["status"] == STATUS_STOPPING:
+        return True
+    key = trading_runs._active_key(run["agent_id"], run["market"], run["symbol"],
+                                   trading_runs.run_filter_key(run))
+    existing = run.get("active_key")
+    if existing == key:
+        return True
+    if existing:
+        # Legacy (or otherwise stale) key: claim the correctly-formatted one.
+        # Losing the race means a live run already holds this exact strategy
+        # slot, so fall through to the duplicate handling below.
+        if _reclaim_active_key(run, key, from_key=existing):
+            run["active_key"] = key
+            return True
+        out["keys_conflicted"] += 1
+        return _halt_duplicate(run)
+    if not _reclaim_active_key(run, key, from_key=None):
+        out["keys_conflicted"] += 1
+        return _halt_duplicate(run)
+    out["keys_healed"] += 1
+    logger.warning("run %s was active without an exclusivity key — "
+                   "reclaimed %s", run["id"], key)
+    run["active_key"] = key
+    return True
+
+
+def _reclaim_active_key(run: dict, key: str, from_key: Optional[str]) -> bool:
+    """Claim `key` for this run, conditional on its key still being `from_key`
+    (None meaning NULL). False when the UNIQUE index says another live run
+    already holds this exact agent+market+symbol+filter slot."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        if from_key is None:
+            cursor.execute(
+                "UPDATE trading_runs SET active_key = ? WHERE id = ? AND active_key IS NULL",
+                (key, run["id"]))
+        else:
+            cursor.execute(
+                "UPDATE trading_runs SET active_key = ? WHERE id = ? AND active_key = ?",
+                (key, run["id"], from_key))
+        conn.commit()
+        return cursor.rowcount == 1
+    except Exception:  # noqa: BLE001 — UNIQUE(active_key): another run owns it
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+    finally:
+        conn.close()
+
+
+def _halt_duplicate(run: dict) -> bool:
+    """Stop (armed) or pause (running) a run whose strategy slot is taken.
+    Always returns False — the caller must skip this run."""
+    # armed -> paused is not a legal transition; armed -> stopped is. The
+    # stopped branch reuses clear_active_key purely to stamp stopped_at.
+    if run["status"] == STATUS_ARMED:
+        halted = _simple_transition(run, STATUS_STOPPED, "duplicate_active_key",
+                                    clear_active_key=True)
+    else:
+        halted = _simple_transition(run, STATUS_PAUSED, "duplicate_active_key",
+                                    extra_sets="paused_reason = ?",
+                                    extra_args=("duplicate_active_key",))
+    if halted:
+        _alert_run(run, "run_stopped",
+                   f"Run #{run['id']} halted: duplicate active run",
+                   (f"Another run with the same settings already owns "
+                    f"{run['symbol']} ({run['market']}) for this agent, so this "
+                    "one was halted before it could race the same signal."),
+                   dedupe=f"run:{run['id']}:dup_key")
+    return False
 
 
 def _control_armed(run: dict, out: dict) -> None:
@@ -689,8 +800,10 @@ def _control_stopping(run: dict, out: dict) -> None:
         return
 
     if not run.get("stop_flatten"):
-        # hold: the position stays under the SL/TP watcher, still stamped
-        # with run_id so later watcher closes attribute correctly
+        # hold: the position stays under the SL/TP watcher, and the stop
+        # releases its run_id back to the unowned book — a finished run must
+        # not keep the owner from closing by hand. Realized P&L up to the stop
+        # is already cached on the run.
         if _simple_transition(run, STATUS_STOPPED, "positions_held",
                               clear_active_key=True):
             out["stopping_finished"] += 1
@@ -904,12 +1017,16 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
     return None
 
 
-def _position_quantity(agent_id: int, market: str, symbol: str) -> float:
-    """Signed position quantity (negative = short book), 0.0 when flat."""
+def _position_quantity(agent_id: int, market: str, symbol: str,
+                       run_id: Optional[int]) -> float:
+    """Signed position quantity in THIS run's book (negative = short), 0.0
+    when flat. Scoped by run_id: a sibling run on the same symbol keeps its
+    own row, and reading the combined book would invert the futures
+    buy/sell -> short/cover remap."""
     from routes_shared import get_position_snapshot
     conn = get_db_connection()
     try:
-        pos = get_position_snapshot(conn.cursor(), agent_id, market, symbol, None)
+        pos = get_position_snapshot(conn.cursor(), agent_id, market, symbol, None, run_id)
         return float(pos["quantity"]) if pos else 0.0
     finally:
         conn.close()
@@ -961,7 +1078,8 @@ def run_cycle(run_id: int) -> dict:
         # path ever emits 'short', so a futures run could never trade. Spot
         # runs are untouched — a spot 'sell' still only reduces a long.
         if (run.get("market_type") or "spot") == "futures" and action in ("buy", "sell"):
-            pos_qty = _position_quantity(run["agent_id"], run["market"], run["symbol"])
+            pos_qty = _position_quantity(run["agent_id"], run["market"], run["symbol"],
+                                         run["id"])
             if action == "sell" and pos_qty <= 0:
                 action = "short"
             elif action == "buy" and pos_qty < 0:
