@@ -111,6 +111,17 @@ ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202 "
 "
 ```
 
+> **Migrations are automatic and now serialized.** On MySQL both the backend and the worker run
+> `alembic upgrade head` at boot (`database.run_migrations()`). Because this runbook starts them
+> together, they would otherwise race the same DDL on any deploy carrying a migration. Since
+> 2026-07-20 the upgrade is wrapped in a MySQL `GET_LOCK` advisory lock — server-side, so it
+> coordinates across containers (the worker's `fcntl` lock is inside its own container and cannot).
+> Verified: a second container blocked 12.2s while the first held the lock, then proceeded.
+>
+> **Rollback is still not symmetric.** Re-pointing `SOOPPIY_IMAGE` at an older tag does NOT undo an
+> applied migration, and older code may not run against the newer schema. For a deploy that carries
+> a migration, plan the down-path before you start — a tag rollback alone is not a rollback.
+
 #### Verify the deploy actually landed
 
 Run all three. Any mismatch means the deploy is half-applied — fix it before walking away.
