@@ -315,11 +315,11 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       {sectionTitle({ ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' })}
       <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
         {tr(language, {
-          ko: '알림 종류별로 켜고 끄고, 각각 이메일·SMS 전송을 선택할 수 있습니다. 받은 알림은 알림함에서 볼 수 있습니다.',
-          en: 'Switch each kind of notification on or off, and choose email/SMS delivery per kind. Everything you receive is listed in your notification centre.',
-          ja: '通知の種類ごとにオン・オフし、メール・SMS配信を選べます。受信した通知は通知センターで確認できます。',
-          th: 'เปิด/ปิดการแจ้งเตือนแต่ละประเภท และเลือกส่งทางอีเมล/SMS แยกกัน ดูทั้งหมดได้ในศูนย์แจ้งเตือน',
-          vi: 'Bật/tắt từng loại thông báo và chọn gửi email/SMS riêng. Tất cả hiển thị trong trung tâm thông báo.',
+          ko: '알림 종류별로 켜고 끕니다. 켠 종류는 이메일과 SMS로 함께 전송됩니다. 받은 알림은 알림함에서 볼 수 있습니다.',
+          en: 'Switch each kind of notification on or off. A kind you switch on is delivered to both your email and your phone. Everything you receive is listed in your notification centre.',
+          ja: '通知の種類ごとにオン・オフします。オンにした種類はメールとSMSの両方に配信されます。受信した通知は通知センターで確認できます。',
+          th: 'เปิด/ปิดการแจ้งเตือนแต่ละประเภท ประเภทที่เปิดจะส่งทั้งอีเมลและ SMS ดูทั้งหมดได้ในศูนย์แจ้งเตือน',
+          vi: 'Bật/tắt từng loại thông báo. Loại đã bật sẽ được gửi cả qua email và SMS. Tất cả hiển thị trong trung tâm thông báo.',
         })}
         {' '}
         <Link to="/notifications" style={{ color: 'var(--accent-primary)' }}>
