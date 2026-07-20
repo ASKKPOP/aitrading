@@ -19,7 +19,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
 
-from analysis_agents import run_analysis
+from analysis_agents import normalize_lang, run_analysis
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
@@ -99,7 +99,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not symbol:
             raise HTTPException(status_code=400, detail="symbol is required")
         market = (data.market or "us-stock").strip().lower()
-        lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
+        lang = normalize_lang(data.lang)
 
         try:
             result = await asyncio.to_thread(
@@ -128,7 +128,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not symbol:
             raise HTTPException(status_code=400, detail="symbol is required")
         market = (data.market or "us-stock").strip().lower()
-        lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
+        lang = normalize_lang(data.lang)
 
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
@@ -203,7 +203,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         if market not in markets.automatable_markets():
             allowed = ", ".join(markets.automatable_markets())
             raise HTTPException(status_code=400, detail=f"market must be one of: {allowed}")
-        lang = "th" if (data.lang or "en").lower().startswith("th") else "en"
+        lang = normalize_lang(data.lang)
 
         import analysis_jobs
         return await asyncio.to_thread(

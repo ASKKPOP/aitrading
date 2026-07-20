@@ -21,7 +21,6 @@ from __future__ import annotations
 import contextvars
 import json
 import logging
-import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
@@ -200,13 +199,29 @@ def _gather_fundamentals_macro(symbol: str, market: str) -> dict[str, Any]:
     return out
 
 
+# ─────────────────────────── output language ───────────────────────────
+
+# The UI ships five languages (frontend i18n.ts); the analyst briefs and the
+# trader report are the only free-text the LLM writes, so they have to follow
+# the same top-bar selection. Anything unknown falls back to English.
+LANG_NAMES = {"ko": "Korean", "en": "English", "ja": "Japanese",
+              "th": "Thai", "vi": "Vietnamese"}
+
+
+def normalize_lang(value: Optional[str]) -> str:
+    """Map a UI language code (possibly a full locale like 'ko-KR') to a
+    supported code. Unknown values become 'en'."""
+    code = (value or "en").strip().lower().replace("_", "-").split("-")[0]
+    return code if code in LANG_NAMES else "en"
+
+
 # ─────────────────────────── analyst briefs ───────────────────────────
 
 def _brief(role: str, instructions: str, data: dict[str, Any], lang: str) -> str:
     """Ask the LLM for a short brief; fall back to a compact data dump."""
     if not llm_configured():
         return _fallback_brief(role, data)
-    lang_line = "Write in Thai." if lang == "th" else "Write in English."
+    lang_line = f"Write in {LANG_NAMES[normalize_lang(lang)]}."
     prompt = (
         f"You are the {role} on a trading desk. {instructions}\n"
         f"{lang_line} Be concrete and under 90 words. No disclaimers, no bullet lists.\n\n"
@@ -308,15 +323,64 @@ def _rule_based_decision(technical: dict[str, Any], news: dict[str, Any]) -> dic
             "target": None, "stop": None, "rationale": rationale, "report": rationale}
 
 
+def _json_objects(text: str) -> list[dict[str, Any]]:
+    """Every top-level JSON object in `text`, in order.
+
+    A single greedy `\\{.*\\}` breaks whenever the model answers with more than
+    one object (e.g. the decision fields and the report emitted separately):
+    the match spans both, json.loads raises, and the caller falls back to
+    dumping the raw text into the report. Scanning brace depth — while
+    respecting string literals — parses each object on its own instead."""
+    out: list[dict[str, Any]] = []
+    depth = 0
+    start = -1
+    in_str = False
+    escaped = False
+    for i, ch in enumerate(text):
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth == 0:
+                continue
+            depth -= 1
+            if depth == 0:
+                try:
+                    obj = json.loads(text[start:i + 1])
+                except Exception:  # noqa: BLE001
+                    continue
+                if isinstance(obj, dict):
+                    out.append(obj)
+    return out
+
+
+def _merged_json_object(text: str) -> Optional[dict[str, Any]]:
+    """One dict from every JSON object in `text`, so an answer split across
+    objects ({"action":...} then {"report":...}) still reads as one payload.
+    Earlier keys win; later objects only fill in what is missing."""
+    merged: dict[str, Any] = {}
+    for part in _json_objects(text):
+        for key, value in part.items():
+            merged.setdefault(key, value)
+    return merged or None
+
+
 def _parse_decision_json(text: str) -> Optional[dict[str, Any]]:
     if not text:
         return None
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        return None
-    try:
-        obj = json.loads(match.group(0))
-    except Exception:  # noqa: BLE001
+    obj = _merged_json_object(text)
+    if obj is None:
         return None
     action = str(obj.get("action", "")).lower()
     if action not in VALID_ACTIONS:
@@ -346,7 +410,7 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           memory: str = "") -> dict[str, Any]:
     if not llm_configured():
         return _rule_based_decision(technical, news)
-    lang_line = "Write the rationale and report in Thai." if lang == "th" else "Write the rationale and report in English."
+    lang_line = f"Write the rationale and report in {LANG_NAMES[normalize_lang(lang)]}."
     prompt = (
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
         f"decide whether to BUY, SELL, or HOLD {symbol} ({market}).\n"
@@ -411,12 +475,8 @@ def _verify_mode() -> str:
 def _parse_verification_json(text: str) -> Optional[dict[str, Any]]:
     if not text:
         return None
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        return None
-    try:
-        obj = json.loads(match.group(0))
-    except Exception:  # noqa: BLE001
+    obj = _merged_json_object(text)
+    if obj is None:
         return None
     verdict = str(obj.get("verdict", "")).lower()
     if verdict not in VERIFY_VERDICTS:
