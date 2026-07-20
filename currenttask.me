@@ -1,0 +1,143 @@
+# currenttask.me — handoff for the next session
+
+Written 2026-07-20 by the previous Claude session. Everything below was verified
+against production, not assumed. Read "Open items" first — that is the work.
+
+---
+
+## Where things stand
+
+**Production is healthy.** sooppiy.com serving, both containers up with zero
+restarts, no errors in logs.
+
+- prod image: `sooppiy-backend:20260720-revertmerge`
+- alembic on prod MySQL: **0025 (head)**
+- `main` HEAD when this was written: `fbc0a69`
+- Social collector: **ENABLED**, collecting real data every 30 min
+
+Three or more Claude sessions work this same checkout and deploy the same box.
+Always `git fetch` and re-check the prod image tag before assuming anything.
+
+---
+
+## Shipped and live (Plan 11 batch, all on prod)
+
+| Feature | Commit | What it does |
+|---|---|---|
+| Top-5 symbol universe | `424df3d`, `0403b6d` | Full-delegation + simple modes trade only the top 5 by 24h USD volume + mention popularity. `service/server/top_symbols.py`, `GET /api/markets/top-symbols` |
+| LLM usage metering | `10648d3` | Token/cost captured per call in `llm_usage`; monthly cost panel in Settings. System-wide totals owner-only (`DOCS_OWNER_EMAILS`) |
+| Zenix-style /positions | `2a0c5aa` | 4 tabs (positions / open orders / order history / trade history). Added `stop_loss`/`take_profit` to `/api/positions`, new `GET /api/positions/trades` |
+| Mobile landing header | `2050566` | Only 가입하기 below 700px; was overflowing |
+| Analysis memory | `9a90807` | Distills durable lessons into `agent_memory`, recalls them into decision + verify prompts. `ANALYSIS_MEMORY_ENABLED` (default on) |
+| Social collection | `820dd9f`, `4249891` | 30-min worker, FB for SEA / X elsewhere, 7-day raw retention, `GET /api/social/sentiment` |
+| Desktop top bar | `7ffdc4c`, `8951d65` | Menu left, account cluster right; sidebar is mobile-only |
+
+Migrations added: `0024_llm_usage`, `0025_social_feed`.
+
+## Reverted — do not redo without asking
+
+`fbc0a69` reverts `2f430c8` + `61bfd98`: the merge of `/monitor` into
+`/automation` (one page, 3 levels). Henry judged it **the wrong direction** and
+asked for the rollback. `/monitor` and `/automation` are separate again with the
+original four modes. The work is recoverable from those commits if he ever
+changes his mind — do not re-attempt it unprompted.
+
+---
+
+## Open items
+
+### 1. Social feed is running on a fallback, not on Facebook/X
+Henry must create the credentials himself — X needs a paid API plan and Facebook
+needs an app review, both tied to his identity. **Do not attempt to register
+developer accounts on his behalf.**
+
+Until then both regions fall back to the keyless public StockTwits stream, which
+does collect real data (first prod cycle: 150 posts across the top-5). Adding
+`X_BEARER_TOKEN` or `FACEBOOK_ACCESS_TOKEN` + `SOCIAL_FACEBOOK_PAGES` to
+`~/sooppiy/.env` flips that region to its primary automatically — no code change.
+`SOCIAL_KEYLESS_FALLBACK=false` disables the fallback.
+
+### 2. Run auto-restart — DESIGN DECISION PENDING, do not build yet
+Henry asked: when a run stops, automatically create a new one with the same
+settings. He was asked to choose a scope and **dismissed the question**, so it is
+unresolved. Do not implement on a guess — two of the three readings silently
+disable protections he already has:
+
+- Goal-reached stops (`profit_target`, `max_trades`, `at_time`) — safe to restart
+- Protective stops (`max_loss`, `synthetic_liquidation`, `stop_eval_failed`,
+  errors) — restarting re-enters the same losing setup and turns his max-loss
+  into a repeating loss
+- `user_stop` — restarting makes the Stop button useless; the run resurrects
+
+Stop reasons are produced by `_evaluate_stop` in `service/server/run_engine.py`.
+
+### 3. AutomationPage sends a stale agent token (pre-existing, real)
+`service/frontend/src/pages/AutomationPage.tsx` captures the claw token once at
+mount with a **setter-less** `useState`. `App` rotates the agent token
+(`linkAgent`, and the 401 re-link path), after which that page keeps sending the
+old value and its own calls — the rules list — 401 **silently**, rendering as an
+empty page rather than an error. `MonitorPage` is immune because `App` passes it
+a live token prop.
+
+Deliberately left unfixed so a bug fix was not smuggled into a revert. Fix =
+give the state a setter and sync it (focus + `storage` event + short interval).
+
+### 4. Monitoring page does not show live runs
+`/monitor` reads `/api/automation/runs` (rule executions) and never reads
+`/api/runs` (Plan 10 live runs). Henry's account currently has 0 rules but **4
+live runs, one running BTC**, so the board reads all zeros while the system is
+actually working. This predates all of today's work. Likely the real reason
+monitoring has felt empty to him.
+
+### 5. `main` is red on the Security workflow
+Went green → red at `de8a275`, a **docs-only** commit from another session, so it
+is almost certainly a newly published CVE tripping `pip-audit` rather than a code
+change (a docs commit cannot change dependencies). Verified: no credentials in
+the new QA docs, and `npm audit` is clean. GitHub's Actions API was 503-ing so
+the failure log was never read — start there.
+
+### 6. Pre-existing test noise
+`pytest` → **1430 passed, 0 failures**, plus **14 errors** in
+`sdk/python/tests/test_client.py` from a missing `pytest-httpx` fixture. Confirmed
+identical before today's work. Not a regression; ignore or install the fixture.
+
+---
+
+## Things that will bite you
+
+**Verify behaviour, not labels.** A page whose every API call 401s still renders
+all its section headings. Checking that headings appear "passed" a completely
+unusable page in this session. Assert on real values, or read the network.
+
+**The SPA catch-all used to swallow `/api/*`.** Fixed in `ade4e53`, but older
+smoke checks that curl'd a wrong API path and got `200` were measuring the HTML
+fallback, not the API. `/api/leaderboard` 404 is correct — it was never a route.
+
+**Publish the SPA separately.** Host nginx serves `/usr/share/nginx/sooppiy`;
+building the image is not enough for a frontend change, and you must
+`sudo restorecon -R /usr/share/nginx/sooppiy` afterwards or SELinux 500s the site.
+
+**Build the deploy package with `git archive`, never macOS `tar`** — bsdtar emits
+AppleDouble `._*` files that corrupt sources under GNU tar. Check
+`find /tmp/app-new -name "._*" | wc -l` = 0.
+
+**Diff prod against main before replacing `app/`.** Other sessions deploy this
+box; prod has been ahead of main before. md5-diff both trees and confirm every
+differing file is one you touched.
+
+Full procedure, hazards and rollback: see the deploy runbook in `docs/` and the
+project memory `sooppiy-deploy-procedure`.
+
+---
+
+## Access
+
+- SSH: `~/shell/sierrabiolab/dev.sh` → `ec2-user@52.9.147.202`, app in
+  `/home/ec2-user/sooppiy`
+- Prod env: single `~/sooppiy/.env` (mode 600). Do **not** recreate
+  backend.env/worker.env — they were deliberately merged into it.
+- Prod QA account: `info@askkpop.com` (user 5, agent 6). The **user** password is
+  known to Henry; the **agent** password is not `test`, so analysis endpoints
+  (which need a `claw_` token) cannot be driven from it. Do not reset a real
+  account's credentials to work around this.
+- No secrets are recorded in this file by design.
