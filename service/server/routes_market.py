@@ -1,14 +1,16 @@
 from typing import Optional
 
+import json as _json
 import re
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
 _FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
+from utils import _extract_token
 from market_intel import (
     get_etf_flows_payload,
     get_featured_stock_analysis_payload,
@@ -281,6 +283,88 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
             return await run_in_threadpool(
                 _cached_market_payload, f'top-symbols:limit={safe_limit}', _build)
         except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
+    @app.post('/api/markets/suggest-symbol')
+    async def suggest_symbol(authorization: str = Header(None)):
+        """Let the AI choose which symbol to trade from the ranked candidates.
+
+        ONE brief-tier call, not the 4-analyst pipeline: a symbol picker that
+        takes 30-90s is not a symbol picker. The model only ever chooses from
+        the candidate list, and a reply naming anything else is discarded in
+        favour of the top-ranked candidate — the AI may rank, never invent.
+
+        Metered to the caller (the usage shows up in their AI spend panel), and
+        fail-soft: if the LLM is unconfigured or unparseable the ranked leader
+        is returned with `by_ai=false` so the button always does something.
+        """
+        from services import _get_agent_by_token
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token) if token else None
+        if not agent:
+            raise HTTPException(status_code=401, detail='Agent token required')
+
+        def _build():
+            from top_symbols import get_top_symbols
+            candidates = get_top_symbols(5)
+            if not candidates:
+                raise HTTPException(status_code=503, detail='No candidates available')
+            fallback = candidates[0]['symbol'].removesuffix('USDT')
+
+            from llm_client import LlmContext, llm_configured, reset_llm_context, set_llm_context
+            if not llm_configured():
+                return {'symbol': fallback, 'reason': '', 'by_ai': False,
+                        'candidates': candidates}
+
+            lines = []
+            for c in candidates:
+                bits = [f"{c['symbol'].removesuffix('USDT')}",
+                        f"price ${c['last_price']}",
+                        f"24h volume ${c['volume_24h_usd']:,.0f}"]
+                if c.get('mention_rate_per_hour'):
+                    bits.append(f"social mentions/hour {c['mention_rate_per_hour']:.1f}")
+                lines.append(' · '.join(bits))
+            allowed = [c['symbol'].removesuffix('USDT') for c in candidates]
+            prompt = (
+                "You pick ONE crypto symbol to start an automated trading run on, from "
+                "the candidates below. Judge which currently offers the best risk-adjusted "
+                "opportunity for a short-horizon systematic strategy — consider liquidity "
+                "(volume), whether attention looks like early interest or a crowded late "
+                "move, and how stretched the price looks.\n\n"
+                + '\n'.join(f"- {ln}" for ln in lines)
+                + f"\n\nChoose strictly from: {', '.join(allowed)}\n"
+                'Reply with ONLY a JSON object: '
+                '{"symbol":"<one of the listed>","reason":"<max 15 words, plain language>"}'
+            )
+            ctx = LlmContext(source='rule', user_id=agent.get('user_id'), agent_id=agent['id'])
+            tok = set_llm_context(ctx)
+            try:
+                from llm_client import generate_text
+                text = generate_text(prompt, max_tokens=120, temperature=0.3, tier='brief')
+            finally:
+                reset_llm_context(tok)
+
+            symbol, reason = fallback, ''
+            try:
+                raw = (text or '').strip()
+                start, end = raw.find('{'), raw.rfind('}')
+                if start >= 0 and end > start:
+                    parsed = _json.loads(raw[start:end + 1])
+                    picked = str(parsed.get('symbol') or '').strip().upper()
+                    # never let the model invent a symbol we cannot price
+                    if picked in allowed:
+                        symbol = picked
+                        reason = str(parsed.get('reason') or '').strip()[:160]
+            except Exception:  # noqa: BLE001 — unparseable reply falls back
+                pass
+            return {'symbol': symbol, 'reason': reason,
+                    'by_ai': bool(reason), 'candidates': candidates}
+
+        try:
+            return await run_in_threadpool(_build)
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=503, detail=str(exc))
 
     @app.get('/api/markets/crypto/tickers')

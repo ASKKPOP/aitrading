@@ -34,6 +34,31 @@ function loadLists(): Promise<SymbolLists> {
   return listsPromise
 }
 
+// Volume-ranked picks (same source the AI auto-pick modes rank from). Shown as
+// the first optgroup so the handful of symbols actually worth trading today are
+// reachable without scrolling past ~230 alphabetical tickers.
+let topCache: string[] | null = null
+let topPromise: Promise<string[]> | null = null
+
+function loadTopSymbols(): Promise<string[]> {
+  if (topCache) return Promise.resolve(topCache)
+  if (!topPromise) {
+    topPromise = fetch(`${API_BASE}/markets/top-symbols`)
+      .then(r => r.json())
+      .then((d): string[] => {
+        // the endpoint speaks OKX pair form (BTCUSDT); the pickers speak base
+        // symbols (BTC) unless variant='pair'
+        const list: string[] = (Array.isArray(d.symbols) ? d.symbols : [])
+          .map((s: any) => String(s?.symbol || ''))
+          .filter(Boolean)
+        topCache = list
+        return list
+      })
+      .catch((): string[] => { topPromise = null; return [] })
+  }
+  return topPromise
+}
+
 let polyCache: Option[] | null = null
 let polyPromise: Promise<Option[]> | null = null
 
@@ -69,6 +94,7 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
   disabled?: boolean
 }) {
   const [options, setOptions] = useState<Option[]>([])
+  const [top, setTop] = useState<string[]>([])
 
   useEffect(() => {
     let alive = true
@@ -88,6 +114,12 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
         else symbols = [...lists.crypto, ...lists.stock.filter(s => !lists.crypto.includes(s))]
         setOptions(symbols.map(s => ({ value: s, label: s })))
       })
+      // Ranking is crypto-only; stock/forex lists are short enough to scan.
+      if (m.includes('crypto') || variant === 'pair') {
+        loadTopSymbols().then(t => { if (alive) setTop(t) })
+      } else {
+        setTop([])
+      }
     }
     return () => { alive = false }
   }, [market, variant])
@@ -96,6 +128,21 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
   const opts = value && !options.some(o => o.value === value)
     ? [{ value, label: value }, ...options]
     : options
+
+  // Split into "ranked now" and "everything else". Matching is done on the base
+  // symbol so the pair-form ranking (BTCUSDT) also lights up a base-form list
+  // (BTC); an entry that is ranked but absent from the list is dropped rather
+  // than invented, so the picker can never offer an unfetchable symbol.
+  const base = (s: string) => s.replace(/USDT$|USD$/, '')
+  const rankedSet = new Set(top.map(base))
+  const ranked = top.length
+    ? opts.filter(o => rankedSet.has(base(o.value)))
+    : []
+  const rest = ranked.length
+    ? opts.filter(o => !ranked.some(r => r.value === o.value))
+    : opts
+
+  const opt = (o: Option) => <option key={o.value} value={o.value}>{o.label}</option>
 
   return (
     <select
@@ -107,7 +154,14 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
       onChange={e => onChange(e.target.value)}
     >
       <option value="">{placeholder ?? '—'}</option>
-      {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      {ranked.length > 0 && (
+        <optgroup label="🔥 지금 거래량 상위 · Top by volume now">
+          {ranked.map(opt)}
+        </optgroup>
+      )}
+      {ranked.length > 0
+        ? <optgroup label={`전체 · All (${rest.length})`}>{rest.map(opt)}</optgroup>
+        : rest.map(opt)}
     </select>
   )
 }

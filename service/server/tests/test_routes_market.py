@@ -201,5 +201,103 @@ class CryptoMarketRouteTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 503)
 
 
+class SuggestSymbolTests(unittest.TestCase):
+    """POST /api/markets/suggest-symbol — the AI picks which symbol to trade."""
+
+    CANDIDATES = [
+        {"symbol": "ETHUSDT", "last_price": 1860.0, "volume_24h_usd": 5.6e9},
+        {"symbol": "BTCUSDT", "last_price": 64000.0, "volume_24h_usd": 4.6e9},
+        {"symbol": "SOLUSDT", "last_price": 76.0, "volume_24h_usd": 5.1e8,
+         "mention_rate_per_hour": 12.5},
+    ]
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "pick-agent", "password": "pw123",
+                                   "initial_balance": 10000.0})
+        self.h = {"Authorization": f"Bearer {r.json()['token']}"}
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def _call(self, llm_reply: str, configured: bool = True):
+        with patch("top_symbols.get_top_symbols", return_value=list(self.CANDIDATES)), \
+                patch("llm_client.llm_configured", return_value=configured), \
+                patch("llm_client.generate_text", return_value=llm_reply):
+            return self.client.post("/api/markets/suggest-symbol", headers=self.h)
+
+    def test_requires_an_agent_token(self):
+        self.assertEqual(
+            self.client.post("/api/markets/suggest-symbol").status_code, 401)
+
+    def test_returns_the_models_choice_with_its_reason(self):
+        r = self._call('{"symbol":"BTC","reason":"deepest liquidity"}')
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        # the model picked BTC over the volume leader ETH — the ranking must not
+        # override a genuine choice
+        self.assertEqual(body["symbol"], "BTC")
+        self.assertEqual(body["reason"], "deepest liquidity")
+        self.assertTrue(body["by_ai"])
+
+    def test_a_symbol_outside_the_candidate_list_is_refused(self):
+        """The model may rank, never invent — an unlisted symbol would create a
+        run on something the price feed cannot quote."""
+        r = self._call('{"symbol":"DOGECOIN9000","reason":"to the moon"}')
+        body = r.json()
+        self.assertEqual(body["symbol"], "ETH", "must fall back to the ranking leader")
+        self.assertFalse(body["by_ai"])
+        self.assertEqual(body["reason"], "")
+
+    def test_unparseable_reply_falls_back_without_erroring(self):
+        r = self._call("I think maybe Bitcoin? Not sure.")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["symbol"], "ETH")
+        self.assertFalse(r.json()["by_ai"])
+
+    def test_prose_wrapped_json_is_still_parsed(self):
+        r = self._call('Sure! {"symbol":"SOL","reason":"rising mentions"} hope that helps')
+        self.assertEqual(r.json()["symbol"], "SOL")
+        self.assertTrue(r.json()["by_ai"])
+
+    def test_no_llm_configured_returns_the_ranking_leader_not_an_error(self):
+        r = self._call("", configured=False)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["symbol"], "ETH")
+        self.assertFalse(r.json()["by_ai"])
+
+    def test_no_candidates_is_a_503_not_a_bad_pick(self):
+        with patch("top_symbols.get_top_symbols", return_value=[]):
+            r = self.client.post("/api/markets/suggest-symbol", headers=self.h)
+        self.assertEqual(r.status_code, 503)
+
+    def test_the_call_runs_under_the_calling_agents_identity(self):
+        """Spend must land in that agent's AI usage rather than floating free,
+        so assert on the context the LLM call actually sees."""
+        from llm_client import current_llm_context
+        seen = {}
+
+        def _capture(*_a, **kw):
+            ctx = current_llm_context()
+            seen["agent_id"] = ctx.agent_id if ctx else None
+            seen["tier"] = kw.get("tier")
+            return '{"symbol":"BTC","reason":"x"}'
+
+        with patch("top_symbols.get_top_symbols", return_value=list(self.CANDIDATES)), \
+                patch("llm_client.llm_configured", return_value=True), \
+                patch("llm_client.generate_text", side_effect=_capture):
+            r = self.client.post("/api/markets/suggest-symbol", headers=self.h)
+
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNotNone(seen.get("agent_id"), "call must carry the agent identity")
+        # brief tier, not the 30-90s analyst pipeline — a slow picker is useless
+        self.assertEqual(seen.get("tier"), "brief")
+
+
 if __name__ == "__main__":
     unittest.main()

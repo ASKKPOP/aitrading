@@ -339,9 +339,12 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       {showCreate && (
         <div role="dialog" aria-modal="true" aria-label={T.newRun}
           onClick={() => setShowCreate(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.55)',
+          // The sticky top nav is z-index 500; at 60 this overlay rendered
+          // UNDER it and the nav covered the modal's first ~32px, so the
+          // symbol/market row was unreachable. Dialogs must outrank the nav.
+          style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)',
             display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-            padding: 24, overflowY: 'auto' }}>
+            padding: '32px 24px 24px', overflowY: 'auto' }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 900, margin: 'auto' }}>
             <CreateRunForm token={token}
@@ -422,7 +425,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
 
       {conflict && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600 }}>
           <div style={{ width: 'min(440px, calc(100% - 32px))', background: 'var(--bg-card,#fff)',
             border: '1px solid var(--border-color,rgba(0,0,0,0.15))', borderRadius: 12,
             padding: 20 }}>
@@ -517,7 +520,7 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, langu
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.45)', display: 'flex', justifyContent: 'flex-end', zIndex: 50 }}>
+      background: 'rgba(0,0,0,0.45)', display: 'flex', justifyContent: 'flex-end', zIndex: 600 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px, 100%)',
         height: '100%', overflowY: 'auto', background: 'var(--bg-primary,#fff)',
         borderLeft: '1px solid var(--border-color,rgba(0,0,0,0.1))', padding: 20 }}>
@@ -650,6 +653,42 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
   })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // "AI pick": the model chooses among the ranked candidates and says why.
+  // One brief-tier call (see /api/markets/suggest-symbol) — the full analyst
+  // pipeline takes 30-90s, which is unusable for a picker. Falls back to the
+  // ranking leader when the LLM is unconfigured or unparseable, and the reason
+  // line distinguishes the two so the button never implies thinking that did
+  // not happen.
+  const [picking, setPicking] = useState(false)
+  const [pickWhy, setPickWhy] = useState('')
+
+  async function pickTopSymbol() {
+    setPicking(true)
+    try {
+      const r = await fetch(`${API_BASE}/markets/suggest-symbol`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!r.ok) throw new Error(String(r.status))
+      const d = await r.json()
+      if (!d?.symbol) throw new Error('empty')
+      setF((prev) => ({ ...prev, symbol: String(d.symbol) }))
+      setPickWhy(d.by_ai && d.reason
+        ? `🧠 ${d.reason}`
+        : tr(language, {
+            ko: '거래량 상위 종목입니다 (AI 응답이 없어 순위로 선택).',
+            en: 'Top-ranked by volume (AI was unavailable, so the ranking chose).',
+            ja: '出来高上位銘柄です（AI応答がないためランキングで選択）。',
+            th: 'อันดับสูงสุดตามปริมาณ (AI ไม่ตอบ จึงใช้การจัดอันดับ)',
+            vi: 'Xếp hạng đầu theo khối lượng (AI không phản hồi nên dùng xếp hạng).' }))
+    } catch {
+      setPickWhy(tr(language, {
+        ko: '추천을 가져오지 못했습니다 — 직접 선택하세요.',
+        en: 'Could not get a suggestion — pick one yourself.',
+        ja: '推奨を取得できませんでした — 手動で選択してください。',
+        th: 'ขอคำแนะนำไม่สำเร็จ — เลือกเอง',
+        vi: 'Không lấy được gợi ý — hãy tự chọn.' }))
+    } finally { setPicking(false) }
+  }
   // Submit runs three sequential requests; stage names which one is in flight so
   // the user sees progress instead of a silently disabled button.
   const [stage, setStage] = useState(0)
@@ -734,11 +773,25 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }}>
       <div style={{ display: 'grid', gap: 12,
         gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-        <label style={field}>{lbl({ ko: '심볼', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
+        <label style={field}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+            {lbl({ ko: '심볼', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
+            {f.market === 'crypto' && (
+              <button type="button" onClick={pickTopSymbol} disabled={picking}
+                style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer',
+                  fontSize: 11, color: 'var(--accent-primary,#c26a45)', fontWeight: 600 }}>
+                🔍 {lbl({ ko: 'AI 추천', en: 'AI pick', ja: 'AI 推奨',
+                  th: 'AI แนะนำ', vi: 'AI chọn' })}
+              </button>
+            )}
+          </span>
           <SymbolSelect style={input} market={f.market} value={f.symbol}
-            onChange={(symbol) => setF({ ...f, symbol })}
+            onChange={(symbol) => { setF({ ...f, symbol }); setPickWhy('') }}
             placeholder={lbl({ ko: '종목 선택', en: 'Select symbol', ja: '銘柄を選択',
-              th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })} /></label>
+              th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })} />
+          {pickWhy && <span style={{ fontSize: 10.5, color: 'var(--text-muted,#8a8073)',
+            lineHeight: 1.4 }}>{pickWhy}</span>}
+        </label>
         <label style={field}>{lbl({ ko: '시장', en: 'Market', ja: '市場', th: 'ตลาด', vi: 'Thị trường' })}
           <select style={input} value={f.market}
             onChange={(e) => setF({ ...f, market: e.target.value, symbol: '',

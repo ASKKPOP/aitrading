@@ -341,7 +341,10 @@ export function AdminPage() {
     s === 'active' ? '#22c55e' : s === 'pending' ? '#eab308' : s === 'rejected' ? '#ef4444' : 'var(--text-muted,#8a8073)'
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
+    // The console renders on its own domain with no top nav above it, so the
+    // heading sat 24px from the viewport edge and read as clipped. Give it real
+    // breathing room at the top.
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 16px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>🔐 {T.title}</h1>
         <span style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)' }}>{me?.email} · {me?.role}</span>
