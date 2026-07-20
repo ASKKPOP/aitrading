@@ -272,6 +272,21 @@ def filter_key(market_type: Optional[str], cfg: dict) -> str:
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:10]
 
 
+def is_futures_book(market: Optional[str], market_type: Optional[str]) -> bool:
+    """Whether a run's positions behave as a futures book — a 'sell' with no
+    long open opens a short rather than being a no-op.
+
+    Two independent axes converge here, which is exactly the naming collision
+    plan 13 phase 3 called out. `market_type` ('spot' | 'futures') separates
+    crypto spot from crypto perpetuals and predates the CME market entirely;
+    `market` now has a genuinely-futures member of its own. Either one makes
+    the book short-capable, so this is a named predicate rather than a string
+    compare scattered across the engine.
+    """
+    return ((market_type or "spot").strip().lower() == "futures"
+            or (market or "").strip().lower() == "futures")
+
+
 def _active_key(agent_id: int, market: str, symbol: str, fkey: str) -> str:
     return f"{agent_id}:{market}:{symbol}:{fkey}"
 

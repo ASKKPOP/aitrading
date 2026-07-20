@@ -29,6 +29,7 @@ from backtest_metrics import (
 )
 from database import get_db_connection
 from fees import TRADE_FEE_RATE
+import markets
 
 
 # ---------------------------------------------------------------------------
@@ -41,12 +42,19 @@ class _Position:
     symbol: str
     market: str
     side: str          # 'buy' (long) or 'short'
-    quantity: float
+    quantity: float    # contracts / shares, as the user entered them
     avg_price: float   # average entry price
+    # Notional per point. Quantity stays in contracts so the report reads in the
+    # user's units; every cash and PnL term multiplies through this.
+    multiplier: float = 1.0
 
     @property
     def is_long(self) -> bool:
         return self.side == "buy"
+
+    @property
+    def notional_qty(self) -> float:
+        return self.quantity * self.multiplier
 
 
 @dataclass
@@ -105,11 +113,12 @@ def _position_value(positions: dict[str, _Position], last_prices: dict[str, floa
     total = 0.0
     for key, pos in positions.items():
         price = last_prices.get(key, pos.avg_price)
+        nq = pos.notional_qty
         if pos.is_long:
-            total += price * pos.quantity
+            total += price * nq
         else:
             # Short P&L: we received cash at entry; unrealised gain/loss from price move
-            total += pos.avg_price * pos.quantity + (pos.avg_price - price) * pos.quantity
+            total += pos.avg_price * nq + (pos.avg_price - price) * nq
     return total
 
 
@@ -226,8 +235,15 @@ def run_backtest(
             continue
 
         last_prices[pos_key] = price
-        fee = _fee(price, qty)
-        trade_value = price * qty
+        # Futures are simulated fully funded rather than on margin: a contract
+        # reserves its whole notional, not the exchange's initial margin. That
+        # under-states leverage (the run holds fewer contracts than a real
+        # margin account could), which is the safe direction for a backtest —
+        # but it means these results are not a margin-accurate simulation.
+        multiplier = markets.contract_multiplier(mkt, sym)
+        notional_qty = qty * multiplier
+        fee = _fee(price, notional_qty)
+        trade_value = price * notional_qty
 
         if action == "buy":
             cost = trade_value + fee
@@ -242,7 +258,7 @@ def run_backtest(
                 pos.avg_price = (pos.avg_price * pos.quantity + price * qty) / total_qty
                 pos.quantity = total_qty
             else:
-                positions[pos_key] = _Position(sym, mkt, "buy", qty, price)
+                positions[pos_key] = _Position(sym, mkt, "buy", qty, price, multiplier)
                 open_timestamps[pos_key] = ts
 
         elif action == "sell":
@@ -251,7 +267,7 @@ def run_backtest(
                 continue  # no matching long position
             proceeds = trade_value - fee
             cash += proceeds
-            pnl = (price - pos.avg_price) * qty - fee * 2
+            pnl = (price - pos.avg_price) * notional_qty - fee * 2
             closed_trades.append(ClosedTrade(
                 symbol=sym,
                 market=mkt,
@@ -279,7 +295,7 @@ def run_backtest(
                 pos.avg_price = (pos.avg_price * pos.quantity + price * qty) / total_qty
                 pos.quantity = total_qty
             else:
-                positions[pos_key] = _Position(sym, mkt, "short", qty, price)
+                positions[pos_key] = _Position(sym, mkt, "short", qty, price, multiplier)
                 open_timestamps[pos_key] = ts
 
         elif action == "cover":
@@ -287,8 +303,8 @@ def run_backtest(
             if pos is None or pos.is_long or pos.quantity < qty - 1e-12:
                 continue
             # Return original margin minus cost to buy back
-            proceeds = (pos.avg_price - price) * qty - fee
-            cash += pos.avg_price * qty + proceeds  # return margin + gain/loss
+            proceeds = (pos.avg_price - price) * notional_qty - fee
+            cash += pos.avg_price * notional_qty + proceeds  # return margin + gain/loss
             pnl = proceeds
             closed_trades.append(ClosedTrade(
                 symbol=sym,
@@ -347,7 +363,7 @@ def run_backtest(
             "last_price": last_prices.get(f"{pos.market}:{pos.symbol}", pos.avg_price),
             "unrealised_pnl": round(
                 (last_prices.get(f"{pos.market}:{pos.symbol}", pos.avg_price) - pos.avg_price)
-                * pos.quantity * (1 if pos.is_long else -1),
+                * pos.notional_qty * (1 if pos.is_long else -1),
                 8,
             ),
         }

@@ -104,6 +104,82 @@ REGISTRY: dict[str, MarketSpec] = {
         price_decimals=5,
         server_priced=True,
     ),
+    'futures': MarketSpec(
+        value='futures',
+        currency='USD',
+        # Overridden per contract by contract_multiplier() — ES is $50/point,
+        # GC $100. The spec value is the fallback for an unlisted contract.
+        contract_multiplier=1.0,
+        session='cme',
+        price_provider='yahoo',
+        supports_short=True,
+        tradeable=True,
+        automatable=True,
+        price_decimals=2,
+        server_priced=True,
+    ),
+    'a-stock': MarketSpec(
+        value='a-stock',
+        # First non-USD market. Positions settle in CNY; portfolio aggregates
+        # convert via fx_rates.to_usd().
+        currency='CNY',
+        contract_multiplier=1.0,
+        session='sse',
+        price_provider='yahoo',
+        # No retail stock borrow on the mainland exchanges — 融券 is a
+        # margin-account facility, not something the simulated ledger models.
+        supports_short=False,
+        tradeable=True,
+        automatable=True,
+        price_decimals=2,
+        server_priced=True,
+    ),
+    'options': MarketSpec(
+        value='options',
+        currency='USD',
+        # US equity options are 100 shares per contract. Unlike futures this is
+        # uniform, so it lives in the spec rather than a per-symbol table.
+        contract_multiplier=100.0,
+        session='nyse',
+        price_provider='yahoo-options',
+        # Selling to open (naked short) is not modelled; see
+        # services._update_position_from_signal.
+        supports_short=False,
+        tradeable=True,
+        # Chain selection has no automation surface yet — a rule cannot express
+        # "roll to the next expiry", so runs may not target options.
+        automatable=False,
+        price_decimals=2,
+        server_priced=True,
+    ),
+}
+
+# USD per full point of price movement, per exchange contract specs (verified
+# 2026-07-20). Keyed by the canonical root symbol; price_fetcher appends '=F'
+# for Yahoo. Grains (ZC/ZS/ZW) quote in cents per bushel on a 5,000 bushel
+# contract, so one quoted point is one cent and the multiplier is 50, not 5000.
+FUTURES_MULTIPLIERS: dict[str, float] = {
+    'ES': 50.0,      # E-mini S&P 500
+    'MES': 5.0,      # Micro E-mini S&P 500
+    'NQ': 20.0,      # E-mini Nasdaq-100
+    'MNQ': 2.0,      # Micro E-mini Nasdaq-100
+    'YM': 5.0,       # E-mini Dow
+    'MYM': 0.5,      # Micro E-mini Dow
+    'RTY': 50.0,     # E-mini Russell 2000
+    'M2K': 5.0,      # Micro E-mini Russell 2000
+    'CL': 1000.0,    # WTI crude, 1,000 barrels
+    'MCL': 100.0,    # Micro WTI crude
+    'NG': 10000.0,   # Henry Hub natural gas, 10,000 MMBtu
+    'GC': 100.0,     # Gold, 100 troy oz
+    'MGC': 10.0,     # Micro gold
+    'SI': 5000.0,    # Silver, 5,000 troy oz
+    'HG': 25000.0,   # Copper, 25,000 lb
+    'ZB': 1000.0,    # 30-year T-Bond, $100k face quoted in points
+    'ZN': 1000.0,    # 10-year T-Note
+    'ZF': 1000.0,    # 5-year T-Note
+    'ZC': 50.0,      # Corn
+    'ZS': 50.0,      # Soybeans
+    'ZW': 50.0,      # Wheat
 }
 
 MARKET_ALIASES: dict[str, str] = {
@@ -162,9 +238,22 @@ def is_server_priced(market: str | None) -> bool:
     return spec.server_priced if spec else False
 
 
-def contract_multiplier(market: str | None) -> float:
+def contract_multiplier(market: str | None, symbol: str | None = None) -> float:
+    """Notional per point of price movement.
+
+    Futures are the one market where this is a property of the contract rather
+    than the market: ES is $50/point, GC $100. Every other market answers from
+    its spec. An unlisted futures root falls back to the spec value (1.0) —
+    wrong-but-inert is better than refusing to price a contract, and
+    FUTURES_SYMBOLS is what the UI actually offers.
+    """
     spec = get_spec(market)
-    return spec.contract_multiplier if spec else 1.0
+    if spec is None:
+        return 1.0
+    if spec.value == 'futures':
+        root = (symbol or '').strip().upper().removesuffix('=F')
+        return FUTURES_MULTIPLIERS.get(root, spec.contract_multiplier)
+    return spec.contract_multiplier
 
 
 def position_currency(market: str | None, symbol: str | None = None) -> str:
@@ -201,6 +290,17 @@ _NYSE_CLOSE_MIN = 16 * 60
 # Forex trades continuously from Sunday 17:00 ET to Friday 17:00 ET.
 _FX_WEEK_BOUNDARY_MIN = 17 * 60
 
+# CME Globex: Sunday 18:00 ET open, a daily 17:00–18:00 ET maintenance halt,
+# Friday 17:00 ET close.
+_CME_HALT_START_MIN = 17 * 60
+_CME_OPEN_MIN = 18 * 60
+
+# Shanghai / Shenzhen: 09:30–11:30 and 13:00–15:00 China Standard Time, with a
+# two-hour midday break that neither NYSE nor Globex has.
+_CST = ZoneInfo('Asia/Shanghai')
+_SSE_MORNING = (9 * 60 + 30, 11 * 60 + 30)
+_SSE_AFTERNOON = (13 * 60, 15 * 60)
+
 
 def is_session_open(session: str, now: datetime | None = None) -> bool:
     now_et = (now or datetime.now(_ET)).astimezone(_ET)
@@ -209,6 +309,16 @@ def is_session_open(session: str, now: datetime | None = None) -> bool:
 
     if session == '24x7':
         return True
+    if session == 'sse':
+        # The one calendar not anchored to New York — a Shanghai trading day
+        # starts while it is still the previous evening in ET, so the weekday
+        # must come from the local clock or Monday's session reads as Sunday.
+        now_cst = (now or datetime.now(_CST)).astimezone(_CST)
+        if now_cst.weekday() >= 5:
+            return False
+        cst_minutes = now_cst.hour * 60 + now_cst.minute
+        return (_SSE_MORNING[0] <= cst_minutes < _SSE_MORNING[1]
+                or _SSE_AFTERNOON[0] <= cst_minutes < _SSE_AFTERNOON[1])
     if session == 'nyse':
         return weekday < 5 and _NYSE_OPEN_MIN <= minutes < _NYSE_CLOSE_MIN
     if session == '24x5':
@@ -219,6 +329,15 @@ def is_session_open(session: str, now: datetime | None = None) -> bool:
         if weekday == 4:  # Friday — closes 17:00 ET
             return minutes < _FX_WEEK_BOUNDARY_MIN
         return True
+    if session == 'cme':
+        if weekday == 5:  # Saturday — closed all day
+            return False
+        if weekday == 6:  # Sunday — opens 18:00 ET
+            return minutes >= _CME_OPEN_MIN
+        if weekday == 4:  # Friday — closes 17:00 ET, no reopen
+            return minutes < _CME_HALT_START_MIN
+        # Mon–Thu run around the clock except the daily maintenance halt.
+        return not (_CME_HALT_START_MIN <= minutes < _CME_OPEN_MIN)
     return True
 
 

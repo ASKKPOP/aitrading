@@ -13,6 +13,7 @@ from contextvars import ContextVar
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Tuple, Any
 import re
+import threading
 import time
 import json
 
@@ -796,6 +797,23 @@ def _yahoo_symbol(symbol: str, market: str) -> Optional[str]:
         if len(cleaned) != 6 or not cleaned.isalpha():
             return None
         return f"{cleaned}=X"
+    if market == "futures":
+        # Canonical form is the bare contract root (ES); Yahoo wants the
+        # continuous-front-month suffix. Accept an already-suffixed symbol so a
+        # round-trip through this helper is idempotent.
+        root = cleaned.removesuffix("=F")
+        if not root or not root.isalnum():
+            return None
+        return f"{root}=F"
+    if market == "a-stock":
+        # Canonical form carries the exchange suffix (600519.SS / 000001.SZ)
+        # because the six-digit code alone is ambiguous between Shanghai and
+        # Shenzhen. The dot is meaningful here, so the share-class dash
+        # rewrite below must not run.
+        board, _, venue = cleaned.partition(".")
+        if not board.isdigit() or venue not in ("SS", "SZ"):
+            return None
+        return f"{board}.{venue}"
     return cleaned.replace(".", "-")
 
 
@@ -860,6 +878,147 @@ def _get_yahoo_chart_price(symbol: str, executed_at: Optional[str], market: str)
     return float(f"{closest:.6f}")
 
 
+# ─── Yahoo options chain ────────────────────────────────────────────────────
+# The v7 options endpoint, unlike v8 chart, rejects anonymous callers with
+# "Invalid Crumb". The handshake is: hit fc.yahoo.com to be issued an A3
+# cookie, exchange it at /v1/test/getcrumb for a token, then send both on
+# every chain request. Both halves are session-scoped, so they are cached
+# together and re-fetched only when a chain call comes back 401/403.
+_YAHOO_CRUMB_TTL_SECONDS = max(60.0, float(os.environ.get("YAHOO_CRUMB_TTL_SECONDS", "1800")))
+_yahoo_crumb: Optional[tuple[str, str, float]] = None  # (cookie_header, crumb, fetched_at)
+_yahoo_crumb_lock = threading.Lock()
+
+# OCC contract symbol: root + YYMMDD + C/P + strike in thousandths.
+_OCC_RE = re.compile(r"^(?P<root>[A-Z]{1,6})(?P<date>\d{6})(?P<right>[CP])(?P<strike>\d{8})$")
+
+
+def _yahoo_crumb_pair(force_refresh: bool = False) -> Optional[tuple[str, str]]:
+    global _yahoo_crumb
+    with _yahoo_crumb_lock:
+        cached = _yahoo_crumb
+        if (not force_refresh and cached is not None
+                and (time.time() - cached[2]) < _YAHOO_CRUMB_TTL_SECONDS):
+            return cached[0], cached[1]
+
+        try:
+            session = requests.Session()
+            session.headers.update({"User-Agent": _YAHOO_USER_AGENT})
+            # This request is expected to 404 — it exists only to be issued the cookie.
+            session.get("https://fc.yahoo.com", timeout=PRICE_FETCH_TIMEOUT_SECONDS)
+            resp = session.get("https://query1.finance.yahoo.com/v1/test/getcrumb",
+                               timeout=PRICE_FETCH_TIMEOUT_SECONDS)
+            crumb = (resp.text or "").strip()
+            # A crumb is a short opaque token; an HTML error page is not one.
+            if resp.status_code != 200 or not crumb or "<" in crumb or len(crumb) > 32:
+                _price_log(f"[Price API] Yahoo crumb handshake failed (status {resp.status_code})")
+                return None
+            cookie_header = "; ".join(f"{c.name}={c.value}" for c in session.cookies)
+            if not cookie_header:
+                _price_log("[Price API] Yahoo crumb handshake returned no cookie")
+                return None
+        except Exception as exc:
+            _price_log(f"[Price API] Yahoo crumb handshake error: {exc}")
+            return None
+
+        _yahoo_crumb = (cookie_header, crumb, time.time())
+        return cookie_header, crumb
+
+
+def _fetch_yahoo_option_chain(underlying: str, expiry_epoch: Optional[int] = None) -> Optional[dict]:
+    """Raw option chain for an underlying, retrying once on a stale crumb."""
+    for attempt in range(2):
+        pair = _yahoo_crumb_pair(force_refresh=attempt > 0)
+        if pair is None:
+            return None
+        cookie_header, crumb = pair
+        params: dict = {"crumb": crumb}
+        if expiry_epoch is not None:
+            params["date"] = int(expiry_epoch)
+        try:
+            data = _request_json_with_retry(
+                "yahoo",
+                "GET",
+                f"https://query1.finance.yahoo.com/v7/finance/options/{underlying}",
+                params=params,
+                headers={"User-Agent": _YAHOO_USER_AGENT, "Cookie": cookie_header},
+                retry_on_rate_limit=False,
+            )
+        except Exception as exc:
+            # An expired crumb comes back as 401/403. Read it off the response
+            # rather than matching on the message text — the string form of a
+            # requests.HTTPError happens to contain the code today, but that is
+            # incidental, and a silent failure here means every option position
+            # stops being marked.
+            response = getattr(exc, "response", None)
+            status = getattr(response, "status_code", None)
+            if attempt == 0 and status in (401, 403):
+                _price_log(f"[Price API] Yahoo crumb rejected ({status}); re-handshaking")
+                continue
+            _price_log(f"[Price API] Yahoo option chain error for {underlying}: {exc}")
+            return None
+        try:
+            return data["optionChain"]["result"][0]  # type: ignore[index]
+        except (TypeError, KeyError, IndexError):
+            _price_log(f"[Price API] Yahoo returned no option chain for {underlying}")
+            return None
+    return None
+
+
+def _option_contract_price(contract: dict) -> Optional[float]:
+    """Mid of the quoted spread, falling back to last trade.
+
+    Bid/ask is the honest mark: an option's lastPrice can be hours or days
+    stale on an illiquid strike, and marking a book to it silently invents PnL.
+    Mid is only used when both sides are actually quoted.
+    """
+    bid, ask = contract.get("bid"), contract.get("ask")
+    try:
+        if bid is not None and ask is not None and float(bid) > 0 and float(ask) > 0:
+            return float(f"{(float(bid) + float(ask)) / 2:.6f}")
+    except (TypeError, ValueError):
+        pass
+    last = contract.get("lastPrice")
+    try:
+        return float(f"{float(last):.6f}") if last is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _get_yahoo_option_price(symbol: str) -> Optional[float]:
+    """Price one OCC-form option contract (e.g. AAPL260720C00205000).
+
+    There is no historical endpoint for a single contract, so executed_at is
+    deliberately not a parameter — options are marked at the current quote and
+    cannot be backfilled the way a chart-series market can.
+    """
+    parsed = _OCC_RE.match((symbol or "").strip().upper())
+    if not parsed:
+        _price_log(f"[Price API] Not an OCC option symbol: {symbol}")
+        return None
+
+    root = parsed.group("root")
+    # Yahoo indexes each contract under its own expiry; requesting the chain
+    # without a date returns only the nearest one, so derive the epoch from the
+    # symbol rather than paging every expiration.
+    try:
+        expiry = datetime.strptime(parsed.group("date"), "%y%m%d").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+    chain = _fetch_yahoo_option_chain(root, int(expiry.timestamp()))
+    if not chain:
+        return None
+
+    wanted = parsed.group(0)
+    side = "calls" if parsed.group("right") == "C" else "puts"
+    for contract in (chain.get("options") or [{}])[0].get(side, []):
+        if str(contract.get("contractSymbol", "")).upper() == wanted:
+            return _option_contract_price(contract)
+
+    _price_log(f"[Price API] Contract {wanted} not present in {root} chain")
+    return None
+
+
 def get_price_from_market(
     symbol: str,
     executed_at: str,
@@ -905,6 +1064,8 @@ def get_price_from_market(
             price = _get_us_stock_price(symbol, executed_at)
         elif provider_key == "yahoo":
             price = _get_yahoo_chart_price(symbol, executed_at, market)
+        elif provider_key == "yahoo-options":
+            price = _get_yahoo_option_price(symbol)
         else:
             _price_log(f"[Price API] Unsupported market for server price fetch: {market}")
             return None
