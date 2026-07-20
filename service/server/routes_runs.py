@@ -25,6 +25,7 @@ from typing import Optional
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, field_validator
 
+import markets
 import trading_runs
 from routes_shared import RouteContext
 from services import _get_agent_by_token
@@ -34,15 +35,63 @@ ALLOWED_PROVIDERS = ("", "openai", "gemini", "grok", "qwen", "glm", "local",
                      "openrouter", "anthropic")
 
 
+def _recent_mark(symbol: str, market: str) -> Optional[float]:
+    """Freshest mark the position refresher wrote for this symbol, or None if
+    nothing recent enough exists.
+
+    Bounded by run_engine._mark_staleness_max() — deliberately the SAME limit
+    the stop evaluator fails closed on. A mark it would refuse to evaluate
+    stops against must not be good enough to arm a run in the first place.
+    """
+    from database import get_db_connection
+    from run_engine import _age_seconds, _mark_staleness_max
+
+    conn = get_db_connection()
+    try:
+        rows = conn.cursor().execute(
+            """SELECT current_price, market, price_updated_at FROM positions
+               WHERE symbol = ? AND current_price IS NOT NULL
+                 AND price_updated_at IS NOT NULL
+               ORDER BY price_updated_at DESC LIMIT 20""",
+            (symbol,),
+        ).fetchall()
+    except Exception:  # noqa: BLE001
+        return None
+    finally:
+        conn.close()
+
+    max_age = _mark_staleness_max()
+    for row in rows:
+        # positions.market holds the caller's original string ('stock', 'us-stock'
+        # …); tasks.py normalizes only for fetching and writes the raw value back.
+        if markets.normalize_market(row["market"]) != market:
+            continue
+        try:
+            if _age_seconds(row["price_updated_at"]) <= max_age:
+                return float(row["current_price"])
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
 def _probe_price(symbol: str, market: str) -> Optional[float]:
     """Creation-time probe that the symbol is actually price-fetchable —
     an unfetchable symbol would arm a run whose stops can never evaluate.
     Isolated for test patching."""
     from price_fetcher import get_price_from_market
     try:
-        return get_price_from_market(symbol, None, market)
+        price = get_price_from_market(symbol, None, market)
     except Exception:  # noqa: BLE001
-        return None
+        price = None
+    if price is not None:
+        return price
+    # A live fetch can fail for reasons that say nothing about the symbol:
+    # Alpha Vantage's daily quota and its rate-limit cooldown take us-stock
+    # down wholesale. A mark the refresher wrote minutes ago proves the symbol
+    # IS priceable, so accept it rather than refusing to create the run. If the
+    # feed is genuinely dead the run still fails safe later — stop evaluation
+    # trips stop_eval_failed once marks pass the same staleness bound.
+    return _recent_mark(symbol, market)
 
 
 class RunIn(BaseModel):

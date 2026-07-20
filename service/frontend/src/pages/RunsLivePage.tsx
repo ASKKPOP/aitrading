@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { RunSparkline } from '../components/RunSparkline'
+import { SymbolSelect } from '../components/SymbolSelect'
 import { useRunStream } from '../hooks/useRunStream'
 import { Language, tr } from '../i18n'
 
@@ -684,12 +685,16 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       <div style={{ display: 'grid', gap: 12,
         gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <label style={field}>{lbl({ ko: '심볼', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' })}
-          <input style={input} value={f.symbol}
-            onChange={(e) => setF({ ...f, symbol: e.target.value.toUpperCase() })} /></label>
+          <SymbolSelect style={input} market={f.market} value={f.symbol}
+            onChange={(symbol) => setF({ ...f, symbol })}
+            placeholder={lbl({ ko: '종목 선택', en: 'Select symbol', ja: '銘柄を選択',
+              th: 'เลือกสัญลักษณ์', vi: 'Chọn mã' })} /></label>
         <label style={field}>{lbl({ ko: '시장', en: 'Market', ja: '市場', th: 'ตลาด', vi: 'Thị trường' })}
           <select style={input} value={f.market}
-            onChange={(e) => setF({ ...f, market: e.target.value })}>
+            onChange={(e) => setF({ ...f, market: e.target.value, symbol: '',
+              market_type: e.target.value === 'crypto' ? f.market_type : 'spot' })}>
             <option value="crypto">crypto</option><option value="us-stock">us-stock</option>
+            <option value="forex">forex</option>
           </select></label>
         <label style={field}>{lbl({ ko: '유형', en: 'Type', ja: 'タイプ', th: 'ชนิด', vi: 'Loại' })}
           <select style={input} value={f.market_type}
