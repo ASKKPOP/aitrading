@@ -27,7 +27,7 @@ type Summary = {
 type Payload = {
   user: Summary
   system?: Summary
-  active?: { provider: string; model: string } | null
+  active?: { provider: string; model: string; key_source?: 'user' | 'system' } | null
 }
 
 const POLL_MS = 30000
@@ -93,6 +93,10 @@ export function AiUsagePill({ userToken }: { userToken?: string | null }) {
       th: 'ตามโมเดล', vi: 'Theo mô hình' }),
     activeModel: tr(language, { ko: '현재 설정된 모델', en: 'Model in use',
       ja: '使用中のモデル', th: 'โมเดลที่ใช้อยู่', vi: 'Mô hình đang dùng' }),
+    ownKey: tr(language, { ko: '내 API 키', en: 'your API key', ja: '自分のAPIキー',
+      th: 'คีย์ API ของคุณ', vi: 'khóa API của bạn' }),
+    systemKey: tr(language, { ko: '서비스 제공 키', en: 'service key',
+      ja: 'サービス提供キー', th: 'คีย์ของบริการ', vi: 'khóa của dịch vụ' }),
     systemWide: tr(language, { ko: '시스템 전체 (관리자 전용)',
       en: 'System-wide (owner only)', ja: 'システム全体（オーナーのみ）',
       th: 'ทั้งระบบ (เจ้าของเท่านั้น)', vi: 'Toàn hệ thống (chỉ chủ sở hữu)' }),
@@ -167,6 +171,8 @@ export function AiUsagePill({ userToken }: { userToken?: string | null }) {
               {T.activeModel}: <strong style={{ color: 'var(--text-primary,#fff)' }}>
                 {data.active.model}</strong>
               {data.active.provider ? ` (${data.active.provider})` : ''}
+              {data.active.key_source
+                && ` · ${data.active.key_source === 'user' ? T.ownKey : T.systemKey}`}
             </div>
           )}
 

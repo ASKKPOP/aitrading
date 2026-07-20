@@ -263,6 +263,74 @@ class VerificationTests(unittest.TestCase):
         with patch.dict(os.environ, {"VERIFY_ENABLED": "advisory"}):
             self.assertIsNone(_verify_decision("BTC", "crypto", {}, {}, {}, "en"))
 
+    def test_verify_carries_the_callers_identity_across_the_provider_switch(self):
+        """VERIFY_PROVIDER swaps the model for cross-model independence, but the
+        call still belongs to the user whose analysis triggered it. Building a
+        bare context here orphaned the llm_usage row (user_id NULL): the spend
+        vanished from that user's total and was absorbed into the system's."""
+        from analysis_agents import _verify_decision
+        from llm_client import (LlmContext, current_llm_context, reset_llm_context,
+                                set_llm_context)
+
+        seen = {}
+
+        def fake_generate(*_a, **_kw):
+            ctx = current_llm_context()
+            seen["provider"] = ctx.provider
+            seen["user_id"] = ctx.user_id
+            seen["agent_id"] = ctx.agent_id
+            seen["model"] = ctx.model
+            return '{"verdict":"upheld","adjusted_confidence":0.7,"reason":"ok"}'
+
+        outer = set_llm_context(LlmContext(provider="anthropic", model="claude-opus-4-8",
+                                           api_key="user-key", source="user",
+                                           user_id=42, agent_id=7))
+        try:
+            with patch.dict(os.environ, {"VERIFY_ENABLED": "advisory",
+                                         "VERIFY_PROVIDER": "openai",
+                                         "OPENAI_API_KEY": "sk-test"}), \
+                    patch("analysis_agents.generate_text", side_effect=fake_generate):
+                out = _verify_decision("BTC", "crypto",
+                                       {"news": "", "sentiment": "",
+                                        "fundamentals_macro": "", "technical": ""},
+                                       {"current_price": 100}, {"action": "buy"}, "en")
+        finally:
+            reset_llm_context(outer)
+
+        self.assertIsNotNone(out)
+        self.assertEqual(seen["provider"], "openai", "provider override must still apply")
+        self.assertEqual(seen["user_id"], 42, "verify spend must stay attributed to the user")
+        self.assertEqual(seen["agent_id"], 7)
+        self.assertIsNone(seen["model"], "the user's model must NOT leak into the verifier")
+
+    def test_verify_without_provider_override_keeps_the_user_context_intact(self):
+        from analysis_agents import _verify_decision
+        from llm_client import (LlmContext, current_llm_context, reset_llm_context,
+                                set_llm_context)
+        seen = {}
+
+        def fake_generate(*_a, **_kw):
+            ctx = current_llm_context()
+            seen.update(user_id=ctx.user_id, model=ctx.model, api_key=ctx.api_key)
+            return '{"verdict":"upheld","adjusted_confidence":0.7,"reason":"ok"}'
+
+        outer = set_llm_context(LlmContext(provider="anthropic", model="claude-opus-4-8",
+                                           api_key="user-key", source="user", user_id=42))
+        try:
+            with patch.dict(os.environ, {"VERIFY_ENABLED": "advisory", "VERIFY_PROVIDER": "",
+                                         "ANTHROPIC_API_KEY": "sk-test"}), \
+                    patch("analysis_agents.generate_text", side_effect=fake_generate):
+                _verify_decision("BTC", "crypto",
+                                 {"news": "", "sentiment": "",
+                                  "fundamentals_macro": "", "technical": ""},
+                                 {"current_price": 100}, {"action": "buy"}, "en")
+        finally:
+            reset_llm_context(outer)
+        # unset VERIFY_PROVIDER = verification runs on the user's own AI, billed to them
+        self.assertEqual(seen["user_id"], 42)
+        self.assertEqual(seen["model"], "claude-opus-4-8")
+        self.assertEqual(seen["api_key"], "user-key")
+
     def test_verify_mode_default_advisory(self):
         from analysis_agents import _verify_mode
         self.assertEqual(_verify_mode(), "advisory")

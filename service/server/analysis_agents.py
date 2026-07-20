@@ -464,8 +464,19 @@ def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
     verify_provider = os.getenv("VERIFY_PROVIDER", "").strip().lower() or None
     token = None
     if verify_provider:
-        from llm_client import LlmContext, set_llm_context
-        token = set_llm_context(LlmContext(provider=verify_provider, source="rule"))
+        # Override ONLY the provider — cross-model disagreement is the point of
+        # an independent verifier, so the user's model must not be reused here.
+        # Everything identifying WHO this call belongs to is carried over from
+        # the surrounding context: building a bare LlmContext instead dropped
+        # user_id/agent_id, and the verify call's llm_usage row then landed with
+        # user_id NULL — invisible in that user's spend, silently absorbed into
+        # the system total.
+        from llm_client import LlmContext, current_llm_context, set_llm_context
+        outer = current_llm_context()
+        token = set_llm_context(LlmContext(
+            provider=verify_provider, source="rule",
+            user_id=outer.user_id if outer else None,
+            agent_id=outer.agent_id if outer else None))
     try:
         text = generate_text(prompt, max_tokens=300, temperature=0.2, tier="decision")
     finally:

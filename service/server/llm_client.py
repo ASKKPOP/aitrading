@@ -69,6 +69,16 @@ def reset_llm_context(token) -> None:
     _context_override.reset(token)
 
 
+def current_llm_context() -> Optional[LlmContext]:
+    """The context in force for this call chain, or None.
+
+    Exists so a nested call can override one field (e.g. the verifier switching
+    provider for cross-model independence) while carrying the metering identity
+    forward, instead of building a bare context and silently orphaning the
+    llm_usage row."""
+    return _context_override.get()
+
+
 def set_provider_override(name: Optional[str]):
     """Back-compat wrapper: provider-only context (automation rules)."""
     return set_llm_context(LlmContext(provider=name, source="rule") if name else None)

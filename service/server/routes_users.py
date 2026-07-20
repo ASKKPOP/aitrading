@@ -133,6 +133,37 @@ def _delete_code(email: str, ctx: "RouteContext") -> None:
     ctx.verification_codes.pop(email, None)
 
 
+def _user_llm_settings(user_id: int) -> dict | None:
+    """The user's own LLM provider/model/key from the Settings page, or None.
+
+    Mirrors services.llm_context_for_agent but keyed on the user rather than an
+    agent, so the usage panel can report the model that user's calls actually
+    resolve to. Fail-soft: a settings problem must not break the panel."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT api_key, config_json FROM user_api_settings "
+                "WHERE user_id = ? AND target = 'llm' AND enabled = 1", (user_id,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return None
+        try:
+            config = json.loads(row['config_json'] or '{}')
+        except (TypeError, ValueError):
+            config = {}
+        out = {'provider': (config.get('provider') or '').strip().lower() or None,
+               'model': (config.get('model') or '').strip() or None,
+               'api_key': (row['api_key'] or '').strip() or None}
+        return out if any(out.values()) else None
+    except Exception:  # noqa: BLE001
+        _logger.warning('user llm settings lookup failed for user %s', user_id, exc_info=True)
+        return None
+
+
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/users/send-code')
     async def send_verification_code(data: UserSendCodeRequest):
@@ -554,14 +585,30 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=401, detail='Invalid token')
 
         from llm_usage import usage_summary
-        from llm_client import active_provider_name, active_provider_model
+        from llm_client import (LlmContext, active_provider_name, active_provider_model,
+                                reset_llm_context, set_llm_context)
 
         out = {'user': usage_summary(user_id=user['id'])}
+        # Resolve the model THIS user's analysis actually runs on. Probing the
+        # bare provider reports the server default, which is wrong — and
+        # confusingly so — for anyone who configured their own key on the
+        # Settings page. Resolve under their context instead, and say whose key
+        # is paying so "$0.71 this month" is unambiguous.
+        settings = _user_llm_settings(user['id'])
+        ctx_token = None
         try:
+            if settings:
+                ctx_token = set_llm_context(LlmContext(
+                    provider=settings.get('provider'), model=settings.get('model'),
+                    api_key=settings.get('api_key'), source='user', user_id=user['id']))
             out['active'] = {'provider': active_provider_name(),
-                             'model': active_provider_model('decision')}
+                             'model': active_provider_model('decision'),
+                             'key_source': 'user' if (settings or {}).get('api_key') else 'system'}
         except Exception:  # noqa: BLE001 — provider probing must not break the page
             out['active'] = None
+        finally:
+            if ctx_token is not None:
+                reset_llm_context(ctx_token)
 
         from routes_guide import _owner_emails
         if (user.get('email') or '').strip().lower() in _owner_emails():
