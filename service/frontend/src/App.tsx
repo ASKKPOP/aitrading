@@ -16,7 +16,6 @@ import {
   Toast,
   TopbarControls,
   TopNav,
-  TrendingSidebar,
   DiscussionsPage,
   HamburgerButton,
 } from './AppPages'
@@ -607,8 +606,6 @@ function AppRouter({
             </Routes>
           </Suspense>
         </div>
-
-        <TrendingSidebar />
       </main>
 
       {/* Per-page guide — the topbar button opens this drawer, which resolves

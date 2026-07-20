@@ -311,14 +311,23 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0 }: {
       {err && <div style={{ color: '#d03b3b', marginTop: 10, fontSize: 13 }}>{err}</div>}
 
       {showCreate && (
-        <CreateRunForm token={token}
-          onDone={(startError, conflictInfo) => {
-            setShowCreate(false)
-            if (conflictInfo) setConflict(conflictInfo)
-            else if (startError) setErr(startError)
-            load()
-          }}
-          onCancel={() => setShowCreate(false)} language={language} />
+        <div role="dialog" aria-modal="true" aria-label={T.newRun}
+          onClick={() => setShowCreate(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: 24, overflowY: 'auto' }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 900, margin: 'auto' }}>
+            <CreateRunForm token={token}
+              onDone={(startError, conflictInfo) => {
+                setShowCreate(false)
+                if (conflictInfo) setConflict(conflictInfo)
+                else if (startError) setErr(startError)
+                load()
+              }}
+              onCancel={() => setShowCreate(false)} language={language} />
+          </div>
+        </div>
       )}
 
       {runs.length === 0 && !showCreate && (
@@ -607,6 +616,10 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
   })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // Submit runs three sequential requests; stage names which one is in flight so
+  // the user sees progress instead of a silently disabled button.
+  const [stage, setStage] = useState(0)
+  const [withReporting, setWithReporting] = useState(false)
   const auth = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const E = {
     createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.',
@@ -621,7 +634,8 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
   }
 
   async function submit() {
-    setErr(''); setBusy(true)
+    const reporting = f.report_frequency !== 'off' || f.notify_on_trade
+    setErr(''); setBusy(true); setWithReporting(reporting); setStage(1)
     const stop: any = {}
     if (f.stop_loss_usd) stop.max_loss_usd = Number(f.stop_loss_usd)
     if (f.profit_target_usd) stop.profit_target_usd = Number(f.profit_target_usd)
@@ -639,10 +653,11 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       const d = await r.json()
       if (!r.ok) {
         const msg = typeof d.detail === 'object' ? d.detail?.message : d.detail
-        setErr(msg || E.createFailed); setBusy(false); return
+        setErr(msg || E.createFailed); setBusy(false); setStage(0); return
       }
       const runId = d.id
-      if (f.report_frequency !== 'off' || f.notify_on_trade) {
+      if (reporting) {
+        setStage(2)
         await fetch(`${API_BASE}/runs/${runId}/reporting`, {
           method: 'PUT', headers: auth,
           body: JSON.stringify({ report_frequency: f.report_frequency,
@@ -655,6 +670,7 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       // with the reason surfaced at section level.
       let startError: string | undefined
       let conflictInfo
+      setStage(3)
       try {
         const s = await fetch(`${API_BASE}/runs/${runId}/start`, { method: 'POST', headers: auth })
         if (!s.ok) {
@@ -670,7 +686,7 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
         }
       } catch { startError = E.network }
       onDone(startError, conflictInfo)
-    } catch { setErr(E.network); setBusy(false) }
+    } catch { setErr(E.network); setBusy(false); setStage(0) }
   }
 
   const lbl = (o: any) => tr(language, o)
@@ -738,6 +754,24 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
           th: 'รันทำงานฝั่งเซิร์ฟเวอร์บนบัญชีจำลอง หุ้นสหรัฐฯ เงื่อนไขหยุดอาจช้าไม่กี่นาที',
           vi: 'Phiên chạy phía máy chủ trên tài khoản mô phỏng. Cổ phiếu Mỹ có thể trễ vài phút do chu kỳ polling giá.' })}
       </p>
+      {stage > 0 && (
+        <ol style={{ listStyle: 'none', margin: '12px 0 0', padding: 0,
+          display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+          {[
+            [1, lbl({ ko: '런 생성', en: 'Creating run', ja: 'ラン作成',
+              th: 'สร้างรัน', vi: 'Tạo phiên chạy' })],
+            ...(withReporting ? [[2, lbl({ ko: '리포트 설정', en: 'Configuring reports',
+              ja: 'レポート設定', th: 'ตั้งค่ารายงาน', vi: 'Cấu hình báo cáo' })]] : []),
+            [3, lbl({ ko: '시작', en: 'Starting', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu' })],
+          ].map(([s, label]: any, i) => (
+            <li key={s} style={{ display: 'flex', alignItems: 'center', gap: 6,
+              opacity: s > stage ? 0.5 : 1 }}>
+              <span>{s < stage ? '✅' : s === stage ? '🔄' : '⏳'}</span>
+              <span>{i + 1}. {label}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button className="btn btn-primary" disabled={busy} onClick={submit}>
           {tr(language, { ko: '▶ TRADING 만들고 시작', en: '▶ Create & start TRADING',
