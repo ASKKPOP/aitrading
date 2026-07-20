@@ -136,3 +136,4 @@ change.md
 # Local .env backups (created by rebuild scripts)
 .env.backup.*
 .gstack/
+.env.bak-*
