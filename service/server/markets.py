@@ -47,11 +47,23 @@ REGISTRY: dict[str, MarketSpec] = {
         currency='USD',
         contract_multiplier=1.0,
         session='nyse',
-        price_provider='alphavantage',
+        # Yahoo, not Alpha Vantage. AV's free tier cannot serve this at all:
+        # the intraday call carries entitlement=realtime, which is premium-only,
+        # and the 25-requests/day cap is a second wall the news/macro loops
+        # already spend. Measured from the production host 2026-07-20 — AV
+        # returned "This is a premium endpoint" while Yahoo served AAPL, MSFT
+        # and SPY unthrottled. AV is still used for news/macro intel.
+        price_provider='yahoo',
         supports_short=True,
         tradeable=True,
         automatable=True,
         price_decimals=2,
+        # Stays False even though the Alpha Vantage cap that motivated it is gone.
+        # Flipping it makes the API demand a server price on the trade path and
+        # REJECT the trade when the fetch fails — and Yahoo carries 1m bars for
+        # only ~7 days, so submitting a historical us-stock signal (what the
+        # backtest flow does) would start failing. Unlike forex, us-stock has an
+        # established agent-provided-price workflow that depends on this.
         server_priced=False,
     ),
     'crypto': MarketSpec(

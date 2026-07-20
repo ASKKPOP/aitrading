@@ -784,6 +784,10 @@ def _yahoo_symbol(symbol: str, market: str) -> Optional[str]:
     Forex pairs are stored in the concatenated six-letter form (EURUSD) and Yahoo
     expects the `=X` suffix. Returns None when the symbol does not fit the market's
     shape, so a malformed pair fails fast instead of querying an unrelated ticker.
+
+    Share classes are the other mismatch: we store the SEC form (BRK.B) and Yahoo
+    only answers to the dashed one (BRK-B) — measured 2026-07-20, BRK.B 404s while
+    BRK-B returns a price.
     """
     cleaned = (symbol or "").strip().upper().replace("/", "")
     if not cleaned:
@@ -792,7 +796,7 @@ def _yahoo_symbol(symbol: str, market: str) -> Optional[str]:
         if len(cleaned) != 6 or not cleaned.isalpha():
             return None
         return f"{cleaned}=X"
-    return cleaned
+    return cleaned.replace(".", "-")
 
 
 def _get_yahoo_chart_price(symbol: str, executed_at: Optional[str], market: str) -> Optional[float]:
