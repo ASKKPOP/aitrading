@@ -110,12 +110,21 @@ def redeem_ticket(ticket: str) -> Optional[int]:
 
 
 def _owned_run(run_id: int, agent_id: int) -> Optional[dict]:
+    # User-scoped like the REST run surface (trading_runs.get_run_user_scoped):
+    # the /automation grid lists every run of the caller's linked user, and its
+    # WS subscriptions must be accepted for the same set.
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, agent_id, symbol, market, last_event_seq FROM trading_runs "
-            "WHERE id = ? AND agent_id = ?", (run_id, agent_id))
+            """SELECT r.id, r.agent_id, r.symbol, r.market, r.last_event_seq
+               FROM trading_runs r
+               JOIN agents owner ON owner.id = r.agent_id
+               JOIN agents caller ON caller.id = ?
+               WHERE r.id = ? AND (r.agent_id = caller.id
+                     OR (owner.user_id IS NOT NULL
+                         AND owner.user_id = caller.user_id))""",
+            (agent_id, run_id))
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:

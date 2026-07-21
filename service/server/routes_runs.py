@@ -261,7 +261,11 @@ def _auth(authorization: Optional[str]):
 
 
 def _run_or_404(run_id: int, agent_id: int) -> dict:
-    run = trading_runs.get_run(run_id, agent_id)
+    """User-scoped (PR #36 boundary): an agent linked to a user reaches every
+    run of that user's agents — the fleet monitor's member cards open runs a
+    sibling agent's fleet created. Downstream trading_runs calls must use the
+    returned run's OWNING agent_id, not the caller's."""
+    run = trading_runs.get_run_user_scoped(run_id, agent_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     return run
@@ -347,8 +351,9 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         """
         agent = _auth(authorization)
         settings, start_condition, stop_conditions = _validated_config(data)
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
-            trading_runs.update_draft_run(run_id, agent["id"], settings,
+            trading_runs.update_draft_run(run_id, owner_id, settings,
                                           start_condition, stop_conditions,
                                           data.stop_flatten)
         except LookupError:
@@ -360,7 +365,8 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get("/api/runs")
     async def list_runs(limit: int = 50, authorization: str = Header(None)):
         agent = _auth(authorization)
-        return {"runs": [_public(r) for r in trading_runs.list_runs(agent["id"], limit)]}
+        return {"runs": [_public(r) for r in
+                         trading_runs.list_runs_user_scoped(agent["id"], limit)]}
 
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: int, authorization: str = Header(None)):
@@ -371,12 +377,12 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def start_run(run_id: int, data: StartIn = None,  # type: ignore[assignment]
                         authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         resolved = None
         try:
             if data is not None and data.resolve_conflicts:
-                resolved = trading_runs.resolve_start_conflicts(run_id, agent["id"])
-            run = trading_runs.start_run(run_id, agent["id"])
+                resolved = trading_runs.resolve_start_conflicts(run_id, owner_id)
+            run = trading_runs.start_run(run_id, owner_id)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except trading_runs.StartConflict as exc:
@@ -397,9 +403,9 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post("/api/runs/{run_id}/pause")
     async def pause_run(run_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
-            run = trading_runs.pause_run(run_id, agent["id"])
+            run = trading_runs.pause_run(run_id, owner_id)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True, "run": _public(run)}
@@ -407,9 +413,9 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post("/api/runs/{run_id}/resume")
     async def resume_run(run_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
-            run = trading_runs.resume_run(run_id, agent["id"])
+            run = trading_runs.resume_run(run_id, owner_id)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True, "run": _public(run)}
@@ -418,10 +424,10 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def stop_run(run_id: int, data: StopIn = None,  # type: ignore[assignment]
                        authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         flatten = data.flatten if data is not None else True
         try:
-            run = trading_runs.request_stop(run_id, agent["id"], flatten)
+            run = trading_runs.request_stop(run_id, owner_id, flatten)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True, "run": _public(run)}
@@ -430,9 +436,9 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def put_stop_conditions(run_id: int, data: dict,
                                   authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
-            run = trading_runs.update_stop_conditions(run_id, agent["id"], data)
+            run = trading_runs.update_stop_conditions(run_id, owner_id, data)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True, "run": _public(run)}
@@ -440,9 +446,9 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.delete("/api/runs/{run_id}")
     async def delete_run(run_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
-            trading_runs.delete_run(run_id, agent["id"])
+            trading_runs.delete_run(run_id, owner_id)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True}
@@ -474,7 +480,7 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def put_reporting(run_id: int, data: ReportingIn,
                             authorization: str = Header(None)):
         agent = _auth(authorization)
-        _run_or_404(run_id, agent["id"])
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         from database import begin_write_transaction, get_db_connection
         conn = get_db_connection()
         try:
@@ -489,7 +495,7 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
                 (data.report_frequency, data.report_hour_local, data.report_tz,
                  1 if data.notify_on_trade else 0, data.profit_threshold_pct,
                  data.loss_threshold_pct, data.drawdown_threshold_pct,
-                 run_id, agent["id"]))
+                 run_id, owner_id))
             conn.commit()
         finally:
             conn.close()
@@ -516,7 +522,8 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def run_events(run_id: int, after_seq: int = 0, limit: int = 200,
                          authorization: str = Header(None)):
         agent = _auth(authorization)
-        events = trading_runs.list_events(run_id, agent["id"], after_seq, limit)
+        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
+        events = trading_runs.list_events(run_id, owner_id, after_seq, limit)
         if events is None:
             raise HTTPException(status_code=404, detail="Run not found")
         for ev in events:

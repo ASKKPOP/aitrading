@@ -253,6 +253,50 @@ def get_run(run_id: int, agent_id: int) -> Optional[dict]:
         conn.close()
 
 
+def get_run_user_scoped(run_id: int, agent_id: int) -> Optional[dict]:
+    """The run when it belongs to the calling agent OR to a sibling agent of
+    the same linked user. Fleets are user-scoped (PR #36) and the fleet
+    monitor opens member runs from any of the user's agents, so the run
+    read/control surface follows the same boundary. Unlinked agents stay
+    strictly agent-scoped (user_id NULL never matches another NULL)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT r.* FROM trading_runs r
+               JOIN agents owner ON owner.id = r.agent_id
+               JOIN agents caller ON caller.id = ?
+               WHERE r.id = ? AND (r.agent_id = caller.id
+                     OR (owner.user_id IS NOT NULL
+                         AND owner.user_id = caller.user_id))""",
+            (agent_id, run_id))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_runs_user_scoped(agent_id: int, limit: int = 50) -> list[dict]:
+    """list_runs widened to every agent of the caller's linked user — the
+    /automation grid (and its WS subscriptions) must include fleet member
+    runs that a sibling agent's fleet created."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT r.* FROM trading_runs r
+               JOIN agents owner ON owner.id = r.agent_id
+               JOIN agents caller ON caller.id = ?
+               WHERE r.agent_id = caller.id
+                  OR (owner.user_id IS NOT NULL
+                      AND owner.user_id = caller.user_id)
+               ORDER BY r.id DESC LIMIT ?""",
+            (agent_id, max(1, min(limit, 200))))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
 def filter_key(market_type: Optional[str], cfg: dict) -> str:
     """Short stable digest of what makes two runs on one symbol genuinely
     different strategies: the instrument type plus the decision parameters
