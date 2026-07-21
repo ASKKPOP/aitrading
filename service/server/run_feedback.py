@@ -57,6 +57,7 @@ ADAPT_BOUNDS = {
     "unrealized_tighten_frac": 0.50,
     "thesis_off_track": -0.5,
     "thesis_review_every_closes": 3,
+    "review_drawdown_frac": 0.35,
     "thesis_review_min_interval_s": 6 * 3600,
     "thesis_review_max_per_day": 4,
     "symbol_cooldown_hours": 24,
@@ -319,8 +320,25 @@ def maybe_review_thesis(state: dict, run: dict, cfg: dict, pnl: dict,
     thesis = cfg.get("thesis") if isinstance(cfg.get("thesis"), dict) else None
     if not thesis:
         return None
-    if state["closes"] == 0 or state["closes"] % \
-            ADAPT_BOUNDS["thesis_review_every_closes"] != 0:
+    due_by_closes = state["closes"] > 0 and state["closes"] % \
+        ADAPT_BOUNDS["thesis_review_every_closes"] == 0
+    # Open-position trigger (Henry 2026-07-21): a run bleeding UNREALIZED
+    # drawdown must not wait for a close to get its what-went-wrong pass —
+    # review once the drawdown crosses the soft-brake line. The 6h interval
+    # and daily cap below bound the extra LLM spend exactly like the
+    # close-triggered path.
+    due_by_drawdown = False
+    if not due_by_closes:
+        try:
+            stops = json.loads(run.get("stop_conditions_json") or "{}")
+            max_loss = float(stops.get("max_loss_usd") or 0)
+            total = float(pnl.get("total") or 0)
+            peak = max(float(state.get("peak_total_pnl") or 0), total)
+            due_by_drawdown = max_loss > 0 and \
+                (peak - total) >= ADAPT_BOUNDS["review_drawdown_frac"] * max_loss
+        except (ValueError, TypeError):
+            due_by_drawdown = False
+    if not (due_by_closes or due_by_drawdown):
         return None
     today = _now_dt().strftime("%Y-%m-%d")
     if state.get("thesis_reviews_day") != today:
