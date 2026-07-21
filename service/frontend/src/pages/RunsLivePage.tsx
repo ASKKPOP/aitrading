@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { RunSparkline } from '../components/RunSparkline'
 import { SymbolSelect } from '../components/SymbolSelect'
@@ -161,6 +161,49 @@ function ageLabel(ts: string | undefined, lang: Language): string {
   return `${Math.round(secs / 3600)}h`
 }
 
+// The card's rotating "what am I doing right now" line (advanced every 3s by
+// the section heartbeat). A running box must never read as static: it cycles
+// through the next-cycle countdown, the live mark it is watching, and the
+// last non-equity event — whatever this run actually has.
+function activityLines(run: Run, tick: any, events: any[],
+                       lang: Language): string[] {
+  const lines: string[] = []
+  const iv = Number((run as any).config?.interval_minutes ?? 60) * 60000
+  const last = run.last_cycle_at ? new Date(run.last_cycle_at).getTime() : 0
+  if (last) {
+    const mins = Math.ceil(Math.max(0, last + iv - Date.now()) / 60000)
+    lines.push(mins <= 0
+      ? tr(lang, { ko: '🧠 AI 분석 사이클 임박', en: '🧠 AI analysis due now',
+          ja: '🧠 AI分析まもなく', th: '🧠 ใกล้รอบวิเคราะห์ AI', vi: '🧠 sắp tới chu kỳ AI' })
+      : tr(lang, { ko: `🧠 다음 AI 분석까지 ${mins}분`, en: `🧠 next AI analysis in ${mins}m`,
+          ja: `🧠 次のAI分析まで${mins}分`, th: `🧠 วิเคราะห์ AI ครั้งถัดไปใน ${mins} นาที`,
+          vi: `🧠 phân tích AI tiếp theo sau ${mins} phút` }))
+  }
+  if (tick && tick.price != null) {
+    const p = `$${Number(tick.price).toFixed(2)}`
+    lines.push(tr(lang, { ko: `👁 가격 감시 중 — ${p}`, en: `👁 watching price — ${p}`,
+      ja: `👁 価格監視中 — ${p}`, th: `👁 เฝ้าดูราคา — ${p}`, vi: `👁 đang theo dõi giá — ${p}` }))
+  }
+  const lastEv = (events || []).filter((e) => e.event_type !== 'equity').slice(-1)[0]
+  if (lastEv) {
+    lines.push(`📋 ${summarize(lastEv, lang)}`)
+  }
+  if (!lines.length) {
+    lines.push(tr(lang, { ko: '⚙️ 서버에서 실행 중', en: '⚙️ running on the server',
+      ja: '⚙️ サーバーで実行中', th: '⚙️ กำลังทำงานบนเซิร์ฟเวอร์', vi: '⚙️ đang chạy trên máy chủ' }))
+  }
+  return lines
+}
+
+// Flash color: the event type decides how the 2s blink reads.
+function flashColor(eventType: string): string {
+  if (eventType === 'trade') return '#0ca30c'
+  if (eventType === 'alert' || eventType === 'gate_skip') return '#eb6834'
+  if (eventType === 'decision') return '#2a78d6'
+  if (eventType === 'run_status') return '#7a68d8'
+  return 'rgba(12,163,12,0.85)'  // equity heartbeat and anything new
+}
+
 // The whole live-runs experience (grid + create + detail drawer), embeddable:
 // /automation renders it as its primary section (embedded), while the old
 // /runs/live route now redirects there. `reloadKey` lets a parent force a
@@ -257,6 +300,38 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       return next
     })
   }, [eventsByRun])
+
+  // Liveness. heartbeat advances the per-card activity line every 3s; flash
+  // marks a card for 2s whenever one of its events arrives (any type — the
+  // blink IS the proof the run is alive, and its color says what happened).
+  const [heartbeat, setHeartbeat] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setHeartbeat((n) => n + 1), 3000)
+    return () => clearInterval(id)
+  }, [])
+  const [flash, setFlash] = useState<Record<number,
+    { nonce: number; text: string; color: string } | undefined>>({})
+  const flashTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
+  const seenEventCount = useRef<Record<number, number>>({})
+  useEffect(() => {
+    for (const [ridStr, events] of Object.entries(eventsByRun)) {
+      const rid = Number(ridStr)
+      const prev = seenEventCount.current[rid] || 0
+      if (events.length <= prev) continue
+      seenEventCount.current[rid] = events.length
+      const e = events[events.length - 1]
+      setFlash((f) => ({ ...f, [rid]: {
+        nonce: (f[rid]?.nonce || 0) + 1,
+        text: summarize(e, language),
+        color: flashColor(e.event_type) } }))
+      clearTimeout(flashTimers.current[rid])
+      flashTimers.current[rid] = setTimeout(
+        () => setFlash((f) => ({ ...f, [rid]: undefined })), 2000)
+    }
+  }, [eventsByRun, language])
+  useEffect(() => () => {  // unmount: drop pending flash timers
+    Object.values(flashTimers.current).forEach(clearTimeout)
+  }, [])
 
   async function act(id: number, action: string, body?: any) {
     setErr('')
@@ -381,6 +456,16 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
         <p className="muted" style={{ marginTop: 24 }}>{T.empty}</p>
       )}
 
+      {/* Liveness keyframes — the flash ring restarts per event because the
+          overlay is keyed by the flash nonce. */}
+      <style>{`
+        @keyframes sp-run-flash {
+          0% { box-shadow: 0 0 0 2.5px var(--sp-flash-color), 0 0 18px 2px var(--sp-flash-color); }
+          70% { box-shadow: 0 0 0 2px var(--sp-flash-color), 0 0 8px 0 transparent; }
+          100% { box-shadow: 0 0 0 0 transparent; }
+        }
+        @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
+      `}</style>
       <div style={{ display: 'grid', gap: 12, marginTop: 18,
         gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {runs.map((run) => {
@@ -388,11 +473,19 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           const pnl = Number(run.realized_pnl_usd || 0)
           const pnlColor = pnl > 0 ? '#0ca30c' : pnl < 0 ? '#d03b3b' : 'var(--text-muted,#898781)'
           const ageTs = run.status === 'running' ? (tick?.ts || run.last_cycle_at) : run.last_cycle_at
+          const fl = flash[run.id]
+          const acts = run.status === 'running'
+            ? activityLines(run, tick, eventsByRun[run.id] || [], language) : []
           return (
             <div key={run.id}
               onClick={() => setSelected(run.id)}
               style={{ background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
-                borderRadius: 12, padding: 14, cursor: 'pointer' }}>
+                borderRadius: 12, padding: 14, cursor: 'pointer', position: 'relative' }}>
+              {fl && (
+                <div key={fl.nonce} style={{ position: 'absolute', inset: 0, borderRadius: 12,
+                  pointerEvents: 'none', ['--sp-flash-color' as any]: fl.color,
+                  animation: 'sp-run-flash 2s ease-out forwards' }} />
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: 15 }}>{run.symbol}
                   <span className="muted" style={{ fontSize: 11, marginLeft: 6 }}>
@@ -403,8 +496,13 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                       🚀 #{(run as any).fleet_id}</span>
                   ) : null}
                 </strong>
-                <span style={{ fontSize: 11, fontWeight: 600,
+                <span style={{ fontSize: 11, fontWeight: 600, display: 'inline-flex',
+                  alignItems: 'center', gap: 5,
                   color: STATUS_COLOR[run.status] || '#898781' }}>
+                  {run.status === 'running' && (
+                    <span style={{ width: 6, height: 6, borderRadius: 6, background: '#0ca30c',
+                      display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
+                  )}
                   {statusLabel(run.status, language)}</span>
               </div>
               {/* the reason is the whole answer to "why did this stop?" —
@@ -421,6 +519,18 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                 fontVariantNumeric: 'tabular-nums' }}>
                 {strategyLabel(run)}
               </div>
+              {/* what it's doing RIGHT NOW — rotates every 3s; an arriving
+                  event takes the line over for its 2s flash */}
+              {run.status === 'running' && (
+                <div style={{ fontSize: 11, marginTop: 5, minHeight: 15,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: fl ? fl.color : 'var(--text-secondary,#8a8073)',
+                  fontWeight: fl ? 600 : 400 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {fl ? `⚡ ${fl.text}` : acts[heartbeat % acts.length]}
+                  </span>
+                </div>
+              )}
               <div style={{ marginTop: 8 }}>
                 <RunSparkline values={equityByRun[run.id] || [0]}
                   color={pnl < 0 ? 'rgb(208,59,59)' : 'rgb(12,163,12)'} height={44} />
