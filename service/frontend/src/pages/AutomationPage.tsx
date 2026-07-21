@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { FleetPanel } from '../components/FleetPanel'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
+import { fmtUsd, pnlColor } from './tradeShared'
 
 // Automation (Target 3). The page itself is deliberately one block — the live
 // TRADING grid — with two ways to make a new one sitting above it:
@@ -108,6 +110,33 @@ export function AutomationPage() {
   // full detail drawer (the drawer lives in RunsLiveSection).
   const [openRunReq, setOpenRunReq] = useState<{ id: number; nonce: number } | null>(null)
 
+  // My Assets at a glance (same numbers as /assets: cash + position value,
+  // unrealized from open positions, realized from closed trades).
+  const [assets, setAssets] = useState<{ total: number; unrealized: number;
+    realized: number } | null>(null)
+  useEffect(() => {
+    if (!token) return
+    let dead = false
+    const loadAssets = async () => {
+      try {
+        const pos = await (await fetch(`${API_BASE}/positions`,
+          { headers: { Authorization: `Bearer ${token}` } })).json()
+        const positions = pos.positions || []
+        const value = positions.reduce((s: number, p: any) =>
+          s + Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0), 0)
+        const unrealized = positions.reduce((s: number, p: any) => s + (p.pnl ?? 0), 0)
+        const mine = await (await fetch(`${API_BASE}/positions/trades?limit=200`,
+          { headers: { Authorization: `Bearer ${token}` } })).json()
+        const realized = (mine.trades || []).reduce(
+          (s: number, t: any) => s + (t.pnl ?? 0), 0)
+        if (!dead) setAssets({ total: (pos.cash ?? 0) + value, unrealized, realized })
+      } catch { /* transient */ }
+    }
+    loadAssets()
+    const iv = setInterval(loadAssets, 10000)
+    return () => { dead = true; clearInterval(iv) }
+  }, [token])
+
   async function startRunFromAnalysis(symbol: string, market: string) {
     setRunStartBusy(true); setRunStartErr('')
     try {
@@ -136,6 +165,9 @@ export function AutomationPage() {
   const T = {
     title: tr(language, { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }),
     subtitle: tr(language, { ko: 'AI가 설정한 일정에 따라 실행되며, 결정이 규칙에 부합할 때 모의 거래를 수행합니다', en: 'AI runs on your schedule and paper-trades when the decision meets your rules', ja: 'スケジュールに沿ってAIが自動売買', th: 'AI ทำงานตามเวลาและเทรดเมื่อเข้าเงื่อนไข', vi: 'AI chạy theo lịch và giao dịch khi đủ điều kiện' }),
+    myAssets: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }),
+    assetsUnrealized: tr(language, { ko: '미실현', en: 'unrealized', ja: '含み', th: 'ยังไม่รับรู้', vi: 'chưa chốt' }),
+    assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt' }),
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay' }),
@@ -434,10 +466,28 @@ export function AutomationPage() {
         </div>
       </div>
 
-      {/* ── The two ways to make one, above the block ── */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+      {/* ── The two ways to make one, above the block — with My Assets at a
+             glance on the right (same numbers as /assets, click through) ── */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18, alignItems: 'stretch' }}>
         <button style={primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
         <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
+        {assets && (
+          <Link to="/assets" style={{ marginLeft: 'auto', textDecoration: 'none', color: 'inherit',
+            background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
+            borderRadius: 10, padding: '8px 16px', display: 'flex', flexDirection: 'column',
+            justifyContent: 'center', gap: 2, minWidth: 190 }}>
+            <span style={{ fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.06em',
+              color: 'var(--text-secondary,#8a8073)' }}>◱ {T.myAssets}</span>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
+              fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }}>
+              <b style={{ fontSize: 17 }}>{fmtUsd(assets.total)}</b>
+              <span style={{ fontSize: 11.5, color: pnlColor(assets.unrealized) }}>
+                {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)} {T.assetsUnrealized}</span>
+              <span style={{ fontSize: 11.5, color: pnlColor(assets.realized) }}>
+                {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} {T.assetsRealized}</span>
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* ── Full Auto fleet monitor — always visible once a fleet is live,

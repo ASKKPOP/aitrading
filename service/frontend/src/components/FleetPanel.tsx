@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
 import { tr } from '../i18n'
@@ -119,9 +119,34 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
       return () => clearInterval(id)
     }
     const fast = fleet.status === 'researching' || fleet.status === 'building'
-    const id = setInterval(load, fast ? 2000 : 15000)
+    // 5s while live — member P&L/status changes drive the card blink, so the
+    // poll has to be tight enough for the box to visibly breathe.
+    const id = setInterval(load, fast ? 2000 : 5000)
     return () => clearInterval(id)
   }, [fleet?.status, load, monitorOnly])
+
+  // Member-card liveness: the panel is poll-driven, so "an event" here is a
+  // change in a member's polled snapshot (status / P&L / pause reason) — blink
+  // that card for 2s so activity is visible without opening the drawer.
+  const [memberFlash, setMemberFlash] = useState<Record<number, number | undefined>>({})
+  const memberSig = useRef<Record<number, string>>({})
+  const memberTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
+  useEffect(() => {
+    members.forEach(m => {
+      const sig = `${m.status}|${m.realized_pnl_usd ?? ''}|${m.paused_reason ?? ''}`
+      const prev = memberSig.current[m.run_id]
+      memberSig.current[m.run_id] = sig
+      if (prev !== undefined && prev !== sig) {
+        setMemberFlash(f => ({ ...f, [m.run_id]: (f[m.run_id] || 0) + 1 }))
+        clearTimeout(memberTimers.current[m.run_id])
+        memberTimers.current[m.run_id] = setTimeout(
+          () => setMemberFlash(f => ({ ...f, [m.run_id]: undefined })), 2000)
+      }
+    })
+  }, [members])
+  useEffect(() => () => {
+    Object.values(memberTimers.current).forEach(clearTimeout)
+  }, [])
 
   const launch = async () => {
     setBusy(true); setError(null)
@@ -257,18 +282,36 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               💡 {T.clickHint}
             </div>
           )}
+          <style>{`
+            @keyframes sp-run-flash {
+              0% { box-shadow: 0 0 0 2.5px var(--sp-flash-color), 0 0 18px 2px var(--sp-flash-color); }
+              70% { box-shadow: 0 0 0 2px var(--sp-flash-color), 0 0 8px 0 transparent; }
+              100% { box-shadow: 0 0 0 0 transparent; }
+            }
+            @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
+          `}</style>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))', gap: 8, marginBottom: 12 }}>
             {members.map(m => (
               <div key={m.run_id}
                 onClick={onSelectRun ? () => onSelectRun(m.run_id) : undefined}
                 style={{ border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 9, padding: '9px 11px', fontSize: 12.5,
-                  cursor: onSelectRun ? 'pointer' : undefined }}>
+                  cursor: onSelectRun ? 'pointer' : undefined, position: 'relative' }}>
+                {memberFlash[m.run_id] != null && (
+                  <div key={memberFlash[m.run_id]} style={{ position: 'absolute', inset: 0, borderRadius: 9,
+                    pointerEvents: 'none', ['--sp-flash-color' as any]: 'rgba(12,163,12,0.85)',
+                    animation: 'sp-run-flash 2s ease-out forwards' }} />
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <b>{m.symbol}</b>
                   <span style={{ color: 'var(--text-muted,#a89f92)' }}>{m.market}{m.thesis?.direction === 'short' ? ' · short' : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-                  <span style={{ color: m.status === 'running' ? '#0ca30c' : m.status === 'paused' ? '#7a68d8' : 'inherit' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5,
+                    color: m.status === 'running' ? '#0ca30c' : m.status === 'paused' ? '#7a68d8' : 'inherit' }}>
+                    {m.status === 'running' && (
+                      <span style={{ width: 6, height: 6, borderRadius: 6, background: '#0ca30c',
+                        display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
+                    )}
                     {statusLabel(m.status, language)}{m.paused_reason ? ` (${m.paused_reason})` : ''}
                   </span>
                   {m.realized_pnl_usd != null && (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { RunSparkline } from '../components/RunSparkline'
 import { SymbolSelect } from '../components/SymbolSelect'
@@ -161,6 +161,158 @@ function ageLabel(ts: string | undefined, lang: Language): string {
   return `${Math.round(secs / 3600)}h`
 }
 
+// The card's rotating "what am I doing right now" line (advanced every 3s by
+// the section heartbeat). A running box must never read as static: it cycles
+// through the next-cycle countdown, the live mark it is watching, and the
+// last non-equity event — whatever this run actually has.
+function activityLines(run: Run, tick: any, events: any[],
+                       lang: Language): string[] {
+  const lines: string[] = []
+  const iv = Number((run as any).config?.interval_minutes ?? 60) * 60000
+  const last = run.last_cycle_at ? new Date(run.last_cycle_at).getTime() : 0
+  if (last) {
+    const mins = Math.ceil(Math.max(0, last + iv - Date.now()) / 60000)
+    lines.push(mins <= 0
+      ? tr(lang, { ko: '🧠 AI 분석 사이클 임박', en: '🧠 AI analysis due now',
+          ja: '🧠 AI分析まもなく', th: '🧠 ใกล้รอบวิเคราะห์ AI', vi: '🧠 sắp tới chu kỳ AI' })
+      : tr(lang, { ko: `🧠 다음 AI 분석까지 ${mins}분`, en: `🧠 next AI analysis in ${mins}m`,
+          ja: `🧠 次のAI分析まで${mins}分`, th: `🧠 วิเคราะห์ AI ครั้งถัดไปใน ${mins} นาที`,
+          vi: `🧠 phân tích AI tiếp theo sau ${mins} phút` }))
+  }
+  if (tick && tick.price != null) {
+    const p = `$${Number(tick.price).toFixed(2)}`
+    lines.push(tr(lang, { ko: `👁 가격 감시 중 — ${p}`, en: `👁 watching price — ${p}`,
+      ja: `👁 価格監視中 — ${p}`, th: `👁 เฝ้าดูราคา — ${p}`, vi: `👁 đang theo dõi giá — ${p}` }))
+  }
+  const lastEv = (events || []).filter((e) => e.event_type !== 'equity').slice(-1)[0]
+  if (lastEv) {
+    lines.push(`📋 ${summarize(lastEv, lang)}`)
+  }
+  if (!lines.length) {
+    lines.push(tr(lang, { ko: '⚙️ 서버에서 실행 중', en: '⚙️ running on the server',
+      ja: '⚙️ サーバーで実行中', th: '⚙️ กำลังทำงานบนเซิร์ฟเวอร์', vi: '⚙️ đang chạy trên máy chủ' }))
+  }
+  return lines
+}
+
+// Flash color: the event type decides how the 2s blink reads.
+function flashColor(eventType: string): string {
+  if (eventType === 'trade') return '#0ca30c'
+  if (eventType === 'alert' || eventType === 'gate_skip') return '#eb6834'
+  if (eventType === 'decision') return '#2a78d6'
+  if (eventType === 'run_status') return '#7a68d8'
+  return 'rgba(12,163,12,0.85)'  // equity heartbeat and anything new
+}
+
+function fmtPx(v: number | null | undefined): string {
+  if (v == null || !isFinite(Number(v))) return '—'
+  const n = Number(v)
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: 2, maximumFractionDigits: n < 1 ? 6 : 2 })
+}
+
+// Exchange-style live book row for one TRADING card. Position quantity/entry
+// only change on trade events (snapshot refetch); the mark rides the WS tick,
+// and the section's 1s clock re-renders so value / unrealized P&L move every
+// second like a real terminal. Shorts run 1x on full collateral, so the
+// synthetic liquidation sits at exactly 2× entry (run_engine._evaluate_stop).
+function BookBlock({ run, snap, tick, lang }: {
+  run: Run; snap: any; tick: any; lang: Language
+}) {
+  const L = {
+    qty: tr(lang, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'KL' }),
+    entry: tr(lang, { ko: '진입가', en: 'Entry', ja: '進入価格', th: 'ราคาเข้า', vi: 'Giá vào' }),
+    mark: tr(lang, { ko: '마크가', en: 'Mark', ja: 'マーク価格', th: 'ราคามาร์ก', vi: 'Giá mark' }),
+    value: tr(lang, { ko: '평가액', en: 'Value', ja: '評価額', th: 'มูลค่า', vi: 'Giá trị' }),
+    upnl: tr(lang, { ko: '미실현', en: 'Unrealized', ja: '含み損益', th: 'ยังไม่รับรู้', vi: 'Chưa chốt' }),
+    realized: tr(lang, { ko: '실현', en: 'Realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'Đã chốt' }),
+    liq: tr(lang, { ko: '청산가', en: 'Liq. price', ja: '清算価格', th: 'ราคาล้าง', vi: 'Giá thanh lý' }),
+    margin: tr(lang, { ko: '담보', en: 'Collateral', ja: '担保', th: 'หลักประกัน', vi: 'Ký quỹ' }),
+    long: tr(lang, { ko: '롱', en: 'LONG', ja: 'ロング', th: 'ลอง', vi: 'LONG' }),
+    short: tr(lang, { ko: '숏', en: 'SHORT', ja: 'ショート', th: 'ชอร์ต', vi: 'SHORT' }),
+    isolated: tr(lang, { ko: '격리 1배', en: 'isolated 1x', ja: '分離 1倍', th: 'แยก 1x', vi: 'cô lập 1x' }),
+    flat: tr(lang, { ko: '포지션 없음 — 현금 대기', en: 'No position — holding cash',
+      ja: 'ポジションなし — 現金待機', th: 'ไม่มีสถานะ — ถือเงินสด', vi: 'Không vị thế — giữ tiền mặt' }),
+    trades: tr(lang, { ko: '거래', en: 'trades', ja: '取引', th: 'ดีล', vi: 'lệnh' }),
+  }
+  const mono: React.CSSProperties = {
+    fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace',
+    fontVariantNumeric: 'tabular-nums' }
+  const lbl: React.CSSProperties = { color: 'var(--text-muted,#a89f92)' }
+  const realized = Number(snap?.pnl?.realized ?? 0)
+  const trades = Number(snap?.pnl?.trades ?? 0)
+  const stops = (run as any).stop_conditions || {}
+  const pos = snap?.position
+  const qtySigned = pos ? Number(pos.quantity || 0) : 0
+
+  if (!pos || Math.abs(qtySigned) < 1e-12) {
+    return (
+      <div style={{ ...mono, fontSize: 10.5, marginTop: 6, padding: '5px 8px',
+        borderRadius: 7, background: 'var(--bg-secondary,rgba(0,0,0,0.04))',
+        display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <span style={lbl}>{L.flat}</span>
+        <span>
+          <span style={lbl}>{L.realized} </span>
+          <span style={{ color: realized > 0 ? '#0ca30c' : realized < 0 ? '#d03b3b' : 'inherit' }}>
+            {realized >= 0 ? '+' : ''}{realized.toFixed(2)}</span>
+          <span style={lbl}> · {trades} {L.trades}</span>
+        </span>
+      </div>
+    )
+  }
+
+  const short = qtySigned < 0
+  const qty = Math.abs(qtySigned)
+  const entry = Number(pos.entry_price || 0)
+  const mark = tick && tick.price != null ? Number(tick.price)
+    : pos.current_price != null ? Number(pos.current_price) : null
+  const value = mark != null ? qty * mark : null
+  const upnl = mark != null ? (short ? entry - mark : mark - entry) * qty : null
+  const upnlPct = upnl != null && entry * qty > 0 ? (upnl / (entry * qty)) * 100 : null
+  const upnlColor = (upnl ?? 0) > 0 ? '#0ca30c' : (upnl ?? 0) < 0 ? '#d03b3b' : 'inherit'
+  const cell = (label: string, val: React.ReactNode) => (
+    <span style={{ whiteSpace: 'nowrap' }}><span style={lbl}>{label} </span>{val}</span>
+  )
+  return (
+    <div style={{ ...mono, fontSize: 10.5, marginTop: 6, padding: '6px 8px',
+      borderRadius: 7, background: 'var(--bg-secondary,rgba(0,0,0,0.04))',
+      display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <span>
+          <b style={{ color: short ? '#d03b3b' : '#0ca30c' }}>{short ? L.short : L.long}</b>
+          {short && <span style={{ ...lbl, marginLeft: 5 }}>{L.isolated}</span>}
+          <span style={{ marginLeft: 8 }}>{cell(L.qty, qty.toFixed(qty < 1 ? 6 : 4))}</span>
+        </span>
+        {cell(L.value, value != null ? `$${fmtPx(value)}` : '—')}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        {cell(L.entry, fmtPx(entry))}
+        {cell(L.mark, <span style={{ color: upnlColor }}>{fmtPx(mark)}</span>)}
+        {short ? cell(L.liq, fmtPx(entry * 2)) : null}
+        {short ? cell(L.margin, `$${fmtPx(entry * qty)}`) : null}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        {cell(L.upnl, (
+          <span style={{ color: upnlColor }}>
+            {upnl != null ? `${upnl >= 0 ? '+' : ''}${upnl.toFixed(2)}` : '—'}
+            {upnlPct != null ? ` (${upnlPct >= 0 ? '+' : ''}${upnlPct.toFixed(2)}%)` : ''}
+          </span>
+        ))}
+        {cell(L.realized, (
+          <span style={{ color: realized > 0 ? '#0ca30c' : realized < 0 ? '#d03b3b' : 'inherit' }}>
+            {realized >= 0 ? '+' : ''}{realized.toFixed(2)}</span>
+        ))}
+        <span style={{ whiteSpace: 'nowrap' }}>
+          <span style={lbl}>TP </span>
+          <span style={{ color: '#0ca30c' }}>{stops.profit_target_usd != null ? `+$${Number(stops.profit_target_usd)}` : '—'}</span>
+          <span style={lbl}> SL </span>
+          <span style={{ color: '#d03b3b' }}>{stops.max_loss_usd != null ? `−$${Number(stops.max_loss_usd)}` : '—'}</span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // The whole live-runs experience (grid + create + detail drawer), embeddable:
 // /automation renders it as its primary section (embedded), while the old
 // /runs/live route now redirects there. `reloadKey` lets a parent force a
@@ -257,6 +409,67 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       return next
     })
   }, [eventsByRun])
+
+  // Liveness. heartbeat advances the per-card activity line every 3s; flash
+  // marks a card for 2s whenever one of its events arrives (any type — the
+  // blink IS the proof the run is alive, and its color says what happened).
+  const [heartbeat, setHeartbeat] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setHeartbeat((n) => n + 1), 3000)
+    return () => clearInterval(id)
+  }, [])
+  // 1s terminal clock — the book's derived fields (value, unrealized, mark)
+  // recompute against the latest tick every second, exchange-style.
+  const [, setClockTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setClockTick((n) => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Per-run book snapshot (position + realized). Quantity/entry only move on
+  // trades, so seed once per run and refetch when a trade or status event
+  // arrives; the per-second motion comes from the WS mark, not from polling.
+  const [snapByRun, setSnapByRun] = useState<Record<number, any>>({})
+  const fetchSnap = useCallback((rid: number) => {
+    fetch(`${API_BASE}/runs/${rid}/snapshot`, { headers: auth })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => { if (s) setSnapByRun((prev) => ({ ...prev, [rid]: s })) })
+      .catch(() => { /* transient */ })
+  }, [auth])
+  useEffect(() => {
+    for (const run of runs) {
+      if (!snapByRun[run.id]) fetchSnap(run.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runs])
+  const [flash, setFlash] = useState<Record<number,
+    { nonce: number; text: string; color: string } | undefined>>({})
+  const flashTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
+  const seenEventCount = useRef<Record<number, number>>({})
+  useEffect(() => {
+    for (const [ridStr, events] of Object.entries(eventsByRun)) {
+      const rid = Number(ridStr)
+      const prev = seenEventCount.current[rid] || 0
+      if (events.length <= prev) continue
+      seenEventCount.current[rid] = events.length
+      const e = events[events.length - 1]
+      setFlash((f) => ({ ...f, [rid]: {
+        nonce: (f[rid]?.nonce || 0) + 1,
+        text: summarize(e, language),
+        color: flashColor(e.event_type) } }))
+      clearTimeout(flashTimers.current[rid])
+      flashTimers.current[rid] = setTimeout(
+        () => setFlash((f) => ({ ...f, [rid]: undefined })), 2000)
+      // trades / lifecycle changes move the book — refresh that run's snapshot
+      const fresh = events.slice(prev)
+      if (fresh.some((ev) => ev.event_type === 'trade' || ev.event_type === 'run_status')) {
+        fetchSnap(rid)
+      }
+    }
+  }, [eventsByRun, language])
+  useEffect(() => () => {  // unmount: drop pending flash timers
+    Object.values(flashTimers.current).forEach(clearTimeout)
+  }, [])
 
   async function act(id: number, action: string, body?: any) {
     setErr('')
@@ -381,6 +594,16 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
         <p className="muted" style={{ marginTop: 24 }}>{T.empty}</p>
       )}
 
+      {/* Liveness keyframes — the flash ring restarts per event because the
+          overlay is keyed by the flash nonce. */}
+      <style>{`
+        @keyframes sp-run-flash {
+          0% { box-shadow: 0 0 0 2.5px var(--sp-flash-color), 0 0 18px 2px var(--sp-flash-color); }
+          70% { box-shadow: 0 0 0 2px var(--sp-flash-color), 0 0 8px 0 transparent; }
+          100% { box-shadow: 0 0 0 0 transparent; }
+        }
+        @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
+      `}</style>
       <div style={{ display: 'grid', gap: 12, marginTop: 18,
         gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {runs.map((run) => {
@@ -388,11 +611,19 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           const pnl = Number(run.realized_pnl_usd || 0)
           const pnlColor = pnl > 0 ? '#0ca30c' : pnl < 0 ? '#d03b3b' : 'var(--text-muted,#898781)'
           const ageTs = run.status === 'running' ? (tick?.ts || run.last_cycle_at) : run.last_cycle_at
+          const fl = flash[run.id]
+          const acts = run.status === 'running'
+            ? activityLines(run, tick, eventsByRun[run.id] || [], language) : []
           return (
             <div key={run.id}
               onClick={() => setSelected(run.id)}
               style={{ background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
-                borderRadius: 12, padding: 14, cursor: 'pointer' }}>
+                borderRadius: 12, padding: 14, cursor: 'pointer', position: 'relative' }}>
+              {fl && (
+                <div key={fl.nonce} style={{ position: 'absolute', inset: 0, borderRadius: 12,
+                  pointerEvents: 'none', ['--sp-flash-color' as any]: fl.color,
+                  animation: 'sp-run-flash 2s ease-out forwards' }} />
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: 15 }}>{run.symbol}
                   <span className="muted" style={{ fontSize: 11, marginLeft: 6 }}>
@@ -403,8 +634,13 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                       🚀 #{(run as any).fleet_id}</span>
                   ) : null}
                 </strong>
-                <span style={{ fontSize: 11, fontWeight: 600,
+                <span style={{ fontSize: 11, fontWeight: 600, display: 'inline-flex',
+                  alignItems: 'center', gap: 5,
                   color: STATUS_COLOR[run.status] || '#898781' }}>
+                  {run.status === 'running' && (
+                    <span style={{ width: 6, height: 6, borderRadius: 6, background: '#0ca30c',
+                      display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
+                  )}
                   {statusLabel(run.status, language)}</span>
               </div>
               {/* the reason is the whole answer to "why did this stop?" —
@@ -421,6 +657,21 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                 fontVariantNumeric: 'tabular-nums' }}>
                 {strategyLabel(run)}
               </div>
+              {/* what it's doing RIGHT NOW — rotates every 3s; an arriving
+                  event takes the line over for its 2s flash */}
+              {run.status === 'running' && (
+                <div style={{ fontSize: 11, marginTop: 5, minHeight: 15,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: fl ? fl.color : 'var(--text-secondary,#8a8073)',
+                  fontWeight: fl ? 600 : 400 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {fl ? `⚡ ${fl.text}` : acts[heartbeat % acts.length]}
+                  </span>
+                </div>
+              )}
+              {/* live book — the contract/holding state of this run's tuple */}
+              <BookBlock run={run} snap={snapByRun[run.id]}
+                tick={run.status === 'running' ? tick : null} lang={language} />
               <div style={{ marginTop: 8 }}>
                 <RunSparkline values={equityByRun[run.id] || [0]}
                   color={pnl < 0 ? 'rgb(208,59,59)' : 'rgb(12,163,12)'} height={44} />
