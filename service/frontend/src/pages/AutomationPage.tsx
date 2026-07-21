@@ -104,6 +104,10 @@ export function AutomationPage() {
   const [runStartErr, setRunStartErr] = useState('')
   const [runsReload, setRunsReload] = useState(0)
 
+  // Fleet monitor → runs section: clicking a member card opens that TRADING's
+  // full detail drawer (the drawer lives in RunsLiveSection).
+  const [openRunReq, setOpenRunReq] = useState<{ id: number; nonce: number } | null>(null)
+
   async function startRunFromAnalysis(symbol: string, market: string) {
     setRunStartBusy(true); setRunStartErr('')
     try {
@@ -436,9 +440,15 @@ export function AutomationPage() {
         <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
       </div>
 
+      {/* ── Full Auto fleet monitor — always visible once a fleet is live,
+             so monitoring never requires reopening the create modal ── */}
+      <FleetPanel token={token!} monitorOnly
+        onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
+
       {/* ── The one block on this page ── */}
       <RunsLiveSection token={token} embedded reloadKey={runsReload}
-        hideCreateButton openCreateSignal={openCreate} extraPanel={rulePanel} />
+        hideCreateButton openCreateSignal={openCreate} extraPanel={rulePanel}
+        openRunRequest={openRunReq} />
 
       {/* ── ② Make by AI Analyst ── */}
       {showAnalyst && (
