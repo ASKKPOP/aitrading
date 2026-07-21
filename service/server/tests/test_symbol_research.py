@@ -309,13 +309,14 @@ class BatchAndSelectionTests(unittest.TestCase):
         self.assertNotIn("BBB", syms)
         conn.close()
 
-    def test_select_targets_diversity_cap(self):
+    def test_select_targets_diversity_is_preference_not_starvation(self):
+        """Diversity caps the FIRST pass; a single-market universe must still
+        fill all n slots (perpetual N outranks spread — Phase 3 fix)."""
         self._refresh(symbols=("AAA", "BBB", "CCC", "DDD"))
         conn = database.get_db_connection()
         cur = conn.cursor()
-        picked = sr.select_targets(cur, agent_id=2, n=2)
-        # ceil(2/2)=1 per market — only one crypto pick allowed
-        self.assertLessEqual(len([t for t in picked if t["market"] == "crypto"]), 1)
+        picked = sr.select_targets(cur, agent_id=2, n=3)
+        self.assertEqual(len(picked), 3)  # crypto-only batch still fills n
         conn.close()
 
 

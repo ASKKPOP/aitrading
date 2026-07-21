@@ -1624,6 +1624,13 @@ async def _policy_feed_loop():
     await policy_feed_loop()
 
 
+async def _fleet_planner_loop():
+    """Plan 14: fleet orchestrator (FLEET_ENABLED gates new builds; supervision
+    of live fleets keeps running regardless — §6.5.5)."""
+    from fleet_planner import fleet_planner_loop
+    await fleet_planner_loop()
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1656,6 +1663,7 @@ BACKGROUND_TASK_REGISTRY = {
     "watches": watch_loop,
     "symbol_research": _symbol_research_loop,
     "policy_feed": _policy_feed_loop,
+    "fleet_planner": _fleet_planner_loop,
 }
 
 
@@ -1720,6 +1728,9 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "symbol_research":         "settlement",
     # Plan 14 F7 — Federal Register policy watchlists (attention factor)
     "policy_feed":             "research",
+    # Plan 14 — fleet orchestrator lives with the runs engine (it creates
+    # runs the run loop must immediately see)
+    "fleet_planner":           "settlement",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

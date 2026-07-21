@@ -92,6 +92,26 @@ def _delete_agent_cascade(cursor, agent_id: int) -> dict[str, int]:
                 deleted[f"{run_table}.run_id"] = cursor.rowcount
         except Exception as exc:  # noqa: BLE001
             logger.warning("admin cascade %s.run_id failed: %s", run_table, exc)
+    # Plan 14: fleet children key on fleet_id — clear via the agent's fleets
+    # BEFORE the fleets rows go (prod MySQL enforces the FKs SQLite ignores).
+    for fleet_table in ("fleet_events", "fleet_candidates", "fleet_slots"):
+        try:
+            cursor.execute(
+                f"""DELETE FROM {fleet_table} WHERE fleet_id IN
+                    (SELECT id FROM fleets WHERE agent_id = ?)""",
+                (agent_id,))
+            if cursor.rowcount:
+                deleted[f"{fleet_table}.fleet_id"] = cursor.rowcount
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("admin cascade %s.fleet_id failed: %s", fleet_table, exc)
+    for table, column in (("fleet_symbol_cooldowns", "agent_id"),
+                          ("fleets", "agent_id")):
+        try:
+            cursor.execute(f"DELETE FROM {table} WHERE {column} = ?", (agent_id,))
+            if cursor.rowcount:
+                deleted[f"{table}.{column}"] = cursor.rowcount
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("admin cascade %s.%s failed: %s", table, column, exc)
     for table, column in _AGENT_CONTENT_TABLES:
         try:
             cursor.execute(f"DELETE FROM {table} WHERE {column} = ?", (agent_id,))

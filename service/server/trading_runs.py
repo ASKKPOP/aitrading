@@ -303,10 +303,14 @@ def run_filter_key(run: dict) -> str:
 # ── lifecycle operations ───────────────────────────────────────────────────
 
 def create_run(agent_id: int, settings: dict, start_condition: dict,
-               stop_conditions: dict, stop_flatten: bool) -> int:
+               stop_conditions: dict, stop_flatten: bool,
+               fleet_id: Optional[int] = None, created_via: str = "user") -> int:
     """Insert a draft run. `settings` is the already-validated config payload
     (max_bet_usd, run_budget_usd, interval_minutes, min_confidence, provider,
-    lang, leverage) — snapshotted verbatim at start time."""
+    lang, leverage) — snapshotted verbatim at start time.
+
+    Plan 14: fleet_id/created_via are columns ON THE INSERT — a separate
+    stamp step would leave a crash window producing unattributed drafts."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -315,11 +319,12 @@ def create_run(agent_id: int, settings: dict, start_condition: dict,
             """INSERT INTO trading_runs
                (agent_id, symbol, market, market_type, status,
                 config_snapshot_json, start_condition_json, stop_conditions_json,
-                stop_flatten, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                stop_flatten, fleet_id, created_via, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (agent_id, settings["symbol"], settings["market"], settings["market_type"],
              STATUS_DRAFT, json.dumps(settings), json.dumps(start_condition),
-             json.dumps(stop_conditions), 1 if stop_flatten else 0, _now_iso()),
+             json.dumps(stop_conditions), 1 if stop_flatten else 0,
+             fleet_id, created_via, _now_iso()),
         )
         run_id = cursor.lastrowid
         _emit_event(cursor, run_id, "run_status",
@@ -547,6 +552,16 @@ def start_run(run_id: int, agent_id: int) -> dict:
         # Plan 10 D9: server-side tier gate (env-gated until PLAN_LIMITS is
         # confirmed). Same gate family as the automation engine's — the two
         # engines must never diverge on entitlements.
+        # Plan 14: serialize the count-then-start per USER first. On MySQL,
+        # plain BEGIN gives REPEATABLE READ over disjoint rows, so two
+        # concurrent starts at limit−1 both count active=k and both commit —
+        # the FOR UPDATE on the owning user row is the serialization point.
+        # SQLite's BEGIN IMMEDIATE already serializes all writers (no-op).
+        from database import using_mysql
+        if using_mysql():
+            cursor.execute(
+                "SELECT u.id FROM users u JOIN agents a ON a.user_id = u.id "
+                "WHERE a.id = ? FOR UPDATE", (agent_id,))
         from entitlements import check_run_start
         try:
             cfg = json.loads(run.get("config_snapshot_json") or "{}")
@@ -653,14 +668,24 @@ def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
     return get_run(run_id, agent_id) or {}
 
 
-def pause_run(run_id: int, agent_id: int, reason: str = "user_pause") -> dict:
+def pause_run(run_id: int, agent_id: int, reason: str = "user_pause",
+              paused_marker: Optional[str] = None) -> dict:
     """Pause gates ENTRIES only — stop conditions and the clock keep
-    evaluating every scheduler scan (Plan 10 D3)."""
+    evaluating every scheduler scan (Plan 10 D3).
+
+    Plan 14: `paused_marker` lands in the paused_reason COLUMN (not
+    status_reason) so marker-disciplined resumes (master hold, drawdown
+    warning) can restore exactly the set they paused — the engine's own
+    stop_eval_failed auto-resume filter is the precedent."""
+    if paused_marker:
+        return _transition(run_id, agent_id, (STATUS_RUNNING,), STATUS_PAUSED, reason,
+                           extra_sets="paused_reason = ?", extra_args=(paused_marker,))
     return _transition(run_id, agent_id, (STATUS_RUNNING,), STATUS_PAUSED, reason)
 
 
 def resume_run(run_id: int, agent_id: int) -> dict:
-    return _transition(run_id, agent_id, (STATUS_PAUSED,), STATUS_RUNNING, "user_resume")
+    return _transition(run_id, agent_id, (STATUS_PAUSED,), STATUS_RUNNING, "user_resume",
+                       extra_sets="paused_reason = NULL", extra_args=())
 
 
 def request_stop(run_id: int, agent_id: int, flatten: bool) -> dict:

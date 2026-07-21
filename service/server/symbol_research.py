@@ -723,19 +723,27 @@ def select_targets(cursor, agent_id: int, n: int,
     if exclude:
         busy |= set(exclude)
 
+    # Diversity is a PREFERENCE, not a hard cap: pass 1 caps ceil(n/2) per
+    # market; pass 2 fills remaining slots from leftovers regardless of market
+    # (a crypto-only scope must still reach N — perpetual N outranks spread).
+    eligible = [t for t in theses
+                if (t["market"], t["symbol"]) not in busy
+                and (not markets_scope or t["market"] in markets_scope)]
     per_market_cap = max(1, math.ceil(n / 2))
     picked: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
-    for t in theses:
-        key = (t["market"], t["symbol"])
-        if key in busy:
-            continue
-        if markets_scope and t["market"] not in markets_scope:
-            continue
+    for t in eligible:
         if counts.get(t["market"], 0) >= per_market_cap:
             continue
         picked.append(t)
         counts[t["market"]] = counts.get(t["market"], 0) + 1
+        if len(picked) >= n:
+            return picked
+    chosen = {(t["market"], t["symbol"]) for t in picked}
+    for t in eligible:
+        if (t["market"], t["symbol"]) in chosen:
+            continue
+        picked.append(t)
         if len(picked) >= n:
             break
     return picked
