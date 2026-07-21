@@ -1180,6 +1180,44 @@ def run_cycle(run_id: int) -> dict:
         seq = int(run["cycle_seq"])
         cfg = json.loads(run.get("config_snapshot_json") or "{}")
 
+        # ── Plan 14 §7: feedback pass — zero-LLM, BEFORE pre-gates ─────────
+        adapt_state = None
+        adapt_params = None
+        import run_feedback
+        if run_feedback.feedback_enabled(cfg):
+            adapt_state = run_feedback.load_state(run)
+            pnl = compute_run_pnl(run)
+            outcomes = run_feedback.leg_outcomes(
+                run, int(adapt_state.get("last_processed_signal_id") or 0))
+            adapt_events = run_feedback.ingest_outcomes(adapt_state, outcomes)
+            if adapt_state.pop("_reset", None):
+                adapt_events.append({"trigger": "state_reset"})
+            policy = run_feedback.apply_policy(adapt_state, run, cfg, pnl)
+            adapt_events.extend(policy["events"])
+            review = run_feedback.maybe_review_thesis(adapt_state, run, cfg, pnl)
+            if review:
+                emit_telemetry_event(run_id, "thesis_review",
+                                     {"cycle": seq, "status": review["status"],
+                                      "rationale": review["rationale"]})
+                if review["retire"]:
+                    policy = {"retire": True, "reason": "thesis_invalidated"}
+            if not run_feedback.save_state(run, adapt_state, adapt_events,
+                                           WORKER_IDENTITY):
+                # lease lost mid-pass: discard adaptation, skip the trade
+                result["skip_reason"] = "adapt state fence lost"
+                return result
+            if policy["retire"]:
+                run_feedback.retire_run(run, policy.get("reason") or "adapt")
+                result["skip_reason"] = "adapt_retired"
+                return result
+            if run_feedback.in_cooldown(adapt_state):
+                result["skip_reason"] = "adapt loss cooldown"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "adapt",
+                                      "reason": "loss cooldown"})
+                return result
+            adapt_params = run_feedback.effective_gate_params(adapt_state, cfg)
+
         skip = _pre_gate_skip(run, cfg)
         if skip:
             result["skip_reason"] = skip
@@ -1228,11 +1266,25 @@ def run_cycle(run_id: int) -> dict:
             elif action == "buy" and pos_qty < 0:
                 action = "cover"
 
+        # Plan 14 §7: same-direction re-entry block after a losing close
+        # (whipsaw/fee-churn guard) — deterministic, before the gates.
+        if adapt_state is not None and \
+                run_feedback.blocked_reentry(adapt_state, action):
+            result["skip_reason"] = "adapt re-entry blocked after losing close"
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "adapt",
+                                  "reason": result["skip_reason"]})
+            return result
+
         from automation import evaluate_execution_gates, execute_paper_trade
         # Plan 14 §6.3.2: for fleet-created runs, run_budget_usd is a HARD
         # deployed (open) cost-basis cap enforced at execution — until this,
         # it was validated at creation and then read only by reporting.
         size_usd = cfg.get("max_bet_usd")
+        min_confidence = cfg.get("min_confidence")
+        if adapt_params is not None:
+            size_usd = adapt_params["size_usd"]
+            min_confidence = adapt_params["min_confidence"]
         if is_fleet_run and cfg.get("run_budget_usd"):
             open_basis = _open_cost_basis(run["agent_id"], run["market"],
                                           run["symbol"], run["id"])
@@ -1247,7 +1299,7 @@ def run_cycle(run_id: int) -> dict:
                 return result
             size_usd = min(float(size_usd or 0), max(headroom, 0.0))
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
-                    "min_confidence": cfg.get("min_confidence"),
+                    "min_confidence": min_confidence,
                     "size_usd": size_usd, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, confidence, entry,

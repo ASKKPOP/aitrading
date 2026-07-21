@@ -765,6 +765,15 @@ async def trading_run_loop():
             if result.get("dispatched") or result.get("armed_started") \
                     or result.get("stopping_finished"):
                 print(f"[TradingRuns] tick: {result}")
+            # Plan 14 §6.5.5: supervision watchdog rides THIS loop — a crashed
+            # fleet loop must still produce an alert (rails may be dark).
+            try:
+                from fleet_supervisor import check_watchdog
+                stale = await asyncio.to_thread(check_watchdog)
+                if stale:
+                    print(f"[TradingRuns] fleet watchdog: {stale} stale fleet(s)")
+            except Exception:  # noqa: BLE001 — watchdog must never wedge runs
+                pass
         except Exception as e:
             print(f"[TradingRuns Error] {e}")
 
