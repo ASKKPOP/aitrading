@@ -41,6 +41,15 @@ US_STOCK_SYMBOLS: tuple[str, ...] = (
     'AMD', 'INTC', 'QCOM', 'TMO', 'CSCO', 'ADBE', 'MCD', 'SBUX', 'NKE', 'IBM',
     'GE', 'CAT', 'BA', 'DIS', 'VZ', 'T', 'F', 'GM', 'PLTR', 'UBER',
     'COIN', 'HOOD', 'MSTR', 'SNOW', 'SHOP', 'PYPL', 'SOFI', 'RIVN', 'LCID',
+    # 2026 listings. Screened 2026-07-20 on 1-month average dollar volume: each
+    # trades heavier than LCID (~$155M/day), the thinnest name above it. The
+    # rest of the 2026 IPO class falls off a cliff below that — the next
+    # candidate, BSP, is ~$150M and everything after is under $110M — so this
+    # bar is what keeps the dropdown to names a $500 order can actually fill.
+    'SPCX',   # SpaceX, Nasdaq 2026-06-12
+    'SKHY',   # SK hynix, Nasdaq 2026-07-10
+    'CBRS',   # Cerebras Systems, Nasdaq 2026-05-14
+    'QNT',    # Quantinuum, Nasdaq 2026-06-04
     'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'GLD', 'SLV', 'TLT',
 )
 
