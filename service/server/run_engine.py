@@ -1237,7 +1237,8 @@ def run_cycle(run_id: int) -> dict:
             analysis = run_analysis(run["symbol"], run["market"],
                                     cfg.get("lang") or "en",
                                     provider=cfg.get("provider") or None,
-                                    agent_id=run["agent_id"])
+                                    agent_id=run["agent_id"],
+                                    llm_tiers=cfg.get("llm_tiers") or None)
         analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
         tech_block = analysts.get("technical")
         technical = tech_block.get("data") if isinstance(tech_block, dict) else None
