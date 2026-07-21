@@ -1077,7 +1077,8 @@ def run_cycle(run_id: int) -> dict:
         # buying on top of a negative row. Without this mapping no decision
         # path ever emits 'short', so a futures run could never trade. Spot
         # runs are untouched — a spot 'sell' still only reduces a long.
-        if (run.get("market_type") or "spot") == "futures" and action in ("buy", "sell"):
+        if trading_runs.is_futures_book(run.get("market"), run.get("market_type")) \
+                and action in ("buy", "sell"):
             pos_qty = _position_quantity(run["agent_id"], run["market"], run["symbol"],
                                          run["id"])
             if action == "sell" and pos_qty <= 0:

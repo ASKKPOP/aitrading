@@ -1,14 +1,18 @@
 from typing import Optional
 
+import json as _json
 import re
 
-from fastapi import FastAPI, HTTPException, Query
+import markets
+
+from fastapi import FastAPI, Header, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
 _FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
+from utils import _extract_token
 from market_intel import (
     get_etf_flows_payload,
     get_featured_stock_analysis_payload,
@@ -37,6 +41,15 @@ US_STOCK_SYMBOLS: tuple[str, ...] = (
     'AMD', 'INTC', 'QCOM', 'TMO', 'CSCO', 'ADBE', 'MCD', 'SBUX', 'NKE', 'IBM',
     'GE', 'CAT', 'BA', 'DIS', 'VZ', 'T', 'F', 'GM', 'PLTR', 'UBER',
     'COIN', 'HOOD', 'MSTR', 'SNOW', 'SHOP', 'PYPL', 'SOFI', 'RIVN', 'LCID',
+    # 2026 listings. Screened 2026-07-20 on 1-month average dollar volume: each
+    # trades heavier than LCID (~$155M/day), the thinnest name above it. The
+    # rest of the 2026 IPO class falls off a cliff below that — the next
+    # candidate, BSP, is ~$150M and everything after is under $110M — so this
+    # bar is what keeps the dropdown to names a $500 order can actually fill.
+    'SPCX',   # SpaceX, Nasdaq 2026-06-12
+    'SKHY',   # SK hynix, Nasdaq 2026-07-10
+    'CBRS',   # Cerebras Systems, Nasdaq 2026-05-14
+    'QNT',    # Quantinuum, Nasdaq 2026-06-04
     'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'GLD', 'SLV', 'TLT',
 )
 
@@ -50,6 +63,56 @@ FOREX_SYMBOLS: tuple[str, ...] = (
     'AUDJPY', 'AUDNZD', 'AUDCAD', 'AUDCHF',
     'CADJPY', 'CHFJPY', 'NZDJPY',
     'USDCNH', 'USDHKD', 'USDSGD', 'USDKRW', 'USDMXN', 'USDTRY', 'USDZAR',
+)
+
+# Tradable futures, as bare contract roots. Every entry must also appear in
+# markets.FUTURES_MULTIPLIERS — an unlisted root silently prices at 1.0, which
+# would under-report an ES trade by 50x. test_market_symbols guards that.
+# price_fetcher._yahoo_symbol() appends '=F' for the provider.
+FUTURES_SYMBOLS: tuple[str, ...] = (
+    'ES', 'MES', 'NQ', 'MNQ', 'YM', 'MYM', 'RTY', 'M2K',   # equity index
+    'CL', 'MCL', 'NG',                                      # energy
+    'GC', 'MGC', 'SI', 'HG',                                # metals
+    'ZB', 'ZN', 'ZF',                                       # rates
+    'ZC', 'ZS', 'ZW',                                       # grains
+)
+
+# Tradable A-shares, carrying the exchange suffix because a six-digit board
+# code alone is ambiguous between Shanghai (.SS) and Shenzhen (.SZ). These are
+# the mainland large caps Yahoo serves reliably; all quote in CNY.
+A_STOCK_SYMBOLS: tuple[str, ...] = (
+    '600519.SS',  # Kweichow Moutai
+    '601398.SS',  # ICBC
+    '601857.SS',  # PetroChina
+    '600036.SS',  # China Merchants Bank
+    '601288.SS',  # Agricultural Bank of China
+    '600900.SS',  # China Yangtze Power
+    '601988.SS',  # Bank of China
+    '600028.SS',  # Sinopec
+    '601628.SS',  # China Life
+    '600030.SS',  # CITIC Securities
+    '600276.SS',  # Jiangsu Hengrui Medicine
+    '601318.SS',  # Ping An Insurance
+    '600887.SS',  # Inner Mongolia Yili
+    '601899.SS',  # Zijin Mining
+    '600309.SS',  # Wanhua Chemical
+    '000001.SZ',  # Ping An Bank
+    '000002.SZ',  # China Vanke
+    '000333.SZ',  # Midea Group
+    '000651.SZ',  # Gree Electric
+    '000858.SZ',  # Wuliangye Yibin
+    '002594.SZ',  # BYD
+    '300750.SZ',  # CATL
+    '002415.SZ',  # Hikvision
+    '300059.SZ',  # East Money
+    '002475.SZ',  # Luxshare Precision
+)
+
+# Underlyings whose option chains are offered. Kept to the liquid names — an
+# illiquid chain is all zero-bid strikes, which prices at a stale last trade.
+OPTION_UNDERLYINGS: tuple[str, ...] = (
+    'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AMD', 'NFLX',
+    'SPY', 'QQQ', 'IWM', 'GLD', 'COIN', 'MSTR', 'PLTR', 'INTC', 'BAC',
 )
 
 
@@ -262,9 +325,62 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'crypto_pairs': list(TOP_20_PAIRS),
                 'stock': list(US_STOCK_SYMBOLS),
                 'forex': list(FOREX_SYMBOLS),
+                'futures': list(FUTURES_SYMBOLS),
+                'a_stock': list(A_STOCK_SYMBOLS),
+                'option_underlyings': list(OPTION_UNDERLYINGS),
             }
 
         return await run_in_threadpool(_cached_market_payload, 'symbol-options', _build)
+
+    @app.get('/api/markets/options/{underlying}')
+    async def market_option_chain(underlying: str, expiry: Optional[int] = None):
+        """Option chain for one underlying, for the strike/expiry picker.
+
+        `expiry` is a UNIX timestamp from this endpoint's own `expirations`
+        list; omitting it returns the nearest expiry. Contracts come back in
+        OCC form (AAPL260720C00205000), which is the symbol a position is
+        actually booked under.
+        """
+        root = (underlying or '').strip().upper()
+        if root not in OPTION_UNDERLYINGS:
+            raise HTTPException(status_code=404, detail=f'No option chain for {root}')
+
+        def _build():
+            from price_fetcher import _fetch_yahoo_option_chain, _option_contract_price
+            chain = _fetch_yahoo_option_chain(root, expiry)
+            if not chain:
+                raise HTTPException(status_code=503,
+                                    detail='Option chain temporarily unavailable')
+
+            def _row(contract: dict) -> dict:
+                return {
+                    'symbol': contract.get('contractSymbol'),
+                    'strike': contract.get('strike'),
+                    'bid': contract.get('bid'),
+                    'ask': contract.get('ask'),
+                    'last': contract.get('lastPrice'),
+                    # The mark a position would actually open at, so the picker
+                    # and the ledger cannot disagree about the price.
+                    'price': _option_contract_price(contract),
+                    'volume': contract.get('volume'),
+                    'open_interest': contract.get('openInterest'),
+                    'implied_volatility': contract.get('impliedVolatility'),
+                    'in_the_money': contract.get('inTheMoney'),
+                }
+
+            leg = (chain.get('options') or [{}])[0]
+            return {
+                'underlying': root,
+                'underlying_price': (chain.get('quote') or {}).get('regularMarketPrice'),
+                'expirations': chain.get('expirationDates') or [],
+                'expiry': leg.get('expirationDate') or expiry,
+                'contract_multiplier': markets.contract_multiplier('options'),
+                'calls': [_row(c) for c in leg.get('calls', [])],
+                'puts': [_row(p) for p in leg.get('puts', [])],
+            }
+
+        cache_key = f'option-chain:{root}:{expiry or "front"}'
+        return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
     @app.get('/api/markets/top-symbols')
     async def market_top_symbols(limit: int = 5):
@@ -281,6 +397,88 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
             return await run_in_threadpool(
                 _cached_market_payload, f'top-symbols:limit={safe_limit}', _build)
         except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
+    @app.post('/api/markets/suggest-symbol')
+    async def suggest_symbol(authorization: str = Header(None)):
+        """Let the AI choose which symbol to trade from the ranked candidates.
+
+        ONE brief-tier call, not the 4-analyst pipeline: a symbol picker that
+        takes 30-90s is not a symbol picker. The model only ever chooses from
+        the candidate list, and a reply naming anything else is discarded in
+        favour of the top-ranked candidate — the AI may rank, never invent.
+
+        Metered to the caller (the usage shows up in their AI spend panel), and
+        fail-soft: if the LLM is unconfigured or unparseable the ranked leader
+        is returned with `by_ai=false` so the button always does something.
+        """
+        from services import _get_agent_by_token
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token) if token else None
+        if not agent:
+            raise HTTPException(status_code=401, detail='Agent token required')
+
+        def _build():
+            from top_symbols import get_top_symbols
+            candidates = get_top_symbols(5)
+            if not candidates:
+                raise HTTPException(status_code=503, detail='No candidates available')
+            fallback = candidates[0]['symbol'].removesuffix('USDT')
+
+            from llm_client import LlmContext, llm_configured, reset_llm_context, set_llm_context
+            if not llm_configured():
+                return {'symbol': fallback, 'reason': '', 'by_ai': False,
+                        'candidates': candidates}
+
+            lines = []
+            for c in candidates:
+                bits = [f"{c['symbol'].removesuffix('USDT')}",
+                        f"price ${c['last_price']}",
+                        f"24h volume ${c['volume_24h_usd']:,.0f}"]
+                if c.get('mention_rate_per_hour'):
+                    bits.append(f"social mentions/hour {c['mention_rate_per_hour']:.1f}")
+                lines.append(' · '.join(bits))
+            allowed = [c['symbol'].removesuffix('USDT') for c in candidates]
+            prompt = (
+                "You pick ONE crypto symbol to start an automated trading run on, from "
+                "the candidates below. Judge which currently offers the best risk-adjusted "
+                "opportunity for a short-horizon systematic strategy — consider liquidity "
+                "(volume), whether attention looks like early interest or a crowded late "
+                "move, and how stretched the price looks.\n\n"
+                + '\n'.join(f"- {ln}" for ln in lines)
+                + f"\n\nChoose strictly from: {', '.join(allowed)}\n"
+                'Reply with ONLY a JSON object: '
+                '{"symbol":"<one of the listed>","reason":"<max 15 words, plain language>"}'
+            )
+            ctx = LlmContext(source='rule', user_id=agent.get('user_id'), agent_id=agent['id'])
+            tok = set_llm_context(ctx)
+            try:
+                from llm_client import generate_text
+                text = generate_text(prompt, max_tokens=120, temperature=0.3, tier='brief')
+            finally:
+                reset_llm_context(tok)
+
+            symbol, reason = fallback, ''
+            try:
+                raw = (text or '').strip()
+                start, end = raw.find('{'), raw.rfind('}')
+                if start >= 0 and end > start:
+                    parsed = _json.loads(raw[start:end + 1])
+                    picked = str(parsed.get('symbol') or '').strip().upper()
+                    # never let the model invent a symbol we cannot price
+                    if picked in allowed:
+                        symbol = picked
+                        reason = str(parsed.get('reason') or '').strip()[:160]
+            except Exception:  # noqa: BLE001 — unparseable reply falls back
+                pass
+            return {'symbol': symbol, 'reason': reason,
+                    'by_ai': bool(reason), 'candidates': candidates}
+
+        try:
+            return await run_in_threadpool(_build)
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=503, detail=str(exc))
 
     @app.get('/api/markets/crypto/tickers')

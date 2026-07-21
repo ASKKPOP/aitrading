@@ -151,12 +151,12 @@ export function AutomationPage() {
     ruleSection: tr(language, { ko: '또는 자동화 규칙 만들기 (AI가 일정에 따라 반복 실행)', en: 'Or create an automation rule (AI repeats it on a schedule)', ja: 'または自動売買ルールを作成（AIが定期実行）', th: 'หรือสร้างกฎอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Hoặc tạo quy tắc tự động (AI lặp lại theo lịch)' }),
     modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản' }),
     modeAgent: tr(language, { ko: '완전 위임', en: 'Agent', ja: '完全委任', th: 'มอบหมายเต็มรูปแบบ', vi: 'Ủy quyền hoàn toàn' }),
-    modeAgentDesc: tr(language, { ko: '예산만 정하세요 — 종목·크기·주기·위험 수준을 AI가 매 사이클 결정하고, 모든 결정이 기록됩니다', en: 'Set only a budget — the AI decides symbol, size, cadence and risk each cycle, and every decision is journaled', ja: '予算だけ設定 — 銘柄・サイズ・周期・リスクをAIが毎サイクル決定し、全決定を記録', th: 'ตั้งแค่งบประมาณ — AI ตัดสินใจเหรียญ ขนาด รอบ และความเสี่ยงทุกรอบ พร้อมบันทึกทุกการตัดสินใจ', vi: 'Chỉ đặt ngân sách — AI quyết định mã, khối lượng, chu kỳ và rủi ro mỗi chu kỳ, mọi quyết định được ghi lại' }),
+    modeAgentDesc: tr(language, { ko: '예산만 정하세요 — AI가 종목을 골라 TRADING을 만들고, 매 사이클 매매 결정을 기록합니다', en: 'Set only a budget — the AI picks a symbol, creates the TRADING, and journals every cycle decision', ja: '予算だけ設定 — AIが銘柄を選んで TRADING を作成し、毎サイクルの判断を記録します', th: 'ตั้งแค่งบประมาณ — AI เลือกเหรียญ สร้าง TRADING และบันทึกการตัดสินใจทุกรอบ', vi: 'Chỉ đặt ngân sách — AI chọn mã, tạo TRADING và ghi lại quyết định mỗi chu kỳ' }),
     modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại' }),
     budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)' }),
     budgetHint: tr(language, { ko: 'AI가 배치할 수 있는 총 노출 한도 — 한 포지션은 예산의 25% 이하', en: 'Total exposure the AI may deploy — one position stays ≤ 25% of budget', ja: 'AIが展開できる総エクスポージャー上限 — 1ポジションは予算の25%以下', th: 'วงเงินรวมที่ AI ใช้ได้ — หนึ่งสถานะ ≤ 25% ของงบ', vi: 'Tổng mức AI được triển khai — một vị thế ≤ 25% ngân sách' }),
     startAgent: tr(language, { ko: 'AI에게 위임 시작', en: 'Start delegation', ja: '委任を開始', th: 'เริ่มมอบหมาย', vi: 'Bắt đầu ủy quyền' }),
-    agentKillNote: tr(language, { ko: '킬 스위치: 규칙을 제거하면 즉시 중단됩니다. 리스크 게이트·브레이커·예산 상한은 AI가 우회할 수 없습니다.', en: 'Kill switch: removing the rule stops it instantly. The risk gate, breakers and budget cap cannot be bypassed by the AI.', ja: 'キルスイッチ: ルール削除で即停止。リスクゲート・ブレーカー・予算上限はAIが回避できません。', th: 'สวิตช์หยุด: ลบกฎแล้วหยุดทันที AI ข้ามประตูความเสี่ยง เบรกเกอร์ และเพดานงบไม่ได้', vi: 'Công tắc dừng: xóa quy tắc là dừng ngay. AI không thể vượt cổng rủi ro, breaker và trần ngân sách.' }),
+    agentKillNote: tr(language, { ko: '킬 스위치: 아래 TRADING 목록에서 중지하면 즉시 멈춥니다. 리스크 게이트·브레이커·예산 상한은 AI가 우회할 수 없습니다.', en: 'Kill switch: stop it from the TRADING list below and it halts instantly. The risk gate, breakers and budget cap cannot be bypassed by the AI.', ja: 'キルスイッチ: 下の TRADING 一覧から停止すれば即座に止まります。リスクゲート・ブレーカー・予算上限はAIが回避できません。', th: 'สวิตช์หยุด: หยุดจากรายการ TRADING ด้านล่างแล้วหยุดทันที AI ข้ามประตูความเสี่ยง เบรกเกอร์ และเพดานงบไม่ได้', vi: 'Công tắc dừng: dừng từ danh sách TRADING bên dưới là ngừng ngay. AI không thể vượt cổng rủi ro, breaker và trần ngân sách.' }),
     coinAuto: tr(language, { ko: 'AI 자동 선택', en: 'AI auto-pick', ja: 'AI自動選択', th: 'AI เลือกให้', vi: 'AI tự chọn' }),
     coinAutoHint: tr(language, { ko: '스캐너가 거래량 급증·신규 상장에서 후보를 고릅니다', en: 'The scanner picks candidates from volume surges & new listings', ja: 'スキャナーが出来高急増・新規上場から選択', th: 'สแกนเนอร์เลือกจากปริมาณพุ่งและเหรียญใหม่', vi: 'Máy quét chọn từ khối lượng tăng vọt & niêm yết mới' }),
     topFiveHint: tr(language, { ko: '지금 거래량·관심도 상위 5개 종목입니다', en: 'The current top-5 symbols by volume & popularity', ja: '現在の出来高・注目度トップ5銘柄です', th: '5 อันดับเหรียญยอดนิยมตามปริมาณซื้อขายตอนนี้', vi: '5 mã hàng đầu theo khối lượng & mức quan tâm hiện tại' }),
@@ -168,7 +168,7 @@ export function AutomationPage() {
     riskBalancedDesc: tr(language, { ko: '1시간마다 · 신뢰도 65%+ · $500', en: 'Every 1h · 65%+ confidence · $500', ja: '1時間毎 · 65%+ · $500', th: 'ทุก 1 ชม. · 65%+ · $500', vi: 'Mỗi 1h · 65%+ · $500' }),
     riskAggressiveDesc: tr(language, { ko: '30분마다 · 신뢰도 55%+ · $1,000', en: 'Every 30min · 55%+ confidence · $1,000', ja: '30分毎 · 55%+ · $1,000', th: 'ทุก 30 นาที · 55%+ · $1,000', vi: 'Mỗi 30 phút · 55%+ · $1.000' }),
     startAuto: tr(language, { ko: '자동매매 시작', en: 'Start auto-trading', ja: '自動売買を開始', th: 'เริ่มเทรดอัตโนมัติ', vi: 'Bắt đầu giao dịch tự động' }),
-    simpleNote: tr(language, { ko: '모의 자금으로 거래합니다 — 실제 돈이 아닙니다. 언제든 규칙을 제거할 수 있습니다.', en: 'Trades with simulated funds — not real money. Remove the rule anytime.', ja: 'シミュレーション資金で取引 — 実際のお金ではありません。', th: 'เทรดด้วยเงินจำลอง — ไม่ใช่เงินจริง ลบกฎได้ตลอด', vi: 'Giao dịch bằng vốn mô phỏng — không phải tiền thật.' }),
+    simpleNote: tr(language, { ko: '모의 자금으로 거래합니다 — 실제 돈이 아닙니다. 아래 TRADING 목록에서 언제든 중지할 수 있습니다.', en: 'Trades with simulated funds — not real money. Stop it anytime from the TRADING list below.', ja: 'シミュレーション資金で取引 — 実際のお金ではありません。下の TRADING 一覧からいつでも停止できます。', th: 'เทรดด้วยเงินจำลอง — ไม่ใช่เงินจริง หยุดได้ตลอดจากรายการ TRADING ด้านล่าง', vi: 'Giao dịch bằng vốn mô phỏng — không phải tiền thật. Dừng bất cứ lúc nào từ danh sách TRADING bên dưới.' }),
     // ── AI Analyst modal ──
     analystSubtitle: tr(language, { ko: '네 명의 AI 애널리스트가 결정과 리포트를 두고 토론합니다 — 일회성 분석이며 주문은 실행되지 않습니다', en: 'Four AI analysts debate a decision + report — a one-off analysis, no order is placed', ja: '4人のAIアナリストが討議 — 1回限りの分析で、注文は出しません', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ — วิเคราะห์ครั้งเดียว ไม่ส่งคำสั่งซื้อขาย', vi: 'Bốn nhà phân tích AI tranh luận — phân tích một lần, không đặt lệnh' }),
     analystRun: tr(language, { ko: '분석 실행', en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích' }),
@@ -178,6 +178,10 @@ export function AutomationPage() {
     confidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy' }),
     startRunNow: tr(language, { ko: '이 설정으로 자동매매 시작', en: 'Start auto-trading with this', ja: 'この設定で自動売買開始', th: 'เริ่มเทรดอัตโนมัติด้วยค่านี้', vi: 'Bắt đầu tự động với thiết lập này' }),
     analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
+    // ── run creation from the two rule-panel modes ──
+    createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.', ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.' }),
+    startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다 — 아래 목록에서 확인하세요.', en: 'Could not start the TRADING — see the list below.', ja: 'TRADING を開始できませんでした — 下の一覧を確認してください。', th: 'เริ่ม TRADING ไม่สำเร็จ — ดูรายการด้านล่าง', vi: 'Không khởi động được TRADING — xem danh sách bên dưới.' }),
+    pickFailed: tr(language, { ko: '종목을 고르지 못했습니다 — 직접 선택하세요.', en: 'Could not pick a symbol — choose one yourself.', ja: '銘柄を選べませんでした — 手動で選択してください。', th: 'เลือกสัญลักษณ์ไม่สำเร็จ — เลือกเอง', vi: 'Không chọn được mã — hãy tự chọn.' }),
   }
 
   const roleLabels: Record<string, string> = {
@@ -203,39 +207,73 @@ export function AutomationPage() {
     return () => clearInterval(iv)
   }, [token])
 
-  async function postRule(rule: Rule) {
+  // Both modes make a TRADING run, not an automation rule. A run already
+  // carries interval/confidence/size and cycles on its own — it is everything
+  // a rule provided, plus a per-run book, a lifecycle and events. Creating
+  // both would also deadlock on itself: start refuses when an auto-executing
+  // rule targets the same symbol (trading_runs.list_start_conflicts).
+  async function createAndStartRun(body: Record<string, unknown>) {
     setBusy(true); setError('')
     try {
-      const res = await fetch(`${API_BASE}/automation/configs`, {
+      const res = await fetch(`${API_BASE}/runs`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ ...rule, provider: rule.provider || null, lang: language }),
+        body: JSON.stringify({ market: 'crypto', market_type: 'spot', lang: language, ...body }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not save rule')
-      await refresh()
+      if (!res.ok) {
+        const detail = data.detail
+        throw new Error((typeof detail === 'string' ? detail : detail?.message) || T.createFailed)
+      }
+      const start = await fetch(`${API_BASE}/runs/${data.id}/start`, { method: 'POST', headers: authHeaders })
+      // The draft survives a refused start, so reload the grid either way —
+      // it is where the conflict is resolved.
+      setRunsReload(n => n + 1)
+      if (!start.ok) {
+        const detail = (await start.json().catch(() => null))?.detail
+        throw new Error((typeof detail === 'string' ? detail : detail?.message) || T.startFailed)
+      }
     } catch (e: any) { setError(e.message) }
     setBusy(false)
   }
 
-  function addSimple() {
-    const preset = RISK_PRESETS[simpleRisk]
-    postRule({
-      symbol: simpleCoin, market: 'crypto', provider: null,
-      interval_minutes: preset.interval_minutes,
-      min_confidence: preset.min_confidence,
-      size_usd: preset.size_usd,
-      auto_execute: true, account_type: 'simulator',
-      risk_level: simpleRisk,
+  // 🔍 AI 자동 선택 and 완전 위임 name no symbol, but a run is bound to one.
+  // Resolve it once at creation with the same picker the create form uses.
+  async function pickSymbol(): Promise<string> {
+    const r = await fetch(`${API_BASE}/markets/suggest-symbol`, {
+      method: 'POST', headers: authHeaders,
     })
+    if (!r.ok) throw new Error(T.pickFailed)
+    const d = await r.json()
+    if (!d?.symbol) throw new Error(T.pickFailed)
+    return String(d.symbol)
   }
 
-  function addAgent() {
-    postRule({
-      symbol: 'AGENT', market: 'crypto', provider: null,
-      interval_minutes: 60, min_confidence: 0.65, size_usd: 500,
-      auto_execute: true, account_type: 'simulator',
-      mode: 'agent', budget_usd: agentBudget,
-    } as Rule)
+  async function addSimple() {
+    const preset = RISK_PRESETS[simpleRisk]
+    try {
+      const symbol = simpleCoin === 'SCANNER' ? await pickSymbol() : simpleCoin
+      await createAndStartRun({
+        symbol,
+        max_bet_usd: preset.size_usd,
+        interval_minutes: preset.interval_minutes,
+        min_confidence: preset.min_confidence,
+        risk_level: simpleRisk,
+      })
+    } catch (e: any) { setError(e.message) }
+  }
+
+  // Budget becomes the run's cap; one position stays at the advertised 25%.
+  async function addAgent() {
+    try {
+      const symbol = await pickSymbol()
+      await createAndStartRun({
+        symbol,
+        max_bet_usd: Math.round(agentBudget * 0.25),
+        run_budget_usd: agentBudget,
+        interval_minutes: 60,
+        min_confidence: 0.65,
+      })
+    } catch (e: any) { setError(e.message) }
   }
 
   async function remove(id?: number) {

@@ -32,6 +32,8 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+from fx_rates import to_usd
+import markets
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +287,11 @@ def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
         qty = float(row["quantity"])
         if qty <= 0 or price <= 0:
             continue
+        # Point value and settlement currency are pure functions of the
+        # instrument, derived the same way position_currency already was —
+        # 1.0/USD for cash markets, 50 for ES, CNY for an A-share.
+        multiplier = markets.contract_multiplier(row["market"], row["symbol"])
+        currency = markets.position_currency(row["market"], row["symbol"])
         pnl = None
         if side == "buy":
             book = books.setdefault(key, {"qty": 0.0, "avg": 0.0})
@@ -311,6 +318,10 @@ def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
             pnl = (book["avg"] - price) * closed
             book["qty"] -= closed
         if pnl is not None:
+            # Scale to contract notional, then to USD. These stats feed a single
+            # cross-market risk gate, so a CNY A-share PnL and a USD futures PnL
+            # cannot be summed in their native units.
+            pnl = to_usd(pnl * multiplier, currency)
             pnls.append(pnl)
             if str(row["executed_at"]).startswith(today):
                 realized_today += pnl

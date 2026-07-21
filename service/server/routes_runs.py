@@ -108,6 +108,11 @@ class RunIn(BaseModel):
     start_condition: Optional[dict] = None
     stop_conditions: Optional[dict] = None
     stop_flatten: bool = True
+    # Optional exit profile, same vocabulary as an automation rule's. Creating
+    # a run with one applies the matching SL/TP/trailing/time-stop to the
+    # agent's risk_limits — the presets live server-side (routes_automation)
+    # so the simple-mode cards never carry a second copy that can drift.
+    risk_level: Optional[str] = None
 
     @field_validator("symbol")
     @classmethod
@@ -116,6 +121,15 @@ class RunIn(BaseModel):
         if not v or len(v) > 20:
             raise ValueError("symbol must be 1-20 characters")
         return v
+
+    @field_validator("risk_level")
+    @classmethod
+    def _risk_level(cls, v):
+        from routes_automation import RISK_LEVEL_PRESETS
+        if v and v not in RISK_LEVEL_PRESETS:
+            raise ValueError(
+                f"risk_level must be one of {list(RISK_LEVEL_PRESETS)} or empty")
+        return v or None
 
     @field_validator("market")
     @classmethod
@@ -276,7 +290,10 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         """Cross-field checks a single field validator cannot do, plus the
         settings snapshot. Shared by create and edit so an edited draft is
         held to exactly the same bar as a new one."""
-        if data.market_type == "futures" and data.market != "crypto":
+        # market_type is the crypto spot-vs-perpetual axis. The CME `futures`
+        # market is already a futures book by virtue of its market, so it may
+        # carry the flag redundantly; everything else may not.
+        if data.market_type == "futures" and data.market not in ("crypto", "futures"):
             raise HTTPException(status_code=400,
                                 detail="futures market_type is crypto-only")
         if data.run_budget_usd is not None and data.run_budget_usd < data.max_bet_usd:
@@ -308,7 +325,13 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         settings, start_condition, stop_conditions = _validated_config(data)
         run_id = trading_runs.create_run(agent["id"], settings, start_condition,
                                          stop_conditions, data.stop_flatten)
-        return {"id": run_id, "ok": True,
+        # Same agent-level exit profile an automation rule would have applied,
+        # so simple mode keeps its advertised SL/TP after moving to runs.
+        applied_limits = None
+        if data.risk_level:
+            from routes_automation import _apply_risk_level
+            applied_limits = _apply_risk_level(agent["id"], data.risk_level)
+        return {"id": run_id, "ok": True, "risk_limits": applied_limits,
                 "run": _public(_run_or_404(run_id, agent["id"]))}
 
     @app.put("/api/runs/{run_id}")
