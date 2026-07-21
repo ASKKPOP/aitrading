@@ -109,6 +109,33 @@ class FleetRouteTests(unittest.TestCase):
             self.client.post("/api/automation/master",
                              json={"action": "hold"}).status_code, 401)
 
+    def test_same_user_second_agent_sees_and_controls_fleet(self):
+        """The uniqueness guard is per USER, so visibility/control must be
+        too — hit live 2026-07-21: fleet built under agent A, user browsing
+        as agent B got the one-fleet 409 for a fleet the panel couldn't show."""
+        fleet_id = self._seed_and_build()
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "second-agent", "password": "pw123"})
+        second_id = resp.json()["agent_id"]
+        second = {"Authorization": f"Bearer {resp.json()['token']}"}
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE agents SET user_id = ? WHERE id = ?",
+                    (self.user_id, second_id))
+        conn.commit()
+        conn.close()
+        # list shows the user's fleet from the second agent
+        r = self.client.get("/api/fleets", headers=second)
+        self.assertIn(fleet_id, [f["id"] for f in r.json()["fleets"]])
+        # detail + control work cross-agent within the same user
+        self.assertEqual(
+            self.client.get(f"/api/fleets/{fleet_id}", headers=second)
+            .status_code, 200)
+        r = self.client.post(f"/api/fleets/{fleet_id}/stop", json={},
+                             headers=second)
+        self.assertEqual(r.status_code, 200, r.text)
+
     def test_cross_tenant_404(self):
         fleet_id = self._seed_and_build()
         resp = self.client.post(

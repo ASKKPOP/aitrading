@@ -82,10 +82,28 @@ def _auth(authorization: Optional[str]) -> dict:
     return agent
 
 
-def _fleet_or_404(fleet_id: int, agent_id: int) -> dict:
-    fleet = fleet_planner.get_fleet(fleet_id, agent_id)
+def _fleet_or_404(fleet_id: int, agent: dict) -> dict:
+    """Fleet ownership is per USER (the uniqueness guard is user-scoped), so
+    any agent linked to the same user may see and control the fleet — without
+    this, the panel refuses a launch for a fleet the caller cannot even see
+    (hit live on 2026-07-21: fleet made by agent A, user browsing as agent B).
+    Cross-USER access stays a 404, never a leak."""
+    fleet = fleet_planner.get_fleet(fleet_id)
     if not fleet:
         raise HTTPException(status_code=404, detail="Fleet not found")
+    if fleet["agent_id"] != agent["id"]:
+        caller_user = agent.get("user_id")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id FROM agents WHERE id = ?",
+                           (fleet["agent_id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        owner_user = row["user_id"] if row else None
+        if not caller_user or owner_user != caller_user:
+            raise HTTPException(status_code=404, detail="Fleet not found")
     return fleet
 
 
@@ -173,14 +191,14 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return {"id": fleet_id, "ok": True,
-                "fleet": _public_fleet(_fleet_or_404(fleet_id, agent["id"]))}
+                "fleet": _public_fleet(_fleet_or_404(fleet_id, agent))}
 
     @app.post("/api/fleets/{fleet_id}/start")
     async def start_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
+        owner_id = _fleet_or_404(fleet_id, agent)["agent_id"]
         try:
-            fleet = fleet_planner.start_fleet(fleet_id, agent["id"])
+            fleet = fleet_planner.start_fleet(fleet_id, owner_id)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except ValueError as exc:
@@ -193,9 +211,15 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM fleets WHERE agent_id = ? ORDER BY id DESC "
-                "LIMIT 20", (agent["id"],))
+            if agent.get("user_id"):
+                cursor.execute(
+                    "SELECT f.* FROM fleets f JOIN agents a ON a.id = f.agent_id "
+                    "WHERE a.user_id = ? ORDER BY f.id DESC LIMIT 20",
+                    (agent["user_id"],))
+            else:
+                cursor.execute(
+                    "SELECT * FROM fleets WHERE agent_id = ? ORDER BY id DESC "
+                    "LIMIT 20", (agent["id"],))
             fleets = [dict(r) for r in cursor.fetchall()]
         finally:
             conn.close()
@@ -204,7 +228,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get("/api/fleets/{fleet_id}")
     async def get_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        fleet = _fleet_or_404(fleet_id, agent["id"])
+        fleet = _fleet_or_404(fleet_id, agent)
         eq = None
         try:
             eq = fleet_planner.marked_equity(fleet)
@@ -222,7 +246,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         any warn change rebases the episode latch so the tightened warning
         can actually fire (§6.5.1)."""
         agent = _auth(authorization)
-        fleet = _fleet_or_404(fleet_id, agent["id"])
+        fleet = _fleet_or_404(fleet_id, agent)
         if fleet["status"] == fleet_planner.STATUS_STOPPED:
             raise HTTPException(status_code=409,
                                 detail="fleet already stopped")
@@ -262,7 +286,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                    warn_latched_at = NULL, warn_acked_at = NULL,
                    warn_level_frac = NULL
                    WHERE id = ? AND agent_id = ?""",
-                (warn, stop, fleet_id, agent["id"]))
+                (warn, stop, fleet_id, fleet["agent_id"]))
             conn.commit()
         finally:
             conn.close()
@@ -270,16 +294,16 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                                        {"warn": warn, "stop": stop,
                                         "confirm": data.confirm})
         return {"ok": True,
-                "fleet": _public_fleet(_fleet_or_404(fleet_id, agent["id"]))}
+                "fleet": _public_fleet(_fleet_or_404(fleet_id, agent))}
 
     @app.post("/api/fleets/{fleet_id}/resume-warning")
     async def resume_warning(fleet_id: int, authorization: str = Header(None)):
         """Acknowledge the −30% warning — 'continuing is your responsibility'."""
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
+        fleet = _fleet_or_404(fleet_id, agent)
         try:
             from fleet_supervisor import ack_warning
-            result = ack_warning(fleet_id, agent["id"])
+            result = ack_warning(fleet_id, fleet["agent_id"])
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc))
         return {"ok": True, **result}
@@ -287,30 +311,30 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post("/api/fleets/{fleet_id}/pause")
     async def pause_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
-        return {"ok": True, **fleet_planner.pause_fleet(fleet_id, agent["id"])}
+        owner_id = _fleet_or_404(fleet_id, agent)["agent_id"]
+        return {"ok": True, **fleet_planner.pause_fleet(fleet_id, owner_id)}
 
     @app.post("/api/fleets/{fleet_id}/resume")
     async def resume_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
-        return {"ok": True, **fleet_planner.resume_fleet(fleet_id, agent["id"])}
+        owner_id = _fleet_or_404(fleet_id, agent)["agent_id"]
+        return {"ok": True, **fleet_planner.resume_fleet(fleet_id, owner_id)}
 
     @app.post("/api/fleets/{fleet_id}/stop")
     async def stop_fleet(fleet_id: int, data: StopIn = None,  # type: ignore[assignment]
                          authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
+        owner_id = _fleet_or_404(fleet_id, agent)["agent_id"]
         flatten = data.flatten if data is not None else True
         return {"ok": True,
-                **fleet_planner.request_stop_fleet(fleet_id, agent["id"], flatten)}
+                **fleet_planner.request_stop_fleet(fleet_id, owner_id, flatten)}
 
     @app.delete("/api/fleets/{fleet_id}")
     async def delete_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
+        owner_id = _fleet_or_404(fleet_id, agent)["agent_id"]
         try:
-            fleet_planner.delete_fleet(fleet_id, agent["id"])
+            fleet_planner.delete_fleet(fleet_id, owner_id)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc))
         return {"ok": True}
@@ -319,7 +343,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def fleet_events(fleet_id: int, after_seq: int = 0, limit: int = 100,
                            authorization: str = Header(None)):
         agent = _auth(authorization)
-        _fleet_or_404(fleet_id, agent["id"])
+        _fleet_or_404(fleet_id, agent)
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
