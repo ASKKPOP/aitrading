@@ -407,10 +407,6 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
                                "AND status IN ('running','paused','armed')",
                                (agent_id,))
                 runs = [dict(r) for r in cursor.fetchall()]
-                cursor.execute("SELECT id, enabled, held_by_master FROM "
-                               "automation_configs WHERE agent_id = ?",
-                               (agent_id,))
-                rules = [dict(r) for r in cursor.fetchall()]
                 cursor.execute("SELECT id FROM fleets WHERE agent_id = ? AND "
                                "status NOT IN ('stopped')", (agent_id,))
                 fleets = [int(r["id"]) for r in cursor.fetchall()]
