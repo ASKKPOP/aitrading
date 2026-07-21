@@ -48,6 +48,11 @@ class LlmContext:
     # Usage-metering identity (Plan 11 F2): whose analysis triggered the call.
     user_id: Optional[int] = None
     agent_id: Optional[int] = None
+    # Per-tier routing (cost A/B): {"brief": {"provider": "local"},
+    # "decision": {"provider": "anthropic", "model": "claude-sonnet-5"}}.
+    # A tier listed here resolves to that provider/model instead of the
+    # context/env provider; tiers not listed are unaffected.
+    tier_providers: Optional[dict] = None
 
 
 _context_override: contextvars.ContextVar[Optional[LlmContext]] = contextvars.ContextVar(
@@ -61,7 +66,8 @@ def set_llm_context(ctx: Optional[LlmContext]):
     if ctx is not None and ctx.provider:
         ctx = LlmContext(provider=ctx.provider.strip().lower(), model=ctx.model,
                          api_key=ctx.api_key, source=ctx.source,
-                         user_id=ctx.user_id, agent_id=ctx.agent_id)
+                         user_id=ctx.user_id, agent_id=ctx.agent_id,
+                         tier_providers=ctx.tier_providers)
     return _context_override.set(ctx)
 
 
@@ -155,6 +161,58 @@ _KEY_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
+# ── admin console overrides (platform_settings, cached) ─────────────────────
+# The console can set the local AI server address/model and route the brief /
+# decision tiers to a provider+model platform-wide, with no deploy. Cached for
+# a short TTL because resolve_provider runs on every LLM call in both the API
+# and the worker process; the TTL is how the worker sees console edits.
+_ADMIN_SETTINGS_TTL = 30.0
+_admin_settings_cache: dict = {"at": -_ADMIN_SETTINGS_TTL, "tiers": {},
+                               "local_base_url": "", "local_model": ""}
+
+
+def _admin_llm_settings() -> dict:
+    import time
+    now = time.monotonic()
+    if now - _admin_settings_cache["at"] < _ADMIN_SETTINGS_TTL:
+        return _admin_settings_cache
+    tiers: dict[str, dict] = {}
+    local_base_url = ""
+    local_model = ""
+    try:
+        from platform_settings import get_setting
+        for tier in ("brief", "decision"):
+            prov = get_setting(f"llm_{tier}_provider").strip().lower()
+            if prov in _PROVIDERS:
+                entry: dict = {"provider": prov}
+                model = get_setting(f"llm_{tier}_model").strip()
+                if model:
+                    entry["model"] = model
+                tiers[tier] = entry
+        local_base_url = get_setting("llm_local_base_url").strip()
+        local_model = get_setting("llm_local_model").strip()
+    except Exception as exc:  # noqa: BLE001 — settings must never break a call
+        logger.warning("admin LLM settings read failed: %s", exc)
+    _admin_settings_cache.update({"at": now, "tiers": tiers,
+                                  "local_base_url": local_base_url,
+                                  "local_model": local_model})
+    return _admin_settings_cache
+
+
+def invalidate_admin_llm_settings_cache() -> None:
+    """Console saves call this so the API process applies edits immediately;
+    the worker process catches up within the TTL."""
+    _admin_settings_cache["at"] = -_ADMIN_SETTINGS_TTL
+
+
+def _base_url_for(spec: ProviderSpec) -> str:
+    if spec.name == "local":
+        stored = _admin_llm_settings()["local_base_url"]
+        if stored:  # console value, else its LOCAL_LLM_BASE_URL env fallback
+            return stored
+    return os.getenv(spec.base_url_env, "").strip() or spec.default_base_url
+
+
 def _get_key(spec: ProviderSpec) -> str:
     for env in _KEY_ALIASES.get(spec.name, (spec.key_env,)):
         val = os.getenv(env, "").strip()
@@ -191,7 +249,9 @@ def _tier_model(spec: ProviderSpec, tier: str) -> str:
     if spec.name == "openrouter":
         return os.getenv("OPENROUTER_MODEL", "").strip() or spec.default_model
     if spec.name == "local":
-        return os.getenv("LOCAL_LLM_MODEL", "").strip() or spec.default_model
+        # Console value first (falls back to LOCAL_LLM_MODEL env inside
+        # platform_settings), then the registry default.
+        return _admin_llm_settings()["local_model"] or spec.default_model
     return spec.default_model
 
 
@@ -203,6 +263,32 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
     the resolved provider) > env key. Model: context model > LLM_MODEL >
     LLM_MODEL_<TIER> > tier table > provider default."""
     ctx = _context_override.get()
+
+    # Per-tier override: a tier routed here uses its own provider/model and
+    # never the user's stored key. Precedence for one tier: run-config
+    # llm_tiers > the chain's explicit user/rule provider > admin console
+    # setting > env resolution. The admin default deliberately does NOT trump
+    # a user or rule that picked its own provider. Unusable overrides
+    # (unknown provider, missing key) fall through to normal resolution so a
+    # misconfigured experiment degrades to current behavior, not to silence.
+    override = None
+    if ctx and ctx.tier_providers:
+        override = ctx.tier_providers.get(tier)
+    if override is None and not (ctx and ctx.provider):
+        override = _admin_llm_settings()["tiers"].get(tier)
+    if override is not None:
+        if isinstance(override, dict) and override.get("provider"):
+            spec = _PROVIDERS.get(str(override["provider"]).strip().lower())
+            key = _get_key(spec) if spec else ""
+            if spec and (key or spec.name == "local"):
+                base_url = _base_url_for(spec)
+                model = (str(override.get("model") or "").strip()
+                         or _tier_model(spec, tier))
+                return ActiveProvider(spec=spec, api_key=key or "local",
+                                      base_url=base_url, model=model, source="rule")
+            logger.warning("llm_tiers override for tier %r unusable (provider=%r); "
+                           "falling back to normal resolution", tier, override.get("provider"))
+
     ctx_provider = (ctx.provider or "") if ctx else ""
     env_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
     explicit = ctx_provider or env_provider
@@ -220,7 +306,7 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
             return None
         if spec.name == "local" and not key:
             key = "local"
-        base_url = os.getenv(spec.base_url_env, "").strip() or spec.default_base_url
+        base_url = _base_url_for(spec)
         model = ""
         if ctx and ctx.model and (not ctx_provider or ctx_provider == spec.name):
             model = ctx.model.strip()

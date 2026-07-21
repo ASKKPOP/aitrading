@@ -113,6 +113,9 @@ class RunIn(BaseModel):
     # agent's risk_limits — the presets live server-side (routes_automation)
     # so the simple-mode cards never carry a second copy that can drift.
     risk_level: Optional[str] = None
+    # Per-tier LLM routing (cost A/B), e.g. {"brief": {"provider": "local"},
+    # "decision": {"provider": "anthropic", "model": "claude-sonnet-5"}}.
+    llm_tiers: Optional[dict] = None
 
     @field_validator("symbol")
     @classmethod
@@ -182,6 +185,28 @@ class RunIn(BaseModel):
         if v not in ALLOWED_PROVIDERS:
             raise ValueError(f"provider must be one of {[p for p in ALLOWED_PROVIDERS if p]} or empty")
         return v or None
+
+    @field_validator("llm_tiers")
+    @classmethod
+    def _llm_tiers(cls, v):
+        if not v:
+            return None
+        out = {}
+        for tier, override in v.items():
+            if tier not in ("brief", "decision"):
+                raise ValueError("llm_tiers keys must be 'brief' or 'decision'")
+            if not isinstance(override, dict):
+                raise ValueError(f"llm_tiers[{tier!r}] must be an object")
+            prov = str(override.get("provider") or "").strip().lower()
+            if prov not in ALLOWED_PROVIDERS or not prov:
+                raise ValueError(
+                    f"llm_tiers[{tier!r}].provider must be one of "
+                    f"{[p for p in ALLOWED_PROVIDERS if p]}")
+            model = str(override.get("model") or "").strip()
+            if len(model) > 100:
+                raise ValueError(f"llm_tiers[{tier!r}].model too long")
+            out[tier] = {"provider": prov, **({"model": model} if model else {})}
+        return out
 
     @field_validator("lang")
     @classmethod
@@ -316,6 +341,8 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
         "min_confidence": data.min_confidence, "provider": data.provider,
         "lang": data.lang, "leverage": 1.0,
     }
+    if data.llm_tiers:
+        settings["llm_tiers"] = data.llm_tiers
     return settings, start_condition, stop_conditions
 
 

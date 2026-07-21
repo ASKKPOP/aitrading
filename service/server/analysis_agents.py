@@ -580,7 +580,8 @@ def _apply_verification(decision: dict[str, Any],
 def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
                  provider: Optional[str] = None,
                  agent_id: Optional[int] = None,
-                 progress: Optional[ProgressFn] = None) -> dict[str, Any]:
+                 progress: Optional[ProgressFn] = None,
+                 llm_tiers: Optional[dict] = None) -> dict[str, Any]:
     """Run the full multi-agent pipeline for one symbol and return decision + report.
 
     provider optionally forces a specific LLM provider for this run (automation
@@ -625,6 +626,14 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
                          user_id=owner_user_id, agent_id=agent_id)
     elif agent_id:
         ctx = LlmContext(source="rule", user_id=owner_user_id, agent_id=agent_id)
+
+    # Per-tier routing (cost A/B): rides on whatever context the branches above
+    # chose so metering identity and key selection are unchanged.
+    if llm_tiers:
+        from dataclasses import replace
+        ctx = (replace(ctx, tier_providers=llm_tiers) if ctx is not None
+               else LlmContext(source="rule", user_id=owner_user_id,
+                               agent_id=agent_id, tier_providers=llm_tiers))
 
     guidelines = None
     try:

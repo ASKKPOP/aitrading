@@ -30,6 +30,11 @@ _ENV_FALLBACK: dict[str, str] = {
     "usdt_address": "USDT_ADDRESS",
     "usdt_network": "USDT_NETWORK",
     "bank_transfer_info": "BANK_TRANSFER_INFO",
+    # LLM routing (admin console): stored value wins, .env keeps working until
+    # an admin saves one. Providers per tier have no env twin on purpose —
+    # tier routing existed only in run config before the console page.
+    "llm_local_base_url": "LOCAL_LLM_BASE_URL",
+    "llm_local_model": "LOCAL_LLM_MODEL",
 }
 
 _DEFAULTS: dict[str, str] = {

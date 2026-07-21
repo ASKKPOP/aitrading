@@ -136,6 +136,16 @@ class PaymentSettingsBody(BaseModel):
     bank_transfer_info: str | None = None
 
 
+class LlmSettingsBody(BaseModel):
+    # None = leave unchanged; "" = clear (falls back to env, then defaults).
+    local_base_url: str | None = None
+    local_model: str | None = None
+    brief_provider: str | None = None
+    brief_model: str | None = None
+    decision_provider: str | None = None
+    decision_model: str | None = None
+
+
 def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     # ────────────────────────── member management ──────────────────────────
@@ -988,3 +998,76 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
               f"bank_info={'unchanged' if bank_info is None else ('set' if bank_info else '(cleared)')}")
         return {"ok": True, "usdt_address": address, "usdt_network": network,
                 "bank_transfer_info": get_setting("bank_transfer_info")}
+
+    # ── LLM routing settings (local AI server + per-tier provider/model) ─────
+
+    _LLM_SETTING_KEYS = ("llm_local_base_url", "llm_local_model",
+                         "llm_brief_provider", "llm_brief_model",
+                         "llm_decision_provider", "llm_decision_model")
+
+    def _llm_effective() -> dict:
+        """What each tier resolves to right now (no run/user context), so the
+        console shows the routing that a plain automation cycle would use."""
+        from llm_client import resolve_provider
+        out = {}
+        for tier in ("brief", "decision", "assistant"):
+            ap = resolve_provider(tier=tier)
+            out[tier] = ({"provider": ap.spec.name, "model": ap.model,
+                          "base_url": ap.base_url} if ap else None)
+        return out
+
+    @app.get('/api/admin/settings/llm')
+    async def admin_llm_settings(authorization: str = Header(None)):
+        require_admin(authorization)
+        from llm_client import _PROVIDERS
+        from platform_settings import get_setting_meta
+        return {"settings": {k: get_setting_meta(k) for k in _LLM_SETTING_KEYS},
+                "providers": list(_PROVIDERS),
+                "effective": _llm_effective()}
+
+    @app.put('/api/admin/settings/llm')
+    async def admin_llm_settings_save(body: LlmSettingsBody,
+                                      authorization: str = Header(None)):
+        """Route the platform's LLM tiers from the console — e.g. point the
+        'local' provider at the operator's own AI server and run analyst
+        briefs on it while decisions stay on a hosted model. Omitted fields
+        stay unchanged; empty strings clear (env fallback resumes)."""
+        admin = require_admin(authorization)
+        from llm_client import _PROVIDERS, invalidate_admin_llm_settings_cache
+        from platform_settings import set_setting
+
+        fields = {"llm_local_base_url": body.local_base_url,
+                  "llm_local_model": body.local_model,
+                  "llm_brief_provider": body.brief_provider,
+                  "llm_brief_model": body.brief_model,
+                  "llm_decision_provider": body.decision_provider,
+                  "llm_decision_model": body.decision_model}
+
+        url = (body.local_base_url or "").strip()
+        if url and not re.match(r"^https?://\S+$", url):
+            raise HTTPException(
+                status_code=400,
+                detail="Local AI server URL must start with http:// or https:// "
+                       "(e.g. http://100.64.0.7:11434/v1)")
+        for key in ("llm_brief_provider", "llm_decision_provider"):
+            val = (fields[key] or "").strip().lower()
+            if val and val not in _PROVIDERS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{key} must be one of: {', '.join(_PROVIDERS)}")
+        for key, val in fields.items():
+            if val is not None and len(val.strip()) > 300:
+                raise HTTPException(status_code=400, detail=f"{key} too long")
+
+        changed = []
+        for key, val in fields.items():
+            if val is None:
+                continue
+            val = val.strip()
+            if key.endswith("_provider"):
+                val = val.lower()
+            set_setting(key, val, admin.get("email"))
+            changed.append(f"{key}={val or '(cleared)'}")
+        invalidate_admin_llm_settings_cache()
+        audit(admin, "settings.llm", "routing", "; ".join(changed) or "(no-op)")
+        return {"ok": True, "effective": _llm_effective()}

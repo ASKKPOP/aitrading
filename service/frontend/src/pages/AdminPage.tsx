@@ -121,6 +121,9 @@ export function AdminPage() {
   const [positions, setPositions] = useState<any | null>(null)
   const [autoStats, setAutoStats] = useState<any | null>(null)
   const [autoRules, setAutoRules] = useState<any | null>(null)
+  const [llmSettings, setLlmSettings] = useState<any | null>(null)
+  const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
+    brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
   const [threads, setThreads] = useState<any | null>(null)
   const [activeThread, setActiveThread] = useState<any | null>(null)
   const [reply, setReply] = useState('')
@@ -171,6 +174,20 @@ export function AdminPage() {
     cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.', ja: 'この購読を解約しますか？会員は直ちに購読ページへ誘導されます。', th: 'ยกเลิกการสมัครนี้หรือไม่ สมาชิกจะถูกพาไปหน้าสมัครทันที', vi: 'Hủy đăng ký này? Thành viên sẽ bị chuyển ngay tới trang đăng ký.' }),
     grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)', ja: '手動付与 — 決済なしでプランを割り当て（無償提供・既存会員・エンタープライズ契約）', th: 'ให้สิทธิ์เอง — กำหนดแพลนโดยไม่ต้องชำระเงิน (ให้ฟรี, สมาชิกเดิม, สัญญาองค์กร)', vi: 'Cấp thủ công — gán gói không cần thanh toán (tặng, thành viên cũ, hợp đồng doanh nghiệp)' }),
     grantBtn: tr(language, { ko: '부여', en: 'Grant', ja: '付与', th: 'ให้สิทธิ์', vi: 'Cấp' }),
+    llmTitle: tr(language, { ko: '🤖 AI 모델 라우팅 (LLM)', en: '🤖 AI model routing (LLM)', ja: '🤖 AIモデルルーティング (LLM)', th: '🤖 การกำหนดเส้นทางโมเดล AI (LLM)', vi: '🤖 Định tuyến mô hình AI (LLM)' }),
+    llmHint: tr(language, {
+      ko: '티어별 프로바이더/모델을 플랫폼 전역으로 지정합니다. Local AI 서버 URL은 운영자의 자체 AI 서버(Ollama 등, OpenAI 호환)를 가리킵니다. 저장한 값이 .env보다 우선하며, 비우면 .env로 돌아갑니다. 사용자가 직접 프로바이더를 지정한 실행에는 적용되지 않고, 워커에는 30초 안에 반영됩니다.',
+      en: 'Routes each tier\'s provider/model platform-wide. The local AI server URL points at your own AI server (Ollama etc., OpenAI-compatible). Saved values win over .env; clearing a field falls back to .env. Runs where a user picked their own provider are not overridden. The worker picks changes up within 30 seconds.',
+      ja: 'ティアごとのプロバイダー/モデルをプラットフォーム全体に指定します。ローカルAIサーバーURLは運営者自身のAIサーバー（Ollamaなど、OpenAI互換）を指します。保存した値は.envより優先され、空欄にすると.envに戻ります。ユーザーが自分でプロバイダーを指定した実行には適用されず、ワーカーには30秒以内に反映されます。',
+      th: 'กำหนดผู้ให้บริการ/โมเดลของแต่ละเทียร์ทั้งแพลตฟอร์ม URL เซิร์ฟเวอร์ AI ท้องถิ่นชี้ไปยังเซิร์ฟเวอร์ AI ของคุณเอง (Ollama ฯลฯ, เข้ากับ OpenAI) ค่าที่บันทึกมีผลเหนือ .env เว้นว่างเพื่อกลับไปใช้ .env ไม่ทับการรันที่ผู้ใช้เลือกผู้ให้บริการเอง เวิร์กเกอร์รับการเปลี่ยนแปลงภายใน 30 วินาที',
+      vi: 'Định tuyến provider/model của từng tầng trên toàn nền tảng. URL máy chủ AI cục bộ trỏ tới máy chủ AI của riêng bạn (Ollama v.v., tương thích OpenAI). Giá trị đã lưu thắng .env; xóa trống sẽ quay về .env. Không ghi đè các lượt chạy mà người dùng tự chọn provider. Worker nhận thay đổi trong vòng 30 giây.' }),
+    llmLocalUrl: tr(language, { ko: 'Local AI 서버 URL', en: 'Local AI server URL', ja: 'ローカルAIサーバーURL', th: 'URL เซิร์ฟเวอร์ AI ท้องถิ่น', vi: 'URL máy chủ AI cục bộ' }),
+    llmLocalModel: tr(language, { ko: '로컬 모델', en: 'Local model', ja: 'ローカルモデル', th: 'โมเดลท้องถิ่น', vi: 'Model cục bộ' }),
+    llmBrief: tr(language, { ko: '브리핑 티어 (애널리스트)', en: 'Brief tier (analysts)', ja: 'ブリーフティア（アナリスト）', th: 'เทียร์สรุป (นักวิเคราะห์)', vi: 'Tầng brief (phân tích)' }),
+    llmDecision: tr(language, { ko: '결정 티어 (트레이더·검증)', en: 'Decision tier (trader & verify)', ja: '決定ティア（トレーダー・検証）', th: 'เทียร์ตัดสินใจ (เทรดเดอร์·ตรวจสอบ)', vi: 'Tầng quyết định (trader & xác minh)' }),
+    llmProviderDefault: tr(language, { ko: '(기본값 유지)', en: '(keep default)', ja: '（デフォルト維持）', th: '(ค่าเริ่มต้น)', vi: '(giữ mặc định)' }),
+    llmModelPlaceholder: tr(language, { ko: '모델 (비우면 프로바이더 기본값)', en: 'model (empty = provider default)', ja: 'モデル（空欄＝プロバイダー既定）', th: 'โมเดล (ว่าง = ค่าเริ่มต้นผู้ให้บริการ)', vi: 'model (trống = mặc định provider)' }),
+    llmEffective: tr(language, { ko: '현재 적용 라우팅', en: 'Effective routing now', ja: '現在適用中のルーティング', th: 'เส้นทางที่มีผลตอนนี้', vi: 'Định tuyến hiệu lực hiện tại' }),
     usdtTitle: tr(language, { ko: 'USDT 입금 주소 등록', en: 'USDT receiving address', ja: 'USDT入金アドレス', th: 'ที่อยู่รับ USDT', vi: 'Địa chỉ nhận USDT' }),
     usdtHint: tr(language, {
       ko: '구독자에게 이 주소로 송금하라고 안내합니다. 여기 저장한 값이 곧바로 결제 페이지에 표시되므로, 지갑에서 복사해 붙여넣고 저장 전에 반드시 확인하세요. 비워두면 결제 페이지에서 USDT 항목이 사라집니다.',
@@ -324,6 +341,17 @@ export function AdminPage() {
       if (which === 'automation') {
         setAutoStats(await call('stats/automation'))
         setAutoRules(await call('automation?limit=100'))
+        const llm = await call('settings/llm')
+        setLlmSettings(llm)
+        const s = llm?.settings || {}
+        setLlmForm({
+          local_base_url: s.llm_local_base_url?.value || '',
+          local_model: s.llm_local_model?.value || '',
+          brief_provider: s.llm_brief_provider?.value || '',
+          brief_model: s.llm_brief_model?.value || '',
+          decision_provider: s.llm_decision_provider?.value || '',
+          decision_model: s.llm_decision_model?.value || '',
+        })
       }
       if (which === 'support') setThreads(await call('support/threads?limit=200'))
       if (which === 'discussions') setDiscussions(await call(`discussions?q=${encodeURIComponent(dq)}&limit=100`))
@@ -847,6 +875,49 @@ export function AdminPage() {
       {/* ── Automation ── */}
       {tab === 'automation' && autoStats && (
         <>
+          {/* LLM routing — the operator's own AI server + per-tier models,
+              editable without a deploy (platform_settings). */}
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.llmTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.llmHint}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+              <input placeholder={`${T.llmLocalUrl} — http://100.x.x.x:11434/v1`} value={llmForm.local_base_url}
+                onChange={e => setLlmForm(p => ({ ...p, local_base_url: e.target.value }))}
+                style={{ ...inputStyle, width: 320, fontFamily: 'ui-monospace, monospace' }} />
+              <input placeholder={`${T.llmLocalModel} — gpt-oss:120b`} value={llmForm.local_model}
+                onChange={e => setLlmForm(p => ({ ...p, local_model: e.target.value }))}
+                style={{ ...inputStyle, width: 200, fontFamily: 'ui-monospace, monospace' }} />
+            </div>
+            {([['brief', T.llmBrief], ['decision', T.llmDecision]] as const).map(([tier, label]) => (
+              <div key={tier} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 12, width: 220 }}>{label}</span>
+                <select value={(llmForm as any)[`${tier}_provider`]}
+                  onChange={e => setLlmForm(p => ({ ...p, [`${tier}_provider`]: e.target.value }))}
+                  style={inputStyle}>
+                  <option value="">{T.llmProviderDefault}</option>
+                  {(llmSettings?.providers || []).map((p: string) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <input placeholder={T.llmModelPlaceholder} value={(llmForm as any)[`${tier}_model`]}
+                  onChange={e => setLlmForm(p => ({ ...p, [`${tier}_model`]: e.target.value }))}
+                  style={{ ...inputStyle, width: 240, fontFamily: 'ui-monospace, monospace' }} />
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+              <button style={primaryBtn}
+                onClick={() => act('settings/llm', {
+                  method: 'PUT', body: JSON.stringify(llmForm),
+                }, 'automation')}>{T.usdtSave}</button>
+              {llmSettings?.effective && (
+                <span style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', fontFamily: 'ui-monospace, monospace' }}>
+                  {T.llmEffective}: {(['brief', 'decision'] as const)
+                    .map(t => `${t} → ${llmSettings.effective[t]?.provider || '—'}:${llmSettings.effective[t]?.model || '—'}`)
+                    .join(' · ')}
+                </span>
+              )}
+            </div>
+          </div>
           <StatCards items={[
             [tr(language, { ko: '규칙 (활성)', en: 'Rules (on)', ja: 'ルール（有効）', th: 'กฎ (เปิด)', vi: 'Quy tắc (bật)' }), `${autoStats.totals.rules} (${autoStats.totals.enabled})`],
             [tr(language, { ko: '자동 실행 규칙', en: 'Auto-execute rules', ja: '自動実行ルール', th: 'กฎรันอัตโนมัติ', vi: 'Quy tắc tự thực thi' }), autoStats.totals.auto_execute],
