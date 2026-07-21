@@ -110,11 +110,18 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   }, [token])
 
   useEffect(() => {
-    if (!fleet || fleet.status === 'stopped') return
+    if (!fleet || fleet.status === 'stopped') {
+      // Discovery poll (monitor box only): the always-visible panel mounts
+      // before any fleet exists, so without this a fleet launched from the
+      // create modal stays invisible until a full page reload.
+      if (!monitorOnly) return
+      const id = setInterval(load, 20000)
+      return () => clearInterval(id)
+    }
     const fast = fleet.status === 'researching' || fleet.status === 'building'
     const id = setInterval(load, fast ? 2000 : 15000)
     return () => clearInterval(id)
-  }, [fleet?.status, load])
+  }, [fleet?.status, load, monitorOnly])
 
   const launch = async () => {
     setBusy(true); setError(null)
