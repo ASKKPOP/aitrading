@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan 14 — Full Auto Trading (Fleet Mode)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --red:#f85149;
+    --amber:#d29922; --purple:#bc8cff; --cyan:#39c5cf; --pink:#ff7b72;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#ffffff; --panel:#f6f8fa; --panel2:#eef1f4; --border:#d0d7de;
+      --text:#1f2328; --muted:#59636e; --accent:#0969da; --green:#1a7f37; --red:#cf222e;
+      --amber:#9a6700; --purple:#8250df; --cyan:#1b7c83; --pink:#a40e26; }
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; line-height:1.55; padding:32px 16px 80px;}
+  .wrap{max-width:1100px; margin:0 auto;}
+  h1{font-size:26px; margin-bottom:4px;}
+  h2{font-size:20px; margin:44px 0 14px; padding-bottom:6px; border-bottom:1px solid var(--border);}
+  h3{font-size:15px; margin:20px 0 8px; color:var(--accent);}
+  p.sub{color:var(--muted); font-size:14px; margin-bottom:8px;}
+  .badges{margin:10px 0 4px;}
+  .badge{display:inline-block; font-size:11.5px; padding:3px 10px; border-radius:20px; margin:2px 6px 2px 0; border:1px solid var(--border); background:var(--panel);}
+  .badge.g{color:var(--green); border-color:var(--green);}
+  .badge.a{color:var(--amber); border-color:var(--amber);}
+  .badge.b{color:var(--accent); border-color:var(--accent);}
+  .badge.r{color:var(--red); border-color:var(--red);}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin:14px 0;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr;}}
+  table{width:100%; border-collapse:collapse; font-size:13px; margin:10px 0;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--panel2); font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--panel) 55%, transparent);}
+  .scroll{overflow-x:auto;}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; background:var(--panel2); padding:1px 5px; border-radius:4px;}
+  .flow{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:12px 0;}
+  .fstep{flex:1 1 150px; min-width:150px; background:var(--panel2); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:10px 12px;}
+  .fstep b{display:block; font-size:13px; margin-bottom:3px;}
+  .fstep span{font-size:12px; color:var(--muted);}
+  .fstep.s1{border-left-color:var(--cyan);} .fstep.s2{border-left-color:var(--accent);}
+  .fstep.s3{border-left-color:var(--purple);} .fstep.s4{border-left-color:var(--green);}
+  .fstep.s5{border-left-color:var(--amber);} .fstep.s6{border-left-color:var(--pink);}
+  .arrow{align-self:center; color:var(--muted); font-size:18px; padding:0 2px;}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:13px;}
+  .kv b{color:var(--muted); font-weight:600; white-space:nowrap;}
+  .sev-c{color:var(--red); font-weight:700;} .sev-m{color:var(--amber); font-weight:600;} .sev-n{color:var(--muted);}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px;}
+  svg text{fill:var(--text); font-family:inherit;}
+  svg .mut{fill:var(--muted);}
+  .legend{font-size:12px; color:var(--muted); margin-top:6px;}
+  .callout{border-left:4px solid var(--red); background:color-mix(in srgb, var(--red) 8%, var(--panel)); border-radius:6px; padding:12px 14px; margin:12px 0; font-size:13.5px;}
+  .callout.ok{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 8%, var(--panel));}
+  ul.tight{margin:6px 0 6px 20px; font-size:13.5px;} ul.tight li{margin:3px 0;}
+  .ko{color:var(--muted); font-size:12.5px;}
+  .statebox{display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:12.5px; font-family:ui-monospace,Menlo,monospace; margin:3px 2px;}
+  .statebox.term{border-color:var(--red); color:var(--red);}
+  .statebox.act{border-color:var(--green); color:var(--green);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 14 — Full Auto Trading <span style="color:var(--muted)">·</span> Fleet Mode</h1>
+<p class="sub">AI Research → N Runs → Step Trading → Feedback &nbsp;·&nbsp; <span class="ko">AI 리서치 → N개 런 자동 등록 → 스텝 트레이딩 → 결과 피드백</span></p>
+<div class="badges">
+  <span class="badge g">v1 Verified 2026-07-20</span>
+  <span class="badge b">5 planner agents</span>
+  <span class="badge b">9 QA agents · 70 findings folded</span>
+  <span class="badge b">4 checkers · 42 more folded</span>
+  <span class="badge a">Simulated ledger only</span>
+  <span class="badge">Companion: 14-full-auto-trading.md</span>
+</div>
+
+<div class="card">
+  <div class="kv">
+    <b>One-line pitch</b><div>The user sets only <b>N (number of runs)</b> and presses go. The AI researches every automatable market, composes N runs with expected-profit theses, registers them on <span class="mono">sooppiy.com/automation</span>, trades each on its interval, and adapts every next step from the last result.</div>
+    <b>Reuse</b><div>~80% exists: Trading Runs engine (Plan 10), Automation gates, risk engine, <span class="mono">agent_planner.py</span>'s "LLM proposes, code disposes" pattern.</div>
+    <b>New</b><div><span class="mono">symbol_research.py</span> · <span class="mono">policy_feed.py</span> · <span class="mono">fleet_planner.py</span> · <span class="mono">run_feedback.py</span> · <span class="mono">routes_fleets.py</span> · 1 combined migration · "② Full Auto" UI</div>
+  </div>
+</div>
+
+<h2>1 · End-to-end pipeline</h2>
+<div class="flow">
+  <div class="fstep s1"><b>① RESEARCH (global)</b><span>~198-symbol universe → deterministic 8-family factor screen → ≤16 survivors → ONE batched LLM thesis call → <span class="mono">research_theses</span></span></div>
+  <div class="arrow">→</div>
+  <div class="fstep s2"><b>② SELECT</b><span><span class="mono">select_targets(agent, N)</span>: exclusivity, symbol cooldowns, per-market diversity, tier cap</span></div>
+  <div class="arrow">→</div>
+  <div class="fstep s3"><b>③ BUILD &amp; REGISTER</b><span>Allocate budget by thesis-key → clamp configs (FLEET_BOUNDS) → internal <span class="mono">create_run/start_run</span> → N ordinary runs, visible at /automation</span></div>
+  <div class="arrow">→</div>
+  <div class="fstep s4"><b>④ STEP TRADING</b><span>Unchanged <span class="mono">run_engine.run_cycle</span> per interval: pre-gates → analysis → gates → paper trade</span></div>
+  <div class="arrow">→</div>
+  <div class="fstep s5"><b>⑤ FEEDBACK</b><span>Every closing leg → W/L → anti-martingale ladder, cooldowns, thesis drift, retire (<span class="mono">adapt_retired</span>)</span></div>
+  <div class="arrow">→</div>
+  <div class="fstep s6"><b>⑥ SUPERVISE / REPLENISH</b><span><b>Always keeps N runs alive until the user stops</b> — a retired run is replaced immediately. Two-tier marked-equity rails (−30% warn / −40% stop-all) + <span class="mono">agent_deleted</span> are the only auto-stops</span></div>
+</div>
+<p class="legend">Loop: ⑥ replacement re-enters at ② with cooldowns applied — perpetual N maintenance (Henry directive 2026-07-20); ① refreshes hourly for the whole platform (cost O(1 call), not O(users)).</p>
+
+<h2>2 · Architecture</h2>
+<div class="card scroll">
+<svg viewBox="0 0 1040 430" width="100%" style="min-width:900px">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- worker box -->
+  <rect x="20" y="14" width="1000" height="86" rx="10" fill="none" stroke="var(--border)"/>
+  <text x="36" y="36" font-size="13" font-weight="700">worker.py (role=settlement) — BACKGROUND_TASK_REGISTRY</text>
+  <rect x="36" y="48" width="200" height="38" rx="6" fill="var(--panel2)" stroke="var(--cyan)"/><text x="46" y="66" font-size="12">symbol_research loop</text><text x="46" y="80" font-size="10" class="mut">NEW · global · hourly</text>
+  <rect x="252" y="48" width="180" height="38" rx="6" fill="var(--panel2)" stroke="var(--purple)"/><text x="262" y="66" font-size="12">fleet_planner loop</text><text x="262" y="80" font-size="10" class="mut">NEW · 60s tick</text>
+  <rect x="448" y="48" width="180" height="38" rx="6" fill="var(--panel2)" stroke="var(--green)"/><text x="458" y="66" font-size="12">trading_run loop</text><text x="458" y="80" font-size="10" class="mut">EXISTS · run_engine</text>
+  <rect x="644" y="48" width="170" height="38" rx="6" fill="var(--panel2)" stroke="var(--amber)"/><text x="654" y="66" font-size="12">policy_feed loop</text><text x="654" y="80" font-size="10" class="mut">NEW · Federal Register</text>
+  <rect x="830" y="48" width="176" height="38" rx="6" fill="var(--panel2)" stroke="var(--border)"/><text x="840" y="66" font-size="12">scanner · psych · social</text><text x="840" y="80" font-size="10" class="mut">EXIST · snapshots</text>
+
+  <!-- research engine -->
+  <rect x="20" y="140" width="300" height="120" rx="10" fill="var(--panel)" stroke="var(--cyan)"/>
+  <text x="34" y="162" font-size="13" font-weight="700">symbol_research.py — GLOBAL</text>
+  <text x="34" y="182" font-size="11.5">Stage 0: universe ~198 (5 markets)</text>
+  <text x="34" y="199" font-size="11.5">Stage 1: 8-family factor screen (zero LLM)</text>
+  <text x="34" y="216" font-size="11.5">Stage 2: ONE batched thesis call ≤2/refresh</text>
+  <text x="34" y="233" font-size="11.5">research_theses batches · select_targets()</text>
+  <text x="34" y="251" font-size="10.5" class="mut">platform OpEx · hard throttle · Redis-locked refresh</text>
+
+  <!-- fleet planner -->
+  <rect x="380" y="140" width="300" height="120" rx="10" fill="var(--panel)" stroke="var(--purple)"/>
+  <text x="394" y="162" font-size="13" font-weight="700">fleet_planner.py — PER USER</text>
+  <text x="394" y="182" font-size="11.5">claim → BUILD (alloc by key, clamps)</text>
+  <text x="394" y="199" font-size="11.5">SUPERVISE: −30/−40 marked-equity rails · watchdog</text>
+  <text x="394" y="216" font-size="11.5">perpetual N: retire → replace, until user stop</text>
+  <text x="394" y="233" font-size="11.5">one non-terminal fleet per USER (UNIQUE)</text>
+  <text x="394" y="251" font-size="10.5" class="mut">tables: fleets · fleet_events · fleet_candidates · cooldowns</text>
+
+  <!-- runs -->
+  <rect x="740" y="140" width="280" height="120" rx="10" fill="var(--panel)" stroke="var(--green)"/>
+  <text x="754" y="162" font-size="13" font-weight="700">Ordinary trading_runs</text>
+  <text x="754" y="182" font-size="11.5">fleet_id · created_via='fleet'</text>
+  <text x="754" y="199" font-size="11.5">run_budget_usd = HARD execution cap (new)</text>
+  <text x="754" y="216" font-size="11.5">no auto-restart for fleet members (new)</text>
+  <text x="754" y="233" font-size="11.5">run_feedback.py adapts each next cycle</text>
+  <text x="754" y="251" font-size="10.5" class="mut">exclusivity · stops · P&amp;L · /ws/runs — all reused</text>
+
+  <!-- frontend -->
+  <rect x="200" y="310" width="640" height="96" rx="10" fill="var(--panel)" stroke="var(--accent)"/>
+  <text x="216" y="333" font-size="13" font-weight="700">routes_fleets.py + /api/entitlements/me → sooppiy.com/automation</text>
+  <text x="216" y="353" font-size="11.5">"② Full Auto" panel: N stepper + Launch (budget defaulted, Advanced expander)</text>
+  <text x="216" y="370" font-size="11.5">FleetCard: research theses (localized factor chips) · rotation timeline · ⏹ Stop-all (flatten)</text>
+  <text x="216" y="387" font-size="11.5">RunsLivePage: fleet badge + NEW event-log timeline (adapt / thesis_review / gate_skip)</text>
+
+  <!-- arrows -->
+  <line x1="170" y1="100" x2="170" y2="140" stroke="#8b949e" marker-end="url(#ah)"/>
+  <line x1="342" y1="100" x2="480" y2="140" stroke="#8b949e" marker-end="url(#ah)"/>
+  <line x1="538" y1="100" x2="850" y2="140" stroke="#8b949e" marker-end="url(#ah)"/>
+  <line x1="320" y1="200" x2="380" y2="200" stroke="#8b949e" marker-end="url(#ah)"/>
+  <text x="326" y="192" font-size="10" class="mut">select</text>
+  <line x1="680" y1="200" x2="740" y2="200" stroke="#8b949e" marker-end="url(#ah)"/>
+  <text x="686" y="192" font-size="10" class="mut">create</text>
+  <line x1="880" y1="260" x2="880" y2="286" stroke="#8b949e"/><line x1="880" y1="286" x2="530" y2="286" stroke="#8b949e"/><line x1="530" y1="286" x2="530" y2="310" stroke="#8b949e" marker-end="url(#ah)"/>
+</svg>
+</div>
+
+<h2>3 · The 8 factor families <span class="ko">(기대수익 파라미터 모델)</span></h2>
+<div class="scroll"><table>
+  <tr><th>Family</th><th>Henry's requirement</th><th>v1 signals</th><th>Source</th><th>Status</th></tr>
+  <tr><td><b>F1 Technical</b></td><td>tech parameters</td><td>12-1 momentum, MA200, RSI, volume ratio, realized σ, perp basis</td><td>quant_crypto · market_intel · scanner</td><td><span class="dot" style="background:var(--green)"></span>live</td></tr>
+  <tr><td><b>F2 Psychology</b></td><td>human parameters</td><td>Fear&amp;Greed (contrarian), regime veto, liquidation shock, funding, long/short ratio</td><td>psych_feed · regime · factor_snapshots + <b>NEW</b> CNN F&amp;G</td><td><span class="dot" style="background:var(--green)"></span>live + 1 new fetcher</td></tr>
+  <tr><td><b>F3 Social</b></td><td>social network</td><td>StockTwits tilt, mention surges (snapshot reads only); X/FB dormant</td><td>social_feed · scanner · analysis_sources</td><td><span class="dot" style="background:var(--green)"></span>live (X/FB = v2)</td></tr>
+  <tr><td><b>F4 News</b></td><td>referenced parameters</td><td>AV category sentiment (<b>honest 4–6h</b>), sentiment-spike z, Finnhub headlines</td><td>market_intel snapshots · psych_feed · Finnhub</td><td><span class="dot" style="background:var(--amber)"></span>cadence fixed to fit 25/day cap</td></tr>
+  <tr><td><b>F5 Economics</b></td><td>economics</td><td>FOMC/CPI/NFP <b>veto windows</b>, FRED, cross-asset tone <b>via Yahoo candles</b>, DXY/kimchi</td><td>market_events · analysis_sources · cross_market</td><td><span class="dot" style="background:var(--amber)"></span>macro tone re-sourced (AV premium was dead)</td></tr>
+  <tr><td><b>F6 Geopolitics</b></td><td>global issues</td><td>Polymarket anticipation odds Δ (fed/tariff/recession/treasury)</td><td>psych_feed ANTICIPATION_TOPICS</td><td><span class="dot" style="background:var(--green)"></span>live (GDELT = v2)</td></tr>
+  <tr><td><b>F7 Gov / Policy</b></td><td>law &amp; policy change</td><td><b>NEW policy_feed.py</b>: Federal Register watchlists (keyless, official) + regulatory prediction-market odds</td><td>federalregister.gov API · Polymarket</td><td><span class="dot" style="background:var(--accent)"></span>new, ~150 lines</td></tr>
+  <tr><td><b>F8 Flows</b></td><td>referenced parameters</td><td>Whale exchange flows, OI change, new listings (ETF flows → v2, AV premium)</td><td>whale_feed · factor_snapshots · scanner</td><td><span class="dot" style="background:var(--green)"></span>live</td></tr>
+</table></div>
+<div class="card">
+  <b>Composite score:</b> subscores ∈ [−1,+1] → per-market weight profiles → renormalize over <i>available</i> factors (missing = None, never fake 0) → <span class="mono">rank_score = eps × √coverage</span> → multiplicative veto gates (event window · regime · session · shock · exclusivity) → fee-hurdle test →
+  <span class="mono">EV/day = (expected_move × confidence − fees/spread) / horizon ÷ vol</span>. All weights journaled as unvalidated priors; the feedback loop closes factor→outcome later.
+</div>
+
+<h2>4 · QA verification results <span class="ko">(9개 QA 에이전트 · 70건 반영)</span></h2>
+<div class="grid2">
+<div class="card">
+<h3 style="margin-top:0">Findings by QA dimension</h3>
+<svg viewBox="0 0 460 300" width="100%">
+  <!-- bars: label, critical, major, minor -->
+  <g font-size="11">
+    <!-- rows: y = 18 + i*30 ; scale 14px per finding -->
+    <!-- risk-safety 3c 5m 1n -->
+    <text x="128" y="30" text-anchor="end">risk-safety</text><rect x="135" y="20" width="42" height="14" fill="var(--red)"/><rect x="177" y="20" width="70" height="14" fill="var(--amber)"/><rect x="247" y="20" width="14" height="14" fill="var(--border)"/><text x="266" y="31" class="mut">9</text>
+    <text x="128" y="60" text-anchor="end">schema-api</text><rect x="135" y="50" width="0" height="14" fill="var(--red)"/><rect x="135" y="50" width="84" height="14" fill="var(--amber)"/><rect x="219" y="50" width="70" height="14" fill="var(--border)"/><text x="294" y="61" class="mut">11</text>
+    <text x="128" y="90" text-anchor="end">completeness</text><rect x="135" y="80" width="28" height="14" fill="var(--red)"/><rect x="163" y="80" width="70" height="14" fill="var(--amber)"/><rect x="233" y="80" width="42" height="14" fill="var(--border)"/><text x="280" y="91" class="mut">10</text>
+    <text x="128" y="120" text-anchor="end">concurrency</text><rect x="135" y="110" width="14" height="14" fill="var(--red)"/><rect x="149" y="110" width="84" height="14" fill="var(--amber)"/><rect x="233" y="110" width="28" height="14" fill="var(--border)"/><text x="266" y="121" class="mut">9</text>
+    <text x="128" y="150" text-anchor="end">test-verify</text><rect x="135" y="140" width="14" height="14" fill="var(--red)"/><rect x="149" y="140" width="70" height="14" fill="var(--amber)"/><rect x="219" y="140" width="28" height="14" fill="var(--border)"/><text x="252" y="151" class="mut">8</text>
+    <text x="128" y="180" text-anchor="end">llm-cost</text><rect x="135" y="170" width="28" height="14" fill="var(--red)"/><rect x="163" y="170" width="28" height="14" fill="var(--amber)"/><rect x="191" y="170" width="14" height="14" fill="var(--border)"/><text x="210" y="181" class="mut">5</text>
+    <text x="128" y="210" text-anchor="end">data-feeds</text><rect x="135" y="200" width="0" height="14"/><rect x="135" y="200" width="42" height="14" fill="var(--amber)"/><rect x="177" y="200" width="42" height="14" fill="var(--border)"/><text x="224" y="211" class="mut">6</text>
+    <text x="128" y="240" text-anchor="end">ux-product</text><rect x="135" y="230" width="0" height="14"/><rect x="135" y="230" width="56" height="14" fill="var(--amber)"/><rect x="191" y="230" width="28" height="14" fill="var(--border)"/><text x="224" y="241" class="mut">6</text>
+    <text x="128" y="270" text-anchor="end">feasibility</text><rect x="135" y="260" width="0" height="14"/><rect x="135" y="260" width="28" height="14" fill="var(--amber)"/><rect x="163" y="260" width="56" height="14" fill="var(--border)"/><text x="224" y="271" class="mut">6</text>
+  </g>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--red)"></span>critical 9 &nbsp; <span class="dot" style="background:var(--amber)"></span>major 38 &nbsp; <span class="dot" style="background:var(--border)"></span>minor 23 — <b>all critical + major folded into the plan</b></p>
+</div>
+<div class="card">
+<h3 style="margin-top:0">The 9 critical findings → fixes</h3>
+<ul class="tight">
+  <li><span class="sev-c">Budget was bookkeeping-only</span> → <span class="mono">run_budget_usd</span> now a hard cost-basis cap inside <span class="mono">run_cycle</span></li>
+  <li><span class="sev-c">Auto-restart clones escape the fleet</span> → members never auto-restart; rotation is the only replacement</li>
+  <li><span class="sev-c">Breaker dead-band + undefined member set</span> → cumulative over ALL runs ever attributed (rotation can't launder loss)</li>
+  <li><span class="sev-c">Tier gating inert on prod</span> (<span class="mono">ENTITLEMENTS_ENFORCED=false</span>, verified via SSH) → fleet gates always-on + prod precondition</li>
+  <li><span class="sev-c">4 incompatible research/cost architectures</span> → ONE global batch, ONE call/refresh</li>
+  <li><span class="sev-c">Fleet creation not idempotent</span> (double-click = 2N runs, 2× budget) → one-active-fleet UNIQUE + idempotency key</li>
+  <li><span class="sev-c">Rotation re-deploys profits unboundedly</span> → slot never grows past original allocation; Σ active ≤ B + breaker property tests (perpetual-N semantics per Henry 2026-07-20)</li>
+  <li><span class="sev-c">Two parallel orchestrator designs</span> → arbitrated to one (§2 of the .md)</li>
+  <li><span class="sev-c">LLM cost undercounted ~6×</span> (a cycle = 6 calls, not 1) → light cycle mode default + tick caps that actually bind</li>
+</ul>
+</div>
+</div>
+
+<h2>5 · Money-safety rails <span class="ko">(자금 안전장치)</span></h2>
+<div class="grid3">
+  <div class="card"><h3 style="margin-top:0">Anti-martingale ladder</h3>
+  <svg viewBox="0 0 300 130" width="100%">
+    <g font-size="10.5">
+    <rect x="20"  y="30" width="50" height="80" fill="var(--green)" opacity=".85"/><text x="45" y="122" text-anchor="middle">1.0×</text>
+    <rect x="90"  y="50" width="50" height="60" fill="var(--amber)" opacity=".85"/><text x="115" y="122" text-anchor="middle">0.75×</text>
+    <rect x="160" y="70" width="50" height="40" fill="var(--amber)" opacity=".7"/><text x="185" y="122" text-anchor="middle">0.5×</text>
+    <rect x="230" y="90" width="50" height="20" fill="var(--red)" opacity=".8"/><text x="255" y="122" text-anchor="middle">0.25×</text>
+    <text x="150" y="18" text-anchor="middle" class="mut">loss → step down · win → restore ≤ 1 rung · 1.0 = HARD ceiling</text>
+    </g>
+  </svg>
+  <p class="legend">Size after a loss can NEVER exceed size before it — property-tested + mutation-tested.</p></div>
+  <div class="card"><h3 style="margin-top:0">Layered stops</h3>
+  <ul class="tight">
+    <li><b>Cycle:</b> confidence gate ↑ after losses, cooldowns, re-entry block (30m)</li>
+    <li><b>Run:</b> max_loss / profit_target / at_time / drawdown brake 70% / <span class="mono">adapt_retired</span> (3 losses)</li>
+    <li><b>Fleet −30%:</b> WARNING — <b>SMS</b> (reserved send budget) + email + in-app; members paused, replacements suspended; episode-latched so resume sticks (their responsibility from here)</li>
+    <li><b>Fleet −40%:</b> <b>STOP-ALL flatten + SMS</b> — evaluated FIRST (gap ⇒ one stop-all), marked equity, fail-closed on stale marks, hard-clamped ≤40%</li>
+    <li><b>Account:</b> master switch — <b>hold / resume / remove</b> ALL AI automation (fleet + runs + rules, every linked agent) with a zero-cost pre-gate so a held account cannot trade</li>
+    <li><b>Ops:</b> FLEET_ENABLED off = no new builds, supervision keeps running</li>
+  </ul></div>
+  <div class="card"><h3 style="margin-top:0">Budget invariant (perpetual N)</h3>
+  <div style="font-size:13.5px">
+  <p><span class="mono">Σ ACTIVE member budgets ≤ total_budget</span> at every tick</p>
+  <p style="margin-top:6px">−40% stop-all fires at the <b>first tick observing</b> the breach (inter-tick overshoot possible — never promised away)</p>
+  <ul class="tight">
+    <li>ONE equity everywhere: <b>marked</b> (realized + unrealized, fail-closed) — funds refunds AND rails, so unrealized losses cut replacement funding too</li>
+    <li>Slots persisted (<span class="mono">fleet_slots</span>): refund = min(original allocation, headroom) — a slot never grows; suspended at/below −30%</li>
+    <li>Unfundable slots go <span class="mono">dormant</span>, re-evaluated every tick (never sticky, never terminal); headroom subtracts zombie basis; same-tick fundings sequential</li>
+  </ul></div></div>
+</div>
+
+<h2>6 · LLM cost model <span class="ko">(비용 상한이 실제로 작동하도록 수정됨)</span></h2>
+<div class="card scroll">
+<table>
+  <tr><th>Surface</th><th>Cadence</th><th>Calls/day</th><th>Accounting</th></tr>
+  <tr><td>Global research (all users)</td><td>1 batched call / hourly refresh (+1 retry max); thesis reuse on unchanged inputs</td><td>≤ 24–48 <b>platform-wide</b></td><td>Platform OpEx · hard throttle</td></tr>
+  <tr><td>Run cycles (per user)</td><td><b>light mode default: 1 call/cycle</b> (was 6 — the QA-corrected number); full pipeline opt-in pro+</td><td>N × 1440/interval, tick-capped</td><td><span class="mono">llm_ticks_exhausted</span>, caps that bind: 150 / 400 / 2,000</td></tr>
+  <tr><td>Thesis reviews (per run)</td><td>every 3 closes, ≥6h apart, ≤4/day/run</td><td>small</td><td><b>now counted</b> into the tick budget</td></tr>
+  <tr><td>Replacements (per user)</td><td>perpetual N: retire → replace, zero extra research LLM (global batch)</td><td>uncapped; churn alert &gt;8/day</td><td>per-user tracking via fleet_events</td></tr>
+</table>
+<svg viewBox="0 0 640 150" width="100%" style="max-width:700px">
+  <g font-size="11">
+  <text x="10" y="18" font-weight="700">Professional fleet, N=10 @60min — worst-case $/day</text>
+  <text x="150" y="52" text-anchor="end">old design (6-call cycles)</text>
+  <rect x="160" y="40" width="430" height="18" fill="var(--red)" opacity=".8"/><text x="596" y="54" class="mut">~$29–86/day (cost-negative vs $500/mo)</text>
+  <text x="150" y="92" text-anchor="end">reconciled (light mode)</text>
+  <rect x="160" y="80" width="36" height="18" fill="var(--green)"/><text x="202" y="94" class="mut">~$2.4–7.2/day</text>
+  <text x="10" y="130" class="mut">+ tick caps lowered so the ceiling binds below fleet worst case per tier; real token counts measured from prod llm_usage before defaults ship.</text>
+  </g>
+</svg>
+</div>
+
+<h2>7 · State machines</h2>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">Fleet</h3>
+<p>
+<span class="statebox">draft</span> → <span class="statebox">researching</span> → <span class="statebox">building</span> → <span class="statebox act">active</span> ⇄ <span class="statebox">paused</span> → <span class="statebox">stopping</span> → <span class="statebox term">stopped</span>
+</p>
+<ul class="tight">
+  <li>partial build ≥1 run → active <span class="mono">partial:k/N</span>; zero → <span class="mono">stopped(build_failed)</span></li>
+  <li><b>never auto-stops on empty:</b> no candidates ⇒ <span class="mono">replenishing:k/N</span>, retried each tick; only user stop (or master switch) / −40% rail / <span class="mono">agent_deleted</span> end it — no equity-floor terminal (both attempted definitions were dominated by the −40% rail)</li>
+  <li>−30% rail ⇒ <b>episode-latched</b> warning: members paused, replacements suspended, SMS sent; user resume sticks (re-arms above −25%; fresh SMS per −5% leg)</li>
+  <li>one non-terminal fleet per USER (<span class="mono">'user:{user_id}'</span> DB UNIQUE); idempotency key on POST</li>
+  <li>lease-claimed (short committed claim txn — run protocol copied verbatim)</li>
+</ul></div>
+<div class="card"><h3 style="margin-top:0">Member run (existing, + fleet hooks)</h3>
+<p><span class="statebox">draft</span> → <span class="statebox">armed</span> → <span class="statebox act">running</span> ⇄ <span class="statebox">paused</span> → <span class="statebox">stopping</span> → <span class="statebox term">stopped</span></p>
+<ul class="tight">
+  <li>new protective reason <span class="mono">adapt_retired</span> — excluded from auto-restart</li>
+  <li>fleet members NEVER auto-restart; replacement follows the per-stop-reason table (immediate: stop_event:* + adapt_retired · deferred: stop_eval_failed, synthetic_liquidation · never: user_stop, agent_deleted)</li>
+  <li>replacement fires once the member is terminal with no open position; <span class="mono">stopped(positions_held)</span> keeps its slot occupied (zombie basis reconstructed from signals replay + fresh mark, counted in equity, subtracted from headroom) until the position closes</li>
+</ul></div>
+</div>
+
+<h2>8 · Build phases <span class="ko">(단계별 검증 게이트)</span></h2>
+<div class="card scroll">
+<svg viewBox="0 0 980 250" width="100%" style="min-width:860px">
+  <g font-size="11.5">
+  <line x1="30" y1="120" x2="960" y2="120" stroke="var(--border)" stroke-width="2"/>
+  <!-- phase nodes -->
+  <g>
+    <circle cx="70" cy="120" r="7" fill="var(--muted)"/><text x="70" y="95" text-anchor="middle" font-weight="700">P0</text>
+    <text x="70" y="145" text-anchor="middle">Preconditions</text><text x="70" y="160" text-anchor="middle" class="mut">Plan 13 lands · 1 head</text>
+    <circle cx="215" cy="120" r="7" fill="var(--cyan)"/><text x="215" y="95" text-anchor="middle" font-weight="700">P1</text>
+    <text x="215" y="145" text-anchor="middle">Data + research skeleton</text><text x="215" y="160" text-anchor="middle" class="mut">candles · policy_feed · factors</text>
+    <text x="215" y="180" text-anchor="middle" class="mut">gate: mutations must fail</text>
+    <circle cx="360" cy="120" r="7" fill="var(--cyan)"/><text x="360" y="95" text-anchor="middle" font-weight="700">P2</text>
+    <text x="360" y="145" text-anchor="middle">Thesis + selection</text><text x="360" y="160" text-anchor="middle" class="mut">clamps · fallback · dedupe</text>
+    <text x="360" y="180" text-anchor="middle" class="mut">gate: unit test $20≠$500</text>
+    <circle cx="505" cy="120" r="7" fill="var(--purple)"/><text x="505" y="95" text-anchor="middle" font-weight="700">P3</text>
+    <text x="505" y="145" text-anchor="middle">Fleet build + budget cap</text><text x="505" y="160" text-anchor="middle" class="mut">idempotency · races · no-clone</text>
+    <text x="505" y="180" text-anchor="middle" class="mut">gate: Σ ≤ B property test</text>
+    <circle cx="650" cy="120" r="7" fill="var(--amber)"/><text x="650" y="95" text-anchor="middle" font-weight="700">P4</text>
+    <text x="650" y="145" text-anchor="middle">Feedback + supervision</text><text x="650" y="160" text-anchor="middle" class="mut">ladder · breaker · rotation</text>
+    <text x="650" y="180" text-anchor="middle" class="mut">gate: anti-martingale + fence</text>
+    <circle cx="795" cy="120" r="7" fill="var(--accent)"/><text x="795" y="95" text-anchor="middle" font-weight="700">P5</text>
+    <text x="795" y="145" text-anchor="middle">API + frontend + i18n</text><text x="795" y="160" text-anchor="middle" class="mut">Full Auto panel · timelines</text>
+    <text x="795" y="180" text-anchor="middle" class="mut">gate: tsc · IDOR · /qa</text>
+    <circle cx="920" cy="120" r="7" fill="var(--green)"/><text x="920" y="95" text-anchor="middle" font-weight="700">P6</text>
+    <text x="920" y="145" text-anchor="middle">Prod rollout</text><text x="920" y="160" text-anchor="middle" class="mut">ENTITLEMENTS=1 · canary</text>
+    <text x="920" y="180" text-anchor="middle" class="mut">gate: 2-run smoke ×2</text>
+  </g>
+  <text x="30" y="40" class="mut">Each phase ships a testable increment, dark behind FLEET_ENABLED / FLEET_RESEARCH_ENABLED · every gate re-verified ≥2× · mutation pass mandatory before any "green" report.</text>
+  </g>
+</svg>
+</div>
+
+<div class="callout">
+<b>Prod rollout preconditions (QA-verified live):</b> prod currently runs <span class="mono">ENTITLEMENTS_ENFORCED=false</span> — flipping <span class="mono">FLEET_ENABLED=1</span> without fixing that would give any <span class="mono">claw_</span> token an unmetered 25-run fleet. Order is fixed: enforcement on (with confirmed PLAN_LIMITS) → research flag on → confirm a batch exists → canary allowlist → QA account granted pro+ → 2-run smoke → kill-switch verified on prod.
+</div>
+
+<h2>9 · Open questions for Henry <span class="ko">(결정 필요 사항)</span></h2>
+<div class="card"><ol style="margin-left:20px; font-size:14px;">
+  <li><b>Input set:</b> you asked "N only" — money safety wants a budget. v1: N stepper + tier-defaulted <i>editable</i> budget, rest defaulted/Advanced. OK? <span class="ko">런 개수만 입력 + 예산은 티어 기본값(수정 가능)으로 처리하는 방식 확인</span></li>
+  <li><b>Tier numbers:</b> fleet size 0/0/3/10/25 · tick caps 150/400/2,000 · churn alert 8/day · light cycle mode default — confirm vs $60/$250/$500 pricing. <span class="ko">(로테이션 일일 상한은 2026-07-20 지시로 제거 — 사용자가 멈출 때까지 항상 N개 유지)</span></li>
+  <li><b>Feedback depth:</b> deterministic adaptation ON; decision-LLM seeing its own record ships default-OFF pending A/B. Accept?</li>
+  <li><b>Market scope at launch:</b> all 5 automatable markets, or crypto + us-stock first week?</li>
+  <li><b>Shorts from day one</b> where the book supports them, or long-only until data accumulates?</li>
+  <li><b>Thesis language:</b> per-language on-read generation (cached) vs English prose + localized factor chips only?</li>
+  <li><b>Agent mode (완전 위임) positioning</b> vs Full Auto (N종목 자동 편성): keep both with differentiated copy, or fold later?</li>
+  <li><b>v2 feed funding order:</b> X API / AV premium / Coinglass / GDELT?</li>
+</ol></div>
+
+<p class="legend" style="margin-top:30px">Plan 14 · generated 2026-07-20 · 5 planner agents + 9 QA agents (70 findings, all critical/major folded) · full text: <span class="mono">docs/plan/14-full-auto-trading.md</span></p>
+</div>
+</body>
+</html>
