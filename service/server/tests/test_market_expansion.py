@@ -27,7 +27,12 @@ import markets
 import price_fetcher
 import trading_runs
 from routes import create_app
-from routes_market import A_STOCK_SYMBOLS, FUTURES_SYMBOLS, OPTION_UNDERLYINGS
+from routes_market import (
+    A_STOCK_SYMBOLS,
+    FUTURES_SYMBOLS,
+    OPTION_UNDERLYINGS,
+    US_STOCK_SYMBOLS,
+)
 
 
 class SymbolUniverseTests(unittest.TestCase):
@@ -54,6 +59,18 @@ class SymbolUniverseTests(unittest.TestCase):
     def test_option_underlyings_are_plain_tickers(self):
         for symbol in OPTION_UNDERLYINGS:
             self.assertRegex(symbol, r'^[A-Z]{1,6}$')
+
+    def test_us_tickers_are_well_formed(self):
+        # The list is hand-maintained, and the UI is selection-only: a typo'd
+        # ticker becomes a dropdown option that no provider can price, which
+        # surfaces only as a confusing rejection at run creation.
+        for symbol in US_STOCK_SYMBOLS:
+            self.assertRegex(symbol, r'^[A-Z]{1,5}(\.[A-Z])?$', symbol)
+
+    def test_no_duplicate_us_tickers(self):
+        dupes = sorted({s for s in US_STOCK_SYMBOLS
+                        if US_STOCK_SYMBOLS.count(s) > 1})
+        self.assertEqual(dupes, [], f"duplicate tickers offered: {dupes}")
 
 
 class YahooSymbolTests(unittest.TestCase):
