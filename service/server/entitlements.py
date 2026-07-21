@@ -22,19 +22,22 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 # plan_code -> entitlements. None key = no active subscription / unlinked agent.
+# daily_llm_ticks lowered per Plan 14 §9.2 so the cap actually binds below
+# fleet worst cases (the old 1000/5000 never bound at fleet interval floors) —
+# still placeholders pending Henry's Q2 confirmation.
 PLAN_LIMITS: dict[Optional[str], dict[str, Any]] = {
     None: {"max_concurrent_runs": 0, "max_bet_usd": 0.0,
-           "sms_allowed": False, "daily_llm_ticks": 0},
+           "sms_allowed": False, "daily_llm_ticks": 0, "max_fleet_size": 0},
     # SMS enabled on ALL paid tiers (Henry, 2026-07-19); unlinked/no-plan
     # stays SMS-off. Run/bet caps below remain placeholders pending numbers.
     "junior": {"max_concurrent_runs": 1, "max_bet_usd": 100.0,
-               "sms_allowed": True, "daily_llm_ticks": 100},
+               "sms_allowed": True, "daily_llm_ticks": 100, "max_fleet_size": 0},
     "pro": {"max_concurrent_runs": 3, "max_bet_usd": 1_000.0,
-            "sms_allowed": True, "daily_llm_ticks": 300},
+            "sms_allowed": True, "daily_llm_ticks": 150, "max_fleet_size": 3},
     "professional": {"max_concurrent_runs": 10, "max_bet_usd": 10_000.0,
-                     "sms_allowed": True, "daily_llm_ticks": 1_000},
+                     "sms_allowed": True, "daily_llm_ticks": 400, "max_fleet_size": 10},
     "enterprise": {"max_concurrent_runs": 25, "max_bet_usd": 100_000.0,
-                   "sms_allowed": True, "daily_llm_ticks": 5_000},
+                   "sms_allowed": True, "daily_llm_ticks": 2_000, "max_fleet_size": 25},
 }
 
 
@@ -131,9 +134,10 @@ def check_auto_execute(cursor, agent_id: int) -> Optional[str]:
 
 def llm_ticks_exhausted(cursor, agent_id: int) -> Optional[str]:
     """Per-tier daily LLM-cycle budget (each analysis cycle is LLM spend —
-    the OpEx attack surface). Counts today's decision events across the
-    OWNING USER's runs. Only market-eligible cycles emit decisions, so
-    skipped cycles never consume budget."""
+    the OpEx attack surface). Counts today's decision AND thesis_review
+    events across the OWNING USER's runs (Plan 14: thesis reviews used to
+    check this budget without ever drawing it down). Only market-eligible
+    cycles emit decisions, so skipped cycles never consume budget."""
     if not enforcement_enabled():
         return None
     user_id, limits = limits_for_agent(cursor, agent_id)
@@ -146,9 +150,29 @@ def llm_ticks_exhausted(cursor, agent_id: int) -> Optional[str]:
         """SELECT COUNT(*) AS n FROM run_events re
            JOIN trading_runs tr ON tr.id = re.run_id
            JOIN agents a ON a.id = tr.agent_id
-           WHERE a.user_id = ? AND re.event_type = 'decision' AND re.ts >= ?""",
+           WHERE a.user_id = ? AND re.event_type IN ('decision', 'thesis_review')
+             AND re.ts >= ?""",
         (user_id, day_start))
     used = int(cursor.fetchone()["n"] or 0)
     if used >= budget:
         return f"daily analysis budget exhausted ({used}/{budget} cycles today)"
+    return None
+
+
+# ── Plan 14: fleet gates — ALWAYS-ON, deliberately NOT behind
+#    enforcement_enabled(). Fleet LLM spend is a direct per-cycle cost, the
+#    same class as the SMS gate (which also bypasses the flag). QA verified
+#    prod runs ENTITLEMENTS_ENFORCED=false — flag-gated fleet checks would
+#    hand any claw_ token an unmetered 25-run fleet.
+
+def check_fleet_create(cursor, agent_id: int, n_runs: int) -> Optional[str]:
+    """Deny reason (or None) for creating/starting a fleet."""
+    user_id, limits = limits_for_agent(cursor, agent_id)
+    if user_id is None:
+        return "fleets require an agent linked to a user account"
+    max_fleet = int(limits.get("max_fleet_size") or 0)
+    if max_fleet <= 0:
+        return "your plan does not include Full Auto fleets"
+    if n_runs > max_fleet:
+        return f"plan allows a fleet of at most {max_fleet} run(s) (requested {n_runs})"
     return None

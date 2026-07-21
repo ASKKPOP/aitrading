@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { API_BASE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
@@ -22,6 +23,7 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     { available: false, address: '', network: 'TRC20' })
   const [txHash, setTxHash] = useState('')
   const [copied, setCopied] = useState(false)
+  const [qr, setQr] = useState('')
   const [mine, setMine] = useState<any | null>(null)
   const [selected, setSelected] = useState<string>('')
   const [reference, setReference] = useState('')
@@ -86,6 +88,9 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
       th: 'ชำระด้วย USDT', vi: 'Thanh toán bằng USDT' }),
     usdtNetwork: tr(language, { ko: '네트워크', en: 'Network', ja: 'ネットワーク',
       th: 'เครือข่าย', vi: 'Mạng lưới' }),
+    usdtScan: tr(language, { ko: '지갑 앱으로 스캔', en: 'Scan with your wallet app',
+      ja: 'ウォレットアプリでスキャン', th: 'สแกนด้วยแอปกระเป๋าเงิน',
+      vi: 'Quét bằng ứng dụng ví' }),
     usdtAddress: tr(language, { ko: '입금 주소', en: 'Deposit address', ja: '入金アドレス',
       th: 'ที่อยู่สำหรับโอน', vi: 'Địa chỉ nhận' }),
     usdtCopy: tr(language, { ko: '복사', en: 'Copy', ja: 'コピー', th: 'คัดลอก', vi: 'Sao chép' }),
@@ -126,6 +131,19 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
   }
 
   useEffect(() => { loadState() }, [userToken])
+
+  // The QR encodes the deposit address verbatim — same `usdt.address` string the
+  // <code> block below renders, so the two can never drift apart. Plain address,
+  // not an EIP-681 URI: every wallet scans it, and there is no contract or
+  // decimals value to get wrong. The user still types the amount by hand.
+  useEffect(() => {
+    if (!usdt.address) { setQr(''); return }
+    let live = true
+    QRCode.toDataURL(usdt.address, { errorCorrectionLevel: 'M', margin: 1, width: 320 })
+      .then(url => { if (live) setQr(url) })
+      .catch(() => { if (live) setQr('') })  // address text stays authoritative
+    return () => { live = false }
+  }, [usdt.address])
 
   // PayPal redirect return: ?paypal=return&token=<ORDER_ID> → capture.
   useEffect(() => {
@@ -282,6 +300,16 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
                   {Number(plans.find(p => p.code === selected)?.price_usd || 0).toLocaleString()} USDT
                 </strong>
               </div>
+              {qr && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  gap: 6, margin: '4px 0 12px' }}>
+                  {/* White plate is required, not decorative: scanners need the
+                      light quiet zone, and the app renders on a dark ground. */}
+                  <img src={qr} alt={`${T.usdtAddress} — ${usdt.network}`} width={160} height={160}
+                    style={{ display: 'block', background: '#fff', padding: 8, borderRadius: 8 }} />
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)' }}>{T.usdtScan}</div>
+                </div>
+              )}
               <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', marginBottom: 4 }}>
                 {T.usdtAddress}
               </div>

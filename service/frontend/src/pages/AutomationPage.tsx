@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
+import { FleetPanel } from '../components/FleetPanel'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
@@ -71,7 +72,7 @@ export function AutomationPage() {
 
   const [rules, setRules] = useState<Rule[]>([])
   const [topCoins, setTopCoins] = useState<string[]>(SIMPLE_COINS_FALLBACK)
-  const [ruleMode, setRuleMode] = useState<'agent' | 'simple'>('simple')
+  const [ruleMode, setRuleMode] = useState<'agent' | 'simple' | 'fleet'>('simple')
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
   const [agentBudget, setAgentBudget] = useState<number>(5000)
@@ -150,7 +151,8 @@ export function AutomationPage() {
     // ── automation-rule panel (hangs off the create modal) ──
     ruleSection: tr(language, { ko: '또는 자동화 규칙 만들기 (AI가 일정에 따라 반복 실행)', en: 'Or create an automation rule (AI repeats it on a schedule)', ja: 'または自動売買ルールを作成（AIが定期実行）', th: 'หรือสร้างกฎอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Hoặc tạo quy tắc tự động (AI lặp lại theo lịch)' }),
     modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản' }),
-    modeAgent: tr(language, { ko: '완전 위임', en: 'Agent', ja: '完全委任', th: 'มอบหมายเต็มรูปแบบ', vi: 'Ủy quyền hoàn toàn' }),
+    modeAgent: tr(language, { ko: '1종목 위임', en: 'Agent (1 symbol)', ja: '1銘柄委任', th: 'มอบหมาย 1 เหรียญ', vi: 'Ủy quyền 1 mã' }),
+    modeFleet: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn' }),
     modeAgentDesc: tr(language, { ko: '예산만 정하세요 — AI가 종목을 골라 TRADING을 만들고, 매 사이클 매매 결정을 기록합니다', en: 'Set only a budget — the AI picks a symbol, creates the TRADING, and journals every cycle decision', ja: '予算だけ設定 — AIが銘柄を選んで TRADING を作成し、毎サイクルの判断を記録します', th: 'ตั้งแค่งบประมาณ — AI เลือกเหรียญ สร้าง TRADING และบันทึกการตัดสินใจทุกรอบ', vi: 'Chỉ đặt ngân sách — AI chọn mã, tạo TRADING và ghi lại quyết định mỗi chu kỳ' }),
     modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại' }),
     budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)' }),
@@ -315,10 +317,15 @@ export function AutomationPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
         <button style={chip(ruleMode === 'agent')} onClick={() => setRuleMode('agent')}>⓪ {T.modeAgent}</button>
         <button style={chip(ruleMode === 'simple')} onClick={() => setRuleMode('simple')}>① {T.modeSimple}</button>
+        <button style={chip(ruleMode === 'fleet')} onClick={() => setRuleMode('fleet')}>② {T.modeFleet}</button>
       </div>
-      <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>
-        {ruleMode === 'agent' ? T.modeAgentDesc : T.modeSimpleDesc}
-      </div>
+      {ruleMode !== 'fleet' && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>
+          {ruleMode === 'agent' ? T.modeAgentDesc : T.modeSimpleDesc}
+        </div>
+      )}
+
+      {ruleMode === 'fleet' && <FleetPanel token={token!} />}
 
       {ruleMode === 'agent' && (
         <>

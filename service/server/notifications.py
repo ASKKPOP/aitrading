@@ -86,6 +86,13 @@ ALERT_KIND_CATEGORY = {
     "run_stopped": "auto_trading_safety",
     "gateway_down": "auto_trading_safety",
     "order_drift": "auto_trading_safety",
+    # Plan 14 fleet
+    "fleet_drawdown_warning": "auto_trading_safety",
+    "fleet_breaker": "auto_trading_safety",
+    "fleet_churn": "auto_trading_reports",
+    "fleet_watchdog": "auto_trading_safety",
+    "fleet_slot_dormant": "auto_trading_reports",
+    "fleet_sms_unavailable": "auto_trading_safety",
 }
 
 

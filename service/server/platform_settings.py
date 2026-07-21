@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 _ENV_FALLBACK: dict[str, str] = {
     "usdt_address": "USDT_ADDRESS",
     "usdt_network": "USDT_NETWORK",
+    "bank_transfer_info": "BANK_TRANSFER_INFO",
 }
 
 _DEFAULTS: dict[str, str] = {

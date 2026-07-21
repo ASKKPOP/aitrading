@@ -181,6 +181,9 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   const [equityByRun, setEquityByRun] = useState<Record<number, number[]>>({})
   const [selected, setSelected] = useState<number | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  // Id of the draft being re-configured. It opens the same modal as create,
+  // seeded from the run — null means the modal is in create mode.
+  const [editRunId, setEditRunId] = useState<number | null>(null)
   const [err, setErr] = useState('')
   // Structured start conflict (409 with resolvable position/rules) — rendered
   // as a modal offering one-click "close position + disable rules, then start".
@@ -336,9 +339,9 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
 
       {err && <div style={{ color: '#d03b3b', marginTop: 10, fontSize: 13 }}>{err}</div>}
 
-      {showCreate && (
+      {(showCreate || editRunId !== null) && (
         <div role="dialog" aria-modal="true" aria-label={T.newRun}
-          onClick={() => setShowCreate(false)}
+          onClick={() => { setShowCreate(false); setEditRunId(null) }}
           // The sticky top nav is z-index 500; at 60 this overlay rendered
           // UNDER it and the nav covered the modal's first ~32px, so the
           // symbol/market row was unreachable. Dialogs must outrank the nav.
@@ -348,13 +351,19 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           <div onClick={(e) => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 900, margin: 'auto' }}>
             <CreateRunForm token={token}
+              // Remount on mode change so the form re-seeds from the run being
+              // edited instead of keeping the previous draft's values.
+              key={editRunId ?? 'create'}
+              editRun={editRunId !== null
+                ? runs.find((r) => r.id === editRunId) : undefined}
               onDone={(startError, conflictInfo) => {
-                setShowCreate(false)
+                setShowCreate(false); setEditRunId(null)
                 if (conflictInfo) setConflict(conflictInfo)
                 else if (startError) setErr(startError)
                 load()
               }}
-              onCancel={() => setShowCreate(false)} language={language} />
+              onCancel={() => { setShowCreate(false); setEditRunId(null) }}
+              language={language} />
             {extraPanel}
           </div>
         </div>
@@ -380,6 +389,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                 <strong style={{ fontSize: 15 }}>{run.symbol}
                   <span className="muted" style={{ fontSize: 11, marginLeft: 6 }}>
                     {run.market}{run.market_type === 'futures' ? ' · fut' : ''}</span>
+                  {(run as any).fleet_id ? (
+                    <span style={{ fontSize: 10.5, marginLeft: 6, padding: '1px 7px', borderRadius: 9,
+                      background: 'rgba(194,106,69,0.14)', color: 'var(--accent-primary,#c26a45)' }}>
+                      🚀 #{(run as any).fleet_id}</span>
+                  ) : null}
                 </strong>
                 <span style={{ fontSize: 11, fontWeight: 600,
                   color: STATUS_COLOR[run.status] || '#898781' }}>
@@ -420,7 +434,8 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           events={eventsByRun[selected] || []}
           tick={tickByRun[selected]}
           onClose={() => setSelected(null)}
-          onAct={act} onDelete={del} language={language} />
+          onAct={act} onDelete={del} language={language}
+          onEdit={(id) => { setSelected(null); setEditRunId(id) }} />
       )}
 
       {conflict && (
@@ -490,11 +505,12 @@ export function RunsLivePage({ token }: Props) {
   )
 }
 
-function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, language }: {
+function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdit, language }: {
   runId: number; token: string; events: any[]; tick: any
   onClose: () => void
   onAct: (id: number, action: string, body?: any) => void
   onDelete: (id: number) => void
+  onEdit?: (id: number) => void
   language: Language
 }) {
   const [snap, setSnap] = useState<any>(null)
@@ -590,6 +606,13 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, langu
             {status === 'draft' &&
               <button className="btn btn-primary" onClick={() => onAct(runId, 'start')}>
                 {tr(language, { ko: '시작', en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu' })}</button>}
+            {/* Only a draft can be re-configured. It is also the way out of the
+                exclusivity refusal: change the interval, type, confidence or
+                provider here and this TRADING can run beside the existing one. */}
+            {status === 'draft' && onEdit &&
+              <button className="btn" onClick={() => onEdit(runId)}>
+                {tr(language, { ko: '설정 수정', en: 'Edit settings', ja: '設定を編集',
+                  th: 'แก้ไขการตั้งค่า', vi: 'Sửa cài đặt' })}</button>}
             <button className="btn" style={{ color: '#d03b3b' }} onClick={() => onDelete(runId)}>
               {tr(language, { ko: '삭제', en: 'Delete', ja: '削除', th: 'ลบ', vi: 'Xóa' })}</button>
           </div>}
@@ -637,19 +660,32 @@ function summarize(e: any, lang: Language): string {
   return JSON.stringify(p).slice(0, 80)
 }
 
-function CreateRunForm({ token, onDone, onCancel, language }: {
+function CreateRunForm({ token, onDone, onCancel, language, editRun }: {
   token: string
   onDone: (startError?: string, conflictInfo?: {
     runId: number; message: string
     conflicts: { position: any; rule_ids: number[] }
   }) => void
   onCancel: () => void; language: Language
+  // Present when re-configuring a draft instead of creating one. Same form,
+  // because an edited draft is validated exactly like a new run — the server
+  // takes a full replacement, not a patch.
+  editRun?: Run
 }) {
-  const [f, setF] = useState({
-    symbol: 'BTC', market: 'crypto', market_type: 'spot',
-    max_bet_usd: 500, interval_minutes: 60, min_confidence: 0.65,
-    stop_loss_usd: '', profit_target_usd: '',
-    report_frequency: 'off', notify_on_trade: false,
+  const [f, setF] = useState(() => {
+    const c = editRun?.config || {}
+    const s = (editRun as any)?.stop_conditions || {}
+    return {
+      symbol: editRun?.symbol ?? 'BTC',
+      market: editRun?.market ?? 'crypto',
+      market_type: editRun?.market_type ?? 'spot',
+      max_bet_usd: c.max_bet_usd ?? 500,
+      interval_minutes: c.interval_minutes ?? 60,
+      min_confidence: c.min_confidence ?? 0.65,
+      stop_loss_usd: s.max_loss_usd != null ? String(s.max_loss_usd) : '',
+      profit_target_usd: s.profit_target_usd != null ? String(s.profit_target_usd) : '',
+      report_frequency: 'off', notify_on_trade: false,
+    }
   })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -695,8 +731,12 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
   const [withReporting, setWithReporting] = useState(false)
   const auth = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const E = {
-    createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.',
-      ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.' }),
+    createFailed: editRun
+      ? tr(language, { ko: 'TRADING을 수정하지 못했습니다.', en: 'Could not save the TRADING.',
+          ja: 'TRADING を保存できませんでした。', th: 'บันทึก TRADING ไม่สำเร็จ',
+          vi: 'Không lưu được TRADING.' })
+      : tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.',
+          ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.' }),
     startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다.', en: 'Could not start the TRADING.',
       ja: 'TRADING を開始できませんでした。', th: 'เริ่ม TRADING ไม่สำเร็จ', vi: 'Không khởi động được TRADING.' }),
     network: tr(language, { ko: '네트워크 오류 — 연결을 확인한 뒤 다시 시도하세요.',
@@ -713,22 +753,25 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
     if (f.stop_loss_usd) stop.max_loss_usd = Number(f.stop_loss_usd)
     if (f.profit_target_usd) stop.profit_target_usd = Number(f.profit_target_usd)
     try {
-      const r = await fetch(`${API_BASE}/runs`, {
-        method: 'POST', headers: auth,
-        body: JSON.stringify({
-          symbol: f.symbol, market: f.market, market_type: f.market_type,
-          max_bet_usd: Number(f.max_bet_usd),
-          interval_minutes: Number(f.interval_minutes),
-          min_confidence: Number(f.min_confidence),
-          stop_conditions: stop,
-        }),
-      })
+      // Editing replaces the draft in place; creating makes a new one. Either
+      // way the same body, because the edit endpoint takes a full config.
+      const r = await fetch(
+        editRun ? `${API_BASE}/runs/${editRun.id}` : `${API_BASE}/runs`, {
+          method: editRun ? 'PUT' : 'POST', headers: auth,
+          body: JSON.stringify({
+            symbol: f.symbol, market: f.market, market_type: f.market_type,
+            max_bet_usd: Number(f.max_bet_usd),
+            interval_minutes: Number(f.interval_minutes),
+            min_confidence: Number(f.min_confidence),
+            stop_conditions: stop,
+          }),
+        })
       const d = await r.json()
       if (!r.ok) {
         const msg = typeof d.detail === 'object' ? d.detail?.message : d.detail
         setErr(msg || E.createFailed); setBusy(false); setStage(0); return
       }
-      const runId = d.id
+      const runId = editRun ? editRun.id : d.id
       if (reporting) {
         setStage(2)
         await fetch(`${API_BASE}/runs/${runId}/reporting`, {
@@ -847,8 +890,11 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
         <ol style={{ listStyle: 'none', margin: '12px 0 0', padding: 0,
           display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           {[
-            [1, lbl({ ko: '런 생성', en: 'Creating run', ja: 'ラン作成',
-              th: 'สร้างรัน', vi: 'Tạo phiên chạy' })],
+            [1, editRun
+              ? lbl({ ko: '설정 저장', en: 'Saving settings', ja: '設定を保存',
+                  th: 'บันทึกการตั้งค่า', vi: 'Lưu cài đặt' })
+              : lbl({ ko: '런 생성', en: 'Creating run', ja: 'ラン作成',
+                  th: 'สร้างรัน', vi: 'Tạo phiên chạy' })],
             ...(withReporting ? [[2, lbl({ ko: '리포트 설정', en: 'Configuring reports',
               ja: 'レポート設定', th: 'ตั้งค่ารายงาน', vi: 'Cấu hình báo cáo' })]] : []),
             [3, lbl({ ko: '시작', en: 'Starting', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu' })],
@@ -863,9 +909,12 @@ function CreateRunForm({ token, onDone, onCancel, language }: {
       )}
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button className="btn btn-primary" disabled={busy} onClick={submit}>
-          {tr(language, { ko: '▶ TRADING 만들고 시작', en: '▶ Create & start TRADING',
-            ja: '▶ TRADING を作成して開始', th: '▶ สร้างและเริ่ม TRADING',
-            vi: '▶ Tạo & bắt đầu TRADING' })}</button>
+          {editRun
+            ? tr(language, { ko: '▶ 저장하고 시작', en: '▶ Save & start',
+                ja: '▶ 保存して開始', th: '▶ บันทึกและเริ่ม', vi: '▶ Lưu & bắt đầu' })
+            : tr(language, { ko: '▶ TRADING 만들고 시작', en: '▶ Create & start TRADING',
+                ja: '▶ TRADING を作成して開始', th: '▶ สร้างและเริ่ม TRADING',
+                vi: '▶ Tạo & bắt đầu TRADING' })}</button>
         <button className="btn" onClick={onCancel}>
           {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}</button>
       </div>

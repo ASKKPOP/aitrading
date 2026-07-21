@@ -352,6 +352,199 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
 
+    # ── Plan 14 §6.7: account-level master control (USER-SESSION auth) ─────
+    # One switch over EVERYTHING AI-automated the user owns, across every
+    # linked agent: the fleet, all runs, all automation rules. Marker-stamped
+    # so resume restores exactly the held set; the zero-cost pre-gate in
+    # run_cycle / the fleet loop / run_rule backs the fan-out (a held account
+    # cannot trade even if an object was missed here).
+
+    @app.post("/api/automation/master")
+    async def master_control(data: dict, authorization: str = Header(None)):
+        from services import _get_user_by_token
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token) if token else None
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        action = str((data or {}).get("action") or "").strip().lower()
+        if action not in ("hold", "resume", "remove"):
+            raise HTTPException(status_code=400,
+                                detail="action must be hold, resume or remove")
+        import fleet_planner
+        import trading_runs as tr
+        from database import begin_write_transaction as _bwt
+
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM agents WHERE user_id = ?",
+                           (user["id"],))
+            agent_ids = [int(r["id"]) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+
+        results: dict[str, dict] = {"runs": {}, "rules": {}, "fleets": {}}
+        state = "held" if action == "hold" else "active"
+
+        if action == "hold":
+            # stamp the account FIRST — the pre-gate closes the fan-out race
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                _bwt(cursor)
+                cursor.execute(
+                    "UPDATE users SET ai_automation_state = 'held', "
+                    "ai_automation_held_at = ? WHERE id = ?",
+                    (fleet_planner._now_iso(), user["id"]))
+                conn.commit()
+            finally:
+                conn.close()
+        for agent_id in agent_ids:
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM trading_runs WHERE agent_id = ? "
+                               "AND status IN ('running','paused','armed')",
+                               (agent_id,))
+                runs = [dict(r) for r in cursor.fetchall()]
+                cursor.execute("SELECT id FROM fleets WHERE agent_id = ? AND "
+                               "status NOT IN ('stopped')", (agent_id,))
+                fleets = [int(r["id"]) for r in cursor.fetchall()]
+            finally:
+                conn.close()
+
+            for run in runs:
+                rid = run["id"]
+                try:
+                    if action == "hold":
+                        if run["status"] == "running":
+                            tr.pause_run(rid, agent_id, reason="master_hold",
+                                         paused_marker="master_hold")
+                            results["runs"][rid] = "held"
+                        else:
+                            # armed runs STAY armed — _control_armed blocks
+                            # the start and suspends the timeout clock
+                            results["runs"][rid] = run["status"]
+                    elif action == "resume":
+                        if run["status"] == "paused" and \
+                                (run.get("paused_reason") or "") == "master_hold":
+                            # a warn-latched fleet's members convert to the
+                            # drawdown marker instead of waking (§6.5.1)
+                            latched = False
+                            if run.get("fleet_id"):
+                                fl = fleet_planner.get_fleet(run["fleet_id"])
+                                latched = bool(fl and fl.get("warn_latched_at")
+                                               and not fl.get("warn_acked_at"))
+                            if latched:
+                                conn = get_db_connection()
+                                try:
+                                    cursor = conn.cursor()
+                                    _bwt(cursor)
+                                    cursor.execute(
+                                        "UPDATE trading_runs SET paused_reason "
+                                        "= 'drawdown_warning' WHERE id = ?",
+                                        (rid,))
+                                    conn.commit()
+                                finally:
+                                    conn.close()
+                                results["runs"][rid] = "still_warned"
+                            else:
+                                tr.resume_run(rid, agent_id)
+                                results["runs"][rid] = "running"
+                        else:
+                            results["runs"][rid] = "not_held"
+                    else:  # remove
+                        if run["status"] == "armed":
+                            tr._transition(rid, agent_id, ("armed",), "stopped",
+                                           "user_master_remove",
+                                           clear_active_key=True)
+                        else:
+                            tr.request_stop(rid, agent_id, flatten=True)
+                        results["runs"][rid] = "stopping"
+                except Exception as exc:  # noqa: BLE001
+                    results["runs"][rid] = f"error: {exc}"
+
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                _bwt(cursor)
+                if action == "hold":
+                    cursor.execute(
+                        "UPDATE automation_configs SET enabled = 0, "
+                        "held_by_master = 1 WHERE agent_id = ? AND enabled = 1",
+                        (agent_id,))
+                elif action == "resume":
+                    cursor.execute(
+                        "UPDATE automation_configs SET enabled = 1, "
+                        "held_by_master = 0 WHERE agent_id = ? AND "
+                        "held_by_master = 1", (agent_id,))
+                else:
+                    cursor.execute(
+                        "UPDATE automation_configs SET enabled = 0, "
+                        "held_by_master = 0 WHERE agent_id = ?", (agent_id,))
+                results["rules"][agent_id] = cursor.rowcount
+                conn.commit()
+            finally:
+                conn.close()
+
+            for fleet_id in fleets:
+                try:
+                    if action == "hold":
+                        fleet_planner._update_master_hold(fleet_id, True)
+                        results["fleets"][fleet_id] = "held"
+                    elif action == "resume":
+                        fleet_planner._update_master_hold(fleet_id, False)
+                        results["fleets"][fleet_id] = "resumed"
+                    else:
+                        fleet_planner.request_stop_fleet(fleet_id, agent_id,
+                                                         flatten=True)
+                        fleet_planner._set_status(
+                            fleet_id, fleet_planner._NON_TERMINAL,
+                            fleet_planner.STATUS_STOPPING, "user_master_remove")
+                        results["fleets"][fleet_id] = "stopping"
+                except Exception as exc:  # noqa: BLE001
+                    results["fleets"][fleet_id] = f"error: {exc}"
+
+        if action != "hold":
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                _bwt(cursor)
+                cursor.execute(
+                    "UPDATE users SET ai_automation_state = ?, "
+                    "ai_automation_held_at = NULL WHERE id = ?",
+                    (state, user["id"]))
+                conn.commit()
+            finally:
+                conn.close()
+        return {"ok": True, "action": action, "results": results}
+
+    @app.get("/api/automation/master")
+    async def master_state(authorization: str = Header(None)):
+        from services import _get_user_by_token
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token) if token else None
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT ai_automation_state, ai_automation_held_at FROM users "
+                "WHERE id = ?", (user["id"],))
+            row = dict(cursor.fetchone() or {})
+            cursor.execute(
+                """SELECT COUNT(*) AS n FROM trading_runs tr
+                   JOIN agents a ON a.id = tr.agent_id
+                   WHERE a.user_id = ? AND tr.paused_reason = 'master_hold'""",
+                (user["id"],))
+            held_runs = int(cursor.fetchone()["n"] or 0)
+        finally:
+            conn.close()
+        return {"state": row.get("ai_automation_state") or "active",
+                "held_at": row.get("ai_automation_held_at"),
+                "held_runs": held_runs}
+
     @app.get("/api/automation/runs")
     async def list_runs(config_id: Optional[int] = None, limit: int = 30,
                         authorization: str = Header(None)):

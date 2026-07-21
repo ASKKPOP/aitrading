@@ -43,7 +43,8 @@ def _raised_strings() -> set[str]:
         return None
 
     raisers = {"HTTPException", "ValueError", "StartConflict",
-               "EntitlementDenied", "LookupError", "PermissionError"}
+               "EntitlementDenied", "LookupError", "PermissionError",
+               "FleetConflict"}
     for path in SERVER.rglob("*.py"):
         if "tests" in path.parts:
             continue

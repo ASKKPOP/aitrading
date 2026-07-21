@@ -38,6 +38,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -610,6 +611,16 @@ def _halt_duplicate(run: dict) -> bool:
 
 
 def _control_armed(run: dict, out: dict) -> None:
+    # Plan 14 §6.7 depth (3): armed runs stay ARMED under an account master
+    # hold (armed→paused is an illegal transition and would bypass the start
+    # condition on resume). The hold blocks the start here — and suspends the
+    # armed-timeout clock, so a long hold cannot silently expire the run
+    # ("reversible" must stay true).
+    try:
+        if _master_held(run["agent_id"]):
+            return
+    except Exception:  # noqa: BLE001 — fail closed: no start under uncertainty
+        return
     started = run.get("started_at")
     if started and _age_seconds(started) > _armed_timeout():
         if _simple_transition(run, STATUS_STOPPED, "armed_timeout",
@@ -752,6 +763,18 @@ def _maybe_auto_restart(run: dict) -> None:
     the control pass and must never wedge the scan."""
     reason = run.get("status_reason") or ""
     if reason not in _RESTARTABLE_STOP_REASONS or not _auto_restart_enabled():
+        return
+    # Plan 14: fleet members NEVER auto-restart — the fleet's slot replacement
+    # is the ONLY replacement mechanism. A clone would trade the same symbol
+    # with fleet-sized budget outside N, outside the rails, and re-clone on
+    # every profit_target hit (the round-2 QA double-deploy critical).
+    if run.get("fleet_id") or (run.get("created_via") or "user") == "fleet":
+        return
+    # Plan 14 §6.7: a held account must not spawn new active runs.
+    try:
+        if _master_held(run["agent_id"]):
+            return
+    except Exception:  # noqa: BLE001
         return
     try:
         from trading_runs import create_run, start_run
@@ -956,12 +979,124 @@ def _fence(run_id: int):
     return _check
 
 
+def _master_held(agent_id: int) -> bool:
+    """Plan 14 §6.7: account-level master hold — the zero-cost pre-gate. A
+    held account cannot trade even if an individual object was missed by the
+    hold fan-out. Fail CLOSED on lookup errors (money gate)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT u.ai_automation_state AS s FROM users u "
+            "JOIN agents a ON a.user_id = u.id WHERE a.id = ?", (agent_id,))
+        row = cursor.fetchone()
+        if row is None:
+            return False  # unlinked agent — no user-level hold exists
+        return (row["s"] or "active") == "held"
+    finally:
+        conn.close()
+
+
+def _open_cost_basis(agent_id: int, market: str, symbol: str, run_id: int) -> float:
+    """Deployed (open) cost basis of the run's own position row: |qty| × avg
+    entry. The Plan 14 run-budget cap input."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT quantity, entry_price FROM positions
+               WHERE agent_id = ? AND market = ? AND symbol = ? AND run_id = ?""",
+            (agent_id, market, symbol, run_id))
+        row = cursor.fetchone()
+        if not row:
+            return 0.0
+        return abs(float(row["quantity"] or 0)) * float(row["entry_price"] or 0)
+    finally:
+        conn.close()
+
+
+def _fleet_cycle_mode(cfg: dict) -> str:
+    """Plan 14 §9.2: fleet members default to the LIGHT cycle profile (one
+    decision-tier call) — the lever the fleet cost model rests on. Full
+    pipeline is per-run opt-in via config, or globally via env."""
+    per_run = (cfg.get("cycle_mode") or "").strip().lower()
+    if per_run in ("light", "full"):
+        return per_run
+    return os.getenv("FLEET_CYCLE_MODE", "light").strip().lower()
+
+
+def _light_analysis(run: dict, cfg: dict) -> dict:
+    """One decision-tier LLM call (agent_planner-style) replacing ONLY the
+    analysis stage of run_cycle. Pre-gates, evaluate_execution_gates, the
+    run-budget cap and the trade fence are byte-identical to the full path.
+    Returns the same {decision: {action, confidence, entry}} shape."""
+    import price_fetcher
+
+    entry = None
+    try:
+        entry = price_fetcher.get_price_from_market(
+            run["symbol"], _now_iso(), run["market"])
+    except Exception:  # noqa: BLE001
+        entry = None
+    if entry is None:
+        return {"decision": {}, "analysts": {}, "error": "no price"}
+
+    thesis = (cfg.get("thesis") or {}) if isinstance(cfg.get("thesis"), dict) else {}
+    candles_summary = None
+    try:
+        candles = price_fetcher.get_daily_candles(run["symbol"], run["market"], days=30)
+        if candles:
+            closes = [c["close"] for c in candles[-10:]]
+            candles_summary = {"last10_closes": [round(float(c), 6) for c in closes]}
+    except Exception:  # noqa: BLE001
+        pass
+
+    prompt = (
+        "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
+        f"Symbol: {run['symbol']} ({run['market']}), price now {entry}.\n"
+        f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
+        f"Recent closes: {json.dumps(candles_summary, default=str)[:400]}\n"
+        'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold", '
+        '"confidence": 0.0-1.0, "report": "<one sentence>"}'
+    )
+    text = None
+    try:
+        from llm_client import generate_text
+        text = generate_text(prompt, max_tokens=200, temperature=0.2, tier="decision")
+    except Exception:  # noqa: BLE001
+        text = None
+    action, confidence, report = "hold", 0.0, "light cycle: no LLM verdict"
+    if text:
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if m:
+            try:
+                obj = json.loads(m.group(0))
+                a = str(obj.get("action") or "").strip().lower()
+                if a in ("buy", "sell", "hold"):
+                    action = a
+                confidence = max(0.0, min(1.0, float(obj.get("confidence") or 0)))
+                report = str(obj.get("report") or "")[:500]
+            except (ValueError, TypeError):
+                pass
+    return {"decision": {"action": action, "confidence": confidence,
+                         "entry": entry, "report": report},
+            "analysts": {}}
+
+
 def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
     """Zero-LLM gates evaluated BEFORE run_analysis — a us-stock run cycling
     all weekend must not burn a multi-agent analysis per tick against a
     guaranteed 'market closed' skip (and skipped cycles don't count against
     tick budgets)."""
     from routes_shared import is_market_open
+
+    # Plan 14 §6.7 depth (1): the account-level master hold, checked before
+    # anything costs money or LLM.
+    try:
+        if _master_held(run["agent_id"]):
+            return "account AI automation held by master switch"
+    except Exception:  # noqa: BLE001 — money gate: fail closed
+        return "master-hold check unavailable"
 
     if not is_market_open(run["market"]):
         return "market closed"
@@ -1045,6 +1180,44 @@ def run_cycle(run_id: int) -> dict:
         seq = int(run["cycle_seq"])
         cfg = json.loads(run.get("config_snapshot_json") or "{}")
 
+        # ── Plan 14 §7: feedback pass — zero-LLM, BEFORE pre-gates ─────────
+        adapt_state = None
+        adapt_params = None
+        import run_feedback
+        if run_feedback.feedback_enabled(cfg):
+            adapt_state = run_feedback.load_state(run)
+            pnl = compute_run_pnl(run)
+            outcomes = run_feedback.leg_outcomes(
+                run, int(adapt_state.get("last_processed_signal_id") or 0))
+            adapt_events = run_feedback.ingest_outcomes(adapt_state, outcomes)
+            if adapt_state.pop("_reset", None):
+                adapt_events.append({"trigger": "state_reset"})
+            policy = run_feedback.apply_policy(adapt_state, run, cfg, pnl)
+            adapt_events.extend(policy["events"])
+            review = run_feedback.maybe_review_thesis(adapt_state, run, cfg, pnl)
+            if review:
+                emit_telemetry_event(run_id, "thesis_review",
+                                     {"cycle": seq, "status": review["status"],
+                                      "rationale": review["rationale"]})
+                if review["retire"]:
+                    policy = {"retire": True, "reason": "thesis_invalidated"}
+            if not run_feedback.save_state(run, adapt_state, adapt_events,
+                                           WORKER_IDENTITY):
+                # lease lost mid-pass: discard adaptation, skip the trade
+                result["skip_reason"] = "adapt state fence lost"
+                return result
+            if policy["retire"]:
+                run_feedback.retire_run(run, policy.get("reason") or "adapt")
+                result["skip_reason"] = "adapt_retired"
+                return result
+            if run_feedback.in_cooldown(adapt_state):
+                result["skip_reason"] = "adapt loss cooldown"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "adapt",
+                                      "reason": "loss cooldown"})
+                return result
+            adapt_params = run_feedback.effective_gate_params(adapt_state, cfg)
+
         skip = _pre_gate_skip(run, cfg)
         if skip:
             result["skip_reason"] = skip
@@ -1053,11 +1226,18 @@ def run_cycle(run_id: int) -> dict:
             _handle_infeasible_skip(run, skip)
             return result
 
-        from analysis_agents import run_analysis
-        analysis = run_analysis(run["symbol"], run["market"],
-                                cfg.get("lang") or "en",
-                                provider=cfg.get("provider") or None,
-                                agent_id=run["agent_id"])
+        is_fleet_run = bool(run.get("fleet_id")) or \
+            (run.get("created_via") or "user") == "fleet"
+        if is_fleet_run and _fleet_cycle_mode(cfg) == "light":
+            # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
+            # everything below (gates, budget cap, fence) is byte-identical.
+            analysis = _light_analysis(run, cfg)
+        else:
+            from analysis_agents import run_analysis
+            analysis = run_analysis(run["symbol"], run["market"],
+                                    cfg.get("lang") or "en",
+                                    provider=cfg.get("provider") or None,
+                                    agent_id=run["agent_id"])
         analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
         tech_block = analysts.get("technical")
         technical = tech_block.get("data") if isinstance(tech_block, dict) else None
@@ -1086,10 +1266,41 @@ def run_cycle(run_id: int) -> dict:
             elif action == "buy" and pos_qty < 0:
                 action = "cover"
 
+        # Plan 14 §7: same-direction re-entry block after a losing close
+        # (whipsaw/fee-churn guard) — deterministic, before the gates.
+        if adapt_state is not None and \
+                run_feedback.blocked_reentry(adapt_state, action):
+            result["skip_reason"] = "adapt re-entry blocked after losing close"
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "adapt",
+                                  "reason": result["skip_reason"]})
+            return result
+
         from automation import evaluate_execution_gates, execute_paper_trade
+        # Plan 14 §6.3.2: for fleet-created runs, run_budget_usd is a HARD
+        # deployed (open) cost-basis cap enforced at execution — until this,
+        # it was validated at creation and then read only by reporting.
+        size_usd = cfg.get("max_bet_usd")
+        min_confidence = cfg.get("min_confidence")
+        if adapt_params is not None:
+            size_usd = adapt_params["size_usd"]
+            min_confidence = adapt_params["min_confidence"]
+        if is_fleet_run and cfg.get("run_budget_usd"):
+            open_basis = _open_cost_basis(run["agent_id"], run["market"],
+                                          run["symbol"], run["id"])
+            headroom = float(cfg["run_budget_usd"]) - open_basis
+            if action in ("buy", "short") and headroom < 10.0:
+                result["skip_reason"] = "budget_headroom_skip"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "budget",
+                                      "reason": "budget_headroom_skip",
+                                      "open_basis": round(open_basis, 2),
+                                      "run_budget": cfg["run_budget_usd"]})
+                return result
+            size_usd = min(float(size_usd or 0), max(headroom, 0.0))
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
-                    "min_confidence": cfg.get("min_confidence"),
-                    "size_usd": cfg.get("max_bet_usd"), "mode": "manual"}
+                    "min_confidence": min_confidence,
+                    "size_usd": size_usd, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, confidence, entry,
                                          None, technical)
@@ -1099,6 +1310,20 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "risk",
                                   "reason": result["skip_reason"]})
+            return result
+
+        # Plan 14 §6.7 depth (2): re-check the master hold immediately before
+        # the trade write — a hold landing mid-cycle (past the pre-gate, during
+        # the LLM call) turns this cycle into a journaled no-trade skip.
+        try:
+            if _master_held(run["agent_id"]):
+                result["skip_reason"] = "account held (master switch, mid-cycle)"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "master_hold",
+                                      "reason": result["skip_reason"]})
+                return result
+        except Exception:  # noqa: BLE001
+            result["skip_reason"] = "master-hold recheck unavailable"
             return result
 
         client_order_id = f"run:{run_id}:cyc:{seq}"

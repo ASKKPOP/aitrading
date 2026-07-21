@@ -127,6 +127,34 @@ def fetch_fear_greed(limit: int = FNG_HISTORY_DAYS) -> dict[str, Any]:
     }
 
 
+def fetch_cnn_fear_greed() -> Optional[dict[str, Any]]:
+    """US-stock analog of the crypto F&G (Plan 14 F2): CNN's fear&greed index.
+
+    Unofficial endpoint — breakage is an accepted risk, so this returns None
+    on ANY failure and the caller's factor coverage renormalizes it away.
+    Never raises.
+    """
+    try:
+        resp = requests.get(
+            "https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        fg = (resp.json() or {}).get("fear_and_greed") or {}
+        score = fg.get("score")
+        if score is None:
+            return None
+        return {
+            "value": float(score),
+            "classification": fg.get("rating"),
+            "as_of": fg.get("timestamp"),
+            "source": "cnn",
+        }
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def fetch_fear_greed_full_history() -> list[dict[str, Any]]:
     """Complete F&G daily archive (limit=0 → everything since 2018-02),
     oldest-first as {date, value, classification}. Used by the strategy

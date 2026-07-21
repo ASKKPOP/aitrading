@@ -39,11 +39,22 @@ ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected"
                "run_report", "run_threshold", "run_stopped", "order_drift",
                # Live execution: the user's broker gateway stopped accepting
                # orders. Silence here means a live rule quietly stops trading.
-               "gateway_down")
+               "gateway_down",
+               # Plan 14 fleet: the two RAIL kinds get their own reserved
+               # budget (Henry's mandatory SMS must never be starved by a
+               # churny day); the informational kinds share the general pool.
+               "fleet_drawdown_warning", "fleet_breaker",
+               "fleet_churn", "fleet_watchdog", "fleet_slot_dormant",
+               "fleet_sms_unavailable")
 
 # run_stopped is the one alert that matters (a run halted on losses) — it gets
 # its own reserved hourly budget so digests/thresholds can never starve it.
 RUN_STOPPED_RESERVE_PER_HOUR = int(os.getenv("ALERTS_RUN_STOPPED_RESERVE", "3") or 3)
+
+# Plan 14: the −30%/−40% drawdown rails carry a directive-mandated SMS — same
+# reserved-budget treatment as run_stopped.
+FLEET_RAIL_KINDS = ("fleet_drawdown_warning", "fleet_breaker")
+FLEET_RAIL_RESERVE_PER_HOUR = int(os.getenv("ALERTS_FLEET_RAIL_RESERVE", "2") or 2)
 
 
 def _now() -> datetime:
@@ -144,9 +155,19 @@ def _external_rate_limited(user_id: int, cursor, kind: str = "") -> bool:
                  AND (channels_json LIKE '%email%' OR channels_json LIKE '%sms%')""",
             (user_id, hour_ago))
         return int(cursor.fetchone()["n"] or 0) >= RUN_STOPPED_RESERVE_PER_HOUR
+    if kind in FLEET_RAIL_KINDS:
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM alert_log
+               WHERE user_id = ? AND created_at >= ?
+                 AND kind IN ('fleet_drawdown_warning', 'fleet_breaker')
+                 AND (channels_json LIKE '%email%' OR channels_json LIKE '%sms%')""",
+            (user_id, hour_ago))
+        return int(cursor.fetchone()["n"] or 0) >= FLEET_RAIL_RESERVE_PER_HOUR
     cursor.execute(
         """SELECT COUNT(*) AS n FROM alert_log
-           WHERE user_id = ? AND created_at >= ? AND kind != 'run_stopped'
+           WHERE user_id = ? AND created_at >= ?
+             AND kind != 'run_stopped'
+             AND kind NOT IN ('fleet_drawdown_warning', 'fleet_breaker')
              AND (channels_json LIKE '%email%' OR channels_json LIKE '%sms%')""",
         (user_id, hour_ago))
     return int(cursor.fetchone()["n"] or 0) >= RATE_LIMIT_PER_HOUR

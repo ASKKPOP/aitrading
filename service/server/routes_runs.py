@@ -284,40 +284,44 @@ def _public(run: dict) -> dict:
     return out
 
 
+def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
+    """Cross-field checks a single field validator cannot do, plus the
+    settings snapshot. Raises ValueError — shared by the create/edit routes
+    (wrapped into HTTPException 400 below) and by the Plan 14 fleet builder
+    (caught as a candidate skip), so both paths hold to the same bar.
+    Includes the price probe: an unpriceable candidate dies before a row
+    exists."""
+    # market_type is the crypto spot-vs-perpetual axis. The CME `futures`
+    # market is already a futures book by virtue of its market, so it may
+    # carry the flag redundantly; everything else may not.
+    if data.market_type == "futures" and data.market not in ("crypto", "futures"):
+        raise ValueError("futures market_type is crypto-only")
+    if data.run_budget_usd is not None and data.run_budget_usd < data.max_bet_usd:
+        raise ValueError("run_budget_usd must be >= max_bet_usd")
+    start_condition = trading_runs.validate_start_condition(data.start_condition)
+    stop_conditions = trading_runs.validate_stop_conditions(data.stop_conditions)
+    if _probe_price(data.symbol, data.market) is None:
+        raise ValueError(
+            f"no price available for {data.symbol} ({data.market}) — "
+            "an unpriceable symbol cannot be traded or stop-checked")
+    settings = {
+        "symbol": data.symbol, "market": data.market,
+        "market_type": data.market_type, "max_bet_usd": data.max_bet_usd,
+        "run_budget_usd": data.run_budget_usd,
+        "interval_minutes": data.interval_minutes,
+        "min_confidence": data.min_confidence, "provider": data.provider,
+        "lang": data.lang, "leverage": 1.0,
+    }
+    return settings, start_condition, stop_conditions
+
+
 def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     def _validated_config(data: RunIn) -> tuple[dict, dict, dict]:
-        """Cross-field checks a single field validator cannot do, plus the
-        settings snapshot. Shared by create and edit so an edited draft is
-        held to exactly the same bar as a new one."""
-        # market_type is the crypto spot-vs-perpetual axis. The CME `futures`
-        # market is already a futures book by virtue of its market, so it may
-        # carry the flag redundantly; everything else may not.
-        if data.market_type == "futures" and data.market not in ("crypto", "futures"):
-            raise HTTPException(status_code=400,
-                                detail="futures market_type is crypto-only")
-        if data.run_budget_usd is not None and data.run_budget_usd < data.max_bet_usd:
-            raise HTTPException(status_code=400,
-                                detail="run_budget_usd must be >= max_bet_usd")
         try:
-            start_condition = trading_runs.validate_start_condition(data.start_condition)
-            stop_conditions = trading_runs.validate_stop_conditions(data.stop_conditions)
+            return validate_run_payload(data)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        if _probe_price(data.symbol, data.market) is None:
-            raise HTTPException(
-                status_code=400,
-                detail=f"no price available for {data.symbol} ({data.market}) — "
-                       "an unpriceable symbol cannot be traded or stop-checked")
-        settings = {
-            "symbol": data.symbol, "market": data.market,
-            "market_type": data.market_type, "max_bet_usd": data.max_bet_usd,
-            "run_budget_usd": data.run_budget_usd,
-            "interval_minutes": data.interval_minutes,
-            "min_confidence": data.min_confidence, "provider": data.provider,
-            "lang": data.lang, "leverage": 1.0,
-        }
-        return settings, start_condition, stop_conditions
 
     @app.post("/api/runs")
     async def create_run(data: RunIn, authorization: str = Header(None)):

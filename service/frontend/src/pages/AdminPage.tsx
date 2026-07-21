@@ -32,6 +32,25 @@ const fmtMoney = (v: any) => `$${Number(v || 0).toLocaleString(undefined, { maxi
 const fmtTime = (v: any) => String(v || '—').replace('T', ' ').slice(0, 16)
 const fmtDate = (v: any) => String(v || '—').slice(0, 10)
 
+// Block explorer for a USDT payment's tx hash, so verifying a pending payment
+// is one click from the row instead of a copy-paste into a search box.
+// The network comes from the CURRENT usdt_network setting — rows are not
+// stamped with the network they were paid on, so if the receiving network is
+// ever rotated, links on older rows point at the wrong chain and will simply
+// not resolve. That fails safe (a missing tx, never a false match), but verify
+// by hand if you have rotated networks since the payment.
+const EXPLORER_TX: Record<string, string> = {
+  ERC20: 'https://etherscan.io/tx/',
+  TRC20: 'https://tronscan.org/#/transaction/',
+  BEP20: 'https://bscscan.com/tx/',
+  SOL: 'https://solscan.io/tx/',
+  POLYGON: 'https://polygonscan.com/tx/',
+}
+const explorerUrl = (method: string, network: string, reference: string) =>
+  method === 'usdt' && EXPLORER_TX[network] && reference
+    ? EXPLORER_TX[network] + encodeURIComponent(reference.trim())
+    : ''
+
 function StatCards({ items }: { items: [string, any][] }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 16 }}>
@@ -88,9 +107,11 @@ export function AdminPage() {
   const [memberDetail, setMemberDetail] = useState<any | null>(null)
   const [subs, setSubs] = useState<any | null>(null)
   const [subFilter, setSubFilter] = useState('')
+  const [copiedRef, setCopiedRef] = useState<number | null>(null)
   const [paySettings, setPaySettings] = useState<any>(null)
   const [usdtAddr, setUsdtAddr] = useState('')
   const [usdtNet, setUsdtNet] = useState('TRC20')
+  const [bankInfo, setBankInfo] = useState('')
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
   const [adminPlans, setAdminPlans] = useState<any[]>([])
@@ -166,6 +187,13 @@ export function AdminPage() {
       th: 'เงินจริงของผู้สมัครจะถูกส่งไปยังที่อยู่นี้ คุณตรวจสอบตรงกันทุกตัวอักษรกับกระเป๋าเงินแล้วหรือยัง',
       vi: 'Người đăng ký sẽ gửi tiền thật tới địa chỉ này. Bạn đã đối chiếu từng ký tự với ví chưa?' }),
     usdtLive: tr(language, { ko: '결제 페이지에 표시 중', en: 'Live on the payment page', ja: '決済ページに表示中', th: 'แสดงอยู่บนหน้าชำระเงิน', vi: 'Đang hiển thị trên trang thanh toán' }),
+    refCopy: tr(language, { ko: '복사', en: 'Copy', ja: 'コピー', th: 'คัดลอก', vi: 'Sao chép' }),
+    refCopied: tr(language, { ko: '복사됨', en: 'Copied', ja: 'コピー済み', th: 'คัดลอกแล้ว', vi: 'Đã sao chép' }),
+    refVerify: tr(language, { ko: '체인에서 확인', en: 'Verify on chain', ja: 'チェーンで確認', th: 'ตรวจสอบบนเชน', vi: 'Kiểm tra trên chuỗi' }),
+    bankTitle: tr(language, { ko: '계좌이체 정보 등록', en: 'Bank transfer details', ja: '銀行振込先の登録', th: 'ข้อมูลโอนเงินธนาคาร', vi: 'Thông tin chuyển khoản' }),
+    bankHint: tr(language, { ko: '구독 페이지에 그대로 표시됩니다. 은행명·계좌번호·예금주를 줄바꿈으로 적어주세요.', en: 'Shown verbatim on the Subscribe page. Bank, account number and holder name, one per line.', ja: '購読ページにそのまま表示されます。銀行名・口座番号・名義を改行で入力してください。', th: 'แสดงตามที่กรอกบนหน้าสมัคร ใส่ธนาคาร เลขบัญชี และชื่อบัญชี บรรทัดละรายการ', vi: 'Hiển thị nguyên văn trên trang đăng ký. Ngân hàng, số tài khoản và chủ tài khoản, mỗi dòng một mục.' }),
+    bankPlaceholder: tr(language, { ko: '국민은행 123456-78-901234\n예금주: (주)수피', en: 'Bank of America 123456789\nAccount holder: Sooppiy Inc.', ja: '三菱UFJ銀行 123-4567890\n名義: Sooppiy', th: 'ธนาคารกสิกรไทย 123-4-56789-0\nชื่อบัญชี: Sooppiy', vi: 'Vietcombank 0123456789\nChủ tài khoản: Sooppiy' }),
+    bankUnset: tr(language, { ko: '미등록 — 계좌이체를 선택한 회원에게 보낼 곳이 표시되지 않습니다', en: 'Not set — members choosing bank transfer are shown no destination', ja: '未登録 — 銀行振込を選んだ会員に送金先が表示されません', th: 'ยังไม่ตั้งค่า — สมาชิกที่เลือกโอนธนาคารจะไม่เห็นปลายทาง', vi: 'Chưa đặt — thành viên chọn chuyển khoản không thấy nơi nhận' }),
     usdtFromEnv: tr(language, { ko: '.env 값 사용 중 (저장하면 대체됨)', en: 'currently from .env (saving replaces it)', ja: '.env の値を使用中（保存すると置き換わります）', th: 'ใช้ค่าจาก .env อยู่ (บันทึกแล้วจะแทนที่)', vi: 'Đang dùng giá trị .env (lưu sẽ thay thế)' }),
     usdtUnset: tr(language, { ko: '주소 미등록 — 결제 페이지에 USDT가 표시되지 않습니다', en: 'No address set — USDT is not offered on the payment page', ja: 'アドレス未登録 — 決済ページにUSDTは表示されません', th: 'ยังไม่ตั้งที่อยู่ — ไม่มี USDT บนหน้าชำระเงิน', vi: 'Chưa đặt địa chỉ — không hiển thị USDT trên trang thanh toán' }),
     grantDays: tr(language, { ko: '일수', en: 'Days', ja: '日数', th: 'จำนวนวัน', vi: 'Số ngày' }),
@@ -289,6 +317,7 @@ export function AdminPage() {
         setPaySettings(pay)
         setUsdtAddr(pay?.usdt_address?.value || '')
         setUsdtNet(pay?.usdt_network?.value || 'TRC20')
+        setBankInfo(pay?.bank_transfer_info?.value || '')
       }
       if (which === 'assets') setAssets(await call('stats/assets'))
       if (which === 'positions') setPositions(await call('stats/positions'))
@@ -523,9 +552,28 @@ export function AdminPage() {
                   if (usdtAddr.trim() && !window.confirm(T.usdtConfirm)) return
                   await act('settings/payment', {
                     method: 'PUT',
-                    body: JSON.stringify({ usdt_address: usdtAddr.trim(), usdt_network: usdtNet }),
+                    body: JSON.stringify({ usdt_address: usdtAddr.trim(), usdt_network: usdtNet,
+                      bank_transfer_info: bankInfo }),
                   }, 'subscriptions')
                 }}>{T.usdtSave}</button>
+            </div>
+            {/* Bank details live in this card, not their own, because the Save
+                button above writes both rails in one PUT. */}
+            <div style={{ borderTop: '1px solid var(--border-color,#2a2a28)',
+              marginTop: 14, paddingTop: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.bankTitle}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 8 }}>
+                {T.bankHint}
+              </div>
+              <textarea value={bankInfo} onChange={e => setBankInfo(e.target.value)}
+                placeholder={T.bankPlaceholder} rows={3} maxLength={2000}
+                style={{ ...inputStyle, width: '100%', resize: 'vertical',
+                  fontFamily: 'ui-monospace, monospace' }} />
+              {!paySettings?.bank_transfer_info?.value && (
+                <div style={{ fontSize: 11, color: '#eab308', marginTop: 6 }}>
+                  ⚠️ {T.bankUnset}
+                </div>
+              )}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginTop: 8 }}>
               {paySettings?.usdt_address?.value
@@ -581,7 +629,29 @@ export function AdminPage() {
                   <tr key={s.id}>
                     <td style={td}>{s.id}</td><td style={{ ...td, fontWeight: 600 }}>{s.email || s.user_id}</td>
                     <td style={td}>{s.plan_code}</td><td style={td}>{s.method}</td>
-                    <td style={{ ...td, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.reference || '—'}</td>
+                    {/* The proof of payment. Shown in full and copyable — a
+                        truncated tx hash cannot be checked against a chain. */}
+                    <td style={{ ...td, maxWidth: 300 }}>
+                      {s.reference ? (
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                          <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11,
+                            wordBreak: 'break-all', lineHeight: 1.45 }}>{s.reference}</code>
+                          <button style={{ ...actionBtn, padding: '2px 8px', fontSize: 11 }}
+                            onClick={() => {
+                              navigator.clipboard?.writeText(s.reference)
+                              setCopiedRef(s.id)
+                              setTimeout(() => setCopiedRef(c => (c === s.id ? null : c)), 1500)
+                            }}>{copiedRef === s.id ? `✓ ${T.refCopied}` : T.refCopy}</button>
+                          {explorerUrl(s.method, paySettings?.usdt_network?.value || '', s.reference) && (
+                            <a href={explorerUrl(s.method, paySettings?.usdt_network?.value || '', s.reference)}
+                              target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize: 11, color: 'var(--accent-primary,#c26a45)' }}>
+                              {T.refVerify} ↗
+                            </a>
+                          )}
+                        </div>
+                      ) : '—'}
+                    </td>
                     <td style={td}>{fmtMoney(s.amount_usd)}</td>
                     <td style={{ ...td, color: subStatusColor(s.status), fontWeight: 600 }}>{s.status}</td>
                     <td style={td}>{fmtDate(s.expires_at)}</td>

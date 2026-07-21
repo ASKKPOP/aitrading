@@ -765,6 +765,15 @@ async def trading_run_loop():
             if result.get("dispatched") or result.get("armed_started") \
                     or result.get("stopping_finished"):
                 print(f"[TradingRuns] tick: {result}")
+            # Plan 14 §6.5.5: supervision watchdog rides THIS loop — a crashed
+            # fleet loop must still produce an alert (rails may be dark).
+            try:
+                from fleet_supervisor import check_watchdog
+                stale = await asyncio.to_thread(check_watchdog)
+                if stale:
+                    print(f"[TradingRuns] fleet watchdog: {stale} stale fleet(s)")
+            except Exception:  # noqa: BLE001 — watchdog must never wedge runs
+                pass
         except Exception as e:
             print(f"[TradingRuns Error] {e}")
 
@@ -1012,7 +1021,10 @@ async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
 
-    refresh_interval = _env_int("MARKET_NEWS_REFRESH_INTERVAL", 3600, minimum=300)
+    # Plan 14 §4.2: 4h default makes the Alpha Vantage budget deterministic —
+    # 4 categories × 6 passes/day = 24 calls against the 25/day free cap.
+    # The old hourly default demanded 96/day and starved to first-25-wins.
+    refresh_interval = _env_int("MARKET_NEWS_REFRESH_INTERVAL", 14400, minimum=300)
 
     # Give the API a moment to start before hitting external providers.
     await asyncio.sleep(3)
@@ -1609,6 +1621,25 @@ async def refresh_signal_feed_snapshot_loop():
         await asyncio.sleep(interval_s)
 
 
+async def _symbol_research_loop():
+    """Plan 14: global fleet-research refresh (env-gated FLEET_RESEARCH_ENABLED)."""
+    from symbol_research import symbol_research_loop
+    await symbol_research_loop()
+
+
+async def _policy_feed_loop():
+    """Plan 14 F7: Federal Register watchlists (env-gated POLICY_FEED_ENABLED)."""
+    from policy_feed import policy_feed_loop
+    await policy_feed_loop()
+
+
+async def _fleet_planner_loop():
+    """Plan 14: fleet orchestrator (FLEET_ENABLED gates new builds; supervision
+    of live fleets keeps running regardless — §6.5.5)."""
+    from fleet_planner import fleet_planner_loop
+    await fleet_planner_loop()
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1639,6 +1670,9 @@ BACKGROUND_TASK_REGISTRY = {
     "social_feed": social_feed_loop,
     "factor_snapshots": factor_snapshot_loop,
     "watches": watch_loop,
+    "symbol_research": _symbol_research_loop,
+    "policy_feed": _policy_feed_loop,
+    "fleet_planner": _fleet_planner_loop,
 }
 
 
@@ -1698,6 +1732,14 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "factor_snapshots":        "research",
     # personal watch functions — user metric conditions -> alerts (Plan 06 C3)
     "watches":                 "research",
+    # Plan 14 — symbol_research is pinned to settlement so it shares a process
+    # (and the process-local Yahoo cooldown dict) with run cycles + the watcher.
+    "symbol_research":         "settlement",
+    # Plan 14 F7 — Federal Register policy watchlists (attention factor)
+    "policy_feed":             "research",
+    # Plan 14 — fleet orchestrator lives with the runs engine (it creates
+    # runs the run loop must immediately see)
+    "fleet_planner":           "settlement",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
