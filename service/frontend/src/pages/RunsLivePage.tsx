@@ -371,6 +371,17 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
     return () => clearInterval(id)
   }, [load])
 
+  // Finished TRADINGs stay OFF the board (Henry 2026-07-21) — the grid is a
+  // live monitor, not an archive. They remain one click away behind the
+  // counter toggle, because a protective stop's reason (max_loss, liquidation)
+  // must stay findable.
+  const [showStopped, setShowStopped] = useState(false)
+  const stoppedCount = useMemo(
+    () => runs.filter((r) => r.status === 'stopped').length, [runs])
+  const visibleRuns = useMemo(
+    () => (showStopped ? runs : runs.filter((r) => r.status !== 'stopped')),
+    [runs, showStopped])
+
   const activeRunIds = useMemo(
     () => runs.filter((r) => ['armed', 'running', 'paused', 'stopping'].includes(r.status))
       .map((r) => r.id),
@@ -512,6 +523,10 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       th: 'TRADING ใหม่', vi: 'TRADING mới' }),
     empty: tr(language, { ko: '아직 TRADING이 없습니다.', en: 'No TRADING yet.',
       ja: 'TRADING はまだありません。', th: 'ยังไม่มี TRADING', vi: 'Chưa có TRADING nào.' }),
+    showStopped: tr(language, { ko: '종료된 TRADING 보기', en: 'Show finished TRADINGs',
+      ja: '終了した TRADING を表示', th: 'แสดง TRADING ที่จบแล้ว', vi: 'Hiện TRADING đã kết thúc' }),
+    hideStopped: tr(language, { ko: '종료된 TRADING 숨기기', en: 'Hide finished TRADINGs',
+      ja: '終了した TRADING を隠す', th: 'ซ่อน TRADING ที่จบแล้ว', vi: 'Ẩn TRADING đã kết thúc' }),
     live: tr(language, { ko: '실시간', en: 'live', ja: 'ライブ', th: 'สด', vi: 'trực tiếp' }),
     offline: tr(language, { ko: '오프라인', en: 'offline', ja: 'オフライン', th: 'ออฟไลน์', vi: 'ngoại tuyến' }),
     actionFailed: tr(language, { ko: '요청을 처리하지 못했습니다.', en: 'That action did not go through.',
@@ -594,6 +609,16 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
         <p className="muted" style={{ marginTop: 24 }}>{T.empty}</p>
       )}
 
+      {stoppedCount > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+          <button onClick={() => setShowStopped((v) => !v)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>
+            {showStopped ? '▾' : '▸'} {showStopped ? T.hideStopped : T.showStopped} ({stoppedCount})
+          </button>
+        </div>
+      )}
+
       {/* Liveness keyframes — the flash ring restarts per event because the
           overlay is keyed by the flash nonce. */}
       <style>{`
@@ -606,7 +631,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       `}</style>
       <div style={{ display: 'grid', gap: 12, marginTop: 18,
         gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-        {runs.map((run) => {
+        {visibleRuns.map((run) => {
           const tick = tickByRun[run.id]
           const pnl = Number(run.realized_pnl_usd || 0)
           const pnlColor = pnl > 0 ? '#0ca30c' : pnl < 0 ? '#d03b3b' : 'var(--text-muted,#898781)'
