@@ -43,8 +43,8 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
   const { language, setLanguage } = useLanguage()
   const [targets, setTargets] = useState<ApiTarget[]>([])
   const [guidelines, setGuidelines] = useState('')
-  const [alertPrefs, setAlertPrefs] = useState<{ email_enabled: boolean; sms_enabled: boolean; phone: string }>(
-    { email_enabled: false, sms_enabled: false, phone: '' })
+  const [alertPrefs, setAlertPrefs] = useState<{ email_enabled: boolean; sms_enabled: boolean; phone: string; sms_consent: boolean }>(
+    { email_enabled: false, sms_enabled: false, phone: '', sms_consent: false })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savedMsg, setSavedMsg] = useState('')
@@ -81,6 +81,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
           email_enabled: String(alertsTarget.config.email_enabled).toLowerCase() === 'true',
           sms_enabled: String(alertsTarget.config.sms_enabled).toLowerCase() === 'true',
           phone: alertsTarget.config.phone || '',
+          sms_consent: String(alertsTarget.config.sms_consent).toLowerCase() === 'true',
         })
       }
       setError('')
@@ -114,6 +115,10 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
           email_enabled: String(alertPrefs.email_enabled),
           sms_enabled: String(alertPrefs.sms_enabled),
           phone: alertPrefs.phone,
+          sms_consent: String(alertPrefs.sms_consent),
+          // Consent record for A2P compliance: when the box is checked we
+          // stamp the moment of (re)affirmation; clearing the number clears it.
+          sms_consent_at: alertPrefs.sms_consent && alertPrefs.phone ? new Date().toISOString() : '',
         } }),
       })
       if (!res.ok) throw new Error(`${res.status}`)
@@ -336,10 +341,36 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
           <input type="tel" value={alertPrefs.phone} placeholder="+821012345678"
             onChange={e => setAlertPrefs(p => ({ ...p, phone: e.target.value.trim() }))}
             style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, width: 190 }} />
-          <button onClick={saveAlertPrefs} className="btn btn-primary" style={{ fontSize: '12px', padding: '7px 16px', cursor: 'pointer' }}>
+          <button onClick={saveAlertPrefs} disabled={!!alertPrefs.phone && !alertPrefs.sms_consent}
+            className="btn btn-primary" style={{ fontSize: '12px', padding: '7px 16px', cursor: (!!alertPrefs.phone && !alertPrefs.sms_consent) ? 'not-allowed' : 'pointer', opacity: (!!alertPrefs.phone && !alertPrefs.sms_consent) ? 0.5 : 1 }}>
             {tr(language, { ko: '전화번호 저장', en: 'Save phone number', ja: '電話番号を保存', th: 'บันทึกเบอร์โทร', vi: 'Lưu số điện thoại' })}
           </button>
         </div>
+        {/* A2P 10DLC consent: must be an ACTIVE, unchecked-by-default checkbox
+            (Twilio error 30925) and the exact disclosure below is what the
+            campaign registration references — keep them in sync. */}
+        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 10, fontSize: '12px', color: 'var(--text-secondary)', cursor: 'pointer', maxWidth: 640 }}>
+          <input type="checkbox" checked={alertPrefs.sms_consent}
+            onChange={e => setAlertPrefs(p => ({ ...p, sms_consent: e.target.checked }))}
+            style={{ marginTop: 2, flexShrink: 0 }} />
+          <span>
+            {tr(language, {
+              ko: '이 번호로 Sooppiy의 SMS 인증 코드와 계정 알림을 수신하는 데 동의합니다. 메시지 수신 빈도는 활동에 따라 다르며, 메시지·데이터 요금이 부과될 수 있습니다. STOP 회신으로 수신을 거부하고 HELP 회신으로 도움을 받을 수 있습니다.',
+              en: 'I agree to receive SMS verification codes and account alerts from Sooppiy at this number. Message frequency varies. Message & data rates may apply. Reply STOP to unsubscribe, HELP for help.',
+              ja: 'この番号でSooppiyからSMS認証コードとアカウント通知を受信することに同意します。受信頻度は利用状況により異なり、メッセージ・データ料金が発生する場合があります。STOPと返信で停止、HELPと返信でサポート。',
+              th: 'ฉันยินยอมรับรหัสยืนยันทาง SMS และการแจ้งเตือนบัญชีจาก Sooppiy ที่หมายเลขนี้ ความถี่ของข้อความแตกต่างกันไป อาจมีค่าบริการข้อความและข้อมูล ตอบกลับ STOP เพื่อยกเลิก หรือ HELP เพื่อขอความช่วยเหลือ',
+              vi: 'Tôi đồng ý nhận mã xác minh SMS và thông báo tài khoản từ Sooppiy qua số này. Tần suất tin nhắn thay đổi. Có thể áp dụng cước tin nhắn và dữ liệu. Trả lời STOP để hủy, HELP để được trợ giúp.',
+            })}
+            {' '}
+            <a href="https://sooppiy.com/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
+              {tr(language, { ko: '개인정보처리방침', en: 'Privacy Policy', ja: 'プライバシーポリシー', th: 'นโยบายความเป็นส่วนตัว', vi: 'Chính sách bảo mật' })}
+            </a>
+            {' · '}
+            <a href="https://sooppiy.com/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
+              {tr(language, { ko: '이용약관', en: 'Terms & Conditions', ja: '利用規約', th: 'ข้อกำหนดและเงื่อนไข', vi: 'Điều khoản & Điều kiện' })}
+            </a>
+          </span>
+        </label>
       </div>
 
       {/* ── AI model usage (Plan 11 F2) ────────────────── */}
