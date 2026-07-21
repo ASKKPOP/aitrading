@@ -1019,6 +1019,79 @@ def _get_yahoo_option_price(symbol: str) -> Optional[float]:
     return None
 
 
+# ─── Daily candles (Plan 14 §4.2 — the research engine's one data primitive) ──
+# Yahoo daily bars for non-crypto, OKX for crypto. Cached ~6h with per-symbol
+# TTL jitter so a whole universe never expires in the same refresh. The sweep
+# is SUBORDINATE to the money path: an active yahoo cooldown means serve cache
+# (or nothing) — research must never race _probe_price / mark fetches into the
+# shared provider cooldown. NOTE the cooldown dict is process-local; cross-
+# process protection comes from the caller pacing its sweep (~1 call/23s).
+_DAILY_CANDLE_TTL_SECONDS = max(600, int(os.environ.get("DAILY_CANDLE_TTL_SECONDS", "21600")))
+
+
+def get_daily_candles(symbol: str, market: str, days: int = 60) -> list[dict[str, Any]]:
+    """Oldest-first [{ts, open, high, low, close, volume}] daily bars, or [].
+
+    Fail-soft by design (research factor coverage shrinks on missing data);
+    never raises for a cooldown — that is the subordination contract.
+    """
+    import cache as _cache  # local import: price_fetcher must not hard-require redis
+
+    market = markets.normalize_market(market)
+    days = max(5, min(int(days or 60), 365))
+    key = f"daily_candles:{market}:{symbol}:{days}"
+    cached = _cache.get_json(key)
+    if isinstance(cached, list) and cached:
+        return cached
+
+    candles: list[dict[str, Any]] = []
+    if market == "crypto":
+        try:
+            import crypto_feed
+            candles = crypto_feed.fetch_candles(symbol, bar="1D", limit=days)
+        except Exception as exc:  # noqa: BLE001
+            _price_log(f"[Price API] OKX daily candles failed for {symbol}: {exc}")
+            return []
+    else:
+        if _provider_cooldown_remaining("yahoo") > 0:
+            return []  # cooldown: cache-only, and the cache already missed
+        ticker = _yahoo_symbol(symbol, market)
+        if not ticker:
+            return []
+        try:
+            data = _request_json_with_retry(
+                "yahoo", "GET",
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
+                params={"interval": "1d", "range": "3mo" if days <= 66 else "1y"},
+                headers={"User-Agent": _YAHOO_USER_AGENT},
+                retry_on_rate_limit=False,
+            )
+            result = data["chart"]["result"][0]  # type: ignore[index]
+            stamps = result.get("timestamp") or []
+            quote = result["indicators"]["quote"][0]
+            for i, ts in enumerate(stamps):
+                close = (quote.get("close") or [None])[i] if i < len(quote.get("close") or []) else None
+                if ts is None or close is None:
+                    continue
+                candles.append({
+                    "ts": int(ts) * 1000,
+                    "open": (quote.get("open") or [None] * len(stamps))[i],
+                    "high": (quote.get("high") or [None] * len(stamps))[i],
+                    "low": (quote.get("low") or [None] * len(stamps))[i],
+                    "close": float(close),
+                    "volume": (quote.get("volume") or [None] * len(stamps))[i] or 0,
+                })
+        except Exception as exc:  # noqa: BLE001
+            _price_log(f"[Price API] Yahoo daily candles failed for {ticker}: {exc}")
+            return []
+
+    candles = candles[-days:]
+    if candles:
+        ttl = _DAILY_CANDLE_TTL_SECONDS + random.randint(0, _DAILY_CANDLE_TTL_SECONDS // 4)
+        _cache.set_json(key, candles, ttl_seconds=ttl)
+    return candles
+
+
 def get_price_from_market(
     symbol: str,
     executed_at: str,

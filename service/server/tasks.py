@@ -1012,7 +1012,10 @@ async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
 
-    refresh_interval = _env_int("MARKET_NEWS_REFRESH_INTERVAL", 3600, minimum=300)
+    # Plan 14 §4.2: 4h default makes the Alpha Vantage budget deterministic —
+    # 4 categories × 6 passes/day = 24 calls against the 25/day free cap.
+    # The old hourly default demanded 96/day and starved to first-25-wins.
+    refresh_interval = _env_int("MARKET_NEWS_REFRESH_INTERVAL", 14400, minimum=300)
 
     # Give the API a moment to start before hitting external providers.
     await asyncio.sleep(3)
@@ -1609,6 +1612,18 @@ async def refresh_signal_feed_snapshot_loop():
         await asyncio.sleep(interval_s)
 
 
+async def _symbol_research_loop():
+    """Plan 14: global fleet-research refresh (env-gated FLEET_RESEARCH_ENABLED)."""
+    from symbol_research import symbol_research_loop
+    await symbol_research_loop()
+
+
+async def _policy_feed_loop():
+    """Plan 14 F7: Federal Register watchlists (env-gated POLICY_FEED_ENABLED)."""
+    from policy_feed import policy_feed_loop
+    await policy_feed_loop()
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1639,6 +1654,8 @@ BACKGROUND_TASK_REGISTRY = {
     "social_feed": social_feed_loop,
     "factor_snapshots": factor_snapshot_loop,
     "watches": watch_loop,
+    "symbol_research": _symbol_research_loop,
+    "policy_feed": _policy_feed_loop,
 }
 
 
@@ -1698,6 +1715,11 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "factor_snapshots":        "research",
     # personal watch functions — user metric conditions -> alerts (Plan 06 C3)
     "watches":                 "research",
+    # Plan 14 — symbol_research is pinned to settlement so it shares a process
+    # (and the process-local Yahoo cooldown dict) with run cycles + the watcher.
+    "symbol_research":         "settlement",
+    # Plan 14 F7 — Federal Register policy watchlists (attention factor)
+    "policy_feed":             "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

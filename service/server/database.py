@@ -2792,6 +2792,170 @@ def init_database():
         )
     """)
 
+    # ── Plan 14: Full Auto Trading (fleet mode) — mirror of alembic 0028 ─────
+    # A fleet is an envelope row owning ordinary trading_runs. One non-terminal
+    # fleet per USER via active_fleet_key ('user:{user_id}', NULL when
+    # terminal) — the runs' active_key trick.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fleets (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id            INTEGER NOT NULL,
+            name                TEXT,
+            status              TEXT NOT NULL DEFAULT 'draft',
+            status_reason       TEXT,
+            active_fleet_key    TEXT,
+            idempotency_key     TEXT,
+            n_runs              INTEGER NOT NULL,
+            total_budget_usd    REAL NOT NULL,
+            risk_appetite       TEXT NOT NULL DEFAULT 'balanced',
+            market_scope_json   TEXT,
+            warn_loss_frac      REAL NOT NULL DEFAULT 0.30,
+            stop_loss_frac      REAL NOT NULL DEFAULT 0.40,
+            warn_latched_at     TEXT,
+            warn_acked_at       TEXT,
+            warn_level_frac     REAL,
+            warn_episode        INTEGER NOT NULL DEFAULT 0,
+            entry_paused_reason TEXT,
+            held_by_master      INTEGER NOT NULL DEFAULT 0,
+            rotation_enabled    INTEGER NOT NULL DEFAULT 1,
+            build_attempts      INTEGER NOT NULL DEFAULT 0,
+            last_event_seq      INTEGER NOT NULL DEFAULT 0,
+            provider            TEXT,
+            lang                TEXT NOT NULL DEFAULT 'en',
+            claimed_by          TEXT,
+            claim_expires_at    TEXT,
+            last_supervise_at   TEXT,
+            created_at          TEXT NOT NULL,
+            started_at          TEXT,
+            stopped_at          TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_fleets_active
+        ON fleets(active_fleet_key)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_fleets_agent ON fleets(agent_id, status)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_fleets_status ON fleets(status)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fleet_events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            fleet_id   INTEGER NOT NULL,
+            seq        INTEGER NOT NULL,
+            ts         TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            payload    TEXT,
+            FOREIGN KEY (fleet_id) REFERENCES fleets(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_fleet_events
+        ON fleet_events(fleet_id, seq)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fleet_slots (
+            id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            fleet_id                INTEGER NOT NULL,
+            slot_index              INTEGER NOT NULL,
+            original_allocation_usd REAL NOT NULL,
+            state                   TEXT NOT NULL DEFAULT 'active',
+            zombie_baseline_qty     REAL,
+            current_run_id          INTEGER,
+            updated_at              TEXT NOT NULL,
+            FOREIGN KEY (fleet_id) REFERENCES fleets(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_fleet_slots
+        ON fleet_slots(fleet_id, slot_index)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fleet_candidates (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            fleet_id       INTEGER NOT NULL,
+            thesis_key     TEXT NOT NULL,
+            slot_index     INTEGER,
+            allocation_usd REAL,
+            state          TEXT NOT NULL DEFAULT 'selected',
+            run_id         INTEGER,
+            created_at     TEXT NOT NULL,
+            FOREIGN KEY (fleet_id) REFERENCES fleets(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_fleet_candidates ON fleet_candidates(fleet_id)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fleet_symbol_cooldowns (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id      INTEGER NOT NULL,
+            market        TEXT NOT NULL,
+            symbol        TEXT NOT NULL,
+            until_ts      TEXT NOT NULL,
+            source_run_id INTEGER
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_symbol_cooldowns
+        ON fleet_symbol_cooldowns(agent_id, market, symbol)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS research_theses (
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            batch_id           TEXT NOT NULL,
+            market             TEXT NOT NULL,
+            symbol             TEXT NOT NULL,
+            market_type        TEXT NOT NULL DEFAULT 'spot',
+            direction          TEXT NOT NULL,
+            factor_scores_json TEXT NOT NULL,
+            thesis             TEXT,
+            risks              TEXT,
+            invalidation       TEXT,
+            expected_move_pct  REAL,
+            horizon_hours      REAL,
+            confidence         REAL,
+            ev_per_day_pct     REAL,
+            final_score        REAL,
+            selectable         INTEGER NOT NULL DEFAULT 1,
+            planner            TEXT NOT NULL,
+            llm_model          TEXT,
+            created_at         TEXT NOT NULL,
+            expires_at         TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_research_batch_symbol
+        ON research_theses(batch_id, market, symbol)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_research_batch ON research_theses(batch_id)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS research_batches (
+            batch_id   TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL
+        )
+    """)
+    for _ddl in (
+        "ALTER TABLE trading_runs ADD COLUMN fleet_id INTEGER",
+        "ALTER TABLE trading_runs ADD COLUMN created_via TEXT NOT NULL DEFAULT 'user'",
+        "ALTER TABLE trading_runs ADD COLUMN adapt_state_json TEXT",
+        "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
+        "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
+        "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",
+    ):
+        try:
+            cursor.execute(_ddl)
+        except Exception:
+            pass
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_trading_runs_fleet ON trading_runs(fleet_id)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")
