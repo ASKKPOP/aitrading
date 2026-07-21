@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import { statusLabel } from '../pages/RunsLivePage'
 import { tr } from '../i18n'
 
 // Plan 14 — Full Auto (fleet mode). The user sets only N and presses go; the
@@ -29,7 +30,13 @@ type Entitlements = {
   plan: string | null; max_fleet_size: number; default_budget_usd: number
 }
 
-export function FleetPanel({ token }: { token: string }) {
+// monitorOnly: the always-visible monitor box on /automation — renders nothing
+// until an active fleet exists, and never shows the creation form (the create
+// modal keeps that). onSelectRun opens a member TRADING's full detail drawer
+// (sparkline + event log + pause/stop) via RunsLiveSection.openRunRequest.
+export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
+  token: string; monitorOnly?: boolean; onSelectRun?: (runId: number) => void
+}) {
   const { language } = useLanguage()
   const T = {
     title: tr(language, { ko: 'N종목 자동 편성 — AI가 전부 알아서', en: 'Full Auto — the AI does everything', ja: '完全自動 — AIがすべて実行', th: 'อัตโนมัติเต็มรูปแบบ — AI จัดการทั้งหมด', vi: 'Tự động hoàn toàn — AI làm tất cả' }),
@@ -45,6 +52,10 @@ export function FleetPanel({ token }: { token: string }) {
     resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)' }),
     needPlan: tr(language, { ko: '완전자동 플릿은 Pro 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Pro plan or above', ja: '完全自動フリートは Pro 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Pro ขึ้นไป', vi: 'Đội hình tự động cần gói Pro trở lên' }),
     equity: tr(language, { ko: '평가 자산', en: 'Marked equity', ja: '評価資産', th: 'มูลค่าตามราคาตลาด', vi: 'Giá trị theo thị trường' }),
+    monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp' }),
+    buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành' }),
+    clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)' }),
+    memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách' }),
     holdBanner: tr(language, { ko: '⚠️ 마스터 스위치로 전체 보류 중 — 손절/익절 청산은 계속 작동하며, 이미 실행 중인 사이클은 신규 진입 없이 마무리됩니다', en: '⚠️ Held by the master switch — protective exits (SL/TP) stay active; any cycle already executing completes without opening new positions', ja: '⚠️ マスタースイッチで保留中 — SL/TPの保護決済は動作し続けます', th: '⚠️ ถูกพักโดยสวิตช์หลัก — SL/TP ยังทำงาน', vi: '⚠️ Đang giữ bởi công tắc chính — SL/TP vẫn hoạt động' }),
   }
   // fleet status_reason → localized label (the RunsLivePage reasonLabel
@@ -134,9 +145,15 @@ export function FleetPanel({ token }: { token: string }) {
     color: active ? 'var(--accent-primary,#c26a45)' : 'inherit',
   })
 
-  const card: any = { background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }
+  const card: any = { background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16,
+    ...(monitorOnly ? { marginBottom: 18 } : {}) }
+
+  // The monitor box has nothing to say until a fleet is live; the creation
+  // form (and the plan-gate notice) stay in the create modal only.
+  if (monitorOnly && (!fleet || fleet.status === 'stopped')) return null
 
   if (ent && ent.max_fleet_size <= 0) {
+    if (monitorOnly) return null
     return <div style={card}><div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>🚀 {T.needPlan}</div></div>
   }
 
@@ -145,8 +162,10 @@ export function FleetPanel({ token }: { token: string }) {
 
   return (
     <div style={card}>
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 {T.title}</div>
-      <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{T.desc}</div>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 {monitorOnly ? T.monitorTitle : T.title}</div>
+      {!monitorOnly && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{T.desc}</div>
+      )}
 
       {!fleet || fleet.status === 'stopped' ? (
         <>
@@ -221,21 +240,41 @@ export function FleetPanel({ token }: { token: string }) {
               </button>
             </div>
           )}
+          {members.length === 0 && (fleet.status === 'researching' || fleet.status === 'building') && (
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 12 }}>
+              ⏳ {T.buildingHint}
+            </div>
+          )}
+          {members.length > 0 && onSelectRun && (
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 6 }}>
+              💡 {T.clickHint}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))', gap: 8, marginBottom: 12 }}>
             {members.map(m => (
-              <div key={m.run_id} style={{ border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 9, padding: '9px 11px', fontSize: 12.5 }}>
+              <div key={m.run_id}
+                onClick={onSelectRun ? () => onSelectRun(m.run_id) : undefined}
+                style={{ border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 9, padding: '9px 11px', fontSize: 12.5,
+                  cursor: onSelectRun ? 'pointer' : undefined }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <b>{m.symbol}</b>
                   <span style={{ color: 'var(--text-muted,#a89f92)' }}>{m.market}{m.thesis?.direction === 'short' ? ' · short' : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-                  <span>{m.status}{m.paused_reason ? ` (${m.paused_reason})` : ''}</span>
+                  <span style={{ color: m.status === 'running' ? '#0ca30c' : m.status === 'paused' ? '#7a68d8' : 'inherit' }}>
+                    {statusLabel(m.status, language)}{m.paused_reason ? ` (${m.paused_reason})` : ''}
+                  </span>
                   {m.realized_pnl_usd != null && (
                     <span style={{ color: (m.realized_pnl_usd || 0) >= 0 ? '#2e9e6b' : '#f0663f' }}>
                       {(m.realized_pnl_usd || 0) >= 0 ? '+' : ''}{Number(m.realized_pnl_usd).toFixed(2)}
                     </span>
                   )}
                 </div>
+                {m.run_budget_usd != null && (
+                  <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--text-muted,#a89f92)' }}>
+                    {T.memberBudget}: ${Number(m.run_budget_usd).toFixed(0)}
+                  </div>
+                )}
                 {m.thesis?.rationale && (
                   <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted,#a89f92)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
                     {m.thesis.rationale}

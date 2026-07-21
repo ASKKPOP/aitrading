@@ -127,7 +127,7 @@ const REASON_TEXT: Record<string, Record<Language, string>> = {
     ko: '생성되었습니다', en: 'Created', ja: '作成しました', th: 'สร้างแล้ว', vi: 'Đã tạo' },
 }
 
-function statusLabel(status: string | undefined, lang: Language): string {
+export function statusLabel(status: string | undefined, lang: Language): string {
   if (!status) return ''
   return STATUS_TEXT[status] ? tr(lang, STATUS_TEXT[status]) : status
 }
@@ -172,9 +172,13 @@ function ageLabel(ts: string | undefined, lang: Language): string {
 // owns the structured-409 conflict flow, which the parent would otherwise have
 // to reimplement. `extraPanel` hangs additional creation UI off the same modal.
 export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
-  hideCreateButton = false, openCreateSignal = 0, extraPanel }: {
+  hideCreateButton = false, openCreateSignal = 0, extraPanel, openRunRequest }: {
   token?: string | null; embedded?: boolean; reloadKey?: number
   hideCreateButton?: boolean; openCreateSignal?: number; extraPanel?: React.ReactNode
+  // Parent-driven "open this run's detail drawer" (the fleet monitor's member
+  // cards use it). Nonce-keyed like openCreateSignal so the same run can be
+  // reopened after the drawer is closed.
+  openRunRequest?: { id: number; nonce: number } | null
 }) {
   const { language } = useLanguage()
   const [runs, setRuns] = useState<Run[]>([])
@@ -206,6 +210,10 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   useEffect(() => { load() }, [load, reloadKey])
   // Parent-driven open. 0 is the "never asked" value, so it never fires on mount.
   useEffect(() => { if (openCreateSignal > 0) setShowCreate(true) }, [openCreateSignal])
+  useEffect(() => {
+    if (openRunRequest && openRunRequest.nonce > 0) setSelected(openRunRequest.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRunRequest?.nonce])
   useEffect(() => {
     const id = setInterval(load, 20000)  // low-frequency reconcile; WS carries live
     return () => clearInterval(id)
