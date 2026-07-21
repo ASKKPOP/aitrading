@@ -20,6 +20,73 @@ English. See i18n_errors.py for the lookup.
 """
 
 MESSAGES: dict[str, dict[str, str]] = {
+    # ── Plan 14: Full Auto fleets ────────────────────────────────────────
+    'Fleet not found': {
+        'ko': '플릿을 찾을 수 없습니다',
+        'ja': 'フリートが見つかりません',
+        'th': 'ไม่พบฟลีต',
+        'vi': 'Không tìm thấy đội hình',
+    },
+    'you already have an active fleet — stop it before launching another (one Full Auto fleet per account)': {
+        'ko': '이미 활성화된 플릿이 있습니다 — 새로 시작하려면 먼저 중지하세요 (계정당 완전자동 플릿 1개)',
+        'ja': 'すでにアクティブなフリートがあります — 新しく開始する前に停止してください（アカウントごとに1フリート）',
+        'th': 'คุณมีฟลีตที่ทำงานอยู่แล้ว — หยุดก่อนเริ่มใหม่ (1 ฟลีตต่อบัญชี)',
+        'vi': 'Bạn đã có một đội hình đang hoạt động — hãy dừng nó trước khi khởi chạy đội mới (mỗi tài khoản 1 đội hình)',
+    },
+    'fleets require an agent linked to a user account': {
+        'ko': '플릿을 만들려면 사용자 계정에 연결된 에이전트가 필요합니다',
+        'ja': 'フリートにはユーザーアカウントに連携されたエージェントが必要です',
+        'th': 'ฟลีตต้องใช้เอเจนต์ที่เชื่อมกับบัญชีผู้ใช้',
+        'vi': 'Đội hình yêu cầu agent được liên kết với tài khoản người dùng',
+    },
+    'rails must satisfy 0 < warn < stop <= 0.40': {
+        'ko': '방어선은 0 < 경고 < 정지 ≤ 0.40 조건을 만족해야 합니다',
+        'ja': 'レールは 0 < 警告 < 停止 ≤ 0.40 を満たす必要があります',
+        'th': 'ราวกันต้องเป็นไปตาม 0 < เตือน < หยุด ≤ 0.40',
+        'vi': 'Ngưỡng phải thỏa 0 < cảnh báo < dừng ≤ 0.40',
+    },
+    'rails are tighten-only while the fleet is active': {
+        'ko': '플릿이 활성 상태일 때 방어선은 더 조이는 방향으로만 변경할 수 있습니다',
+        'ja': 'フリートが稼働中はレールを厳しくする方向にのみ変更できます',
+        'th': 'ขณะฟลีตทำงาน ปรับราวกันได้เฉพาะให้เข้มงวดขึ้นเท่านั้น',
+        'vi': 'Khi đội hình đang hoạt động, ngưỡng chỉ có thể siết chặt hơn',
+    },
+    'this stop level would stop the fleet immediately — confirm to proceed': {
+        'ko': '이 정지 수준은 플릿을 즉시 중지시킵니다 — 진행하려면 확인이 필요합니다',
+        'ja': 'この停止レベルはフリートを即座に停止させます — 続行するには確認が必要です',
+        'th': 'ระดับหยุดนี้จะหยุดฟลีตทันที — ยืนยันเพื่อดำเนินการ',
+        'vi': 'Mức dừng này sẽ dừng đội hình ngay lập tức — xác nhận để tiếp tục',
+    },
+    'no drawdown warning is active': {
+        'ko': '활성화된 손실 경고가 없습니다',
+        'ja': 'アクティブなドローダウン警告はありません',
+        'th': 'ไม่มีคำเตือนการขาดทุนที่ใช้งานอยู่',
+        'vi': 'Không có cảnh báo sụt giảm nào đang hoạt động',
+    },
+    'only a draft fleet can start (status={})': {
+        'ko': '초안 상태의 플릿만 시작할 수 있습니다 (현재 상태={})',
+        'ja': 'ドラフト状態のフリートのみ開始できます（現在の状態={}）',
+        'th': 'เริ่มได้เฉพาะฟลีตร่างเท่านั้น (สถานะ={})',
+        'vi': 'Chỉ đội hình nháp mới có thể bắt đầu (trạng thái={})',
+    },
+    'only a draft or stopped fleet can be deleted': {
+        'ko': '초안 또는 중지된 플릿만 삭제할 수 있습니다',
+        'ja': 'ドラフトまたは停止済みのフリートのみ削除できます',
+        'th': 'ลบได้เฉพาะฟลีตร่างหรือที่หยุดแล้วเท่านั้น',
+        'vi': 'Chỉ có thể xóa đội hình nháp hoặc đã dừng',
+    },
+    'action must be hold, resume or remove': {
+        'ko': 'action은 hold, resume, remove 중 하나여야 합니다',
+        'ja': 'action は hold、resume、remove のいずれかである必要があります',
+        'th': 'action ต้องเป็น hold, resume หรือ remove',
+        'vi': 'action phải là hold, resume hoặc remove',
+    },
+    'fleet already stopped': {
+        'ko': '플릿이 이미 중지되었습니다',
+        'ja': 'フリートはすでに停止しています',
+        'th': 'ฟลีตหยุดแล้ว',
+        'vi': 'Đội hình đã dừng',
+    },
     'Account not found': {
         'ko': '계정을 찾을 수 없습니다',
         'ja': 'アカウントが見つかりません',

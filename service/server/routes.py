@@ -22,6 +22,7 @@ from routes_agent import register_agent_routes
 from routes_analysis import register_analysis_routes
 from routes_automation import register_automation_routes
 from routes_runs import register_runs_routes
+from routes_fleets import register_fleet_routes
 from routes_run_stream import register_run_stream_routes
 from routes_challenges import register_challenge_routes
 from routes_experiments import register_experiment_routes
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
     register_guide_routes(app, ctx)
     register_watch_routes(app, ctx)
     register_runs_routes(app, ctx)
+    register_fleet_routes(app, ctx)
     register_run_stream_routes(app, ctx)
     register_oauth_routes(app, ctx)
     register_misc_routes(app)   # must be last — contains /{path:path} SPA fallback

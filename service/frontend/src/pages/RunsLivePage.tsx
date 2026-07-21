@@ -389,6 +389,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                 <strong style={{ fontSize: 15 }}>{run.symbol}
                   <span className="muted" style={{ fontSize: 11, marginLeft: 6 }}>
                     {run.market}{run.market_type === 'futures' ? ' · fut' : ''}</span>
+                  {(run as any).fleet_id ? (
+                    <span style={{ fontSize: 10.5, marginLeft: 6, padding: '1px 7px', borderRadius: 9,
+                      background: 'rgba(194,106,69,0.14)', color: 'var(--accent-primary,#c26a45)' }}>
+                      🚀 #{(run as any).fleet_id}</span>
+                  ) : null}
                 </strong>
                 <span style={{ fontSize: 11, fontWeight: 600,
                   color: STATUS_COLOR[run.status] || '#898781' }}>

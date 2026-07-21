@@ -392,6 +392,20 @@ def list_members(fleet_id: int) -> list[dict]:
         conn.close()
 
 
+def _update_master_hold(fleet_id: int, held: bool) -> None:
+    """§6.7: the fleet's hold marker lives in its OWN field — status_reason
+    (e.g. a live 'partial:3/5') is untouched and recomputed by supervise."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("UPDATE fleets SET held_by_master = ? WHERE id = ?",
+                       (1 if held else 0, fleet_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # ── budget math (pure) ──────────────────────────────────────────────────────
 
 def allocate_budget(total: float, theses: list[dict]) -> list[float]:
