@@ -1,0 +1,100 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+---
+
+<LegalLayout
+  title="SMS Opt-In & Messaging Program"
+  description="How Sooppiy collects consent to send SMS, with screenshots of the in-app opt-in flow."
+  lastUpdated="July 21, 2026"
+>
+
+<div class="legal-notice">
+  <p>
+    This page documents how end users give consent to receive text messages
+    from Sooppiy. The opt-in itself happens inside the Sooppiy web app after
+    sign-in; because that screen requires authentication, the full flow is
+    reproduced here with screenshots for carrier and campaign review.
+  </p>
+</div>
+
+<h2>1. What We Send</h2>
+<p>
+  Sooppiy sends two kinds of transactional text messages, and nothing else:
+</p>
+<ul>
+  <li><strong>One-time verification codes (OTP)</strong> used to verify the phone number and sign-in activity.</li>
+  <li><strong>Account alerts</strong> the user has switched on in their notification settings (trade and risk alerts for their own account).</li>
+</ul>
+<p>
+  We do not send marketing or promotional SMS, and we do not share phone
+  numbers with third parties for their marketing purposes. Message frequency
+  varies with the user's own activity and alert settings. Message and data
+  rates may apply.
+</p>
+
+<h2>2. How Users Opt In</h2>
+<ol>
+  <li>
+    The user creates an account at
+    <a href="https://sooppiy.com/sign-up">https://sooppiy.com/sign-up</a>
+    (email + verification code, or Google sign-in). No phone number is
+    collected at sign-up.
+  </li>
+  <li>
+    After signing in, the user opens <strong>Account Settings</strong> at
+    <a href="https://sooppiy.com/settings">https://sooppiy.com/settings</a>
+    and finds the <strong>"Phone number for SMS"</strong> card.
+  </li>
+  <li>
+    The user enters their mobile number and actively checks a consent
+    checkbox that is <strong>unchecked by default</strong>. The phone number
+    cannot be saved while the checkbox is unchecked.
+  </li>
+  <li>
+    Only after this explicit consent is stored does Sooppiy send any SMS to
+    that number. Consent (and its timestamp) is recorded with the user's
+    account.
+  </li>
+</ol>
+
+<h2>3. Consent Language Shown in the App</h2>
+<blockquote>
+  <p>
+    "I agree to receive SMS verification codes and account alerts from
+    Sooppiy at this number. Message frequency varies. Message &amp; data
+    rates may apply. Reply STOP to unsubscribe, HELP for help."
+  </p>
+</blockquote>
+<p>
+  The checkbox links directly to our
+  <a href="https://sooppiy.com/privacypolicy">Privacy Policy</a> and
+  <a href="https://sooppiy.com/termsconditions">Terms &amp; Conditions</a>.
+</p>
+
+<h2>4. Screenshots of the Opt-In Flow</h2>
+<p><strong>Step 1 — account creation at sooppiy.com/sign-up:</strong></p>
+<p>
+  <img src="/sms-optin-signup.png" alt="Sooppiy sign-up page"
+       style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;" />
+</p>
+<p><strong>Step 2 — the SMS consent card in Account Settings (default state — checkbox unchecked):</strong></p>
+<p>
+  <img src="/sms-optin-settings.png" alt="Sooppiy Account Settings SMS consent card with unchecked consent checkbox"
+       style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;" />
+</p>
+
+<h2>5. Opting Out</h2>
+<ul>
+  <li>Reply <strong>STOP</strong> to any message to stop receiving SMS.</li>
+  <li>Reply <strong>HELP</strong> for assistance.</li>
+  <li>Uncheck the consent box or remove the phone number in
+      <a href="https://sooppiy.com/settings">Account Settings</a> at any time.</li>
+</ul>
+
+<h2>6. Related Policies</h2>
+<ul>
+  <li><a href="https://sooppiy.com/privacypolicy">Privacy Policy</a> — see section 4, "SMS &amp; Text Messaging".</li>
+  <li><a href="https://sooppiy.com/termsconditions">Terms &amp; Conditions</a> — see section 7, "SMS &amp; Phone Verification".</li>
+</ul>
+
+</LegalLayout>

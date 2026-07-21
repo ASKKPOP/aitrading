@@ -39,7 +39,7 @@ API_TARGET_CATALOG: dict = {
         'label': 'Alerts (email · SMS)',
         'description': 'Trade/risk alert delivery. In-app alerts are always on; enable email and SMS here.',
         'requires_key': False,
-        'fields': ['email_enabled', 'sms_enabled', 'phone'],
+        'fields': ['email_enabled', 'sms_enabled', 'phone', 'sms_consent', 'sms_consent_at'],
     },
     'alpha_vantage': {
         'label': 'Alpha Vantage',
