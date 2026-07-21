@@ -12,6 +12,7 @@ export function AssetsPage() {
   const [cash, setCash] = useState<number>(0)
   const [positions, setPositions] = useState<any[]>([])
   const [trades, setTrades] = useState<any[]>([])
+  const [realizedPnl, setRealizedPnl] = useState<number | null>(null)
   const [hide, setHide] = useState(false)
   const [spotOpen, setSpotOpen] = useState(true)
 
@@ -35,6 +36,8 @@ export function AssetsPage() {
     date: tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
     unrealized: tr(language, { ko: '미실현 손익', en: 'Unrealized PnL', ja: '含み損益', th: 'กำไรที่ยังไม่รับรู้', vi: 'PnL chưa thực hiện' }),
+    realized: tr(language, { ko: '실현 손익', en: 'Realized PnL', ja: '実現損益', th: 'กำไรที่รับรู้แล้ว', vi: 'PnL đã thực hiện' }),
+    pnlCol: tr(language, { ko: '손익', en: 'P&L', ja: '損益', th: 'กำไร/ขาดทุน', vi: 'Lãi/lỗ' }),
   }
 
   async function load() {
@@ -47,6 +50,11 @@ export function AssetsPage() {
       const me = await (await fetch(`${API_BASE}/claw/agents/me`, { headers: { Authorization: `Bearer ${token}` } })).json()
       const feed = await (await fetch(`${API_BASE}/signals/feed?limit=50`)).json()
       setTrades((feed.signals || []).filter((s: any) => s.agent_name === me.name && s.side).slice(0, 10))
+    } catch { /* transient */ }
+    try {
+      const mine = await (await fetch(`${API_BASE}/positions/trades?limit=200`, { headers: { Authorization: `Bearer ${token}` } })).json()
+      const sum = (mine.trades || []).reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+      setRealizedPnl(sum)
     } catch { /* transient */ }
   }
 
@@ -92,6 +100,11 @@ export function AssetsPage() {
           <span style={{ ...mono, color: pnlColor(totalPnl), fontSize: 14 }}>
             {M(`${totalPnl >= 0 ? '+' : ''}${fmtUsd(totalPnl)} ${T.unrealized}`)}
           </span>
+          {realizedPnl !== null && (
+            <span style={{ ...mono, color: pnlColor(realizedPnl), fontSize: 14 }}>
+              {M(`${realizedPnl >= 0 ? '+' : ''}${fmtUsd(realizedPnl)} ${T.realized}`)}
+            </span>
+          )}
         </div>
         <div style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 12.5, marginTop: 4 }}>{T.totalNote}</div>
       </div>
@@ -157,6 +170,7 @@ export function AssetsPage() {
                 <th style={{ textAlign: 'left', padding: '10px 8px' }}>Symbol</th>
                 <th style={{ textAlign: 'right', padding: '10px 8px' }}>{T.amount}</th>
                 <th style={{ textAlign: 'right', padding: '10px 8px' }}>{T.price}</th>
+                <th style={{ textAlign: 'right', padding: '10px 8px' }}>{T.pnlCol}</th>
                 <th style={{ textAlign: 'right', padding: '10px 16px' }}>{T.date}</th>
               </tr>
             </thead>
@@ -170,6 +184,9 @@ export function AssetsPage() {
                   <td style={{ padding: '9px 8px', fontWeight: 600 }}>{s.symbol}</td>
                   <td style={{ ...mono, padding: '9px 8px', textAlign: 'right' }}>{M(fmtQty(s.quantity))}</td>
                   <td style={{ ...mono, padding: '9px 8px', textAlign: 'right' }}>{M(fmtUsd(s.entry_price))}</td>
+                  <td style={{ ...mono, padding: '9px 8px', textAlign: 'right', color: s.pnl != null ? pnlColor(s.pnl) : 'var(--text-secondary,#8a8073)' }}>
+                    {s.pnl != null ? M(`${s.pnl >= 0 ? '+' : ''}${fmtUsd(s.pnl)}`) : '—'}
+                  </td>
                   <td style={{ padding: '9px 16px', textAlign: 'right', color: 'var(--text-secondary,#8a8073)', fontSize: 12 }}>{String(s.created_at || '').replace('T', ' ').slice(0, 16)}</td>
                 </tr>
               ))}

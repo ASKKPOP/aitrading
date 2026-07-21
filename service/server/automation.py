@@ -116,6 +116,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 return None, "duplicate client_order_id (cycle already executed)"
 
         short_entry: Optional[float] = None
+        long_entry: Optional[float] = None
         if side == "sell":
             pos = get_position_snapshot(cursor, agent_id, market, symbol, None, run_id)
             current_qty = float(pos["quantity"]) if pos else 0.0
@@ -125,6 +126,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             quantity = min(quantity, current_qty)
             trade_value = price * quantity
             fee = trade_value * TRADE_FEE_RATE
+            if pos["entry_price"] is not None:
+                long_entry = float(pos["entry_price"])
 
         if side == "cover":
             # Close (part of) a short book (negative quantity rows).
@@ -151,18 +154,31 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 conn.rollback()
                 return None, f"insufficient cash (${cash:.2f} < ${trade_value + fee:.2f})"
 
+        # Realized P&L stamp for closing legs: net of THIS leg's fee against
+        # the book's average entry. Buys/shorts leave pnl NULL (nothing
+        # realized yet) — the /assets and trades views read signals.pnl.
+        realized_pnl: Optional[float] = None
+        exit_price: Optional[float] = None
+        if side == "sell":
+            exit_price = price
+            if long_entry is not None:
+                realized_pnl = (price - long_entry) * quantity - fee
+        elif side == "cover":
+            exit_price = price
+            realized_pnl = (short_entry - price) * quantity - fee
+
         signal_id = _reserve_signal_id(cursor)
         cursor.execute(
             """
             INSERT INTO signals
             (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome,
              side, entry_price, quantity, content, timestamp, created_at, executed_at,
-             run_id, client_order_id, fee_usd)
-            VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             run_id, client_order_id, fee_usd, pnl, exit_price)
+            VALUES (?, ?, 'operation', ?, 'automation', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (signal_id, agent_id, market, symbol, side, price, quantity,
              content, int(datetime.now(timezone.utc).timestamp()), now, now,
-             run_id, client_order_id, fee),
+             run_id, client_order_id, fee, realized_pnl, exit_price),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now,
                                      cursor=cursor, run_id=run_id)

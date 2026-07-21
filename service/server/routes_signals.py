@@ -324,11 +324,24 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                         ),
                     )
 
+            # Realized P&L stamp for closing legs (net of this leg's fee) —
+            # the /assets and trades views read signals.pnl; without it a
+            # closed position's profit silently disappears into cash.
+            realized_pnl = None
+            exit_price_value = None
+            if action_lower in ('sell', 'cover'):
+                exit_price_value = price
+                if position_entry_price is not None:
+                    if action_lower == 'sell':
+                        realized_pnl = (price - position_entry_price) * qty - fee
+                    else:
+                        realized_pnl = (position_entry_price - price) * qty - fee
+
             cursor.execute(
                 """
                 INSERT INTO signals
-                (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome, side, entry_price, quantity, content, timestamp, created_at, executed_at)
-                VALUES (?, ?, 'operation', ?, 'realtime', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome, side, entry_price, quantity, content, timestamp, created_at, executed_at, fee_usd, pnl, exit_price)
+                VALUES (?, ?, 'operation', ?, 'realtime', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     signal_id,
@@ -344,6 +357,9 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                     timestamp,
                     now,
                     executed_at,
+                    fee,
+                    realized_pnl,
+                    exit_price_value,
                 ),
             )
 
@@ -501,11 +517,26 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                     follower_signal_id = _reserve_signal_id(cursor)
                     leader_name = agent['name'] if isinstance(agent, dict) else 'Leader'
                     copy_content = f'[Copied from {leader_name}] {data.content or ""}'
+                    # Mirror the leader's realized-P&L stamp against the
+                    # FOLLOWER's own average entry (their book, their profit).
+                    follower_fee = trade_value * TRADE_FEE_RATE
+                    follower_entry = None
+                    if follower_position and follower_position['entry_price'] is not None:
+                        follower_entry = float(follower_position['entry_price'])
+                    follower_pnl = None
+                    follower_exit_price = None
+                    if action_lower in ('sell', 'cover'):
+                        follower_exit_price = price
+                        if follower_entry is not None:
+                            if action_lower == 'sell':
+                                follower_pnl = (price - follower_entry) * qty - follower_fee
+                            else:
+                                follower_pnl = (follower_entry - price) * qty - follower_fee
                     cursor.execute(
                         """
                         INSERT INTO signals
-                        (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome, side, entry_price, quantity, content, timestamp, created_at, executed_at)
-                        VALUES (?, ?, 'operation', ?, 'realtime', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (signal_id, agent_id, message_type, market, signal_type, symbol, token_id, outcome, side, entry_price, quantity, content, timestamp, created_at, executed_at, fee_usd, pnl, exit_price)
+                        VALUES (?, ?, 'operation', ?, 'realtime', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             follower_signal_id,
@@ -521,6 +552,9 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                             int(datetime.now(timezone.utc).timestamp()),
                             now,
                             executed_at,
+                            follower_fee,
+                            follower_pnl,
+                            follower_exit_price,
                         ),
                     )
 
