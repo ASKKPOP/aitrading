@@ -497,6 +497,15 @@ def get_db_connection():
             charset="utf8mb4",
             cursorclass=pymysql.cursors.DictCursor,
             autocommit=False,
+            # FOUND_ROWS makes UPDATE rowcount mean MATCHED rows, like the
+            # SQLite the test suite runs on. MySQL's default (changed rows)
+            # returned 0 for identical-value UPDATEs, so every rowcount==1
+            # ownership/lease fence silently failed whenever the written
+            # value hadn't changed — run_feedback.save_state re-writing an
+            # unchanged adapt state read as "fence lost" and killed every
+            # fleet member's cycle after its first trade-free save (prod,
+            # 2026-07-21: 11 hours of claimed-but-eventless cycles).
+            client_flag=pymysql.constants.CLIENT.FOUND_ROWS,
         )
         return DatabaseConnection(conn, "mysql")
 
