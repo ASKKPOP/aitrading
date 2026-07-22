@@ -583,6 +583,35 @@ def _fetch_news_feed(category: str, definition: dict[str, str]) -> list[dict[str
     return _dedupe_news_items(normalized_items)
 
 
+def _daily_rows_from_yahoo(symbol: str) -> list[dict[str, Any]]:
+    """Plan 15 P1 (F2): TIME_SERIES_DAILY_ADJUSTED sits behind the Alpha
+    Vantage premium wall on the free tier, which left every us-stock run with
+    no technicals at all — the TSLA run held on missing data for 15 straight
+    cycles. Yahoo daily candles (already the us-stock price source) fill the
+    same newest-first {date, close, volume} shape."""
+    try:
+        from price_fetcher import get_daily_candles
+        candles = get_daily_candles(symbol, "us-stock", days=100)
+    except Exception:  # noqa: BLE001
+        return []
+    rows: list[dict[str, Any]] = []
+    for c in candles or []:
+        try:
+            # candle ts is epoch milliseconds; "date" surfaces as `as_of`
+            # in the analysis payload, so it must be a real ISO date.
+            day = datetime.fromtimestamp(
+                int(c["ts"]) / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+            rows.append({
+                "date": day,
+                "close": float(c["close"]),
+                "volume": float(c.get("volume") or 0),
+            })
+        except (KeyError, TypeError, ValueError, OSError):
+            continue
+    rows.sort(key=lambda row: row["date"], reverse=True)
+    return rows
+
+
 def _fetch_daily_adjusted_series(symbol: str) -> list[dict[str, Any]]:
     payload = _alpha_vantage_get({
         "function": "TIME_SERIES_DAILY_ADJUSTED",
@@ -591,6 +620,9 @@ def _fetch_daily_adjusted_series(symbol: str) -> list[dict[str, Any]]:
     })
     series = payload.get("Time Series (Daily)") if isinstance(payload, dict) else None
     if not isinstance(series, dict):
+        fallback_rows = _daily_rows_from_yahoo(symbol)
+        if fallback_rows:
+            return fallback_rows
         raise RuntimeError(f"Missing daily series for {symbol}")
 
     rows: list[dict[str, Any]] = []

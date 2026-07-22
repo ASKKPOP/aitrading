@@ -456,12 +456,19 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     max_bet = round(run_budget * FLEET_BOUNDS["max_bet_frac_of_run_budget"][risk], 2)
     max_bet = min(max_bet, 1_000_000.0)
     at_time = (_now_dt() + timedelta(hours=horizon_h)).strftime(TS_FMT)
+    # Plan 15 P1 (F3): a run whose gate exceeds its own thesis confidence is
+    # born unable to trade (fleet 6 built ZC at thesis 0.539 against a 0.65
+    # gate — every cycle skipped). The gate never exceeds thesis_conf − 0.05,
+    # floored at 0.50 so weak theses still gate meaningfully.
+    thesis_conf = float(thesis.get("confidence") or 0.5)
+    min_conf = min(FLEET_BOUNDS["min_confidence"][risk],
+                   max(0.50, round(thesis_conf - 0.05, 2)))
     return {
         "symbol": thesis["symbol"], "market": market, "market_type": market_type,
         "max_bet_usd": max_bet,
         "run_budget_usd": round(float(run_budget), 2),
         "interval_minutes": int(interval),
-        "min_confidence": FLEET_BOUNDS["min_confidence"][risk],
+        "min_confidence": min_conf,
         "provider": fleet.get("provider"), "lang": fleet.get("lang") or "en",
         "stop_conditions": {
             "max_loss_usd": round(run_budget * FLEET_BOUNDS["stop_max_loss_frac"][risk], 2),

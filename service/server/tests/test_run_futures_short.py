@@ -124,12 +124,28 @@ class FuturesShortMappingTests(unittest.TestCase):
         self.assertEqual(self._position_qty(), 0.0)
 
     def test_spot_sell_with_no_long_still_skips(self):
+        # Plan 15 P1 (F4): the empty-book spot sell now skips BEFORE the risk
+        # gates with an explicit hold reason, instead of reaching the execute
+        # stage and failing with "no long position to sell".
         run_id = self._running_run()  # market_type defaults to spot
         with patch("analysis_agents.run_analysis", return_value=SELL_ANALYSIS):
             result = run_engine.run_cycle(run_id)
         self.assertFalse(result["executed"], result)
-        self.assertIn("no long position to sell", result["skip_reason"] or "")
+        self.assertIn("spot sell with no inventory", result["skip_reason"] or "")
         self.assertEqual(self._signals(run_id), [])
+
+    def test_spot_sell_with_long_still_reduces(self):
+        # The pre-gate hold must NOT block a legitimate sell of a real long.
+        run_id = self._running_run()
+        with patch("analysis_agents.run_analysis", return_value=BUY_ANALYSIS):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result)
+        self.assertGreater(self._position_qty(), 0.0)
+        with patch("analysis_agents.run_analysis", return_value=SELL_ANALYSIS):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result)
+        sides = [s["side"] for s in self._signals(run_id)]
+        self.assertEqual(sides, ["buy", "sell"])
 
 
 if __name__ == "__main__":

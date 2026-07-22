@@ -1051,11 +1051,37 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     except Exception:  # noqa: BLE001
         pass
 
+    # Plan 15 P1 (F1/F4): the naked "confidence: 0.0-1.0" ask produced a
+    # quantized output pinned at 0.62 (53% of observed decisions), and the
+    # desk had no idea what it held — spot runs emitted unactionable sells.
+    # Give it the book and a calibration rubric.
+    pos_qty = 0.0
+    try:
+        pos_qty = _position_quantity(run["agent_id"], run["market"],
+                                     run["symbol"], run["id"])
+    except Exception:  # noqa: BLE001
+        pos_qty = 0.0
+    market_type = (run.get("market_type") or "spot").strip().lower()
+    if trading_runs.is_futures_book(run.get("market"), market_type):
+        inventory_rule = ("Futures book: 'sell' opens or extends a short; "
+                          "'buy' covers a short or goes long.")
+    elif pos_qty > 0:
+        inventory_rule = "'sell' reduces/closes this long; 'buy' adds to it."
+    else:
+        inventory_rule = ("Spot book with no inventory: 'sell' is NOT available "
+                          "(nothing to reduce) — a bearish read means 'hold'.")
     prompt = (
         "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
-        f"Symbol: {run['symbol']} ({run['market']}), price now {entry}.\n"
+        f"Symbol: {run['symbol']} ({run['market']}, {market_type}), price now {entry}.\n"
+        f"Position in this run's book: {pos_qty} units (negative = short, 0 = flat). "
+        f"{inventory_rule}\n"
         f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
         f"Recent closes: {json.dumps(candles_summary, default=str)[:400]}\n"
+        "Calibrate confidence honestly across the full range, two decimals: "
+        "0.50 = coin-flip, 0.55 = slight edge, 0.65 = clear thesis+momentum+entry "
+        "alignment, 0.75 = strong multi-factor confirmation, 0.85+ = exceptional "
+        "setup. Do not default to a habitual value; if your report states a "
+        "percentage it MUST equal this number.\n"
         'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold", '
         '"confidence": 0.0-1.0, "report": "<one sentence>"}'
     )
@@ -1266,6 +1292,19 @@ def run_cycle(run_id: int) -> dict:
                 action = "short"
             elif action == "buy" and pos_qty < 0:
                 action = "cover"
+        elif action == "sell":
+            # Plan 15 P1 (F4): a spot 'sell' with an empty book has nothing to
+            # reduce. Skip here instead of at the execute stage ("no long
+            # position to sell") so the wasted verdict is visible as a gate
+            # skip, not an execution failure.
+            pos_qty = _position_quantity(run["agent_id"], run["market"], run["symbol"],
+                                         run["id"])
+            if pos_qty <= 0:
+                result["skip_reason"] = "spot sell with no inventory — treated as hold"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "risk",
+                                      "reason": result["skip_reason"]})
+                return result
 
         # Plan 14 §7: same-direction re-entry block after a losing close
         # (whipsaw/fee-churn guard) — deterministic, before the gates.
