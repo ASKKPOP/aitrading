@@ -275,7 +275,11 @@ def _prune_profit_history_unlocked() -> None:
         conn.commit()
 
         if using_mysql():
-            # MySQL 8.0: use STR_TO_DATE to parse ISO-8601 text timestamps
+            # MySQL 8.0: bucket by SUBSTRING of the ISO-8601 text timestamps.
+            # STR_TO_DATE('%Y-%m-%dT%H:%i:%sZ') raises 1411 on values with
+            # fractional seconds ('...T01:20:18.660506Z'); the ISO string is
+            # fixed-width through the seconds, so substrings bucket correctly
+            # with or without a microsecond suffix.
             if full_resolution_cutoff > fifteen_min_cutoff:
                 cursor.execute("""
                     DELETE FROM profit_history
@@ -286,8 +290,8 @@ def _prune_profit_history_unlocked() -> None:
                                 ROW_NUMBER() OVER (
                                     PARTITION BY
                                         agent_id,
-                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d %H'),
-                                        FLOOR(MINUTE(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ')) / ?)
+                                        SUBSTRING(recorded_at, 1, 13),
+                                        FLOOR(CAST(SUBSTRING(recorded_at, 15, 2) AS UNSIGNED) / ?)
                                     ORDER BY recorded_at DESC, id DESC
                                 ) AS rn
                             FROM profit_history
@@ -308,7 +312,7 @@ def _prune_profit_history_unlocked() -> None:
                                 id,
                                 ROW_NUMBER() OVER (
                                     PARTITION BY agent_id,
-                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d %H')
+                                        SUBSTRING(recorded_at, 1, 13)
                                     ORDER BY recorded_at DESC, id DESC
                                 ) AS rn
                             FROM profit_history
@@ -329,7 +333,7 @@ def _prune_profit_history_unlocked() -> None:
                                 id,
                                 ROW_NUMBER() OVER (
                                     PARTITION BY agent_id,
-                                        DATE_FORMAT(STR_TO_DATE(recorded_at, '%Y-%m-%dT%H:%i:%sZ'), '%Y-%m-%d')
+                                        SUBSTRING(recorded_at, 1, 10)
                                     ORDER BY recorded_at DESC, id DESC
                                 ) AS rn
                             FROM profit_history
