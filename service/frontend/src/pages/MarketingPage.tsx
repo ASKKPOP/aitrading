@@ -1018,6 +1018,14 @@ export function MarketingPage() {
             </span>
           </div>
           <p style={{ fontSize: 12, color: V.faint, maxWidth: '90ch', margin: 0 }}>{T.legal}</p>
+          {/* Legal pages must be linked from the public homepage — A2P 10DLC
+              vetting (error 30908) checks the privacy policy is discoverable
+              from the brand website, not just that the URL exists. */}
+          <p style={{ fontSize: 12, margin: 0, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <a href="/privacypolicy" style={{ color: V.mut, textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/termsconditions" style={{ color: V.mut, textDecoration: 'none' }}>Terms &amp; Conditions</a>
+            <a href="/smsoptin" style={{ color: V.mut, textDecoration: 'none' }}>SMS Policy</a>
+          </p>
           <p style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, margin: 0 }}>© 2026 Sooppiy</p>
         </div>
       </footer>

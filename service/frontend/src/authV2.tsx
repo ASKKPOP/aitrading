@@ -89,6 +89,16 @@ function AuthShell({ title, subtitle, children }: {
           )}
         </div>
         {children}
+        {/* Legal links must be reachable from the auth pages — A2P 10DLC
+            vetting (error 30908) checks that the privacy policy is
+            discoverable from the pages where users sign up. */}
+        <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--border-color, rgba(0,0,0,0.08))', fontSize: 12, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          <a href="https://sooppiy.com/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Privacy Policy</a>
+          {' · '}
+          <a href="https://sooppiy.com/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Terms &amp; Conditions</a>
+          {' · '}
+          <a href="https://sooppiy.com/smsoptin" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>SMS Policy</a>
+        </div>
       </div>
     </div>
   )
