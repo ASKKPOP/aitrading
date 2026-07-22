@@ -113,6 +113,19 @@ class YahooTechnicalsFallbackTests(unittest.TestCase):
         self.assertRegex(rows[0]["date"], r"^\d{4}-\d{2}-\d{2}$")
         self.assertIsInstance(rows[0]["close"], float)
 
+    def test_premium_wall_raise_falls_back_to_yahoo(self):
+        # THE REAL PROD SHAPE: _alpha_vantage_get RAISES on the premium
+        # message (it converts it to RuntimeError) — it does not return the
+        # payload. Caught live on prod 2026-07-22; the return-shape mock
+        # above alone let a dead fallback pass locally.
+        import market_intel
+        with patch.object(market_intel, "_alpha_vantage_get",
+                          side_effect=RuntimeError("premium endpoint")), \
+                patch("price_fetcher.get_daily_candles",
+                      return_value=self._candles()):
+            rows = market_intel._fetch_daily_adjusted_series("TSLA")
+        self.assertGreaterEqual(len(rows), 20)
+
     def test_premium_wall_and_no_yahoo_still_raises(self):
         import market_intel
         wall = {"Information": "premium endpoint"}

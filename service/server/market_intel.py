@@ -613,12 +613,18 @@ def _daily_rows_from_yahoo(symbol: str) -> list[dict[str, Any]]:
 
 
 def _fetch_daily_adjusted_series(symbol: str) -> list[dict[str, Any]]:
-    payload = _alpha_vantage_get({
-        "function": "TIME_SERIES_DAILY_ADJUSTED",
-        "symbol": symbol,
-        "outputsize": "compact",
-    })
-    series = payload.get("Time Series (Daily)") if isinstance(payload, dict) else None
+    series = None
+    try:
+        payload = _alpha_vantage_get({
+            "function": "TIME_SERIES_DAILY_ADJUSTED",
+            "symbol": symbol,
+            "outputsize": "compact",
+        })
+        series = payload.get("Time Series (Daily)") if isinstance(payload, dict) else None
+    except Exception:  # noqa: BLE001 — premium wall RAISES inside
+        # _alpha_vantage_get (it converts the "premium endpoint" message to a
+        # RuntimeError), so the fallback must catch, not just shape-check.
+        series = None
     if not isinstance(series, dict):
         fallback_rows = _daily_rows_from_yahoo(symbol)
         if fallback_rows:
