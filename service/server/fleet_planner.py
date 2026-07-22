@@ -53,7 +53,12 @@ FLEET_BOUNDS = {
     "total_budget_usd": (50.0, 10_000_000.0),
     "alloc_frac_of_equal": (0.5, 2.0),           # slot ∈ [B/2N, 2B/N], Σ ≤ B
     "max_bet_frac_of_run_budget": {"stable": 0.20, "balanced": 0.25, "aggressive": 0.35},
-    "min_confidence": {"stable": 0.75, "balanced": 0.65, "aggressive": 0.58},
+    # Plan 15 P0 (2026-07-22): balanced 0.65 → 0.60. The decision LLM's
+    # confidence output is quantized and pins at 0.62 (53% of observed
+    # decisions), so a 0.65 gate blocked 76% of actionable calls on noise —
+    # see docs/plan/15-run-ai-reading-algorithm-fix.html. P2/P3 replace the
+    # scalar entirely; this is the interim mitigation.
+    "min_confidence": {"stable": 0.75, "balanced": 0.60, "aggressive": 0.58},
     "interval_minutes": {"stable": 240, "balanced": 60, "aggressive": 30},
     "interval_floor_by_market": {"us-stock": 30},  # Yahoo pressure, not AV
     "interval_floor_default": 15,

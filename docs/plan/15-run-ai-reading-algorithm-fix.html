@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 15 — RUN AI Reading Algorithm Fix</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; }
+  figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  #tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+         border-radius: 7px; padding: 6px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+         display: none; z-index: 10; color: var(--ink-1); }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  /* pipeline diagram */
+  .pipes { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 780px) { .pipes { grid-template-columns: 1fr; } }
+  .pipe h3 { margin: 0 0 10px; text-align: center; }
+  .pnode { border: 1px solid var(--border); background: var(--page); border-radius: 8px;
+           padding: 8px 12px; margin: 0 0 4px; font-size: 13px; position: relative; }
+  .pnode b { display: block; font-size: 13.5px; }
+  .pnode span { color: var(--ink-2); font-size: 12.3px; }
+  .pnode .file { display: block; color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .pnode.bad { border-left: 3px solid var(--crit); }
+  .pnode.chg { border-left: 3px solid var(--s2); background: var(--chg-bg); }
+  .pnode.keep { border-left: 3px solid var(--s3); }
+  .parrow { text-align: center; color: var(--ink-3); font-size: 15px; line-height: 1.15; margin: 0 0 4px; }
+  .legendline { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; }
+  .legendline .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legendline .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  /* gantt */
+  .gantt-row { display: grid; grid-template-columns: 210px 1fr; gap: 10px; align-items: center; margin: 7px 0; }
+  .gantt-row .glabel { font-size: 13px; color: var(--ink-2); text-align: right; }
+  .gtrack { position: relative; height: 26px; background: var(--page); border-radius: 6px; border: 1px solid var(--grid); }
+  .gbar { position: absolute; top: 3px; bottom: 3px; border-radius: 5px; font-size: 11.5px; font-weight: 600;
+          display: flex; align-items: center; padding: 0 8px; color: #fff; white-space: nowrap; overflow: visible; }
+  .gaxis { display: grid; grid-template-columns: 210px 1fr; gap: 10px; margin-top: 6px; }
+  .gaxis .ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+
+<h1>Plan 15 — RUN AI Reading Algorithm Fix</h1>
+<p class="sub">Change plan derived from the overnight monitoring window (<strong>2026-07-22 03:28–10:18 PDT</strong>, 14 checks, 125 cycles, 96 decisions). Covers all three review questions: ① plan-conformance, ② profit/loss causes, ③ what the reading algorithm must change.</p>
+<p class="meta">Evidence base: <a href="../reports/2026-07-22-automation-run-monitoring.html">docs/reports/2026-07-22-automation-run-monitoring.html</a> · every change below is anchored to a real file/line in the current codebase · ships all the way to prod sooppiy.com per standing rule.</p>
+
+<div class="kr">
+  <strong>요약 (Korean summary)</strong>
+  <p>지난밤 모니터링에서 확인된 전부(①②③)를 반영한 알고리즘 변경 계획입니다. 핵심 타깃 5개: <strong>A</strong> 신뢰도 신호 재설계(0.62 고정 → 구성요소 점수 기반 계산), <strong>B</strong> 미국주식 기술지표 복구(Yahoo 폴백 + 데이터 없는 런 자동 일시정지), <strong>C</strong> 플릿이 게이트 미달 논지로 런을 만들지 못하게, <strong>D</strong> 스팟 런의 실행 불가 매도 제거(재고 인지), <strong>E</strong> 손실 시 게이트를 +0.05씩 조이는 적응 루프가 고정된 0.62 출력과 만나면 런이 즉사하는 상호작용 수정. 4단계 롤아웃(P0 당일 완화 → P1 프롬프트 v2 → P2 계산 신뢰도 섀도 → P3 게이트 전환+데이터 피드), 각 단계에 측정 가능한 종료 기준과 롤백(env 플래그) 포함.</p>
+</div>
+
+<h2>1 · Focus targets</h2>
+<div class="tiles">
+  <div class="tile"><div class="lbl">Target A <span class="chip crit">CRITICAL</span></div><div class="val">Confidence signal</div><div class="d">53% pinned at 0.62 → computed component score; gate stops deciding on noise</div></div>
+  <div class="tile"><div class="lbl">Target B <span class="chip crit">CRITICAL</span></div><div class="val">US-stock data</div><div class="d">Alpha Vantage premium wall → Yahoo fallback + auto-pause starved runs</div></div>
+  <div class="tile"><div class="lbl">Target C <span class="chip warn">WARN</span></div><div class="val">Fleet coherence</div><div class="d">No more runs whose thesis conf &lt; own gate (ZC 0.539 vs 0.65)</div></div>
+  <div class="tile"><div class="lbl">Target D <span class="chip warn">WARN</span></div><div class="val">Inventory awareness</div><div class="d">Spot + empty book + bearish read → hold, not a dead sell</div></div>
+  <div class="tile"><div class="lbl">Target E <span class="chip warn">WARN</span></div><div class="val">Adapt interplay</div><div class="d">+0.05/loss tightening vs pinned 0.62 = run death after one loss — rescale</div></div>
+</div>
+
+<h2>2 · Diagram — decision pipeline, current vs proposed</h2>
+<div class="card">
+  <div class="pipes">
+    <div class="pipe">
+      <h3>CURRENT (observed failing)</h3>
+      <div class="pnode keep"><b>Pre-gate</b><span>market closed / start conditions — worked 29/29</span><span class="file">run_engine.py:1086 _pre_gate_skip</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode bad"><b>Light analysis — one naked LLM call</b><span>prompt asks <code>"confidence": 0.0-1.0</code> with no rubric, no inventory, thesis + last-10 closes only → output collapses to 0.62</span><span class="file">run_engine.py:1028 _light_analysis (temp 0.2, tier=decision)</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode bad"><b>Scalar confidence gate</b><span><code>confidence &lt; min_confidence</code> → blocked 48/63 actionable calls; pass/block uncorrelated with outcome</span><span class="file">automation.py:471 evaluate_execution_gates</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode keep"><b>Risk engine</b><span>sizing, SL/TP, $10k exposure cap — all verified correct</span><span class="file">automation.py gate chain</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode bad"><b>Adapt loop (on loss)</b><span>min_confidence +0.05/loss (cap +0.15) — with a 0.62-pinned signal one loss makes the run permanently silent</span><span class="file">run_feedback.py:488 effective_gate_params</span></div>
+    </div>
+    <div class="pipe">
+      <h3>PROPOSED</h3>
+      <div class="pnode chg"><b>Pre-gate + inventory & data checks</b><span>NEW: spot sell with empty book → hold here (D); N consecutive no-technicals cycles → paused_reason <code>data_unavailable</code> (B)</span><span class="file">run_engine.py _pre_gate_skip + _position_quantity:1155</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode chg"><b>Reading v2 — component scores</b><span>LLM returns <code>{thesis_alignment, momentum_quality, entry_quality, risk_context}</code> each 0–1 + action; calibration anchors in prompt; inventory + market_type in context; us-stock candles from Yahoo when AV walled (B)</span><span class="file">run_engine.py _light_analysis · market_intel.py technicals path</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode chg"><b>Computed conviction gate</b><span><code>conviction = w·scores</code> computed in code, logged next to legacy scalar; gate flips to conviction via env <code>RUN_CONF_V2</code> after shadow proves correlation with outcomes</span><span class="file">automation.py evaluate_execution_gates (flagged)</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode keep"><b>Risk engine</b><span>unchanged — it was right all night</span><span class="file">automation.py gate chain</span></div>
+      <div class="parrow">↓</div>
+      <div class="pnode chg"><b>Adapt loop rescaled</b><span>tightening expressed in distribution percentiles of the new conviction score, not +0.05 absolute steps (E); fleet builder refuses thesis_conf &lt; gate−margin (C)</span><span class="file">run_feedback.py ADAPT_BOUNDS · fleet_planner.py:56,459</span></div>
+    </div>
+  </div>
+  <div class="legendline">
+    <span class="k"><span class="sw" style="background:var(--crit)"></span>failing today</span>
+    <span class="k"><span class="sw" style="background:var(--s2)"></span>changed by this plan</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span>kept as-is (verified correct)</span>
+  </div>
+</div>
+
+<h2>3 · The problem &amp; the fix on one chart</h2>
+<div class="card">
+  <figure><div id="conf"></div>
+  <figcaption>Observed distribution of all 96 decision confidences (window 03:28–10:18 PDT). The 0.65 gate (red) sits just above the 0.62 pin — blocking 76% of actionable calls on noise. P0 moves the fleet gate to 0.60 (orange) so coherent theses can trade <em>today</em>; P2/P3 replace the scalar entirely with a computed conviction score whose target distribution is continuous (green band = healthy spread: no single value &gt;25% share, ≥12 distinct values per 50 decisions).</figcaption></figure>
+</div>
+
+<h2>4 · Rollout — four phases, each flagged &amp; reversible</h2>
+<div class="card">
+  <div id="gantt"></div>
+  <figure><figcaption>Solid bars = active work; the P2 bar includes a 7-day shadow period where the computed conviction is logged but the legacy gate still decides — the flip in P3 happens only if shadow data proves the new score correlates with trade outcomes. Every phase is a one-line revert (config value or env flag).</figcaption></figure>
+</div>
+
+<h2>5 · Per-target changes (file-anchored)</h2>
+
+<h3><span class="chip crit">A</span> Confidence signal — the reading algorithm change</h3>
+<div class="card">
+<table>
+<thead><tr><th>Step</th><th>Change</th><th>Where</th><th>Verify (loop until proven)</th></tr></thead>
+<tbody>
+<tr><td>P0</td><td>Fleet <code>balanced</code> gate 0.65 → <strong>0.60</strong> (stable 0.75 / aggressive 0.58 unchanged). Existing runs: update <code>config_snapshot_json.min_confidence</code> for fleet-6 runs in place.</td><td><code>fleet_planner.py:56</code> FLEET_BOUNDS + one prod SQL for live runs</td><td>Within 24h: run 38's coherent ZEC short executes; fleet exec rate on actionable calls leaves 11% floor. Check run_events ≥2×.</td></tr>
+<tr><td>P1</td><td>Calibration rubric in the decision prompt: anchors (0.50 = coin-flip … 0.90 = exceptional), two decimals required, narrated conviction must match the number (the "68% in text / 0.62 in field" bug).</td><td><code>run_engine.py:1053-1060</code> prompt</td><td>50 decisions: ≥12 distinct values, mode share &lt;25%, zero narration/number mismatches.</td></tr>
+<tr><td>P2</td><td>LLM returns component scores <code>{thesis_alignment, momentum_quality, entry_quality, risk_context}</code>; code computes <code>conviction</code> (weighted blend). Log both to <code>run_events.decision</code> payload — gate keeps using legacy scalar (shadow).</td><td><code>run_engine.py _light_analysis</code> return shape + payload</td><td>7 days shadow: conviction on executed+hypothetical legs correlates with outcome sign better than legacy scalar (compare on closed legs; need ≥20 legs).</td></tr>
+<tr><td>P3</td><td>Gate reads <code>conviction</code> when env <code>RUN_CONF_V2=1</code>; legacy path untouched for rollback.</td><td><code>automation.py:471</code> (flagged branch)</td><td>1 week live: exec rate 20–45% band; blocked-call hypothetical P&amp;L no longer beats executed P&amp;L.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="chip crit">B</span> US-stock technicals feed</h3>
+<div class="card">
+<table>
+<thead><tr><th>Step</th><th>Change</th><th>Where</th><th>Verify</th></tr></thead>
+<tbody>
+<tr><td>P1</td><td>When Alpha Vantage returns the premium-wall message, fall back to <code>price_fetcher.get_daily_candles</code> (Yahoo, already used by the light path; bare <code>Mozilla/5.0</code> UA per registry rule) for trend/momentum inputs.</td><td><code>market_intel.py:381 _alpha_vantage_get</code> callers · <code>price_fetcher.py get_daily_candles</code></td><td>TSLA (run 27) decision reports stop saying "no verified price/volume data"; <code>[Market Intel] errors=6</code> → 0. Check 2 consecutive refreshes.</td></tr>
+<tr><td>P1</td><td>Auto-pause: N=6 consecutive cycles with no technicals → <code>paused_reason: data_unavailable</code> + alert; auto-resume when feed heals. Stops ~6 LLM calls/cycle on dead runs.</td><td><code>run_engine.py</code> (mirror <code>_handle_infeasible_skip:1380</code> pattern)</td><td>Kill the feed locally → run pauses at cycle 6, resumes on heal. Repro 2×.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="chip warn">C</span> Fleet thesis/gate coherence</h3>
+<div class="card">
+<table>
+<tbody>
+<tr><td>P1</td><td>Builder rejects a thesis when <code>thesis.confidence &lt; min_confidence − 0.03</code>; otherwise sets the run's gate to <code>min(bound, thesis_conf − 0.05)</code> so a run is never born unable to trade (ZC 0.539 and CAT 0.611 both violated this).</td><td><code>fleet_planner.py:459</code> builder return</td><td>Seed a fleet with a 0.55-conf thesis → rejected (fleet_events records why); 0.68-conf thesis → gate 0.63. Both cases tested.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="chip warn">D</span> Inventory awareness for spot runs</h3>
+<div class="card">
+<table>
+<tbody>
+<tr><td>P1</td><td>Pass current position qty + market_type into the decision prompt; AND map spot-sell-with-empty-book → hold at the pre-gate (before the LLM's verdict is wasted at execute stage). Futures short-mapping stays as is.</td><td><code>run_engine.py _light_analysis</code> (context) + <code>_pre_gate_skip:1086</code> using <code>_position_quantity:1155</code></td><td>Zero <code>no long position to sell</code> execute-skips over 30 cycles (run 29 had 2 in 15).</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="chip warn">E</span> Adapt-loop interplay</h3>
+<div class="card">
+<table>
+<tbody>
+<tr><td>P3</td><td>Loss-tightening becomes percentile-based on the observed conviction distribution (e.g. +10pp percentile per loss) instead of +0.05 absolute; horizon guard: user_stop before <code>horizon_hours</code> elapse asks for confirmation in the UI (run 35's −$100.12 was realized by an early stop, not thesis failure).</td><td><code>run_feedback.py:488</code> ADAPT_BOUNDS · stop endpoint in <code>routes_runs.py</code></td><td>Simulated loss on a v2 run still allows trades at the new percentile; UI shows horizon warning on early stop.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>6 · What we deliberately do NOT touch</h2>
+<div class="card">
+<p style="color:var(--ink-2);margin:4px 0">Everything the monitoring window <em>verified correct</em> stays byte-identical: scheduler/lease machinery, market-closed pre-gate, position sizing &amp; averaging, SL/TP brackets, the $10k symbol-exposure cap (it blocked over-concentration 6× including a 0.68-conf add — that was right), stop-flatten accounting, and the run exclusivity keys. The risk engine was not the problem; the signal feeding it was.</p>
+</div>
+
+<h2>7 · Risks &amp; rollback</h2>
+<div class="card">
+<table>
+<thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+<tbody>
+<tr><td>P0 gate-lowering lets weak theses trade (more losers pass too — the gate blocked CAT's would-be losing short as often as ZEC's winner)</td><td>Accepted for 1 week deliberately: the $10k exposure cap, SL/TP brackets and per-run budgets bound the downside; P&amp;L attribution during shadow week feeds the P2 correlation test.</td></tr>
+<tr><td>Component scores also collapse to a pin (same failure, new shape)</td><td>P1 exit criteria measure distribution spread <em>before</em> P2 is built; if the model can't produce spread with a rubric, P2 computes conviction mostly from code-side features (momentum/entry math) with the LLM contributing thesis_alignment only.</td></tr>
+<tr><td>Yahoo candle pressure for us-stock (rate limits)</td><td>Interval floor 30m for us-stock already in FLEET_BOUNDS; fallback caches per cycle.</td></tr>
+<tr><td>Shadow verdict ambiguous (&lt;20 closed legs in 7 days)</td><td>Extend shadow rather than flip; the P0 gate keeps trades flowing meanwhile.</td></tr>
+<tr><td>Anything breaks on prod</td><td>Every phase = config value or env flag (<code>RUN_CONF_V2</code>); revert is one line + redeploy per the standing deploy runbook.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="meta">Plan authored 2026-07-22 from the 14-check monitoring window. Companion evidence report: <a href="../reports/2026-07-22-automation-run-monitoring.html">2026-07-22-automation-run-monitoring.html</a>. Deployment: all phases ship to prod sooppiy.com (tarball + docker per runbook), migrations none — no schema changes required.</p>
+
+</div>
+<script>
+(function(){
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = document.getElementById('tip');
+function showTip(ev, html){ tip.innerHTML = html; tip.style.display='block';
+  const x = Math.min(ev.clientX+14, innerWidth-tip.offsetWidth-8);
+  tip.style.left = x+'px'; tip.style.top = (ev.clientY+14)+'px'; }
+function hideTip(){ tip.style.display='none'; }
+const NS='http://www.w3.org/2000/svg';
+function el(n,a,parent){ const e=document.createElementNS(NS,n); for(const k in a) e.setAttribute(k,a[k]); if(parent) parent.appendChild(e); return e; }
+
+/* ---------- Confidence histogram with gates ---------- */
+(function(){
+  const data=[[0.35,1],[0.55,7],[0.58,16],[0.60,4],[0.62,51],[0.63,3],[0.65,12],[0.68,2]];
+  const W=980,H=280,padL=44,padB=34,padT=30,padR=16;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'},document.getElementById('conf'));
+  const xs=v=>padL+(v-0.30)/(0.95-0.30)*(W-padL-padR);
+  const ys=c=>H-padB-c/55*(H-padB-padT);
+  [0,10,20,30,40,50].forEach(c=>{ el('line',{x1:padL,x2:W-padR,y1:ys(c),y2:ys(c),stroke:c===0?css('--axis'):css('--grid')},svg);
+    el('text',{x:padL-8,y:ys(c)+4,'text-anchor':'end'},svg).textContent=c; });
+  // healthy-spread target band 0.45..0.90
+  const bx0=xs(0.45), bx1=xs(0.90);
+  el('rect',{x:bx0,y:padT-4,width:bx1-bx0,height:H-padB-padT+4,fill:css('--s3'),opacity:0.08},svg);
+  el('text',{x:bx1,y:16,'text-anchor':'end'},svg).textContent='P2/P3 target: continuous spread across this band, no value >25% share';
+  data.forEach(d=>{
+    const bw=14, bx=xs(d[0])-bw/2, by=ys(d[1]);
+    const r=el('rect',{x:bx,y:by,width:bw,height:H-padB-by,fill:css('--s1'),rx:3},svg);
+    el('text',{x:xs(d[0]),y:by-6,'text-anchor':'middle','class':d[1]>40?'lab-strong':'lab'},svg).textContent=d[1];
+    if(d[0]!==0.63) el('text',{x:xs(d[0]),y:H-padB+16,'text-anchor':'middle'},svg).textContent=d[0].toFixed(2);
+    r.addEventListener('mousemove',ev=>showTip(ev,`<b>confidence ${d[0].toFixed(2)}</b><br>${d[1]} of 96 decisions (${Math.round(d[1]/96*100)}%)`));
+    r.addEventListener('mouseleave',hideTip);
+  });
+  const g1=xs(0.648);
+  el('line',{x1:g1,x2:g1,y1:padT+14,y2:H-padB,stroke:css('--neg'),'stroke-width':2,'stroke-dasharray':'5 4'},svg);
+  el('text',{x:g1+5,y:padT+28,'class':'lab-strong'},svg).textContent='current gate 0.65';
+  const g0=xs(0.597);
+  el('line',{x1:g0,x2:g0,y1:padT+14,y2:H-padB,stroke:css('--s2'),'stroke-width':2,'stroke-dasharray':'5 4'},svg);
+  el('text',{x:g0-5,y:padT+28,'text-anchor':'end','class':'lab'},svg).textContent='P0 gate 0.60';
+})();
+
+/* ---------- Gantt ---------- */
+(function(){
+  const root=document.getElementById('gantt');
+  const rows=[
+    ['P0 · Config mitigation','Day 0','gate 0.60 + live-run snapshot update',0,1,css('--neg')],
+    ['P1 · Reading v2 inputs','Day 1–3','rubric · inventory · Yahoo fallback · auto-pause · fleet coherence',1,3,css('--s2')],
+    ['P2 · Conviction shadow','Day 3–10','component scores logged, legacy gate still decides',3,7,css('--s1')],
+    ['P3 · Flip + rescale','Day 10–14','RUN_CONF_V2 gate flip · adapt percentiles · horizon guard',10,4,css('--s3')]
+  ];
+  const total=14;
+  rows.forEach(r=>{
+    const row=document.createElement('div'); row.className='gantt-row';
+    const lab=document.createElement('div'); lab.className='glabel'; lab.textContent=r[0]; row.appendChild(lab);
+    const track=document.createElement('div'); track.className='gtrack';
+    const bar=document.createElement('div'); bar.className='gbar';
+    bar.style.left=(r[3]/total*100)+'%'; bar.style.width=(r[4]/total*100)+'%'; bar.style.background=r[5];
+    bar.textContent=r[1];
+    bar.addEventListener('mousemove',ev=>showTip(ev,`<b>${r[0]}</b><br>${r[1]} — ${r[2]}`));
+    bar.addEventListener('mouseleave',hideTip);
+    track.appendChild(bar); row.appendChild(track); root.appendChild(row);
+  });
+  const ax=document.createElement('div'); ax.className='gaxis';
+  ax.innerHTML='<div></div><div class="ticks"><span>Day 0</span><span>Day 3</span><span>Day 7</span><span>Day 10</span><span>Day 14</span></div>';
+  root.appendChild(ax);
+})();
+})();
+</script>
+</body>
+</html>
