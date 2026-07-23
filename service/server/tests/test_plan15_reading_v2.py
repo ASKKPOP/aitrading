@@ -635,3 +635,51 @@ class DustOrderGuardTests(unittest.TestCase):
             probe.stop()
             os.environ.pop("AUTO_TRADING_ENABLED", None)
             tmp.cleanup()
+
+
+class FleetProfitTierTests(unittest.TestCase):
+    """2026-07-23 (Henry) — three profit tiers for 종목 자동 편성. Higher tiers
+    deploy more of the run budget, gate looser, stop wider, bank later."""
+
+    def _settings(self, risk):
+        from fleet_planner import compose_run_settings
+        thesis = {"symbol": "BTC", "market": "crypto", "market_type": "spot",
+                  "direction": "long", "confidence": 0.80,  # high so gate isn't thesis-clamped
+                  "expected_move_pct": 4.0, "horizon_hours": 48}
+        return compose_run_settings(thesis, 1000.0, {"risk_appetite": risk})
+
+    def test_bet_size_increases_by_tier(self):
+        self.assertEqual(self._settings("balanced")["max_bet_usd"], 300.0)   # 30%
+        self.assertEqual(self._settings("aggressive")["max_bet_usd"], 450.0)  # 45%
+        self.assertEqual(self._settings("extreme")["max_bet_usd"], 700.0)     # 70%
+
+    def test_gate_loosens_by_tier(self):
+        self.assertEqual(self._settings("balanced")["min_confidence"], 0.60)
+        self.assertEqual(self._settings("aggressive")["min_confidence"], 0.57)
+        self.assertEqual(self._settings("extreme")["min_confidence"], 0.55)
+
+    def test_stop_widens_by_tier(self):
+        self.assertEqual(self._settings("balanced")["stop_conditions"]["max_loss_usd"], 100.0)   # 10%
+        self.assertEqual(self._settings("aggressive")["stop_conditions"]["max_loss_usd"], 200.0)  # 20%
+        self.assertEqual(self._settings("extreme")["stop_conditions"]["max_loss_usd"], 300.0)     # 30%
+
+    def test_profit_target_multiplier(self):
+        # expected_move 4% → 0.04; extreme ×2 = 0.08 of $1000 = $80
+        self.assertEqual(self._settings("balanced")["stop_conditions"]["profit_target_usd"], 40.0)
+        self.assertEqual(self._settings("aggressive")["stop_conditions"]["profit_target_usd"], 60.0)
+        self.assertEqual(self._settings("extreme")["stop_conditions"]["profit_target_usd"], 80.0)
+
+    def test_leverage_stays_one(self):
+        # the tiers must NOT silently enable leverage (fully-funded ledger)
+        for r in ("balanced", "aggressive", "extreme"):
+            s = self._settings(r)
+            self.assertEqual(s.get("leverage", 1.0), 1.0)
+
+    def test_unknown_risk_falls_back_to_balanced(self):
+        self.assertEqual(self._settings("bogus")["max_bet_usd"],
+                         self._settings("balanced")["max_bet_usd"])
+
+    def test_extreme_accepted_by_api_validator(self):
+        from routes_fleets import FleetIn
+        self.assertEqual(FleetIn(n_runs=3, risk_appetite="extreme").risk_appetite,
+                         "extreme")

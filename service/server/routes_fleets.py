@@ -22,7 +22,7 @@ from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
 
-VALID_RISK = ("stable", "balanced", "aggressive")
+VALID_RISK = ("stable", "balanced", "aggressive", "extreme")
 
 
 class FleetIn(BaseModel):

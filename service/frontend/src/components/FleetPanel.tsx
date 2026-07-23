@@ -31,6 +31,30 @@ type Entitlements = {
   plan: string | null; max_fleet_size: number; default_budget_usd: number
 }
 
+// The three profit-oriented risk tiers (2026-07-23). Keys map to backend
+// FLEET_BOUNDS; leverage stays 1× — the lever here is position size + gate +
+// stop width + cycle speed, not borrowed margin.
+const RISK_TIERS: { key: string; label: any; desc: any }[] = [
+  { key: 'balanced',
+    label: { ko: '안정 · Balance', en: 'Balance', ja: '安定', th: 'สมดุล', vi: 'Cân bằng' },
+    desc: { ko: '작은 포지션(예산의 30%)·표준 게이트·좁은 손절. 변동성 낮고 꾸준함.',
+            en: 'Small positions (30% of budget), standard gate, tight stop. Steady, low swing.',
+            ja: '小さめのポジション(予算の30%)・標準ゲート・浅い損切り。', th: 'สถานะเล็ก (30%) เกตมาตรฐาน ตัดขาดทุนแคบ',
+            vi: 'Vị thế nhỏ (30% ngân sách), cổng chuẩn, cắt lỗ hẹp.' } },
+  { key: 'aggressive',
+    label: { ko: '수익 · High Profit', en: 'High Profit', ja: '収益', th: 'กำไรสูง', vi: 'Lợi nhuận cao' },
+    desc: { ko: '큰 포지션(예산의 45%)·낮은 게이트(더 자주 거래)·넓은 손절·1.5× 익절 목표. 수익·변동성 모두 상승.',
+            en: 'Bigger positions (45%), looser gate (trades more), wider stop, 1.5× profit target. More profit and more swing.',
+            ja: '大きめのポジション(45%)・低いゲート・広い損切り・1.5倍利確。', th: 'สถานะใหญ่ (45%) เกตต่ำ ตัดขาดทุนกว้าง เป้ากำไร 1.5×',
+            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×.' } },
+  { key: 'extreme',
+    label: { ko: '고위험 고수익 · Risk & High Profit', en: 'Risk & High Profit', ja: '高リスク高収益', th: 'เสี่ยงสูง กำไรสูง', vi: 'Rủi ro & Lợi nhuận cao' },
+    desc: { ko: '최대 포지션(예산의 70%)·최저 게이트·아주 넓은 손절(30%)·2× 익절 목표. 최고 수익 잠재력이자 최대 낙폭. (레버리지는 1배 유지 — 별도 엔진 필요)',
+            en: 'Largest positions (70% of budget), lowest gate, very wide 30% stop, 2× profit target. Highest upside AND deepest drawdown. (Leverage stays 1× — separate engine.)',
+            ja: '最大ポジション(70%)・最低ゲート・非常に広い損切り(30%)・2倍利確。最大の上昇余地と最大の下落。', th: 'สถานะใหญ่สุด (70%) เกตต่ำสุด ตัดขาดทุนกว้างมาก (30%) เป้ากำไร 2×',
+            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×. Lợi nhuận cao nhất và sụt giảm sâu nhất.' } },
+]
+
 // monitorOnly: the always-visible monitor box on /automation — renders nothing
 // until an active fleet exists, and never shows the creation form (the create
 // modal keeps that). onSelectRun opens a member TRADING's full detail drawer
@@ -228,10 +252,15 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
           {showAdvanced && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontSize: 12, marginBottom: 6 }}>{T.risk}</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {['stable', 'balanced', 'aggressive'].map(k => (
-                  <button key={k} style={chip(risk === k)} onClick={() => setRisk(k)}>{k}</button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {RISK_TIERS.map(t => (
+                  <button key={t.key} style={chip(risk === t.key)} onClick={() => setRisk(t.key)}>
+                    {tr(language, t.label)}
+                  </button>
                 ))}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
+                {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
               </div>
             </div>
           )}

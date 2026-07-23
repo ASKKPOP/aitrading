@@ -48,26 +48,48 @@ STATUS_STOPPED = "stopped"
 _NON_TERMINAL = (STATUS_DRAFT, STATUS_RESEARCHING, STATUS_BUILDING,
                  STATUS_ACTIVE, STATUS_PAUSED, STATUS_STOPPING)
 
+# Risk-appetite tiers. The 종목 자동 편성 UI exposes three profit-oriented
+# levels (2026-07-23, Henry: "profit is low, make 3 levels"):
+#   balanced   → 안정 · Balance          (steady, small positions)
+#   aggressive → 수익 · High Profit       (bigger positions, looser gate)
+#   extreme    → 고위험 고수익 · Risk&High (largest positions, widest stop)
+# 'stable' stays API-valid for backward compat but is no longer featured.
+# NOTE: real >1× margin leverage is NOT part of these tiers — leverage is
+# pinned to 1 by routes_runs (a fully-funded ledger; real isolated-margin
+# leverage + liquidation is a separate deferred engine). The profit lever
+# here is bet fraction of run budget + gate + stop width + cycle speed.
 FLEET_BOUNDS = {
     "n_runs": (1, 25),
     "total_budget_usd": (50.0, 10_000_000.0),
     "alloc_frac_of_equal": (0.5, 2.0),           # slot ∈ [B/2N, 2B/N], Σ ≤ B
-    "max_bet_frac_of_run_budget": {"stable": 0.20, "balanced": 0.25, "aggressive": 0.35},
+    "max_bet_frac_of_run_budget": {"stable": 0.20, "balanced": 0.30,
+                                   "aggressive": 0.45, "extreme": 0.70},
     # Plan 15 P0 (2026-07-22): balanced 0.65 → 0.60. The decision LLM's
     # confidence output is quantized and pins at 0.62 (53% of observed
     # decisions), so a 0.65 gate blocked 76% of actionable calls on noise —
     # see docs/plan/15-run-ai-reading-algorithm-fix.html. P2/P3 replace the
     # scalar entirely; this is the interim mitigation.
-    "min_confidence": {"stable": 0.75, "balanced": 0.60, "aggressive": 0.58},
-    "interval_minutes": {"stable": 240, "balanced": 60, "aggressive": 30},
+    "min_confidence": {"stable": 0.75, "balanced": 0.60,
+                       "aggressive": 0.57, "extreme": 0.55},
+    "interval_minutes": {"stable": 240, "balanced": 60,
+                         "aggressive": 45, "extreme": 30},
     "interval_floor_by_market": {"us-stock": 30},  # Yahoo pressure, not AV
     "interval_floor_default": 15,
-    "stop_max_loss_frac": {"stable": 0.05, "balanced": 0.10, "aggressive": 0.15},
+    "stop_max_loss_frac": {"stable": 0.05, "balanced": 0.10,
+                           "aggressive": 0.20, "extreme": 0.30},
+    # Higher tiers let winners run further before banking (× the thesis move).
+    "profit_target_mult": {"stable": 1.0, "balanced": 1.0,
+                           "aggressive": 1.5, "extreme": 2.0},
     "profit_target_frac_bounds": (0.002, 0.50),   # thesis % / 100 clamps here
     "min_slot_funding_usd_frac": 0.5,             # dormant below B/2N
     "churn_alert_per_day": 8,
     "equity_eval_fail_limit": 5,                  # K consecutive ⇒ pause entries
 }
+
+# Backward-compat: any risk key not in a per-tier dict falls back to balanced.
+def _tier(dimension: str, risk: str):
+    d = FLEET_BOUNDS[dimension]
+    return d.get(risk, d["balanced"])
 
 # Replacement disposition per stop reason (Plan 14 §2 — ENUMERATED, never a
 # wildcard; a future stop_event:* kind must be classified here before shipping).
@@ -447,13 +469,16 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     direction = (thesis.get("direction") or "long").strip().lower()
     market_type = "futures" if (direction == "short" and market == "crypto") else \
         thesis.get("market_type") or "spot"
-    interval = max(FLEET_BOUNDS["interval_minutes"][risk],
+    interval = max(_tier("interval_minutes", risk),
                    FLEET_BOUNDS["interval_floor_by_market"].get(
                        market, FLEET_BOUNDS["interval_floor_default"]))
     g_lo, g_hi = FLEET_BOUNDS["profit_target_frac_bounds"]
-    gain_frac = max(g_lo, min(g_hi, float(thesis.get("expected_move_pct") or 0) / 100.0))
+    # Higher tiers bank later: multiply the thesis move, then re-clamp so a
+    # 2× on a big expected move can't exceed the 50% run-budget target cap.
+    gain_frac = float(thesis.get("expected_move_pct") or 0) / 100.0
+    gain_frac = max(g_lo, min(g_hi, gain_frac * _tier("profit_target_mult", risk)))
     horizon_h = max(4.0, min(24.0 * 14, float(thesis.get("horizon_hours") or 48)))
-    max_bet = round(run_budget * FLEET_BOUNDS["max_bet_frac_of_run_budget"][risk], 2)
+    max_bet = round(run_budget * _tier("max_bet_frac_of_run_budget", risk), 2)
     max_bet = min(max_bet, 1_000_000.0)
     at_time = (_now_dt() + timedelta(hours=horizon_h)).strftime(TS_FMT)
     # Plan 15 P1 (F3): a run whose gate exceeds its own thesis confidence is
@@ -461,7 +486,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     # gate — every cycle skipped). The gate never exceeds thesis_conf − 0.05,
     # floored at 0.50 so weak theses still gate meaningfully.
     thesis_conf = float(thesis.get("confidence") or 0.5)
-    min_conf = min(FLEET_BOUNDS["min_confidence"][risk],
+    min_conf = min(_tier("min_confidence", risk),
                    max(0.50, round(thesis_conf - 0.05, 2)))
     return {
         "symbol": thesis["symbol"], "market": market, "market_type": market_type,
@@ -471,7 +496,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         "min_confidence": min_conf,
         "provider": fleet.get("provider"), "lang": fleet.get("lang") or "en",
         "stop_conditions": {
-            "max_loss_usd": round(run_budget * FLEET_BOUNDS["stop_max_loss_frac"][risk], 2),
+            "max_loss_usd": round(run_budget * _tier("stop_max_loss_frac", risk), 2),
             "profit_target_usd": round(run_budget * gain_frac, 2),
             "at_time": at_time,
         },
