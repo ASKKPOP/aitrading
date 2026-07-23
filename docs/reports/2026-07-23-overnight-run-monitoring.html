@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overnight RUN Monitoring — 2026-07-22 19:17 → 07-23 09:45 PDT</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 25px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 26px; font-weight: 600; margin-top: 2px; }
+  .tile .d { font-size: 12.5px; margin-top: 2px; color: var(--ink-3); }
+  .pos { color: var(--good-txt); } .negv { color: var(--neg); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; }
+  figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 4px 0 10px; }
+  .legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  #tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+         border-radius: 7px; padding: 6px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+         display: none; z-index: 10; color: var(--ink-1); }
+  .finding { border-left: 3px solid var(--axis); padding: 2px 0 2px 14px; margin: 16px 0; }
+  .finding.crit { border-left-color: var(--crit); }
+  .finding.warn { border-left-color: #fab219; }
+  .finding.ok { border-left-color: #0ca30c; }
+  .finding h3 { margin: 0 0 4px; }
+  .finding p { margin: 5px 0; color: var(--ink-2); }
+  .finding p strong { color: var(--ink-1); }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  /* timeline */
+  .tl { position: relative; margin: 10px 0 4px; padding-left: 0; overflow-x: auto; }
+  .tl-axis { height: 3px; background: var(--axis); border-radius: 2px; margin: 42px 0 46px; position: relative; min-width: 900px; }
+  .tl-ev { position: absolute; transform: translateX(-50%); text-align: center; width: 150px; }
+  .tl-ev .dot { width: 11px; height: 11px; border-radius: 50%; margin: 0 auto; border: 2px solid var(--surface-1); }
+  .tl-ev.up { bottom: 8px; } .tl-ev.down { top: 8px; }
+  .tl-ev .txt { font-size: 11.3px; line-height: 1.35; color: var(--ink-2); }
+  .tl-ev .t { font-weight: 600; color: var(--ink-1); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+
+<h1>Overnight RUN Monitoring Report</h1>
+<p class="sub">sooppiy.com/automation · production · window <strong>2026-07-22 19:17 → 2026-07-23 09:45 PDT</strong> (29 checks, every 30 min) · fleet 9: $100,055 across 5 runs</p>
+<p class="meta">Verified each check through BOTH the info@askkpop.com user view (/api/runs, /api/fleets) and prod MySQL + worker logs. Times PDT unless marked Z (UTC = PDT+7). All figures USD, simulated ledger. Evening context: the Plan 15 fixes (P0–P3, E) shipped just before this window — this night was their first real-scale trial.</p>
+
+<div class="kr">
+  <strong>요약 (Korean summary)</strong>
+  <p>① 파이프라인은 밤새 <strong>계획대로 동작</strong>: 15사이클 무중단, 논지 연동 게이트·conviction 섀도·확신도 사이징·켈리 상한 모두 정상. ② 손익: 플릿 9는 창 마감 시점 <strong>총 ≈ +$187</strong> (CL 롱 +211이 견인, ETH 롱 −113이 최대 손실 — 알고리즘이 아니라 크립토 하락 장세). ③ 밤새 결함 3건을 발견 즉시 수정·배포: <strong>O1</strong> 선물 마크 동결로 인한 stop_eval_failed 순환 사망(9개 런 소모 후 근절 — 이후 15사이클 0건), <strong>O2</strong> 카드가 수수료 장부만 표시해 "100% 손실"로 보이던 버그, <strong>O3</strong> 켈리 사이징의 먼지 주문. 가장 중요한 발견: <strong>스칼라 신뢰도는 하룻밤 만에 0.58에 재고착(75건 중 65%)</strong>했지만 코드가 계산하는 conviction은 41개 상이값으로 연속 분포 — P3 게이트 전환의 결정적 근거. 전환은 청산 에피소드 20건 축적 후 계산된 순위 일치도로 결정합니다(현재 0건 — 48시간 논지가 아직 열려 있음).</p>
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">Fleet 9 total P&amp;L (close of window)</div><div class="val pos">+$187</div><div class="d">on $100,055 · 4 of 5 runs green</div></div>
+  <div class="tile"><div class="lbl">Cycles / decisions</div><div class="val">15 / 75</div><div class="d">zero missed, zero errors</div></div>
+  <div class="tile"><div class="lbl">Defects found → fixed → deployed</div><div class="val">3</div><div class="d">O1 churn · O2 display · O3 dust</div></div>
+  <div class="tile"><div class="lbl">stop_eval_failed after fix</div><div class="val pos">0</div><div class="d">9 runs churned before it</div></div>
+  <div class="tile"><div class="lbl">Conviction distinct values</div><div class="val">41</div><div class="d">vs 6 for the scalar (65% pinned at 0.58)</div></div>
+</div>
+
+<h2>1 · Run-by-run verdict (fleet 9)</h2>
+<div class="card" style="overflow-x:auto">
+<table>
+<thead><tr><th>Run</th><th>Symbol · direction</th><th class="num">Gate (thesis conf)</th><th class="num">P&amp;L @ 09:45</th><th>Working to plan?</th><th>Why profit / loss</th></tr></thead>
+<tbody>
+<tr><td>65</td><td>CL · long</td><td class="num">0.50 (0.539)</td><td class="num pos">+211.06</td><td><span class="chip ok">YES</span></td><td>Crude broke out 88.2 → 92.5 overnight; the weak-thesis run the OLD gate would have silenced entirely (0.539 &lt; 0.65) became the night's best trade. Adds were Kelly-capped and conviction-scaled correctly.</td></tr>
+<tr><td>63</td><td>ZECUSDT · short</td><td class="num">0.60 (0.646)</td><td class="num pos">+37.95</td><td><span class="chip ok">YES</span></td><td>Entered at ref, rode the ZEC downtrend; survived two bounces without panic (holds each cycle were coherent).</td></tr>
+<tr><td>61</td><td>HYPEUSDT · short</td><td class="num">0.60 (0.700)</td><td class="num pos">+26.60</td><td><span class="chip ok">YES</span></td><td>Chopped against the short most of the night (worst −110), never approached the $784 review line, finished green on the morning fade. Patience was correct.</td></tr>
+<tr><td>64</td><td>ZC · long</td><td class="num">0.51 (0.557)</td><td class="num pos">+24.42</td><td><span class="chip ok">YES</span></td><td>Second born-viable weak-thesis run (old gate: dead). Entered cycle 2 when momentum confirmed; the $5.18 dust add it made at cycle 7 exposed Finding O3.</td></tr>
+<tr><td>62</td><td>ETHUSDT · long</td><td class="num">0.60 (0.682)</td><td class="num negv">−113.20</td><td><span class="chip warn">TAPE</span></td><td>ETH sold off 1926 → 1888 overnight. The thesis was fresh (ref ≈ market at build), entries at ref, holds coherent — a directional loss, not a reading failure. Drawdown ≈ 14% of the review line; rails never threatened.</td></tr>
+</tbody>
+</table>
+<p class="meta">Fleet 8 (the $1k predecessor, 23:54–02:35Z): 10 runs, 9 destroyed by the O1 churn loop before the fix — its full cost was ≈ $0.49 of fees plus wasted LLM cycles. Its final flatten P&amp;L is excluded from the shadow flip test as outcome-free.</p>
+</div>
+
+<h2>2 · Fleet 9 equity — per run, all night</h2>
+<div class="card">
+  <div class="legend" id="eqleg"></div>
+  <figure><div id="equity"></div>
+  <figcaption>Total P&amp;L (realized + unrealized, fees included) per run, 02:37Z → 16:45Z, ~15-min samples. CL (blue) compounds the crude breakout; ETH (magenta) is the tape casualty; HYPE (orange) round-trips a −$110 drawdown back to green — the patience the risk rails are designed to allow.</figcaption></figure>
+</div>
+
+<h2>3 · The decisive finding — the scalar re-pinned, conviction didn't</h2>
+<div class="card">
+  <figure><div id="dist"></div>
+  <figcaption>All 75 fleet-9 decisions overnight. <strong>Top:</strong> the LLM's scalar confidence collapsed onto 0.58 (49 of 75 = 65%) — the calibration rubric widened it for a while, but under repetitive conditions the scalar re-quantizes; prompt engineering alone cannot fix this. <strong>Bottom:</strong> the code-computed conviction (weighted component scores) spans 41 distinct values across 0.48–0.65 on the same decisions — continuous discrimination the gate can actually use. This is the empirical case for the RUN_CONF_V2 flip.</figcaption></figure>
+</div>
+
+<h2>4 · Scalar vs conviction, decision by decision</h2>
+<div class="card">
+  <figure><div id="scatter"></div>
+  <figcaption>Each dot is one decision (x = scalar confidence, y = computed conviction; dashed = agreement line). The vertical stack at x=0.58 IS the quantization: decisions the scalar calls identical get spread across ~0.51–0.65 by the component scores. Sizing already consumes the y-axis (size_scale = f(conviction)); the gate still reads x until the flip.</figcaption></figure>
+</div>
+
+<h2>5 · Diagram — the night's finds and fixes</h2>
+<div class="card">
+  <div class="tl"><div class="tl-axis" id="timeline"></div></div>
+  <figure><figcaption>Five production deploys, each find→fix→verify inside one monitoring window: <strong>O1</strong> futures marks frozen at entry → stop-eval fail-closed → 9 runs churned (6× CL in 95 min) → refresh default now covers futures/us-stock — 15 cycles, zero churn since. <strong>O2</strong> member cards rendered the fee ledger as "P&amp;L" → a +$45 winner displayed −5.17 ("100% lost") → cards now show the marked total. <strong>O3</strong> Kelly sizing produced a $5.18 dust add → dust guard at final sizing. Plus rec-1/2/3: the flip-test tool, conviction sizing, and the macro-signal fallback.</figcaption></figure>
+</div>
+
+<h2>6 · Findings</h2>
+
+<div class="finding crit">
+<h3><span class="chip crit">FIXED</span> O1 — Frozen futures marks killed every true-futures run at ~18 min</h3>
+<p>The position price updater only <em>refreshed</em> crypto marks; other markets were priced once at entry and frozen. Stop evaluation fails closed on marks older than 900s → <code>stop_eval_failed</code> → fleet replaces → repeat. 9 runs churned (ZC, ZS×2, CL×6) before the fix; latent until the Plan 15 gate fixes let true-futures runs actually trade. Fix: refresh default <code>crypto,futures,us-stock</code> (commit 1dd1e57, image 20260723-markrefresh). <strong>15 cycles / 0 churn events since — proven.</strong></p>
+</div>
+
+<div class="finding crit">
+<h3><span class="chip crit">FIXED</span> O2 — "100% lost" was the fee ledger, not P&amp;L</h3>
+<p>Member cards rendered <code>realized_pnl_usd</code>, which is fees-only until a first close — every young run showed red even while winning (ZEC displayed −5.17 holding +$45). The member API now ships <code>unrealized/total</code> and the card renders the marked total (commit 6c31cf3, image 20260723-membertotals + SPA both hostnames). Verified live against fleet 9.</p>
+</div>
+
+<div class="finding warn">
+<h3><span class="chip warn">FIXED</span> O3 — Kelly-sized dust orders</h3>
+<p>A $5.18 ZC add (fee half a cent) slipped past the budget floor because the Kelly cap sizes the <em>final</em> order. Dust guard now skips any sized order under max($10, 2% of max_bet) (commits 5200022 + b3501c5, images dustfloor + dustguard). The floor change itself was approved mid-window.</p>
+</div>
+
+<div class="finding crit">
+<h3><span class="chip crit">ALGORITHM</span> O4 — The scalar re-pins; only computed conviction stays continuous</h3>
+<p>Yesterday's fix (calibration rubric) widened the scalar's range — for a while. Overnight it collapsed again onto a new attractor: <strong>65% of 75 decisions emitted exactly 0.58</strong> (6 distinct values all night). The component-computed conviction on the same decisions: <strong>41 distinct values</strong>, properly ordered (winning CL cycles scored 0.61–0.65 while stale holds sat ~0.52). Conclusion: quantization is a property of asking an LLM for one number — no prompt fixes it. The gate must move to the computed conviction (P3 flip) once outcome data confirms; sizing already has.</p>
+</div>
+
+<div class="finding warn">
+<h3><span class="chip warn">PENDING DATA</span> P3 flip status — not ready yet, by design</h3>
+<p><code>conviction_shadow.shadow_report()</code> (built and deployed tonight): 8 episodes, <strong>0 informative</strong> — every close so far was a churn flatten with no outcome signal; fleet 9's real positions are mid-flight on 48h horizons. Flip when: ≥20 informative episodes AND conviction's rank-agreement beats the scalar's. The check is one command; the flip is one .env line.</p>
+</div>
+
+<div class="finding ok">
+<h3><span class="chip ok">WORKING TO PLAN</span> Verified across 15 cycles</h3>
+<p>• Thesis-clamped gates: weak theses (CL 0.539, ZC 0.557) born tradable — CL became the night's best run (+$211). The old 0.65 gate would have silenced both.<br>
+• Conviction sizing live: scale tracked each read cycle-to-cycle (0.40 → 0.64 as ZC momentum built); "slight edge" entries now bet ~40–55%, not 100%.<br>
+• Kelly cap blocked over-concentration every cycle it should have; budget headroom trimmed adds correctly.<br>
+• Risk rails: worst drawdown (HYPE −$110) stayed at 14% of its review line, then recovered — no premature review, no panic exit.<br>
+• Early-stop guard live-verified (409 with 47.4h remaining; run untouched).<br>
+• Macro signals restored (5 signals flowing, hourly [Macro Signal Error] gone).<br>
+• User view = DB every check; marks fresh every check; zero worker tracebacks all night.</p>
+</div>
+
+<h2>7 · Deploy ledger (overnight)</h2>
+<div class="card">
+<table>
+<thead><tr><th>Time (PDT)</th><th>Image</th><th>Commit</th><th>What</th></tr></thead>
+<tbody>
+<tr><td>19:27</td><td>20260723-markrefresh</td><td>1dd1e57</td><td>O1: futures/us-stock mark refresh</td></tr>
+<tr><td>21:05</td><td>20260723-membertotals</td><td>6c31cf3</td><td>O2: member cards show marked total (backend + SPA both roots)</td></tr>
+<tr><td>22:2x</td><td>20260723-dustfloor</td><td>5200022</td><td>Budget-headroom floor max($10, 2% max_bet) — approved mid-window</td></tr>
+<tr><td>23:5x</td><td>20260723-rec123</td><td>dc14cf0</td><td>rec-1 flip-test tool · rec-2 conviction sizing · rec-3 macro fallback</td></tr>
+<tr><td>02:0x</td><td>20260723-dustguard</td><td>b3501c5</td><td>O3: dust guard at final Kelly sizing</td></tr>
+</tbody>
+</table>
+<p class="meta">Every deploy: CI green before roll, content verified inside the running container, health 200 public, and the specific behavior live-verified (churn counter, member API fields, size_scale in decisions, shadow report, macro verdict). Rollback images retained at each step.</p>
+</div>
+
+<h2>8 · What's next</h2>
+<div class="card">
+<table>
+<thead><tr><th>#</th><th>Action</th><th>Trigger</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Run <code>conviction_shadow.shadow_report()</code>; if ≥20 informative episodes and conviction wins rank-agreement → set <code>RUN_CONF_V2=1</code> + compose roll</td><td>~24–48h (first thesis horizons close tonight)</td></tr>
+<tr><td>2</td><td>Resend API key on prod — password-reset/registration emails still cannot send (user account setup, not code)</td><td>whenever convenient</td></tr>
+<tr><td>3</td><td>Thesis-outcome feedback into symbol research (down-weight repeatedly failing directions, e.g. ETH-long) via the existing policy_feed plumbing</td><td>after flip settles</td></tr>
+<tr><td>4</td><td>Optional: Alpha Vantage paid tier — everything now falls back keyless, so this is a data-quality upgrade, not a fix</td><td>optional</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="meta">Method: 29 checks over 14.5h against prod MySQL (trading_runs / run_events / positions), worker logs, and the authenticated user view. Three defects were repro'd, fixed, tested (mutation-verified), CI'd, deployed, and live-verified inside the same window. Full check log: scratchpad run-monitor-overnight.md. Report generated 2026-07-23 ~10:00 PDT.</p>
+
+</div>
+<script>
+(function(){
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = document.getElementById('tip');
+function showTip(ev, html){ tip.innerHTML = html; tip.style.display='block';
+  const x = Math.min(ev.clientX+14, innerWidth-tip.offsetWidth-8);
+  tip.style.left = x+'px'; tip.style.top = (ev.clientY+14)+'px'; }
+function hideTip(){ tip.style.display='none'; }
+const NS='http://www.w3.org/2000/svg';
+function el(n,a,parent){ const e=document.createElementNS(NS,n); for(const k in a) e.setAttribute(k,a[k]); if(parent) parent.appendChild(e); return e; }
+const toH = s => { const[h,m]=s.split(':').map(Number); return h+m/60; };
+
+/* ---------- Chart A: equity lines ---------- */
+(function(){
+  const EQ={"61":[["02:37",0.0],["02:51",-9.41],["03:06",-22.56],["03:21",-9.79],["03:36",-9.03],["03:51",-28.47],["04:06",-21.7],["04:21",-37.04],["04:36",-50.47],["04:51",-33.52],["05:06",-28.09],["05:21",-30.66],["05:35",-52.19],["05:50",-33.04],["06:05",-9.51],["06:20",-10.27],["06:35",-23.23],["06:50",-29.51],["07:05",-19.51],["07:20",2.68],["07:35",18.97],["07:50",38.22],["08:05",11.07],["08:20",2.11],["08:35",-15.13],["08:49",-12.46],["09:04",-24.94],["09:20",-34.37],["09:34",-32.56],["09:50",-38.85],["10:04",-38.85],["10:20",-42.57],["10:35",-35.8],["10:49",-32.37],["11:05",-25.13],["11:20",-37.23],["11:35",-46.76],["11:50",-50.76],["12:05",-41.14],["12:20",-51.33],["12:35",-48.28],["12:50",-35.99],["13:05",-69.24],["13:20",-66.67],["13:35",-105.82],["13:50",-57.52],["14:05",-40.85],["14:20",-100.3],["14:35",-73.43],["14:50",-79.24],["15:05",-92.01],["15:21",-83.72],["15:35",-82.86],["15:51",-85.63],["16:06",-38.37],["16:20",-6.17],["16:36",18.97],["16:45",26.6]],"62":[["02:37",0.0],["02:51",-3.76],["03:06",-2.34],["03:21",-18.5],["03:36",-15.1],["03:51",-17.65],["04:06",-25.31],["04:21",-17.93],["04:36",-14.82],["04:51",-13.97],["05:06",-28.99],["05:21",-24.46],["05:35",-4.04],["05:50",-7.44],["06:05",-15.67],["06:20",-13.4],["06:35",-9.43],["06:50",-6.59],["07:05",-14.82],["07:20",-32.68],["07:35",-34.95],["07:50",-43.45],["08:05",-35.51],["08:20",-27.29],["08:35",-13.68],["08:49",-6.31],["09:04",2.76],["09:20",5.6],["09:34",-1.49],["09:50",-1.21],["10:04",-9.71],["10:19",-5.18],["10:35",0.49],["10:49",4.18],["11:05",-4.33],["11:20",-2.62],["11:35",-4.89],["11:50",-6.03],["12:05",-4.33],["12:20",-25.87],["12:35",-42.6],["12:50",-78.61],["13:05",-77.47],["13:20",-83.99],["13:35",-61.6],["13:50",-71.24],["14:05",-77.47],["14:20",-69.54],["14:35",-76.34],["14:51",-92.5],["15:05",-102.71],["15:21",-106.11],["15:35",-102.99],["15:51",-93.07],["16:06",-113.76],["16:20",-118.02],["16:36",-117.73],["16:45",-113.2]],"63":[["02:37",0.0],["02:51",5.71],["03:06",7.7],["03:21",31.86],["03:36",35.56],["03:51",32.56],["04:06",50.53],["04:21",27.97],["04:36",41.25],["04:51",41.55],["05:06",53.93],["05:21",50.53],["05:35",2.41],["05:50",19.88],["06:05",24.18],["06:20",24.38],["06:35",27.77],["06:50",12.7],["07:05",15.29],["07:20",25.47],["07:35",16.59],["07:50",33.66],["08:05",31.06],["08:20",18.09],["08:35",15.29],["08:49",18.79],["09:04",6.21],["09:20",1.91],["09:34",9.4],["09:50",21.28],["10:04",10.8],["10:19",19.98],["10:35",24.18],["10:49",25.67],["11:05",22.38],["11:20",25.17],["11:35",11.4],["11:50",4.91],["12:05",-2.48],["12:20",27.67],["12:35",45.04],["12:50",45.64],["13:05",47.84],["13:20",46.24],["13:35",-23.44],["13:50",13.69],["14:05",38.25],["14:20",-12.46],["14:35",-4.28],["14:51",32.56],["15:05",42.85],["15:21",34.16],["15:36",23.08],["15:51",25.67],["16:06",50.83],["16:20",43.54],["16:36",38.65],["16:45",37.95]],"64":[["02:37",0.0],["02:52",0.0],["03:07",0.0],["03:23",0.0],["03:38",-4.46],["03:53",-2.16],["04:08",-4.46],["04:23",-4.46],["04:38",-5.22],["04:53",-5.22],["05:08",-5.22],["05:23",-2.53],["05:38",-2.53],["05:54",-2.53],["06:09",-2.53],["06:24",5.55],["06:39",2.86],["06:54",5.55],["07:09",2.86],["07:24",16.32],["07:39",16.32],["07:54",21.7],["08:09",13.62],["08:24",8.24],["08:39",-5.22],["08:54",-2.53],["09:09",0.16],["09:24",8.25],["09:38",10.94],["09:54",16.33],["10:09",24.42],["10:23",32.5],["10:39",29.81],["10:54",37.89],["11:09",40.58],["11:24",37.89],["11:39",35.2],["11:54",37.89],["12:09",32.5],["12:24",29.81],["12:39",21.72],["12:54",27.11],["13:09",24.42],["13:25",24.42],["13:40",21.72],["13:55",27.11],["14:10",8.25],["14:25",16.33],["14:40",24.42],["14:56",16.33],["15:10",-5.22],["15:25",0.16],["15:41",-10.61],["15:55",10.94],["16:11",19.03],["16:26",13.64],["16:41",24.42],["16:45",24.42]],"65":[["02:37",0.0],["02:51",-4.32],["03:06",5.47],["03:21",3.02],["03:36",18.2],["03:50",8.01],["04:05",10.37],["04:20",6.24],["04:35",-1.43],["04:50",-20.37],["05:05",-7.94],["05:19",-7.94],["05:34",-7.94],["05:49",-31.02],["06:04",-8.53],["06:19",-11.49],["06:34",-13.27],["06:49",-0.24],["07:04",12.78],["07:19",36.45],["07:34",69.01],["07:49",70.78],["08:04",75.52],["08:19",57.76],["08:34",51.25],["08:49",76.11],["09:03",54.21],["09:19",59.54],["09:33",99.78],["09:49",111.62],["10:03",91.5],["10:19",99.78],["10:34",122.87],["10:49",128.79],["11:04",118.72],["11:19",114.58],["11:34",148.91],["11:49",151.87],["12:04",131.74],["12:19",132.93],["12:34",151.28],["12:49",139.44],["13:04",150.09],["13:19",167.26],["13:34",147.13],["13:49",150.09],["14:04",196.26],["14:19",194.48],["14:34",178.5],["14:49",212.24],["15:04",221.12],["15:20",214.01],["15:34",234.14],["15:50",243.02],["16:05",208.1],["16:20",222.89],["16:35",218.16],["16:45",211.06]]};
+  const NAMES={"65":"CL long","61":"HYPE short","63":"ZEC short","64":"ZC long","62":"ETH long"};
+  const ORDER=["65","61","63","64","62"];
+  const COLORS={"65":css('--s1'),"61":css('--s2'),"63":css('--s3'),"64":css('--s4'),"62":css('--s5')};
+  const leg=document.getElementById('eqleg');
+  ORDER.forEach(r=>{ const k=document.createElement('span'); k.className='k';
+    k.innerHTML=`<span class="sw" style="background:${COLORS[r]}"></span>${NAMES[r]} (#${r})`; leg.appendChild(k); });
+  const W=980,H=330,padL=54,padB=32,padT=14,padR=78;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'},document.getElementById('equity'));
+  const tmin=2.6,tmax=16.8,vmin=-140,vmax=260;
+  const xs=t=>padL+(t-tmin)/(tmax-tmin)*(W-padL-padR);
+  const ys=v=>padT+(vmax-v)/(vmax-vmin)*(H-padT-padB);
+  [-100,0,100,200].forEach(v=>{ el('line',{x1:padL,x2:W-padR,y1:ys(v),y2:ys(v),stroke:v===0?css('--axis'):css('--grid')},svg);
+    el('text',{x:padL-8,y:ys(v)+4,'text-anchor':'end'},svg).textContent=(v>0?'+':'')+v; });
+  [[3,'03:00Z'],[6,'06:00'],[9,'09:00'],[12,'12:00'],[15,'15:00']].forEach(t=>{
+    el('text',{x:xs(t[0]),y:H-padB+16,'text-anchor':'middle'},svg).textContent=t[1]; });
+  const ends=[];
+  ORDER.forEach(r=>{
+    const pts=EQ[r].map(p=>[xs(toH(p[0])),ys(p[1])]);
+    el('path',{d:'M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join('L'),fill:'none',stroke:COLORS[r],'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'},svg);
+    const lp=pts[pts.length-1], endv=EQ[r][EQ[r].length-1][1];
+    el('circle',{cx:lp[0],cy:lp[1],r:4,fill:COLORS[r],stroke:css('--surface-1'),'stroke-width':2},svg);
+    ends.push({x:lp[0],y:lp[1],v:endv,color:COLORS[r]});
+  });
+  // converging end-labels: spread vertically with leader lines (≥14px apart)
+  ends.sort((a,b)=>a.y-b.y);
+  let prev=-1e9;
+  ends.forEach(e=>{ e.ly=Math.max(e.y, prev+14); prev=e.ly; });
+  ends.forEach(e=>{
+    if (Math.abs(e.ly-e.y)>2)
+      el('line',{x1:e.x+5,y1:e.y,x2:e.x+16,y2:e.ly-3,stroke:css('--grid'),'stroke-width':1},svg);
+    el('text',{x:e.x+18,y:e.ly+1,'class':'lab-strong'},svg).textContent=(e.v>0?'+':'')+e.v.toFixed(0);
+  });
+  const ov=el('rect',{x:padL,y:padT,width:W-padL-padR,height:H-padT-padB,fill:'transparent'},svg);
+  ov.addEventListener('mousemove',ev=>{
+    const r=svg.getBoundingClientRect(), fx=(ev.clientX-r.left)/r.width*W;
+    let html='';
+    ORDER.forEach(rid=>{ let best=EQ[rid][0],bd=1e9;
+      EQ[rid].forEach(p=>{ const d=Math.abs(xs(toH(p[0]))-fx); if(d<bd){bd=d;best=p;} });
+      html+=`<span style="color:${COLORS[rid]}">●</span> ${NAMES[rid]}: <b>${best[1]>=0?'+':''}${best[1].toFixed(2)}</b> @ ${best[0]}Z<br>`; });
+    showTip(ev,html);
+  });
+  ov.addEventListener('mouseleave',hideTip);
+})();
+
+/* ---------- Chart B: distributions ---------- */
+(function(){
+  const conf=[[0.53,1],[0.55,10],[0.57,10],[0.58,49],[0.61,2],[0.62,3]];
+  const conv=[[0.48,1],[0.51,5],[0.52,3],[0.53,5],[0.54,1],[0.55,3],[0.56,22],[0.57,2],[0.58,7],[0.59,7],[0.60,3],[0.61,8],[0.62,3],[0.63,2],[0.64,1],[0.65,2]];
+  const W=980,panelH=180,gap=42,H=panelH*2+gap+16,padL=46,padR=16;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'},document.getElementById('dist'));
+  const xs=v=>padL+(v-0.455)/(0.675-0.455)*(W-padL-padR);
+  function panel(data,y0,color,label,maxC){
+    const ys=c=>y0+panelH-28-c/maxC*(panelH-52);
+    el('text',{x:padL,y:y0+12,'class':'lab-strong'},svg).textContent=label;
+    el('line',{x1:padL,x2:W-padR,y1:y0+panelH-28,y2:y0+panelH-28,stroke:css('--axis')},svg);
+    data.forEach(d=>{
+      const bw=11,bx=xs(d[0])-bw/2,by=ys(d[1]);
+      const r=el('rect',{x:bx,y:by,width:bw,height:y0+panelH-28-by,fill:color,rx:2},svg);
+      if(d[1]>=5||d[1]===49) el('text',{x:xs(d[0]),y:by-5,'text-anchor':'middle','class':d[1]>40?'lab-strong':'lab'},svg).textContent=d[1];
+      r.addEventListener('mousemove',ev=>showTip(ev,`<b>${d[0].toFixed(2)}</b> — ${d[1]} decisions`));
+      r.addEventListener('mouseleave',hideTip);
+    });
+    [0.48,0.52,0.56,0.60,0.64].forEach(v=>{
+      el('text',{x:xs(v),y:y0+panelH-12,'text-anchor':'middle'},svg).textContent=v.toFixed(2); });
+  }
+  panel(conf,4,css('--s1'),'Scalar confidence — 6 distinct values, 65% at 0.58',49);
+  panel(conv,panelH+gap,css('--s3'),'Computed conviction (same 75 decisions) — 41 distinct values',22);
+  el('text',{x:xs(0.58),y:panelH-6,'text-anchor':'middle','class':'lab-strong'},svg).textContent='the new pin ↑';
+})();
+
+/* ---------- Chart C: scatter ---------- */
+(function(){
+  const P=[[0.61,0.5745],[0.62,0.627],[0.53,0.4825],[0.62,0.6505],[0.55,0.624],[0.58,0.5645],[0.58,0.5575],[0.58,0.5325],[0.55,0.5875],[0.55,0.5995],[0.58,0.52],[0.58,0.5945],[0.58,0.5555],[0.58,0.557],[0.55,0.612],[0.57,0.5805],[0.58,0.53],[0.58,0.5645],[0.58,0.5555],[0.55,0.608],[0.62,0.642],[0.58,0.5645],[0.58,0.52],[0.58,0.5605],[0.55,0.6195],[0.58,0.5645],[0.58,0.5645],[0.58,0.5945],[0.58,0.5575],[0.58,0.6095],[0.58,0.5675],[0.58,0.5645],[0.58,0.5945],[0.58,0.5525],[0.57,0.6095],[0.57,0.627],[0.58,0.5645],[0.58,0.585],[0.58,0.52],[0.58,0.6145],[0.58,0.5895],[0.58,0.5645],[0.55,0.525],[0.58,0.585],[0.57,0.6095],[0.58,0.5555],[0.58,0.5845],[0.58,0.53],[0.58,0.5645],[0.55,0.6145],[0.58,0.5845],[0.58,0.5575],[0.58,0.5125],[0.58,0.557],[0.57,0.6095],[0.58,0.5995],[0.58,0.5125],[0.58,0.5645],[0.58,0.55],[0.58,0.577],[0.58,0.5945],[0.57,0.5555],[0.55,0.505],[0.57,0.545],[0.57,0.58],[0.58,0.5125],[0.57,0.527],[0.61,0.652],[0.58,0.5645],[0.57,0.602],[0.58,0.5645],[0.58,0.622],[0.58,0.537],[0.55,0.5105],[0.58,0.5895]];
+  const W=980,H=340,padL=52,padB=36,padT=14,padR=16;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'},document.getElementById('scatter'));
+  const lo=0.46,hi=0.68;
+  const xs=v=>padL+(v-lo)/(hi-lo)*(W-padL-padR);
+  const ys=v=>padT+(hi-v)/(hi-lo)*(H-padT-padB);
+  [0.48,0.52,0.56,0.60,0.64].forEach(v=>{
+    el('line',{x1:xs(v),x2:xs(v),y1:padT,y2:H-padB,stroke:css('--grid')},svg);
+    el('line',{x1:padL,x2:W-padR,y1:ys(v),y2:ys(v),stroke:css('--grid')},svg);
+    el('text',{x:xs(v),y:H-padB+16,'text-anchor':'middle'},svg).textContent=v.toFixed(2);
+    el('text',{x:padL-8,y:ys(v)+4,'text-anchor':'end'},svg).textContent=v.toFixed(2);
+  });
+  el('line',{x1:xs(lo),y1:ys(lo),x2:xs(hi),y2:ys(hi),stroke:css('--ink-3'),'stroke-dasharray':'5 4'},svg);
+  el('text',{x:xs(0.655),y:ys(0.655)-8,'text-anchor':'end'},svg).textContent='agreement';
+  // jitter x slightly by index to reveal the 0.58 stack density
+  P.forEach((p,i)=>{
+    const jx=xs(p[0])+((i%7)-3)*1.15;
+    const c=el('circle',{cx:jx,cy:ys(p[1]),r:4.5,fill:css('--s1'),'fill-opacity':0.55,stroke:css('--surface-1'),'stroke-width':1.5},svg);
+    c.addEventListener('mousemove',ev=>showTip(ev,`scalar <b>${p[0].toFixed(2)}</b> → conviction <b>${p[1].toFixed(3)}</b>`));
+    c.addEventListener('mouseleave',hideTip);
+  });
+  el('text',{x:xs(0.58),y:padT+10,'text-anchor':'middle','class':'lab'},svg).textContent='65% of decisions stack here';
+  el('text',{x:W/2,y:H-4,'text-anchor':'middle'},svg).textContent='scalar confidence →';
+  el('text',{x:14,y:H/2,transform:`rotate(-90 14 ${H/2})`,'text-anchor':'middle'},svg).textContent='computed conviction →';
+})();
+
+/* ---------- Timeline ---------- */
+(function(){
+  const axis=document.getElementById('timeline');
+  const t0=toH('19:00')-24, t1=toH('10:00'); // PDT hours, previous evening negative offset
+  const span=(t1-(t0))
+  const evs=[
+    {t:-4.72,side:'up',color:css('--neg'),title:'19:17 O1 found',txt:'futures marks frozen — 9 runs churned'},
+    {t:-4.55,side:'down',color:css('--s3'),title:'19:27 O1 fixed',txt:'markrefresh deployed + verified'},
+    {t:-4.25,side:'up',color:css('--s1'),title:'19:45 fleet 9 live',txt:'$100k · 5 runs · clamped gates'},
+    {t:-3.05,side:'up',color:css('--neg'),title:'20:57 O2 found',txt:'cards showed fee ledger ("100% lost")'},
+    {t:-2.9,side:'down',color:css('--s3'),title:'21:05 O2 fixed',txt:'membertotals + SPA both roots'},
+    {t:-1.8,side:'down',color:css('--s3'),title:'22:1x floor',txt:'dust floor 2% (approved)'},
+    {t:-0.1,side:'down',color:css('--s3'),title:'23:5x rec 1-3',txt:'flip tool · conviction sizing · macro fallback'},
+    {t:1.9,side:'up',color:css('--neg'),title:'01:52 O3 found',txt:'$5.18 Kelly dust add'},
+    {t:2.15,side:'down',color:css('--s3'),title:'02:05 O3 fixed',txt:'dustguard deployed'},
+    {t:7.5,side:'up',color:css('--s1'),title:'02:37→09:45',txt:'15 cycles · 0 churn · +$187'},
+    {t:9.9,side:'down',color:css('--s1'),title:'09:45 close',txt:'loop stopped · report built'},
+  ];
+  const xp=t=>( (t - t0) / span )*100;
+  evs.forEach(e=>{
+    const d=document.createElement('div');
+    d.className='tl-ev '+e.side;
+    d.style.left=xp(e.t)+'%';
+    d.innerHTML=`<div class="txt"><span class="t">${e.title}</span><br>${e.txt}</div>`;
+    const dot=document.createElement('div'); dot.className='dot'; dot.style.background=e.color;
+    if(e.side==='up'){ d.appendChild(dot); } else { d.insertBefore(dot, d.firstChild); }
+    axis.appendChild(d);
+  });
+})();
+})();
+</script>
+</body>
+</html>
