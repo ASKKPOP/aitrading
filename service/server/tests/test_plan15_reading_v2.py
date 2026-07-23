@@ -439,3 +439,16 @@ class EarlyStopConfirmTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MarkRefreshDefaultTests(unittest.TestCase):
+    """Overnight finding — futures/us-stock marks must refresh, or every run
+    holding such a position dies stop_eval_failed at the staleness limit."""
+
+    def test_default_covers_run_markets(self):
+        import tasks
+        parsed = tasks._env_csv_set("__UNSET_ENV__",
+                                    tasks.REFRESH_PRICED_MARKETS_DEFAULT)
+        self.assertIn("crypto", parsed)
+        self.assertIn("futures", parsed)
+        self.assertIn("us-stock", parsed)

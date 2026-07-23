@@ -22,6 +22,14 @@ _last_profit_history_prune_at: float = time.time()
 _profit_history_prune_task: Optional[asyncio.Task] = None
 _TRENDING_CACHE_KEY = "trending:top20"
 _SUPPORTED_PRICE_MARKETS = markets.supported_markets()
+
+# Plan 15 overnight finding (2026-07-23): crypto-only refresh left every
+# true-futures position's mark frozen at entry — run stop evaluation
+# fail-closes on stale marks, so each CL/ZC/ZS run died stop_eval_failed
+# ~18 min after entering and the fleet churned replacements (6 CL runs in
+# 95 min, double fees each). us-stock included for the same reason once
+# those runs hold positions.
+REFRESH_PRICED_MARKETS_DEFAULT = "crypto,futures,us-stock"
 _PRICE_FAILURES: Dict[tuple[str, str, str, str], dict[str, float]] = {}
 _PRICE_FAILURE_CACHE_KEY_PREFIX = "position_price_failures"
 _POLYMARKET_SETTLEMENT_RECHECK_AFTER: Dict[tuple[str, str, str], float] = {}
@@ -485,7 +493,8 @@ async def update_position_prices():
     # Get max parallel requests from environment variable
     max_parallel = _env_int("MAX_PARALLEL_PRICE_FETCH", 2, minimum=1)
     verbose_fetch = _env_bool("POSITION_PRICE_VERBOSE_FETCH_LOGS", False)
-    refresh_priced_markets = _env_csv_set("POSITION_PRICE_REFRESH_PRICED_MARKETS", "crypto")
+    refresh_priced_markets = _env_csv_set("POSITION_PRICE_REFRESH_PRICED_MARKETS",
+                                          REFRESH_PRICED_MARKETS_DEFAULT)
 
     # Wait a bit on startup before first update
     await asyncio.sleep(_env_int("POSITION_PRICE_STARTUP_DELAY_SECONDS", 15, minimum=0))
