@@ -109,27 +109,29 @@ def _rank_agreement(episodes: list[dict], key: str) -> Optional[float]:
     return round(good / (len(wins) * len(losses)), 4)
 
 
+def _cycle_from_coid(coid: Optional[str]) -> Optional[int]:
+    """Parse the cycle out of a signals.client_order_id ('run:{id}:cyc:{seq}';
+    'run:{id}:flatten' and other close forms carry no cycle → None)."""
+    coid = str(coid or "")
+    if ":cyc:" not in coid:
+        return None
+    try:
+        return int(coid.rsplit(":", 1)[1])
+    except (ValueError, TypeError):
+        return None
+
+
 def _run_episodes(cursor, run_id: int) -> list[dict]:
+    # The signals row carries client_order_id directly — read the cycle from
+    # it, NOT via the trade-event signal_id (that id is a separate counter
+    # and does not equal signals.id; joining on it silently dropped every
+    # open's metrics — caught on fleet 9, 2026-07-23).
     cursor.execute(
-        """SELECT side, quantity, entry_price, fee_usd, id FROM signals
+        """SELECT side, quantity, entry_price, fee_usd, client_order_id
+           FROM signals
            WHERE run_id = ? AND message_type = 'operation' ORDER BY id""",
         (run_id,))
     sig_rows = [dict(r) for r in cursor.fetchall()]
-    cursor.execute(
-        """SELECT payload FROM run_events
-           WHERE run_id = ? AND event_type = 'trade' ORDER BY id""", (run_id,))
-    sig_cycle: dict[int, Optional[int]] = {}
-    for row in cursor.fetchall():
-        try:
-            obj = json.loads(row["payload"] or "{}")
-            coid = str(obj.get("client_order_id") or "")
-            cyc = None
-            if ":cyc:" in coid:
-                cyc = int(coid.rsplit(":", 1)[1])
-            if obj.get("signal_id") is not None:
-                sig_cycle[int(obj["signal_id"])] = cyc
-        except (ValueError, TypeError):
-            continue
     cursor.execute(
         """SELECT payload FROM run_events
            WHERE run_id = ? AND event_type = 'decision' ORDER BY id""", (run_id,))
@@ -145,7 +147,7 @@ def _run_episodes(cursor, run_id: int) -> list[dict]:
             continue
     legs = [{"side": s["side"], "quantity": s["quantity"],
              "entry_price": s["entry_price"], "fee_usd": s["fee_usd"],
-             "cycle": sig_cycle.get(int(s["id"]))} for s in sig_rows]
+             "cycle": _cycle_from_coid(s["client_order_id"])} for s in sig_rows]
     eps = build_episodes(legs, cycle_metrics)
     for e in eps:
         e["run_id"] = run_id

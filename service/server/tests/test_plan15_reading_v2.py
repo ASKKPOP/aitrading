@@ -583,6 +583,16 @@ class ShadowReportTests(unittest.TestCase):
         self.assertIsNone(_rank_agreement(
             [{"pnl": 1, "confidence": 0.6}], "confidence"))
 
+    def test_cycle_from_coid(self):
+        # regression: the metric join must read the cycle from the SIGNALS
+        # client_order_id, and only :cyc: forms carry a cycle (fleet 9 bug).
+        from conviction_shadow import _cycle_from_coid
+        self.assertEqual(_cycle_from_coid("run:65:cyc:3"), 3)
+        self.assertEqual(_cycle_from_coid("run:112:cyc:17"), 17)
+        self.assertIsNone(_cycle_from_coid("run:65:flatten"))
+        self.assertIsNone(_cycle_from_coid(None))
+        self.assertIsNone(_cycle_from_coid(""))
+
 
 class DustOrderGuardTests(unittest.TestCase):
     """Overnight: Kelly-sized dust must skip at the final order, not trade
