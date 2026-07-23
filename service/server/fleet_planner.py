@@ -120,6 +120,26 @@ def fleet_enabled() -> bool:
     return os.getenv("FLEET_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _session_bias_enabled() -> bool:
+    """Default-on kill switch. When on, an unrestricted fleet only composes
+    from markets that are open at research time (see _open_markets_scope)."""
+    return os.getenv("FLEET_SESSION_BIAS", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _open_markets_scope(now: "datetime | None" = None) -> "list[str] | None":
+    """Allowlist of tradeable markets open at `now` (real now by default), used
+    to bias an unrestricted fleet away from markets that are closed and would
+    idle its slots. Returns None (→ caller leaves scope unrestricted) when the
+    kill switch is off or, defensively, when nothing is open (crypto is 24x7 so
+    the list is non-empty in practice)."""
+    if not _session_bias_enabled():
+        return None
+    import markets
+    open_markets = [m for m in markets.tradeable_markets()
+                    if markets.is_market_open(m, now)]
+    return open_markets or None
+
+
 def _tick_interval() -> int:
     return max(15, int(os.getenv("FLEET_TICK_INTERVAL", "60")))
 
@@ -708,6 +728,14 @@ def _do_research(fleet: dict) -> None:
                 scope = json.loads(fleet["market_scope_json"])
             except (ValueError, TypeError):
                 scope = None
+        if not scope:
+            # Auto session-bias: an unrestricted fleet composed while a market
+            # is closed would bind slots to symbols that idle until the next
+            # session (e.g. us-stock overnight sits dead until ~13:30Z). Narrow
+            # the universe to markets open right now so every slot works
+            # immediately. Explicit market_scope is honoured verbatim — this
+            # only fills the None case.
+            scope = _open_markets_scope()
         theses = symbol_research.select_targets(
             cursor, fleet["agent_id"], int(fleet["n_runs"]), markets_scope=scope)
     finally:
