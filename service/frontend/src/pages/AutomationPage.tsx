@@ -114,7 +114,7 @@ export function AutomationPage() {
   // My Assets at a glance (same numbers as /assets: cash + position value,
   // unrealized from open positions, realized from closed trades).
   const [assets, setAssets] = useState<{ total: number; unrealized: number;
-    realized: number } | null>(null)
+    realized: number; cash: number; inUse: number; since: string | null } | null>(null)
   useEffect(() => {
     if (!token) return
     let dead = false
@@ -128,9 +128,16 @@ export function AutomationPage() {
         const unrealized = positions.reduce((s: number, p: any) => s + (p.pnl ?? 0), 0)
         const mine = await (await fetch(`${API_BASE}/positions/trades?limit=200`,
           { headers: { Authorization: `Bearer ${token}` } })).json()
-        const realized = (mine.trades || []).reduce(
+        const mineTrades = mine.trades || []
+        const realized = mineTrades.reduce(
           (s: number, t: any) => s + (t.pnl ?? 0), 0)
-        if (!dead) setAssets({ total: (pos.cash ?? 0) + value, unrealized, realized })
+        // earliest trade = "lifetime" anchor (first automated activity)
+        const since = mineTrades.reduce((min: string | null, t: any) => {
+          const c = t.created_at
+          return c && (!min || c < min) ? c : min
+        }, null as string | null)
+        const cash = pos.cash ?? 0
+        if (!dead) setAssets({ total: cash + value, unrealized, realized, cash, inUse: value, since })
       } catch { /* transient */ }
     }
     loadAssets()
@@ -169,6 +176,15 @@ export function AutomationPage() {
     myAssets: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }),
     assetsUnrealized: tr(language, { ko: '미실현', en: 'unrealized', ja: '含み', th: 'ยังไม่รับรู้', vi: 'chưa chốt' }),
     assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt' }),
+    sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại' }),
+    sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động' }),
+    sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận' }),
+    sumCash: tr(language, { ko: '현금', en: 'cash', ja: '現金', th: 'เงินสด', vi: 'tiền mặt' }),
+    sumInUse: tr(language, { ko: '사용 중', en: 'in use', ja: '使用中', th: 'ใช้อยู่', vi: 'đang dùng' }),
+    sumSince: tr(language, { ko: '시작', en: 'since', ja: '開始', th: 'เริ่ม', vi: 'từ' }),
+    sumDay: tr(language, { ko: '일', en: 'd', ja: '日', th: 'วัน', vi: 'ngày' }),
+    sumHour: tr(language, { ko: '시간', en: 'h', ja: '時間', th: 'ชม.', vi: 'giờ' }),
+    sumNoHistory: tr(language, { ko: '거래 내역 없음', en: 'no history yet', ja: '取引履歴なし', th: 'ยังไม่มีประวัติ', vi: 'chưa có lịch sử' }),
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay' }),
@@ -495,29 +511,44 @@ export function AutomationPage() {
         </div>
       </div>
 
-      {/* ── The two ways to make one, above the block — with My Assets at a
-             glance on the right (same numbers as /assets, click through) ── */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18, alignItems: 'stretch' }}>
+      {/* ── The two ways to make one, above the block ── */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'stretch' }}>
         <button style={primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
         <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
-        {assets && (
-          <Link to="/assets" style={{ marginLeft: 'auto', textDecoration: 'none', color: 'inherit',
-            background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
-            borderRadius: 10, padding: '8px 16px', display: 'flex', flexDirection: 'column',
-            justifyContent: 'center', gap: 2, minWidth: 190 }}>
-            <span style={{ fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.06em',
-              color: 'var(--text-secondary,#8a8073)' }}>◱ {T.myAssets}</span>
-            <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
-              fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }}>
-              <b style={{ fontSize: 17 }}>{fmtUsd(assets.total)}</b>
-              <span style={{ fontSize: 11.5, color: pnlColor(assets.unrealized) }}>
-                {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)} {T.assetsUnrealized}</span>
-              <span style={{ fontSize: 11.5, color: pnlColor(assets.realized) }}>
-                {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} {T.assetsRealized}</span>
-            </span>
-          </Link>
-        )}
       </div>
+
+      {/* ── Account summary (above the box): deposit · lifetime · profit ── */}
+      {assets && (() => {
+        const profit = assets.realized + assets.unrealized
+        let life: { d: number; h: number } | null = null
+        if (assets.since) {
+          const ms = Date.now() - new Date(assets.since.replace(' ', 'T')).getTime()
+          if (ms > 0) life = { d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) }
+        }
+        const tile: any = { flex: 1, minWidth: 200, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: '14px 18px' }
+        const kSt: any = { fontSize: 12, color: 'var(--text-secondary,#8a8073)', marginBottom: 7 }
+        const vSt: any = { fontSize: 24, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }
+        const sSt: any = { fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 5, fontVariantNumeric: 'tabular-nums' }
+        return (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+            <Link to="/assets" style={{ ...tile, textDecoration: 'none', color: 'inherit' }}>
+              <div style={kSt}>💰 {T.sumDeposit}</div>
+              <div style={vSt}>{fmtUsd(assets.total)}</div>
+              <div style={sSt}>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</div>
+            </Link>
+            <div style={tile}>
+              <div style={kSt}>📅 {T.sumLifetime}</div>
+              <div style={vSt}>{life ? <>{life.d}{T.sumDay} <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{life.h}{T.sumHour}</span></> : '—'}</div>
+              <div style={sSt}>{assets.since ? `${assets.since.slice(0, 10)} ${T.sumSince}` : T.sumNoHistory}</div>
+            </div>
+            <div style={tile}>
+              <div style={kSt}>📈 {T.sumProfit}</div>
+              <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
+              <div style={sSt}>{T.assetsRealized} {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Full Auto fleet monitor — always visible once a fleet is live,
              so monitoring never requires reopening the create modal ── */}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { API_BASE, useLanguage } from '../appShared'
+import { API_BASE, marketLabel, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
 import { tr } from '../i18n'
 
@@ -91,6 +91,15 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)' }),
     memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách' }),
+    tabMonitor: tr(language, { ko: '실시간 모니터', en: 'Live monitor', ja: 'ライブモニター', th: 'มอนิเตอร์สด', vi: 'Theo dõi trực tiếp' }),
+    tabActivity: tr(language, { ko: '거래 활동', en: 'Trading activity', ja: '取引アクティビティ', th: 'กิจกรรมเทรด', vi: 'Hoạt động giao dịch' }),
+    actAll: tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả' }),
+    actType: tr(language, { ko: '유형', en: 'Type', ja: 'タイプ', th: 'ประเภท', vi: 'Loại' }),
+    actQty: tr(language, { ko: '수량', en: 'Amount', ja: '数量', th: 'จำนวน', vi: 'Số lượng' }),
+    actPrice: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' }),
+    actPnl: tr(language, { ko: '손익', en: 'P&L', ja: '損益', th: 'กำไร/ขาดทุน', vi: 'Lãi/lỗ' }),
+    actDate: tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày' }),
+    actEmpty: tr(language, { ko: '아직 거래 활동이 없습니다', en: 'No trading activity yet', ja: '取引はまだありません', th: 'ยังไม่มีกิจกรรมเทรด', vi: 'Chưa có hoạt động giao dịch' }),
     holdBanner: tr(language, { ko: '⚠️ 마스터 스위치로 전체 보류 중 — 손절/익절 청산은 계속 작동하며, 이미 실행 중인 사이클은 신규 진입 없이 마무리됩니다', en: '⚠️ Held by the master switch — protective exits (SL/TP) stay active; any cycle already executing completes without opening new positions', ja: '⚠️ マスタースイッチで保留中 — SL/TPの保護決済は動作し続けます', th: '⚠️ ถูกพักโดยสวิตช์หลัก — SL/TP ยังทำงาน', vi: '⚠️ Đang giữ bởi công tắc chính — SL/TP vẫn hoạt động' }),
   }
   // fleet status_reason → localized label (the RunsLivePage reasonLabel
@@ -123,6 +132,10 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [levKey, setLevKey] = useState('auto')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Monitor box tabs: cards (실시간 모니터) | trading activity (거래 활동)
+  const [monTab, setMonTab] = useState<'monitor' | 'activity'>('monitor')
+  const [trades, setTrades] = useState<any[]>([])
+  const [actMkt, setActMkt] = useState('all')
 
   const load = useCallback(async () => {
     try {
@@ -159,6 +172,22 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     const id = setInterval(load, fast ? 2000 : 5000)
     return () => clearInterval(id)
   }, [fleet?.status, load, monitorOnly])
+
+  // 거래 활동 tab: the account's recent legs across every market (side, symbol,
+  // qty, price, P&L, date). Monitor box only; light 15s poll.
+  useEffect(() => {
+    if (!monitorOnly || !token) return
+    let dead = false
+    const loadTrades = async () => {
+      try {
+        const r = await fetch(`${API_BASE}/positions/trades?limit=50`, { headers: authHeaders }).then(r => r.json())
+        if (!dead) setTrades(r.trades || [])
+      } catch { /* transient */ }
+    }
+    loadTrades()
+    const iv = setInterval(loadTrades, 15000)
+    return () => { dead = true; clearInterval(iv) }
+  }, [monitorOnly, token])
 
   // Member-card liveness: the panel is poll-driven, so "an event" here is a
   // change in a member's polled snapshot (status / P&L / pause reason) — blink
@@ -324,6 +353,20 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               ⏳ {T.buildingHint}
             </div>
           )}
+          {monitorOnly && (
+            <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid var(--border-color,rgba(0,0,0,0.12))', marginBottom: 14 }}>
+              {([['monitor', T.tabMonitor], ['activity', T.tabActivity]] as const).map(([k, lbl]) => (
+                <button key={k} onClick={() => setMonTab(k)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px 2px 10px', fontSize: 13, fontWeight: 700, marginBottom: -1,
+                    color: monTab === k ? 'var(--text-primary,inherit)' : 'var(--text-secondary,#8a8073)',
+                    borderBottom: monTab === k ? '2px solid var(--accent-primary,#c26a45)' : '2px solid transparent' }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          )}
+          {(!monitorOnly || monTab === 'monitor') ? (
+          <>
           {members.length > 0 && onSelectRun && (
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 6 }}>
               💡 {T.clickHint}
@@ -396,6 +439,68 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               {T.stopAll}
             </button>
           </div>
+          </>
+          ) : (
+          <>
+            {(() => {
+              const markets = Array.from(new Set(trades.map((t: any) => t.market).filter(Boolean)))
+              const rows = trades.filter((t: any) => actMkt === 'all' || t.market === actMkt)
+              return (
+                <>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {['all', ...markets].map(mk => (
+                      <button key={mk} onClick={() => setActMkt(mk)} style={chip(actMkt === mk)}>
+                        {mk === 'all' ? T.actAll : marketLabel(mk, language)}
+                      </button>
+                    ))}
+                  </div>
+                  {rows.length === 0 ? (
+                    <div style={{ fontSize: 12.5, color: 'var(--text-muted,#a89f92)', padding: '16px 4px' }}>{T.actEmpty}</div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                        <thead>
+                          <tr style={{ color: 'var(--text-secondary,#8a8073)', textAlign: 'right', fontSize: 11.5 }}>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600 }}>{T.actType}</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600 }}>Symbol</th>
+                            <th style={{ padding: '8px 10px', fontWeight: 600 }}>{T.actQty}</th>
+                            <th style={{ padding: '8px 10px', fontWeight: 600 }}>{T.actPrice}</th>
+                            <th style={{ padding: '8px 10px', fontWeight: 600 }}>{T.actPnl}</th>
+                            <th style={{ padding: '8px 10px', fontWeight: 600 }}>{T.actDate}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((t: any, i: number) => {
+                            const side = String(t.side || '').toLowerCase()
+                            const isBuy = side === 'buy' || side === 'cover'
+                            const pnl = t.pnl
+                            return (
+                              <tr key={t.signal_id ?? i} style={{ borderTop: '1px solid var(--border-color,rgba(0,0,0,0.08))', textAlign: 'right' }}>
+                                <td style={{ textAlign: 'left', padding: '9px 10px', fontWeight: 700, color: isBuy ? '#2e9e6b' : '#f0663f' }}>
+                                  {String(t.side || '').toUpperCase()}
+                                </td>
+                                <td style={{ textAlign: 'left', padding: '9px 10px' }}>
+                                  <b>{t.symbol}</b>
+                                  {t.market && <span style={{ fontSize: 10.5, color: 'var(--text-muted,#a89f92)', background: 'var(--bg-hover,rgba(0,0,0,0.05))', borderRadius: 4, padding: '1px 6px', marginLeft: 6 }}>{marketLabel(t.market, language)}</span>}
+                                </td>
+                                <td style={{ padding: '9px 10px', fontVariantNumeric: 'tabular-nums' }}>{Number(t.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+                                <td style={{ padding: '9px 10px', fontVariantNumeric: 'tabular-nums' }}>{Number(t.entry_price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '9px 10px', fontVariantNumeric: 'tabular-nums', color: pnl == null ? 'var(--text-muted,#a89f92)' : pnl >= 0 ? '#2e9e6b' : '#f0663f' }}>
+                                  {pnl == null ? '—' : (pnl >= 0 ? '+' : '') + Number(pnl).toFixed(2)}
+                                </td>
+                                <td style={{ padding: '9px 10px', color: 'var(--text-muted,#a89f92)' }}>{String(t.created_at || '').slice(0, 16).replace('T', ' ')}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </>
+          )}
         </>
       )}
     </div>
