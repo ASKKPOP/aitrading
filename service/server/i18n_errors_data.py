@@ -1335,12 +1335,6 @@ MESSAGES: dict[str, dict[str, str]] = {
         'th': 'interval_minutes ต้องอยู่ระหว่าง 5 ถึง 1440',
         'vi': 'interval_minutes phải nằm trong khoảng 5 đến 1440',
     },
-    'leverage must be 1 in this build': {
-        'ko': '이 빌드에서는 leverage가 1이어야 합니다',
-        'ja': 'このビルドでは leverage は 1 である必要があります',
-        'th': 'ในบิลด์นี้ leverage ต้องเป็น 1',
-        'vi': 'leverage phải bằng 1 trong bản build này',
-    },
     'manual start takes no extra keys': {
         'ko': 'manual 시작에는 추가 키를 사용할 수 없습니다',
         'ja': 'manual 開始に追加のキーは指定できません',

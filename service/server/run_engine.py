@@ -164,7 +164,7 @@ def compute_run_pnl(run: dict) -> dict:
             (run["id"],))
         legs = [dict(r) for r in cursor.fetchall()]
         cursor.execute(
-            """SELECT quantity, entry_price, current_price, price_updated_at
+            """SELECT quantity, entry_price, current_price, price_updated_at, leverage
                FROM positions
                WHERE agent_id = ? AND market = ? AND symbol = ? AND run_id = ?""",
             (run["agent_id"], run["market"], run["symbol"], run["id"]))
@@ -234,14 +234,23 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     pos = pnl["position"]
     has_position = bool(pos and float(pos["quantity"] or 0) != 0)
 
-    # Synthetic liquidation (D5): a v1 short's loss can exceed 100% of the
-    # escrowed collateral (cover credit goes negative past 2x entry) — force
-    # the stop at ~100% collateral loss regardless of configured conditions.
-    if has_position and float(pos["quantity"]) < 0 and pnl["mark_age_ok"]:
+    # Synthetic liquidation: a position's loss can wipe 100% of its escrowed
+    # margin. Isolated-margin liq price from leverage L: long at
+    # entry×(1−1/L), short at entry×(1+1/L). At L=1 this is exactly the prior
+    # rule (short at 2×entry; a fully-funded long never liquidates).
+    if has_position and pnl["mark_age_ok"]:
         entry = float(pos["entry_price"] or 0)
         mark = float(pos["current_price"] or 0)
-        if entry > 0 and mark >= 2 * entry:
-            return "synthetic_liquidation"
+        try:
+            lev = max(1.0, float(pos["leverage"])) if pos["leverage"] else 1.0
+        except (KeyError, TypeError, ValueError):
+            lev = 1.0
+        qty = float(pos["quantity"] or 0)
+        if entry > 0 and mark > 0:
+            if qty < 0 and mark >= entry * (1 + 1 / lev):
+                return "synthetic_liquidation"
+            if qty > 0 and lev > 1 and mark <= entry * (1 - 1 / lev):
+                return "synthetic_liquidation"
 
     at = conditions.get("at_time")
     if at and at <= _now_iso():
@@ -998,19 +1007,25 @@ def _master_held(agent_id: int) -> bool:
 
 
 def _open_cost_basis(agent_id: int, market: str, symbol: str, run_id: int) -> float:
-    """Deployed (open) cost basis of the run's own position row: |qty| × avg
-    entry. The Plan 14 run-budget cap input."""
+    """Deployed MARGIN of the run's own position row: |qty| × avg entry / L.
+    The Plan 14 run-budget cap input — run_budget caps committed margin, so a
+    leveraged run controls L× the notional for the same budget. L=1 ⇒ the
+    prior |qty|×entry notional basis."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT quantity, entry_price FROM positions
+            """SELECT quantity, entry_price, leverage FROM positions
                WHERE agent_id = ? AND market = ? AND symbol = ? AND run_id = ?""",
             (agent_id, market, symbol, run_id))
         row = cursor.fetchone()
         if not row:
             return 0.0
-        return abs(float(row["quantity"] or 0)) * float(row["entry_price"] or 0)
+        try:
+            lev = max(1.0, float(row["leverage"])) if row["leverage"] else 1.0
+        except (KeyError, TypeError, ValueError):
+            lev = 1.0
+        return abs(float(row["quantity"] or 0)) * float(row["entry_price"] or 0) / lev
     finally:
         conn.close()
 
@@ -1433,9 +1448,14 @@ def run_cycle(run_id: int) -> dict:
                                       "run_budget": cfg["run_budget_usd"]})
                 return result
             size_usd = min(float(size_usd or 0), max(headroom, 0.0))
+        # Leverage (2026-07-23): size_usd is the MARGIN the run commits; the
+        # position notional is margin × L. Size the gate with the leveraged
+        # notional so Kelly / vol / exposure caps bound total exposure, then
+        # the executor debits only the margin. L=1 leaves this untouched.
+        lev = max(1.0, float(cfg.get("leverage") or 1.0))
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
                     "min_confidence": min_confidence,
-                    "size_usd": size_usd, "mode": "manual"}
+                    "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, gate_confidence, entry,
                                          None, technical)
@@ -1452,11 +1472,13 @@ def run_cycle(run_id: int) -> dict:
         # the Kelly cap inside the risk engine can still shrink the sized
         # quantity to dust (observed: a $5.18 ZC add, fee half a cent).
         if action in ("buy", "short"):
-            sized_notional = float(gate.quantity or 0) * float(entry or 0)
+            # Compare the committed MARGIN (notional / L) to the floor, since
+            # the floor is denominated in max_bet (also margin).
+            sized_margin = float(gate.quantity or 0) * float(entry or 0) / lev
             dust_floor = max(10.0, 0.02 * float(cfg.get("max_bet_usd") or 0))
-            if sized_notional < dust_floor:
+            if sized_margin < dust_floor:
                 result["skip_reason"] = (
-                    f"dust order skip (sized ${sized_notional:.2f} "
+                    f"dust order skip (margin ${sized_margin:.2f} "
                     f"< floor ${dust_floor:.2f})")
                 emit_telemetry_event(run_id, "gate_skip",
                                      {"cycle": seq, "stage": "risk",
@@ -1484,7 +1506,7 @@ def run_cycle(run_id: int) -> dict:
             content=f"Trading run #{run_id} cycle {seq}",
             stop_loss=gate.stop_loss, take_profit=gate.take_profit,
             run_id=run_id, client_order_id=client_order_id,
-            fence=_fence(run_id))
+            leverage=lev, fence=_fence(run_id))
         if signal_id:
             result.update({"executed": True, "signal_id": signal_id})
             _reset_infeasible(run_id)

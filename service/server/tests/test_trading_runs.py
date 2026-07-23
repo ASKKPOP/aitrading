@@ -83,9 +83,14 @@ class TradingRunsTests(unittest.TestCase):
         resp = self._create(market="us-stock", market_type="futures")
         self.assertEqual(resp.status_code, 400)
 
-    def test_leverage_pinned_to_one(self):
-        resp = self._create(leverage=3)
-        self.assertEqual(resp.status_code, 422)
+    def test_leverage_accepted_and_clamped(self):
+        # Isolated-margin leverage is now accepted (1–10×) and clamped.
+        r3 = self._create(leverage=3)
+        self.assertEqual(r3.status_code, 200, r3.text)
+        self.assertEqual(r3.json()["run"]["config"]["leverage"], 3.0)
+        r99 = self._create(leverage=99)   # over-max clamps, not rejected
+        self.assertEqual(r99.status_code, 200, r99.text)
+        self.assertEqual(r99.json()["run"]["config"]["leverage"], 10.0)
 
     def test_malformed_start_condition_rejects(self):
         for bad in ({"type": "sometime"},

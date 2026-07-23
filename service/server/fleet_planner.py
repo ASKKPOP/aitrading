@@ -80,6 +80,11 @@ FLEET_BOUNDS = {
     # Higher tiers let winners run further before banking (× the thesis move).
     "profit_target_mult": {"stable": 1.0, "balanced": 1.0,
                            "aggressive": 1.5, "extreme": 2.0},
+    # Auto leverage per tier (isolated margin). Used when the fleet does not
+    # override it. Extreme trades 3× the notional for the same committed
+    # margin; liquidation at entry×(1∓1/L).
+    "auto_leverage": {"stable": 1.0, "balanced": 1.0,
+                      "aggressive": 2.0, "extreme": 3.0},
     "profit_target_frac_bounds": (0.002, 0.50),   # thesis % / 100 clamps here
     "min_slot_funding_usd_frac": 0.5,             # dormant below B/2N
     "churn_alert_per_day": 8,
@@ -488,12 +493,18 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     thesis_conf = float(thesis.get("confidence") or 0.5)
     min_conf = min(_tier("min_confidence", risk),
                    max(0.50, round(thesis_conf - 0.05, 2)))
+    # Leverage: the fleet's explicit setting wins ("set"); None/0 ⇒ auto by
+    # tier ("auto"). Clamp to the 1–10× the run route accepts.
+    fleet_lev = fleet.get("leverage")
+    leverage = float(fleet_lev) if fleet_lev else _tier("auto_leverage", risk)
+    leverage = max(1.0, min(10.0, leverage))
     return {
         "symbol": thesis["symbol"], "market": market, "market_type": market_type,
         "max_bet_usd": max_bet,
         "run_budget_usd": round(float(run_budget), 2),
         "interval_minutes": int(interval),
         "min_confidence": min_conf,
+        "leverage": leverage,
         "provider": fleet.get("provider"), "lang": fleet.get("lang") or "en",
         "stop_conditions": {
             "max_loss_usd": round(run_budget * _tier("stop_max_loss_frac", risk), 2),

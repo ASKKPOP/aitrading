@@ -217,11 +217,13 @@ class RunIn(BaseModel):
     @field_validator("leverage")
     @classmethod
     def _leverage(cls, v: float) -> float:
-        # v1: leverage is pinned to 1. Real leverage (2-5x isolated margin +
-        # liquidation) is gated on ENABLE_PRICE_PUSH in prod (Plan 10 D5).
-        if v != 1:
-            raise ValueError("leverage must be 1 in this build")
-        return 1.0
+        # Isolated-margin leverage (2026-07-23): 1× (fully funded) … 10×.
+        # margin = notional/L; liquidation at entry×(1∓1/L). 0/None ⇒ 1×.
+        try:
+            v = float(v or 1.0)
+        except (TypeError, ValueError):
+            return 1.0
+        return max(1.0, min(10.0, v))
 
 
 class StartIn(BaseModel):
@@ -368,7 +370,7 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
         "run_budget_usd": data.run_budget_usd,
         "interval_minutes": data.interval_minutes,
         "min_confidence": data.min_confidence, "provider": data.provider,
-        "lang": data.lang, "leverage": 1.0,
+        "lang": data.lang, "leverage": float(data.leverage or 1.0),
     }
     if data.llm_tiers:
         settings["llm_tiers"] = data.llm_tiers

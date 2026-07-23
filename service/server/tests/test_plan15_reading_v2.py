@@ -679,11 +679,20 @@ class FleetProfitTierTests(unittest.TestCase):
         self.assertEqual(self._settings("aggressive")["stop_conditions"]["profit_target_usd"], 60.0)
         self.assertEqual(self._settings("extreme")["stop_conditions"]["profit_target_usd"], 80.0)
 
-    def test_leverage_stays_one(self):
-        # the tiers must NOT silently enable leverage (fully-funded ledger)
-        for r in ("balanced", "aggressive", "extreme"):
-            s = self._settings(r)
-            self.assertEqual(s.get("leverage", 1.0), 1.0)
+    def test_auto_leverage_by_tier(self):
+        # auto leverage scales with the tier (isolated margin): 1× / 2× / 3×
+        self.assertEqual(self._settings("balanced")["leverage"], 1.0)
+        self.assertEqual(self._settings("aggressive")["leverage"], 2.0)
+        self.assertEqual(self._settings("extreme")["leverage"], 3.0)
+
+    def test_fleet_leverage_override_wins(self):
+        from fleet_planner import compose_run_settings
+        thesis = {"symbol": "BTC", "market": "crypto", "market_type": "spot",
+                  "direction": "long", "confidence": 0.80,
+                  "expected_move_pct": 4.0, "horizon_hours": 48}
+        s = compose_run_settings(thesis, 1000.0,
+                                 {"risk_appetite": "balanced", "leverage": 5})
+        self.assertEqual(s["leverage"], 5.0)  # explicit set beats tier auto
 
     def test_unknown_risk_falls_back_to_balanced(self):
         self.assertEqual(self._settings("bogus")["max_bet_usd"],
@@ -693,3 +702,124 @@ class FleetProfitTierTests(unittest.TestCase):
         from routes_fleets import FleetIn
         self.assertEqual(FleetIn(n_runs=3, risk_appetite="extreme").risk_appetite,
                          "extreme")
+
+
+class LeverageMarginEngineTests(unittest.TestCase):
+    """Isolated-margin leverage (2026-07-23). Every assertion also pins the
+    L=1 identity so the fully-funded ledger can never silently change."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        from fastapi.testclient import TestClient
+        from routes import create_app
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "lev", "password": "pw123",
+                                   "initial_balance": 100000.0})
+        self.token = r.json()["token"]
+        self.agent_id = r.json()["agent_id"]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _cash(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT cash FROM agents WHERE id = ?", (self.agent_id,))
+            return float(cur.fetchone()["cash"])
+        finally:
+            conn.close()
+
+    def _pos(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT quantity, entry_price, leverage FROM positions "
+                        "WHERE agent_id = ?", (self.agent_id,))
+            r = cur.fetchone()
+            return dict(r) if r else None
+        finally:
+            conn.close()
+
+    def test_long_open_debits_margin_not_notional(self):
+        import automation
+        c0 = self._cash()
+        # notional = 100 * 10 = 1000; 5x ⇒ margin 200 + fee
+        sid, skip = automation.execute_paper_trade(
+            self.agent_id, "BTC", "crypto", "buy", 10.0, 100.0, leverage=5.0)
+        self.assertIsNotNone(sid, skip)
+        fee = 1000.0 * 0.001
+        self.assertAlmostEqual(self._cash(), c0 - 200.0 - fee, places=4)
+        self.assertEqual(self._pos()["leverage"], 5.0)
+
+    def test_long_roundtrip_pnl_leveraged(self):
+        import automation
+        c0 = self._cash()
+        automation.execute_paper_trade(self.agent_id, "BTC", "crypto", "buy",
+                                       10.0, 100.0, leverage=5.0)
+        # price +10% → notional pnl = (110-100)*10 = 100 (5x on 200 margin)
+        automation.execute_paper_trade(self.agent_id, "BTC", "crypto", "sell",
+                                       10.0, 110.0, leverage=5.0)
+        fees = 1000.0 * 0.001 + 1100.0 * 0.001
+        self.assertAlmostEqual(self._cash(), c0 + 100.0 - fees, places=4)
+        self.assertIsNone(self._pos())
+
+    def test_l1_long_roundtrip_identical_to_legacy(self):
+        # L=1 must be byte-identical to the fully-funded model.
+        import automation
+        c0 = self._cash()
+        automation.execute_paper_trade(self.agent_id, "BTC", "crypto", "buy",
+                                       10.0, 100.0, leverage=1.0)
+        self.assertAlmostEqual(self._cash(), c0 - 1000.0 - 1.0, places=4)
+        automation.execute_paper_trade(self.agent_id, "BTC", "crypto", "sell",
+                                       10.0, 110.0, leverage=1.0)
+        fees = 1000.0 * 0.001 + 1100.0 * 0.001
+        self.assertAlmostEqual(self._cash(), c0 + 100.0 - fees, places=4)
+
+    def test_short_roundtrip_leveraged_and_l1(self):
+        import automation
+        for lev, price_exit in ((3.0, 90.0), (1.0, 90.0)):
+            c0 = self._cash()
+            automation.execute_paper_trade(self.agent_id, "ETH", "crypto",
+                                           "short", 10.0, 100.0, leverage=lev)
+            # short at 100, cover at 90 → pnl (100-90)*10 = 100
+            automation.execute_paper_trade(self.agent_id, "ETH", "crypto",
+                                           "cover", 10.0, 90.0, leverage=lev)
+            fees = 1000.0 * 0.001 + 900.0 * 0.001
+            self.assertAlmostEqual(self._cash(), c0 + 100.0 - fees, places=3,
+                                   msg=f"lev={lev}")
+
+    def test_liquidation_price_from_leverage(self):
+        import run_engine
+        # long 5x at 100 → liq at 100*(1-1/5) = 80
+        pos = {"quantity": 10.0, "entry_price": 100.0,
+               "current_price": 79.0, "leverage": 5.0}
+        pnl = {"position": pos, "mark_age_ok": True, "total": -1.0,
+               "trades": 1}
+        with patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+            reason = run_engine._evaluate_stop(
+                {"stop_conditions_json": "{}"})
+        self.assertEqual(reason, "synthetic_liquidation")
+
+    def test_long_l1_never_liquidates(self):
+        import run_engine
+        # L=1 long: liq price is 0 → even a 99% drop does not liquidate
+        pos = {"quantity": 10.0, "entry_price": 100.0,
+               "current_price": 1.0, "leverage": 1.0}
+        pnl = {"position": pos, "mark_age_ok": True, "total": -1.0, "trades": 1}
+        with patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+            reason = run_engine._evaluate_stop({"stop_conditions_json": "{}"})
+        self.assertIsNone(reason)
+
+    def test_short_l1_liquidates_at_2x_entry(self):
+        import run_engine
+        pos = {"quantity": -10.0, "entry_price": 100.0,
+               "current_price": 200.0, "leverage": 1.0}
+        pnl = {"position": pos, "mark_age_ok": True, "total": -1.0, "trades": 1}
+        with patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+            reason = run_engine._evaluate_stop({"stop_conditions_json": "{}"})
+        self.assertEqual(reason, "synthetic_liquidation")

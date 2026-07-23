@@ -865,6 +865,7 @@ def init_database():
             entry_price REAL NOT NULL,
             current_price REAL,
             opened_at TEXT NOT NULL,
+            leverage REAL NOT NULL DEFAULT 1,
             FOREIGN KEY (agent_id) REFERENCES agents(id),
             FOREIGN KEY (leader_id) REFERENCES agents(id)
         )
@@ -1378,6 +1379,9 @@ def init_database():
         "ALTER TABLE automation_configs ADD COLUMN schedule_json TEXT",
         # Order reconciler — broker-confirmed final fill quantity
         "ALTER TABLE broker_orders ADD COLUMN filled_qty NUMERIC(20,8)",
+        # Leverage (2026-07-23): isolated-margin leverage per position. 1 =
+        # fully-funded (the prior behavior). Drives margin cash + liquidation.
+        "ALTER TABLE positions ADD COLUMN leverage REAL NOT NULL DEFAULT 1",
     ):
         try:
             cursor.execute(_ddl)

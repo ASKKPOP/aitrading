@@ -70,6 +70,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                         take_profit: Optional[float] = None,
                         run_id: Optional[int] = None,
                         client_order_id: Optional[str] = None,
+                        leverage: float = 1.0,
                         fence=None) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
@@ -93,6 +94,11 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         return None, f"action '{side}' is not executable"
     if quantity <= 0 or price <= 0:
         return None, "invalid quantity/price"
+    # Isolated-margin leverage (2026-07-23): margin = notional / L. L=1 is the
+    # prior fully-funded model and every formula below reduces to it exactly.
+    lev = float(leverage or 1.0)
+    if lev < 1.0:
+        lev = 1.0
 
     trade_value = price * quantity
     fee = trade_value * TRADE_FEE_RATE
@@ -117,6 +123,23 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
 
         short_entry: Optional[float] = None
         long_entry: Optional[float] = None
+        # Closes return the escrowed MARGIN (notional/L) using the POSITION's
+        # own leverage, not the caller's — the source of truth for what was
+        # posted at open. Defaults to 1 (fully-funded) for legacy rows.
+        pos_lev = 1.0
+
+        def _read_pos_leverage() -> float:
+            scope, scope_args = run_scope_sql(run_id)
+            cursor.execute(
+                "SELECT leverage FROM positions WHERE agent_id = ? AND "
+                "market = ? AND symbol = ?" + scope,
+                (agent_id, market, symbol, *scope_args))
+            r = cursor.fetchone()
+            try:
+                return max(1.0, float(r["leverage"])) if r and r["leverage"] else 1.0
+            except (KeyError, TypeError, ValueError):
+                return 1.0
+
         if side == "sell":
             pos = get_position_snapshot(cursor, agent_id, market, symbol, None, run_id)
             current_qty = float(pos["quantity"]) if pos else 0.0
@@ -128,6 +151,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             fee = trade_value * TRADE_FEE_RATE
             if pos["entry_price"] is not None:
                 long_entry = float(pos["entry_price"])
+            pos_lev = _read_pos_leverage()
 
         if side == "cover":
             # Close (part of) a short book (negative quantity rows).
@@ -143,6 +167,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             if short_entry <= 0:
                 conn.rollback()
                 return None, "short position entry price missing"
+            pos_lev = _read_pos_leverage()
 
         if side in ("buy", "short"):
             # Shorts escrow the notional as collateral — same debit as a buy
@@ -150,9 +175,11 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             cursor.execute("SELECT cash FROM agents WHERE id = ?", (agent_id,))
             row = cursor.fetchone()
             cash = row["cash"] if row else 0
-            if cash < trade_value + fee:
+            # Only the margin (notional/L) + fee is debited on open.
+            margin_due = trade_value / lev
+            if cash < margin_due + fee:
                 conn.rollback()
-                return None, f"insufficient cash (${cash:.2f} < ${trade_value + fee:.2f})"
+                return None, f"insufficient cash (${cash:.2f} < ${margin_due + fee:.2f})"
 
         # Realized P&L stamp for closing legs: net of THIS leg's fee against
         # the book's average entry. Buys/shorts leave pnl NULL (nothing
@@ -181,7 +208,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
              run_id, client_order_id, fee, realized_pnl, exit_price),
         )
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now,
-                                     cursor=cursor, run_id=run_id)
+                                     cursor=cursor, run_id=run_id, leverage=lev)
         # Every positions statement below is scoped to the same book this trade
         # wrote — several runs may hold a position on one agent+market+symbol.
         pos_scope, pos_scope_args = run_scope_sql(run_id)
@@ -242,15 +269,26 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                        WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
                     (new_sl, new_tp, agent_id, market, symbol, *pos_scope_args),
                 )
-            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+            # Open a long: debit MARGIN = notional/L (L=1 ⇒ full notional).
+            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?",
+                           (trade_value / lev + fee, agent_id))
         elif side == "short":
-            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?", (trade_value + fee, agent_id))
+            # Open a short: escrow MARGIN = notional/L.
+            cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?",
+                           (trade_value / lev + fee, agent_id))
         elif side == "cover":
-            # Return collateral + short P&L: entry×qty escrow + (entry−price)×qty
-            cover_credit = ((2 * short_entry) - price) * quantity - fee
+            # Return escrowed margin (short_entry×qty/L) + short P&L
+            # (short_entry−price)×qty − fee. At L=1 this is exactly the old
+            # (2×short_entry − price)×qty − fee collateral formula.
+            cover_credit = (short_entry * quantity / pos_lev
+                            + (short_entry - price) * quantity - fee)
             cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (cover_credit, agent_id))
         else:
-            cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (trade_value - fee, agent_id))
+            # Close a long: return margin (long_entry×qty/L) + P&L
+            # (price−long_entry)×qty − fee. At L=1 this is trade_value − fee.
+            sell_credit = (float(long_entry or 0) * quantity / pos_lev
+                           + (price - float(long_entry or 0)) * quantity - fee)
+            cursor.execute("UPDATE agents SET cash = cash + ? WHERE id = ?", (sell_credit, agent_id))
         if run_id is not None:
             # Trade event rides THIS transaction — never fail-soft (Plan 10 D6).
             from trading_runs import _emit_event
