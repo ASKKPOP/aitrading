@@ -24,6 +24,7 @@ type Member = {
   run_id: number; symbol: string; market: string; status: string
   status_reason: string | null; paused_reason: string | null
   run_budget_usd: number | null; realized_pnl_usd: number | null
+  unrealized_pnl_usd?: number | null; total_pnl_usd?: number | null
   thesis: { direction?: string; rationale?: string; confidence?: number } | null
 }
 type Entitlements = {
@@ -133,7 +134,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const memberTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
   useEffect(() => {
     members.forEach(m => {
-      const sig = `${m.status}|${m.realized_pnl_usd ?? ''}|${m.paused_reason ?? ''}`
+      const sig = `${m.status}|${m.total_pnl_usd ?? m.realized_pnl_usd ?? ''}|${m.paused_reason ?? ''}`
       const prev = memberSig.current[m.run_id]
       memberSig.current[m.run_id] = sig
       if (prev !== undefined && prev !== sig) {
@@ -314,11 +315,19 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                     )}
                     {statusLabel(m.status, language)}{m.paused_reason ? ` (${m.paused_reason})` : ''}
                   </span>
-                  {m.realized_pnl_usd != null && (
-                    <span style={{ color: (m.realized_pnl_usd || 0) >= 0 ? '#2e9e6b' : '#f0663f' }}>
-                      {(m.realized_pnl_usd || 0) >= 0 ? '+' : ''}{Number(m.realized_pnl_usd).toFixed(2)}
-                    </span>
-                  )}
+                  {(m.total_pnl_usd ?? m.realized_pnl_usd) != null && (() => {
+                    // Plan 15 O2: show the marked TOTAL (realized + unrealized) —
+                    // realized alone is just the fee ledger until the first
+                    // close and painted every young winner red.
+                    const total = Number(m.total_pnl_usd ?? m.realized_pnl_usd)
+                    const tip = `${tr(language, { ko: '평가 손익', en: 'marked P&L', ja: '評価損益', th: 'P&L ตามราคาตลาด', vi: 'P&L theo giá' })} ${total >= 0 ? '+' : ''}${total.toFixed(2)}` +
+                      (m.realized_pnl_usd != null ? ` · ${tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt' })} ${Number(m.realized_pnl_usd) >= 0 ? '+' : ''}${Number(m.realized_pnl_usd).toFixed(2)}` : '')
+                    return (
+                      <span title={tip} style={{ color: total >= 0 ? '#2e9e6b' : '#f0663f' }}>
+                        {total >= 0 ? '+' : ''}{total.toFixed(2)}
+                      </span>
+                    )
+                  })()}
                 </div>
                 {m.run_budget_usd != null && (
                   <div style={{ marginTop: 3, fontSize: 11.5, color: 'var(--text-muted,#a89f92)' }}>

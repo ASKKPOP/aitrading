@@ -279,3 +279,22 @@ class FleetRouteTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MemberPnlFieldsTests(FleetRouteTests):
+    """Plan 15 O2 — member cards need the marked total, not just the fee
+    ledger (realized is fees-only until the first close)."""
+
+    def test_members_carry_unrealized_and_total(self):
+        fleet_id = self._seed_and_build()
+        r = self.client.get(f"/api/fleets/{fleet_id}", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        members = r.json().get("members") or []
+        self.assertTrue(members)
+        for m in members:
+            self.assertIn("unrealized_pnl_usd", m)
+            self.assertIn("total_pnl_usd", m)
+            # flat freshly-built member: total == realized (fees so far)
+            if m.get("total_pnl_usd") is not None and m.get("realized_pnl_usd") is not None:
+                self.assertAlmostEqual(float(m["total_pnl_usd"]),
+                                       float(m["realized_pnl_usd"]), places=6)

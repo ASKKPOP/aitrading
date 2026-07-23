@@ -136,6 +136,19 @@ def _members_public(fleet_id: int) -> list[dict]:
             cfg = _json.loads(m.get("config_snapshot_json") or "{}")
         except Exception:  # noqa: BLE001
             pass
+        # Plan 15 overnight finding O2 (2026-07-23): realized alone is the
+        # FEE ledger until the first close — a card showing it reads "loss"
+        # on every young run even while its position is winning (Henry read
+        # a +$9-unrealized fleet as "100% lost"). Ship the marked total too.
+        unrealized = None
+        total = m.get("realized_pnl_usd")
+        try:
+            import run_engine
+            pnl = run_engine.compute_run_pnl(m)
+            unrealized = pnl.get("unrealized")
+            total = pnl.get("total")
+        except Exception:  # noqa: BLE001
+            pass
         members.append({
             "run_id": m["id"], "symbol": m["symbol"], "market": m["market"],
             "market_type": m["market_type"], "status": m["status"],
@@ -144,6 +157,8 @@ def _members_public(fleet_id: int) -> list[dict]:
             "run_budget_usd": cfg.get("run_budget_usd"),
             "thesis": cfg.get("thesis"),
             "realized_pnl_usd": m.get("realized_pnl_usd"),
+            "unrealized_pnl_usd": unrealized,
+            "total_pnl_usd": total,
         })
     return members
 
