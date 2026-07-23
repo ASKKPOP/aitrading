@@ -1055,6 +1055,22 @@ def compute_conviction(scores: Optional[dict]) -> Optional[float]:
     return round(total, 4)
 
 
+def _conviction_size_scale(value: Optional[float]) -> Optional[float]:
+    """Plan 15 rec-2: bet-size scale from conviction (or the scalar when no
+    scores exist). Linear 0.45→0.75 mapped to 0.40→1.00, clamped — strictly
+    shrink-only so it can never lever up. None disables scaling (no signal,
+    or the kill-switch is off)."""
+    if os.getenv("RUN_SIZE_BY_CONVICTION", "true").strip().lower() not in {"1", "true", "yes", "on"}:
+        return None
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    return round(max(0.40, min(1.0, (v - 0.45) / 0.30)), 4)
+
+
 def _conf_v2_enabled() -> bool:
     """Plan 15 P3: flip the gate from the LLM's scalar confidence to the
     computed conviction. Default OFF — enable only after the shadow period
@@ -1335,11 +1351,14 @@ def run_cycle(run_id: int) -> dict:
         conviction = compute_conviction(scores)
         use_conviction = _conf_v2_enabled() and conviction is not None
         gate_confidence = conviction if use_conviction else confidence
+        size_scale = _conviction_size_scale(
+            conviction if conviction is not None else confidence)
 
         emit_telemetry_event(run_id, "decision",
                              {"cycle": seq, "action": action, "confidence": confidence,
                               "conviction": conviction, "scores": scores,
                               "gate_source": "conviction" if use_conviction else "confidence",
+                              "size_scale": size_scale,
                               "entry": entry,
                               "report": (decision.get("report") or "")[:1000]})
 
@@ -1390,6 +1409,12 @@ def run_cycle(run_id: int) -> dict:
         if adapt_params is not None:
             size_usd = adapt_params["size_usd"]
             min_confidence = adapt_params["min_confidence"]
+        # Plan 15 rec-2 (2026-07-23, Henry-approved): bet size follows stated
+        # conviction — "modest long, slight edge only" must not execute a
+        # full max_bet. Shrink-only (scale ≤ 1.0), composes with the adapt
+        # ladder; kill-switch RUN_SIZE_BY_CONVICTION=0.
+        if size_scale is not None and size_usd:
+            size_usd = float(size_usd) * size_scale
         if is_fleet_run and cfg.get("run_budget_usd"):
             open_basis = _open_cost_basis(run["agent_id"], run["market"],
                                           run["symbol"], run["id"])

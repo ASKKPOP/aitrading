@@ -463,3 +463,122 @@ class HeadroomFloorTests(unittest.TestCase):
         for max_bet, expected in ((5200.0, 104.0), (400.0, 10.0), (0, 10.0)):
             floor = max(10.0, 0.02 * float(max_bet or 0))
             self.assertEqual(floor, expected)
+
+
+class ConvictionSizeScaleTests(unittest.TestCase):
+    """rec-2 — size follows conviction, shrink-only."""
+
+    def test_mapping(self):
+        f = run_engine._conviction_size_scale
+        self.assertEqual(f(0.75), 1.0)
+        self.assertEqual(f(0.90), 1.0)     # never levers up
+        self.assertEqual(f(0.60), 0.5)
+        self.assertEqual(f(0.45), 0.40)
+        self.assertEqual(f(0.10), 0.40)    # floor
+        self.assertIsNone(f(None))
+
+    def test_kill_switch(self):
+        os.environ["RUN_SIZE_BY_CONVICTION"] = "0"
+        try:
+            self.assertIsNone(run_engine._conviction_size_scale(0.9))
+        finally:
+            os.environ.pop("RUN_SIZE_BY_CONVICTION", None)
+
+    def test_trade_size_scales_with_scores(self):
+        """Integration: weak scores → smaller executed quantity."""
+        import tempfile as _tf
+        tmp = _tf.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(tmp.name, "t.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        from fastapi.testclient import TestClient
+        from routes import create_app
+        probe = patch("routes_runs._probe_price", return_value=100.0)
+        probe.start()
+        client = TestClient(create_app())
+        try:
+            def mk_run(name):
+                tok = client.post("/api/claw/agents/selfRegister",
+                                  json={"name": name, "password": "pw123",
+                                        "initial_balance": 100000.0}).json()["token"]
+                h = {"Authorization": f"Bearer {tok}"}
+                rid = client.post("/api/runs",
+                                  json={"symbol": "BTC", "market": "crypto",
+                                        "max_bet_usd": 1000.0,
+                                        "min_confidence": 0.5},
+                                  headers=h).json()["id"]
+                assert client.post(f"/api/runs/{rid}/start",
+                                   headers=h).status_code == 200
+                return rid
+
+            def analysis(scores):
+                return {"symbol": "BTC", "market": "crypto",
+                        "analysts": {"technical": {"brief": "t",
+                                                   "data": {"sigma_daily_pct": 2.5,
+                                                            "current_price": 100.0}}},
+                        "decision": {"action": "buy", "confidence": 0.62,
+                                     "entry": 100.0, "report": "r",
+                                     "scores": scores}}
+
+            strong = {"thesis_alignment": 0.9, "momentum_quality": 0.9,
+                      "entry_quality": 0.9, "risk_context": 0.9}   # cv 0.9 → 1.0
+            weak = {"thesis_alignment": 0.6, "momentum_quality": 0.6,
+                    "entry_quality": 0.6, "risk_context": 0.6}     # cv 0.6 → 0.5
+            r1, r2 = mk_run("sz-strong"), mk_run("sz-weak")
+            with patch("analysis_agents.run_analysis",
+                       return_value=analysis(strong)):
+                self.assertTrue(run_engine.run_cycle(r1)["executed"])
+            with patch("analysis_agents.run_analysis",
+                       return_value=analysis(weak)):
+                self.assertTrue(run_engine.run_cycle(r2)["executed"])
+            conn = database.get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT run_id, quantity FROM signals ORDER BY id")
+            rows = {r["run_id"]: float(r["quantity"]) for r in cur.fetchall()}
+            conn.close()
+            # weak run's quantity ≈ half the strong run's
+            self.assertAlmostEqual(rows[r2] / rows[r1], 0.5, places=2)
+        finally:
+            probe.stop()
+            os.environ.pop("AUTO_TRADING_ENABLED", None)
+            tmp.cleanup()
+
+
+class ShadowReportTests(unittest.TestCase):
+    """rec-1 — the flip test is computed from episodes."""
+
+    def test_episode_cutting_and_weighting(self):
+        from conviction_shadow import build_episodes
+        legs = [
+            {"side": "buy", "quantity": 10, "entry_price": 100.0,
+             "fee_usd": 1.0, "cycle": 1},
+            {"side": "buy", "quantity": 10, "entry_price": 110.0,
+             "fee_usd": 1.0, "cycle": 2},
+            {"side": "sell", "quantity": 20, "entry_price": 120.0,
+             "fee_usd": 2.0, "cycle": None},          # win: +300 -4 fees
+            {"side": "short", "quantity": 5, "entry_price": 100.0,
+             "fee_usd": 1.0, "cycle": 3},
+            {"side": "cover", "quantity": 5, "entry_price": 110.0,
+             "fee_usd": 1.0, "cycle": None},          # loss: -50 -2 fees
+        ]
+        metrics = {1: {"confidence": 0.6, "conviction": 0.7},
+                   2: {"confidence": 0.8, "conviction": 0.9},
+                   3: {"confidence": 0.5, "conviction": 0.4}}
+        eps = build_episodes(legs, metrics)
+        self.assertEqual(len(eps), 2)
+        self.assertAlmostEqual(eps[0]["pnl"], 296.0)
+        # weighted mean: (1000*0.6 + 1100*0.8) / 2100
+        self.assertAlmostEqual(eps[0]["confidence"], 0.7048, places=4)
+        self.assertAlmostEqual(eps[0]["conviction"], 0.8048, places=4)
+        self.assertAlmostEqual(eps[1]["pnl"], -52.0)
+        self.assertEqual(eps[1]["confidence"], 0.5)
+
+    def test_rank_agreement(self):
+        from conviction_shadow import _rank_agreement
+        eps = [{"pnl": 10, "confidence": 0.6}, {"pnl": 20, "confidence": 0.7},
+               {"pnl": -5, "confidence": 0.65}, {"pnl": -8, "confidence": 0.5}]
+        # pairs: (0.6 vs 0.65)=0, (0.6 vs 0.5)=1, (0.7 vs 0.65)=1, (0.7 vs 0.5)=1
+        self.assertEqual(_rank_agreement(eps, "confidence"), 0.75)
+        self.assertIsNone(_rank_agreement(
+            [{"pnl": 1, "confidence": 0.6}], "confidence"))

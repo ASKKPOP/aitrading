@@ -583,15 +583,16 @@ def _fetch_news_feed(category: str, definition: dict[str, str]) -> list[dict[str
     return _dedupe_news_items(normalized_items)
 
 
-def _daily_rows_from_yahoo(symbol: str) -> list[dict[str, Any]]:
+def _daily_rows_from_yahoo(symbol: str, market: str = "us-stock") -> list[dict[str, Any]]:
     """Plan 15 P1 (F2): TIME_SERIES_DAILY_ADJUSTED sits behind the Alpha
-    Vantage premium wall on the free tier, which left every us-stock run with
-    no technicals at all — the TSLA run held on missing data for 15 straight
-    cycles. Yahoo daily candles (already the us-stock price source) fill the
-    same newest-first {date, close, volume} shape."""
+    Vantage premium/rate-limit wall on the free tier, which left every
+    us-stock run with no technicals at all — the TSLA run held on missing
+    data for 15 straight cycles. Daily candles from the market's keyless
+    feed (Yahoo for us-stock, OKX for crypto) fill the same newest-first
+    {date, close, volume} shape."""
     try:
         from price_fetcher import get_daily_candles
-        candles = get_daily_candles(symbol, "us-stock", days=100)
+        candles = get_daily_candles(symbol, market, days=100)
     except Exception:  # noqa: BLE001
         return []
     rows: list[dict[str, Any]] = []
@@ -653,13 +654,24 @@ def _fetch_daily_adjusted_series(symbol: str) -> list[dict[str, Any]]:
 
 
 def _fetch_btc_daily_series() -> list[dict[str, Any]]:
-    payload = _alpha_vantage_get({
-        "function": "DIGITAL_CURRENCY_DAILY",
-        "symbol": "BTC",
-        "market": "USD",
-    })
-    series = payload.get("Time Series (Digital Currency Daily)") if isinstance(payload, dict) else None
+    series = None
+    try:
+        payload = _alpha_vantage_get({
+            "function": "DIGITAL_CURRENCY_DAILY",
+            "symbol": "BTC",
+            "market": "USD",
+        })
+        series = payload.get("Time Series (Digital Currency Daily)") if isinstance(payload, dict) else None
+    except Exception:  # noqa: BLE001 — premium/rate-limit wall raises inside
+        series = None
     if not isinstance(series, dict):
+        # Plan 15 rec-3 (2026-07-23): the free AV key allows 25 req/day; the
+        # macro loop alone would need ~384. Fall back to the keyless OKX
+        # candle feed so macro signals keep flowing (this was the last leg
+        # still throwing [Macro Signal Error] hourly).
+        fallback_rows = _daily_rows_from_yahoo("BTC", market="crypto")
+        if fallback_rows:
+            return fallback_rows
         raise RuntimeError("Missing BTC daily series")
 
     rows: list[dict[str, Any]] = []
