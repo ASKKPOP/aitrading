@@ -485,14 +485,64 @@ def retire_run(run: dict, reason: str) -> None:
         conn.close()
 
 
-def effective_gate_params(state: dict, cfg: dict) -> dict:
+def _recent_decision_values(run_id: int, limit: int = 30) -> list[float]:
+    """Gate-relevant values from the run's recent decision events —
+    conviction when present (P2), else the legacy scalar. Fail-soft: [] on
+    any error (the caller then applies no distribution cap)."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT payload FROM run_events
+                   WHERE run_id = ? AND event_type = 'decision'
+                   ORDER BY id DESC LIMIT ?""",
+                (run_id, int(limit)))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+        values: list[float] = []
+        for row in rows:
+            try:
+                obj = json.loads(row["payload"] or "{}")
+                v = obj.get("conviction")
+                if v is None:
+                    v = obj.get("confidence")
+                if v is not None:
+                    values.append(float(v))
+            except (ValueError, TypeError):
+                continue
+        return values
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def effective_gate_params(state: dict, cfg: dict,
+                          run_id: Optional[int] = None) -> dict:
     """The ONLY interface adaptation has to the money path: modulate the
-    gate config — size shrink-only, confidence tighten-only."""
+    gate config — size shrink-only, confidence tighten-only.
+
+    Plan 15 E1: the absolute +0.05/loss bump assumed the model uses the full
+    confidence scale; with output pinned near 0.62 one loss pushed the gate
+    to 0.65+ and the run went permanently silent (it would never emit above
+    the gate again). The tightened gate is therefore capped at the run's own
+    recent p90 emitted value − 0.01: the run must beat its own strongest
+    recent read to trade — tightened, but never unreachable. Needs ≥8 recent
+    decisions; below that (or with no run_id) behavior is unchanged."""
     base_conf = float(cfg.get("min_confidence") or 0)
     base_size = float(cfg.get("max_bet_usd") or 0)
+    tightened = min(ADAPT_BOUNDS["min_conf_ceiling"],
+                    base_conf + float(state.get("conf_bump") or 0))
+    if run_id is not None and float(state.get("conf_bump") or 0) > 0:
+        values = _recent_decision_values(run_id)
+        if len(values) >= 8:
+            ordered = sorted(values)
+            p90 = ordered[min(len(ordered) - 1, int(0.9 * len(ordered)))]
+            cap = round(p90 - 0.01, 4)
+            if cap > base_conf:
+                tightened = min(tightened, cap)
     return {
-        "min_confidence": min(ADAPT_BOUNDS["min_conf_ceiling"],
-                              base_conf + float(state.get("conf_bump") or 0)),
+        "min_confidence": tightened,
         "size_usd": max(10.0, base_size * float(state.get("size_mult") or 1.0)),
         "size_mult": float(state.get("size_mult") or 1.0),
     }

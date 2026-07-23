@@ -491,7 +491,21 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       })
       if (!r.ok) {
         const detail = (await r.json()).detail
-        if (r.status === 409 && detail && typeof detail === 'object' && detail.conflicts
+        if (r.status === 409 && detail && typeof detail === 'object' && detail.early_stop) {
+          // Plan 15 E2: stopping a thesis run before its horizon realizes the
+          // current mark — confirm, then re-send with confirm_early.
+          const es = detail.early_stop
+          const msg = tr(language, {
+            ko: `이 TRADING의 AI 논지 기간이 ${es.remaining_hours}시간 남았습니다. 지금 정지하면 현재 가격으로 손익이 확정됩니다. 그래도 정지할까요?`,
+            en: `This TRADING's AI thesis still has ${es.remaining_hours}h to run. Stopping now locks in P&L at the current price. Stop anyway?`,
+            ja: `このTRADINGのAI論点はあと${es.remaining_hours}時間残っています。今停止すると現在価格で損益が確定します。停止しますか？`,
+            th: `วิทยานิพนธ์ AI ของ TRADING นี้เหลืออีก ${es.remaining_hours} ชม. หยุดตอนนี้จะล็อกกำไร/ขาดทุนที่ราคาปัจจุบัน หยุดหรือไม่?`,
+            vi: `Luận điểm AI của TRADING này còn ${es.remaining_hours} giờ. Dừng bây giờ sẽ chốt lãi/lỗ theo giá hiện tại. Vẫn dừng?`,
+          })
+          if (window.confirm(msg)) {
+            await act(id, action, { ...(body || {}), confirm_early: true })
+          }
+        } else if (r.status === 409 && detail && typeof detail === 'object' && detail.conflicts
             && (detail.conflicts.position || detail.conflicts.rule_ids?.length)) {
           setConflict({ runId: id, message: detail.message, conflicts: detail.conflicts })
         } else {

@@ -1025,6 +1025,43 @@ def _fleet_cycle_mode(cfg: dict) -> str:
     return os.getenv("FLEET_CYCLE_MODE", "light").strip().lower()
 
 
+# Plan 15 P2: the scalar confidence proved quantized (0.62 pin), so the
+# desk also scores four components and CODE computes the conviction the
+# gate can eventually trust. Weights are deterministic and documented in
+# docs/plan/15-run-ai-reading-algorithm-fix.html §5-A.
+CONVICTION_WEIGHTS = {
+    "thesis_alignment": 0.35,
+    "momentum_quality": 0.25,
+    "entry_quality": 0.25,
+    "risk_context": 0.15,
+}
+
+
+def compute_conviction(scores: Optional[dict]) -> Optional[float]:
+    """Weighted blend of the component scores, or None when the model did
+    not produce a complete, valid score set (shadow logging must stay honest
+    about absence — never fabricate a midpoint)."""
+    if not isinstance(scores, dict):
+        return None
+    total = 0.0
+    for key, weight in CONVICTION_WEIGHTS.items():
+        try:
+            v = float(scores[key])
+        except (KeyError, TypeError, ValueError):
+            return None
+        if not (0.0 <= v <= 1.0):
+            return None
+        total += weight * v
+    return round(total, 4)
+
+
+def _conf_v2_enabled() -> bool:
+    """Plan 15 P3: flip the gate from the LLM's scalar confidence to the
+    computed conviction. Default OFF — enable only after the shadow period
+    shows conviction correlates with outcomes better than the scalar."""
+    return os.getenv("RUN_CONF_V2", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _light_analysis(run: dict, cfg: dict) -> dict:
     """One decision-tier LLM call (agent_planner-style) replacing ONLY the
     analysis stage of run_cycle. Pre-gates, evaluate_execution_gates, the
@@ -1082,8 +1119,15 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "alignment, 0.75 = strong multi-factor confirmation, 0.85+ = exceptional "
         "setup. Do not default to a habitual value; if your report states a "
         "percentage it MUST equal this number.\n"
+        "Also score four components, each 0.00-1.00: thesis_alignment (does "
+        "price action still support the thesis?), momentum_quality (strength "
+        "and cleanliness of the current move), entry_quality (how good is THIS "
+        "price as an entry vs the reference?), risk_context (headroom to "
+        "invalidation; 1.0 = very safe).\n"
         'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold", '
-        '"confidence": 0.0-1.0, "report": "<one sentence>"}'
+        '"confidence": 0.0-1.0, "scores": {"thesis_alignment": 0.0-1.0, '
+        '"momentum_quality": 0.0-1.0, "entry_quality": 0.0-1.0, '
+        '"risk_context": 0.0-1.0}, "report": "<one sentence>"}'
     )
     text = None
     try:
@@ -1092,6 +1136,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     except Exception:  # noqa: BLE001
         text = None
     action, confidence, report = "hold", 0.0, "light cycle: no LLM verdict"
+    scores: Optional[dict] = None
     if text:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if m:
@@ -1102,10 +1147,20 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                     action = a
                 confidence = max(0.0, min(1.0, float(obj.get("confidence") or 0)))
                 report = str(obj.get("report") or "")[:500]
+                raw_scores = obj.get("scores")
+                if isinstance(raw_scores, dict):
+                    parsed = {}
+                    for k in CONVICTION_WEIGHTS:
+                        try:
+                            parsed[k] = max(0.0, min(1.0, float(raw_scores[k])))
+                        except (KeyError, TypeError, ValueError):
+                            parsed = None
+                            break
+                    scores = parsed
             except (ValueError, TypeError):
                 pass
     return {"decision": {"action": action, "confidence": confidence,
-                         "entry": entry, "report": report},
+                         "entry": entry, "report": report, "scores": scores},
             "analysts": {}}
 
 
@@ -1242,7 +1297,8 @@ def run_cycle(run_id: int) -> dict:
                                      {"cycle": seq, "stage": "adapt",
                                       "reason": "loss cooldown"})
                 return result
-            adapt_params = run_feedback.effective_gate_params(adapt_state, cfg)
+            adapt_params = run_feedback.effective_gate_params(adapt_state, cfg,
+                                                              run_id=run["id"])
 
         skip = _pre_gate_skip(run, cfg)
         if skip:
@@ -1272,9 +1328,18 @@ def run_cycle(run_id: int) -> dict:
         action = decision.get("action")
         confidence = decision.get("confidence")
         entry = decision.get("entry")
+        # Plan 15 P2: conviction is computed HERE from the component scores
+        # (shadow next to the legacy scalar in every decision event). P3:
+        # when RUN_CONF_V2 is on and a conviction exists, the gate reads it.
+        scores = decision.get("scores")
+        conviction = compute_conviction(scores)
+        use_conviction = _conf_v2_enabled() and conviction is not None
+        gate_confidence = conviction if use_conviction else confidence
 
         emit_telemetry_event(run_id, "decision",
                              {"cycle": seq, "action": action, "confidence": confidence,
+                              "conviction": conviction, "scores": scores,
+                              "gate_source": "conviction" if use_conviction else "confidence",
                               "entry": entry,
                               "report": (decision.get("report") or "")[:1000]})
 
@@ -1342,7 +1407,7 @@ def run_cycle(run_id: int) -> dict:
                     "min_confidence": min_confidence,
                     "size_usd": size_usd, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
-                                         run["market"], action, confidence, entry,
+                                         run["market"], action, gate_confidence, entry,
                                          None, technical)
         gate = gates.get("gate")
         if gates["skip_reason"] is not None or gate is None:

@@ -230,6 +230,10 @@ class StartIn(BaseModel):
 
 class StopIn(BaseModel):
     flatten: bool = True
+    # Plan 15 E2: acknowledge stopping a thesis-driven run before its
+    # horizon has elapsed (run 35 realized −$100 via an early user stop the
+    # thesis never got to play out).
+    confirm_early: bool = False
 
 
 class ReportingIn(BaseModel):
@@ -294,6 +298,31 @@ def _run_or_404(run_id: int, agent_id: int) -> dict:
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     return run
+
+
+def _early_stop_details(run: dict) -> Optional[dict]:
+    """Plan 15 E2: {horizon_hours, elapsed_hours, remaining_hours} when the
+    run carries a thesis whose horizon has not elapsed yet; None otherwise
+    (no thesis, no horizon, not started, or horizon already passed).
+    Fail-open: a parsing problem must never block a stop."""
+    try:
+        from datetime import datetime, timezone
+        cfg = _json.loads(run.get("config_snapshot_json") or "{}")
+        thesis = cfg.get("thesis")
+        horizon = float((thesis or {}).get("horizon_hours") or 0)
+        started = run.get("started_at")
+        if horizon <= 0 or not started:
+            return None
+        started_dt = datetime.strptime(started, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+        elapsed = (datetime.now(timezone.utc) - started_dt).total_seconds() / 3600.0
+        if elapsed >= horizon:
+            return None
+        return {"horizon_hours": round(horizon, 2),
+                "elapsed_hours": round(elapsed, 2),
+                "remaining_hours": round(horizon - elapsed, 2)}
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _public(run: dict) -> dict:
@@ -451,8 +480,22 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def stop_run(run_id: int, data: StopIn = None,  # type: ignore[assignment]
                        authorization: str = Header(None)):
         agent = _auth(authorization)
-        owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
+        row = _run_or_404(run_id, agent["id"])
+        owner_id = row["agent_id"]
         flatten = data.flatten if data is not None else True
+        confirm_early = data.confirm_early if data is not None else False
+        # Plan 15 E2: a thesis-driven run stopped before horizon_hours have
+        # elapsed realizes whatever the current mark says instead of letting
+        # the thesis resolve — require an explicit acknowledgement.
+        if not confirm_early and row.get("status") in ("running", "paused"):
+            early = _early_stop_details(row)
+            if early is not None:
+                raise HTTPException(status_code=409, detail={
+                    "message": ("This run's thesis horizon has not elapsed — "
+                                "stopping now realizes the current mark. "
+                                "Re-send with confirm_early to stop anyway."),
+                    "early_stop": early,
+                })
         try:
             run = trading_runs.request_stop(run_id, owner_id, flatten)
         except ValueError as exc:

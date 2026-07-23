@@ -183,5 +183,259 @@ class FleetGateCoherenceTests(unittest.TestCase):
                          0.63)
 
 
+class ConvictionMathTests(unittest.TestCase):
+    """P2 — conviction is computed in code from the component scores."""
+
+    def test_weighted_blend(self):
+        scores = {"thesis_alignment": 0.8, "momentum_quality": 0.6,
+                  "entry_quality": 0.4, "risk_context": 0.5}
+        # 0.35*0.8 + 0.25*0.6 + 0.25*0.4 + 0.15*0.5 = 0.605
+        self.assertEqual(run_engine.compute_conviction(scores), 0.605)
+
+    def test_missing_key_is_none(self):
+        self.assertIsNone(run_engine.compute_conviction(
+            {"thesis_alignment": 0.8, "momentum_quality": 0.6,
+             "entry_quality": 0.4}))
+
+    def test_out_of_range_is_none(self):
+        self.assertIsNone(run_engine.compute_conviction(
+            {"thesis_alignment": 1.4, "momentum_quality": 0.6,
+             "entry_quality": 0.4, "risk_context": 0.5}))
+
+    def test_non_dict_is_none(self):
+        self.assertIsNone(run_engine.compute_conviction(None))
+        self.assertIsNone(run_engine.compute_conviction("0.7"))
+
+    def test_light_analysis_parses_scores(self):
+        reply = ('{"action": "buy", "confidence": 0.62, "scores": '
+                 '{"thesis_alignment": 0.8, "momentum_quality": 0.7, '
+                 '"entry_quality": 0.6, "risk_context": 0.5}, "report": "r"}')
+        with patch("price_fetcher.get_price_from_market", return_value=100.0), \
+                patch("price_fetcher.get_daily_candles", return_value=[]), \
+                patch("llm_client.generate_text", return_value=reply), \
+                patch.object(run_engine, "_position_quantity", return_value=0.0):
+            out = run_engine._light_analysis(
+                {"id": 1, "agent_id": 1, "symbol": "X", "market": "crypto",
+                 "market_type": "spot"}, {})
+        self.assertEqual(out["decision"]["scores"]["thesis_alignment"], 0.8)
+        self.assertEqual(run_engine.compute_conviction(out["decision"]["scores"]),
+                         0.68)
+
+
+class ConvictionGateFlagTests(unittest.TestCase):
+    """P3 — RUN_CONF_V2 flips the gate to conviction; default stays legacy."""
+
+    STRONG_SCORES_WEAK_SCALAR = {
+        "symbol": "BTC", "market": "crypto",
+        "analysts": {"technical": {"brief": "t",
+                                   "data": {"sigma_daily_pct": 2.5,
+                                            "current_price": 100.0}}},
+        "decision": {"action": "buy", "confidence": 0.30, "entry": 100.0,
+                     "report": "r",
+                     "scores": {"thesis_alignment": 0.9, "momentum_quality": 0.8,
+                                "entry_quality": 0.8, "risk_context": 0.7}},
+    }  # conviction = 0.35*.9+0.25*.8+0.25*.8+0.15*.7 = 0.82
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        from fastapi.testclient import TestClient
+        from routes import create_app
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "conv-agent", "password": "pw123",
+                  "initial_balance": 100000.0})
+        self.token = resp.json()["token"]
+
+    def tearDown(self):
+        self.probe.stop()
+        os.environ.pop("AUTO_TRADING_ENABLED", None)
+        os.environ.pop("RUN_CONF_V2", None)
+        self.tmp.cleanup()
+
+    def _running_run(self):
+        h = {"Authorization": f"Bearer {self.token}"}
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 500.0, "min_confidence": 0.6},
+            headers=h).json()["id"]
+        assert self.client.post(f"/api/runs/{run_id}/start",
+                                headers=h).status_code == 200
+        return run_id
+
+    def test_flag_off_gates_on_scalar(self):
+        run_id = self._running_run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self.STRONG_SCORES_WEAK_SCALAR):
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result["executed"], result)
+        self.assertIn("below threshold", result["skip_reason"] or "")
+
+    def test_flag_on_gates_on_conviction(self):
+        os.environ["RUN_CONF_V2"] = "1"
+        run_id = self._running_run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self.STRONG_SCORES_WEAK_SCALAR):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result)
+
+    def test_decision_event_carries_shadow_fields(self):
+        run_id = self._running_run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self.STRONG_SCORES_WEAK_SCALAR):
+            run_engine.run_cycle(run_id)
+        import json as _j
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT payload FROM run_events WHERE run_id = ? AND "
+                        "event_type = 'decision' ORDER BY id DESC LIMIT 1",
+                        (run_id,))
+            payload = _j.loads(cur.fetchone()["payload"])
+        finally:
+            conn.close()
+        self.assertEqual(payload["conviction"], 0.82)
+        self.assertEqual(payload["gate_source"], "confidence")
+        self.assertEqual(payload["scores"]["thesis_alignment"], 0.9)
+
+
+class AdaptPercentileCapTests(unittest.TestCase):
+    """E1 — loss-tightening can no longer out-run the model's own output."""
+
+    def _params(self, values, bump=0.05, run_id=7):
+        import run_feedback as rf
+        state = dict(rf._DEFAULT_STATE)
+        state["conf_bump"] = bump
+        cfg = {"min_confidence": 0.60, "max_bet_usd": 500.0}
+        with patch.object(rf, "_recent_decision_values", return_value=values):
+            return rf.effective_gate_params(state, cfg, run_id=run_id)
+
+    def test_pinned_output_caps_at_p90_minus_epsilon(self):
+        # the fleet-6 disease: everything 0.62, base 0.60, one loss
+        p = self._params([0.62] * 10)
+        self.assertEqual(p["min_confidence"], 0.61)  # min(0.65, 0.62-0.01)
+
+    def test_spread_output_keeps_full_tightening(self):
+        values = [0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
+        p = self._params(values)
+        self.assertEqual(p["min_confidence"], 0.65)  # p90 0.9 → cap 0.89 no-op
+
+    def test_too_few_decisions_keeps_legacy(self):
+        p = self._params([0.62] * 5)
+        self.assertEqual(p["min_confidence"], 0.65)
+
+    def test_no_run_id_keeps_legacy(self):
+        import run_feedback as rf
+        state = dict(rf._DEFAULT_STATE)
+        state["conf_bump"] = 0.05
+        p = rf.effective_gate_params(state, {"min_confidence": 0.60,
+                                             "max_bet_usd": 500.0})
+        self.assertEqual(p["min_confidence"], 0.65)
+
+    def test_no_bump_skips_the_query(self):
+        import run_feedback as rf
+        state = dict(rf._DEFAULT_STATE)
+        with patch.object(rf, "_recent_decision_values",
+                          side_effect=AssertionError("must not query")) :
+            p = rf.effective_gate_params(state, {"min_confidence": 0.60,
+                                                 "max_bet_usd": 500.0},
+                                         run_id=7)
+        self.assertEqual(p["min_confidence"], 0.60)
+
+
+class EarlyStopConfirmTests(unittest.TestCase):
+    """E2 — stopping a thesis run before its horizon needs confirm_early."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        from fastapi.testclient import TestClient
+        from routes import create_app
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "estop-agent", "password": "pw123",
+                  "initial_balance": 100000.0})
+        self.token = resp.json()["token"]
+        self.h = {"Authorization": f"Bearer {self.token}"}
+
+    def tearDown(self):
+        self.probe.stop()
+        self.tmp.cleanup()
+
+    def _running_run(self, thesis_horizon_h=None):
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 500.0}, headers=self.h).json()["id"]
+        assert self.client.post(f"/api/runs/{run_id}/start",
+                                headers=self.h).status_code == 200
+        if thesis_horizon_h is not None:
+            import json as _j
+            conn = database.get_db_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT config_snapshot_json FROM trading_runs "
+                            "WHERE id = ?", (run_id,))
+                cfg = _j.loads(cur.fetchone()["config_snapshot_json"] or "{}")
+                cfg["thesis"] = {"horizon_hours": thesis_horizon_h}
+                cur.execute("UPDATE trading_runs SET config_snapshot_json = ? "
+                            "WHERE id = ?", (_j.dumps(cfg), run_id))
+                conn.commit()
+            finally:
+                conn.close()
+        return run_id
+
+    def test_early_stop_409s_without_confirm(self):
+        run_id = self._running_run(thesis_horizon_h=48)
+        resp = self.client.post(f"/api/runs/{run_id}/stop",
+                                json={"flatten": True}, headers=self.h)
+        self.assertEqual(resp.status_code, 409, resp.text)
+        early = resp.json()["detail"]["early_stop"]
+        self.assertEqual(early["horizon_hours"], 48)
+        self.assertGreater(early["remaining_hours"], 0)
+
+    def test_early_stop_with_confirm_stops(self):
+        run_id = self._running_run(thesis_horizon_h=48)
+        resp = self.client.post(
+            f"/api/runs/{run_id}/stop",
+            json={"flatten": True, "confirm_early": True}, headers=self.h)
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertIn(resp.json()["run"]["status"], ("stopping", "stopped"))
+
+    def test_no_thesis_stops_without_confirm(self):
+        run_id = self._running_run()
+        resp = self.client.post(f"/api/runs/{run_id}/stop",
+                                json={"flatten": True}, headers=self.h)
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+    def test_elapsed_horizon_stops_without_confirm(self):
+        # deterministic: 1h horizon, started_at backdated 2h
+        from datetime import datetime, timedelta, timezone
+        run_id = self._running_run(thesis_horizon_h=1)
+        past = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE trading_runs SET started_at = ? WHERE id = ?",
+                        (past, run_id))
+            conn.commit()
+        finally:
+            conn.close()
+        resp = self.client.post(f"/api/runs/{run_id}/stop",
+                                json={"flatten": True}, headers=self.h)
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+
 if __name__ == "__main__":
     unittest.main()
