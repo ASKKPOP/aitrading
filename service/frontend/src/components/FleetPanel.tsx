@@ -68,8 +68,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.' }),
     nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING' }),
     budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn' }),
-    advanced: tr(language, { ko: '고급 설정', en: 'Advanced', ja: '詳細設定', th: 'ขั้นสูง', vi: 'Nâng cao' }),
-    risk: tr(language, { ko: '위험 성향', en: 'Risk appetite', ja: 'リスク', th: 'ความเสี่ยง', vi: 'Khẩu vị rủi ro' }),
+    profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)' }),
     launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy' }),
     stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)' }),
     pause: tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng' }),
@@ -110,7 +109,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [n, setN] = useState(3)
   const [budget, setBudget] = useState<number>(0)
   const [risk, setRisk] = useState('balanced')
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -245,25 +243,19 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             </button>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
           </div>
-          <button onClick={() => setShowAdvanced(v => !v)}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted,#a89f92)', fontSize: 12, cursor: 'pointer', padding: 0 }}>
-            {showAdvanced ? '▾' : '▸'} {T.advanced}
-          </button>
-          {showAdvanced && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, marginBottom: 6 }}>{T.risk}</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {RISK_TIERS.map(t => (
-                  <button key={t.key} style={chip(risk === t.key)} onClick={() => setRisk(t.key)}>
-                    {tr(language, t.label)}
-                  </button>
-                ))}
-              </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
-                {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
-              </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 12.5, marginBottom: 6, fontWeight: 600 }}>{T.profitLevel}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {RISK_TIERS.map(t => (
+                <button key={t.key} style={chip(risk === t.key)} onClick={() => setRisk(t.key)}>
+                  {tr(language, t.label)}
+                </button>
+              ))}
             </div>
-          )}
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
+              {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
+            </div>
+          </div>
           {fleet && fleet.status === 'stopped' && fleet.status_reason && (
             <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--text-secondary,#8a8073)' }}>
               ℹ️ {reasonLabel(fleet.status_reason)}
