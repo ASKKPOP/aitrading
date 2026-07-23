@@ -452,3 +452,14 @@ class MarkRefreshDefaultTests(unittest.TestCase):
         self.assertIn("crypto", parsed)
         self.assertIn("futures", parsed)
         self.assertIn("us-stock", parsed)
+
+
+class HeadroomFloorTests(unittest.TestCase):
+    """Overnight (Henry-approved): dust adds below max($10, 2% of max_bet)
+    skip instead of trading — a $17 add on a $5.2k max_bet is fee churn."""
+
+    def test_floor_scales_with_max_bet(self):
+        # replicate the floor expression used in run_cycle
+        for max_bet, expected in ((5200.0, 104.0), (400.0, 10.0), (0, 10.0)):
+            floor = max(10.0, 0.02 * float(max_bet or 0))
+            self.assertEqual(floor, expected)

@@ -295,6 +295,42 @@ class RunEngineFleetTests(FleetTestBase):
         self.assertEqual(len(members), 1)
         return fleet_id, members[0]
 
+
+    def test_dust_headroom_skips_instead_of_trading(self):
+        """Plan 15 overnight: headroom below max($10, 2% of max_bet) must
+        skip (budget_headroom_skip), not place a dust add."""
+        import json as _j
+        import run_engine
+        _seed_batch()
+        fleet_id = self._fleet(n=1, budget=10000.0)
+        fp.start_fleet(fleet_id, self.agent_id)
+        fp._do_research(fp.get_fleet(fleet_id))
+        fp._do_build(fp.get_fleet(fleet_id))
+        member = fp.list_members(fleet_id)[0]
+        cfg = _j.loads(member["config_snapshot_json"])
+        max_bet = float(cfg["max_bet_usd"])
+        floor = max(10.0, 0.02 * max_bet)
+        # floor must exceed the flat $10 for this test to bite
+        self.assertGreater(floor, 10.0)
+        headroom = (10.0 + floor) / 2.0   # between old ($10) and new floor
+        basis = float(cfg["run_budget_usd"]) - headroom
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO positions (agent_id, symbol, market, side, quantity, "
+            "entry_price, opened_at, run_id) VALUES (?, ?, 'crypto', 'buy', 10, "
+            "?, '2026-01-01T00:00:00Z', ?)",
+            (self.agent_id, member["symbol"], basis / 10.0, member["id"]))
+        conn.commit()
+        conn.close()
+        with patch("llm_client.generate_text",
+                   return_value='{"action": "buy", "confidence": 0.9, "report": "go"}'), \
+             patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]):
+            result = run_engine.run_cycle(member["id"])
+        self.assertFalse(result["executed"], result)
+        self.assertEqual(result["skip_reason"], "budget_headroom_skip")
+
     def test_no_auto_restart_for_fleet_members(self):
         """A fleet member stopped on profit_target must NOT clone (the
         round-4 double-deploy critical)."""

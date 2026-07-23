@@ -1394,7 +1394,12 @@ def run_cycle(run_id: int) -> dict:
             open_basis = _open_cost_basis(run["agent_id"], run["market"],
                                           run["symbol"], run["id"])
             headroom = float(cfg["run_budget_usd"]) - open_basis
-            if action in ("buy", "short") and headroom < 10.0:
+            # Plan 15 overnight (2026-07-23, Henry-approved): floor raised
+            # from a flat $10 to max($10, 2% of max_bet) — a $17 headroom on
+            # a $5.2k max_bet produced a $17 dust add that burned a cycle and
+            # fees for no meaningful exposure.
+            headroom_floor = max(10.0, 0.02 * float(cfg.get("max_bet_usd") or 0))
+            if action in ("buy", "short") and headroom < headroom_floor:
                 result["skip_reason"] = "budget_headroom_skip"
                 emit_telemetry_event(run_id, "gate_skip",
                                      {"cycle": seq, "stage": "budget",
