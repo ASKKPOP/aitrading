@@ -1447,6 +1447,22 @@ def run_cycle(run_id: int) -> dict:
                                   "reason": result["skip_reason"]})
             return result
 
+        # Plan 15 overnight (2026-07-23): dust guard on the FINAL sized order.
+        # The budget-headroom floor upstream only bounds run_budget headroom;
+        # the Kelly cap inside the risk engine can still shrink the sized
+        # quantity to dust (observed: a $5.18 ZC add, fee half a cent).
+        if action in ("buy", "short"):
+            sized_notional = float(gate.quantity or 0) * float(entry or 0)
+            dust_floor = max(10.0, 0.02 * float(cfg.get("max_bet_usd") or 0))
+            if sized_notional < dust_floor:
+                result["skip_reason"] = (
+                    f"dust order skip (sized ${sized_notional:.2f} "
+                    f"< floor ${dust_floor:.2f})")
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "risk",
+                                      "reason": result["skip_reason"]})
+                return result
+
         # Plan 14 §6.7 depth (2): re-check the master hold immediately before
         # the trade write — a hold landing mid-cycle (past the pre-gate, during
         # the LLM call) turns this cycle into a journaled no-trade skip.

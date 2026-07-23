@@ -582,3 +582,56 @@ class ShadowReportTests(unittest.TestCase):
         self.assertEqual(_rank_agreement(eps, "confidence"), 0.75)
         self.assertIsNone(_rank_agreement(
             [{"pnl": 1, "confidence": 0.6}], "confidence"))
+
+
+class DustOrderGuardTests(unittest.TestCase):
+    """Overnight: Kelly-sized dust must skip at the final order, not trade
+    ($5.18 ZC add observed after the budget-headroom floor shipped)."""
+
+    def test_kelly_sized_dust_skips(self):
+        import tempfile as _tf
+        tmp = _tf.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(tmp.name, "t.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        from fastapi.testclient import TestClient
+        from routes import create_app
+        probe = patch("routes_runs._probe_price", return_value=100.0)
+        probe.start()
+        client = TestClient(create_app())
+        try:
+            tok = client.post("/api/claw/agents/selfRegister",
+                              json={"name": "dust-agent", "password": "pw123",
+                                    "initial_balance": 100000.0}).json()["token"]
+            h = {"Authorization": f"Bearer {tok}"}
+            rid = client.post("/api/runs",
+                              json={"symbol": "BTC", "market": "crypto",
+                                    "max_bet_usd": 2000.0,
+                                    "min_confidence": 0.5},
+                              headers=h).json()["id"]
+            assert client.post(f"/api/runs/{rid}/start",
+                               headers=h).status_code == 200
+            analysis = {"symbol": "BTC", "market": "crypto",
+                        "analysts": {"technical": {"brief": "t",
+                                                   "data": {"sigma_daily_pct": 2.5,
+                                                            "current_price": 100.0}}},
+                        "decision": {"action": "buy", "confidence": 0.9,
+                                     "entry": 100.0, "report": "r"}}
+
+            class TinyGate:
+                quantity = 0.05          # $5 notional at entry 100
+                stop_loss = None
+                take_profit = None
+
+            with patch("analysis_agents.run_analysis", return_value=analysis), \
+                 patch("automation.evaluate_execution_gates",
+                       return_value={"skip_reason": None, "gate": TinyGate(),
+                                     "regime_size_multiplier": None}):
+                result = run_engine.run_cycle(rid)
+            self.assertFalse(result["executed"], result)
+            self.assertIn("dust order skip", result["skip_reason"] or "")
+        finally:
+            probe.stop()
+            os.environ.pop("AUTO_TRADING_ENABLED", None)
+            tmp.cleanup()
