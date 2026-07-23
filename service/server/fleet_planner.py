@@ -189,7 +189,8 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  provider: Optional[str] = None, lang: str = "en",
                  warn_loss_frac: float = 0.30, stop_loss_frac: float = 0.40,
                  idempotency_key: Optional[str] = None,
-                 name: Optional[str] = None) -> int:
+                 name: Optional[str] = None,
+                 leverage: Optional[float] = None) -> int:
     """Insert a draft fleet. Raises ValueError on bad inputs, FleetConflict
     when the user already has a non-terminal fleet, EntitlementDenied per the
     ALWAYS-ON tier gate."""
@@ -224,17 +225,21 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                 conn.rollback()
                 return int(row["id"])
         try:
+            lev = None
+            if leverage:
+                lev = max(1.0, min(10.0, float(leverage)))
             cursor.execute(
                 """INSERT INTO fleets
                    (agent_id, name, status, active_fleet_key, idempotency_key,
                     n_runs, total_budget_usd, risk_appetite, market_scope_json,
-                    warn_loss_frac, stop_loss_frac, provider, lang, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    warn_loss_frac, stop_loss_frac, provider, lang, created_at,
+                    leverage)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent_id, name, STATUS_DRAFT, f"user:{user_id}", idempotency_key,
                  int(n_runs), float(total_budget_usd), risk_appetite,
                  json.dumps(market_scope) if market_scope else None,
                  float(warn_loss_frac), float(stop_loss_frac),
-                 provider, lang, _now_iso()))
+                 provider, lang, _now_iso(), lev))
         except trading_runs.EntitlementDenied:
             raise
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_fleet_key)
@@ -892,6 +897,7 @@ def _do_build(fleet: dict) -> None:
                 min_confidence=settings["min_confidence"],
                 provider=settings["provider"], lang=settings["lang"],
                 stop_conditions=settings["stop_conditions"],
+                leverage=settings.get("leverage", 1.0),
                 stop_flatten=True)
             core, start_c, stop_c = validate_run_payload(payload)
             # thesis + fleet flags ride the config snapshot (§4.4 top-level)

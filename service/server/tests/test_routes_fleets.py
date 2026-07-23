@@ -298,3 +298,47 @@ class MemberPnlFieldsTests(FleetRouteTests):
             if m.get("total_pnl_usd") is not None and m.get("realized_pnl_usd") is not None:
                 self.assertAlmostEqual(float(m["total_pnl_usd"]),
                                        float(m["realized_pnl_usd"]), places=6)
+
+
+class FleetLeverageTests(FleetRouteTests):
+    """2026-07-23 — fleet-level leverage: None ⇒ auto by tier, a number
+    overrides it for every run the fleet builds."""
+
+    def _build_with(self, **fleet_kwargs):
+        universe = [{"symbol": s, "market": "crypto"}
+                    for s in ("AAA", "BBB", "CCC")]
+        with patch.object(sr, "build_universe", return_value=universe), \
+             patch.object(sr, "_read_overlays",
+                          return_value={"event_window": False,
+                                        "regime_blocks_longs": False,
+                                        "policy": {}}), \
+             patch("cache.acquire_lock", return_value=None):
+            sr.refresh_research_batch(
+                generate_text=lambda *a, **k: None,
+                fetch_candles=lambda s, m: _candles())
+        body = {"n_runs": 1, "total_budget_usd": 2000.0}
+        body.update(fleet_kwargs)
+        r = self.client.post("/api/fleets", json=body, headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        fleet_id = r.json()["id"]
+        self.client.post(f"/api/fleets/{fleet_id}/start", headers=self.auth)
+        fp._do_research(fp.get_fleet(fleet_id))
+        fp._do_build(fp.get_fleet(fleet_id))
+        return fleet_id
+
+    def _member_leverage(self, fleet_id):
+        import json as _j
+        m = fp.list_members(fleet_id)[0]
+        return _j.loads(m["config_snapshot_json"])["leverage"]
+
+    def test_extreme_tier_auto_leverage_is_3x(self):
+        fid = self._build_with(risk_appetite="extreme")
+        self.assertEqual(self._member_leverage(fid), 3.0)
+
+    def test_explicit_leverage_overrides_tier(self):
+        fid = self._build_with(risk_appetite="extreme", leverage=5)
+        self.assertEqual(self._member_leverage(fid), 5.0)
+
+    def test_balanced_default_leverage_is_1x(self):
+        fid = self._build_with(risk_appetite="balanced")
+        self.assertEqual(self._member_leverage(fid), 1.0)

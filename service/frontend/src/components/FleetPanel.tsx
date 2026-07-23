@@ -43,16 +43,27 @@ const RISK_TIERS: { key: string; label: any; desc: any }[] = [
             vi: 'Vị thế nhỏ (30% ngân sách), cổng chuẩn, cắt lỗ hẹp.' } },
   { key: 'aggressive',
     label: { ko: '수익 · High Profit', en: 'High Profit', ja: '収益', th: 'กำไรสูง', vi: 'Lợi nhuận cao' },
-    desc: { ko: '큰 포지션(예산의 45%)·낮은 게이트(더 자주 거래)·넓은 손절·1.5× 익절 목표. 수익·변동성 모두 상승.',
-            en: 'Bigger positions (45%), looser gate (trades more), wider stop, 1.5× profit target. More profit and more swing.',
-            ja: '大きめのポジション(45%)・低いゲート・広い損切り・1.5倍利確。', th: 'สถานะใหญ่ (45%) เกตต่ำ ตัดขาดทุนกว้าง เป้ากำไร 1.5×',
-            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×.' } },
+    desc: { ko: '큰 포지션(예산의 45%)·낮은 게이트(더 자주 거래)·넓은 손절·1.5× 익절 목표·자동 2배 레버리지. 수익·변동성 모두 상승.',
+            en: 'Bigger positions (45%), looser gate, wider stop, 1.5× profit target, auto 2× leverage. More profit and more swing.',
+            ja: '大きめのポジション(45%)・低いゲート・広い損切り・1.5倍利確・自動2倍レバレッジ。', th: 'สถานะใหญ่ (45%) เกตต่ำ ตัดขาดทุนกว้าง เป้ากำไร 1.5× เลเวอเรจอัตโนมัติ 2×',
+            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×, đòn bẩy tự động 2×.' } },
   { key: 'extreme',
     label: { ko: '고위험 고수익 · Risk & High Profit', en: 'Risk & High Profit', ja: '高リスク高収益', th: 'เสี่ยงสูง กำไรสูง', vi: 'Rủi ro & Lợi nhuận cao' },
-    desc: { ko: '최대 포지션(예산의 70%)·최저 게이트·아주 넓은 손절(30%)·2× 익절 목표. 최고 수익 잠재력이자 최대 낙폭. (레버리지는 1배 유지 — 별도 엔진 필요)',
-            en: 'Largest positions (70% of budget), lowest gate, very wide 30% stop, 2× profit target. Highest upside AND deepest drawdown. (Leverage stays 1× — separate engine.)',
-            ja: '最大ポジション(70%)・最低ゲート・非常に広い損切り(30%)・2倍利確。最大の上昇余地と最大の下落。', th: 'สถานะใหญ่สุด (70%) เกตต่ำสุด ตัดขาดทุนกว้างมาก (30%) เป้ากำไร 2×',
-            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×. Lợi nhuận cao nhất và sụt giảm sâu nhất.' } },
+    desc: { ko: '최대 포지션(예산의 70%)·최저 게이트·아주 넓은 손절(30%)·2× 익절 목표·자동 3배 레버리지. 최고 수익 잠재력이자 최대 낙폭 — 3배는 진입가에서 33% 역행 시 청산됩니다.',
+            en: 'Largest positions (70% of budget), lowest gate, very wide 30% stop, 2× profit target, auto 3× leverage. Highest upside AND deepest drawdown — 3× liquidates on a 33% adverse move.',
+            ja: '最大ポジション(70%)・最低ゲート・非常に広い損切り(30%)・2倍利確・自動3倍レバレッジ。33%逆行で清算。', th: 'สถานะใหญ่สุด (70%) เกตต่ำสุด ตัดขาดทุนกว้างมาก (30%) เป้ากำไร 2× เลเวอเรจอัตโนมัติ 3× (ล้างพอร์ตเมื่อราคาสวน 33%)',
+            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×, đòn bẩy tự động 3×. Thanh lý khi giá đi ngược 33%.' } },
+]
+
+// Leverage choices for the fleet. 'auto' = the tier's default (1/2/3×);
+// a number overrides it for every run the fleet builds.
+const LEV_CHOICES: { key: string; val: number | null; label: string }[] = [
+  { key: 'auto', val: null, label: '자동 · Auto' },
+  { key: '1', val: 1, label: '1×' },
+  { key: '2', val: 2, label: '2×' },
+  { key: '3', val: 3, label: '3×' },
+  { key: '5', val: 5, label: '5×' },
+  { key: '10', val: 10, label: '10×' },
 ]
 
 // monitorOnly: the always-visible monitor box on /automation — renders nothing
@@ -109,6 +120,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [n, setN] = useState(3)
   const [budget, setBudget] = useState<number>(0)
   const [risk, setRisk] = useState('balanced')
+  const [levKey, setLevKey] = useState('auto')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -176,7 +188,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -254,6 +266,19 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
               {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
+            </div>
+            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
+              {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy' })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {LEV_CHOICES.map(l => (
+                <button key={l.key} style={chip(levKey === l.key)} onClick={() => setLevKey(l.key)}>{l.label}</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
+              {levKey === 'auto'
+                ? tr(language, { ko: '자동: 티어 기준(안정 1× · 수익 2× · 고위험 3×). 격리 마진 — 3배는 33% 역행 시 청산.', en: 'Auto: by tier (Balance 1× · High Profit 2× · Risk&High 3×). Isolated margin — 3× liquidates on a 33% adverse move.', ja: '自動: ティア基準(安定1×・収益2×・高リスク3×)。分離マージン。', th: 'อัตโนมัติ: ตามระดับ (1×/2×/3×) มาร์จินแยก', vi: 'Tự động: theo mức (1×/2×/3×). Ký quỹ tách biệt.' })
+                : tr(language, { ko: `${levKey}배 고정 — 격리 마진, 진입가에서 ${(100 / Number(levKey)).toFixed(0)}% 역행 시 청산. 같은 증거금으로 ${levKey}배 포지션.`, en: `Fixed ${levKey}× — isolated margin, liquidates at a ${(100 / Number(levKey)).toFixed(0)}% adverse move. ${levKey}× the position for the same margin.`, ja: `${levKey}倍固定 — 分離マージン、${(100 / Number(levKey)).toFixed(0)}%逆行で清算。`, th: `${levKey}× คงที่ — ล้างพอร์ตเมื่อสวน ${(100 / Number(levKey)).toFixed(0)}%`, vi: `Cố định ${levKey}× — thanh lý khi giá đi ngược ${(100 / Number(levKey)).toFixed(0)}%.` })}
             </div>
           </div>
           {fleet && fleet.status === 'stopped' && fleet.status_reason && (

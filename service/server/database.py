@@ -2841,9 +2841,15 @@ def init_database():
             created_at          TEXT NOT NULL,
             started_at          TEXT,
             stopped_at          TEXT,
+            leverage            REAL,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )
     """)
+    # Leverage (2026-07-23): NULL ⇒ auto per risk tier; a number overrides it.
+    try:
+        cursor.execute("ALTER TABLE fleets ADD COLUMN leverage REAL")
+    except Exception:
+        pass
     cursor.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS uq_fleets_active
         ON fleets(active_fleet_key)

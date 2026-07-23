@@ -36,6 +36,7 @@ class FleetIn(BaseModel):
     stop_loss_frac: float = 0.40
     idempotency_key: Optional[str] = None
     name: Optional[str] = None
+    leverage: Optional[float] = None   # None ⇒ auto by tier; 1–10 ⇒ override
 
     @field_validator("risk_appetite")
     @classmethod
@@ -198,7 +199,8 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                 provider=data.provider, lang=data.lang,
                 warn_loss_frac=data.warn_loss_frac,
                 stop_loss_frac=data.stop_loss_frac,
-                idempotency_key=data.idempotency_key, name=data.name)
+                idempotency_key=data.idempotency_key, name=data.name,
+                leverage=data.leverage)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except fleet_planner.FleetConflict as exc:
