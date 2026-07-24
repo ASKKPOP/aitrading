@@ -102,7 +102,8 @@ REPLACE_IMMEDIATE = frozenset({
     "stop_event:max_loss", "stop_event:profit_target", "stop_event:max_trades",
     "stop_event:at_time", "stop_event:price_cross", "adapt_retired",
 })
-REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation"})
+REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
+                              "stop_event:liq_cushion"})
 REPLACE_NEVER = frozenset({"user_stop", "agent_deleted", "user_master_remove"})
 
 LIQUIDATION_COOLDOWN_HOURS = 24

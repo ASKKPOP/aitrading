@@ -795,12 +795,15 @@ class LeverageMarginEngineTests(unittest.TestCase):
 
     def test_liquidation_price_from_leverage(self):
         import run_engine
-        # long 5x at 100 → liq at 100*(1-1/5) = 80
+        # long 5x at 100 → liq at 100*(1-1/5) = 80. Cushion off so this exercises
+        # the HARD liq path (the cushion, tested in test_leverage_safety, would
+        # otherwise pre-empt it at 100*(1-0.85/5)=83).
         pos = {"quantity": 10.0, "entry_price": 100.0,
                "current_price": 79.0, "leverage": 5.0}
         pnl = {"position": pos, "mark_age_ok": True, "total": -1.0,
                "trades": 1}
-        with patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+        with patch.dict(os.environ, {"RUN_LIQ_CUSHION": "0"}), \
+                patch.object(run_engine, "compute_run_pnl", return_value=pnl):
             reason = run_engine._evaluate_stop(
                 {"stop_conditions_json": "{}"})
         self.assertEqual(reason, "synthetic_liquidation")
