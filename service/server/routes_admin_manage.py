@@ -136,6 +136,13 @@ class PaymentSettingsBody(BaseModel):
     bank_transfer_info: str | None = None
 
 
+class AlertSettingsBody(BaseModel):
+    # "" clears (channel off). Both default to "" so a PUT of one field alone
+    # would clear the other — the console form always sends both.
+    admin_alert_email: str = ""
+    admin_alert_phone: str = ""
+
+
 class LlmSettingsBody(BaseModel):
     # None = leave unchanged; "" = clear (falls back to env, then defaults).
     local_base_url: str | None = None
@@ -998,6 +1005,44 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
               f"bank_info={'unchanged' if bank_info is None else ('set' if bank_info else '(cleared)')}")
         return {"ok": True, "usdt_address": address, "usdt_network": network,
                 "bank_transfer_info": get_setting("bank_transfer_info")}
+
+    # ── admin alert recipients (subscription-request email/SMS) ──────────────
+
+    @app.get('/api/admin/settings/alerts')
+    async def admin_alert_settings(authorization: str = Header(None)):
+        require_admin(authorization)
+        from platform_settings import get_setting_meta
+        return {"admin_alert_email": get_setting_meta("admin_alert_email"),
+                "admin_alert_phone": get_setting_meta("admin_alert_phone")}
+
+    @app.put('/api/admin/settings/alerts')
+    async def admin_alert_settings_save(body: AlertSettingsBody,
+                                        authorization: str = Header(None)):
+        """Register where subscription-request alerts go. An empty field takes
+        that channel off; both empty means new requests raise no operator
+        alert (they still land in the console as pending). Validation is loose
+        on purpose — a phone is only lightly shaped so international formats
+        pass."""
+        admin = require_admin(authorization)
+        from platform_settings import set_setting
+
+        email = body.admin_alert_email.strip()
+        if email and "@" not in email:
+            raise HTTPException(
+                status_code=400,
+                detail="Alert email must contain '@', or be empty to disable email alerts.")
+        phone = body.admin_alert_phone.strip()
+        if phone and not re.fullmatch(r"[0-9+()\-\s]{7,20}", phone):
+            raise HTTPException(
+                status_code=400,
+                detail="Alert phone must be 7-20 characters (digits, spaces, +, -, () only), "
+                       "or empty to disable SMS alerts.")
+
+        set_setting("admin_alert_email", email, admin.get("email"))
+        set_setting("admin_alert_phone", phone, admin.get("email"))
+        audit(admin, "settings.alerts", "admin_alert",
+              f"email={'set' if email else '(cleared)'} phone={'set' if phone else '(cleared)'}")
+        return {"ok": True, "admin_alert_email": email, "admin_alert_phone": phone}
 
     # ── LLM routing settings (local AI server + per-tier provider/model) ─────
 

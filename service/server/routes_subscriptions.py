@@ -109,6 +109,27 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat().replace("+00:00", "Z")
 
 
+def _alert_new_subscription(*, email: Optional[str], plan_code: str,
+                            amount: Any, method: str, status_note: str,
+                            reference: str = "") -> None:
+    """Message the operator that a subscription request came in via /subscribe.
+
+    Fail-soft: alerting must never break the submission that triggered it, so
+    every failure (import, formatting, delivery) is swallowed here in addition
+    to notify_admins' own fail-soft contract."""
+    try:
+        from admin_alerts import notify_admins
+        lines = [f"user: {email or '(unknown)'}"]
+        lines.append(f"plan: {plan_code}" + (f" (${amount})" if amount is not None else ""))
+        lines.append(f"method: {method}")
+        lines.append(f"status: {status_note}")
+        if reference:
+            lines.append(f"ref: {reference[:120]}")
+        notify_admins("New subscription request", "\n".join(lines))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("admin subscription alert failed: %s", exc)
+
+
 def _paypal_token() -> str:
     resp = requests.post(
         f"{_paypal_base()}/v1/oauth2/token",
@@ -330,6 +351,9 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         logger.info("PayPal subscription activated: user=%s plan=%s order=%s",
                     user["id"], row["plan_code"], body.order_id)
+        _alert_new_subscription(
+            email=user.get("email"), plan_code=row["plan_code"], amount=None, method="paypal",
+            status_note="auto-activated", reference=body.order_id)
         return {"ok": True, "status": "active"}
 
     def _submit_manual_payment(authorization: str, plan_code: str, reference: str,
@@ -358,6 +382,9 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         logger.info("%s subscription submitted: user=%s plan=%s", method, user["id"], plan_code)
+        _alert_new_subscription(
+            email=user.get("email"), plan_code=plan["code"], amount=plan["price_usd"],
+            method=method, status_note="pending — needs approval", reference=reference)
         return {"ok": True, "status": "pending"}
 
     @app.post('/api/subscriptions/bank-transfer')
@@ -399,4 +426,7 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.commit()
         finally:
             conn.close()
+        _alert_new_subscription(
+            email=email, plan_code="enterprise", amount=None, method="enterprise contract",
+            status_note="follow up", reference=(body.company.strip() or body.name.strip()))
         return {"ok": True}

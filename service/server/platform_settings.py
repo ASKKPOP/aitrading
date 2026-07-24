@@ -35,6 +35,10 @@ _ENV_FALLBACK: dict[str, str] = {
     # tier routing existed only in run config before the console page.
     "llm_local_base_url": "LOCAL_LLM_BASE_URL",
     "llm_local_model": "LOCAL_LLM_MODEL",
+    # Operator alert recipients (admin_alerts.notify_admins). Stored value wins;
+    # the env vars keep an existing box working until an admin saves one.
+    "admin_alert_email": "ADMIN_ALERT_EMAIL",
+    "admin_alert_phone": "ADMIN_ALERT_PHONE",
 }
 
 _DEFAULTS: dict[str, str] = {

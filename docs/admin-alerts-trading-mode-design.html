@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sooppiy — Admin Alerts &amp; Trading Mode (Design)</title>
+<style>
+  :root{
+    --bg:#f6f5f2; --panel:#ffffff; --ink:#26221c; --muted:#8a8073; --line:#e5e1d8;
+    --accent:#c9944a; --live:#ef4444; --shadow:#eab308; --sim:#9aa0a6; --ok:#22c55e;
+    --blue:#3b82f6; --violet:#8b5cf6; --code:#f0eee8;
+    --shadowc:rgba(40,34,26,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17150f; --panel:#211d16; --ink:#ece7dc; --muted:#a49b8a; --line:#332d22;
+      --accent:#d8a95e; --code:#1b1811; --shadowc:rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+      --bg:#17150f; --panel:#211d16; --ink:#ece7dc; --muted:#a49b8a; --line:#332d22;
+      --accent:#d8a95e; --code:#1b1811; --shadowc:rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f5f2; --panel:#ffffff; --ink:#26221c; --muted:#8a8073; --line:#e5e1d8;
+    --accent:#c9944a; --code:#f0eee8; --shadowc:rgba(40,34,26,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 22px 90px}
+  header.top{margin-bottom:34px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:30px;line-height:1.2;margin:.35em 0 .15em}
+  .sub{color:var(--muted);font-size:15px;max-width:70ch}
+  h2{font-size:21px;margin:44px 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;
+    background:var(--accent);color:#fff;font-size:14px;font-weight:800;flex:none}
+  h3{font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+  p{margin:.5em 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px;margin:14px 0;box-shadow:0 1px 2px var(--shadowc)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+  .chip{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Menlo,monospace;font-size:.82em;white-space:nowrap}
+  .muted{color:var(--muted)}
+  .scroll{overflow-x:auto}
+
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:0;min-width:760px;margin:6px 0 2px}
+  .col{flex:1;display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:150px}
+  .col.center{align-items:center}
+  .node{background:var(--panel);border:1.5px solid var(--line);border-radius:11px;padding:11px 13px;font-size:13px;position:relative}
+  .node .t{font-weight:700;font-size:13px}
+  .node .d{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .node.ep{border-color:var(--blue)}
+  .node.ep .tag{color:var(--blue)}
+  .node.hub{border-color:var(--accent);background:linear-gradient(180deg,transparent,rgba(201,148,74,.07))}
+  .node.pending{border-left:4px solid var(--shadow)}
+  .node.contact{border-left:4px solid var(--violet)}
+  .node.auto{border-left:4px solid var(--sim)}
+  .arrowcol{flex:0 0 42px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:var(--muted)}
+  .arrowcol svg{width:42px;height:20px}
+  .lbl{font-size:10.5px;color:var(--muted);text-align:center;margin-top:2px}
+  .stack-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:2px;font-weight:700}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;border:1px solid var(--line)}
+  .pill.email{color:var(--blue)} .pill.sms{color:var(--ok)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  tbody tr:last-child td{border-bottom:none}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;border-radius:7px;padding:2px 9px;border:1px solid var(--line)}
+  .b-live{color:var(--live);border-color:color-mix(in srgb,var(--live) 45%,var(--line))}
+  .b-shadow{color:#b7860b;border-color:color-mix(in srgb,var(--shadow) 45%,var(--line))}
+  .b-sim{color:var(--sim)}
+  .b-none{color:var(--muted)}
+
+  .prec{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .prec .step{display:flex;align-items:center;gap:8px}
+  .prec .gt{color:var(--muted);font-weight:800}
+
+  pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.5}
+  .kw{color:var(--violet)} .str{color:var(--ok)} .cm{color:var(--muted)}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+  ul.tight{margin:.3em 0;padding-left:20px} ul.tight li{margin:4px 0}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+  .no{color:var(--muted);font-size:13.5px}
+  .foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  .win{background:var(--code);border-radius:8px;border:1px solid var(--line);overflow:hidden}
+  .win .bar{display:flex;gap:6px;padding:8px 11px;border-bottom:1px solid var(--line);align-items:center}
+  .win .bar i{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--sim);opacity:.5}
+  .win .bar .u{margin-left:8px;font-size:11.5px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .win .body{padding:12px 14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">Sooppiy · Design walkthrough</div>
+    <h1>Admin subscription alerts &amp; per-user trading mode</h1>
+    <p class="sub">Two admin features, both assembled from patterns already in the codebase — the
+    <code>platform_settings</code> console store, the <code>alerts</code> email/SMS senders, and the admin Users query.
+    No new infrastructure.</p>
+  </header>
+
+  <!-- ============ FEATURE 1 ============ -->
+  <h2><span class="n">1</span> Alert you when someone requests a subscription</h2>
+  <p>Whenever a user submits a request on <span class="chip">sooppiy.com/subscribe</span>, you get an email and/or SMS
+  carrying who, which plan, and the reference to act on — so you can approve straight from the message.</p>
+
+  <div class="card scroll">
+    <h3 style="margin-top:2px">End-to-end flow</h3>
+    <div class="flow">
+      <!-- col 1: user -->
+      <div class="col center">
+        <div class="stack-label">Member</div>
+        <div class="node" style="text-align:center">
+          <div class="t">👤 User</div>
+          <div class="d">on /subscribe</div>
+        </div>
+      </div>
+
+      <div class="arrowcol">
+        <svg viewBox="0 0 42 20"><line x1="0" y1="10" x2="36" y2="10" stroke="currentColor" stroke-width="1.5"/><polygon points="36,5 42,10 36,15" fill="currentColor"/></svg>
+        <div class="lbl">submits</div>
+      </div>
+
+      <!-- col 2: endpoints -->
+      <div class="col">
+        <div class="stack-label">Backend endpoint · routes_subscriptions.py</div>
+        <div class="node ep pending"><div class="t">POST /subscriptions/usdt <span class="tag">·</span></div><div class="d">→ status <b>pending</b> · needs approval</div></div>
+        <div class="node ep pending"><div class="t">POST /subscriptions/bank-transfer</div><div class="d">→ status <b>pending</b> · needs approval</div></div>
+        <div class="node ep contact"><div class="t">POST /subscriptions/contract</div><div class="d">enterprise · <b>follow up</b></div></div>
+        <div class="node ep auto"><div class="t">POST /subscriptions/paypal/capture</div><div class="d">auto-active · hidden by default</div></div>
+      </div>
+
+      <div class="arrowcol">
+        <svg viewBox="0 0 42 20"><line x1="0" y1="10" x2="36" y2="10" stroke="currentColor" stroke-width="1.5"/><polygon points="36,5 42,10 36,15" fill="currentColor"/></svg>
+        <div class="lbl">calls</div>
+      </div>
+
+      <!-- col 3: hub -->
+      <div class="col center">
+        <div class="stack-label">New</div>
+        <div class="node hub" style="text-align:center">
+          <div class="t">🔔 notify_admins()</div>
+          <div class="d">admin_alerts.py · fail-soft<br>never breaks the submission</div>
+        </div>
+        <div class="node" style="text-align:center;font-size:12px">
+          reads recipients from<br><span class="chip">platform_settings</span>
+        </div>
+      </div>
+
+      <div class="arrowcol">
+        <svg viewBox="0 0 42 20"><line x1="0" y1="10" x2="36" y2="10" stroke="currentColor" stroke-width="1.5"/><polygon points="36,5 42,10 36,15" fill="currentColor"/></svg>
+        <div class="lbl">sends</div>
+      </div>
+
+      <!-- col 4: channels -->
+      <div class="col center">
+        <div class="stack-label">You (admin)</div>
+        <div class="node" style="text-align:center">
+          <span class="pill email"><span class="dot" style="background:var(--blue)"></span>Email</span>
+          <div class="d" style="margin-top:6px">alerts._send_email · SendGrid</div>
+        </div>
+        <div class="node" style="text-align:center">
+          <span class="pill sms"><span class="dot" style="background:var(--ok)"></span>SMS</span>
+          <div class="d" style="margin-top:6px">alerts._send_sms · Twilio</div>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--shadow)"></span> pending → your approval</span>
+      <span><span class="dot" style="background:var(--violet)"></span> enterprise → follow up</span>
+      <span><span class="dot" style="background:var(--sim)"></span> PayPal → auto-activated (wired, but hidden)</span>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:2px">Where you configure it</h3>
+      <p>A new <span class="chip">GET/PUT /api/admin/settings/alerts</span> — an exact mirror of the existing
+      <span class="chip">/settings/payment</span> route. Values live in <code>platform_settings</code>, editable from a
+      new <b>“Admin alerts”</b> card in the console Settings tab. No deploy needed to change your number.</p>
+      <ul class="tight">
+        <li><code>admin_alert_email</code> <span class="muted">— env fallback <code>ADMIN_ALERT_EMAIL</code></span></li>
+        <li><code>admin_alert_phone</code> <span class="muted">— env fallback <code>ADMIN_ALERT_PHONE</code></span></li>
+      </ul>
+      <p class="muted" style="font-size:13px">Empty field = that channel is off. Same fail-soft rule as the USDT address.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:2px">What the message carries</h3>
+      <div class="win">
+        <div class="bar"><i></i><i></i><i></i><span class="u">SMS · +82 10 ••••</span></div>
+        <div class="body mono" style="font-size:12.5px;line-height:1.55">
+          [Sooppiy] New subscription request<br>
+          user: kim@example.com<br>
+          plan: pro ($250) · method: usdt<br>
+          status: <b>pending — needs approval</b><br>
+          ref: 0x9f3c…a12b
+        </div>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px">Enough to verify on-chain and approve in the console without digging.</p>
+    </div>
+  </div>
+
+  <!-- ============ FEATURE 2 ============ -->
+  <h2><span class="n">2</span> Show each user’s trading mode — simulator vs real</h2>
+  <p>The admin Users list gains one <b>Trading</b> column that answers “who is trading real money?” at a glance.
+  It rolls up each user’s automation rules to a single mode.</p>
+
+  <div class="card">
+    <h3 style="margin-top:2px">Rollup precedence</h3>
+    <p class="muted" style="font-size:13.5px">A user’s badge = the highest-risk <code>account_type</code> across their agent’s rules. Legacy <code>real</code> folds into <b>live</b>.</p>
+    <div class="prec">
+      <div class="step"><span class="badge b-live">🔴 Live</span></div>
+      <span class="gt">&gt;</span>
+      <div class="step"><span class="badge b-shadow">🟡 Shadow</span></div>
+      <span class="gt">&gt;</span>
+      <div class="step"><span class="badge b-sim">⚪ Simulator</span></div>
+      <span class="gt">&gt;</span>
+      <div class="step"><span class="badge b-none">— no automation</span></div>
+    </div>
+    <p class="muted" style="font-size:12.5px">Any live rule → 🔴. Else any shadow → 🟡. Else has rules → ⚪. No rules → —.</p>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:2px">One query, no N+1</h3>
+      <p class="muted" style="font-size:13px">A correlated subquery added to the existing <span class="chip">GET /api/admin/users</span>. Works on SQLite and MySQL.</p>
+<pre><span class="kw">CASE</span>
+  <span class="kw">WHEN</span> SUM(c.account_type <span class="kw">IN</span> (<span class="str">'live'</span>,<span class="str">'real'</span>)) &gt; 0 <span class="kw">THEN</span> <span class="str">'live'</span>
+  <span class="kw">WHEN</span> SUM(c.account_type = <span class="str">'shadow'</span>)     &gt; 0 <span class="kw">THEN</span> <span class="str">'shadow'</span>
+  <span class="kw">WHEN</span> COUNT(*) &gt; 0                        <span class="kw">THEN</span> <span class="str">'simulator'</span>
+  <span class="kw">ELSE</span> <span class="kw">NULL</span> <span class="kw">END</span>  <span class="cm">-- as trading_mode</span></pre>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:2px">Data source</h3>
+      <div class="flow" style="min-width:0">
+        <div class="col center" style="min-width:0">
+          <div class="node" style="text-align:center;font-size:12.5px"><div class="t">users</div></div>
+          <svg viewBox="0 0 20 24" style="width:20px;height:22px;color:var(--muted)"><line x1="10" y1="0" x2="10" y2="18" stroke="currentColor" stroke-width="1.5"/><polygon points="5,18 10,24 15,18" fill="currentColor"/></svg>
+          <div class="node" style="text-align:center;font-size:12.5px"><div class="t">agents</div><div class="d">1 per user</div></div>
+          <svg viewBox="0 0 20 24" style="width:20px;height:22px;color:var(--muted)"><line x1="10" y1="0" x2="10" y2="18" stroke="currentColor" stroke-width="1.5"/><polygon points="5,18 10,24 15,18" fill="currentColor"/></svg>
+          <div class="node" style="text-align:center;font-size:12.5px"><div class="t">automation_configs</div><div class="d">.account_type</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card scroll">
+    <h3 style="margin-top:2px">Admin Users tab — mockup with the new column</h3>
+    <table>
+      <thead><tr><th>ID</th><th>Email</th><th>Status</th><th>Plan</th><th>Trading</th><th>Agent</th></tr></thead>
+      <tbody>
+        <tr><td>12</td><td>kim@example.com</td><td style="color:var(--ok)">active</td><td>pro</td><td><span class="badge b-live">🔴 Live</span></td><td>Kim-bot</td></tr>
+        <tr><td>11</td><td>lee@example.com</td><td style="color:var(--ok)">active</td><td>junior</td><td><span class="badge b-shadow">🟡 Shadow</span></td><td>Lee-bot</td></tr>
+        <tr><td>10</td><td>park@example.com</td><td style="color:var(--ok)">active</td><td>junior</td><td><span class="badge b-sim">⚪ Simulator</span></td><td>Park-bot</td></tr>
+        <tr><td>9</td><td>new@example.com</td><td class="muted">active</td><td class="muted">—</td><td><span class="badge b-none">—</span></td><td class="muted">new-bot</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="font-size:12.5px;margin-top:10px">The “Trading” cell is the only addition; every other column already exists.</p>
+  </div>
+
+  <!-- ============ SCOPE / TEST ============ -->
+  <h2><span class="n">3</span> Scope &amp; verification</h2>
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:2px">Deliberately NOT building <span class="muted">(tell me if you want any)</span></h3>
+      <ul class="tight no">
+        <li>No new in-app admin notification feed/bell — email + SMS only, as asked.</li>
+        <li>No per-rule drill-down from the badge — the Automation tab already lists rules.</li>
+        <li>No admin-SMS tier gating — it’s your own number, low volume.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:2px">How it’s verified</h3>
+      <ul class="tight">
+        <li><b>Unit:</b> both channels fire; empty-config skips; a sender exception never propagates.</li>
+        <li><b>Unit:</b> rollup precedence — live &gt; shadow &gt; simulator; <code>real</code>→live; no-rules→null.</li>
+        <li><b>Mutation-checked:</b> inject a bug, confirm the test fails (per your rule).</li>
+        <li><b>Manual:</b> submit USDT on local /subscribe → one alert; set a live rule → badge turns 🔴.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    Files touched: <code>admin_alerts.py</code> (new) · <code>routes_subscriptions.py</code> · <code>routes_admin_manage.py</code> ·
+    <code>routes_admin.py</code> · <code>platform_settings.py</code> · <code>AdminPage.tsx</code>.
+    &nbsp;·&nbsp; Design walkthrough — awaiting your approval before the spec is written.
+  </div>
+
+</div>
+</body>
+</html>

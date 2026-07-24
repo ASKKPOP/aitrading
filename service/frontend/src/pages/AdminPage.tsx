@@ -112,6 +112,9 @@ export function AdminPage() {
   const [usdtAddr, setUsdtAddr] = useState('')
   const [usdtNet, setUsdtNet] = useState('TRC20')
   const [bankInfo, setBankInfo] = useState('')
+  const [alertSettings, setAlertSettings] = useState<any>(null)
+  const [alertEmail, setAlertEmail] = useState('')
+  const [alertPhone, setAlertPhone] = useState('')
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
   const [adminPlans, setAdminPlans] = useState<any[]>([])
@@ -213,6 +216,13 @@ export function AdminPage() {
     bankUnset: tr(language, { ko: '미등록 — 계좌이체를 선택한 회원에게 보낼 곳이 표시되지 않습니다', en: 'Not set — members choosing bank transfer are shown no destination', ja: '未登録 — 銀行振込を選んだ会員に送金先が表示されません', th: 'ยังไม่ตั้งค่า — สมาชิกที่เลือกโอนธนาคารจะไม่เห็นปลายทาง', vi: 'Chưa đặt — thành viên chọn chuyển khoản không thấy nơi nhận' }),
     usdtFromEnv: tr(language, { ko: '.env 값 사용 중 (저장하면 대체됨)', en: 'currently from .env (saving replaces it)', ja: '.env の値を使用中（保存すると置き換わります）', th: 'ใช้ค่าจาก .env อยู่ (บันทึกแล้วจะแทนที่)', vi: 'Đang dùng giá trị .env (lưu sẽ thay thế)' }),
     usdtUnset: tr(language, { ko: '주소 미등록 — 결제 페이지에 USDT가 표시되지 않습니다', en: 'No address set — USDT is not offered on the payment page', ja: 'アドレス未登録 — 決済ページにUSDTは表示されません', th: 'ยังไม่ตั้งที่อยู่ — ไม่มี USDT บนหน้าชำระเงิน', vi: 'Chưa đặt địa chỉ — không hiển thị USDT trên trang thanh toán' }),
+    alertsTitle: tr(language, { ko: '구독 요청 알림 수신처', en: 'Subscription request alerts', ja: '購読リクエスト通知先', th: 'การแจ้งเตือนคำขอสมัคร', vi: 'Cảnh báo yêu cầu đăng ký' }),
+    alertsHint: tr(language, { ko: '누군가 /subscribe에서 구독을 요청하면 이 이메일·문자로 알림을 보냅니다. 비워두면 해당 채널은 꺼집니다.', en: 'When someone requests a subscription on /subscribe, an alert is sent to this email and/or phone. Leave a field empty to turn that channel off.', ja: '誰かが /subscribe で購読を申請すると、この메ール・電話に通知します。空欄にするとそのチャンネルはオフになります。', th: 'เมื่อมีคนขอสมัครที่ /subscribe ระบบจะแจ้งไปยังอีเมล/เบอร์นี้ เว้นว่างเพื่อปิดช่องทางนั้น', vi: 'Khi ai đó yêu cầu đăng ký trên /subscribe, cảnh báo sẽ gửi tới email/điện thoại này. Để trống để tắt kênh đó.' }),
+    alertEmailPlaceholder: tr(language, { ko: '알림 이메일 (예: ops@sooppiy.com)', en: 'Alert email (e.g. ops@sooppiy.com)', ja: '通知メール (例: ops@sooppiy.com)', th: 'อีเมลแจ้งเตือน (เช่น ops@sooppiy.com)', vi: 'Email cảnh báo (vd: ops@sooppiy.com)' }),
+    alertPhonePlaceholder: tr(language, { ko: '알림 전화번호 (예: +821012345678)', en: 'Alert phone (e.g. +821012345678)', ja: '通知電話 (例: +821012345678)', th: 'เบอร์แจ้งเตือน (เช่น +821012345678)', vi: 'Điện thoại cảnh báo (vd: +821012345678)' }),
+    alertsSave: tr(language, { ko: '알림 수신처 저장', en: 'Save alert recipients', ja: '通知先を保存', th: 'บันทึกผู้รับการแจ้งเตือน', vi: 'Lưu người nhận cảnh báo' }),
+    alertsOff: tr(language, { ko: '수신처 미등록 — 새 구독 요청 알림이 발송되지 않습니다 (콘솔에는 계속 표시됨)', en: 'No recipient set — new subscription requests raise no alert (they still appear in the console)', ja: '受信先未登録 — 新しい購読リクエストの通知は送信されません（コンソールには表示されます）', th: 'ยังไม่ตั้งผู้รับ — คำขอสมัครใหม่จะไม่ส่งการแจ้งเตือน (ยังแสดงในคอนโซล)', vi: 'Chưa đặt người nhận — yêu cầu đăng ký mới không gửi cảnh báo (vẫn hiển thị trong console)' }),
+    trading: tr(language, { ko: '거래', en: 'Trading', ja: '取引', th: 'การเทรด', vi: 'Giao dịch' }),
     grantDays: tr(language, { ko: '일수', en: 'Days', ja: '日数', th: 'จำนวนวัน', vi: 'Số ngày' }),
     grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)', ja: 'メモ（任意）', th: 'หมายเหตุ (ไม่บังคับ)', vi: 'Ghi chú (tùy chọn)' }),
     grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.', ja: '既存の有効・保留中の購読は自動的に置き換えられます。', th: 'จะแทนที่การสมัครที่ใช้งานอยู่หรือรออยู่เดิม', vi: 'Thay thế mọi đăng ký đang hoạt động/chờ xử lý.' }),
@@ -335,6 +345,10 @@ export function AdminPage() {
         setUsdtAddr(pay?.usdt_address?.value || '')
         setUsdtNet(pay?.usdt_network?.value || 'TRC20')
         setBankInfo(pay?.bank_transfer_info?.value || '')
+        const al = await call('settings/alerts')
+        setAlertSettings(al)
+        setAlertEmail(al?.admin_alert_email?.value || '')
+        setAlertPhone(al?.admin_alert_phone?.value || '')
       }
       if (which === 'assets') setAssets(await call('stats/assets'))
       if (which === 'positions') setPositions(await call('stats/positions'))
@@ -403,6 +417,22 @@ export function AdminPage() {
   const subStatusColor = (s: string) =>
     s === 'active' ? '#22c55e' : s === 'pending' ? '#eab308' : s === 'rejected' ? '#ef4444' : 'var(--text-muted,#8a8073)'
 
+  // Per-user trading mode badge — colours mirror the design doc: live is red
+  // (real money), shadow amber, simulator neutral, no rules a muted dash.
+  const tradingBadge = (mode: string | null | undefined) => {
+    const spec: Record<string, [string, string]> = {
+      live: ['🔴 Live', '#ef4444'],
+      shadow: ['🟡 Shadow', '#eab308'],
+      simulator: ['⚪ Simulator', 'var(--text-muted,#8a8073)'],
+    }
+    const [label, color] = spec[mode || ''] || ['—', 'var(--text-muted,#8a8073)']
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12, fontWeight: 700,
+        color, border: `1px solid ${mode && spec[mode] ? color : 'var(--border-color,#2a2a28)'}`,
+        borderRadius: 7, padding: '2px 8px', whiteSpace: 'nowrap' }}>{label}</span>
+    )
+  }
+
   return (
     // The console renders on its own domain with no top nav above it, so the
     // heading sat 24px from the viewport edge and read as clipped. Give it real
@@ -462,13 +492,14 @@ export function AdminPage() {
         <>
           <div style={tableCard}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
-              <thead><tr><th style={th}>ID</th><th style={th}>{T.email}</th><th style={th}>{T.status}</th><th style={th}>{T.plan}</th><th style={th}>MFA</th><th style={th}>{T.agent}</th><th style={th}>{T.created}</th><th style={th}></th></tr></thead>
+              <thead><tr><th style={th}>ID</th><th style={th}>{T.email}</th><th style={th}>{T.status}</th><th style={th}>{T.plan}</th><th style={th}>{T.trading}</th><th style={th}>MFA</th><th style={th}>{T.agent}</th><th style={th}>{T.created}</th><th style={th}></th></tr></thead>
               <tbody>
                 {(users?.users || []).map((u: any) => (
                   <tr key={u.id}>
                     <td style={td}>{u.id}</td><td style={{ ...td, fontWeight: 600 }}>{u.email}</td>
                     <td style={{ ...td, color: u.status === 'suspended' ? '#ef4444' : '#22c55e' }}>{u.status}</td>
                     <td style={td}>{u.plan_code || '—'}</td>
+                    <td style={td}>{tradingBadge(u.trading_mode)}</td>
                     <td style={td}>{u.mfa_enabled ? '✓' : '—'}</td>
                     <td style={td}>{u.agent_name || '—'}</td>
                     <td style={td}>{fmtDate(u.created_at)}</td>
@@ -484,7 +515,7 @@ export function AdminPage() {
                     </td>
                   </tr>
                 ))}
-                {!(users?.users || []).length && <tr><td style={td} colSpan={8}>{T.noData}</td></tr>}
+                {!(users?.users || []).length && <tr><td style={td} colSpan={9}>{T.noData}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -614,6 +645,35 @@ export function AdminPage() {
                   </>
                 : <span style={{ color: '#eab308' }}>⚠️ {T.usdtUnset}</span>}
             </div>
+          </div>
+
+          {/* Admin alert recipients — where new subscription-request emails/SMS
+              go. Console-registered like the payment settings above so the
+              number can change without a deploy. */}
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🔔 {T.alertsTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
+              {T.alertsHint}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input placeholder={T.alertEmailPlaceholder} value={alertEmail}
+                onChange={e => setAlertEmail(e.target.value)}
+                style={{ ...inputStyle, width: 320 }} />
+              <input placeholder={T.alertPhonePlaceholder} value={alertPhone}
+                onChange={e => setAlertPhone(e.target.value)}
+                style={{ ...inputStyle, width: 260, fontFamily: 'ui-monospace, monospace' }} />
+              <button style={primaryBtn}
+                onClick={async () => {
+                  await act('settings/alerts', {
+                    method: 'PUT',
+                    body: JSON.stringify({ admin_alert_email: alertEmail.trim(),
+                      admin_alert_phone: alertPhone.trim() }),
+                  }, 'subscriptions')
+                }}>{T.alertsSave}</button>
+            </div>
+            {!(alertSettings?.admin_alert_email?.value || alertSettings?.admin_alert_phone?.value) && (
+              <div style={{ fontSize: 11, color: '#eab308', marginTop: 8 }}>⚠️ {T.alertsOff}</div>
+            )}
           </div>
 
           <div style={{ ...card, marginBottom: 16 }}>

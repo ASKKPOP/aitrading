@@ -224,6 +224,12 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
                        (SELECT s.plan_code FROM user_subscriptions s
                         WHERE s.user_id = u.id AND s.status = 'active'
                         ORDER BY s.id DESC LIMIT 1) AS plan_code,
+                       (SELECT CASE
+                          WHEN SUM(c.account_type IN ('live', 'real')) > 0 THEN 'live'
+                          WHEN SUM(c.account_type = 'shadow') > 0 THEN 'shadow'
+                          WHEN COUNT(*) > 0 THEN 'simulator'
+                          ELSE NULL END
+                        FROM automation_configs c WHERE c.agent_id = a.id) AS trading_mode,
                        a.id AS agent_id, a.name AS agent_name
                 FROM users u
                 LEFT JOIN agents a ON a.user_id = u.id
