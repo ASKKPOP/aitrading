@@ -688,6 +688,57 @@ def refresh_research_batch(generate_text=None, fetch_candles=None) -> dict[str, 
 
 # ── selection (builder-side) ────────────────────────────────────────────────
 
+# Per market (a correlated asset class), the majority direction may lead the
+# minority by at most this many in the diversity pass — so a single broad tape
+# move can't sweep the whole sleeve of one market in lockstep (Finding L2).
+_DIR_IMBALANCE_MAX = 1
+
+
+def _dir_balance_enabled() -> bool:
+    """Default-on kill switch for the directional-balance guard."""
+    return os.getenv("FLEET_DIR_BALANCE", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _select_from_eligible(eligible: list[dict[str, Any]], n: int,
+                          dir_balance: bool = True) -> list[dict[str, Any]]:
+    """Two-pass pick from pre-filtered eligible theses (highest score first).
+
+    Pass 1 is a PREFERENCE pass: caps ceil(n/2) per market AND, when
+    dir_balance is on, keeps each market directionally balanced (majority −
+    minority ≤ _DIR_IMBALANCE_MAX) so a correlated sleeve can't stack one way.
+    Pass 2 fills any remaining slots from leftovers regardless of market OR
+    direction — reaching N always outranks balance (a bearish-only batch still
+    fills). Non long/short directions are never constrained.
+    """
+    per_market_cap = max(1, math.ceil(n / 2))
+    picked: list[dict[str, Any]] = []
+    counts: dict[str, int] = {}
+    dir_counts: dict[tuple[str, str], int] = {}
+    for t in eligible:
+        m = t["market"]
+        if counts.get(m, 0) >= per_market_cap:
+            continue
+        d = str(t.get("direction") or "").lower()
+        if dir_balance and d in ("long", "short"):
+            other = "short" if d == "long" else "long"
+            if (dir_counts.get((m, d), 0) + 1) - dir_counts.get((m, other), 0) > _DIR_IMBALANCE_MAX:
+                continue
+        picked.append(t)
+        counts[m] = counts.get(m, 0) + 1
+        if d in ("long", "short"):
+            dir_counts[(m, d)] = dir_counts.get((m, d), 0) + 1
+        if len(picked) >= n:
+            return picked
+    chosen = {(t["market"], t["symbol"]) for t in picked}
+    for t in eligible:
+        if (t["market"], t["symbol"]) in chosen:
+            continue
+        picked.append(t)
+        if len(picked) >= n:
+            break
+    return picked
+
+
 def select_targets(cursor, agent_id: int, n: int,
                    exclude: Optional[set[tuple[str, str]]] = None,
                    markets_scope: Optional[list[str]] = None) -> list[dict[str, Any]]:
@@ -723,30 +774,14 @@ def select_targets(cursor, agent_id: int, n: int,
     if exclude:
         busy |= set(exclude)
 
-    # Diversity is a PREFERENCE, not a hard cap: pass 1 caps ceil(n/2) per
-    # market; pass 2 fills remaining slots from leftovers regardless of market
-    # (a crypto-only scope must still reach N — perpetual N outranks spread).
+    # Diversity + directional balance are PREFERENCES, not hard caps: pass 1
+    # caps ceil(n/2) per market and keeps each market directionally balanced;
+    # pass 2 fills remaining slots from leftovers regardless (perpetual N
+    # outranks spread — see _select_from_eligible).
     eligible = [t for t in theses
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
-    per_market_cap = max(1, math.ceil(n / 2))
-    picked: list[dict[str, Any]] = []
-    counts: dict[str, int] = {}
-    for t in eligible:
-        if counts.get(t["market"], 0) >= per_market_cap:
-            continue
-        picked.append(t)
-        counts[t["market"]] = counts.get(t["market"], 0) + 1
-        if len(picked) >= n:
-            return picked
-    chosen = {(t["market"], t["symbol"]) for t in picked}
-    for t in eligible:
-        if (t["market"], t["symbol"]) in chosen:
-            continue
-        picked.append(t)
-        if len(picked) >= n:
-            break
-    return picked
+    return _select_from_eligible(eligible, n, _dir_balance_enabled())
 
 
 def latest_batch_payload(limit: int = 40) -> dict[str, Any]:
