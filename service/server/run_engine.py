@@ -140,6 +140,47 @@ def _armed_timeout() -> int:
         return 7 * 86400
 
 
+# ── fee/edge re-entry gate (Plan-L2 follow-up) ─────────────────────────────
+# Fees scale with leverage AND round-trip frequency; a fast, leveraged tier
+# (extreme: 30-min cycles, 3×) can churn fees faster than the edge pays. After
+# a CLOSE, hold a run flat for an extra window that grows with leverage, so
+# round-trips are spaced enough for the edge to clear the fee. L=1 ⇒ 0 extra
+# (byte-identical to the old ungated behaviour).
+def _reentry_cooldown_enabled() -> bool:
+    return os.getenv("RUN_REENTRY_COOLDOWN", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _reentry_cooldown_minutes(cfg: dict) -> float:
+    lev = max(1.0, float(cfg.get("leverage") or 1.0))
+    interval = max(1, int(cfg.get("interval_minutes") or 60))
+    try:
+        mult = float(os.getenv("RUN_REENTRY_LEV_MULT", "1.0") or 1.0)
+    except ValueError:
+        mult = 1.0
+    return interval * (lev - 1.0) * max(0.0, mult)   # 1× → 0; 3×/30m → 60m
+
+
+def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
+                             now: datetime) -> Optional[str]:
+    """Skip reason when a just-flat run is still inside its post-close cooldown.
+    Pure (last-close time in, reason out) so it unit-tests without a DB."""
+    if not _reentry_cooldown_enabled():
+        return None
+    cd = _reentry_cooldown_minutes(cfg)
+    if cd <= 0 or not last_close_iso:
+        return None
+    try:  # tolerate microseconds / trailing Z by parsing the first 19 chars
+        last_dt = datetime.strptime(str(last_close_iso)[:19],
+                                    "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+    if now - last_dt < timedelta(minutes=cd):
+        lev = max(1.0, float(cfg.get("leverage") or 1.0))
+        return f"re-entry cooldown ({cd:.0f}m at {lev:.0f}x leverage)"
+    return None
+
+
 def _stop_eval_failure_limit() -> int:
     try:
         return max(1, int(os.getenv("RUN_STOP_EVAL_FAILURES", "5")))
@@ -1231,6 +1272,24 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
     max_bet = float(cfg.get("max_bet_usd") or 0)
     if not has_position and cash < max_bet * 1.001:
         return f"insufficient cash for max bet (${cash:.2f} < ${max_bet:.2f})"
+
+    # Fee/edge re-entry cooldown: only a FLAT run can open, so only a flat run
+    # is subject to the post-close spacing that keeps leveraged/fast tiers from
+    # churning fees. Reads the run's last realized (closing) leg.
+    if not has_position and _reentry_cooldown_enabled() and _reentry_cooldown_minutes(cfg) > 0:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT MAX(created_at) AS last_close FROM signals "
+                "WHERE run_id = ? AND pnl IS NOT NULL", (run["id"],))
+            row = cursor.fetchone()
+            last_close = row["last_close"] if row else None
+        finally:
+            conn.close()
+        cooldown = _reentry_cooldown_reason(last_close, cfg, _now_dt())
+        if cooldown:
+            return cooldown
 
     # daily trade cap (always-on per-run rail)
     cap = int(run.get("max_trades_per_day") or 0)
