@@ -21,7 +21,7 @@ const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px soli
 const tableCard: any = { ...card, padding: 0, overflowX: 'auto' }
 const th: any = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted,#8a8073)', padding: '8px 10px', borderBottom: '1px solid var(--border-color,#2a2a28)', whiteSpace: 'nowrap' }
 const td: any = { padding: '8px 10px', fontSize: 13, borderBottom: '1px solid var(--border-color,#2a2a28)' }
-const chip = (active: boolean): any => ({ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, border: active ? '1.5px solid var(--accent-primary,#c26a45)' : '1px solid var(--border-color,#2a2a28)', background: active ? 'rgba(194,106,69,0.12)' : 'transparent', color: active ? 'var(--accent-primary,#c26a45)' : 'inherit' })
+const chip = (active: boolean): any => ({ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, border: active ? '1.5px solid var(--accent-primary,#d8a95e)' : '1px solid var(--border-color,#332d22)', background: active ? 'rgba(216,169,94,0.14)' : 'transparent', color: active ? 'var(--accent-primary,#d8a95e)' : 'inherit' })
 const dangerBtn: any = { padding: '4px 10px', borderRadius: 6, border: '1px solid #7f1d1d', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: 12 }
 const actionBtn: any = { padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border-color,#2a2a28)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }
 const primaryBtn: any = { padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }
@@ -115,6 +115,12 @@ export function AdminPage() {
   const [alertSettings, setAlertSettings] = useState<any>(null)
   const [alertEmail, setAlertEmail] = useState('')
   const [alertPhone, setAlertPhone] = useState('')
+  // View/edit toggles for the saved-row pattern on the Subscriptions tab: a set
+  // value shows an "applied" row (edit/delete); editing or an unset value shows
+  // the form. Reset to false after a successful save.
+  const [editUsdt, setEditUsdt] = useState(false)
+  const [editBank, setEditBank] = useState(false)
+  const [editAlerts, setEditAlerts] = useState(false)
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
   const [adminPlans, setAdminPlans] = useState<any[]>([])
@@ -223,6 +229,11 @@ export function AdminPage() {
     alertsSave: tr(language, { ko: '알림 수신처 저장', en: 'Save alert recipients', ja: '通知先を保存', th: 'บันทึกผู้รับการแจ้งเตือน', vi: 'Lưu người nhận cảnh báo' }),
     alertsOff: tr(language, { ko: '수신처 미등록 — 새 구독 요청 알림이 발송되지 않습니다 (콘솔에는 계속 표시됨)', en: 'No recipient set — new subscription requests raise no alert (they still appear in the console)', ja: '受信先未登録 — 新しい購読リクエストの通知は送信されません（コンソールには表示されます）', th: 'ยังไม่ตั้งผู้รับ — คำขอสมัครใหม่จะไม่ส่งการแจ้งเตือน (ยังแสดงในคอนโซล)', vi: 'Chưa đặt người nhận — yêu cầu đăng ký mới không gửi cảnh báo (vẫn hiển thị trong console)' }),
     trading: tr(language, { ko: '거래', en: 'Trading', ja: '取引', th: 'การเทรด', vi: 'Giao dịch' }),
+    edit: tr(language, { ko: '수정', en: 'Edit', ja: '編集', th: 'แก้ไข', vi: 'Sửa' }),
+    cancelEdit: tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' }),
+    clearConfirm: tr(language, { ko: '이 설정을 삭제할까요?', en: 'Delete this setting?', ja: 'この設定を削除しますか？', th: 'ลบการตั้งค่านี้?', vi: 'Xóa cài đặt này?' }),
+    activeGrants: tr(language, { ko: '부여된 플랜 (활성)', en: 'Granted plans (active)', ja: '付与済みプラン（有効）', th: 'แพลนที่ให้ (ใช้งาน)', vi: 'Gói đã cấp (đang hoạt động)' }),
+    cancelGrantConfirm: tr(language, { ko: '이 부여를 취소(해지)할까요?', en: 'Cancel (revoke) this grant?', ja: 'この付与を取り消しますか？', th: 'ยกเลิก (เพิกถอน) การให้สิทธิ์นี้?', vi: 'Hủy (thu hồi) khoản cấp này?' }),
     grantDays: tr(language, { ko: '일수', en: 'Days', ja: '日数', th: 'จำนวนวัน', vi: 'Số ngày' }),
     grantNote: tr(language, { ko: '메모 (선택)', en: 'Note (optional)', ja: 'メモ（任意）', th: 'หมายเหตุ (ไม่บังคับ)', vi: 'Ghi chú (tùy chọn)' }),
     grantReplaces: tr(language, { ko: '기존 활성/대기 구독은 자동으로 대체됩니다.', en: 'Replaces any existing active/pending subscription.', ja: '既存の有効・保留中の購読は自動的に置き換えられます。', th: 'จะแทนที่การสมัครที่ใช้งานอยู่หรือรออยู่เดิม', vi: 'Thay thế mọi đăng ký đang hoạt động/chờ xử lý.' }),
@@ -379,6 +390,14 @@ export function AdminPage() {
 
   useEffect(() => { refresh(tab) }, [tab, token, subFilter, lbMetric])
 
+  // Paint the whole viewport (not just the centered column) in the design-doc
+  // background; restore on unmount.
+  useEffect(() => {
+    const prev = document.body.style.background
+    document.body.style.background = '#17150f'
+    return () => { document.body.style.background = prev }
+  }, [])
+
   // Returns true only when the write succeeded — callers must not clear a typed
   // reply/broadcast composer on failure, or the admin loses what they wrote.
   async function act(path: string, opts: RequestInit, then: Tab): Promise<boolean> {
@@ -433,11 +452,38 @@ export function AdminPage() {
     )
   }
 
+  // Saved-row for the Subscriptions tab: shows a persisted value with Edit /
+  // Delete, so a saved setting reads as an applied record rather than a form.
+  const appliedRow = (primary: any, meta: any, onEdit: () => void, onDelete: () => void) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
+      border: '1px solid var(--border-color,#332d22)', borderRadius: 8,
+      background: 'var(--bg-primary,#1b1811)' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontFamily: 'ui-monospace, monospace', fontSize: 13,
+          wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{primary}</div>
+        {meta && <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginTop: 3 }}>{meta}</div>}
+      </div>
+      <button style={actionBtn} onClick={onEdit}>{T.edit}</button>
+      <button style={dangerBtn} onClick={onDelete}>{T.del}</button>
+    </div>
+  )
+
+  // Design-doc palette (docs/admin-alerts-trading-mode-design.html, dark) applied
+  // as CSS variables on the console root so every `var(--x, fallback)` style below
+  // resolves to the warm gold/cream theme. The body background is set to match so
+  // the full viewport (not just the centered column) picks it up.
+  const themeVars: any = {
+    '--bg-primary': '#1b1811', '--bg-secondary': '#211d16', '--border-color': '#332d22',
+    '--accent-primary': '#d8a95e', '--text-primary': '#ece7dc', '--text-muted': '#a49b8a',
+    background: '#17150f', color: '#ece7dc', minHeight: '100vh',
+  }
+
   return (
     // The console renders on its own domain with no top nav above it, so the
     // heading sat 24px from the viewport edge and read as clipped. Give it real
-    // breathing room at the top.
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 16px 24px' }}>
+    // breathing room at the top. themeVars restyles the whole console to the
+    // design-doc palette (dark, warm gold/cream).
+    <div style={{ ...themeVars, maxWidth: 1200, margin: '0 auto', padding: '48px 16px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>🔐 {T.title}</h1>
         <span style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)' }}>{me?.email} · {me?.role}</span>
@@ -597,53 +643,79 @@ export function AdminPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
               {T.usdtHint}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={usdtNet} onChange={e => setUsdtNet(e.target.value)} style={inputStyle}>
-                {(paySettings?.networks || ['TRC20']).map((n: string) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-              <input placeholder={T.usdtAddrPlaceholder} value={usdtAddr}
-                onChange={e => setUsdtAddr(e.target.value)}
-                style={{ ...inputStyle, width: 380, fontFamily: 'ui-monospace, monospace' }} />
-              <button style={primaryBtn}
-                onClick={async () => {
-                  if (usdtAddr.trim() && !window.confirm(T.usdtConfirm)) return
-                  await act('settings/payment', {
-                    method: 'PUT',
-                    body: JSON.stringify({ usdt_address: usdtAddr.trim(), usdt_network: usdtNet,
-                      bank_transfer_info: bankInfo }),
-                  }, 'subscriptions')
-                }}>{T.usdtSave}</button>
-            </div>
-            {/* Bank details live in this card, not their own, because the Save
-                button above writes both rails in one PUT. */}
-            <div style={{ borderTop: '1px solid var(--border-color,#2a2a28)',
+            {paySettings?.usdt_address?.value && !editUsdt ? (
+              appliedRow(
+                `${paySettings.usdt_network?.value || usdtNet} · ${paySettings.usdt_address.value}`,
+                <>✓ {T.usdtLive}
+                  {paySettings.usdt_address.source === 'env' && ` · ${T.usdtFromEnv}`}
+                  {paySettings.usdt_address.updated_by && ` · ${paySettings.usdt_address.updated_by}`}
+                  {paySettings.usdt_address.updated_at && ` · ${fmtDate(paySettings.usdt_address.updated_at)}`}</>,
+                () => { setUsdtAddr(paySettings.usdt_address.value); setEditUsdt(true) },
+                async () => { if (!window.confirm(T.clearConfirm)) return
+                  setUsdtAddr('')
+                  await act('settings/payment', { method: 'PUT',
+                    body: JSON.stringify({ usdt_address: '', usdt_network: usdtNet }) }, 'subscriptions') },
+              )
+            ) : (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select value={usdtNet} onChange={e => setUsdtNet(e.target.value)} style={inputStyle}>
+                  {(paySettings?.networks || ['TRC20']).map((n: string) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <input placeholder={T.usdtAddrPlaceholder} value={usdtAddr}
+                  onChange={e => setUsdtAddr(e.target.value)}
+                  style={{ ...inputStyle, width: 380, fontFamily: 'ui-monospace, monospace' }} />
+                <button style={primaryBtn}
+                  onClick={async () => {
+                    if (usdtAddr.trim() && !window.confirm(T.usdtConfirm)) return
+                    const ok = await act('settings/payment', {
+                      method: 'PUT',
+                      body: JSON.stringify({ usdt_address: usdtAddr.trim(), usdt_network: usdtNet }),
+                    }, 'subscriptions')
+                    if (ok) setEditUsdt(false)
+                  }}>{T.usdtSave}</button>
+                {paySettings?.usdt_address?.value
+                  ? <button style={actionBtn} onClick={() => { setEditUsdt(false); setUsdtAddr(paySettings.usdt_address.value) }}>{T.cancelEdit}</button>
+                  : <span style={{ fontSize: 11, color: '#eab308' }}>⚠️ {T.usdtUnset}</span>}
+              </div>
+            )}
+            {/* Bank details — its own saved row; a targeted PUT keeps the USDT
+                address untouched when only the bank rail changes. */}
+            <div style={{ borderTop: '1px solid var(--border-color,#332d22)',
               marginTop: 14, paddingTop: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.bankTitle}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginBottom: 8 }}>
                 {T.bankHint}
               </div>
-              <textarea value={bankInfo} onChange={e => setBankInfo(e.target.value)}
-                placeholder={T.bankPlaceholder} rows={3} maxLength={2000}
-                style={{ ...inputStyle, width: '100%', resize: 'vertical',
-                  fontFamily: 'ui-monospace, monospace' }} />
-              {!paySettings?.bank_transfer_info?.value && (
-                <div style={{ fontSize: 11, color: '#eab308', marginTop: 6 }}>
-                  ⚠️ {T.bankUnset}
-                </div>
+              {paySettings?.bank_transfer_info?.value && !editBank ? (
+                appliedRow(
+                  paySettings.bank_transfer_info.value,
+                  null,
+                  () => { setBankInfo(paySettings.bank_transfer_info.value); setEditBank(true) },
+                  async () => { if (!window.confirm(T.clearConfirm)) return
+                    setBankInfo('')
+                    await act('settings/payment', { method: 'PUT',
+                      body: JSON.stringify({ usdt_address: usdtAddr, usdt_network: usdtNet, bank_transfer_info: '' }) }, 'subscriptions') },
+                )
+              ) : (
+                <>
+                  <textarea value={bankInfo} onChange={e => setBankInfo(e.target.value)}
+                    placeholder={T.bankPlaceholder} rows={3} maxLength={2000}
+                    style={{ ...inputStyle, width: '100%', resize: 'vertical',
+                      fontFamily: 'ui-monospace, monospace' }} />
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                    <button style={primaryBtn} onClick={async () => {
+                      const ok = await act('settings/payment', { method: 'PUT',
+                        body: JSON.stringify({ usdt_address: usdtAddr, usdt_network: usdtNet, bank_transfer_info: bankInfo }) }, 'subscriptions')
+                      if (ok) setEditBank(false)
+                    }}>{T.usdtSave}</button>
+                    {paySettings?.bank_transfer_info?.value
+                      ? <button style={actionBtn} onClick={() => { setEditBank(false); setBankInfo(paySettings.bank_transfer_info.value) }}>{T.cancelEdit}</button>
+                      : <span style={{ fontSize: 11, color: '#eab308' }}>⚠️ {T.bankUnset}</span>}
+                  </div>
+                </>
               )}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginTop: 8 }}>
-              {paySettings?.usdt_address?.value
-                ? <>✓ {T.usdtLive}
-                    {paySettings.usdt_address.source === 'env' && ` · ${T.usdtFromEnv}`}
-                    {paySettings.usdt_address.updated_by
-                      && ` · ${paySettings.usdt_address.updated_by}`}
-                    {paySettings.usdt_address.updated_at
-                      && ` · ${fmtDate(paySettings.usdt_address.updated_at)}`}
-                  </>
-                : <span style={{ color: '#eab308' }}>⚠️ {T.usdtUnset}</span>}
             </div>
           </div>
 
@@ -655,24 +727,44 @@ export function AdminPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>
               {T.alertsHint}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input placeholder={T.alertEmailPlaceholder} value={alertEmail}
-                onChange={e => setAlertEmail(e.target.value)}
-                style={{ ...inputStyle, width: 320 }} />
-              <input placeholder={T.alertPhonePlaceholder} value={alertPhone}
-                onChange={e => setAlertPhone(e.target.value)}
-                style={{ ...inputStyle, width: 260, fontFamily: 'ui-monospace, monospace' }} />
-              <button style={primaryBtn}
-                onClick={async () => {
-                  await act('settings/alerts', {
-                    method: 'PUT',
-                    body: JSON.stringify({ admin_alert_email: alertEmail.trim(),
-                      admin_alert_phone: alertPhone.trim() }),
-                  }, 'subscriptions')
-                }}>{T.alertsSave}</button>
-            </div>
-            {!(alertSettings?.admin_alert_email?.value || alertSettings?.admin_alert_phone?.value) && (
-              <div style={{ fontSize: 11, color: '#eab308', marginTop: 8 }}>⚠️ {T.alertsOff}</div>
+            {(alertSettings?.admin_alert_email?.value || alertSettings?.admin_alert_phone?.value) && !editAlerts ? (
+              appliedRow(
+                <>{alertSettings.admin_alert_email?.value ? `📧 ${alertSettings.admin_alert_email.value}` : ''}
+                  {alertSettings.admin_alert_email?.value && alertSettings.admin_alert_phone?.value ? '     ' : ''}
+                  {alertSettings.admin_alert_phone?.value ? `📱 ${alertSettings.admin_alert_phone.value}` : ''}</>,
+                null,
+                () => { setAlertEmail(alertSettings.admin_alert_email?.value || ''); setAlertPhone(alertSettings.admin_alert_phone?.value || ''); setEditAlerts(true) },
+                async () => { if (!window.confirm(T.clearConfirm)) return
+                  setAlertEmail(''); setAlertPhone('')
+                  await act('settings/alerts', { method: 'PUT',
+                    body: JSON.stringify({ admin_alert_email: '', admin_alert_phone: '' }) }, 'subscriptions') },
+              )
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input placeholder={T.alertEmailPlaceholder} value={alertEmail}
+                    onChange={e => setAlertEmail(e.target.value)}
+                    style={{ ...inputStyle, width: 320 }} />
+                  <input placeholder={T.alertPhonePlaceholder} value={alertPhone}
+                    onChange={e => setAlertPhone(e.target.value)}
+                    style={{ ...inputStyle, width: 260, fontFamily: 'ui-monospace, monospace' }} />
+                  <button style={primaryBtn}
+                    onClick={async () => {
+                      const ok = await act('settings/alerts', {
+                        method: 'PUT',
+                        body: JSON.stringify({ admin_alert_email: alertEmail.trim(),
+                          admin_alert_phone: alertPhone.trim() }),
+                      }, 'subscriptions')
+                      if (ok) setEditAlerts(false)
+                    }}>{T.alertsSave}</button>
+                  {(alertSettings?.admin_alert_email?.value || alertSettings?.admin_alert_phone?.value) && (
+                    <button style={actionBtn} onClick={() => { setEditAlerts(false); setAlertEmail(alertSettings.admin_alert_email?.value || ''); setAlertPhone(alertSettings.admin_alert_phone?.value || '') }}>{T.cancelEdit}</button>
+                  )}
+                </div>
+                {!(alertSettings?.admin_alert_email?.value || alertSettings?.admin_alert_phone?.value) && (
+                  <div style={{ fontSize: 11, color: '#eab308', marginTop: 8 }}>⚠️ {T.alertsOff}</div>
+                )}
+              </>
             )}
           </div>
 
@@ -700,6 +792,19 @@ export function AdminPage() {
                   setGrant(p => ({ ...p, email: '', note: '' }))
                 }}>{T.grantBtn}</button>
             </div>
+            {(subs?.subscriptions || []).filter((s: any) => s.method === 'manual' && s.status === 'active').length > 0 && (
+              <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted,#a49b8a)' }}>{T.activeGrants}</div>
+                {(subs?.subscriptions || []).filter((s: any) => s.method === 'manual' && s.status === 'active').map((s: any) => (
+                  <Fragment key={s.id}>{appliedRow(
+                    `${s.email || `user ${s.user_id}`} · ${s.plan_code}`,
+                    `~ ${fmtDate(s.expires_at)}`,
+                    () => setGrant(p => ({ ...p, email: s.email || '', plan_code: s.plan_code })),
+                    () => { if (window.confirm(T.cancelGrantConfirm)) act(`subscriptions/${s.id}/cancel`, { method: 'POST', body: JSON.stringify({ note: 'admin removed grant' }) }, 'subscriptions') },
+                  )}</Fragment>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             {['', 'pending', 'active', 'rejected', 'expired'].map(s => (
