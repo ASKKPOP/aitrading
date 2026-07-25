@@ -5,6 +5,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from pydantic import BaseModel
 
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
 from email_sender import send_verification_code_email
@@ -162,6 +163,10 @@ def _user_llm_settings(user_id: int) -> dict | None:
     except Exception:  # noqa: BLE001
         _logger.warning('user llm settings lookup failed for user %s', user_id, exc_info=True)
         return None
+
+
+class UserLanguageRequest(BaseModel):
+    lang: str
 
 
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -341,6 +346,12 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             mfa_on = bool(row['mfa_enabled'])
         except (KeyError, IndexError):
             mfa_on = False
+
+        try:
+            lang = row['lang']
+        except (KeyError, IndexError):
+            lang = 'en'
+
         if mfa_on:
             from routes_auth import issue_mfa_token_for_user
             return {
@@ -361,7 +372,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return {'token': token, 'user_id': row['id'], 'email': row['email'],
-                'subscription_status': sub['status']}
+                'subscription_status': sub['status'], 'lang': lang}
 
     @app.get('/api/users/me')
     async def get_user_info(authorization: str = Header(None)):
@@ -384,9 +395,28 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'wallet_address': user.get('wallet_address'),
             'points': user.get('points', 0),
             'status': user.get('status', 'active'),
+            'lang': user.get('lang', 'en'),
             'subscription_status': sub['status'],
             'subscription': sub['subscription'],
         }
+
+    @app.put('/api/users/language')
+    async def set_user_language(data: UserLanguageRequest, authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        from analysis_agents import normalize_lang
+        lang = normalize_lang(data.lang)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET lang = ? WHERE id = ?', (lang, user['id']))
+            conn.commit()
+        finally:
+            conn.close()
+        return {'lang': lang}
 
     @app.get('/api/users/points')
     async def get_points_balance(authorization: str = Header(None)):
