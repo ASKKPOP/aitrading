@@ -64,10 +64,10 @@ def _update_fleet(fleet_id: int, sets: str, args: tuple) -> None:
         conn.close()
 
 
-def _alert(fleet: dict, kind: str, title: str, body: str, dedupe: str) -> None:
+def _alert(fleet: dict, kind: str, msg_id: str, params: dict, dedupe: str) -> None:
     try:
         from alerts import send_alert
-        send_alert(fleet["agent_id"], kind, title, body, dedupe_key=dedupe)
+        send_alert(fleet["agent_id"], kind, msg_id, params, dedupe_key=dedupe)
     except Exception:  # noqa: BLE001 — alerting must never wedge supervision
         logger.warning("fleet alert failed (%s, %s)", fleet["id"], kind,
                        exc_info=True)
@@ -104,10 +104,8 @@ def supervise_fleet(fleet: dict) -> dict:
                             {"consecutive": fails})
         if fails == EVAL_FAIL_LIMIT:
             _pause_entries(fleet, reason="eval_failed")
-            _alert(fleet, "fleet_watchdog",
-                   f"Fleet #{fleet['id']}: equity evaluation failing",
-                   "Marked-equity evaluation has failed on stale prices for "
-                   f"{fails} consecutive passes — new entries are paused.",
+            _alert(fleet, "fleet_watchdog", "fleet_watchdog_eval_failed",
+                   {"fleet_id": fleet["id"], "fails": fails},
                    dedupe=f"fleet:{fleet['id']}:eval_failed")
         return {**out, "frozen": True, "eval_failures": fails}
     _reset_eval_failures(fleet)
@@ -177,10 +175,8 @@ def check_watchdog() -> int:
     finally:
         conn.close()
     for fleet in stale:
-        _alert(fleet, "fleet_watchdog",
-               f"Fleet #{fleet['id']}: supervision stalled",
-               "The fleet supervisor has not run for 3+ ticks — drawdown "
-               "rails may be dark. Check the worker.",
+        _alert(fleet, "fleet_watchdog", "fleet_watchdog_stalled",
+               {"fleet_id": fleet["id"]},
                dedupe=f"fleet:{fleet['id']}:watchdog")
     return len(stale)
 
@@ -208,12 +204,9 @@ def _stop_all(fleet: dict, loss_frac: float) -> None:
                         {"loss_frac": round(loss_frac, 4),
                          "stop_loss_frac": fleet["stop_loss_frac"]})
     fp._set_status(fleet["id"], fp._NON_TERMINAL, fp.STATUS_STOPPING, "breaker")
-    _alert(fleet, "fleet_breaker",
-           f"Fleet #{fleet['id']} STOPPED at −{loss_frac * 100:.0f}%",
-           (f"Your Full Auto fleet crossed the −{float(fleet['stop_loss_frac']) * 100:.0f}% "
-            "stop rail. Every position is being closed. This stop fired at the "
-            "first check observing the breach; the final loss may exceed the "
-            "threshold."),
+    _alert(fleet, "fleet_breaker", "fleet_breaker",
+           {"fleet_id": fleet["id"], "loss_pct": f"{loss_frac * 100:.0f}",
+            "stop_loss_pct": f"{float(fleet['stop_loss_frac']) * 100:.0f}"},
            dedupe=f"fleet:{fleet['id']}:breaker")
 
 
@@ -279,13 +272,9 @@ def _fire_warning(fleet: dict, loss_frac: float, first: bool) -> None:
     fp.emit_fleet_event(fleet["id"], "drawdown_warning",
                         {"loss_frac": round(loss_frac, 4), "level": level,
                          "episode": episode, "paused_members": paused})
-    _alert(fleet, "fleet_drawdown_warning",
-           f"Fleet #{fleet['id']} down {loss_frac * 100:.0f}% — paused",
-           (f"Your Full Auto fleet has lost {loss_frac * 100:.0f}% of its "
-            "budget. New entries are paused; open positions and their "
-            "stop-losses remain active. If you resume trading from here, "
-            "continuing is your responsibility. The fleet stops everything "
-            f"automatically at −{float(fleet['stop_loss_frac']) * 100:.0f}%."),
+    _alert(fleet, "fleet_drawdown_warning", "fleet_drawdown_warning",
+           {"fleet_id": fleet["id"], "loss_pct": f"{loss_frac * 100:.0f}",
+            "stop_loss_pct": f"{float(fleet['stop_loss_frac']) * 100:.0f}"},
            # per-episode dedupe: a fresh leg must not be swallowed by the 1h
            # window, and hovering must not re-send hourly
            dedupe=f"fleet:{fleet['id']}:warn:{episode}")
@@ -660,8 +649,6 @@ def _maybe_churn_alert(fleet: dict) -> None:
     finally:
         conn.close()
     if n > fp.FLEET_BOUNDS["churn_alert_per_day"]:
-        _alert(fleet, "fleet_churn",
-               f"Fleet #{fleet['id']}: high replacement churn",
-               f"{n} member replacements today — the market may be chopping "
-               "your strategies out. Consider pausing the fleet.",
+        _alert(fleet, "fleet_churn", "fleet_churn",
+               {"fleet_id": fleet["id"], "n": n},
                dedupe=f"fleet:{fleet['id']}:churn:{day_start}")
