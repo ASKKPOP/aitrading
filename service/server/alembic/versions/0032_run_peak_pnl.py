@@ -9,14 +9,14 @@ IDEMPOTENT: prod received this column via a manual ALTER on 2026-07-25
 (the inline database.py DDL does not run on MySQL), so the upgrade guards on
 information_schema before adding — re-running is a no-op.
 
-Revision ID: 0031
-Revises: 0030
+Revision ID: 0032
+Revises: 0031
 """
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0031"
-down_revision = "0030"
+revision = "0032"
+down_revision = "0031"
 branch_labels = None
 depends_on = None
 
