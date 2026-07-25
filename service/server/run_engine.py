@@ -1177,6 +1177,57 @@ def _fleet_cycle_mode(cfg: dict) -> str:
     return os.getenv("FLEET_CYCLE_MODE", "light").strip().lower()
 
 
+def _decision_routing_enabled() -> bool:
+    """E1-A kill switch (default off): route each fleet cycle by situation —
+    full analyst pipeline on the tails, light path in the middle."""
+    return os.getenv("DECISION_ROUTING_ENABLED", "false").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _classify_situation(run: dict, cfg: dict) -> dict:
+    """E1-A: deterministic, ZERO-LLM situation classifier. Any trigger routes
+    this cycle to the FULL analyst pipeline (news/sentiment/psych/macro — the
+    judgment layer an algorithm can't encode); quiet cycles take the light
+    path. Every signal is one that already ships in prod, and every read is
+    fail-soft: a broken feed silently drops that trigger — routing must never
+    break a cycle. Returns {"route": "full"|"light", "triggers": [...]}."""
+    triggers: list[str] = []
+    try:
+        from market_events import active_event_window
+        if active_event_window():
+            triggers.append("event_window")
+    except Exception:  # noqa: BLE001
+        pass
+    if (run.get("market") or "") == "crypto":
+        # liquidation-shock proxy is OKX crypto data — meaningless elsewhere
+        try:
+            from psych_feed import get_psych_payload
+            psych = get_psych_payload()
+            if psych.get("available") and psych.get("shock"):
+                triggers.append("psych_shock")
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        from regime import current_regime_state
+        state = current_regime_state()
+        if state and state.get("regime") in ("event", "panic", "euphoria"):
+            triggers.append(f"regime:{state['regime']}")
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        conditions = json.loads(run.get("stop_conditions_json") or "{}")
+        max_loss = conditions.get("max_loss_usd")
+        if max_loss:
+            pnl = compute_run_pnl(run)
+            pos = pnl.get("position")
+            if pos and float(pos.get("quantity") or 0) != 0 and \
+                    float(pnl.get("total") or 0) <= -0.5 * float(max_loss):
+                triggers.append("near_stop")
+    except Exception:  # noqa: BLE001
+        pass
+    return {"route": "full" if triggers else "light", "triggers": triggers}
+
+
 # Plan 15 P2: the scalar confidence proved quantized (0.62 pin), so the
 # desk also scores four components and CODE computes the conviction the
 # gate can eventually trust. Weights are deterministic and documented in
@@ -1504,7 +1555,16 @@ def run_cycle(run_id: int) -> dict:
 
         is_fleet_run = bool(run.get("fleet_id")) or \
             (run.get("created_via") or "user") == "fleet"
-        if is_fleet_run and _fleet_cycle_mode(cfg) == "light":
+        cycle_mode = _fleet_cycle_mode(cfg) if is_fleet_run else "full"
+        route = None
+        if is_fleet_run and _decision_routing_enabled() and \
+                (cfg.get("cycle_mode") or "").strip().lower() not in ("light", "full"):
+            # E1-A: situation routing — an explicit per-run pin always wins;
+            # otherwise the classifier overrides the blanket env mode (full
+            # analysts on the tails, light path in the middle).
+            route = _classify_situation(run, cfg)
+            cycle_mode = route["route"]
+        if is_fleet_run and cycle_mode == "light":
             # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
             # everything below (gates, budget cap, fence) is byte-identical.
             analysis = _light_analysis(run, cfg)
@@ -1539,6 +1599,7 @@ def run_cycle(run_id: int) -> dict:
                               "gate_source": "conviction" if use_conviction else "confidence",
                               "size_scale": size_scale,
                               "entry": entry,
+                              "route": route,
                               "report": (decision.get("report") or "")[:1000]})
 
         # Futures v1 (Plan 10 D5): the desk decides direction (buy/sell); the
