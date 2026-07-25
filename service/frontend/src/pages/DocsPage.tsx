@@ -8,6 +8,7 @@ import { tr } from '../i18n'
 const SLUG_TO_GROUP: Record<string, string> = {
   'guide': 'guide',
   'gateway': 'gateway',
+  'smart-features': 'smart',
   'strategy': 'hybrid',
   'ai-trading-parameters': 'top10',
   'chart-vs-human-psychology': 'psych-report',

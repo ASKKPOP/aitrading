@@ -30,6 +30,10 @@ SOURCES: list[dict] = [
      "group": "guide", "title": "Full AI-Trading Pipeline Guide"},
     {"key": "gateway-ko", "src": "design/live-trading-gateway-guide.html", "kind": "html", "lang": "ko",
      "group": "gateway", "title": "실거래 게이트웨이 완전 가이드"},
+    {"key": "smart-ko", "src": "design/smart-trading-features-ko.html", "kind": "html", "lang": "ko",
+     "group": "smart", "title": "스마트 AI 판단 & 맞춤 알림"},
+    {"key": "smart-en", "src": "design/smart-trading-features-en.html", "kind": "html", "lang": "en",
+     "group": "smart", "title": "Smart AI Decisions & Personal Alerts"},
     {"key": "top10-en", "src": "research/parameters/2-ai-trading-parameters-en.html", "kind": "html",
      "lang": "en", "group": "top10", "title": "Top-10 Decision Parameters"},
     {"key": "top10-ko", "src": "research/parameters/2-ai-trading-parameters-ko.html", "kind": "html",
@@ -59,6 +63,7 @@ SOURCES: list[dict] = [
 GROUPS = [
     {"group": "guide", "ko": "완전 가이드", "en": "Full Guide"},
     {"group": "gateway", "ko": "실거래 게이트웨이", "en": "Live Trading Gateway"},
+    {"group": "smart", "ko": "스마트 AI & 알림", "en": "Smart AI & Alerts"},
     {"group": "top10", "ko": "TOP 10 파라미터", "en": "Top-10 Parameters"},
     {"group": "hybrid", "ko": "하이브리드 전략", "en": "Hybrid Strategy"},
     {"group": "framework", "ko": "프레임워크 체크리스트", "en": "Framework Checklists"},

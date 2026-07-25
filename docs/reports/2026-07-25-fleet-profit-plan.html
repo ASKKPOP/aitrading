@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet Profit Plan — Sooppiy · 2026-07-25</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --amber:#c88a1a; --gold:#b8862b;
+    --r1:#3b6ef5; --r2:#1a8f5e; --r3:#8b5cf6;
+    --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+      --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+      --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+      --accent:#5b86f7; --amber:#e0a53a; --gold:#d4a445;
+      --r1:#5b86f7; --r2:#3fd08a; --r3:#a78bfa;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+    --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+    --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+    --accent:#5b86f7; --amber:#e0a53a; --gold:#d4a445; --r1:#5b86f7; --r2:#3fd08a; --r3:#a78bfa;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --neg:#d1443b; --accent:#3b6ef5; --amber:#c88a1a; --gold:#b8862b;
+    --r1:#3b6ef5; --r2:#1a8f5e; --r3:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+    -webkit-font-smoothing:antialiased;font-size:15px}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+  header.top{margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-size:30px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink-2);font-size:15.5px;max-width:64ch}
+  h2{font-size:20px;margin:44px 0 4px;letter-spacing:-.01em}
+  h2 .n{color:var(--muted);font-variant-numeric:tabular-nums}
+  .sectnote{color:var(--ink-2);margin:0 0 18px;max-width:70ch;font-size:14.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:20px 22px}
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;letter-spacing:-.02em}
+  .tile .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .neg{color:var(--neg)} .pos{color:var(--pos)}
+  /* chart */
+  figure{margin:0}
+  .chart-card{padding:18px 18px 8px}
+  .cap{color:var(--ink-2);font-size:13px;margin:2px 4px 14px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .axis{stroke:var(--border);stroke-width:1}
+  .grid{stroke:var(--border);stroke-width:1;stroke-dasharray:2 4;opacity:.7}
+  .zero{stroke:var(--ink-2);stroke-width:1.4;stroke-dasharray:4 3;opacity:.55}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+  .anno{fill:var(--ink-2);font-size:11.5px;font-weight:600}
+  .anno-dot{fill:var(--amber);stroke:var(--surface);stroke-width:2}
+  .legendrow{display:flex;gap:18px;flex-wrap:wrap;color:var(--ink-2);font-size:12.5px;margin:4px 4px 6px}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+  /* ranked initiatives */
+  .rank{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;margin-top:16px}
+  .medal{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;font-size:24px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+  .m1{background:linear-gradient(135deg,#c89b3c,#9a7220)}
+  .m2{background:linear-gradient(135deg,#8b98a8,#5f6b7a)}
+  .m3{background:linear-gradient(135deg,#b07a4a,#7c5230)}
+  .rhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .rhead h3{margin:0;font-size:18px;letter-spacing:-.01em}
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 12px}
+  .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+  .badge b{color:var(--ink)}
+  .badge.impact{border-color:var(--pos);color:var(--pos)}
+  .badge.effort{border-color:var(--amber);color:var(--amber)}
+  .problem{color:var(--ink-2);font-size:14px;margin:0 0 12px;padding-left:12px;border-left:3px solid var(--neg-soft);border-left-color:var(--neg)}
+  .steps{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+  .steps li{display:grid;grid-template-columns:auto 1fr;gap:11px;font-size:14px}
+  .ph{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);background:var(--surface-2);
+    border:1px solid var(--border);border-radius:6px;padding:2px 7px;height:fit-content;white-space:nowrap}
+  .win{margin-top:12px;font-size:13.5px;color:var(--ink-2);background:var(--surface-2);border-radius:9px;padding:9px 12px}
+  .win b{color:var(--ink)}
+  hr.sep{border:none;border-top:1px solid var(--border);margin:26px 0}
+  /* roadmap */
+  .road{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .rc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .rc .wk{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  .rc .t{font-weight:650;margin:5px 0 4px;font-size:14.5px}
+  .rc .b{font-size:12.5px;color:var(--ink-2)}
+  .rc .tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 6px;margin-top:8px}
+  .tg1{background:var(--r1)22;color:var(--r1)} .tg2{background:var(--r2)22;color:var(--r2)} .tg3{background:var(--r3)22;color:var(--r3)}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--border);padding-top:16px}
+  .foot code{font-family:var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  @media (max-width:720px){
+    .tiles{grid-template-columns:repeat(2,1fr)} .road{grid-template-columns:repeat(2,1fr)}
+    h1{font-size:25px}
+  }
+  @media (max-width:480px){
+    .rank{grid-template-columns:1fr} .medal{width:44px;height:44px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Sooppiy · Full-Auto Fleet · Strategy Plan</div>
+    <h1>How to actually increase profit</h1>
+    <p class="sub">A ranked, concrete plan drawn from a 12.5-hour live monitoring run of Fleet&nbsp;16
+    (N종목 자동 편성). The engine now trades correctly — but this fleet still lost money.
+    The lesson underneath every snapshot: <b>you can't grow profit until you can measure edge.</b></p>
+  </header>
+
+  <!-- STAT TILES -->
+  <div class="tiles">
+    <div class="tile"><div class="k">Final realized P&amp;L</div><div class="v neg">−$204.81</div><div class="d">fleet manually stopped · −0.41%</div></div>
+    <div class="tile"><div class="k">Peak → Close</div><div class="v">+$50 → −$205</div><div class="d">round-tripped, never auto-banked</div></div>
+    <div class="tile"><div class="k">Exits taken by the run AI</div><div class="v neg">0</div><div class="d">held all the way down</div></div>
+    <div class="tile"><div class="k">Prod changes shipped</div><div class="v pos">4</div><div class="d">Kelly · NaN-500 · exit-logic · full-cycle</div></div>
+  </div>
+
+  <!-- CHART: THE EVIDENCE -->
+  <h2>The evidence <span class="n">— what the fleet did, 07:11–17:11 UTC</span></h2>
+  <p class="sectnote">Total P&amp;L of the 4-symbol crypto-short sleeve across 22 snapshots. It could not trade for
+  the first ~2h (Kelly death-spiral), peaked at <b>+$50</b> once fixed, then round-tripped and bled to <b>−$139</b>
+  as an all-short book met a sustained crypto rally — with no exit logic on the live runs to cap it.</p>
+  <figure class="card chart-card">
+    <div class="legendrow">
+      <span><span class="sw" style="background:var(--pos)"></span>P&amp;L in profit</span>
+      <span><span class="sw" style="background:var(--neg)"></span>P&amp;L in loss</span>
+      <span><span class="sw" style="background:var(--amber)"></span>key event</span>
+    </div>
+    <svg id="pnl" viewBox="0 0 920 340" role="img" aria-label="Fleet total P&L over time, peaking at +$50 then falling to −$139"></svg>
+    <figcaption class="cap">Fleet 16 total P&amp;L (USD). Source: 22 live prod snapshots, 2026-07-25.</figcaption>
+  </figure>
+
+  <!-- THE PLAN -->
+  <h2>The plan <span class="n">— ranked by ROI</span></h2>
+  <p class="sectnote">Three initiatives, in priority order. #1 is the foundation; without it, #2 and #3 are polishing a
+  gamble. Each lists the concrete build steps, effort, and the bar that says it worked.</p>
+
+  <!-- #1 -->
+  <div class="card pad rank">
+    <div class="medal m1">1</div>
+    <div>
+      <div class="rhead"><h3>Edge measurement — Backtest &amp; forward-eval harness</h3></div>
+      <div class="badges">
+        <span class="badge impact">Impact: <b>Highest</b></span>
+        <span class="badge effort">Effort: <b>High (~2–3 wks)</b></span>
+        <span class="badge">Owner: backend/quant</span>
+        <span class="badge">Greenfield: <b>backtest.py</b></span>
+      </div>
+      <p class="problem"><b>Why:</b> No strategy is validated before it trades. The AI's confidence pins at
+      0.58–0.62 (barely above a coin flip), and −$138 from a signal that was right early / wrong late is
+      <b>noise, not a losing thesis</b>. You're discovering expectancy live, with capital.</p>
+      <ul class="steps">
+        <li><span class="ph">A</span><span><b>Backtest engine</b> — <code>service/server/backtest.py</code>, exposed via <code>routes_research.py</code>, historical bars from <code>price_fetcher</code>. Replay a strategy's decision logic over N months → equity curve, win-rate, Sharpe, max drawdown, <b>expectancy per trade</b>.</span></li>
+        <li><span class="ph">B</span><span><b>Net-of-cost model</b> — apply the live 0.1% taker fee + slippage so backtest P&amp;L is what you'd actually keep (the −$19.47 fee floor was the whole realized loss here).</span></li>
+        <li><span class="ph">C</span><span><b>Paper-forward eval</b> — run a candidate strategy in shadow (no capital) for K days; log decision-vs-realized; compute <b>live expectancy</b> and compare to backtest.</span></li>
+        <li><span class="ph">D</span><span><b>Expectancy gate</b> — a fleet/run may only deploy capital if its strategy cleared a positive-expectancy bar (expectancy&nbsp;&gt;&nbsp;round-trip fee, Sharpe&nbsp;&gt;&nbsp;threshold) in <em>both</em> backtest and forward eval.</span></li>
+      </ul>
+      <div class="win"><b>Done when:</b> every fleet launch carries a backtest scorecard, and no negative-expectancy strategy can trade. Turns "deploy and hope" → "deploy what's proven."</div>
+    </div>
+  </div>
+
+  <!-- #2 -->
+  <div class="card pad rank" style="margin-top:16px">
+    <div class="medal m2">2</div>
+    <div>
+      <div class="rhead"><h3>Kill directional concentration</h3></div>
+      <div class="badges">
+        <span class="badge impact">Impact: <b>High</b></span>
+        <span class="badge effort">Effort: <b>Low–Med (~2–4 days)</b></span>
+        <span class="badge">Quickest high-impact win</span>
+        <span class="badge">Extends <b>select_targets</b></span>
+      </div>
+      <p class="problem"><b>Why:</b> 4-of-4 crypto shorts is <b>one</b> correlated bet, not four. When crypto rallied
+      together, nothing offset it — the direct cause of −$139. The per-market directional-balance guard doesn't stop
+      an all-one-market, all-one-direction fleet.</p>
+      <ul class="steps">
+        <li><span class="ph">A</span><span><b>Fleet-level caps</b> in composition (<code>symbol_research.select_targets</code> / <code>fleet_planner</code>): max same-direction fraction across the whole fleet (e.g. ≤60%) and max single-market fraction (e.g. ≤50%).</span></li>
+        <li><span class="ph">B</span><span><b>Prefer a long/short mix</b> and cross-market spread when the batch allows, so the sleeve earns from being <em>right relative</em>, not from the whole tape going your way.</span></li>
+        <li><span class="ph">C</span><span><b>Surface net exposure</b> — show net long/short and per-market concentration in the fleet status strip, and bound it.</span></li>
+      </ul>
+      <div class="win"><b>Done when:</b> no fleet is &gt;X% one direction or one market; net exposure is visible and capped. Removes the single-bet failure mode that sank this run.</div>
+    </div>
+  </div>
+
+  <!-- #3 -->
+  <div class="card pad rank" style="margin-top:16px">
+    <div class="medal m3">3</div>
+    <div>
+      <div class="rhead"><h3>Decisive AI reads — conviction&nbsp;v2</h3></div>
+      <div class="badges">
+        <span class="badge impact">Impact: <b>Medium</b></span>
+        <span class="badge effort">Effort: <b>Med (~1 wk, partly built)</b></span>
+        <span class="badge">Pays off after #1</span>
+      </div>
+      <p class="problem"><b>Why:</b> Confidence is quantized and pins at 0.62 — the model can't separate strong setups
+      from weak ones, so sizing and gating run on noise. More gates won't help; a sharper signal will.</p>
+      <ul class="steps">
+        <li><span class="ph">A</span><span><b>Promote conviction-v2</b> — the component-score conviction is already computed shadow; make it the sizing + gating input (<code>RUN_CONF_V2</code>) and retire the scalar gate.</span></li>
+        <li><span class="ph">B</span><span><b>Calibrate to realized win-rate</b> — using #1's backtest data, map conviction → historical win-rate so <b>position size scales with measured edge</b>, not a flat fraction.</span></li>
+      </ul>
+      <div class="win"><b>Done when:</b> conviction correlates with realized win-rate and size scales with it. Note: this only pays off <em>after</em> #1 provides the calibration data — hence rank 3.</div>
+    </div>
+  </div>
+
+  <!-- SHIPPED 4th lever -->
+  <div class="card pad rank" style="margin-top:16px;border-color:var(--pos);background:linear-gradient(180deg,var(--pos-soft),transparent)">
+    <div class="medal" style="background:linear-gradient(135deg,#1a8f5e,#0f6b45)">✓</div>
+    <div>
+      <div class="rhead"><h3>Full-analysis cycles — human factors in every decision</h3>
+        <span class="badge impact" style="border-color:var(--pos);color:var(--pos)">✅ Shipped this session</span></div>
+      <div class="badges">
+        <span class="badge">Config: <b>FLEET_CYCLE_MODE=full</b></span>
+        <span class="badge">Cost: <b>~6 LLM calls/cycle</b></span>
+      </div>
+      <p class="problem" style="border-left-color:var(--pos)"><b>Found &amp; fixed:</b> the fleet <em>picked</em> symbols with the full factor stack
+      (crypto weights: technical 30% · <b>psych 20% · social 15% · news 15%</b> — the "human fact"), but each 45-min
+      trade decision ran in <b>light</b> mode: one LLM call on price + a frozen thesis, with <code>analysts:&nbsp;{}</code> empty.
+      So it entered with human factors but <b>managed the position blind to them</b> — a direct reason it held every losing
+      short into the rally.</p>
+      <ul class="steps">
+        <li><span class="ph">✓</span><span>Flipped prod to <code>FLEET_CYCLE_MODE=full</code> — every cycle now re-runs News, <b>Sentiment (psych / Fear&amp;Greed / social)</b>, Fundamentals+macro (Polymarket/FRED) and Technical, then the Trader+Risk debate. Verified: all four analyst briefs populate.</span></li>
+        <li><span class="ph">→</span><span><b>Next:</b> because the per-cycle read now sees live sentiment, a regime turn can flip a stale "hold" — pairs with #1's calibration to make conviction mean something.</span></li>
+      </ul>
+      <div class="win"><b>Live now:</b> the next fleet you compose reads the full human-factor stack on <em>every</em> decision, not just at pick time. (Repo default stays <code>light</code> for cost; prod is <code>full</code>.)</div>
+    </div>
+  </div>
+
+  <!-- IMPACT / EFFORT MATRIX -->
+  <h2>Priority at a glance <span class="n">— impact vs effort</span></h2>
+  <p class="sectnote">#2 is the fast risk-reducer to ship first; #1 is the highest-impact build; #3 waits on #1's data.</p>
+  <figure class="card chart-card">
+    <svg id="matrix" viewBox="0 0 920 380" role="img" aria-label="Impact versus effort matrix of the three initiatives"></svg>
+    <figcaption class="cap">Bubble position = impact (up) × effort (right). Higher-left is better ROI.</figcaption>
+  </figure>
+
+  <!-- ROADMAP -->
+  <h2>Suggested sequencing <span class="n">— 4 weeks</span></h2>
+  <div class="road">
+    <div class="rc"><div class="wk">Week 1</div><div class="t">Concentration limits</div><div class="b">Ship #2 — immediate risk reduction. Start #3 plumbing (conviction as gate input).</div><span class="tag tg2">#2</span> <span class="tag tg3">#3</span></div>
+    <div class="rc"><div class="wk">Week 2</div><div class="t">Backtest engine</div><div class="b">Build #1-A/B — replay + net-of-fee equity curves for existing thesis logic.</div><span class="tag tg1">#1</span></div>
+    <div class="rc"><div class="wk">Week 3</div><div class="t">Forward-eval + gate</div><div class="b">#1-C/D — shadow paper-forward, expectancy gate before any capital.</div><span class="tag tg1">#1</span></div>
+    <div class="rc"><div class="wk">Week 4</div><div class="t">Calibrate &amp; validate</div><div class="b">#3-B — calibrate conviction on backtest data; first expectancy-gated fleet.</div><span class="tag tg3">#3</span></div>
+  </div>
+
+  <div class="foot">
+    <b>This fleet:</b> stopped manually at <b>−$204.81</b> realized (the crypto rally continued ~3h past the last snapshot; had the exit logic been on these pre-fix runs, trailing + the ~$175/leg stop would have capped it far earlier).<br>
+    <b>Shipped this session (deployed to prod):</b> Kelly per-run scoping (PR&nbsp;#58, merged) · NaN-500 sanitizer (PR&nbsp;#58, merged) · position-scaled stop + trailing lock (PR&nbsp;#60, open — new runs only) · <b>full-analysis cycles</b> (<code>FLEET_CYCLE_MODE=full</code> — human factors in every decision). Follow-up: formal alembic migration for <code>peak_pnl_usd</code>.<br>
+    Sooppiy fleet monitoring · generated 2026-07-25 · data from 22 live prod snapshots (04:49–17:11 UTC).
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ---- P&L journey data: [UTC hour-decimal, total P&L] ----
+  var D=[[7.18,-11.13],[7.68,-11.62],[8.18,46.32],[8.68,17.27],[9.18,50.27],[9.68,-0.78],
+    [10.18,-57.11],[10.83,-35.58],[11.18,-55.80],[11.68,-34.74],[12.18,-50.52],[12.68,-29.30],
+    [13.18,-66.64],[13.68,-70.76],[14.18,-37.43],[14.68,-64.19],[15.18,-89.74],[15.68,-130.58],
+    [16.18,-104.19],[16.68,-130.08],[17.18,-138.74]];
+  var events=[{x:8.18,y:46.32,t:"first trades → +$50 peak",dy:-14,dx:6},
+              {x:9.18,y:50.27,t:"",dy:0,dx:0},
+              {x:15.68,y:-130.58,t:"all-short into crypto rally",dy:20,dx:-6}];
+
+  function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+  function draw(){
+    var svg=document.getElementById('pnl'); if(!svg)return; svg.innerHTML='';
+    var W=920,H=340, m={l:52,r:18,t:22,b:34};
+    var xs=D.map(d=>d[0]), ys=D.map(d=>d[1]);
+    var xmin=6.9,xmax=17.4, ymin=Math.min(...ys)-14, ymax=Math.max(...ys)+16;
+    var X=x=>m.l+(x-xmin)/(xmax-xmin)*(W-m.l-m.r);
+    var Y=y=>m.t+(1-(y-ymin)/(ymax-ymin))*(H-m.t-m.b);
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc){var t=el('text',{x:x,y:y,class:c||'tick'});if(anc)t.setAttribute('text-anchor',anc);t.textContent=s;return t;}
+
+    var pos=css('--pos'),neg=css('--neg'),amber=css('--amber'),surf=css('--surface');
+
+    // y gridlines + labels
+    var yticks=[50,0,-50,-100];
+    yticks.forEach(function(v){
+      if(v>ymax||v<ymin)return;
+      svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),class:v===0?'zero':'grid'}));
+      svg.appendChild(txt(m.l-8,Y(v)+4,(v>0?'+':'')+'$'+v,'tick','end'));
+    });
+    // x labels (UTC hours)
+    [8,10,12,14,16].forEach(function(h){
+      svg.appendChild(txt(X(h),H-m.b+18,h+':00','tick','middle'));
+    });
+    svg.appendChild(txt(X(11.5),H-2,'UTC · 2026-07-25','tick','middle'));
+
+    // build the line path + split fill at zero via clip
+    var dstr=D.map((d,i)=>(i?'L':'M')+X(d[0]).toFixed(1)+' '+Y(d[1]).toFixed(1)).join(' ');
+    var zeroY=Y(0);
+    // area to zero, clipped above/below
+    var areaUp=dstr+' L'+X(D[D.length-1][0]).toFixed(1)+' '+zeroY+' L'+X(D[0][0]).toFixed(1)+' '+zeroY+' Z';
+    var cid1='cUp',cid2='cDn';
+    var defs=el('defs',{});
+    var c1=el('clipPath',{id:cid1}); c1.appendChild(el('rect',{x:0,y:0,width:W,height:zeroY})); defs.appendChild(c1);
+    var c2=el('clipPath',{id:cid2}); c2.appendChild(el('rect',{x:0,y:zeroY,width:W,height:H-zeroY})); defs.appendChild(c2);
+    svg.appendChild(defs);
+    svg.appendChild(el('path',{d:areaUp,fill:pos,'fill-opacity':.14,'clip-path':'url(#'+cid1+')'}));
+    svg.appendChild(el('path',{d:areaUp,fill:neg,'fill-opacity':.14,'clip-path':'url(#'+cid2+')'}));
+    // the two-colour line
+    svg.appendChild(el('path',{d:dstr,fill:'none',stroke:pos,'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round','clip-path':'url(#'+cid1+')'}));
+    svg.appendChild(el('path',{d:dstr,fill:'none',stroke:neg,'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round','clip-path':'url(#'+cid2+')'}));
+
+    // event annotations
+    events.forEach(function(e){
+      if(!e.t)return;
+      svg.appendChild(el('circle',{cx:X(e.x),cy:Y(e.y),r:4.5,class:'anno-dot'}));
+      var anchor = e.dx<0?'end':'start';
+      svg.appendChild(txt(X(e.x)+e.dx,Y(e.y)+e.dy,e.t,'anno',anchor));
+    });
+    // endpoint marker
+    var last=D[D.length-1];
+    svg.appendChild(el('circle',{cx:X(last[0]),cy:Y(last[1]),r:4.5,fill:neg,stroke:surf,'stroke-width':2}));
+    svg.appendChild(txt(X(last[0])-6,Y(last[1])+18,'−$138.74','anno','end'));
+  }
+
+  function drawMatrix(){
+    var svg=document.getElementById('matrix'); if(!svg)return; svg.innerHTML='';
+    var W=920,H=380,m={l:64,r:24,t:20,b:48};
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc,fs){var t=el('text',{x:x,y:y});t.setAttribute('class',c||'tick');if(anc)t.setAttribute('text-anchor',anc);if(fs)t.setAttribute('font-size',fs);t.textContent=s;return t;}
+    var X=v=>m.l+v/100*(W-m.l-m.r), Y=v=>m.t+(1-v/100)*(H-m.t-m.b);
+    // quadrant grid
+    [25,50,75].forEach(function(g){
+      svg.appendChild(el('line',{x1:X(g),x2:X(g),y1:m.t,y2:H-m.b,class:'grid'}));
+      svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:Y(g),y2:Y(g),class:'grid'}));
+    });
+    svg.appendChild(el('rect',{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:'none',stroke:'var(--border)','stroke-width':1}));
+    // axis labels
+    svg.appendChild(txt((m.l+W-m.r)/2,H-10,'Effort  →','anno','middle'));
+    var yl=txt(0,0,'Impact  →','anno','middle'); yl.setAttribute('transform','translate(18,'+((m.t+H-m.b)/2)+') rotate(-90)'); svg.appendChild(yl);
+    svg.appendChild(txt(m.l+6,m.t+16,'high-value, quick','tick','start'));
+    svg.appendChild(txt(W-m.r-6,m.t+16,'high-value, heavy','tick','end'));
+
+    var items=[
+      {x:30,y:82,r:34,c:'--r2',n:'2',lab:'Concentration limits'},
+      {x:85,y:95,r:40,c:'--r1',n:'1',lab:'Backtest / eval harness'},
+      {x:55,y:55,r:30,c:'--r3',n:'3',lab:'Conviction v2'}
+    ];
+    items.forEach(function(it){
+      var col=getComputedStyle(document.body).getPropertyValue(it.c).trim();
+      svg.appendChild(el('circle',{cx:X(it.x),cy:Y(it.y),r:it.r,fill:col,'fill-opacity':.20,stroke:col,'stroke-width':2}));
+      var t=txt(X(it.x),Y(it.y)+7,it.n,''); t.setAttribute('text-anchor','middle'); t.setAttribute('fill',col); t.setAttribute('font-weight','800'); t.setAttribute('font-size','20'); svg.appendChild(t);
+      svg.appendChild(txt(X(it.x),Y(it.y)+it.r+16,it.lab,'anno','middle'));
+    });
+  }
+
+  function render(){draw();drawMatrix();}
+  render();
+  // re-render on theme toggle (data-theme) and OS scheme change
+  new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);}
+  window.addEventListener('resize',function(){/* viewBox scales; nothing needed */});
+})();
+</script>
+</body>
+</html>

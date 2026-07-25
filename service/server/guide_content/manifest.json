@@ -11,6 +11,11 @@
       "en": "Live Trading Gateway"
     },
     {
+      "group": "smart",
+      "ko": "스마트 AI & 알림",
+      "en": "Smart AI & Alerts"
+    },
+    {
       "group": "top10",
       "ko": "TOP 10 파라미터",
       "en": "Top-10 Parameters"
@@ -64,6 +69,18 @@
       "lang": "ko",
       "group": "gateway",
       "title": "실거래 게이트웨이 완전 가이드"
+    },
+    {
+      "key": "smart-ko",
+      "lang": "ko",
+      "group": "smart",
+      "title": "스마트 AI 판단 & 맞춤 알림"
+    },
+    {
+      "key": "smart-en",
+      "lang": "en",
+      "group": "smart",
+      "title": "Smart AI Decisions & Personal Alerts"
     },
     {
       "key": "top10-en",
