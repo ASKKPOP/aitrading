@@ -1,3 +1,4 @@
+import asyncio
 import hmac
 import json
 import logging
@@ -187,7 +188,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'last_sent_at': now,
         }, ctx)
         from signup_lang import resolve_signup_lang
-        lang = resolve_signup_lang(request)
+        # Offload the (sync, network) geo lookup so a slow geo API can't stall
+        # the shared event loop during signup — fail-soft returns 'en' anyway.
+        lang = await asyncio.to_thread(resolve_signup_lang, request)
         if not send_verification_code_email(data.email, code, lang):
             # Fallback: log code when Resend is not configured (local dev).
             _logger.info('[Email] Verification code for %s: %s', data.email, code)
@@ -220,7 +223,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         password_hash = hash_password(data.password)
         from signup_lang import resolve_signup_lang
-        lang = resolve_signup_lang(request)
+        # Offload the (sync, network) geo lookup so a slow geo API can't stall
+        # the shared event loop during signup — fail-soft returns 'en' anyway.
+        lang = await asyncio.to_thread(resolve_signup_lang, request)
         cursor.execute(
             """
             INSERT INTO users (email, password_hash, lang)

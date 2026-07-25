@@ -20,6 +20,7 @@ Env vars (all required for Google to be enabled):
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import secrets as _secrets
 from datetime import datetime, timedelta, timezone
@@ -244,7 +245,8 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=502, detail=f"Google userinfo failed: {exc}")
 
         from signup_lang import resolve_signup_lang
-        lang = resolve_signup_lang(request)
+        # Offload the (sync, network) geo lookup off the event loop; fail-soft.
+        lang = await asyncio.to_thread(resolve_signup_lang, request)
         user_id = _find_or_create_user_from_google(user_info, lang=lang)
         session_token = _create_user_session(user_id)
         return JSONResponse({
