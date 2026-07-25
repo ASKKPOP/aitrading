@@ -532,7 +532,7 @@ export function MarketingPage() {
     login: tr(language, { ko: '로그인', en: 'Log in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
     signup: tr(language, { ko: '가입하기', en: 'Sign up', ja: '登録', th: 'สมัคร', vi: 'Đăng ký' }),
 
-    heroKicker: tr(language, { ko: 'INTELLIGENT AUTOMATE AGENT · 페이퍼 전용', en: 'INTELLIGENT AUTOMATE AGENT · PAPER ONLY', ja: 'INTELLIGENT AUTOMATE AGENT · 模擬のみ', th: 'INTELLIGENT AUTOMATE AGENT · จำลองเท่านั้น', vi: 'INTELLIGENT AUTOMATE AGENT · CHỈ MÔ PHỎNG' }),
+    heroKicker: tr(language, { ko: 'INTELLIGENT AUTOMATE AGENT · 페이퍼 먼저', en: 'INTELLIGENT AUTOMATE AGENT · PAPER-FIRST', ja: 'INTELLIGENT AUTOMATE AGENT · まず模擬', th: 'INTELLIGENT AUTOMATE AGENT · เปเปอร์ก่อน', vi: 'INTELLIGENT AUTOMATE AGENT · PAPER TRƯỚC' }),
     heroH1a: tr(language, { ko: '신호는 예측이 아니라,', en: 'Signals are measured,', ja: 'シグナルは予測ではなく、', th: 'สัญญาณคือสิ่งที่วัดได้', vi: 'Tín hiệu là thứ đo được,' }),
     heroH1b: tr(language, { ko: '측정하는 것입니다.', en: 'not predicted.', ja: '測定するもの。', th: 'ไม่ใช่การทำนาย', vi: 'không phải dự đoán.' }),
     heroSub: tr(language, {
@@ -544,7 +544,7 @@ export function MarketingPage() {
     }),
     ctaStart: tr(language, { ko: '무료로 시작', en: 'Start free', ja: '無料で始める', th: 'เริ่มฟรี', vi: 'Bắt đầu miễn phí' }),
     ctaBoard: tr(language, { ko: '리더보드 보기', en: 'See leaderboard', ja: 'リーダーボード', th: 'ดูลีดเดอร์บอร์ด', vi: 'Xem bảng xếp hạng' }),
-    heroNote: tr(language, { ko: '연구·교육용 소프트웨어입니다. 모든 거래는 모의이며 — 실제 자금도, 투자 자문도 아닙니다.', en: 'Research & education software. Every trade is simulated — no real funds, no advice.', ja: '研究・教育用ソフトウェアです。すべての取引は模擬であり、実資金や投資助言はありません。', th: 'ซอฟต์แวร์เพื่อการวิจัยและการศึกษา ทุกการเทรดเป็นแบบจำลอง — ไม่มีเงินจริง ไม่ใช่คำแนะนำ', vi: 'Phần mềm nghiên cứu & giáo dục. Mọi giao dịch đều mô phỏng — không tiền thật, không phải lời khuyên.' }),
+    heroNote: tr(language, { ko: '페이퍼로 시작 — 모든 모의 거래는 실제 자금이 없습니다. 라이브는 본인 브로커에서 검증 후 선택적으로. 투자 자문 아님.', en: 'Start on paper — every simulated trade uses no real funds. Live is opt-in on your own broker, after you verify. Not advice.', ja: 'まずは模擬から — 全ての模擬取引に実資金は不要。ライブは本人のブローカーで検証後に任意で。投資助言ではありません。', th: 'เริ่มด้วยเปเปอร์ — ทุกเทรดจำลองไม่ใช้เงินจริง ไลฟ์เป็นทางเลือกบนโบรกเกอร์ของคุณหลังยืนยัน ไม่ใช่คำแนะนำ', vi: 'Bắt đầu bằng paper — mọi giao dịch mô phỏng không dùng tiền thật. Live là tùy chọn trên broker của bạn, sau khi xác minh. Không phải lời khuyên.' }),
 
     readKicker: tr(language, { ko: 'AI가 읽는 것', en: 'WHAT THE AI READS', ja: 'AIが読むもの', th: 'สิ่งที่ AI อ่าน', vi: 'AI ĐỌC GÌ' }),
     readH: tr(language, { ko: '여섯 가지 신호 요소', en: 'Six signal elements', ja: '6つのシグナル要素', th: 'องค์ประกอบสัญญาณ 6 อย่าง', vi: 'Sáu yếu tố tín hiệu' }),
@@ -609,12 +609,15 @@ export function MarketingPage() {
       { n: 'signal-postmortem', d: tr(language, { ko: '복기 프레임워크 — 지는 것은 잘라내고 되는 것만 남김', en: 'Review framework — prune what loses, keep what works', ja: '振り返りフレームワーク — 負けを削り、勝ちを残す', th: 'กรอบทบทวน — ตัดที่แพ้ เก็บที่ได้ผล', vi: 'Khung đánh giá — cắt cái thua, giữ cái hiệu quả' }) },
     ],
     caps: [
+      tr(language, { ko: '7개 마켓', en: '7 markets', ja: '7マーケット', th: '7 ตลาด', vi: '7 thị trường' }),
       tr(language, { ko: '백테스트', en: 'Backtesting', ja: 'バックテスト', th: 'แบ็กเทสต์', vi: 'Backtest' }),
       tr(language, { ko: '신호 생성', en: 'Signal generation', ja: 'シグナル生成', th: 'สร้างสัญญาณ', vi: 'Tạo tín hiệu' }),
-      tr(language, { ko: '주문 체결(모의)', en: 'Order execution (paper)', ja: '注文執行（模擬）', th: 'ส่งคำสั่ง (จำลอง)', vi: 'Khớp lệnh (mô phỏng)' }),
+      tr(language, { ko: '주문 체결(모의+라이브)', en: 'Order execution (paper + live)', ja: '注文執行（模擬＋ライブ）', th: 'ส่งคำสั่ง (จำลอง + ไลฟ์)', vi: 'Khớp lệnh (mô phỏng + live)' }),
+      tr(language, { ko: '카피 트레이딩', en: 'Copy-trading', ja: 'コピートレード', th: 'ก๊อปปี้เทรด', vi: 'Copy-trading' }),
+      tr(language, { ko: '플릿 오토파일럿', en: 'Fleet auto-pilot', ja: 'フリート自動運転', th: 'ฟลีตออโตไพลอต', vi: 'Fleet tự lái' }),
+      tr(language, { ko: '레버리지 1–10×', en: 'Leverage 1–10×', ja: 'レバレッジ 1–10×', th: 'เลเวอเรจ 1–10×', vi: 'Đòn bẩy 1–10×' }),
       tr(language, { ko: '거래 기록', en: 'Trade journaling', ja: '取引記録', th: 'บันทึกการเทรด', vi: 'Nhật ký giao dịch' }),
       tr(language, { ko: '리스크 관리', en: 'Risk management', ja: 'リスク管理', th: 'จัดการความเสี่ยง', vi: 'Quản trị rủi ro' }),
-      tr(language, { ko: '3단계 자동화 모드', en: '3-tier automation modes', ja: '3段階自動化モード', th: 'โหมดอัตโนมัติ 3 ระดับ', vi: '3 cấp độ tự động hóa' }),
     ],
 
     riskKicker: tr(language, { ko: '리스크는 코드에 고정', en: 'RISK, HARD-CODED', ja: 'リスクはコードに固定', th: 'ความเสี่ยงถูกฝังในโค้ด', vi: 'RỦI RO ĐƯỢC MÃ HÓA CỨNG' }),
@@ -624,17 +627,45 @@ export function MarketingPage() {
       { t: tr(language, { ko: '하드 손절', en: 'Hard stop-losses', ja: 'ハード損切り', th: 'จุดตัดขาดทุนตายตัว', vi: 'Cắt lỗ cứng' }), d: tr(language, { ko: '손절과 최대 손실 한도는 코드 안에 있어 감정이 건드릴 수 없습니다.', en: 'Stops and max-loss limits live in code, where emotions cannot touch them.', ja: '損切りと最大損失の上限はコード内にあり、感情は介入できません。', th: 'จุดตัดขาดทุนและลิมิตขาดทุนสูงสุดอยู่ในโค้ด อารมณ์แตะต้องไม่ได้', vi: 'Điểm dừng và giới hạn lỗ tối đa nằm trong code, cảm xúc không chạm tới.' }) },
       { t: tr(language, { ko: '서킷 브레이커', en: 'Circuit breakers', ja: 'サーキットブレーカー', th: 'เซอร์กิตเบรกเกอร์', vi: 'Ngắt mạch' }), d: tr(language, { ko: '3σ 변동성, API 지연, 조작 의심 시 자동 정지합니다.', en: 'Auto-halt on 3σ volatility, API lag or suspected manipulation.', ja: '3σ変動・API遅延・操作疑いで自動停止します。', th: 'หยุดอัตโนมัติเมื่อผันผวน 3σ, API หน่วง หรือสงสัยการปั่นราคา', vi: 'Tự dừng khi biến động 3σ, API trễ hoặc nghi thao túng.' }) },
       { t: tr(language, { ko: '이벤트 캘린더 가드', en: 'Event-calendar guard', ja: 'イベントカレンダーガード', th: 'การ์ดปฏิทินอีเวนต์', vi: 'Chắn lịch sự kiện' }), d: tr(language, { ko: 'FOMC·CPI·NFP 이벤트 창을 표시하고, 옵션으로 해당 구간의 신규 진입을 차단할 수 있습니다.', en: 'Shows FOMC/CPI/NFP event windows and can optionally block new entries inside them.', ja: 'FOMC・CPI・NFPのイベント窓を表示し、オプションでその区間の新規エントリーを遮断できます。', th: 'แสดงหน้าต่างอีเวนต์ FOMC·CPI·NFP และเลือกบล็อกการเข้าใหม่ในช่วงนั้นได้', vi: 'Hiển thị cửa sổ sự kiện FOMC·CPI·NFP và có thể tùy chọn chặn lệnh mới trong đó.' }) },
+      { t: tr(language, { ko: '레버리지 세이프티', en: 'Leverage safety', ja: 'レバレッジセーフティ', th: 'ความปลอดภัยเลเวอเรจ', vi: 'An toàn đòn bẩy' }), d: tr(language, { ko: '격리 레버리지 1–10×. 스톱은 청산가 안쪽에 두고, 확신도에 따라 크기를 조절하며, 방향 균형 가드가 한쪽 쏠림을 막습니다.', en: 'Isolated leverage 1–10×. Stops sit inside the liquidation price, size scales with conviction, and a directional-balance guard stops a market stacking one way.', ja: '分離レバレッジ1–10×。ストップは清算価格の内側に置き、確信度でサイズを調整し、方向バランスガードが一方向への偏りを防ぎます。', th: 'เลเวอเรจแยก 1–10× สต็อปอยู่ในราคาล้างพอร์ต ปรับขนาดตามความมั่นใจ และการ์ดสมดุลทิศทางกันการเทหน้าเดียว', vi: 'Đòn bẩy cô lập 1–10×. Stop nằm trong giá thanh lý, khối lượng co giãn theo độ tin cậy, và bộ chắn cân bằng hướng ngăn dồn một phía.' }) },
     ],
+
+    mmKicker: tr(language, { ko: '마켓과 모드', en: 'MARKETS & MODES', ja: 'マーケットとモード', th: 'ตลาดและโหมด', vi: 'THỊ TRƯỜNG & CHẾ ĐỘ' }),
+    mmH: tr(language, { ko: '일곱 개 마켓, 네 가지 매매 방식', en: 'Seven markets. Four ways to trade.', ja: '7つのマーケット、4つの取引方法。', th: 'เจ็ดตลาด สี่วิธีเทรด', vi: 'Bảy thị trường. Bốn cách giao dịch.' }),
+    markets: [
+      { n: tr(language, { ko: '크립토', en: 'Crypto', ja: '暗号資産', th: 'คริปโต', vi: 'Crypto' }), sub: 'Hyperliquid', auto: true },
+      { n: tr(language, { ko: '미국 주식', en: 'US stocks', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ' }), sub: tr(language, { ko: '주식·ETF', en: 'Stocks & ETFs', ja: '株式・ETF', th: 'หุ้น·ETF', vi: 'CP & ETF' }), auto: true },
+      { n: tr(language, { ko: '외환', en: 'Forex', ja: 'FX', th: 'ฟอเร็กซ์', vi: 'Forex' }), sub: tr(language, { ko: '주요 통화쌍', en: 'Major pairs', ja: '主要通貨ペア', th: 'คู่หลัก', vi: 'Cặp chính' }), auto: true },
+      { n: tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }), sub: tr(language, { ko: '지수·상품', en: 'Index & commodity', ja: '指数・商品', th: 'ดัชนี·สินค้า', vi: 'Chỉ số & hàng hóa' }), auto: true },
+      { n: tr(language, { ko: '중국 A주', en: 'China A-shares', ja: '中国A株', th: 'หุ้นจีน A', vi: 'CP loại A (TQ)' }), sub: tr(language, { ko: '본토 상장', en: 'Mainland listings', ja: '本土上場', th: 'จดทะเบียนแผ่นดินใหญ่', vi: 'Niêm yết đại lục' }), auto: true },
+      { n: tr(language, { ko: '예측 시장', en: 'Prediction', ja: '予測市場', th: 'ตลาดคาดการณ์', vi: 'Dự đoán' }), sub: 'Polymarket', auto: false },
+      { n: tr(language, { ko: '옵션', en: 'Options', ja: 'オプション', th: 'ออปชั่น', vi: 'Quyền chọn' }), sub: tr(language, { ko: '주식 옵션', en: 'Equity options', ja: '株式オプション', th: 'ออปชั่นหุ้น', vi: 'Quyền chọn CP' }), auto: false },
+    ],
+    mmAuto: tr(language, { ko: '자동매매', en: 'auto-trade', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'tự động' }),
+    mmManual: tr(language, { ko: '수동', en: 'manual', ja: '手動', th: 'มือ', vi: 'thủ công' }),
+    modes: [
+      { t: tr(language, { ko: '수동 페이퍼', en: 'Manual paper', ja: '手動ペーパー', th: 'เปเปอร์มือ', vi: 'Paper thủ công' }), d: tr(language, { ko: '$100,000 모의 원장을 직접 매매하고, 손익·저널로 복기합니다.', en: 'Trade the $100,000 simulated ledger yourself, then review with P&L and journal.', ja: '10万ドルの模擬台帳を自分で売買し、損益とジャーナルで振り返ります。', th: 'เทรดบัญชีจำลอง $100,000 ด้วยตัวเอง แล้วทบทวนด้วย P&L และบันทึก', vi: 'Tự giao dịch sổ mô phỏng $100.000, rồi xem lại bằng P&L và nhật ký.' }) },
+      { t: tr(language, { ko: '규칙 자동화', en: 'Rule-based automation', ja: 'ルールベース自動化', th: 'ระบบอัตโนมัติตามกฎ', vi: 'Tự động theo luật' }), d: tr(language, { ko: '당신이 정한 규칙이 5–1440분 주기로, 최소 신뢰도 게이트와 리스크 게이트를 거쳐 실행됩니다.', en: 'Your own rules run on a 5–1440 min interval, through a min-confidence gate and the risk gate.', ja: 'あなたのルールが5–1440分周期で、最低信頼度ゲートとリスクゲートを通って実行されます。', th: 'กฎของคุณรันทุก 5–1440 นาที ผ่านประตูความเชื่อมั่นขั้นต่ำและประตูความเสี่ยง', vi: 'Quy tắc của bạn chạy theo chu kỳ 5–1440 phút, qua cổng tin cậy tối thiểu và cổng rủi ro.' }) },
+      { t: tr(language, { ko: '플릿 오토파일럿', en: 'Fleet autopilot', ja: 'フリート自動運転', th: 'ฟลีตออโตไพลอต', vi: 'Fleet tự lái' }), d: tr(language, { ko: '감독되는 AI 런의 플릿이 리스크 성향 티어(균형/고수익/고위험)와 손실 워치독으로 알아서 굴러갑니다.', en: 'A supervised fleet of AI runs drives itself with risk-appetite tiers (Balance / High-Profit / High-Risk) and a loss watchdog.', ja: '監督されたAIランのフリートが、リスク志向ティア（均衡／高収益／高リスク）と損失ウォッチドッグで自走します。', th: 'ฟลีต AI ที่มีผู้ดูแลขับเคลื่อนตัวเองด้วยเทียร์ระดับความเสี่ยง (สมดุล/กำไรสูง/เสี่ยงสูง) และวอตช์ด็อกขาดทุน', vi: 'Một đội AI được giám sát tự vận hành với các mức khẩu vị rủi ro (Cân bằng / Lợi nhuận cao / Rủi ro cao) và watchdog thua lỗ.' }) },
+      { t: tr(language, { ko: '카피 트레이딩', en: 'Copy-trading', ja: 'コピートレード', th: 'ก๊อปปี้เทรด', vi: 'Copy-trading' }), d: tr(language, { ko: '리더를 팔로우하면 그의 신호가 당신의 원장에 자동으로 미러링됩니다.', en: 'Follow a leader and their signals mirror onto your own ledger automatically.', ja: 'リーダーをフォローすると、そのシグナルがあなたの台帳へ自動でミラーされます。', th: 'ติดตามลีดเดอร์แล้วสัญญาณของเขาจะมิเรอร์มายังบัญชีของคุณอัตโนมัติ', vi: 'Theo dõi một leader và tín hiệu của họ tự động sao chép vào sổ của bạn.' }) },
+    ],
+    mmLive: tr(language, {
+      ko: '실전 준비가 되면 본인 Alpaca·Binance·IBKR 계좌를 연결하세요. 라이브는 기본 비활성이며, 검증을 마치고 각 브로커 약관에 동의한 뒤에만 시작됩니다 — AI 자동 런은 페이퍼에 그대로 남습니다.',
+      en: 'Ready for real money? Connect your own Alpaca, Binance, or IBKR account. Live is off by default and starts only after you verify and accept each broker’s terms — AI auto-runs stay on paper.',
+      ja: '実弾の準備ができたら、本人のAlpaca・Binance・IBKR口座を接続。ライブは既定で無効、検証を終え各社の規約に同意した後にのみ開始します — AI自動ランはペーパーのままです。',
+      th: 'พร้อมเงินจริงไหม? เชื่อมบัญชี Alpaca, Binance หรือ IBKR ของคุณเอง ไลฟ์ปิดโดยค่าเริ่มต้น และเริ่มเฉพาะหลังยืนยันและยอมรับข้อกำหนดของแต่ละโบรกเกอร์ — การรันอัตโนมัติของ AI ยังอยู่บนเปเปอร์',
+      vi: 'Sẵn sàng tiền thật? Kết nối tài khoản Alpaca, Binance hoặc IBKR của bạn. Live tắt mặc định và chỉ bắt đầu sau khi bạn xác minh và chấp nhận điều khoản từng broker — các lần AI tự chạy vẫn ở paper.',
+    }),
 
     ctaH: tr(language, { ko: '모의 자금 $100,000. 실제 리스크는 0.', en: '$100,000 of paper money. Zero real risk.', ja: '10万ドルの模擬資金。実リスクはゼロ。', th: 'เงินจำลอง $100,000 ความเสี่ยงจริงเป็นศูนย์', vi: '$100.000 tiền mô phỏng. Rủi ro thật bằng không.' }),
     ctaSub: tr(language, { ko: '한 번만 설정하세요. AI가 측정하고 판단하고 기록합니다 — 당신은 검토만.', en: 'Configure once. The AI measures, decides and journals — you review.', ja: '一度設定すれば、AIが測定・判断・記録し、あなたは確認するだけ。', th: 'ตั้งค่าครั้งเดียว AI วัด ตัดสินใจ และบันทึก — คุณแค่ทบทวน', vi: 'Cấu hình một lần. AI đo, quyết định và ghi lại — bạn chỉ xem xét.' }),
 
     legal: tr(language, {
-      ko: 'Sooppiy는 연구·교육용 소프트웨어입니다. 이 플랫폼의 모든 거래는 모의이며, 실제 자금을 보관·이동하거나 위험에 노출하지 않습니다. 시장 데이터는 정보 제공 목적입니다. 이 사이트의 어떤 내용도 투자 자문이 아닙니다.',
-      en: 'Sooppiy is research and education software. All trading on this platform is simulated: no real funds are held, moved, or at risk. Market data is provided for information only. Nothing on this site is investment advice.',
-      ja: 'Sooppiyは研究・教育用ソフトウェアです。すべての取引は模擬であり、実際の資金は保有・移動・リスクにさらされません。投資助言ではありません。',
-      th: 'Sooppiy คือซอฟต์แวร์วิจัยและการศึกษา การเทรดทั้งหมดเป็นแบบจำลอง ไม่มีเงินจริง ไม่ใช่คำแนะนำการลงทุน',
-      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Mọi giao dịch đều mô phỏng. Không phải lời khuyên đầu tư.',
+      ko: 'Sooppiy는 연구·교육용 소프트웨어입니다. 기본적으로 모든 거래는 모의이며 실제 자금이 위험에 노출되지 않습니다. 라이브 브로커 거래는 선택 사항이며 기본 비활성 상태입니다 — 사용자가 직접 연결한 브로커 계좌에서, 각 브로커 약관에 동의한 후에만 실행되고, AI 자동 실행은 모의 원장에 남습니다. 시장 데이터는 정보 제공 목적이며, 이 사이트의 어떤 내용도 투자 자문이 아닙니다.',
+      en: 'Sooppiy is research and education software. By default all trading is simulated — no real funds are at risk. Live brokerage trading is optional and off by default: it runs only on a brokerage account you connect yourself, after you accept each broker’s terms, and AI auto-runs stay on the simulated ledger. Market data is for information only. Nothing on this site is investment advice.',
+      ja: 'Sooppiyは研究・教育用ソフトウェアです。既定ではすべての取引は模擬で、実資金はリスクにさらされません。ライブのブローカー取引は任意で既定は無効です — 本人が接続したブローカー口座で、各社の規約に同意した後にのみ実行され、AIの自動実行は模擬台帳に残ります。市場データは情報提供のみで、投資助言ではありません。',
+      th: 'Sooppiy คือซอฟต์แวร์วิจัยและการศึกษา โดยค่าเริ่มต้นทุกการเทรดเป็นแบบจำลอง ไม่มีเงินจริงเสี่ยง การเทรดไลฟ์ผ่านโบรกเกอร์เป็นทางเลือกและปิดอยู่โดยค่าเริ่มต้น — ทำงานเฉพาะบนบัญชีโบรกเกอร์ที่คุณเชื่อมเอง หลังยอมรับข้อกำหนดของแต่ละโบรกเกอร์ และการรันอัตโนมัติของ AI ยังอยู่บนบัญชีจำลอง ข้อมูลตลาดเพื่อการให้ข้อมูลเท่านั้น ไม่ใช่คำแนะนำการลงทุน',
+      vi: 'Sooppiy là phần mềm nghiên cứu và giáo dục. Mặc định mọi giao dịch đều mô phỏng — không tiền thật nào chịu rủi ro. Giao dịch live qua broker là tùy chọn và tắt mặc định: chỉ chạy trên tài khoản broker bạn tự kết nối, sau khi chấp nhận điều khoản từng broker, và các lần AI tự chạy vẫn ở sổ cái mô phỏng. Dữ liệu thị trường chỉ để tham khảo. Không nội dung nào là lời khuyên đầu tư.',
     }),
   }
 
@@ -735,10 +766,10 @@ export function MarketingPage() {
               L('기록·복기', 'Journal & review', '記録・振り返り', 'บันทึก·ทบทวน', 'Nhật ký & xem lại'),
             ]
             const kpis = [
-              { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh'), vl: L('페이퍼 전용', 'Paper only', 'ペーパー専用', 'เปเปอร์เท่านั้น', 'Chỉ paper'), hint: L('실계좌 주문 코드 자체가 비활성', 'real-account order code disabled', '実口座注文コード自体が無効', 'โค้ดคำสั่งบัญชีจริงถูกปิด', 'mã lệnh tài khoản thật bị vô hiệu') },
+              { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh'), vl: L('페이퍼 먼저', 'Paper first', 'まず模擬', 'เปเปอร์ก่อน', 'Paper trước'), hint: L('검증 후 본인 브로커에서 라이브 선택', 'live optional on your broker, after you verify', '検証後に本人ブローカーで任意ライブ', 'ไลฟ์ทางเลือกบนโบรกเกอร์คุณ หลังยืนยัน', 'live tùy chọn trên broker của bạn, sau khi xác minh') },
               { lb: L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'), vl: L('3중 검사', 'Triple check', '三重チェック', 'ตรวจ 3 ชั้น', 'Kiểm tra 3 lớp'), hint: L('켈리 → 한도 → 브레이커', 'Kelly → limits → breaker', 'ケリー → 上限 → ブレーカー', 'เคลลี → ลิมิต → เบรกเกอร์', 'Kelly → hạn mức → breaker') },
-              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: L('854 통과', '854 passing', '854件通過', 'ผ่าน 854', '854 đạt'), hint: L('시그널 확장 테스트 포함', 'incl. signal-expansion tests', 'シグナル拡張テスト含む', 'รวมเทสต์ขยายสัญญาณ', 'gồm test mở rộng tín hiệu') },
-              { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền'), vl: '21' + L('개', '', '件', '', ''), hint: 'risk_watcher · psych · scanner' },
+              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: '1,800+', hint: L('시그널·실행·리스크 커버리지', 'signal · execution · risk coverage', 'シグナル・実行・リスクの網羅', 'ครอบคลุมสัญญาณ·ดำเนินการ·ความเสี่ยง', 'phủ tín hiệu · thực thi · rủi ro') },
+              { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền'), vl: '32' + L('개', '', '件', '', ''), hint: 'risk_watcher · psych · scanner · fleet' },
             ]
             return (<>
               <p style={{ fontSize: 14, color: V.mut, margin: '4px 0 14px', maxWidth: '80ch' }}>
@@ -992,6 +1023,35 @@ export function MarketingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── markets & modes ── */}
+      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
+        <div style={wrap}>
+          <div style={kicker}>{T.mmKicker}</div>
+          <h2 style={h2S}>{T.mmH}</h2>
+          <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginTop: 18 }}>
+            {T.markets.map((m, i) => (
+              <div key={i} style={{ ...cardS, padding: '13px 15px' }}>
+                <div style={{ fontWeight: 700, fontSize: 15.5 }}>{m.n}</div>
+                <div style={{ fontSize: 12.5, color: V.mut, marginTop: 2 }}>{m.sub}</div>
+                <span style={{ display: 'inline-block', marginTop: 8, fontFamily: V.mono, fontSize: 10.5, fontWeight: 600, borderRadius: 999, padding: '3px 9px', background: m.auto ? 'var(--up-soft, rgba(45,158,107,0.10))' : V.bg2, color: m.auto ? V.up : V.mut }}>{m.auto ? T.mmAuto : T.mmManual}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginTop: 14 }}>
+            {T.modes.map((m, i) => (
+              <div key={i} style={{ ...cardS, borderLeft: `3px solid ${V.accent}` }}>
+                <div style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 5 }}>{m.t}</div>
+                <div style={{ fontSize: 13.5, color: V.mut }}>{m.d}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 13.5, color: V.mut, marginTop: 16, maxWidth: '76ch', borderTop: `1px solid ${V.line}`, paddingTop: 16 }}>
+            <span style={{ fontWeight: 700, color: V.ink }}>{tr(language, { ko: '페이퍼 먼저, 그다음 라이브. ', en: 'Paper first, then live. ', ja: 'まず模擬、次にライブ。', th: 'เปเปอร์ก่อน แล้วค่อยไลฟ์ ', vi: 'Paper trước, rồi live. ' })}</span>
+            {T.mmLive}
+          </p>
         </div>
       </section>
 

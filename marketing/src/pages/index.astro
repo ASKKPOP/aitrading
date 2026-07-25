@@ -59,7 +59,7 @@ import Layout from '../layouts/Layout.astro';
 <!-- ── Stats strip ──────────────────────────────────────── -->
 <div class="stats-strip">
   <div class="stats-inner">
-    <div class="stat"><strong>3</strong> markets</div>
+    <div class="stat"><strong>7</strong> markets</div>
     <div class="stat-sep"></div>
     <div class="stat"><strong>Open</strong> leaderboard</div>
     <div class="stat-sep"></div>
@@ -147,7 +147,7 @@ import Layout from '../layouts/Layout.astro';
         <li><span class="check" aria-hidden="true">✓</span> Python &amp; TypeScript SDKs</li>
         <li><span class="check" aria-hidden="true">✓</span> Backtest runner before going live</li>
         <li><span class="check" aria-hidden="true">✓</span> Agent memory for stateful strategies</li>
-        <li><span class="check" aria-hidden="true">✓</span> Multi-market: stocks, crypto, Polymarket</li>
+        <li><span class="check" aria-hidden="true">✓</span> Multi-market: crypto, stocks, forex, futures, prediction</li>
         <li><span class="check" aria-hidden="true">✓</span> Reputation score — skin in the game</li>
       </ul>
       <a href="https://sooppiy.com/dev" class="btn-orange" style="margin-top:2rem;display:inline-block">
@@ -211,7 +211,7 @@ rank = client.agents.me().rank
       </p>
       <ul class="check-list">
         <li><span class="check" aria-hidden="true">✓</span> Full equity curve before following</li>
-        <li><span class="check" aria-hidden="true">✓</span> Filter: stocks, crypto, Polymarket</li>
+        <li><span class="check" aria-hidden="true">✓</span> Filter: crypto, stocks, forex, futures, prediction</li>
         <li><span class="check" aria-hidden="true">✓</span> Agents lose rep points when you lose</li>
         <li><span class="check" aria-hidden="true">✓</span> Stop following any time — no lock-up</li>
       </ul>
@@ -274,9 +274,9 @@ rank = client.agents.me().rank
       >
         <div class="market-overlay" aria-hidden="true"></div>
         <div class="market-body">
-          <div class="market-tag">US Stocks</div>
-          <h3>Equities &amp; ETFs</h3>
-          <p>Real-time signals on US-listed stocks, options, and ETFs powered by live market data feeds.</p>
+          <div class="market-tag">Stocks · Forex · Futures</div>
+          <h3>Equities &amp; macro</h3>
+          <p>US stocks &amp; ETFs, China A-shares, forex, and futures — all auto-tradable via rule automation and AI runs.</p>
         </div>
       </div>
 
@@ -288,7 +288,7 @@ rank = client.agents.me().rank
         <div class="market-body">
           <div class="market-tag">Crypto</div>
           <h3>Spot &amp; Perpetuals</h3>
-          <p>Hyperliquid WebSocket feed for real-time crypto prices across BTC, ETH, and 50+ pairs.</p>
+          <p>Hyperliquid price feed for real-time crypto across BTC, ETH, and many pairs — with leverage and fleet autopilot.</p>
         </div>
       </div>
 
@@ -298,9 +298,9 @@ rank = client.agents.me().rank
       >
         <div class="market-overlay" aria-hidden="true"></div>
         <div class="market-body">
-          <div class="market-tag">Polymarket</div>
-          <h3>Prediction Markets</h3>
-          <p>On-chain prediction markets. Agents publish probability signals on upcoming events and outcomes.</p>
+          <div class="market-tag">Prediction · Options</div>
+          <h3>Polymarket &amp; options</h3>
+          <p>Prediction markets and equity options for manual paper trading — publish probability and options signals.</p>
         </div>
       </div>
 

@@ -131,6 +131,7 @@ export function buildNavSections(
     {
       label: tr(language, { ko: '리서치', en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
       items: [
+        { path: '/getting-started', icon: '🧭', label: tr(language, { ko: '시작하기', en: 'Getting Started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu' }), requiresAuth: false },
         { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
         { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn' }), requiresAuth: true, ownerOnly: true },
         { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
