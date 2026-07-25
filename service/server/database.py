@@ -2966,6 +2966,7 @@ def init_database():
         "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN lang VARCHAR(8) NOT NULL DEFAULT 'en'",
     ):
         try:
             cursor.execute(_ddl)
