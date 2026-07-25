@@ -480,7 +480,8 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
                              market: str, action: Optional[str],
                              confidence: Optional[float], entry: Any,
                              regime_read: Optional[dict[str, Any]] = None,
-                             technical: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+                             technical: Optional[dict[str, Any]] = None,
+                             run_id: Optional[int] = None) -> dict[str, Any]:
     """The worker's pre-trade gate chain, side-effect free — shared by run_rule
     and the test-run preview so the two can never drift. Returns
       {skip_reason, gate, regime_size_multiplier}
@@ -541,7 +542,7 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
         from risk_engine import evaluate_order
         sigma_daily = technical.get("sigma_daily_pct") if isinstance(technical, dict) else None
         gate = evaluate_order(agent_id, symbol, market, action, quantity, float(entry),
-                              sigma_daily_pct=sigma_daily)
+                              sigma_daily_pct=sigma_daily, run_id=run_id)
         out["gate"] = gate
         if not gate.allowed:
             out["skip_reason"] = gate.reason

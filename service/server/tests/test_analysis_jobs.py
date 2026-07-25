@@ -233,5 +233,47 @@ class JobEndpointTests(_Base):
         self.assertEqual(res.status_code, 400)
 
 
+class NaNSerializationTests(_Base):
+    """A technical analyst can emit NaN indicators (ma200 on <200 bars,
+    sigma on a gappy feed). Those must not 500 the current-job endpoint —
+    Starlette renders with allow_nan=False, so a stored NaN is fatal."""
+
+    def test_json_safe_replaces_nan_and_inf_with_none(self):
+        out = analysis_jobs._json_safe(
+            {"a": float("nan"), "b": [1.0, float("inf")], "c": {"d": float("-inf")},
+             "e": "ok", "f": 3})
+        self.assertEqual(out, {"a": None, "b": [1.0, None], "c": {"d": None},
+                               "e": "ok", "f": 3})
+        import json as _json
+        _json.dumps(out, allow_nan=False)  # must not raise
+
+    def test_current_endpoint_survives_nan_indicators(self):
+        import routes_analysis
+
+        def nan_run(symbol, market, lang, provider, agent_id, progress=None):
+            return {"symbol": symbol, "market": market,
+                    "decision": {"action": "hold", "confidence": 0.5},
+                    "analysts": {"technical": {"data": {
+                        "moving_averages": {"ma50": float("nan"),
+                                            "ma200": float("nan")},
+                        "sigma_daily_pct": float("nan")}}}}
+
+        with patch.object(routes_analysis, "_get_agent_by_token", return_value=AGENT), \
+             patch.object(analysis_jobs, "run_analysis", side_effect=nan_run):
+            client = TestClient(create_app(), raise_server_exceptions=False)
+            client.post("/api/analysis/jobs",
+                        json={"symbol": "BTC", "market": "crypto"},
+                        headers={"Authorization": "Bearer x"})
+            self._wait_status(1, "done")
+            res = client.get("/api/analysis/jobs/current",
+                             headers={"Authorization": "Bearer x"})
+
+        self.assertEqual(res.status_code, 200)
+        data = res.json()["job"]["result"]["analysts"]["technical"]["data"]
+        self.assertIsNone(data["moving_averages"]["ma50"])
+        self.assertIsNone(data["moving_averages"]["ma200"])
+        self.assertIsNone(data["sigma_daily_pct"])
+
+
 if __name__ == "__main__":
     unittest.main()

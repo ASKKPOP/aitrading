@@ -60,24 +60,28 @@ class RiskEngineTestCase(unittest.TestCase):
     _next_signal_id = 900000
 
     def _insert_signal(self, side: str, price: float, qty: float,
-                       executed_at: str, symbol: str = "BTC", market: str = "crypto"):
+                       executed_at: str, symbol: str = "BTC", market: str = "crypto",
+                       run_id: "int | None" = None):
         RiskEngineTestCase._next_signal_id += 1
         conn = database.get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO signals
                (signal_id, agent_id, message_type, market, signal_type, symbol,
-                side, entry_price, quantity, content, timestamp, created_at, executed_at)
-               VALUES (?, ?, 'operation', ?, 'automation', ?, ?, ?, ?, 'test', 0, ?, ?)""",
+                side, entry_price, quantity, content, timestamp, created_at,
+                executed_at, run_id)
+               VALUES (?, ?, 'operation', ?, 'automation', ?, ?, ?, ?, 'test', 0, ?, ?, ?)""",
             (RiskEngineTestCase._next_signal_id, self.agent_id, market, symbol,
-             side, price, qty, executed_at, executed_at),
+             side, price, qty, executed_at, executed_at, run_id),
         )
         conn.commit()
         conn.close()
 
-    def _round_trip(self, buy: float, sell: float, when: datetime, qty: float = 1.0):
-        self._insert_signal("buy", buy, qty, _iso(when))
-        self._insert_signal("sell", sell, qty, _iso(when + timedelta(minutes=1)))
+    def _round_trip(self, buy: float, sell: float, when: datetime, qty: float = 1.0,
+                    run_id: "int | None" = None):
+        self._insert_signal("buy", buy, qty, _iso(when), run_id=run_id)
+        self._insert_signal("sell", sell, qty, _iso(when + timedelta(minutes=1)),
+                            run_id=run_id)
 
     def _insert_position(self, symbol="BTC", market="crypto", qty=1.0, entry=100.0,
                          current=None, stop_loss=None, take_profit=None):
@@ -250,6 +254,43 @@ class GateTests(RiskEngineTestCase):
         self.assertTrue(decision.allowed)
         self.assertAlmostEqual(decision.stop_loss, 95.0)    # default 5%
         self.assertAlmostEqual(decision.take_profit, 110.0)  # default 10%
+
+    def test_kelly_scopes_to_run_breaking_the_death_spiral(self):
+        """A losing AGENT-wide journal must not lock a FRESH run out of trading.
+        Kelly's edge is estimated per-run; a run with no history of its own is
+        below KELLY_MIN_TRADES so Kelly is skipped and the order proceeds.
+        Passing run_id=None keeps the agent-wide behaviour (no regression)."""
+        from risk_engine import evaluate_order
+        # Agent-wide history (run_id NULL) is a net loser: 3 wins, 9 losses.
+        for i in range(3):
+            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i))
+        for i in range(9):
+            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)))
+        # Agent-wide (run_id=None): still blocked — behaviour preserved.
+        blocked = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0)
+        self.assertFalse(blocked.allowed)
+        self.assertIn("kelly", blocked.reason)
+        # Fresh run (its own journal empty): NOT gated by the agent's history.
+        fresh = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0,
+                               run_id=4242)
+        self.assertTrue(fresh.allowed)
+        self.assertEqual(fresh.quantity, 5.0)
+
+    def test_per_run_kelly_still_engages_on_the_runs_own_losses(self):
+        """Scoping doesn't disable Kelly: once a run has ≥ KELLY_MIN_TRADES of
+        its OWN closed trades with a losing edge, its own opens are rejected."""
+        from risk_engine import evaluate_order
+        rid = 7777
+        for i in range(3):
+            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i),
+                             run_id=rid)
+        for i in range(9):
+            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)),
+                             run_id=rid)
+        decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0,
+                                  run_id=rid)
+        self.assertFalse(decision.allowed)
+        self.assertIn("kelly", decision.reason)
 
 
 # ── SL/TP watcher ─────────────────────────────────────────────────────────
