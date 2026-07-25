@@ -22,7 +22,7 @@ from analysis_agents import normalize_lang
 logger = logging.getLogger(__name__)
 
 # Param names whose values are closed enum keys localized via TOKENS below.
-TOKEN_PARAMS = ['comparator', 'outcome', 'trigger_label']
+TOKEN_PARAMS = ['comparator', 'outcome', 'trigger_label', 'action', 'action_upper', 'side', 'final', 'status']
 
 # family -> lang -> key -> localized phrase
 TOKENS: dict[str, dict[str, dict[str, str]]] = {
@@ -95,6 +95,161 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_loss': 'Cắt lỗ',
             'take_profit': 'Chốt lời',
             'time_stop': 'Dừng theo thời gian',
+        },
+    },
+    'action': {
+        'en': {
+            'buy': 'buy',
+            'sell': 'sell',
+            'short': 'short',
+            'cover': 'cover',
+        },
+        'ko': {
+            'buy': '매수',
+            'sell': '매도',
+            'short': '숏',
+            'cover': '커버',
+        },
+        'ja': {
+            'buy': '買い',
+            'sell': '売り',
+            'short': 'ショート',
+            'cover': 'カバー',
+        },
+        'th': {
+            'buy': 'ซื้อ',
+            'sell': 'ขาย',
+            'short': 'ชอร์ต',
+            'cover': 'ปิดชอร์ต',
+        },
+        'vi': {
+            'buy': 'mua',
+            'sell': 'bán',
+            'short': 'bán khống',
+            'cover': 'mua bù',
+        },
+    },
+    'action_upper': {
+        'en': {
+            'BUY': 'BUY',
+            'SELL': 'SELL',
+            'SHORT': 'SHORT',
+            'COVER': 'COVER',
+        },
+        'ko': {
+            'BUY': '매수',
+            'SELL': '매도',
+            'SHORT': '숏',
+            'COVER': '커버',
+        },
+        'ja': {
+            'BUY': '買い',
+            'SELL': '売り',
+            'SHORT': 'ショート',
+            'COVER': 'カバー',
+        },
+        'th': {
+            'BUY': 'ซื้อ',
+            'SELL': 'ขาย',
+            'SHORT': 'ชอร์ต',
+            'COVER': 'ปิดชอร์ต',
+        },
+        'vi': {
+            'BUY': 'MUA',
+            'SELL': 'BÁN',
+            'SHORT': 'BÁN KHỐNG',
+            'COVER': 'MUA BÙ',
+        },
+    },
+    'side': {
+        'en': {
+            'buy': 'buy',
+            'sell': 'sell',
+            'short': 'short',
+            'cover': 'cover',
+        },
+        'ko': {
+            'buy': '매수',
+            'sell': '매도',
+            'short': '숏',
+            'cover': '커버',
+        },
+        'ja': {
+            'buy': '買い',
+            'sell': '売り',
+            'short': 'ショート',
+            'cover': 'カバー',
+        },
+        'th': {
+            'buy': 'ซื้อ',
+            'sell': 'ขาย',
+            'short': 'ชอร์ต',
+            'cover': 'ปิดชอร์ต',
+        },
+        'vi': {
+            'buy': 'mua',
+            'sell': 'bán',
+            'short': 'bán khống',
+            'cover': 'mua bù',
+        },
+    },
+    'final': {
+        'en': {
+            'cancelled': 'cancelled',
+            'rejected': 'rejected',
+        },
+        'ko': {
+            'cancelled': '취소됨',
+            'rejected': '거부됨',
+        },
+        'ja': {
+            'cancelled': 'キャンセル済み',
+            'rejected': '拒否済み',
+        },
+        'th': {
+            'cancelled': 'ยกเลิกแล้ว',
+            'rejected': 'ถูกปฏิเสธ',
+        },
+        'vi': {
+            'cancelled': 'đã hủy',
+            'rejected': 'bị từ chối',
+        },
+    },
+    'status': {
+        'en': {
+            'armed': 'armed',
+            'running': 'running',
+            'paused': 'paused',
+            'stopping': 'stopping',
+            'stopped': 'stopped',
+        },
+        'ko': {
+            'armed': '대기',
+            'running': '실행 중',
+            'paused': '일시정지',
+            'stopping': '중지 중',
+            'stopped': '중지됨',
+        },
+        'ja': {
+            'armed': '待機中',
+            'running': '実行中',
+            'paused': '一時停止中',
+            'stopping': '停止中',
+            'stopped': '停止済み',
+        },
+        'th': {
+            'armed': 'รอเริ่ม',
+            'running': 'กำลังทำงาน',
+            'paused': 'หยุดชั่วคราว',
+            'stopping': 'กำลังหยุด',
+            'stopped': 'หยุดแล้ว',
+        },
+        'vi': {
+            'armed': 'chờ kích hoạt',
+            'running': 'đang chạy',
+            'paused': 'tạm dừng',
+            'stopping': 'đang dừng',
+            'stopped': 'đã dừng',
         },
     },
 }
