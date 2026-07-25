@@ -186,7 +186,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'attempts': 0,
             'last_sent_at': now,
         }, ctx)
-        if not send_verification_code_email(data.email, code):
+        from signup_lang import resolve_signup_lang
+        lang = resolve_signup_lang(request)
+        if not send_verification_code_email(data.email, code, lang):
             # Fallback: log code when Resend is not configured (local dev).
             _logger.info('[Email] Verification code for %s: %s', data.email, code)
         return {'success': True, 'message': 'Code sent'}
@@ -271,12 +273,14 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id FROM users WHERE email = ?', (data.email,))
-        account_exists = cursor.fetchone() is not None
+        cursor.execute('SELECT id, lang FROM users WHERE email = ?', (data.email,))
+        row = cursor.fetchone()
+        account_exists = row is not None
         conn.close()
 
         if account_exists:
-            if not send_verification_code_email(data.email, code):
+            lang = row['lang'] or 'en'
+            if not send_verification_code_email(data.email, code, lang):
                 # Fallback: log code when Resend is not configured (local dev).
                 _logger.info('[Email] Password-reset code for %s: %s', data.email, code)
         return {'success': True, 'message': 'If an account exists, a code was sent'}
