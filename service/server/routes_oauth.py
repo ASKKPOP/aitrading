@@ -27,7 +27,7 @@ from typing import Any, Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 import database
@@ -124,7 +124,7 @@ def _fetch_google_userinfo(access_token: str) -> dict[str, Any]:
     return body
 
 
-def _find_or_create_user_from_google(google_user: dict[str, Any]) -> int:
+def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "en") -> int:
     """Map a Google identity to a Sooppiy user. Returns user_id.
 
     Three cases, in priority:
@@ -179,8 +179,8 @@ def _find_or_create_user_from_google(google_user: dict[str, Any]) -> int:
         # can't sign in via the password endpoint until they set one.
         random_password = _secrets.token_urlsafe(32)
         cur.execute(
-            "INSERT INTO users (email, password_hash, points) VALUES (?, ?, 0)",
-            (email or f"google-{sub}@sooppiy.com", hash_password(random_password)),
+            "INSERT INTO users (email, password_hash, points, lang) VALUES (?, ?, 0, ?)",
+            (email or f"google-{sub}@sooppiy.com", hash_password(random_password), lang),
         )
         user_id = int(cur.lastrowid)
         cur.execute(
@@ -223,7 +223,7 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         )
 
     @app.get("/api/auth/google/callback")
-    async def google_callback(code: str, state: str):
+    async def google_callback(code: str, state: str, request: Request):
         if not _google_configured():
             raise HTTPException(status_code=503, detail="Google OAuth is not configured")
         if not _consume_state(state):
@@ -243,7 +243,9 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Google userinfo failed: {exc}")
 
-        user_id = _find_or_create_user_from_google(user_info)
+        from signup_lang import resolve_signup_lang
+        lang = resolve_signup_lang(request)
+        user_id = _find_or_create_user_from_google(user_info, lang=lang)
         session_token = _create_user_session(user_id)
         return JSONResponse({
             "token":   session_token,
