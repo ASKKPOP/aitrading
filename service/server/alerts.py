@@ -117,7 +117,7 @@ def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
     switch — one place governs delivery (notifications.py).
     """
     cursor.execute(
-        """SELECT u.id AS user_id, u.email, s.config_json
+        """SELECT u.id AS user_id, u.email, u.lang, s.config_json
            FROM agents a
            JOIN users u ON u.id = a.user_id
            LEFT JOIN user_api_settings s
@@ -126,7 +126,7 @@ def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
     row = cursor.fetchone()
     if row is None:
         return {"user_id": None, "email": None, "email_enabled": False,
-                "sms_enabled": False, "phone": None, "enabled": False}
+                "sms_enabled": False, "phone": None, "enabled": False, "lang": "en"}
     try:
         config = json.loads(row["config_json"] or "{}")
     except (TypeError, ValueError):
@@ -140,6 +140,7 @@ def _alert_prefs(agent_id: int, cursor, category: str) -> dict[str, Any]:
         "email_enabled": switches["email"],
         "sms_enabled": switches["sms"],
         "phone": (config.get("phone") or "").strip() or None,
+        "lang": row["lang"] or "en",
     }
 
 
@@ -183,12 +184,27 @@ def _is_duplicate(dedupe_key: str, cursor) -> bool:
 
 # ─────────────────────────── entry point ───────────────────────────
 
-def send_alert(agent_id: int, kind: str, title: str, body: str,
+def send_alert(agent_id: int, kind: str, msg_id: str, params: dict | str | None = None,
                dedupe_key: Optional[str] = None) -> dict[str, Any]:
     """Journal an alert (in-app feed) and deliver to opted-in channels.
-    Fail-soft everywhere: trading code must never break on alert trouble."""
+    Fail-soft everywhere: trading code must never break on alert trouble.
+
+    Dual-mode 4th argument, for backward compatibility while producers are
+    migrated to msg_id/params (Task C3):
+      - `params` is a dict (or None): NEW form. `msg_id` is a
+        notifications_i18n catalogue id; `title`/`body` are rendered in the
+        recipient's stored language (`users.lang`, via _alert_prefs).
+      - `params` is a str: LEGACY form. `msg_id` is treated as a pre-rendered
+        English `title` and `params` as the pre-rendered `body` — no
+        rendering happens. This keeps existing callers/tests (arbitrary
+        literal strings used to exercise rate-limiting/dedupe) valid.
+    """
     if kind not in ALERT_KINDS:
         kind = "custom"
+    if isinstance(params, str):
+        title, body = msg_id, params
+    else:
+        title = body = None  # rendered below, once we know the recipient's lang
     channels: list[str] = []
     try:
         conn = get_db_connection()
@@ -198,6 +214,9 @@ def send_alert(agent_id: int, kind: str, title: str, body: str,
             return {"skipped": "duplicate", "channels": []}
         category = ALERT_KIND_CATEGORY.get(kind, "watch")
         prefs = _alert_prefs(agent_id, cursor, category)
+        if title is None:
+            from notifications_i18n import render
+            title, body = render(msg_id, prefs.get("lang", "en"), **(params or {}))
         channels.append("inapp")
 
         limited = prefs["user_id"] is not None and _external_rate_limited(
