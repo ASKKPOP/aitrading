@@ -431,7 +431,8 @@ class TestGatewayFailureAlert(_GatewayTestCase):
         self.assertIsNone(signal_id)
         alert.assert_called_once()
         self.assertEqual(alert.call_args[0][1], "gateway_down")
-        self.assertIn("connection refused", alert.call_args[0][3])
+        self.assertEqual(alert.call_args[0][2], "gateway_down_live_order_failed")
+        self.assertIn("connection refused", alert.call_args[0][3]["reason"])
 
     def test_a_simulator_rule_never_alerts(self):
         from unittest.mock import patch

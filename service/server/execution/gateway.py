@@ -377,16 +377,14 @@ def _alert_order_drift(agent_id: int, row: dict[str, Any], final: str,
         # never let string formatting of None swallow it.
         filled_txt = "an unknown amount" if filled_qty is None else f"{filled_qty:g}"
         if final in ("cancelled", "rejected"):
-            body = (f"{row['symbol']}: your {row['side']} order was {final} by the "
-                    f"broker AFTER submission — the platform recorded it at the "
-                    f"requested size ({requested:g}). Review the position on your "
-                    "broker and correct manually if needed.")
+            msg_id = "order_drift_cancelled_rejected"
+            params = {"symbol": row["symbol"], "side": row["side"], "final": final,
+                      "requested": f"{requested:g}"}
         else:
-            body = (f"{row['symbol']}: broker confirmed {filled_txt} of the "
-                    f"requested {requested:g} {row['side']} — the platform ledger "
-                    "recorded the requested size. Review and correct manually.")
-        send_alert(agent_id, "order_drift",
-                   "Broker fill differs from platform record", body,
+            msg_id = "order_drift_partial_fill"
+            params = {"symbol": row["symbol"], "filled_txt": filled_txt,
+                      "requested": f"{requested:g}", "side": row["side"]}
+        send_alert(agent_id, "order_drift", msg_id, params,
                    dedupe_key=f"order_drift:{row['id']}")
     except Exception:  # noqa: BLE001
         _logger.debug("order drift alert failed for broker_order %s", row.get("id"))
@@ -403,10 +401,8 @@ def _alert_session_down(agent_id: int, detail: str) -> None:
         from datetime import datetime, timezone
         from alerts import send_alert
         day = datetime.now(timezone.utc).strftime("%Y%m%d")
-        send_alert(agent_id, "gateway_down",
-                   "Your IBKR gateway session is down",
-                   f"{detail} — live and shadow IBKR orders will not fill until "
-                   "you log in to the Client Portal Gateway again.",
+        send_alert(agent_id, "gateway_down", "gateway_down_ibkr_session",
+                   {"detail": detail},
                    dedupe_key=f"gateway_session:{agent_id}:{day}")
     except Exception:  # noqa: BLE001
         _logger.debug("session-down alert failed for agent %s", agent_id)
