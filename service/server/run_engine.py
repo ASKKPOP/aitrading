@@ -1566,7 +1566,7 @@ def run_cycle(run_id: int) -> dict:
                     "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, gate_confidence, entry,
-                                         None, technical)
+                                         None, technical, run_id=run_id)
         gate = gates.get("gate")
         if gates["skip_reason"] is not None or gate is None:
             result["skip_reason"] = gates["skip_reason"] or "no gate verdict"

@@ -243,13 +243,19 @@ def _is_halted(cursor, agent_id: int, market: Optional[str] = None,
 
 # ─────────────────────────── journal replay ───────────────────────────
 
-def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
+def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dict[str, Any]:
     """Replay the agent's executed signals (average-cost basis) to derive
     closed-trade stats: win rate W, payoff ratio R, and today's realized P&L.
 
     Longs: buy accumulates, sell realizes (price − avg_cost) × qty.
     Shorts: short accumulates, cover realizes (avg_entry − price) × qty.
     Groups by (market, symbol, token_id) so Polymarket outcomes don't mix.
+
+    run_id scopes the replay to a single run's own trades. Kelly's edge is only
+    a valid i.i.d. estimate within one strategy/symbol, and pooling an agent's
+    whole cross-strategy journal lets one losing run permanently lock every
+    fresh run out (the death-spiral). None ⇒ agent-wide (used for the
+    account-level daily-loss breaker, which must stay agent-wide).
     """
     own = cursor is None
     if own:
@@ -258,16 +264,21 @@ def trade_stats(agent_id: int, cursor=None) -> dict[str, Any]:
     try:
         # Most recent N signals, replayed oldest-first. Bounded so the gate
         # stays cheap no matter how long an agent has been trading.
+        scope_sql = " AND run_id = ?" if run_id is not None else ""
+        params: list = [agent_id]
+        if run_id is not None:
+            params.append(run_id)
+        params.append(TRADE_STATS_MAX_SIGNALS)
         cursor.execute(
-            """SELECT market, symbol, COALESCE(token_id, '') AS token_id, side,
+            f"""SELECT market, symbol, COALESCE(token_id, '') AS token_id, side,
                       entry_price, quantity, executed_at
                FROM signals
                WHERE agent_id = ? AND executed_at IS NOT NULL
                  AND side IN ('buy', 'sell', 'short', 'cover')
-                 AND entry_price IS NOT NULL AND quantity IS NOT NULL
+                 AND entry_price IS NOT NULL AND quantity IS NOT NULL{scope_sql}
                ORDER BY executed_at DESC, id DESC
                LIMIT ?""",
-            (agent_id, TRADE_STATS_MAX_SIGNALS),
+            tuple(params),
         )
         rows = list(reversed(cursor.fetchall()))
     finally:
@@ -371,11 +382,16 @@ class GateDecision:
 
 def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                    quantity: float, price: float,
-                   sigma_daily_pct: Optional[float] = None) -> GateDecision:
+                   sigma_daily_pct: Optional[float] = None,
+                   run_id: Optional[int] = None) -> GateDecision:
     """Run an intended automation order through breaker → limits → vol sizing
     → Kelly. Callers must treat a not-allowed decision as a skip (journal the
     reason). sigma_daily_pct is the 20-day DAILY-return σ in % (never the
-    hourly sigma_24h_pct — ~√24 smaller; feeding it here oversizes ~5×)."""
+    hourly sigma_24h_pct — ~√24 smaller; feeding it here oversizes ~5×).
+
+    run_id scopes the Kelly edge estimate to that run's own closed trades so a
+    fresh run isn't gated by the agent's pooled cross-strategy history (the
+    death-spiral). The daily-loss breaker stays agent-wide regardless."""
     if not risk_engine_enabled():
         return GateDecision(allowed=True, quantity=quantity)
 
@@ -450,14 +466,19 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
                 adjustment = (f"vol-sizing: ${quantity * price:.2f} → ${headroom:.2f} "
                               f"(σ_daily {sigma_daily_pct:.2f}%, budget {risk_budget * 100:.2f}%)")
                 quantity = headroom / price
-        if int(limits["use_kelly"]) and stats["n_trades"] >= KELLY_MIN_TRADES:
-            f_star = kelly_fraction(stats["win_rate"], stats["payoff_ratio"])
+        # Kelly edge is scoped to THIS run's own journal (agent-wide when
+        # run_id is None) — pooling all of an agent's strategies makes W a
+        # meaningless average and lets one loser lock out every fresh run.
+        kstats = (trade_stats(agent_id, cursor=cursor, run_id=run_id)
+                  if run_id is not None else stats)
+        if int(limits["use_kelly"]) and kstats["n_trades"] >= KELLY_MIN_TRADES:
+            f_star = kelly_fraction(kstats["win_rate"], kstats["payoff_ratio"])
             if f_star is not None:
                 if f_star <= 0:
                     return GateDecision(
                         allowed=False, quantity=0.0,
-                        reason=(f"risk: kelly no-edge (W={stats['win_rate']:.2f}, "
-                                f"R={stats['payoff_ratio']:.2f}, f*={f_star:.3f} ≤ 0)"))
+                        reason=(f"risk: kelly no-edge (W={kstats['win_rate']:.2f}, "
+                                f"R={kstats['payoff_ratio']:.2f}, f*={f_star:.3f} ≤ 0)"))
                 cap_notional = 0.5 * f_star * _equity(cursor, agent_id) - exposure
                 if cap_notional < quantity * price:
                     if cap_notional < MIN_ORDER_NOTIONAL_USD:
