@@ -12,6 +12,7 @@ still gives a good default.
 """
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
 
@@ -54,7 +55,13 @@ def _client_ip(request) -> str | None:
 
 def _geo_country(ip: str | None) -> str | None:
     """Country code for an IP, or None on any failure. Never raises."""
-    if not ip or ip.startswith(("127.", "10.", "192.168.")) or ip == "::1":
+    if not ip:
+        return None
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return None  # not a parseable IP — no point calling geo
+    if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
         return None
     try:
         resp = httpx.get(_GEO_URL.format(ip=ip), timeout=_GEO_TIMEOUT)
