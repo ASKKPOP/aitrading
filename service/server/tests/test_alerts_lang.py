@@ -55,8 +55,14 @@ class AlertsLangTestCase(unittest.TestCase):
             "SELECT title, body FROM alert_log WHERE agent_id=? ORDER BY id DESC LIMIT 1",
             (agent_id,)).fetchone()
         conn.close()
-        self.assertTrue(row["title"].startswith("서킷 브레이커 정지"))
-        self.assertEqual(row["body"], "loss cap")
+        # The stored alert must be the recipient's-language render, and it must
+        # differ from English (proving localization actually happened). Assert
+        # against the catalogue itself, not a pinned translation string.
+        from notifications_i18n import render
+        ko_title, ko_body = render("breaker", "ko", scope="account", reason="loss cap")
+        en_title, _ = render("breaker", "en", scope="account", reason="loss cap")
+        self.assertEqual((row["title"], row["body"]), (ko_title, ko_body))
+        self.assertNotEqual(row["title"], en_title)
 
     def test_legacy_string_form_still_works(self):
         # Backward-compat shim: (title, body) strings are stored as-is, no
