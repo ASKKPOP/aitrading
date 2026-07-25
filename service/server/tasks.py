@@ -1653,6 +1653,13 @@ async def _fleet_planner_loop():
     await fleet_planner_loop()
 
 
+async def _hot_issue_daemon_loop():
+    """E2: hourly hot-issue watch over every user's RUN symbols
+    (HOT_ISSUE_DAEMON_ENABLED gates each pass)."""
+    from hot_issue_daemon import hot_issue_daemon_loop
+    await hot_issue_daemon_loop()
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1686,6 +1693,7 @@ BACKGROUND_TASK_REGISTRY = {
     "symbol_research": _symbol_research_loop,
     "policy_feed": _policy_feed_loop,
     "fleet_planner": _fleet_planner_loop,
+    "hot_issue_daemon": _hot_issue_daemon_loop,
 }
 
 
@@ -1753,6 +1761,7 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # Plan 14 — fleet orchestrator lives with the runs engine (it creates
     # runs the run loop must immediately see)
     "fleet_planner":           "settlement",
+    "hot_issue_daemon":        "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

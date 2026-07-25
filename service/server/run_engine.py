@@ -1217,6 +1217,14 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
                 triggers.append("near_stop")
     except Exception:  # noqa: BLE001
         pass
+    try:
+        # E2 escalation: the hot-issue daemon flagged this symbol recently —
+        # the per-user final verification IS this cycle running full.
+        from hot_issue_daemon import recent_hot_issue
+        if recent_hot_issue(run.get("market") or "", run.get("symbol") or ""):
+            triggers.append("hot_issue")
+    except Exception:  # noqa: BLE001
+        pass
     return {"route": "full" if triggers else "light", "triggers": triggers}
 
 
