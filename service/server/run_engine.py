@@ -181,6 +181,35 @@ def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
     return None
 
 
+# ── #3 leverage-aware conviction sizing ────────────────────────────────────
+def _lev_sizing_enabled() -> bool:
+    return os.getenv("RUN_LEV_SIZING", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _lev_size_damp() -> float:
+    try:
+        return max(0.0, float(os.getenv("RUN_LEV_SIZE_DAMP", "0.5") or 0.5))
+    except ValueError:
+        return 0.5
+
+
+# ── #4 stop-inside-liquidation cushion ─────────────────────────────────────
+def _liq_cushion_enabled() -> bool:
+    return os.getenv("RUN_LIQ_CUSHION", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _liq_cushion_frac() -> float:
+    """Fraction of the way to the liquidation price at which the protective
+    cushion stop fires (0.85 ⇒ close at 85% of the liq distance)."""
+    try:
+        f = float(os.getenv("RUN_LIQ_CUSHION_FRAC", "0.85") or 0.85)
+    except ValueError:
+        f = 0.85
+    return min(0.98, max(0.50, f))
+
+
 def _stop_eval_failure_limit() -> int:
     try:
         return max(1, int(os.getenv("RUN_STOP_EVAL_FAILURES", "5")))
@@ -288,6 +317,17 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             lev = 1.0
         qty = float(pos["quantity"] or 0)
         if entry > 0 and mark > 0:
+            # #4: protective cushion INSIDE the liquidation line. A small
+            # position's USD max_loss stop can sit BEYOND the liq price, so
+            # without this the run would liquidate (100% margin wipe) before
+            # the P&L stop fires. Firing at c/L (c<1) guarantees a controlled
+            # close first. Only leveraged runs can liquidate, so L=1 is inert.
+            if lev > 1 and _liq_cushion_enabled():
+                c = _liq_cushion_frac()
+                if qty < 0 and mark >= entry * (1 + c / lev):
+                    return "stop_event:liq_cushion"
+                if qty > 0 and mark <= entry * (1 - c / lev):
+                    return "stop_event:liq_cushion"
             if qty < 0 and mark >= entry * (1 + 1 / lev):
                 return "synthetic_liquidation"
             if qty > 0 and lev > 1 and mark <= entry * (1 - 1 / lev):
@@ -1111,7 +1151,7 @@ def compute_conviction(scores: Optional[dict]) -> Optional[float]:
     return round(total, 4)
 
 
-def _conviction_size_scale(value: Optional[float]) -> Optional[float]:
+def _conviction_size_scale(value: Optional[float], leverage: float = 1.0) -> Optional[float]:
     """Plan 15 rec-2: bet-size scale from conviction (or the scalar when no
     scores exist). Linear 0.45→0.75 mapped to 0.40→1.00, clamped — strictly
     shrink-only so it can never lever up. None disables scaling (no signal,
@@ -1124,7 +1164,15 @@ def _conviction_size_scale(value: Optional[float]) -> Optional[float]:
         v = float(value)
     except (TypeError, ValueError):
         return None
-    return round(max(0.40, min(1.0, (v - 0.45) / 0.30)), 4)
+    base = max(0.40, min(1.0, (v - 0.45) / 0.30))
+    # #3: temper MARGINAL conviction at leverage L>1 — a wrong L× thesis burns
+    # margin L× faster toward the 1/L liquidation line, so commit less unless
+    # conviction is high. base→1.0 (certain) is untouched (1.0**x == 1.0); L=1
+    # is byte-identical to before.
+    lev = max(1.0, float(leverage or 1.0))
+    if lev > 1.0 and _lev_sizing_enabled():
+        base = min(1.0, max(0.30, base ** (1.0 + _lev_size_damp() * (lev - 1.0))))
+    return round(base, 4)
 
 
 def _conf_v2_enabled() -> bool:
@@ -1426,7 +1474,8 @@ def run_cycle(run_id: int) -> dict:
         use_conviction = _conf_v2_enabled() and conviction is not None
         gate_confidence = conviction if use_conviction else confidence
         size_scale = _conviction_size_scale(
-            conviction if conviction is not None else confidence)
+            conviction if conviction is not None else confidence,
+            leverage=cfg.get("leverage") or 1.0)
 
         emit_telemetry_event(run_id, "decision",
                              {"cycle": seq, "action": action, "confidence": confidence,

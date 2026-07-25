@@ -43,6 +43,7 @@ const AutomationPage = lazy(() => import('./pages/AutomationPage'))
 const AccountsPage = lazy(() => import('./pages/AccountsPage'))
 const AssetsPage = lazy(() => import('./pages/AssetsPage'))
 const MarketingPage = lazy(() => import('./pages/MarketingPage'))
+const GettingStartedPage = lazy(() => import('./pages/GettingStartedPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SupportPage = lazy(() => import('./pages/SupportPage'))
@@ -442,6 +443,8 @@ function AppRouter({
         <Routes>
           <Route path="/" element={<MarketingPage />} />
           <Route path="/about" element={<MarketingPage />} />
+          {/* Beginner overview is public so people can read it before signing up. */}
+          <Route path="/getting-started" element={<GettingStartedPage />} />
           <Route path="/login" element={<LoginPage onLogin={login} />} />
           <Route path="/register" element={<RegisterPage onLogin={login} />} />
           <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
@@ -528,6 +531,7 @@ function AppRouter({
             <Routes>
               <Route path="/" element={<LeaderboardPage token={token} />} />
               <Route path="/dev" element={<DevPage />} />
+              <Route path="/getting-started" element={<GettingStartedPage />} />
               <Route path="/market" element={<MarketPage token={token} />} />
               <Route path="/leaderboard" element={<LeaderboardPage token={token} />} />
               <Route path="/challenges" element={<ChallengePage token={token} />} />
