@@ -294,6 +294,23 @@ def _age_seconds(ts: str) -> float:
 
 # ── stop-condition evaluation (every scan, running AND paused) ─────────────
 
+def _trailing_lock_hit(peak_pnl: "float | None", current_pnl: float,
+                       trail: "dict | None") -> bool:
+    """Peak-tracked profit lock. Once the run's best total P&L clears the
+    activation floor, exit if it retraces more than giveback_frac from that
+    peak — banks a winner that would otherwise round-trip and catches a
+    reversal off the top (the fleet's small, mean-reverting moves never reach
+    the far profit_target). Inert without a trail config (manual runs) or
+    before the peak arms."""
+    if not trail or peak_pnl is None:
+        return False
+    activate = float(trail.get("activate_usd") or 0)
+    giveback = float(trail.get("giveback_frac") or 0)
+    if float(peak_pnl) < activate or float(peak_pnl) <= 0 or not (0 < giveback < 1):
+        return False
+    return current_pnl <= float(peak_pnl) * (1.0 - giveback)
+
+
 def _evaluate_stop(run: dict) -> Optional[str]:
     """Return a stop reason string when a stop event fired, None otherwise.
     Raises on evaluation FAILURE (stale marks, unreadable state) — the
@@ -351,6 +368,14 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         return "stop_event:max_loss"
     pt = conditions.get("profit_target_usd")
     if pt is not None and pnl["total"] >= float(pt):
+        return "stop_event:profit_target"
+
+    # Trailing profit lock (fleet path): bank the peak before it round-trips.
+    # Only on a live position with fresh marks; classified profit_target so a
+    # fleet replaces the slot immediately (REPLACE_IMMEDIATE).
+    if has_position and pnl["mark_age_ok"] and \
+            _trailing_lock_hit(run.get("peak_pnl_usd"), pnl["total"],
+                               conditions.get("trail")):
         return "stop_event:profit_target"
 
     pc = conditions.get("price_cross")
@@ -413,6 +438,36 @@ def _cache_realized_pnl(run_id: int, realized: float) -> None:
         conn.commit()
     except Exception:  # noqa: BLE001
         logger.debug("realized_pnl cache write failed for run %s", run_id, exc_info=True)
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _ratchet_peak_pnl(run: dict, pnl: dict) -> None:
+    """Ratchet peak_pnl_usd up so the trailing lock has a high-water mark.
+    Only for runs carrying a trail config (the fleet path) and holding a live
+    position — a monotone climb, written only when it advances."""
+    conditions = json.loads(run.get("stop_conditions_json") or "{}")
+    if not conditions.get("trail"):
+        return
+    pos = pnl.get("position")
+    if not (pos and float(pos.get("quantity") or 0) != 0):
+        return
+    cur = float(pnl.get("total") or 0)
+    prev = run.get("peak_pnl_usd")
+    if prev is not None and cur <= float(prev):
+        return
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("UPDATE trading_runs SET peak_pnl_usd = ? WHERE id = ?",
+                       (cur, run["id"]))
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        logger.debug("peak_pnl ratchet failed for run %s", run["id"], exc_info=True)
     finally:
         try:
             conn.close()
@@ -738,6 +793,7 @@ def _control_active(run: dict, out: dict) -> None:
         reason = _evaluate_stop(run)
         pnl = compute_run_pnl(run)
         _cache_realized_pnl(run["id"], pnl["realized"])
+        _ratchet_peak_pnl(run, pnl)
         try:
             from run_reports import evaluate_thresholds
             evaluate_thresholds(run, pnl)

@@ -64,7 +64,8 @@ _TRANSITIONS = {
 }
 
 START_TYPES = ("manual", "at_time", "window", "price_cross")
-STOP_KEYS = ("at_time", "max_loss_usd", "profit_target_usd", "max_trades", "price_cross")
+STOP_KEYS = ("at_time", "max_loss_usd", "profit_target_usd", "max_trades",
+             "price_cross", "trail")
 
 
 def _now_iso() -> str:
@@ -166,6 +167,17 @@ def validate_stop_conditions(obj: Any) -> dict:
     pc = obj.get("price_cross")
     if pc is not None:
         out["price_cross"] = _validate_price_cross(pc)
+    tr = obj.get("trail")
+    if tr is not None:
+        if not isinstance(tr, dict):
+            raise ValueError("trail must be an object")
+        act = tr.get("activate_usd")
+        gb = tr.get("giveback_frac")
+        if not isinstance(act, (int, float)) or isinstance(act, bool) or act <= 0:
+            raise ValueError("trail.activate_usd must be a positive number")
+        if not isinstance(gb, (int, float)) or isinstance(gb, bool) or not (0 < gb < 1):
+            raise ValueError("trail.giveback_frac must be between 0 and 1")
+        out["trail"] = {"activate_usd": float(act), "giveback_frac": float(gb)}
     return out
 
 

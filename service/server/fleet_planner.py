@@ -77,6 +77,15 @@ FLEET_BOUNDS = {
     "interval_floor_default": 15,
     "stop_max_loss_frac": {"stable": 0.05, "balanced": 0.10,
                            "aggressive": 0.20, "extreme": 0.30},
+    # Exit management (2026-07-25): the budget-scaled stop above sits ~44%
+    # beyond the actual max_bet-sized position, so a loser never cuts and a
+    # winner round-trips. Scale the ACTIVE stop to the position (max_bet), and
+    # add a peak-tracked trailing lock (run_engine._trailing_lock_hit) that
+    # banks the small, mean-reverting moves the far profit_target never reaches.
+    "stop_loss_frac_of_bet": {"stable": 0.015, "balanced": 0.02,
+                              "aggressive": 0.03, "extreme": 0.04},
+    "trail_activate_frac_of_bet": 0.003,   # arm once peak ≥ 0.3% of notional
+    "trail_giveback_frac": 0.40,           # exit on a >40% retrace from peak
     # Higher tiers let winners run further before banking (× the thesis move).
     "profit_target_mult": {"stable": 1.0, "balanced": 1.0,
                            "aggressive": 1.5, "extreme": 2.0},
@@ -533,8 +542,17 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         "leverage": leverage,
         "provider": fleet.get("provider"), "lang": fleet.get("lang") or "en",
         "stop_conditions": {
-            "max_loss_usd": round(run_budget * _tier("stop_max_loss_frac", risk), 2),
+            # Active stop scaled to the POSITION (max_bet), not run_budget —
+            # cuts a real adverse move instead of sitting ~44% beyond it.
+            "max_loss_usd": round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2),
+            # Far thesis-move target kept as a secondary cap; the trailing lock
+            # below is the primary profit-realiser for intraday moves.
             "profit_target_usd": round(run_budget * gain_frac, 2),
+            "trail": {
+                "activate_usd": round(
+                    max_bet * FLEET_BOUNDS["trail_activate_frac_of_bet"], 2),
+                "giveback_frac": FLEET_BOUNDS["trail_giveback_frac"],
+            },
             "at_time": at_time,
         },
         # Plan 14: stop_flatten pinned True on the builder path (the API-route

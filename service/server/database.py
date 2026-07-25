@@ -2641,6 +2641,7 @@ def init_database():
             claimed_by              TEXT,
             claim_expires_at        TEXT,
             realized_pnl_usd        REAL    NOT NULL DEFAULT 0,
+            peak_pnl_usd            REAL,
             created_at              TEXT    NOT NULL,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )
@@ -2963,6 +2964,10 @@ def init_database():
         "ALTER TABLE trading_runs ADD COLUMN fleet_id INTEGER",
         "ALTER TABLE trading_runs ADD COLUMN created_via TEXT NOT NULL DEFAULT 'user'",
         "ALTER TABLE trading_runs ADD COLUMN adapt_state_json TEXT",
+        # Exit management (2026-07-25): high-water mark of a run's total P&L,
+        # ratcheted each scan, read by the trailing profit lock. NULL until
+        # first in profit (manual runs stay NULL — inert without a trail cfg).
+        "ALTER TABLE trading_runs ADD COLUMN peak_pnl_usd REAL",
         "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",
