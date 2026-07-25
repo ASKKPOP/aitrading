@@ -101,8 +101,9 @@ class EngineTests(WatchTestCase):
         mock_alert.assert_called_once()
         args = mock_alert.call_args[0]
         self.assertEqual(args[1], "custom")
-        self.assertIn("BTC dip", args[2])
-        self.assertIn("59,000", args[3])
+        self.assertEqual(args[2], "watch")
+        self.assertEqual(args[3]["name"], "BTC dip")
+        self.assertIn("59,000", args[3]["value"])
 
     def test_no_fire_when_not_crossed(self):
         self._create(comparator="below", threshold=60000)
