@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import threading
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -23,6 +24,21 @@ from analysis_agents import run_analysis
 from database import begin_write_transaction, get_db_connection, using_mysql
 
 logger = logging.getLogger(__name__)
+
+
+def _json_safe(obj: Any) -> Any:
+    """Recursively replace NaN/Inf floats with None so a job result survives
+    Starlette's allow_nan=False JSON renderer. A technical indicator that is
+    undefined (ma200 on <200 bars, sigma on a gappy feed) arrives here as NaN;
+    left in place it 500s /api/analysis/jobs/current on every poll. null is the
+    correct wire value for "not computable"."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    return obj
 
 # A running job older than this is presumed dead (crashed thread / killed
 # process) and is replaced instead of blocking new runs forever.
@@ -56,8 +72,8 @@ def _finish_job(job_id: int, status: str, *, result: Optional[dict] = None,
             """UPDATE analysis_jobs SET status = ?, result_json = ?, gates_json = ?,
                error = ?, finished_at = ? WHERE id = ?""",
             (status,
-             json.dumps(result, ensure_ascii=False, default=str) if result else None,
-             json.dumps(gates, ensure_ascii=False, default=str) if gates else None,
+             json.dumps(_json_safe(result), ensure_ascii=False, default=str) if result else None,
+             json.dumps(_json_safe(gates), ensure_ascii=False, default=str) if gates else None,
              error, _now_iso(), job_id),
         )
         conn.commit()
@@ -187,7 +203,10 @@ def get_current_job(agent_id: int) -> Optional[dict[str, Any]]:
         except (TypeError, ValueError):
             return fallback
 
-    return {
+    # _json_safe also on read: rows persisted before the write-side guard (or by
+    # json.dumps' default allow_nan=True) hold literal NaN that json.loads
+    # restores as float nan — sanitise so the endpoint never 500s on old data.
+    return _json_safe({
         "job_id": row["id"],
         "symbol": row["symbol"],
         "market": row["market"],
@@ -201,7 +220,7 @@ def get_current_job(agent_id: int) -> Optional[dict[str, Any]]:
         "error": row.get("error"),
         "created_at": row["created_at"],
         "finished_at": row.get("finished_at"),
-    }
+    })
 
 
 def mark_stale_jobs() -> int:
