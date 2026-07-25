@@ -164,7 +164,8 @@ class TestSweepDecisions(_ReconcilerTestCase):
                                  "filled_qty": 0.0, "avg_price": None})
         self.assertEqual(out["drift"], 1)
         alert.assert_called_once()
-        self.assertIn("cancelled", alert.call_args[0][3])
+        self.assertEqual(alert.call_args[0][2], "order_drift_cancelled_rejected")
+        self.assertEqual(alert.call_args[0][3]["final"], "cancelled")
 
     def test_shadow_drift_is_recorded_but_not_alerted(self):
         """Shadow's ledger is authoritative by design — sandbox divergence is
@@ -372,7 +373,8 @@ class TestMalformedBrokerPayloads(_ReconcilerTestCase):
         self.assertEqual(out["drift"], 1)
         alert.assert_called_once()
         self.assertEqual(alert.call_args[0][1], "order_drift")
-        self.assertIn("unknown amount", alert.call_args[0][3])
+        self.assertEqual(alert.call_args[0][2], "order_drift_partial_fill")
+        self.assertIn("unknown amount", alert.call_args[0][3]["filled_txt"])
 
     def test_partial_fill_is_repolled_then_completes(self):
         """A partial is not terminal: it stays scannable and a later full fill

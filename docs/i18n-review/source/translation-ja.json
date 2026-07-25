@@ -1,0 +1,159 @@
+{
+  "messages": {
+    "breaker": {
+      "title": "サーキットブレーカー発動（{scope}）",
+      "body": "取引停止：{reason}"
+    },
+    "position_closed": {
+      "title": "{trigger_label} — {symbol}",
+      "body": "ウォッチャーが{symbol}（{market}）を${price}でクローズしました"
+    },
+    "watch": {
+      "title": "ウォッチ: {name}",
+      "body": "{metric}{where}は{value}{unit}です（しきい値{threshold}{unit}を{comparator}）"
+    },
+    "run_report": {
+      "title": "Run #{run_id} {symbol} 損益レポート",
+      "body": "Run #{run_id} {symbol}（{market}）— 期間 {period_start} → {period_end}：損益 ${pnl}、取引{trades}件。ステータス：{status}。"
+    },
+    "run_threshold_loss": {
+      "title": "Run #{run_id} が{loss_pct}%下落",
+      "body": "{symbol}のRun損益${total}が${base}の−{loss_pct}%を下回りました。"
+    },
+    "run_threshold_profit": {
+      "title": "Run #{run_id} が{profit_pct}%上昇",
+      "body": "{symbol}のRun損益${total}が${base}の+{profit_pct}%を上回りました。"
+    },
+    "gateway_down_live_order_failed": {
+      "title": "実売買注文がブローカーに届きませんでした",
+      "body": "{symbol}：{reason}"
+    },
+    "automation_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "自動売買が{action} {qty} {symbol}を${entry}で実行しました（信頼度 {confidence}）"
+    },
+    "order_drift_cancelled_rejected": {
+      "title": "ブローカーの約定内容がプラットフォームの記録と異なります",
+      "body": "{symbol}：提出後、ブローカー側で{side}注文が{final}されました — プラットフォームには注文時の数量（{requested}）で記録されています。ブローカー側のポジションを確認し、必要に応じて手動で修正してください。"
+    },
+    "order_drift_partial_fill": {
+      "title": "ブローカーの約定内容がプラットフォームの記録と異なります",
+      "body": "{symbol}：ブローカーは注文数量{requested} {side}のうち{filled_txt}の約定を確認しました — プラットフォームの台帳には注文時の数量が記録されています。内容を確認し、手動で修正してください。"
+    },
+    "gateway_down_ibkr_session": {
+      "title": "IBKRゲートウェイセッションが切断されています",
+      "body": "{detail} — Client Portal Gatewayに再ログインするまで、実売買およびシャドーのIBKR注文は約定しません。"
+    },
+    "run_dup_key": {
+      "title": "Run #{run_id} 停止：アクティブなRunが重複",
+      "body": "同じ設定の別のRunがこのエージェントで既に{symbol}（{market}）を保有しているため、同一シグナルの競合を避けてこのRunは開始前に停止されました。"
+    },
+    "run_armed_timeout": {
+      "title": "Run #{run_id} 待機中にタイムアウト",
+      "body": "{symbol}の開始条件が{hours}時間以内に発生しなかったため、Runは停止されました。"
+    },
+    "run_stop_eval_failed": {
+      "title": "Run #{run_id} 停止：ストップ条件を評価できません",
+      "body": "ストップ条件の評価が{failures}回連続で失敗しました（{exc}）— 安全のため停止します。"
+    },
+    "run_stop_eval_paused": {
+      "title": "Run #{run_id} 一時停止：ストップ確認に失敗",
+      "body": "ストップ条件の評価に失敗しました（{exc}）。評価が回復するまでエントリーを一時停止します。"
+    },
+    "run_stop_event": {
+      "title": "Run #{run_id} ストップイベント：{reason}",
+      "body": "{symbol}（{market}）が{reason}に到達 — {outcome}"
+    },
+    "run_goal_restart": {
+      "title": "Run #{run_id} が目標達成 — #{new_run_id}として再開",
+      "body": "{symbol}（{market}）が{reason}に到達。同じ設定の新しいRunが稼働を開始しました。"
+    },
+    "run_positions_held": {
+      "title": "Run #{run_id} 停止（ポジション保有中）",
+      "body": "手仕舞いが{minutes}分を超えてブロックされたままです（{why}）— ポジションはSL/TPウォッチャー管理下で保有されたままです。"
+    },
+    "run_infeasible": {
+      "title": "Run #{run_id} 一時停止：取引資金を確保できません",
+      "body": "設定された最大ベット額に対して資金が不足しているサイクルが{count}回連続しました — 資金または設定が変更されるまで一時停止します。"
+    },
+    "run_sub_lapsed": {
+      "title": "Run #{run_id} 一時停止：サブスクリプションが期限切れ",
+      "body": "プランの期限が切れたため、Runは一時停止されました（ポジションとストップの管理は継続します）。再開するには更新してください。"
+    },
+    "run_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "Run #{run_id}が{action} {qty} {symbol}を${entry}で実行しました（信頼度 {confidence}）"
+    },
+    "fleet_watchdog_eval_failed": {
+      "title": "フリート #{fleet_id}：資産評価が失敗しています",
+      "body": "時価評価が古い価格データにより{fails}回連続で失敗しました — 新規エントリーを一時停止します。"
+    },
+    "fleet_watchdog_stalled": {
+      "title": "フリート #{fleet_id}：監視が停止しています",
+      "body": "フリートスーパーバイザーが3ティック以上実行されていません — ドローダウンレールが機能していない可能性があります。ワーカーを確認してください。"
+    },
+    "fleet_breaker": {
+      "title": "フリート #{fleet_id} が−{loss_pct}%で停止しました",
+      "body": "Full Autoフリートが−{stop_loss_pct}%のストップレールを超えました。すべてのポジションをクローズしています。このストップは超過を検知した最初のチェックで発動したため、最終的な損失がしきい値を上回る場合があります。"
+    },
+    "fleet_drawdown_warning": {
+      "title": "フリート #{fleet_id} が{loss_pct}%下落 — 一時停止",
+      "body": "Full Autoフリートは予算の{loss_pct}%を失いました。新規エントリーは一時停止中です。保有中のポジションとストップロスは有効のままです。ここから取引を再開する場合、その継続はご自身の責任となります。フリートは−{stop_loss_pct}%で全ポジションを自動停止します。"
+    },
+    "fleet_churn": {
+      "title": "フリート #{fleet_id}：入れ替えが頻発しています",
+      "body": "本日{n}件のメンバー入れ替えが発生しました — 相場の乱高下で戦略が損切りされている可能性があります。フリートの一時停止をご検討ください。"
+    }
+  },
+  "tokens": {
+    "comparator": {
+      "above": "上回っています",
+      "below": "下回っています"
+    },
+    "outcome": {
+      "flatten": "ポジションを手仕舞いします。",
+      "hold": "SL/TPウォッチャー管理下でポジションを保持します。"
+    },
+    "trigger_label": {
+      "stop_loss": "ストップロス",
+      "take_profit": "テイクプロフィット",
+      "time_stop": "タイムストップ"
+    },
+    "action": {
+      "buy": "買い",
+      "sell": "売り",
+      "short": "ショート",
+      "cover": "カバー"
+    },
+    "action_upper": {
+      "BUY": "買い",
+      "SELL": "売り",
+      "SHORT": "ショート",
+      "COVER": "カバー"
+    },
+    "side": {
+      "buy": "買い",
+      "sell": "売り",
+      "short": "ショート",
+      "cover": "カバー"
+    },
+    "final": {
+      "cancelled": "キャンセル済み",
+      "rejected": "拒否済み"
+    },
+    "status": {
+      "armed": "待機中",
+      "running": "実行中",
+      "paused": "一時停止中",
+      "stopping": "停止中",
+      "stopped": "停止済み"
+    }
+  },
+  "email": {
+    "verification": {
+      "subject": "Sooppiy認証コードのお知らせ",
+      "html": "<p>認証コードは次のとおりです：<strong>{code}</strong></p><p>このコードの有効期限は5分間です。他人と共有しないでください。</p>"
+    }
+  },
+  "note": "English source of truth. Placeholders in {curly} MUST stay verbatim in every translation. Do not translate placeholder names or the {code} slot."
+}

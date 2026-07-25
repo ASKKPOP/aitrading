@@ -1,10 +1,12 @@
+import asyncio
 import hmac
 import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
+from pydantic import BaseModel
 
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
 from email_sender import send_verification_code_email
@@ -164,9 +166,13 @@ def _user_llm_settings(user_id: int) -> dict | None:
         return None
 
 
+class UserLanguageRequest(BaseModel):
+    lang: str
+
+
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/users/send-code')
-    async def send_verification_code(data: UserSendCodeRequest):
+    async def send_verification_code(data: UserSendCodeRequest, request: Request):
         now = datetime.now(timezone.utc)
         existing = _load_code(data.email, ctx)
         if existing:
@@ -181,13 +187,17 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'attempts': 0,
             'last_sent_at': now,
         }, ctx)
-        if not send_verification_code_email(data.email, code):
+        from signup_lang import resolve_signup_lang
+        # Offload the (sync, network) geo lookup so a slow geo API can't stall
+        # the shared event loop during signup — fail-soft returns 'en' anyway.
+        lang = await asyncio.to_thread(resolve_signup_lang, request)
+        if not send_verification_code_email(data.email, code, lang):
             # Fallback: log code when Resend is not configured (local dev).
             _logger.info('[Email] Verification code for %s: %s', data.email, code)
         return {'success': True, 'message': 'Code sent'}
 
     @app.post('/api/users/register')
-    async def user_register(data: UserRegisterRequest):
+    async def user_register(data: UserRegisterRequest, request: Request):
         stored = _load_code(data.email, ctx)
         if stored is None:
             raise HTTPException(status_code=400, detail='No code sent')
@@ -212,12 +222,16 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400, detail='User already exists')
 
         password_hash = hash_password(data.password)
+        from signup_lang import resolve_signup_lang
+        # Offload the (sync, network) geo lookup so a slow geo API can't stall
+        # the shared event loop during signup — fail-soft returns 'en' anyway.
+        lang = await asyncio.to_thread(resolve_signup_lang, request)
         cursor.execute(
             """
-            INSERT INTO users (email, password_hash)
-            VALUES (?, ?)
+            INSERT INTO users (email, password_hash, lang)
+            VALUES (?, ?, ?)
             """,
-            (data.email, password_hash),
+            (data.email, password_hash, lang),
         )
         user_id = cursor.lastrowid
 
@@ -264,12 +278,14 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id FROM users WHERE email = ?', (data.email,))
-        account_exists = cursor.fetchone() is not None
+        cursor.execute('SELECT id, lang FROM users WHERE email = ?', (data.email,))
+        row = cursor.fetchone()
+        account_exists = row is not None
         conn.close()
 
         if account_exists:
-            if not send_verification_code_email(data.email, code):
+            lang = row['lang'] or 'en'
+            if not send_verification_code_email(data.email, code, lang):
                 # Fallback: log code when Resend is not configured (local dev).
                 _logger.info('[Email] Password-reset code for %s: %s', data.email, code)
         return {'success': True, 'message': 'If an account exists, a code was sent'}
@@ -339,6 +355,12 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             mfa_on = bool(row['mfa_enabled'])
         except (KeyError, IndexError):
             mfa_on = False
+
+        try:
+            lang = row['lang']
+        except (KeyError, IndexError):
+            lang = 'en'
+
         if mfa_on:
             from routes_auth import issue_mfa_token_for_user
             return {
@@ -359,7 +381,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return {'token': token, 'user_id': row['id'], 'email': row['email'],
-                'subscription_status': sub['status']}
+                'subscription_status': sub['status'], 'lang': lang}
 
     @app.get('/api/users/me')
     async def get_user_info(authorization: str = Header(None)):
@@ -382,9 +404,28 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'wallet_address': user.get('wallet_address'),
             'points': user.get('points', 0),
             'status': user.get('status', 'active'),
+            'lang': user.get('lang', 'en'),
             'subscription_status': sub['status'],
             'subscription': sub['subscription'],
         }
+
+    @app.put('/api/users/language')
+    async def set_user_language(data: UserLanguageRequest, authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        from analysis_agents import normalize_lang
+        lang = normalize_lang(data.lang)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET lang = ? WHERE id = ?', (lang, user['id']))
+            conn.commit()
+        finally:
+            conn.close()
+        return {'lang': lang}
 
     @app.get('/api/users/points')
     async def get_points_balance(authorization: str = Header(None)):

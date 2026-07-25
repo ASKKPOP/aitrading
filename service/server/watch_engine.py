@@ -101,13 +101,6 @@ def _cooling_down(watch: dict[str, Any]) -> bool:
     return _now() - fired < timedelta(minutes=int(watch.get("cooldown_min") or 60))
 
 
-def _describe(watch: dict[str, Any], value: float) -> str:
-    unit = "%" if watch["metric"] in ("kimchi_premium", "funding_rate", "basis") else ""
-    where = f" {watch['symbol']}" if watch.get("symbol") else ""
-    return (f"{watch['metric']}{where} is {value:,.2f}{unit} "
-            f"({watch['comparator']} your {watch['threshold']:,.2f}{unit} threshold)")
-
-
 def run_watch_tick() -> dict[str, Any]:
     """Evaluate every enabled watch once; fire alerts on crossings.
     Metric values are cached per (metric, symbol) within the tick so 50 watches
@@ -137,9 +130,14 @@ def run_watch_tick() -> dict[str, Any]:
         if not crosses(value, w["comparator"], float(w["threshold"])):
             continue
         try:
+            unit = "%" if w["metric"] in ("kimchi_premium", "funding_rate", "basis") else ""
+            where = f" {w['symbol']}" if w.get("symbol") else ""
             from alerts import send_alert
-            send_alert(w["agent_id"], "custom", f"Watch: {w['name']}",
-                       _describe(w, value),
+            send_alert(w["agent_id"], "custom", "watch",
+                       {"name": w["name"], "metric": w["metric"], "where": where,
+                        "value": f"{value:,.2f}", "unit": unit,
+                        "comparator": w["comparator"],
+                        "threshold": f"{float(w['threshold']):,.2f}"},
                        dedupe_key=f"watch:{w['id']}:{int(_now().timestamp() // 3600)}")
             fired += 1
             conn = get_db_connection()

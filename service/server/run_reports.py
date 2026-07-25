@@ -150,13 +150,14 @@ def deliver_report(report: dict, run: dict) -> bool:
     from alerts import send_alert
 
     pnl = float(report.get("pnl") or 0)
-    body = (f"Run #{run['id']} {run['symbol']} ({run['market']}) — "
-            f"period {report.get('period_start')} → {report.get('period_end')}: "
-            f"P&L ${pnl:+.2f}, {int(report.get('trades') or 0)} trade(s). "
-            f"Status: {run.get('status')}.")
-    out = send_alert(run["agent_id"], "run_report",
-                     f"Run #{run['id']} {run['symbol']} P&L digest",
-                     body, dedupe_key=f"run_report:{report['id']}")
+    out = send_alert(run["agent_id"], "run_report", "run_report",
+                     {"run_id": run["id"], "symbol": run["symbol"], "market": run["market"],
+                      "period_start": report.get("period_start"),
+                      "period_end": report.get("period_end"),
+                      "pnl": f"{pnl:+.2f}",
+                      "trades": int(report.get("trades") or 0),
+                      "status": run.get("status")},
+                     dedupe_key=f"run_report:{report['id']}")
     if out.get("error"):
         return False
     channels = out.get("channels") or []
@@ -298,17 +299,17 @@ def evaluate_thresholds(run: dict, pnl: dict) -> None:
         from alerts import send_alert
         loss_pct = run.get("loss_threshold_pct")
         if loss_pct is not None and total <= -(float(loss_pct) / 100.0) * base:
-            send_alert(run["agent_id"], "run_threshold",
-                       f"Run #{run['id']} down {float(loss_pct):g}%",
-                       (f"{run['symbol']} run P&L ${total:+.2f} crossed "
-                        f"-{float(loss_pct):g}% of ${base:.0f}."),
+            send_alert(run["agent_id"], "run_threshold", "run_threshold_loss",
+                       {"run_id": run["id"], "loss_pct": f"{float(loss_pct):g}",
+                        "symbol": run["symbol"], "total": f"{total:+.2f}",
+                        "base": f"{base:.0f}"},
                        dedupe_key=f"run:{run['id']}:loss:{today}")
         profit_pct = run.get("profit_threshold_pct")
         if profit_pct is not None and total >= (float(profit_pct) / 100.0) * base:
-            send_alert(run["agent_id"], "run_threshold",
-                       f"Run #{run['id']} up {float(profit_pct):g}%",
-                       (f"{run['symbol']} run P&L ${total:+.2f} crossed "
-                        f"+{float(profit_pct):g}% of ${base:.0f}."),
+            send_alert(run["agent_id"], "run_threshold", "run_threshold_profit",
+                       {"run_id": run["id"], "profit_pct": f"{float(profit_pct):g}",
+                        "symbol": run["symbol"], "total": f"{total:+.2f}",
+                        "base": f"{base:.0f}"},
                        dedupe_key=f"run:{run['id']}:profit:{today}")
     except Exception:  # noqa: BLE001
         logger.debug("threshold evaluation failed (run %s)", run.get("id"),

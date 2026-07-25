@@ -1,0 +1,159 @@
+{
+  "messages": {
+    "breaker": {
+      "title": "Circuit breaker HALT ({scope})",
+      "body": "Trading halted: {reason}"
+    },
+    "position_closed": {
+      "title": "{trigger_label} — {symbol}",
+      "body": "Watcher closed {symbol} ({market}) at ${price}"
+    },
+    "watch": {
+      "title": "Watch: {name}",
+      "body": "{metric}{where} is {value}{unit} ({comparator} your {threshold}{unit} threshold)"
+    },
+    "run_report": {
+      "title": "Run #{run_id} {symbol} P&L digest",
+      "body": "Run #{run_id} {symbol} ({market}) — period {period_start} → {period_end}: P&L ${pnl}, {trades} trade(s). Status: {status}."
+    },
+    "run_threshold_loss": {
+      "title": "Run #{run_id} down {loss_pct}%",
+      "body": "{symbol} run P&L ${total} crossed -{loss_pct}% of ${base}."
+    },
+    "run_threshold_profit": {
+      "title": "Run #{run_id} up {profit_pct}%",
+      "body": "{symbol} run P&L ${total} crossed +{profit_pct}% of ${base}."
+    },
+    "gateway_down_live_order_failed": {
+      "title": "Live order did not reach your broker",
+      "body": "{symbol}: {reason}"
+    },
+    "automation_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "Automation executed {action} {qty} {symbol} @ ${entry} (confidence {confidence})"
+    },
+    "order_drift_cancelled_rejected": {
+      "title": "Broker fill differs from platform record",
+      "body": "{symbol}: your {side} order was {final} by the broker AFTER submission — the platform recorded it at the requested size ({requested}). Review the position on your broker and correct manually if needed."
+    },
+    "order_drift_partial_fill": {
+      "title": "Broker fill differs from platform record",
+      "body": "{symbol}: broker confirmed {filled_txt} of the requested {requested} {side} — the platform ledger recorded the requested size. Review and correct manually."
+    },
+    "gateway_down_ibkr_session": {
+      "title": "Your IBKR gateway session is down",
+      "body": "{detail} — live and shadow IBKR orders will not fill until you log in to the Client Portal Gateway again."
+    },
+    "run_dup_key": {
+      "title": "Run #{run_id} halted: duplicate active run",
+      "body": "Another run with the same settings already owns {symbol} ({market}) for this agent, so this one was halted before it could race the same signal."
+    },
+    "run_armed_timeout": {
+      "title": "Run #{run_id} timed out while armed",
+      "body": "Start condition for {symbol} never fired within {hours}h — the run was stopped."
+    },
+    "run_stop_eval_failed": {
+      "title": "Run #{run_id} stopped: cannot evaluate stops",
+      "body": "{failures} consecutive stop-evaluation failures ({exc}) — stopping for safety."
+    },
+    "run_stop_eval_paused": {
+      "title": "Run #{run_id} paused: stop check failed",
+      "body": "Stop-condition evaluation failed ({exc}); entries are paused until evaluation recovers."
+    },
+    "run_stop_event": {
+      "title": "Run #{run_id} stop event: {reason}",
+      "body": "{symbol} ({market}) hit {reason} — {outcome}"
+    },
+    "run_goal_restart": {
+      "title": "Run #{run_id} reached its goal — restarted as #{new_run_id}",
+      "body": "{symbol} ({market}) hit {reason}; a new run with the same settings is live."
+    },
+    "run_positions_held": {
+      "title": "Run #{run_id} stopped with positions held",
+      "body": "Flatten stayed blocked ({why}) past {minutes}min — the position remains open under the SL/TP watcher."
+    },
+    "run_infeasible": {
+      "title": "Run #{run_id} paused: cannot fund trades",
+      "body": "{count} consecutive cycles with insufficient cash for the configured max bet — paused until funds or settings change."
+    },
+    "run_sub_lapsed": {
+      "title": "Run #{run_id} paused: subscription expired",
+      "body": "Your plan lapsed, so the run was paused (positions and stops stay managed). Renew to resume."
+    },
+    "run_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "Run #{run_id} executed {action} {qty} {symbol} @ ${entry} (confidence {confidence})"
+    },
+    "fleet_watchdog_eval_failed": {
+      "title": "Fleet #{fleet_id}: equity evaluation failing",
+      "body": "Marked-equity evaluation has failed on stale prices for {fails} consecutive passes — new entries are paused."
+    },
+    "fleet_watchdog_stalled": {
+      "title": "Fleet #{fleet_id}: supervision stalled",
+      "body": "The fleet supervisor has not run for 3+ ticks — drawdown rails may be dark. Check the worker."
+    },
+    "fleet_breaker": {
+      "title": "Fleet #{fleet_id} STOPPED at −{loss_pct}%",
+      "body": "Your Full Auto fleet crossed the −{stop_loss_pct}% stop rail. Every position is being closed. This stop fired at the first check observing the breach; the final loss may exceed the threshold."
+    },
+    "fleet_drawdown_warning": {
+      "title": "Fleet #{fleet_id} down {loss_pct}% — paused",
+      "body": "Your Full Auto fleet has lost {loss_pct}% of its budget. New entries are paused; open positions and their stop-losses remain active. If you resume trading from here, continuing is your responsibility. The fleet stops everything automatically at −{stop_loss_pct}%."
+    },
+    "fleet_churn": {
+      "title": "Fleet #{fleet_id}: high replacement churn",
+      "body": "{n} member replacements today — the market may be chopping your strategies out. Consider pausing the fleet."
+    }
+  },
+  "tokens": {
+    "comparator": {
+      "above": "above",
+      "below": "below"
+    },
+    "outcome": {
+      "flatten": "flattening position.",
+      "hold": "holding position under the SL/TP watcher."
+    },
+    "trigger_label": {
+      "stop_loss": "stop loss",
+      "take_profit": "take profit",
+      "time_stop": "time stop"
+    },
+    "action": {
+      "buy": "buy",
+      "sell": "sell",
+      "short": "short",
+      "cover": "cover"
+    },
+    "action_upper": {
+      "BUY": "BUY",
+      "SELL": "SELL",
+      "SHORT": "SHORT",
+      "COVER": "COVER"
+    },
+    "side": {
+      "buy": "buy",
+      "sell": "sell",
+      "short": "short",
+      "cover": "cover"
+    },
+    "final": {
+      "cancelled": "cancelled",
+      "rejected": "rejected"
+    },
+    "status": {
+      "armed": "armed",
+      "running": "running",
+      "paused": "paused",
+      "stopping": "stopping",
+      "stopped": "stopped"
+    }
+  },
+  "email": {
+    "verification": {
+      "subject": "Your Sooppiy verification code",
+      "html": "<p>Your verification code is: <strong>{code}</strong></p><p>It expires in 5 minutes. Do not share it.</p>"
+    }
+  },
+  "note": "English source of truth. Placeholders in {curly} MUST stay verbatim in every translation. Do not translate placeholder names or the {code} slot."
+}

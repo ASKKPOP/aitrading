@@ -27,25 +27,24 @@ except ImportError:
     _RESEND_AVAILABLE = False
 
 
-def send_verification_code_email(to_email: str, code: str) -> bool:
-    """Send a 6-digit verification code to *to_email*.
+def send_verification_code_email(to_email: str, code: str, lang: str = "en") -> bool:
+    """Send a 6-digit verification code to *to_email*, localized to *lang*.
 
     Returns True if the email was accepted by Resend, False otherwise.
     Callers should log the code as a fallback when this returns False.
     """
     if not _RESEND_AVAILABLE or _resend_lib is None:
         return False
+    from email_i18n import verification_email
+    subject, html = verification_email(code, lang)
     try:
         _resend_lib.Emails.send({
             "from": EMAIL_FROM,
             "to": to_email,
-            "subject": "Your Sooppiy verification code",
-            "html": (
-                f"<p>Your verification code is: <strong>{code}</strong></p>"
-                "<p>It expires in 5 minutes. Do not share it.</p>"
-            ),
+            "subject": subject,
+            "html": html,
         })
-        _logger.info("[Email] Verification code sent to %s", to_email)
+        _logger.info("[Email] Verification code sent to %s (%s)", to_email, lang)
         return True
     except Exception as exc:
         _logger.warning("[Email] Failed to send to %s: %s", to_email, exc)

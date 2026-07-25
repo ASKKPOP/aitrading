@@ -108,6 +108,19 @@ function App() {
   })
   const [token, setToken] = useState<string | null>(localStorage.getItem('claw_token'))
   const [userToken, setUserToken] = useState<string | null>(localStorage.getItem(USER_TOKEN_KEY))
+  // User-initiated language changes persist to the server when logged in;
+  // server-seeded changes (see /users/me effect below) use the raw setter
+  // directly to avoid echoing a redundant PUT back on every mount.
+  const changeLanguage = (next: Language) => {
+    setLanguage(next)
+    if (userToken) {
+      fetch(`${API_BASE}/users/language`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
+        body: JSON.stringify({ lang: next }),
+      }).catch(() => {})
+    }
+  }
   const [agentInfo, setAgentInfo] = useState<any>(null)
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
   const [notificationCounts, setNotificationCounts] = useState<NotificationCounts>({ discussion: 0, strategy: 0, experiment: 0 })
@@ -147,7 +160,14 @@ function App() {
         if (res.status === 401) { userLogout(); return null }
         return res.ok ? res.json() : null
       })
-      .then(data => { if (data) setUserInfo(data) })
+      .then(data => {
+        if (data) {
+          setUserInfo(data)
+          if (LANGUAGES.some((l) => l.value === data.lang) && data.lang !== language) {
+            setLanguage(data.lang as Language)
+          }
+        }
+      })
       .catch(() => {})
   }, [userToken])
 
@@ -309,7 +329,7 @@ function App() {
   if (window.location.hostname.startsWith('administr.')) {
     return (
       <ThemeContext.Provider value={{ theme, setTheme }}>
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>
           <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
             <AdminPage />
           </Suspense>
@@ -320,7 +340,7 @@ function App() {
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
-      <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>
         <BrowserRouter>
           <AppRouter
             token={token}

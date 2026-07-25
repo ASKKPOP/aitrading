@@ -317,9 +317,8 @@ def _alert_gateway_failure(agent_id: int, symbol: str, reason: str) -> None:
     try:
         from alerts import send_alert
         hour = datetime.now(timezone.utc).strftime("%Y%m%d%H")
-        send_alert(agent_id, "gateway_down",
-                   "Live order did not reach your broker",
-                   f"{symbol}: {reason}",
+        send_alert(agent_id, "gateway_down", "gateway_down_live_order_failed",
+                   {"symbol": symbol, "reason": reason},
                    dedupe_key=f"gateway_down:{agent_id}:{hour}")
     except Exception:  # noqa: BLE001 — alerting must never break trading
         logger.debug("gateway failure alert failed for agent %s", agent_id)
@@ -757,10 +756,10 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                 # Alert (Plan 06 C3) — in-app always; email/SMS per user prefs.
                 try:
                     from alerts import send_alert
-                    send_alert(agent_id, "trade_executed",
-                               f"{action.upper()} {symbol}",
-                               (f"Automation executed {action} {gate.quantity:.6f} "
-                                f"{symbol} @ ${float(entry):.2f} (confidence {confidence})"),
+                    send_alert(agent_id, "trade_executed", "automation_trade_executed",
+                               {"action_upper": action.upper(), "symbol": symbol,
+                                "action": action, "qty": f"{gate.quantity:.6f}",
+                                "entry": f"{float(entry):.2f}", "confidence": confidence},
                                dedupe_key=f"exec:{signal_id}")
                 except Exception:  # noqa: BLE001
                     logger.debug("trade alert failed for signal %s", signal_id)

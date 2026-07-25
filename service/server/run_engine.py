@@ -557,10 +557,10 @@ def _simple_transition(run: dict, target: str, reason: str,
         conn.close()
 
 
-def _alert_run(run: dict, kind: str, title: str, body: str, dedupe: str) -> None:
+def _alert_run(run: dict, kind: str, msg_id: str, params: dict, dedupe: str) -> None:
     try:
         from alerts import send_alert
-        send_alert(run["agent_id"], kind, title, body, dedupe_key=dedupe)
+        send_alert(run["agent_id"], kind, msg_id, params, dedupe_key=dedupe)
     except Exception:  # noqa: BLE001
         logger.debug("run alert failed (run %s)", run["id"], exc_info=True)
 
@@ -691,11 +691,8 @@ def _halt_duplicate(run: dict) -> bool:
                                     extra_sets="paused_reason = ?",
                                     extra_args=("duplicate_active_key",))
     if halted:
-        _alert_run(run, "run_stopped",
-                   f"Run #{run['id']} halted: duplicate active run",
-                   (f"Another run with the same settings already owns "
-                    f"{run['symbol']} ({run['market']}) for this agent, so this "
-                    "one was halted before it could race the same signal."),
+        _alert_run(run, "run_stopped", "run_dup_key",
+                   {"run_id": run["id"], "symbol": run["symbol"], "market": run["market"]},
                    dedupe=f"run:{run['id']}:dup_key")
     return False
 
@@ -715,9 +712,9 @@ def _control_armed(run: dict, out: dict) -> None:
     if started and _age_seconds(started) > _armed_timeout():
         if _simple_transition(run, STATUS_STOPPED, "armed_timeout",
                               clear_active_key=True):
-            _alert_run(run, "run_stopped", f"Run #{run['id']} timed out while armed",
-                       (f"Start condition for {run['symbol']} never fired within "
-                        f"{_armed_timeout() // 3600}h — the run was stopped."),
+            _alert_run(run, "run_stopped", "run_armed_timeout",
+                       {"run_id": run["id"], "symbol": run["symbol"],
+                        "hours": _armed_timeout() // 3600},
                        dedupe=f"run:{run['id']}:armed_timeout")
         return
     if _start_condition_fires(run):
@@ -765,18 +762,16 @@ def _control_active(run: dict, out: dict) -> None:
             if _simple_transition(run, STATUS_STOPPING, "stop_eval_failed",
                                   extra_sets="consecutive_errors = ?, stopped_at = ?",
                                   extra_args=(failures, _now_iso())):
-                _alert_run(run, "run_stopped", f"Run #{run['id']} stopped: cannot evaluate stops",
-                           f"{failures} consecutive stop-evaluation failures "
-                           f"({exc}) — stopping for safety.",
+                _alert_run(run, "run_stopped", "run_stop_eval_failed",
+                           {"run_id": run["id"], "failures": failures, "exc": exc},
                            dedupe=f"run:{run['id']}:eval_stop")
             return
         if run["status"] == STATUS_RUNNING:
             if _simple_transition(run, STATUS_PAUSED, "stop_eval_failed",
                                   extra_sets="consecutive_errors = ?, paused_reason = ?",
                                   extra_args=(failures, "stop_eval_failed")):
-                _alert_run(run, "run_stopped", f"Run #{run['id']} paused: stop check failed",
-                           f"Stop-condition evaluation failed ({exc}); entries are "
-                           "paused until evaluation recovers.",
+                _alert_run(run, "run_stopped", "run_stop_eval_paused",
+                           {"run_id": run["id"], "exc": exc},
                            dedupe=f"run:{run['id']}:eval_pause")
         else:
             conn = get_db_connection()
@@ -801,10 +796,10 @@ def _control_active(run: dict, out: dict) -> None:
 
     out["stops_fired"] += 1
     emit_telemetry_event(run["id"], "alert", {"stop_reason": reason})
-    _alert_run(run, "run_stopped", f"Run #{run['id']} stop event: {reason}",
-               f"{run['symbol']} ({run['market']}) hit {reason} — "
-               + ("flattening position." if run.get("stop_flatten") else
-                  "holding position under the SL/TP watcher."),
+    _alert_run(run, "run_stopped", "run_stop_event",
+               {"run_id": run["id"], "reason": reason, "symbol": run["symbol"],
+                "market": run["market"],
+                "outcome": "flatten" if run.get("stop_flatten") else "hold"},
                dedupe=f"run:{run['id']}:{reason}")
     if _simple_transition(run, STATUS_STOPPING, reason,
                           extra_sets="stopped_at = ?", extra_args=(_now_iso(),)):
@@ -883,10 +878,9 @@ def _maybe_auto_restart(run: dict) -> None:
         return
     emit_telemetry_event(run["id"], "alert",
                          {"auto_restart_run_id": new_id, "stop_reason": reason})
-    _alert_run(run, "custom",
-               f"Run #{run['id']} reached its goal — restarted as #{new_id}",
-               f"{run['symbol']} ({run['market']}) hit {reason}; a new run with "
-               "the same settings is live.",
+    _alert_run(run, "custom", "run_goal_restart",
+               {"run_id": run["id"], "new_run_id": new_id, "symbol": run["symbol"],
+                "market": run["market"], "reason": reason},
                dedupe=f"run:{run['id']}:auto_restart")
 
 
@@ -952,11 +946,9 @@ def _control_stopping(run: dict, out: dict) -> None:
         if _simple_transition(run, STATUS_STOPPED, "positions_held",
                               clear_active_key=True):
             out["stopping_finished"] += 1
-            _alert_run(run, "run_stopped",
-                       f"Run #{run['id']} stopped with positions held",
-                       f"Flatten stayed blocked ({why}) past "
-                       f"{_flatten_timeout() // 60}min — the position remains "
-                       "open under the SL/TP watcher.",
+            _alert_run(run, "run_stopped", "run_positions_held",
+                       {"run_id": run["id"], "why": why,
+                        "minutes": _flatten_timeout() // 60},
                        dedupe=f"run:{run['id']}:positions_held")
 
 
@@ -1623,11 +1615,11 @@ def run_cycle(run_id: int) -> dict:
             if run.get("notify_on_trade"):
                 try:
                     from alerts import send_alert
-                    send_alert(run["agent_id"], "trade_executed",
-                               f"{str(action).upper()} {run['symbol']}",
-                               (f"Run #{run_id} executed {action} {gate.quantity:.6f} "
-                                f"{run['symbol']} @ ${float(entry):.2f} "
-                                f"(confidence {confidence})"),
+                    send_alert(run["agent_id"], "trade_executed", "run_trade_executed",
+                               {"action_upper": str(action).upper(), "symbol": run["symbol"],
+                                "run_id": run_id, "action": action,
+                                "qty": f"{gate.quantity:.6f}",
+                                "entry": f"{float(entry):.2f}", "confidence": confidence},
                                dedupe_key=f"run-exec:{signal_id}")
                 except Exception:  # noqa: BLE001
                     logger.debug("run trade alert failed (run %s)", run_id)
@@ -1674,11 +1666,8 @@ def _handle_infeasible_skip(run: dict, skip: str) -> None:
             if _simple_transition(run, STATUS_PAUSED, "infeasible",
                                   extra_sets="consecutive_infeasible = ?, paused_reason = ?",
                                   extra_args=(count, "infeasible")):
-                _alert_run(run, "run_stopped",
-                           f"Run #{run['id']} paused: cannot fund trades",
-                           f"{count} consecutive cycles with insufficient cash "
-                           "for the configured max bet — paused until funds "
-                           "or settings change.",
+                _alert_run(run, "run_stopped", "run_infeasible",
+                           {"run_id": run["id"], "count": count},
                            dedupe=f"run:{run['id']}:infeasible")
             return
         conn = get_db_connection()
@@ -1744,10 +1733,8 @@ def subscription_enforcer_tick() -> dict:
                                   extra_sets="paused_reason = ?",
                                   extra_args=("subscription_lapsed",)):
                 out["paused"] += 1
-                _alert_run(run, "run_stopped",
-                           f"Run #{run['id']} paused: subscription expired",
-                           "Your plan lapsed, so the run was paused (positions "
-                           "and stops stay managed). Renew to resume.",
+                _alert_run(run, "run_stopped", "run_sub_lapsed",
+                           {"run_id": run["id"]},
                            dedupe=f"run:{run['id']}:sub_lapsed")
         except Exception:  # noqa: BLE001
             logger.warning("subscription enforcement failed for run %s",
