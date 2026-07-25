@@ -4,7 +4,7 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
 from email_sender import send_verification_code_email
@@ -166,7 +166,7 @@ def _user_llm_settings(user_id: int) -> dict | None:
 
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/users/send-code')
-    async def send_verification_code(data: UserSendCodeRequest):
+    async def send_verification_code(data: UserSendCodeRequest, request: Request):
         now = datetime.now(timezone.utc)
         existing = _load_code(data.email, ctx)
         if existing:
@@ -187,7 +187,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {'success': True, 'message': 'Code sent'}
 
     @app.post('/api/users/register')
-    async def user_register(data: UserRegisterRequest):
+    async def user_register(data: UserRegisterRequest, request: Request):
         stored = _load_code(data.email, ctx)
         if stored is None:
             raise HTTPException(status_code=400, detail='No code sent')
@@ -212,12 +212,14 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400, detail='User already exists')
 
         password_hash = hash_password(data.password)
+        from signup_lang import resolve_signup_lang
+        lang = resolve_signup_lang(request)
         cursor.execute(
             """
-            INSERT INTO users (email, password_hash)
-            VALUES (?, ?)
+            INSERT INTO users (email, password_hash, lang)
+            VALUES (?, ?, ?)
             """,
-            (data.email, password_hash),
+            (data.email, password_hash, lang),
         )
         user_id = cursor.lastrowid
 
