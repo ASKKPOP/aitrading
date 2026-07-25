@@ -2981,6 +2981,24 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_trading_runs_fleet ON trading_runs(fleet_id)
     """)
 
+    # E2 (2026-07-25): hot-issue daemon journal — one row per detected issue
+    # per symbol; the E1 classifier reads recent rows to escalate cycles.
+    # MySQL mirror: alembic 0033.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hot_issues (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            market        TEXT NOT NULL,
+            symbol        TEXT NOT NULL,
+            triggers_json TEXT NOT NULL,
+            severity      TEXT NOT NULL DEFAULT 'medium',
+            created_at    TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_hot_issues_tuple
+        ON hot_issues(market, symbol, created_at)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")
