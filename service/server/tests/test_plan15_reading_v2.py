@@ -669,9 +669,15 @@ class FleetProfitTierTests(unittest.TestCase):
         self.assertEqual(self._settings("extreme")["min_confidence"], 0.55)
 
     def test_stop_widens_by_tier(self):
-        self.assertEqual(self._settings("balanced")["stop_conditions"]["max_loss_usd"], 100.0)   # 10%
-        self.assertEqual(self._settings("aggressive")["stop_conditions"]["max_loss_usd"], 200.0)  # 20%
-        self.assertEqual(self._settings("extreme")["stop_conditions"]["max_loss_usd"], 300.0)     # 30%
+        # 2026-07-25: the stop now scales to the POSITION (max_bet), not
+        # run_budget, so it actually cuts a loser. max_bet = budget * bet_frac
+        # (0.30/0.45/0.70); stop = max_bet * stop_loss_frac_of_bet (0.02/0.03/0.04).
+        self.assertAlmostEqual(
+            self._settings("balanced")["stop_conditions"]["max_loss_usd"], 6.0, places=2)
+        self.assertAlmostEqual(
+            self._settings("aggressive")["stop_conditions"]["max_loss_usd"], 13.5, places=2)
+        self.assertAlmostEqual(
+            self._settings("extreme")["stop_conditions"]["max_loss_usd"], 28.0, places=2)
 
     def test_profit_target_multiplier(self):
         # expected_move 4% → 0.04; extreme ×2 = 0.08 of $1000 = $80

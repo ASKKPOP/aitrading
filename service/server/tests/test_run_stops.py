@@ -38,6 +38,27 @@ def _ts(offset_seconds: float = 0) -> str:
             + timedelta(seconds=offset_seconds)).strftime(trading_runs.TS_FMT)
 
 
+class TrailingLockTests(unittest.TestCase):
+    """Pure peak-tracked profit lock: arm once best P&L clears the activation
+    floor, then exit on a retrace past giveback_frac from that peak."""
+
+    CFG = {"activate_usd": 15.0, "giveback_frac": 0.40}  # lock level = peak * 0.60
+
+    def test_fires_at_and_below_the_lock_level(self):
+        # peak 30 (armed ≥15), lock = 30*0.6 = 18
+        self.assertFalse(run_engine._trailing_lock_hit(30.0, 19.0, self.CFG))
+        self.assertTrue(run_engine._trailing_lock_hit(30.0, 18.0, self.CFG))
+        self.assertTrue(run_engine._trailing_lock_hit(30.0, -50.0, self.CFG))
+
+    def test_inert_until_peak_clears_activation(self):
+        # peak 10 never armed (<15) — even a full reversal does not fire
+        self.assertFalse(run_engine._trailing_lock_hit(10.0, -80.0, self.CFG))
+
+    def test_inert_without_config_or_peak(self):
+        self.assertFalse(run_engine._trailing_lock_hit(30.0, 0.0, None))
+        self.assertFalse(run_engine._trailing_lock_hit(None, 0.0, self.CFG))
+
+
 class RunStopsTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -179,6 +200,23 @@ class RunStopsTests(unittest.TestCase):
         # realized cache reconciled from the ledger
         expected = (97 - 100) * 5 - (500 * FEE) - (485 * FEE)
         self.assertAlmostEqual(float(row["realized_pnl_usd"]), expected, places=6)
+
+    def test_trailing_lock_banks_a_peaked_winner_before_it_round_trips(self):
+        run_id = self._run(stop_conditions={
+            "trail": {"activate_usd": 15.0, "giveback_frac": 0.40}})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")   # 500 notional
+        # Rally to +~29.5 total (unrealized 30 − 0.5 fee). First scan arms the
+        # peak (read NULL, then ratcheted) — it must NOT fire yet.
+        self._set_mark(106.0)
+        out = run_engine.control_pass()
+        self.assertEqual(out["stops_fired"], 0)
+        row = self._row(run_id)
+        self.assertGreater(float(row["peak_pnl_usd"]), 15.0)
+        # Retrace to +9.5 (below peak*0.60 ≈ 17.7) — the lock fires and banks it.
+        self._set_mark(102.0)
+        out = run_engine.control_pass()
+        self.assertEqual(out["stops_fired"], 1)
+        self.assertIn("profit_target", self._row(run_id)["status_reason"])
 
     def test_profit_target_stop(self):
         run_id = self._run(stop_conditions={"profit_target_usd": 10.0})

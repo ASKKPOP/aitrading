@@ -143,6 +143,26 @@ class AllocationTests(unittest.TestCase):
         self.assertAlmostEqual(
             settings["stop_conditions"]["profit_target_usd"], 20.0, places=2)
 
+    def test_stop_and_trail_scale_to_position_not_budget(self):
+        """The stop and trailing lock must scale to the POSITION (max_bet),
+        not run_budget — a budget-scaled 20% stop sits ~44% beyond the actual
+        position, so losers never cut and winners round-trip (2026-07-25)."""
+        thesis = {"symbol": "AAA", "market": "crypto", "direction": "short",
+                  "confidence": 0.7, "expected_move_pct": 2.0, "horizon_hours": 24}
+        settings = fp.compose_run_settings(thesis, 1000.0,
+                                           {"risk_appetite": "aggressive",
+                                            "lang": "en"})
+        sc = settings["stop_conditions"]
+        max_bet = float(settings["max_bet_usd"])
+        # aggressive: stop_loss_frac_of_bet 0.03, trail activate 0.003 of notional
+        self.assertAlmostEqual(sc["max_loss_usd"], round(max_bet * 0.03, 2), places=2)
+        self.assertIn("trail", sc)
+        self.assertAlmostEqual(sc["trail"]["activate_usd"],
+                               round(max_bet * 0.003, 2), places=2)
+        self.assertEqual(sc["trail"]["giveback_frac"], 0.40)
+        # and it must be MUCH tighter than the old run_budget * 0.20 = $200
+        self.assertLess(sc["max_loss_usd"], 200.0)
+
     def test_short_thesis_maps_to_futures_book(self):
         thesis = {"symbol": "AAA", "market": "crypto", "direction": "short",
                   "confidence": 0.7, "expected_move_pct": 2.0,
