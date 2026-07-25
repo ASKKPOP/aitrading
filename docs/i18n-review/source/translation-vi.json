@@ -1,0 +1,159 @@
+{
+  "messages": {
+    "breaker": {
+      "title": "Ngắt mạch giao dịch — DỪNG ({scope})",
+      "body": "Đã dừng giao dịch: {reason}"
+    },
+    "position_closed": {
+      "title": "{trigger_label} — {symbol}",
+      "body": "Bộ theo dõi đã đóng {symbol} ({market}) tại ${price}"
+    },
+    "watch": {
+      "title": "Theo dõi: {name}",
+      "body": "{metric}{where} hiện là {value}{unit} ({comparator} ngưỡng {threshold}{unit} của bạn)"
+    },
+    "run_report": {
+      "title": "Tóm tắt lãi/lỗ Run #{run_id} {symbol}",
+      "body": "Run #{run_id} {symbol} ({market}) — kỳ {period_start} → {period_end}: Lãi/lỗ ${pnl}, {trades} lệnh. Trạng thái: {status}."
+    },
+    "run_threshold_loss": {
+      "title": "Run #{run_id} giảm {loss_pct}%",
+      "body": "Lãi/lỗ run {symbol} ${total} đã vượt ngưỡng −{loss_pct}% của ${base}."
+    },
+    "run_threshold_profit": {
+      "title": "Run #{run_id} tăng {profit_pct}%",
+      "body": "Lãi/lỗ run {symbol} ${total} đã vượt ngưỡng +{profit_pct}% của ${base}."
+    },
+    "gateway_down_live_order_failed": {
+      "title": "Lệnh live chưa đến được sàn môi giới của bạn",
+      "body": "{symbol}: {reason}"
+    },
+    "automation_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "Tự động hóa đã thực hiện {action} {qty} {symbol} @ ${entry} (độ tin cậy {confidence})"
+    },
+    "order_drift_cancelled_rejected": {
+      "title": "Khớp lệnh của sàn khác với ghi nhận trên nền tảng",
+      "body": "{symbol}: lệnh {side} của bạn đã bị {final} bởi sàn môi giới SAU KHI gửi — nền tảng vẫn ghi nhận theo khối lượng yêu cầu ({requested}). Vui lòng kiểm tra vị thế trên sàn môi giới và tự điều chỉnh nếu cần."
+    },
+    "order_drift_partial_fill": {
+      "title": "Khớp lệnh của sàn khác với ghi nhận trên nền tảng",
+      "body": "{symbol}: sàn môi giới xác nhận khớp {filled_txt} trên tổng {requested} {side} yêu cầu — sổ lệnh của nền tảng vẫn ghi nhận theo khối lượng yêu cầu. Vui lòng kiểm tra và tự điều chỉnh."
+    },
+    "gateway_down_ibkr_session": {
+      "title": "Phiên gateway IBKR của bạn đã ngắt kết nối",
+      "body": "{detail} — các lệnh IBKR live và shadow sẽ không được khớp cho đến khi bạn đăng nhập lại vào Client Portal Gateway."
+    },
+    "run_dup_key": {
+      "title": "Run #{run_id} đã dừng: trùng run đang hoạt động",
+      "body": "Một run khác với cùng cấu hình đã đang quản lý {symbol} ({market}) cho agent này, nên run này bị dừng trước khi có thể tranh chấp cùng tín hiệu."
+    },
+    "run_armed_timeout": {
+      "title": "Run #{run_id} hết hạn khi đang chờ kích hoạt",
+      "body": "Điều kiện khởi động cho {symbol} không được kích hoạt trong vòng {hours}h — run đã bị dừng."
+    },
+    "run_stop_eval_failed": {
+      "title": "Run #{run_id} đã dừng: không thể đánh giá điểm dừng",
+      "body": "{failures} lần đánh giá điểm dừng thất bại liên tiếp ({exc}) — dừng lại để đảm bảo an toàn."
+    },
+    "run_stop_eval_paused": {
+      "title": "Run #{run_id} tạm dừng: kiểm tra điểm dừng thất bại",
+      "body": "Đánh giá điều kiện dừng thất bại ({exc}); các lệnh vào mới bị tạm dừng cho đến khi việc đánh giá hoạt động trở lại."
+    },
+    "run_stop_event": {
+      "title": "Run #{run_id} sự kiện dừng: {reason}",
+      "body": "{symbol} ({market}) đã chạm {reason} — {outcome}"
+    },
+    "run_goal_restart": {
+      "title": "Run #{run_id} đã đạt mục tiêu — khởi động lại thành #{new_run_id}",
+      "body": "{symbol} ({market}) đã chạm {reason}; một run mới với cùng cấu hình đã được kích hoạt."
+    },
+    "run_positions_held": {
+      "title": "Run #{run_id} đã dừng nhưng vẫn còn giữ vị thế",
+      "body": "Việc đóng vị thế vẫn bị chặn ({why}) quá {minutes} phút — vị thế vẫn mở dưới sự theo dõi của SL/TP watcher."
+    },
+    "run_infeasible": {
+      "title": "Run #{run_id} tạm dừng: không đủ vốn để giao dịch",
+      "body": "{count} chu kỳ liên tiếp không đủ tiền mặt cho mức đặt cược tối đa đã cấu hình — tạm dừng cho đến khi có thêm vốn hoặc thay đổi cài đặt."
+    },
+    "run_sub_lapsed": {
+      "title": "Run #{run_id} tạm dừng: gói đăng ký đã hết hạn",
+      "body": "Gói của bạn đã hết hạn nên run bị tạm dừng (vị thế và điểm dừng vẫn được quản lý). Gia hạn để tiếp tục."
+    },
+    "run_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "Run #{run_id} đã thực hiện {action} {qty} {symbol} @ ${entry} (độ tin cậy {confidence})"
+    },
+    "fleet_watchdog_eval_failed": {
+      "title": "Fleet #{fleet_id}: đánh giá vốn chủ sở hữu thất bại",
+      "body": "Đánh giá vốn theo giá thị trường thất bại do giá dữ liệu cũ trong {fails} lần liên tiếp — các lệnh vào mới bị tạm dừng."
+    },
+    "fleet_watchdog_stalled": {
+      "title": "Fleet #{fleet_id}: giám sát bị gián đoạn",
+      "body": "Bộ giám sát fleet đã không chạy trong 3+ chu kỳ — các giới hạn drawdown có thể không hoạt động. Vui lòng kiểm tra worker."
+    },
+    "fleet_breaker": {
+      "title": "Fleet #{fleet_id} ĐÃ DỪNG tại −{loss_pct}%",
+      "body": "Fleet Full Auto của bạn đã vượt ngưỡng dừng −{stop_loss_pct}%. Mọi vị thế đang được đóng. Lệnh dừng này được kích hoạt ngay tại lần kiểm tra đầu tiên phát hiện vi phạm; khoản lỗ cuối cùng có thể vượt ngưỡng này."
+    },
+    "fleet_drawdown_warning": {
+      "title": "Fleet #{fleet_id} giảm {loss_pct}% — đã tạm dừng",
+      "body": "Fleet Full Auto của bạn đã lỗ {loss_pct}% ngân sách. Các lệnh vào mới bị tạm dừng; vị thế đang mở và điểm dừng lỗ của chúng vẫn hoạt động. Nếu bạn tiếp tục giao dịch từ đây, trách nhiệm thuộc về bạn. Fleet sẽ tự động dừng toàn bộ tại −{stop_loss_pct}%."
+    },
+    "fleet_churn": {
+      "title": "Fleet #{fleet_id}: tỷ lệ thay thế thành viên cao",
+      "body": "{n} lượt thay thế thành viên hôm nay — thị trường có thể đang loại bỏ các chiến lược của bạn. Cân nhắc tạm dừng fleet."
+    }
+  },
+  "tokens": {
+    "comparator": {
+      "above": "trên",
+      "below": "dưới"
+    },
+    "outcome": {
+      "flatten": "đang đóng vị thế.",
+      "hold": "đang giữ vị thế dưới sự theo dõi của SL/TP watcher."
+    },
+    "trigger_label": {
+      "stop_loss": "Cắt lỗ",
+      "take_profit": "Chốt lời",
+      "time_stop": "Dừng theo thời gian"
+    },
+    "action": {
+      "buy": "mua",
+      "sell": "bán",
+      "short": "bán khống",
+      "cover": "mua bù"
+    },
+    "action_upper": {
+      "BUY": "MUA",
+      "SELL": "BÁN",
+      "SHORT": "BÁN KHỐNG",
+      "COVER": "MUA BÙ"
+    },
+    "side": {
+      "buy": "mua",
+      "sell": "bán",
+      "short": "bán khống",
+      "cover": "mua bù"
+    },
+    "final": {
+      "cancelled": "đã hủy",
+      "rejected": "bị từ chối"
+    },
+    "status": {
+      "armed": "chờ kích hoạt",
+      "running": "đang chạy",
+      "paused": "tạm dừng",
+      "stopping": "đang dừng",
+      "stopped": "đã dừng"
+    }
+  },
+  "email": {
+    "verification": {
+      "subject": "Mã xác minh Sooppiy của bạn",
+      "html": "<p>Mã xác minh của bạn là: <strong>{code}</strong></p><p>Mã sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã này.</p>"
+    }
+  },
+  "note": "Bản dịch tiếng Việt dựa trên nguồn tiếng Anh chuẩn. Các placeholder trong dấu {ngoặc nhọn} PHẢI được giữ nguyên trong mọi bản dịch. Không dịch tên placeholder hoặc khe {code}."
+}

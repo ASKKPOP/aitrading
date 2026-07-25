@@ -1,0 +1,159 @@
+{
+  "messages": {
+    "breaker": {
+      "title": "서킷 브레이커 발동 ({scope})",
+      "body": "거래 중단: {reason}"
+    },
+    "position_closed": {
+      "title": "{trigger_label} — {symbol}",
+      "body": "워처가 {symbol}({market}) 포지션을 ${price}에 종료했습니다"
+    },
+    "watch": {
+      "title": "감시: {name}",
+      "body": "{metric}{where}이(가) {value}{unit}입니다 (설정하신 임계값 {threshold}{unit} {comparator})"
+    },
+    "run_report": {
+      "title": "런 #{run_id} {symbol} 손익 요약",
+      "body": "런 #{run_id} {symbol}({market}) — 기간 {period_start} → {period_end}: 손익 ${pnl}, 거래 {trades}건. 상태: {status}."
+    },
+    "run_threshold_loss": {
+      "title": "런 #{run_id} {loss_pct}% 하락",
+      "body": "{symbol} 런 손익 ${total}이(가) ${base} 대비 -{loss_pct}%를 넘어섰습니다."
+    },
+    "run_threshold_profit": {
+      "title": "런 #{run_id} {profit_pct}% 상승",
+      "body": "{symbol} 런 손익 ${total}이(가) ${base} 대비 +{profit_pct}%를 넘어섰습니다."
+    },
+    "gateway_down_live_order_failed": {
+      "title": "실거래 주문이 브로커에 전달되지 않았습니다",
+      "body": "{symbol}: {reason}"
+    },
+    "automation_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "자동매매가 {action} {qty} {symbol}을(를) ${entry}에 실행했습니다 (신뢰도 {confidence})"
+    },
+    "order_drift_cancelled_rejected": {
+      "title": "브로커 체결이 플랫폼 기록과 다릅니다",
+      "body": "{symbol}: 제출 후 브로커에서 {side} 주문이 {final} 처리되었습니다 — 플랫폼에는 요청 수량({requested})으로 기록되었습니다. 브로커에서 포지션을 확인하고 필요시 직접 수정하세요."
+    },
+    "order_drift_partial_fill": {
+      "title": "브로커 체결이 플랫폼 기록과 다릅니다",
+      "body": "{symbol}: 브로커는 요청한 {requested} {side} 중 {filled_txt}만 체결을 확인했습니다 — 플랫폼 장부에는 요청 수량이 기록되었습니다. 확인 후 직접 수정하세요."
+    },
+    "gateway_down_ibkr_session": {
+      "title": "IBKR 게이트웨이 세션이 끊겼습니다",
+      "body": "{detail} — Client Portal Gateway에 다시 로그인할 때까지 실거래 및 섀도우 IBKR 주문이 체결되지 않습니다."
+    },
+    "run_dup_key": {
+      "title": "런 #{run_id} 중단: 활성 런 중복",
+      "body": "동일한 설정의 다른 런이 이미 이 에이전트의 {symbol}({market})을(를) 점유하고 있어, 동일 신호를 두고 경합하기 전에 이 런을 중단했습니다."
+    },
+    "run_armed_timeout": {
+      "title": "런 #{run_id} 대기 중 시간 초과",
+      "body": "{symbol}의 시작 조건이 {hours}시간 내에 발생하지 않아 런이 중지되었습니다."
+    },
+    "run_stop_eval_failed": {
+      "title": "런 #{run_id} 중지: 스탑 평가 불가",
+      "body": "스탑 평가가 {failures}회 연속 실패({exc})하여 안전을 위해 중지합니다."
+    },
+    "run_stop_eval_paused": {
+      "title": "런 #{run_id} 일시중지: 스탑 확인 실패",
+      "body": "스탑 조건 평가에 실패({exc})하여 평가가 정상화될 때까지 신규 진입이 일시중지됩니다."
+    },
+    "run_stop_event": {
+      "title": "런 #{run_id} 스탑 이벤트: {reason}",
+      "body": "{symbol}({market})이(가) {reason}에 도달 — {outcome}"
+    },
+    "run_goal_restart": {
+      "title": "런 #{run_id} 목표 달성 — #{new_run_id}(으)로 재시작",
+      "body": "{symbol}({market})이(가) {reason}에 도달했습니다. 동일한 설정의 새 런이 시작되었습니다."
+    },
+    "run_positions_held": {
+      "title": "런 #{run_id} 중지(포지션 보유 상태)",
+      "body": "청산이 {minutes}분 넘게 차단된 상태({why})입니다 — 포지션은 SL/TP 워처 하에 계속 열려 있습니다."
+    },
+    "run_infeasible": {
+      "title": "런 #{run_id} 일시중지: 거래 자금 부족",
+      "body": "설정된 최대 베팅 금액에 필요한 현금이 {count}회 연속 부족하여 자금 또는 설정이 변경될 때까지 일시중지합니다."
+    },
+    "run_sub_lapsed": {
+      "title": "런 #{run_id} 일시중지: 구독 만료",
+      "body": "구독 플랜이 만료되어 런이 일시중지되었습니다(포지션과 스탑은 계속 관리됩니다). 재개하려면 구독을 갱신하세요."
+    },
+    "run_trade_executed": {
+      "title": "{action_upper} {symbol}",
+      "body": "런 #{run_id}이(가) {action} {qty} {symbol}을(를) ${entry}에 실행했습니다 (신뢰도 {confidence})"
+    },
+    "fleet_watchdog_eval_failed": {
+      "title": "플릿 #{fleet_id}: 자산 평가 실패",
+      "body": "오래된 가격 데이터로 인해 자산 평가가 {fails}회 연속 실패했습니다 — 신규 진입이 일시중지됩니다."
+    },
+    "fleet_watchdog_stalled": {
+      "title": "플릿 #{fleet_id}: 감독 정지",
+      "body": "플릿 감독자가 3틱 이상 실행되지 않았습니다 — 드로우다운 레일이 작동하지 않을 수 있습니다. 워커를 확인하세요."
+    },
+    "fleet_breaker": {
+      "title": "플릿 #{fleet_id} −{loss_pct}%에서 중지됨",
+      "body": "Full Auto 플릿이 −{stop_loss_pct}% 스탑 레일을 넘었습니다. 모든 포지션을 청산하고 있습니다. 이 스탑은 임계값 이탈을 처음 감지한 시점에 발동한 것으로, 최종 손실은 임계값을 초과할 수 있습니다."
+    },
+    "fleet_drawdown_warning": {
+      "title": "플릿 #{fleet_id} {loss_pct}% 하락 — 일시중지",
+      "body": "Full Auto 플릿이 예산의 {loss_pct}%를 잃었습니다. 신규 진입은 일시중지되며, 보유 포지션과 스탑로스는 계속 작동합니다. 여기서 거래를 재개할 경우 그 책임은 사용자에게 있습니다. 플릿은 −{stop_loss_pct}%에서 모든 것을 자동으로 중지합니다."
+    },
+    "fleet_churn": {
+      "title": "플릿 #{fleet_id}: 높은 교체 회전율",
+      "body": "오늘 멤버 교체가 {n}건 발생했습니다 — 시장 변동성이 전략을 자주 청산시키고 있을 수 있습니다. 플릿 일시중지를 고려하세요."
+    }
+  },
+  "tokens": {
+    "comparator": {
+      "above": "위",
+      "below": "아래"
+    },
+    "outcome": {
+      "flatten": "포지션을 청산합니다.",
+      "hold": "SL/TP 워처 하에 포지션을 유지합니다."
+    },
+    "trigger_label": {
+      "stop_loss": "손절",
+      "take_profit": "익절",
+      "time_stop": "타임스탑"
+    },
+    "action": {
+      "buy": "매수",
+      "sell": "매도",
+      "short": "숏",
+      "cover": "커버"
+    },
+    "action_upper": {
+      "BUY": "매수",
+      "SELL": "매도",
+      "SHORT": "숏",
+      "COVER": "커버"
+    },
+    "side": {
+      "buy": "매수",
+      "sell": "매도",
+      "short": "숏",
+      "cover": "커버"
+    },
+    "final": {
+      "cancelled": "취소됨",
+      "rejected": "거부됨"
+    },
+    "status": {
+      "armed": "대기",
+      "running": "실행 중",
+      "paused": "일시정지",
+      "stopping": "중지 중",
+      "stopped": "중지됨"
+    }
+  },
+  "email": {
+    "verification": {
+      "subject": "Sooppiy 인증 코드",
+      "html": "<p>인증 코드: <strong>{code}</strong></p><p>5분 후 만료됩니다. 타인과 공유하지 마세요.</p>"
+    }
+  },
+  "note": "English source of truth. Placeholders in {curly} MUST stay verbatim in every translation. Do not translate placeholder names or the {code} slot."
+}
