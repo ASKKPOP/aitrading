@@ -101,6 +101,9 @@ FLEET_BOUNDS = {
                       "aggressive": 2.0, "extreme": 3.0},
     "profit_target_frac_bounds": (0.002, 0.50),   # thesis % / 100 clamps here
     "min_slot_funding_usd_frac": 0.5,             # dormant below B/2N
+    # Fleet-level take-profit goal (2026-07-26): "when the fleet reaches my
+    # target profit, bank it and start the same trading again". 1% .. 500%.
+    "profit_target_goal_bounds": (0.01, 5.0),
     "churn_alert_per_day": 8,
     "equity_eval_fail_limit": 5,                  # K consecutive ⇒ pause entries
 }
@@ -225,7 +228,8 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  warn_loss_frac: float = 0.30, stop_loss_frac: float = 0.40,
                  idempotency_key: Optional[str] = None,
                  name: Optional[str] = None,
-                 leverage: Optional[float] = None) -> int:
+                 leverage: Optional[float] = None,
+                 profit_target_frac: Optional[float] = None) -> int:
     """Insert a draft fleet. Raises ValueError on bad inputs, FleetConflict
     when the user already has a non-terminal fleet, EntitlementDenied per the
     ALWAYS-ON tier gate."""
@@ -239,6 +243,11 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         raise ValueError("risk_appetite must be stable|balanced|aggressive")
     if not (0 < float(warn_loss_frac) < float(stop_loss_frac) <= 0.40):
         raise ValueError("rails must satisfy 0 < warn < stop <= 0.40")
+    if profit_target_frac is not None:
+        t_lo, t_hi = FLEET_BOUNDS["profit_target_goal_bounds"]
+        if not (t_lo <= float(profit_target_frac) <= t_hi):
+            raise ValueError(
+                f"profit_target_frac must be between {t_lo} and {t_hi}")
 
     conn = get_db_connection()
     try:
@@ -268,13 +277,14 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                    (agent_id, name, status, active_fleet_key, idempotency_key,
                     n_runs, total_budget_usd, risk_appetite, market_scope_json,
                     warn_loss_frac, stop_loss_frac, provider, lang, created_at,
-                    leverage)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    leverage, profit_target_frac)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent_id, name, STATUS_DRAFT, f"user:{user_id}", idempotency_key,
                  int(n_runs), float(total_budget_usd), risk_appetite,
                  json.dumps(market_scope) if market_scope else None,
                  float(warn_loss_frac), float(stop_loss_frac),
-                 provider, lang, _now_iso(), lev))
+                 provider, lang, _now_iso(), lev,
+                 float(profit_target_frac) if profit_target_frac else None))
         except trading_runs.EntitlementDenied:
             raise
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_fleet_key)
