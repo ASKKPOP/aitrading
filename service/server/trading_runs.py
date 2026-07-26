@@ -178,6 +178,24 @@ def validate_stop_conditions(obj: Any) -> dict:
         if not isinstance(gb, (int, float)) or isinstance(gb, bool) or not (0 < gb < 1):
             raise ValueError("trail.giveback_frac must be between 0 and 1")
         out["trail"] = {"activate_usd": float(act), "giveback_frac": float(gb)}
+        # Optional fee-aware ratchet: above tighten_usd of peak P&L the
+        # giveback compresses to tighten_giveback_frac. Both must be present
+        # and the tightened band must actually be tighter, or neither is
+        # stored — a half-specified ratchet would silently do nothing.
+        t_at = tr.get("tighten_usd")
+        t_gb = tr.get("tighten_giveback_frac")
+        if t_at is not None or t_gb is not None:
+            if not isinstance(t_at, (int, float)) or isinstance(t_at, bool) or t_at <= 0:
+                raise ValueError("trail.tighten_usd must be a positive number")
+            if not isinstance(t_gb, (int, float)) or isinstance(t_gb, bool) \
+                    or not (0 < t_gb < 1):
+                raise ValueError(
+                    "trail.tighten_giveback_frac must be between 0 and 1")
+            if t_gb >= gb:
+                raise ValueError(
+                    "trail.tighten_giveback_frac must be tighter than giveback_frac")
+            out["trail"]["tighten_usd"] = float(t_at)
+            out["trail"]["tighten_giveback_frac"] = float(t_gb)
     return out
 
 

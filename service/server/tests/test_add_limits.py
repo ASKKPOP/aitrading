@@ -54,14 +54,15 @@ class AddLimitBase(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _position(self, qty):
+    def _position(self, qty, mark=None):
         conn = database.get_db_connection()
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO positions (agent_id, symbol, market, side, quantity,"
-            " entry_price, opened_at, run_id) VALUES (1,'SOL','crypto',?,?,"
-            " 74.0,'2026-01-01T00:00:00Z',1)",
-            ("short" if qty < 0 else "buy", qty))
+            " entry_price, current_price, price_updated_at, opened_at, run_id)"
+            " VALUES (1,'SOL','crypto',?,?,74.0,?,?,'2026-01-01T00:00:00Z',1)",
+            ("short" if qty < 0 else "buy", qty, mark,
+             _iso(0) if mark is not None else None))
         conn.commit()
         conn.close()
 
@@ -106,6 +107,42 @@ class AddLimitUnitTests(AddLimitBase):
         skip = run_engine._add_limit_skip(self.run_row, self.CFG, "sell")
         self.assertIsNotNone(skip)
         self.assertIn("max", skip)
+
+    def test_underwater_position_blocks_the_add(self):
+        """Never average into a loser (2026-07-26): prod run 112 doubled a
+        losing ETH short at −$27 and run 104 stacked five shorts to −$38.62.
+        Short from 74 with the mark at 80 is underwater, so the add is
+        refused even though max_adds and the cooldown both allow it."""
+        self._position(-5, mark=80.0)
+        self._open("short", 300)                     # 1 open, adds=0, no cooldown
+        skip = run_engine._add_limit_skip(self.run_row, self.CFG, "sell")
+        self.assertIsNotNone(skip)
+        self.assertIn("underwater", skip)
+
+    def test_winning_position_still_allows_the_add(self):
+        """The block is on losers only — a working short may still add."""
+        self._position(-5, mark=70.0)                # short from 74 → +$20
+        self._open("short", 300)
+        self.assertIsNone(
+            run_engine._add_limit_skip(self.run_row, self.CFG, "sell"))
+
+    def test_underwater_block_is_kill_switchable(self):
+        self._position(-5, mark=80.0)
+        self._open("short", 300)
+        os.environ["RUN_ADDS_REQUIRE_PROFIT"] = "false"
+        try:
+            self.assertIsNone(
+                run_engine._add_limit_skip(self.run_row, self.CFG, "sell"))
+        finally:
+            os.environ.pop("RUN_ADDS_REQUIRE_PROFIT", None)
+
+    def test_unknown_mark_does_not_block(self):
+        """No trustworthy mark ⇒ unknown, not 'underwater'. The other add
+        rails still apply; this one abstains rather than guessing."""
+        self._position(-5)                           # no current_price at all
+        self._open("short", 300)
+        self.assertIsNone(
+            run_engine._add_limit_skip(self.run_row, self.CFG, "sell"))
 
     def test_cooldown_blocks_recent_add(self):
         self._position(-5)
