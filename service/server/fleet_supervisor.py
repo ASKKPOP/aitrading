@@ -631,7 +631,6 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                        exclude: set) -> Optional[int]:
     """One replacement via the same validated path as the initial build."""
     import symbol_research
-    from routes_runs import RunIn, validate_run_payload, _probe_price
 
     agent_id = fleet["agent_id"]
     if fp._master_state(agent_id) == "held":
@@ -664,7 +663,57 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
         fp._bind_slot(fleet["id"], slot["slot_index"],
                       slot.get("current_run_id"), "waiting")
         return None
-    thesis = theses[0]
+    # E3: iterate candidates — a junk top pick (unpriceable ALLO, live
+    # 2026-07-26) must not block the slot while a buildable one waits below.
+    thesis = run_id = None
+    last_exc = None
+    for candidate in theses:
+        try:
+            run_id = _try_build(fleet, candidate, funding)
+            thesis = candidate
+            break
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            fp.emit_fleet_event(fleet["id"], "candidate_skipped",
+                                {"slot": slot["slot_index"],
+                                 "symbol": candidate.get("symbol"),
+                                 "reason": str(exc)[:300]})
+    if run_id is None:
+        fp.emit_fleet_event(fleet["id"], "slot_waiting",
+                            {"slot": slot["slot_index"],
+                             "reason": "all_candidates_failed",
+                             "last_error": str(last_exc)[:200] if last_exc else None})
+        fp._bind_slot(fleet["id"], slot["slot_index"],
+                      slot.get("current_run_id"), "waiting")
+        return None
+    fp._bind_slot(fleet["id"], slot["slot_index"], run_id, "active")
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            """INSERT INTO fleet_candidates
+               (fleet_id, thesis_key, slot_index, allocation_usd, state,
+                run_id, created_at) VALUES (?, ?, ?, ?, 'rotated_in', ?, ?)""",
+            (fleet["id"],
+             f"{thesis.get('batch_id')}:{thesis['market']}:{thesis['symbol']}",
+             slot["slot_index"], funding, run_id, _now_iso()))
+        conn.commit()
+    finally:
+        conn.close()
+    fp.emit_fleet_event(fleet["id"], "rotation",
+                        {"slot": slot["slot_index"], "run_id": run_id,
+                         "symbol": thesis["symbol"], "market": thesis["market"],
+                         "funding": round(funding, 2)})
+    return run_id
+
+
+def _try_build(fleet: dict, thesis: dict, funding: float) -> int:
+    """Create+start one run for a candidate thesis (raises on any failure —
+    unpriceable symbol, validation, start conflict; caller iterates)."""
+    from routes_runs import RunIn, validate_run_payload, _probe_price
+
+    agent_id = fleet["agent_id"]
     settings = fp.compose_run_settings(thesis, funding, fleet)
     run_id = None
     try:
@@ -688,36 +737,14 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                                          fleet_id=fleet["id"],
                                          created_via="fleet")
         trading_runs.start_run(run_id, agent_id)
-    except Exception as exc:  # noqa: BLE001
+        return run_id
+    except Exception:
         if run_id:
             try:
                 trading_runs.delete_run(run_id, agent_id)
             except Exception:  # noqa: BLE001
                 pass
-        fp.emit_fleet_event(fleet["id"], "candidate_skipped",
-                            {"slot": slot["slot_index"],
-                             "reason": str(exc)[:300]})
-        return None
-    fp._bind_slot(fleet["id"], slot["slot_index"], run_id, "active")
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        begin_write_transaction(cursor)
-        cursor.execute(
-            """INSERT INTO fleet_candidates
-               (fleet_id, thesis_key, slot_index, allocation_usd, state,
-                run_id, created_at) VALUES (?, ?, ?, ?, 'rotated_in', ?, ?)""",
-            (fleet["id"],
-             f"{thesis.get('batch_id')}:{thesis['market']}:{thesis['symbol']}",
-             slot["slot_index"], funding, run_id, _now_iso()))
-        conn.commit()
-    finally:
-        conn.close()
-    fp.emit_fleet_event(fleet["id"], "rotation",
-                        {"slot": slot["slot_index"], "run_id": run_id,
-                         "symbol": thesis["symbol"], "market": thesis["market"],
-                         "funding": round(funding, 2)})
-    return run_id
+        raise
 
 
 def _maybe_churn_alert(fleet: dict) -> None:
