@@ -385,8 +385,35 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             else:
                 continue
 
-        if member is None or member["status"] != trading_runs.STATUS_STOPPED:
-            continue  # live member (or waiting slot pending candidates below)
+        if member is None:
+            # E3 back-fill (2026-07-26): a slot that never got a run bound
+            # (build-time skip — unpriceable symbol, start conflict) stayed
+            # empty forever; "kept at N" must hold for under-fills too.
+            if state not in ("active", "waiting"):
+                continue
+            if suspended:
+                if state != "waiting":
+                    fp._bind_slot(fleet["id"], slot["slot_index"], None,
+                                  "waiting")
+                continue
+            funding = min(float(slot["original_allocation_usd"]), headroom)
+            if funding < floor_usd:
+                fp._bind_slot(fleet["id"], slot["slot_index"], None, "dormant")
+                fp.emit_fleet_event(fleet["id"], "slot_dormant",
+                                    {"slot": slot["slot_index"],
+                                     "headroom": round(headroom, 2)})
+                continue
+            new_run_id = _build_replacement(fleet, slot, funding,
+                                            exclude=non_terminal_symbols)
+            if new_run_id:
+                headroom -= funding
+                replaced += 1
+                non_terminal_symbols = {(m["market"], m["symbol"])
+                                        for m in fp.list_members(fleet["id"])
+                                        if m["status"] != trading_runs.STATUS_STOPPED}
+            continue
+        if member["status"] != trading_runs.STATUS_STOPPED:
+            continue  # live member
 
         reason = member.get("status_reason") or ""
 
@@ -446,6 +473,51 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
                                         exclude=non_terminal_symbols)
         if new_run_id:
             headroom -= funding  # SEQUENTIAL: recompute within the pass
+            replaced += 1
+            non_terminal_symbols = {(m["market"], m["symbol"])
+                                    for m in fp.list_members(fleet["id"])
+                                    if m["status"] != trading_runs.STATUS_STOPPED}
+
+    # E3 under-fill (2026-07-26): research found fewer candidates than N at
+    # composition, so slots BEYOND the composed count never existed (fleet 18
+    # sat at 1/8, fleet 16 at 4/9, forever). Create the deficit one slot per
+    # pass — equal-share allocation, same sequential-headroom discipline —
+    # and try to build into it immediately; an unfilled new slot becomes the
+    # member-None back-fill case next pass.
+    if not suspended:
+        while True:
+            slots_now = _slots(fleet["id"])
+            if len(slots_now) >= n:
+                break
+            alloc = min(total / n, headroom)
+            if alloc < floor_usd:
+                break
+            next_index = 1 + max((s["slot_index"] for s in slots_now),
+                                 default=-1)
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                begin_write_transaction(cursor)
+                cursor.execute(
+                    "INSERT INTO fleet_slots (fleet_id, slot_index, "
+                    "original_allocation_usd, state, updated_at) "
+                    "VALUES (?, ?, ?, 'active', ?)",
+                    (fleet["id"], next_index, round(alloc, 2), fp._now_iso()))
+                conn.commit()
+            finally:
+                conn.close()
+            fp.emit_fleet_event(fleet["id"], "slot_created",
+                                {"slot": next_index,
+                                 "allocation": round(alloc, 2),
+                                 "reason": "underfill_backfill"})
+            new_slot = {"slot_index": next_index,
+                        "original_allocation_usd": round(alloc, 2),
+                        "current_run_id": None}
+            new_run_id = _build_replacement(fleet, new_slot, alloc,
+                                            exclude=non_terminal_symbols)
+            if not new_run_id:
+                break  # no candidates — the waiting slot back-fills next pass
+            headroom -= alloc
             replaced += 1
             non_terminal_symbols = {(m["market"], m["symbol"])
                                     for m in fp.list_members(fleet["id"])
@@ -567,10 +639,24 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        theses = symbol_research.select_targets(cursor, agent_id, 1,
-                                                exclude=exclude)
+        # Parity with the initial build (E3): open-markets scope so a slot is
+        # never bound to a closed-market symbol overnight, and the expectancy
+        # gate so a replacement can't sneak a negative-edge symbol past the
+        # bar the composition enforced. Ask for a few, gate, take the best.
+        theses = symbol_research.select_targets(
+            cursor, agent_id, 3, exclude=exclude,
+            markets_scope=fp._open_markets_scope())
     finally:
         conn.close()
+    import backtest_gate
+    if theses and backtest_gate.gate_enabled():
+        kept, dropped = backtest_gate.gate_candidates(theses)
+        if dropped:
+            fp.emit_fleet_event(fleet["id"], "backtest_gate",
+                                {"context": "replacement",
+                                 "kept": [t["symbol"] for t in kept],
+                                 "dropped": dropped})
+        theses = kept
     if not theses:
         fp.emit_fleet_event(fleet["id"], "slot_waiting",
                             {"slot": slot["slot_index"],
@@ -590,12 +676,14 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             interval_minutes=settings["interval_minutes"],
             min_confidence=settings["min_confidence"],
             provider=settings["provider"], lang=settings["lang"],
-            stop_conditions=settings["stop_conditions"], stop_flatten=True)
+            stop_conditions=settings["stop_conditions"],
+            leverage=settings.get("leverage", 1.0), stop_flatten=True)
         core, start_c, stop_c = validate_run_payload(payload)
         core["thesis"] = dict(settings["thesis"])
         core["thesis"]["entry_ref_price"] = _probe_price(core["symbol"],
                                                          core["market"])
         core["feedback"] = True
+        core["add_limits"] = dict(settings.get("add_limits") or {})
         run_id = trading_runs.create_run(agent_id, core, start_c, stop_c, True,
                                          fleet_id=fleet["id"],
                                          created_via="fleet")
