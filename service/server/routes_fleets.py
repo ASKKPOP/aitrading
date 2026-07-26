@@ -34,6 +34,9 @@ class FleetIn(BaseModel):
     lang: str = "en"
     warn_loss_frac: float = 0.30
     stop_loss_frac: float = 0.40
+    # Fleet goal: bank everything and start the same trading again at this
+    # gain (fraction of total budget). None = run until the user stops.
+    profit_target_frac: Optional[float] = None
     idempotency_key: Optional[str] = None
     name: Optional[str] = None
     leverage: Optional[float] = None   # None ⇒ auto by tier; 1–10 ⇒ override
@@ -199,6 +202,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                 provider=data.provider, lang=data.lang,
                 warn_loss_frac=data.warn_loss_frac,
                 stop_loss_frac=data.stop_loss_frac,
+                profit_target_frac=data.profit_target_frac,
                 idempotency_key=data.idempotency_key, name=data.name,
                 leverage=data.leverage)
         except trading_runs.EntitlementDenied as exc:

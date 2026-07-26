@@ -2825,6 +2825,8 @@ def init_database():
             market_scope_json   TEXT,
             warn_loss_frac      REAL NOT NULL DEFAULT 0.30,
             stop_loss_frac      REAL NOT NULL DEFAULT 0.40,
+            profit_target_frac  REAL,
+            successor_fleet_id  INTEGER,
             warn_latched_at     TEXT,
             warn_acked_at       TEXT,
             warn_level_frac     REAL,
@@ -2968,6 +2970,10 @@ def init_database():
         # ratcheted each scan, read by the trailing profit lock. NULL until
         # first in profit (manual runs stay NULL — inert without a trail cfg).
         "ALTER TABLE trading_runs ADD COLUMN peak_pnl_usd REAL",
+        # Fleet take-profit + auto-restart (2026-07-26): NULL = disabled; on
+        # reaching the gain the fleet banks everything and spawns a successor.
+        "ALTER TABLE fleets ADD COLUMN profit_target_frac REAL",
+        "ALTER TABLE fleets ADD COLUMN successor_fleet_id INTEGER",
         "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",

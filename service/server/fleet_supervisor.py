@@ -92,9 +92,14 @@ def supervise_fleet(fleet: dict) -> dict:
     # stopping ⇒ finalize when every member is terminal
     if fleet["status"] == fp.STATUS_STOPPING:
         if all(m["status"] == trading_runs.STATUS_STOPPED for m in members):
+            reason = fleet.get("status_reason") or "user_stop"
             fp._set_status(fleet["id"], (fp.STATUS_STOPPING,), fp.STATUS_STOPPED,
-                           fleet.get("status_reason") or "user_stop")
+                           reason)
             out["stopped"] = True
+            if reason == "profit_target_hit":
+                succ = _spawn_successor(fleet)
+                if succ:
+                    out["successor_fleet_id"] = succ
         return out
 
     eq = fp.marked_equity(fleet)
@@ -119,6 +124,16 @@ def supervise_fleet(fleet: dict) -> dict:
     if loss_frac >= float(fleet["stop_loss_frac"]):
         _stop_all(fleet, loss_frac)
         return {**out, "breaker": True}
+
+    # ── GOAL: fleet-level take-profit. A gain shows up as a NEGATIVE
+    # loss_frac clamp, so read the equity directly. Checked after the loss
+    # rails so a breach can never be mistaken for a gain.
+    target = fleet.get("profit_target_frac")
+    if target and total > 0:
+        gain_frac = (eq["equity"] - total) / total
+        if gain_frac >= float(target):
+            _harvest(fleet, gain_frac)
+            return {**out, "profit_target": True, "gain_frac": round(gain_frac, 4)}
 
     # ── TIER 1: episode-latched warning
     _warning_tier(fleet, loss_frac)
@@ -183,6 +198,75 @@ def check_watchdog() -> int:
 
 
 # ── rails internals ─────────────────────────────────────────────────────────
+
+def _harvest(fleet: dict, gain_frac: float) -> None:
+    """Fleet reached its profit goal: flatten every member and finalize as
+    profit_target_hit. The successor is spawned only once every member is
+    terminal (one non-terminal fleet per user), from the finalize hook."""
+    for m in fp.list_members(fleet["id"]):
+        if m["status"] in (trading_runs.STATUS_RUNNING, trading_runs.STATUS_PAUSED,
+                           trading_runs.STATUS_ARMED):
+            try:
+                if m["status"] == trading_runs.STATUS_ARMED:
+                    trading_runs._transition(m["id"], fleet["agent_id"],
+                                             (trading_runs.STATUS_ARMED,),
+                                             trading_runs.STATUS_STOPPED,
+                                             "fleet_profit_target",
+                                             clear_active_key=True)
+                else:
+                    trading_runs.request_stop(m["id"], fleet["agent_id"],
+                                              flatten=True)
+            except Exception:  # noqa: BLE001
+                pass
+    fp.emit_fleet_event(fleet["id"], "profit_target",
+                        {"gain_frac": round(gain_frac, 4),
+                         "profit_target_frac": fleet["profit_target_frac"]})
+    fp._set_status(fleet["id"], fp._NON_TERMINAL, fp.STATUS_STOPPING,
+                   "profit_target_hit")
+    _alert(fleet, "fleet_profit_target", "fleet_profit_target",
+           {"fleet_id": fleet["id"], "gain_pct": f"{gain_frac * 100:.1f}"},
+           dedupe=f"fleet:{fleet['id']}:profit_target")
+
+
+def _spawn_successor(fleet: dict) -> Optional[int]:
+    """Start the same trading again: a fresh fleet with identical settings.
+    Profit is HARVESTED — the successor gets the original budget, so gains
+    stay banked as cash instead of silently compounding position size.
+    Idempotent via fleets.successor_fleet_id; fail-soft (a spawn problem must
+    never leave the harvested fleet in a broken state)."""
+    if fleet.get("successor_fleet_id"):
+        return None
+    try:
+        scope = None
+        if fleet.get("market_scope_json"):
+            scope = json.loads(fleet["market_scope_json"])
+    except (ValueError, TypeError):
+        scope = None
+    try:
+        new_id = fp.create_fleet(
+            fleet["agent_id"], int(fleet["n_runs"]),
+            float(fleet["total_budget_usd"]),
+            risk_appetite=fleet.get("risk_appetite") or "balanced",
+            market_scope=scope, provider=fleet.get("provider"),
+            lang=fleet.get("lang") or "en",
+            warn_loss_frac=float(fleet["warn_loss_frac"]),
+            stop_loss_frac=float(fleet["stop_loss_frac"]),
+            name=fleet.get("name"),
+            leverage=fleet.get("leverage"),
+            profit_target_frac=fleet.get("profit_target_frac"))
+        fp.start_fleet(new_id, fleet["agent_id"])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("successor spawn failed for fleet %s: %s",
+                       fleet["id"], exc)
+        fp.emit_fleet_event(fleet["id"], "successor_failed",
+                            {"error": str(exc)[:200]})
+        return None
+    _update_fleet(fleet["id"], "successor_fleet_id = ?", (new_id,))
+    fp.emit_fleet_event(fleet["id"], "successor_started",
+                        {"successor_fleet_id": new_id,
+                         "budget": float(fleet["total_budget_usd"])})
+    return new_id
+
 
 def _stop_all(fleet: dict, loss_frac: float) -> None:
     for m in fp.list_members(fleet["id"]):
