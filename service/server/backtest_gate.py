@@ -45,7 +45,7 @@ def _strict() -> bool:
 
 
 def _days() -> int:
-    return max(30, int(os.getenv("BACKTEST_GATE_DAYS", "120")))
+    return max(30, int(os.getenv("BACKTEST_GATE_DAYS", "365")))
 
 
 def _min_trades() -> int:
@@ -84,7 +84,17 @@ def symbol_expectancy(symbol: str, market: str,
     bars = _bars_from_candles(candles)
     if len(bars) < 30:
         raise ValueError(f"only {len(bars)} bars for {market}:{symbol}")
-    result = simulate(symbol, bars, {}, [], dict(DEFAULT_PARAMS))
+    # The Phase-4 strategy uses Fear&Greed in its confluence conditions —
+    # without it entries rarely align and every symbol scores 0 trades
+    # (observed live 2026-07-25). Fail-soft to {} when the feed is down.
+    fng_by_date: dict[str, int] = {}
+    try:
+        from psych_feed import fetch_fear_greed_full_history
+        fng_by_date = {r["date"]: r["value"]
+                       for r in fetch_fear_greed_full_history() or []}
+    except Exception:  # noqa: BLE001
+        pass
+    result = simulate(symbol, bars, fng_by_date, [], dict(DEFAULT_PARAMS))
     closed = [t for t in result.trades if t.exit_reason != "end_of_data"]
     pnls = [t.pnl for t in closed]
     n = len(pnls)
