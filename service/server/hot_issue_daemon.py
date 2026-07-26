@@ -76,8 +76,12 @@ def _personal_verdict(run: dict[str, Any], side: str,
             f"Event triggers: {', '.join(triggers)}. Symbol: {run['symbol']} "
             f"({run['market']}). The user's book: a {side.upper()} position "
             "held by an automated run.\n"
-            "For THIS user only, is the event for, against, or neutral to "
-            "their position, and how urgent is it? Respond ONLY with JSON: "
+            "For THIS user only: is the event for, against, or neutral to "
+            "their position, and how urgent is it? A shock/volatility event "
+            "with no clear direction raises risk for BOTH sides — treat it "
+            "as stance neutral with urgency medium-or-high, and say why in "
+            "the note. Never ask for more information.\n"
+            "Respond with ONLY the JSON object, no prose before or after: "
             '{"stance": "for"|"against"|"neutral", '
             '"urgency": "low"|"medium"|"high", "note": "<one short sentence>"}')
         text = generate_text(prompt, max_tokens=120, temperature=0.2,
