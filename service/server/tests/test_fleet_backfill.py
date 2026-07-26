@@ -95,6 +95,12 @@ class BackfillTests(SupervisionBase):
             os.environ.pop("BACKTEST_GATE_ENABLED", None)
         self.assertEqual(len(_live(fleet_id)), 1,
                          "all candidates negative-edge → nothing built")
+        # age the waiting slot past the empty-slot retry cooldown
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleet_slots SET updated_at = ? WHERE fleet_id = ?",
+                    ("2020-01-01T00:00:00Z", fleet_id))
+        conn.commit(); conn.close()
         fs.supervise_fleet(fp.get_fleet(fleet_id))   # gate off → fills
         self.assertEqual(len(_live(fleet_id)), 2)
 
@@ -153,3 +159,36 @@ class CandidateIterationTests(SupervisionBase):
         live = _live(fleet_id)
         self.assertEqual(len(live), 2,
                          "junk top candidate must not block the slot")
+
+
+class RetryCooldownTests(SupervisionBase):
+    def test_waiting_empty_slot_not_retried_within_cooldown(self):
+        """With no buildable candidates, an empty waiting slot must NOT be
+        re-attempted every 60s tick (live 2026-07-26: 7 slots × ~60s = a
+        junk-symbol price probe and 3 journal rows per slot per minute)."""
+        fleet_id = self._built_fleet(n=2)
+        # orphan slot 0 and exhaust the universe (no candidates at all)
+        slot_runs = {s["slot_index"]: s.get("current_run_id")
+                     for s in fs._slots(fleet_id)}
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM trading_runs WHERE id = ?", (slot_runs[0],))
+        cur.execute("UPDATE fleet_slots SET current_run_id = NULL, "
+                    "state = 'active' WHERE fleet_id = ? AND slot_index = 0",
+                    (fleet_id,))
+        conn.commit(); conn.close()
+        with patch.object(sr, "select_targets", return_value=[]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))     # attempt 1 → waiting
+            with patch.object(fs, "_build_replacement") as br:
+                fs.supervise_fleet(fp.get_fleet(fleet_id))  # within cooldown
+                self.assertEqual(br.call_count, 0,
+                                 "waiting slot retried inside cooldown")
+        # age the slot past the cooldown → retried again
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleet_slots SET updated_at = ? WHERE fleet_id = ? "
+                    "AND slot_index = 0", ("2020-01-01T00:00:00Z", fleet_id))
+        conn.commit(); conn.close()
+        with patch.object(fs, "_build_replacement", return_value=None) as br2:
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+            self.assertGreaterEqual(br2.call_count, 1, "aged slot must retry")
