@@ -72,6 +72,11 @@ class FleetIn(BaseModel):
 class RailsIn(BaseModel):
     warn_loss_frac: Optional[float] = None
     stop_loss_frac: Optional[float] = None
+    # The take-profit GOAL is not a risk rail: raising it just runs longer,
+    # lowering it banks sooner, 0/null clears it. So it is freely editable
+    # while the fleet is live — the tighten-only rule applies to the loss
+    # rails only.
+    profit_target_frac: Optional[float] = None
     confirm: bool = False
 
 
@@ -271,6 +276,19 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         if fleet["status"] == fleet_planner.STATUS_STOPPED:
             raise HTTPException(status_code=409,
                                 detail="fleet already stopped")
+        if data.profit_target_frac is not None:
+            goal = float(data.profit_target_frac)
+            t_lo, t_hi = fleet_planner.FLEET_BOUNDS["profit_target_goal_bounds"]
+            if goal and not (t_lo <= goal <= t_hi):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"profit_target_frac must be between {t_lo} and {t_hi}")
+            fleet_planner.set_profit_target(fleet_id, goal or None)
+            fleet_planner.emit_fleet_event(fleet_id, "goal_changed",
+                                           {"profit_target_frac": goal or None})
+            fleet = _fleet_or_404(fleet_id, agent)
+            if data.warn_loss_frac is None and data.stop_loss_frac is None:
+                return {"ok": True, "profit_target_frac": fleet["profit_target_frac"]}
         warn = data.warn_loss_frac if data.warn_loss_frac is not None \
             else float(fleet["warn_loss_frac"])
         stop = data.stop_loss_frac if data.stop_loss_frac is not None \
