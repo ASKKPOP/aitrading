@@ -122,3 +122,34 @@ class BackfillTests(SupervisionBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CandidateIterationTests(SupervisionBase):
+    def test_unpriceable_first_candidate_falls_through_to_next(self):
+        """ALLO case live 2026-07-26: the top-ranked candidate was junk
+        (unpriceable) and _build_replacement gave up instead of trying the
+        next one — every slot stayed empty while a good candidate waited."""
+        import fleet_supervisor as fs2
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_runs SET status='stopped', "
+                    "status_reason='stop_event:profit_target', "
+                    "active_key=NULL WHERE id = ?", (member["id"],))
+        conn.commit(); conn.close()
+        first_symbol = {}
+
+        def probe(symbol, market):
+            # the FIRST symbol tried is junk; everything else prices fine
+            if not first_symbol:
+                first_symbol[symbol] = True
+                raise ValueError(f"no price available for {symbol}")
+            if symbol in first_symbol:
+                raise ValueError(f"no price available for {symbol}")
+            return 100.0
+        with patch("routes_runs._probe_price", side_effect=probe):
+            fs2.supervise_fleet(fp.get_fleet(fleet_id))
+        live = _live(fleet_id)
+        self.assertEqual(len(live), 2,
+                         "junk top candidate must not block the slot")
