@@ -106,6 +106,9 @@ class LadderPropertyTests(unittest.TestCase):
 
 class SupervisionBase(unittest.TestCase):
     def setUp(self):
+        # module-level retry cache is keyed by (fleet_id, slot_index); every
+        # test recreates fleet 1 in the same process, so reset it
+        fs._LAST_EMPTY_ATTEMPT.clear()
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")

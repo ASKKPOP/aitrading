@@ -95,12 +95,7 @@ class BackfillTests(SupervisionBase):
             os.environ.pop("BACKTEST_GATE_ENABLED", None)
         self.assertEqual(len(_live(fleet_id)), 1,
                          "all candidates negative-edge → nothing built")
-        # age the waiting slot past the empty-slot retry cooldown
-        conn = database.get_db_connection()
-        cur = conn.cursor()
-        cur.execute("UPDATE fleet_slots SET updated_at = ? WHERE fleet_id = ?",
-                    ("2020-01-01T00:00:00Z", fleet_id))
-        conn.commit(); conn.close()
+        fs._LAST_EMPTY_ATTEMPT.clear()   # past the retry cooldown
         fs.supervise_fleet(fp.get_fleet(fleet_id))   # gate off → fills
         self.assertEqual(len(_live(fleet_id)), 2)
 
@@ -183,12 +178,74 @@ class RetryCooldownTests(SupervisionBase):
                 fs.supervise_fleet(fp.get_fleet(fleet_id))  # within cooldown
                 self.assertEqual(br.call_count, 0,
                                  "waiting slot retried inside cooldown")
-        # age the slot past the cooldown → retried again
-        conn = database.get_db_connection()
-        cur = conn.cursor()
-        cur.execute("UPDATE fleet_slots SET updated_at = ? WHERE fleet_id = ? "
-                    "AND slot_index = 0", ("2020-01-01T00:00:00Z", fleet_id))
-        conn.commit(); conn.close()
+        fs._LAST_EMPTY_ATTEMPT.clear()   # past the retry cooldown
         with patch.object(fs, "_build_replacement", return_value=None) as br2:
             fs.supervise_fleet(fp.get_fleet(fleet_id))
             self.assertGreaterEqual(br2.call_count, 1, "aged slot must retry")
+
+
+class WaitingJournalNoiseTests(SupervisionBase):
+    """slot_waiting must be journaled on STATE CHANGE, not every 60s tick,
+    and an already-waiting stopped-member slot must respect the same retry
+    cooldown as an empty one (live 2026-07-26: slot 1 alone emitted 38 of 86
+    slot_waiting rows in 30 min because the replacement path had no cooldown)."""
+
+    def _waiting_events(self, fleet_id):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) n FROM fleet_events WHERE fleet_id = ? "
+                    "AND event_type = 'slot_waiting'", (fleet_id,))
+        n = cur.fetchone()["n"]
+        conn.close()
+        return n
+
+    def test_stopped_member_slot_respects_retry_cooldown(self):
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_runs SET status='stopped', "
+                    "status_reason='stop_event:profit_target', active_key=NULL "
+                    "WHERE id = ?", (member["id"],))
+        conn.commit(); conn.close()
+        with patch.object(sr, "select_targets", return_value=[]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))      # attempt 1 → waiting
+            with patch.object(fs, "_build_replacement") as br:
+                fs.supervise_fleet(fp.get_fleet(fleet_id))  # inside cooldown
+                self.assertEqual(br.call_count, 0,
+                                 "waiting stopped-member slot retried too soon")
+
+    def test_fresh_stop_replaces_immediately(self):
+        """A member that JUST stopped must not wait out a cooldown."""
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_runs SET status='stopped', "
+                    "status_reason='stop_event:profit_target', active_key=NULL "
+                    "WHERE id = ?", (member["id"],))
+        conn.commit(); conn.close()
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(len(_live(fleet_id)), 2, "immediate replacement lost")
+
+    def test_no_duplicate_waiting_events_while_unchanged(self):
+        fleet_id = self._built_fleet(n=2)
+        # orphan a slot so it genuinely enters the waiting path
+        slot_runs = {s["slot_index"]: s.get("current_run_id")
+                     for s in fs._slots(fleet_id)}
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM trading_runs WHERE id = ?", (slot_runs[0],))
+        cur.execute("UPDATE fleet_slots SET current_run_id = NULL, "
+                    "state = 'active' WHERE fleet_id = ? AND slot_index = 0",
+                    (fleet_id,))
+        conn.commit(); conn.close()
+        # empty every slot's candidate supply
+        with patch.object(sr, "select_targets", return_value=[]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+            first = self._waiting_events(fleet_id)
+            fs._LAST_EMPTY_ATTEMPT.clear()   # retry happens, state unchanged
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+            second = self._waiting_events(fleet_id)
+        self.assertEqual(second, first,
+                         "unchanged waiting state re-journaled")

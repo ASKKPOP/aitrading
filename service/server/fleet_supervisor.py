@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -325,6 +326,31 @@ def _agent_deleted(agent_id: int) -> bool:
 _EMPTY_SLOT_RETRY_SECONDS = max(60, int(__import__("os").getenv("FLEET_EMPTY_SLOT_RETRY_SECONDS", "300")))
 
 
+# (fleet_id, slot_index) -> monotonic seconds of the last build attempt that
+# found nothing buildable. Keyed on the ATTEMPT, not on slot state: a slot
+# waiting for another reason (suspension lifted, batch healthy again) must
+# still replace on the very next pass.
+_LAST_EMPTY_ATTEMPT: dict[tuple, float] = {}
+
+
+def _retry_cooling(fleet_id: int, slot_index: int) -> bool:
+    """True while a slot whose last build attempt found nothing is inside its
+    retry cooldown — re-probing every 60s tick burns feed calls and journal
+    rows for a universe that is simply exhausted."""
+    last = _LAST_EMPTY_ATTEMPT.get((fleet_id, slot_index))
+    if last is None:
+        return False
+    return (time.monotonic() - last) < _EMPTY_SLOT_RETRY_SECONDS
+
+
+def _note_build_attempt(fleet_id: int, slot_index: int, built: bool) -> None:
+    key = (fleet_id, slot_index)
+    if built:
+        _LAST_EMPTY_ATTEMPT.pop(key, None)
+    else:
+        _LAST_EMPTY_ATTEMPT[key] = time.monotonic()
+
+
 def _slots(fleet_id: int) -> list[dict]:
     conn = get_db_connection()
     try:
@@ -394,17 +420,8 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             # empty forever; "kept at N" must hold for under-fills too.
             if state not in ("active", "waiting"):
                 continue
-            # Retry cooldown: with no buildable candidates, re-attempting an
-            # empty waiting slot every 60s tick burns a junk-symbol price
-            # probe and 3 journal rows per slot per minute (observed live).
-            if state == "waiting":
-                try:
-                    from run_engine import _age_seconds
-                    if _age_seconds(slot.get("updated_at") or "") < \
-                            _EMPTY_SLOT_RETRY_SECONDS:
-                        continue
-                except Exception:  # noqa: BLE001
-                    pass
+            if _retry_cooling(fleet["id"], slot["slot_index"]):
+                continue
             if suspended:
                 if state != "waiting":
                     fp._bind_slot(fleet["id"], slot["slot_index"], None,
@@ -418,7 +435,9 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
                                      "headroom": round(headroom, 2)})
                 continue
             new_run_id = _build_replacement(fleet, slot, funding,
-                                            exclude=non_terminal_symbols)
+                                            exclude=non_terminal_symbols,
+                                            already_waiting=(state == "waiting"))
+            _note_build_attempt(fleet["id"], slot["slot_index"], bool(new_run_id))
             if new_run_id:
                 headroom -= funding
                 replaced += 1
@@ -428,6 +447,8 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             continue
         if member["status"] != trading_runs.STATUS_STOPPED:
             continue  # live member
+        if _retry_cooling(fleet["id"], slot["slot_index"]):
+            continue  # last attempt found nothing — don't re-probe every tick
 
         reason = member.get("status_reason") or ""
 
@@ -484,7 +505,9 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             continue
 
         new_run_id = _build_replacement(fleet, slot, funding,
-                                        exclude=non_terminal_symbols)
+                                        exclude=non_terminal_symbols,
+                                        already_waiting=(state == "waiting"))
+        _note_build_attempt(fleet["id"], slot["slot_index"], bool(new_run_id))
         if new_run_id:
             headroom -= funding  # SEQUENTIAL: recompute within the pass
             replaced += 1
@@ -642,7 +665,7 @@ def _fresh_batch_exists() -> bool:
 
 
 def _build_replacement(fleet: dict, slot: dict, funding: float,
-                       exclude: set) -> Optional[int]:
+                       exclude: set, already_waiting: bool = False) -> Optional[int]:
     """One replacement via the same validated path as the initial build."""
     import symbol_research
 
@@ -671,9 +694,10 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                                  "dropped": dropped})
         theses = kept
     if not theses:
-        fp.emit_fleet_event(fleet["id"], "slot_waiting",
-                            {"slot": slot["slot_index"],
-                             "reason": "no_candidates"})
+        if not already_waiting:      # journal the transition, not every tick
+            fp.emit_fleet_event(fleet["id"], "slot_waiting",
+                                {"slot": slot["slot_index"],
+                                 "reason": "no_candidates"})
         fp._bind_slot(fleet["id"], slot["slot_index"],
                       slot.get("current_run_id"), "waiting")
         return None
@@ -693,10 +717,11 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                                  "symbol": candidate.get("symbol"),
                                  "reason": str(exc)[:300]})
     if run_id is None:
-        fp.emit_fleet_event(fleet["id"], "slot_waiting",
-                            {"slot": slot["slot_index"],
-                             "reason": "all_candidates_failed",
-                             "last_error": str(last_exc)[:200] if last_exc else None})
+        if not already_waiting:      # journal the transition, not every tick
+            fp.emit_fleet_event(fleet["id"], "slot_waiting",
+                                {"slot": slot["slot_index"],
+                                 "reason": "all_candidates_failed",
+                                 "last_error": str(last_exc)[:200] if last_exc else None})
         fp._bind_slot(fleet["id"], slot["slot_index"],
                       slot.get("current_run_id"), "waiting")
         return None
