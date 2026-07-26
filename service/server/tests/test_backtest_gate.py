@@ -91,6 +91,12 @@ class BarsAdapterTests(unittest.TestCase):
         self.assertEqual(set(bars[0].keys()), {"date", "open", "close", "volume"})
         self.assertEqual(bars[0]["volume"], 0.0)   # None-safe
 
+    def test_epoch_ms_timestamps_become_iso_dates(self):
+        candles = [{"ts": 1753545600000, "open": 10, "close": 11, "volume": 1}]
+        bars = bg._bars_from_candles(candles)
+        self.assertRegex(bars[0]["date"], r"^\d{4}-\d{2}-\d{2}$")
+        self.assertTrue(bars[0]["date"].startswith("2025-07-2"))
+
 
 class FleetWiringTests(unittest.TestCase):
     """_do_research consults the gate when enabled: dropped candidates never
