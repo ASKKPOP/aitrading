@@ -45,7 +45,7 @@ def _strict() -> bool:
 
 
 def _days() -> int:
-    return max(30, int(os.getenv("BACKTEST_GATE_DAYS", "365")))
+    return max(30, int(os.getenv("BACKTEST_GATE_DAYS", "900")))
 
 
 def _min_trades() -> int:
@@ -86,20 +86,67 @@ def _bars_from_candles(candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return bars
 
 
+def _yahoo_ticker(symbol: str, market: str) -> str:
+    """Exchange symbol → the historical_data (Yahoo-style) ticker the Phase-4
+    runner uses: BTCUSDT → BTC-USD. Non-crypto passes through."""
+    if market == "crypto":
+        base = symbol[:-4] if symbol.upper().endswith("USDT") else symbol
+        return f"{base}-USD"
+    return symbol
+
+
+def _load_bars(symbol: str, market: str, days: int) -> list[dict[str, Any]]:
+    """Multi-year daily bars. The live exchange feed caps at 365 bars while
+    the strategy's WARMUP_BARS is 400 (observed live 2026-07-25: every symbol
+    scored zero evaluated days) — so prefer the runner's historical_data
+    loader (years of history), falling back to the short live feed."""
+    try:
+        from datetime import timedelta
+        from historical_data import get_bars
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=days)
+        raw = get_bars(_yahoo_ticker(symbol, market), "1d",
+                       start.isoformat(), end.isoformat())
+        bars = [{"date": b.date, "open": float(b.open), "close": float(b.close),
+                 "volume": float(b.volume or 0)} for b in raw or []]
+        if len(bars) >= 430:      # warmup 400 + a real evaluation window
+            return bars
+    except Exception:  # noqa: BLE001
+        pass
+    import price_fetcher
+    return _bars_from_candles(
+        price_fetcher.get_daily_candles(symbol, market, days=days))
+
+
+def _event_datetimes() -> list:
+    """Macro release datetimes for the event-window condition — same sources
+    as the Phase-4 runner, fail-soft empty."""
+    events = []
+    try:
+        from zoneinfo import ZoneInfo
+        et = ZoneInfo("America/New_York")
+        from market_events import _CALENDAR
+        from market_events_history import all_historical_events
+        for _etype, day, hhmm, _title in list(all_historical_events()) + list(_CALENDAR):
+            events.append(datetime.fromisoformat(f"{day}T{hhmm}")
+                          .replace(tzinfo=et).astimezone(timezone.utc))
+    except Exception:  # noqa: BLE001
+        pass
+    return sorted(events)
+
+
 def symbol_expectancy(symbol: str, market: str,
                       days: Optional[int] = None) -> dict[str, Any]:
     """Replay the Phase-4 strategy on the symbol's recent bars → closed-trade
     stats {n_trades, expectancy_usd, win_rate, wilson_lb}. Raises on feed
     trouble (caller treats any raise as fail-open)."""
-    import price_fetcher
     from backtest_strategy import DEFAULT_PARAMS, simulate, wilson_lower_bound
 
     days = days or _days()
     key = (market, symbol, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     if key in _CACHE:
         return _CACHE[key]
-    candles = price_fetcher.get_daily_candles(symbol, market, days=days)
-    bars = _bars_from_candles(candles)
+    bars = _load_bars(symbol, market, days)
     if len(bars) < 30:
         raise ValueError(f"only {len(bars)} bars for {market}:{symbol}")
     # The Phase-4 strategy uses Fear&Greed in its confluence conditions —
@@ -112,7 +159,8 @@ def symbol_expectancy(symbol: str, market: str,
                        for r in fetch_fear_greed_full_history() or []}
     except Exception:  # noqa: BLE001
         pass
-    result = simulate(symbol, bars, fng_by_date, [], dict(DEFAULT_PARAMS))
+    result = simulate(symbol, bars, fng_by_date, _event_datetimes(),
+                      dict(DEFAULT_PARAMS))
     closed = [t for t in result.trades if t.exit_reason != "end_of_data"]
     pnls = [t.pnl for t in closed]
     n = len(pnls)
