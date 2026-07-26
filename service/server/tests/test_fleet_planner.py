@@ -310,6 +310,19 @@ class BuildTests(FleetTestBase):
 
 
 class RunEngineFleetTests(FleetTestBase):
+    # These exercise the sizing/budget rails, not the fee gate. The synthetic
+    # research batch produces a ~1.5% thesis, which the fee/edge gate refuses
+    # before sizing is ever reached — so switch that one gate off here and let
+    # test_fee_edge_gate.py own it. Without this the assertions below would be
+    # silently testing the fee gate instead of what they name.
+    def setUp(self):
+        super().setUp()
+        os.environ["RUN_FEE_EDGE_MULTIPLE"] = "0"
+
+    def tearDown(self):
+        os.environ.pop("RUN_FEE_EDGE_MULTIPLE", None)
+        super().tearDown()
+
     def _member(self):
         _seed_batch()
         fleet_id = self._fleet(n=1, budget=1000.0)
