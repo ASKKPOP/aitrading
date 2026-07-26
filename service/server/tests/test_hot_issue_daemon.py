@@ -216,6 +216,86 @@ class E1EscalationTests(DaemonBase):
         self.assertEqual(out["route"], "light")
 
 
+class I18nAlertTests(DaemonBase):
+    """Alerts go through the notifications_i18n catalogue (msg_id + params),
+    not pre-rendered English — so each user reads them in their language."""
+
+    SHOCK = {"psych": ("psych_feed.get_psych_payload",
+                       {"available": True, "shock": [{"symbol": "BTC"}]})}
+
+    def test_alert_uses_msg_id_params_form(self):
+        _, sent = self._tick(overrides=self.SHOCK)
+        self.assertEqual(len(sent), 1)
+        args, kwargs = sent[0]
+        # new form: (agent_id, kind, msg_id, params_dict)
+        self.assertEqual(args[2], "hot_issue_position")
+        self.assertIsInstance(args[3], dict)
+        self.assertEqual(args[3]["side"], "short")
+        self.assertIn("symbol", args[3])
+
+    def test_catalogue_entry_renders_in_all_languages(self):
+        import notifications_i18n as n18
+        variants = n18.MESSAGES.get("hot_issue_position")
+        self.assertIsNotNone(variants, "catalogue entry missing")
+        params = {"symbol": "BTC", "market": "crypto", "side": "short",
+                  "run_id": 7, "triggers": "psych_shock",
+                  "verdict": "AGAINST your short (high): shock rally."}
+        for lang in ("en", "ko", "ja", "th", "vi"):
+            title, body = variants[lang]
+            title.format(**params)   # must not raise
+            body.format(**params)
+
+
+class LlmVerifyTests(DaemonBase):
+    """Stage 2′: optional personalized LLM verification per material user —
+    fail-soft to the deterministic verdict, never called when disabled."""
+
+    SHOCK = {"psych": ("psych_feed.get_psych_payload",
+                       {"available": True, "shock": [{"symbol": "BTC"}]})}
+
+    def tearDown(self):
+        os.environ.pop("HOT_ISSUE_LLM_VERIFY", None)
+        super().tearDown()
+
+    def _tick_llm(self, llm):
+        os.environ["HOT_ISSUE_LLM_VERIFY"] = "true"
+        from unittest.mock import patch as _p
+        calls = []
+
+        def gen(prompt, **kw):
+            calls.append(prompt)
+            if isinstance(llm, Exception):
+                raise llm
+            return llm
+        with _p("llm_client.generate_text", side_effect=gen):
+            out, sent = self._tick(overrides=self.SHOCK)
+        return out, sent, calls
+
+    def test_llm_verdict_enriches_alert(self):
+        out, sent, calls = self._tick_llm(
+            '{"stance": "against", "urgency": "high", '
+            '"note": "shock rally squeezes shorts"}')
+        self.assertEqual(len(calls), 1)          # one call, only for the holder
+        params = sent[0][0][3]
+        self.assertIn("AGAINST", params["verdict"])
+        self.assertIn("shock rally", params["verdict"])
+
+    def test_llm_failure_falls_back_to_deterministic(self):
+        out, sent, calls = self._tick_llm(RuntimeError("llm down"))
+        self.assertEqual(len(sent), 1)           # alert still goes out
+        self.assertIn("position", sent[0][0][3]["verdict"].lower())
+
+    def test_disabled_flag_never_calls_llm(self):
+        os.environ.pop("HOT_ISSUE_LLM_VERIFY", None)
+        from unittest.mock import patch as _p
+        calls = []
+        with _p("llm_client.generate_text",
+                side_effect=lambda *a, **k: calls.append(1)):
+            _, sent = self._tick(overrides=self.SHOCK)
+        self.assertEqual(calls, [])
+        self.assertEqual(len(sent), 1)
+
+
 class GateTests(unittest.TestCase):
     def test_env_gate_default_off(self):
         os.environ.pop("HOT_ISSUE_DAEMON_ENABLED", None)

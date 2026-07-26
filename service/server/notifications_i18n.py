@@ -256,6 +256,21 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
 
 # msg_id -> lang -> (title_template, body_template)
 MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
+    # E2 hot-issue daemon (2026-07-25). {verdict} is a short English sentence
+    # (deterministic default or the stage-2' LLM read) — ko/ja/th/vi bodies
+    # frame it; native review pending per the i18n review note.
+    'hot_issue_position': {
+        'en': ('Hot issue: {symbol} — your {side} position',
+               '{symbol} ({market}): {triggers}. {verdict} Run #{run_id} escalates to the full AI desk next cycle.'),
+        'ko': ('핫이슈: {symbol} — 보유 중인 {side} 포지션',
+               '{symbol}({market}): {triggers}. {verdict} 런 #{run_id}의 다음 사이클은 풀 AI 데스크로 승격됩니다.'),
+        'ja': ('ホットイシュー：{symbol} — 保有中の{side}ポジション',
+               '{symbol}（{market}）：{triggers}。{verdict} ラン #{run_id} の次サイクルはフルAIデスクに昇格します。'),
+        'th': ('ประเด็นร้อน: {symbol} — สถานะ {side} ของคุณ',
+               '{symbol} ({market}): {triggers}. {verdict} รอบถัดไปของรัน #{run_id} จะยกระดับไปยังทีมวิเคราะห์ AI เต็มรูปแบบ'),
+        'vi': ('Sự kiện nóng: {symbol} — vị thế {side} của bạn',
+               '{symbol} ({market}): {triggers}. {verdict} Chu kỳ tiếp theo của run #{run_id} sẽ được nâng lên bàn AI đầy đủ.'),
+    },
     'breaker': {
         'en': ('Circuit breaker HALT ({scope})', 'Trading halted: {reason}'),
         'ko': ('서킷 브레이커 발동 ({scope})', '거래 중단: {reason}'),
