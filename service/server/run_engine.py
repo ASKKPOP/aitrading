@@ -147,11 +147,26 @@ def _armed_timeout() -> int:
 # thesis' expected move to clear a multiple of the round-trip cost before
 # committing. Reduce/close orders are never gated — exiting only cuts risk.
 def _fee_edge_multiple() -> float:
-    """How many round trips of edge an entry must promise. 0 disables."""
+    """How many round trips of REALIZED edge an entry must promise. 0 disables."""
     try:
         return max(0.0, float(os.getenv("RUN_FEE_EDGE_MULTIPLE", "3.0") or 3.0))
     except ValueError:
         return 3.0
+
+
+def _thesis_realization() -> float:
+    """Fraction of a thesis' claimed move the desk actually captures.
+
+    Measured on prod 2026-07-26 across the 40 runs of the prior week that
+    traded: median 0.154, mean 0.246 — theses claim 1.2–6.6% and realize a
+    small fraction of it. Comparing the raw claim against the fee hurdle
+    therefore passed every single run (40/40, zero effect); the claim must be
+    discounted to a realistic capture before it is graded."""
+    try:
+        val = float(os.getenv("RUN_FEE_EDGE_REALIZATION", "0.25") or 0.25)
+    except ValueError:
+        val = 0.25
+    return min(1.0, max(0.01, val))
 
 
 def _fee_edge_skip(expected_move_pct: "float | None",
@@ -162,21 +177,28 @@ def _fee_edge_skip(expected_move_pct: "float | None",
     is the same scale the fee is charged on — leverage multiplies both the
     gain and the fee, so it cancels and is accepted only to keep the signature
     honest for callers. None/0 (no stated expectation) leaves the entry alone;
-    this gate refuses only moves it can prove are too small."""
+    this gate refuses only moves it can prove are too small.
+
+    The claim is discounted by _thesis_realization() first: the desk's stated
+    move is systematically optimistic, and grading the raw number made this
+    gate a no-op on every run in the week that motivated it."""
     from fees import TRADE_FEE_RATE
     mult = _fee_edge_multiple()
     if mult <= 0 or expected_move_pct is None:
         return None
     try:
-        move = abs(float(expected_move_pct))
+        claimed = abs(float(expected_move_pct))
     except (TypeError, ValueError):
         return None
-    if move <= 0:
+    if claimed <= 0:
         return None
+    realization = _thesis_realization()
+    expected = claimed * realization
     round_trip_pct = TRADE_FEE_RATE * 2 * 100.0
     required = round_trip_pct * mult
-    if move < required:
-        return (f"fee_edge: expected move {move:.2f}% < {required:.2f}% "
+    if expected < required:
+        return (f"fee_edge: claimed {claimed:.2f}% × {realization:.2f} realization "
+                f"= {expected:.2f}% < {required:.2f}% "
                 f"({mult:g}× the {round_trip_pct:.2f}% round trip)")
     return None
 
