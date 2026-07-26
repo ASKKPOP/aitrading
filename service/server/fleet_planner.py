@@ -86,6 +86,11 @@ FLEET_BOUNDS = {
                               "aggressive": 0.03, "extreme": 0.04},
     "trail_activate_frac_of_bet": 0.003,   # arm once peak ≥ 0.3% of notional
     "trail_giveback_frac": 0.40,           # exit on a >40% retrace from peak
+    # Add-churn guard (2026-07-25, Fleet 17): at most N same-direction adds
+    # per open position, with a cooldown between opens — averaging into a
+    # loser every 45-min cycle stacked fees for no new information.
+    "max_position_adds": 2,
+    "add_cooldown_minutes": 90,
     # Higher tiers let winners run further before banking (× the thesis move).
     "profit_target_mult": {"stable": 1.0, "balanced": 1.0,
                            "aggressive": 1.5, "extreme": 2.0},
@@ -559,6 +564,8 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         # default does not apply to internal create_run), feedback on, light
         # cycle default, thesis stored at TOP level of the snapshot.
         "stop_flatten": True,
+        "add_limits": {"max_adds": FLEET_BOUNDS["max_position_adds"],
+                       "cooldown_minutes": FLEET_BOUNDS["add_cooldown_minutes"]},
         "thesis": {
             "symbol": thesis["symbol"], "market": market, "market_type": market_type,
             "direction": direction,
@@ -759,6 +766,17 @@ def _do_research(fleet: dict) -> None:
             cursor, fleet["agent_id"], int(fleet["n_runs"]), markets_scope=scope)
     finally:
         conn.close()
+    # Expectancy gate (plan #1-D): candidates with a measured non-positive
+    # net edge never get a slot. Fail-open by construction — a gate problem
+    # must not stop the fleet from composing.
+    import backtest_gate
+    if theses and backtest_gate.gate_enabled():
+        kept, dropped = backtest_gate.gate_candidates(theses)
+        if dropped or len(kept) != len(theses):
+            emit_fleet_event(fleet["id"], "backtest_gate",
+                             {"kept": [t["symbol"] for t in kept],
+                              "dropped": dropped})
+        theses = kept
     if not theses:
         # stay in researching; supervise/status shows replenishing-style state
         emit_fleet_event(fleet["id"], "research_empty",
@@ -952,6 +970,7 @@ def _do_build(fleet: dict) -> None:
             core["thesis"]["entry_ref_price"] = _probe_price(core["symbol"],
                                                              core["market"])
             core["feedback"] = True
+            core["add_limits"] = dict(settings.get("add_limits") or {})
             run_id = trading_runs.create_run(agent_id, core, start_c, stop_c,
                                              True, fleet_id=fleet["id"],
                                              created_via="fleet")

@@ -53,6 +53,47 @@ def _price_move_pct() -> float:
     return max(1.0, float(os.getenv("HOT_ISSUE_PRICE_MOVE_PCT", "5.0")))
 
 
+def llm_verify_enabled() -> bool:
+    """Stage 2' (E2-B'): one small decision-tier call per MATERIAL user that
+    personalizes the verdict for their book. Default off; the deterministic
+    verdict ships either way, so this only ever enriches."""
+    return os.getenv("HOT_ISSUE_LLM_VERIFY", "false").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _personal_verdict(run: dict[str, Any], side: str,
+                      triggers: list[str]) -> str:
+    """The alert's {verdict} sentence. Deterministic default; when the LLM
+    layer is on, ask for stance/urgency/note for THIS user's book — fail-soft
+    back to the default on any trouble."""
+    verdict = f"Affects your {side} position."
+    if not llm_verify_enabled():
+        return verdict
+    try:
+        from llm_client import generate_text
+        prompt = (
+            "A market event hit a symbol one specific user is trading. "
+            f"Event triggers: {', '.join(triggers)}. Symbol: {run['symbol']} "
+            f"({run['market']}). The user's book: a {side.upper()} position "
+            "held by an automated run.\n"
+            "For THIS user only, is the event for, against, or neutral to "
+            "their position, and how urgent is it? Respond ONLY with JSON: "
+            '{"stance": "for"|"against"|"neutral", '
+            '"urgency": "low"|"medium"|"high", "note": "<one short sentence>"}')
+        text = generate_text(prompt, max_tokens=120, temperature=0.2,
+                             tier="decision")
+        data = json.loads(text[text.index("{"):text.rindex("}") + 1])
+        stance = str(data.get("stance") or "").strip().lower()
+        urgency = str(data.get("urgency") or "").strip().lower()
+        note = str(data.get("note") or "").strip()[:120]
+        if stance in ("for", "against", "neutral"):
+            return f"{stance.upper()} your {side} ({urgency or 'medium'}): {note}"
+    except Exception:  # noqa: BLE001
+        logger.debug("hot-issue LLM verify failed (run %s)", run.get("id"),
+                     exc_info=True)
+    return verdict
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime(TS_FMT)
 
@@ -213,11 +254,10 @@ def run_daemon_tick() -> dict[str, int]:
             try:
                 import alerts
                 alerts.send_alert(
-                    run["agent_id"], "hot_issue",
-                    f"Hot issue on {symbol} — affects your {side} position",
-                    (f"{symbol} ({market}): {', '.join(triggers)}. Your run "
-                     f"#{run['id']} holds a {side} position; its next cycle "
-                     "escalates to the full AI analyst desk."),
+                    run["agent_id"], "hot_issue", "hot_issue_position",
+                    {"symbol": symbol, "market": market, "side": side,
+                     "run_id": run["id"], "triggers": ", ".join(triggers),
+                     "verdict": _personal_verdict(run, side, triggers)},
                     dedupe_key=f"hot:{market}:{symbol}:{run['id']}")
                 out["alerts"] += 1
             except Exception:  # noqa: BLE001

@@ -1169,6 +1169,53 @@ def _fleet_cycle_mode(cfg: dict) -> str:
     return os.getenv("FLEET_CYCLE_MODE", "light").strip().lower()
 
 
+def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
+    """Add-churn guard (2026-07-25, Fleet 17 finding): a run averaging into an
+    open position every cycle stacks fees for no new information (SOL: 5
+    same-direction adds at conf 0.58 into a flat tape). Config-driven via
+    cfg.add_limits {max_adds, cooldown_minutes} — emitted by the fleet
+    composer; absent config (manual runs) disables the guard. Reduce/close
+    orders are never limited. Returns a skip reason or None."""
+    limits = cfg.get("add_limits") if isinstance(cfg.get("add_limits"), dict) else None
+    if not limits:
+        return None
+    try:
+        qty = _position_quantity(run["agent_id"], run["market"],
+                                 run["symbol"], run["id"])
+    except Exception:  # noqa: BLE001
+        return None
+    if not qty:
+        return None
+    is_futures = trading_runs.is_futures_book(run.get("market"),
+                                              run.get("market_type") or "spot")
+    if qty > 0 and action == "buy":
+        open_side = "buy"
+    elif qty < 0 and is_futures and action == "sell":
+        open_side = "short"
+    else:
+        return None  # reducing/closing — never limited
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT executed_at FROM signals WHERE run_id = ? AND side = ? "
+            "AND executed_at IS NOT NULL ORDER BY id",
+            (run["id"], open_side))
+        opens = [r["executed_at"] for r in cursor.fetchall()]
+    finally:
+        conn.close()
+    if not opens:
+        return None
+    max_adds = int(limits.get("max_adds") or 0)
+    adds_so_far = len(opens) - 1  # first open is the entry, not an add
+    if max_adds and adds_so_far >= max_adds:
+        return f"add_limit: max {max_adds} adds reached on the open position"
+    cooldown = float(limits.get("cooldown_minutes") or 0)
+    if cooldown and _age_seconds(opens[-1]) < cooldown * 60:
+        return f"add_limit: cooldown {cooldown:.0f}m since the last add"
+    return None
+
+
 def _decision_routing_enabled() -> bool:
     """E1-A kill switch (default off): route each fleet cycle by situation —
     full analyst pipeline on the tails, light path in the middle."""
@@ -1673,6 +1720,16 @@ def run_cycle(run_id: int) -> dict:
                                       "run_budget": cfg["run_budget_usd"]})
                 return result
             size_usd = min(float(size_usd or 0), max(headroom, 0.0))
+        # Add-churn guard (2026-07-25): bound same-direction adds on an open
+        # position — max_adds + cooldown from cfg.add_limits (fleet composer).
+        if action in ("buy", "sell"):
+            add_skip = _add_limit_skip(run, cfg, action)
+            if add_skip:
+                result["skip_reason"] = add_skip
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "add_limit",
+                                      "reason": add_skip})
+                return result
         # Leverage (2026-07-23): size_usd is the MARGIN the run commits; the
         # position notional is margin × L. Size the gate with the leveraged
         # notional so Kelly / vol / exposure caps bound total exposure, then
