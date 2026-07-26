@@ -747,9 +747,13 @@ def select_targets(cursor, agent_id: int, n: int,
     (b) fleet_symbol_cooldowns rows (the feedback loop's retire list),
     (c) caller-supplied exclusions; with per-market diversity ceil(n/2)."""
     now = _now_iso()
+    # Newest batch that actually HAS live theses — an empty refresh (LLM or
+    # feed failure) must not blank the universe while the previous batch's
+    # theses are still unexpired (2026-07-26: batch 495847 came up empty and
+    # every fleet replacement went no_candidates for an hour).
     cursor.execute(
-        "SELECT batch_id FROM research_batches WHERE created_at IS NOT NULL "
-        "ORDER BY batch_id DESC LIMIT 1")
+        "SELECT batch_id FROM research_theses WHERE selectable = 1 "
+        "AND expires_at > ? ORDER BY batch_id DESC LIMIT 1", (now,))
     row = cursor.fetchone()
     if not row:
         return []
