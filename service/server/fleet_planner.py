@@ -85,7 +85,14 @@ FLEET_BOUNDS = {
     "stop_loss_frac_of_bet": {"stable": 0.015, "balanced": 0.02,
                               "aggressive": 0.03, "extreme": 0.04},
     "trail_activate_frac_of_bet": 0.003,   # arm once peak ≥ 0.3% of notional
-    "trail_giveback_frac": 0.40,           # exit on a >40% retrace from peak
+    # Giveback cut 0.40 → 0.20 (2026-07-26). At 40% the five prod ZEC winners
+    # peaked $6.95–$27.83 and banked $1.98–$7.50: the retrace surrendered up to
+    # half the peak and the 0.1%/side round trip took 44–82% of the remainder.
+    "trail_giveback_frac": 0.20,           # exit on a >20% retrace from peak
+    # …and compress to 15% once the peak proves it is a real winner: 3× the
+    # round-trip fee on the position notional (see _trail_config).
+    "trail_tighten_giveback_frac": 0.15,
+    "trail_tighten_fee_multiple": 3.0,
     # Add-churn guard (2026-07-25, Fleet 17): at most N same-direction adds
     # per open position, with a cooldown between opens — averaging into a
     # loser every 45-min cycle stacked fees for no new information.
@@ -113,11 +120,33 @@ def _tier(dimension: str, risk: str):
     d = FLEET_BOUNDS[dimension]
     return d.get(risk, d["balanced"])
 
+
+def _trail_config(max_bet: float, leverage: float) -> dict:
+    """Trailing-lock config for a run sized at `max_bet` margin on `leverage`.
+
+    tighten_usd is the fee-aware "this is a real winner" line: the round trip
+    on the position notional costs notional × 2 × TRADE_FEE_RATE, so a peak
+    worth several round trips is worth protecting harder than one that merely
+    armed. Above it the giveback compresses (run_engine._trailing_lock_hit)."""
+    from fees import TRADE_FEE_RATE
+    notional = max(0.0, float(max_bet)) * max(1.0, float(leverage or 1.0))
+    round_trip_usd = notional * TRADE_FEE_RATE * 2
+    return {
+        "activate_usd": round(
+            float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"], 2),
+        "giveback_frac": FLEET_BOUNDS["trail_giveback_frac"],
+        "tighten_usd": round(
+            round_trip_usd * FLEET_BOUNDS["trail_tighten_fee_multiple"], 2),
+        "tighten_giveback_frac": FLEET_BOUNDS["trail_tighten_giveback_frac"],
+    }
+
 # Replacement disposition per stop reason (Plan 14 §2 — ENUMERATED, never a
 # wildcard; a future stop_event:* kind must be classified here before shipping).
 REPLACE_IMMEDIATE = frozenset({
     "stop_event:max_loss", "stop_event:profit_target", "stop_event:max_trades",
     "stop_event:at_time", "stop_event:price_cross", "adapt_retired",
+    "stop_event:trailing_lock",   # banked winner — replace the slot at once
+    "idle_retired",               # never traded — free the slot for a live thesis
 })
 REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
                               "stop_event:liq_cushion"})
@@ -577,11 +606,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             # Far thesis-move target kept as a secondary cap; the trailing lock
             # below is the primary profit-realiser for intraday moves.
             "profit_target_usd": round(run_budget * gain_frac, 2),
-            "trail": {
-                "activate_usd": round(
-                    max_bet * FLEET_BOUNDS["trail_activate_frac_of_bet"], 2),
-                "giveback_frac": FLEET_BOUNDS["trail_giveback_frac"],
-            },
+            "trail": _trail_config(max_bet, leverage),
             "at_time": at_time,
         },
         # Plan 14: stop_flatten pinned True on the builder path (the API-route

@@ -162,6 +162,37 @@ class TradeStatsTests(RiskEngineTestCase):
         self.assertEqual(stats["n_trades"], 1)
         self.assertAlmostEqual(stats["realized_today"], 60.0)
 
+    def test_agent_wide_replay_keeps_concurrent_runs_on_separate_books(self):
+        """Two live runs on the SAME symbol must not cross-match. Run 1 is a
+        clean +10 round trip; run 2 is still open with a single buy far above
+        the market. Merging the books would average run 2's open buy into run
+        1's cost basis and invent a large loss (prod 2026-07-24: a fabricated
+        "realized today $-154,418" hard-blocked the agent's daily-loss gate)."""
+        from risk_engine import trade_stats
+        # Run 2's open buy lands FIRST, so a merged book would average it into
+        # run 1's cost basis before run 1's exit replays.
+        self._insert_signal("buy", 9000.0, 1.0,                   # run 2: open, no exit
+                            _iso(TODAY), run_id=2)
+        self._insert_signal("buy", 100.0, 1.0,
+                            _iso(TODAY + timedelta(minutes=1)), run_id=1)
+        self._insert_signal("sell", 110.0, 1.0,                   # run 1 exits: +10
+                            _iso(TODAY + timedelta(minutes=2)), run_id=1)
+        stats = trade_stats(self.agent_id)
+        self.assertEqual(stats["n_trades"], 1, "run 2's open buy must not close run 1")
+        # Merged books would price the exit against avg(9000, 100) = 4550 and
+        # book a −$4,440 phantom loss instead of run 1's real +$10.
+        self.assertAlmostEqual(stats["realized_today"], 10.0)
+
+    def test_agent_wide_replay_sums_realized_across_runs(self):
+        """Per-run books, but realized_today still aggregates every run — the
+        daily-loss breaker is an account-level rail and must stay agent-wide."""
+        from risk_engine import trade_stats
+        self._round_trip(100.0, 110.0, TODAY, run_id=1)                       # +10
+        self._round_trip(100.0, 70.0, TODAY + timedelta(minutes=5), run_id=2)  # −30
+        stats = trade_stats(self.agent_id)
+        self.assertEqual(stats["n_trades"], 2)
+        self.assertAlmostEqual(stats["realized_today"], -20.0)
+
 
 # ── the gate ──────────────────────────────────────────────────────────────
 

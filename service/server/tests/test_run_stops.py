@@ -216,7 +216,31 @@ class RunStopsTests(unittest.TestCase):
         self._set_mark(102.0)
         out = run_engine.control_pass()
         self.assertEqual(out["stops_fired"], 1)
-        self.assertIn("profit_target", self._row(run_id)["status_reason"])
+        # Reported as its own reason, never profit_target: the far target is
+        # untouched and calling this "profit target reached" misreports a
+        # single-dollar exit as a $400 goal.
+        self.assertEqual(self._row(run_id)["status_reason"],
+                         "stop_event:trailing_lock")
+
+    def test_trailing_lock_tightens_giveback_once_peak_clears_fee_multiple(self):
+        """Above tighten_usd the giveback compresses, so a big peak is banked
+        on a shallow retrace instead of surrendering 40% of it (the prod ZEC
+        runs peaked $27.83 and banked $7.50)."""
+        run_id = self._run(stop_conditions={
+            "trail": {"activate_usd": 5.0, "giveback_frac": 0.40,
+                      "tighten_usd": 20.0, "tighten_giveback_frac": 0.15}})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")   # 500 notional
+        self._set_mark(106.0)                          # peak ≈ +29.5 ⇒ tightened
+        self.assertEqual(run_engine.control_pass()["stops_fired"], 0)
+        peak = float(self._row(run_id)["peak_pnl_usd"])
+        self.assertGreater(peak, 20.0)
+        # A retrace the OLD 40% band would have tolerated (still above 60% of
+        # peak) must now fire, because the band is 15%.
+        self._set_mark(104.5)
+        out = run_engine.control_pass()
+        self.assertEqual(out["stops_fired"], 1)
+        self.assertEqual(self._row(run_id)["status_reason"],
+                         "stop_event:trailing_lock")
 
     def test_profit_target_stop(self):
         run_id = self._run(stop_conditions={"profit_target_usd": 10.0})
@@ -270,6 +294,65 @@ class RunStopsTests(unittest.TestCase):
         run_engine.control_pass()
         self.assertEqual(self._row(run_id)["status"], "stopping")
         self.assertEqual(self._row(run_id)["status_reason"], "stop_eval_failed")
+
+    def test_eval_failure_stop_does_not_flatten_on_untrusted_marks(self):
+        """The trigger for this path IS that marks cannot be trusted, so the
+        forced exit would price the position on the data we just rejected.
+        Six prod runs died here and the flatten realised −$14.41. Stop, but
+        clear stop_flatten so the position is held."""
+        run_id = self._run(stop_conditions={"max_loss_usd": 10.0},
+                           stop_flatten=True)
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(97.0, updated_at=_ts(-7200))
+        self._set_run(run_id, consecutive_errors=4)
+        run_engine.control_pass()
+        row = self._row(run_id)
+        self.assertEqual(row["status_reason"], "stop_eval_failed")
+        self.assertFalse(bool(row["stop_flatten"]),
+                         "must not flatten on marks we just declared stale")
+        # …and the position survives the stop.
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT SUM(quantity) q FROM positions WHERE run_id = ?",
+                        (run_id,))
+            self.assertAlmostEqual(float(cur.fetchone()["q"] or 0), 5.0)
+        finally:
+            conn.close()
+
+    # ── idle retire ────────────────────────────────────────────────────
+
+    def test_idle_run_retires_after_cycle_budget(self):
+        """A never-traded, flat run is burning analysis for nothing (prod run
+        111: 13 cycles / 8.5h at conf 0.58–0.62 against a 0.65 gate)."""
+        run_id = self._run()
+        self._set_run(run_id, cycle_seq=12)
+        out = run_engine.control_pass()
+        self.assertEqual(out["stops_fired"], 1)
+        self.assertEqual(self._row(run_id)["status_reason"], "idle_retired")
+
+    def test_idle_retire_leaves_a_run_that_has_traded(self):
+        """Cycle count alone never retires a run with a real book."""
+        run_id = self._run()
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(100.0)
+        self._set_run(run_id, cycle_seq=99)
+        self.assertEqual(run_engine.control_pass()["stops_fired"], 0)
+        self.assertEqual(self._row(run_id)["status"], "running")
+
+    def test_idle_retire_holds_off_below_the_budget(self):
+        run_id = self._run()
+        self._set_run(run_id, cycle_seq=11)
+        self.assertEqual(run_engine.control_pass()["stops_fired"], 0)
+
+    def test_idle_retire_disabled_by_zero(self):
+        run_id = self._run()
+        self._set_run(run_id, cycle_seq=500)
+        os.environ["RUN_IDLE_RETIRE_CYCLES"] = "0"
+        try:
+            self.assertEqual(run_engine.control_pass()["stops_fired"], 0)
+        finally:
+            os.environ.pop("RUN_IDLE_RETIRE_CYCLES", None)
 
     # ── flatten paths ──────────────────────────────────────────────────
 

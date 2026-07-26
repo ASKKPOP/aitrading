@@ -271,7 +271,7 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
         params.append(TRADE_STATS_MAX_SIGNALS)
         cursor.execute(
             f"""SELECT market, symbol, COALESCE(token_id, '') AS token_id, side,
-                      entry_price, quantity, executed_at
+                      entry_price, quantity, executed_at, COALESCE(run_id, 0) AS run_key
                FROM signals
                WHERE agent_id = ? AND executed_at IS NOT NULL
                  AND side IN ('buy', 'sell', 'short', 'cover')
@@ -292,7 +292,13 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
     realized_today = 0.0
 
     for row in rows:
-        key = (row["market"], row["symbol"], row["token_id"])
+        # run_key is part of the book identity even in agent-wide mode. Runs are
+        # exclusive per agent+market+symbol+filter, so two live runs on the SAME
+        # symbol keep separate books; merging them matched run A's buy against
+        # run B's sell and fabricated P&L (observed on prod 2026-07-24:
+        # "realized today $-154,418" against a worst real run of -$218, which
+        # hard-blocked the whole agent on the daily-loss breaker).
+        key = (row["run_key"], row["market"], row["symbol"], row["token_id"])
         side = row["side"]
         price = float(row["entry_price"])
         qty = float(row["quantity"])

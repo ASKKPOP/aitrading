@@ -159,7 +159,12 @@ class AllocationTests(unittest.TestCase):
         self.assertIn("trail", sc)
         self.assertAlmostEqual(sc["trail"]["activate_usd"],
                                round(max_bet * 0.003, 2), places=2)
-        self.assertEqual(sc["trail"]["giveback_frac"], 0.40)
+        self.assertEqual(sc["trail"]["giveback_frac"], 0.20)
+        # fee-aware ratchet: above 3× the round-trip cost the giveback tightens
+        self.assertEqual(sc["trail"]["tighten_giveback_frac"], 0.15)
+        lev = max(1.0, float(settings.get("leverage") or 1.0))
+        self.assertAlmostEqual(sc["trail"]["tighten_usd"],
+                               round(max_bet * lev * 0.001 * 2 * 3.0, 2), places=2)
         # and it must be MUCH tighter than the old run_budget * 0.20 = $200
         self.assertLess(sc["max_loss_usd"], 200.0)
 

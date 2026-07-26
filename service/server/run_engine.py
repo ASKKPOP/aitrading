@@ -140,12 +140,47 @@ def _armed_timeout() -> int:
         return 7 * 86400
 
 
-# ── fee/edge re-entry gate (Plan-L2 follow-up) ─────────────────────────────
-# Fees scale with leverage AND round-trip frequency; a fast, leveraged tier
-# (extreme: 30-min cycles, 3×) can churn fees faster than the edge pays. After
-# a CLOSE, hold a run flat for an extra window that grows with leverage, so
-# round-trips are spaced enough for the edge to clear the fee. L=1 ⇒ 0 extra
-# (byte-identical to the old ungated behaviour).
+# ── fee/edge entry gate (2026-07-26) ───────────────────────────────────────
+# An entry only pays if the move it is predicting is bigger than the round
+# trip it costs. Prod evidence: the ZEC winners captured 0.24–0.44% gross
+# against a 0.2% round trip, so fees took 44–82% of every win. Require the
+# thesis' expected move to clear a multiple of the round-trip cost before
+# committing. Reduce/close orders are never gated — exiting only cuts risk.
+def _fee_edge_multiple() -> float:
+    """How many round trips of edge an entry must promise. 0 disables."""
+    try:
+        return max(0.0, float(os.getenv("RUN_FEE_EDGE_MULTIPLE", "3.0") or 3.0))
+    except ValueError:
+        return 3.0
+
+
+def _fee_edge_skip(expected_move_pct: "float | None",
+                   leverage: float = 1.0) -> Optional[str]:
+    """Skip reason when the expected move cannot pay for its own round trip.
+
+    expected_move_pct is the thesis' predicted move in PERCENT of price, which
+    is the same scale the fee is charged on — leverage multiplies both the
+    gain and the fee, so it cancels and is accepted only to keep the signature
+    honest for callers. None/0 (no stated expectation) leaves the entry alone;
+    this gate refuses only moves it can prove are too small."""
+    from fees import TRADE_FEE_RATE
+    mult = _fee_edge_multiple()
+    if mult <= 0 or expected_move_pct is None:
+        return None
+    try:
+        move = abs(float(expected_move_pct))
+    except (TypeError, ValueError):
+        return None
+    if move <= 0:
+        return None
+    round_trip_pct = TRADE_FEE_RATE * 2 * 100.0
+    required = round_trip_pct * mult
+    if move < required:
+        return (f"fee_edge: expected move {move:.2f}% < {required:.2f}% "
+                f"({mult:g}× the {round_trip_pct:.2f}% round trip)")
+    return None
+
+
 def _reentry_cooldown_enabled() -> bool:
     return os.getenv("RUN_REENTRY_COOLDOWN", "true").strip().lower() in (
         "1", "true", "yes", "on")
@@ -208,6 +243,130 @@ def _liq_cushion_frac() -> float:
     except ValueError:
         f = 0.85
     return min(0.98, max(0.50, f))
+
+
+# ── confidence recalibration (2026-07-26) ──────────────────────────────────
+# The LLM's confidence scalar is severely quantized: over 7 prod days 261
+# decisions landed on exactly 0.58 and 137 on exactly 0.62, and only 13 all
+# week reached the 0.65 gate. Those anchors are prompt artefacts, not a
+# calibrated probability, so a fixed absolute threshold sits just above the
+# model's ceiling and rejects on noise. Grade each decision against the
+# agent's own recent distribution instead: gate on percentile RANK, keeping a
+# much lower absolute floor as a sanity rail so a uniformly terrible tape
+# cannot promote its least-bad idea.
+def _conf_percentile_enabled() -> bool:
+    return os.getenv("RUN_CONF_PERCENTILE", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _conf_percentile_min() -> float:
+    """Required rank within the recent window (0.70 ⇒ top 30%)."""
+    try:
+        return min(0.99, max(0.0, float(
+            os.getenv("RUN_CONF_PERCENTILE_MIN", "0.70") or 0.70)))
+    except ValueError:
+        return 0.70
+
+
+def _conf_percentile_window() -> int:
+    try:
+        return max(10, int(os.getenv("RUN_CONF_PERCENTILE_WINDOW", "100")))
+    except ValueError:
+        return 100
+
+
+def _conf_percentile_min_samples() -> int:
+    """Below this many observations the distribution is not meaningful and the
+    absolute min_confidence gate is used unchanged."""
+    try:
+        return max(5, int(os.getenv("RUN_CONF_PERCENTILE_MIN_SAMPLES", "20")))
+    except ValueError:
+        return 20
+
+
+def _conf_abs_floor() -> float:
+    """Absolute sanity floor kept underneath the percentile gate."""
+    try:
+        return min(1.0, max(0.0, float(
+            os.getenv("RUN_CONF_ABS_FLOOR", "0.55") or 0.55)))
+    except ValueError:
+        return 0.55
+
+
+def percentile_rank(value: float, sample: "list[float]") -> float:
+    """Fraction of `sample` strictly below `value`, plus half the ties — the
+    midrank convention, so a heavily tied distribution (0.58 × 261) does not
+    hand the whole cluster either a 0.0 or a 1.0 rank. Empty sample ⇒ 1.0
+    (nothing to be worse than)."""
+    if not sample:
+        return 1.0
+    below = sum(1 for s in sample if s < value)
+    ties = sum(1 for s in sample if s == value)
+    return (below + 0.5 * ties) / len(sample)
+
+
+def _recent_confidences(agent_id: int, window: int) -> "list[float]":
+    """Confidence scalars from the agent's most recent decision events."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT e.payload FROM run_events e
+               JOIN trading_runs t ON t.id = e.run_id
+               WHERE e.event_type = 'decision' AND t.agent_id = ?
+               ORDER BY e.id DESC LIMIT ?""",
+            (agent_id, window))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001 — telemetry read, never blocks a cycle
+        return []
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    out: list[float] = []
+    for row in rows:
+        try:
+            val = json.loads(row["payload"] or "{}").get("confidence")
+        except (ValueError, TypeError):
+            continue
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            out.append(float(val))
+    return out
+
+
+def _conf_percentile_skip(agent_id: int, gate_confidence: "float | None",
+                          min_confidence: "float | None") -> "tuple[Optional[str], Optional[float]]":
+    """(skip_reason, effective_min_confidence).
+
+    effective_min_confidence is what the risk gate should enforce: the low
+    absolute floor when percentile grading applied, or the caller's original
+    threshold when it did not (too few samples, disabled, no confidence)."""
+    if not _conf_percentile_enabled() or gate_confidence is None:
+        return None, min_confidence
+    sample = _recent_confidences(agent_id, _conf_percentile_window())
+    if len(sample) < _conf_percentile_min_samples():
+        return None, min_confidence          # not enough history to grade
+    floor = _conf_abs_floor()
+    conf = float(gate_confidence)
+    if conf < floor:
+        return (f"confidence {conf:.2f} below absolute floor {floor:.2f}",
+                min_confidence)
+    rank = percentile_rank(conf, sample)
+    need = _conf_percentile_min()
+    if rank < need:
+        return (f"confidence {conf:.2f} ranks {rank:.0%} of the last "
+                f"{len(sample)} decisions (needs {need:.0%})", min_confidence)
+    return None, floor
+
+
+def _idle_retire_cycles() -> int:
+    """Cycles a never-traded, flat run may burn before it is retired.
+    0 disables the rail entirely."""
+    try:
+        return max(0, int(os.getenv("RUN_IDLE_RETIRE_CYCLES", "12")))
+    except ValueError:
+        return 12
 
 
 def _stop_eval_failure_limit() -> int:
@@ -301,14 +460,28 @@ def _trailing_lock_hit(peak_pnl: "float | None", current_pnl: float,
     peak — banks a winner that would otherwise round-trip and catches a
     reversal off the top (the fleet's small, mean-reverting moves never reach
     the far profit_target). Inert without a trail config (manual runs) or
-    before the peak arms."""
+    before the peak arms.
+
+    Ratchet (2026-07-26): a fixed 40% giveback surrendered most of every
+    winner — the five prod ZEC runs peaked at $6.95–$27.83 and banked
+    $1.98–$7.50, because the 40% retrace fires and THEN the round-trip fee
+    (0.1%/side) takes 44–82% of what is left. Once the peak clears
+    tighten_usd (the fee-aware "this is a real winner" line) the giveback
+    compresses to tighten_giveback_frac, so a large peak is protected far
+    harder than the one that just armed. Absent tighten_usd the behaviour is
+    the flat giveback exactly as before."""
     if not trail or peak_pnl is None:
         return False
     activate = float(trail.get("activate_usd") or 0)
     giveback = float(trail.get("giveback_frac") or 0)
-    if float(peak_pnl) < activate or float(peak_pnl) <= 0 or not (0 < giveback < 1):
+    peak = float(peak_pnl)
+    if peak < activate or peak <= 0 or not (0 < giveback < 1):
         return False
-    return current_pnl <= float(peak_pnl) * (1.0 - giveback)
+    tighten_at = float(trail.get("tighten_usd") or 0)
+    tight = float(trail.get("tighten_giveback_frac") or 0)
+    if tighten_at > 0 and peak >= tighten_at and 0 < tight < giveback:
+        giveback = tight
+    return current_pnl <= peak * (1.0 - giveback)
 
 
 def _evaluate_stop(run: dict) -> Optional[str]:
@@ -320,6 +493,18 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     pnl = compute_run_pnl(run)
     pos = pnl["position"]
     has_position = bool(pos and float(pos["quantity"] or 0) != 0)
+
+    # Idle retire (2026-07-26): a run that has cycled N times without ever
+    # opening a position is not "waiting for its setup", it is burning a
+    # multi-agent analysis per tick for nothing. Prod: run 111 held for 13
+    # cycles / 8.5h at confidence 0.58–0.62 against a 0.65 gate, and the
+    # us-stock board (runs 70/71/82) cycled 8–35 times with zero trades all
+    # week. Flat and never-traded only — an open position is never abandoned
+    # on a cycle count.
+    if not has_position and int(pnl.get("trades") or 0) == 0:
+        limit = _idle_retire_cycles()
+        if limit and int(run.get("cycle_seq") or 0) >= limit:
+            return "idle_retired"
 
     # Synthetic liquidation: a position's loss can wipe 100% of its escrowed
     # margin. Isolated-margin liq price from leverage L: long at
@@ -371,12 +556,16 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         return "stop_event:profit_target"
 
     # Trailing profit lock (fleet path): bank the peak before it round-trips.
-    # Only on a live position with fresh marks; classified profit_target so a
-    # fleet replaces the slot immediately (REPLACE_IMMEDIATE).
+    # Only on a live position with fresh marks. Reported as its own reason
+    # rather than profit_target — the far target is typically ~$410 while the
+    # lock banks single dollars, and reusing the label told users "profit
+    # target reached" for a $2.82 exit against a $413 target. Classified
+    # alongside profit_target in the fleet disposition sets so replacement and
+    # auto-restart behaviour is unchanged.
     if has_position and pnl["mark_age_ok"] and \
             _trailing_lock_hit(run.get("peak_pnl_usd"), pnl["total"],
                                conditions.get("trail")):
-        return "stop_event:profit_target"
+        return "stop_event:trailing_lock"
 
     pc = conditions.get("price_cross")
     if pc:
@@ -447,11 +636,13 @@ def _cache_realized_pnl(run_id: int, realized: float) -> None:
 
 def _ratchet_peak_pnl(run: dict, pnl: dict) -> None:
     """Ratchet peak_pnl_usd up so the trailing lock has a high-water mark.
-    Only for runs carrying a trail config (the fleet path) and holding a live
-    position — a monotone climb, written only when it advances."""
-    conditions = json.loads(run.get("stop_conditions_json") or "{}")
-    if not conditions.get("trail"):
-        return
+    Tracked for ANY run holding a live position — a monotone climb, written
+    only when it advances.
+
+    Previously gated on a trail config, which meant every non-fleet run kept
+    peak_pnl_usd NULL (confirmed on prod: NULL on all 63 manual runs). The
+    high-water mark is also plain telemetry the reports read, and a run that
+    later gains a trail would otherwise arm from a cold NULL."""
     pos = pnl.get("position")
     if not (pos and float(pos.get("quantity") or 0) != 0):
         return
@@ -814,10 +1005,19 @@ def _control_active(run: dict, out: dict) -> None:
         failures = int(run.get("consecutive_errors") or 0) + 1
         if failures >= _stop_eval_failure_limit():
             # persistent failure escalates to stop — never an infinite
-            # pause<->resume livelock
-            if _simple_transition(run, STATUS_STOPPING, "stop_eval_failed",
-                                  extra_sets="consecutive_errors = ?, stopped_at = ?",
-                                  extra_args=(failures, _now_iso())):
+            # pause<->resume livelock.
+            #
+            # …but do NOT flatten on the way out (2026-07-26). The trigger for
+            # this path is that marks are stale or unreadable, so a forced
+            # market exit prices the position on exactly the data we just
+            # declared untrustworthy. Six prod runs died here and the forced
+            # flatten realised −$14.41 (runs 79/80: −$6.83 / −$7.36 with no
+            # other trade). Stop and HOLD the position; the user (or the
+            # watcher, once the feed recovers) decides the exit.
+            if _simple_transition(
+                    run, STATUS_STOPPING, "stop_eval_failed",
+                    extra_sets="consecutive_errors = ?, stopped_at = ?, stop_flatten = 0",
+                    extra_args=(failures, _now_iso())):
                 _alert_run(run, "run_stopped", "run_stop_eval_failed",
                            {"run_id": run["id"], "failures": failures, "exc": exc},
                            dedupe=f"run:{run['id']}:eval_stop")
@@ -886,6 +1086,7 @@ def _control_active(run: dict, out: dict) -> None:
 # profit_target (P&L back to 0) and max_trades (trade count back to 0).
 _RESTARTABLE_STOP_REASONS = frozenset({
     "stop_event:profit_target",
+    "stop_event:trailing_lock",   # same disposition: a banked win, P&L back to 0
     "stop_event:max_trades",
 })
 
@@ -1169,6 +1370,28 @@ def _fleet_cycle_mode(cfg: dict) -> str:
     return os.getenv("FLEET_CYCLE_MODE", "light").strip().lower()
 
 
+def _adds_require_profit() -> bool:
+    """Kill switch for the underwater-add block (default on)."""
+    return os.getenv("RUN_ADDS_REQUIRE_PROFIT", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _unrealized_pnl(run: dict) -> Optional[float]:
+    """This run's unrealized P&L, or None when it cannot be trusted (no live
+    mark, stale mark, unreadable book) — callers must treat None as 'unknown'
+    and not as 'flat'."""
+    try:
+        pnl = compute_run_pnl(run)
+    except Exception:  # noqa: BLE001
+        return None
+    if not pnl.get("mark_age_ok"):
+        return None
+    pos = pnl.get("position")
+    if not (pos and float(pos.get("quantity") or 0) != 0):
+        return None
+    return float(pnl.get("unrealized") or 0)
+
+
 def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
     """Add-churn guard (2026-07-25, Fleet 17 finding): a run averaging into an
     open position every cycle stacks fees for no new information (SOL: 5
@@ -1206,6 +1429,15 @@ def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
         conn.close()
     if not opens:
         return None
+    # Never average into a loser (2026-07-26). Run 112 doubled a losing ETH
+    # short at −$27 unrealized, and run 104 stacked five shorts on the way to
+    # −$38.62: an add is a fresh bet that the thesis is working, so it must be
+    # earned by the position already working. Only the sign of unrealized P&L
+    # gates here — the fee hurdle on the new leg is a separate gate.
+    if _adds_require_profit():
+        upnl = _unrealized_pnl(run)
+        if upnl is not None and upnl < 0:
+            return f"add_limit: position underwater (unrealized ${upnl:.2f})"
     max_adds = int(limits.get("max_adds") or 0)
     adds_so_far = len(opens) - 1  # first open is the entry, not an add
     if max_adds and adds_so_far >= max_adds:
@@ -1687,6 +1919,19 @@ def run_cycle(run_id: int) -> dict:
                                   "reason": result["skip_reason"]})
             return result
 
+        # Fee/edge entry gate (2026-07-26): an OPEN must promise a move that
+        # outruns its own round trip. Exits are never gated.
+        if action in ("buy", "short"):
+            thesis = cfg.get("thesis") if isinstance(cfg.get("thesis"), dict) else {}
+            fee_skip = _fee_edge_skip(thesis.get("expected_move_pct"),
+                                      float(cfg.get("leverage") or 1.0))
+            if fee_skip:
+                result["skip_reason"] = fee_skip
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "fee_edge",
+                                      "reason": fee_skip})
+                return result
+
         from automation import evaluate_execution_gates, execute_paper_trade
         # Plan 14 §6.3.2: for fleet-created runs, run_budget_usd is a HARD
         # deployed (open) cost-basis cap enforced at execution — until this,
@@ -1696,6 +1941,18 @@ def run_cycle(run_id: int) -> dict:
         if adapt_params is not None:
             size_usd = adapt_params["size_usd"]
             min_confidence = adapt_params["min_confidence"]
+        # Confidence recalibration: grade this decision against the agent's own
+        # recent distribution rather than a fixed threshold the quantized
+        # scalar barely reaches. On success the risk gate enforces only the low
+        # absolute floor, because rank has already done the discriminating.
+        conf_skip, min_confidence = _conf_percentile_skip(
+            run["agent_id"], gate_confidence, min_confidence)
+        if conf_skip:
+            result["skip_reason"] = conf_skip
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "confidence_rank",
+                                  "reason": conf_skip})
+            return result
         # Plan 15 rec-2 (2026-07-23, Henry-approved): bet size follows stated
         # conviction — "modest long, slight edge only" must not execute a
         # full max_bet. Shrink-only (scale ≤ 1.0), composes with the adapt
