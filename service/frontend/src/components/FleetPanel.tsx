@@ -16,6 +16,7 @@ import { tr } from '../i18n'
 type Fleet = {
   id: number; status: string; status_reason: string | null
   n_runs: number; total_budget_usd: number; risk_appetite: string
+  profit_target_frac?: number | null; successor_fleet_id?: number | null
   warn_loss_frac: number; stop_loss_frac: number
   warn_latched_at: string | null; warn_acked_at: string | null
   entry_paused_reason: string | null; held_by_master: number
@@ -79,6 +80,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.' }),
     nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING' }),
     budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn' }),
+    goal: tr(language, { ko: '목표 수익 (%) — 도달 시 전량 실현 후 같은 매매 재시작', en: 'Profit goal (%) — bank everything at this gain, then restart the same fleet', ja: '目標利益 (%) — 到達で全決済し同じ運用を再開', th: 'เป้ากำไร (%) — ถึงเป้าแล้วปิดทั้งหมดและเริ่มใหม่', vi: 'Mục tiêu lợi nhuận (%) — đạt thì chốt hết rồi chạy lại' }),
+    goalOff: tr(language, { ko: '0 = 목표 없음 (중지할 때까지 계속)', en: '0 = no goal (runs until you stop it)', ja: '0 = 目標なし（停止するまで継続）', th: '0 = ไม่มีเป้า (ทำงานจนกว่าจะหยุด)', vi: '0 = không mục tiêu (chạy đến khi bạn dừng)' }),
+    goalSave: tr(language, { ko: '목표 저장', en: 'Save goal', ja: '目標を保存', th: 'บันทึกเป้า', vi: 'Lưu mục tiêu' }),
     profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)' }),
     launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy' }),
     stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)' }),
@@ -130,6 +134,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [budget, setBudget] = useState<number>(0)
   const [risk, setRisk] = useState('balanced')
   const [levKey, setLevKey] = useState('auto')
+  const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Monitor box tabs: cards (실시간 모니터) | trading activity (거래 활동)
@@ -217,12 +222,25 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
       const s = await fetch(`${API_BASE}/fleets/${body.id}/start`, { method: 'POST', headers: authHeaders })
       if (!s.ok) { setError((await s.json()).detail || 'error'); return }
+      await load()
+    } finally { setBusy(false) }
+  }
+
+  const saveGoal = async (pct: number) => {
+    if (!fleet) return
+    setBusy(true); setError(null)
+    try {
+      const r = await fetch(`${API_BASE}/fleets/${fleet.id}/rails`, {
+        method: 'PUT', headers: authHeaders,
+        body: JSON.stringify({ profit_target_frac: pct > 0 ? pct / 100 : 0 }),
+      })
+      if (!r.ok) { setError((await r.json()).detail || 'error'); return }
       await load()
     } finally { setBusy(false) }
   }
@@ -277,6 +295,12 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               <input type="number" min={50} value={budget}
                 onChange={e => setBudget(Number(e.target.value))}
                 style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 160, background: 'transparent', color: 'inherit' }} />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+              {T.goal}
+              <input type="number" min={0} max={500} step={0.5} value={goalPct}
+                onChange={e => setGoalPct(Number(e.target.value))}
+                style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 150, background: 'transparent', color: 'inherit' }} />
             </label>
             <button onClick={launch} disabled={busy || n < 1}
               style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
@@ -438,6 +462,19 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               {T.stopAll}
             </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
+            <span style={{ fontWeight: 600 }}>{T.goal}</span>
+            <input type="number" min={0} max={500} step={0.5}
+              defaultValue={fleet.profit_target_frac ? +(fleet.profit_target_frac * 100).toFixed(2) : 0}
+              onChange={e => setGoalPct(Number(e.target.value))}
+              style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 110, background: 'transparent', color: 'inherit' }} />
+            <button style={chip(false)} disabled={busy} onClick={() => saveGoal(goalPct)}>{T.goalSave}</button>
+            <span style={{ color: 'var(--text-muted,#a89f92)' }}>
+              {fleet.profit_target_frac
+                ? `→ $${(fleet.total_budget_usd * fleet.profit_target_frac).toFixed(0)}`
+                : T.goalOff}
+            </span>
           </div>
           </>
           ) : (

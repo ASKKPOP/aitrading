@@ -306,6 +306,20 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         conn.close()
 
 
+def set_profit_target(fleet_id: int, frac: Optional[float]) -> None:
+    """Set (or clear with None) the fleet's take-profit goal. Free to change
+    while live — it is a goal, not a protective rail."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("UPDATE fleets SET profit_target_frac = ? WHERE id = ?",
+                       (float(frac) if frac else None, fleet_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_fleet(fleet_id: int, agent_id: Optional[int] = None) -> Optional[dict]:
     conn = get_db_connection()
     try:
