@@ -52,6 +52,24 @@ def _min_trades() -> int:
     return max(1, int(os.getenv("BACKTEST_GATE_MIN_TRADES", "5")))
 
 
+def _iso_date(ts: Any) -> str:
+    """Candle timestamp → YYYY-MM-DD. Feeds return epoch ms (OKX), epoch s,
+    or ISO strings — simulate() keys F&G and event windows by ISO date, so a
+    raw epoch here silently evaluates zero bars (observed live 2026-07-25)."""
+    if ts is None:
+        return ""
+    text = str(ts)
+    if text[:4].isdigit() and "-" in text:
+        return text[:10]
+    try:
+        val = float(text)
+    except ValueError:
+        return text[:10]
+    if val > 1e11:          # epoch milliseconds
+        val /= 1000.0
+    return datetime.fromtimestamp(val, tz=timezone.utc).strftime("%Y-%m-%d")
+
+
 def _bars_from_candles(candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """price_fetcher daily candles → simulate() bar shape (None-safe)."""
     bars = []
@@ -60,7 +78,7 @@ def _bars_from_candles(candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if close is None:
             continue
         bars.append({
-            "date": str(c.get("ts") or c.get("date") or "")[:10],
+            "date": _iso_date(c.get("ts") or c.get("date")),
             "open": float(c.get("open") or close),
             "close": float(close),
             "volume": float(c.get("volume") or 0.0),
