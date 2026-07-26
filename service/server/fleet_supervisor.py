@@ -322,6 +322,9 @@ def _agent_deleted(agent_id: int) -> bool:
 
 # ── slot / replacement pass ─────────────────────────────────────────────────
 
+_EMPTY_SLOT_RETRY_SECONDS = max(60, int(__import__("os").getenv("FLEET_EMPTY_SLOT_RETRY_SECONDS", "300")))
+
+
 def _slots(fleet_id: int) -> list[dict]:
     conn = get_db_connection()
     try:
@@ -391,6 +394,17 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             # empty forever; "kept at N" must hold for under-fills too.
             if state not in ("active", "waiting"):
                 continue
+            # Retry cooldown: with no buildable candidates, re-attempting an
+            # empty waiting slot every 60s tick burns a junk-symbol price
+            # probe and 3 journal rows per slot per minute (observed live).
+            if state == "waiting":
+                try:
+                    from run_engine import _age_seconds
+                    if _age_seconds(slot.get("updated_at") or "") < \
+                            _EMPTY_SLOT_RETRY_SECONDS:
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
             if suspended:
                 if state != "waiting":
                     fp._bind_slot(fleet["id"], slot["slot_index"], None,
