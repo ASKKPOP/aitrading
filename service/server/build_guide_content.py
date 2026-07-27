@@ -58,6 +58,20 @@ SOURCES: list[dict] = [
      "group": "ops-keys", "title": "API Keys Reference", "owner_only": True},
     {"key": "architecture-en", "src": "12-system-architecture-report.html", "kind": "html", "lang": "en",
      "group": "architecture", "title": "System Architecture & Technical Flow", "owner_only": True},
+    # The member-facing distillation of the E1/E2 analysis and the order
+    # decision pipeline: how a decision becomes an order, and which parts
+    # the AI owns. Published in all five UI languages — the first group
+    # that is, which is why DocsPage no longer forces ko-or-en.
+    {"key": "decisions-ko", "src": "design/decisions-guide-ko.html", "kind": "html",
+     "lang": "ko", "group": "decisions", "title": "자동매매는 어떻게 판단하는가"},
+    {"key": "decisions-en", "src": "design/decisions-guide-en.html", "kind": "html",
+     "lang": "en", "group": "decisions", "title": "How your fleet decides to trade"},
+    {"key": "decisions-ja", "src": "design/decisions-guide-ja.html", "kind": "html",
+     "lang": "ja", "group": "decisions", "title": "自動売買はどう判断するのか"},
+    {"key": "decisions-th", "src": "design/decisions-guide-th.html", "kind": "html",
+     "lang": "th", "group": "decisions", "title": "ระบบเทรดอัตโนมัติตัดสินใจอย่างไร"},
+    {"key": "decisions-vi", "src": "design/decisions-guide-vi.html", "kind": "html",
+     "lang": "vi", "group": "decisions", "title": "Hệ thống giao dịch tự động quyết định thế nào"},
     # Engineering analysis behind the smart-routing + hot-issue features. Kept
     # owner_only alongside architecture: it carries file-level implementation
     # plans, LLM cost modelling and merge sequencing. The member-facing version
@@ -78,6 +92,7 @@ GROUPS = [
     {"group": "backtest-report", "ko": "백테스트 결과", "en": "Backtest Result"},
     {"group": "ops-keys", "ko": "API 키 (관리자)", "en": "API Keys (owner)"},
     {"group": "architecture", "ko": "시스템 아키텍처 (관리자)", "en": "System Architecture (owner)"},
+    {"group": "decisions", "ko": "AI 판단과 주문", "en": "How Decisions Become Orders"},
     {"group": "extensions", "ko": "확장 설계 분석 (관리자)", "en": "Extension Design Analysis (owner)"},
 ]
 
