@@ -425,7 +425,27 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         '"entry":number|null (your suggested level — commentary only; the fill '
         'is executed at the live market price regardless),'
         '"target":number|null,"stop":number|null,"rationale":"1-2 sentences",'
-        '"report":"a 4-6 sentence markdown report synthesizing the analysts"}\n\n'
+        '"report":"a 4-6 sentence markdown report synthesizing the analysts",'
+        # The order block: the desk sizes its own trade. Every field is
+        # RELATIVE — no absolute prices, no dollar amounts — so a wrong number
+        # is bounded by the rails instead of becoming a fabricated order. All
+        # fields optional; "defer" hands the trade back to the fixed defaults,
+        # which is the right answer whenever the situation is unremarkable.
+        '"order":{"defer":true|false,'
+        '"size_frac":0.05-1.0 (fraction of the max bet),'
+        '"leverage":number,'
+        '"stop_pct":number (%% from entry — size it to THIS instrument\'s '
+        'volatility, not a house default),'
+        '"target_pct":number (%% from entry — must be at least 2x stop_pct),'
+        '"trail_arm_pct":number (%% profit before the trailing lock arms),'
+        '"trail_give":0.05-0.40 (fraction of peak profit you will surrender),'
+        '"horizon_hours":number,"max_adds":0-3,'
+        '"why":"one sentence tying these numbers to the evidence above"}}\n\n'
+        "For the order block: set defer=true unless the analysts give you a "
+        "concrete reason to depart from a house default. When you do set the "
+        "numbers, anchor the stop to measured volatility (ATR/sigma) and a "
+        "structural level, and the target to a real level the move can reach "
+        "— not to a round number.\n\n"
         f"NEWS ANALYST:\n{briefs['news']}\n\n"
         f"SENTIMENT ANALYST:\n{briefs['sentiment']}\n\n"
         f"FUNDAMENTALS/MACRO ANALYST:\n{briefs['fundamentals_macro']}\n\n"

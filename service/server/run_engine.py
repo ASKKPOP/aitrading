@@ -46,6 +46,12 @@ from typing import Any, Optional
 
 import trading_runs
 from database import begin_write_transaction, get_db_connection
+from order_params import (
+    exit_prices as order_exit_prices,
+    mode as order_params_mode,
+    parse_order_block,
+    rr_floor_violation,
+)
 from trading_runs import (
     STATUS_ARMED,
     STATUS_PAUSED,
@@ -1903,6 +1909,24 @@ def run_cycle(run_id: int) -> dict:
                               "route": route,
                               "report": (decision.get("report") or "")[:1000]})
 
+        # AI-authored order parameters (2026-07-27). Parsed and railed here,
+        # journaled either way; whether they change the order is
+        # RUN_AI_ORDER_PARAMS. Default 'shadow' — the block is recorded beside
+        # the decision that produced it and the deterministic path runs
+        # unchanged, which is what makes the constants-vs-AI comparison
+        # possible without risking anything on an unproven model output.
+        order_params = None
+        op_mode = order_params_mode()
+        if op_mode != "off":
+            order_params = parse_order_block(
+                decision.get("order"),
+                leverage_cap=max(1.0, float(cfg.get("leverage") or 1.0)))
+            emit_telemetry_event(
+                run_id, "order_params",
+                {"cycle": seq, "mode": op_mode, "action": action,
+                 "deferred": order_params is None,
+                 **({"params": order_params.as_event()} if order_params else {})})
+
         # Futures v1 (Plan 10 D5): the desk decides direction (buy/sell); the
         # futures book translates it. A bearish call with no long to reduce
         # OPENS a short; a bullish call while short COVERS the book instead of
@@ -2014,6 +2038,16 @@ def run_cycle(run_id: int) -> dict:
         # notional so Kelly / vol / exposure caps bound total exposure, then
         # the executor debits only the margin. L=1 leaves this untouched.
         lev = max(1.0, float(cfg.get("leverage") or 1.0))
+        # Apply mode only: the desk's own sizing, already railed. size_frac is
+        # a fraction OF the configured max bet and leverage is capped at the
+        # run's own tier, so both can only shrink the order the config allowed.
+        # Every downstream gate (Kelly, exposure, dust, budget headroom) still
+        # runs on the result — this replaces the size, never the checks.
+        if op_mode == "apply" and order_params is not None:
+            if order_params.size_frac is not None:
+                size_usd = float(cfg.get("max_bet_usd") or 0) * order_params.size_frac
+            if order_params.leverage is not None:
+                lev = max(1.0, min(lev, float(order_params.leverage)))
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
                     "min_confidence": min_confidence,
                     "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
@@ -2046,6 +2080,33 @@ def run_cycle(run_id: int) -> dict:
                                       "reason": result["skip_reason"]})
                 return result
 
+        # Exit bracket. In apply mode the desk's railed stop/target replace the
+        # flat risk_limits percentages (5%/10% for every instrument in every
+        # regime); otherwise the gate's own bracket stands.
+        stop_loss, take_profit = gate.stop_loss, gate.take_profit
+        is_short = action in ("short", "sell")
+        if op_mode == "apply" and order_params is not None \
+                and order_params.has_exits() and entry:
+            ai_sl, ai_tp = order_exit_prices(order_params, float(entry), is_short)
+            if ai_sl and ai_tp:
+                stop_loss, take_profit = ai_sl, ai_tp
+
+        # R:R floor — applied to WHICHEVER bracket won, AI or deterministic.
+        # The rail exists because the fleet's own tier maths produced a 10:1
+        # adverse geometry for a month (lock armed at 1/10th of the stop), and
+        # a hand-edited risk_limits row can still express one. Refusing the
+        # entry is correct: a bracket that risks more than it can win is not a
+        # trade worth taking, whoever authored it.
+        if action in ("buy", "short") and entry:
+            violation = rr_floor_violation(stop_loss, take_profit,
+                                           float(entry), is_short)
+            if violation:
+                result["skip_reason"] = violation
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "rr_floor",
+                                      "reason": violation})
+                return result
+
         # Plan 14 §6.7 depth (2): re-check the master hold immediately before
         # the trade write — a hold landing mid-cycle (past the pre-gate, during
         # the LLM call) turns this cycle into a journaled no-trade skip.
@@ -2065,7 +2126,7 @@ def run_cycle(run_id: int) -> dict:
             run["agent_id"], run["symbol"], run["market"], action,
             gate.quantity, float(entry),
             content=f"Trading run #{run_id} cycle {seq}",
-            stop_loss=gate.stop_loss, take_profit=gate.take_profit,
+            stop_loss=stop_loss, take_profit=take_profit,
             run_id=run_id, client_order_id=client_order_id,
             leverage=lev, fence=_fence(run_id))
         if signal_id:
