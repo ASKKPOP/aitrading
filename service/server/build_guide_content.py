@@ -58,6 +58,13 @@ SOURCES: list[dict] = [
      "group": "ops-keys", "title": "API Keys Reference", "owner_only": True},
     {"key": "architecture-en", "src": "12-system-architecture-report.html", "kind": "html", "lang": "en",
      "group": "architecture", "title": "System Architecture & Technical Flow", "owner_only": True},
+    # Engineering analysis behind the smart-routing + hot-issue features. Kept
+    # owner_only alongside architecture: it carries file-level implementation
+    # plans, LLM cost modelling and merge sequencing. The member-facing version
+    # of this material is the `smart` group.
+    {"key": "extension-e1-e2-en", "src": "reports/2026-07-25-extension-e1-e2-analysis.html",
+     "kind": "html", "lang": "en", "group": "extensions",
+     "title": "E1 Decision Routing & E2 Hot-Issue Daemon — Design Analysis", "owner_only": True},
 ]
 
 GROUPS = [
@@ -71,6 +78,7 @@ GROUPS = [
     {"group": "backtest-report", "ko": "백테스트 결과", "en": "Backtest Result"},
     {"group": "ops-keys", "ko": "API 키 (관리자)", "en": "API Keys (owner)"},
     {"group": "architecture", "ko": "시스템 아키텍처 (관리자)", "en": "System Architecture (owner)"},
+    {"group": "extensions", "ko": "확장 설계 분석 (관리자)", "en": "Extension Design Analysis (owner)"},
 ]
 
 _MD_SHELL = """<!doctype html>

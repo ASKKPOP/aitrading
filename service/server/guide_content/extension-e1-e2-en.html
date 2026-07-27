@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extension Analysis — AI Routing &amp; Hot-Issue Daemon · Sooppiy</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+    --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+      --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+      --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+      --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+    --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+    --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+    --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-size:29px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink-2);font-size:15.5px;max-width:68ch}
+  h2{font-size:20px;margin:46px 0 4px;letter-spacing:-.01em}
+  h2 .tag{font-size:12px;font-weight:700;vertical-align:3px;margin-left:8px;padding:3px 9px;border-radius:999px}
+  .tag-go{background:var(--pos-soft);color:var(--pos);border:1px solid var(--pos)}
+  .sectnote{color:var(--ink-2);margin:0 0 18px;max-width:72ch;font-size:14.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:20px 22px}
+  /* verdict tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:12px;color:var(--muted);font-weight:600}
+  .tile .v{font-size:22px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+  .tile .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .acc{color:var(--accent)}
+  /* flow diagram */
+  .flow{display:flex;flex-direction:column;gap:0;margin:18px 0 6px}
+  .frow{display:flex;gap:10px;align-items:stretch;justify-content:center;flex-wrap:wrap}
+  .fbox{background:var(--surface-2);border:1.5px solid var(--border);border-radius:11px;padding:10px 14px;
+    font-size:13px;text-align:center;min-width:130px;flex:1;max-width:250px}
+  .fbox b{display:block;font-size:13.5px}
+  .fbox .s{color:var(--ink-2);font-size:11.5px;margin-top:2px;display:block}
+  .fbox.ai{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 9%,var(--surface))}
+  .fbox.algo{border-color:var(--accent);background:var(--accent-soft)}
+  .fbox.gate{border-color:var(--amber)}
+  .fbox.hot{border-color:var(--neg);background:var(--neg-soft)}
+  .fbox.ok{border-color:var(--pos);background:var(--pos-soft)}
+  .farrow{text-align:center;color:var(--muted);font-size:16px;line-height:1;padding:6px 0}
+  .fsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;margin:0 auto}
+  .flabel{font-size:11px;font-weight:700;text-align:center;letter-spacing:.04em;text-transform:uppercase;padding-bottom:4px}
+  .fl-a{color:var(--accent)} .fl-b{color:var(--purple)}
+  /* tables */
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+  .c-have{background:var(--pos-soft);color:var(--pos)}
+  .c-build{background:var(--accent-soft);color:var(--accent)}
+  /* badges row */
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 14px}
+  .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2)}
+  .badge b{color:var(--ink)}
+  /* chart */
+  figure{margin:0}
+  .chart-card{padding:18px 18px 8px;margin-top:14px}
+  .cap{color:var(--ink-2);font-size:13px;margin:2px 4px 14px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+  .blabel{fill:var(--ink);font-size:12.5px;font-weight:650}
+  .bval{fill:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .warn{background:var(--neg-soft);border-left:3px solid var(--neg);padding:10px 14px;border-radius:8px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .warn b{color:var(--ink)}
+  .note{background:var(--surface-2);border-radius:9px;padding:10px 14px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .note b{color:var(--ink)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:44px;border-top:1px solid var(--border);padding-top:16px}
+  @media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.cols2{grid-template-columns:1fr}.fsplit{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Sooppiy · Extension Proposals · Feasibility &amp; Design</div>
+    <h1>E1 — AI/Algorithm decision routing &nbsp;·&nbsp; E2 — Hot-issue daemon</h1>
+    <p class="sub">Analysis of the two proposed extensions against the live codebase. Verdict up front:
+    <b>both are feasible and recommended</b> — and most of the machinery already exists. E1 is the smarter
+    successor to the blanket <code>FLEET_CYCLE_MODE=full</code> we just enabled; E2 is largely an assembly of
+    feeds the worker already snapshots hourly.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">E1 · AI routing</div><div class="v pos">✅ Build</div><div class="d">~1–2 weeks · mostly existing signals</div></div>
+    <div class="tile"><div class="k">E2 · Hot-issue daemon</div><div class="v pos">✅ Build</div><div class="d">~1.5–2 weeks · 3-stage, per-user verified</div></div>
+    <div class="tile"><div class="k">LLM cost vs full mode</div><div class="v acc">−80%</div><div class="d">AI only when it matters</div></div>
+    <div class="tile"><div class="k">Synergy</div><div class="v">E2 → E1</div><div class="d">daemon signal = routing trigger</div></div>
+  </div>
+
+  <!-- ══════════════ E1 ══════════════ -->
+  <h2>E1 — Route by situation: AI for the tails, algorithm for the middle <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Your idea:</b> when analysis reads <b>high-event / high-risk / high-profit</b>, let the AI recommend and act
+  (an algorithm can't encode every parameter of a tail situation). In <b>normal</b> conditions (hold / routine), act by the
+  <b>programmed deterministic algorithm</b> — cheap, auditable, predictable. This is a sound architecture, and it directly
+  fixes the cost problem of running full analysis on every cycle.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Every run cycle</b><span class="s">price + feeds refresh (0 LLM)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Situation Classifier</b><span class="s">deterministic · 0 LLM · from signals that already exist</span></div></div>
+      <div class="farrow">↓ &nbsp; routes &nbsp; ↓</div>
+      <div class="fsplit">
+        <div>
+          <div class="flabel fl-a">NORMAL (~80–85% of cycles)</div>
+          <div class="fbox algo" style="max-width:none"><b>Programmed algorithm acts</b>
+            <span class="s">thesis rules + technicals + stops/trailing · 0 LLM calls · fully auditable</span></div>
+        </div>
+        <div>
+          <div class="flabel fl-b">HIGH EVENT / RISK / PROFIT (~15–20%)</div>
+          <div class="fbox ai" style="max-width:none"><b>Full AI desk decides</b>
+            <span class="s">all analysts (news · sentiment/psych · macro · technical) + Trader/Risk debate</span></div>
+        </div>
+      </div>
+      <div class="farrow">↓ &nbsp; both paths &nbsp; ↓</div>
+      <div class="frow"><div class="fbox ok"><b>Risk gates (unchanged, always)</b><span class="s">Kelly per-run · exposure caps · stops · trailing lock — AI can never bypass them</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Order / hold</b><span class="s">journaled with the route decision (why AI / why algo)</span></div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 6px">The classifier costs zero LLM calls — every trigger already exists in prod</h3>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Trigger → route to AI</th><th>Source (already live)</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Scheduled macro release window (FOMC / CPI / jobs)</td><td><code>market_events.active_event_window</code> (event guard)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Liquidation shock — |return| ≥ 3σ or volume spike</td><td><code>psych_feed</code> shock proxy (OKX hourly σ + volume)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Regime = panic / euphoria / event (F&amp;G &lt;20 or ≥80, vol pct ≥90)</td><td><code>regime.py</code> — 6 regimes, persisted snapshots</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Position P&amp;L near stop or near trail-lock level</td><td><code>peak_pnl_usd</code> + stop distances (shipped this session)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Hot-issue signal on this symbol</td><td><b>E2 daemon</b> (below)</td><td><span class="chip c-build">BUILD</span></td></tr>
+      <tr><td>Thesis invalidation price crossed</td><td>thesis <code>invalidation</code> field vs mark</td><td><span class="chip c-build">BUILD (small)</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols2" style="margin-top:16px">
+    <div class="card pad">
+      <b>Why this is right</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>Cost:</b> full AI only on ~15–20% of cycles → ~80% cheaper than the blanket full mode now running, while keeping AI exactly where human-factor judgment matters.</li>
+        <li><b>Auditability:</b> normal ops are deterministic — reproducible, backtestable, explainable.</li>
+        <li><b>Tail quality:</b> the tails are where Fleet 16 lost (rally against an all-short book) — precisely where the full desk should think.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>Risks &amp; guardrails</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>AI never bypasses the risk engine</b> — both routes end at the same gates (Kelly, exposure, stops, trailing). Non-negotiable invariant.</li>
+        <li><b>Fail-closed:</b> AI call fails on a hot cycle → hold + keep stops, never silently fall to the algorithm mid-event.</li>
+        <li><b>Threshold calibration</b> needs the backtest harness (plan&nbsp;#1) — ship v1 with the conservative triggers above, tune with data.</li>
+        <li><b>Journal the route</b> (<code>route: ai|algo + trigger</code>) in every decision event so behaviour is explainable per cycle.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ E2 ══════════════ -->
+  <h2>E2 — Hot-issue daemon: hourly AI watch over every user's RUN symbols <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Your idea:</b> a daemon that, every hour, sweeps all symbols across all users' runs
+  (e.g. 3 users · 11 symbols), detects hot issues (ROI shift, economy/policy change from any organization, technical
+  breakout, news &amp; social surge), notifies each affected user, and hands each user's Trading Master a decision point.
+  The worker already snapshots every input feed — this is mostly assembly plus a fan-out layer.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Hourly daemon tick</b><span class="s">new worker task <code>hot_issue_daemon</code></span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Collect DISTINCT symbols across all users' active runs</b><span class="s">3 users · 11 symbols → analyze 11 once, fan out per user (dedupe = cost ÷ users)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Cheap trigger scan · 0 LLM</b><span class="s">news burst · policy_feed delta · psych shock/F&amp;G jump · social z-score · technical break (MA/σ) · ETF flows</span></div></div>
+      <div class="farrow">↓ only tripped symbols (~15%) ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Stage 1 · AI deep read of the EVENT (global, shared)</b><span class="s">what changed · direction · magnitude · urgency — a fact about the market, not yet about any user</span></div></div>
+      <div class="farrow">↓ per affected user — case-by-case ↓</div>
+      <div class="frow"><div class="fbox gate"><b>Stage 2 · Per-user verification — 결정은 사용자별 (deterministic first · 0 LLM)</b><span class="s">holds/runs the symbol? · impact direction vs <b>their</b> position sign (bearish news + their short = supportive; + their long = against) · materiality vs <b>their</b> leverage &amp; distance-to-stop → <b>below threshold = SILENT, no alert</b></span></div></div>
+      <div class="farrow">↓ material users only ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Stage 2′ · Personalized AI verification</b><span class="s">one small call per (hot symbol × material user): "for THIS book — for/against/neutral · urgency · suggested act"</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="fsplit">
+        <div><div class="fbox hot" style="max-width:none"><b>Stage 3 · Personalized notify</b><span class="s"><code>send_alert</code> — i18n (5 langs), text written for THEIR position ("against your 2× short, stop 1.1% away"), dedupe + cooldown + severity floor</span></div></div>
+        <div><div class="fbox ai" style="max-width:none"><b>Stage 3 · Decision point → Trading Master</b><span class="s"><code>hot_issues</code> row + run_event; next cycle routes to the full desk <b>with that user's own book</b> (E1) — final verification is per-user by construction</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>Walk-through (your example, now case-by-case):</b> 3 users hold 11 distinct symbols. Hourly tick scans all 11 at zero
+  LLM cost; ETH trips (bearish policy headline + news burst). Stage-1 deep-reads the event once. Stage-2 then verifies <em>per user</em>:
+  user A is <b>short ETH</b> → the news supports the position → low urgency FYI (or silence); user B is <b>long ETH 2×</b> with the stop
+  1.1% away → against the position and material → personalized urgent alert + Master decision point + next cycle routed to the full desk;
+  user C holds ETH with a far stop and small size → below materiality → <b>no alert at all</b>. Same global fact, three different outcomes —
+  and the other 10 symbols cost nothing.</div>
+
+  <div class="cols2">
+    <div class="card pad">
+      <b>Already exists (verified in prod)</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li>Feeds: <code>policy_feed</code> · <code>psych_feed</code> (F&amp;G, shock) · <code>social_feed</code> · market news / macro / ETF-flow snapshots — all on the worker schedule.</li>
+        <li>Notifications: <code>send_alert</code> with per-user language (5-lang catalogues live on prod), dedupe keys.</li>
+        <li>Master layer: <code>ai_automation_state</code> + fleet supervisor to receive/act on the signal.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>To build</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><code>hot_issue_daemon.py</code> worker task + <code>hot_issues</code> table (symbol, trigger, severity, ai_read, ts).</li>
+        <li>Trigger thresholds (z-scores vs each feed's own history) + per-symbol cooldown (no re-alert &lt; N h at same severity).</li>
+        <li><b>E2-B′ per-user verification layer</b> — join hot issue × each user's book (position sign, leverage, distance-to-stop, thesis); deterministic relevance/materiality filter, then one personalized AI verify per material user. Silent below threshold.</li>
+        <li>New i18n message ids for the alert catalogue (needs native review per memory note) — parameterized per-position wording.</li>
+        <li>Master "act on signal" — v1: notify + surface decision point + route next cycle to AI. Auto-trade on signal only as opt-in phase 2.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warn"><b>Main risk — alert fatigue:</b> an hourly AI watcher that over-notifies gets muted within a week. The severity floor,
+  per-symbol cooldowns, and "only on state <em>change</em>" rule are as important as the detection itself.</div>
+
+  <!-- ══════════════ COST ══════════════ -->
+  <h2>LLM cost — why routing beats blanket full mode</h2>
+  <p class="sectnote">Daily decision-tier LLM calls for a 4-run fleet at 45-min cycles (32 cycles/run/day), plus the daemon over 11 symbols.
+  E1 keeps the full desk exactly where it pays, at ~⅕ the cost of always-full. E2's pre-filter makes an hourly AI watch affordable.</p>
+  <figure class="card chart-card">
+    <svg id="cost" viewBox="0 0 920 300" role="img" aria-label="Daily LLM calls: light 128, routed 134, full 768; daemon naive 1584 vs prefiltered 80"></svg>
+    <figcaption class="cap">Left: per-cycle decision calls (4-run fleet). Right: hourly daemon over 11 symbols. Lower is cheaper; purple = where AI judgment is actually applied.</figcaption>
+  </figure>
+
+  <!-- ══════════════ INTEGRATION ══════════════ -->
+  <h2>Where it hooks in — file-level plan</h2>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Step</th><th>Change</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td><b>E1-A</b></td><td>Situation classifier (pure function over existing feeds; returns <code>route + trigger</code>)</td><td><code>run_engine.py</code> new <code>_classify_situation()</code>, called where <code>_fleet_cycle_mode</code> is read</td></tr>
+      <tr><td><b>E1-B</b></td><td>Normal-path algorithm v1 (thesis + technical rules; entries conservative, exits = existing stops/trailing)</td><td><code>run_engine.py</code> (light path generalized, minus LLM)</td></tr>
+      <tr><td><b>E1-C</b></td><td>Journal route per decision; env kill-switch <code>DECISION_ROUTING_ENABLED</code></td><td><code>run_events</code> decision payload</td></tr>
+      <tr><td><b>E2-A</b></td><td><code>hot_issue_daemon</code> task + <code>hot_issues</code> table + trigger z-scores</td><td>new <code>hot_issue_daemon.py</code>, register in worker tasks</td></tr>
+      <tr><td><b>E2-B</b></td><td>Per-user fan-out alerts (i18n ids, dedupe, cooldown, severity floor)</td><td><code>alerts.send_alert</code> + catalogue entries</td></tr>
+      <tr><td><b>E2-B′</b></td><td><b>Per-user verification</b> — deterministic relevance/materiality filter (position sign × impact direction, leverage, stop distance; silent below threshold) + one personalized AI verify per material user</td><td><code>hot_issue_daemon.py</code> verify stage, joins <code>positions</code>/<code>trading_runs</code> per user</td></tr>
+      <tr><td><b>E2-C</b></td><td>Master decision point + route-next-cycle-to-AI flag</td><td><code>fleet_supervisor</code> / run_event consumed by E1 classifier</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Sequencing — merged with the profit plan</h2>
+  <p class="sectnote">These slot cleanly into the existing 4-week plan. The backtest harness (#1) remains the prerequisite for tuning
+  E1's thresholds beyond the conservative v1; concentration limits (#2) stay the week-1 quick win.</p>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Week</th><th>Ship</th><th>From</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Concentration limits · E1-A/B v1 (conservative triggers, algorithm normal-path)</td><td>plan #2 · <b>E1</b></td></tr>
+      <tr><td>2</td><td>Backtest engine · E1-C rollout (replace blanket full mode with routing)</td><td>plan #1 · <b>E1</b></td></tr>
+      <tr><td>3</td><td>Forward-eval + expectancy gate · E2-A/B/<b>B′</b> daemon + per-user-verified alerts (B′ ships WITH the alerts — an unverified broadcast never ships)</td><td>plan #1 · <b>E2</b></td></tr>
+      <tr><td>4</td><td>Conviction calibration · E2-C master integration · tune E1 thresholds on backtest data</td><td>plan #3 · <b>E1+E2</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <b>Verdict:</b> build both. E1 (~1–2 wk, <b>E1-A shipped &amp; live 2026-07-25</b>) turns "full analysis always" into "full analysis when
+    it matters". E2 (~1.5–2 wk) is the event radar — now 3-stage: <b>detection is global; judgment is always per-user</b> (a hot issue is a
+    fact about the market; whether it matters is a fact about each user's book — verified case-by-case before any alert or act). Safety
+    invariant throughout: <b>AI recommends; the risk engine always disposes.</b><br>
+    Sooppiy extension analysis · 2026-07-25 · verified against prod (market_events, psych_feed, regime, policy_feed, social_feed, alerts i18n all live).
+  </div>
+</div>
+
+<script>
+(function(){
+  function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+  function draw(){
+    var svg=document.getElementById('cost'); if(!svg)return; svg.innerHTML='';
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc){var t=el('text',{x:x,y:y,class:c||'tick'});if(anc)t.setAttribute('text-anchor',anc);t.textContent=s;return t;}
+    var acc=css('--accent'),pur=css('--purple'),mut=css('--muted'),brd=css('--border');
+    var W=920,H=300, baseY=240, top=40;
+    // two groups: fleet cycles (light/routed/full), daemon (naive/prefiltered)
+    var groups=[
+      {x0:70, w:340, title:'Fleet decision calls / day (4 runs)',
+       bars:[{l:'Light (old)',v:128,c:mut},{l:'E1 Routed',v:134,c:pur,star:true},{l:'Full (now)',v:768,c:acc}]},
+      {x0:520, w:330, title:'Daemon calls / day (11 symbols)',
+       bars:[{l:'E2 Pre-filtered',v:80,c:pur,star:true},{l:'Naive hourly full',v:1584,c:mut}]}
+    ];
+    var vmax=1584;
+    var scale=v=>Math.max(4,(v/vmax)*(baseY-top));
+    groups.forEach(function(g){
+      svg.appendChild(txt(g.x0+g.w/2,24,g.title,'blabel','middle'));
+      svg.appendChild(el('line',{x1:g.x0-10,x2:g.x0+g.w+10,y1:baseY,y2:baseY,stroke:brd,'stroke-width':1}));
+      var n=g.bars.length, bw=Math.min(86,(g.w-(n-1)*26)/n), gap=(g.w-n*bw)/(n-1||1);
+      g.bars.forEach(function(b,i){
+        var x=g.x0+i*(bw+gap), h=scale(b.v), y=baseY-h;
+        var r=el('path',{d:'M'+x+' '+baseY+' L'+x+' '+(y+4)+' Q'+x+' '+y+' '+(x+4)+' '+y+' L'+(x+bw-4)+' '+y+' Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+4)+' L'+(x+bw)+' '+baseY+' Z',fill:b.c,'fill-opacity':.85});
+        svg.appendChild(r);
+        svg.appendChild(txt(x+bw/2,y-8,b.v.toLocaleString(),'bval','middle'));
+        var lt=txt(x+bw/2,baseY+18,(b.star?'★ ':'')+b.l,'tick','middle'); svg.appendChild(lt);
+      });
+    });
+    svg.appendChild(txt(70,H-8,'★ = recommended architecture · purple = AI applied selectively','tick','start'));
+  }
+  draw();
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);}
+})();
+</script>
+</body>
+</html>

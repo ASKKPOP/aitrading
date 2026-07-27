@@ -6,18 +6,23 @@
 <style>
 :root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
   --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --good:#1a8f5e; --warn:#c88a1a;
-  --border:rgba(11,11,11,.1); }
+  --bad:#d03b3b; --border:rgba(11,11,11,.1); }
 @media (prefers-color-scheme: dark){
   :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
     --ink2:#c3c2b7; --muted:#8f8d85; --accent:#3987e5; --good:#3fd08a; --warn:#e0a53a;
-    --border:rgba(255,255,255,.1); } }
+    --bad:#e66767; --border:rgba(255,255,255,.1); } }
 *{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
   font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
   line-height:1.65;font-size:14.5px}
 main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
 h1{font-size:26px;line-height:1.25;margin:0 0 6px}
 h2{font-size:19px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:20px 0 6px}
 p,li{color:var(--ink2)} strong{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2)}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td strong{color:var(--ink)}
 .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;
   padding:2px 10px;vertical-align:3px;margin-left:8px;letter-spacing:.03em}
 .live{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good);border:1px solid var(--good)}
@@ -38,83 +43,130 @@ p,li{color:var(--ink2)} strong{color:var(--ink)}
 .note{border-left:3px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;
   padding:10px 14px;margin:14px 0;font-size:13.5px;color:var(--ink2)}
 .safe{border-left-color:var(--good)}
-/* flow diagram */
-.fbox{background:var(--card);border:1.5px solid var(--grid);border-radius:11px;padding:10px 16px;
-  text-align:center;font-size:13.5px;max-width:420px;margin:0 auto}
-.fbox b{display:block;color:var(--ink)} .fbox span{color:var(--ink2);font-size:12.5px}
-.fbox.q{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--card))}
-.fbox.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))}
-.farrow{text-align:center;color:var(--muted);font-size:16px;line-height:1;padding:7px 0}
-/* per-user fan-out */
+.trig{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
+.trig .t{background:var(--card);border:1.5px solid var(--warn);border-radius:11px;padding:12px 13px;font-size:12.8px}
+.trig .t b{display:block;color:var(--ink);font-size:13.2px;margin-bottom:3px}
+.trig .t i{font-style:normal;font-size:19px;display:block;margin-bottom:5px}
 .fan{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
 @media (max-width:640px){.fan{grid-template-columns:1fr}}
 .fan .u{border-radius:11px;border:1.5px solid var(--grid);background:var(--card);padding:11px 13px;font-size:12.5px}
 .fan .u b{display:block;font-size:13px;color:var(--ink);margin-bottom:3px}
 .fan .good{border-color:var(--good)} .fan .bad{border-color:var(--warn)} .fan .mute{opacity:.75;border-style:dashed}
-figure{margin:14px 0} figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+figure{margin:16px 0} figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
 svg{display:block;width:100%;height:auto}
 </style></head>
 <body><main>
 
 <h1>Smart AI Decisions &amp; Personal Alerts</h1>
-<p>How your automated trading thinks — and what's coming next. In plain language: when the market is calm your
-fleet follows fast, disciplined rules; when something important happens, the full AI analyst desk takes over.
-And soon, you'll get personal alerts that are checked against <strong>your own positions</strong> before they
-ever reach you.</p>
+<p>How your automated trading thinks. In plain language: the platform decides <em>who</em> should make each
+call — a fast rules engine, or the full AI analyst desk — and it watches your symbols around the clock,
+checking every event against <strong>your own positions</strong> before it ever alerts you.</p>
 
 <h2>Two minds, one fleet — smart decision routing <span class="badge live">LIVE</span></h2>
-<p>Every trading cycle, the platform first asks a simple question: <strong>is this an ordinary moment, or a
-critical one?</strong> The answer decides who makes the call.</p>
+<p>Every trading cycle begins with one question: <strong>is this an ordinary moment, or a critical one?</strong>
+The answer decides who makes the call. Both answers end up passing through the same safety layer.</p>
 
-<div class="fbox"><b>⏱ Every trading cycle</b><span>prices &amp; market feeds refresh</span></div>
-<div class="farrow">↓</div>
-<div class="fbox q"><b>Situation check</b><span>ordinary moment — or critical?</span></div>
-<div class="farrow">↓ &nbsp; routes the decision &nbsp; ↓</div>
+<figure>
+  <svg viewBox="0 0 720 372" role="img" aria-label="Each cycle is classified as ordinary or critical; ordinary goes to the rules engine, critical to the AI desk, and both pass through safety checks before any action">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="250" y="8" width="220" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="360" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">⏱ Every trading cycle</text>
+    <text x="360" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">prices &amp; market feeds refresh</text>
+    <line x1="360" y1="54" x2="360" y2="76" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
 
-<div class="split">
-  <div class="mode calm">
-    <h3>🧭 Ordinary moments → the rules engine</h3>
-    <ul>
-      <li>Follows your strategy's plan: entries, holds, and the safety stops you can see on each RUN</li>
-      <li>Fast, consistent, and predictable — the same situation always gets the same answer</li>
-      <li>Most cycles are handled this way</li>
-    </ul>
-  </div>
-  <div class="mode hot">
-    <h3>🧠 Critical moments → the full AI desk</h3>
-    <ul>
-      <li>Major economic releases (interest-rate decisions, inflation data, jobs reports)</li>
-      <li>Sudden market shocks — abnormal price moves with unusual volume</li>
-      <li>Extreme market mood — panic or euphoria readings</li>
-      <li>Your position getting close to its safety stop</li>
-    </ul>
-  </div>
+    <rect x="235" y="80" width="250" height="48" rx="10" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="360" y="100" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Situation check</text>
+    <text x="360" y="117" font-size="11.5" fill="var(--ink2)" text-anchor="middle">ordinary moment — or critical?</text>
+
+    <path d="M300 128 L300 150 L150 150 L150 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <path d="M420 128 L420 150 L570 150 L570 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="26" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="150" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧭 Rules engine</text>
+    <text x="150" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">your strategy's plan, applied</text>
+    <text x="150" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">fast · consistent · no AI cost</text>
+
+    <rect x="446" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="570" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 Full AI desk</text>
+    <text x="570" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">4 analysts + trader &amp; risk debate</text>
+    <text x="570" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">judgement, not just rules</text>
+
+    <path d="M150 248 L150 272 L360 272 L360 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M570 248 L570 272 L360 272" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="360" y1="272" x2="360" y2="290" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="210" y="294" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--good) 10%,var(--card))" stroke="var(--good)" stroke-width="2"/>
+    <text x="360" y="314" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🛡️ Safety checks — always</text>
+    <text x="360" y="331" font-size="11" fill="var(--ink2)" text-anchor="middle">risk limits · position caps · stops · profit lock</text>
+    <line x1="360" y1="340" x2="360" y2="360" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="360" y="370" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">Action — trade, hold, or protect</text>
+  </svg>
+  <figcaption>Whichever mind decides, the answer still has to clear your safety layer. The AI can never bypass it.</figcaption>
+</figure>
+
+<h3>What counts as a "critical moment"</h3>
+<p>Four things send a decision to the full AI desk. Each is measured from live market data — no guesswork:</p>
+<div class="trig">
+  <div class="t"><i>📅</i><b>Event window</b>A major economic release is imminent — rate decisions, inflation, jobs data.</div>
+  <div class="t"><i>⚡</i><b>Market shock</b>An abnormal price move on unusual volume — something real just happened.</div>
+  <div class="t"><i>🎭</i><b>Crowd extremes</b>Fear or euphoria readings at an extreme — the crowd is not behaving normally.</div>
+  <div class="t"><i>🎯</i><b>Near your stop</b>Your position is approaching its safety stop — the moment judgement matters most.</div>
 </div>
-
-<div class="farrow">↓ &nbsp; both paths &nbsp; ↓</div>
-<div class="fbox ok"><b>🛡️ Safety checks — always</b><span>risk limits · position caps · safety stops · profit lock</span></div>
-<div class="farrow">↓</div>
-<div class="fbox"><b>Action</b><span>trade, hold, or protect — recorded with the reason</span></div>
-
-<p style="margin-top:16px">In critical moments, the decision is handed to the full analyst team — the situations where fixed rules
-can't capture everything, and judgment matters most.</p>
+<div class="note"><strong>Why route at all?</strong> Fixed rules are excellent at ordinary conditions — fast,
+consistent, and they cost nothing to run. But an unusual situation is exactly where a fixed rule has no
+answer. Routing spends the deep analysis where it can actually change the outcome.</div>
 
 <h2>What the full AI desk reads <span class="badge live">LIVE</span></h2>
 <p>When the AI desk takes a decision, it doesn't just look at the chart. Four analysts each write a brief,
 then a trader and a risk manager debate the final call:</p>
-<div class="card">
-  <ul style="margin:0;padding-left:18px">
-    <li><strong>News analyst</strong> — market and macro headlines, with sentiment</li>
-    <li><strong>Psychology analyst</strong> — the human side: crowd mood, fear &amp; greed, social buzz</li>
-    <li><strong>Macro &amp; policy analyst</strong> — economic regime signals and policy changes</li>
-    <li><strong>Technical analyst</strong> — price structure, moving averages, momentum, volatility</li>
-  </ul>
-</div>
-<p>This means human factors — how people <em>feel</em> about the market — are part of every critical
-decision, not just the chart.</p>
+
+<figure>
+  <svg viewBox="0 0 720 232" role="img" aria-label="Four analysts - news, psychology, macro and technical - feed a trader and risk manager who debate and produce a decision with a written reason">
+    <rect x="8"   y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="91" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📰 News</text>
+    <text x="91" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">headlines &amp; macro,</text>
+    <text x="91" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">with sentiment</text>
+
+    <rect x="190" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="273" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🎭 Psychology</text>
+    <text x="273" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">crowd mood, fear</text>
+    <text x="273" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">&amp; greed, social buzz</text>
+
+    <rect x="372" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="455" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🏛 Macro &amp; policy</text>
+    <text x="455" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">economic regime,</text>
+    <text x="455" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">policy changes</text>
+
+    <rect x="554" y="8" width="158" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="633" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📈 Technical</text>
+    <text x="633" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">structure, momentum,</text>
+    <text x="633" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">volatility</text>
+
+    <path d="M91 74 L91 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M273 74 L273 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M455 74 L455 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M633 74 L633 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <line x1="360" y1="96" x2="360" y2="118" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="212" y="122" width="296" height="50" rx="11" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="143" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⚖️ Trader &amp; Risk manager debate</text>
+    <text x="360" y="161" font-size="11" fill="var(--ink2)" text-anchor="middle">the call, and the case against it</text>
+    <line x1="360" y1="172" x2="360" y2="192" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <rect x="248" y="194" width="224" height="34" rx="9" fill="var(--card)" stroke="var(--accent)" stroke-width="1.8"/>
+    <text x="360" y="216" font-size="12.5" font-weight="700" fill="var(--accent)" text-anchor="middle">Decision + written reason</text>
+  </svg>
+  <figcaption>Human factors — how people <em>feel</em> about the market — are part of every critical decision, not just the chart.</figcaption>
+</figure>
+
+<p>Every decision is recorded with the reason it was made, and which mind made it. You can read back exactly
+why your fleet acted the way it did.</p>
 
 <h2>Automatic profit protection <span class="badge live">LIVE</span></h2>
-<p>Two protections now run on every new fleet, without you doing anything:</p>
+<p>Two protections run on every new fleet, without you doing anything:</p>
 <div class="card">
   <p style="margin:0 0 8px"><strong>🛡️ A safety stop sized to your actual position.</strong> If a trade moves
   genuinely against you, it's cut early — small, controlled losses instead of large ones.</p>
@@ -134,38 +186,76 @@ decision, not just the chart.</p>
     <text x="385" y="42" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">peak gain</text>
     <circle cx="560" cy="118" r="6" fill="var(--accent)"/>
     <text x="572" y="112" font-size="12" font-weight="700" fill="var(--accent)">profit banked ✓</text>
-    <text x="572" y="128" font-size="10.5" fill="var(--muted)">lock level (portion of peak)</text>
+    <text x="572" y="128" font-size="10.5" fill="var(--muted)">lock level (% of peak)</text>
     <path d="M560 118 C 590 140, 620 165, 650 178" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 4"/>
     <text x="648" y="168" font-size="10.5" fill="var(--muted)" text-anchor="end">what would have happened…</text>
   </svg>
   <figcaption>The trailing lock: gains are tracked at their peak — if they retrace past the lock level, the profit is realized instead of round-tripping to zero.</figcaption>
 </figure>
 
-<h2>Personal hot-issue alerts <span class="badge soon">COMING SOON</span></h2>
+<div class="note"><strong>Recent improvement.</strong> The profit lock used to arm very early, which meant it
+could bank a small gain while the safety stop still allowed a much larger loss. It now waits until a position
+has earned at least as much as it is risking before it arms — so a protected win is worth having.</div>
+
+<h2>Personal hot-issue alerts <span class="badge live">LIVE</span></h2>
 <p>An around-the-clock watch over the symbols in <strong>your</strong> RUNs. The key idea: a market event is
 a fact about the market — <strong>whether it matters is a fact about you.</strong> So every alert is verified
-against your own account before it's sent:</p>
-<ol class="steps">
-  <li><strong>Detect.</strong> Every hour, the platform scans all of your active symbols for real changes —
-  policy news, breaking headlines, sharp technical moves, unusual crowd sentiment.</li>
-  <li><strong>Verify for you.</strong> A detected event is checked against <em>your</em> position: which
-  direction you hold, your leverage, how far your safety stop is. The same news can be good for one member,
-  bad for another, and irrelevant for a third.</li>
-  <li><strong>Alert — or stay silent.</strong> Only if it actually matters for your position do you get a
-  personal alert, written for your situation (for example: <em>"this policy news runs against your short —
-  your stop is 1.1% away"</em>). If it doesn't affect you, no notification. Silence is part of the product.</li>
-</ol>
-<div class="fbox hotev" style="border-color:var(--warn)"><b>📰 One market event</b><span>e.g. "bearish policy news on ETH"</span></div>
-<div class="farrow">↓ &nbsp; verified against each member's own position &nbsp; ↓</div>
+against your own account before it's sent.</p>
+
+<figure>
+  <svg viewBox="0 0 720 250" role="img" aria-label="Three stages: hourly detection across all symbols, per-member verification against each position, then a personal alert only when it matters">
+    <rect x="30" y="10" width="660" height="52" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="52" y="33" font-size="13" font-weight="700" fill="var(--ink)">① Detect — hourly, across every active symbol</text>
+    <text x="52" y="51" font-size="11.3" fill="var(--ink2)">policy news · breaking headlines · sharp technical moves · unusual crowd sentiment</text>
+    <line x1="360" y1="62" x2="360" y2="82" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="30" y="86" width="660" height="52" rx="11" fill="color-mix(in srgb,var(--accent) 8%,var(--card))" stroke="var(--accent)" stroke-width="2"/>
+    <text x="52" y="109" font-size="13" font-weight="700" fill="var(--ink)">② Verify — against YOUR position</text>
+    <text x="52" y="127" font-size="11.3" fill="var(--ink2)">which direction you hold · your leverage · how far your safety stop is</text>
+
+    <path d="M180 138 L180 160 L140 160 L140 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M360 138 L360 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M540 138 L540 160 L580 160 L580 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+
+    <rect x="30" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--good)" stroke-width="1.8"/>
+    <text x="140" y="205" font-size="12" font-weight="700" fill="var(--good)" text-anchor="middle">Supports your position</text>
+    <text x="140" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">gentle FYI,</text>
+    <text x="140" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">low urgency</text>
+
+    <rect x="262" y="184" width="196" height="58" rx="10" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="205" font-size="12" font-weight="700" fill="var(--warn)" text-anchor="middle">Runs against you</text>
+    <text x="360" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">urgent personal alert</text>
+    <text x="360" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">+ decision point</text>
+
+    <rect x="470" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.8" stroke-dasharray="5 4"/>
+    <text x="580" y="205" font-size="12" font-weight="700" fill="var(--muted)" text-anchor="middle">Not material for you</text>
+    <text x="580" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">no alert at all —</text>
+    <text x="580" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">silence is the feature</text>
+  </svg>
+  <figcaption>One event, three different outcomes. Most members correctly receive nothing.</figcaption>
+</figure>
+
+<h3>The same news, three members</h3>
 <div class="fan">
   <div class="u good"><b>Member A — short ETH</b>News supports the position → gentle FYI, low urgency.</div>
   <div class="u bad"><b>Member B — long ETH ×2</b>News runs against the position, stop 1.1% away → <strong>urgent personal alert</strong> + decision point.</div>
   <div class="u mute"><b>Member C — far stop, small size</b>Not material for this account → <strong>no alert at all</strong>.</div>
 </div>
-<figure><figcaption>Same event, three different outcomes — every alert is verified for <em>your</em> account first.</figcaption></figure>
 
-<p>Your Trading Master sees the same signal as a decision point, and the affected RUN's next cycle is
-automatically escalated to the full AI desk.</p>
+<p>When an alert does matter, your Trading Master sees the same signal as a decision point, and the affected
+RUN's next cycle is automatically escalated to the full AI desk.</p>
+
+<h2>What this means for you</h2>
+<table>
+  <thead><tr><th>You might notice</th><th>Why it happens</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Some cycles act instantly, others pause to think</strong></td><td>Ordinary moments take the rules path; critical ones take the AI desk, which reads more before answering.</td></tr>
+    <tr><td><strong>A winning position closed on its own</strong></td><td>The trailing profit lock banked the gain before it could slip away.</td></tr>
+    <tr><td><strong>A losing position closed early</strong></td><td>The safety stop cut it — a small controlled loss instead of a large one.</td></tr>
+    <tr><td><strong>You got no alert during big news</strong></td><td>It was checked against your position and wasn't material for you. That is the system working.</td></tr>
+    <tr><td><strong>A RUN never opened a trade</strong></td><td>Its plan couldn't clear the cost of trading, or no moment met the confidence bar. Not trading is a valid outcome.</td></tr>
+  </tbody>
+</table>
 
 <div class="note safe"><strong>Safety, always:</strong> the AI recommends — your risk limits decide. Every
 action, whether it comes from the rules engine or the AI desk, still passes through your account's risk

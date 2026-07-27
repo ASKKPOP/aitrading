@@ -49,6 +49,11 @@
       "group": "architecture",
       "ko": "시스템 아키텍처 (관리자)",
       "en": "System Architecture (owner)"
+    },
+    {
+      "group": "extensions",
+      "ko": "확장 설계 분석 (관리자)",
+      "en": "Extension Design Analysis (owner)"
     }
   ],
   "docs": [
@@ -154,6 +159,13 @@
       "lang": "en",
       "group": "architecture",
       "title": "System Architecture & Technical Flow",
+      "owner_only": true
+    },
+    {
+      "key": "extension-e1-e2-en",
+      "lang": "en",
+      "group": "extensions",
+      "title": "E1 Decision Routing & E2 Hot-Issue Daemon — Design Analysis",
       "owner_only": true
     }
   ]
