@@ -15,11 +15,36 @@ import { Language, tr } from '../i18n'
 
 interface Props { token?: string | null }
 
+// `capability` is what `status` cannot tell you: a run reads "running"
+// whether it is hunting, parked on a closed market, or arithmetically unable
+// to ever open a position. Prod 2026-07-27: three of seven running runs held
+// $3,399 behind a permanent fee block and this page showed all seven green.
+// Computed server-side from the frozen config snapshot (routes_runs._capability).
+type Capability = {
+  state: 'hunting' | 'waiting' | 'cannot_trade' | 'inactive'
+  permanent: boolean
+  reason_code?: string | null
+  reason?: string | null
+  capital_usd?: number | null
+}
+
 type Run = {
   id: number; symbol: string; market: string; market_type: string
   status: string; status_reason?: string
   config?: any; realized_pnl_usd?: number
   last_cycle_at?: string; last_event_seq?: number
+  capability?: Capability
+}
+
+// Only two of these need to shout. `hunting` is the healthy default and gets
+// no chip at all — a badge on every card is a badge on none.
+const CAPABILITY_TEXT: Record<string, Record<Language, string>> = {
+  cannot_trade: {
+    ko: '거래 불가', en: 'Cannot trade', ja: '取引不可',
+    th: 'เทรดไม่ได้', vi: 'Không thể giao dịch' },
+  waiting: {
+    ko: '장 마감 대기', en: 'Market closed', ja: '市場クローズ',
+    th: 'ตลาดปิด', vi: 'Thị trường đóng' },
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -378,6 +403,37 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   const [showStopped, setShowStopped] = useState(false)
   const stoppedCount = useMemo(
     () => runs.filter((r) => r.status === 'stopped').length, [runs])
+
+  // Allocated-but-inert capital. `permanent` is the only class worth a banner:
+  // a closed market reopens on its own, a dead thesis never does.
+  const blockedRuns = useMemo(
+    () => runs.filter((r) => r.capability?.permanent), [runs])
+  const blockedCapital = useMemo(
+    () => blockedRuns.reduce((s, r) => s + Number(r.capability?.capital_usd || 0), 0),
+    [blockedRuns])
+  const [releasing, setReleasing] = useState(false)
+  const releaseBlocked = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setReleasing(true)
+    try {
+      // Sequential, not Promise.all: each stop frees a fleet slot and the
+      // supervisor rebuilds against live state — firing them together races
+      // the replacement path onto stale slot bookkeeping.
+      for (const r of blockedRuns) {
+        // confirm_early is required while the thesis horizon is unelapsed —
+        // the guard exists so a stop does not realize the current mark instead
+        // of letting the thesis resolve. Neither applies here: the run never
+        // opened a position and never could, so there is nothing to realize
+        // and no thesis left to wait on. Clicking Release IS the acknowledgement.
+        await fetch(`${API_BASE}/runs/${r.id}/stop`, {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flatten: true, confirm_early: true }),
+        })
+      }
+      await load()
+    } finally { setReleasing(false) }
+  }
   const visibleRuns = useMemo(
     () => (showStopped ? runs : runs.filter((r) => r.status !== 'stopped')),
     [runs, showStopped])
@@ -541,6 +597,22 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       ja: '終了した TRADING を表示', th: 'แสดง TRADING ที่จบแล้ว', vi: 'Hiện TRADING đã kết thúc' }),
     hideStopped: tr(language, { ko: '종료된 TRADING 숨기기', en: 'Hide finished TRADINGs',
       ja: '終了した TRADING を隠す', th: 'ซ่อน TRADING ที่จบแล้ว', vi: 'Ẩn TRADING đã kết thúc' }),
+    blockedTitle: (n: number, usd: number) => tr(language, {
+      ko: `TRADING ${n}개 ($${usd.toLocaleString()})가 거래할 수 없습니다`,
+      en: `${n} TRADING${n > 1 ? 's' : ''} ($${usd.toLocaleString()}) cannot trade`,
+      ja: `TRADING ${n} 件 ($${usd.toLocaleString()}) が取引できません`,
+      th: `${n} TRADING ($${usd.toLocaleString()}) เทรดไม่ได้`,
+      vi: `${n} TRADING ($${usd.toLocaleString()}) không thể giao dịch` }),
+    blockedWhy: tr(language, {
+      ko: '목표 이동폭이 수수료를 감당하기에 너무 작아 포지션을 열 수 없습니다. 해제하면 자본이 반환됩니다.',
+      en: 'their target move is too small to cover fees, so they can never open a position. Releasing returns the capital.',
+      ja: '目標変動幅が手数料に対して小さすぎ、ポジションを開けません。解除すると資金が戻ります。',
+      th: 'เป้าการเคลื่อนไหวเล็กเกินกว่าจะคุ้มค่าธรรมเนียม จึงเปิดสถานะไม่ได้ ปล่อยแล้วเงินทุนจะคืนมา',
+      vi: 'mức biến động mục tiêu quá nhỏ so với phí nên không thể mở vị thế. Giải phóng sẽ hoàn lại vốn.' }),
+    releaseAll: tr(language, { ko: '전부 해제', en: 'Release all', ja: 'すべて解除',
+      th: 'ปล่อยทั้งหมด', vi: 'Giải phóng tất cả' }),
+    releasing: tr(language, { ko: '해제 중…', en: 'Releasing…', ja: '解除中…',
+      th: 'กำลังปล่อย…', vi: 'Đang giải phóng…' }),
     live: tr(language, { ko: '실시간', en: 'live', ja: 'ライブ', th: 'สด', vi: 'trực tiếp' }),
     offline: tr(language, { ko: '오프라인', en: 'offline', ja: 'オフライン', th: 'ออฟไลน์', vi: 'ngoại tuyến' }),
     actionFailed: tr(language, { ko: '요청을 처리하지 못했습니다.', en: 'That action did not go through.',
@@ -623,6 +695,28 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
         <p className="muted" style={{ marginTop: 24 }}>{T.empty}</p>
       )}
 
+      {/* Capital that is allocated but cannot act. Silent until it exists, and
+          it should normally never exist — the server retires an infeasible run
+          on its first cycle. This strip is the receipt when it does. */}
+      {blockedRuns.length > 0 && (
+        <div style={{ marginTop: 14, padding: '11px 13px', borderRadius: 10,
+          border: '1px solid rgba(208,59,59,0.28)', background: 'rgba(208,59,59,0.06)',
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 13 }}>⚠</span>
+          <span style={{ fontSize: 12.5, lineHeight: 1.5, flex: '1 1 260px' }}>
+            <strong>{T.blockedTitle(blockedRuns.length, blockedCapital)}</strong>
+            <br />
+            <span className="muted">{blockedRuns.map((r) => r.symbol).join(', ')} — {T.blockedWhy}</span>
+          </span>
+          <button onClick={releaseBlocked} disabled={releasing}
+            style={{ fontSize: 12, padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
+              border: '1px solid rgba(208,59,59,0.4)', background: 'transparent',
+              color: 'var(--text-primary,#2b2b2b)', opacity: releasing ? 0.5 : 1 }}>
+            {releasing ? T.releasing : T.releaseAll}
+          </button>
+        </div>
+      )}
+
       {stoppedCount > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
           <button onClick={() => setShowStopped((v) => !v)}
@@ -682,6 +776,26 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                   )}
                   {statusLabel(run.status, language)}</span>
               </div>
+              {/* A `running` badge on a run that cannot open a position is the
+                  single most misleading thing this page can say. The chip sits
+                  directly under the status so the two are read together. */}
+              {run.capability && CAPABILITY_TEXT[run.capability.state] && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 8px',
+                    borderRadius: 9, whiteSpace: 'nowrap',
+                    background: run.capability.permanent
+                      ? 'rgba(208,59,59,0.14)' : 'rgba(237,161,0,0.16)',
+                    color: run.capability.permanent ? '#d03b3b' : '#8a6000' }}>
+                    {run.capability.permanent ? '🔴' : '🟡'}{' '}
+                    {CAPABILITY_TEXT[run.capability.state][language]}
+                  </span>
+                  {run.capability.permanent && run.capability.capital_usd ? (
+                    <span className="muted" style={{ fontSize: 10.5, fontVariantNumeric: 'tabular-nums' }}>
+                      ${Number(run.capability.capital_usd).toLocaleString()}
+                    </span>
+                  ) : null}
+                </div>
+              )}
               {/* the reason is the whole answer to "why did this stop?" —
                   never leave a stopped/paused box without it */}
               {['stopped', 'stopping', 'paused'].includes(run.status) && run.status_reason && (

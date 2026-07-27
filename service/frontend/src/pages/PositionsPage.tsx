@@ -89,6 +89,15 @@ export function PositionsPage() {
     status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái' }),
     time: tr(language, { ko: '시간', en: 'Time', ja: '時間', th: 'เวลา', vi: 'Thời gian' }),
     source: tr(language, { ko: '출처', en: 'Source', ja: 'ソース', th: 'แหล่งที่มา', vi: 'Nguồn' }),
+    unmanaged: tr(language, { ko: '관리 주체 없음 · 손절 없음', en: 'No run · no stop',
+      ja: '管理なし · 損切りなし', th: 'ไม่มีผู้ดูแล · ไม่มีจุดตัดขาดทุน',
+      vi: 'Không ai quản lý · không cắt lỗ' }),
+    unmanagedHint: tr(language, {
+      ko: '이 포지션을 지켜보는 TRADING이 없고 손절·익절도 설정돼 있지 않습니다. 직접 청산하거나 손절을 지정하세요.',
+      en: 'No TRADING is watching this position and it has no stop or take-profit. Close it yourself or set an exit level.',
+      ja: 'このポジションを見ている TRADING がなく、損切り・利確も未設定です。手動で決済するか、決済水準を設定してください。',
+      th: 'ไม่มี TRADING เฝ้าสถานะนี้ และไม่ได้ตั้งจุดตัดขาดทุนหรือทำกำไร ปิดเองหรือกำหนดจุดออก',
+      vi: 'Không có TRADING nào theo dõi vị thế này và cũng không có mức cắt lỗ hay chốt lời. Hãy tự đóng hoặc đặt mức thoát.' }),
     self: tr(language, { ko: '본인', en: 'Self', ja: '自分', th: 'ตนเอง', vi: 'Tự' }),
     copied: tr(language, { ko: '복제', en: 'Copied', ja: 'コピー', th: 'คัดลอก', vi: 'Sao chép' }),
     cash: tr(language, { ko: '가용 현금', en: 'Available Cash', ja: '利用可能な現金', th: 'เงินสดที่ใช้ได้', vi: 'Tiền khả dụng' }),
@@ -238,6 +247,18 @@ export function PositionsPage() {
                         </td>
                         <td style={td}>
                           <span style={sub}>{pos.source === 'self' ? T.self : T.copied}</span>
+                          {/* A run releases its run_id on stop ("close it by
+                              hand"), and a manual terminal fill never had one,
+                              so an unowned row is normal — but silent. Prod
+                              position 13 sat unowned with NO stop for 7 days at
+                              −4%. Only flag the pairing that is actually
+                              uncontrolled: nobody watching AND no exit level. */}
+                          {!pos.managed_by && pos.unprotected && (
+                            <div style={{ ...sub, marginTop: 3, color: '#f0663f', fontWeight: 600 }}
+                              title={T.unmanagedHint}>
+                              ⚠ {T.unmanaged}
+                            </div>
+                          )}
                         </td>
                         <td style={td}>
                           <button
