@@ -51,6 +51,11 @@
       "en": "System Architecture (owner)"
     },
     {
+      "group": "decisions",
+      "ko": "AI 판단과 주문",
+      "en": "How Decisions Become Orders"
+    },
+    {
       "group": "extensions",
       "ko": "확장 설계 분석 (관리자)",
       "en": "Extension Design Analysis (owner)"
@@ -160,6 +165,36 @@
       "group": "architecture",
       "title": "System Architecture & Technical Flow",
       "owner_only": true
+    },
+    {
+      "key": "decisions-ko",
+      "lang": "ko",
+      "group": "decisions",
+      "title": "자동매매는 어떻게 판단하는가"
+    },
+    {
+      "key": "decisions-en",
+      "lang": "en",
+      "group": "decisions",
+      "title": "How your fleet decides to trade"
+    },
+    {
+      "key": "decisions-ja",
+      "lang": "ja",
+      "group": "decisions",
+      "title": "自動売買はどう判断するのか"
+    },
+    {
+      "key": "decisions-th",
+      "lang": "th",
+      "group": "decisions",
+      "title": "ระบบเทรดอัตโนมัติตัดสินใจอย่างไร"
+    },
+    {
+      "key": "decisions-vi",
+      "lang": "vi",
+      "group": "decisions",
+      "title": "Hệ thống giao dịch tự động quyết định thế nào"
     },
     {
       "key": "extension-e1-e2-en",

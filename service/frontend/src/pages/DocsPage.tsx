@@ -15,6 +15,7 @@ const SLUG_TO_GROUP: Record<string, string> = {
   'framework': 'framework',
   'backtest-report': 'backtest-report',
   'architecture': 'architecture',
+  'decisions': 'decisions',
   'extensions': 'extensions',
 }
 const GROUP_TO_SLUG: Record<string, string> = Object.fromEntries(
@@ -40,8 +41,11 @@ export function DocsPage({ token, userToken }: Props) {
   const [frameH, setFrameH] = useState(900)
 
   const auth = userToken || token || ''
-  // documents exist in ko/en; other UI languages read the English document
-  const docLang = language === 'ko' ? 'ko' : 'en'
+  // Prefer the reader's own language when that group publishes it; fall back to
+  // English otherwise. Older groups ship ko/en only, so ja/th/vi readers still
+  // land on English there — but a group that IS fully localised now reaches
+  // them, which the previous hard-coded ko-or-en rule made impossible.
+  const docLang = language
   const group = SLUG_TO_GROUP[slug || 'guide'] || 'guide'
 
   useEffect(() => {
@@ -56,7 +60,8 @@ export function DocsPage({ token, userToken }: Props) {
   useEffect(() => {
     if (!manifest) return
     const docs = manifest.docs.filter(d => d.group === group)
-    const doc = docs.find(d => d.lang === docLang) || docs[0]
+    const doc = docs.find(d => d.lang === docLang)
+      || docs.find(d => d.lang === 'en') || docs[0]
     if (!doc) { setError('doc'); return }
     setError(null)
     if (cache.current[doc.key]) { setHtml(cache.current[doc.key]); return }
@@ -76,7 +81,11 @@ export function DocsPage({ token, userToken }: Props) {
   }
 
   const activeDocs = manifest?.docs.filter(d => d.group === group) ?? []
-  const langNote = docLang === 'en' && language !== 'en' && activeDocs.some(d => d.lang === 'en')
+  // Only warn when we actually fell back — a fully localised group must not
+  // tell the reader they are looking at English when they are not.
+  const langNote = language !== 'en' && language !== 'ko'
+    && !activeDocs.some(d => d.lang === language)
+    && activeDocs.some(d => d.lang === 'en')
 
   return (
     <div className="page-container" style={{ maxWidth: 1100, margin: '0 auto' }}>
