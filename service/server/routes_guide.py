@@ -47,14 +47,20 @@ def _load_manifest() -> dict:
 def _visible_manifest(is_owner: bool) -> dict:
     """The manifest as this reader may see it.
 
-    An owner sees everything. A member sees every doc NOT marked owner_only,
-    and only the groups that still have a document left — an empty group in the
-    sidebar would advertise material the member cannot open, which is how the
-    old all-or-nothing gate ended up showing 'could not load the document'."""
+    A member sees every doc NOT marked owner_only; an owner sees those too.
+    Either way a doc is listed only when its file is actually on disk, and a
+    group only while it still has a listed doc.
+
+    Both filters exist because the sidebar is built from this: an entry the
+    reader cannot open renders as a tab that answers 'could not load the
+    document'. That happened twice — first for members, when the whole guide
+    was gated on one email, then for the owner, when the E1/E2 analysis was
+    registered in a manifest that shipped without its HTML file."""
     manifest = _load_manifest()
-    if is_owner:
-        return manifest
-    docs = [d for d in manifest.get("docs", []) if not d.get("owner_only")]
+    docs = [
+        d for d in manifest.get("docs", [])
+        if (is_owner or not d.get("owner_only")) and (_CONTENT_DIR / f"{d['key']}.html").exists()
+    ]
     live = {d.get("group") for d in docs}
     groups = [g for g in manifest.get("groups", []) if g.get("group") in live]
     return {"groups": groups, "docs": docs}

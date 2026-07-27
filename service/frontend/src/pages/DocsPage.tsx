@@ -81,16 +81,38 @@ export function DocsPage({ token, userToken }: Props) {
   // Documents ship their own light/dark palette keyed on prefers-color-scheme,
   // which follows the OS — not this app's theme. On the 'claude' theme (always
   // dark) with a light OS that produced dark text on a dark surface. So push
-  // the resolved theme variables in and let the document paint with them, with
-  // a transparent page so it sits on the site's own surface instead of a box.
+  // the resolved theme variables in and let the document paint with them.
+  //
+  // The page background is PAINTED, not left transparent: a transparent page
+  // under color-scheme:dark makes the browser fall back to its own black
+  // canvas, which on the warm-charcoal 'claude' surface reads as a black box
+  // around the document. Two of the documents (hybrid, top10) set no body
+  // background at all, so they hit the same canvas. Painting html/body with
+  // the site's page colour removes the box everywhere, whatever the document
+  // happens to call its own variables.
+  //
+  // Documents disagree on variable names — --page/--bg/--ground for the page,
+  // --card/--panel/--surface for a raised surface, --ink-2/--ink2/--ink-3 for
+  // secondary text — so every alias in guide_content/ is mapped here. A name
+  // no document uses simply goes unread.
   const applySiteTheme = () => {
     const doc = frameRef.current?.contentDocument
     if (!doc?.body) return
     try {
       const root = getComputedStyle(document.documentElement)
       const v = (name: string) => root.getPropertyValue(name).trim()
-      const dark = document.documentElement.getAttribute('data-theme') === 'claude'
-        || matchMedia('(prefers-color-scheme: dark)').matches
+      const themeAttr = document.documentElement.getAttribute('data-theme')
+      const dark = themeAttr
+        ? themeAttr !== 'light'
+        : matchMedia('(prefers-color-scheme: dark)').matches
+      const page = v('--bg-primary')
+      const card = v('--bg-card')
+      const surface = v('--bg-secondary')
+      const line = v('--bg-tertiary')
+      const ink = v('--text-primary')
+      const ink2 = v('--text-secondary')
+      const muted = v('--text-muted')
+      const accent = v('--accent-primary')
       let style = doc.getElementById('site-theme') as HTMLStyleElement | null
       if (!style) {
         style = doc.createElement('style')
@@ -99,16 +121,15 @@ export function DocsPage({ token, userToken }: Props) {
       }
       style.textContent = `
         :root{color-scheme:${dark ? 'dark' : 'light'};
-          --page:transparent; --surface-0:transparent;
-          --card:${v('--bg-card')};      --surface-1:${v('--bg-card')};
-          --surface:${v('--bg-secondary')}; --surface-2:${v('--bg-secondary')};
-          --grid:${v('--bg-tertiary')};  --border:${v('--bg-tertiary')};
-          --border-strong:${v('--bg-tertiary')};
-          --ink:${v('--text-primary')};   --text-primary:${v('--text-primary')};
-          --ink2:${v('--text-secondary')};--text-secondary:${v('--text-secondary')};
-          --muted:${v('--text-muted')};   --text-muted:${v('--text-muted')};
-          --accent:${v('--accent-primary')}; --ai:${v('--accent-primary')};}
-        html,body{background:transparent}
+          --page:${page}; --bg:${page}; --ground:${page}; --surface-0:${page};
+          --card:${card}; --panel:${card}; --surface-1:${card};
+          --surface:${surface}; --surf:${surface}; --panel-2:${surface}; --surface-2:${surface};
+          --grid:${line}; --border:${line}; --bd:${line}; --hair:${line}; --border-strong:${line};
+          --ink:${ink}; --text-primary:${ink};
+          --ink2:${ink2}; --ink-2:${ink2}; --ink-3:${muted}; --text-secondary:${ink2};
+          --muted:${muted}; --text-muted:${muted};
+          --accent:${accent}; --ai:${accent};}
+        html,body{background:${page}}
         main,.viz-root{padding-top:0}`
     } catch {
       /* styling is a nicety — never let it stop the document rendering */
@@ -119,7 +140,16 @@ export function DocsPage({ token, userToken }: Props) {
   const onFrameLoad = () => applySiteTheme()
 
   // Re-paint an already-open document when the reader switches theme.
-  useEffect(() => { applySiteTheme() }, [theme, html])
+  //
+  // Deferred by a frame on purpose: data-theme is written by an ANCESTOR's
+  // effect (App.tsx), and React runs child effects before parent ones, so
+  // reading the palette synchronously here returns the theme being replaced —
+  // which is how switching to 'claude' left the document wearing 'signal'
+  // colours. rAF runs after the whole commit, with the new theme in place.
+  useEffect(() => {
+    const id = requestAnimationFrame(applySiteTheme)
+    return () => cancelAnimationFrame(id)
+  }, [theme, html])
 
   const activeDocs = manifest?.docs.filter(d => d.group === group) ?? []
   // Only warn when we actually fell back — a fully localised group must not
