@@ -59,7 +59,13 @@ class RunAnalysisProgressTests(unittest.TestCase):
         self.assertEqual(starts, ALL_STEPS)
         self.assertEqual(dones, ALL_STEPS)
         self.assertEqual(len(events), 2 * len(ALL_STEPS))
-        self.assertEqual(result["decision"]["action"], "buy")
+        # PRIMARY RULE (2026-07-27): with no LLM provider the engine still runs
+        # every step and still reports — but the rule engine may not ORIGINATE
+        # a position, so its "buy" signal is suppressed to hold. This asserted
+        # "buy" before, which is precisely the behaviour the rule forbids.
+        self.assertEqual(result["decision"]["action"], "hold")
+        self.assertEqual(result["decision"]["rule_action_suppressed"], "buy")
+        self.assertEqual(result["decision"]["decided_by"], "rule")
 
     def test_dependency_ordering(self):
         events, _ = self._run()
@@ -75,7 +81,8 @@ class RunAnalysisProgressTests(unittest.TestCase):
         events, _ = self._run()
         decision_done = next(e for e in events
                              if e["step"] == "decision" and e["status"] == "done")
-        self.assertEqual(decision_done["action"], "buy")
+        # Suppressed to hold by the AI-only-orders rule; see above.
+        self.assertEqual(decision_done["action"], "hold")
         verify_done = next(e for e in events
                            if e["step"] == "verify" and e["status"] == "done")
         self.assertEqual(verify_done["verdict"], "skipped")  # no LLM -> verifier off

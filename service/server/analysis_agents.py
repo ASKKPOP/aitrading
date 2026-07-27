@@ -440,11 +440,49 @@ def _guidelines_block(guidelines: Optional[str]) -> str:
             f"{guidelines}\n\n")
 
 
+def ai_only_orders() -> bool:
+    """PRIMARY RULE: an order is decided by the AI, or it is not placed.
+
+    The order space is far too large to encode — size × leverage × stop ×
+    target × trail × horizon × adds runs to ~10^11 configurations for a single
+    symbol in a single regime — so a rule engine can never stand in for the
+    desk's judgement on WHETHER and WHICH WAY to trade. It may still manage
+    risk on a position that already exists (stops, liquidation cushions, the
+    SL/TP watcher); those reduce exposure and are deliberately deterministic.
+
+    What it must never do is ORIGINATE a position. Set false only to restore
+    the pre-2026-07-27 behaviour, where an unreadable AI answer silently became
+    a rule-authored buy or sell at up to 0.9 confidence."""
+    return os.getenv("RUN_AI_ONLY_ORDERS", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _hold_only(decision: dict[str, Any], reason: str) -> dict[str, Any]:
+    """Strip a rule-authored decision down to HOLD, preserving its reasoning.
+
+    Not a rejection of the analysis — the technical read stays in the report so
+    the operator can see what the rule engine thought. It simply may not become
+    an order."""
+    if not ai_only_orders() or decision.get("action") == "hold":
+        return decision
+    out = dict(decision)
+    out["rule_action_suppressed"] = out.get("action")
+    out["action"] = "hold"
+    out["confidence"] = 0.0
+    out["ai_only_reason"] = reason
+    return out
+
+
 def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           guidelines: Optional[str] = None,
                           memory: str = "") -> dict[str, Any]:
     if not llm_configured():
-        return _rule_based_decision(technical, news)
+        # No provider at all. The engine still runs and still reports, but it
+        # does not trade on a rule signal — see ai_only_orders().
+        out = _rule_based_decision(technical, news)
+        out["decided_by"] = "rule"
+        out["fallback_reason"] = "no llm provider configured"
+        return _hold_only(out, "no llm provider configured")
     lang_line = f"Write the rationale and report in {LANG_NAMES[normalize_lang(lang)]}."
     prompt = (
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
@@ -528,10 +566,16 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
     # produced (0.6 journaled against 0.55 in its own report text).
     fallback = _rule_based_decision(technical, news)
     fallback["decided_by"] = "rule"
-    fallback["fallback_reason"] = "decision json unparseable" if text else "no llm response"
+    reason = "decision json unparseable" if text else "no llm response"
+    fallback["fallback_reason"] = reason
     if text:
         fallback["report"] = text.strip()[:2000]
-    return fallback
+    # PRIMARY RULE (2026-07-27): the rule engine may not originate a position.
+    # Before this, an unreadable AI answer became a rule-authored buy/sell at
+    # up to 0.9 confidence, journaled as though the desk had decided it — 3 of
+    # 6 observed live full-path cycles. Holding is the honest answer when the
+    # desk could not be read.
+    return _hold_only(fallback, reason)
 
 
 def _trader_max_tokens() -> int:

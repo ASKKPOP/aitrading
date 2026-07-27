@@ -202,3 +202,107 @@ class SalvageNeverFabricatesTests(unittest.TestCase):
     def test_the_prod_payload_still_qualifies(self):
         """run 115 had both — the case this whole rail exists for."""
         self.assertIsNotNone(aa._parse_decision_json(RUN115_TRUNCATED))
+
+
+class PrimaryRuleAiOnlyOrdersTests(unittest.TestCase):
+    """PRIMARY RULE: an order is decided by the AI, or it is not placed.
+
+    The order space is ~10^11 configurations for one symbol in one regime, so a
+    rule engine can never stand in for the desk's judgement on WHETHER and
+    WHICH WAY to trade. It may still manage risk on an EXISTING position;
+    it may not originate one.
+
+    Before this, an unreadable AI answer became a rule-authored buy or sell at
+    up to 0.9 confidence — 3 of 6 observed live full-path cycles.
+    """
+
+    def tearDown(self):
+        os.environ.pop("RUN_AI_ONLY_ORDERS", None)
+
+    def test_the_rule_is_on_by_default(self):
+        self.assertTrue(aa.ai_only_orders())
+
+    def test_a_rule_authored_buy_is_suppressed_to_hold(self):
+        d = aa._hold_only({"action": "buy", "confidence": 0.9}, "unparseable")
+        self.assertEqual(d["action"], "hold")
+        self.assertEqual(d["confidence"], 0.0)
+
+    def test_a_rule_authored_sell_is_suppressed_to_hold(self):
+        d = aa._hold_only({"action": "sell", "confidence": 0.85}, "unparseable")
+        self.assertEqual(d["action"], "hold")
+
+    def test_the_suppressed_action_is_recorded_not_erased(self):
+        """The operator must be able to see what the rule engine wanted."""
+        d = aa._hold_only({"action": "buy", "confidence": 0.9}, "no llm response")
+        self.assertEqual(d["rule_action_suppressed"], "buy")
+        self.assertEqual(d["ai_only_reason"], "no llm response")
+
+    def test_an_existing_hold_is_untouched(self):
+        d = aa._hold_only({"action": "hold", "confidence": 0.4}, "x")
+        self.assertEqual(d["confidence"], 0.4)
+        self.assertNotIn("rule_action_suppressed", d)
+
+    def test_the_kill_switch_restores_the_old_behaviour(self):
+        os.environ["RUN_AI_ONLY_ORDERS"] = "false"
+        d = aa._hold_only({"action": "buy", "confidence": 0.9}, "x")
+        self.assertEqual(d["action"], "buy")
+
+    def test_no_llm_provider_never_originates_a_trade(self):
+        """The documented 'engine always runs' fallback must still not trade."""
+        from unittest.mock import patch
+        with patch.object(aa, "llm_configured", return_value=False):
+            d = aa._trader_risk_decision(
+                "BTC", "crypto", {}, {"signal": "buy", "signal_score": 8.0,
+                                      "current_price": 100.0},
+                {"sentiment_breakdown": {}}, "en")
+        self.assertEqual(d["action"], "hold",
+                         "a rule signal must never become an order")
+        self.assertEqual(d["rule_action_suppressed"], "buy")
+        self.assertEqual(d["decided_by"], "rule")
+
+    def test_unparseable_ai_answer_never_originates_a_trade(self):
+        """The exact prod path: LLM answered, JSON unreadable, rule decided."""
+        from unittest.mock import patch
+        with patch.object(aa, "llm_configured", return_value=True), \
+             patch.object(aa, "generate_text", return_value="prose, no json"):
+            d = aa._trader_risk_decision(
+                "BTC", "crypto", {"news": "", "sentiment": "",
+                                  "fundamentals_macro": "", "technical": ""},
+                {"signal": "sell", "signal_score": -8.0, "current_price": 100.0},
+                {"sentiment_breakdown": {}}, "en")
+        self.assertEqual(d["action"], "hold")
+        self.assertEqual(d["rule_action_suppressed"], "sell")
+        self.assertEqual(d["decided_by"], "rule")
+
+
+class OrderOriginationAuditTests(unittest.TestCase):
+    """Only ONE code path may open a position, and it is the AI cycle.
+    Every other order site must be reduce-only."""
+
+    def _sides_near(self, path: str, needle: str, span: int = 16) -> str:
+        src = (SERVER_DIR / path).read_text().splitlines()
+        for i, line in enumerate(src):
+            if needle in line:
+                return "\n".join(src[max(0, i - span):i + 4])
+        raise AssertionError(f"{needle} not found in {path}")
+
+    def test_the_sltp_watcher_is_reduce_only(self):
+        block = self._sides_near("risk_engine.py", "signal_id, skip = execute_paper_trade(")
+        self.assertIn("cover", block)
+        self.assertNotIn('"buy"', block)
+        self.assertNotIn('"short"', block)
+
+    def test_run_flatten_is_reduce_only(self):
+        block = self._sides_near("run_engine.py", 'side = "cover" if qty < 0 else "sell"')
+        self.assertNotIn('"buy"', block)
+        self.assertNotIn('"short"', block)
+
+    def test_stopping_a_run_is_reduce_only(self):
+        block = self._sides_near("trading_runs.py", 'side = "cover" if qty < 0 else "sell"')
+        self.assertNotIn('"buy"', block)
+        self.assertNotIn('"short"', block)
+
+    def test_the_light_path_holds_when_the_llm_is_silent(self):
+        src = (SERVER_DIR / "run_engine.py").read_text()
+        self.assertIn('action, confidence, report = "hold", 0.0', src,
+                      "the cheap path must default to hold, never to a side")
