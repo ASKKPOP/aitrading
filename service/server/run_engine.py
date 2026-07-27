@@ -384,9 +384,32 @@ def _conf_percentile_skip(agent_id: int, gate_confidence: "float | None",
     rank = percentile_rank(conf, sample)
     need = _conf_percentile_min()
     if rank < need:
+        # A purely RELATIVE gate always rejects ~(1-need) of decisions, however
+        # good they are. Observed live: RUN 115's futures short sat at 0.60 —
+        # comfortably over its own 0.57 threshold — and was refused twice for
+        # ranking 52%, because the reference window is dominated by the same
+        # handful of runs. A desk that is consistently decent can never clear
+        # a moving bar set by its own output.
+        #
+        # So the percentile is a TIE-BREAKER inside the band where confidence
+        # is ambiguous, not an independent hurdle. Clear the caller's own
+        # threshold by a real margin and the absolute reading wins.
+        margin = _conf_absolute_override_margin()
+        if min_confidence is not None and margin > 0 \
+                and conf >= float(min_confidence) + margin:
+            return None, floor
         return (f"confidence {conf:.2f} ranks {rank:.0%} of the last "
                 f"{len(sample)} decisions (needs {need:.0%})", min_confidence)
     return None, floor
+
+
+def _conf_absolute_override_margin() -> float:
+    """How far above its own min_confidence a decision must sit to bypass the
+    percentile tie-breaker. 0 restores the pure-relative gate."""
+    try:
+        return max(0.0, float(os.getenv("RUN_CONF_ABSOLUTE_MARGIN", "0.03") or 0.03))
+    except ValueError:
+        return 0.03
 
 
 def _idle_retire_cycles() -> int:
@@ -396,6 +419,51 @@ def _idle_retire_cycles() -> int:
         return max(0, int(os.getenv("RUN_IDLE_RETIRE_CYCLES", "12")))
     except ValueError:
         return 12
+
+
+UNACTIONABLE_SKIP = "spot sell with no inventory"
+
+
+def _thesis_invalidation_strikes() -> int:
+    """Consecutive unactionable-direction cycles before the thesis is declared
+    dead. 0 disables, leaving only the blunter idle-retire timer."""
+    try:
+        return max(0, int(os.getenv("RUN_THESIS_INVALIDATION_STRIKES", "3")))
+    except ValueError:
+        return 3
+
+
+def _unactionable_streak(run_id: int) -> int:
+    """How many of the run's most recent gate skips were the direction its
+    book cannot express — counted back from the latest, stopping at the first
+    skip of any other kind so an intervening ordinary skip resets the streak.
+    Fail-soft: an unreadable journal reports 0 and the rail stays quiet."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT payload FROM run_events
+               WHERE run_id = ? AND event_type = 'gate_skip'
+               ORDER BY id DESC LIMIT 20""", (run_id,))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001
+        return 0
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    streak = 0
+    for row in rows:
+        try:
+            reason = str(json.loads(row["payload"]).get("reason") or "")
+        except Exception:  # noqa: BLE001
+            break
+        if UNACTIONABLE_SKIP in reason:
+            streak += 1
+        else:
+            break
+    return streak
 
 
 def _stop_eval_failure_limit() -> int:
@@ -534,6 +602,17 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         limit = _idle_retire_cycles()
         if limit and int(run.get("cycle_seq") or 0) >= limit:
             return "idle_retired"
+        # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
+        # A spot run built on a LONG thesis whose desk keeps reading bearish
+        # cannot act at all: nothing to sell, and it will not buy. Observed
+        # live — runs 116/117 carried long theses and the desk returned `sell`
+        # while flat, so both would have burned every cycle to idle-retire for
+        # a thesis already dead. The desk repeatedly contradicting its own
+        # thesis IS the invalidation signal; hand the slot back early so the
+        # fleet can build a fresh candidate.
+        strikes = _thesis_invalidation_strikes()
+        if strikes and _unactionable_streak(run["id"]) >= strikes:
+            return "thesis_invalidated"
 
     # Synthetic liquidation: a position's loss can wipe 100% of its escrowed
     # margin. Isolated-margin liq price from leverage L: long at

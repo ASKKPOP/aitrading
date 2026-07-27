@@ -242,6 +242,10 @@ REPLACE_IMMEDIATE = frozenset({
     "stop_event:at_time", "stop_event:price_cross", "adapt_retired",
     "stop_event:trailing_lock",   # banked winner — replace the slot at once
     "idle_retired",               # never traded — free the slot for a live thesis
+    # The desk kept reading the opposite of the run's own thesis on a book
+    # that cannot express it. Replacing immediately is the entire point: the
+    # slot should carry a thesis the desk still believes.
+    "thesis_invalidated",
 })
 REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
                               "stop_event:liq_cushion"})

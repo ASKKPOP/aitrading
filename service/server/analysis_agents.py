@@ -21,6 +21,7 @@ from __future__ import annotations
 import contextvars
 import json
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
@@ -362,7 +363,41 @@ def _json_objects(text: str) -> list[dict[str, Any]]:
                     continue
                 if isinstance(obj, dict):
                     out.append(obj)
+    # Salvage a TRUNCATED trailing object (2026-07-27). A response cut off by
+    # the token limit leaves an object that never closes, `out` stays empty,
+    # and the caller silently substitutes a rule-based decision for the AI's —
+    # observed on 3 of 6 live full-path cycles, with the AI's own stop/target
+    # sitting unused in the report field. The complete leading key/value pairs
+    # are still perfectly good; only the final partial one is lost.
+    if not out and start >= 0 and depth > 0:
+        repaired = _repair_truncated_object(text[start:])
+        if repaired is not None:
+            out.append(repaired)
     return out
+
+
+def _repair_truncated_object(fragment: str) -> Optional[dict[str, Any]]:
+    """Best-effort parse of an unterminated JSON object.
+
+    Trims back to the last complete `"key": value,` pair and closes the brace.
+    Returns None when nothing complete survives — never guesses at a value.
+
+    A salvaged object must carry BOTH action and confidence. `confidence`
+    defaults to 0.5 downstream, so recovering an action without one would
+    manufacture a midpoint the model never expressed and feed it to the gates.
+    A fragment that short is not a damaged decision, it is no decision — the
+    caller's rule fallback is the honest answer there."""
+    for cut in range(len(fragment) - 1, 0, -1):
+        if fragment[cut] != ",":
+            continue
+        try:
+            obj = json.loads(fragment[:cut] + "}")
+        except Exception:  # noqa: BLE001
+            continue
+        if isinstance(obj, dict) and "action" in obj and "confidence" in obj:
+            obj["_truncated"] = True
+            return obj
+    return None
 
 
 def _merged_json_object(text: str) -> Optional[dict[str, Any]]:
@@ -405,11 +440,49 @@ def _guidelines_block(guidelines: Optional[str]) -> str:
             f"{guidelines}\n\n")
 
 
+def ai_only_orders() -> bool:
+    """PRIMARY RULE: an order is decided by the AI, or it is not placed.
+
+    The order space is far too large to encode — size × leverage × stop ×
+    target × trail × horizon × adds runs to ~10^11 configurations for a single
+    symbol in a single regime — so a rule engine can never stand in for the
+    desk's judgement on WHETHER and WHICH WAY to trade. It may still manage
+    risk on a position that already exists (stops, liquidation cushions, the
+    SL/TP watcher); those reduce exposure and are deliberately deterministic.
+
+    What it must never do is ORIGINATE a position. Set false only to restore
+    the pre-2026-07-27 behaviour, where an unreadable AI answer silently became
+    a rule-authored buy or sell at up to 0.9 confidence."""
+    return os.getenv("RUN_AI_ONLY_ORDERS", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _hold_only(decision: dict[str, Any], reason: str) -> dict[str, Any]:
+    """Strip a rule-authored decision down to HOLD, preserving its reasoning.
+
+    Not a rejection of the analysis — the technical read stays in the report so
+    the operator can see what the rule engine thought. It simply may not become
+    an order."""
+    if not ai_only_orders() or decision.get("action") == "hold":
+        return decision
+    out = dict(decision)
+    out["rule_action_suppressed"] = out.get("action")
+    out["action"] = "hold"
+    out["confidence"] = 0.0
+    out["ai_only_reason"] = reason
+    return out
+
+
 def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           guidelines: Optional[str] = None,
                           memory: str = "") -> dict[str, Any]:
     if not llm_configured():
-        return _rule_based_decision(technical, news)
+        # No provider at all. The engine still runs and still reports, but it
+        # does not trade on a rule signal — see ai_only_orders().
+        out = _rule_based_decision(technical, news)
+        out["decided_by"] = "rule"
+        out["fallback_reason"] = "no llm provider configured"
+        return _hold_only(out, "no llm provider configured")
     lang_line = f"Write the rationale and report in {LANG_NAMES[normalize_lang(lang)]}."
     prompt = (
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
@@ -422,6 +495,12 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         # suggested_entry; execution always fills at the live price (P-1).
         # Saying so keeps the model from treating it as an order instruction.
         '{"action":"buy|sell|hold","confidence":0.0-1.0,'
+        # Component scores (2026-07-27). The LIGHT path already returns these
+        # and the full path did not, so conviction came back None on every
+        # expensive cycle — the cheap path had richer sizing input than the
+        # one that costs six LLM calls. Same four keys, same weights.
+        '"scores":{"thesis_alignment":0.0-1.0,"momentum_quality":0.0-1.0,'
+        '"entry_quality":0.0-1.0,"risk_context":0.0-1.0},'
         '"entry":number|null (your suggested level — commentary only; the fill '
         'is executed at the live market price regardless),'
         '"target":number|null,"stop":number|null,"rationale":"1-2 sentences",'
@@ -452,9 +531,15 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         f"TECHNICAL ANALYST:\n{briefs['technical']}\n\n"
         f"Current price: {technical.get('current_price')}\n"
     )
-    text = generate_text(prompt, max_tokens=900, temperature=0.3)
+    # 900 was not enough once the order block joined action/confidence/entry/
+    # target/stop/rationale/report in one payload: the JSON was cut mid-object
+    # on half of the observed live cycles, and an unparseable answer silently
+    # became a RULE decision (see the fallback below). Budget the completion
+    # for what we actually ask for.
+    text = generate_text(prompt, max_tokens=_trader_max_tokens(), temperature=0.3)
     parsed = _parse_decision_json(text or "")
     if parsed:
+        parsed["decided_by"] = "ai"
         # P-1: the model does NOT author the execution price.
         #
         # Every risk limit is denominated in price — automation sizes with
@@ -473,11 +558,33 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         if not parsed.get("report"):
             parsed["report"] = parsed.get("rationale", "")
         return parsed
-    # LLM answered but unparseable -> keep its prose as the report, decide by rule
+    # LLM answered but unparseable -> keep its prose as the report, decide by
+    # rule. Stamped `decided_by='rule'` (2026-07-27): this path silently
+    # replaces the desk's verdict with the rule engine's, and until it was
+    # labelled the journal showed the two as identical — a rule decision was
+    # indistinguishable from an AI one, including a confidence the AI never
+    # produced (0.6 journaled against 0.55 in its own report text).
     fallback = _rule_based_decision(technical, news)
+    fallback["decided_by"] = "rule"
+    reason = "decision json unparseable" if text else "no llm response"
+    fallback["fallback_reason"] = reason
     if text:
         fallback["report"] = text.strip()[:2000]
-    return fallback
+    # PRIMARY RULE (2026-07-27): the rule engine may not originate a position.
+    # Before this, an unreadable AI answer became a rule-authored buy/sell at
+    # up to 0.9 confidence, journaled as though the desk had decided it — 3 of
+    # 6 observed live full-path cycles. Holding is the honest answer when the
+    # desk could not be read.
+    return _hold_only(fallback, reason)
+
+
+def _trader_max_tokens() -> int:
+    """Completion budget for the trader verdict. Must cover the whole JSON —
+    a cut-off object is not a smaller answer, it is a lost one."""
+    try:
+        return max(400, int(os.getenv("RUN_TRADER_MAX_TOKENS", "1500")))
+    except ValueError:
+        return 1500
 
 
 # ─────────────────────────── verification pass ───────────────────────────
