@@ -1612,7 +1612,79 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
             triggers.append("hot_issue")
     except Exception:  # noqa: BLE001
         pass
-    return {"route": "full" if triggers else "light", "triggers": triggers}
+    deterministic = "full" if triggers else "light"
+    if not triggers or not _ai_routing_enabled():
+        return {"route": deterministic, "triggers": triggers}
+    # PRIMARY RULE applied to routing (2026-07-27). `full if triggers else
+    # light` treats every trigger as decisive, and two of them — psych_shock
+    # and hot_issue — are MARKET-WIDE flags that stay on for long stretches.
+    # Result in prod: 85% of cycles took the expensive path against a 15-20%
+    # design target, so the routing saving was not merely reduced, it was
+    # inverted. Which combination of signals genuinely warrants the desk is
+    # exactly the judgement no threshold table can hold, so the desk decides.
+    verdict = _ai_route_verdict(run, cfg, triggers)
+    if verdict is None:
+        return {"route": deterministic, "triggers": triggers, "route_by": "rule"}
+    route, why = verdict
+    return {"route": route, "triggers": triggers, "route_by": "ai",
+            "route_why": why, "rule_route": deterministic}
+
+
+def _ai_routing_enabled() -> bool:
+    """Let the desk decide whether a triggered cycle is really critical.
+    false restores `any trigger => full`."""
+    return os.getenv("RUN_AI_ROUTING", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _ai_route_verdict(run: dict, cfg: dict,
+                      triggers: list) -> "tuple[str, str] | None":
+    """One cheap call: are these signals critical FOR THIS RUN, or ambient?
+
+    Returns (route, why) or None to fall back to the deterministic answer —
+    routing must never break a cycle, and an unreachable model must not strand
+    a run. Deliberately tiny: this exists to avoid six expensive calls, so it
+    must not become a seventh."""
+    try:
+        from llm_client import generate_text, llm_configured
+        if not llm_configured():
+            return None
+        pos_note = "flat"
+        try:
+            pnl = compute_run_pnl(run)
+            pos = pnl.get("position")
+            if pos and float(pos.get("quantity") or 0) != 0:
+                pos_note = f"open, P&L ${float(pnl.get('total') or 0):+.2f}"
+        except Exception:  # noqa: BLE001
+            pass
+        prompt = (
+            "Route ONE trading cycle. The full desk costs six model calls; the "
+            "light path costs one. Spend the desk only where judgement can "
+            "change the outcome.\n"
+            f"Symbol: {run.get('symbol')} ({run.get('market')})\n"
+            f"Position: {pos_note}\n"
+            f"Signals firing: {', '.join(str(t) for t in triggers)}\n"
+            "Note: psych_shock and hot_issue are MARKET-WIDE flags that can "
+            "stay on for hours — on their own, with a flat book and nothing "
+            "specific to this symbol, they are ambient noise, not an event. "
+            "near_stop and event_window are specific and usually do warrant "
+            "the desk.\n"
+            'Respond ONLY with JSON: {"route":"full"|"light","why":"<8 words>"}'
+        )
+        text = generate_text(prompt, max_tokens=60, temperature=0.0,
+                             tier="decision")
+        if not text:
+            return None
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            return None
+        obj = json.loads(match.group(0))
+        route = str(obj.get("route") or "").strip().lower()
+        if route not in ("full", "light"):
+            return None
+        return route, str(obj.get("why") or "")[:120]
+    except Exception:  # noqa: BLE001 — routing is never allowed to break a cycle
+        return None
 
 
 # Plan 15 P2: the scalar confidence proved quantized (0.62 pin), so the
