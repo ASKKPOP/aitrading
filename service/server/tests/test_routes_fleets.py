@@ -38,6 +38,11 @@ def _candles(n=60, drift=0.8, volume=5_000_000):
 
 class FleetRouteTests(unittest.TestCase):
     def setUp(self):
+        # Synthetic theses are ~1.5%, below the build-time fee/edge hurdle
+        # (~2.4% claimed). These fixtures are about the fleet HTTP routes, not that gate —
+        # test_build_gates.py owns it.
+        os.environ["RUN_FEE_EDGE_MULTIPLE"] = "0"
+        os.environ["FLEET_EXPECTANCY_GATE"] = "false"
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
@@ -74,6 +79,8 @@ class FleetRouteTests(unittest.TestCase):
         self.user_auth = {"Authorization": f"Bearer {self.user_token}"}
 
     def tearDown(self):
+        os.environ.pop("RUN_FEE_EDGE_MULTIPLE", None)
+        os.environ.pop("FLEET_EXPECTANCY_GATE", None)
         self.plan.stop()
         self.probe.stop()
         self.tmp.cleanup()

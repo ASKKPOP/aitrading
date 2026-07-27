@@ -29,7 +29,6 @@ from backtest_metrics import (
 )
 from database import get_db_connection
 from fees import TRADE_FEE_RATE
-import markets
 
 
 # ---------------------------------------------------------------------------
@@ -235,12 +234,21 @@ def run_backtest(
             continue
 
         last_prices[pos_key] = price
-        # Futures are simulated fully funded rather than on margin: a contract
+        # Futures are simulated fully funded rather than on margin: a position
         # reserves its whole notional, not the exchange's initial margin. That
-        # under-states leverage (the run holds fewer contracts than a real
-        # margin account could), which is the safe direction for a backtest —
+        # under-states leverage, which is the safe direction for a backtest —
         # but it means these results are not a margin-accurate simulation.
-        multiplier = markets.contract_multiplier(mkt, sym)
+        #
+        # No contract point value (2026-07-26, World B): these rows are the
+        # live `signals` the desk actually wrote, and live sizing produces
+        # `quantity = size_usd / entry` — already USD notional. Multiplying
+        # again inflated every commodity replay by 50-1000x, so the
+        # expectancy gate that reads these results was grading CL and ZC on
+        # fictional numbers. See risk_engine.trade_stats for the same fix.
+        # Kept as an explicit 1.0 rather than deleted so _Position's
+        # notional_quantity plumbing stays intact for a future real-contract
+        # mode.
+        multiplier = 1.0
         notional_qty = qty * multiplier
         fee = _fee(price, notional_qty)
         trade_value = price * notional_qty

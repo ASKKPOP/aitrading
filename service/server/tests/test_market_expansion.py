@@ -280,7 +280,24 @@ if __name__ == '__main__':
 
 
 class FuturesPnlTests(unittest.TestCase):
-    """The 50x. A futures round trip must book contract notional, not points."""
+    """Futures P&L is USD-notional, NOT contract point value (World B).
+
+    Reversed 2026-07-26. This class previously asserted the 50x point value
+    ("one ES contract, +10 points = $500"), but nothing else in the system
+    ever adopted that convention: automation sizes `quantity = size_usd /
+    entry` (automation.py), run_engine.compute_run_pnl marks that quantity
+    straight against price, and positions / realized_pnl_usd / every risk cap
+    follow suit. Sizing routinely produces fractional "contracts" (0.267 ES),
+    which is meaningless if qty were really contracts.
+
+    Only risk_engine.trade_stats and backtest.py applied the point value, so
+    the SAME trade was graded 50-1000x larger by the account risk gate than by
+    the book that produced it:
+        run 76 CL booked -$159.82  ->  risk_engine counted -$159,816
+        run 83 ZW booked -$218.83  ->  risk_engine counted  -$10,942
+    which is exactly the "realized today $-154,418" / "$-10,521" that tripped
+    the daily-loss breaker 49 times in 7 days and hard-blocked every order.
+    """
 
     _next_signal_id = 950000
 
@@ -327,12 +344,22 @@ class FuturesPnlTests(unittest.TestCase):
         self._signal("sell", exit_, qty, (t0 + timedelta(minutes=1)).strftime(fmt),
                      symbol, market)
 
-    def test_es_round_trip_books_fifty_dollars_per_point(self):
+    def test_es_round_trip_books_usd_notional_not_point_value(self):
         import risk_engine
-        # One ES contract, +10 points => 10 * 1 * 50 = $500, not $10.
+        # 1.0 "ES" of exposure is $7,500 of notional, not one 50x contract.
+        # +10 points on that notional is $10 — the same arithmetic the run's
+        # own book uses. Booking $500 here is what broke the risk gate.
         self._round_trip(7500.0, 7510.0, 'ES', 'futures')
         self.assertAlmostEqual(risk_engine.trade_stats(self.agent_id)["realized_today"],
-                               500.0, places=6)
+                               10.0, places=6)
+
+    def test_commodity_loss_matches_the_run_book_that_produced_it(self):
+        """Regression for the 49 phantom daily-loss trips: CL carries a 1000x
+        point value, so this $10 loss was being counted as $10,000."""
+        import risk_engine
+        self._round_trip(100.0, 90.0, 'CL', 'futures')
+        self.assertAlmostEqual(risk_engine.trade_stats(self.agent_id)["realized_today"],
+                               -10.0, places=6)
 
     def test_equity_round_trip_is_unchanged_by_the_multiplier_work(self):
         import risk_engine
