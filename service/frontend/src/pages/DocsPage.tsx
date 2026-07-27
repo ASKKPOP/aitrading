@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { API_BASE, useLanguage, useTheme } from '../appShared'
+import { API_BASE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
 // Login-gated guide & research documents (backend: routes_guide.py).
@@ -29,9 +29,15 @@ interface Props {
   userToken?: string | null
 }
 
+/** Is the SITE currently dark? 'signal' and 'claude' are dark, 'light' is not;
+ *  before the theme is applied fall back to the OS. */
+function siteIsDark(): boolean {
+  const t = document.documentElement.getAttribute('data-theme')
+  return t ? t !== 'light' : matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 export function DocsPage({ token, userToken }: Props) {
   const { language } = useLanguage()
-  const { theme } = useTheme()
   const { slug } = useParams()
   const navigate = useNavigate()
   const [manifest, setManifest] = useState<Manifest | null>(null)
@@ -40,6 +46,7 @@ export function DocsPage({ token, userToken }: Props) {
   const cache = useRef<Record<string, string>>({})
   const frameRef = useRef<HTMLIFrameElement | null>(null)
   const [frameH, setFrameH] = useState(900)
+  const [dark, setDark] = useState(siteIsDark)
 
   const auth = userToken || token || ''
   // Prefer the reader's own language when that group publishes it; fall back to
@@ -95,16 +102,20 @@ export function DocsPage({ token, userToken }: Props) {
   // --card/--panel/--surface for a raised surface, --ink-2/--ink2/--ink-3 for
   // secondary text — so every alias in guide_content/ is mapped here. A name
   // no document uses simply goes unread.
+  //
+  // Two documents (hybrid, top10) declare no variables at all and hardcode
+  // their colours inside a prefers-color-scheme block, so no variable reaches
+  // them. They follow instead from color-scheme on the IFRAME ELEMENT, which
+  // is what prefers-color-scheme resolves against inside a nested browsing
+  // context — see the `dark` state and the iframe style below.
   const applySiteTheme = () => {
     const doc = frameRef.current?.contentDocument
     if (!doc?.body) return
     try {
       const root = getComputedStyle(document.documentElement)
       const v = (name: string) => root.getPropertyValue(name).trim()
-      const themeAttr = document.documentElement.getAttribute('data-theme')
-      const dark = themeAttr
-        ? themeAttr !== 'light'
-        : matchMedia('(prefers-color-scheme: dark)').matches
+      const dark = siteIsDark()
+      setDark(dark)
       const page = v('--bg-primary')
       const card = v('--bg-card')
       const surface = v('--bg-secondary')
@@ -139,17 +150,24 @@ export function DocsPage({ token, userToken }: Props) {
 
   const onFrameLoad = () => applySiteTheme()
 
+  // Paint a freshly loaded document.
+  useEffect(() => { applySiteTheme() }, [html])
+
   // Re-paint an already-open document when the reader switches theme.
   //
-  // Deferred by a frame on purpose: data-theme is written by an ANCESTOR's
-  // effect (App.tsx), and React runs child effects before parent ones, so
-  // reading the palette synchronously here returns the theme being replaced —
-  // which is how switching to 'claude' left the document wearing 'signal'
-  // colours. rAF runs after the whole commit, with the new theme in place.
+  // Watching the attribute rather than reacting to the `theme` value: the
+  // palette lives in CSS keyed on data-theme, which an ANCESTOR writes in its
+  // own effect (App.tsx), and React runs child effects before parent ones — so
+  // reading the variables when `theme` changes returns the theme being
+  // REPLACED, which is how switching to 'claude' left the document wearing
+  // 'signal' blue. A MutationObserver fires once the attribute is actually
+  // there, and unlike rAF it still fires in a background tab.
   useEffect(() => {
-    const id = requestAnimationFrame(applySiteTheme)
-    return () => cancelAnimationFrame(id)
-  }, [theme, html])
+    const target = document.documentElement
+    const obs = new MutationObserver(applySiteTheme)
+    obs.observe(target, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => obs.disconnect()
+  }, [html])
 
   const activeDocs = manifest?.docs.filter(d => d.group === group) ?? []
   // Only warn when we actually fell back — a fully localised group must not
@@ -204,10 +222,18 @@ export function DocsPage({ token, userToken }: Props) {
           srcDoc={html}
           onLoad={onFrameLoad}
           // No frame around the document: the border + radius read as a box
-          // inside a page that is already a page. Background is transparent so
-          // the document sits on the site's own surface and follows the site
-          // theme rather than painting its own.
-          style={{ width: '100%', height: frameH, border: 'none', background: 'transparent', display: 'block' }}
+          // inside a page that is already a page.
+          //
+          // colorScheme here is load-bearing, not decoration: inside a nested
+          // browsing context prefers-color-scheme resolves against the EMBEDDER
+          // element, so this is what makes each document's own light/dark block
+          // follow the site theme instead of the reader's OS. Without it, the
+          // two documents that hardcode their colours render white headings on
+          // the cream 'light' page whenever the OS is dark.
+          style={{
+            width: '100%', height: frameH, border: 'none', display: 'block',
+            colorScheme: dark ? 'dark' : 'light',
+          }}
         />
       )}
     </div>
