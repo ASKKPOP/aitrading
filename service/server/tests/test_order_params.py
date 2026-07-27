@@ -227,3 +227,30 @@ class JournalShapeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OutcomeClassificationTests(unittest.TestCase):
+    """'absent' and 'defer' are opposite findings — one says the prompt never
+    reached the model, the other says the desk looked and chose the house
+    default. A single `deferred` flag made the shadow dataset unreadable."""
+
+    def test_absent_block(self):
+        self.assertEqual(op.outcome(None), "absent")
+
+    def test_explicit_defer(self):
+        self.assertEqual(op.outcome({"defer": True}), "defer")
+
+    def test_usable_block(self):
+        self.assertEqual(op.outcome(GOOD), "parsed")
+
+    def test_non_dict_is_malformed_not_absent(self):
+        self.assertEqual(op.outcome("stop at 2%"), "malformed")
+        self.assertEqual(op.outcome(42), "malformed")
+
+    def test_dict_with_nothing_usable_is_malformed(self):
+        """A model emitting {"size_frac": "lots"} tried and failed — that is a
+        prompt/model problem, not a deliberate deferral."""
+        self.assertEqual(op.outcome({"size_frac": "lots"}), "malformed")
+
+    def test_defer_wins_over_other_fields(self):
+        self.assertEqual(op.outcome({"defer": True, "size_frac": 0.5}), "defer")

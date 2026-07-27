@@ -103,6 +103,24 @@ class OrderParams:
         return self.stop_pct is not None and self.target_pct is not None
 
 
+def outcome(raw: Any) -> str:
+    """Why no params were applied — 'parsed' | 'defer' | 'absent' | 'malformed'.
+
+    The journal previously recorded a single `deferred: true` for all three
+    non-parsing cases, which made the shadow experiment unreadable: a model
+    that never emits an order block and a model that deliberately defers on a
+    quiet tape are opposite findings, and both looked identical. 'absent' in
+    particular is the signal that the prompt (or the cheap analysis path,
+    which never asks for the block) is the thing to fix — not the model."""
+    if raw is None:
+        return "absent"
+    if not isinstance(raw, dict):
+        return "malformed"
+    if raw.get("defer") is True:
+        return "defer"
+    return "parsed" if parse_order_block(raw) is not None else "malformed"
+
+
 def mode() -> str:
     """'off' | 'shadow' | 'apply'.
 

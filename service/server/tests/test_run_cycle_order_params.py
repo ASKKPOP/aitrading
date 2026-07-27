@@ -144,6 +144,39 @@ class RunCycleOrderParamTests(unittest.TestCase):
         evs = self._events(run_id, "order_params")
         self.assertEqual(len(evs), 1)
         self.assertTrue(evs[0]["deferred"])
+        self.assertEqual(evs[0]["outcome"], "defer")
+
+    def test_an_absent_block_is_distinguished_from_a_deferral(self):
+        """Prod journaled 6 straight `deferred: true` and there was no way to
+        tell whether the model was choosing the house default or never seeing
+        the prompt at all. Those are opposite findings."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis", return_value=_analysis()):
+            run_engine.run_cycle(run_id)
+        self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
+                         "absent")
+
+    def test_a_malformed_block_is_not_reported_as_a_deferral(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"size_frac": "lots"})):
+            run_engine.run_cycle(run_id)
+        self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
+                         "malformed")
+
+    def test_light_path_is_not_eligible_rather_than_absent(self):
+        """The cheap path deliberately does not ask for order parameters; it
+        must not pollute the shadow dataset as a missing-prompt signal."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._run()
+        light = _analysis()
+        light["decision"]["order_eligible"] = False
+        with patch("analysis_agents.run_analysis", return_value=light):
+            run_engine.run_cycle(run_id)
+        self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
+                         "not_eligible")
 
     def test_off_mode_journals_nothing(self):
         os.environ["RUN_AI_ORDER_PARAMS"] = "off"
