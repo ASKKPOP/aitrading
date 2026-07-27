@@ -151,6 +151,35 @@ class GuideRoutesTests(unittest.TestCase):
             self.assertEqual(r.status_code, 200, f"{doc['key']} not served")
             self.assertGreater(len(r.text), 500, f"{doc['key']} suspiciously small")
 
+    def test_every_registered_doc_has_its_file_committed(self):
+        """The listing above is filtered by what exists, so it cannot notice a
+        registered doc whose HTML never shipped — the manifest ON DISK can.
+
+        This is the check that was missing when extension-e1-e2-en reached
+        production as a manifest entry with no file: the sidebar offered the
+        tab and every click answered 'could not load the document'."""
+        from routes_guide import _CONTENT_DIR, _load_manifest
+        missing = [d["key"] for d in _load_manifest()["docs"]
+                   if not (_CONTENT_DIR / f"{d['key']}.html").exists()]
+        self.assertEqual(missing, [], f"registered but not built: {missing}")
+
+    def test_a_registered_doc_with_no_file_is_not_offered(self):
+        """Second line of defence for the case above: if the two ever diverge
+        again in a shipped image, the reader gets no tab rather than a tab that
+        always fails."""
+        from routes_guide import _load_manifest
+        real = _load_manifest()
+        ghost = {"groups": real["groups"] + [{"group": "ghost", "ko": "유령", "en": "Ghost"}],
+                 "docs": real["docs"] + [{"key": "never-built-en", "lang": "en",
+                                          "group": "ghost", "title": "Ghost"}]}
+        with unittest.mock.patch("routes_guide._load_manifest", return_value=ghost):
+            r = self.client.get("/api/guide/docs", headers=self._h(self.owner_token))
+            self.assertNotIn("never-built-en", {d["key"] for d in r.json()["docs"]})
+            self.assertNotIn("ghost", {g["group"] for g in r.json()["groups"]})
+            self.assertEqual(
+                self.client.get("/api/guide/doc/never-built-en",
+                                headers=self._h(self.owner_token)).status_code, 404)
+
 
 class OwnerAllowlistTests(unittest.TestCase):
     """Owner-email matching: case-insensitive, env-configurable, no secret leak."""
