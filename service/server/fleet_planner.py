@@ -84,7 +84,17 @@ FLEET_BOUNDS = {
     # banks the small, mean-reverting moves the far profit_target never reaches.
     "stop_loss_frac_of_bet": {"stable": 0.015, "balanced": 0.02,
                               "aggressive": 0.03, "extreme": 0.04},
-    "trail_activate_frac_of_bet": 0.003,   # arm once peak ≥ 0.3% of notional
+    # Arm the lock at a floor of 0.3% of notional — but never below a fraction
+    # of what the run is RISKING (trail_activate_rr × max_loss). The old
+    # frac-only rule put activation at exactly 1/10th of the stop on every
+    # run (arm $6.66 vs stop $66.61), so the desk banked ~$6 wins and took
+    # ~$67 losses: a structure needing a 90.9% hit rate to break even, against
+    # a measured 35% directional accuracy. At rr=1.0 the lock cannot arm until
+    # the position is up as much as it can lose, which drops the breakeven hit
+    # rate to ~55%. Reaching breakeven at 35% would need rr≈2.3, but that also
+    # slashes how often the lock ever arms — raise it only with measurement.
+    "trail_activate_frac_of_bet": 0.003,   # floor: 0.3% of notional
+    "trail_activate_rr": 1.0,              # …and ≥ 1.0 × max_loss_usd
     # Giveback cut 0.40 → 0.20 (2026-07-26). At 40% the five prod ZEC winners
     # peaked $6.95–$27.83 and banked $1.98–$7.50: the retrace surrendered up to
     # half the peak and the 0.1%/side round trip took 44–82% of the remainder.
@@ -121,8 +131,14 @@ def _tier(dimension: str, risk: str):
     return d.get(risk, d["balanced"])
 
 
-def _trail_config(max_bet: float, leverage: float) -> dict:
+def _trail_config(max_bet: float, leverage: float,
+                  max_loss_usd: float = 0.0) -> dict:
     """Trailing-lock config for a run sized at `max_bet` margin on `leverage`.
+
+    activate_usd is the greater of a notional floor and trail_activate_rr ×
+    max_loss_usd — the lock must not bank a win smaller than the loss the run
+    is prepared to take. See the FLEET_BOUNDS note: the frac-only rule armed
+    at exactly 1/10th of the stop and needed a 90.9% hit rate to break even.
 
     tighten_usd is the fee-aware "this is a real winner" line: the round trip
     on the position notional costs notional × 2 × TRADE_FEE_RATE, so a peak
@@ -131,14 +147,93 @@ def _trail_config(max_bet: float, leverage: float) -> dict:
     from fees import TRADE_FEE_RATE
     notional = max(0.0, float(max_bet)) * max(1.0, float(leverage or 1.0))
     round_trip_usd = notional * TRADE_FEE_RATE * 2
+    activate = max(
+        float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"],
+        max(0.0, float(max_loss_usd)) * FLEET_BOUNDS["trail_activate_rr"],
+    )
+    tighten = round(round_trip_usd * FLEET_BOUNDS["trail_tighten_fee_multiple"], 2)
+    # The ratchet only means something above the arming line; with an RR-scaled
+    # activation the fee-based tighten can land below it, which would apply the
+    # tight band the instant the lock arms and defeat the point of arming late.
+    tighten = max(tighten, round(activate * 1.5, 2))
     return {
-        "activate_usd": round(
-            float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"], 2),
+        "activate_usd": round(activate, 2),
         "giveback_frac": FLEET_BOUNDS["trail_giveback_frac"],
-        "tighten_usd": round(
-            round_trip_usd * FLEET_BOUNDS["trail_tighten_fee_multiple"], 2),
+        "tighten_usd": tighten,
         "tighten_giveback_frac": FLEET_BOUNDS["trail_tighten_giveback_frac"],
     }
+
+def _thesis_fee_infeasible(thesis: dict) -> "str | None":
+    """Reason a thesis can never pay for its own round trip, or None.
+
+    Mirrors run_engine._fee_edge_skip exactly — same discount, same hurdle —
+    but evaluated once at build instead of every cycle, because
+    expected_move_pct is frozen in the config snapshot and never changes."""
+    try:
+        from run_engine import _fee_edge_skip
+    except Exception:  # noqa: BLE001 — never block a build on an import
+        return None
+    skip = _fee_edge_skip(thesis.get("expected_move_pct"))
+    return f"fee_infeasible: {skip}" if skip else None
+
+
+def _expectancy_min_trades() -> int:
+    """Closed trades in a bucket before its record is allowed to veto. Below
+    this the sample says nothing and the bucket is presumed innocent."""
+    try:
+        return max(3, int(os.getenv("FLEET_EXPECTANCY_MIN_TRADES", "8")))
+    except ValueError:
+        return 8
+
+
+def _expectancy_gate_enabled() -> bool:
+    return os.getenv("FLEET_EXPECTANCY_GATE", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _bucket_expectancy_block(agent_id: int, thesis: dict) -> "str | None":
+    """Reason to refuse a (market, direction) bucket on its own track record.
+
+    The desk's directional accuracy is 35% overall — worse than a coin flip —
+    but it is not uniformly bad, and the per-bucket realised record is the
+    only evidence about where the edge actually is. A bucket with at least
+    FLEET_EXPECTANCY_MIN_TRADES closed runs and negative mean P&L per run has
+    demonstrated it loses; stop rebuilding it and let the survivors compete
+    for the budget. Fail-open: any error, or too small a sample, allows."""
+    if not _expectancy_gate_enabled():
+        return None
+    direction = (thesis.get("direction") or "").lower()
+    side = "short" if direction == "short" else "long"
+    market = thesis.get("market")
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # Runs are the unit of account: realized_pnl_usd is the fee-inclusive
+        # book the run itself closed on, already scoped per run.
+        cursor.execute(
+            """SELECT COUNT(*) AS n, COALESCE(SUM(realized_pnl_usd), 0) AS total
+               FROM trading_runs
+               WHERE agent_id = ? AND market = ? AND status = 'stopped'
+                 AND created_via = 'fleet'
+                 AND JSON_EXTRACT(config_snapshot_json, '$.thesis.direction') = ?""",
+            (agent_id, market, side))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — evidence is a nicety, never a blocker
+        return None
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    if not row:
+        return None
+    n = int(row["n"] or 0)
+    total = float(row["total"] or 0.0)
+    if n < _expectancy_min_trades() or total >= 0:
+        return None
+    return (f"negative_expectancy: {market}/{side} is {total:+.2f} over "
+            f"{n} closed runs (mean {total / n:+.2f}/run)")
+
 
 # Replacement disposition per stop reason (Plan 14 §2 — ENUMERATED, never a
 # wildcard; a future stop_event:* kind must be classified here before shipping).
@@ -591,6 +686,9 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     fleet_lev = fleet.get("leverage")
     leverage = float(fleet_lev) if fleet_lev else _tier("auto_leverage", risk)
     leverage = max(1.0, min(10.0, leverage))
+    # Hoisted: the trailing lock arms against this, so it must exist before
+    # the stop_conditions literal is built.
+    max_loss_usd = round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2)
     return {
         "symbol": thesis["symbol"], "market": market, "market_type": market_type,
         "max_bet_usd": max_bet,
@@ -602,11 +700,12 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         "stop_conditions": {
             # Active stop scaled to the POSITION (max_bet), not run_budget —
             # cuts a real adverse move instead of sitting ~44% beyond it.
-            "max_loss_usd": round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2),
+            "max_loss_usd": max_loss_usd,
             # Far thesis-move target kept as a secondary cap; the trailing lock
             # below is the primary profit-realiser for intraday moves.
             "profit_target_usd": round(run_budget * gain_frac, 2),
-            "trail": _trail_config(max_bet, leverage),
+            # Lock arms against the STOP, not just notional — see _trail_config.
+            "trail": _trail_config(max_bet, leverage, max_loss_usd),
             "at_time": at_time,
         },
         # Plan 14: stop_flatten pinned True on the builder path (the API-route
@@ -995,6 +1094,32 @@ def _do_build(fleet: dict) -> None:
             emit_fleet_event(fleet["id"], "candidate_skipped",
                              {"thesis_key": cand["thesis_key"],
                               "reason": "symbol_busy"})
+            skipped += 1
+            continue
+        # Fee/edge feasibility, checked HERE rather than per cycle
+        # (2026-07-26). expected_move_pct is frozen into the config snapshot at
+        # build, so a thesis that cannot clear the round-trip hurdle can never
+        # clear it — prod run 114 (ZS, 1.31%) was refused on every cycle and
+        # would have burned ~60 LLM calls over 7h before idle-retire collected
+        # it. Deterministic input, so decide once, before the run exists.
+        infeasible = _thesis_fee_infeasible(thesis)
+        if infeasible:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": infeasible})
+            skipped += 1
+            continue
+        # Proven-negative expectancy: refuse to rebuild a (market, direction)
+        # the desk has already demonstrated it loses on. Directional accuracy
+        # measured 35% overall (long 32% / short 40%) over 40 runs, so the
+        # per-bucket record is the only honest input we have about edge.
+        negative = _bucket_expectancy_block(agent_id, thesis)
+        if negative:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": negative})
             skipped += 1
             continue
 

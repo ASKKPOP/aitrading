@@ -50,6 +50,14 @@ def _seed_batch(symbols=("AAA", "BBB", "CCC", "DDD", "EEE", "FFF")):
 
 class FleetTestBase(unittest.TestCase):
     def setUp(self):
+        # The synthetic research batch yields ~1.5% theses, which the
+        # build-time fee/edge gate refuses (hurdle ≈2.4% claimed). Every fleet
+        # fixture below is about allocation, leverage, supervision or
+        # replacement — not about that gate — so switch it off here and let
+        # test_build_gates.py own it. Without this the fixtures would silently
+        # assert "no members were built" for the wrong reason.
+        os.environ["RUN_FEE_EDGE_MULTIPLE"] = "0"
+        os.environ["FLEET_EXPECTANCY_GATE"] = "false"
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
@@ -80,6 +88,8 @@ class FleetTestBase(unittest.TestCase):
         self.probe.start()
 
     def tearDown(self):
+        os.environ.pop("RUN_FEE_EDGE_MULTIPLE", None)
+        os.environ.pop("FLEET_EXPECTANCY_GATE", None)
         self.plan.stop()
         self.probe.stop()
         self.tmp.cleanup()
@@ -154,17 +164,22 @@ class AllocationTests(unittest.TestCase):
                                             "lang": "en"})
         sc = settings["stop_conditions"]
         max_bet = float(settings["max_bet_usd"])
-        # aggressive: stop_loss_frac_of_bet 0.03, trail activate 0.003 of notional
+        # aggressive: stop_loss_frac_of_bet 0.03
         self.assertAlmostEqual(sc["max_loss_usd"], round(max_bet * 0.03, 2), places=2)
         self.assertIn("trail", sc)
+        # The lock arms against the STOP, not merely 0.3% of notional
+        # (2026-07-26). The old frac-only rule armed at exactly 1/10th of the
+        # stop, so the desk banked ~$6 wins against ~$67 losses — a structure
+        # needing a 90.9% hit rate against a measured 35%.
         self.assertAlmostEqual(sc["trail"]["activate_usd"],
-                               round(max_bet * 0.003, 2), places=2)
+                               sc["max_loss_usd"], places=2)
+        self.assertGreater(sc["trail"]["activate_usd"], round(max_bet * 0.003, 2))
         self.assertEqual(sc["trail"]["giveback_frac"], 0.20)
         # fee-aware ratchet: above 3× the round-trip cost the giveback tightens
         self.assertEqual(sc["trail"]["tighten_giveback_frac"], 0.15)
-        lev = max(1.0, float(settings.get("leverage") or 1.0))
-        self.assertAlmostEqual(sc["trail"]["tighten_usd"],
-                               round(max_bet * lev * 0.001 * 2 * 3.0, 2), places=2)
+        # …but never below the arming line, or the tight band would apply the
+        # instant the lock arms.
+        self.assertGreater(sc["trail"]["tighten_usd"], sc["trail"]["activate_usd"])
         # and it must be MUCH tighter than the old run_budget * 0.20 = $200
         self.assertLess(sc["max_loss_usd"], 200.0)
 
@@ -310,19 +325,6 @@ class BuildTests(FleetTestBase):
 
 
 class RunEngineFleetTests(FleetTestBase):
-    # These exercise the sizing/budget rails, not the fee gate. The synthetic
-    # research batch produces a ~1.5% thesis, which the fee/edge gate refuses
-    # before sizing is ever reached — so switch that one gate off here and let
-    # test_fee_edge_gate.py own it. Without this the assertions below would be
-    # silently testing the fee gate instead of what they name.
-    def setUp(self):
-        super().setUp()
-        os.environ["RUN_FEE_EDGE_MULTIPLE"] = "0"
-
-    def tearDown(self):
-        os.environ.pop("RUN_FEE_EDGE_MULTIPLE", None)
-        super().tearDown()
-
     def _member(self):
         _seed_batch()
         fleet_id = self._fleet(n=1, budget=1000.0)

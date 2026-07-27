@@ -140,6 +140,23 @@ class KellyFractionTests(unittest.TestCase):
 # ── journal replay ────────────────────────────────────────────────────────
 
 class TradeStatsTests(RiskEngineTestCase):
+    def test_commodity_pnl_is_not_scaled_by_contract_point_value(self):
+        """The ledger is USD-notional end to end: automation sizes
+        `quantity = size_usd / entry` and run_engine marks that quantity
+        straight against price, so a CL row is dollars of exposure, not
+        contracts of 1,000 barrels. Applying a point value here scaled the
+        same trade by 1000x against the book that produced it — prod run 76
+        booked -$159.82 and this counted -$159,816, tripping the account
+        daily-loss breaker 49 times in a week."""
+        from risk_engine import trade_stats
+        # CL carries contract_multiplier 1000; a $10 loss must stay $10.
+        self._insert_signal("buy", 100.0, 1.0, _iso(TODAY),
+                            symbol="CL", market="futures")
+        self._insert_signal("sell", 90.0, 1.0, _iso(TODAY + timedelta(minutes=1)),
+                            symbol="CL", market="futures")
+        stats = trade_stats(self.agent_id)
+        self.assertAlmostEqual(stats["realized_today"], -10.0)
+
     def test_replay_win_rate_payoff_and_daily_pnl(self):
         from risk_engine import trade_stats
         # Two wins of +20 yesterday, one loss of −10 today.

@@ -304,10 +304,18 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
         qty = float(row["quantity"])
         if qty <= 0 or price <= 0:
             continue
-        # Point value and settlement currency are pure functions of the
-        # instrument, derived the same way position_currency already was —
-        # 1.0/USD for cash markets, 50 for ES, CNY for an A-share.
-        multiplier = markets.contract_multiplier(row["market"], row["symbol"])
+        # NO contract point value here (2026-07-26). The simulated ledger is
+        # USD-notional end to end: automation sizes `quantity = size_usd /
+        # entry` and run_engine.compute_run_pnl marks that quantity straight
+        # against price, so a "3.4958 ZC" row is $1,703 of exposure, not 3.5
+        # contracts of 50 bushels. Applying a point value scaled the SAME
+        # trade by 50–1000× against the book that produced it:
+        #   run 76 CL booked -$159.82  →  counted as -$159,816
+        #   run 83 ZW booked -$218.83  →  counted as  -$10,942
+        # which is exactly the "realized today $-154,418" / "$-10,521" that
+        # tripped the account daily-loss breaker 49 times in 7 days and
+        # hard-blocked every new order. Currency conversion stays — that is a
+        # real unit change (a CNY A-share P&L genuinely is not USD).
         currency = markets.position_currency(row["market"], row["symbol"])
         pnl = None
         if side == "buy":
@@ -335,10 +343,11 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
             pnl = (book["avg"] - price) * closed
             book["qty"] -= closed
         if pnl is not None:
-            # Scale to contract notional, then to USD. These stats feed a single
-            # cross-market risk gate, so a CNY A-share PnL and a USD futures PnL
-            # cannot be summed in their native units.
-            pnl = to_usd(pnl * multiplier, currency)
+            # To USD. These stats feed a single cross-market risk gate, so a
+            # CNY A-share PnL and a USD futures PnL cannot be summed in their
+            # native units. Point value is deliberately NOT applied — see the
+            # note above the currency lookup.
+            pnl = to_usd(pnl, currency)
             pnls.append(pnl)
             if str(row["executed_at"]).startswith(today):
                 realized_today += pnl

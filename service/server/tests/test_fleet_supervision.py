@@ -106,6 +106,11 @@ class LadderPropertyTests(unittest.TestCase):
 
 class SupervisionBase(unittest.TestCase):
     def setUp(self):
+        # Synthetic theses are ~1.5%, below the build-time fee/edge hurdle
+        # (~2.4% claimed). These fixtures are about supervision and replacement, not that gate —
+        # test_build_gates.py owns it.
+        os.environ["RUN_FEE_EDGE_MULTIPLE"] = "0"
+        os.environ["FLEET_EXPECTANCY_GATE"] = "false"
         # module-level retry cache is keyed by (fleet_id, slot_index); every
         # test recreates fleet 1 in the same process, so reset it
         fs._LAST_EMPTY_ATTEMPT.clear()
@@ -139,6 +144,8 @@ class SupervisionBase(unittest.TestCase):
         self.alert_patch.start()
 
     def tearDown(self):
+        os.environ.pop("RUN_FEE_EDGE_MULTIPLE", None)
+        os.environ.pop("FLEET_EXPECTANCY_GATE", None)
         self.plan.stop()
         self.probe.stop()
         self.alert_patch.stop()
