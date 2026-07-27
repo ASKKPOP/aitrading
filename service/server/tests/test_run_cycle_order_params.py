@@ -166,14 +166,14 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
                          "malformed")
 
-    def test_light_path_is_not_eligible_rather_than_absent(self):
-        """The cheap path deliberately does not ask for order parameters; it
-        must not pollute the shadow dataset as a missing-prompt signal."""
+    def test_a_path_that_opts_out_is_marked_not_eligible(self):
+        """`not_eligible` is retained for any future path that declines to ask
+        for a bracket. The light path no longer sets it."""
         os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
         run_id = self._run()
-        light = _analysis()
-        light["decision"]["order_eligible"] = False
-        with patch("analysis_agents.run_analysis", return_value=light):
+        opted_out = _analysis()
+        opted_out["decision"]["order_eligible"] = False
+        with patch("analysis_agents.run_analysis", return_value=opted_out):
             run_engine.run_cycle(run_id)
         self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
                          "not_eligible")
@@ -270,3 +270,109 @@ class RunCycleOrderParamTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LightPathOrderBlockTests(RunCycleOrderParamTests):
+    """The light path must ASK for a bracket (2026-07-27).
+
+    100% of live runs routed to `_light_analysis`, whose prompt never
+    requested order parameters and whose parser dropped any `order` key. The
+    shadow dataset therefore stayed empty while the feature looked deployed.
+    It now asks for stop_pct/target_pct only — the two fields the flat 5%/10%
+    overrides — so the cheap path stays cheap.
+    """
+
+    def _fleet_light_run(self) -> int:
+        """A run the cycle will actually route to _light_analysis.
+
+        The light path is fleet-only (`is_fleet_run`), and the per-run
+        cycle_mode pin wins over routing — so stamp both.
+        """
+        run_id = self._run()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT config_snapshot_json FROM trading_runs WHERE id = ?",
+                        (run_id,))
+            cfg = json.loads(cur.fetchone()["config_snapshot_json"] or "{}")
+            cfg["cycle_mode"] = "light"
+            database.begin_write_transaction(cur)
+            cur.execute("UPDATE trading_runs SET config_snapshot_json = ?, "
+                        "created_via = 'fleet' WHERE id = ?",
+                        (json.dumps(cfg), run_id))
+            conn.commit()
+        finally:
+            conn.close()
+        return run_id
+
+    def _light(self, reply: str):
+        """Drive the real _light_analysis with a canned LLM reply."""
+        run_id = self._fleet_light_run()
+        with patch("llm_client.generate_text", return_value=reply), \
+             patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]):
+            run_engine.run_cycle(run_id)
+        return run_id
+
+    def test_light_prompt_requests_a_bracket(self):
+        seen = {}
+        def cap(prompt, **kw):
+            seen["p"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+        run_id = self._fleet_light_run()
+        with patch("llm_client.generate_text", side_effect=cap), \
+             patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]):
+            run_engine.run_cycle(run_id)
+        prompt = seen.get("p", "")
+        # Assert the JSON CONTRACT, not just a prose mention — the model
+        # returns the response shape, and prose alone would not make it emit
+        # the fields.
+        self.assertIn('"stop_pct": number|null', prompt)
+        self.assertIn('"target_pct": number|null', prompt)
+        # …and the instruction that keeps the bracket sane.
+        self.assertIn("at least 2x stop_pct", prompt)
+
+    def test_light_bracket_is_parsed_and_journaled(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._light('{"action":"buy","confidence":0.9,'
+                             '"stop_pct":1.5,"target_pct":4.0,"report":"r"}')
+        evs = self._events(run_id, "order_params")
+        self.assertTrue(evs, "the light cycle must journal an order_params event")
+        self.assertEqual(evs[0]["outcome"], "parsed",
+                         "was 'not_eligible' — the whole reason shadow collected nothing")
+        self.assertEqual(evs[0]["params"]["stop_pct"], 1.5)
+        self.assertEqual(evs[0]["params"]["target_pct"], 4.0)
+
+    def test_light_bracket_is_railed_like_any_other(self):
+        """An inverted bracket from the cheap path gets the same R:R floor."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._light('{"action":"buy","confidence":0.9,'
+                             '"stop_pct":3.0,"target_pct":1.0,"report":"r"}')
+        p = self._events(run_id, "order_params")[0]["params"]
+        self.assertEqual(p["target_pct"], 6.0)
+        self.assertTrue(any("R:R floor" in n for n in p["notes"]))
+
+    def test_light_bracket_reaches_the_book_in_apply_mode(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._light('{"action":"buy","confidence":0.9,'
+                             '"stop_pct":2.0,"target_pct":6.0,"report":"r"}')
+        fill = self._fill(run_id)
+        self.assertTrue(fill, "the cycle should have traded")
+        self.assertAlmostEqual(float(fill[0]["stop_loss"]), 98.0, places=2)
+        self.assertAlmostEqual(float(fill[0]["take_profit"]), 106.0, places=2)
+
+    def test_omitted_bracket_still_degrades_to_the_house_default(self):
+        """"If you have no concrete basis, omit them" must keep working."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._light('{"action":"buy","confidence":0.9,"report":"r"}')
+        fill = self._fill(run_id)
+        self.assertAlmostEqual(float(fill[0]["stop_loss"]), 95.0, places=2)
+        self.assertAlmostEqual(float(fill[0]["take_profit"]), 110.0, places=2)
+
+    def test_null_bracket_is_treated_as_omitted(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._light('{"action":"buy","confidence":0.9,'
+                             '"stop_pct":null,"target_pct":null,"report":"r"}')
+        self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
+                         "absent")
