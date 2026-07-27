@@ -1659,10 +1659,24 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "and cleanliness of the current move), entry_quality (how good is THIS "
         "price as an entry vs the reference?), risk_context (headroom to "
         "invalidation; 1.0 = very safe).\n"
+        # Order parameters, minimal edition (2026-07-27). Only the two fields
+        # the flat 5%/10% actually overrides — a stop and a target sized to
+        # THIS instrument. The full trader prompt asks for the whole block
+        # (size, leverage, trail, horizon, adds); asking for all of that here
+        # would defeat the point of the cheap path. Two numbers cost ~20
+        # output tokens against the 200-token budget.
+        "Then place THIS instrument's bracket. A 5% stop is a hair-trigger on "
+        "a currency pair and unreachable on a volatile crypto name, so size "
+        "both to the symbol's own recent range shown above: stop_pct = %% from "
+        "entry to your invalidation level, target_pct = %% to a level the move "
+        "can realistically reach. target_pct MUST be at least 2x stop_pct. If "
+        "you have no concrete basis, omit them and the house defaults apply.\n"
         'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold", '
         '"confidence": 0.0-1.0, "scores": {"thesis_alignment": 0.0-1.0, '
         '"momentum_quality": 0.0-1.0, "entry_quality": 0.0-1.0, '
-        '"risk_context": 0.0-1.0}, "report": "<one sentence>"}'
+        '"risk_context": 0.0-1.0}, '
+        '"stop_pct": number|null, "target_pct": number|null, '
+        '"report": "<one sentence>"}'
     )
     text = None
     try:
@@ -1672,6 +1686,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         text = None
     action, confidence, report = "hold", 0.0, "light cycle: no LLM verdict"
     scores: Optional[dict] = None
+    order_block: Optional[dict] = None
     if text:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if m:
@@ -1692,16 +1707,25 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                             parsed = None
                             break
                     scores = parsed
+                # Lift the flat stop/target pair into the same `order` shape
+                # the full path emits, so one parser and one set of rails
+                # serve both. Absent or null -> no block at all, which
+                # degrades to the deterministic bracket exactly as before.
+                flat = {k: obj.get(k) for k in ("stop_pct", "target_pct")
+                        if obj.get(k) is not None}
+                if flat:
+                    order_block = flat
             except (ValueError, TypeError):
                 pass
-    # No `order` key: the light prompt deliberately does not ask for order
-    # parameters — it is the cheap path for a quiet tape, on a 200-token
-    # budget, and sizing a bespoke bracket is exactly the work it exists to
-    # skip. Stamped explicitly so the shadow journal records 'not_eligible'
-    # rather than an 'absent' that reads like a broken prompt.
-    return {"decision": {"action": action, "confidence": confidence,
-                         "entry": entry, "report": report, "scores": scores,
-                         "order_eligible": False},
+    # `order_eligible` is now True: the light prompt DOES ask for a bracket
+    # (stop_pct/target_pct only — the full block would defeat the cheap path).
+    # Without the ask, every light cycle journaled 'not_eligible' and the
+    # shadow dataset stayed empty while 100% of live runs routed here.
+    decision = {"action": action, "confidence": confidence,
+                "entry": entry, "report": report, "scores": scores}
+    if order_block:
+        decision["order"] = order_block
+    return {"decision": decision,
             "analysts": {}}
 
 
@@ -1937,6 +1961,9 @@ def run_cycle(run_id: int) -> dict:
                  # does not ask for the block at all), the other says the desk
                  # looked and chose the house default. A single `deferred`
                  # flag made the shadow dataset unreadable.
+                 # `not_eligible` retained for any future path that opts out;
+                 # the light path no longer sets it — it asks for a bracket
+                 # like everything else.
                  "outcome": ("not_eligible" if decision.get("order_eligible") is False
                              else order_params_outcome(decision.get("order"))),
                  "route": (route or {}).get("route"),
