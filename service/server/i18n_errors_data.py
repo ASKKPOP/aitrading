@@ -567,12 +567,6 @@ MESSAGES: dict[str, dict[str, str]] = {
         'th': 'ไม่พบคำสั่ง',
         'vi': 'Không tìm thấy lệnh',
     },
-    'Owner only': {
-        'ko': '소유자만 가능합니다',
-        'ja': '所有者のみです',
-        'th': 'เฉพาะเจ้าของเท่านั้น',
-        'vi': 'Chỉ chủ sở hữu',
-    },
     'Pass ids or all=true': {
         'ko': 'ids 또는 all=true를 전달하세요',
         'ja': 'ids または all=true を指定してください',

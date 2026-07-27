@@ -1,4 +1,11 @@
-"""Guide routes are owner-only: no owner token → no bytes, no listing, no keys."""
+"""Guide access: members read member docs, owner_only stays owner-only.
+
+Until 2026-07-27 the WHOLE guide was gated on one allowlisted email, so three
+of four prod accounts got 403 on every document — including the member guides
+written for them — while the page advertised itself as members-only. These
+tests pin the split: a logged-in member sees the member documents and cannot
+even learn that an owner_only key exists.
+"""
 
 from __future__ import annotations
 
@@ -60,11 +67,31 @@ class GuideRoutesTests(unittest.TestCase):
             self.client.get("/api/guide/docs", headers=self._h("claw_not_a_real_token")).status_code,
             401)
 
-    def test_docs_forbidden_for_non_owner(self):
-        # agent (no email) and a logged-in non-owner both get 403 — no listing.
+    def test_members_get_the_listing_without_owner_only_docs(self):
         for tok in (self.agent_token, _make_user_token("someone@else.com")):
-            self.assertEqual(
-                self.client.get("/api/guide/docs", headers=self._h(tok)).status_code, 403)
+            r = self.client.get("/api/guide/docs", headers=self._h(tok))
+            self.assertEqual(r.status_code, 200)
+            keys = {d["key"] for d in r.json()["docs"]}
+            self.assertIn("guide-ko", keys)
+            self.assertIn("decisions-ko", keys)
+            self.assertNotIn("api-keys-en", keys)
+            self.assertNotIn("architecture-en", keys)
+
+    def test_member_listing_hides_groups_left_with_no_documents(self):
+        """An empty group in the sidebar advertises material the member cannot
+        open — which is how the old gate produced 'could not load'."""
+        r = self.client.get("/api/guide/docs",
+                            headers=self._h(_make_user_token("someone@else.com")))
+        groups = {g["group"] for g in r.json()["groups"]}
+        self.assertIn("decisions", groups)
+        self.assertNotIn("ops-keys", groups)
+        self.assertNotIn("architecture", groups)
+
+    def test_the_member_guide_is_published_in_every_ui_language(self):
+        r = self.client.get("/api/guide/docs",
+                            headers=self._h(_make_user_token("someone@else.com")))
+        langs = {d["lang"] for d in r.json()["docs"] if d["group"] == "decisions"}
+        self.assertEqual(langs, {"ko", "en", "ja", "th", "vi"})
 
     def test_docs_for_owner(self):
         r = self.client.get("/api/guide/docs", headers=self._h(self.owner_token))
@@ -74,12 +101,13 @@ class GuideRoutesTests(unittest.TestCase):
         self.assertIn("backtest-report-en", keys)
         self.assertIn("api-keys-en", keys)   # owner sees everything
 
-    def test_doc_requires_login_then_owner(self):
+    def test_doc_requires_login_and_serves_members(self):
         self.assertEqual(self.client.get("/api/guide/doc/guide-ko").status_code, 401)
-        # non-owner → 404, existence not confirmed
-        self.assertEqual(
-            self.client.get("/api/guide/doc/guide-ko", headers=self._h(self.agent_token)).status_code,
-            404)
+        # a logged-in member now RECEIVES a member document
+        r_member = self.client.get("/api/guide/doc/guide-ko",
+                                   headers=self._h(self.agent_token))
+        self.assertEqual(r_member.status_code, 200)
+        self.assertIn("<!doctype html", r_member.text.lower())
         # owner → 200 html
         r = self.client.get("/api/guide/doc/guide-ko", headers=self._h(self.owner_token))
         self.assertEqual(r.status_code, 200)
@@ -87,12 +115,18 @@ class GuideRoutesTests(unittest.TestCase):
         self.assertIn("<!doctype html", r.text.lower())
         self.assertIn("private", r.headers.get("cache-control", ""))
 
-    def test_non_owner_doc_fetch_404s_for_every_key(self):
-        # both a sensitive key and a normal one are 404 for non-owners.
+    def test_owner_only_keys_stay_404_for_members(self):
+        """404 rather than 403 — a member must not even learn the key exists."""
         for tok in (self.agent_token, _make_user_token("nope@else.com")):
-            for key in ("api-keys-en", "guide-ko", "backtest-report-en"):
+            for key in ("api-keys-en", "architecture-en", "extension-e1-e2-en"):
                 r = self.client.get(f"/api/guide/doc/{key}", headers=self._h(tok))
-                self.assertEqual(r.status_code, 404, f"{key} not gated for non-owner")
+                self.assertEqual(r.status_code, 404, f"{key} leaked to a member")
+
+    def test_member_keys_are_readable_by_members(self):
+        for tok in (self.agent_token, _make_user_token("nope@else.com")):
+            for key in ("guide-ko", "decisions-ko", "backtest-report-en"):
+                r = self.client.get(f"/api/guide/doc/{key}", headers=self._h(tok))
+                self.assertEqual(r.status_code, 200, f"{key} withheld from a member")
 
     def test_unknown_and_traversal_keys_rejected(self):
         self.assertEqual(

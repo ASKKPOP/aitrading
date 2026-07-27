@@ -44,6 +44,22 @@ def _load_manifest() -> dict:
         return {"groups": [], "docs": []}
 
 
+def _visible_manifest(is_owner: bool) -> dict:
+    """The manifest as this reader may see it.
+
+    An owner sees everything. A member sees every doc NOT marked owner_only,
+    and only the groups that still have a document left — an empty group in the
+    sidebar would advertise material the member cannot open, which is how the
+    old all-or-nothing gate ended up showing 'could not load the document'."""
+    manifest = _load_manifest()
+    if is_owner:
+        return manifest
+    docs = [d for d in manifest.get("docs", []) if not d.get("owner_only")]
+    live = {d.get("group") for d in docs}
+    groups = [g for g in manifest.get("groups", []) if g.get("group") in live]
+    return {"groups": groups, "docs": docs}
+
+
 def _require_login(authorization: Optional[str]) -> None:
     """401 unless the bearer token belongs to a user OR an agent."""
     token = _extract_token(authorization)
@@ -71,21 +87,21 @@ def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.get("/api/guide/docs")
     async def guide_docs(authorization: str = Header(None)):
-        # The whole guide is owner-only: a logged-in non-owner is forbidden,
-        # so nothing about the docs (not even the listing) is exposed.
+        # Members see the member documents; owner_only docs stay owner-only
+        # (2026-07-27). Previously the WHOLE guide was gated on a single
+        # allowlisted email, so every other member got 403 and the UI showed
+        # "could not load the document" — while the same page advertised
+        # itself as members-only. Three of four accounts could not open any
+        # guide at all, including the ones written for them.
         _require_login(authorization)
-        if not _is_owner(authorization):
-            raise HTTPException(status_code=403, detail="Owner only")
-        return _load_manifest()
+        return _visible_manifest(_is_owner(authorization))
 
     @app.get("/api/guide/doc/{key}")
     async def guide_doc(key: str, authorization: str = Header(None)):
         _require_login(authorization)
-        # Non-owners get 404 (not 403) so no document key — including whether
-        # this one exists — is ever confirmed to a non-owner.
-        if not _is_owner(authorization):
-            raise HTTPException(status_code=404, detail="Unknown document")
-        manifest = _load_manifest()
+        # An owner_only key is 404 (not 403) for a member, so its existence is
+        # never confirmed to someone who may not read it.
+        manifest = _visible_manifest(_is_owner(authorization))
         if not any(d["key"] == key for d in manifest["docs"]):
             raise HTTPException(status_code=404, detail="Unknown document")
         path = _CONTENT_DIR / f"{key}.html"   # keys come from the manifest, never the path
