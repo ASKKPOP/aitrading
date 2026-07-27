@@ -421,6 +421,37 @@ def _idle_retire_cycles() -> int:
         return 12
 
 
+def _infeasible_retire_enabled() -> bool:
+    """Default-on kill switch for the fee-infeasible retire rail."""
+    return os.getenv("RUN_INFEASIBLE_RETIRE", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def run_thesis_expected_move(run: dict) -> "float | None":
+    """The run's frozen thesis expected_move_pct, or None when it carries no
+    thesis (manual runs) or the snapshot is unreadable."""
+    try:
+        cfg = json.loads(run.get("config_snapshot_json") or "{}")
+    except (ValueError, TypeError):
+        return None
+    thesis = cfg.get("thesis")
+    if not isinstance(thesis, dict):
+        return None
+    val = thesis.get("expected_move_pct")
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        return float(val)
+    return None
+
+
+def _run_thesis_fee_infeasible(run: dict) -> Optional[str]:
+    """Reason the run's own thesis can never pay for a round trip, or None.
+
+    Reuses the per-cycle gate verbatim so the retire rail and the entry gate
+    can never disagree — if _fee_edge_skip would refuse every entry this run
+    will ever attempt, the run is dead and the slot should go back."""
+    return _fee_edge_skip(run_thesis_expected_move(run))
+
+
 UNACTIONABLE_SKIP = "spot sell with no inventory"
 
 
@@ -599,6 +630,19 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # week. Flat and never-traded only — an open position is never abandoned
     # on a cycle count.
     if not has_position and int(pnl.get("trades") or 0) == 0:
+        # Fee-infeasible retire (2026-07-27), the sharpest rail of the three:
+        # it needs no samples at all. expected_move_pct is frozen in the config
+        # snapshot and never changes, so a thesis that cannot clear the fee
+        # hurdle on cycle 1 cannot clear it on cycle 12 either — the idle timer
+        # just makes the desk pay nine hours of a held slot to learn a fact
+        # arithmetic already knew. Prod: runs 129/130/131 (ZC, USDKRW, USDZAR)
+        # were each blocked by fee_edge on their FIRST cycle and held $3,399 of
+        # allocation between them; 100% of all forex theses ever generated are
+        # in this class. Flat and never-traded only, same as the timer.
+        if _infeasible_retire_enabled():
+            infeasible = _run_thesis_fee_infeasible(run)
+            if infeasible:
+                return "fee_infeasible_retired"
         limit = _idle_retire_cycles()
         if limit and int(run.get("cycle_seq") or 0) >= limit:
             return "idle_retired"

@@ -242,6 +242,11 @@ REPLACE_IMMEDIATE = frozenset({
     "stop_event:at_time", "stop_event:price_cross", "adapt_retired",
     "stop_event:trailing_lock",   # banked winner — replace the slot at once
     "idle_retired",               # never traded — free the slot for a live thesis
+    # Arithmetic, not evidence: the frozen thesis cannot clear the fee hurdle,
+    # so the run could never have traded. Replace at once — the slot is good,
+    # only the thesis was dead, and _build_replacement now applies the same
+    # fee gate so the successor cannot inherit the defect.
+    "fee_infeasible_retired",
     # The desk kept reading the opposite of the run's own thesis on a book
     # that cannot express it. Replacing immediately is the entire point: the
     # slot should carry a thesis the desk still believes.

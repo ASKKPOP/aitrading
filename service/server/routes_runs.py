@@ -327,9 +327,61 @@ def _early_stop_details(run: dict) -> Optional[dict]:
         return None
 
 
+def _capability(run: dict) -> dict:
+    """Can this run actually act, and if not, why — the answer `status` alone
+    cannot give.
+
+    A run reads `running` whether it is hunting, parked on a closed market, or
+    arithmetically unable to ever open a position. Prod 2026-07-27: three of
+    seven `running` runs held $3,399 of allocation behind a permanent fee
+    block and the UI showed all seven as healthy. `permanent` is the field
+    that matters — it separates "wait" from "this will never work".
+
+    Derived from the FROZEN config snapshot only: no event lookup, no extra
+    query, so it is safe to compute for every row of a list response and can
+    be shown in a create-run preview before the run exists.
+    """
+    import markets
+    import run_engine
+
+    cap = {"state": "hunting", "permanent": False, "reason_code": None,
+           "reason": None, "capital_usd": None}
+    try:
+        cfg = _json.loads(run.get("config_snapshot_json") or "{}")
+        cap["capital_usd"] = cfg.get("run_budget_usd") or cfg.get("max_bet_usd")
+    except Exception:  # noqa: BLE001
+        pass
+    if run.get("status") not in ("armed", "running", "paused"):
+        cap["state"] = "inactive"
+        return cap
+
+    # Permanent first — a dead thesis outranks a closed market, because the
+    # market reopening changes nothing for it.
+    move = run_engine.run_thesis_expected_move(run)
+    if run_engine._fee_edge_skip(move):
+        realized = move * run_engine._thesis_realization()
+        cap.update({
+            "state": "cannot_trade", "permanent": True,
+            "reason_code": "fee_infeasible",
+            "reason": (f"Target move {move:.2f}% — after realistic slippage "
+                       f"that is {realized:.2f}%, below what a round trip "
+                       f"costs. This run cannot open a position."),
+        })
+        return cap
+    try:
+        if not markets.is_market_open(run.get("market")):
+            cap.update({"state": "waiting", "reason_code": "market_closed",
+                        "reason": "Market is closed — the run resumes at the "
+                                  "next session open."})
+    except Exception:  # noqa: BLE001 — a calendar problem must not blank the row
+        pass
+    return cap
+
+
 def _public(run: dict) -> dict:
     """Route-facing shape: JSON columns decoded, claim bookkeeping hidden."""
     out = dict(run)
+    out["capability"] = _capability(run)
     for col, key in (("config_snapshot_json", "config"),
                      ("start_condition_json", "start_condition"),
                      ("stop_conditions_json", "stop_conditions")):

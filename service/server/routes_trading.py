@@ -671,9 +671,10 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT p.*, a.name as leader_name
+            SELECT p.*, a.name as leader_name, r.status as run_status
             FROM positions p
             LEFT JOIN agents a ON a.id = p.leader_id
+            LEFT JOIN trading_runs r ON r.id = p.run_id
             WHERE p.agent_id = ?
             ORDER BY p.opened_at DESC
             """,
@@ -713,6 +714,20 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'take_profit': _row_value(row, 'take_profit'),
                 'source': source,
                 'opened_at': row['opened_at'],
+                # Who is actually watching this position. A run releases its
+                # run_id on stop (run_engine: "close it by hand"), and a manual
+                # terminal fill never had one — so an unowned row is normal,
+                # but it was invisible: prod position 13 sat unowned with no
+                # stop for 7 days at −4%. managed_by is null for those, and
+                # `unprotected` is the one that needs a badge — nothing is
+                # watching AND there is no exit level to watch for.
+                'managed_by': (f"run:{_row_value(row, 'run_id')}"
+                               if _row_value(row, 'run_id')
+                               and _row_value(row, 'run_status') in
+                               ('armed', 'running', 'paused', 'stopping')
+                               else None),
+                'unprotected': (_row_value(row, 'stop_loss') is None
+                                and _row_value(row, 'take_profit') is None),
             })
             if positions[-1]['market'] == 'polymarket':
                 decorate_polymarket_item(positions[-1], fetch_remote=False)

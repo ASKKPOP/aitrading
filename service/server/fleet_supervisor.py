@@ -768,6 +768,30 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             markets_scope=fp._open_markets_scope())
     finally:
         conn.close()
+    # Fee feasibility, the third gate the initial build applies
+    # (fleet_planner._do_build). It was missed when E3 ported parity, and the
+    # replacement path shipped with only two of three: prod runs 129/130/131
+    # were each built into a permanent fee_edge block and held $3,399 between
+    # them. The expectancy gate below cannot catch this class — it needs
+    # FLEET_EXPECTANCY_MIN_TRADES closed runs, so a fresh symbol like USDZAR is
+    # presumed innocent. This one is pure arithmetic on the frozen thesis.
+    # select_targets returns research_theses rows verbatim, so the candidate
+    # IS the thesis — expected_move_pct sits at the top level, same shape
+    # _thesis_fee_infeasible reads on the build path.
+    if theses:
+        feasible, infeasible = [], {}
+        for t in theses:
+            why = fp._thesis_fee_infeasible(t)
+            if why:
+                infeasible[t["symbol"]] = why
+            else:
+                feasible.append(t)
+        if infeasible:
+            fp.emit_fleet_event(fleet["id"], "fee_gate",
+                                {"context": "replacement",
+                                 "kept": [t["symbol"] for t in feasible],
+                                 "dropped": infeasible})
+        theses = feasible
     import backtest_gate
     if theses and backtest_gate.gate_enabled():
         kept, dropped = backtest_gate.gate_candidates(theses)
