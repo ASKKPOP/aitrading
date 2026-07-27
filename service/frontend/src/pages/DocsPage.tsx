@@ -103,11 +103,20 @@ export function DocsPage({ token, userToken }: Props) {
   // secondary text — so every alias in guide_content/ is mapped here. A name
   // no document uses simply goes unread.
   //
-  // Two documents (hybrid, top10) declare no variables at all and hardcode
-  // their colours inside a prefers-color-scheme block, so no variable reaches
-  // them. They follow instead from color-scheme on the IFRAME ELEMENT, which
-  // is what prefers-color-scheme resolves against inside a nested browsing
-  // context — see the `dark` state and the iframe style below.
+  // hybrid and top10 scope their palette to .viz-root rather than :root, and a
+  // variable set on that element beats one inherited from :root — so those two
+  // kept painting their own #0d0d0d page inside ours, a black box with the
+  // wrong accent. Both selectors carry the palette, and .viz-root's own
+  // background is overridden alongside html/body. Their dark/light choice is
+  // separate again: it is hardcoded behind prefers-color-scheme, which inside
+  // a nested browsing context resolves against color-scheme on the IFRAME
+  // ELEMENT — see the `dark` state and the iframe style below.
+  //
+  // Every document also brought its OWN measure (860 / 880 / 980 / 1020 /
+  // 1040 / 1120 px, each self-centred with its own gutter), so no two guide
+  // pages lined up and none of them lined up with the page heading above the
+  // frame. The page container is already the measure; the documents' is
+  // removed so all of them share one column and one left edge.
   const applySiteTheme = () => {
     const doc = frameRef.current?.contentDocument
     if (!doc?.body) return
@@ -131,16 +140,18 @@ export function DocsPage({ token, userToken }: Props) {
         doc.head.appendChild(style)
       }
       style.textContent = `
-        :root{color-scheme:${dark ? 'dark' : 'light'};
+        :root,.viz-root{color-scheme:${dark ? 'dark' : 'light'};
           --page:${page}; --bg:${page}; --ground:${page}; --surface-0:${page};
           --card:${card}; --panel:${card}; --surface-1:${card};
           --surface:${surface}; --surf:${surface}; --panel-2:${surface}; --surface-2:${surface};
-          --grid:${line}; --border:${line}; --bd:${line}; --hair:${line}; --border-strong:${line};
+          --grid:${line}; --border:${line}; --bd:${line}; --hair:${line};
+          --border-strong:${line}; --baseline:${line};
           --ink:${ink}; --text-primary:${ink};
           --ink2:${ink2}; --ink-2:${ink2}; --ink-3:${muted}; --text-secondary:${ink2};
           --muted:${muted}; --text-muted:${muted};
           --accent:${accent}; --ai:${accent};}
-        html,body{background:${page}}
+        html,body,.viz-root{background:${page}}
+        .wrap,main,.viz-root{max-width:none; padding-left:0; padding-right:0}
         main,.viz-root{padding-top:0}`
     } catch {
       /* styling is a nicety — never let it stop the document rendering */
