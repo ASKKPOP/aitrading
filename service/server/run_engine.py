@@ -49,6 +49,7 @@ from database import begin_write_transaction, get_db_connection
 from order_params import (
     exit_prices as order_exit_prices,
     mode as order_params_mode,
+    outcome as order_params_outcome,
     parse_order_block,
     rr_floor_violation,
 )
@@ -1693,8 +1694,14 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                     scores = parsed
             except (ValueError, TypeError):
                 pass
+    # No `order` key: the light prompt deliberately does not ask for order
+    # parameters — it is the cheap path for a quiet tape, on a 200-token
+    # budget, and sizing a bespoke bracket is exactly the work it exists to
+    # skip. Stamped explicitly so the shadow journal records 'not_eligible'
+    # rather than an 'absent' that reads like a broken prompt.
     return {"decision": {"action": action, "confidence": confidence,
-                         "entry": entry, "report": report, "scores": scores},
+                         "entry": entry, "report": report, "scores": scores,
+                         "order_eligible": False},
             "analysts": {}}
 
 
@@ -1925,6 +1932,14 @@ def run_cycle(run_id: int) -> dict:
                 run_id, "order_params",
                 {"cycle": seq, "mode": op_mode, "action": action,
                  "deferred": order_params is None,
+                 # 'absent' vs 'defer' are opposite findings — one says the
+                 # prompt never reached the model (the cheap analysis path
+                 # does not ask for the block at all), the other says the desk
+                 # looked and chose the house default. A single `deferred`
+                 # flag made the shadow dataset unreadable.
+                 "outcome": ("not_eligible" if decision.get("order_eligible") is False
+                             else order_params_outcome(decision.get("order"))),
+                 "route": (route or {}).get("route"),
                  **({"params": order_params.as_event()} if order_params else {})})
 
         # Futures v1 (Plan 10 D5): the desk decides direction (buy/sell); the
