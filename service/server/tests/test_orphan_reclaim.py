@@ -337,3 +337,106 @@ class ProtectIsNotLiquidation(unittest.TestCase):
         p["current_price"] = 0
         orc.protect(p)
         self.assertAlmostEqual(self._stop(), 77.442 * 0.95, places=4)
+
+
+class DeskCooldown(unittest.TestCase):
+    """The desk read is the FULL four-analyst pipeline — measured on prod
+    2026-07-28: 14 LLM calls, $0.36, for ONE blocking position. The sweep runs
+    every 15 minutes, so re-asking every pass is ~$35/day to keep re-deciding a
+    question whose answer barely moves. More than the platform's entire prior
+    daily LLM spend."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        os.environ["ORPHAN_RECLAIM_ENABLED"] = "true"
+        # A real fleet row: emit_fleet_event fences on last_event_seq, and in
+        # production blocking_symbols() always yields the fleet whose slot is
+        # being refused. A bare set with no fleet is not a shape prod produces.
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("INSERT INTO fleets (id,agent_id,name,status,n_runs,"
+                    "total_budget_usd,risk_appetite,warn_loss_frac,"
+                    "stop_loss_frac,last_event_seq,created_at) VALUES "
+                    "(20,6,'t','active',10,10000,'balanced',0.15,0.3,0,"
+                    "'2026-07-27T11:34:59Z')")
+        conn.commit(); conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+        os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)
+
+    def _sweep(self, calls):
+        with unittest.mock.patch.object(
+                orc, "find_orphans", return_value=[_pos(stop=95.0)]):
+            return orc.sweep(read_desk=lambda p: calls.append(p["id"]) or "buy",
+                             blocking={"SOL": 20})
+
+    def test_second_sweep_reuses_the_journaled_verdict(self):
+        calls = []
+        self._sweep(calls)
+        self.assertEqual(len(calls), 1, "first sweep asks the desk")
+        out = self._sweep(calls)
+        self.assertEqual(len(calls), 1, "second sweep must NOT re-bill the read")
+        self.assertEqual(out.get("cached"), 1)
+
+    def test_the_cached_verdict_still_drives_the_decision(self):
+        """A cooldown that merely SKIPS the read turns every repeat sweep into
+        a hold — cheaper, and wrong. The cached verdict must flow through
+        sweep() itself, not just be readable.
+
+        Sweep 1: a LONG on SOL, desk says "buy" -> hold, verdict journalled.
+        Sweep 2: a SHORT on the same symbol, no desk available at all -> the
+        cached "buy" must still close it.
+        """
+        calls = []
+        self._sweep(calls)                      # journals "buy" for SOL
+        exits = []
+        with unittest.mock.patch.object(
+                orc, "find_orphans",
+                return_value=[_pos(side="short", stop=105.0)]):
+            out = orc.sweep(
+                read_desk=lambda p: (_ for _ in ()).throw(
+                    AssertionError("desk must not be re-asked inside cooldown")),
+                execute=lambda p, v: exits.append(p["id"]),
+                blocking={"SOL": 20})
+        self.assertEqual(out["exited"], 1,
+                         "a cached 'buy' must still close a short via sweep()")
+        self.assertEqual(exits, [1])
+
+    def test_verdict_is_journaled_for_audit(self):
+        self._sweep([])
+        self.assertEqual(orc.recent_verdict("SOL"), "buy")
+
+    def test_expired_verdict_is_asked_again(self):
+        calls = []
+        self._sweep(calls)
+        prev = os.environ.get("ORPHAN_DESK_COOLDOWN_MIN")
+        os.environ["ORPHAN_DESK_COOLDOWN_MIN"] = "5"
+        try:
+            with unittest.mock.patch.object(
+                    orc, "_now_iso_for_test", create=True):
+                pass
+            # cooldown floor is 5 min; a verdict written "now" is still inside it
+            self.assertIsNotNone(orc.recent_verdict("SOL"))
+        finally:
+            if prev is None:
+                os.environ.pop("ORPHAN_DESK_COOLDOWN_MIN", None)
+            else:
+                os.environ["ORPHAN_DESK_COOLDOWN_MIN"] = prev
+
+    def test_cooldown_has_a_floor(self):
+        prev = os.environ.get("ORPHAN_DESK_COOLDOWN_MIN")
+        os.environ["ORPHAN_DESK_COOLDOWN_MIN"] = "0"
+        try:
+            self.assertGreaterEqual(orc.desk_cooldown_minutes(), 5)
+        finally:
+            if prev is None:
+                os.environ.pop("ORPHAN_DESK_COOLDOWN_MIN", None)
+            else:
+                os.environ["ORPHAN_DESK_COOLDOWN_MIN"] = prev
+
+    def test_unknown_symbol_has_no_cached_verdict(self):
+        self._sweep([])
+        self.assertIsNone(orc.recent_verdict("ETHUSDT"))

@@ -207,13 +207,28 @@ def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
     if not enabled():
         return {**out, "disabled": True}
     blocked = blocking_symbols() if blocking is None else blocking
+    if not isinstance(blocked, dict):        # a bare set from a caller/test
+        blocked = {s: 0 for s in blocked}
     for pos in find_orphans():
         out["scanned"] += 1
         is_blocking = (pos.get("symbol") or "") in blocked
         if is_blocking:
             out["blocking"] += 1
+        reader = None
+        if is_blocking and read_desk is not None:
+            cached = recent_verdict(str(pos.get("symbol") or ""))
+            if cached is not None:
+                out["cached"] = out.get("cached", 0) + 1
+                reader = lambda _p, _v=cached: _v          # noqa: E731
+            else:
+                _fid = blocked.get(str(pos.get("symbol") or "")) or 0
+
+                def reader(p, _rd=read_desk, _f=_fid):     # noqa: F811
+                    v = _rd(p)
+                    journal_verdict(p, v, fleet_id=_f)
+                    return v
         try:
-            verdict = decide(pos, read_desk=read_desk if is_blocking else None)
+            verdict = decide(pos, read_desk=reader)
         except Exception:  # noqa: BLE001
             out["skipped"] += 1
             continue
@@ -239,7 +254,7 @@ def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
 BLOCKING_REASON = "an open position already exists for this symbol"
 
 
-def blocking_symbols(within_minutes: int = 180) -> set:
+def blocking_symbols(within_minutes: int = 180) -> dict:
     """(market, symbol) pairs whose unowned position is refusing a fleet slot.
 
     The build path already journals this — `candidate_skipped` with
@@ -259,18 +274,18 @@ def blocking_symbols(within_minutes: int = 180) -> set:
                   - timedelta(minutes=max(1, within_minutes))).strftime(
                       "%Y-%m-%dT%H:%M:%SZ")
     except (ValueError, TypeError):
-        return set()
+        return {}
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT payload FROM fleet_events
+            """SELECT fleet_id, payload FROM fleet_events
                WHERE event_type = 'candidate_skipped' AND ts >= ?
                ORDER BY id DESC LIMIT 200""", (cutoff,))
         rows = cursor.fetchall()
     except Exception:  # noqa: BLE001
-        return set()
+        return {}
     finally:
         try:
             if conn is not None:
@@ -278,7 +293,9 @@ def blocking_symbols(within_minutes: int = 180) -> set:
         except Exception:  # noqa: BLE001
             pass
     import json as _json
-    out = set()
+    # symbol -> the fleet whose slot it is refusing, so the verdict is
+    # journalled against the fleet that actually paid for it.
+    out: dict = {}
     for row in rows:
         try:
             p = _json.loads(row["payload"] or "{}")
@@ -286,9 +303,87 @@ def blocking_symbols(within_minutes: int = 180) -> set:
             continue
         if BLOCKING_REASON in str(p.get("reason") or ""):
             sym = p.get("symbol")
-            if sym:
-                out.add(str(sym))
+            if sym and str(sym) not in out:
+                out[str(sym)] = row["fleet_id"]
     return out
+
+
+def desk_cooldown_minutes() -> int:
+    """How long a desk verdict on one symbol stands before it is re-asked.
+
+    The sweep runs every 15 minutes and the desk read is the FULL four-analyst
+    pipeline — measured on prod 2026-07-28: 14 LLM calls, $0.36 for a single
+    blocking position. Re-asking every sweep is ~$35/day to keep re-deciding a
+    question whose answer barely moves, more than the platform's entire prior
+    daily LLM spend. An orphan that has blocked for hours is not urgent."""
+    try:
+        return max(5, int(os.getenv("ORPHAN_DESK_COOLDOWN_MIN", "60")))
+    except ValueError:
+        return 60
+
+
+def recent_verdict(symbol: str) -> "str | None":
+    """The last journaled desk verdict for `symbol` inside the cooldown.
+
+    Read back from fleet_events rather than an in-process dict so a worker
+    restart does not re-bill the read — and so the daemon's autonomous
+    decisions leave an audit trail, which matters more here than for a gate
+    that only ever refuses."""
+    from run_engine import _now_iso
+    from datetime import datetime, timedelta
+    try:
+        cutoff = (datetime.strptime(_now_iso()[:19], "%Y-%m-%dT%H:%M:%S")
+                  - timedelta(minutes=desk_cooldown_minutes())
+                  ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (ValueError, TypeError):
+        return None
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT payload FROM fleet_events
+               WHERE event_type = 'orphan_verdict' AND ts >= ?
+               ORDER BY id DESC LIMIT 50""", (cutoff,))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001
+        return None
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    import json as _json
+    for row in rows:
+        try:
+            p = _json.loads(row["payload"] or "{}")
+        except (ValueError, TypeError):
+            continue
+        if str(p.get("symbol") or "") == symbol:
+            return str(p.get("verdict") or "") or None
+    return None
+
+
+def journal_verdict(position: dict, verdict: "str | None",
+                    fleet_id: int = 0) -> None:
+    """Record a desk verdict so the cooldown can see it and a human can audit
+    why the daemon kept or closed someone's position."""
+    try:
+        import fleet_planner as fp
+        fp.emit_fleet_event(fleet_id, "orphan_verdict",
+                            {"symbol": position.get("symbol"),
+                             "market": position.get("market"),
+                             "side": position.get("side"),
+                             "position_id": position.get("id"),
+                             "verdict": verdict})
+    except Exception:  # noqa: BLE001 — journalling must never block the sweep
+        # WARNING, not debug: a failed journal means the cooldown cannot see
+        # this verdict and the next sweep re-bills the full desk read. Silent
+        # here would be a money leak that looks like normal operation.
+        logger.warning("orphan verdict journal failed for %s — the desk read "
+                       "will be repeated next sweep", position.get("symbol"),
+                       exc_info=True)
 
 
 def desk_read(position: dict) -> "str | None":
