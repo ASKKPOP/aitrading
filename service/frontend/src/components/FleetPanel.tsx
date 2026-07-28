@@ -21,6 +21,14 @@ type Fleet = {
   warn_latched_at: string | null; warn_acked_at: string | null
   entry_paused_reason: string | null; held_by_master: number
 }
+// Rebased to 100 at launch, so an N-symbol sleeve is readable on its own
+// terms instead of being lost inside the account total. Server-computed from
+// marked_equity (routes_fleets.fleet_index); null when equity is unreadable —
+// never render a fabricated number.
+type FleetIndex = {
+  base: number; value: number; pnl_usd: number; pnl_pct: number
+  budget_usd: number; equity_usd: number; since: string | null
+}
 type Member = {
   run_id: number; symbol: string; market: string; status: string
   status_reason: string | null; paused_reason: string | null
@@ -91,6 +99,10 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)' }),
     needPlan: tr(language, { ko: '완전자동 플릿은 Pro 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Pro plan or above', ja: '完全自動フリートは Pro 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Pro ขึ้นไป', vi: 'Đội hình tự động cần gói Pro trở lên' }),
     equity: tr(language, { ko: '평가 자산', en: 'Marked equity', ja: '評価資産', th: 'มูลค่าตามราคาตลาด', vi: 'Giá trị theo thị trường' }),
+    indexLabel: tr(language, { ko: 'N종목 지수', en: 'Fleet index', ja: 'フリート指数',
+      th: 'ดัชนีกองทุน', vi: 'Chỉ số nhóm' }),
+    indexBase: tr(language, { ko: '기준', en: 'base', ja: '基準', th: 'ฐาน', vi: 'gốc' }),
+    indexBudget: tr(language, { ko: '예산', en: 'budget', ja: '予算', th: 'งบ', vi: 'ngân sách' }),
     monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp' }),
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)' }),
@@ -128,6 +140,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const authHeaders: any = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const [ent, setEnt] = useState<Entitlements | null>(null)
   const [fleet, setFleet] = useState<Fleet | null>(null)
+  const [index, setIndex] = useState<FleetIndex | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [equity, setEquity] = useState<number | null>(null)
   const [n, setN] = useState(3)
@@ -150,7 +163,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
         const detail = await fetch(`${API_BASE}/fleets/${active.id}`, { headers: authHeaders }).then(r => r.json())
         setFleet(detail.fleet); setMembers(detail.members || [])
         setEquity(detail.equity && detail.equity.ok ? detail.equity.equity : null)
-      } else { setFleet(null); setMembers([]) }
+        setIndex(detail.index || null)
+      } else { setFleet(null); setMembers([]); setIndex(null) }
     } catch { /* transient */ }
   }, [token])
 
@@ -344,6 +358,37 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
         <>
           {!!fleet.held_by_master && (
             <div style={{ fontSize: 12.5, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(240,102,63,0.1)' }}>{T.holdBanner}</div>
+          )}
+          {/* This sleeve's own scoreboard, rebased to 100 at launch. The
+              account total above answers "am I up?"; only this answers "is
+              THIS fleet working?" — on a six-figure account a $10k sleeve's
+              result is otherwise invisible. Budget-independent, so two fleets
+              of different size are directly comparable. */}
+          {index && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap',
+              marginBottom: 12, padding: '12px 16px', borderRadius: 12,
+              border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
+              background: 'var(--bg-card,rgba(0,0,0,0.02))' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
+                🎯 {T.indexLabel}
+              </span>
+              <span style={{ fontSize: 30, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                color: index.value >= index.base ? '#2e9e6b' : '#f0663f' }}>
+                {index.value.toFixed(2)}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                color: index.pnl_pct >= 0 ? '#2e9e6b' : '#f0663f' }}>
+                {index.pnl_pct >= 0 ? '+' : ''}{index.pnl_pct.toFixed(2)}%
+                <span style={{ marginLeft: 6, fontWeight: 600 }}>
+                  ({index.pnl_usd >= 0 ? '+' : ''}${index.pnl_usd.toFixed(2)})
+                </span>
+              </span>
+              <span style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)',
+                fontVariantNumeric: 'tabular-nums' }}>
+                {T.indexBase} {index.base.toFixed(0)} · {T.indexBudget} ${index.budget_usd.toFixed(0)}
+                {index.since ? ` · ${index.since.slice(0, 10)}` : ''}
+              </span>
+            </div>
           )}
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 12.5 }}>
