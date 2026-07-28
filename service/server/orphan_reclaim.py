@@ -141,7 +141,21 @@ def decide(position: dict[str, Any], read_desk=None) -> dict[str, Any]:
 
 
 def protect(position: dict[str, Any]) -> bool:
-    """Attach a protective stop to a bare orphan. Returns True when written."""
+    """Attach a protective stop to a bare orphan. Returns True when written.
+
+    Measured from the CURRENT MARK when the position is underwater, not from
+    entry. An entry-relative stop on a losing position is not protection — it
+    sits on the wrong side of the mark and the SL/TP watcher fills it at once.
+
+    Live 2026-07-28, my own bug: position 13 (SOL long, entry 77.442) was
+    -5.4% when the first sweep ran. A 5% stop off ENTRY put the trigger at
+    73.5699 while the mark was 73.134 — already through it. The watcher closed
+    the position 31 seconds later for -$25.72. Correct outcome for an eight-day
+    abandoned position, but it was a liquidation dressed as a safety net.
+
+    Anchoring on min(entry, mark) for a long — max for a short — keeps the stop
+    a full `frac` away on the losing side whatever the position is worth now.
+    """
     try:
         entry = float(position.get("entry_price") or 0)
     except (TypeError, ValueError):
@@ -150,7 +164,16 @@ def protect(position: dict[str, Any]) -> bool:
         return False
     frac = default_stop_frac()
     side = (position.get("side") or "").lower()
-    stop = entry * (1 - frac) if side in ("long", "buy") else entry * (1 + frac)
+    try:
+        mark = float(position.get("current_price"))
+    except (TypeError, ValueError):
+        mark = entry            # no mark: entry is the only anchor we have
+    if mark <= 0:
+        mark = entry
+    if side in ("long", "buy"):
+        stop = min(entry, mark) * (1 - frac)
+    else:
+        stop = max(entry, mark) * (1 + frac)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()

@@ -264,3 +264,76 @@ class BlockingEscalation(unittest.TestCase):
                              "enabling the sweep must not enable closing")
         finally:
             os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)
+
+
+class ProtectIsNotLiquidation(unittest.TestCase):
+    """My own bug, live 2026-07-28. Position 13 (SOL long, entry 77.442) was
+    -5.4% when the sweep ran. A 5% stop off ENTRY landed at 73.5699 while the
+    mark was 73.134 — already through it. The watcher filled 31 seconds later
+    for -$25.72. A stop that is already breached is a market order, not a
+    safety net."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("INSERT INTO positions (id,agent_id,symbol,market,side,"
+                    "quantity,entry_price,opened_at,run_id) VALUES "
+                    "(1,6,'SOL','crypto','long',5.87,77.442,'2026-07-20T22:53:52Z',NULL)")
+        conn.commit(); conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _stop(self):
+        conn = database.get_db_connection(); cur = conn.cursor()
+        cur.execute("SELECT stop_loss FROM positions WHERE id=1")
+        v = cur.fetchone()["stop_loss"]; conn.close()
+        return v
+
+    def _pos13(self, mark):
+        p = _pos(entry=77.442)
+        p["current_price"] = mark
+        return p
+
+    def test_the_live_case_is_not_instantly_breached(self):
+        orc.protect(self._pos13(73.134))
+        self.assertLess(self._stop(), 73.134,
+                        "the stop must sit BELOW the mark, not above it")
+
+    def test_underwater_long_anchors_on_the_mark(self):
+        orc.protect(self._pos13(73.134))
+        self.assertAlmostEqual(self._stop(), 73.134 * 0.95, places=4)
+
+    def test_winning_long_still_anchors_on_entry(self):
+        """A profitable position keeps its risk measured from cost, so the
+        stop cannot drift up with the price and cut a winner short."""
+        orc.protect(self._pos13(90.0))
+        self.assertAlmostEqual(self._stop(), 77.442 * 0.95, places=4)
+
+    def test_underwater_short_anchors_on_the_mark(self):
+        p = _pos(side="short", entry=74.031)
+        p["current_price"] = 80.0            # a short is underwater when price rises
+        orc.protect(p)
+        self.assertAlmostEqual(self._stop(), 80.0 * 1.05, places=4)
+        self.assertGreater(self._stop(), 80.0, "stop must sit ABOVE the mark")
+
+    def test_winning_short_still_anchors_on_entry(self):
+        p = _pos(side="short", entry=74.031)
+        p["current_price"] = 70.0
+        orc.protect(p)
+        self.assertAlmostEqual(self._stop(), 74.031 * 1.05, places=4)
+
+    def test_missing_mark_falls_back_to_entry(self):
+        p = _pos(entry=77.442)
+        p["current_price"] = None
+        self.assertTrue(orc.protect(p))
+        self.assertAlmostEqual(self._stop(), 77.442 * 0.95, places=4)
+
+    def test_zero_mark_falls_back_to_entry(self):
+        p = _pos(entry=77.442)
+        p["current_price"] = 0
+        orc.protect(p)
+        self.assertAlmostEqual(self._stop(), 77.442 * 0.95, places=4)
