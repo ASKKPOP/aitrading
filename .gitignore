@@ -2,6 +2,11 @@
 # Dependencies
 # ====================
 node_modules/
+# ...and a SYMLINK named node_modules: the trailing-slash pattern above only
+# matches directories, so a symlink slipped onto main in #95 and would have
+# broken the image build (Dockerfile COPYs service/frontend/ AFTER npm ci,
+# replacing the installed tree with a dangling link).
+node_modules
 .venv/
 venv/
 env/
