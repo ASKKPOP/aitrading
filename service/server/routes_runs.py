@@ -358,7 +358,7 @@ def _capability(run: dict) -> dict:
     # Permanent first — a dead thesis outranks a closed market, because the
     # market reopening changes nothing for it.
     move = run_engine.run_thesis_expected_move(run)
-    if run_engine._fee_edge_skip(move):
+    if run_engine._fee_edge_skip(move, market=run.get("market")):
         realized = move * run_engine._thesis_realization()
         cap.update({
             "state": "cannot_trade", "permanent": True,
