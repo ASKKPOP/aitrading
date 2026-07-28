@@ -130,6 +130,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
       drawdown_warning: { ko: '손실 경고 — 신규 진입 정지됨', en: 'Drawdown warning — new entries paused', ja: 'ドローダウン警告 — 新規停止', th: 'เตือนขาดทุน — พักการเข้าใหม่', vi: 'Cảnh báo sụt giảm — tạm dừng lệnh mới' },
       eval_failed: { ko: '가격 데이터 문제로 평가 불가 — 진입 정지', en: 'Equity evaluation failing on stale prices — entries paused', ja: '価格データ問題で評価不可 — 停止', th: 'ประเมินไม่ได้ — พัก', vi: 'Không đánh giá được — tạm dừng' },
       user_stop: { ko: '사용자 정지', en: 'Stopped by you', ja: 'ユーザー停止', th: 'หยุดโดยผู้ใช้', vi: 'Bạn đã dừng' },
+      fleet_stop_all: { ko: '전체 정지 — 이 N종목 전체를 정지했습니다', en: 'Stop all — this sleeve was stopped as a whole', ja: '全体停止 — このスリーブ全体を停止しました', th: 'หยุดทั้งหมด — หยุดสลีฟนี้ทั้งชุด', vi: 'Dừng tất cả — đã dừng toàn bộ sleeve này' },
+      fleet_profit_target: { ko: '플릿 목표 수익 달성 — 전체 청산됨', en: 'Fleet profit target reached — everything closed', ja: 'フリート利益目標達成 — 全決済', th: 'ฟลีทถึงเป้าหมายกำไร — ปิดทั้งหมด', vi: 'Fleet đạt mục tiêu lợi nhuận — đã đóng tất cả' },
       user_master_remove: { ko: '마스터 스위치로 제거됨', en: 'Removed via master switch', ja: 'マスタースイッチで削除', th: 'ลบผ่านสวิตช์หลัก', vi: 'Đã gỡ qua công tắc chính' },
       agent_deleted: { ko: '에이전트가 삭제되어 정지됨', en: 'Stopped — agent deleted', ja: 'エージェント削除により停止', th: 'หยุด — เอเจนต์ถูกลบ', vi: 'Dừng — agent đã xóa' },
       adapt_retired: { ko: '연속 손실로 은퇴됨', en: 'Retired after consecutive losses', ja: '連続損失により引退', th: 'ปลดหลังขาดทุนต่อเนื่อง', vi: 'Nghỉ sau chuỗi thua lỗ' },

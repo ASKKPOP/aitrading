@@ -258,7 +258,13 @@ REPLACE_IMMEDIATE = frozenset({
 })
 REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
                               "stop_event:liq_cushion"})
-REPLACE_NEVER = frozenset({"user_stop", "agent_deleted", "user_master_remove"})
+# fleet_stop_all MUST be here. An unclassified reason falls straight through
+# to _build_replacement at the bottom of the supervisor's slot loop, so a
+# fleet-wide stop would rebuild every slot it had just torn down.
+REPLACE_NEVER = frozenset({"user_stop", "fleet_stop_all", "agent_deleted",
+                           "user_master_remove"})
+# Reasons whose slot is closed rather than left occupied by a dead member.
+SLOT_CLOSING = frozenset({"user_stop", "fleet_stop_all"})
 
 LIQUIDATION_COOLDOWN_HOURS = 24
 
@@ -569,11 +575,12 @@ def request_stop_fleet(fleet_id: int, agent_id: int, flatten: bool = True) -> di
                 trading_runs.delete_run(run["id"], agent_id)
                 results[run["id"]] = "draft_deleted"
             else:
-                trading_runs.request_stop(run["id"], agent_id, flatten)
+                trading_runs.request_stop(run["id"], agent_id, flatten,
+                                          reason="fleet_stop_all")
                 results[run["id"]] = "stopping"
         except Exception as exc:  # noqa: BLE001
             results[run["id"]] = f"error: {exc}"
-    _set_status(fleet_id, _NON_TERMINAL, STATUS_STOPPING, "user_stop")
+    _set_status(fleet_id, _NON_TERMINAL, STATUS_STOPPING, "fleet_stop_all")
     emit_fleet_event(fleet_id, "stop_all", {"flatten": flatten, "members": results})
     return {"members": results}
 

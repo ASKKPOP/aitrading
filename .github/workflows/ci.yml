@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Supersede in-flight runs for the same ref. Actions minutes are metered on
+# this account, and a push that lands mid-run pays twice for a result nobody
+# reads. 852 runs in July burned roughly twice the included allowance.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend (Python 3.12 · pytest)

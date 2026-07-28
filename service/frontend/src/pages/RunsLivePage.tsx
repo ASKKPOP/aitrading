@@ -78,6 +78,26 @@ const REASON_TEXT: Record<string, Record<Language, string>> = {
     ja: '手動停止 — この TRADING に停止リクエストが届きました（ボタンまたは API）',
     th: 'หยุดด้วยมือ — มีคำขอหยุดส่งมาที่ TRADING นี้ (ปุ่มหรือ API)',
     vi: 'Dừng thủ công — có yêu cầu Dừng gửi tới TRADING này (nút hoặc API)' },
+  // NOT a person either — the fleet stopped its whole sleeve. 59 of the 61
+  // runs that read "user_stop" on prod were this, arriving in batches of four.
+  fleet_stop_all: {
+    ko: '전체 정지 — 이 TRADING이 속한 N종목 전체가 함께 정지되었습니다',
+    en: 'Stop all — the whole sleeve this TRADING belongs to was stopped together',
+    ja: '全体停止 — この TRADING が属するスリーブ全体が停止されました',
+    th: 'หยุดทั้งหมด — สลีฟที่ TRADING นี้อยู่ถูกหยุดพร้อมกันทั้งชุด',
+    vi: 'Dừng tất cả — toàn bộ sleeve chứa TRADING này đã bị dừng cùng lúc' },
+  fleet_profit_target: {
+    ko: '플릿 목표 수익 달성 — N종목 전체가 이익을 확정하고 정지했습니다',
+    en: 'Fleet profit target — the sleeve banked its gain and stopped',
+    ja: 'フリート利益目標達成 — スリーブ全体が利益を確定して停止しました',
+    th: 'ฟลีทถึงเป้าหมายกำไร — สลีฟล็อกกำไรและหยุด',
+    vi: 'Fleet đạt mục tiêu lợi nhuận — sleeve chốt lãi và dừng' },
+  fleet_breaker: {
+    ko: '플릿 서킷 브레이커 — 손실 한도에 도달해 N종목 전체가 청산되었습니다',
+    en: 'Fleet circuit breaker — the loss rail fired and the sleeve was closed',
+    ja: 'フリートのサーキットブレーカー — 損失ラインに達しスリーブ全体を決済しました',
+    th: 'เซอร์กิตเบรกเกอร์ของฟลีท — ถึงขีดขาดทุนและปิดสลีฟทั้งชุด',
+    vi: 'Ngắt mạch fleet — chạm ngưỡng lỗ và toàn bộ sleeve đã bị đóng' },
   user_pause: {
     ko: '수동 일시정지 — 일시정지 요청이 들어왔습니다',
     en: 'Paused by hand — a Pause request arrived',
