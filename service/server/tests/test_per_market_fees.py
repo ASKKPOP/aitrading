@@ -33,7 +33,19 @@ def _on():
     return patch.dict("os.environ", {"FEE_PER_MARKET": "true"})
 
 
-class DarkByDefault(unittest.TestCase):
+class FeeTestBase(unittest.TestCase):
+    """The override cache is module-level with a 30s TTL, so a value cached by
+    one test would otherwise leak into the next — which is exactly the hazard
+    of caching a hot-path lookup. Clear it around every test."""
+
+    def setUp(self):
+        fees.reset_override_cache()
+
+    def tearDown(self):
+        fees.reset_override_cache()
+
+
+class DarkByDefault(FeeTestBase):
     """Off, every market pays exactly what it paid before — that is what makes
     this safe to merge ahead of the flip."""
 
@@ -49,12 +61,14 @@ class DarkByDefault(unittest.TestCase):
             self.assertAlmostEqual(fees.fee_rate("forex"), 0.0002)
 
 
-class Rates(unittest.TestCase):
+class Rates(FeeTestBase):
     def setUp(self):
+        super().setUp()
         self._p = _on(); self._p.start()
 
     def tearDown(self):
         self._p.stop()
+        super().tearDown()
 
     def test_crypto_is_a_perp_taker_not_a_spot_taker(self):
         self.assertAlmostEqual(fees.fee_rate("crypto"), 0.00045)
@@ -78,12 +92,14 @@ class Rates(unittest.TestCase):
                                fees.fee_rate("futures") * 2)
 
 
-class OperatorOverride(unittest.TestCase):
+class OperatorOverride(FeeTestBase):
     def setUp(self):
+        super().setUp()
         self._p = _on(); self._p.start()
 
     def tearDown(self):
         self._p.stop()
+        super().tearDown()
 
     def test_override_wins(self):
         with patch("platform_settings.get_setting", return_value="0.002"):
@@ -113,14 +129,16 @@ class OperatorOverride(unittest.TestCase):
             self.assertAlmostEqual(fees.fee_rate("crypto"), 0.00045)
 
 
-class GateUnblocksTheRealTheses(unittest.TestCase):
+class GateUnblocksTheRealTheses(FeeTestBase):
     """The live numbers that were permanently refused."""
 
     def setUp(self):
+        super().setUp()
         self._p = _on(); self._p.start()
 
     def tearDown(self):
         self._p.stop()
+        super().tearDown()
 
     def _blocked(self, move, market):
         return run_engine._fee_edge_skip(move, market=market) is not None
@@ -157,7 +175,7 @@ class GateUnblocksTheRealTheses(unittest.TestCase):
         self.assertTrue(self._blocked(2.23, "unknown-market"))
 
 
-class FillsChargeTheMarketRate(unittest.TestCase):
+class FillsChargeTheMarketRate(FeeTestBase):
     """The rate existing is not the fix — the fill must USE it. Asserted on
     the multiplication, not on the word: a comment mentioning the legacy
     constant is not a bug, charging it is."""
@@ -187,3 +205,45 @@ class FillsChargeTheMarketRate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OverrideCache(FeeTestBase):
+    """A DB round-trip per fill for a value that changes maybe once a quarter
+    is waste; a cache that never expires is a config change nobody can land."""
+
+    def test_repeated_lookups_hit_the_db_once(self):
+        with _on(), patch("platform_settings.get_setting",
+                          return_value="0.002") as g:
+            for _ in range(10):
+                fees.fee_rate("crypto")
+            self.assertEqual(g.call_count, 1)
+
+    def test_a_miss_is_cached_too(self):
+        """Otherwise the common case — no override configured — pays the round
+        trip on every single fill."""
+        with _on(), patch("platform_settings.get_setting", return_value="") as g:
+            for _ in range(10):
+                fees.fee_rate("forex")
+            self.assertEqual(g.call_count, 1)
+
+    def test_a_settings_failure_is_cached_not_retried_per_fill(self):
+        with _on(), patch("platform_settings.get_setting",
+                          side_effect=RuntimeError("db")) as g:
+            for _ in range(5):
+                self.assertAlmostEqual(fees.fee_rate("crypto"), 0.00045)
+            self.assertEqual(g.call_count, 1)
+
+    def test_markets_are_cached_independently(self):
+        with _on(), patch("platform_settings.get_setting", return_value="") as g:
+            fees.fee_rate("crypto"); fees.fee_rate("forex"); fees.fee_rate("crypto")
+            self.assertEqual(g.call_count, 2)
+
+    def test_reset_forces_a_fresh_read(self):
+        with _on(), patch("platform_settings.get_setting", return_value="") as g:
+            fees.fee_rate("crypto")
+            fees.reset_override_cache()
+            fees.fee_rate("crypto")
+            self.assertEqual(g.call_count, 2)
+
+    def test_ttl_is_short_enough_to_land_a_console_edit(self):
+        self.assertLessEqual(fees._OVERRIDE_TTL_SECONDS, 60)
