@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Region-aware trading — design plan</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--vio:#8256d0;
+ --bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --vio:#9670dd;--bd:rgba(255,255,255,.1)}}
+:root[data-theme="dark"]{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --vio:#9670dd;--bd:rgba(255,255,255,.1)}
+:root[data-theme="light"]{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;
+ --ink2:#52514e;--muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;
+ --vio:#8256d0;--bd:rgba(11,11,11,.1)}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.72;font-size:14.5px}
+main{max-width:940px;margin:0 auto;padding:38px 22px 90px}
+h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+h2{font-size:19px;margin:38px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:22px 0 6px;color:var(--ink)}
+p,li{color:var(--ink2)}strong{color:var(--ink)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.6px;
+ background:var(--surf);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.lede{font-size:16px;margin-bottom:22px}
+.rule{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:15px 18px;margin:16px 0 26px}
+.rule.hot{border-left-color:var(--safe)}
+.rule b{display:block;color:var(--ink);margin-bottom:5px;font-size:14.5px}
+.rule p{margin:0;font-size:13.8px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:18px 0}
+.ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
+.fs{font-size:12.3px;color:var(--muted);margin-bottom:16px}
+.cap{font-size:12.3px;color:var(--muted);margin:12px 0 0}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.2px;margin:8px 0;min-width:560px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2);vertical-align:top}
+th{font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td strong{color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
+.p-no{background:color-mix(in srgb,var(--safe) 15%,transparent);color:var(--safe)}
+.p-w{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.p-n{background:var(--surf);color:var(--muted)}
+/* bar chart */
+.bars{display:grid;gap:7px}
+.br{display:grid;grid-template-columns:82px 1fr 46px;gap:10px;align-items:center;font-size:12.5px}
+.brl{color:var(--ink2);white-space:nowrap}
+.brt{height:19px;background:var(--surf);border-radius:5px;overflow:hidden}
+.brf{height:100%;border-radius:5px}
+.brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h timeline */
+.tl{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:center;margin-bottom:5px;font-size:12.4px}
+.tlt{position:relative;height:26px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;opacity:.92}
+.axis{display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:10.5px;color:var(--muted);margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* flow */
+.flow{display:grid;gap:5px}
+.fr{display:grid;grid-template-columns:30px 1fr;gap:11px;align-items:stretch}
+.fn{display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink2);
+ background:var(--surf);border-radius:7px}
+.fb{border:1.5px solid var(--grid);border-left-width:4px;border-radius:9px;background:var(--page);padding:9px 13px}
+.fb.ai{border-left-color:var(--ai)}.fb.sf{border-left-color:var(--safe)}
+.fb.ex{border-left-color:var(--go);background:color-mix(in srgb,var(--go) 8%,var(--page))}
+.fb.w{border-left-color:var(--warn)}
+.fb b{font-size:13.5px;color:var(--ink);display:block}
+.fb span{font-size:12.3px;color:var(--ink2)}
+.ar{grid-column:2;color:var(--muted);font-size:12px;line-height:1;padding:1px 0 1px 12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:680px){.two{grid-template-columns:1fr}}
+.box{border:1.5px solid var(--grid);border-radius:10px;background:var(--card);padding:12px 14px;font-size:12.6px;color:var(--ink2)}
+.box b{display:block;color:var(--ink);font-size:13px;margin-bottom:3px}
+.box.no{border-color:var(--safe)}.box.yes{border-color:var(--go)}
+.phase{display:grid;grid-template-columns:54px 1fr;gap:12px;margin:10px 0;align-items:start}
+.pn{background:var(--ai);color:#fff;border-radius:8px;display:grid;place-items:center;
+ font-size:12px;font-weight:700;padding:5px 0;line-height:1.25;text-align:center}
+.pn.b{background:var(--vio)}.pn.c{background:var(--go)}.pn.d{background:var(--muted)}
+.src{font-size:12px;color:var(--muted);margin-top:3px}
+ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
+</style>
+</head>
+<body>
+<main>
+
+<div class="eyebrow">Design plan · 2026-07-28</div>
+<h1>Region-aware trading</h1>
+<p class="lede">Sooppiy serves eight countries in five languages. Region decides <strong>when</strong> a member can trade, <strong>what</strong> they may hold, and <strong>which venue</strong> fills it. Today the platform models none of that — it models language, and quietly assumes New York.</p>
+
+<div class="rule hot">
+<b>The one mistake this plan exists to prevent</b>
+<p>Language is not region. <strong>English covers the USA, Canada, Australia and Singapore</strong> — four countries, four time zones, four regulators, two hemispheres of daylight saving. Keying regional behaviour off <code>users.lang</code> would put a Sydney member on a New York clock and call it done. Region has to be its own field.</p>
+</div>
+
+<h2>1 · What exists today</h2>
+
+<p>More of the groundwork is already in place than it looks, and one piece is being thrown away.</p>
+
+<div class="sw"><table>
+<tr><th>Capability</th><th>State</th><th>Where</th></tr>
+<tr><td><strong>Five languages</strong>, end to end</td><td><span class="pill p-go">shipped</span></td><td><code>users.lang</code> · <code>notifications_i18n.py</code></td></tr>
+<tr><td><strong>Country geolocation at signup</strong></td><td><span class="pill p-w">runs, then discarded</span></td><td><code>signup_lang.py:79</code></td></tr>
+<tr><td>Session calendars (NYSE, CME, FX, SSE)</td><td><span class="pill p-go">shipped</span></td><td><code>markets.is_session_open()</code></td></tr>
+<tr><td>Single market allowlist</td><td><span class="pill p-go">shipped</span></td><td><code>markets.REGISTRY</code></td></tr>
+<tr><td>Per-market fee table</td><td><span class="pill p-go">shipped</span></td><td><code>fees._MARKET_FEE_RATES</code></td></tr>
+<tr><td><code>users.region</code> / country</td><td><span class="pill p-no">does not exist</span></td><td>—</td></tr>
+<tr><td><code>users.timezone</code></td><td><span class="pill p-no">does not exist</span></td><td>—</td></tr>
+<tr><td>Region → market entitlement</td><td><span class="pill p-no">does not exist</span></td><td>—</td></tr>
+<tr><td>Region → exchange routing</td><td><span class="pill p-no">does not exist</span></td><td><code>execution/</code> is broker-keyed, not region-keyed</td></tr>
+</table></div>
+
+<div class="rule">
+<b>The cheapest possible start already ran</b>
+<p><code>signup_lang.py</code> geolocates the member's country on the way in, maps <code>KR→ko / JP→ja / TH→th / VN→vi</code>, keeps the language and <strong>throws the country away</strong>. Persisting that one string is most of Phase 1.</p>
+</div>
+
+<h2>2 · Why this matters: the availability collapse</h2>
+
+<p>Every session calendar in <code>markets.py</code> is anchored to New York or Shanghai. That is correct — an exchange opens when it opens. But it means the <em>same product</em> offers wildly different access depending on where the member sleeps.</p>
+
+<div class="fig">
+<div class="ft">US stocks, hours available during a member's waking day</div>
+<div class="fs">Waking day taken as 08:00–24:00 local. Computed by walking <code>markets.is_market_open('us-stock', t)</code> minute by minute for Wed 2026-07-29 and projecting into each region's own clock — not estimated.</div>
+<div class="bars">
+  <div class="br"><div class="brl">USA</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5h</div></div>
+  <div class="br"><div class="brl">Canada</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5h</div></div>
+  <div class="br"><div class="brl">Thailand</div><div class="brt"><div class="brf" style="width:53.8%;background:var(--warn)"></div></div><div class="brv">3.5h</div></div>
+  <div class="br"><div class="brl">Vietnam</div><div class="brt"><div class="brf" style="width:53.8%;background:var(--warn)"></div></div><div class="brv">3.5h</div></div>
+  <div class="br"><div class="brl">Singapore</div><div class="brt"><div class="brf" style="width:38.5%;background:var(--warn)"></div></div><div class="brv">2.5h</div></div>
+  <div class="br"><div class="brl">Korea</div><div class="brt"><div class="brf" style="width:23.1%;background:var(--safe)"></div></div><div class="brv">1.5h</div></div>
+  <div class="br"><div class="brl">Japan</div><div class="brt"><div class="brf" style="width:23.1%;background:var(--safe)"></div></div><div class="brv">1.5h</div></div>
+  <div class="br"><div class="brl">Australia</div><div class="brt"><div class="brf" style="width:7.7%;background:var(--safe)"></div></div><div class="brv">0.5h</div></div>
+</div>
+<p class="cap">An Australian member gets <strong>thirty minutes</strong> of US-stock trading in their waking day; a Korean member gets ninety, all after 22:30. Same subscription, same price, 13× the access in New York.</p>
+</div>
+
+<div class="fig">
+<div class="ft">The same day, in each region's local clock</div>
+<div class="fs">Wed 2026-07-29. Bands are the real open windows returned by <code>is_market_open()</code>, projected into local time. Crypto and FX omitted — both cover the full bar on a weekday.</div>
+
+<div class="tl"><div class="brl">USA / Canada</div><div class="tlt">
+  <div class="tlb" style="left:39.58%;width:27.08%;background:var(--ai)"></div>
+  <div class="tlb" style="left:4.17%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+  <div class="tlb" style="left:89.58%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+</div></div>
+<div class="tl"><div class="brl">Australia</div><div class="tlt">
+  <div class="tlb" style="left:0;width:25%;background:var(--ai)"></div>
+  <div class="tlb" style="left:97.92%;width:2.08%;background:var(--ai)"></div>
+  <div class="tlb" style="left:47.92%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+  <div class="tlb" style="left:62.5%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+</div></div>
+<div class="tl"><div class="brl">Singapore</div><div class="tlt">
+  <div class="tlb" style="left:0;width:16.67%;background:var(--ai)"></div>
+  <div class="tlb" style="left:89.58%;width:10.42%;background:var(--ai)"></div>
+  <div class="tlb" style="left:39.58%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+  <div class="tlb" style="left:54.17%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+</div></div>
+<div class="tl"><div class="brl">Korea / Japan</div><div class="tlt">
+  <div class="tlb" style="left:0;width:20.83%;background:var(--ai)"></div>
+  <div class="tlb" style="left:93.75%;width:6.25%;background:var(--ai)"></div>
+  <div class="tlb" style="left:43.75%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+  <div class="tlb" style="left:58.33%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+</div></div>
+<div class="tl"><div class="brl">Thailand / Vietnam</div><div class="tlt">
+  <div class="tlb" style="left:0;width:12.5%;background:var(--ai)"></div>
+  <div class="tlb" style="left:85.42%;width:14.58%;background:var(--ai)"></div>
+  <div class="tlb" style="left:35.42%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+  <div class="tlb" style="left:50%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
+</div></div>
+<div class="axis"><div></div><div class="axl"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div></div>
+<div class="lgd">
+  <span><i style="background:var(--ai)"></i>US stocks &amp; options (NYSE)</span>
+  <span><i style="background:var(--vio)"></i>China A-shares (SSE, split session)</span>
+  <span><i style="background:var(--surf);border:1px solid var(--grid)"></i>closed</span>
+</div>
+<p class="cap">Read the Asian rows left-to-right: the US session is the band that <em>starts</em> the day, because it began the previous evening. For a Korean member, "the market opens" means 22:30.</p>
+</div>
+
+<h2>3 · What is always available, and what that implies</h2>
+
+<div class="sw"><table>
+<tr><th>Market</th><th>Session</th><th>USA/CA</th><th>AU</th><th>SG</th><th>KR/JP</th><th>TH/VN</th></tr>
+<tr><td><strong>crypto</strong></td><td>24×7</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
+<tr><td><strong>forex</strong></td><td>24×5</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
+<tr><td><strong>futures</strong></td><td>CME Globex</td><td>15.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
+<tr><td><strong>a-stock</strong></td><td>SSE</td><td>2.0h</td><td>4.0h</td><td>4.0h</td><td>4.0h</td><td>4.0h</td></tr>
+<tr><td><strong>us-stock</strong> / options</td><td>NYSE</td><td>6.5h</td><td>0.5h</td><td>2.5h</td><td>1.5h</td><td>3.5h</td></tr>
+</table></div>
+
+<div class="rule">
+<b>The product conclusion, before any code</b>
+<p>For seven of the eight countries, <strong>crypto, forex and futures are the product</strong> — they are the only markets open when those members are awake. US equities are a nights-and-weekends feature outside North America. Region-awareness is therefore not only a compliance chore; it changes what the platform should <em>lead with</em> per region.</p>
+</div>
+
+<h2>4 · The model</h2>
+
+<p>Three fields, deliberately separate, because they answer three different questions and change at different rates.</p>
+
+<div class="two">
+<div class="box yes"><b>users.region</b>ISO-3166 country: <code>US CA AU SG KR JP TH VN</code>. Answers <em>what may I trade and under whose rules</em>. Changes rarely; needs an audit trail.</div>
+<div class="box yes"><b>users.timezone</b>IANA zone: <code>Asia/Seoul</code>. Answers <em>what time is it for you</em>. Derived from region by default, separately overridable — members travel.</div>
+<div class="box yes"><b>users.lang</b>Already shipped. Answers <em>what words do you read</em>. Deliberately independent: a Korean speaker in Singapore is <code>lang=ko, region=SG</code>.</div>
+<div class="box no"><b>Not a single "locale"</b>The tempting shortcut. It collapses three independent axes into one and makes the Korean-speaker-in-Singapore case unrepresentable. Do not do this.</div>
+</div>
+
+<h3>Resolution at signup</h3>
+<div class="fig">
+<div class="flow">
+  <div class="fr"><div class="fn">1</div><div class="fb ai"><b>IP geolocation</b><span>Already implemented — <code>signup_lang._geo_country()</code>. Today the country is used and dropped; now it persists.</span></div></div>
+  <div class="ar">▼ country known?</div>
+  <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Country → region, timezone, language</b><span>One table. <code>KR → (KR, Asia/Seoul, ko)</code>. A country outside the eight resolves to <code>region=null, lang=en</code>.</span></div></div>
+  <div class="ar">▼ geo failed or unsupported country</div>
+  <div class="fr"><div class="fn">3</div><div class="fb w"><b>Accept-Language + browser timezone</b><span>The header already feeds language. <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code> gives the zone for free from the client.</span></div></div>
+  <div class="ar">▼ still nothing</div>
+  <div class="fr"><div class="fn">4</div><div class="fb sf"><b>region = null, not region = US</b><span>An unknown region must be <em>unknown</em>. Defaulting to the US would silently grant US entitlements to someone the system cannot place — the failure mode is regulatory, not cosmetic.</span></div></div>
+  <div class="ar">▼</div>
+  <div class="fr"><div class="fn">5</div><div class="fb ex"><b>Member confirms in settings</b><span>Geolocation is a guess. Show it, let them correct it, log the change.</span></div></div>
+</div>
+<p class="cap">Steps 1–3 already exist in some form. Step 4 is the one that needs stating out loud, because "default to US" is what every codebase does by accident.</p>
+</div>
+
+<h3>Enforcement at request time</h3>
+<div class="fig">
+<div class="flow">
+  <div class="fr"><div class="fn">1</div><div class="fb"><b>Member or fleet requests a market</b><span>Run build, manual order, or <code>fleet_planner</code> selecting a candidate.</span></div></div>
+  <div class="ar">▼</div>
+  <div class="fr"><div class="fn">2</div><div class="fb ai"><b>region_policy.allowed_markets(region)</b><span>Derived from <code>markets.REGISTRY</code> minus a per-region deny set — <em>never</em> a hand-written per-region allowlist.</span></div></div>
+  <div class="ar">▼ market not allowed</div>
+  <div class="fr"><div class="fn">3</div><div class="fb sf"><b>Refused with a localized reason</b><span>New reason code <code>region_blocked</code> — which means a catalogue entry in all five languages, or it renders as a raw identifier inside a translated sentence.</span></div></div>
+  <div class="ar">▼ allowed</div>
+  <div class="fr"><div class="fn">4</div><div class="fb ex"><b>Existing gate cascade, unchanged</b><span><code>pre → fee_edge → backtest_gate → confidence_rank → risk → budget</code>. Region sits <em>in front</em> of the cascade and touches none of it.</span></div></div>
+</div>
+</div>
+
+<div class="rule hot">
+<b>Derive the allowlist, never enumerate it</b>
+<p>This codebase has been bitten three times by hand-written market lists that went stale the moment a market was unblocked — most recently on 2026-07-28, when enabling per-market fees let forex trade for the first time and froze the fleet twenty minutes later because <code>REFRESH_PRICED_MARKETS</code> had been written back when forex could never trade. A per-region <em>allow</em> list repeats that mistake by construction. Use <code>tradeable_markets() − deny[region]</code>, and pin it with a test that fails when a new market appears in the registry.</p>
+</div>
+
+<h2>5 · Region → market matrix</h2>
+
+<p>A starting position, not a legal opinion. Every <span class="pill p-no">review</span> cell needs an answer from someone qualified before that region opens.</p>
+
+<div class="sw"><table>
+<tr><th>Region</th><th>crypto</th><th>forex</th><th>futures</th><th>us-stock</th><th>options</th><th>a-stock</th><th>polymarket</th></tr>
+<tr><td><strong>USA</strong></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Canada</strong></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Australia</strong></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Singapore</strong></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Korea</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Japan</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Thailand</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Vietnam</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>unknown</strong></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td></tr>
+</table></div>
+
+<p class="src">Two notes I can support from the code, and one I cannot. <strong>Supportable:</strong> the ledger is simulated by default (<code>CLAUDE.md</code>), so today nothing here routes real orders — which is exactly why the matrix should land <em>before</em> live routing spreads. <strong>Also supportable:</strong> <code>polymarket</code> is already <code>automatable=False</code> in the registry, so gating it per region costs nothing. <strong>Not supportable by me:</strong> every <span class="pill p-no">review</span> cell. Prediction markets and retail crypto/FX carry real licensing constraints in several of these countries and I am not qualified to rule on them.</p>
+
+<h2>6 · Exchanges and venues</h2>
+
+<p>Region affects routing in two different places, and only one of them exists yet.</p>
+
+<div class="two">
+<div class="box"><b>Price source — shipped</b><code>markets.REGISTRY.price_provider</code> already picks per market: Hyperliquid for crypto, Yahoo for equities/FX/futures, Polymarket for prediction. This is <em>market</em>-keyed and needs no region dimension. Leave it alone.</div>
+<div class="box"><b>Order routing — the gap</b><code>execution/</code> has Alpaca, Binance and IBKR-CPAPI adapters selected by the member's own connected gateway. Nothing maps <em>region → permitted broker</em>. A Korean member connecting Alpaca is neither prevented nor flagged.</div>
+</div>
+
+<div class="sw"><table>
+<tr><th>Region</th><th>Equities / futures</th><th>Crypto</th><th>Note</th></tr>
+<tr><td><strong>USA</strong></td><td>Alpaca, IBKR</td><td>Binance.US, Coinbase</td><td>Both adapters exist</td></tr>
+<tr><td><strong>Canada</strong></td><td>IBKR</td><td><span class="pill p-w">review</span></td><td>Alpaca coverage needs confirming</td></tr>
+<tr><td><strong>Australia</strong></td><td>IBKR</td><td><span class="pill p-w">review</span></td><td>—</td></tr>
+<tr><td><strong>Singapore</strong></td><td>IBKR</td><td>Binance</td><td>—</td></tr>
+<tr><td><strong>Korea</strong></td><td>IBKR</td><td>Upbit, Bithumb <span class="pill p-no">no adapter</span></td><td>Domestic crypto is a separate build</td></tr>
+<tr><td><strong>Japan</strong></td><td>IBKR</td><td>bitFlyer, Coincheck <span class="pill p-no">no adapter</span></td><td>Domestic crypto is a separate build</td></tr>
+<tr><td><strong>Thailand</strong></td><td>IBKR</td><td>Bitkub <span class="pill p-no">no adapter</span></td><td>—</td></tr>
+<tr><td><strong>Vietnam</strong></td><td>IBKR</td><td><span class="pill p-w">review</span></td><td>—</td></tr>
+</table></div>
+
+<p class="src">The pattern: <strong>IBKR covers equities and futures nearly everywhere; crypto fragments per country.</strong> Since crypto is the market that is actually open when Asian members are awake, the domestic-crypto adapter gap is the most commercially significant hole in this table — and the largest piece of work in the whole plan.</p>
+
+<h2>7 · Phasing</h2>
+
+<div class="phase"><div class="pn">P1</div><div>
+<b>Persist what is already being computed.</b> <code>users.region</code>, <code>users.timezone</code>; store the country <code>signup_lang</code> already resolves; settings UI to confirm and correct; render every timestamp in the member's zone instead of the browser's. <em>No behaviour gating.</em> Ships dark, changes nothing, and starts collecting the field the rest of the plan needs.
+<div class="src">Small. Touches signup, one migration, the settings page, and time formatting.</div>
+</div></div>
+
+<div class="phase"><div class="pn b">P2</div><div>
+<b>Region-local time everywhere it matters.</b> Session countdowns ("US market opens in 4h 20m" in <em>their</em> clock), fleet schedules, notification send-time windows — a <code>hot_issue</code> alert at 03:00 local is a worse product than no alert. Still no entitlement gating.
+<div class="src">Depends on P1. Mostly presentation, plus a quiet-hours rule in <code>alerts.send_alert</code>.</div>
+</div></div>
+
+<div class="phase"><div class="pn c">P3</div><div>
+<b>Entitlement gating.</b> <code>region_policy.py</code> with the deny sets, the <code>region_blocked</code> reason in all five languages, run-build and order-path enforcement, and the derived-not-enumerated test. Dark-shipped behind <code>REGION_POLICY_ENABLED</code> like every other money path here.
+<div class="src">Needs the matrix in §5 answered first. Gating on a guess is worse than not gating.</div>
+</div></div>
+
+<div class="phase"><div class="pn d">P4</div><div>
+<b>Regional venue routing.</b> Region → permitted broker set, and the domestic crypto adapters (Upbit, bitFlyer, Bitkub). Largest phase by far and the only one that is genuinely new infrastructure rather than a field and a lookup.
+<div class="src">Each adapter is a build in its own right. Sequence by member count, not by table order.</div>
+</div></div>
+
+<h2>8 · What I would get wrong</h2>
+
+<ul>
+<li><strong>Daylight saving is not decoration.</strong> The US, Canada and Australia observe it; Korea, Japan, Singapore, Thailand and Vietnam do not — and Australia's runs <em>opposite</em> to the northern hemisphere. Every band in §2 shifts twice a year, and the Sydney↔New York gap changes by two hours. Store IANA zones and compute; never store a UTC offset.</li>
+<li><strong>The matrix in §5 is my starting position, not a legal one.</strong> Retail crypto and FX are constrained in several of these countries in ways I cannot rule on. P3 must not ship until someone qualified has answered each <span class="pill p-no">review</span> cell.</li>
+<li><strong>IP geolocation is a guess, and VPNs exist.</strong> It is fine for a default and unfit as a compliance control. If regional entitlement ever becomes a regulatory boundary rather than a product one, it needs declared residence with evidence, not an IP lookup.</li>
+<li><strong>Existing members have no region.</strong> Backfilling from <code>lang</code> would place every English speaker in the US — precisely the mistake this plan opens by warning about. They should be <code>null</code> until they tell us, and P3's gating has to behave sensibly for a null region on day one.</li>
+<li><strong>A new reason code without a translation is a shipped bug.</strong> <code>region_blocked</code> needs all five languages in the same commit. This has already happened once: <code>stop_event:price_cross</code> was classified but untranslated and would have rendered as a raw identifier inside a Korean sentence.</li>
+</ul>
+
+<div class="rule">
+<b>Recommended first move</b>
+<p>Phase 1 alone, this week. It is small, it is reversible, it gates nothing, and it starts capturing a field the platform currently computes and discards on every signup. Everything after it is a decision about markets and licensing — which is a business question, and should not be blocked on the schema.</p>
+</div>
+
+</main>
+<script>
+// The site renders docs in an iframe and toggles data-theme on the root. Inside
+// an iframe prefers-color-scheme resolves against the IFRAME element, not the
+// page, so the media query alone is unreliable here — mirror the parent's
+// attribute. rAF is dead in a hidden tab, so observe rather than poll.
+(function(){
+  try{
+    var apply=function(){
+      var t=(window.parent&&window.parent!==window&&window.parent.document
+             &&window.parent.document.documentElement.getAttribute('data-theme'))||null;
+      if(t)document.documentElement.setAttribute('data-theme',t);
+    };
+    apply();
+    if(window.parent&&window.parent!==window&&window.parent.document){
+      new MutationObserver(apply).observe(window.parent.document.documentElement,
+        {attributes:true,attributeFilter:['data-theme']});
+    }
+  }catch(e){/* cross-origin parent — the media query still covers the common case */}
+})();
+</script>
+</body>
+</html>

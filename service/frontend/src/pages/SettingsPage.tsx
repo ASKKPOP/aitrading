@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import NotificationSettings from '../components/NotificationSettings'
+import { RegionPicker } from '../components/RegionSetup'
 import { API_BASE, useLanguage } from '../appShared'
-import { LANGUAGES, tr } from '../i18n'
+import { tr } from '../i18n'
 
 type ApiTarget = {
   target: string
@@ -270,23 +271,22 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
       </div>
 
       {/* ── Preferences ─────────────────────────────────── */}
-      {sectionTitle({ ko: '환경설정', en: 'Preferences', ja: '環境設定', th: 'การตั้งค่า', vi: 'Tùy chọn' })}
+      {sectionTitle({ ko: '지역과 언어', en: 'Region & Language', ja: '地域と言語', th: 'ภูมิภาคและภาษา', vi: 'Khu vực & Ngôn ngữ' })}
       <div className="card" style={{ padding: '14px 16px' }}>
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          {tr(language, { ko: '언어', en: 'Language', ja: '言語', th: 'ภาษา', vi: 'Ngôn ngữ' })}
+        <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+          {tr(language, {
+            ko: '지역에 따라 거래 가능한 시장과 시장이 열리는 시각이 달라집니다.',
+            en: 'Your region decides which markets you can trade and when they open in your own clock.',
+            ja: '地域によって取引できる市場と、市場が開く時刻が変わります。',
+            th: 'ภูมิภาคของคุณกำหนดว่าคุณเทรดตลาดใดได้ และตลาดเปิดกี่โมงตามเวลาของคุณ',
+            vi: 'Khu vực quyết định bạn giao dịch được thị trường nào và thị trường mở lúc mấy giờ theo giờ của bạn.',
+          })}
         </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {LANGUAGES.map(lang => (
-            <button
-              key={lang.value}
-              onClick={() => setLanguage(lang.value)}
-              className={`control-pill ${language === lang.value ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
+        <RegionPicker
+          token={userToken}
+          language={language}
+          onSaved={(_region, lang) => { if (lang !== language) setLanguage(lang) }}
+        />
       </div>
 
       {/* ── AI trading guidelines (Personalized mode) ───── */}

@@ -73,13 +73,28 @@ def _geo_country(ip: str | None) -> str | None:
         return None
 
 
-def resolve_signup_lang(request) -> str:
-    """Best default language for a signing-up user: IP country, else header, else en."""
+def resolve_signup_locale(request) -> tuple[str, str | None]:
+    """(language, geo_country) for a signing-up member.
+
+    The country used to be resolved here, mapped to a language and thrown
+    away. It is now returned as well: it pre-selects the region in the
+    first-run prompt. It is a GUESS — stored in users.geo_country, never in
+    users.region, and it never sets locale_confirmed_at.
+    """
+    country = None
     try:
-        by_country = _country_to_lang(_geo_country(_client_ip(request)))
+        country = _geo_country(_client_ip(request))
+        by_country = _country_to_lang(country)
         if by_country:
-            return normalize_lang(by_country)
-        return normalize_lang(_parse_accept_language(request.headers.get("accept-language")))
+            return normalize_lang(by_country), country
+        return (normalize_lang(
+            _parse_accept_language(request.headers.get("accept-language"))),
+            country)
     except Exception as exc:  # noqa: BLE001
-        logger.info("resolve_signup_lang failed: %s", exc)
-        return "en"
+        logger.info("resolve_signup_locale failed: %s", exc)
+        return "en", country
+
+
+def resolve_signup_lang(request) -> str:
+    """Language only. Kept for callers that do not need the country."""
+    return resolve_signup_locale(request)[0]

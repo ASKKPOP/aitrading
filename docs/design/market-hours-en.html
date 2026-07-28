@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When your markets are open</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;
+ --grid:#2c2c2a;--ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--go:#199e70;
+ --warn:#e0a53a;--bd:rgba(255,255,255,.1)}}
+:root[data-theme=dark]{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;--ink:#fff;
+ --ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--go:#199e70;--warn:#e0a53a;--bd:rgba(255,255,255,.1)}
+:root[data-theme=light]{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;
+ --ink2:#52514e;--muted:#7a7975;--ai:#2a78d6;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+ line-height:1.72;font-size:14.5px}
+main{max-width:820px;margin:0 auto;padding:38px 22px 80px}
+h1{font-size:25px;line-height:1.3;margin:0 0 8px}
+h2{font-size:18px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+p,li{color:var(--ink2)}strong,b{color:var(--ink)}
+.lede{font-size:15.5px;margin-bottom:20px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0}
+.always{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+.always span{background:color-mix(in srgb,var(--go) 14%,transparent);color:var(--go);
+ font-weight:700;font-size:13px;padding:5px 13px;border-radius:999px}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.4px;margin:6px 0;min-width:460px}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);color:var(--ink2)}
+th{font-size:10.5px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td.m{color:var(--ink);font-weight:650;white-space:nowrap}
+td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
+.nd{color:var(--muted);font-size:11.5px}
+.rg{font-size:15px;font-weight:700;color:var(--ink);margin:20px 0 2px}
+.tz{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.bar{display:inline-block;height:8px;border-radius:4px;vertical-align:1px;margin-right:7px}
+.note{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:14px 17px;margin:14px 0}
+.note p{margin:0;font-size:13.6px}
+</style>
+</head>
+<body>
+<main>
+<h1>When your markets are open</h1>
+<p class="lede">Exchanges open on their own clock, not yours. This page shows every market's hours in <b>your</b> local time, so you know when your automation can actually trade.</p>
+
+<h2>Always open</h2>
+<p>These never close during the week, so they are available whenever you are — whatever your region.</p>
+<div class="fig"><div class="always"><span>Crypto</span><span>Forex</span><span>Futures</span></div></div>
+
+<h2>Markets with fixed hours — in your time</h2>
+<div class="rg">United States</div><div class="tz">America/New_York</div><div class="sw"><table><tr><th>Market</th><th>Your local hours</th><th>While you're awake</th></tr><tr><td class="m">US stocks</td><td class="h">09:30–16:00</td><td class="h"><span class="bar" style="width:100px;background:var(--go)"></span>6.5h</td></tr><tr><td class="m">China A-shares</td><td class="h">01:00–03:00, 21:30–23:30</td><td class="h"><span class="bar" style="width:31px;background:var(--warn)"></span>2.0h</td></tr></table></div><div class="rg">Canada</div><div class="tz">America/Toronto</div><div class="sw"><table><tr><th>Market</th><th>Your local hours</th><th>While you're awake</th></tr><tr><td class="m">US stocks</td><td class="h">09:30–16:00</td><td class="h"><span class="bar" style="width:100px;background:var(--go)"></span>6.5h</td></tr><tr><td class="m">China A-shares</td><td class="h">01:00–03:00, 21:30–23:30</td><td class="h"><span class="bar" style="width:31px;background:var(--warn)"></span>2.0h</td></tr></table></div><div class="rg">Australia</div><div class="tz">Australia/Sydney</div><div class="sw"><table><tr><th>Market</th><th>Your local hours</th><th>While you're awake</th></tr><tr><td class="m">US stocks</td><td class="h">23:30–06:00 <span class=nd>(next day)</span></td><td class="h"><span class="bar" style="width:8px;background:var(--ai)"></span>0.5h</td></tr><tr><td class="m">China A-shares</td><td class="h">11:30–13:30, 15:00–17:00</td><td class="h"><span class="bar" style="width:62px;background:var(--go)"></span>4.0h</td></tr></table></div><div class="rg">Singapore</div><div class="tz">Asia/Singapore</div><div class="sw"><table><tr><th>Market</th><th>Your local hours</th><th>While you're awake</th></tr><tr><td class="m">US stocks</td><td class="h">21:30–04:00 <span class=nd>(next day)</span></td><td class="h"><span class="bar" style="width:38px;background:var(--warn)"></span>2.5h</td></tr><tr><td class="m">China A-shares</td><td class="h">09:30–11:30, 13:00–15:00</td><td class="h"><span class="bar" style="width:62px;background:var(--go)"></span>4.0h</td></tr></table></div>
+
+<h2>What this means for you</h2>
+<div class="note"><p>US, Canadian and Australian hours shift by an hour when daylight saving starts or ends — and Australia's runs opposite to the northern hemisphere. The site always shows the current, correct time.</p></div>
+
+<h2>Setting your region</h2>
+<p>You choose your region and language when you first sign in, and can change either at any time in <b>Settings → Region &amp; Language</b>. Your region sets the clock every time on the site is shown in.</p>
+</main>
+<script>
+(function(){try{var a=function(){var t=(window.parent&&window.parent!==window&&
+window.parent.document&&window.parent.document.documentElement.getAttribute('data-theme'))||null;
+if(t)document.documentElement.setAttribute('data-theme',t);};a();
+if(window.parent&&window.parent!==window&&window.parent.document){
+new MutationObserver(a).observe(window.parent.document.documentElement,
+{attributes:true,attributeFilter:['data-theme']});}}catch(e){}})();
+</script>
+</body>
+</html>

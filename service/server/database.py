@@ -2978,6 +2978,16 @@ def init_database():
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN lang VARCHAR(8) NOT NULL DEFAULT 'en'",
+        # Region (2026-07-28): a COUNTRY, deliberately not derived from lang —
+        # English alone serves US/CA/AU/SG. All NULLABLE: a member who has not
+        # been asked is `unknown`, never defaulted into a jurisdiction.
+        # `geo_country` is what IP lookup guessed; `locale_confirmed_at` is set
+        # only when the member answers, because a guess is not a confirmation.
+        # MySQL mirror: alembic 0035.
+        "ALTER TABLE users ADD COLUMN region VARCHAR(2)",
+        "ALTER TABLE users ADD COLUMN timezone VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN locale_confirmed_at VARCHAR(32)",
+        "ALTER TABLE users ADD COLUMN geo_country VARCHAR(2)",
     ):
         try:
             cursor.execute(_ddl)

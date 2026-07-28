@@ -170,6 +170,14 @@ class UserLanguageRequest(BaseModel):
     lang: str
 
 
+class UserLocaleRequest(BaseModel):
+    region: str
+    lang: str | None = None
+    # Omitted ⇒ the region's default zone. Sent when the member is somewhere
+    # other than their region's usual clock.
+    timezone: str | None = None
+
+
 def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/users/send-code')
     async def send_verification_code(data: UserSendCodeRequest, request: Request):
@@ -222,16 +230,18 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400, detail='User already exists')
 
         password_hash = hash_password(data.password)
-        from signup_lang import resolve_signup_lang
+        from signup_lang import resolve_signup_locale
         # Offload the (sync, network) geo lookup so a slow geo API can't stall
         # the shared event loop during signup — fail-soft returns 'en' anyway.
-        lang = await asyncio.to_thread(resolve_signup_lang, request)
+        lang, geo_country = await asyncio.to_thread(resolve_signup_locale, request)
+        # geo_country only. `region` stays NULL until the member answers the
+        # first-run prompt: an IP guess must never grant a jurisdiction.
         cursor.execute(
             """
-            INSERT INTO users (email, password_hash, lang)
-            VALUES (?, ?, ?)
+            INSERT INTO users (email, password_hash, lang, geo_country)
+            VALUES (?, ?, ?, ?)
             """,
-            (data.email, password_hash, lang),
+            (data.email, password_hash, lang, geo_country),
         )
         user_id = cursor.lastrowid
 
@@ -405,6 +415,11 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'points': user.get('points', 0),
             'status': user.get('status', 'active'),
             'lang': user.get('lang', 'en'),
+            'region': user.get('region'),
+            'timezone': user.get('timezone'),
+            # The first-run prompt reads this. False only once the member has
+            # answered — a geolocation guess never flips it.
+            'locale_confirmed': bool(user.get('locale_confirmed_at')),
             'subscription_status': sub['status'],
             'subscription': sub['subscription'],
         }
@@ -426,6 +441,61 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return {'lang': lang}
+
+    @app.get('/api/users/locale/options')
+    async def get_locale_options(authorization: str = Header(None)):
+        """Region picker payload + what to pre-select.
+
+        `suggested_region` is the signup-time IP guess. It is only ever a
+        pre-selection; nothing is applied until the member confirms."""
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        import regions
+        lang = user.get('lang') or 'en'
+        return {
+            'regions': regions.options(lang),
+            'region': user.get('region'),
+            'timezone': user.get('timezone'),
+            'lang': lang,
+            'locale_confirmed': bool(user.get('locale_confirmed_at')),
+            'suggested_region': regions.normalize_region(user.get('geo_country')),
+        }
+
+    @app.put('/api/users/locale')
+    async def set_user_locale(data: UserLocaleRequest, authorization: str = Header(None)):
+        """The member's own answer: region + language, timezone optional.
+
+        Setting locale_confirmed_at is what stops the first-run prompt. An
+        unrecognised region is rejected rather than coerced — silently
+        substituting a jurisdiction is the failure mode this whole field
+        exists to avoid."""
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        import regions
+        from analysis_agents import normalize_lang
+        region = regions.normalize_region(data.region)
+        if region is None:
+            raise HTTPException(status_code=400, detail='unsupported region')
+        lang = normalize_lang(data.lang or regions.default_lang(region))
+        tz = (regions.normalize_timezone(data.timezone)
+              or regions.default_timezone(region))
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'UPDATE users SET region = ?, timezone = ?, lang = ?, '
+                'locale_confirmed_at = ? WHERE id = ?',
+                (region, tz, lang, now, user['id']))
+            conn.commit()
+        finally:
+            conn.close()
+        return {'region': region, 'timezone': tz, 'lang': lang,
+                'locale_confirmed': True}
 
     @app.get('/api/users/points')
     async def get_points_balance(authorization: str = Header(None)):
