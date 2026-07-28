@@ -29,7 +29,22 @@ _SUPPORTED_PRICE_MARKETS = markets.supported_markets()
 # ~18 min after entering and the fleet churned replacements (6 CL runs in
 # 95 min, double fees each). us-stock included for the same reason once
 # those runs hold positions.
-REFRESH_PRICED_MARKETS_DEFAULT = "crypto,futures,us-stock"
+# forex + a-stock added 2026-07-28. They were absent because they could never
+# open a position — the flat 0.1%/side fee gate refused 100% of forex theses,
+# so no forex mark ever needed refreshing. Per-market fees removed that block
+# and the SAME failure returned within twenty minutes: USDZAR opened at
+# 08:40:19, its mark never advanced, _zombie_pnl could not value the position,
+# marked_equity returned ok=False, and the WHOLE fleet froze — 63 consecutive
+# breaker_eval_failed ticks with two runs paused behind it.
+#
+# The list must name every market that can TRADE, not every market that
+# happens to be trading today. A market this list forgets fails silently at
+# entry+staleness, not at deploy.
+# options is here despite automatable=False: runs never target it, but a
+# MANUAL options position still needs a mark or the SL/TP watcher cannot see
+# it — the same failure, reached by a different door. Found by the regression
+# test below on its first run, not by an outage.
+REFRESH_PRICED_MARKETS_DEFAULT = "crypto,futures,us-stock,forex,a-stock,options"
 _PRICE_FAILURES: Dict[tuple[str, str, str, str], dict[str, float]] = {}
 _PRICE_FAILURE_CACHE_KEY_PREFIX = "position_price_failures"
 _POLYMARKET_SETTLEMENT_RECHECK_AFTER: Dict[tuple[str, str, str], float] = {}
