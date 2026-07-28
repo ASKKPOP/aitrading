@@ -176,6 +176,30 @@ def _thesis_realization() -> float:
     return min(1.0, max(0.01, val))
 
 
+def _min_edge_pct() -> float:
+    """Minimum REALIZED (discounted) move an entry must promise, independent
+    of what the fill costs. 0 disables.
+
+    The fee multiple alone stopped filtering the moment fees became per-market
+    (2026-07-28). It ties the edge requirement to the fee, so once fees differ
+    20x across venues one multiple cannot serve them: at 20x the crypto
+    hurdle is 1.80% while futures is 0.20%. Measured on the live universe the
+    old flat-fee gate admitted 67% of theses; per-market fees took that to
+    100%, which is not a gate.
+
+    This is a NOISE floor, not a proven edge threshold — I do not have data
+    separating winners from losers by claimed size. 0.15% admits 96% of the
+    universe and 78% of forex, refusing only the weakest FX theses (AUDJPY at
+    0.111% discounted). Raising it to 0.25% would cut forex to 28%, which
+    would quietly undo a market we had just deliberately opened. The real
+    per-symbol answer is the expectancy gate, which already works.
+    """
+    try:
+        return max(0.0, float(os.getenv("RUN_MIN_EDGE_PCT", "0.15") or 0.15))
+    except ValueError:
+        return 0.15
+
+
 def _fee_edge_skip(expected_move_pct: "float | None",
                    leverage: float = 1.0,
                    market: "str | None" = None) -> Optional[str]:
@@ -203,10 +227,19 @@ def _fee_edge_skip(expected_move_pct: "float | None",
     realization = _thesis_realization()
     expected = claimed * realization
     round_trip_pct = fee_rate(market) * 2 * 100.0
-    required = round_trip_pct * mult
+    fee_required = round_trip_pct * mult
+    # Two independent hurdles: the move must out-earn its own fees AND clear an
+    # absolute noise floor. Whichever binds, binds — a cheap venue does not get
+    # to admit a move that is indistinguishable from zero.
+    floor = _min_edge_pct()
+    required = max(fee_required, floor)
     if expected < required:
+        if floor > fee_required:
+            return (f"min_edge: claimed {claimed:.2f}% × {realization:.2f} "
+                    f"realization = {expected:.2f}% < {floor:.2f}% floor "
+                    f"(fees would have allowed {fee_required:.2f}%)")
         return (f"fee_edge: claimed {claimed:.2f}% × {realization:.2f} realization "
-                f"= {expected:.2f}% < {required:.2f}% "
+                f"= {expected:.2f}% < {fee_required:.2f}% "
                 f"({mult:g}× the {round_trip_pct:.2f}% round trip)")
     return None
 

@@ -149,10 +149,17 @@ class GateUnblocksTheRealTheses(FeeTestBase):
                             f"{claim}% cleared the OLD flat hurdle unexpectedly")
 
     def test_forex_now_passes_at_a_realistic_fx_cost(self):
-        for claim, sym in ((0.443, "AUDJPY"), (0.6623, "USDKRW"),
-                           (1.2466, "USDZAR"), (2.00, "USDZAR")):
+        """Realistic FX fees unblock the market — but the absolute edge floor
+        added alongside them (run_engine._min_edge_pct, 0.15% of the
+        DISCOUNTED move) still refuses the weakest thesis. AUDJPY at 0.443%
+        discounts to 0.111% and is noise whatever the venue costs; that is the
+        floor's job, not the fee gate's, and it is deliberate."""
+        for claim, sym in ((0.6623, "USDKRW"), (1.2466, "USDZAR"),
+                           (2.00, "USDZAR")):
             self.assertFalse(self._blocked(claim, "forex"),
                              f"{sym} at {claim}% should now be tradeable")
+        self.assertTrue(self._blocked(0.443, "forex"),
+                        "AUDJPY at 0.443% is under the noise floor by design")
 
     def test_the_zc_four_basis_point_miss_now_clears(self):
         """ZC claimed 2.37%: 2.37 x 0.25 = 0.5925% vs a 0.60% hurdle — refused
