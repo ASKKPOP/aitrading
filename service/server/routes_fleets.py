@@ -137,6 +137,45 @@ def _public_fleet(fleet: dict) -> dict:
     return out
 
 
+FLEET_INDEX_BASE = 100.0
+
+
+def fleet_index(fleet: dict, equity: "dict | None") -> "dict | None":
+    """This fleet's own performance, rebased to 100 at launch.
+
+    The account total answers "am I up?"; it cannot answer "is THIS sleeve
+    working?" — an N-symbol fleet is a distinct bet with its own budget, and
+    its result is invisible inside a six-figure account balance. Rebasing to
+    100 makes fleets comparable to each other and to a benchmark regardless
+    of how much money each was given.
+
+    Built on marked_equity (budget + Σ P&L over every run ever attributed to
+    the fleet, including stopped members and positions_held zombies), so a
+    retired run's result stays in the index instead of vanishing with it.
+    Returns None when equity is unreadable — the caller must not invent a
+    number, same fail-closed rule the supervisor uses.
+    """
+    if not equity or not equity.get("ok"):
+        return None
+    try:
+        budget = float(fleet.get("total_budget_usd") or 0)
+        eq = float(equity.get("equity") or 0)
+    except (TypeError, ValueError):
+        return None
+    if budget <= 0:
+        return None
+    pnl = eq - budget
+    return {
+        "base": FLEET_INDEX_BASE,
+        "value": round(FLEET_INDEX_BASE * eq / budget, 2),
+        "pnl_usd": round(pnl, 2),
+        "pnl_pct": round(100.0 * pnl / budget, 2),
+        "budget_usd": round(budget, 2),
+        "equity_usd": round(eq, 2),
+        "since": fleet.get("started_at") or fleet.get("created_at"),
+    }
+
+
 def _members_public(fleet_id: int) -> list[dict]:
     members = []
     for m in fleet_planner.list_members(fleet_id):
@@ -249,7 +288,20 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
             fleets = [dict(r) for r in cursor.fetchall()]
         finally:
             conn.close()
-        return {"fleets": [_public_fleet(f) for f in fleets]}
+        # The index rides along on the list so a fleet card can show its own
+        # result without a second round trip per fleet. Non-terminal only —
+        # marked_equity replays every member's P&L, which is not worth paying
+        # for on an archived fleet nobody is watching.
+        out = []
+        for f in fleets:
+            pub = _public_fleet(f)
+            if f.get("status") not in ("stopped", "archived"):
+                try:
+                    pub["index"] = fleet_index(f, fleet_planner.marked_equity(f))
+                except Exception:  # noqa: BLE001 — a stats read never breaks the list
+                    pub["index"] = None
+            out.append(pub)
+        return {"fleets": out}
 
     @app.get("/api/fleets/{fleet_id}")
     async def get_fleet(fleet_id: int, authorization: str = Header(None)):
@@ -262,7 +314,8 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
             eq = None
         return {"fleet": _public_fleet(fleet),
                 "members": _members_public(fleet_id),
-                "equity": eq}
+                "equity": eq,
+                "index": fleet_index(fleet, eq)}
 
     @app.put("/api/fleets/{fleet_id}/rails")
     async def edit_rails(fleet_id: int, data: RailsIn,
