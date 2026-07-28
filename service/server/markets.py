@@ -12,7 +12,7 @@ See docs/plan/13-market-expansion.md.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
@@ -346,3 +346,35 @@ def is_market_open(market: str | None, now: datetime | None = None) -> bool:
     if spec is None:
         return True
     return is_session_open(spec.session, now)
+
+
+# A market that is open but about to close is, for a run being BUILT right now,
+# effectively shut: the run gets one cycle and then parks until the next
+# session. Live 2026-07-28 — ORCL and CAT were composed at 19:56:40 UTC, three
+# minutes and twenty seconds before the NYSE close, and spent the next nine
+# hours on `pre: market closed` before the idle rail collected them. Neither
+# ever saw an open session. is_market_open() was true at that instant and told
+# the builder nothing useful.
+def session_minutes_left(market: str | None, now: datetime | None = None,
+                         horizon_min: int = 24 * 60) -> int:
+    """Whole minutes the market stays open from `now`, capped at horizon_min.
+
+    0 when it is already shut. Probes forward a minute at a time — the session
+    calendars are pure functions of the clock, so this needs no new schedule
+    table to fall out of step with is_session_open()."""
+    spec = get_spec(market)
+    if spec is None:
+        return horizon_min
+    start = (now or datetime.now(_ET))
+    if not is_session_open(market, start):
+        return 0
+    lo, hi = 0, max(0, int(horizon_min))
+    # The open window is contiguous forward from an open `now`, so the first
+    # closed minute can be found by bisection instead of a linear walk.
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if is_market_open(market, start + timedelta(minutes=mid)):
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo

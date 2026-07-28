@@ -277,17 +277,44 @@ def _session_bias_enabled() -> bool:
     return os.getenv("FLEET_SESSION_BIAS", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _min_session_minutes() -> int:
+    """Session a market must still have left to be worth composing into.
+
+    Being open is not the same as being usable. Live 2026-07-28: ORCL and CAT
+    were composed at 19:56:40 UTC — 3m20s before the NYSE close — got one
+    cycle, then spent nine hours on `pre: market closed` until the idle rail
+    collected them. is_market_open() was true at that instant and told the
+    builder nothing. 0 disables the check."""
+    try:
+        return max(0, int(os.getenv("FLEET_MIN_SESSION_MINUTES", "60")))
+    except ValueError:
+        return 60
+
+
 def _open_markets_scope(now: "datetime | None" = None) -> "list[str] | None":
     """Allowlist of tradeable markets open at `now` (real now by default), used
     to bias an unrestricted fleet away from markets that are closed and would
     idle its slots. Returns None (→ caller leaves scope unrestricted) when the
     kill switch is off or, defensively, when nothing is open (crypto is 24x7 so
-    the list is non-empty in practice)."""
+    the list is non-empty in practice).
+
+    A market with less than _min_session_minutes() left is treated as closed —
+    a slot bound to it now would park before it could act."""
     if not _session_bias_enabled():
         return None
     import markets
-    open_markets = [m for m in markets.tradeable_markets()
-                    if markets.is_market_open(m, now)]
+    need = _min_session_minutes()
+    open_markets = []
+    for m in markets.tradeable_markets():
+        if not markets.is_market_open(m, now):
+            continue
+        if need:
+            try:
+                if markets.session_minutes_left(m, now, horizon_min=need) < need:
+                    continue
+            except Exception:  # noqa: BLE001 — a calendar problem must not
+                pass          # empty the universe; fall back to open/closed
+        open_markets.append(m)
     return open_markets or None
 
 
