@@ -8,6 +8,13 @@ on:
   schedule:
     - cron: '0 6 * * 1'  # weekly Monday 06:00 UTC
 
+# Supersede in-flight runs for the same ref. Actions minutes are metered on
+# this account, and a push that lands mid-run pays twice for a result nobody
+# reads. 852 runs in July burned roughly twice the included allowance.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python-audit:
     name: Python dependency audit

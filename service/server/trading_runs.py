@@ -762,17 +762,25 @@ def resume_run(run_id: int, agent_id: int) -> dict:
                        extra_sets="paused_reason = NULL", extra_args=())
 
 
-def request_stop(run_id: int, agent_id: int, flatten: bool) -> dict:
-    """User stop. An armed run (no entries yet) stops immediately. A
+def request_stop(run_id: int, agent_id: int, flatten: bool,
+                 reason: str = "user_stop") -> dict:
+    """Stop a run. An armed run (no entries yet) stops immediately. A
     running/paused run with a run-owned open position moves to `stopping`
     (the scheduler completes the flatten, Phase 3); with nothing to flatten
-    it stops immediately."""
+    it stops immediately.
+
+    `reason` defaults to user_stop, which is what a Stop button or an API
+    stop request means. Machine-initiated stops MUST pass their own reason:
+    this function is also the fleet's stop path, and 59 of 61 "user_stop"
+    runs on prod were fleet stop-alls and rotations, not anyone clicking
+    anything. Anything new here needs a REPLACE_* classification in
+    fleet_planner and an entry in the notifications reason table."""
     run = get_run(run_id, agent_id)
     if not run:
         raise LookupError("run not found")
     if run["status"] == STATUS_ARMED:
         return _transition(run_id, agent_id, (STATUS_ARMED,), STATUS_STOPPED,
-                           "user_stop", clear_active_key=True)
+                           reason, clear_active_key=True)
     if run["status"] in (STATUS_RUNNING, STATUS_PAUSED):
         conn = get_db_connection()
         try:
@@ -789,10 +797,10 @@ def request_stop(run_id: int, agent_id: int, flatten: bool) -> dict:
         if has_position:
             return _transition(
                 run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED), STATUS_STOPPING,
-                "user_stop", extra_sets="stop_flatten = ?, stopped_at = ?",
+                reason, extra_sets="stop_flatten = ?, stopped_at = ?",
                 extra_args=(1 if flatten else 0, _now_iso()))
         return _transition(run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED),
-                           STATUS_STOPPED, "user_stop", clear_active_key=True)
+                           STATUS_STOPPED, reason, clear_active_key=True)
     raise ValueError(f"cannot stop a {run['status']} run")
 
 

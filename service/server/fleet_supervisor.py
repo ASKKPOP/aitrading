@@ -216,7 +216,8 @@ def _harvest(fleet: dict, gain_frac: float) -> None:
                                              clear_active_key=True)
                 else:
                     trading_runs.request_stop(m["id"], fleet["agent_id"],
-                                              flatten=True)
+                                              flatten=True,
+                                              reason="fleet_profit_target")
             except Exception:  # noqa: BLE001
                 pass
     fp.emit_fleet_event(fleet["id"], "profit_target",
@@ -283,7 +284,8 @@ def _stop_all(fleet: dict, loss_frac: float) -> None:
                                              clear_active_key=True)
                 else:
                     trading_runs.request_stop(m["id"], fleet["agent_id"],
-                                              flatten=True)
+                                              flatten=True,
+                                              reason="fleet_breaker")
             except Exception:  # noqa: BLE001
                 pass
     fp.emit_fleet_event(fleet["id"], "breaker",
@@ -566,11 +568,11 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         reason = member.get("status_reason") or ""
 
         if reason in fp.REPLACE_NEVER:
-            if reason == "user_stop":
+            if reason in fp.SLOT_CLOSING:
                 fp._bind_slot(fleet["id"], slot["slot_index"], None, "closed")
                 fp.emit_fleet_event(fleet["id"], "slot_closed",
                                     {"slot": slot["slot_index"],
-                                     "reason": "user_stop"})
+                                     "reason": reason})
             continue
 
         if reason == "positions_held":
