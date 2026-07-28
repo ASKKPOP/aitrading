@@ -152,7 +152,9 @@ class Sweep(unittest.TestCase):
         try:
             with unittest.mock.patch.object(
                     orc, "find_orphans", return_value=[_pos(stop=95.0)]):
-                out = orc.sweep(read_desk=lambda p: "sell")
+                # blocking is explicit: the desk is only consulted for an
+                # orphan that is actually refusing a slot.
+                out = orc.sweep(read_desk=lambda p: "sell", blocking={"SOL"})
             self.assertEqual(out["exited"], 0)
             self.assertEqual(out["skipped"], 1)
         finally:
@@ -192,3 +194,73 @@ class Wiring(unittest.TestCase):
                 os.environ.pop("ORPHAN_RECLAIM_INTERVAL", None)
             else:
                 os.environ["ORPHAN_RECLAIM_INTERVAL"] = prev
+
+
+class BlockingEscalation(unittest.TestCase):
+    """A skip that repeats forever is not a decision, it is a question nobody
+    asked. Live: SOLUSDT cleared the fee gate AND the expectancy gate on every
+    tick and was refused on every tick, holding the fleet at 2/10 for hours."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _skip_event(self, symbol, ts, reason=None):
+        import json
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO fleet_events (fleet_id, seq, event_type, ts, payload) "
+            "VALUES (20, ?, 'candidate_skipped', ?, ?)",
+            (abs(hash((symbol, ts))) % 100000, ts,
+             json.dumps({"slot": 9, "symbol": symbol,
+                         "reason": reason or (orc.BLOCKING_REASON + " outside any run")})))
+        conn.commit(); conn.close()
+
+    def test_finds_the_blocking_symbol(self):
+        from run_engine import _now_iso
+        self._skip_event("SOLUSDT", _now_iso())
+        self.assertIn("SOLUSDT", orc.blocking_symbols())
+
+    def test_ignores_other_skip_reasons(self):
+        from run_engine import _now_iso
+        self._skip_event("ETHUSDT", _now_iso(), reason="symbol_busy")
+        self.assertNotIn("ETHUSDT", orc.blocking_symbols())
+
+    def test_desk_is_only_consulted_for_a_blocking_orphan(self):
+        """An LLM call per orphan per sweep would be pure spend. Only an
+        orphan with a measurable cost earns one."""
+        asked = []
+        with unittest.mock.patch.object(
+                orc, "find_orphans",
+                return_value=[_pos(pid=13, stop=95.0),
+                              _pos(pid=67, side="short", stop=105.0)]):
+            os.environ["ORPHAN_RECLAIM_ENABLED"] = "true"
+            try:
+                orc.sweep(read_desk=lambda p: asked.append(p["id"]) or None,
+                          blocking=set())
+                self.assertEqual(asked, [], "no blocker -> no LLM call")
+                orc.sweep(read_desk=lambda p: asked.append(p["id"]) or None,
+                          blocking={"SOL"})
+                self.assertEqual(asked, [13, 67],
+                                 "both fixtures are SOL; a blocker earns the call")
+            finally:
+                os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)
+
+    def test_closing_is_a_separate_switch_from_protecting(self):
+        """Protection has no market consequence; closing does. One flag for
+        both would mean turning on protection also turns on liquidation."""
+        os.environ.pop("ORPHAN_RECLAIM_EXIT", None)
+        self.assertFalse(orc.exit_enabled())
+        os.environ["ORPHAN_RECLAIM_ENABLED"] = "true"
+        try:
+            self.assertTrue(orc.enabled())
+            self.assertFalse(orc.exit_enabled(),
+                             "enabling the sweep must not enable closing")
+        finally:
+            os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)

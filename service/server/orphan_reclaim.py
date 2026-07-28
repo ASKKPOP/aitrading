@@ -171,15 +171,26 @@ def protect(position: dict[str, Any]) -> bool:
             pass
 
 
-def sweep(read_desk=None, execute=None) -> dict[str, Any]:
-    """One pass. Returns counters; never raises."""
-    out = {"scanned": 0, "protected": 0, "exited": 0, "held": 0, "skipped": 0}
+def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
+    """One pass. Returns counters; never raises.
+
+    The desk is consulted ONLY for an orphan that is currently refusing a
+    fleet slot. Every orphan gets protection; only a blocking one is worth an
+    LLM call, because only a blocking one has a cost that closing would
+    recover.
+    """
+    out = {"scanned": 0, "protected": 0, "exited": 0, "held": 0,
+           "skipped": 0, "blocking": 0}
     if not enabled():
         return {**out, "disabled": True}
+    blocked = blocking_symbols() if blocking is None else blocking
     for pos in find_orphans():
         out["scanned"] += 1
+        is_blocking = (pos.get("symbol") or "") in blocked
+        if is_blocking:
+            out["blocking"] += 1
         try:
-            verdict = decide(pos, read_desk=read_desk)
+            verdict = decide(pos, read_desk=read_desk if is_blocking else None)
         except Exception:  # noqa: BLE001
             out["skipped"] += 1
             continue
@@ -202,11 +213,119 @@ def sweep(read_desk=None, execute=None) -> dict[str, Any]:
     return out
 
 
+BLOCKING_REASON = "an open position already exists for this symbol"
+
+
+def blocking_symbols(within_minutes: int = 180) -> set:
+    """(market, symbol) pairs whose unowned position is refusing a fleet slot.
+
+    The build path already journals this — `candidate_skipped` with
+    "an open position already exists for this symbol outside any run — close it
+    first". Live on prod it repeated every 60 s for hours: SOLUSDT cleared the
+    fee gate AND the expectancy gate on every tick and was refused on every
+    tick, holding the fleet at 2/10.
+
+    A skip that repeats forever is not a decision, it is a question nobody
+    asked. These are the orphans worth spending an LLM call on: the ones with
+    a measurable cost.
+    """
+    from run_engine import _now_iso
+    from datetime import datetime, timedelta
+    try:
+        cutoff = (datetime.strptime(_now_iso()[:19], "%Y-%m-%dT%H:%M:%S")
+                  - timedelta(minutes=max(1, within_minutes))).strftime(
+                      "%Y-%m-%dT%H:%M:%SZ")
+    except (ValueError, TypeError):
+        return set()
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT payload FROM fleet_events
+               WHERE event_type = 'candidate_skipped' AND ts >= ?
+               ORDER BY id DESC LIMIT 200""", (cutoff,))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001
+        return set()
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    import json as _json
+    out = set()
+    for row in rows:
+        try:
+            p = _json.loads(row["payload"] or "{}")
+        except (ValueError, TypeError):
+            continue
+        if BLOCKING_REASON in str(p.get("reason") or ""):
+            sym = p.get("symbol")
+            if sym:
+                out.add(str(sym))
+    return out
+
+
+def desk_read(position: dict) -> "str | None":
+    """Ask the desk which way it reads this symbol RIGHT NOW.
+
+    Same pipeline a run cycle uses (analysis_agents.run_analysis), so an
+    orphan is judged exactly like a position the fleet holds — no second,
+    weaker opinion path. Returns the action string or None; None is a HOLD,
+    never an exit.
+    """
+    try:
+        from analysis_agents import run_analysis
+        out = run_analysis(position.get("symbol") or "",
+                           position.get("market") or "crypto",
+                           agent_id=position.get("agent_id"))
+        action = ((out or {}).get("decision") or {}).get("action")
+        return str(action).lower() if action else None
+    except Exception:  # noqa: BLE001 — an unreadable desk is a HOLD
+        logger.debug("desk read failed for %s", position.get("symbol"),
+                     exc_info=True)
+        return None
+
+
+def exit_enabled() -> bool:
+    """Second, separate switch for the CLOSING half.
+
+    Protection can be turned on with no market consequence; closing cannot.
+    They are deliberately not the same flag."""
+    return os.getenv("ORPHAN_RECLAIM_EXIT", "false").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def sweep_interval_seconds() -> int:
     try:
         return max(60, int(os.getenv("ORPHAN_RECLAIM_INTERVAL", "900")))
     except ValueError:
         return 900
+
+
+def close_orphan(position: dict, verdict: dict) -> None:
+    """Close an orphan the desk has turned against.
+
+    Routed through execute_paper_trade — the same executor the runs and the
+    SL/TP watcher use — so fees, the ledger and the signal journal all behave
+    identically to any other exit. Idempotent via the client_order_id, which
+    is what stops a retry double-closing.
+    """
+    from automation import execute_paper_trade
+    qty = abs(float(position.get("quantity") or 0))
+    mark = position.get("current_price")
+    if qty <= 0 or mark is None:
+        raise ValueError("no quantity or no mark to close against")
+    side = "cover" if (position.get("side") or "").lower() in ("short", "sell") else "sell"
+    signal_id, skip = execute_paper_trade(
+        position["agent_id"], position["symbol"], position["market"],
+        side, qty, float(mark),
+        content=f"Orphan reclaim — {verdict.get('reason') or 'desk turned'}",
+        client_order_id=f"orphan:{position['id']}:reclaim")
+    if not signal_id and not (skip and "duplicate client_order_id" in str(skip)):
+        raise RuntimeError(skip or "close refused")
 
 
 async def orphan_reclaim_loop() -> None:
@@ -228,7 +347,8 @@ async def orphan_reclaim_loop() -> None:
     while True:
         try:
             if enabled():
-                out = sweep()
+                out = sweep(read_desk=desk_read if exit_enabled() else None,
+                            execute=close_orphan if exit_enabled() else None)
                 if out.get("scanned"):
                     logger.info("[OrphanReclaim] %s", out)
         except Exception:  # noqa: BLE001 — a sweep must never kill the worker
