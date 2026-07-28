@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
@@ -776,6 +777,17 @@ def _fresh_batch_exists() -> bool:
         conn.close()
 
 
+def _replacement_depth() -> int:
+    """How many candidates a replacement considers before giving up.
+
+    Every gate downstream only ever REMOVES, so this is the ceiling on how
+    many rejections a slot can absorb and still fill."""
+    try:
+        return max(1, int(os.getenv("FLEET_REPLACEMENT_DEPTH", "10")))
+    except ValueError:
+        return 10
+
+
 def _build_replacement(fleet: dict, slot: dict, funding: float,
                        exclude: set, already_waiting: bool = False) -> Optional[int]:
     """One replacement via the same validated path as the initial build."""
@@ -791,8 +803,17 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
         # never bound to a closed-market symbol overnight, and the expectancy
         # gate so a replacement can't sneak a negative-edge symbol past the
         # bar the composition enforced. Ask for a few, gate, take the best.
+        #
+        # Depth (2026-07-28): asking for 3 assumed the gates reject rarely.
+        # They do not. Live: the batch's top three were NG, SOLUSDT, USDKRW —
+        # the fee gate dropped USDKRW, the expectancy gate dropped NG, and
+        # SOLUSDT was refused because an unowned position already held the
+        # symbol. Nothing built, while SEVEN feasible candidates (ETHUSDT, GM,
+        # VZ, T, SPCX, 601288.SS, 601899.SS) sat below the cut and were never
+        # looked at. Same lesson as E3's junk-top-pick fix, one layer up: the
+        # FETCH has to be deeper than the rejection rate, not just the retry.
         theses = symbol_research.select_targets(
-            cursor, agent_id, 3, exclude=exclude,
+            cursor, agent_id, _replacement_depth(), exclude=exclude,
             markets_scope=fp._open_markets_scope())
     finally:
         conn.close()
