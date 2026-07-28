@@ -30,6 +30,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
+from notifications_i18n import (normalize_lang, triggers_text,
+                                verdict_default as _verdict_default,
+                                verdict_sentence as _verdict_sentence)
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +64,50 @@ def llm_verify_enabled() -> bool:
         "1", "true", "yes", "on")
 
 
+def _recipient_lang(agent_id: int) -> str:
+    """The language the alert will actually be rendered in.
+
+    send_alert resolves users.lang at render time, but the LLM note is written
+    BEFORE that — so the daemon has to look it up itself or the note is
+    English no matter who receives it. Fail-soft to 'en'."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT u.lang FROM ai_agents a JOIN users u ON u.id = a.user_id
+               WHERE a.id = ?""", (agent_id,))
+        row = cursor.fetchone()
+        return (row["lang"] if row and row["lang"] else "en") or "en"
+    except Exception:  # noqa: BLE001
+        return "en"
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+_LANG_NAMES = {"en": "English", "ko": "Korean", "ja": "Japanese",
+               "th": "Thai", "vi": "Vietnamese"}
+
+
 def _personal_verdict(run: dict[str, Any], side: str,
-                      triggers: list[str]) -> str:
-    """The alert's {verdict} sentence. Deterministic default; when the LLM
-    layer is on, ask for stance/urgency/note for THIS user's book — fail-soft
-    back to the default on any trouble."""
-    verdict = f"Affects your {side} position."
+                      triggers: list[str], lang: str = "en") -> str:
+    """The alert's {verdict} sentence, in the RECIPIENT's language.
+
+    Deterministic default; when the LLM layer is on, ask for
+    stance/urgency/note for THIS user's book — fail-soft back to the default
+    on any trouble.
+
+    2026-07-28: this used to hand-build an English sentence
+    ('NEUTRAL your long (high): <English note>') which was then interpolated
+    into a Korean template, so a Korean user got half a sentence in each
+    language. stance/urgency/side now render through the notifications
+    catalogue, and the free-form note is written in their language."""
+    lang = normalize_lang(lang)
+    verdict = _verdict_default(side, lang)
     if not llm_verify_enabled():
         return verdict
     try:
@@ -83,7 +124,9 @@ def _personal_verdict(run: dict[str, Any], side: str,
             "the note. Never ask for more information.\n"
             "Respond with ONLY the JSON object, no prose before or after: "
             '{"stance": "for"|"against"|"neutral", '
-            '"urgency": "low"|"medium"|"high", "note": "<one short sentence>"}')
+            '"urgency": "low"|"medium"|"high", "note": "<one short sentence>"}'
+            f'\nWrite the "note" value in {_LANG_NAMES.get(lang, "English")}. '
+            'The stance and urgency values stay in English exactly as listed.')
         text = generate_text(prompt, max_tokens=120, temperature=0.2,
                              tier="decision")
         data = json.loads(text[text.index("{"):text.rindex("}") + 1])
@@ -91,7 +134,9 @@ def _personal_verdict(run: dict[str, Any], side: str,
         urgency = str(data.get("urgency") or "").strip().lower()
         note = str(data.get("note") or "").strip()[:120]
         if stance in ("for", "against", "neutral"):
-            return f"{stance.upper()} your {side} ({urgency or 'medium'}): {note}"
+            if urgency not in ("low", "medium", "high"):
+                urgency = "medium"
+            return _verdict_sentence(stance, side, urgency, note, lang)
     except Exception:  # noqa: BLE001
         logger.debug("hot-issue LLM verify failed (run %s)", run.get("id"),
                      exc_info=True)
@@ -255,13 +300,15 @@ def run_daemon_tick() -> dict[str, int]:
                 pass
             if side is None:
                 continue  # flat run: escalate silently, never alert
+            lang = _recipient_lang(run["agent_id"])
             try:
                 import alerts
                 alerts.send_alert(
                     run["agent_id"], "hot_issue", "hot_issue_position",
                     {"symbol": symbol, "market": market, "side": side,
-                     "run_id": run["id"], "triggers": ", ".join(triggers),
-                     "verdict": _personal_verdict(run, side, triggers)},
+                     "run_id": run["id"],
+                     "triggers": triggers_text(triggers, lang),
+                     "verdict": _personal_verdict(run, side, triggers, lang)},
                     dedupe_key=f"hot:{market}:{symbol}:{run['id']}")
                 out["alerts"] += 1
             except Exception:  # noqa: BLE001
