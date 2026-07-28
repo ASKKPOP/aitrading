@@ -464,6 +464,48 @@ def _thesis_invalidation_strikes() -> int:
         return 3
 
 
+def _closed_market_cycles(run_id: int) -> int:
+    """Cycles this run burned with its market shut.
+
+    cycle_seq increments when the cycle is CLAIMED (run_engine ~1409), before
+    _pre_gate_skip runs, so a run parked on a closed market still counts a
+    cycle every tick. The idle-retire rail then collects it for "never
+    traded" — which it never had the chance to do.
+
+    Live 2026-07-28: runs 127 (ORCL) and 128 (CAT) were built at 19:56:40,
+    3m20s before the US close, spent twelve cycles on `pre: market closed`,
+    and were idle-retired at 04:27 — 9 hours before the market reopened. Two
+    slots and their allocation, spent on a rail whose own premise ("burning a
+    multi-agent analysis per tick for nothing") is false here: a pre-gate skip
+    returns before any analysis is requested and costs nothing at all.
+
+    Fail-soft: an unreadable journal reports 0, so the rail behaves exactly as
+    it did before rather than becoming un-retirable.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'gate_skip'
+                 AND payload LIKE '%"stage": "pre"%'
+                 AND payload LIKE '%market closed%'""", (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return int((row["n"] if row else 0) or 0)
+    except (KeyError, TypeError, ValueError):
+        return 0
+
+
 def _unactionable_streak(run_id: int) -> int:
     """How many of the run's most recent gate skips were the direction its
     book cannot express — counted back from the latest, stopping at the first
@@ -644,8 +686,14 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             if infeasible:
                 return "fee_infeasible_retired"
         limit = _idle_retire_cycles()
-        if limit and int(run.get("cycle_seq") or 0) >= limit:
-            return "idle_retired"
+        if limit:
+            # Only cycles the run could actually have traded in count. A
+            # closed-market tick costs nothing and proves nothing — see
+            # _closed_market_cycles for the two runs this rail wrongly
+            # collected.
+            worked = int(run.get("cycle_seq") or 0) - _closed_market_cycles(run["id"])
+            if worked >= limit:
+                return "idle_retired"
         # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
         # A spot run built on a LONG thesis whose desk keeps reading bearish
         # cannot act at all: nothing to sell, and it will not buy. Observed
