@@ -42,26 +42,50 @@ _MARKET_FEE_RATES: dict[str, float] = {
 }
 
 
+# fee_rate() is on the hot path — every fill and every gate evaluation calls
+# it — and platform_settings.get_setting opens its own DB connection. Without
+# a cache that is a round trip per fee lookup for a value that changes maybe
+# once a quarter. 30s TTL matches the llm_client settings cache, so a console
+# edit still lands within half a minute and no restart is needed.
+_OVERRIDE_TTL_SECONDS = 30.0
+_override_cache: "dict[str, tuple[float, float | None]]" = {}
+
+
+def reset_override_cache() -> None:
+    """Drop cached overrides — for tests, and for an operator who has just
+    changed a rate and does not want to wait out the TTL."""
+    _override_cache.clear()
+
+
 def _override(market: str) -> "float | None":
     """Operator override from platform_settings (`fee_rate_<market>`).
 
     A fee is an external fact about a venue, not something the desk can infer,
     so it must be settable without a deploy when a venue changes its schedule.
     Never raises — a bad row falls through to the table."""
+    import time
+    now = time.monotonic()
+    hit = _override_cache.get(market)
+    if hit is not None and (now - hit[0]) < _OVERRIDE_TTL_SECONDS:
+        return hit[1]
     try:
         import platform_settings
         raw = platform_settings.get_setting(f"fee_rate_{market}")
     except Exception:  # noqa: BLE001 — settings must never break a fill
+        _override_cache[market] = (now, None)
         return None
-    if raw in (None, ""):
-        return None
-    try:
-        val = float(raw)
-    except (TypeError, ValueError):
-        return None
-    # A negative fee would pay the desk to trade; anything above 10% is a typo,
-    # not a venue. Refuse both rather than price a fill on them.
-    return val if 0.0 <= val <= 0.10 else None
+    val: "float | None" = None
+    if raw not in (None, ""):
+        try:
+            parsed = float(raw)
+        except (TypeError, ValueError):
+            parsed = None
+        # A negative fee would pay the desk to trade; anything above 10% is a
+        # typo, not a venue. Refuse both rather than price a fill on them.
+        if parsed is not None and 0.0 <= parsed <= 0.10:
+            val = parsed
+    _override_cache[market] = (now, val)
+    return val
 
 
 def per_market_enabled() -> bool:
