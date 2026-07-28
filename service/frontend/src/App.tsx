@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { RegionSetupDialog } from './components/RegionSetup'
 
 import {
   API_BASE,
@@ -356,6 +357,21 @@ function App() {
             userLogin={userLogin}
             userLogout={userLogout}
           />
+
+          {/* First sign-in: ask for region + language rather than guessing.
+              locale_confirmed stays false until the member answers — a
+              signup-time IP lookup pre-selects but never confirms. */}
+          {userToken && userInfo && userInfo.locale_confirmed === false && (
+            <RegionSetupDialog
+              token={userToken}
+              language={language}
+              onDone={(region, lang, timezone) => {
+                setUserInfo((prev: any) => ({ ...prev, region, timezone,
+                  lang, locale_confirmed: true }))
+                if (LANGUAGES.some((l) => l.value === lang)) setLanguage(lang)
+              }}
+            />
+          )}
 
           {toast && (
             <Toast

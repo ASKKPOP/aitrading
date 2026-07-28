@@ -56,6 +56,11 @@
       "en": "How Decisions Become Orders"
     },
     {
+      "group": "market-hours",
+      "ko": "내 시장 개장 시간",
+      "en": "When Your Markets Are Open"
+    },
+    {
       "group": "extensions",
       "ko": "확장 설계 분석 (관리자)",
       "en": "Extension Design Analysis (owner)"
@@ -195,6 +200,36 @@
       "lang": "vi",
       "group": "decisions",
       "title": "Hệ thống giao dịch tự động quyết định thế nào"
+    },
+    {
+      "key": "market-hours-en",
+      "lang": "en",
+      "group": "market-hours",
+      "title": "When your markets are open"
+    },
+    {
+      "key": "market-hours-ko",
+      "lang": "ko",
+      "group": "market-hours",
+      "title": "내 시장은 언제 열리나요"
+    },
+    {
+      "key": "market-hours-ja",
+      "lang": "ja",
+      "group": "market-hours",
+      "title": "あなたの市場が開く時間"
+    },
+    {
+      "key": "market-hours-th",
+      "lang": "th",
+      "group": "market-hours",
+      "title": "ตลาดของคุณเปิดเมื่อไหร่"
+    },
+    {
+      "key": "market-hours-vi",
+      "lang": "vi",
+      "group": "market-hours",
+      "title": "Thị trường của bạn mở khi nào"
     },
     {
       "key": "extension-e1-e2-en",
