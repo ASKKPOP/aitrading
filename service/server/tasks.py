@@ -1660,6 +1660,13 @@ async def _hot_issue_daemon_loop():
     await hot_issue_daemon_loop()
 
 
+async def _orphan_reclaim_loop():
+    """Positions no run owns — attach the missing stop so the SL/TP watcher
+    can see them (ORPHAN_RECLAIM_ENABLED gates each pass)."""
+    from orphan_reclaim import orphan_reclaim_loop
+    await orphan_reclaim_loop()
+
+
 BACKGROUND_TASK_REGISTRY = {
     "prices": update_position_prices,
     "profit_history": record_profit_history,
@@ -1694,6 +1701,7 @@ BACKGROUND_TASK_REGISTRY = {
     "policy_feed": _policy_feed_loop,
     "fleet_planner": _fleet_planner_loop,
     "hot_issue_daemon": _hot_issue_daemon_loop,
+    "orphan_reclaim": _orphan_reclaim_loop,
 }
 
 
@@ -1737,6 +1745,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # trading runs — Plan 10 run lifecycle scheduler (dedicated executor for
     # LLM cycles; gated by AUTO_TRADING_ENABLED)
     "trading_runs":            "settlement",
+    # unowned positions — attach the missing stop so the SL/TP watcher sees them
+    "orphan_reclaim":          "settlement",
     # trading-run P&L digests + delivery retry sweep (Plan 10 Phase 4)
     "run_reports":             "settlement",
     # pause runs whose owner's subscription lapsed (Plan 10 Phase 5)
