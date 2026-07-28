@@ -72,12 +72,14 @@ class Base(unittest.TestCase):
                              "scores": scores})))
         conn.commit(); conn.close()
 
-    def evaluate(self, run, has_position=True, trades=1):
+    def evaluate(self, run, has_position=True, trades=1, enabled=True):
         pos = {"quantity": 1 if has_position else 0, "entry_price": 476.0,
                "current_price": 475.0, "leverage": 1.0}
         pnl = {"total": -1.0, "realized": -0.45, "trades": trades,
                "mark_age_ok": True, "position": pos if has_position else None}
-        with patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+        env = {"RUN_THESIS_DECAY_ENABLED": "true" if enabled else "false"}
+        with patch.dict(os.environ, env), \
+                patch.object(run_engine, "compute_run_pnl", return_value=pnl):
             return run_engine._evaluate_stop(run)
 
 
@@ -141,6 +143,14 @@ class Rail(Base):
     def test_strikes_never_below_two(self):
         with patch.dict(os.environ, {"RUN_THESIS_DECAY_STRIKES": "1"}):
             self.assertGreaterEqual(run_engine._thesis_decay_strikes(), 2)
+
+    def test_it_ships_dark(self):
+        """Retiring a HOLDING run flattens at market or orphans the position.
+        That is a money path, and money paths here ship behind a default-off
+        flag — a live rail nobody armed is how you find out the hard way."""
+        self.assertFalse(run_engine._thesis_decay_enabled())
+        self.decisions([0.30, 0.30, 0.30])
+        self.assertIsNone(self.evaluate(_run(), enabled=False))
 
     def test_reason_is_classified_for_immediate_replacement(self):
         """An unclassified stop reason strands the fleet slot."""

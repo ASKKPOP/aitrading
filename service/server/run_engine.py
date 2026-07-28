@@ -541,6 +541,23 @@ def _closed_market_cycles(run_id: int) -> int:
         return 0
 
 
+def _thesis_decay_enabled() -> bool:
+    """Ship gate, default OFF.
+
+    Retiring a run that HOLDS a position is a money path: _control_stopping
+    either flattens it at market or releases it with run_id = NULL, which is
+    the orphan path. Every other money-path change in this codebase ships
+    dark and is enabled deliberately after the journal shows the rail firing
+    where it should. This one is no different — the decay signal is only as
+    good as the desk's own self-scoring, and it has never been measured
+    against an outcome.
+
+    Enable with RUN_THESIS_DECAY_ENABLED=true once the shadow read looks
+    right; the floor is a separate tuning knob."""
+    return (os.getenv("RUN_THESIS_DECAY_ENABLED", "false") or "false"
+            ).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _thesis_decay_floor() -> float:
     """thesis_alignment at or below which the desk no longer believes its own
     thesis. Boundary is inclusive: run 345's decay read exactly 0.35, and a
@@ -831,7 +848,8 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # same way every other retire does and the stop conditions do the closing.
     decay_strikes = _thesis_decay_strikes()
     run_id = run.get("id")
-    if run_id and _thesis_decay_floor() > 0 and decay_strikes \
+    if run_id and _thesis_decay_enabled() and _thesis_decay_floor() > 0 \
+            and decay_strikes \
             and _thesis_decay_streak(run_id) >= decay_strikes:
         return "thesis_decayed"
 
