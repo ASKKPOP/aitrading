@@ -102,6 +102,10 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                 ) AS trade_count
             FROM agents a
             LEFT JOIN positions p ON p.agent_id = a.id
+            -- Owned agents only (2026-07-28). An agent with no user_id was
+            -- created by a script — deploy checks, e2e probes, canaries — and
+            -- is not a member. Nine of them were sitting on the public board.
+            WHERE a.user_id IS NOT NULL
             GROUP BY a.id, a.name, a.cash, a.deposited
         )
         SELECT
@@ -125,6 +129,12 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
             ) AS collaboration_score
         FROM agent_profit ap
         LEFT JOIN latest_snapshots ls ON ls.agent_id = ap.agent_id
+        -- A performance board ranks performance, and an agent that has never
+        -- traded has none. This also removes a phantom loss: profit_percent is
+        -- measured against a hardcoded INITIAL_CAPITAL, so an agent seeded with
+        -- anything else reports a collapse it never took — cash 1,000 read as
+        -- -99.00%, cash 50,000 as -50.00%, both on zero trades.
+        WHERE ap.trade_count > 0
         """,
         (INITIAL_CAPITAL, INITIAL_CAPITAL, INITIAL_CAPITAL),
     )

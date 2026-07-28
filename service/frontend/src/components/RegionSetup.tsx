@@ -149,7 +149,7 @@ export function RegionPicker({ token, language, onSaved, compact }: {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={save} disabled={!region || state === 'saving'}
-          className="btn-primary"
+          className="btn btn-primary"
           style={{ cursor: region ? 'pointer' : 'not-allowed', opacity: region ? 1 : 0.5 }}>
           {state === 'saving' ? tr(language, T.saving) : tr(language, T.save)}
         </button>

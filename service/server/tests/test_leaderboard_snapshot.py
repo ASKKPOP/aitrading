@@ -35,18 +35,33 @@ from routes import create_app
 
 # ── fixtures ──────────────────────────────────────────────────────────────
 
-def _mk_agent(name: str, *, cash: float = 100_000.0, deposited: float = 0.0) -> int:
-    """Insert an agent and return its id. Uses a stable hashed dummy token."""
+def _mk_agent(name: str, *, cash: float = 100_000.0, deposited: float = 0.0,
+              user_id: int | None = 1, trades: int = 1) -> int:
+    """Insert an agent and return its id. Uses a stable hashed dummy token.
+
+    Owned and with one trade by default (2026-07-28): the board now ranks only
+    agents that have an owner and a track record, so an unowned/never-traded
+    fixture agent is invisible to every assertion here. These tests are about
+    pagination and read mechanics, not eligibility — eligibility has its own
+    suite in test_leaderboard_filters.py.
+    """
     token_raw = f"tok-{name}"
     token_hash = hashlib.sha256(token_raw.encode()).hexdigest()
     conn = database.get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO agents (name, token, token_hash, cash, deposited) "
-        "VALUES (?, NULL, ?, ?, ?)",
-        (name, token_hash, cash, deposited),
+        "INSERT INTO agents (name, token, token_hash, cash, deposited, user_id) "
+        "VALUES (?, NULL, ?, ?, ?, ?)",
+        (name, token_hash, cash, deposited, user_id),
     )
     aid = cur.lastrowid
+    for i in range(trades):
+        cur.execute(
+            "INSERT INTO signals (signal_id, agent_id, message_type, market, "
+            "symbol, timestamp, created_at) VALUES "
+            "(?, ?, 'operation', 'crypto', 'BTCUSDT', 0, '2026-07-28T00:00:00Z')",
+            (aid * 1000 + i, aid),
+        )
     conn.commit()
     conn.close()
     return aid
