@@ -162,3 +162,33 @@ class Sweep(unittest.TestCase):
 if __name__ == "__main__":
     import unittest.mock  # noqa: F401
     unittest.main()
+
+
+class Wiring(unittest.TestCase):
+    """A tested module nothing calls is dead code. These fail if the loop is
+    dropped from the registry — which is exactly how it shipped the first time."""
+
+    def test_registered_as_a_background_task(self):
+        import tasks
+        self.assertIn("orphan_reclaim", tasks.BACKGROUND_TASK_REGISTRY)
+
+    def test_assigned_to_the_settlement_role(self):
+        import tasks
+        self.assertEqual(tasks.BACKGROUND_TASK_ROLES.get("orphan_reclaim"),
+                         "settlement")
+
+    def test_runs_under_the_settlement_worker(self):
+        import tasks
+        self.assertIn("orphan_reclaim", tasks.tasks_for_role("settlement"))
+        self.assertIn("orphan_reclaim", tasks.tasks_for_role("all"))
+
+    def test_interval_has_a_floor(self):
+        prev = os.environ.get("ORPHAN_RECLAIM_INTERVAL")
+        os.environ["ORPHAN_RECLAIM_INTERVAL"] = "1"
+        try:
+            self.assertGreaterEqual(orc.sweep_interval_seconds(), 60)
+        finally:
+            if prev is None:
+                os.environ.pop("ORPHAN_RECLAIM_INTERVAL", None)
+            else:
+                os.environ["ORPHAN_RECLAIM_INTERVAL"] = prev

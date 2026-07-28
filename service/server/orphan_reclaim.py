@@ -200,3 +200,37 @@ def sweep(read_desk=None, execute=None) -> dict[str, Any]:
         else:
             out["held"] += 1
     return out
+
+
+def sweep_interval_seconds() -> int:
+    try:
+        return max(60, int(os.getenv("ORPHAN_RECLAIM_INTERVAL", "900")))
+    except ValueError:
+        return 900
+
+
+async def orphan_reclaim_loop() -> None:
+    """Registry key 'orphan_reclaim', role 'settlement'.
+
+    PROTECT-only for now, and that is a complete answer rather than half of
+    one: attaching a stop hands the position to the SL/TP watcher, which is
+    the component that already owns exits and has done since Phase 1. No new
+    close path is introduced, so nothing here can liquidate anything the
+    watcher would not have.
+
+    Closing on a desk read (orphan_reclaim.decide's RECLAIM_EXIT branch) stays
+    dark until the read is wired: sweep() without an `execute` counts those as
+    skipped rather than silently dropping them.
+    """
+    import asyncio
+
+    await asyncio.sleep(11)
+    while True:
+        try:
+            if enabled():
+                out = sweep()
+                if out.get("scanned"):
+                    logger.info("[OrphanReclaim] %s", out)
+        except Exception:  # noqa: BLE001 — a sweep must never kill the worker
+            logger.exception("[OrphanReclaim] pass failed")
+        await asyncio.sleep(sweep_interval_seconds())
