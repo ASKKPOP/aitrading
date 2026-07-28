@@ -502,13 +502,51 @@ export function AutomationPage() {
   const primaryBtn: any = { padding: '12px 22px', borderRadius: 10, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
   const secondaryBtn: any = { padding: '12px 22px', borderRadius: 10, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
 
+  // Account summary. Lives in the page header, right-aligned: it is reference
+  // data you glance at, not the thing you came to do — the create buttons are.
+  // Full-width tiles under the buttons pushed the actual TRADING list below
+  // the fold on a laptop.
+  const summaryStrip = assets && (() => {
+    const profit = assets.realized + assets.unrealized
+    let life: { d: number; h: number } | null = null
+    if (assets.since) {
+      const ms = Date.now() - new Date(assets.since.replace(' ', 'T')).getTime()
+      if (ms > 0) life = { d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) }
+    }
+    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px' }
+    const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap' }
+    const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+    const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+    return (
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <Link to="/assets" style={{ ...tile, textDecoration: 'none', color: 'inherit' }}>
+          <div style={kSt}>💰 {T.sumDeposit}</div>
+          <div style={vSt}>{fmtUsd(assets.total)}</div>
+          <div style={sSt}>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</div>
+        </Link>
+        <div style={tile}>
+          <div style={kSt}>📅 {T.sumLifetime}</div>
+          <div style={vSt}>{life ? <>{life.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{life.h}{T.sumHour}</span></> : '—'}</div>
+          <div style={sSt}>{assets.since ? `${assets.since.slice(0, 10)} ${T.sumSince}` : T.sumNoHistory}</div>
+        </div>
+        <div style={tile}>
+          <div style={kSt}>📈 {T.sumProfit}</div>
+          <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
+          <div style={sSt}>{T.assetsRealized} {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+        </div>
+      </div>
+    )
+  })()
+
   return (
     <div>
-      <div className="header">
+      <div className="header" style={{ display: 'flex', justifyContent: 'space-between',
+        alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 className="header-title">{T.title}</h1>
           <div style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 14 }}>{T.subtitle}</div>
         </div>
+        {summaryStrip}
       </div>
 
       {/* ── The two ways to make one, above the block ── */}
@@ -517,38 +555,6 @@ export function AutomationPage() {
         <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
       </div>
 
-      {/* ── Account summary (above the box): deposit · lifetime · profit ── */}
-      {assets && (() => {
-        const profit = assets.realized + assets.unrealized
-        let life: { d: number; h: number } | null = null
-        if (assets.since) {
-          const ms = Date.now() - new Date(assets.since.replace(' ', 'T')).getTime()
-          if (ms > 0) life = { d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) }
-        }
-        const tile: any = { flex: 1, minWidth: 200, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: '14px 18px' }
-        const kSt: any = { fontSize: 12, color: 'var(--text-secondary,#8a8073)', marginBottom: 7 }
-        const vSt: any = { fontSize: 24, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }
-        const sSt: any = { fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 5, fontVariantNumeric: 'tabular-nums' }
-        return (
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
-            <Link to="/assets" style={{ ...tile, textDecoration: 'none', color: 'inherit' }}>
-              <div style={kSt}>💰 {T.sumDeposit}</div>
-              <div style={vSt}>{fmtUsd(assets.total)}</div>
-              <div style={sSt}>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</div>
-            </Link>
-            <div style={tile}>
-              <div style={kSt}>📅 {T.sumLifetime}</div>
-              <div style={vSt}>{life ? <>{life.d}{T.sumDay} <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{life.h}{T.sumHour}</span></> : '—'}</div>
-              <div style={sSt}>{assets.since ? `${assets.since.slice(0, 10)} ${T.sumSince}` : T.sumNoHistory}</div>
-            </div>
-            <div style={tile}>
-              <div style={kSt}>📈 {T.sumProfit}</div>
-              <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
-              <div style={sSt}>{T.assetsRealized} {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* ── Full Auto fleet monitor — always visible once a fleet is live,
              so monitoring never requires reopening the create modal ── */}
