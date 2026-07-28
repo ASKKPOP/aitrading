@@ -252,6 +252,9 @@ REPLACE_IMMEDIATE = frozenset({
     # that cannot express it. Replacing immediately is the entire point: the
     # slot should carry a thesis the desk still believes.
     "thesis_invalidated",
+    # The desk marked its own thesis down for three straight cycles. The slot
+    # is fine, the reason for holding is not — replace it at once.
+    "thesis_decayed",
 })
 REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
                               "stop_event:liq_cushion"})
