@@ -36,6 +36,7 @@ const ConsultPage = lazy(() => import('./pages/ConsultPage'))
 const AssistantDock = lazy(() => import('./components/AssistantDock'))
 const GuidePanel = lazy(() => import('./components/GuidePanel'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const PositionsPage = lazy(() => import('./pages/PositionsPage'))
 const TradePage = lazy(() => import('./pages/TradePage'))
 const ExchangePage = lazy(() => import('./pages/ExchangePage'))
@@ -565,7 +566,9 @@ function AppRouter({
 
           <Suspense fallback={<div className="loading"><div className="spinner"></div></div>}>
             <Routes>
-              <Route path="/" element={<LeaderboardPage token={token} />} />
+              {/* Signed-in root shows the member their own book. Ranking
+                  stays at /leaderboard, where it is the question being asked. */}
+              <Route path="/" element={<DashboardPage token={token} />} />
               <Route path="/dev" element={<DevPage />} />
               <Route path="/getting-started" element={<GettingStartedPage />} />
               <Route path="/market" element={<MarketPage token={token} />} />

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로그인 후 대시보드 — 미리보기</title>
+<style>
+:root{
+  --bg:#262624; --bg2:#1f1e1d; --card:#30302e; --tert:#35342f;
+  --bd:#4a4844; --ink:#faf9f5; --ink2:#c3c2b7; --muted:#8f8d85;
+  --accent:#d97757; --go:#3fb27f; --warn:#e0a53a; --bad:#e0654a; --info:#6f9fd8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg2);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+ line-height:1.55;font-size:13px;-webkit-text-size-adjust:100%}
+.note{max-width:1180px;margin:0 auto;padding:20px 16px 0}
+.note h1{font-size:16px;margin:0 0 4px}
+.note p{color:var(--ink2);font-size:12.5px;margin:0}
+.tag{display:inline-block;background:var(--accent);color:#fff;font-size:9.5px;
+ font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;
+ border-radius:999px;margin-bottom:8px}
+.frame{max-width:1180px;margin:14px auto 50px;background:var(--bg);
+ border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+
+/* ── nav: never wraps, scrolls instead ── */
+.nav{display:flex;align-items:center;gap:14px;padding:9px 14px;
+ border-bottom:1px solid var(--bd);background:var(--bg2);
+ overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav>*{flex:0 0 auto;white-space:nowrap}
+.logo{font-weight:800;font-size:14px;letter-spacing:-.2px}
+.logo i{color:var(--accent);font-style:normal}
+.nav a{color:var(--ink2);text-decoration:none;font-size:12.5px}
+.nav .sp{flex:1 1 auto;min-width:8px}
+.btn{border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;
+ cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--ink2)}
+.btn.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.av{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;
+ display:grid;place-items:center;font-size:11.5px;font-weight:800}
+
+/* ── my money: the first thing after login ── */
+.me{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd);
+ border-bottom:1px solid var(--bd)}
+.mc{background:var(--bg);padding:12px 14px;min-width:0}
+.mk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+ margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
+ letter-spacing:-.3px;white-space:nowrap}
+.mv.up{color:var(--go)}.mv.dn{color:var(--bad)}
+.ms{font-size:10.5px;color:var(--muted);margin-top:1px;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis}
+
+.wrap{padding:14px}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+h2{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+ margin:0 0 8px;font-weight:700;display:flex;align-items:baseline;gap:7px}
+h2 em{font-style:normal;color:var(--accent);text-transform:none;letter-spacing:0;
+ font-size:10.5px;font-weight:600}
+h2 a{margin-left:auto;color:var(--ink2);font-size:10.5px;text-decoration:none;
+ text-transform:none;letter-spacing:0;font-weight:500}
+section+section{margin-top:16px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.g{background:var(--go)}.w{background:var(--warn)}.m{background:var(--muted)}
+
+/* attention */
+.att{background:color-mix(in srgb,var(--warn) 11%,var(--card));
+ border:1px solid color-mix(in srgb,var(--warn) 34%,var(--bd));
+ border-radius:10px;padding:10px 12px;display:flex;gap:9px;align-items:flex-start}
+.att b{color:var(--ink);font-size:12.5px;display:block;margin-bottom:1px}
+.att p{margin:0;font-size:11.8px;color:var(--ink2)}
+.att .btn{margin-left:auto;flex:0 0 auto;align-self:center}
+
+/* desk read */
+.read{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:11px 13px}
+.chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{background:var(--tert);border:1px solid var(--bd);border-radius:6px;
+ padding:3px 8px;font-size:11.5px;color:var(--ink);white-space:nowrap}
+.chip b{color:var(--accent)}
+.arw{color:var(--muted);font-size:11px}
+.read p{font-size:12.2px;color:var(--ink2);margin:0}
+.read p b{color:var(--ink)}
+.caveat{font-size:10.8px;color:var(--muted);margin:7px 0 0;padding-top:7px;
+ border-top:1px solid var(--bd)}
+
+/* feed */
+.feed{display:grid;gap:7px}
+.f{background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--info);
+ border-radius:0 9px 9px 0;padding:9px 11px}
+.f.buy{border-left-color:var(--go)}.f.hold{border-left-color:var(--muted)}
+.f.exit{border-left-color:var(--accent)}
+.fh{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-bottom:2px}
+.sym{font-weight:800;font-size:12.5px}
+.mkt{font-size:10.5px;color:var(--muted)}
+.act{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+.act.buy{color:var(--go)}.act.hold{color:var(--muted)}.act.exit{color:var(--accent)}
+.f p{font-size:11.8px;color:var(--ink2);margin:0}
+.ft{font-size:10.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* positions */
+.pos{display:grid;gap:6px}
+.pr{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:center;
+ background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:8px 11px}
+.pn{font-weight:700;font-size:12.3px}
+.pm{font-size:10.5px;color:var(--muted)}
+.pp{font-weight:800;font-variant-numeric:tabular-nums;font-size:12.8px;white-space:nowrap}
+.pp.up{color:var(--go)}.pp.dn{color:var(--bad)}
+.pg{font-size:10.5px;color:var(--muted);text-align:right;white-space:nowrap}
+
+/* sessions */
+.sess{display:grid;gap:5px}
+.s{display:grid;grid-template-columns:64px 1fr 62px;gap:8px;align-items:center;font-size:11.5px}
+.sn{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{height:6px;border-radius:3px;background:var(--tert);position:relative;overflow:hidden}
+.sf{position:absolute;top:0;height:100%;border-radius:3px}
+.sv{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;
+ text-align:right;white-space:nowrap}
+
+@media(max-width:840px){
+  .grid{grid-template-columns:1fr}
+  .me{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .mv{font-size:15.5px}
+  .s{grid-template-columns:56px 1fr 56px}
+}
+</style>
+</head>
+<body>
+
+<div class="note">
+  <div class="tag">Preview · 로그인 후 화면</div>
+  <h1>로그인하면 도착하는 화면</h1>
+  <p>지금은 남들의 순위표가 뜹니다. 대신 <b>내 돈, 내 AI가 한 일, 지금 열린 내 시장</b>을 먼저 보여주는 안. 리더보드는 <code>/leaderboard</code>에 그대로 둡니다.</p>
+</div>
+
+<div class="frame">
+
+  <div class="nav">
+    <div class="logo">✳ Sooppiy</div>
+    <a href="#">AI 데스크</a><a href="#">트레이딩</a><a href="#">마켓</a><a href="#">리서치</a>
+    <div class="sp"></div>
+    <button class="btn">가이드</button>
+    <div class="av">i</div>
+  </div>
+
+  <!-- 1. 내 돈이 먼저 -->
+  <div class="me">
+    <div class="mc">
+      <div class="mk">평가 자산</div>
+      <div class="mv">$101,927</div>
+      <div class="ms">현금 98,733 · 사용 중 3,195</div>
+    </div>
+    <div class="mc">
+      <div class="mk">오늘 손익</div>
+      <div class="mv up">+$41.02</div>
+      <div class="ms">실현 +35.83 · 미실현 +5.18</div>
+    </div>
+    <div class="mc">
+      <div class="mk">N종목 지수</div>
+      <div class="mv">99.97</div>
+      <div class="ms">−0.03% · 기준 100</div>
+    </div>
+    <div class="mc">
+      <div class="mk">가동 중</div>
+      <div class="mv">3</div>
+      <div class="ms">슬롯 2/3 · 보충 대기</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div>
+
+        <section>
+          <h2><span class="dot w"></span> 확인이 필요합니다</h2>
+          <div class="att">
+            <div>
+              <b>ZC — 논제가 식고 있습니다</b>
+              <p>데스크가 3회 연속 정합도 0.30 이하로 평가했습니다. 슬롯 반납 후 교체를 검토하세요.</p>
+            </div>
+            <button class="btn">보기</button>
+          </div>
+        </section>
+
+        <section>
+          <h2><span class="dot w"></span> 지금 데스크의 판단 <em>실시간</em></h2>
+          <div class="read">
+            <div class="chain">
+              <span class="chip">공포·탐욕 <b>29</b></span><span class="arw">→</span>
+              <span class="chip">공포 구간</span><span class="arw">→</span>
+              <span class="chip">자세 <b>주의</b></span><span class="arw">→</span>
+              <span class="chip">사이즈 <b>0.5×</b></span>
+            </div>
+            <p>변동성은 18퍼센타일로 낮지만 심리가 공포 구간입니다. <b>신규 진입은 허용하되 크기를 절반으로 줄입니다.</b></p>
+            <p class="caveat">⚠ 구간 값은 검증 전 단계이며 현재 주문을 강제하지 않습니다.</p>
+          </div>
+        </section>
+
+        <section>
+          <h2>내 AI가 한 일 <em>최근 3건</em><a href="#">전체 →</a></h2>
+          <div class="feed">
+            <div class="f buy">
+              <div class="fh"><span class="sym">USDZAR</span><span class="mkt">forex · short</span><span class="act buy">진입</span></div>
+              <p>20일 모멘텀 −5.3%로 달러 약세 확인. 예상 1.80% &gt; 수수료 허들 0.08%.</p>
+              <div class="ft">04:12 · 스탑 −2.1% · 목표 +1.8%</div>
+            </div>
+            <div class="f exit">
+              <div class="fh"><span class="sym">SOLUSDT</span><span class="mkt">crypto · long</span><span class="act exit">청산</span></div>
+              <p>추적 이익 잠금 작동. 고점 되돌림이 한도에 도달해 이익 확정.</p>
+              <div class="ft">02:48 · 보유 4시간 12분 · 실현 +$34.20</div>
+            </div>
+            <div class="f hold">
+              <div class="fh"><span class="sym">ZC</span><span class="mkt">futures · long</span><span class="act hold">보유</span></div>
+              <p>논제 유지되나 모멘텀 품질 0.20. 추가 매수 없이 스탑만 유지.</p>
+              <div class="ft">01:30 · 정합도 0.30</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+      <div>
+
+        <section>
+          <h2>보유 중 <em>4</em><a href="#">전체 →</a></h2>
+          <div class="pos">
+            <div class="pr">
+              <div><div class="pn">USDZAR</div><div class="pm">forex · short</div></div>
+              <div class="pp up">+$0.00</div>
+              <div class="pg">예산<br>$3,468</div>
+            </div>
+            <div class="pr">
+              <div><div class="pn">ZC</div><div class="pm">futures · long</div></div>
+              <div class="pp dn">−$3.26</div>
+              <div class="pg">예산<br>$3,179</div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>내 시각 기준 개장 <em>서울</em></h2>
+          <div class="sess">
+            <div class="s"><div class="sn">크립토</div><div class="st"><div class="sf" style="left:0;width:100%;background:var(--go)"></div></div><div class="sv">24시간</div></div>
+            <div class="s"><div class="sn">외환</div><div class="st"><div class="sf" style="left:0;width:100%;background:var(--go)"></div></div><div class="sv">24×5</div></div>
+            <div class="s"><div class="sn">선물</div><div class="st"><div class="sf" style="left:0;width:25%;background:var(--go)"></div><div class="sf" style="left:29%;width:71%;background:var(--go)"></div></div><div class="sv">거의 종일</div></div>
+            <div class="s"><div class="sn">중국 A주</div><div class="st"><div class="sf" style="left:43.7%;width:8.3%;background:var(--info)"></div><div class="sf" style="left:58.3%;width:8.3%;background:var(--info)"></div></div><div class="sv">10:30·14:00</div></div>
+            <div class="s"><div class="sn">미국 주식</div><div class="st"><div class="sf" style="left:0;width:20.8%;background:var(--muted)"></div><div class="sf" style="left:93.7%;width:6.3%;background:var(--muted)"></div></div><div class="sv">22:30 개장</div></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>내 순위 <a href="#">리더보드 →</a></h2>
+          <div class="pr">
+            <div><div class="pn">#1 · info</div><div class="pm">155 거래 · 최대낙폭 23.4%</div></div>
+            <div class="pp up">+6.58%</div>
+            <div class="pg">SHARPE<br>10.00</div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
