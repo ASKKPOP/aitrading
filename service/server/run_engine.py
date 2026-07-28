@@ -177,7 +177,8 @@ def _thesis_realization() -> float:
 
 
 def _fee_edge_skip(expected_move_pct: "float | None",
-                   leverage: float = 1.0) -> Optional[str]:
+                   leverage: float = 1.0,
+                   market: "str | None" = None) -> Optional[str]:
     """Skip reason when the expected move cannot pay for its own round trip.
 
     expected_move_pct is the thesis' predicted move in PERCENT of price, which
@@ -189,7 +190,7 @@ def _fee_edge_skip(expected_move_pct: "float | None",
     The claim is discounted by _thesis_realization() first: the desk's stated
     move is systematically optimistic, and grading the raw number made this
     gate a no-op on every run in the week that motivated it."""
-    from fees import TRADE_FEE_RATE
+    from fees import fee_rate
     mult = _fee_edge_multiple()
     if mult <= 0 or expected_move_pct is None:
         return None
@@ -201,7 +202,7 @@ def _fee_edge_skip(expected_move_pct: "float | None",
         return None
     realization = _thesis_realization()
     expected = claimed * realization
-    round_trip_pct = TRADE_FEE_RATE * 2 * 100.0
+    round_trip_pct = fee_rate(market) * 2 * 100.0
     required = round_trip_pct * mult
     if expected < required:
         return (f"fee_edge: claimed {claimed:.2f}% × {realization:.2f} realization "
@@ -449,7 +450,8 @@ def _run_thesis_fee_infeasible(run: dict) -> Optional[str]:
     Reuses the per-cycle gate verbatim so the retire rail and the entry gate
     can never disagree — if _fee_edge_skip would refuse every entry this run
     will ever attempt, the run is dead and the slot should go back."""
-    return _fee_edge_skip(run_thesis_expected_move(run))
+    return _fee_edge_skip(run_thesis_expected_move(run),
+                          market=run.get("market"))
 
 
 UNACTIONABLE_SKIP = "spot sell with no inventory"
@@ -2255,7 +2257,8 @@ def run_cycle(run_id: int) -> dict:
         if action in ("buy", "short"):
             thesis = cfg.get("thesis") if isinstance(cfg.get("thesis"), dict) else {}
             fee_skip = _fee_edge_skip(thesis.get("expected_move_pct"),
-                                      float(cfg.get("leverage") or 1.0))
+                                      float(cfg.get("leverage") or 1.0),
+                                      market=run.get("market"))
             if fee_skip:
                 result["skip_reason"] = fee_skip
                 emit_telemetry_event(run_id, "gate_skip",

@@ -173,7 +173,8 @@ def _thesis_fee_infeasible(thesis: dict) -> "str | None":
         from run_engine import _fee_edge_skip
     except Exception:  # noqa: BLE001 — never block a build on an import
         return None
-    skip = _fee_edge_skip(thesis.get("expected_move_pct"))
+    skip = _fee_edge_skip(thesis.get("expected_move_pct"),
+                          market=thesis.get("market"))
     return f"fee_infeasible: {skip}" if skip else None
 
 

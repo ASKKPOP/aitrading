@@ -86,7 +86,10 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     index — exactly-once per cycle even across worker crashes. `fence` is an
     optional callable(cursor) -> Optional[str] evaluated inside the
     transaction; a non-None return aborts (zombie-claimant protection)."""
-    from fees import TRADE_FEE_RATE
+    # Per-market rate (2026-07-28). The flat TRADE_FEE_RATE charged a crypto
+    # taker fee to grain futures and FX majors; fee_rate() falls back to it for
+    # any market with no entry, so an unknown market is unchanged.
+    from fees import fee_rate
     from services import _reserve_signal_id, _update_position_from_signal
     from routes_shared import get_position_snapshot, run_scope_sql
 
@@ -100,8 +103,9 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     if lev < 1.0:
         lev = 1.0
 
+    rate = fee_rate(market)
     trade_value = price * quantity
-    fee = trade_value * TRADE_FEE_RATE
+    fee = trade_value * rate
     now = _now_iso()
 
     conn = get_db_connection()
@@ -148,7 +152,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 return None, "no long position to sell"
             quantity = min(quantity, current_qty)
             trade_value = price * quantity
-            fee = trade_value * TRADE_FEE_RATE
+            fee = trade_value * rate
             if pos["entry_price"] is not None:
                 long_entry = float(pos["entry_price"])
             pos_lev = _read_pos_leverage()
@@ -162,7 +166,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 return None, "no short position to cover"
             quantity = min(quantity, -current_qty)
             trade_value = price * quantity
-            fee = trade_value * TRADE_FEE_RATE
+            fee = trade_value * rate
             short_entry = float(pos["entry_price"] or 0)
             if short_entry <= 0:
                 conn.rollback()
@@ -552,8 +556,11 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
 def _execution_feasibility(agent_id: int, symbol: str, market: str, side: str,
                            quantity: float, price: float) -> Optional[str]:
     """Read-only mirror of execute_paper_trade's cash/position preconditions,
-    for the test-run preview. Returns a skip reason or None."""
-    from fees import TRADE_FEE_RATE
+    for the test-run preview. Returns a skip reason or None.
+
+    Uses the same per-market rate the real fill does — a mirror charging a
+    different fee would refuse previews the actual trade would accept."""
+    from fees import fee_rate
     from routes_shared import get_position_snapshot
 
     conn = get_db_connection()
@@ -571,7 +578,7 @@ def _execution_feasibility(agent_id: int, symbol: str, market: str, side: str,
             cursor.execute("SELECT cash FROM agents WHERE id = ?", (agent_id,))
             row = cursor.fetchone()
             cash = row["cash"] if row else 0
-            need = price * quantity * (1 + TRADE_FEE_RATE)
+            need = price * quantity * (1 + fee_rate(market))
             if cash < need:
                 return f"insufficient cash (${cash:.2f} < ${need:.2f})"
         return None

@@ -30,7 +30,13 @@ import trading_runs
 from automation import execute_paper_trade
 from routes import create_app
 
-FEE = 0.001  # fees.TRADE_FEE_RATE
+# Every run in this file trades market="crypto". Read the rate from the same
+# place the executor does rather than pinning the number: these tests are
+# about the ledger being FEE-INCLUSIVE, not about what the rate happens to be.
+# Hard-coding it meant a per-market fee table broke four money tests that had
+# no opinion on fee levels at all.
+import fees
+FEE = fees.fee_rate("crypto")
 
 
 def _ts(offset_seconds: float = 0) -> str:
