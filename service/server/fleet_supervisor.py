@@ -380,7 +380,35 @@ def _bump_eval_failures(fleet: dict) -> int:
 
 
 def _reset_eval_failures(fleet: dict) -> None:
+    """Marks are readable again — clear the counter AND release the freeze.
+
+    The release half was missing and it deadlocked live (2026-07-28, fleet 20).
+    An eval freeze pauses members with the `drawdown_warning` marker but never
+    latches `warn_latched_at`, and BOTH un-pause paths are gated on that latch:
+    the automatic one sits inside the drawdown-recovery branch, and
+    `ack_warning` refuses outright with "no drawdown warning is active". So a
+    fleet frozen for unreadable marks stayed paused after the marks recovered,
+    with no path back — automatic or manual. Runs 125/127/128 sat paused for
+    ~53 minutes holding a live ZEC short while the fleet itself read `active`.
+
+    Recovery is symmetric with the drawdown branch: clear the flag, un-pause
+    only what THIS freeze paused. A member paused by a real drawdown warning
+    keeps its latch and is left alone.
+    """
     _EVAL_FAILURES.pop(fleet["id"], None)
+    if (fleet.get("entry_paused_reason") or "") != "eval_failed":
+        return
+    _update_fleet(fleet["id"], "entry_paused_reason = NULL", ())
+    resumed = []
+    for m in fp.list_members(fleet["id"]):
+        if m["status"] == trading_runs.STATUS_PAUSED and \
+                (m.get("status_reason") or "") == "eval_failed":
+            try:
+                trading_runs.resume_run(m["id"], fleet["agent_id"])
+                resumed.append(m["id"])
+            except Exception:  # noqa: BLE001 — one stuck member must not block the rest
+                pass
+    fp.emit_fleet_event(fleet["id"], "eval_recovered", {"resumed_members": resumed})
 
 
 def _pause_entries(fleet: dict, reason: str) -> None:
