@@ -541,6 +541,105 @@ def _closed_market_cycles(run_id: int) -> int:
         return 0
 
 
+def _thesis_decay_enabled() -> bool:
+    """Ship gate, default OFF.
+
+    Retiring a run that HOLDS a position is a money path: _control_stopping
+    either flattens it at market or releases it with run_id = NULL, which is
+    the orphan path. Every other money-path change in this codebase ships
+    dark and is enabled deliberately after the journal shows the rail firing
+    where it should. This one is no different — the decay signal is only as
+    good as the desk's own self-scoring, and it has never been measured
+    against an outcome.
+
+    Enable with RUN_THESIS_DECAY_ENABLED=true once the shadow read looks
+    right; the floor is a separate tuning knob."""
+    return (os.getenv("RUN_THESIS_DECAY_ENABLED", "false") or "false"
+            ).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _thesis_decay_floor() -> float:
+    """thesis_alignment at or below which the desk no longer believes its own
+    thesis. Boundary is inclusive: run 345's decay read exactly 0.35, and a
+    strict comparison would have scored that cycle healthy and let the rail
+    miss the case it exists for. 0 disables the rail."""
+    try:
+        return max(0.0, min(1.0, float(
+            os.getenv("RUN_THESIS_DECAY_FLOOR", "0.35") or 0.35)))
+    except ValueError:
+        return 0.35
+
+
+def _thesis_decay_strikes() -> int:
+    """Consecutive cycles under the floor before the run is handed back.
+
+    Three, matching _thesis_invalidation_strikes: one weak read is a market
+    wobble, three in a row is the desk having changed its mind."""
+    try:
+        return max(2, int(os.getenv("RUN_THESIS_DECAY_STRIKES", "3")))
+    except ValueError:
+        return 3
+
+
+def _thesis_decay_streak(run_id: int) -> int:
+    """How many of the run's most recent decisions rated thesis_alignment
+    below the floor, counted back from the latest and stopping at the first
+    one that recovered.
+
+    The gap this closes: _unactionable_streak catches the desk CONTRADICTING
+    its thesis — a long book being told to sell. It cannot catch the desk
+    quietly abandoning one. Live 2026-07-28, run 345 (ZC, "corn shows robust
+    positive momentum, 18% over 20 days"):
+
+        cycle 1  alignment 0.70  momentum 0.62  -> traded
+        cycle 3  alignment 0.35  momentum 0.20  -> hold
+        cycle 4  alignment 0.30  momentum 0.15  -> hold
+        cycle 5  alignment 0.30  momentum 0.20  -> hold
+
+    Every decision was `hold`, so no rail fired and the position sat on a
+    thesis its own author had marked down by more than half. A run that has
+    stopped believing its reason for existing should hand the slot back.
+
+    Fail-soft: an unreadable journal reports 0 and the rail stays quiet.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT payload FROM run_events
+               WHERE run_id = ? AND event_type = 'decision'
+               ORDER BY id DESC LIMIT 20""", (run_id,))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    floor = _thesis_decay_floor()
+    streak = 0
+    for row in rows:
+        try:
+            scores = (json.loads(row["payload"] or "{}") or {}).get("scores")
+        except (ValueError, TypeError):
+            return streak
+        if not isinstance(scores, dict):
+            # A decision with no scores says nothing either way — it must not
+            # extend a streak, and it must not silently reset one either.
+            return streak
+        val = scores.get("thesis_alignment")
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            return streak
+        if float(val) <= floor:
+            streak += 1
+        else:
+            break
+    return streak
+
+
 def _unactionable_streak(run_id: int) -> int:
     """How many of the run's most recent gate skips were the direction its
     book cannot express — counted back from the latest, stopping at the first
@@ -740,6 +839,19 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         strikes = _thesis_invalidation_strikes()
         if strikes and _unactionable_streak(run["id"]) >= strikes:
             return "thesis_invalidated"
+
+    # Thesis decay (2026-07-28). Unlike the two rails above this one applies to
+    # a run HOLDING a position — that is the whole point. A flat run with a
+    # dead thesis merely wastes a slot; a run still holding on a thesis its own
+    # desk has marked down is carrying risk for a reason nobody believes any
+    # more. Exits stay with the safety system, so this hands the slot back the
+    # same way every other retire does and the stop conditions do the closing.
+    decay_strikes = _thesis_decay_strikes()
+    run_id = run.get("id")
+    if run_id and _thesis_decay_enabled() and _thesis_decay_floor() > 0 \
+            and decay_strikes \
+            and _thesis_decay_streak(run_id) >= decay_strikes:
+        return "thesis_decayed"
 
     # Synthetic liquidation: a position's loss can wipe 100% of its escrowed
     # margin. Isolated-margin liq price from leverage L: long at
