@@ -53,6 +53,31 @@ def research_interval_seconds() -> int:
 
 MAX_LLM_CALLS_PER_REFRESH = max(1, int(os.environ.get("FLEET_RESEARCH_MAX_LLM_CALLS", "2")))
 
+
+# Stage 2 sizing (2026-07-28). The batch was ONE call over all survivors with
+# max_tokens=2000. Measured on prod: one thesis object costs ~300 tokens, so 14
+# survivors need ~4,200 and the reply was cut mid-object at candidate ~11 every
+# single time. With no closing `]` the array parse returned [] and all 14 fell
+# back — 2,099 of 2,099 theses ever written carry planner='fallback'. The LLM
+# research layer had never once run. Two independent fixes, either sufficient:
+# chunk small enough to finish, and salvage whatever did finish.
+def _thesis_batch_size() -> int:
+    try:
+        return max(1, int(os.environ.get("FLEET_RESEARCH_BATCH_SIZE", "5")))
+    except ValueError:
+        return 5
+
+
+def _thesis_max_tokens() -> int:
+    try:
+        return max(500, int(os.environ.get("FLEET_RESEARCH_MAX_TOKENS", "4000")))
+    except ValueError:
+        return 4000
+
+
+def _chunked(items: "list[Any]", n: int) -> "list[list[Any]]":
+    return [items[i:i + n] for i in range(0, len(items), n)]
+
 # ── Stage 1 constants (unvalidated priors — journaled for later tuning) ─────
 
 WEIGHT_PROFILES: dict[str, dict[str, float]] = {
@@ -423,17 +448,60 @@ def screen_universe(universe: list[dict[str, str]],
 _JSON_ARRAY_RE = re.compile(r"\[.*\]", re.DOTALL)
 
 
+def _salvage_objects(text: str) -> list[dict[str, Any]]:
+    """Every complete {...} in a truncated array, by brace balance.
+
+    A reply cut off mid-object has no closing `]`, so the whole-array parse
+    returns nothing and EVERY symbol in the batch falls back — which is what
+    happened on prod for seven days straight. The objects that DID arrive are
+    perfectly good; take them and let the tail fall back on its own.
+    String-aware so a brace inside a thesis sentence cannot unbalance the scan.
+    """
+    out: list[dict[str, Any]] = []
+    depth = start = 0
+    in_str = esc = False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0:
+                    try:
+                        obj = json.loads(text[start:i + 1])
+                    except (ValueError, TypeError):
+                        continue
+                    if isinstance(obj, dict):
+                        out.append(obj)
+    return out
+
+
 def _parse_thesis_array(text: str) -> list[dict[str, Any]]:
     if not text:
         return []
     m = _JSON_ARRAY_RE.search(text)
-    if not m:
-        return []
-    try:
-        arr = json.loads(m.group(0))
-    except (ValueError, TypeError):
-        return []
-    return [x for x in arr if isinstance(x, dict)]
+    if m:
+        try:
+            arr = json.loads(m.group(0))
+        except (ValueError, TypeError):
+            pass
+        else:
+            if isinstance(arr, list):
+                return [x for x in arr if isinstance(x, dict)]
+    # Truncated or otherwise unparseable as a whole — salvage what completed.
+    return _salvage_objects(text)
 
 
 def generate_theses(survivors: list[dict[str, Any]],
@@ -458,9 +526,9 @@ def generate_theses(survivors: list[dict[str, Any]],
             fresh_needed.append(s)
 
     parsed: dict[tuple[str, str], dict[str, Any]] = {}
-    if fresh_needed:
+    for chunk in _chunked(fresh_needed, _thesis_batch_size()):
         rows = []
-        for s in fresh_needed:
+        for s in chunk:
             f = s["factors"]
             rows.append({
                 "symbol": s["symbol"], "market": s["market"],
@@ -473,13 +541,14 @@ def generate_theses(survivors: list[dict[str, Any]],
             "object with keys: symbol, market, direction ('long'|'short'), "
             "expected_move_pct (percent, e.g. 2.5 means 2.5%), horizon_hours (4-168), "
             "confidence (0.40-0.95), thesis (<=2 sentences), risks, invalidation. "
+            "Keep thesis, risks and invalidation to one short sentence each. "
             "Respond with ONLY a JSON array covering every candidate.\n\n"
             f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
-        text = None
         for _attempt in range(MAX_LLM_CALLS_PER_REFRESH):
             try:
-                text = generate_text(prompt, max_tokens=2000, temperature=0.3, tier="decision")
+                text = generate_text(prompt, max_tokens=_thesis_max_tokens(),
+                                     temperature=0.3, tier="decision")
             except Exception:  # noqa: BLE001
                 text = None
             got = _parse_thesis_array(text or "")
@@ -487,6 +556,11 @@ def generate_theses(survivors: list[dict[str, Any]],
                 for item in got:
                     key = (str(item.get("market") or ""), str(item.get("symbol") or ""))
                     parsed[key] = item
+                # A salvaged partial covers only part of the chunk. Retrying
+                # the whole chunk would re-bill the symbols already in hand, so
+                # accept and let the remainder take the rule-based fallback —
+                # a partial batch is strictly better than the all-or-nothing
+                # behaviour this replaces.
                 break
 
     out: list[dict[str, Any]] = []
