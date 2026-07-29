@@ -70,40 +70,42 @@ export function PositionsPage() {
   }, [token])
 
   const T = {
-    tabPositions: tr(language, { ko: '포지션', en: 'Positions', ja: 'ポジション', th: 'สถานะ', vi: 'Vị thế' }),
-    tabOpen: tr(language, { ko: '미체결 주문', en: 'Open Orders', ja: '未約定注文', th: 'คำสั่งค้าง', vi: 'Lệnh chờ' }),
-    tabOrders: tr(language, { ko: '주문 내역', en: 'Order History', ja: '注文履歴', th: 'ประวัติคำสั่ง', vi: 'Lịch sử lệnh' }),
-    tabTrades: tr(language, { ko: '거래 내역', en: 'Trade History', ja: '取引履歴', th: 'ประวัติเทรด', vi: 'Lịch sử giao dịch' }),
-    contract: tr(language, { ko: '계약', en: 'Contract', ja: '契約', th: 'สัญญา', vi: 'Hợp đồng' }),
-    price: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' }),
-    entry: tr(language, { ko: '진입가', en: 'Entry', ja: '進入価', th: 'ราคาเข้า', vi: 'Giá vào' }),
-    mark: tr(language, { ko: '현재가', en: 'Mark', ja: '現在価', th: 'ราคาปัจจุบัน', vi: 'Giá hiện tại' }),
-    value: tr(language, { ko: '가치', en: 'Value', ja: '価値', th: 'มูลค่า', vi: 'Giá trị' }),
-    pnl: tr(language, { ko: '손익', en: 'PnL', ja: '損益', th: 'กำไรขาดทุน', vi: 'Lãi/Lỗ' }),
-    close: tr(language, { ko: '청산', en: 'Close', ja: '決済', th: 'ปิด', vi: 'Đóng' }),
-    market: tr(language, { ko: '시장가', en: 'Market', ja: '成行', th: 'ราคาตลาด', vi: 'Thị trường' }),
-    long: tr(language, { ko: '롱', en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Long' }),
-    short: tr(language, { ko: '숏', en: 'Short', ja: 'ショート', th: 'ชอร์ต', vi: 'Short' }),
-    qty: tr(language, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL' }),
-    side: tr(language, { ko: '방향', en: 'Side', ja: '方向', th: 'ทิศทาง', vi: 'Hướng' }),
-    status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái' }),
-    time: tr(language, { ko: '시간', en: 'Time', ja: '時間', th: 'เวลา', vi: 'Thời gian' }),
-    source: tr(language, { ko: '출처', en: 'Source', ja: 'ソース', th: 'แหล่งที่มา', vi: 'Nguồn' }),
+    tabPositions: tr(language, { ko: '포지션', en: 'Positions', ja: 'ポジション', th: 'สถานะ', vi: 'Vị thế', id: 'Posisi' }),
+    tabOpen: tr(language, { ko: '미체결 주문', en: 'Open Orders', ja: '未約定注文', th: 'คำสั่งค้าง', vi: 'Lệnh chờ', id: 'Order terbuka' }),
+    tabOrders: tr(language, { ko: '주문 내역', en: 'Order History', ja: '注文履歴', th: 'ประวัติคำสั่ง', vi: 'Lịch sử lệnh', id: 'Riwayat order' }),
+    tabTrades: tr(language, { ko: '거래 내역', en: 'Trade History', ja: '取引履歴', th: 'ประวัติเทรด', vi: 'Lịch sử giao dịch', id: 'Riwayat transaksi' }),
+    contract: tr(language, { ko: '계약', en: 'Contract', ja: '契約', th: 'สัญญา', vi: 'Hợp đồng', id: 'Kontrak' }),
+    price: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá', id: 'Harga' }),
+    entry: tr(language, { ko: '진입가', en: 'Entry', ja: '進入価', th: 'ราคาเข้า', vi: 'Giá vào', id: 'Harga masuk' }),
+    mark: tr(language, { ko: '현재가', en: 'Mark', ja: '現在価', th: 'ราคาปัจจุบัน', vi: 'Giá hiện tại', id: 'Harga pasar' }),
+    value: tr(language, { ko: '가치', en: 'Value', ja: '価値', th: 'มูลค่า', vi: 'Giá trị', id: 'Nilai' }),
+    pnl: tr(language, { ko: '손익', en: 'PnL', ja: '損益', th: 'กำไรขาดทุน', vi: 'Lãi/Lỗ', id: 'Laba rugi' }),
+    close: tr(language, { ko: '청산', en: 'Close', ja: '決済', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
+    market: tr(language, { ko: '시장가', en: 'Market', ja: '成行', th: 'ราคาตลาด', vi: 'Thị trường', id: 'Pasar' }),
+    long: tr(language, { ko: '롱', en: 'Long', ja: 'ロング', th: 'ลอง', vi: 'Long', id: 'Long' }),
+    short: tr(language, { ko: '숏', en: 'Short', ja: 'ショート', th: 'ชอร์ต', vi: 'Short', id: 'Short' }),
+    qty: tr(language, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'SL', id: 'Jml' }),
+    side: tr(language, { ko: '방향', en: 'Side', ja: '方向', th: 'ทิศทาง', vi: 'Hướng', id: 'Arah' }),
+    status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái', id: 'Status' }),
+    time: tr(language, { ko: '시간', en: 'Time', ja: '時間', th: 'เวลา', vi: 'Thời gian', id: 'Waktu' }),
+    source: tr(language, { ko: '출처', en: 'Source', ja: 'ソース', th: 'แหล่งที่มา', vi: 'Nguồn', id: 'Sumber' }),
     unmanaged: tr(language, { ko: '관리 주체 없음 · 손절 없음', en: 'No run · no stop',
       ja: '管理なし · 損切りなし', th: 'ไม่มีผู้ดูแล · ไม่มีจุดตัดขาดทุน',
-      vi: 'Không ai quản lý · không cắt lỗ' }),
+      vi: 'Không ai quản lý · không cắt lỗ',
+      id: 'Tanpa run · tanpa stop' }),
     unmanagedHint: tr(language, {
       ko: '이 포지션을 지켜보는 TRADING이 없고 손절·익절도 설정돼 있지 않습니다. 직접 청산하거나 손절을 지정하세요.',
       en: 'No TRADING is watching this position and it has no stop or take-profit. Close it yourself or set an exit level.',
       ja: 'このポジションを見ている TRADING がなく、損切り・利確も未設定です。手動で決済するか、決済水準を設定してください。',
       th: 'ไม่มี TRADING เฝ้าสถานะนี้ และไม่ได้ตั้งจุดตัดขาดทุนหรือทำกำไร ปิดเองหรือกำหนดจุดออก',
-      vi: 'Không có TRADING nào theo dõi vị thế này và cũng không có mức cắt lỗ hay chốt lời. Hãy tự đóng hoặc đặt mức thoát.' }),
-    self: tr(language, { ko: '본인', en: 'Self', ja: '自分', th: 'ตนเอง', vi: 'Tự' }),
-    copied: tr(language, { ko: '복제', en: 'Copied', ja: 'コピー', th: 'คัดลอก', vi: 'Sao chép' }),
-    cash: tr(language, { ko: '가용 현금', en: 'Available Cash', ja: '利用可能な現金', th: 'เงินสดที่ใช้ได้', vi: 'Tiền khả dụng' }),
-    none: tr(language, { ko: '내역이 없습니다', en: 'Nothing here yet', ja: '履歴がありません', th: 'ยังไม่มีรายการ', vi: 'Chưa có dữ liệu' }),
-    closing: tr(language, { ko: '청산 중…', en: 'Closing…', ja: '決済中…', th: 'กำลังปิด…', vi: 'Đang đóng…' }),
-    confirmClose: tr(language, { ko: '이 포지션을 시장가로 청산할까요?', en: 'Close this position at market price?', ja: 'このポジションを成行で決済しますか？', th: 'ปิดสถานะนี้ที่ราคาตลาด?', vi: 'Đóng vị thế này theo giá thị trường?' }),
+      vi: 'Không có TRADING nào theo dõi vị thế này và cũng không có mức cắt lỗ hay chốt lời. Hãy tự đóng hoặc đặt mức thoát.',
+      id: 'Tidak ada TRADING yang mengawasi posisi ini dan posisi ini tidak punya stop loss atau take profit. Tutup sendiri atau tetapkan level keluar.' }),
+    self: tr(language, { ko: '본인', en: 'Self', ja: '自分', th: 'ตนเอง', vi: 'Tự', id: 'Sendiri' }),
+    copied: tr(language, { ko: '복제', en: 'Copied', ja: 'コピー', th: 'คัดลอก', vi: 'Sao chép', id: 'Salinan' }),
+    cash: tr(language, { ko: '가용 현금', en: 'Available Cash', ja: '利用可能な現金', th: 'เงินสดที่ใช้ได้', vi: 'Tiền khả dụng', id: 'Kas tersedia' }),
+    none: tr(language, { ko: '내역이 없습니다', en: 'Nothing here yet', ja: '履歴がありません', th: 'ยังไม่มีรายการ', vi: 'Chưa có dữ liệu', id: 'Belum ada apa pun di sini' }),
+    closing: tr(language, { ko: '청산 중…', en: 'Closing…', ja: '決済中…', th: 'กำลังปิด…', vi: 'Đang đóng…', id: 'Menutup…' }),
+    confirmClose: tr(language, { ko: '이 포지션을 시장가로 청산할까요?', en: 'Close this position at market price?', ja: 'このポジションを成行で決済しますか？', th: 'ปิดสถานะนี้ที่ราคาตลาด?', vi: 'Đóng vị thế này theo giá thị trường?', id: 'Tutup posisi ini pada harga pasar?' }),
   }
 
   const pending = orders.filter(o => (o.status || '').toLowerCase() === 'pending')
@@ -157,7 +159,7 @@ export function PositionsPage() {
         <div>
           <h1 className="header-title">{t.positions.title}</h1>
           <p className="header-subtitle">
-            {tr(language, { ko: '포지션 · 주문 · 체결 현황', en: 'Positions, orders and fills', ja: 'ポジション・注文・約定', th: 'สถานะ คำสั่ง และการจับคู่', vi: 'Vị thế, lệnh và khớp lệnh' })}
+            {tr(language, { ko: '포지션 · 주문 · 체결 현황', en: 'Positions, orders and fills', ja: 'ポジション・注文・約定', th: 'สถานะ คำสั่ง และการจับคู่', vi: 'Vị thế, lệnh và khớp lệnh', id: 'Posisi, order, dan eksekusi' })}
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
