@@ -15,6 +15,7 @@ export const spotGuide: PageGuide = {
     ja: '板情報を見ながら暗号通貨を素早く売買する現物ターミナルです。レバレッジなしの 1 倍のみで、成行注文は現在価格で即座に模擬約定します。',
     th: 'เทอร์มินัลสปอตสำหรับซื้อขายคริปโตอย่างรวดเร็วข้างสมุดคำสั่งสด เทรดที่ 1 เท่าโดยไม่มีเลเวอเรจ และคำสั่งตลาดจะเติมทันทีที่ราคาสดแบบเทรดจำลอง',
     vi: 'Terminal spot để mua bán crypto nhanh chóng cạnh sổ lệnh trực tiếp. Giao dịch ở mức 1x không đòn bẩy, và lệnh thị trường khớp ngay theo giá trực tiếp dưới dạng giao dịch giả lập.',
+    id: 'Terminal spot untuk membeli dan menjual kripto dengan cepat di samping order book langsung. Bertransaksi pada 1x tanpa leverage, dan order pasar tereksekusi seketika pada harga langsung sebagai paper trading.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const spotGuide: PageGuide = {
           'Bên phải là biểu mẫu đặt lệnh: tab thị trường/limit, nút chuyển mua-bán, thông tin số dư, ô số lượng và giá trị lệnh, và các nút %.',
           'Dưới cùng là bảng Nắm giữ, chỉ liệt kê các vị thế long đang mở của bạn.',
           'Có tám cặp — BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX — hiển thị theo kiểu BTC/USDT.',
+        ],
+        id: [
+          'Baris header memuat pemilih pasangan, harga terakhir dalam huruf besar, perubahan 24 jam, dan volume 24 jam.',
+          'Di sebelah kiri ada order book: kolom harga, jumlah, dan total, menampilkan 10 baris ask, harga saat ini, lalu 10 baris bid.',
+          'Di sebelah kanan ada formulir order: tab market/limit, sakelar beli/jual, informasi saldo, kolom kuantitas dan nilai order, serta tombol persentase.',
+          'Di bagian bawah ada tabel Kepemilikan, yang hanya memuat posisi long Anda yang sedang terbuka.',
+          'Tersedia delapan pasangan — BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX — ditampilkan dalam format seperti BTC/USDT.',
         ],
       },
     },
@@ -114,6 +122,14 @@ export const spotGuide: PageGuide = {
           'Thanh tỷ lệ B / S ở dưới hiển thị tỷ trọng tổng khối lượng mua so với tổng khối lượng bán đang hiển thị.',
           'Khi giá thay đổi, con số nháy xanh hoặc cam trong chốc lát kèm mũi tên ↑ hoặc ↓. Sổ lệnh và giá làm mới khoảng mỗi 4 giây.',
         ],
+        id: [
+          'Baris oranye di atas adalah ask, baris hijau di bawah adalah bid, dan angka tebal di antaranya adalah harga transaksi saat ini.',
+          'Batang samar di belakang setiap baris menunjukkan seberapa besar ukuran baris itu dibanding ukuran terbesar yang terlihat.',
+          'Kolom Total adalah harga × jumlah untuk baris tersebut — ukuran dolar pada satu level itu.',
+          'Mengeklik sebuah baris order book menyalin kuantitas baris itu langsung ke formulir order. Yang disalin adalah ukurannya, bukan harganya.',
+          'Batang rasio B / S di bagian bawah menunjukkan porsi total ukuran bid yang terlihat dibanding total ukuran ask yang terlihat.',
+          'Ketika harga bergerak, angkanya berkedip hijau atau oranye sesaat dengan panah ↑ atau ↓. Order book dan ticker diperbarui kira-kira setiap 4 detik.',
+        ],
       },
     },
     {
@@ -165,6 +181,14 @@ export const spotGuide: PageGuide = {
           'Số lượng và giá trị lệnh liên kết với nhau: gõ vào một ô, ô kia được tính từ giá trực tiếp.',
           'Các nút 25% / 50% / 75% / 100% tính cỡ theo tiền mặt khi mua, và theo số lượng đang nắm giữ khi bán.',
           'Phí là 0,1% giá trị lệnh và được xem trước ngay khi bạn gõ.',
+        ],
+        id: [
+          'Hanya order pasar yang tersedia. Tab Limit dinonaktifkan dan berlabel "segera".',
+          'Pilih arah dengan sakelar Beli / Jual — Beli disorot hijau, Jual disorot oranye.',
+          'Tersedia adalah saldo kas Anda (ditampilkan dalam USDT); Dimiliki adalah kuantitas long Anda saat ini pada aset tersebut.',
+          'Kuantitas dan nilai order saling terkait: ketik salah satunya dan yang lain dihitung dari harga langsung.',
+          'Tombol 25% / 50% / 75% / 100% menentukan ukuran dari kas Anda saat membeli, dan dari kuantitas kepemilikan saat menjual.',
+          'Biayanya 0,1% dari nilai order dan dipratinjau secara langsung saat Anda mengetik.',
         ],
       },
     },
@@ -218,6 +242,14 @@ export const spotGuide: PageGuide = {
           'Sau khi khớp, số lượng, giá trị lệnh và lựa chọn % được đặt lại, và bảng Nắm giữ tải lại.',
           'Đây là giao dịch giả lập. Không có gì được gửi tới sàn thật và việc khớp dùng giá thị trường được dò định kỳ.',
         ],
+        id: [
+          'Menekan tombol besar Beli atau Jual tidak langsung mengeksekusi — dialog konfirmasi terbuka lebih dulu.',
+          'Dialog itu merangkum jenis order dan pasangannya, harga masuk langsung, kuantitas beserta nilainya, biaya, dan total biaya.',
+          'Konfirmasi akan mengeksekusi seketika pada harga langsung; bila berhasil, pesan hijau menampilkan eksekusi dan nomor sinyalnya.',
+          'Bila gagal, di tempat yang sama muncul alasan dari server dengan warna oranye.',
+          'Setelah tereksekusi, kuantitas, nilai order, dan pilihan persentase direset, dan tabel Kepemilikan dimuat ulang.',
+          'Ini adalah paper trading. Tidak ada yang dikirim ke bursa sungguhan dan eksekusinya memakai harga pasar hasil polling.',
+        ],
       },
     },
     {
@@ -270,6 +302,14 @@ export const spotGuide: PageGuide = {
           'Nút "Đóng thị trường" trên mỗi dòng sẽ bán vị thế đó theo giá hiện tại ngay lập tức. Không có hộp thoại xác nhận, hãy cẩn thận.',
           'Danh sách vị thế tự làm mới khoảng mỗi 12 giây.',
         ],
+        id: [
+          'Tabel Kepemilikan memiliki kolom aset, kuantitas, harga masuk, harga saat ini, nilai, dan laba rugi / ROI.',
+          'Pada layar spot hanya posisi long yang muncul. Posisi short berada di terminal Futures.',
+          'Laba rugi menampilkan nominal sekaligus persentase ROI, dihitung terhadap basis biaya masuk.',
+          'Keuntungan berwarna hijau dan kerugian berwarna oranye.',
+          'Tombol "Tutup di harga pasar" pada setiap baris langsung menjual posisi itu pada harga saat ini. Tidak ada dialog konfirmasi, jadi berhati-hatilah.',
+          'Daftar posisi diperbarui otomatis kira-kira setiap 12 detik.',
+        ],
       },
     },
   ],
@@ -289,6 +329,7 @@ export const spotGuide: PageGuide = {
         ja: 'このターミナルは保存されたエージェントトークンがないと開きません。トークンがない場合、板情報と注文フォームの代わりにログイン案内が表示されます。ログインすると残高と保有資産も読み込まれます。',
         th: 'เทอร์มินัลต้องมีโทเคนเอเจนต์ที่บันทึกไว้จึงจะเปิดได้ หากไม่มี คุณจะเห็นข้อความให้เข้าสู่ระบบแทนสมุดคำสั่งและฟอร์มคำสั่ง เมื่อเข้าสู่ระบบแล้ว ยอดคงเหลือและการถือครองจะโหลดมาด้วย',
         vi: 'Terminal cần một token tác nhân đã lưu để mở. Không có nó, bạn sẽ thấy thông báo đăng nhập thay vì sổ lệnh và biểu mẫu. Đăng nhập rồi số dư và danh mục sẽ tải theo.',
+        id: 'Terminal ini memerlukan token agen yang tersimpan untuk bisa dibuka. Tanpa token itu, Anda melihat pemberitahuan untuk masuk alih-alih order book dan formulir order. Masuklah, dan saldo serta kepemilikan Anda ikut termuat.',
       },
     },
     {
@@ -306,6 +347,7 @@ export const spotGuide: PageGuide = {
         ja: 'まだ実装されていないためです。タブには「準備中」と表示され無効化されています。現在このターミナルでは成行注文のみが可能で、現在価格で即座に約定します。',
         th: 'เพราะยังไม่ได้พัฒนา — แท็บระบุว่า "เร็วๆนี้" และถูกปิดใช้งาน ตอนนี้เทอร์มินัลนี้รองรับเฉพาะคำสั่งตลาด ซึ่งเติมทันทีที่ราคาสด',
         vi: 'Vì nó chưa được xây dựng — tab ghi "sắp có" và bị vô hiệu. Hiện terminal này chỉ hỗ trợ lệnh thị trường, khớp ngay theo giá trực tiếp.',
+        id: 'Fiturnya belum diimplementasikan — tabnya berlabel "segera" dan dinonaktifkan. Untuk saat ini terminal ini hanya mendukung order pasar, yang tereksekusi seketika pada harga langsung.',
       },
     },
     {
@@ -323,6 +365,7 @@ export const spotGuide: PageGuide = {
         ja: '数量が空または 0 の場合、あるいはまだ価格を取得できていない場合にボタンが無効になります。数量か注文金額を入力するか % ボタンを押して値を埋めると再び有効になります。',
         th: 'ปุ่มจะถูกปิดใช้งานเมื่อจำนวนว่างหรือเป็นศูนย์ หรือขณะที่ราคาสดยังมาไม่ถึง ใส่จำนวนหรือมูลค่าคำสั่ง หรือกดปุ่ม % แล้วปุ่มจะกลับมาใช้ได้',
         vi: 'Nút bị vô hiệu khi số lượng trống hoặc bằng 0, hoặc khi giá trực tiếp chưa về. Nhập số lượng hoặc giá trị lệnh, hoặc nhấn một nút %, thì nút sẽ hoạt động lại.',
+        id: 'Tombolnya nonaktif ketika kuantitasnya kosong atau nol, atau selama harga langsung belum tiba. Masukkan kuantitas atau nilai order, atau tekan tombol persentase, dan tombolnya aktif kembali.',
       },
     },
     {
@@ -332,6 +375,7 @@ export const spotGuide: PageGuide = {
         ja: '板の行をクリックしたのに価格ではなく数量だけが変わりました。',
         th: 'ฉันคลิกแถวในสมุดคำสั่ง แต่เปลี่ยนแค่จำนวน ไม่ใช่ราคา',
         vi: 'Tôi nhấn một dòng sổ lệnh nhưng chỉ số lượng thay đổi, không phải giá.',
+        id: 'Saya mengeklik baris order book tetapi hanya kuantitasnya yang berubah, bukan harganya.',
       },
       a: {
         ko: '정상 동작입니다. 시장가 주문만 지원하므로 가격은 선택할 수 없고, 클릭은 그 호가의 수량만 폼에 복사합니다. 실제 체결은 확인 시점의 실시간 가격으로 이루어집니다.',
@@ -339,6 +383,7 @@ export const spotGuide: PageGuide = {
         ja: '仕様どおりです。成行注文のみ対応のため価格は選べず、クリックはその価格帯の数量をフォームにコピーするだけです。実際の約定は確定時の現在価格で行われます。',
         th: 'เป็นการทำงานตามที่ตั้งใจ เนื่องจากรองรับเฉพาะคำสั่งตลาด คุณจึงเลือกราคาไม่ได้ การคลิกจะคัดลอกเฉพาะขนาดของระดับนั้นเข้าฟอร์ม การเติมจริงใช้ราคาสด ณ เวลายืนยัน',
         vi: 'Đó là chủ ý. Vì chỉ hỗ trợ lệnh thị trường nên bạn không chọn được giá, cú nhấn chỉ chép khối lượng của mức đó vào biểu mẫu. Việc khớp thật dùng giá trực tiếp tại thời điểm xác nhận.',
+        id: 'Itu memang disengaja. Karena hanya order pasar yang didukung, Anda tidak dapat memilih harga, jadi klik itu sekadar menyalin ukuran level tersebut ke formulir. Eksekusi sebenarnya memakai harga langsung pada saat konfirmasi.',
       },
     },
   ],

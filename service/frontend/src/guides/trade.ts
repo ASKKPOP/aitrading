@@ -15,6 +15,7 @@ export const tradeGuide: PageGuide = {
     ja: '米国株・暗号通貨・Polymarket の売買シグナルを自分で記録するページです。実際の証券会社に発注されるわけではなく、取得した現在価格で模擬約定し、ポジションとシグナルとして残ります。',
     th: 'หน้าสำหรับบันทึกสัญญาณซื้อ/ขายของคุณเองสำหรับหุ้นสหรัฐ คริปโต และ Polymarket ไม่มีการส่งคำสั่งไปยังโบรกเกอร์จริง คำสั่งจะถูกจับคู่กับราคาสดที่ดึงมาและกลายเป็นสถานะพร้อมสัญญาณที่เผยแพร่',
     vi: 'Trang để bạn tự ghi lại tín hiệu mua/bán cho cổ phiếu Mỹ, tiền mã hóa và Polymarket. Không có lệnh nào được gửi tới môi giới thật — lệnh khớp theo giá trực tiếp bạn đã lấy và trở thành một vị thế cùng một tín hiệu được công bố.',
+    id: 'Halaman tempat Anda mencatat sinyal beli/jual Anda sendiri untuk saham AS, kripto, dan Polymarket. Tidak ada yang dikirim ke broker sungguhan — order tereksekusi terhadap harga langsung yang Anda ambil, lalu menjadi sebuah posisi sekaligus sinyal yang diterbitkan.',
   },
   sections: [
     {
@@ -62,6 +63,13 @@ export const tradeGuide: PageGuide = {
           'Ô giá cũng chỉ đọc. Bạn không thể gõ vào đó — nó chỉ được điền bằng nút "Lấy giá".',
           'Khi thành công sẽ có thông báo, biểu mẫu được xóa và bạn được chuyển tự động sang trang Vị thế.',
         ],
+        id: [
+          'Halaman ini berupa satu formulir order, dari atas ke bawah: Pasar → Aksi → Simbol → Harga → Kuantitas → Waktu eksekusi → Catatan.',
+          'Jika ada tantangan berjalan yang cocok dengan order ini, kartu muncul di atas formulir yang menyatakan transaksi tersebut dihitung untuknya, dengan judul tantangannya ditampilkan sebagai tagar.',
+          'Kolom waktu eksekusi bersifat hanya-baca dan berdetak setiap detik. Waktu lokal Anda ditampilkan dengan Waktu Timur AS (ET) di bawahnya.',
+          'Kolom harga juga hanya-baca. Anda tidak dapat mengetik di sana — kolom itu hanya terisi dari tombol "Ambil harga".',
+          'Bila berhasil, Anda menerima peringatan konfirmasi, formulirnya direset, dan Anda otomatis dibawa ke halaman Posisi.',
+        ],
       },
     },
     {
@@ -108,6 +116,13 @@ export const tradeGuide: PageGuide = {
           'Mua mở vị thế long mới; Bán giảm hoặc đóng long. Short mở vị thế bán; Cover mua lại để đóng.',
           'Chọn Polymarket sẽ vô hiệu hóa nút Short và Cover — trong ứng dụng này Polymarket chỉ hoạt động kiểu spot.',
           'Nếu đang chọn Short hoặc Cover rồi chuyển sang Polymarket, hành động sẽ tự động quay về Mua.',
+        ],
+        id: [
+          'Pasar punya tiga pilihan: Saham AS, Kripto, dan Polymarket (Uji coba). Berpindah pasar juga mengubah daftar simbol di bawahnya.',
+          'Aksi berupa empat tombol: Beli 📈, Jual 📉, Short 🔻, Cover 🔺. Hanya yang terpilih yang disorot.',
+          'Beli membuka posisi long baru; Jual mengurangi atau menutup long. Short membuka posisi short; Cover membelinya kembali untuk menutup.',
+          'Memilih Polymarket menonaktifkan tombol Short dan Cover — di aplikasi ini Polymarket hanya berperilaku mirip spot.',
+          'Jika Short atau Cover sedang terpilih lalu Anda berpindah ke Polymarket, aksinya diam-diam kembali ke Beli.',
         ],
       },
     },
@@ -161,6 +176,14 @@ export const tradeGuide: PageGuide = {
           '7) Nhấn nút gửi ở dưới cùng. Khi đang gửi, nút hiển thị "Đang gửi..." và bị vô hiệu để tránh nhấn đúp.',
           'Đổi mã, hoặc outcome / token ID của Polymarket sẽ xóa giá đã lấy — hãy nhấn "Lấy giá" lại.',
         ],
+        id: [
+          '1) Pilih pasarnya, 2) tekan sebuah tombol aksi, 3) pilih instrumennya dari menu simbol.',
+          '4) Tekan "Ambil harga" di sebelah kanan. Bila berhasil, harga langsung muncul di bawah simbol dengan warna aksen dan kolom harga terisi.',
+          '5) Masukkan kuantitasnya. Desimal diperbolehkan, jadi ukuran kripto seperti 0,05 tidak masalah.',
+          '6) Bila mau, tuliskan alasan Anda di kotak Catatan. Catatan itu diterbitkan sebagai isi sinyalnya.',
+          '7) Tekan tombol kirim di bagian bawah. Selama mengirim, tombolnya bertuliskan "Mengirim..." dan dinonaktifkan agar tidak terklik ganda.',
+          'Mengubah simbol, atau outcome / token ID Polymarket, akan menghapus harga yang sudah diambil — tekan "Ambil harga" lagi.',
+        ],
       },
     },
     {
@@ -207,6 +230,13 @@ export const tradeGuide: PageGuide = {
           'Kết quả nhận giá trị như Yes / No. Điền nó giúp nền tảng hiển thị câu hỏi và kết quả thật thay vì định danh thô.',
           'Token ID là tùy chọn — chỉ điền nếu bạn đã biết outcome token.',
           'Polymarket được đánh dấu là thị trường thử nghiệm và là giao dịch giả lập kiểu spot, không có short/cover.',
+        ],
+        id: [
+          'Memilih Polymarket menambahkan dua kolom lagi di bawah simbol: "Hasil" dan "Token ID (opsional)".',
+          'Masukkan slug pasar atau conditionId ke kolom simbol. Nilai itu dikirim persis seperti diketik, tanpa diubah menjadi huruf besar.',
+          'Hasil menerima nilai seperti Yes / No. Mengisinya membuat platform dapat menampilkan pertanyaan dan hasil yang sebenarnya, bukan sekadar identitas mentah.',
+          'Token ID bersifat opsional — isi hanya jika Anda sudah mengetahui token hasilnya.',
+          'Polymarket ditandai sebagai pasar uji coba dan berupa paper trading mirip spot tanpa short/cover.',
         ],
       },
     },
@@ -255,6 +285,13 @@ export const tradeGuide: PageGuide = {
           'Khi không đủ tiền, thông báo liệt kê số tiền cần, phí, tiền khả dụng và số tiền điểm của bạn có thể đổi được, rồi hướng bạn tới trang Đổi điểm.',
           'Không lệnh nào tới môi giới thật. Việc khớp được mô phỏng theo giá bạn đã lấy, và giá trị vị thế cập nhật sau qua việc dò giá định kỳ.',
         ],
+        id: [
+          'Order saham AS hanya diproses pada jam perdagangan. Mengirim saat pasar tutup akan menampilkan peringatan berisi waktu ET saat ini dan jam sesinya (Sen–Jum 9:30–16:00 ET).',
+          'Jika Anda belum mengambil harga, pengiriman dihentikan dengan peringatan "tekan Ambil harga terlebih dahulu".',
+          'Beli dan Short memeriksa saldo kas Anda. Jika nilai transaksi ditambah biaya 0,1% melebihi kas tersedia, order ditolak.',
+          'Ketika kas tidak mencukupi, peringatannya memuat jumlah yang dibutuhkan, biaya, kas tersedia, dan berapa nilai poin Anda bila ditukar, lalu mengarahkan Anda ke halaman Penukaran Poin.',
+          'Tidak ada order yang sampai ke broker sungguhan. Eksekusi disimulasikan pada harga yang Anda ambil, dan nilai posisi diperbarui kemudian lewat polling harga.',
+        ],
       },
     },
     {
@@ -302,6 +339,13 @@ export const tradeGuide: PageGuide = {
           'Nếu thẻ thử thách xuất hiện, giao dịch này được tính vào thử thách đó — xem tiến độ ở trang Thử thách.',
           'Nếu bạn giao dịch crypto thường xuyên, terminal Spot và Futures với sổ lệnh và nút % sẽ nhanh hơn.',
         ],
+        id: [
+          'Anda diarahkan ke halaman Posisi tepat setelah mengirim — periksa apakah harga masuk dan laba ruginya tercatat sesuai harapan.',
+          'Untuk menutup posisi, kembalilah dengan instrumen yang sama dan pilih Jual (untuk long) atau Cover (untuk short).',
+          'Catatan yang baik membantu pengikut memahami alasan Anda saat melihat sinyalnya, sehingga kualitas penyalinan meningkat.',
+          'Jika kartu tantangan muncul, transaksi ini dihitung untuk tantangan tersebut — periksa perkembangannya di halaman Tantangan.',
+          'Jika Anda sering bertransaksi kripto, terminal Spot dan Futures dengan order book dan tombol persentase jauh lebih cepat.',
+        ],
       },
     },
   ],
@@ -321,6 +365,7 @@ export const tradeGuide: PageGuide = {
         ja: '価格欄は読み取り専用です。すべての注文はサーバーから取得した現在価格でのみ約定する必要があるため、「価格を取得」で受け取った値だけが入ります。銘柄や Polymarket の結果・トークン ID を変更すると消えるので再取得してください。',
         th: 'ช่องราคาเป็นแบบอ่านอย่างเดียว ทุกคำสั่งต้องจับคู่ที่ราคาสดที่ดึงจากเซิร์ฟเวอร์ จึงใส่ได้เฉพาะค่าที่ได้จาก "รับราคา" การแก้สัญลักษณ์หรือ outcome / token ID ของ Polymarket จะล้างค่านี้ ให้ดึงใหม่',
         vi: 'Ô giá chỉ đọc. Mọi lệnh phải khớp theo giá trực tiếp lấy từ máy chủ, nên chỉ giá trị do "Lấy giá" trả về mới vào được. Sửa mã hoặc outcome / token ID của Polymarket sẽ xóa nó, hãy lấy lại.',
+        id: 'Kolom harga bersifat hanya-baca. Setiap order harus tereksekusi pada harga langsung yang diambil dari server, jadi hanya nilai yang dikembalikan "Ambil harga" yang bisa masuk. Mengubah simbol atau outcome / token ID Polymarket akan menghapusnya, jadi ambil ulang.',
       },
     },
     {
@@ -338,6 +383,7 @@ export const tradeGuide: PageGuide = {
         ja: 'マーケットが Polymarket に設定されているためです。ここでの Polymarket はスポット型の模擬取引でショート/カバーに対応していません。マーケットを米国株か暗号通貨に変えると両ボタンが再び有効になります。',
         th: 'เพราะตลาดถูกตั้งเป็น Polymarket ที่นี่ Polymarket เป็นการเทรดจำลองแบบ spot และไม่รองรับ short หรือ cover เปลี่ยนตลาดเป็นหุ้นสหรัฐหรือคริปโตแล้วปุ่มทั้งสองจะใช้ได้อีกครั้ง',
         vi: 'Vì thị trường đang đặt là Polymarket. Ở đây Polymarket là giao dịch giả lập kiểu spot và không hỗ trợ short hay cover. Đổi thị trường sang Cổ phiếu Mỹ hoặc Tiền mã hóa thì cả hai nút sẽ hoạt động lại.',
+        id: 'Karena pasarnya disetel ke Polymarket. Di sini Polymarket berupa paper trading mirip spot dan tidak mendukung short atau cover. Ubah pasarnya ke Saham AS atau Kripto dan kedua tombol itu tersedia kembali.',
       },
     },
     {
@@ -355,6 +401,7 @@ export const tradeGuide: PageGuide = {
         ja: 'ポイント交換ページで保有ポイントを現金に換えてください。警告には必要額と現在のポイントで交換できる金額が表示されるので、それを見て交換量を決められます。必要額には約定代金の 0.1% の手数料が含まれます。',
         th: 'แปลงคะแนนของคุณเป็นเงินสดที่หน้าแลกคะแนน คำเตือนแสดงยอดที่ต้องใช้และมูลค่าของคะแนนปัจจุบันอยู่แล้ว ใช้ตัวเลขเหล่านั้นตัดสินใจว่าจะแลกเท่าไร ทั้งนี้ยอดที่ต้องใช้รวมค่าธรรมเนียม 0.1% แล้ว',
         vi: 'Đổi điểm của bạn thành tiền mặt ở trang Đổi điểm. Cảnh báo đã hiển thị số tiền cần và giá trị điểm hiện có, hãy dùng các con số đó để quyết định đổi bao nhiêu. Lưu ý số tiền cần đã bao gồm phí giao dịch 0,1%.',
+        id: 'Tukar poin Anda menjadi kas di halaman Penukaran Poin. Peringatannya sudah menampilkan jumlah yang dibutuhkan dan berapa nilai poin Anda saat ini, jadi pakailah angka itu untuk menentukan berapa yang perlu ditukar. Perhatikan bahwa jumlah yang dibutuhkan sudah termasuk biaya trading 0,1%.',
       },
     },
     {
@@ -372,6 +419,7 @@ export const tradeGuide: PageGuide = {
         ja: 'できません。マーケットが米国株のときは送信前に開場かどうかを判定し、閉場中は現在の ET 時刻とともに却下されます。暗号通貨は 24 時間開いているのでいつでも記録できます。',
         th: 'ไม่ได้ เมื่อตลาดเป็นหุ้นสหรัฐ ฟอร์มจะตรวจช่วงเวลาทำการก่อนส่ง และปฏิเสธคำสั่งพร้อมเวลา ET ปัจจุบันหากปิดอยู่ ส่วนคริปโตเปิด 24 ชั่วโมงจึงบันทึกได้ตลอด',
         vi: 'Không. Khi thị trường là Cổ phiếu Mỹ, biểu mẫu kiểm tra phiên trước khi gửi và từ chối lệnh kèm giờ ET hiện tại nếu đã đóng. Crypto mở 24/7 nên bạn có thể ghi bất cứ lúc nào.',
+        id: 'Tidak. Ketika pasarnya Saham AS, formulir memeriksa sesi perdagangan sebelum mengirim dan menolak order dengan menampilkan waktu ET saat ini bila pasar tutup. Kripto buka 24/7, jadi Anda bisa mencatatnya kapan saja.',
       },
     },
   ],
