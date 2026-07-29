@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { fearGreedLabel, tr, type Language } from '../i18n'
+import { fearGreedLabel, regimeLabel, tr, type Language } from '../i18n'
 
 // Signals Board (signal-collection plan Phase 5): every number on this page is
 // a real collected value from the psych feed, scanner, and fusion APIs — no
@@ -353,13 +353,7 @@ export function SignalsBoardPage() {
         </div>
         <Tile
           label={tr(language, { ko: '시장 국면', en: 'Market Regime', ja: '市場レジーム', th: 'สภาวะตลาด', vi: 'Chế độ thị trường' })}
-          value={regime ? tr(language, {
-            ko: { trend: '추세', caution: '주의', panic: '패닉', euphoria: '과열', event: '이벤트', unknown: '미확정' }[regime.regime],
-            en: regime.regime.toUpperCase(),
-            ja: { trend: 'トレンド', caution: '注意', panic: 'パニック', euphoria: '過熱', event: 'イベント', unknown: '不明' }[regime.regime],
-            th: regime.regime.toUpperCase(),
-            vi: regime.regime.toUpperCase(),
-          }) : '—'}
+          value={regime ? regimeLabel(language, regime.regime) : '—'}
           sub={regime
             ? `${regime.allow_new_buys
                 ? tr(language, { ko: `신규 진입 ×${regime.size_multiplier}`, en: `entries ×${regime.size_multiplier}`, ja: `新規 ×${regime.size_multiplier}`, th: `เข้าใหม่ ×${regime.size_multiplier}`, vi: `vào lệnh ×${regime.size_multiplier}` })

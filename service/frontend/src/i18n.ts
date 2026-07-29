@@ -739,6 +739,25 @@ export const fearGreedLabel = (lang: Language, classification: string | null | u
   return m ? tr(lang, m) : classification
 }
 
+// The desk's stance code from /api/market-intel/regime. Dashboard rendered it
+// raw ("caution" under a Korean heading); Signals Board had its own inline map
+// where th/vi merely upper-cased the English. One table, six languages, both
+// callers — an unknown regime falls through so a new one stays visible.
+const REGIME: Record<string, TrMap> = {
+  trend: { en: 'Trend', ko: '추세', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' },
+  caution: { en: 'Caution', ko: '주의', ja: '注意', th: 'ระวัง', vi: 'Thận trọng', id: 'Waspada' },
+  panic: { en: 'Panic', ko: '패닉', ja: 'パニック', th: 'ตื่นตระหนก', vi: 'Hoảng loạn', id: 'Panik' },
+  euphoria: { en: 'Euphoria', ko: '과열', ja: '過熱', th: 'ร้อนแรงเกินไป', vi: 'Hưng phấn', id: 'Euforia' },
+  event: { en: 'Event', ko: '이벤트', ja: 'イベント', th: 'เหตุการณ์', vi: 'Sự kiện', id: 'Peristiwa' },
+  unknown: { en: 'Unknown', ko: '미확정', ja: '不明', th: 'ไม่ทราบ', vi: 'Chưa xác định', id: 'Belum pasti' },
+}
+
+export const regimeLabel = (lang: Language, regime: string | null | undefined): string => {
+  if (!regime) return ''
+  const m = REGIME[regime.trim().toLowerCase()]
+  return m ? tr(lang, m) : regime
+}
+
 // Category translations
 export const categoryTranslations: Record<Language, Record<string, string>> = {
   ko: {

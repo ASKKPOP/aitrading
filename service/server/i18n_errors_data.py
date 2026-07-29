@@ -2420,6 +2420,90 @@ MESSAGES: dict[str, dict[str, str]] = {
         'vi': 'URL máy chủ AI cục bộ phải bắt đầu bằng http:// hoặc https:// (ví dụ: http://100.64.0.7:11434/v1)',
         'id': 'URL server AI lokal harus diawali http:// atau https:// (mis. http://100.64.0.7:11434/v1)',
     },
+    # ── market-regime reasons (2026-07-28) ───────────────────────────────
+    # Not errors — the sentences the desk panel shows a member to explain the
+    # current stance ("변동성은 낮지만 심리가 공포 구간입니다"). regime.py
+    # builds them in English and /api/market-intel/regime served them raw, so
+    # the dashboard printed English prose under Korean headings. Same closed
+    # set + interpolation shape as everything else here, so same catalogue.
+    'macro release window active': {
+        'ko': '거시 지표 발표 구간이 진행 중입니다',
+        'ja': 'マクロ指標の発表時間帯です',
+        'th': 'อยู่ในช่วงประกาศตัวเลขเศรษฐกิจมหภาค',
+        'vi': 'Đang trong khung công bố dữ liệu vĩ mô',
+        'id': 'Sedang dalam jendela rilis data makro',
+    },
+    'psych + volatility data unavailable': {
+        'ko': '심리·변동성 데이터를 가져오지 못했습니다',
+        'ja': '心理・ボラティリティのデータを取得できません',
+        'th': 'ไม่สามารถดึงข้อมูลจิตวิทยาและความผันผวนได้',
+        'vi': 'Không lấy được dữ liệu tâm lý và biến động',
+        'id': 'Data psikologi dan volatilitas tidak tersedia',
+    },
+    'F&G {} < {} (extreme fear)': {
+        'ko': '공포·탐욕 {0}이(가) {1} 미만 — 극단적 공포',
+        'ja': '恐怖・強欲指数 {0} が {1} 未満 — 極度の恐怖',
+        'th': 'ดัชนีความกลัว/ความโลภ {0} ต่ำกว่า {1} — ความกลัวขั้นสุด',
+        'vi': 'Chỉ số sợ hãi/tham lam {0} dưới {1} — cực kỳ sợ hãi',
+        'id': 'Indeks ketakutan/keserakahan {0} di bawah {1} — ketakutan ekstrem',
+    },
+    'realized-vol percentile {} ≥ {}': {
+        'ko': '실현 변동성 {0}퍼센타일 — {1} 이상',
+        'ja': '実現ボラティリティ {0} パーセンタイル — {1} 以上',
+        'th': 'ความผันผวนที่เกิดขึ้นจริงเปอร์เซ็นไทล์ {0} — ตั้งแต่ {1} ขึ้นไป',
+        'vi': 'Biến động thực tế phân vị {0} — từ {1} trở lên',
+        'id': 'Volatilitas terealisasi persentil {0} — {1} atau lebih',
+    },
+    'unresolved volatility/liquidation shock': {
+        'ko': '미해결 변동성·청산 충격이 남아 있습니다',
+        'ja': '未解消のボラティリティ・清算ショックが残っています',
+        'th': 'ยังมีแรงกระแทกจากความผันผวน/การบังคับปิดสถานะที่ยังไม่คลี่คลาย',
+        'vi': 'Vẫn còn cú sốc biến động/thanh lý chưa được giải tỏa',
+        'id': 'Masih ada guncangan volatilitas/likuidasi yang belum mereda',
+    },
+    'F&G {} ≥ {} (euphoria extreme)': {
+        'ko': '공포·탐욕 {0}이(가) {1} 이상 — 극단적 과열',
+        'ja': '恐怖・強欲指数 {0} が {1} 以上 — 極度の過熱',
+        'th': 'ดัชนีความกลัว/ความโลภ {0} ตั้งแต่ {1} ขึ้นไป — ภาวะร้อนแรงขั้นสุด',
+        'vi': 'Chỉ số sợ hãi/tham lam {0} từ {1} trở lên — hưng phấn cực độ',
+        'id': 'Indeks ketakutan/keserakahan {0} dari {1} ke atas — euforia ekstrem',
+    },
+    'F&G {} in fear band': {
+        'ko': '공포·탐욕 {}이(가) 공포 구간입니다',
+        'ja': '恐怖・強欲指数 {} は恐怖ゾーンです',
+        'th': 'ดัชนีความกลัว/ความโลภ {} อยู่ในโซนความกลัว',
+        'vi': 'Chỉ số sợ hãi/tham lam {} nằm trong vùng sợ hãi',
+        'id': 'Indeks ketakutan/keserakahan {} berada di zona ketakutan',
+    },
+    'F&G {} in greed band': {
+        'ko': '공포·탐욕 {}이(가) 탐욕 구간입니다',
+        'ja': '恐怖・強欲指数 {} は強欲ゾーンです',
+        'th': 'ดัชนีความกลัว/ความโลภ {} อยู่ในโซนความโลภ',
+        'vi': 'Chỉ số sợ hãi/tham lam {} nằm trong vùng tham lam',
+        'id': 'Indeks ketakutan/keserakahan {} berada di zona keserakahan',
+    },
+    'realized-vol percentile {} elevated': {
+        'ko': '실현 변동성 {}퍼센타일 — 다소 높습니다',
+        'ja': '実現ボラティリティ {} パーセンタイル — やや高めです',
+        'th': 'ความผันผวนที่เกิดขึ้นจริงเปอร์เซ็นไทล์ {} — ค่อนข้างสูง',
+        'vi': 'Biến động thực tế phân vị {} — ở mức cao',
+        'id': 'Volatilitas terealisasi persentil {} — tergolong tinggi',
+    },
+    'partial data (F&G or volatility missing)': {
+        'ko': '일부 데이터 누락 — 공포·탐욕 또는 변동성 값이 없습니다',
+        'ja': 'データが一部欠落 — 恐怖・強欲指数またはボラティリティがありません',
+        'th': 'ข้อมูลไม่ครบ — ไม่มีค่าดัชนีความกลัว/ความโลภ หรือความผันผวน',
+        'vi': 'Thiếu một phần dữ liệu — không có chỉ số sợ hãi/tham lam hoặc biến động',
+        'id': 'Data tidak lengkap — indeks ketakutan/keserakahan atau volatilitas tidak ada',
+    },
+    'F&G {} neutral, vol percentile {} normal': {
+        'ko': '공포·탐욕 {0} 중립, 변동성 {1}퍼센타일로 정상입니다',
+        'ja': '恐怖・強欲指数 {0} は中立、ボラティリティ {1} パーセンタイルで正常です',
+        'th': 'ดัชนีความกลัว/ความโลภ {0} เป็นกลาง ความผันผวนเปอร์เซ็นไทล์ {1} อยู่ในเกณฑ์ปกติ',
+        'vi': 'Chỉ số sợ hãi/tham lam {0} trung lập, biến động phân vị {1} ở mức bình thường',
+        'id': 'Indeks ketakutan/keserakahan {0} netral, volatilitas persentil {1} normal',
+    },
+
     # Deliberately last: these two are the broadest patterns in the catalogue
     # and would shadow any specific message ending in the same words. The
     # pattern list is scanned in insertion order, so keep them at the bottom.
