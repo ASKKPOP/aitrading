@@ -1993,6 +1993,66 @@ def _conf_v2_enabled() -> bool:
     return os.getenv("RUN_CONF_V2", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _desk_exit_awareness() -> bool:
+    """Whether the desk is shown its open position's trajectory and told that
+    banking is an action. Default ON — the entry-only prompt is what let three
+    prod runs round-trip their peaks. Kill switch matches the other behavioural
+    rails here (_adds_require_profit, _liq_cushion_enabled)."""
+    return (os.getenv("RUN_DESK_EXIT_AWARENESS", "true") or "true"
+            ).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _position_state_line(run: dict, cfg: dict, pos_qty: float,
+                         thesis: dict) -> str:
+    """The open position's own trajectory, for the desk's exit decision.
+
+    The four component scores are entry-framed, so nothing in the prompt told
+    the desk whether the trade it is already in has worked, peaked, or is
+    unwinding. This supplies exactly that: open P&L, the run's high-water
+    mark and how much of it survives, and how much of the move the thesis was
+    written for has actually arrived.
+
+    Returns "" when flat or when the book cannot be trusted. An unknown P&L
+    must never be rendered as a confident $0.00 — that would read as
+    "breakeven, nothing to bank", the opposite of the truth.
+    """
+    if not pos_qty or not _desk_exit_awareness():
+        return ""
+    try:
+        pnl = compute_run_pnl(run)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not pnl.get("mark_age_ok"):
+        return ""
+    pos = pnl.get("position") or {}
+    try:
+        upnl = float(pnl.get("unrealized") or 0)
+    except (TypeError, ValueError):
+        return ""
+    bits = [f"Open P&L on this position: ${upnl:,.2f}."]
+    try:
+        peak = float(run.get("peak_pnl_usd"))
+    except (TypeError, ValueError):
+        peak = None
+    if peak and peak > 0:
+        bits.append(f"Best this run has reached: ${peak:,.2f} — you are "
+                    f"holding {max(0.0, upnl) / peak:.0%} of that high-water "
+                    f"mark.")
+    try:
+        want = abs(float(thesis.get("expected_move_pct")))
+        ent = float(pos.get("entry_price") or 0)
+        mark = float(pos.get("current_price") or 0)
+        if want > 0 and ent > 0 and mark > 0:
+            got = (mark - ent) / ent * 100.0
+            if pos_qty < 0:                      # a short profits as price falls
+                got = -got
+            bits.append(f"Thesis expected a {want:.2f}% move; {got:+.2f}% has "
+                        f"arrived ({got / want:.0%} of it).")
+    except (TypeError, ValueError, ZeroDivisionError):
+        pass
+    return " ".join(bits) + "\n"
+
+
 def _light_analysis(run: dict, cfg: dict) -> dict:
     """One decision-tier LLM call (agent_planner-style) replacing ONLY the
     analysis stage of run_cycle. Pre-gates, evaluate_execution_gates, the
@@ -2051,11 +2111,13 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     else:
         inventory_rule = ("Spot book with no inventory: 'sell' is NOT available "
                           "(nothing to reduce) — a bearish read means 'hold'.")
+    position_state = _position_state_line(run, cfg, pos_qty, thesis)
     prompt = (
         "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
         f"Symbol: {run['symbol']} ({run['market']}, {market_type}), price now {entry}.\n"
         f"Position in this run's book: {pos_qty} units (negative = short, 0 = flat). "
         f"{inventory_rule}\n"
+        f"{position_state}"
         f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
         f"Recent closes: {json.dumps(candles_summary, default=str)[:400]}\n"
         "Calibrate confidence honestly across the full range, two decimals: "
@@ -2068,6 +2130,27 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "and cleanliness of the current move), entry_quality (how good is THIS "
         "price as an entry vs the reference?), risk_context (headroom to "
         "invalidation; 1.0 = very safe).\n"
+        # Exit awareness (2026-07-29). Those four components are ALL
+        # entry-framed — entry_quality literally asks how good this price is
+        # as an entry — so a desk holding a decaying winner had nothing to
+        # reason from and its whole deliberation collapsed to add / don't-add.
+        # Prod: runs 776, 811 and 816 round-tripped peaks of $78.58, $33.44
+        # and $75.29 to roughly zero while emitting `hold` or `buy`, with
+        # `sell`/`cover` available on every one of those cycles. 811's own
+        # reports read "...rather than adding" / "...without adding". The
+        # rails cannot cover this: every one of them is indexed to max_loss,
+        # so a run whose peak never clears 0.70x max_loss has no profit exit
+        # at all. So say it plainly to the only actor that can act inside a
+        # small excursion.
+        + (
+            "Banking is a first-class action, not merely the absence of an "
+            "add. If the move your thesis was paid for has largely happened, "
+            "or open P&L is rolling over from its high-water mark, then "
+            "reducing or closing is the correct answer THIS cycle even while "
+            "the thesis still technically holds — a thesis that is still "
+            "valid is not a reason to keep giving back a gain.\n"
+            if pos_qty and _desk_exit_awareness() else ""
+        ) +
         # Order parameters, minimal edition (2026-07-27). Only the two fields
         # the flat 5%/10% actually overrides — a stop and a target sized to
         # THIS instrument. The full trader prompt asks for the whole block

@@ -120,6 +120,68 @@ class LightAnalysisPromptTests(unittest.TestCase):
         self.assertIn("'sell' opens or extends a short", prompt)
         self.assertNotIn("'sell' is NOT available", prompt)
 
+    # ── the desk must be able to decide to BANK ────────────────────────────
+    # The four component scores are all entry-framed, so a desk holding a
+    # decaying winner had nothing to reason from. Prod runs 776 / 811 / 816
+    # round-tripped peaks of $78.58 / $33.44 / $75.29 to ~zero while emitting
+    # `hold` or `buy`, with `sell`/`cover` available every cycle; 811's own
+    # reports read "...rather than adding". Give it the trajectory and the verb.
+
+    def _held_prompt(self, qty, unrealized, peak, expected_move_pct=2.0,
+                     entry=100.0, mark=104.0, mark_ok=True):
+        pnl = {"unrealized": unrealized, "mark_age_ok": mark_ok,
+               "position": {"quantity": qty, "entry_price": entry,
+                            "current_price": mark}}
+        run = self._run_row(market="futures")
+        run["peak_pnl_usd"] = peak
+        cfg = {"thesis": {"expected_move_pct": expected_move_pct}}
+        with patch.object(run_engine, "_position_quantity", return_value=qty), \
+                patch.object(run_engine, "compute_run_pnl", return_value=pnl):
+            return self._capture_prompt(run, cfg)[0]
+
+    def test_held_position_gets_its_open_pnl_and_high_water_mark(self):
+        prompt = self._held_prompt(qty=2.0, unrealized=30.0, peak=75.0)
+        self.assertIn("Open P&L on this position: $30.00", prompt)
+        self.assertIn("$75.00", prompt)
+        self.assertIn("40% of that high-water mark", prompt)
+
+    def test_held_position_is_told_how_much_of_the_move_arrived(self):
+        # long from 100 to 104 = +4.00% against a thesis wanting 2.00%
+        prompt = self._held_prompt(qty=2.0, unrealized=30.0, peak=75.0)
+        self.assertIn("Thesis expected a 2.00% move; +4.00% has arrived", prompt)
+
+    def test_short_move_is_measured_in_the_short_s_favour(self):
+        # short from 100 with price at 104 = the move went AGAINST it
+        prompt = self._held_prompt(qty=-2.0, unrealized=-30.0, peak=0.0)
+        self.assertIn("-4.00% has arrived", prompt)
+
+    def test_banking_is_stated_as_a_first_class_action(self):
+        prompt = self._held_prompt(qty=2.0, unrealized=30.0, peak=75.0)
+        self.assertIn("Banking is a first-class action", prompt)
+        self.assertIn("still valid is not a reason to keep giving back", prompt)
+
+    def test_flat_book_gets_no_position_state_and_no_banking_line(self):
+        """A flat run must not be nudged to close something it does not hold."""
+        prompt = self._capture_prompt(self._run_row(market="futures"), {})[0]
+        self.assertNotIn("Open P&L on this position", prompt)
+        self.assertNotIn("Banking is a first-class action", prompt)
+
+    def test_exit_awareness_is_kill_switchable(self):
+        """One env var reverts to the pre-2026-07-29 entry-only prompt."""
+        with patch.dict(os.environ, {"RUN_DESK_EXIT_AWARENESS": "false"}):
+            prompt = self._held_prompt(qty=2.0, unrealized=30.0, peak=75.0)
+        self.assertNotIn("Open P&L on this position", prompt)
+        self.assertNotIn("Banking is a first-class action", prompt)
+
+    def test_stale_mark_reports_nothing_rather_than_a_confident_zero(self):
+        """An untrustworthy book must stay silent — rendering $0.00 would read
+        as 'breakeven, nothing to bank', the opposite of the truth."""
+        prompt = self._held_prompt(qty=2.0, unrealized=30.0, peak=75.0,
+                                   mark_ok=False)
+        self.assertNotIn("Open P&L on this position", prompt)
+        # the verb still stands: it holds a position, it may still close it
+        self.assertIn("Banking is a first-class action", prompt)
+
 
 class YahooTechnicalsFallbackTests(unittest.TestCase):
     """F2 — the premium wall must no longer starve us-stock technicals."""
