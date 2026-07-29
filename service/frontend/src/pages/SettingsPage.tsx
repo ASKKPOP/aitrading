@@ -522,7 +522,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                     type="password"
                     autoComplete="off"
                     placeholder={t.masked_key
-                      ? tr(language, { ko: `저장된 키 ${t.masked_key} — 새 키 입력 시 교체`, en: `Saved key ${t.masked_key} — enter new key to replace`, ja: `保存済み ${t.masked_key}`, th: `คีย์ที่บันทึก ${t.masked_key}`, vi: `Khóa đã lưu ${t.masked_key}` })
+                      ? tr(language, { ko: `저장된 키 ${t.masked_key} — 새 키 입력 시 교체`, en: `Saved key ${t.masked_key} — enter new key to replace`, ja: `保存済み ${t.masked_key}`, th: `คีย์ที่บันทึก ${t.masked_key}`, vi: `Khóa đã lưu ${t.masked_key}`, id: `Kunci tersimpan ${t.masked_key} — masukkan kunci baru untuk menggantinya` })
                       : tr(language, { ko: 'API 키 입력', en: 'Enter API key', ja: 'APIキー入力', th: 'ใส่คีย์ API', vi: 'Nhập khóa API', id: 'Masukkan kunci API' })}
                     value={draft.api_key}
                     onChange={e => setDraft(t.target, { api_key: e.target.value })}

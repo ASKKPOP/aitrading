@@ -458,8 +458,8 @@ function SignalCard({
       <p className="signal-content">{signal.content}</p>
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-        <span>{tr(language, { ko: `답글 ${signal.reply_count || 0}개`, en: `${signal.reply_count || 0} replies`, ja: `返信 ${signal.reply_count || 0}`, th: `${signal.reply_count || 0} การตอบกลับ`, vi: `${signal.reply_count || 0} trả lời` })}</span>
-        <span>{tr(language, { ko: `참여자 ${signal.participant_count || 1}명`, en: `${signal.participant_count || 1} participants`, ja: `参加者 ${signal.participant_count || 1}`, th: `${signal.participant_count || 1} ผู้เข้าร่วม`, vi: `${signal.participant_count || 1} người tham gia` })}</span>
+        <span>{tr(language, { ko: `답글 ${signal.reply_count || 0}개`, en: `${signal.reply_count || 0} replies`, ja: `返信 ${signal.reply_count || 0}`, th: `${signal.reply_count || 0} การตอบกลับ`, vi: `${signal.reply_count || 0} trả lời`, id: `${signal.reply_count || 0} balasan` })}</span>
+        <span>{tr(language, { ko: `참여자 ${signal.participant_count || 1}명`, en: `${signal.participant_count || 1} participants`, ja: `参加者 ${signal.participant_count || 1}`, th: `${signal.participant_count || 1} ผู้เข้าร่วม`, vi: `${signal.participant_count || 1} người tham gia`, id: `${signal.participant_count || 1} peserta` })}</span>
         <span>
           {tr(language, { ko: '활성 ', en: 'Active ', ja: 'アクティブ ', th: 'ใช้งานล่าสุด ', vi: 'Hoạt động ', id: 'Aktif ' })}
           {signal.last_reply_at ? new Date(signal.last_reply_at).toLocaleString() : new Date(signal.created_at).toLocaleString()}
@@ -925,7 +925,7 @@ export function StrategiesPage() {
                   ko: `페이지 ${strategyPage} / ${strategyTotalPages}, 총 전략 ${strategyTotal}개`, en: `Page ${strategyPage} / ${strategyTotalPages}, ${strategyTotal} strategies total`,
                   ja: `ページ ${strategyPage} / ${strategyTotalPages}、合計 ${strategyTotal} 件の戦略`,
                   th: `หน้า ${strategyPage} / ${strategyTotalPages}, รวม ${strategyTotal} กลยุทธ์`,
-                  vi: `Trang ${strategyPage} / ${strategyTotalPages}, tổng ${strategyTotal} chiến lược`
+                  vi: `Trang ${strategyPage} / ${strategyTotalPages}, tổng ${strategyTotal} chiến lược`, id: `Halaman ${strategyPage} / ${strategyTotalPages}, total ${strategyTotal} strategi`
                 })}
               </div>
               <button
@@ -1359,7 +1359,7 @@ export function DiscussionsPage() {
                   ko: `페이지 ${discussionPage} / ${discussionTotalPages}, 총 토론 ${discussionTotal}개`, en: `Page ${discussionPage} / ${discussionTotalPages}, ${discussionTotal} discussions total`,
                   ja: `ページ ${discussionPage} / ${discussionTotalPages}、合計 ${discussionTotal} 件のディスカッション`,
                   th: `หน้า ${discussionPage} / ${discussionTotalPages}, รวม ${discussionTotal} การสนทนา`,
-                  vi: `Trang ${discussionPage} / ${discussionTotalPages}, tổng ${discussionTotal} thảo luận`
+                  vi: `Trang ${discussionPage} / ${discussionTotalPages}, tổng ${discussionTotal} thảo luận`, id: `Halaman ${discussionPage} / ${discussionTotalPages}, total ${discussionTotal} diskusi`
                 })}
               </div>
               <button

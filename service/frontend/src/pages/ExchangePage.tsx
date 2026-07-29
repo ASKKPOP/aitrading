@@ -104,7 +104,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
           {t.exchange.exchangeRate}
         </div>
         <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          {tr(language, { ko: `${points} 포인트를 $${(points * exchangeRate).toLocaleString()} USD로 교환할 수 있습니다`, en: `You can exchange ${points} points for $${(points * exchangeRate).toLocaleString()} USD`, ja: `${points} ポイントを $${(points * exchangeRate).toLocaleString()} USD と交換できます`, th: `คุณสามารถแลก ${points} คะแนนเป็น $${(points * exchangeRate).toLocaleString()} USD`, vi: `Bạn có thể đổi ${points} điểm thành $${(points * exchangeRate).toLocaleString()} USD` })}
+          {tr(language, { ko: `${points} 포인트를 $${(points * exchangeRate).toLocaleString()} USD로 교환할 수 있습니다`, en: `You can exchange ${points} points for $${(points * exchangeRate).toLocaleString()} USD`, ja: `${points} ポイントを $${(points * exchangeRate).toLocaleString()} USD と交換できます`, th: `คุณสามารถแลก ${points} คะแนนเป็น $${(points * exchangeRate).toLocaleString()} USD`, vi: `Bạn có thể đổi ${points} điểm thành $${(points * exchangeRate).toLocaleString()} USD`, id: `Anda dapat menukar ${points} poin menjadi $${(points * exchangeRate).toLocaleString()} USD` })}
         </div>
       </div>
 

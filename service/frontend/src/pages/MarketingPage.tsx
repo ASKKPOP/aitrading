@@ -755,7 +755,7 @@ export function MarketingPage() {
               SVG at original geometry, KPI row), localized; FlowParticles
               animates the connectors in the same coordinate space. */}
           {(() => {
-            const L = (ko: string, en: string, ja: string, th: string, vi: string) => tr(language, { ko, en, ja, th, vi })
+            const L = (ko: string, en: string, ja: string, th: string, vi: string, id: string) => tr(language, { ko, en, ja, th, vi, id })
             const svT: any = { font: `600 12px ${V.sans}`, fill: V.ink }
             const svS: any = { font: `500 10.5px ${V.sans}`, fill: V.mut }
             const svM: any = { font: `600 10px ${V.mono}`, fill: V.faint }
@@ -765,22 +765,22 @@ export function MarketingPage() {
             const goodF = `color-mix(in srgb, ${GOOD} 12%, ${V.card})`
             const warnF = `color-mix(in srgb, ${YELL} 14%, ${V.card})`
             const steps = [
-              L('데이터 수집', 'Data collection', 'データ収集', 'เก็บข้อมูล', 'Thu thập dữ liệu'),
-              L('종목 발굴', 'Coin discovery', '銘柄発掘', 'ค้นหาเหรียญ', 'Tìm coin'),
-              L('정량 분석', 'Quant analysis', '定量分析', 'วิเคราะห์เชิงปริมาณ', 'Phân tích định lượng'),
-              L('심리 분석', 'Psych analysis', '心理分析', 'วิเคราะห์จิตวิทยา', 'Phân tích tâm lý'),
-              L('신호 융합', 'Signal fusion', 'シグナル融合', 'ผสานสัญญาณ', 'Hợp nhất tín hiệu'),
-              L('AI 4-분석가', 'AI 4 analysts', 'AI 4アナリスト', 'นักวิเคราะห์ AI 4', '4 nhà phân tích AI'),
-              L('자동매매 규칙', 'Automation rules', '自動売買ルール', 'กฎเทรดอัตโนมัติ', 'Quy tắc tự động'),
-              L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'),
-              L('체결·SL/TP', 'Fill · SL/TP', '約定·SL/TP', 'เติมคำสั่ง·SL/TP', 'Khớp · SL/TP'),
-              L('기록·복기', 'Journal & review', '記録・振り返り', 'บันทึก·ทบทวน', 'Nhật ký & xem lại'),
+              L('데이터 수집', 'Data collection', 'データ収集', 'เก็บข้อมูล', 'Thu thập dữ liệu', 'Pengumpulan data'),
+              L('종목 발굴', 'Coin discovery', '銘柄発掘', 'ค้นหาเหรียญ', 'Tìm coin', 'Penemuan koin'),
+              L('정량 분석', 'Quant analysis', '定量分析', 'วิเคราะห์เชิงปริมาณ', 'Phân tích định lượng', 'Analisis kuantitatif'),
+              L('심리 분석', 'Psych analysis', '心理分析', 'วิเคราะห์จิตวิทยา', 'Phân tích tâm lý', 'Analisis psikologi'),
+              L('신호 융합', 'Signal fusion', 'シグナル融合', 'ผสานสัญญาณ', 'Hợp nhất tín hiệu', 'Penggabungan sinyal'),
+              L('AI 4-분석가', 'AI 4 analysts', 'AI 4アナリスト', 'นักวิเคราะห์ AI 4', '4 nhà phân tích AI', '4 analis AI'),
+              L('자동매매 규칙', 'Automation rules', '自動売買ルール', 'กฎเทรดอัตโนมัติ', 'Quy tắc tự động', 'Aturan otomatisasi'),
+              L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro', 'Gerbang risiko'),
+              L('체결·SL/TP', 'Fill · SL/TP', '約定·SL/TP', 'เติมคำสั่ง·SL/TP', 'Khớp · SL/TP', 'Eksekusi · SL/TP'),
+              L('기록·복기', 'Journal & review', '記録・振り返り', 'บันทึก·ทบทวน', 'Nhật ký & xem lại', 'Catatan & tinjauan'),
             ]
             const kpis = [
-              { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh'), vl: L('페이퍼 먼저', 'Paper first', 'まず模擬', 'เปเปอร์ก่อน', 'Paper trước'), hint: L('검증 후 본인 브로커에서 라이브 선택', 'live optional on your broker, after you verify', '検証後に本人ブローカーで任意ライブ', 'ไลฟ์ทางเลือกบนโบรกเกอร์คุณ หลังยืนยัน', 'live tùy chọn trên broker của bạn, sau khi xác minh') },
-              { lb: L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro'), vl: L('3중 검사', 'Triple check', '三重チェック', 'ตรวจ 3 ชั้น', 'Kiểm tra 3 lớp'), hint: L('켈리 → 한도 → 브레이커', 'Kelly → limits → breaker', 'ケリー → 上限 → ブレーカー', 'เคลลี → ลิมิต → เบรกเกอร์', 'Kelly → hạn mức → breaker') },
-              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử'), vl: '1,800+', hint: L('시그널·실행·리스크 커버리지', 'signal · execution · risk coverage', 'シグナル・実行・リスクの網羅', 'ครอบคลุมสัญญาณ·ดำเนินการ·ความเสี่ยง', 'phủ tín hiệu · thực thi · rủi ro') },
-              { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền'), vl: '32' + L('개', '', '件', '', ''), hint: 'risk_watcher · psych · scanner · fleet' },
+              { lb: L('체결 방식', 'Execution mode', '約定方式', 'โหมดดำเนินการ', 'Chế độ khớp lệnh', 'Mode eksekusi'), vl: L('페이퍼 먼저', 'Paper first', 'まず模擬', 'เปเปอร์ก่อน', 'Paper trước', 'Paper lebih dulu'), hint: L('검증 후 본인 브로커에서 라이브 선택', 'live optional on your broker, after you verify', '検証後に本人ブローカーで任意ライブ', 'ไลฟ์ทางเลือกบนโบรกเกอร์คุณ หลังยืนยัน', 'live tùy chọn trên broker của bạn, sau khi xác minh', 'live opsional di broker Anda, setelah verifikasi') },
+              { lb: L('리스크 게이트', 'Risk gate', 'リスクゲート', 'ประตูความเสี่ยง', 'Cổng rủi ro', 'Gerbang risiko'), vl: L('3중 검사', 'Triple check', '三重チェック', 'ตรวจ 3 ชั้น', 'Kiểm tra 3 lớp', 'Pemeriksaan rangkap tiga'), hint: L('켈리 → 한도 → 브레이커', 'Kelly → limits → breaker', 'ケリー → 上限 → ブレーカー', 'เคลลี → ลิมิต → เบรกเกอร์', 'Kelly → hạn mức → breaker', 'Kelly → batas → pemutus sirkuit') },
+              { lb: L('테스트', 'Tests', 'テスト', 'เทสต์', 'Kiểm thử', 'Pengujian'), vl: '1,800+', hint: L('시그널·실행·리스크 커버리지', 'signal · execution · risk coverage', 'シグナル・実行・リスクの網羅', 'ครอบคลุมสัญญาณ·ดำเนินการ·ความเสี่ยง', 'phủ tín hiệu · thực thi · rủi ro', 'cakupan sinyal · eksekusi · risiko') },
+              { lb: L('백그라운드 태스크', 'Background tasks', 'バックグラウンドタスク', 'งานเบื้องหลัง', 'Tác vụ nền', 'Tugas latar belakang'), vl: '32' + L('개', '', '件', '', '', ''), hint: 'risk_watcher · psych · scanner · fleet' },
             ]
             return (<>
               <p style={{ fontSize: 14, color: V.mut, margin: '4px 0 14px', maxWidth: '80ch' }}>
@@ -788,7 +788,7 @@ export function MarketingPage() {
                   'From data collection to review. Every trade fills only on the paper (simulator) account, every stage is isolated behind env flags, and an external-source outage silently drops only its own part — fail-soft by design.',
                   'データ収集から振り返りまで。全ての売買はペーパー（シミュレーター）口座のみで約定し、各段階はenvフラグで隔離され、外部ソース障害は該当部分だけが静かに抜けるfail-soft構造です。',
                   'ตั้งแต่เก็บข้อมูลจนถึงทบทวน ทุกการเทรดเกิดในบัญชีเปเปอร์ (จำลอง) เท่านั้น ทุกขั้นถูกแยกด้วย env flag และเมื่อแหล่งข้อมูลภายนอกล่ม เฉพาะส่วนนั้นจะหายไปเงียบ ๆ — โครงสร้าง fail-soft',
-                  'Từ thu thập dữ liệu đến xem lại. Mọi giao dịch chỉ khớp trên tài khoản paper (mô phỏng), mọi giai đoạn được cách ly bằng cờ env, và sự cố nguồn ngoài chỉ làm rơi phần đó một cách im lặng — thiết kế fail-soft.')}
+                  'Từ thu thập dữ liệu đến xem lại. Mọi giao dịch chỉ khớp trên tài khoản paper (mô phỏng), mọi giai đoạn được cách ly bằng cờ env, và sự cố nguồn ngoài chỉ làm rơi phần đó một cách im lặng — thiết kế fail-soft.', 'Dari pengumpulan data hingga peninjauan. Setiap transaksi hanya tereksekusi di akun paper (simulator), setiap tahap diisolasi di balik penanda env, dan gangguan sumber eksternal hanya menggugurkan bagiannya sendiri secara diam-diam — fail-soft sejak rancangan.')}
               </p>
               <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))', margin: '14px 0' }}>
                 {steps.map((s, i) => (
@@ -808,88 +808,88 @@ export function MarketingPage() {
                       <marker id="mp-arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={BAD} /></marker>
                     </defs>
                     {/* band 1: sources */}
-                    <text x={16} y={24} style={svLb}>{L('외부 데이터 소스 (전부 무키 검증 완료)', 'EXTERNAL DATA SOURCES (ALL VERIFIED KEYLESS)', '外部データソース（全て無キー検証済み）', 'แหล่งข้อมูลภายนอก (ตรวจสอบแบบไร้คีย์แล้ว)', 'NGUỒN DỮ LIỆU NGOÀI (ĐÃ KIỂM CHỨNG KHÔNG CẦN KEY)')}</text>
+                    <text x={16} y={24} style={svLb}>{L('외부 데이터 소스 (전부 무키 검증 완료)', 'EXTERNAL DATA SOURCES (ALL VERIFIED KEYLESS)', '外部データソース（全て無キー検証済み）', 'แหล่งข้อมูลภายนอก (ตรวจสอบแบบไร้คีย์แล้ว)', 'NGUỒN DỮ LIỆU NGOÀI (ĐÃ KIỂM CHỨNG KHÔNG CẦN KEY)', 'SUMBER DATA EKSTERNAL (SEMUA TERVERIFIKASI TANPA KUNCI)')}</text>
                     <rect x={16} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={102} y={53} textAnchor="middle" style={svT}>OKX</text>
-                    <text x={102} y={68} textAnchor="middle" style={svS}>{L('캔들·펀딩·OI·롱숏·청산', 'candles·funding·OI·L/S·liq.', 'ローソク足・資金調達率・OI・L/S・清算', 'แท่งเทียน·ฟันดิง·OI·L/S·ล้างพอร์ต', 'nến·funding·OI·L/S·thanh lý')}</text>
+                    <text x={102} y={68} textAnchor="middle" style={svS}>{L('캔들·펀딩·OI·롱숏·청산', 'candles·funding·OI·L/S·liq.', 'ローソク足・資金調達率・OI・L/S・清算', 'แท่งเทียน·ฟันดิง·OI·L/S·ล้างพอร์ต', 'nến·funding·OI·L/S·thanh lý', 'candle·funding·OI·L/S·likuidasi')}</text>
                     <rect x={204} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={290} y={53} textAnchor="middle" style={svT}>alternative.me</text>
-                    <text x={290} y={68} textAnchor="middle" style={svS}>{L('공포·탐욕 지수 + 이력', 'Fear & Greed index + history', 'Fear&Greed指数＋履歴', 'ดัชนี F&G + ประวัติ', 'chỉ số F&G + lịch sử')}</text>
+                    <text x={290} y={68} textAnchor="middle" style={svS}>{L('공포·탐욕 지수 + 이력', 'Fear & Greed index + history', 'Fear&Greed指数＋履歴', 'ดัชนี F&G + ประวัติ', 'chỉ số F&G + lịch sử', 'Indeks Fear & Greed + riwayat')}</text>
                     <rect x={392} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={478} y={53} textAnchor="middle" style={svT}>StockTwits · Polymarket</text>
-                    <text x={478} y={68} textAnchor="middle" style={svS}>{L('군중 감성·예측시장 Δodds', 'crowd sentiment · Δodds', '群衆感情・予測市場Δodds', 'อารมณ์ฝูงชน · Δodds', 'tâm lý đám đông · Δodds')}</text>
+                    <text x={478} y={68} textAnchor="middle" style={svS}>{L('군중 감성·예측시장 Δodds', 'crowd sentiment · Δodds', '群衆感情・予測市場Δodds', 'อารมณ์ฝูงชน · Δodds', 'tâm lý đám đông · Δodds', 'sentimen massa · Δpeluang')}</text>
                     <rect x={580} y={34} width={172} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={666} y={53} textAnchor="middle" style={svT}>SoSoValue · Upbit</text>
-                    <text x={666} y={68} textAnchor="middle" style={svS}>{L('ETF 실흐름·김치 프리미엄', 'real ETF flows · kimchi premium', 'ETF実フロー・キムチプレミアム', 'กระแส ETF จริง · คิมชิพรีเมียม', 'dòng ETF thật · kimchi premium')}</text>
+                    <text x={666} y={68} textAnchor="middle" style={svS}>{L('ETF 실흐름·김치 프리미엄', 'real ETF flows · kimchi premium', 'ETF実フロー・キムチプレミアム', 'กระแส ETF จริง · คิมชิพรีเมียม', 'dòng ETF thật · kimchi premium', 'aliran ETF nyata · premi kimchi')}</text>
                     <rect x={768} y={34} width={176} height={46} rx={9} fill={V.bg2} stroke={V.line} />
                     <text x={856} y={53} textAnchor="middle" style={svT}>AV · FRED · FinnHub</text>
-                    <text x={856} y={68} textAnchor="middle" style={svS}>{L('뉴스·매크로·DXY', 'news · macro · DXY', 'ニュース・マクロ・DXY', 'ข่าว·มหภาค·DXY', 'tin tức · vĩ mô · DXY')}</text>
+                    <text x={856} y={68} textAnchor="middle" style={svS}>{L('뉴스·매크로·DXY', 'news · macro · DXY', 'ニュース・マクロ・DXY', 'ข่าว·มหภาค·DXY', 'tin tức · vĩ mô · DXY', 'berita · makro · DXY')}</text>
                     {[102, 290, 478, 666, 856].map(x => <path key={x} d={`M${x} 80 V108`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
                     {/* band 2: collectors */}
                     <rect x={16} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={126} y={130} textAnchor="middle" style={svT}>{L('STEP 2 · 스캐너', 'STEP 2 · Scanner', 'STEP 2 · スキャナー', 'STEP 2 · สแกนเนอร์', 'STEP 2 · Máy quét')}</text>
-                    <text x={126} y={145} textAnchor="middle" style={svS}>{L('거래량 급증 ×2 · 멘션 +100%', 'volume surge ×2 · mentions +100%', '出来高急増×2・言及+100%', 'ปริมาณพุ่ง ×2 · การพูดถึง +100%', 'khối lượng ×2 · nhắc +100%')}</text>
+                    <text x={126} y={130} textAnchor="middle" style={svT}>{L('STEP 2 · 스캐너', 'STEP 2 · Scanner', 'STEP 2 · スキャナー', 'STEP 2 · สแกนเนอร์', 'STEP 2 · Máy quét', 'LANGKAH 2 · Pemindai')}</text>
+                    <text x={126} y={145} textAnchor="middle" style={svS}>{L('거래량 급증 ×2 · 멘션 +100%', 'volume surge ×2 · mentions +100%', '出来高急増×2・言及+100%', 'ปริมาณพุ่ง ×2 · การพูดถึง +100%', 'khối lượng ×2 · nhắc +100%', 'lonjakan volume ×2 · penyebutan +100%')}</text>
                     <text x={126} y={159} textAnchor="middle" style={svM}>scanner.py · 1h</text>
                     <rect x={252} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={362} y={130} textAnchor="middle" style={svT}>{L('STEP 3 · 정량(퀀트)', 'STEP 3 · Quant', 'STEP 3 · 定量(クオンツ)', 'STEP 3 · ควอนต์', 'STEP 3 · Định lượng')}</text>
-                    <text x={362} y={145} textAnchor="middle" style={svS}>RSI·σ·{L('펀딩·베이시스·OI·롱숏', 'funding·basis·OI·long/short', '資金調達率・ベーシス・OI・L/S', 'ฟันดิง·เบสิส·OI·L/S', 'funding·basis·OI·L/S')}</text>
-                    <text x={362} y={159} textAnchor="middle" style={svM}>quant_crypto.py · {L('온디맨드', 'on-demand', 'オンデマンド', 'ออนดีมานด์', 'theo yêu cầu')}</text>
+                    <text x={362} y={130} textAnchor="middle" style={svT}>{L('STEP 3 · 정량(퀀트)', 'STEP 3 · Quant', 'STEP 3 · 定量(クオンツ)', 'STEP 3 · ควอนต์', 'STEP 3 · Định lượng', 'LANGKAH 3 · Kuantitatif')}</text>
+                    <text x={362} y={145} textAnchor="middle" style={svS}>RSI·σ·{L('펀딩·베이시스·OI·롱숏', 'funding·basis·OI·long/short', '資金調達率・ベーシス・OI・L/S', 'ฟันดิง·เบสิส·OI·L/S', 'funding·basis·OI·L/S', 'funding·basis·OI·long/short')}</text>
+                    <text x={362} y={159} textAnchor="middle" style={svM}>quant_crypto.py · {L('온디맨드', 'on-demand', 'オンデマンド', 'ออนดีมานด์', 'theo yêu cầu', 'sesuai permintaan')}</text>
                     <rect x={488} y={110} width={220} height={58} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={598} y={130} textAnchor="middle" style={svT}>{L('STEP 4 · 심리 피드', 'STEP 4 · Psych feed', 'STEP 4 · 心理フィード', 'STEP 4 · ฟีดจิตวิทยา', 'STEP 4 · Nguồn tâm lý')}</text>
-                    <text x={598} y={145} textAnchor="middle" style={svS}>{L('F&G·감성 스파이크·실제 청산', 'F&G · sentiment spikes · real liq.', 'F&G・感情スパイク・実清算', 'F&G·สไปก์อารมณ์·ล้างพอร์ตจริง', 'F&G · tâm lý tăng vọt · thanh lý thật')}</text>
+                    <text x={598} y={130} textAnchor="middle" style={svT}>{L('STEP 4 · 심리 피드', 'STEP 4 · Psych feed', 'STEP 4 · 心理フィード', 'STEP 4 · ฟีดจิตวิทยา', 'STEP 4 · Nguồn tâm lý', 'LANGKAH 4 · Umpan psikologi')}</text>
+                    <text x={598} y={145} textAnchor="middle" style={svS}>{L('F&G·감성 스파이크·실제 청산', 'F&G · sentiment spikes · real liq.', 'F&G・感情スパイク・実清算', 'F&G·สไปก์อารมณ์·ล้างพอร์ตจริง', 'F&G · tâm lý tăng vọt · thanh lý thật', 'F&G · lonjakan sentimen · likuidasi nyata')}</text>
                     <text x={598} y={159} textAnchor="middle" style={svM}>psych_feed.py · 1h</text>
                     <rect x={724} y={110} width={220} height={58} rx={9} fill={V.bg2} stroke={V.line} />
-                    <text x={834} y={130} textAnchor="middle" style={svT}>{L('뉴스 · 매크로 인텔', 'News · macro intel', 'ニュース・マクロインテル', 'ข่าว · อินเทลมหภาค', 'Tin tức · vĩ mô')}</text>
-                    <text x={834} y={145} textAnchor="middle" style={svS}>{L('뉴스 감성·ETF 실흐름·이벤트 캘린더', 'news sentiment · real ETF · event calendar', 'ニュース感情・ETF実フロー・イベント暦', 'เซนติเมนต์ข่าว·ETF จริง·ปฏิทินอีเวนต์', 'tâm lý tin · ETF thật · lịch sự kiện')}</text>
-                    <text x={834} y={159} textAnchor="middle" style={svM}>market_intel.py · {L('주기 갱신', 'periodic refresh', '定期更新', 'รีเฟรชตามรอบ', 'làm mới định kỳ')}</text>
+                    <text x={834} y={130} textAnchor="middle" style={svT}>{L('뉴스 · 매크로 인텔', 'News · macro intel', 'ニュース・マクロインテル', 'ข่าว · อินเทลมหภาค', 'Tin tức · vĩ mô', 'Berita · intelijen makro')}</text>
+                    <text x={834} y={145} textAnchor="middle" style={svS}>{L('뉴스 감성·ETF 실흐름·이벤트 캘린더', 'news sentiment · real ETF · event calendar', 'ニュース感情・ETF実フロー・イベント暦', 'เซนติเมนต์ข่าว·ETF จริง·ปฏิทินอีเวนต์', 'tâm lý tin · ETF thật · lịch sự kiện', 'sentimen berita · ETF nyata · kalender peristiwa')}</text>
+                    <text x={834} y={159} textAnchor="middle" style={svM}>market_intel.py · {L('주기 갱신', 'periodic refresh', '定期更新', 'รีเฟรชตามรอบ', 'làm mới định kỳ', 'penyegaran berkala')}</text>
                     {[126, 362, 598, 834].map(x => <path key={x} d={`M${x} 168 V196`} stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />)}
                     {/* snapshot store */}
                     <rect x={16} y={198} width={928} height={40} rx={9} fill={V.card} stroke={V.lineStrong} strokeDasharray="5 4" />
-                    <text x={480} y={222} textAnchor="middle" style={svT}>{L('스냅샷 저장소', 'Snapshot store', 'スナップショット保存所', 'คลังสแนปช็อต', 'Kho snapshot')} — scanner · psych · market_news/macro/etf/stock_analysis ({L('모든 판단의 증거가 DB에 남음', 'evidence of every decision stays in the DB', '全判断の証拠がDBに残る', 'หลักฐานทุกการตัดสินใจอยู่ใน DB', 'bằng chứng mọi quyết định lưu trong DB')})</text>
+                    <text x={480} y={222} textAnchor="middle" style={svT}>{L('스냅샷 저장소', 'Snapshot store', 'スナップショット保存所', 'คลังสแนปช็อต', 'Kho snapshot', 'Penyimpanan snapshot')} — scanner · psych · market_news/macro/etf/stock_analysis ({L('모든 판단의 증거가 DB에 남음', 'evidence of every decision stays in the DB', '全判断の証拠がDBに残る', 'หลักฐานทุกการตัดสินใจอยู่ใน DB', 'bằng chứng mọi quyết định lưu trong DB', 'bukti setiap keputusan tetap tersimpan di basis data')})</text>
                     <path d="M240 238 V266" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     <path d="M720 238 V266" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     {/* band 3: fusion + AI */}
                     <rect x={60} y={268} width={360} height={66} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={240} y={288} textAnchor="middle" style={svT}>{L('STEP 5 · 신호 융합', 'STEP 5 · Signal fusion', 'STEP 5 · シグナル融合', 'STEP 5 · ผสานสัญญาณ', 'STEP 5 · Hợp nhất tín hiệu')}</text>
-                    <text x={240} y={304} textAnchor="middle" style={svS}>{L('0.5·퀀트 + 0.3·감성 + 0.2·심리 (심리 상한 0.3)', '0.5·quant + 0.3·sentiment + 0.2·psych (psych cap 0.3)', '0.5·クオンツ+0.3·感情+0.2·心理（心理上限0.3）', '0.5·ควอนต์ + 0.3·อารมณ์ + 0.2·จิต (จำกัด 0.3)', '0.5·quant + 0.3·cảm xúc + 0.2·tâm lý (trần 0.3)')}</text>
+                    <text x={240} y={288} textAnchor="middle" style={svT}>{L('STEP 5 · 신호 융합', 'STEP 5 · Signal fusion', 'STEP 5 · シグナル融合', 'STEP 5 · ผสานสัญญาณ', 'STEP 5 · Hợp nhất tín hiệu', 'LANGKAH 5 · Penggabungan sinyal')}</text>
+                    <text x={240} y={304} textAnchor="middle" style={svS}>{L('0.5·퀀트 + 0.3·감성 + 0.2·심리 (심리 상한 0.3)', '0.5·quant + 0.3·sentiment + 0.2·psych (psych cap 0.3)', '0.5·クオンツ+0.3·感情+0.2·心理（心理上限0.3）', '0.5·ควอนต์ + 0.3·อารมณ์ + 0.2·จิต (จำกัด 0.3)', '0.5·quant + 0.3·cảm xúc + 0.2·tâm lý (trần 0.3)', '0,5·kuantitatif + 0,3·sentimen + 0,2·psikologi (batas psikologi 0,3)')}</text>
                     <text x={240} y={320} textAnchor="middle" style={svM}>signal_fusion.py · GET /api/market-intel/fusion</text>
                     <rect x={540} y={268} width={360} height={66} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={720} y={288} textAnchor="middle" style={svT}>{L('STEP 6 · AI 4-분석가 + 트레이더 토론', 'STEP 6 · AI 4 analysts + trader debate', 'STEP 6 · AI 4アナリスト＋トレーダー討論', 'STEP 6 · นักวิเคราะห์ AI 4 + ดีเบต', 'STEP 6 · 4 nhà phân tích AI + tranh luận')}</text>
-                    <text x={720} y={304} textAnchor="middle" style={svS}>{L('뉴스·감성·펀더멘털/매크로·기술 → BUY/SELL/HOLD + 신뢰도', 'news·sentiment·fundamental/macro·technical → BUY/SELL/HOLD + confidence', 'ニュース・感情・ファンダ/マクロ・技術 → BUY/SELL/HOLD＋信頼度', 'ข่าว·อารมณ์·พื้นฐาน/มหภาค·เทคนิค → BUY/SELL/HOLD + ความเชื่อมั่น', 'tin·cảm xúc·cơ bản/vĩ mô·kỹ thuật → BUY/SELL/HOLD + độ tin cậy')}</text>
-                    <text x={720} y={320} textAnchor="middle" style={svM}>analysis_agents.py · {L('LLM 또는 룰 기반 폴백', 'LLM or rule-based fallback', 'LLMまたはルールベースのフォールバック', 'LLM หรือ fallback แบบกฎ', 'LLM hoặc fallback theo luật')}</text>
+                    <text x={720} y={288} textAnchor="middle" style={svT}>{L('STEP 6 · AI 4-분석가 + 트레이더 토론', 'STEP 6 · AI 4 analysts + trader debate', 'STEP 6 · AI 4アナリスト＋トレーダー討論', 'STEP 6 · นักวิเคราะห์ AI 4 + ดีเบต', 'STEP 6 · 4 nhà phân tích AI + tranh luận', 'LANGKAH 6 · 4 analis AI + debat trader')}</text>
+                    <text x={720} y={304} textAnchor="middle" style={svS}>{L('뉴스·감성·펀더멘털/매크로·기술 → BUY/SELL/HOLD + 신뢰도', 'news·sentiment·fundamental/macro·technical → BUY/SELL/HOLD + confidence', 'ニュース・感情・ファンダ/マクロ・技術 → BUY/SELL/HOLD＋信頼度', 'ข่าว·อารมณ์·พื้นฐาน/มหภาค·เทคนิค → BUY/SELL/HOLD + ความเชื่อมั่น', 'tin·cảm xúc·cơ bản/vĩ mô·kỹ thuật → BUY/SELL/HOLD + độ tin cậy', 'berita·sentimen·fundamental/makro·teknikal → BELI/JUAL/TAHAN + keyakinan')}</text>
+                    <text x={720} y={320} textAnchor="middle" style={svM}>analysis_agents.py · {L('LLM 또는 룰 기반 폴백', 'LLM or rule-based fallback', 'LLMまたはルールベースのフォールバック', 'LLM หรือ fallback แบบกฎ', 'LLM hoặc fallback theo luật', 'LLM atau cadangan berbasis aturan')}</text>
                     {/* band 4: automation → gate → execution */}
                     <path d="M240 334 V360 H180 V386" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     <path d="M720 334 V360 H180" stroke={V.lineStrong} strokeWidth={1.4} fill="none" />
                     <rect x={40} y={388} width={280} height={66} rx={9} fill={V.card} stroke={V.lineStrong} />
-                    <text x={180} y={408} textAnchor="middle" style={svT}>{L('STEP 7 · 자동매매 규칙 (사용자 설정)', 'STEP 7 · Automation rules (user-set)', 'STEP 7 · 自動売買ルール（ユーザー設定）', 'STEP 7 · กฎเทรดอัตโนมัติ (ผู้ใช้ตั้ง)', 'STEP 7 · Quy tắc tự động (người dùng đặt)')}</text>
-                    <text x={180} y={424} textAnchor="middle" style={svS}>{L('주기 5–1440분 · 최소 신뢰도 0.65 · 자동체결 on/off', 'interval 5–1440min · min confidence 0.65 · auto-execute on/off', '周期5–1440分・最低信頼度0.65・自動約定on/off', 'รอบ 5–1440 นาที · เชื่อมั่นขั้นต่ำ 0.65 · เทรดอัตโนมัติ on/off', 'chu kỳ 5–1440ph · tin cậy tối thiểu 0.65 · tự khớp on/off')}</text>
-                    <text x={180} y={440} textAnchor="middle" style={svM}>automation.py · 60s {L('틱', 'tick', 'ティック', 'ติ๊ก', 'tick')}</text>
+                    <text x={180} y={408} textAnchor="middle" style={svT}>{L('STEP 7 · 자동매매 규칙 (사용자 설정)', 'STEP 7 · Automation rules (user-set)', 'STEP 7 · 自動売買ルール（ユーザー設定）', 'STEP 7 · กฎเทรดอัตโนมัติ (ผู้ใช้ตั้ง)', 'STEP 7 · Quy tắc tự động (người dùng đặt)', 'LANGKAH 7 · Aturan otomatisasi (disetel pengguna)')}</text>
+                    <text x={180} y={424} textAnchor="middle" style={svS}>{L('주기 5–1440분 · 최소 신뢰도 0.65 · 자동체결 on/off', 'interval 5–1440min · min confidence 0.65 · auto-execute on/off', '周期5–1440分・最低信頼度0.65・自動約定on/off', 'รอบ 5–1440 นาที · เชื่อมั่นขั้นต่ำ 0.65 · เทรดอัตโนมัติ on/off', 'chu kỳ 5–1440ph · tin cậy tối thiểu 0.65 · tự khớp on/off', 'interval 5–1440 menit · keyakinan min 0,65 · eksekusi otomatis aktif/mati')}</text>
+                    <text x={180} y={440} textAnchor="middle" style={svM}>automation.py · 60s {L('틱', 'tick', 'ティック', 'ติ๊ก', 'tick', 'tik')}</text>
                     <rect x={368} y={388} width={256} height={66} rx={9} fill={warnF} stroke={YELL} />
-                    <text x={496} y={408} textAnchor="middle" style={svT}>{L('STEP 8 · 리스크 게이트', 'STEP 8 · Risk gate', 'STEP 8 · リスクゲート', 'STEP 8 · ประตูความเสี่ยง', 'STEP 8 · Cổng rủi ro')}</text>
-                    <text x={496} y={424} textAnchor="middle" style={svS}>{L('① 켈리 사이징 → ② 한도 → ③ 브레이커', '① Kelly sizing → ② limits → ③ breaker', '① ケリーサイジング → ② 上限 → ③ ブレーカー', '① ไซซิ่งเคลลี → ② ลิมิต → ③ เบรกเกอร์', '① Kelly sizing → ② hạn mức → ③ breaker')}</text>
-                    <text x={496} y={440} textAnchor="middle" style={svM}>risk_engine.py · {L('전 주문 통과 필수', 'every order must pass', '全注文の通過必須', 'ทุกคำสั่งต้องผ่าน', 'mọi lệnh phải qua')}</text>
+                    <text x={496} y={408} textAnchor="middle" style={svT}>{L('STEP 8 · 리스크 게이트', 'STEP 8 · Risk gate', 'STEP 8 · リスクゲート', 'STEP 8 · ประตูความเสี่ยง', 'STEP 8 · Cổng rủi ro', 'LANGKAH 8 · Gerbang risiko')}</text>
+                    <text x={496} y={424} textAnchor="middle" style={svS}>{L('① 켈리 사이징 → ② 한도 → ③ 브레이커', '① Kelly sizing → ② limits → ③ breaker', '① ケリーサイジング → ② 上限 → ③ ブレーカー', '① ไซซิ่งเคลลี → ② ลิมิต → ③ เบรกเกอร์', '① Kelly sizing → ② hạn mức → ③ breaker', '① Penentuan ukuran Kelly → ② batas → ③ pemutus sirkuit')}</text>
+                    <text x={496} y={440} textAnchor="middle" style={svM}>risk_engine.py · {L('전 주문 통과 필수', 'every order must pass', '全注文の通過必須', 'ทุกคำสั่งต้องผ่าน', 'mọi lệnh phải qua', 'setiap order wajib lolos')}</text>
                     <rect x={672} y={388} width={272} height={66} rx={9} fill={goodF} stroke={GOOD} />
-                    <text x={808} y={408} textAnchor="middle" style={svT}>{L('STEP 9 · 페이퍼 체결', 'STEP 9 · Paper execution', 'STEP 9 · ペーパー約定', 'STEP 9 · ดำเนินการเปเปอร์', 'STEP 9 · Khớp lệnh paper')}</text>
-                    <text x={808} y={424} textAnchor="middle" style={svS}>{L('SL −5% / TP +10% 자동 등록 · 30초 워처', 'SL −5% / TP +10% auto-set · 30s watcher', 'SL−5%／TP+10%自動登録・30秒ウォッチャー', 'SL −5% / TP +10% อัตโนมัติ · วอตเชอร์ 30 วิ', 'SL −5% / TP +10% tự đặt · watcher 30s')}</text>
-                    <text x={808} y={440} textAnchor="middle" style={svM}>{L('시뮬레이터 계정만 · 실계좌 체결 없음', 'simulator account only · no real orders', 'シミュレーター口座のみ・実口座約定なし', 'บัญชีจำลองเท่านั้น · ไม่มีคำสั่งจริง', 'chỉ tài khoản mô phỏng · không lệnh thật')}</text>
+                    <text x={808} y={408} textAnchor="middle" style={svT}>{L('STEP 9 · 페이퍼 체결', 'STEP 9 · Paper execution', 'STEP 9 · ペーパー約定', 'STEP 9 · ดำเนินการเปเปอร์', 'STEP 9 · Khớp lệnh paper', 'LANGKAH 9 · Eksekusi paper')}</text>
+                    <text x={808} y={424} textAnchor="middle" style={svS}>{L('SL −5% / TP +10% 자동 등록 · 30초 워처', 'SL −5% / TP +10% auto-set · 30s watcher', 'SL−5%／TP+10%自動登録・30秒ウォッチャー', 'SL −5% / TP +10% อัตโนมัติ · วอตเชอร์ 30 วิ', 'SL −5% / TP +10% tự đặt · watcher 30s', 'SL −5% / TP +10% disetel otomatis · pengawas 30 detik')}</text>
+                    <text x={808} y={440} textAnchor="middle" style={svM}>{L('시뮬레이터 계정만 · 실계좌 체결 없음', 'simulator account only · no real orders', 'シミュレーター口座のみ・実口座約定なし', 'บัญชีจำลองเท่านั้น · ไม่มีคำสั่งจริง', 'chỉ tài khoản mô phỏng · không lệnh thật', 'hanya akun simulator · tanpa order sungguhan')}</text>
                     <path d="M320 421 H366" stroke={V.accent} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arA)" />
                     <path d="M624 421 H670" stroke={GOOD} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arG)" />
                     <text x={643} y={412} textAnchor="middle" style={{ ...svM, fill: GOOD }}>PASS</text>
                     <path d="M496 454 V488" stroke={BAD} strokeWidth={1.6} fill="none" markerEnd="url(#mp-arR)" />
-                    <text x={522} y={474} style={{ ...svM, fill: BAD }}>{L('FAIL → 사유 기록', 'FAIL → reason logged', 'FAIL → 理由記録', 'FAIL → บันทึกเหตุผล', 'FAIL → ghi lý do')}</text>
+                    <text x={522} y={474} style={{ ...svM, fill: BAD }}>{L('FAIL → 사유 기록', 'FAIL → reason logged', 'FAIL → 理由記録', 'FAIL → บันทึกเหตุผล', 'FAIL → ghi lý do', 'GAGAL → alasan dicatat')}</text>
                     {/* band 5: journal */}
                     <path d="M808 454 V488" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     <rect x={368} y={490} width={256} height={54} rx={9} fill={V.card} stroke={V.lineStrong} />
-                    <text x={496} y={510} textAnchor="middle" style={svT}>{L('STEP 10 · 저널 · 복기', 'STEP 10 · Journal & review', 'STEP 10 · 記録・振り返り', 'STEP 10 · บันทึก·ทบทวน', 'STEP 10 · Nhật ký & xem lại')}</text>
-                    <text x={496} y={526} textAnchor="middle" style={svS}>automation_runs · signals {L('원장', 'ledger', '台帳', 'บัญชีแยกประเภท', 'sổ cái')} · {L('실험 이벤트', 'experiment events', '実験イベント', 'อีเวนต์ทดลอง', 'sự kiện thử nghiệm')}</text>
+                    <text x={496} y={510} textAnchor="middle" style={svT}>{L('STEP 10 · 저널 · 복기', 'STEP 10 · Journal & review', 'STEP 10 · 記録・振り返り', 'STEP 10 · บันทึก·ทบทวน', 'STEP 10 · Nhật ký & xem lại', 'LANGKAH 10 · Catatan & tinjauan')}</text>
+                    <text x={496} y={526} textAnchor="middle" style={svS}>automation_runs · signals {L('원장', 'ledger', '台帳', 'บัญชีแยกประเภท', 'sổ cái', 'buku')} · {L('실험 이벤트', 'experiment events', '実験イベント', 'อีเวนต์ทดลอง', 'sự kiện thử nghiệm', 'peristiwa eksperimen')}</text>
                     <rect x={672} y={490} width={272} height={54} rx={9} fill={V.card} stroke={V.lineStrong} />
-                    <text x={808} y={510} textAnchor="middle" style={svT}>{L('포지션 · 손익 추적', 'Position & P&L tracking', 'ポジション・損益追跡', 'ติดตามสถานะ·กำไรขาดทุน', 'Theo dõi vị thế & P&L')}</text>
-                    <text x={808} y={526} textAnchor="middle" style={svS}>{L('가격 폴링 → 평가손익 · SL/TP 워처 감시', 'price polling → unrealized P&L · SL/TP watcher', '価格ポーリング → 評価損益・SL/TPウォッチャー', 'โพลราคา → P&L · วอตเชอร์ SL/TP', 'poll giá → P&L tạm tính · watcher SL/TP')}</text>
+                    <text x={808} y={510} textAnchor="middle" style={svT}>{L('포지션 · 손익 추적', 'Position & P&L tracking', 'ポジション・損益追跡', 'ติดตามสถานะ·กำไรขาดทุน', 'Theo dõi vị thế & P&L', 'Pelacakan posisi & laba rugi')}</text>
+                    <text x={808} y={526} textAnchor="middle" style={svS}>{L('가격 폴링 → 평가손익 · SL/TP 워처 감시', 'price polling → unrealized P&L · SL/TP watcher', '価格ポーリング → 評価損益・SL/TPウォッチャー', 'โพลราคา → P&L · วอตเชอร์ SL/TP', 'poll giá → P&L tạm tính · watcher SL/TP', 'polling harga → laba rugi belum direalisasi · pengawas SL/TP')}</text>
                     <path d="M672 517 H626" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     {/* dashboard */}
                     <path d="M496 544 V572" stroke={V.lineStrong} strokeWidth={1.4} fill="none" markerEnd="url(#mp-ar)" />
                     <rect x={280} y={574} width={432} height={38} rx={9} fill={accF} stroke={V.accent} />
-                    <text x={496} y={597} textAnchor="middle" style={svT}>{L('시그널 보드 대시보드 + 알림 — 사람이 항상 검증 가능', 'Signal board dashboard + alerts — humans can always verify', 'シグナルボード＋アラート — 人がいつでも検証可能', 'แดชบอร์ด + แจ้งเตือน — คนตรวจสอบได้เสมอ', 'Bảng tín hiệu + cảnh báo — con người luôn kiểm chứng được')}</text>
+                    <text x={496} y={597} textAnchor="middle" style={svT}>{L('시그널 보드 대시보드 + 알림 — 사람이 항상 검증 가능', 'Signal board dashboard + alerts — humans can always verify', 'シグナルボード＋アラート — 人がいつでも検証可能', 'แดชบอร์ด + แจ้งเตือน — คนตรวจสอบได้เสมอ', 'Bảng tín hiệu + cảnh báo — con người luôn kiểm chứng được', 'Dasbor papan sinyal + peringatan — manusia selalu bisa memverifikasi')}</text>
                   </svg>
                   <FlowParticles />
                 </div>

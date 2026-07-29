@@ -194,7 +194,7 @@ function SourceBadge({ s, language }: { s: FusedSignal; language: Language }) {
     }}>{text}</span>
   )
   const age = s.cached_age_s != null && s.cached_age_s > 0
-    ? tr(language, { ko: `, ${s.cached_age_s}초 전 판정`, en: `, verdict ${s.cached_age_s}s old`, ja: `, ${s.cached_age_s}秒前の判定`, th: `, ผลเมื่อ ${s.cached_age_s} วิ.ที่แล้ว`, vi: `, phán quyết ${s.cached_age_s}s trước` })
+    ? tr(language, { ko: `, ${s.cached_age_s}초 전 판정`, en: `, verdict ${s.cached_age_s}s old`, ja: `, ${s.cached_age_s}秒前の判定`, th: `, ผลเมื่อ ${s.cached_age_s} วิ.ที่แล้ว`, vi: `, phán quyết ${s.cached_age_s}s trước`, id: `, putusan berusia ${s.cached_age_s} detik` })
     : ''
   return (
     <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
@@ -356,7 +356,7 @@ export function SignalsBoardPage() {
           value={regime ? regimeLabel(language, regime.regime) : '—'}
           sub={regime
             ? `${regime.allow_new_buys
-                ? tr(language, { ko: `신규 진입 ×${regime.size_multiplier}`, en: `entries ×${regime.size_multiplier}`, ja: `新規 ×${regime.size_multiplier}`, th: `เข้าใหม่ ×${regime.size_multiplier}`, vi: `vào lệnh ×${regime.size_multiplier}` })
+                ? tr(language, { ko: `신규 진입 ×${regime.size_multiplier}`, en: `entries ×${regime.size_multiplier}`, ja: `新規 ×${regime.size_multiplier}`, th: `เข้าใหม่ ×${regime.size_multiplier}`, vi: `vào lệnh ×${regime.size_multiplier}`, id: `entri ×${regime.size_multiplier}` })
                 : tr(language, { ko: '신규 매수 금지', en: 'no new buys', ja: '新規買い禁止', th: 'ห้ามซื้อใหม่', vi: 'không mua mới', id: 'tanpa pembelian baru' })}${regime.vol_percentile != null ? ` · vol p${regime.vol_percentile.toFixed(0)}` : ''}${regime.enforced ? '' : tr(language, { ko: ' · 자문용', en: ' · advisory', ja: ' · 参考', th: ' · แนะนำ', vi: ' · tư vấn', id: ' · bersifat saran' })}`
             : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…', id: 'mengumpulkan…' })}
           accent={regime ? (regime.regime === 'trend' ? 'var(--success)'
@@ -367,7 +367,7 @@ export function SignalsBoardPage() {
           label={tr(language, { ko: '뉴스 심리', en: 'News Sentiment', ja: 'ニュースセンチメント', th: 'อารมณ์ข่าว', vi: 'Tâm lý tin tức', id: 'Sentimen berita' })}
           value={cryptoSpike ? cryptoSpike.latest_score.toFixed(2) : '—'}
           sub={cryptoSpike
-            ? tr(language, { ko: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} 급등)` : ''}`, en: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} spike)` : ''}`, ja: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} 急騰)` : ''}`, th: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} พุ่ง)` : ''}`, vi: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} tăng vọt)` : ''}` })
+            ? tr(language, { ko: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} 급등)` : ''}`, en: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} spike)` : ''}`, ja: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} 急騰)` : ''}`, th: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} พุ่ง)` : ''}`, vi: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (${cryptoSpike.direction} tăng vọt)` : ''}`, id: `${cryptoSpike.category} · z=${cryptoSpike.z}${cryptoSpike.spike ? ` (lonjakan ${cryptoSpike.direction})` : ''}` })
             : tr(language, { ko: '수집 중… (뉴스 스냅샷 필요)', en: 'collecting… (needs news snapshots)', ja: '収集中… (ニューススナップショットが必要)', th: 'กำลังเก็บ… (ต้องมีสแนปช็อตข่าว)', vi: 'Đang thu thập… (cần ảnh chụp tin tức)', id: 'mengumpulkan… (perlu snapshot berita)' })}
           accent={cryptoSpike && cryptoSpike.latest_score < 0 ? 'var(--error)' : undefined}
         />
@@ -377,7 +377,7 @@ export function SignalsBoardPage() {
           sub={!psych?.available
             ? tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…', id: 'mengumpulkan…' })
             : liqTotal1h != null
-              ? tr(language, { ko: `실제 청산 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ 프록시`, en: `real liquidations (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy`, ja: `実清算 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σプロキシ`, th: `การชำระบัญชีจริง (OKX) 1 ชม. $${(liqTotal1h / 1e6).toFixed(2)}M + σ พรอกซี`, vi: `thanh lý thực (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy` })
+              ? tr(language, { ko: `실제 청산 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ 프록시`, en: `real liquidations (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy`, ja: `実清算 (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σプロキシ`, th: `การชำระบัญชีจริง (OKX) 1 ชม. $${(liqTotal1h / 1e6).toFixed(2)}M + σ พรอกซี`, vi: `thanh lý thực (OKX) 1h $${(liqTotal1h / 1e6).toFixed(2)}M + σ proxy`, id: `likuidasi nyata (OKX) 1 jam $${(liqTotal1h / 1e6).toFixed(2)}M + proksi σ` })
               : tr(language, { ko: '변동성 σ + 거래량 · 추정 프록시', en: 'volatility σ + volume · estimated proxy', ja: 'ボラティリティσ + 出来高 · 推定プロキシ', th: 'ความผันผวน σ + ปริมาณ · พรอกซีประมาณ', vi: 'biến động σ + khối lượng · proxy ước tính', id: 'volatilitas σ + volume · proksi perkiraan' })}
           accent={shockAlerts.length > 0 ? 'var(--error)' : undefined}
         />
@@ -390,7 +390,7 @@ export function SignalsBoardPage() {
           label={tr(language, { ko: '다음 거시 이벤트', en: 'Next Macro Event', ja: '次のマクロイベント', th: 'เหตุการณ์มหภาคถัดไป', vi: 'Sự kiện vĩ mô tiếp theo', id: 'Peristiwa makro berikutnya' })}
           value={nextEvent ? (nextEvent.days_until >= 1 ? `D-${Math.ceil(nextEvent.days_until)}` : `${Math.round(nextEvent.hours_until)}h`) : '—'}
           sub={events?.event_window
-            ? tr(language, { ko: `⚠ ${events.event_window.title} 발표 창 진행 중`, en: `⚠ ${events.event_window.title} release window active`, ja: `⚠ ${events.event_window.title} 発表ウィンドウ中`, th: `⚠ ช่วงประกาศ ${events.event_window.title}`, vi: `⚠ Cửa sổ công bố ${events.event_window.title}` })
+            ? tr(language, { ko: `⚠ ${events.event_window.title} 발표 창 진행 중`, en: `⚠ ${events.event_window.title} release window active`, ja: `⚠ ${events.event_window.title} 発表ウィンドウ中`, th: `⚠ ช่วงประกาศ ${events.event_window.title}`, vi: `⚠ Cửa sổ công bố ${events.event_window.title}`, id: `⚠ jendela rilis ${events.event_window.title} sedang aktif` })
             : nextEvent
               ? `${nextEvent.title} · ${nextEvent.at.slice(0, 10)}`
               : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…', id: 'mengumpulkan…' })}
@@ -420,8 +420,8 @@ export function SignalsBoardPage() {
           sub={psych?.whales?.available
             ? (psych.whales.totals?.eth_net_flow_usd
               ? ((psych.whales.totals.eth_net_flow_usd ?? 0) > 0
-                ? tr(language, { ko: `ETH 순유입 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 매도 압력`, en: `ETH net inflow $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → sell pressure`, ja: `ETH純流入 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 売り圧力`, th: `ETH ไหลเข้าสุทธิ $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → แรงขาย`, vi: `ETH ròng vào $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → áp lực bán` })
-                : tr(language, { ko: `ETH 순유출 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 축적`, en: `ETH net outflow $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → accumulation`, ja: `ETH純流出 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 蓄積`, th: `ETH ไหลออกสุทธิ $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → สะสม`, vi: `ETH ròng ra $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → tích lũy` }))
+                ? tr(language, { ko: `ETH 순유입 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 매도 압력`, en: `ETH net inflow $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → sell pressure`, ja: `ETH純流入 $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → 売り圧力`, th: `ETH ไหลเข้าสุทธิ $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → แรงขาย`, vi: `ETH ròng vào $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → áp lực bán`, id: `Aliran masuk bersih ETH $${(psych.whales.totals.eth_net_flow_usd / 1e6).toFixed(1)}M → tekanan jual` })
+                : tr(language, { ko: `ETH 순유출 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 축적`, en: `ETH net outflow $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → accumulation`, ja: `ETH純流出 $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → 蓄積`, th: `ETH ไหลออกสุทธิ $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → สะสม`, vi: `ETH ròng ra $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → tích lũy`, id: `Aliran keluar bersih ETH $${(Math.abs(psych.whales.totals.eth_net_flow_usd) / 1e6).toFixed(1)}M → akumulasi` }))
               : tr(language, { ko: '온체인 대형 이체 (실데이터)', en: 'large on-chain transfers (real data)', ja: 'オンチェーン大口送金（実データ）', th: 'โอนออนเชนขนาดใหญ่ (ข้อมูลจริง)', vi: 'chuyển on-chain lớn (dữ liệu thật)', id: 'transfer on-chain besar (data nyata)' }))
             : psych?.whales?.available === false
               ? tr(language, { ko: '비활성화됨 (WHALE_FEED_ENABLED)', en: 'disabled (WHALE_FEED_ENABLED)', ja: '無効 (WHALE_FEED_ENABLED)', th: 'ปิดอยู่ (WHALE_FEED_ENABLED)', vi: 'tắt (WHALE_FEED_ENABLED)', id: 'nonaktif (WHALE_FEED_ENABLED)' })
@@ -535,7 +535,7 @@ export function SignalsBoardPage() {
             en: `dashed = ${shockHist?.threshold_sigma ?? 3}σ threshold · red dots = shock (σ multiple AND volume ratio both met) · last ${shockHist?.hours ?? 72}h · an estimated proxy when real liquidation data is unavailable`,
             ja: `破線 = ${shockHist?.threshold_sigma ?? 3}σ 閾値 · 赤点 = ショック判定 · 直近${shockHist?.hours ?? 72}時間 · 実清算データがない場合は推定プロキシ`,
             th: `เส้นประ = เกณฑ์ ${shockHist?.threshold_sigma ?? 3}σ · จุดแดง = ช็อก · ${shockHist?.hours ?? 72} ชม.ล่าสุด · เป็นพรอกซีประมาณเมื่อไม่มีข้อมูลจริง`,
-            vi: `nét đứt = ngưỡng ${shockHist?.threshold_sigma ?? 3}σ · chấm đỏ = sốc · ${shockHist?.hours ?? 72}h gần nhất · là proxy ước tính khi thiếu dữ liệu thanh lý thực`,
+            vi: `nét đứt = ngưỡng ${shockHist?.threshold_sigma ?? 3}σ · chấm đỏ = sốc · ${shockHist?.hours ?? 72}h gần nhất · là proxy ước tính khi thiếu dữ liệu thanh lý thực`, id: `garis putus-putus = ambang ${shockHist?.threshold_sigma ?? 3}σ · titik merah = guncangan (kelipatan σ DAN rasio volume sama-sama terpenuhi) · ${shockHist?.hours ?? 72} jam terakhir · memakai proksi perkiraan ketika data likuidasi nyata tidak tersedia`,
           })}
         </div>
       </div>

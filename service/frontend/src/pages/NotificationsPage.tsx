@@ -81,7 +81,7 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
   const markOne = (id: number) => markRead({ ids: [id] })
 
   const meta = (category: string) =>
-    CATEGORY_META[category] || { icon: '•', color: 'var(--text-muted)', label: { ko: category, en: category, ja: category, th: category, vi: category } }
+    CATEGORY_META[category] || { icon: '•', color: 'var(--text-muted)', label: { ko: category, en: category, ja: category, th: category, vi: category, id: category } }
 
   return (
     <div style={{ maxWidth: 760 }}>

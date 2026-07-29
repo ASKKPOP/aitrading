@@ -182,6 +182,40 @@ class TheFrontendPickerAgrees(unittest.TestCase):
                 with self.subTest(band=band, lang=lang):
                     self.assertRegex(body, rf"\b{lang}:\s*'")
 
+    def test_every_frontend_language_map_covers_every_language(self):
+        """The UI-copy counterpart to the catalogue checks above.
+
+        A "language map" is any object literal carrying `en` plus two or more
+        of ko/ja/th/vi — the shape `tr()` consumes. Every one of them must
+        cover every registered language, or that surface silently serves
+        English to a member who chose otherwise.
+
+        Regex rather than a TS parser, so it runs in the Python suite: for
+        each map, capture its key names and compare. Multi-line maps are
+        handled by matching across newlines; template literals count too,
+        which is what a purely line-based grep gets wrong.
+        """
+        src_root = FRONTEND.parent
+        codes = set(LANG_NAMES)
+        offenders = []
+        # Object literal that contains an `en:` key and at least one other
+        # language key. Non-greedy to the first closing brace that is not
+        # inside a nested ${...} — good enough because these maps are flat.
+        pat = re.compile(r"\{[^{}]*?\ben\s*:.*?\}", re.S)
+        for path in list(src_root.rglob("*.ts")) + list(src_root.rglob("*.tsx")):
+            if path.name == "i18n.ts" or "node_modules" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8")
+            for m in pat.finditer(text):
+                keys = set(re.findall(r"(?:^|[{,\s])([a-z]{2})\s*:", m.group(0)))
+                present = keys & codes
+                if "en" in present and len(present - {"en"}) >= 2 and "id" not in present:
+                    line = text[:m.start()].count("\n") + 1
+                    offenders.append(f"{path.name}:{line}")
+        self.assertFalse(offenders,
+                         f"{len(offenders)} frontend language map(s) missing 'id': "
+                         + ", ".join(offenders[:15]))
+
     def test_every_language_has_a_picker_label_and_a_locale(self):
         src = self._source()
         listed = set(re.findall(r"\{ value: '([a-z-]+)', label:", src))

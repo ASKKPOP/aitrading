@@ -102,7 +102,7 @@ function AccountHeader({ user, mfa, onSignOut }: {
               <>{tr(language, { ko: '포인트: ', en: 'Points: ', ja: 'ポイント: ', th: 'คะแนน: ', vi: 'Điểm: ', id: 'Poin: ' })}<strong>{user.points}</strong> · </>
             )}
             {mfa?.enabled
-              ? <span style={{ color: '#86efac' }}>{tr(language, { ko: `2FA 활성화됨 (백업 코드 ${mfa.backup_codes_remaining}개 남음)`, en: `2FA enabled (${mfa.backup_codes_remaining} backup codes left)`, ja: `2FA有効 (バックアップコード残り${mfa.backup_codes_remaining}個)`, th: `เปิด 2FA แล้ว (เหลือรหัสสำรอง ${mfa.backup_codes_remaining} รหัส)`, vi: `Đã bật 2FA (còn ${mfa.backup_codes_remaining} mã dự phòng)` })}</span>
+              ? <span style={{ color: '#86efac' }}>{tr(language, { ko: `2FA 활성화됨 (백업 코드 ${mfa.backup_codes_remaining}개 남음)`, en: `2FA enabled (${mfa.backup_codes_remaining} backup codes left)`, ja: `2FA有効 (バックアップコード残り${mfa.backup_codes_remaining}個)`, th: `เปิด 2FA แล้ว (เหลือรหัสสำรอง ${mfa.backup_codes_remaining} รหัส)`, vi: `Đã bật 2FA (còn ${mfa.backup_codes_remaining} mã dự phòng)`, id: `2FA aktif (${mfa.backup_codes_remaining} kode cadangan tersisa)` })}</span>
               : <Link to="/auth/mfa/setup" style={{ color: '#fde68a', textDecoration: 'underline' }}>{tr(language, { ko: '2FA 활성화', en: 'Enable 2FA', ja: '2FAを有効化', th: 'เปิดใช้งาน 2FA', vi: 'Bật 2FA', id: 'Aktifkan 2FA' })}</Link>
             }
           </div>
@@ -234,7 +234,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
       {error && <div style={{ color: '#dc2626', padding: 12 }}>{error}</div>}
 
       <Section
-        title={tr(language, { ko: `📍 포지션 (${positions.length})`, en: `📍 Positions (${positions.length})`, ja: `📍 ポジション (${positions.length})`, th: `📍 ตำแหน่ง (${positions.length})`, vi: `📍 Vị thế (${positions.length})` })}
+        title={tr(language, { ko: `📍 포지션 (${positions.length})`, en: `📍 Positions (${positions.length})`, ja: `📍 ポジション (${positions.length})`, th: `📍 ตำแหน่ง (${positions.length})`, vi: `📍 Vị thế (${positions.length})`, id: `📍 Posisi (${positions.length})` })}
         action={<Link to="/positions" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '전체 보기 →', en: 'View all →', ja: 'すべて表示 →', th: 'ดูทั้งหมด →', vi: 'Xem tất cả →', id: 'Lihat semua →' })}</Link>}
       >
         {positions.length === 0 ? (
@@ -272,7 +272,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
       </Section>
 
       <Section
-        title={tr(language, { ko: `⊞ 팔로잉 (${following.length})`, en: `⊞ Following (${following.length})`, ja: `⊞ フォロー中 (${following.length})`, th: `⊞ กำลังติดตาม (${following.length})`, vi: `⊞ Đang theo dõi (${following.length})` })}
+        title={tr(language, { ko: `⊞ 팔로잉 (${following.length})`, en: `⊞ Following (${following.length})`, ja: `⊞ フォロー中 (${following.length})`, th: `⊞ กำลังติดตาม (${following.length})`, vi: `⊞ Đang theo dõi (${following.length})`, id: `⊞ Following (${following.length})` })}
         action={<Link to="/leaderboard" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '에이전트 찾기 →', en: 'Find agents →', ja: 'エージェントを探す →', th: 'ค้นหาเอเจนต์ →', vi: 'Tìm agent →', id: 'Cari agen →' })}</Link>}
       >
         {following.length === 0 ? (
@@ -283,7 +283,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
             {following.slice(0, 8).map((f, i) => (
               <li key={f.provider_id ?? i} style={{ marginBottom: 4 }}>
-                {f.provider_name ?? tr(language, { ko: `제공자 #${f.provider_id}`, en: `Provider #${f.provider_id}`, ja: `プロバイダー #${f.provider_id}`, th: `ผู้ให้บริการ #${f.provider_id}`, vi: `Nhà cung cấp #${f.provider_id}` })}
+                {f.provider_name ?? tr(language, { ko: `제공자 #${f.provider_id}`, en: `Provider #${f.provider_id}`, ja: `プロバイダー #${f.provider_id}`, th: `ผู้ให้บริการ #${f.provider_id}`, vi: `Nhà cung cấp #${f.provider_id}`, id: `Penyedia #${f.provider_id}` })}
                 {f.total_profit_percent !== undefined && (
                   <span style={{ color: f.total_profit_percent >= 0 ? '#15803d' : '#b91c1c', marginLeft: 8 }}>
                     {f.total_profit_percent >= 0 ? '+' : ''}{f.total_profit_percent.toFixed(2)}%
@@ -296,7 +296,7 @@ export function MyTradingPage({ userToken, onSignOut }: {
       </Section>
 
       <Section
-        title={tr(language, { ko: `↗ 전략 (${strategies.length})`, en: `↗ Strategies (${strategies.length})`, ja: `↗ 戦略 (${strategies.length})`, th: `↗ กลยุทธ์ (${strategies.length})`, vi: `↗ Chiến lược (${strategies.length})` })}
+        title={tr(language, { ko: `↗ 전략 (${strategies.length})`, en: `↗ Strategies (${strategies.length})`, ja: `↗ 戦略 (${strategies.length})`, th: `↗ กลยุทธ์ (${strategies.length})`, vi: `↗ Chiến lược (${strategies.length})`, id: `↗ Strategi (${strategies.length})` })}
         action={<Link to="/strategies" style={{ fontSize: 13, color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '전체 →', en: 'All →', ja: 'すべて →', th: 'ทั้งหมด →', vi: 'Tất cả →', id: 'Semua →' })}</Link>}
       >
         {strategies.length === 0 ? (

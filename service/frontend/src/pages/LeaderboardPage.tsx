@@ -161,7 +161,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
           <div>
             <span className="challenge-badge">{tr(language, { ko: '챌린지 진행 중', en: 'Challenge active', ja: 'チャレンジ進行中', th: 'ชาเลนจ์กำลังทำงาน', vi: 'Thử thách đang chạy', id: 'Tantangan berjalan' })}</span>
             <span style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-              {tr(language, { ko: `챌린지 리더보드 ${activeChallengeCount}개 채점 중`, en: `${activeChallengeCount} challenge leaderboards are scoring`, ja: `${activeChallengeCount} 件のチャレンジリーダーボードが採点中`, th: `อันดับชาเลนจ์ ${activeChallengeCount} รายการกำลังให้คะแนน`, vi: `${activeChallengeCount} bảng xếp hạng thử thách đang chấm điểm` })}
+              {tr(language, { ko: `챌린지 리더보드 ${activeChallengeCount}개 채점 중`, en: `${activeChallengeCount} challenge leaderboards are scoring`, ja: `${activeChallengeCount} 件のチャレンジリーダーボードが採点中`, th: `อันดับชาเลนจ์ ${activeChallengeCount} รายการกำลังให้คะแนน`, vi: `${activeChallengeCount} bảng xếp hạng thử thách đang chấm điểm`, id: `${activeChallengeCount} papan peringkat tantangan sedang dinilai` })}
             </span>
           </div>
           <button className="btn btn-ghost" onClick={() => navigate('/challenges')}>
@@ -543,7 +543,7 @@ export function LeaderboardPage({ token }: { token?: string | null }) {
               {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước', id: 'Sebelumnya' })}
             </button>
             <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              {tr(language, { ko: `페이지 ${leaderboardPage} / ${leaderboardTotalPages}, 총 트레이더 ${totalTraders}명`, en: `Page ${leaderboardPage} / ${leaderboardTotalPages}, ${totalTraders} traders total`, ja: `ページ ${leaderboardPage} / ${leaderboardTotalPages}、合計 ${totalTraders} トレーダー`, th: `หน้า ${leaderboardPage} / ${leaderboardTotalPages}, รวม ${totalTraders} เทรดเดอร์`, vi: `Trang ${leaderboardPage} / ${leaderboardTotalPages}, tổng ${totalTraders} trader` })}
+              {tr(language, { ko: `페이지 ${leaderboardPage} / ${leaderboardTotalPages}, 총 트레이더 ${totalTraders}명`, en: `Page ${leaderboardPage} / ${leaderboardTotalPages}, ${totalTraders} traders total`, ja: `ページ ${leaderboardPage} / ${leaderboardTotalPages}、合計 ${totalTraders} トレーダー`, th: `หน้า ${leaderboardPage} / ${leaderboardTotalPages}, รวม ${totalTraders} เทรดเดอร์`, vi: `Trang ${leaderboardPage} / ${leaderboardTotalPages}, tổng ${totalTraders} trader`, id: `Halaman ${leaderboardPage} / ${leaderboardTotalPages}, total ${totalTraders} trader` })}
             </div>
             <button
               className="btn btn-secondary"

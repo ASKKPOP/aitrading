@@ -493,7 +493,7 @@ export function SignalsFeed({ token }: { token?: string | null }) {
                 {tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước', id: 'Sebelumnya' })}
               </button>
               <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                {tr(language, { ko: `페이지 ${page} / ${totalPages}, 총 트레이더 ${totalAgents}명`, en: `Page ${page} / ${totalPages}, ${totalAgents} traders total`, ja: `ページ ${page} / ${totalPages}、合計 ${totalAgents} トレーダー`, th: `หน้า ${page} / ${totalPages}, รวม ${totalAgents} เทรดเดอร์`, vi: `Trang ${page} / ${totalPages}, tổng ${totalAgents} trader` })}
+                {tr(language, { ko: `페이지 ${page} / ${totalPages}, 총 트레이더 ${totalAgents}명`, en: `Page ${page} / ${totalPages}, ${totalAgents} traders total`, ja: `ページ ${page} / ${totalPages}、合計 ${totalAgents} トレーダー`, th: `หน้า ${page} / ${totalPages}, รวม ${totalAgents} เทรดเดอร์`, vi: `Trang ${page} / ${totalPages}, tổng ${totalAgents} trader`, id: `Halaman ${page} / ${totalPages}, total ${totalAgents} trader` })}
               </div>
               <button
                 className="btn btn-secondary"

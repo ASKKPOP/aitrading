@@ -374,7 +374,7 @@ export function AutomationPage() {
       <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6 }}>
         {runLev === 1
           ? tr(language, { ko: '레버리지 없음 — 완전 자금형(청산 없음).', en: 'No leverage — fully funded (no liquidation).', ja: 'レバレッジなし。', th: 'ไม่มีเลเวอเรจ', vi: 'Không đòn bẩy.', id: 'Tanpa leverage — didanai penuh (tidak ada likuidasi).' })
-          : tr(language, { ko: `${runLev}배 격리 마진 — 같은 증거금으로 ${runLev}배 포지션, 진입가에서 ${(100 / runLev).toFixed(0)}% 역행 시 청산.`, en: `${runLev}× isolated margin — ${runLev}× the position for the same margin, liquidates on a ${(100 / runLev).toFixed(0)}% adverse move.`, ja: `${runLev}倍分離マージン、${(100 / runLev).toFixed(0)}%逆行で清算。`, th: `${runLev}× ล้างพอร์ตเมื่อสวน ${(100 / runLev).toFixed(0)}%`, vi: `${runLev}× thanh lý khi giá đi ngược ${(100 / runLev).toFixed(0)}%.` })}
+          : tr(language, { ko: `${runLev}배 격리 마진 — 같은 증거금으로 ${runLev}배 포지션, 진입가에서 ${(100 / runLev).toFixed(0)}% 역행 시 청산.`, en: `${runLev}× isolated margin — ${runLev}× the position for the same margin, liquidates on a ${(100 / runLev).toFixed(0)}% adverse move.`, ja: `${runLev}倍分離マージン、${(100 / runLev).toFixed(0)}%逆行で清算。`, th: `${runLev}× ล้างพอร์ตเมื่อสวน ${(100 / runLev).toFixed(0)}%`, vi: `${runLev}× thanh lý khi giá đi ngược ${(100 / runLev).toFixed(0)}%.`, id: `Margin terisolasi ${runLev}× — posisi ${runLev}× lipat dengan margin yang sama, terlikuidasi pada pergerakan berlawanan ${(100 / runLev).toFixed(0)}%.` })}
       </div>
     </div>
   )

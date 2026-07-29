@@ -236,7 +236,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
       onLogin(body.token)
       navigate('/my-trading')
     } catch (err) {
-      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
       setLoading(false)
     }
@@ -261,7 +261,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
       onLogin(body.token)
       navigate('/my-trading')
     } catch (err) {
-      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
       setLoading(false)
     }
@@ -397,7 +397,7 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
       title={tr(language, { ko: '계정을 만드세요', en: 'Create your account', ja: 'アカウントを作成しましょう', th: 'สร้างบัญชีของคุณ', vi: 'Tạo tài khoản của bạn', id: 'Buat akun Anda' })}
       subtitle={step === 'email'
         ? tr(language, { ko: '이메일로 6자리 코드를 보내드립니다.', en: "We'll send a 6-digit code to your email.", ja: 'メールに6桁のコードを送信します。', th: 'เราจะส่งรหัส 6 หลักไปยังอีเมลของคุณ', vi: 'Chúng tôi sẽ gửi mã 6 chữ số đến email của bạn.', id: 'Kami akan mengirim kode 6 digit ke email Anda.' })
-        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a password.`, ja: `${email} に送信したコードを入力し、パスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่าน`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu.` })}
+        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a password.`, ja: `${email} に送信したコードを入力し、パスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่าน`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu.`, id: `Masukkan kode yang kami kirim ke ${email}, lalu pilih kata sandi.` })}
     >
       {step === 'email' ? (
         <form onSubmit={sendCode}>
@@ -469,7 +469,7 @@ export function ForgotPasswordPage() {
       }
       setStep('reset')
     } catch (err) {
-      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
       setLoading(false)
     }
@@ -490,7 +490,7 @@ export function ForgotPasswordPage() {
       }
       setStep('done')
     } catch (err) {
-      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}` }))
+      setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
       setLoading(false)
     }
@@ -514,7 +514,7 @@ export function ForgotPasswordPage() {
       title={tr(language, { ko: '비밀번호 재설정', en: 'Reset your password', ja: 'パスワードをリセット', th: 'รีเซ็ตรหัสผ่านของคุณ', vi: 'Đặt lại mật khẩu của bạn', id: 'Atur ulang kata sandi Anda' })}
       subtitle={step === 'email'
         ? tr(language, { ko: '가입한 이메일로 6자리 코드를 보내드립니다.', en: "Enter your account email and we'll send a 6-digit code.", ja: 'アカウントのメールアドレスに6桁のコードを送信します。', th: 'กรอกอีเมลบัญชีของคุณ แล้วเราจะส่งรหัส 6 หลักให้', vi: 'Nhập email tài khoản và chúng tôi sẽ gửi mã 6 chữ số.', id: 'Masukkan email akun Anda dan kami akan mengirim kode 6 digit.' })
-        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 새 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a new password.`, ja: `${email} に送信したコードを入力し、新しいパスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่านใหม่`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu mới.` })}
+        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 새 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a new password.`, ja: `${email} に送信したコードを入力し、新しいパスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่านใหม่`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu mới.`, id: `Masukkan kode yang kami kirim ke ${email}, lalu pilih kata sandi baru.` })}
     >
       {step === 'email' ? (
         <form onSubmit={sendResetCode}>

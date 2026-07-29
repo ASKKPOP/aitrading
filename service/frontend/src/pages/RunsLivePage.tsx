@@ -238,12 +238,12 @@ function activityLines(run: Run, tick: any, events: any[],
           ja: '🧠 AI分析まもなく', th: '🧠 ใกล้รอบวิเคราะห์ AI', vi: '🧠 sắp tới chu kỳ AI', id: '🧠 Analisis AI dijadwalkan sekarang' })
       : tr(lang, { ko: `🧠 다음 AI 분석까지 ${mins}분`, en: `🧠 next AI analysis in ${mins}m`,
           ja: `🧠 次のAI分析まで${mins}分`, th: `🧠 วิเคราะห์ AI ครั้งถัดไปใน ${mins} นาที`,
-          vi: `🧠 phân tích AI tiếp theo sau ${mins} phút` }))
+          vi: `🧠 phân tích AI tiếp theo sau ${mins} phút`, id: `🧠 analisis AI berikutnya dalam ${mins} menit` }))
   }
   if (tick && tick.price != null) {
     const p = `$${Number(tick.price).toFixed(2)}`
     lines.push(tr(lang, { ko: `👁 가격 감시 중 — ${p}`, en: `👁 watching price — ${p}`,
-      ja: `👁 価格監視中 — ${p}`, th: `👁 เฝ้าดูราคา — ${p}`, vi: `👁 đang theo dõi giá — ${p}` }))
+      ja: `👁 価格監視中 — ${p}`, th: `👁 เฝ้าดูราคา — ${p}`, vi: `👁 đang theo dõi giá — ${p}`, id: `👁 memantau harga — ${p}` }))
   }
   const lastEv = (events || []).filter((e) => e.event_type !== 'equity').slice(-1)[0]
   if (lastEv) {
@@ -592,7 +592,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
             en: `This TRADING's AI thesis still has ${es.remaining_hours}h to run. Stopping now locks in P&L at the current price. Stop anyway?`,
             ja: `このTRADINGのAI論点はあと${es.remaining_hours}時間残っています。今停止すると現在価格で損益が確定します。停止しますか？`,
             th: `วิทยานิพนธ์ AI ของ TRADING นี้เหลืออีก ${es.remaining_hours} ชม. หยุดตอนนี้จะล็อกกำไร/ขาดทุนที่ราคาปัจจุบัน หยุดหรือไม่?`,
-            vi: `Luận điểm AI của TRADING này còn ${es.remaining_hours} giờ. Dừng bây giờ sẽ chốt lãi/lỗ theo giá hiện tại. Vẫn dừng?`,
+            vi: `Luận điểm AI của TRADING này còn ${es.remaining_hours} giờ. Dừng bây giờ sẽ chốt lãi/lỗ theo giá hiện tại. Vẫn dừng?`, id: `Tesis AI TRADING ini masih punya sisa ${es.remaining_hours} jam. Menghentikannya sekarang mengunci laba rugi pada harga saat ini. Tetap hentikan?`,
           })
           if (window.confirm(msg)) {
             await act(id, action, { ...(body || {}), confirm_early: true })
@@ -639,7 +639,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       en: `${n} TRADING${n > 1 ? 's' : ''} ($${usd.toLocaleString()}) cannot trade`,
       ja: `TRADING ${n} 件 ($${usd.toLocaleString()}) が取引できません`,
       th: `${n} TRADING ($${usd.toLocaleString()}) เทรดไม่ได้`,
-      vi: `${n} TRADING ($${usd.toLocaleString()}) không thể giao dịch` }),
+      vi: `${n} TRADING ($${usd.toLocaleString()}) không thể giao dịch`, id: `${n} TRADING ($${usd.toLocaleString()}) tidak dapat bertransaksi` }),
     blockedWhy: tr(language, {
       ko: '목표 이동폭이 수수료를 감당하기에 너무 작아 포지션을 열 수 없습니다. 해제하면 자본이 반환됩니다.',
       en: 'their target move is too small to cover fees, so they can never open a position. Releasing returns the capital.',
@@ -908,7 +908,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                   en: `An open position exists on this symbol (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
                   ja: `このシンボルに未決済ポジションがあります (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
                   th: `มีสถานะเปิดอยู่ (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`,
-                  vi: `Đang có vị thế mở (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})` })}</li>
+                  vi: `Đang có vị thế mở (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})`, id: `Ada posisi terbuka pada simbol ini (${conflict.conflicts.position.side} ${conflict.conflicts.position.quantity})` })}</li>
               )}
               {conflict.conflicts.rule_ids?.length > 0 && (
                 <li>{tr(language, {
@@ -916,7 +916,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                   en: `${conflict.conflicts.rule_ids.length} auto-executing automation rule(s) enabled on this symbol`,
                   ja: `同一シンボルで自動実行ルールが${conflict.conflicts.rule_ids.length}件有効です`,
                   th: `กฎอัตโนมัติ ${conflict.conflicts.rule_ids.length} ข้อเปิดอยู่บนสัญลักษณ์นี้`,
-                  vi: `${conflict.conflicts.rule_ids.length} quy tắc tự động đang bật trên mã này` })}</li>
+                  vi: `${conflict.conflicts.rule_ids.length} quy tắc tự động đang bật trên mã này`, id: `${conflict.conflicts.rule_ids.length} aturan otomatisasi eksekusi-otomatis aktif pada simbol ini` })}</li>
               )}
             </ul>
             <p className="muted" style={{ fontSize: 12, margin: '0 0 14px' }}>
@@ -1103,7 +1103,7 @@ function summarize(e: any, lang: Language): string {
       en: `Restarted as TRADING #${p.auto_restart_run_id} with the same settings`,
       ja: `同じ設定で TRADING #${p.auto_restart_run_id} を開始しました`,
       th: `เริ่ม TRADING #${p.auto_restart_run_id} ใหม่ด้วยการตั้งค่าเดิม`,
-      vi: `Đã khởi động lại thành TRADING #${p.auto_restart_run_id} với cùng thiết lập` })
+      vi: `Đã khởi động lại thành TRADING #${p.auto_restart_run_id} với cùng thiết lập`, id: `Dimulai ulang sebagai TRADING #${p.auto_restart_run_id} dengan pengaturan yang sama` })
   }
   if (e.event_type === 'alert' && p.stop_reason) return reasonLabel(p.stop_reason, lang)
   if (e.event_type === 'trade') return `${p.side} ${Number(p.quantity).toFixed(4)} @ $${Number(p.price).toFixed(2)}`

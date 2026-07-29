@@ -499,7 +499,7 @@ export function FinancialEventsPage() {
                                 {tr(language, { ko: '← 이전', en: '← Prev', ja: '← 前へ', th: '← ก่อนหน้า', vi: '← Trước', id: '← Sebelumnya' })}
                               </button>
                               <div className="intel-pager-status">
-                                {tr(language, { ko: `페이지 ${currentPage + 1} / ${totalPages}`, en: `Page ${currentPage + 1} / ${totalPages}`, ja: `ページ ${currentPage + 1} / ${totalPages}`, th: `หน้า ${currentPage + 1} / ${totalPages}`, vi: `Trang ${currentPage + 1} / ${totalPages}` })}
+                                {tr(language, { ko: `페이지 ${currentPage + 1} / ${totalPages}`, en: `Page ${currentPage + 1} / ${totalPages}`, ja: `ページ ${currentPage + 1} / ${totalPages}`, th: `หน้า ${currentPage + 1} / ${totalPages}`, vi: `Trang ${currentPage + 1} / ${totalPages}`, id: `Halaman ${currentPage + 1} / ${totalPages}` })}
                               </div>
                               <button
                                 type="button"

@@ -551,7 +551,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
             )}
             {benchmark && (
               <SummaryCard
-                label={tr(language, { ko: `알파 대비 매수후보유 ${benchmark.symbol}`, en: `Alpha vs B&H ${benchmark.symbol}`, ja: `α vs B&H ${benchmark.symbol}`, th: `อัลฟา vs B&H ${benchmark.symbol}`, vi: `Alpha vs B&H ${benchmark.symbol}` })}
+                label={tr(language, { ko: `알파 대비 매수후보유 ${benchmark.symbol}`, en: `Alpha vs B&H ${benchmark.symbol}`, ja: `α vs B&H ${benchmark.symbol}`, th: `อัลฟา vs B&H ${benchmark.symbol}`, vi: `Alpha vs B&H ${benchmark.symbol}`, id: `Alfa vs B&H ${benchmark.symbol}` })}
                 value={pct(result.summary.total_return_pct - benchmark.returnPct)}
                 color={result.summary.total_return_pct >= benchmark.returnPct ? 'var(--success)' : 'var(--error)'}
               />
@@ -572,7 +572,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ display: 'inline-block', width: 20, height: 2, background: 'var(--text-muted, #888)', borderTop: '2px dashed var(--text-muted, #888)' }} />
-                    {tr(language, { ko: `매수후보유 ${benchmark.symbol}`, en: `Buy & Hold ${benchmark.symbol}`, ja: `${benchmark.symbol} 保有`, th: `ถือ ${benchmark.symbol}`, vi: `Giữ ${benchmark.symbol}` })}
+                    {tr(language, { ko: `매수후보유 ${benchmark.symbol}`, en: `Buy & Hold ${benchmark.symbol}`, ja: `${benchmark.symbol} 保有`, th: `ถือ ${benchmark.symbol}`, vi: `Giữ ${benchmark.symbol}`, id: `Beli & Tahan ${benchmark.symbol}` })}
                   </span>
                 </div>
               )}
@@ -713,7 +713,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                     ko: `(아직 청산되지 않은 미결제 포지션 ${result.open_positions.length}개)`, en: `(${result.open_positions.length} open position(s) not yet closed)`,
                     ja: `(${result.open_positions.length} 件のオープンポジションがまだクローズされていません)`,
                     th: `(${result.open_positions.length} โพซิชันที่ยังเปิดอยู่)`,
-                    vi: `(${result.open_positions.length} vị thế đang mở chưa đóng)`,
+                    vi: `(${result.open_positions.length} vị thế đang mở chưa đóng)`, id: `(${result.open_positions.length} posisi masih terbuka)`,
                   })}
                 </div>
               )}
@@ -729,7 +729,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                     ko: `에이전트 #${result.agent_id} · 수익률 ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`, en: `Agent #${result.agent_id} · ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}% return`,
                     ja: `エージェント #${result.agent_id} · ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}% リターン`,
                     th: `เอเจนต์ #${result.agent_id} · ผลตอบแทน ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`,
-                    vi: `Agent #${result.agent_id} · lợi nhuận ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`,
+                    vi: `Agent #${result.agent_id} · lợi nhuận ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`, id: `Agen #${result.agent_id} · imbal hasil ${result.summary.total_return_pct >= 0 ? '+' : ''}${fmt(result.summary.total_return_pct)}%`,
                   })}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
