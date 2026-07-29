@@ -6,12 +6,12 @@ export function FinancialEventsPage() {
   const { language } = useLanguage()
 
   const macroVerdictLabel = (v?: string) => {
-    if (!v) return tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' })
+    if (!v) return tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' })
     const map: Record<string, string> = {
-      bullish: tr(language, { ko: '강세', en: 'bullish', ja: '強気', th: 'ขาขึ้น', vi: 'tăng' }),
-      bearish: tr(language, { ko: '약세', en: 'bearish', ja: '弱気', th: 'ขาลง', vi: 'giảm' }),
-      mixed: tr(language, { ko: '혼조', en: 'mixed', ja: 'まちまち', th: 'ผสม', vi: 'trái chiều' }),
-      unavailable: tr(language, { ko: '데이터 없음', en: 'unavailable', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'không có dữ liệu' }),
+      bullish: tr(language, { ko: '강세', en: 'bullish', ja: '強気', th: 'ขาขึ้น', vi: 'tăng', id: 'bullish' }),
+      bearish: tr(language, { ko: '약세', en: 'bearish', ja: '弱気', th: 'ขาลง', vi: 'giảm', id: 'bearish' }),
+      mixed: tr(language, { ko: '혼조', en: 'mixed', ja: 'まちまち', th: 'ผสม', vi: 'trái chiều', id: 'campuran' }),
+      unavailable: tr(language, { ko: '데이터 없음', en: 'unavailable', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'không có dữ liệu', id: 'tidak tersedia' }),
     }
     return map[v] || v
   }
@@ -46,7 +46,7 @@ export function FinancialEventsPage() {
         ])
 
         if (!macroRes.ok || !etfRes.ok || !stocksRes.ok || !newsRes.ok) {
-          throw new Error(tr(language, { ko: '금융 이벤트를 불러오지 못했습니다', en: 'Failed to load financial events', ja: '金融イベントの読み込みに失敗しました', th: 'โหลดเหตุการณ์การเงินล้มเหลว', vi: 'Tải sự kiện tài chính thất bại' }))
+          throw new Error(tr(language, { ko: '금융 이벤트를 불러오지 못했습니다', en: 'Failed to load financial events', ja: '金融イベントの読み込みに失敗しました', th: 'โหลดเหตุการณ์การเงินล้มเหลว', vi: 'Tải sự kiện tài chính thất bại', id: 'Gagal memuat peristiwa keuangan' }))
         }
 
         const [macroData, etfData, stocksData, newsData] = await Promise.all([
@@ -65,7 +65,7 @@ export function FinancialEventsPage() {
         setError(null)
       } catch (err: any) {
         if (cancelled) return
-        setError(err?.message || (tr(language, { ko: '금융 이벤트를 불러오지 못했습니다', en: 'Failed to load financial events', ja: '金融イベントの読み込みに失敗しました', th: 'โหลดเหตุการณ์การเงินล้มเหลว', vi: 'Tải sự kiện tài chính thất bại' })))
+        setError(err?.message || (tr(language, { ko: '금융 이벤트를 불러오지 못했습니다', en: 'Failed to load financial events', ja: '金融イベントの読み込みに失敗しました', th: 'โหลดเหตุการณ์การเงินล้มเหลว', vi: 'Tải sự kiện tài chính thất bại', id: 'Gagal memuat peristiwa keuangan' })))
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -90,7 +90,7 @@ export function FinancialEventsPage() {
   const currentStock = (currentStockSymbol && stockDetailsBySymbol[currentStockSymbol]) || currentStockBase || null
   const currentCategoryTitle = currentCategory
     ? ((currentCategory.category === 'equities')
-      ? (tr(language, { ko: '최신 뉴스', en: 'Latest News', ja: '最新ニュース', th: 'ข่าวล่าสุด', vi: 'Tin mới nhất' }))
+      ? (tr(language, { ko: '최신 뉴스', en: 'Latest News', ja: '最新ニュース', th: 'ข่าวล่าสุด', vi: 'Tin mới nhất', id: 'Berita terbaru' }))
       : currentCategory.label)
     : ''
 
@@ -182,7 +182,7 @@ export function FinancialEventsPage() {
     <div className="intel-page">
       <section className="intel-hero">
         <h1 className="intel-title">
-          {tr(language, { ko: '하나의 보드에서 필요한 모든 것을 추적하세요', en: 'One board, track everything you need', ja: '1つのボードで必要なものすべてを追跡', th: 'บอร์ดเดียว ติดตามทุกอย่างที่คุณต้องการ', vi: 'Một bảng, theo dõi mọi thứ bạn cần' })}
+          {tr(language, { ko: '하나의 보드에서 필요한 모든 것을 추적하세요', en: 'One board, track everything you need', ja: '1つのボードで必要なものすべてを追跡', th: 'บอร์ดเดียว ติดตามทุกอย่างที่คุณต้องการ', vi: 'Một bảng, theo dõi mọi thứ bạn cần', id: 'Satu papan, pantau semua yang Anda butuhkan' })}
         </h1>
       </section>
 
@@ -193,26 +193,26 @@ export function FinancialEventsPage() {
           </div>
         ) : error && categories.length === 0 ? (
           <div className="intel-empty-card">
-            <div className="empty-title">{tr(language, { ko: '금융 이벤트 보드를 일시적으로 사용할 수 없습니다', en: 'Financial events board is temporarily unavailable', ja: '金融イベントボードは一時的に利用できません', th: 'บอร์ดเหตุการณ์การเงินใช้งานไม่ได้ชั่วคราว', vi: 'Bảng sự kiện tài chính tạm thời không khả dụng' })}</div>
+            <div className="empty-title">{tr(language, { ko: '금융 이벤트 보드를 일시적으로 사용할 수 없습니다', en: 'Financial events board is temporarily unavailable', ja: '金融イベントボードは一時的に利用できません', th: 'บอร์ดเหตุการณ์การเงินใช้งานไม่ได้ชั่วคราว', vi: 'Bảng sự kiện tài chính tạm thời không khả dụng', id: 'Papan peristiwa keuangan sementara tidak tersedia' })}</div>
             <div className="text-muted">{error}</div>
           </div>
         ) : (
           <>
             <div className="intel-status-strip">
               <div className="intel-status-card">
-                <span>{tr(language, { ko: '매크로 국면', en: 'Macro regime', ja: 'マクロレジーム', th: 'ระบอบมหภาค', vi: 'Chế độ vĩ mô' })}</span>
+                <span>{tr(language, { ko: '매크로 국면', en: 'Macro regime', ja: 'マクロレジーム', th: 'ระบอบมหภาค', vi: 'Chế độ vĩ mô', id: 'Kondisi makro' })}</span>
                 <strong>{macroVerdictLabel(macro?.verdict)}</strong>
               </div>
               <div className="intel-status-card">
-                <span>{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF' })}</span>
-                <strong>{etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}</strong>
+                <span>{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF', id: 'Aliran dana ETF' })}</span>
+                <strong>{etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}</strong>
               </div>
               <div className="intel-status-card">
-                <span>{tr(language, { ko: '뉴스 레인', en: 'News lanes', ja: 'ニュースレーン', th: 'ช่องข่าว', vi: 'Luồng tin tức' })}</span>
+                <span>{tr(language, { ko: '뉴스 레인', en: 'News lanes', ja: 'ニュースレーン', th: 'ช่องข่าว', vi: 'Luồng tin tức', id: 'Jalur berita' })}</span>
                 <strong>{categories.length}</strong>
               </div>
               <div className="intel-status-card">
-                <span>{tr(language, { ko: '주요 종목', en: 'Featured symbols', ja: '注目銘柄', th: 'สัญลักษณ์แนะนำ', vi: 'Mã nổi bật' })}</span>
+                <span>{tr(language, { ko: '주요 종목', en: 'Featured symbols', ja: '注目銘柄', th: 'สัญลักษณ์แนะนำ', vi: 'Mã nổi bật', id: 'Simbol unggulan' })}</span>
                 <strong>{stockItems.length}</strong>
               </div>
             </div>
@@ -223,7 +223,7 @@ export function FinancialEventsPage() {
                   <article className="intel-stocks-card intel-main-panel">
                     <div className="intel-news-card-header">
                       <div>
-                        <div className="intel-news-title">{tr(language, { ko: '주요 종목 분석', en: 'Featured Stock Analysis', ja: '注目株分析', th: 'การวิเคราะห์หุ้นแนะนำ', vi: 'Phân tích cổ phiếu nổi bật' })}</div>
+                        <div className="intel-news-title">{tr(language, { ko: '주요 종목 분석', en: 'Featured Stock Analysis', ja: '注目株分析', th: 'การวิเคราะห์หุ้นแนะนำ', vi: 'Phân tích cổ phiếu nổi bật', id: 'Analisis saham unggulan' })}</div>
                       </div>
                     </div>
 
@@ -250,11 +250,11 @@ export function FinancialEventsPage() {
                       const riskFactors = item.risk_factors || analysis.risk_factors || []
                       const isRealtimeQuote = item.price_source === 'alpha_vantage_time_series_intraday' && !item.price_stale
                       const priceStatusLabel = item.price_stale
-                        ? (tr(language, { ko: '지연 시세', en: 'Delayed quote', ja: '遅延クォート', th: 'ราคาล่าช้า', vi: 'Báo giá trễ' }))
-                        : (tr(language, { ko: '실시간 시세', en: 'Live quote', ja: 'ライブクォート', th: 'ราคาสด', vi: 'Báo giá trực tiếp' }))
+                        ? (tr(language, { ko: '지연 시세', en: 'Delayed quote', ja: '遅延クォート', th: 'ราคาล่าช้า', vi: 'Báo giá trễ', id: 'Kutipan tertunda' }))
+                        : (tr(language, { ko: '실시간 시세', en: 'Live quote', ja: 'ライブクォート', th: 'ราคาสด', vi: 'Báo giá trực tiếp', id: 'Kutipan langsung' }))
                       const priceAsOfLabel = item.price_stale
-                        ? (tr(language, { ko: '시세 기준', en: 'Quote as of', ja: 'クォート時点', th: 'ราคา ณ', vi: 'Báo giá tính đến' }))
-                        : (tr(language, { ko: '실시간 기준', en: 'Live as of', ja: 'ライブ時点', th: 'สด ณ', vi: 'Trực tiếp tính đến' }))
+                        ? (tr(language, { ko: '시세 기준', en: 'Quote as of', ja: 'クォート時点', th: 'ราคา ณ', vi: 'Báo giá tính đến', id: 'Kutipan per' }))
+                        : (tr(language, { ko: '실시간 기준', en: 'Live as of', ja: 'ライブ時点', th: 'สด ณ', vi: 'Trực tiếp tính đến', id: 'Langsung per' }))
 
                       return (
                         <div className="intel-stock-detail">
@@ -262,7 +262,7 @@ export function FinancialEventsPage() {
                             <div>
                               <div className="intel-etf-symbol">{item.symbol}</div>
                               <div className="intel-news-item-meta">
-                                <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(item.created_at, language)}</span>
+                                <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối', id: 'Pembaruan terakhir' })}: {formatIntelTimestamp(item.created_at, language)}</span>
                               </div>
                             </div>
                             <div className={`intel-activity-badge ${item.trend_status || 'quiet'}`}>{item.signal}</div>
@@ -275,8 +275,8 @@ export function FinancialEventsPage() {
                           </div>
                           <div className="intel-news-item-summary">{item.summary}</div>
                           <div className="intel-chip-row">
-                            <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm' })} {item.signal_score}</span>
-                            <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng' })} {item.trend_status}</span>
+                            <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm', id: 'Skor' })} {item.signal_score}</span>
+                            <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {item.trend_status}</span>
                             {item.price_as_of && (
                               <span className={`intel-chip ${item.price_stale ? 'intel-chip-warn' : 'intel-chip-live'}`}>
                                 {priceAsOfLabel} {formatIntelTimestamp(item.price_as_of, language)}
@@ -284,36 +284,36 @@ export function FinancialEventsPage() {
                             )}
                             {item.price_source && (
                               <span className="intel-chip">
-                                {tr(language, { ko: '시세 출처', en: 'Quote source', ja: 'クォートソース', th: 'แหล่งราคา', vi: 'Nguồn báo giá' })} {item.price_source === 'alpha_vantage_time_series_intraday' ? 'Alpha Vantage Intraday' : 'Alpha Vantage Daily'}
+                                {tr(language, { ko: '시세 출처', en: 'Quote source', ja: 'クォートソース', th: 'แหล่งราคา', vi: 'Nguồn báo giá', id: 'Sumber kutipan' })} {item.price_source === 'alpha_vantage_time_series_intraday' ? 'Alpha Vantage Intraday' : 'Alpha Vantage Daily'}
                               </span>
                             )}
                             {analysis.as_of && (
-                              <span className="intel-chip">{tr(language, { ko: '분석 기준 시각', en: 'Analysis as of', ja: '分析時点', th: 'วิเคราะห์ ณ', vi: 'Phân tích tính đến' })} {analysis.as_of}</span>
+                              <span className="intel-chip">{tr(language, { ko: '분석 기준 시각', en: 'Analysis as of', ja: '分析時点', th: 'วิเคราะห์ ณ', vi: 'Phân tích tính đến', id: 'Analisis per' })} {analysis.as_of}</span>
                             )}
                           </div>
 
                           <div className="intel-stock-metrics-grid">
                             <div className="intel-stock-metric-card">
-                              <span>{tr(language, { ko: '5일 수익률', en: '5d return', ja: '5日リターン', th: 'ผลตอบแทน 5 วัน', vi: 'Lợi suất 5 ngày' })}</span>
+                              <span>{tr(language, { ko: '5일 수익률', en: '5d return', ja: '5日リターン', th: 'ผลตอบแทน 5 วัน', vi: 'Lợi suất 5 ngày', id: 'Imbal hasil 5 hari' })}</span>
                               <strong>{formatIntelNumber(analysis.return_5d_pct)}%</strong>
                             </div>
                             <div className="intel-stock-metric-card">
-                              <span>{tr(language, { ko: '20일 수익률', en: '20d return', ja: '20日リターン', th: 'ผลตอบแทน 20 วัน', vi: 'Lợi suất 20 ngày' })}</span>
+                              <span>{tr(language, { ko: '20일 수익률', en: '20d return', ja: '20日リターン', th: 'ผลตอบแทน 20 วัน', vi: 'Lợi suất 20 ngày', id: 'Imbal hasil 20 hari' })}</span>
                               <strong>{formatIntelNumber(analysis.return_20d_pct)}%</strong>
                             </div>
                             <div className="intel-stock-metric-card">
-                              <span>{tr(language, { ko: '지지까지', en: 'To support', ja: 'サポートまで', th: 'ถึงแนวรับ', vi: 'Đến hỗ trợ' })}</span>
+                              <span>{tr(language, { ko: '지지까지', en: 'To support', ja: 'サポートまで', th: 'ถึงแนวรับ', vi: 'Đến hỗ trợ', id: 'Ke support' })}</span>
                               <strong>{formatIntelNumber(analysis.distance_to_support_pct)}%</strong>
                             </div>
                             <div className="intel-stock-metric-card">
-                              <span>{tr(language, { ko: '저항까지', en: 'To resistance', ja: 'レジスタンスまで', th: 'ถึงแนวต้าน', vi: 'Đến kháng cự' })}</span>
+                              <span>{tr(language, { ko: '저항까지', en: 'To resistance', ja: 'レジスタンスまで', th: 'ถึงแนวต้าน', vi: 'Đến kháng cự', id: 'Ke resistance' })}</span>
                               <strong>{formatIntelNumber(analysis.distance_to_resistance_pct)}%</strong>
                             </div>
                           </div>
 
                           <div className="intel-stock-levels-grid">
                             <div className="intel-stock-levels-card">
-                              <div className="intel-stock-levels-title">{tr(language, { ko: '이동평균', en: 'Moving averages', ja: '移動平均', th: 'ค่าเฉลี่ยเคลื่อนที่', vi: 'Đường trung bình động' })}</div>
+                              <div className="intel-stock-levels-title">{tr(language, { ko: '이동평균', en: 'Moving averages', ja: '移動平均', th: 'ค่าเฉลี่ยเคลื่อนที่', vi: 'Đường trung bình động', id: 'Rata-rata bergerak' })}</div>
                               <div className="intel-stock-levels-list">
                                 <span className="intel-chip">MA5 {formatIntelNumber(movingAverages.ma5)}</span>
                                 <span className="intel-chip">MA10 {formatIntelNumber(movingAverages.ma10)}</span>
@@ -322,16 +322,16 @@ export function FinancialEventsPage() {
                               </div>
                             </div>
                             <div className="intel-stock-levels-card">
-                              <div className="intel-stock-levels-title">{tr(language, { ko: '주요 가격대', en: 'Key levels', ja: '主要レベル', th: 'ระดับสำคัญ', vi: 'Mức quan trọng' })}</div>
+                              <div className="intel-stock-levels-title">{tr(language, { ko: '주요 가격대', en: 'Key levels', ja: '主要レベル', th: 'ระดับสำคัญ', vi: 'Mức quan trọng', id: 'Level kunci' })}</div>
                               <div className="intel-stock-levels-list">
                                 {supportLevels.slice(0, 2).map((level: number, index: number) => (
                                   <span key={`${item.symbol}-support-${index}`} className="intel-chip">
-                                    {tr(language, { ko: '지지', en: 'Support', ja: 'サポート', th: 'แนวรับ', vi: 'Hỗ trợ' })} {formatIntelNumber(level)}
+                                    {tr(language, { ko: '지지', en: 'Support', ja: 'サポート', th: 'แนวรับ', vi: 'Hỗ trợ', id: 'Support' })} {formatIntelNumber(level)}
                                   </span>
                                 ))}
                                 {resistanceLevels.slice(0, 2).map((level: number, index: number) => (
                                   <span key={`${item.symbol}-resistance-${index}`} className="intel-chip">
-                                    {tr(language, { ko: '저항', en: 'Resistance', ja: 'レジスタンス', th: 'แนวต้าน', vi: 'Kháng cự' })} {formatIntelNumber(level)}
+                                    {tr(language, { ko: '저항', en: 'Resistance', ja: 'レジスタンス', th: 'แนวต้าน', vi: 'Kháng cự', id: 'Resistance' })} {formatIntelNumber(level)}
                                   </span>
                                 ))}
                               </div>
@@ -340,7 +340,7 @@ export function FinancialEventsPage() {
 
                           <div className="intel-factors-grid">
                             <div className="intel-factor-card">
-                              <div className="intel-factor-title">{tr(language, { ko: '강세 요인', en: 'Bullish factors', ja: '強気要因', th: 'ปัจจัยบวก', vi: 'Yếu tố tăng giá' })}</div>
+                              <div className="intel-factor-title">{tr(language, { ko: '강세 요인', en: 'Bullish factors', ja: '強気要因', th: 'ปัจจัยบวก', vi: 'Yếu tố tăng giá', id: 'Faktor bullish' })}</div>
                               {bullishFactors.length > 0 ? (
                                 <ul className="intel-factor-list">
                                   {bullishFactors.map((factor: string) => (
@@ -348,11 +348,11 @@ export function FinancialEventsPage() {
                                   ))}
                                 </ul>
                               ) : (
-                                <div className="intel-empty-inline">{tr(language, { ko: '뚜렷한 강세 요인이 없습니다.', en: 'No clear bullish factors.', ja: '明確な強気要因はありません。', th: 'ยังไม่มีปัจจัยบวกชัดเจน', vi: 'Chưa có yếu tố tăng giá rõ ràng.' })}</div>
+                                <div className="intel-empty-inline">{tr(language, { ko: '뚜렷한 강세 요인이 없습니다.', en: 'No clear bullish factors.', ja: '明確な強気要因はありません。', th: 'ยังไม่มีปัจจัยบวกชัดเจน', vi: 'Chưa có yếu tố tăng giá rõ ràng.', id: 'Tidak ada faktor bullish yang jelas.' })}</div>
                               )}
                             </div>
                             <div className="intel-factor-card intel-factor-card-risk">
-                              <div className="intel-factor-title">{tr(language, { ko: '위험 요인', en: 'Risk factors', ja: 'リスク要因', th: 'ปัจจัยเสี่ยง', vi: 'Yếu tố rủi ro' })}</div>
+                              <div className="intel-factor-title">{tr(language, { ko: '위험 요인', en: 'Risk factors', ja: 'リスク要因', th: 'ปัจจัยเสี่ยง', vi: 'Yếu tố rủi ro', id: 'Faktor risiko' })}</div>
                               {riskFactors.length > 0 ? (
                                 <ul className="intel-factor-list">
                                   {riskFactors.map((factor: string) => (
@@ -360,7 +360,7 @@ export function FinancialEventsPage() {
                                   ))}
                                 </ul>
                               ) : (
-                                <div className="intel-empty-inline">{tr(language, { ko: '뚜렷한 위험 요인이 없습니다.', en: 'No clear risk factors.', ja: '明確なリスク要因はありません。', th: 'ยังไม่มีปัจจัยเสี่ยงชัดเจน', vi: 'Chưa có yếu tố rủi ro rõ ràng.' })}</div>
+                                <div className="intel-empty-inline">{tr(language, { ko: '뚜렷한 위험 요인이 없습니다.', en: 'No clear risk factors.', ja: '明確なリスク要因はありません。', th: 'ยังไม่มีปัจจัยเสี่ยงชัดเจน', vi: 'Chưa có yếu tố rủi ro rõ ràng.', id: 'Tidak ada faktor risiko yang jelas.' })}</div>
                               )}
                             </div>
                           </div>
@@ -371,14 +371,14 @@ export function FinancialEventsPage() {
                             onClick={() => toggleStockHistory(item.symbol)}
                           >
                             {expandedStockHistory[item.symbol]
-                              ? (tr(language, { ko: '기록 숨기기', en: 'Hide history', ja: '履歴を隠す', th: 'ซ่อนประวัติ', vi: 'Ẩn lịch sử' }))
-                              : (tr(language, { ko: '기록 보기', en: 'Show history', ja: '履歴を表示', th: 'แสดงประวัติ', vi: 'Hiện lịch sử' }))}
+                              ? (tr(language, { ko: '기록 숨기기', en: 'Hide history', ja: '履歴を隠す', th: 'ซ่อนประวัติ', vi: 'Ẩn lịch sử', id: 'Sembunyikan riwayat' }))
+                              : (tr(language, { ko: '기록 보기', en: 'Show history', ja: '履歴を表示', th: 'แสดงประวัติ', vi: 'Hiện lịch sử', id: 'Tampilkan riwayat' }))}
                           </button>
                           {expandedStockHistory[item.symbol] && (
                             <div className="intel-history-panel">
                               {loadingStockHistory[item.symbol] ? (
                                 <div className="intel-empty-inline">
-                                  {tr(language, { ko: '기록 스냅샷 불러오는 중...', en: 'Loading history snapshots...', ja: '履歴スナップショットを読み込み中...', th: 'กำลังโหลดสแนปช็อตประวัติ...', vi: 'Đang tải snapshot lịch sử...' })}
+                                  {tr(language, { ko: '기록 스냅샷 불러오는 중...', en: 'Loading history snapshots...', ja: '履歴スナップショットを読み込み中...', th: 'กำลังโหลดสแนปช็อตประวัติ...', vi: 'Đang tải snapshot lịch sử...', id: 'Memuat snapshot riwayat...' })}
                                 </div>
                               ) : (stockHistoryBySymbol[item.symbol] || []).length > 0 ? (
                                 <div className="intel-history-list">
@@ -389,13 +389,13 @@ export function FinancialEventsPage() {
                                         <span className={`intel-activity-badge ${entry.trend_status || 'quiet'}`}>{entry.signal}</span>
                                       </div>
                                       <div className="intel-chip-row">
-                                        <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm' })} {entry.signal_score}</span>
-                                        <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng' })} {entry.trend_status}</span>
+                                        <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm', id: 'Skor' })} {entry.signal_score}</span>
+                                        <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {entry.trend_status}</span>
                                         {entry.analysis?.return_5d_pct !== undefined && (
-                                          <span className="intel-chip">{tr(language, { ko: '5일 수익률', en: '5d return', ja: '5日リターン', th: 'ผลตอบแทน 5 วัน', vi: 'Lợi suất 5 ngày' })} {formatIntelNumber(entry.analysis?.return_5d_pct)}%</span>
+                                          <span className="intel-chip">{tr(language, { ko: '5일 수익률', en: '5d return', ja: '5日リターン', th: 'ผลตอบแทน 5 วัน', vi: 'Lợi suất 5 ngày', id: 'Imbal hasil 5 hari' })} {formatIntelNumber(entry.analysis?.return_5d_pct)}%</span>
                                         )}
                                         {entry.analysis?.return_20d_pct !== undefined && (
-                                          <span className="intel-chip">{tr(language, { ko: '20일 수익률', en: '20d return', ja: '20日リターン', th: 'ผลตอบแทน 20 วัน', vi: 'Lợi suất 20 ngày' })} {formatIntelNumber(entry.analysis?.return_20d_pct)}%</span>
+                                          <span className="intel-chip">{tr(language, { ko: '20일 수익률', en: '20d return', ja: '20日リターン', th: 'ผลตอบแทน 20 วัน', vi: 'Lợi suất 20 ngày', id: 'Imbal hasil 20 hari' })} {formatIntelNumber(entry.analysis?.return_20d_pct)}%</span>
                                         )}
                                       </div>
                                       <div className="intel-news-item-summary">{entry.summary}</div>
@@ -404,7 +404,7 @@ export function FinancialEventsPage() {
                                 </div>
                               ) : (
                                 <div className="intel-empty-inline">
-                                  {tr(language, { ko: '아직 기록 스냅샷이 없습니다.', en: 'No historical snapshots yet.', ja: '履歴スナップショットはまだありません。', th: 'ยังไม่มีสแนปช็อตประวัติ', vi: 'Chưa có snapshot lịch sử.' })}
+                                  {tr(language, { ko: '아직 기록 스냅샷이 없습니다.', en: 'No historical snapshots yet.', ja: '履歴スナップショットはまだありません。', th: 'ยังไม่มีสแนปช็อตประวัติ', vi: 'Chưa có snapshot lịch sử.', id: 'Belum ada snapshot riwayat.' })}
                                 </div>
                               )}
                             </div>
@@ -423,12 +423,12 @@ export function FinancialEventsPage() {
                         <div className="intel-news-description">{currentCategory.description}</div>
                       </div>
                       <div className={`intel-activity-badge ${currentCategory.summary?.activity_level || 'quiet'}`}>
-                        {currentCategory.summary?.activity_level || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}
+                        {currentCategory.summary?.activity_level || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
                       </div>
                     </div>
 
                     <div className="intel-news-card-meta">
-                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(currentCategory.created_at, language)}</span>
+                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối', id: 'Pembaruan terakhir' })}: {formatIntelTimestamp(currentCategory.created_at, language)}</span>
                     </div>
 
                     <div className="intel-panel-tabs">
@@ -441,7 +441,7 @@ export function FinancialEventsPage() {
                         >
                           <span className="intel-panel-tab-label">
                             {section.category === 'equities'
-                              ? (tr(language, { ko: '최신 뉴스', en: 'Latest News', ja: '最新ニュース', th: 'ข่าวล่าสุด', vi: 'Tin mới nhất' }))
+                              ? (tr(language, { ko: '최신 뉴스', en: 'Latest News', ja: '最新ニュース', th: 'ข่าวล่าสุด', vi: 'Tin mới nhất', id: 'Berita terbaru' }))
                               : section.label}
                           </span>
                         </button>
@@ -496,7 +496,7 @@ export function FinancialEventsPage() {
                                   [currentCategory.category]: Math.max(0, currentPage - 1)
                                 }))}
                               >
-                                {tr(language, { ko: '← 이전', en: '← Prev', ja: '← 前へ', th: '← ก่อนหน้า', vi: '← Trước' })}
+                                {tr(language, { ko: '← 이전', en: '← Prev', ja: '← 前へ', th: '← ก่อนหน้า', vi: '← Trước', id: '← Sebelumnya' })}
                               </button>
                               <div className="intel-pager-status">
                                 {tr(language, { ko: `페이지 ${currentPage + 1} / ${totalPages}`, en: `Page ${currentPage + 1} / ${totalPages}`, ja: `ページ ${currentPage + 1} / ${totalPages}`, th: `หน้า ${currentPage + 1} / ${totalPages}`, vi: `Trang ${currentPage + 1} / ${totalPages}` })}
@@ -510,14 +510,14 @@ export function FinancialEventsPage() {
                                   [currentCategory.category]: Math.min(totalPages - 1, currentPage + 1)
                                 }))}
                               >
-                                {tr(language, { ko: '다음 →', en: 'Next →', ja: '次へ →', th: 'ถัดไป →', vi: 'Tiếp →' })}
+                                {tr(language, { ko: '다음 →', en: 'Next →', ja: '次へ →', th: 'ถัดไป →', vi: 'Tiếp →', id: 'Berikutnya →' })}
                               </button>
                             </div>
                           )}
                         </>
                       ) : (
                         <div className="intel-empty-inline">
-                          {tr(language, { ko: '이 카테고리에 대한 스냅샷 콘텐츠가 아직 없습니다.', en: 'No snapshot content available for this category yet.', ja: 'このカテゴリのスナップショットコンテンツはまだありません。', th: 'ยังไม่มีเนื้อหาสแนปช็อตสำหรับหมวดนี้', vi: 'Chưa có nội dung snapshot cho danh mục này.' })}
+                          {tr(language, { ko: '이 카테고리에 대한 스냅샷 콘텐츠가 아직 없습니다.', en: 'No snapshot content available for this category yet.', ja: 'このカテゴリのスナップショットコンテンツはまだありません。', th: 'ยังไม่มีเนื้อหาสแนปช็อตสำหรับหมวดนี้', vi: 'Chưa có nội dung snapshot cho danh mục này.', id: 'Belum ada konten snapshot untuk kategori ini.' })}
                         </div>
                       )
                     })()}
@@ -530,9 +530,9 @@ export function FinancialEventsPage() {
                   <article className="intel-macro-card intel-side-panel">
                     <div className="intel-news-card-header">
                       <div>
-                        <div className="intel-news-title">{tr(language, { ko: '매크로 시그널', en: 'Macro Signals', ja: 'マクロシグナル', th: 'สัญญาณมหภาค', vi: 'Tín hiệu vĩ mô' })}</div>
+                        <div className="intel-news-title">{tr(language, { ko: '매크로 시그널', en: 'Macro Signals', ja: 'マクロシグナル', th: 'สัญญาณมหภาค', vi: 'Tín hiệu vĩ mô', id: 'Sinyal makro' })}</div>
                         <div className="intel-news-description">
-                          {macro?.meta?.summary || tr(language, { ko: '서버 측 매크로 국면 스냅샷.', en: 'A server-side macro regime snapshot.', ja: 'サーバー側のマクロレジームスナップショット。', th: 'สแนปช็อตระบอบมหภาคจากเซิร์ฟเวอร์', vi: 'Ảnh chụp chế độ vĩ mô phía máy chủ.' })}
+                          {macro?.meta?.summary || tr(language, { ko: '서버 측 매크로 국면 스냅샷.', en: 'A server-side macro regime snapshot.', ja: 'サーバー側のマクロレジームスナップショット。', th: 'สแนปช็อตระบอบมหภาคจากเซิร์ฟเวอร์', vi: 'Ảnh chụp chế độ vĩ mô phía máy chủ.', id: 'Snapshot kondisi makro dari sisi server.' })}
                         </div>
                       </div>
                       <div className={`intel-activity-badge ${macro?.verdict || 'quiet'}`}>
@@ -540,7 +540,7 @@ export function FinancialEventsPage() {
                       </div>
                     </div>
                     <div className="intel-news-card-meta">
-                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(macro?.created_at, language)}</span>
+                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối', id: 'Pembaruan terakhir' })}: {formatIntelTimestamp(macro?.created_at, language)}</span>
                     </div>
                     <div className="intel-macro-list">
                       {(macro?.signals || []).map((signal: any) => (
@@ -552,7 +552,7 @@ export function FinancialEventsPage() {
                           <div className="intel-macro-row-value">
                             {signal.value !== null && signal.value !== undefined
                               ? `${signal.value}${signal.unit === '%' ? '%' : ''}`
-                              : (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}
+                              : (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
                           </div>
                           <div className="intel-news-item-summary">
                             {signal.explanation}
@@ -567,20 +567,20 @@ export function FinancialEventsPage() {
                   <article className="intel-etf-card intel-side-panel">
                     <div className="intel-news-card-header">
                       <div>
-                        <div className="intel-news-title">{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF Flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF' })}</div>
+                        <div className="intel-news-title">{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF Flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF', id: 'Aliran dana ETF' })}</div>
                       </div>
                       <div className={`intel-activity-badge ${etfFlows?.summary?.direction || 'quiet'}`}>
-                        {etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A' }))}
+                        {etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
                       </div>
                     </div>
                     <div className="intel-news-card-meta">
-                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối' })}: {formatIntelTimestamp(etfFlows?.created_at, language)}</span>
+                      <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối', id: 'Pembaruan terakhir' })}: {formatIntelTimestamp(etfFlows?.created_at, language)}</span>
                     </div>
                     {etfFlows?.summary?.source === 'sosovalue' && etfFlows?.summary?.btc && (
                       <div style={{ fontSize: 12.5, lineHeight: 1.6, padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                         <div>
                           <strong>BTC</strong>{' '}
-                          {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày' })}{' '}
+                          {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày', id: 'aliran bersih harian' })}{' '}
                           <span style={{ color: etfFlows.summary.btc.latest_net_inflow_usd >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
                             {etfFlows.summary.btc.latest_net_inflow_usd >= 0 ? '+' : '−'}${(Math.abs(etfFlows.summary.btc.latest_net_inflow_usd) / 1e6).toFixed(0)}M
                           </span>
@@ -592,14 +592,14 @@ export function FinancialEventsPage() {
                         {etfFlows.summary.eth && (
                           <div>
                             <strong>ETH</strong>{' '}
-                            {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày' })}{' '}
+                            {tr(language, { ko: '일간 순유입', en: 'daily net flow', ja: '日次純流入', th: 'กระแสสุทธิรายวัน', vi: 'dòng ròng hàng ngày', id: 'aliran bersih harian' })}{' '}
                             <span style={{ color: etfFlows.summary.eth.latest_net_inflow_usd >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
                               {etfFlows.summary.eth.latest_net_inflow_usd >= 0 ? '+' : '−'}${(Math.abs(etfFlows.summary.eth.latest_net_inflow_usd) / 1e6).toFixed(0)}M
                             </span>
                           </div>
                         )}
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {tr(language, { ko: '실제 자금 데이터 (SoSoValue) · 누적', en: 'real flow data (SoSoValue) · cumulative', ja: '実フローデータ (SoSoValue) · 累計', th: 'ข้อมูลจริง (SoSoValue) · สะสม', vi: 'dữ liệu thực (SoSoValue) · lũy kế' })}{' '}
+                          {tr(language, { ko: '실제 자금 데이터 (SoSoValue) · 누적', en: 'real flow data (SoSoValue) · cumulative', ja: '実フローデータ (SoSoValue) · 累計', th: 'ข้อมูลจริง (SoSoValue) · สะสม', vi: 'dữ liệu thực (SoSoValue) · lũy kế', id: 'data aliran nyata (SoSoValue) · kumulatif' })}{' '}
                           ${(etfFlows.summary.btc.cum_net_inflow_usd / 1e9).toFixed(1)}B
                         </div>
                       </div>
@@ -613,15 +613,15 @@ export function FinancialEventsPage() {
                           </div>
                           <div className="intel-etf-stack-metrics">
                             <div className="intel-etf-metric">
-                              <span>{tr(language, { ko: '변동', en: 'Change', ja: '変動', th: 'เปลี่ยนแปลง', vi: 'Thay đổi' })}</span>
+                              <span>{tr(language, { ko: '변동', en: 'Change', ja: '変動', th: 'เปลี่ยนแปลง', vi: 'Thay đổi', id: 'Perubahan' })}</span>
                               <strong>{etf.price_change_pct}%</strong>
                             </div>
                             <div className="intel-etf-metric">
-                              <span>{tr(language, { ko: '거래량 비율', en: 'Vol ratio', ja: '出来高比率', th: 'อัตราส่วนปริมาณ', vi: 'Tỷ lệ khối lượng' })}</span>
+                              <span>{tr(language, { ko: '거래량 비율', en: 'Vol ratio', ja: '出来高比率', th: 'อัตราส่วนปริมาณ', vi: 'Tỷ lệ khối lượng', id: 'Rasio volume' })}</span>
                               <strong>{etf.volume_ratio}</strong>
                             </div>
                             <div className="intel-etf-metric">
-                              <span>{tr(language, { ko: '자금 흐름 점수', en: 'Flow score', ja: 'フロースコア', th: 'คะแนนกระแส', vi: 'Điểm dòng tiền' })}</span>
+                              <span>{tr(language, { ko: '자금 흐름 점수', en: 'Flow score', ja: 'フロースコア', th: 'คะแนนกระแส', vi: 'Điểm dòng tiền', id: 'Skor aliran' })}</span>
                               <strong>{etf.estimated_flow_score}</strong>
                             </div>
                           </div>
