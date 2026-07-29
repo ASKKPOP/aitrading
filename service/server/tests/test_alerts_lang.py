@@ -80,6 +80,55 @@ class AlertsLangTestCase(unittest.TestCase):
         self.assertEqual(row["title"], "Literal Title")
         self.assertEqual(row["body"], "Literal Body")
 
+    def test_the_reported_bug_end_to_end_for_every_language(self):
+        """The two rows the member actually reported, driven through the real
+        send_alert path rather than render() in isolation:
+
+            ZECUSDT(crypto)이(가) stop_event:trailing_lock에 도달
+            스탑 조건 평가에 실패(marks stale beyond 900s — refusing …)
+
+        A raw enum code and an English sentence, both inside a Korean
+        sentence. Neither may survive in any non-Latin language, and the
+        number inside the second one must.
+        """
+        from analysis_agents import LANG_NAMES
+        import alerts
+
+        stale = ("marks stale beyond 900s — refusing to evaluate P&L stops "
+                 "on frozen prices")
+        for lang in LANG_NAMES:
+            with self.subTest(lang=lang):
+                self.tearDown(); self.setUp()
+                agent_id = self._seed_user_agent(lang=lang)
+                with patch.object(alerts, "_send_email", return_value=False), \
+                     patch.object(alerts, "_send_sms", return_value=False):
+                    alerts.send_alert(agent_id, "run_stopped", "run_stop_event",
+                                      {"run_id": 811, "symbol": "ZECUSDT",
+                                       "market": "crypto",
+                                       "reason": "stop_event:trailing_lock",
+                                       "outcome": "flatten"})
+                    alerts.send_alert(agent_id, "run_stopped", "run_stop_eval_paused",
+                                      {"run_id": 811, "exc": stale})
+                conn = database.get_db_connection()
+                rows = conn.execute(
+                    "SELECT title, body FROM alert_log WHERE agent_id=? ORDER BY id",
+                    (agent_id,)).fetchall()
+                conn.close()
+                self.assertEqual(len(rows), 2)
+                stop_evt, eval_paused = rows
+
+                # the identifier never reaches the member, in any language
+                self.assertNotIn("stop_event:", stop_evt["body"], lang)
+                self.assertNotIn("stop_event:", stop_evt["title"], lang)
+                # the English sentence is gone everywhere but English…
+                if lang == "en":
+                    self.assertIn(stale, eval_paused["body"])
+                else:
+                    self.assertNotIn("marks stale", eval_paused["body"], lang)
+                    self.assertNotIn("frozen prices", eval_paused["body"], lang)
+                # …and its number survives the pattern path regardless
+                self.assertIn("900", eval_paused["body"], lang)
+
     def test_default_lang_en_when_no_lang_set(self):
         agent_id = self._seed_user_agent(lang="en")
         import alerts

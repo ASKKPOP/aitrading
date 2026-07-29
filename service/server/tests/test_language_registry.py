@@ -125,6 +125,33 @@ class TheFrontendPickerAgrees(unittest.TestCase):
         codes = set(re.findall(r"'([a-z-]+)'", declared.group(1)))
         self.assertEqual(codes, set(LANG_NAMES))
 
+    def test_no_page_hand_lists_the_language_codes(self):
+        """MarketingPage held its own switcher as
+
+            const LANGS: Record<string, string> = { ko:'KO', …, vi:'VI' }
+
+        The loose `string` key meant adding a sixth language typechecked
+        perfectly clean while the landing page kept offering five — a visitor
+        could not select the language the rest of the product already served,
+        and nothing failed. Any structure enumerating language codes must
+        derive from LANGUAGES instead of repeating them.
+        """
+        src_root = FRONTEND.parent
+        codes = set(LANG_NAMES)
+        offenders = []
+        for path in sorted(src_root.rglob("*.ts")) + sorted(src_root.rglob("*.tsx")):
+            if path.name == "i18n.ts":
+                continue          # the registry itself
+            for m in re.finditer(r"Record<string,\s*string>\s*=\s*\{([^}]*)\}",
+                                 path.read_text(encoding="utf-8")):
+                keys = set(re.findall(r"(\w[\w-]*)\s*:", m.group(1)))
+                # a map keyed by language codes and nothing else
+                if len(keys) >= 3 and keys <= codes:
+                    offenders.append(f"{path.name}: {sorted(keys)}")
+        self.assertFalse(offenders,
+                         "language codes hand-listed instead of derived from "
+                         "LANGUAGES: " + "; ".join(offenders))
+
     def test_every_language_has_a_picker_label_and_a_locale(self):
         src = self._source()
         listed = set(re.findall(r"\{ value: '([a-z-]+)', label:", src))

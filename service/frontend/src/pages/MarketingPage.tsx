@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { LANGUAGES, tr } from '../i18n'
+import type { Language } from '../i18n'
 
-const LANGS: Record<string, string> = { ko: 'KO', en: 'EN', ja: 'JA', th: 'TH', vi: 'VI' }
+// Derived from LANGUAGES, never hand-listed. This was a literal
+// Record<string, string> of five codes — the loose `string` key meant adding a
+// sixth language typechecked clean while the landing page kept offering five,
+// so a visitor could not select the language the rest of the product served.
+const LANGS: [Language, string][] =
+  LANGUAGES.map(({ value }) => [value, value.toUpperCase()])
 
 // Public landing page — quiet editorial, zero animation, compact blocks.
 // Narrative: the AI *measures* market footprints (quant × qualitative × psychology
@@ -706,8 +712,8 @@ export function MarketingPage() {
           <img src="/logo.svg" alt="" width={46} height={46} className="mkt-logo" style={{ display: 'block', flexShrink: 0 }} />
           <span className="mkt-wordmark" style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
           <span className="mkt-langs" style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px', flexShrink: 0 }}>
-            {Object.entries(LANGS).map(([code, label]) => (
-              <button key={code} onClick={() => setLanguage(code as any)}
+            {LANGS.map(([code, label]) => (
+              <button key={code} onClick={() => setLanguage(code)}
                 style={{ background: language === code ? V.accent : 'none', color: language === code ? V.accentOn : V.mut, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 9px', borderRadius: 999, fontFamily: V.sans }}>{label}</button>
             ))}
           </span>
