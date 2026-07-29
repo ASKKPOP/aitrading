@@ -171,79 +171,79 @@ export function AutomationPage() {
   }
 
   const T = {
-    title: tr(language, { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }),
-    subtitle: tr(language, { ko: 'AI가 설정한 일정에 따라 실행되며, 결정이 규칙에 부합할 때 모의 거래를 수행합니다', en: 'AI runs on your schedule and paper-trades when the decision meets your rules', ja: 'スケジュールに沿ってAIが自動売買', th: 'AI ทำงานตามเวลาและเทรดเมื่อเข้าเงื่อนไข', vi: 'AI chạy theo lịch và giao dịch khi đủ điều kiện' }),
-    myAssets: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }),
-    assetsUnrealized: tr(language, { ko: '미실현', en: 'unrealized', ja: '含み', th: 'ยังไม่รับรู้', vi: 'chưa chốt' }),
-    assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt' }),
-    sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại' }),
-    sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động' }),
-    sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận' }),
-    sumCash: tr(language, { ko: '현금', en: 'cash', ja: '現金', th: 'เงินสด', vi: 'tiền mặt' }),
-    sumInUse: tr(language, { ko: '사용 중', en: 'in use', ja: '使用中', th: 'ใช้อยู่', vi: 'đang dùng' }),
-    sumSince: tr(language, { ko: '시작', en: 'since', ja: '開始', th: 'เริ่ม', vi: 'từ' }),
-    sumDay: tr(language, { ko: '일', en: 'd', ja: '日', th: 'วัน', vi: 'ngày' }),
-    sumHour: tr(language, { ko: '시간', en: 'h', ja: '時間', th: 'ชม.', vi: 'giờ' }),
-    sumNoHistory: tr(language, { ko: '거래 내역 없음', en: 'no history yet', ja: '取引履歴なし', th: 'ยังไม่มีประวัติ', vi: 'chưa có lịch sử' }),
+    title: tr(language, { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa', id: 'Otomatisasi' }),
+    subtitle: tr(language, { ko: 'AI가 설정한 일정에 따라 실행되며, 결정이 규칙에 부합할 때 모의 거래를 수행합니다', en: 'AI runs on your schedule and paper-trades when the decision meets your rules', ja: 'スケジュールに沿ってAIが自動売買', th: 'AI ทำงานตามเวลาและเทรดเมื่อเข้าเงื่อนไข', vi: 'AI chạy theo lịch và giao dịch khi đủ điều kiện', id: 'AI berjalan sesuai jadwal Anda dan melakukan paper trading ketika keputusannya memenuhi aturan Anda' }),
+    myAssets: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản', id: 'Aset saya' }),
+    assetsUnrealized: tr(language, { ko: '미실현', en: 'unrealized', ja: '含み', th: 'ยังไม่รับรู้', vi: 'chưa chốt', id: 'belum direalisasi' }),
+    assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt', id: 'direalisasi' }),
+    sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
+    sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
+    sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
+    sumCash: tr(language, { ko: '현금', en: 'cash', ja: '現金', th: 'เงินสด', vi: 'tiền mặt', id: 'kas' }),
+    sumInUse: tr(language, { ko: '사용 중', en: 'in use', ja: '使用中', th: 'ใช้อยู่', vi: 'đang dùng', id: 'terpakai' }),
+    sumSince: tr(language, { ko: '시작', en: 'since', ja: '開始', th: 'เริ่ม', vi: 'từ', id: 'sejak' }),
+    sumDay: tr(language, { ko: '일', en: 'd', ja: '日', th: 'วัน', vi: 'ngày', id: 'h' }),
+    sumHour: tr(language, { ko: '시간', en: 'h', ja: '時間', th: 'ชม.', vi: 'giờ', id: 'j' }),
+    sumNoHistory: tr(language, { ko: '거래 내역 없음', en: 'no history yet', ja: '取引履歴なし', th: 'ยังไม่มีประวัติ', vi: 'chưa có lịch sử', id: 'belum ada riwayat' }),
     // ── the two entry points ──
-    makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới' }),
-    makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay' }),
-    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng' }),
-    symbol: tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã' }),
-    market: tr(language, { ko: '시장', en: 'Market', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
-    provider: tr(language, { ko: 'AI 제공자', en: 'AI provider', ja: 'AIプロバイダー', th: 'ผู้ให้บริการ AI', vi: 'Nhà cung cấp AI' }),
-    serverDefault: tr(language, { ko: '서버 기본값', en: 'server default', ja: 'サーバー既定', th: 'ค่าเริ่มต้นเซิร์ฟเวอร์', vi: 'mặc định máy chủ' }),
-    liveMoney: tr(language, { ko: '실제 자금', en: 'REAL MONEY', ja: '実資金', th: 'เงินจริง', vi: 'TIỀN THẬT' }),
-    badgeAuto: tr(language, { ko: '자동', en: 'auto', ja: '自動', th: 'อัตโนมัติ', vi: 'tự động' }),
-    badgeAnalysis: tr(language, { ko: '분석 전용', en: 'analysis only', ja: '分析のみ', th: 'วิเคราะห์เท่านั้น', vi: 'chỉ phân tích' }),
-    remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa' }),
-    removeFailed: tr(language, { ko: '규칙 제거에 실패했습니다 — 잠시 후 다시 시도하세요', en: 'Failed to remove the rule — try again shortly', ja: 'ルールの削除に失敗しました — しばらくして再試行してください', th: 'ลบกฎไม่สำเร็จ — ลองใหม่อีกครั้ง', vi: 'Xóa quy tắc thất bại — thử lại sau' }),
-    yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn' }),
-    empty: tr(language, { ko: '아직 규칙이 없습니다. 위에서 추가하세요.', en: 'No rules yet. Add one above.', ja: 'ルールはまだありません。', th: 'ยังไม่มีกฎ', vi: 'Chưa có quy tắc.' }),
-    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới', id: 'Buat lewat TRADING baru' }),
+    makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay', id: 'Buat lewat Analis AI — analisis sekarang' }),
+    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
+    symbol: tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã', id: 'Simbol' }),
+    market: tr(language, { ko: '시장', en: 'Market', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' }),
+    provider: tr(language, { ko: 'AI 제공자', en: 'AI provider', ja: 'AIプロバイダー', th: 'ผู้ให้บริการ AI', vi: 'Nhà cung cấp AI', id: 'Penyedia AI' }),
+    serverDefault: tr(language, { ko: '서버 기본값', en: 'server default', ja: 'サーバー既定', th: 'ค่าเริ่มต้นเซิร์ฟเวอร์', vi: 'mặc định máy chủ', id: 'bawaan server' }),
+    liveMoney: tr(language, { ko: '실제 자금', en: 'REAL MONEY', ja: '実資金', th: 'เงินจริง', vi: 'TIỀN THẬT', id: 'UANG SUNGGUHAN' }),
+    badgeAuto: tr(language, { ko: '자동', en: 'auto', ja: '自動', th: 'อัตโนมัติ', vi: 'tự động', id: 'otomatis' }),
+    badgeAnalysis: tr(language, { ko: '분석 전용', en: 'analysis only', ja: '分析のみ', th: 'วิเคราะห์เท่านั้น', vi: 'chỉ phân tích', id: 'hanya analisis' }),
+    remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa', id: 'Hapus' }),
+    removeFailed: tr(language, { ko: '규칙 제거에 실패했습니다 — 잠시 후 다시 시도하세요', en: 'Failed to remove the rule — try again shortly', ja: 'ルールの削除に失敗しました — しばらくして再試行してください', th: 'ลบกฎไม่สำเร็จ — ลองใหม่อีกครั้ง', vi: 'Xóa quy tắc thất bại — thử lại sau', id: 'Gagal menghapus aturan — coba lagi sebentar' }),
+    yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn', id: 'Aturan otomatisasi Anda' }),
+    empty: tr(language, { ko: '아직 규칙이 없습니다. 위에서 추가하세요.', en: 'No rules yet. Add one above.', ja: 'ルールはまだありません。', th: 'ยังไม่มีกฎ', vi: 'Chưa có quy tắc.', id: 'Belum ada aturan. Tambahkan satu di atas.' }),
+    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.', id: 'Silakan masuk.' }),
     // ── automation-rule panel (hangs off the create modal) ──
-    ruleSection: tr(language, { ko: '또는 자동화 규칙 만들기 (AI가 일정에 따라 반복 실행)', en: 'Or create an automation rule (AI repeats it on a schedule)', ja: 'または自動売買ルールを作成（AIが定期実行）', th: 'หรือสร้างกฎอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Hoặc tạo quy tắc tự động (AI lặp lại theo lịch)' }),
-    modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản' }),
-    modeAgent: tr(language, { ko: '1종목 위임', en: 'Agent (1 symbol)', ja: '1銘柄委任', th: 'มอบหมาย 1 เหรียญ', vi: 'Ủy quyền 1 mã' }),
-    modeFleet: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn' }),
-    modeAgentDesc: tr(language, { ko: '예산만 정하세요 — AI가 종목을 골라 TRADING을 만들고, 매 사이클 매매 결정을 기록합니다', en: 'Set only a budget — the AI picks a symbol, creates the TRADING, and journals every cycle decision', ja: '予算だけ設定 — AIが銘柄を選んで TRADING を作成し、毎サイクルの判断を記録します', th: 'ตั้งแค่งบประมาณ — AI เลือกเหรียญ สร้าง TRADING และบันทึกการตัดสินใจทุกรอบ', vi: 'Chỉ đặt ngân sách — AI chọn mã, tạo TRADING và ghi lại quyết định mỗi chu kỳ' }),
-    modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại' }),
-    budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)' }),
-    budgetHint: tr(language, { ko: 'AI가 배치할 수 있는 총 노출 한도 — 한 포지션은 예산의 25% 이하', en: 'Total exposure the AI may deploy — one position stays ≤ 25% of budget', ja: 'AIが展開できる総エクスポージャー上限 — 1ポジションは予算の25%以下', th: 'วงเงินรวมที่ AI ใช้ได้ — หนึ่งสถานะ ≤ 25% ของงบ', vi: 'Tổng mức AI được triển khai — một vị thế ≤ 25% ngân sách' }),
-    startAgent: tr(language, { ko: 'AI에게 위임 시작', en: 'Start delegation', ja: '委任を開始', th: 'เริ่มมอบหมาย', vi: 'Bắt đầu ủy quyền' }),
-    agentKillNote: tr(language, { ko: '킬 스위치: 아래 TRADING 목록에서 중지하면 즉시 멈춥니다. 리스크 게이트·브레이커·예산 상한은 AI가 우회할 수 없습니다.', en: 'Kill switch: stop it from the TRADING list below and it halts instantly. The risk gate, breakers and budget cap cannot be bypassed by the AI.', ja: 'キルスイッチ: 下の TRADING 一覧から停止すれば即座に止まります。リスクゲート・ブレーカー・予算上限はAIが回避できません。', th: 'สวิตช์หยุด: หยุดจากรายการ TRADING ด้านล่างแล้วหยุดทันที AI ข้ามประตูความเสี่ยง เบรกเกอร์ และเพดานงบไม่ได้', vi: 'Công tắc dừng: dừng từ danh sách TRADING bên dưới là ngừng ngay. AI không thể vượt cổng rủi ro, breaker và trần ngân sách.' }),
-    coinAuto: tr(language, { ko: 'AI 자동 선택', en: 'AI auto-pick', ja: 'AI自動選択', th: 'AI เลือกให้', vi: 'AI tự chọn' }),
-    coinAutoHint: tr(language, { ko: '스캐너가 거래량 급증·신규 상장에서 후보를 고릅니다', en: 'The scanner picks candidates from volume surges & new listings', ja: 'スキャナーが出来高急増・新規上場から選択', th: 'สแกนเนอร์เลือกจากปริมาณพุ่งและเหรียญใหม่', vi: 'Máy quét chọn từ khối lượng tăng vọt & niêm yết mới' }),
-    topFiveHint: tr(language, { ko: '지금 거래량·관심도 상위 5개 종목입니다', en: 'The current top-5 symbols by volume & popularity', ja: '現在の出来高・注目度トップ5銘柄です', th: '5 อันดับเหรียญยอดนิยมตามปริมาณซื้อขายตอนนี้', vi: '5 mã hàng đầu theo khối lượng & mức quan tâm hiện tại' }),
-    riskLabel: tr(language, { ko: '위험 성향', en: 'Risk level', ja: 'リスク', th: 'ระดับความเสี่ยง', vi: 'Mức rủi ro' }),
-    riskStable: tr(language, { ko: '안정', en: 'Stable', ja: '安定', th: 'มั่นคง', vi: 'Ổn định' }),
-    riskBalanced: tr(language, { ko: '균형', en: 'Balanced', ja: 'バランス', th: 'สมดุล', vi: 'Cân bằng' }),
-    riskAggressive: tr(language, { ko: '공격', en: 'Aggressive', ja: '積極', th: 'เชิงรุก', vi: 'Tích cực' }),
-    riskStableDesc: tr(language, { ko: '4시간마다 · 신뢰도 75%+ · $200', en: 'Every 4h · 75%+ confidence · $200', ja: '4時間毎 · 75%+ · $200', th: 'ทุก 4 ชม. · 75%+ · $200', vi: 'Mỗi 4h · 75%+ · $200' }),
-    riskBalancedDesc: tr(language, { ko: '1시간마다 · 신뢰도 65%+ · $500', en: 'Every 1h · 65%+ confidence · $500', ja: '1時間毎 · 65%+ · $500', th: 'ทุก 1 ชม. · 65%+ · $500', vi: 'Mỗi 1h · 65%+ · $500' }),
-    riskAggressiveDesc: tr(language, { ko: '30분마다 · 신뢰도 55%+ · $1,000', en: 'Every 30min · 55%+ confidence · $1,000', ja: '30分毎 · 55%+ · $1,000', th: 'ทุก 30 นาที · 55%+ · $1,000', vi: 'Mỗi 30 phút · 55%+ · $1.000' }),
-    startAuto: tr(language, { ko: '자동매매 시작', en: 'Start auto-trading', ja: '自動売買を開始', th: 'เริ่มเทรดอัตโนมัติ', vi: 'Bắt đầu giao dịch tự động' }),
-    simpleNote: tr(language, { ko: '모의 자금으로 거래합니다 — 실제 돈이 아닙니다. 아래 TRADING 목록에서 언제든 중지할 수 있습니다.', en: 'Trades with simulated funds — not real money. Stop it anytime from the TRADING list below.', ja: 'シミュレーション資金で取引 — 実際のお金ではありません。下の TRADING 一覧からいつでも停止できます。', th: 'เทรดด้วยเงินจำลอง — ไม่ใช่เงินจริง หยุดได้ตลอดจากรายการ TRADING ด้านล่าง', vi: 'Giao dịch bằng vốn mô phỏng — không phải tiền thật. Dừng bất cứ lúc nào từ danh sách TRADING bên dưới.' }),
+    ruleSection: tr(language, { ko: '또는 자동화 규칙 만들기 (AI가 일정에 따라 반복 실행)', en: 'Or create an automation rule (AI repeats it on a schedule)', ja: 'または自動売買ルールを作成（AIが定期実行）', th: 'หรือสร้างกฎอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Hoặc tạo quy tắc tự động (AI lặp lại theo lịch)', id: 'Atau buat aturan otomatisasi (AI mengulanginya sesuai jadwal)' }),
+    modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản', id: 'Sederhana' }),
+    modeAgent: tr(language, { ko: '1종목 위임', en: 'Agent (1 symbol)', ja: '1銘柄委任', th: 'มอบหมาย 1 เหรียญ', vi: 'Ủy quyền 1 mã', id: 'Agen (1 simbol)' }),
+    modeFleet: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn', id: 'Full Auto' }),
+    modeAgentDesc: tr(language, { ko: '예산만 정하세요 — AI가 종목을 골라 TRADING을 만들고, 매 사이클 매매 결정을 기록합니다', en: 'Set only a budget — the AI picks a symbol, creates the TRADING, and journals every cycle decision', ja: '予算だけ設定 — AIが銘柄を選んで TRADING を作成し、毎サイクルの判断を記録します', th: 'ตั้งแค่งบประมาณ — AI เลือกเหรียญ สร้าง TRADING และบันทึกการตัดสินใจทุกรอบ', vi: 'Chỉ đặt ngân sách — AI chọn mã, tạo TRADING và ghi lại quyết định mỗi chu kỳ', id: 'Cukup tetapkan anggaran — AI memilih simbol, membuat TRADING, dan mencatat setiap keputusan siklus' }),
+    modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại', id: 'Pilih koin dan tingkat risiko — sisanya ditangani AI' }),
+    budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)', id: 'Total anggaran ($)' }),
+    budgetHint: tr(language, { ko: 'AI가 배치할 수 있는 총 노출 한도 — 한 포지션은 예산의 25% 이하', en: 'Total exposure the AI may deploy — one position stays ≤ 25% of budget', ja: 'AIが展開できる総エクスポージャー上限 — 1ポジションは予算の25%以下', th: 'วงเงินรวมที่ AI ใช้ได้ — หนึ่งสถานะ ≤ 25% ของงบ', vi: 'Tổng mức AI được triển khai — một vị thế ≤ 25% ngân sách', id: 'Total eksposur yang boleh dipakai AI — satu posisi tetap ≤ 25% dari anggaran' }),
+    startAgent: tr(language, { ko: 'AI에게 위임 시작', en: 'Start delegation', ja: '委任を開始', th: 'เริ่มมอบหมาย', vi: 'Bắt đầu ủy quyền', id: 'Mulai pendelegasian' }),
+    agentKillNote: tr(language, { ko: '킬 스위치: 아래 TRADING 목록에서 중지하면 즉시 멈춥니다. 리스크 게이트·브레이커·예산 상한은 AI가 우회할 수 없습니다.', en: 'Kill switch: stop it from the TRADING list below and it halts instantly. The risk gate, breakers and budget cap cannot be bypassed by the AI.', ja: 'キルスイッチ: 下の TRADING 一覧から停止すれば即座に止まります。リスクゲート・ブレーカー・予算上限はAIが回避できません。', th: 'สวิตช์หยุด: หยุดจากรายการ TRADING ด้านล่างแล้วหยุดทันที AI ข้ามประตูความเสี่ยง เบรกเกอร์ และเพดานงบไม่ได้', vi: 'Công tắc dừng: dừng từ danh sách TRADING bên dưới là ngừng ngay. AI không thể vượt cổng rủi ro, breaker và trần ngân sách.', id: 'Tombol darurat: hentikan dari daftar TRADING di bawah dan semuanya berhenti seketika. Gerbang risiko, pemutus sirkuit, dan batas anggaran tidak dapat dilewati oleh AI.' }),
+    coinAuto: tr(language, { ko: 'AI 자동 선택', en: 'AI auto-pick', ja: 'AI自動選択', th: 'AI เลือกให้', vi: 'AI tự chọn', id: 'Pilihan otomatis AI' }),
+    coinAutoHint: tr(language, { ko: '스캐너가 거래량 급증·신규 상장에서 후보를 고릅니다', en: 'The scanner picks candidates from volume surges & new listings', ja: 'スキャナーが出来高急増・新規上場から選択', th: 'สแกนเนอร์เลือกจากปริมาณพุ่งและเหรียญใหม่', vi: 'Máy quét chọn từ khối lượng tăng vọt & niêm yết mới', id: 'Pemindai memilih kandidat dari lonjakan volume & pencatatan baru' }),
+    topFiveHint: tr(language, { ko: '지금 거래량·관심도 상위 5개 종목입니다', en: 'The current top-5 symbols by volume & popularity', ja: '現在の出来高・注目度トップ5銘柄です', th: '5 อันดับเหรียญยอดนิยมตามปริมาณซื้อขายตอนนี้', vi: '5 mã hàng đầu theo khối lượng & mức quan tâm hiện tại', id: 'Lima simbol teratas saat ini berdasarkan volume & popularitas' }),
+    riskLabel: tr(language, { ko: '위험 성향', en: 'Risk level', ja: 'リスク', th: 'ระดับความเสี่ยง', vi: 'Mức rủi ro', id: 'Tingkat risiko' }),
+    riskStable: tr(language, { ko: '안정', en: 'Stable', ja: '安定', th: 'มั่นคง', vi: 'Ổn định', id: 'Stabil' }),
+    riskBalanced: tr(language, { ko: '균형', en: 'Balanced', ja: 'バランス', th: 'สมดุล', vi: 'Cân bằng', id: 'Seimbang' }),
+    riskAggressive: tr(language, { ko: '공격', en: 'Aggressive', ja: '積極', th: 'เชิงรุก', vi: 'Tích cực', id: 'Agresif' }),
+    riskStableDesc: tr(language, { ko: '4시간마다 · 신뢰도 75%+ · $200', en: 'Every 4h · 75%+ confidence · $200', ja: '4時間毎 · 75%+ · $200', th: 'ทุก 4 ชม. · 75%+ · $200', vi: 'Mỗi 4h · 75%+ · $200', id: 'Setiap 4 jam · keyakinan 75%+ · $200' }),
+    riskBalancedDesc: tr(language, { ko: '1시간마다 · 신뢰도 65%+ · $500', en: 'Every 1h · 65%+ confidence · $500', ja: '1時間毎 · 65%+ · $500', th: 'ทุก 1 ชม. · 65%+ · $500', vi: 'Mỗi 1h · 65%+ · $500', id: 'Setiap 1 jam · keyakinan 65%+ · $500' }),
+    riskAggressiveDesc: tr(language, { ko: '30분마다 · 신뢰도 55%+ · $1,000', en: 'Every 30min · 55%+ confidence · $1,000', ja: '30分毎 · 55%+ · $1,000', th: 'ทุก 30 นาที · 55%+ · $1,000', vi: 'Mỗi 30 phút · 55%+ · $1.000', id: 'Setiap 30 menit · keyakinan 55%+ · $1.000' }),
+    startAuto: tr(language, { ko: '자동매매 시작', en: 'Start auto-trading', ja: '自動売買を開始', th: 'เริ่มเทรดอัตโนมัติ', vi: 'Bắt đầu giao dịch tự động', id: 'Mulai trading otomatis' }),
+    simpleNote: tr(language, { ko: '모의 자금으로 거래합니다 — 실제 돈이 아닙니다. 아래 TRADING 목록에서 언제든 중지할 수 있습니다.', en: 'Trades with simulated funds — not real money. Stop it anytime from the TRADING list below.', ja: 'シミュレーション資金で取引 — 実際のお金ではありません。下の TRADING 一覧からいつでも停止できます。', th: 'เทรดด้วยเงินจำลอง — ไม่ใช่เงินจริง หยุดได้ตลอดจากรายการ TRADING ด้านล่าง', vi: 'Giao dịch bằng vốn mô phỏng — không phải tiền thật. Dừng bất cứ lúc nào từ danh sách TRADING bên dưới.', id: 'Bertransaksi dengan dana simulasi — bukan uang sungguhan. Hentikan kapan saja dari daftar TRADING di bawah.' }),
     // ── AI Analyst modal ──
-    analystSubtitle: tr(language, { ko: '네 명의 AI 애널리스트가 결정과 리포트를 두고 토론합니다 — 일회성 분석이며 주문은 실행되지 않습니다', en: 'Four AI analysts debate a decision + report — a one-off analysis, no order is placed', ja: '4人のAIアナリストが討議 — 1回限りの分析で、注文は出しません', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ — วิเคราะห์ครั้งเดียว ไม่ส่งคำสั่งซื้อขาย', vi: 'Bốn nhà phân tích AI tranh luận — phân tích một lần, không đặt lệnh' }),
-    analystRun: tr(language, { ko: '분석 실행', en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích' }),
-    analystRunning: tr(language, { ko: '애널리스트들이 토론 중…', en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…' }),
-    analystBriefs: tr(language, { ko: '애널리스트 브리프', en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích' }),
-    analystNone: tr(language, { ko: '결정론적 (LLM 키 미설정)', en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM' }),
-    confidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy' }),
-    startRunNow: tr(language, { ko: '이 설정으로 자동매매 시작', en: 'Start auto-trading with this', ja: 'この設定で自動売買開始', th: 'เริ่มเทรดอัตโนมัติด้วยค่านี้', vi: 'Bắt đầu tự động với thiết lập này' }),
-    analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.' }),
+    analystSubtitle: tr(language, { ko: '네 명의 AI 애널리스트가 결정과 리포트를 두고 토론합니다 — 일회성 분석이며 주문은 실행되지 않습니다', en: 'Four AI analysts debate a decision + report — a one-off analysis, no order is placed', ja: '4人のAIアナリストが討議 — 1回限りの分析で、注文は出しません', th: 'นักวิเคราะห์ AI สี่คนถกเถียงเพื่อสรุปการตัดสินใจ — วิเคราะห์ครั้งเดียว ไม่ส่งคำสั่งซื้อขาย', vi: 'Bốn nhà phân tích AI tranh luận — phân tích một lần, không đặt lệnh', id: 'Empat analis AI mendebatkan sebuah keputusan + laporan — analisis sekali jalan, tidak ada order yang dipasang' }),
+    analystRun: tr(language, { ko: '분석 실행', en: 'Run analysis', ja: '分析する', th: 'วิเคราะห์', vi: 'Phân tích', id: 'Jalankan analisis' }),
+    analystRunning: tr(language, { ko: '애널리스트들이 토론 중…', en: 'Analysts are debating…', ja: '分析中…', th: 'กำลังวิเคราะห์…', vi: 'Đang phân tích…', id: 'Para analis sedang berdebat…' }),
+    analystBriefs: tr(language, { ko: '애널리스트 브리프', en: 'Analyst briefs', ja: 'アナリスト概要', th: 'สรุปนักวิเคราะห์', vi: 'Tóm tắt phân tích', id: 'Ringkasan analis' }),
+    analystNone: tr(language, { ko: '결정론적 (LLM 키 미설정)', en: 'deterministic (no LLM key set)', ja: 'LLM未設定', th: 'ไม่ได้ตั้งค่า LLM', vi: 'chưa đặt LLM', id: 'deterministik (kunci LLM belum diatur)' }),
+    confidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy', id: 'Keyakinan' }),
+    startRunNow: tr(language, { ko: '이 설정으로 자동매매 시작', en: 'Start auto-trading with this', ja: 'この設定で自動売買開始', th: 'เริ่มเทรดอัตโนมัติด้วยค่านี้', vi: 'Bắt đầu tự động với thiết lập này', id: 'Mulai trading otomatis dengan ini' }),
+    analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.', id: 'Hanya riset — bukan nasihat keuangan.' }),
     // ── run creation from the two rule-panel modes ──
-    createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.', ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.' }),
-    startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다 — 아래 목록에서 확인하세요.', en: 'Could not start the TRADING — see the list below.', ja: 'TRADING を開始できませんでした — 下の一覧を確認してください。', th: 'เริ่ม TRADING ไม่สำเร็จ — ดูรายการด้านล่าง', vi: 'Không khởi động được TRADING — xem danh sách bên dưới.' }),
-    pickFailed: tr(language, { ko: '종목을 고르지 못했습니다 — 직접 선택하세요.', en: 'Could not pick a symbol — choose one yourself.', ja: '銘柄を選べませんでした — 手動で選択してください。', th: 'เลือกสัญลักษณ์ไม่สำเร็จ — เลือกเอง', vi: 'Không chọn được mã — hãy tự chọn.' }),
+    createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.', ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.', id: 'Tidak dapat membuat TRADING.' }),
+    startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다 — 아래 목록에서 확인하세요.', en: 'Could not start the TRADING — see the list below.', ja: 'TRADING を開始できませんでした — 下の一覧を確認してください。', th: 'เริ่ม TRADING ไม่สำเร็จ — ดูรายการด้านล่าง', vi: 'Không khởi động được TRADING — xem danh sách bên dưới.', id: 'Tidak dapat memulai TRADING — lihat daftar di bawah.' }),
+    pickFailed: tr(language, { ko: '종목을 고르지 못했습니다 — 직접 선택하세요.', en: 'Could not pick a symbol — choose one yourself.', ja: '銘柄を選べませんでした — 手動で選択してください。', th: 'เลือกสัญลักษณ์ไม่สำเร็จ — เลือกเอง', vi: 'Không chọn được mã — hãy tự chọn.', id: 'Tidak dapat memilih simbol — pilih sendiri.' }),
   }
 
   const roleLabels: Record<string, string> = {
-    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức' }),
-    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý' }),
-    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô' }),
-    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
+    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức', id: 'Berita' }),
+    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý', id: 'Sentimen' }),
+    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô', id: 'Fundamental & Makro' }),
+    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật', id: 'Teknikal' }),
   }
 
   const authHeaders: any = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -362,18 +362,18 @@ export function AutomationPage() {
   const leveragePicker = (
     <div style={{ marginBottom: 16 }}>
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>
-        {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy' })}
+        {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {[1, 2, 3, 5, 10].map(l => (
           <button key={l} style={chip(runLev === l)} onClick={() => setRunLev(l)}>
-            {l === 1 ? tr(language, { ko: '1× 자동', en: '1× (none)', ja: '1×', th: '1×', vi: '1×' }) : `${l}×`}
+            {l === 1 ? tr(language, { ko: '1× 자동', en: '1× (none)', ja: '1×', th: '1×', vi: '1×', id: '1× (tanpa leverage)' }) : `${l}×`}
           </button>
         ))}
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6 }}>
         {runLev === 1
-          ? tr(language, { ko: '레버리지 없음 — 완전 자금형(청산 없음).', en: 'No leverage — fully funded (no liquidation).', ja: 'レバレッジなし。', th: 'ไม่มีเลเวอเรจ', vi: 'Không đòn bẩy.' })
+          ? tr(language, { ko: '레버리지 없음 — 완전 자금형(청산 없음).', en: 'No leverage — fully funded (no liquidation).', ja: 'レバレッジなし。', th: 'ไม่มีเลเวอเรจ', vi: 'Không đòn bẩy.', id: 'Tanpa leverage — didanai penuh (tidak ada likuidasi).' })
           : tr(language, { ko: `${runLev}배 격리 마진 — 같은 증거금으로 ${runLev}배 포지션, 진입가에서 ${(100 / runLev).toFixed(0)}% 역행 시 청산.`, en: `${runLev}× isolated margin — ${runLev}× the position for the same margin, liquidates on a ${(100 / runLev).toFixed(0)}% adverse move.`, ja: `${runLev}倍分離マージン、${(100 / runLev).toFixed(0)}%逆行で清算。`, th: `${runLev}× ล้างพอร์ตเมื่อสวน ${(100 / runLev).toFixed(0)}%`, vi: `${runLev}× thanh lý khi giá đi ngược ${(100 / runLev).toFixed(0)}%.` })}
       </div>
     </div>
