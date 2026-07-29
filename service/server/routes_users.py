@@ -431,7 +431,16 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not user:
             raise HTTPException(status_code=401, detail='Invalid token')
 
-        from analysis_agents import normalize_lang
+        from analysis_agents import LANG_NAMES, normalize_lang
+        # normalize_lang maps anything unknown to 'en', which is the right
+        # fallback for RENDERING and the wrong one for WRITING: until
+        # 2026-07-29 a client that sent a bad code got 200 and this endpoint
+        # silently overwrote the member's stored language with English.
+        # A write must refuse what it doesn't recognize.
+        base = (data.lang or '').strip().lower().replace('_', '-').split('-')[0]
+        if base not in LANG_NAMES:
+            raise HTTPException(status_code=400,
+                                detail=f'Unsupported language: {data.lang}')
         lang = normalize_lang(data.lang)
         conn = get_db_connection()
         cursor = conn.cursor()

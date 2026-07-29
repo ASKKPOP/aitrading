@@ -297,6 +297,111 @@
       "owner_only": true
     },
     {
+      "key": "ops-keys-ko",
+      "lang": "ko",
+      "group": "ops-keys",
+      "title": "API 키 레퍼런스",
+      "owner_only": true
+    },
+    {
+      "key": "ops-keys-ja",
+      "lang": "ja",
+      "group": "ops-keys",
+      "title": "APIキー・リファレンス",
+      "owner_only": true
+    },
+    {
+      "key": "ops-keys-th",
+      "lang": "th",
+      "group": "ops-keys",
+      "title": "คู่มืออ้างอิงคีย์ API",
+      "owner_only": true
+    },
+    {
+      "key": "ops-keys-vi",
+      "lang": "vi",
+      "group": "ops-keys",
+      "title": "Tài liệu tham chiếu khóa API",
+      "owner_only": true
+    },
+    {
+      "key": "ops-keys-id",
+      "lang": "id",
+      "group": "ops-keys",
+      "title": "Referensi Kunci API",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-ko",
+      "lang": "ko",
+      "group": "architecture",
+      "title": "시스템 아키텍처 & 기술 흐름",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-ja",
+      "lang": "ja",
+      "group": "architecture",
+      "title": "システムアーキテクチャと技術フロー",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-th",
+      "lang": "th",
+      "group": "architecture",
+      "title": "สถาปัตยกรรมระบบ & โฟลว์ทางเทคนิค",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-vi",
+      "lang": "vi",
+      "group": "architecture",
+      "title": "Kiến trúc hệ thống & luồng kỹ thuật",
+      "owner_only": true
+    },
+    {
+      "key": "architecture-id",
+      "lang": "id",
+      "group": "architecture",
+      "title": "Arsitektur Sistem & Alur Teknis",
+      "owner_only": true
+    },
+    {
+      "key": "extensions-ko",
+      "lang": "ko",
+      "group": "extensions",
+      "title": "E1 판단 라우팅 & E2 핫이슈 데몬 — 설계 분석",
+      "owner_only": true
+    },
+    {
+      "key": "extensions-ja",
+      "lang": "ja",
+      "group": "extensions",
+      "title": "E1判断ルーティング & E2ホットイシューデーモン — 設計分析",
+      "owner_only": true
+    },
+    {
+      "key": "extensions-th",
+      "lang": "th",
+      "group": "extensions",
+      "title": "E1 การกำหนดเส้นทางการตัดสินใจ & เดมอนประเด็นร้อน E2 — การวิเคราะห์การออกแบบ",
+      "owner_only": true
+    },
+    {
+      "key": "extensions-vi",
+      "lang": "vi",
+      "group": "extensions",
+      "title": "Định tuyến quyết định E1 & daemon sự kiện nóng E2 — phân tích thiết kế",
+      "owner_only": true
+    },
+    {
+      "key": "extensions-id",
+      "lang": "id",
+      "group": "extensions",
+      "title": "Perutean Keputusan E1 & Daemon Isu Penting E2 — Analisis Desain",
+      "owner_only": true
+    },
+    {
       "key": "guide-ja",
       "lang": "ja",
       "group": "guide",

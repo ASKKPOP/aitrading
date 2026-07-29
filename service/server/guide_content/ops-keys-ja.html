@@ -1,0 +1,142 @@
+<!-- machine-translated from design/api-keys-reference-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — API Keys リファレンス（オーナー専用）</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.formula{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0;font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+.persona{border:1px solid var(--border);border-radius:14px;background:var(--card);margin-top:14px;overflow:hidden}
+.persona-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--grid)}
+.persona-icon{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;font-weight:800}
+.persona-body{padding:13px 16px;font-size:13.5px;color:var(--ink-2)}
+.persona-body b{color:var(--ink)}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+.kpi .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.kpi .vl{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .hint{font-size:11px;color:var(--muted)}
+/* SVG shared */
+.sv-t{font:600 12px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink)}
+.sv-s{font:500 10.5px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink-2)}
+.sv-m{font:600 10px ui-monospace,Menlo,monospace;fill:var(--muted)}
+.sv-lb{font:700 10px system-ui,sans-serif;fill:var(--muted);letter-spacing:.08em}
+.sv-box{fill:var(--surface);stroke:var(--border)}
+.sv-card{fill:var(--card);stroke:var(--baseline)}
+.sv-acc{fill:color-mix(in srgb,var(--accent) 12%,var(--card));stroke:var(--accent)}
+.sv-good{fill:color-mix(in srgb,var(--good) 12%,var(--card));stroke:var(--good)}
+.sv-bad{fill:color-mix(in srgb,var(--critical) 10%,var(--card));stroke:var(--critical)}
+.sv-warn{fill:color-mix(in srgb,var(--yellow) 14%,var(--card));stroke:var(--yellow)}
+.sv-line{stroke:var(--baseline);stroke-width:1.4;fill:none}
+.sv-accline{stroke:var(--accent);stroke-width:1.6;fill:none}
+.sv-goodline{stroke:var(--good);stroke-width:1.6;fill:none}
+.sv-badline{stroke:var(--critical);stroke-width:1.6;fill:none}
+footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
+@media (max-width:640px){ .formula{font-size:12px} }
+</style>
+
+</head>
+
+<body>
+<header class="doc"><div class="wrap">
+  <div class="kicker">Sooppiy · オーナー専用 · 運用</div>
+  <h1>API Keys リファレンス</h1>
+  <div class="meta">2026-07-17 · 本番ステータス · 組織オーナーのみ閲覧可能 · 実際のシークレット値はここには表示されません</div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="note red"><b>オーナー専用。</b> このページには、どの本番シークレットが設定されているか、そして各シークレットが何を動かしているかが一覧されています。シークレットの値自体は一切含まれず、状態と長さのみが記載されます。アクセスはサーバー側のメールアローリストによって制限されています。</div>
+
+  <h2><span class="no">§1</span>設定済みで正常に動作中</h2>
+  <p class="sub">9つのキーが設定され、本番で稼働しています。</p>
+  <table>
+    <tr><th>キー</th><th>用途</th><th>ソース</th></tr>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>すべてのAI — アナリストブリーフ、トレーダー判断、フュージョン、検証</td><td>console.anthropic.com</td></tr>
+    <tr><td><code>EXECUTION_ENCRYPTION_KEY</code></td><td>保存されたブローカー認証情報のAES-GCM暗号化</td><td>アプリ自身で2026-07-17に生成 <code>generate_key_b64</code></td></tr>
+    <tr><td><code>SENDGRID_API_KEY</code></td><td>メールアラート（フィル、SL/TP、ブレーカー、ホエール、ウォッチ）</td><td>sendgrid.com</td></tr>
+    <tr><td><code>TWILIO_ACCOUNT_SID</code> · <code>TWILIO_AUTH_TOKEN</code></td><td>SMSアラート</td><td>twilio.com</td></tr>
+    <tr><td><code>SOSOVALUE_API_KEY</code></td><td>実際のBTC/ETH ETFフロー</td><td>sosovalue.com</td></tr>
+    <tr><td><code>COINMARKETCAL_API_KEY</code></td><td>暗号資産イベントカレンダー</td><td>coinmarketcal.com/en/api</td></tr>
+    <tr><td><code>ETHERSCAN_API_KEY</code></td><td>ETHホエール転送（取引所への入出金）</td><td>etherscan.io/apis（無料）</td></tr>
+    <tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>Google OAuthサインイン</td><td>Google Cloud コンソール</td></tr>
+    <tr><td><code>ADMIN_TOKEN</code></td><td>管理者/マネージャーサイト認証</td><td>デプロイ時に設定</td></tr>
+  </table>
+
+  <h2><span class="no">§2</span>設定済みだが制限あり — 判断が必要</h2>
+  <table>
+    <tr><th>キー</th><th>問題</th><th>選択肢</th></tr>
+    <tr><td><code>ALPHA_VANTAGE_API_KEY</code></td>
+      <td><b>無料プラン：25リクエスト/日。</b> ニュースセンチメント（4カテゴリ）は1時間ごとだと約96/日必要です。6時間間隔（<code>MARKET_NEWS_REFRESH_INTERVAL=21600</code>、約16/日）に設定することで収まります — ニュースセンチメントは動作しますが、6時間ごとに更新されます。</td>
+      <td>プレミアムにアップグレード（約$50/月、alphavantage.co/premium）すると1時間間隔に戻せて日次上限も解除されます。その後 <code>MARKET_NEWS_REFRESH_INTERVAL=3600</code> を設定してください。あるいはそのままでも構いません — 6時間でも緩やかなセンチメント信号としては十分です。</td></tr>
+  </table>
+
+  <h2><span class="no">§3</span>意図的に空 — 現時点では不要</h2>
+  <table>
+    <tr><th>キー</th><th>空でも問題ない理由</th></tr>
+    <tr><td><code>OPENAI_API_KEY</code>, <code>GEMINI_API_KEY</code>, <code>XAI_API_KEY</code>, <code>DASHSCOPE_API_KEY</code>, <code>GLM_API_KEY</code>, <code>OPENROUTER_API_KEY</code></td><td>私たちはAnthropic（Sonnet + Opus）で運用しています。これらはティアリングシステムが使用できる代替LLMプロバイダーですが、必須ではありません。</td></tr>
+    <tr><td><code>ALPACA_KEY/SECRET</code>, <code>BINANCE_KEY/SECRET</code></td><td>実際の注文執行は存在しません — Sooppiyは設計上、ペーパー/シミュレーターのプラットフォームです。</td></tr>
+    <tr><td><code>RESEND_API_KEY</code></td><td>メールはResendではなくSendGrid経由で送信されます。</td></tr>
+    <tr><td><code>LOCAL_LLM_API_KEY</code></td><td>セルフホスト型モデル用です。私たちはホスト型のAnthropic APIを使用しています。</td></tr>
+  </table>
+
+  <div class="note"><b>本番環境でのキー編集。</b> キーは <code>~/sooppiy/app/.env</code> にのみ存在します。変更後は必ずコンテナを再作成する必要があります — <code>--env-file</code>は起動時にのみ読み込まれ、<code>docker run</code>、再起動時には読み込まれません。</div>
+
+  <h2><span class="no">§4</span>対応が必要な可能性がある2つ</h2>
+  <h3>Alpha Vantage プレミアム（1時間ごとのニュース）</h3>
+  <p class="sub">alphavantage.co/premium — 月額$49.99のプランでは、1日25回の上限と秒間バーストの制限が解除されます。新しいキーを <code>ALPHA_VANTAGE_API_KEY</code> に貼り付け、<code>MARKET_NEWS_REFRESH_INTERVAL=3600</code> を設定し、コンテナを再作成してください。</p>
+  <h3>ソースごとのセンチメント（X、Reddit、Telegram、YouTube）</h3>
+  <p class="sub">モックアップには5つのセンチメントソースが表示されていますが、現在利用可能なのは StockTwits（無料）とニュース見出し（Alpha Vantage）のみです。他のソースにはそれぞれ独自のキー／収集機構が必要です：X API（有料、月額約$100）、Reddit API（無料枠）、Telegram（ボットAPI、チャンネルスクレイパーが必要）、YouTube（Data API、無料クォータ）。これは単なるキー設定ではなく、構築プロジェクトです。</p>
+</div></section>
+
+<footer><div class="wrap">Sooppiy 運用 · 所有者専用 · docs/plan/08-api-keys-reference.md から生成</div></footer>
+</body>
+</html>

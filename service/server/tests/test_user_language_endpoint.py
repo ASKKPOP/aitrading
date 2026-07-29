@@ -70,17 +70,45 @@ class UserLanguageEndpointTests(unittest.TestCase):
         self.assertEqual(login.json()["lang"], "ja")
 
     def test_put_language_rejects_unknown(self) -> None:
+        """An unknown code is a 400 and the stored language is untouched.
+
+        This test used to pin the OPPOSITE: unknown → 200 + coerced to 'en'.
+        That made the write path share normalize_lang's read-side fallback,
+        so any client that ever sent a bad code silently switched the member
+        to English — the QA sweep flipped the debug account to 'en' with a
+        single probe and nobody was told. Coercion is correct when RENDERING
+        (an error message must never 500 over a locale); it is data loss when
+        WRITING.
+        """
         user = _register_user(self.client, "l3@example.com")
         token = user["token"]
+        headers = {"Authorization": f"Bearer {token}"}
 
-        resp = self.client.put(
-            "/api/users/language",
-            headers={"Authorization": f"Bearer {token}"},
-            json={"lang": "xx"},
-        )
-        # Unknown normalizes to 'en' — never a 500.
+        # establish a real preference first
+        resp = self.client.put("/api/users/language", headers=headers,
+                               json={"lang": "ko"})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["lang"], "en")
+
+        for bad in ("xx", "zz", "qq", "", "english"):
+            with self.subTest(lang=bad):
+                resp = self.client.put("/api/users/language", headers=headers,
+                                       json={"lang": bad})
+                self.assertEqual(resp.status_code, 400, resp.text)
+
+        # the stored preference survived every bad write
+        me = self.client.get("/api/users/me", headers=headers)
+        self.assertEqual(me.json()["lang"], "ko")
+
+    def test_put_language_accepts_full_locales(self) -> None:
+        """'ko-KR' and 'id_ID' are real client behavior, not bad codes."""
+        user = _register_user(self.client, "l4@example.com")
+        headers = {"Authorization": f"Bearer {user['token']}"}
+        for sent, stored in (("ko-KR", "ko"), ("id_ID", "id"), ("JA", "ja")):
+            with self.subTest(sent=sent):
+                resp = self.client.put("/api/users/language", headers=headers,
+                                       json={"lang": sent})
+                self.assertEqual(resp.status_code, 200, resp.text)
+                self.assertEqual(resp.json()["lang"], stored)
 
     def test_put_language_requires_auth(self) -> None:
         resp = self.client.put("/api/users/language", json={"lang": "ja"})

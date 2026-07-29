@@ -1,0 +1,332 @@
+<!-- machine-translated from reports/2026-07-25-extension-e1-e2-analysis.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phân tích Mở rộng — Định tuyến AI &amp; Daemon Vấn đề Nóng · Sooppiy</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+    --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+      --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+      --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+      --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+    --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+    --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+    --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-size:29px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink-2);font-size:15.5px;max-width:68ch}
+  h2{font-size:20px;margin:46px 0 4px;letter-spacing:-.01em}
+  h2 .tag{font-size:12px;font-weight:700;vertical-align:3px;margin-left:8px;padding:3px 9px;border-radius:999px}
+  .tag-go{background:var(--pos-soft);color:var(--pos);border:1px solid var(--pos)}
+  .sectnote{color:var(--ink-2);margin:0 0 18px;max-width:72ch;font-size:14.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:20px 22px}
+  /* verdict tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:12px;color:var(--muted);font-weight:600}
+  .tile .v{font-size:22px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+  .tile .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .acc{color:var(--accent)}
+  /* flow diagram */
+  .flow{display:flex;flex-direction:column;gap:0;margin:18px 0 6px}
+  .frow{display:flex;gap:10px;align-items:stretch;justify-content:center;flex-wrap:wrap}
+  .fbox{background:var(--surface-2);border:1.5px solid var(--border);border-radius:11px;padding:10px 14px;
+    font-size:13px;text-align:center;min-width:130px;flex:1;max-width:250px}
+  .fbox b{display:block;font-size:13.5px}
+  .fbox .s{color:var(--ink-2);font-size:11.5px;margin-top:2px;display:block}
+  .fbox.ai{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 9%,var(--surface))}
+  .fbox.algo{border-color:var(--accent);background:var(--accent-soft)}
+  .fbox.gate{border-color:var(--amber)}
+  .fbox.hot{border-color:var(--neg);background:var(--neg-soft)}
+  .fbox.ok{border-color:var(--pos);background:var(--pos-soft)}
+  .farrow{text-align:center;color:var(--muted);font-size:16px;line-height:1;padding:6px 0}
+  .fsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;margin:0 auto}
+  .flabel{font-size:11px;font-weight:700;text-align:center;letter-spacing:.04em;text-transform:uppercase;padding-bottom:4px}
+  .fl-a{color:var(--accent)} .fl-b{color:var(--purple)}
+  /* tables */
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+  .c-have{background:var(--pos-soft);color:var(--pos)}
+  .c-build{background:var(--accent-soft);color:var(--accent)}
+  /* badges row */
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 14px}
+  .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2)}
+  .badge b{color:var(--ink)}
+  /* chart */
+  figure{margin:0}
+  .chart-card{padding:18px 18px 8px;margin-top:14px}
+  .cap{color:var(--ink-2);font-size:13px;margin:2px 4px 14px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+  .blabel{fill:var(--ink);font-size:12.5px;font-weight:650}
+  .bval{fill:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .warn{background:var(--neg-soft);border-left:3px solid var(--neg);padding:10px 14px;border-radius:8px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .warn b{color:var(--ink)}
+  .note{background:var(--surface-2);border-radius:9px;padding:10px 14px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .note b{color:var(--ink)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:44px;border-top:1px solid var(--border);padding-top:16px}
+  @media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.cols2{grid-template-columns:1fr}.fsplit{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Sooppiy · Đề xuất Mở rộng · Tính khả thi &amp; Thiết kế</div>
+    <h1>E1 — Định tuyến quyết định AI/Thuật toán &nbsp;·&nbsp; E2 — Daemon vấn đề nóng</h1>
+    <p class="sub">Phân tích hai đề xuất mở rộng dựa trên codebase hiện có. Kết luận trước:
+    <b>cả hai đều khả thi và được khuyến nghị</b> — và phần lớn cơ chế đã tồn tại sẵn. E1 là phiên bản kế thừa
+    thông minh hơn của <code>FLEET_CYCLE_MODE=full</code> mà chúng ta vừa bật; E2 phần lớn là tập hợp
+    các nguồn dữ liệu mà worker đã chụp nhanh (snapshot) hàng giờ.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">E1 · Định tuyến AI</div><div class="v pos">✅ Xây dựng</div><div class="d">~1–2 tuần · chủ yếu là tín hiệu có sẵn</div></div>
+    <div class="tile"><div class="k">E2 · Daemon vấn đề nóng</div><div class="v pos">✅ Xây dựng</div><div class="d">~1.5–2 tuần · 3 giai đoạn, xác minh theo từng người dùng</div></div>
+    <div class="tile"><div class="k">Chi phí LLM so với chế độ đầy đủ</div><div class="v acc">−80%</div><div class="d">AI chỉ khi cần thiết</div></div>
+    <div class="tile"><div class="k">Hiệp lực</div><div class="v">E2 → E1</div><div class="d">tín hiệu daemon = kích hoạt định tuyến</div></div>
+  </div>
+
+  <!-- ══════════════ E1 ══════════════ -->
+  <h2>E1 — Định tuyến theo tình huống: AI cho các trường hợp cực đoan, thuật toán cho phần giữa <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Ý tưởng của bạn:</b> khi phân tích cho thấy <b>sự kiện lớn / rủi ro cao / lợi nhuận cao</b>, để AI đề xuất và hành động
+  (một thuật toán không thể mã hóa mọi tham số của một tình huống cực đoan). Trong điều kiện
+  <b>bình thường</b> (giữ / thường lệ), hành động theo
+  <b>thuật toán tất định được lập trình sẵn</b> — rẻ, có thể kiểm toán, có thể dự đoán. Đây là một kiến trúc hợp lý, và nó trực tiếp
+  khắc phục vấn đề chi phí khi chạy phân tích đầy đủ ở mọi chu kỳ.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Mỗi chu kỳ chạy</b><span class="s">làm mới giá + nguồn dữ liệu (0 LLM)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Bộ phân loại Tình huống</b><span class="s">tất định · 0 LLM · từ các tín hiệu đã có sẵn</span></div></div>
+      <div class="farrow">↓ &nbsp; định tuyến &nbsp; ↓</div>
+      <div class="fsplit">
+        <div>
+          <div class="flabel fl-a">BÌNH THƯỜNG (~80–85% số chu kỳ)</div>
+          <div class="fbox algo" style="max-width:none"><b>Thuật toán lập trình sẵn hành động</b>
+            <span class="s">quy tắc luận đề + kỹ thuật + dừng lỗ/trailing · 0 lệnh gọi LLM · có thể kiểm toán hoàn toàn</span></div>
+        </div>
+        <div>
+          <div class="flabel fl-b">SỰ KIỆN LỚN / RỦI RO / LỢI NHUẬN CAO (~15–20%)</div>
+          <div class="fbox ai" style="max-width:none"><b>Bàn AI đầy đủ quyết định</b>
+            <span class="s">tất cả nhà phân tích (tin tức · tâm lý/cảm xúc · vĩ mô · kỹ thuật) + tranh luận Trader/Risk</span></div>
+        </div>
+      </div>
+      <div class="farrow">↓ &nbsp; cả hai luồng &nbsp; ↓</div>
+      <div class="frow"><div class="fbox ok"><b>Cổng kiểm soát rủi ro (không đổi, luôn áp dụng)</b><span class="s">Kelly mỗi lần chạy · giới hạn mức độ tiếp xúc · dừng lỗ · khóa trailing — AI không bao giờ có thể bỏ qua chúng</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Lệnh / giữ</b><span class="s">được ghi nhật ký cùng quyết định định tuyến (tại sao AI / tại sao thuật toán)</span></div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 6px">Bộ phân loại này không tốn cuộc gọi LLM nào — mọi trigger đã tồn tại sẵn trong prod</h3>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Trigger → định tuyến sang AI</th><th>Nguồn (đã hoạt động)</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+      <tr><td>Cửa sổ phát hành vĩ mô theo lịch (FOMC / CPI / jobs)</td><td><code>market_events.active_event_window</code> (bộ bảo vệ sự kiện)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Sốc thanh lý — |return| ≥ 3σ hoặc volume tăng đột biến</td><td><code>psych_feed</code>proxy sốc (σ hàng giờ OKX + khối lượng)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Regime = panic / euphoria / event (F&amp;G &lt;20 hoặc ≥80, vol pct ≥90)</td><td><code>regime.py</code> — 6 regimes, các snapshot được lưu trữ</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>P&amp;L của vị thế gần mức stop hoặc gần mức trail-lock</td><td><code>peak_pnl_usd</code> + khoảng cách stop (đã triển khai trong phiên này)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Tín hiệu hot-issue trên symbol này</td><td><b>E2 daemon</b> (bên dưới)</td><td><span class="chip c-build">BUILD</span></td></tr>
+      <tr><td>Giá vô hiệu hóa thesis đã bị vượt qua</td><td>thesis <code>invalidation</code> field so với mark</td><td><span class="chip c-build">BUILD (nhỏ)</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols2" style="margin-top:16px">
+    <div class="card pad">
+      <b>Tại sao điều này đúng</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>Chi phí:</b> chỉ chạy full AI trên khoảng ~15–20% số chu kỳ → rẻ hơn khoảng ~80% so với chế độ full mode toàn diện đang chạy hiện tại, trong khi vẫn giữ AI đúng ở nơi mà phán đoán yếu tố con người thực sự quan trọng.</li>
+        <li><b>Khả năng kiểm toán:</b> các thao tác vận hành bình thường mang tính xác định — có thể tái tạo, backtest được, và giải thích được.</li>
+        <li><b>Chất lượng đuôi phân phối:</b> các tail chính là nơi Fleet 16 đã thua lỗ (rally ngược với một sổ lệnh toàn short) — chính xác là nơi mà cả bàn giao dịch đầy đủ nên tư duy.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>Rủi ro &amp; các cơ chế bảo vệ</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>AI không bao giờ vượt qua risk engine</b> — cả hai luồng đều kết thúc tại cùng các cổng kiểm soát (Kelly, exposure, stop, trailing). Đây là bất biến không thể thương lượng.</li>
+        <li><b>Thất bại-đóng:</b> cuộc gọi AI thất bại trong một chu kỳ nóng → giữ nguyên (hold) + duy trì các stop, không bao giờ âm thầm rơi về thuật toán giữa lúc sự kiện đang diễn ra.</li>
+        <li><b>Hiệu chỉnh ngưỡng</b> cần bộ khung backtest (plan&nbsp;#1) — phát hành v1 với các trigger thận trọng ở trên, rồi tinh chỉnh bằng dữ liệu.</li>
+        <li><b>Ghi nhật ký tuyến định tuyến</b> (<code>route: ai|algo + trigger</code>) trong mọi sự kiện quyết định để hành vi có thể giải thích được theo từng chu kỳ.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ E2 ══════════════ -->
+  <h2>E2 — Hot-issue daemon: theo dõi AI hàng giờ trên mọi symbol RUN của từng người dùng <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Ý tưởng của bạn:</b>một daemon mà, mỗi giờ, quét tất cả các symbol trên tất cả các run của người dùng
+  (ví dụ: 3 users · 11 symbols), phát hiện các vấn đề nóng (thay đổi ROI, thay đổi kinh tế/chính sách từ bất kỳ tổ chức nào, đột phá
+  kỹ thuật, tin tức &amp; làn sóng mạng xã hội), thông báo cho từng người dùng bị ảnh hưởng, và trao cho Trading Master của mỗi người dùng một điểm quyết định.
+  Worker đã snapshot mọi input feed — đây chủ yếu là việc lắp ráp cộng với một lớp fan-out.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Nhịp chạy hàng giờ của daemon</b><span class="s">nhiệm vụ worker mới <code>hot_issue_daemon</code></span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Thu thập các symbol DISTINCT trên tất cả các run đang hoạt động của người dùng</b><span class="s">3 users · 11 symbols → phân tích 11 một lần, fan out theo từng user (dedupe = cost ÷ users)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Quét trigger chi phí thấp · 0 LLM</b><span class="s">làn sóng tin tức · độ lệch policy_feed · sốc tâm lý/F&amp;G tăng vọt · z-score mạng xã hội · phá vỡ kỹ thuật (MA/σ) · dòng vốn ETF</span></div></div>
+      <div class="farrow">↓ chỉ các mã đã được kích hoạt (~15%) ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Giai đoạn 1 · AI đọc sâu SỰ KIỆN (toàn cục, dùng chung)</b><span class="s">điều gì đã thay đổi · hướng · độ lớn · mức độ khẩn cấp — một sự thật về thị trường, chưa liên quan đến người dùng nào</span></div></div>
+      <div class="farrow">↓ theo từng người dùng bị ảnh hưởng — từng trường hợp một ↓</div>
+      <div class="frow"><div class="fbox gate"><b>Giai đoạn 2 · Xác minh theo từng người dùng — quyết định theo từng người dùng (ưu tiên tất định · 0 LLM)</b><span class="s">có nắm giữ/chạy mã này không? · hướng tác động so với <b>của họ</b>  dấu hiệu vị thế (tin tức giảm giá + họ bán khống = ủng hộ; + họ mua dài hạn = chống lại) · tính trọng yếu so với <b>của họ</b> đòn bẩy &amp; khoảng cách đến điểm dừng → <b>dưới ngưỡng = IM LẶNG, không có cảnh báo</b></span></div></div>
+      <div class="farrow">↓ chỉ người dùng trọng yếu ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Giai đoạn 2′ · Xác minh AI cá nhân hóa</b><span class="s">một cuộc gọi nhỏ cho mỗi (mã nóng × người dùng trọng yếu): "cho SỔ NÀY — ủng hộ/chống lại/trung lập · mức độ khẩn cấp · hành động đề xuất"</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="fsplit">
+        <div><div class="fbox hot" style="max-width:none"><b>Giai đoạn 3 · Thông báo cá nhân hóa</b><span class="s"><code>send_alert</code> — i18n (5 ngôn ngữ), văn bản được viết theo vị thế CỦA HỌ ("ngược với lệnh short 2× của bạn, dừng lỗ cách 1.1%"), dedupe + cooldown + severity floor</span></div></div>
+        <div><div class="fbox ai" style="max-width:none"><b>Giai đoạn 3 · Điểm quyết định → Trading Master</b><span class="s"><code>hot_issues</code> row + run_event; chu kỳ tiếp theo định tuyến đến toàn bộ desk <b>với sổ lệnh riêng của người dùng đó</b> (E1) — xác minh cuối cùng được thực hiện theo từng người dùng một cách tự nhiên</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>Hướng dẫn từng bước (ví dụ của bạn, giờ theo từng trường hợp):</b>  3 người dùng nắm giữ 11 mã khác nhau. Quét theo giờ kiểm tra cả 11 mã với chi phí
+  LLM bằng 0; ETH kích hoạt (tiêu đề chính sách giảm giá + đợt tin tức bùng phát). Stage-1 đọc sâu sự kiện một lần. Stage-2 sau đó xác minh <em>theo từng người dùng</em>:
+  người dùng A đang <b>bán khống ETH</b> → tin tức ủng hộ vị thế → mức độ khẩn cấp thấp chỉ để biết (hoặc im lặng); người dùng B đang <b>Long ETH 2×</b> với stop
+  cách 1.1% → ngược với vị thế và có ý nghĩa quan trọng → cảnh báo khẩn cấp cá nhân hóa + điểm quyết định Master + chu kỳ tiếp theo được chuyển đến toàn bộ desk;
+  người dùng C nắm giữ ETH với stop xa và quy mô nhỏ → dưới ngưỡng quan trọng → <b>hoàn toàn không có cảnh báo</b>. Cùng một sự kiện toàn cục, ba kết quả khác nhau —
+  và 10 mã còn lại không tốn chi phí gì.</div>
+
+  <div class="cols2">
+    <div class="card pad">
+      <b>Đã tồn tại (đã xác minh trên prod)</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li>Các nguồn dữ liệu: <code>policy_feed</code> · <code>psych_feed</code> (F&amp;G, sốc) · <code>social_feed</code> · tin tức thị trường / vĩ mô / ảnh chụp dòng vốn ETF — tất cả theo lịch worker.</li>
+        <li>Thông báo: <code>send_alert</code> với ngôn ngữ riêng cho từng người dùng (danh mục 5 ngôn ngữ đang chạy trên prod), khóa chống trùng lặp.</li>
+        <li>Lớp Master: <code>ai_automation_state</code> + fleet supervisor để nhận/hành động theo tín hiệu.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>Cần xây dựng</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><code>hot_issue_daemon.py</code>worker task +<code>hot_issues</code> bảng (symbol, trigger, severity, ai_read, ts).</li>
+        <li>Ngưỡng kích hoạt (z-scores so với lịch sử riêng của từng nguồn) + thời gian chờ theo từng mã (không cảnh báo lại &lt; N giờ ở cùng mức độ nghiêm trọng).</li>
+        <li><b>Lớp xác minh theo từng người dùng E2-B′</b> — kết hợp sự kiện nóng × sổ vị thế của từng người dùng (chiều vị thế, đòn bẩy, khoảng cách đến stop, luận điểm); bộ lọc mức độ liên quan/quan trọng có tính xác định, sau đó thực hiện một lần xác minh AI cá nhân hóa cho mỗi người dùng có liên quan quan trọng. Im lặng nếu dưới ngưỡng.</li>
+        <li>Các id thông điệp i18n mới cho danh mục cảnh báo (cần được người bản ngữ xem xét theo ghi chú lưu ý) — nội dung được tham số hóa theo từng vị thế.</li>
+        <li>Master "hành động theo tín hiệu" — v1: thông báo + hiển thị điểm quyết định + chuyển chu kỳ tiếp theo cho AI. Tự động giao dịch theo tín hiệu chỉ là giai đoạn 2 tùy chọn.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warn"><b>Rủi ro chính — mệt mỏi vì cảnh báo:</b> một trình theo dõi AI theo giờ mà thông báo quá mức sẽ bị tắt tiếng trong vòng một tuần. Ngưỡng sàn mức độ nghiêm trọng,
+  thời gian chờ theo từng mã, và "chỉ khi trạng thái <em>thay đổi</em>" rule cũng quan trọng như chính việc phát hiện.</div>
+
+  <!-- ══════════════ COST ══════════════ -->
+  <h2>Chi phí LLM — vì sao định tuyến tốt hơn chế độ full toàn bộ</h2>
+  <p class="sectnote">Số lượt gọi LLM ở tầng quyết định mỗi ngày cho một đội hình 4-run với chu kỳ 45 phút (32 chu kỳ/run/ngày), cộng với daemon trên 11 symbol.
+  E1 giữ nguyên full desk chính xác ở nơi nó đáng giá, với chi phí chỉ ~⅕ so với luôn luôn full. Bộ lọc trước của E2 giúp việc theo dõi AI theo giờ trở nên khả thi về chi phí.</p>
+  <figure class="card chart-card">
+    <svg id="cost" viewBox="0 0 920 300" role="img" aria-label="Daily LLM calls: light 128, routed 134, full 768; daemon naive 1584 vs prefiltered 80"></svg>
+    <figcaption class="cap">Trái: số lượt gọi quyết định mỗi chu kỳ (đội hình 4-run). Phải: daemon theo giờ trên 11 symbol. Càng thấp càng rẻ; màu tím = nơi đánh giá của AI thực sự được áp dụng.</figcaption>
+  </figure>
+
+  <!-- ══════════════ INTEGRATION ══════════════ -->
+  <h2>Nơi tích hợp vào — kế hoạch theo từng file</h2>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Bước</th><th>Thay đổi</th><th>Vị trí</th></tr></thead>
+    <tbody>
+      <tr><td><b>E1-A</b></td><td>Bộ phân loại tình huống (hàm thuần túy trên các feed hiện có; trả về <code>route + trigger</code>)</td><td><code>run_engine.py</code> mới <code>_classify_situation()</code>, được gọi ở nơi <code>_fleet_cycle_mode</code> được đọc</td></tr>
+      <tr><td><b>E1-B</b></td><td>Thuật toán đường bình thường v1 (luận điểm + quy tắc kỹ thuật; điểm vào thận trọng, điểm ra = stop/trailing hiện có)</td><td><code>run_engine.py</code> (đường nhẹ được tổng quát hóa, bỏ LLM)</td></tr>
+      <tr><td><b>E1-C</b></td><td>Ghi log theo từng quyết định; công tắc tắt khẩn cấp bằng env <code>DECISION_ROUTING_ENABLED</code></td><td><code>run_events</code> payload quyết định</td></tr>
+      <tr><td><b>E2-A</b></td><td><code>hot_issue_daemon</code> task + <code>hot_issues</code> bảng + các z-score kích hoạt</td><td>mới <code>hot_issue_daemon.py</code>, đăng ký trong worker tasks</td></tr>
+      <tr><td><b>E2-B</b></td><td>Cảnh báo phân phối theo từng người dùng (id đa ngôn ngữ, khử trùng lặp, cooldown, ngưỡng mức độ nghiêm trọng)</td><td><code>alerts.send_alert</code> + các mục danh mục</td></tr>
+      <tr><td><b>E2-B′</b></td><td><b>Xác minh theo từng người dùng</b> — bộ lọc mức độ liên quan/trọng yếu tất định (dấu vị thế × hướng tác động, đòn bẩy, khoảng cách stop; im lặng dưới ngưỡng) + một lượt xác minh AI cá nhân hóa cho mỗi người dùng trọng yếu</td><td><code>hot_issue_daemon.py</code> giai đoạn xác minh, kết hợp với <code>positions</code>/<code>trading_runs</code> theo từng người dùng</td></tr>
+      <tr><td><b>E2-C</b></td><td>Điểm quyết định chính + cờ định tuyến chu kỳ tiếp theo sang AI</td><td><code>fleet_supervisor</code> / run_event được tiêu thụ bởi bộ phân loại E1</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Trình tự — hợp nhất với kế hoạch lợi nhuận</h2>
+  <p class="sectnote">Các mục này khớp gọn gàng vào kế hoạch 4 tuần hiện có. Bộ khung backtest (#1) vẫn là điều kiện tiên quyết để tinh chỉnh
+  các ngưỡng của E1 vượt ra ngoài v1 thận trọng; giới hạn tập trung (#2) vẫn là chiến thắng nhanh của tuần 1.</p>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Tuần</th><th>Triển khai</th><th>Từ</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Giới hạn tập trung · E1-A/B v1 (kích hoạt thận trọng, đường bình thường của thuật toán)</td><td>kế hoạch #2 · <b>E1</b></td></tr>
+      <tr><td>2</td><td>Công cụ backtest · triển khai E1-C (thay thế chế độ full toàn bộ bằng định tuyến)</td><td>kế hoạch #1 · <b>E1</b></td></tr>
+      <tr><td>3</td><td>Cổng đánh giá tiến tới + kỳ vọng · E2-A/B/<b>B′</b>daemon + cảnh báo đã xác minh theo từng người dùng (B′ đi kèm cảnh báo — một bản phát không xác minh sẽ không bao giờ được phát hành)</td><td>kế hoạch #1 · <b>E2</b></td></tr>
+      <tr><td>4</td><td>Hiệu chỉnh độ tin cậy · tích hợp chủ đạo E2-C · tinh chỉnh ngưỡng E1 trên dữ liệu backtest</td><td>kế hoạch #3 · <b>E1+E2</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <b>Kết luận:</b> xây dựng cả hai. E1 (~1–2 tuần, <b>E1-A đã phát hành &amp; hoạt động 2026-07-25</b>) biến "phân tích đầy đủ luôn luôn" thành "phân tích đầy đủ khi
+    điều đó quan trọng". E2 (~1.5–2 tuần) là radar sự kiện — giờ đây gồm 3 giai đoạn: <b>phát hiện là toàn cục; đánh giá luôn theo từng người dùng</b> (một vấn đề nóng là một
+    sự thật về thị trường; liệu nó có quan trọng hay không là một sự thật về danh mục của từng người dùng — được xác minh theo từng trường hợp trước khi có bất kỳ cảnh báo hoặc hành động nào). Bất biến về an toàn xuyên suốt: <b>AI đề xuất; công cụ quản lý rủi ro luôn là bên quyết định.</b><br>
+    Phân tích mở rộng Sooppiy · 2026-07-25 · đã xác minh với môi trường prod (market_events, psych_feed, regime, policy_feed, social_feed, alerts i18n đều đang hoạt động).
+  </div>
+</div>
+
+<script>
+(function(){
+  function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+  function draw(){
+    var svg=document.getElementById('cost'); if(!svg)return; svg.innerHTML='';
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc){var t=el('text',{x:x,y:y,class:c||'tick'});if(anc)t.setAttribute('text-anchor',anc);t.textContent=s;return t;}
+    var acc=css('--accent'),pur=css('--purple'),mut=css('--muted'),brd=css('--border');
+    var W=920,H=300, baseY=240, top=40;
+    // two groups: fleet cycles (light/routed/full), daemon (naive/prefiltered)
+    var groups=[
+      {x0:70, w:340, title:'Fleet decision calls / day (4 runs)',
+       bars:[{l:'Light (old)',v:128,c:mut},{l:'E1 Routed',v:134,c:pur,star:true},{l:'Full (now)',v:768,c:acc}]},
+      {x0:520, w:330, title:'Daemon calls / day (11 symbols)',
+       bars:[{l:'E2 Pre-filtered',v:80,c:pur,star:true},{l:'Naive hourly full',v:1584,c:mut}]}
+    ];
+    var vmax=1584;
+    var scale=v=>Math.max(4,(v/vmax)*(baseY-top));
+    groups.forEach(function(g){
+      svg.appendChild(txt(g.x0+g.w/2,24,g.title,'blabel','middle'));
+      svg.appendChild(el('line',{x1:g.x0-10,x2:g.x0+g.w+10,y1:baseY,y2:baseY,stroke:brd,'stroke-width':1}));
+      var n=g.bars.length, bw=Math.min(86,(g.w-(n-1)*26)/n), gap=(g.w-n*bw)/(n-1||1);
+      g.bars.forEach(function(b,i){
+        var x=g.x0+i*(bw+gap), h=scale(b.v), y=baseY-h;
+        var r=el('path',{d:'M'+x+' '+baseY+' L'+x+' '+(y+4)+' Q'+x+' '+y+' '+(x+4)+' '+y+' L'+(x+bw-4)+' '+y+' Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+4)+' L'+(x+bw)+' '+baseY+' Z',fill:b.c,'fill-opacity':.85});
+        svg.appendChild(r);
+        svg.appendChild(txt(x+bw/2,y-8,b.v.toLocaleString(),'bval','middle'));
+        var lt=txt(x+bw/2,baseY+18,(b.star?'★ ':'')+b.l,'tick','middle'); svg.appendChild(lt);
+      });
+    });
+    svg.appendChild(txt(70,H-8,'★ = recommended architecture · purple = AI applied selectively','tick','start'));
+  }
+  draw();
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);}
+})();
+</script>
+</body>
+</html>

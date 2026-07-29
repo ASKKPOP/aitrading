@@ -112,13 +112,20 @@ T = {
         "th": "คุณเลือกภูมิภาคและภาษาเมื่อเข้าสู่ระบบครั้งแรก และเปลี่ยนได้ทุกเมื่อที่ <b>การตั้งค่า → ภูมิภาคและภาษา</b> ภูมิภาคของคุณกำหนดเวลาที่แสดงทั้งหมดบนเว็บไซต์",
         "vi": "Bạn chọn khu vực và ngôn ngữ khi đăng nhập lần đầu, và có thể đổi bất cứ lúc nào tại <b>Cài đặt → Khu vực &amp; Ngôn ngữ</b>. Khu vực quyết định múi giờ của mọi thời điểm hiển thị trên trang.",
         "id": "Anda memilih wilayah dan bahasa saat pertama kali masuk, dan dapat mengubah keduanya kapan saja di <b>Pengaturan → Wilayah &amp; Bahasa</b>. Wilayah Anda menentukan zona waktu untuk setiap waktu yang ditampilkan di situs ini."},
+    # Two DST notes, not one. The en page shows US/Canada/Australia/Singapore
+    # region tables, so naming those countries is right there. Every other
+    # language shows ONE region — Seoul/Tokyo/Bangkok/HCMC/Jakarta, none of
+    # which observes DST — so "Canada and Australia shift" was a caveat about
+    # tables the reader could not see (flagged by the 2026-07-29 QA sweep).
+    # What DOES still move for those readers is the US session converted into
+    # their clock, so that is what their note says.
     "dst": {
         "en": "US, Canadian and Australian hours shift by an hour when daylight saving starts or ends — and Australia's runs opposite to the northern hemisphere. The site always shows the current, correct time.",
-        "ko": "미국·캐나다·호주는 서머타임 시작과 종료에 따라 한 시간씩 이동합니다. 호주는 북반구와 반대로 적용됩니다. 사이트는 항상 현재 기준의 정확한 시각을 표시합니다.",
-        "ja": "米国・カナダ・オーストラリアの時間は夏時間の開始と終了で1時間ずれます。オーストラリアは北半球と逆です。サイトでは常に現在の正しい時刻を表示します。",
-        "th": "เวลาของสหรัฐฯ แคนาดา และออสเตรเลียจะเลื่อนหนึ่งชั่วโมงเมื่อเริ่มหรือสิ้นสุดเวลาออมแสง และของออสเตรเลียสวนทางกับซีกโลกเหนือ เว็บไซต์แสดงเวลาที่ถูกต้องตามปัจจุบันเสมอ",
-        "vi": "Giờ của Mỹ, Canada và Úc dịch một tiếng khi bắt đầu hoặc kết thúc giờ mùa hè — và của Úc ngược với bắc bán cầu. Trang luôn hiển thị thời gian đúng ở hiện tại.",
-        "id": "Jam Amerika Serikat, Kanada, dan Australia bergeser satu jam saat waktu musim panas dimulai atau berakhir — dan Australia berlawanan dengan belahan bumi utara. Situs ini selalu menampilkan waktu yang benar saat itu."},
+        "ko": "한국은 서머타임이 없지만, 미국 증시의 개장 시간은 미국 서머타임 시작·종료에 따라 한국 시각 기준으로 한 시간씩 이동합니다. 사이트는 항상 현재 기준의 정확한 시각을 표시합니다.",
+        "ja": "日本に夏時間はありませんが、米国市場の取引時間は米国の夏時間の開始・終了により日本時間で1時間ずれます。サイトでは常に現在の正しい時刻を表示します。",
+        "th": "ประเทศไทยไม่มีเวลาออมแสง แต่เวลาเปิดตลาดหุ้นสหรัฐฯ เมื่อแปลงเป็นเวลาไทยจะเลื่อนหนึ่งชั่วโมงตามการเริ่มหรือสิ้นสุดเวลาออมแสงของสหรัฐฯ เว็บไซต์แสดงเวลาที่ถูกต้องตามปัจจุบันเสมอ",
+        "vi": "Việt Nam không có giờ mùa hè, nhưng giờ mở cửa thị trường chứng khoán Mỹ quy đổi sang giờ Việt Nam sẽ dịch một tiếng khi Mỹ bắt đầu hoặc kết thúc giờ mùa hè. Trang luôn hiển thị thời gian đúng ở hiện tại.",
+        "id": "Indonesia tidak memakai waktu musim panas, tetapi jam buka bursa saham AS dalam waktu Indonesia bergeser satu jam saat waktu musim panas AS dimulai atau berakhir. Situs ini selalu menampilkan waktu yang benar saat itu."},
     "hrs": {"en": "{h}h", "ko": "{h}시간", "ja": "{h}時間", "th": "{h} ชม.", "vi": "{h} giờ",
         "id": "{h} jam"},
 }

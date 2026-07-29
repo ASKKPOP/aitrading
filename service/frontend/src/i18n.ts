@@ -715,10 +715,20 @@ export const translations: Record<Language, Translations> = {
 export const getT = (lang: Language): Translations => translations[lang]
 
 // Inline translation helper for ad-hoc strings outside the structured Translations.
-// Usage: tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại' })
-// Falls back to English if a translation is missing.
-export type TrMap = { en: string } & Partial<Record<Language, string>>
-export const tr = (lang: Language, m: TrMap): string => m[lang] ?? m.en
+// Usage: tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại', id: 'Kembali' })
+//
+// TrMap requires EVERY language. It used to be `{ en } & Partial<...>`, which
+// compiled `tr(lang, { en: '…' })` clean and silently served English to all
+// six languages — the type looked like a guard and wasn't. All ~2,000 inline
+// maps in the codebase already carry all six, so tightening it costs nothing
+// and turns the next forgotten language into a tsc error instead of a member
+// quietly reading English. Data that arrives at RUNTIME (e.g. the docs
+// manifest) may still be missing keys, so tr() keeps its English fallback.
+export type TrMap = Record<Language, string>
+// For values parsed from API responses, where completeness is the server's
+// promise rather than the compiler's: same shape, holes tolerated.
+export type PartialTrMap = { en: string } & Partial<Record<Language, string>>
+export const tr = (lang: Language, m: PartialTrMap): string => m[lang] ?? m.en
 
 // alternative.me's `value_classification`, rendered straight into the UI in
 // three places (home, Signals Board, Dashboard) — so a Korean member read

@@ -111,8 +111,12 @@ SOURCES: list[dict] = [
 # Listed as a table rather than 34 more literal dicts: the source path and kind
 # are a property of the GROUP, and repeating them per language is how the group
 # title and the file it points at drift apart.
+_OWNER_GROUPS = {"ops-keys", "architecture", "extensions"}
 _TRANSLATED_SOURCES = {
     # group: (path template, kind)
+    "ops-keys": ("design/api-keys-reference-{lang}.html", "html"),
+    "architecture": ("12-system-architecture-report-{lang}.html", "html"),
+    "extensions": ("reports/2026-07-25-extension-e1-e2-analysis-{lang}.html", "html"),
     "guide": ("design/ai-trading-guide-{lang}.html", "html"),
     "gateway": ("design/live-trading-gateway-guide-{lang}.html", "html"),
     "smart": ("design/smart-trading-features-{lang}.html", "html"),
@@ -124,6 +128,26 @@ _TRANSLATED_SOURCES = {
     "backtest-report": ("research/parameters/3-phase4-backtest-report-{lang}.md", "md"),
 }
 _TRANSLATED_TITLES = {
+    # owner_only groups (2026-07-29): the console operator picked a language
+    # too. Still owner-gated — localization does not widen the audience.
+    "ops-keys": {
+        "ko": "API 키 레퍼런스",
+        "ja": "APIキー・リファレンス",
+        "th": "คู่มืออ้างอิงคีย์ API",
+        "vi": "Tài liệu tham chiếu khóa API",
+        "id": "Referensi Kunci API"},
+    "architecture": {
+        "ko": "시스템 아키텍처 & 기술 흐름",
+        "ja": "システムアーキテクチャと技術フロー",
+        "th": "สถาปัตยกรรมระบบ & โฟลว์ทางเทคนิค",
+        "vi": "Kiến trúc hệ thống & luồng kỹ thuật",
+        "id": "Arsitektur Sistem & Alur Teknis"},
+    "extensions": {
+        "ko": "E1 판단 라우팅 & E2 핫이슈 데몬 — 설계 분석",
+        "ja": "E1判断ルーティング & E2ホットイシューデーモン — 設計分析",
+        "th": "E1 การกำหนดเส้นทางการตัดสินใจ & เดมอนประเด็นร้อน E2 — การวิเคราะห์การออกแบบ",
+        "vi": "Định tuyến quyết định E1 & daemon sự kiện nóng E2 — phân tích thiết kế",
+        "id": "Perutean Keputusan E1 & Daemon Isu Penting E2 — Analisis Desain"},
     "guide": {
         "ja": "AI自動売買パイプライン完全ガイド",
         "th": "คู่มือฉบับสมบูรณ์: ไปป์ไลน์เทรด AI",
@@ -172,8 +196,11 @@ _TRANSLATED_TITLES = {
 for _group, _titles in _TRANSLATED_TITLES.items():
     _pattern, _kind = _TRANSLATED_SOURCES[_group]
     for _lang, _title in _titles.items():
-        SOURCES.append({"key": f"{_group}-{_lang}", "src": _pattern.format(lang=_lang),
-                        "kind": _kind, "lang": _lang, "group": _group, "title": _title})
+        _entry = {"key": f"{_group}-{_lang}", "src": _pattern.format(lang=_lang),
+                  "kind": _kind, "lang": _lang, "group": _group, "title": _title}
+        if _group in _OWNER_GROUPS:
+            _entry["owner_only"] = True
+        SOURCES.append(_entry)
 
 
 # Nav labels for the docs rail, in every language LANG_NAMES registers.

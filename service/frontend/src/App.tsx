@@ -99,7 +99,16 @@ const EXPERIMENT_NOTIFICATION_TYPES = new Set([
 function App() {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('sooppiy_language')
-    return LANGUAGES.some((l) => l.value === saved) ? (saved as Language) : DEFAULT_LANGUAGE
+    if (LANGUAGES.some((l) => l.value === saved)) return saved as Language
+    // First visit, nothing chosen yet: follow the browser before falling back
+    // to the product default. Until 2026-07-29 this fell straight through to
+    // 'ko', so a Japanese visitor's first impression was a Korean page. Logged
+    // -in members are unaffected — /users/me seeds their stored language.
+    for (const tag of navigator.languages ?? [navigator.language]) {
+      const base = (tag || '').toLowerCase().split('-')[0]
+      if (LANGUAGES.some((l) => l.value === base)) return base as Language
+    }
+    return DEFAULT_LANGUAGE
   })
   useEffect(() => {
     localStorage.setItem('sooppiy_language', language)
