@@ -80,22 +80,22 @@ export function MonitorPage({ token }: Props) {
   }, [load])
 
   const T = {
-    title: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' }),
-    subtitle: tr(language, { ko: '내 규칙 · 실행 · 포지션 · 알림을 한 화면에서', en: 'Your rules, runs, positions and alerts on one board', ja: 'ルール・実行・ポジション・通知を一画面で', th: 'กฎ การรัน สถานะ และการแจ้งเตือนในหน้าเดียว', vi: 'Quy tắc, lần chạy, vị thế và cảnh báo trên một bảng' }),
-    rules: tr(language, { ko: '자동화 규칙', en: 'Automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติ', vi: 'Quy tắc tự động' }),
-    runs: tr(language, { ko: '최근 실행', en: 'Recent runs', ja: '実行履歴', th: 'การรันล่าสุด', vi: 'Lần chạy gần đây' }),
-    positions: tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '保有ポジション', th: 'สถานะที่เปิด', vi: 'Vị thế đang mở' }),
-    alerts: tr(language, { ko: '알림', en: 'Alerts', ja: '通知', th: 'การแจ้งเตือน', vi: 'Cảnh báo' }),
-    decisions: tr(language, { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (Agent mode)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI', vi: 'Quyết định AI' }),
-    watches: tr(language, { ko: '내 감시 조건', en: 'My watches', ja: '監視条件', th: 'เงื่อนไขเฝ้าดู', vi: 'Điều kiện theo dõi' }),
-    watchHint: tr(language, { ko: '조건이 충족되면 알림이 발송됩니다 (인앱 · 이메일/SMS는 설정에서 옵트인).', en: 'An alert fires when the condition crosses (in-app; email/SMS via Settings opt-in).', ja: '条件を満たすと通知します（アプリ内・メール/SMSは設定で有効化）。', th: 'แจ้งเตือนเมื่อเงื่อนไขถึงเกณฑ์ (ในแอป; อีเมล/SMS เปิดในตั้งค่า)', vi: 'Cảnh báo khi điều kiện vượt ngưỡng (trong app; email/SMS bật ở Cài đặt).' }),
-    watchAdd: tr(language, { ko: '조건 추가', en: 'Add watch', ja: '条件を追加', th: 'เพิ่มเงื่อนไข', vi: 'Thêm điều kiện' }),
-    watchName: tr(language, { ko: '이름 (선택)', en: 'Name (optional)', ja: '名前（任意）', th: 'ชื่อ (ไม่บังคับ)', vi: 'Tên (tùy chọn)' }),
-    above: tr(language, { ko: '초과', en: 'above', ja: '超過', th: 'สูงกว่า', vi: 'trên' }),
-    below: tr(language, { ko: '미만', en: 'below', ja: '未満', th: 'ต่ำกว่า', vi: 'dưới' }),
-    now: tr(language, { ko: '현재', en: 'now', ja: '現在', th: 'ตอนนี้', vi: 'hiện tại' }),
-    none: tr(language, { ko: '없음', en: 'None', ja: 'なし', th: 'ไม่มี', vi: 'Không có' }),
-    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    title: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát', id: 'Pemantauan' }),
+    subtitle: tr(language, { ko: '내 규칙 · 실행 · 포지션 · 알림을 한 화면에서', en: 'Your rules, runs, positions and alerts on one board', ja: 'ルール・実行・ポジション・通知を一画面で', th: 'กฎ การรัน สถานะ และการแจ้งเตือนในหน้าเดียว', vi: 'Quy tắc, lần chạy, vị thế và cảnh báo trên một bảng', id: 'Aturan, run, posisi, dan peringatan Anda dalam satu papan' }),
+    rules: tr(language, { ko: '자동화 규칙', en: 'Automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติ', vi: 'Quy tắc tự động', id: 'Aturan otomatisasi' }),
+    runs: tr(language, { ko: '최근 실행', en: 'Recent runs', ja: '実行履歴', th: 'การรันล่าสุด', vi: 'Lần chạy gần đây', id: 'Run terkini' }),
+    positions: tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '保有ポジション', th: 'สถานะที่เปิด', vi: 'Vị thế đang mở', id: 'Posisi terbuka' }),
+    alerts: tr(language, { ko: '알림', en: 'Alerts', ja: '通知', th: 'การแจ้งเตือน', vi: 'Cảnh báo', id: 'Peringatan' }),
+    decisions: tr(language, { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (Agent mode)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI', vi: 'Quyết định AI', id: 'Keputusan AI (mode Agen)' }),
+    watches: tr(language, { ko: '내 감시 조건', en: 'My watches', ja: '監視条件', th: 'เงื่อนไขเฝ้าดู', vi: 'Điều kiện theo dõi', id: 'Pantauan saya' }),
+    watchHint: tr(language, { ko: '조건이 충족되면 알림이 발송됩니다 (인앱 · 이메일/SMS는 설정에서 옵트인).', en: 'An alert fires when the condition crosses (in-app; email/SMS via Settings opt-in).', ja: '条件を満たすと通知します（アプリ内・メール/SMSは設定で有効化）。', th: 'แจ้งเตือนเมื่อเงื่อนไขถึงเกณฑ์ (ในแอป; อีเมล/SMS เปิดในตั้งค่า)', vi: 'Cảnh báo khi điều kiện vượt ngưỡng (trong app; email/SMS bật ở Cài đặt).', id: 'Peringatan terpicu saat kondisinya terlampaui (dalam aplikasi; email/SMS bila diaktifkan di Pengaturan).' }),
+    watchAdd: tr(language, { ko: '조건 추가', en: 'Add watch', ja: '条件を追加', th: 'เพิ่มเงื่อนไข', vi: 'Thêm điều kiện', id: 'Tambah pantauan' }),
+    watchName: tr(language, { ko: '이름 (선택)', en: 'Name (optional)', ja: '名前（任意）', th: 'ชื่อ (ไม่บังคับ)', vi: 'Tên (tùy chọn)', id: 'Nama (opsional)' }),
+    above: tr(language, { ko: '초과', en: 'above', ja: '超過', th: 'สูงกว่า', vi: 'trên', id: 'di atas' }),
+    below: tr(language, { ko: '미만', en: 'below', ja: '未満', th: 'ต่ำกว่า', vi: 'dưới', id: 'di bawah' }),
+    now: tr(language, { ko: '현재', en: 'now', ja: '現在', th: 'ตอนนี้', vi: 'hiện tại', id: 'sekarang' }),
+    none: tr(language, { ko: '없음', en: 'None', ja: 'なし', th: 'ไม่มี', vi: 'Không có', id: 'Tidak ada' }),
+    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.', id: 'Silakan masuk.' }),
   }
 
   if (!token) {

@@ -40,7 +40,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
       setThread(data.thread || null)
       setError('')
     } catch {
-      setError(tr(language, { ko: '대화를 불러오지 못했습니다', en: 'Failed to load the conversation', ja: '会話を読み込めませんでした', th: 'โหลดการสนทนาไม่สำเร็จ', vi: 'Không tải được cuộc trò chuyện' }))
+      setError(tr(language, { ko: '대화를 불러오지 못했습니다', en: 'Failed to load the conversation', ja: '会話を読み込めませんでした', th: 'โหลดการสนทนาไม่สำเร็จ', vi: 'Không tải được cuộc trò chuyện', id: 'Gagal memuat percakapan' }))
     } finally {
       setLoading(false)
     }
@@ -67,7 +67,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
       setDraft('')
       setError('')
     } catch {
-      setError(tr(language, { ko: '전송에 실패했습니다', en: 'Failed to send', ja: '送信に失敗しました', th: 'ส่งไม่สำเร็จ', vi: 'Gửi thất bại' }))
+      setError(tr(language, { ko: '전송에 실패했습니다', en: 'Failed to send', ja: '送信に失敗しました', th: 'ส่งไม่สำเร็จ', vi: 'Gửi thất bại', id: 'Gagal mengirim' }))
     } finally {
       setSending(false)
     }
@@ -80,7 +80,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
         <div style={{ maxWidth: '78%' }}>
           {!mine && (
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, paddingLeft: 4 }}>
-              {tr(language, { ko: '운영팀', en: 'Sooppiy team', ja: '運営チーム', th: 'ทีม Sooppiy', vi: 'Đội ngũ Sooppiy' })}
+              {tr(language, { ko: '운영팀', en: 'Sooppiy team', ja: '運営チーム', th: 'ทีม Sooppiy', vi: 'Đội ngũ Sooppiy', id: 'Tim Sooppiy' })}
               {m.admin_email ? ` · ${m.admin_email}` : ''}
             </div>
           )}
@@ -109,14 +109,14 @@ export default function SupportPage({ userToken }: { userToken: string }) {
     <div style={{ maxWidth: 760 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
-          {tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' })}
+          {tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' })}
         </h1>
         {thread?.status === 'closed' && (
           <span style={{
             fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 9px',
             background: 'var(--bg-secondary, rgba(0,0,0,0.05))', color: 'var(--text-muted)',
           }}>
-            {tr(language, { ko: '종료됨', en: 'Closed', ja: '終了', th: 'ปิดแล้ว', vi: 'Đã đóng' })}
+            {tr(language, { ko: '종료됨', en: 'Closed', ja: '終了', th: 'ปิดแล้ว', vi: 'Đã đóng', id: 'Ditutup' })}
           </span>
         )}
       </div>
@@ -127,13 +127,14 @@ export default function SupportPage({ userToken }: { userToken: string }) {
           ja: '運営チームと直接やり取りできます。返信があると通知されます。',
           th: 'พูดคุยกับทีม Sooppiy โดยตรง คุณจะได้รับการแจ้งเตือนเมื่อมีการตอบกลับ',
           vi: 'Trò chuyện trực tiếp với đội ngũ Sooppiy. Bạn sẽ nhận thông báo khi có phản hồi.',
+          id: 'Bicara langsung dengan tim Sooppiy. Anda akan menerima notifikasi saat mereka membalas.',
         })}
       </div>
 
       {error && <div style={{ color: 'var(--error, #d03b3b)', fontSize: 12.5, marginTop: 10 }}>{error}</div>}
 
       <div className="card" style={{ padding: '16px', marginTop: 14, minHeight: 260, maxHeight: 460, overflowY: 'auto' }}>
-        {loading && <div style={{ fontSize: 13 }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...' })}</div>}
+        {loading && <div style={{ fontSize: 13 }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...', id: 'Memuat...' })}</div>}
         {!loading && messages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13.5, padding: '40px 12px' }}>
             {tr(language, {
@@ -142,6 +143,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
               ja: 'まだメッセージはありません。下からご質問ください。',
               th: 'ยังไม่มีข้อความ — ส่งคำถามของคุณด้านล่าง',
               vi: 'Chưa có tin nhắn — gửi câu hỏi của bạn bên dưới.',
+              id: 'Belum ada pesan — kirimkan pertanyaan Anda di bawah ini.',
             })}
           </div>
         )}
@@ -155,7 +157,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
           onChange={e => setDraft(e.target.value.slice(0, 4000))}
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
           rows={3}
-          placeholder={tr(language, { ko: '메시지를 입력하세요… (⌘/Ctrl + Enter 로 전송)', en: 'Write a message… (⌘/Ctrl + Enter to send)', ja: 'メッセージを入力… (⌘/Ctrl + Enter で送信)', th: 'พิมพ์ข้อความ… (⌘/Ctrl + Enter เพื่อส่ง)', vi: 'Nhập tin nhắn… (⌘/Ctrl + Enter để gửi)' })}
+          placeholder={tr(language, { ko: '메시지를 입력하세요… (⌘/Ctrl + Enter 로 전송)', en: 'Write a message… (⌘/Ctrl + Enter to send)', ja: 'メッセージを入力… (⌘/Ctrl + Enter で送信)', th: 'พิมพ์ข้อความ… (⌘/Ctrl + Enter เพื่อส่ง)', vi: 'Nhập tin nhắn… (⌘/Ctrl + Enter để gửi)', id: 'Tulis pesan… (⌘/Ctrl + Enter untuk mengirim)' })}
           style={{
             flex: 1, padding: '10px 12px', borderRadius: 10, resize: 'vertical',
             border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
@@ -165,8 +167,8 @@ export default function SupportPage({ userToken }: { userToken: string }) {
         <button onClick={send} disabled={sending || !draft.trim()} className="btn btn-primary"
           style={{ fontSize: 13, padding: '10px 20px', cursor: 'pointer' }}>
           {sending
-            ? tr(language, { ko: '전송 중...', en: 'Sending...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...' })
-            : tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi' })}
+            ? tr(language, { ko: '전송 중...', en: 'Sending...', ja: '送信中...', th: 'กำลังส่ง...', vi: 'Đang gửi...', id: 'Mengirim...' })
+            : tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi', id: 'Kirim' })}
         </button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>{draft.length}/4000</div>
