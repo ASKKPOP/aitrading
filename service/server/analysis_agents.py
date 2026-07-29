@@ -480,7 +480,8 @@ def _hold_only(decision: dict[str, Any], reason: str) -> dict[str, Any]:
 
 def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           guidelines: Optional[str] = None,
-                          memory: str = "") -> dict[str, Any]:
+                          memory: str = "",
+                          position_state: str = "") -> dict[str, Any]:
     if not llm_configured():
         # No provider at all. The engine still runs and still reports, but it
         # does not trade on a rule signal — see ai_only_orders().
@@ -494,7 +495,16 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         f"decide whether to BUY, SELL, or HOLD {symbol} ({market}).\n"
         f"{lang_line}\n"
         + memory
-        + _guidelines_block(guidelines) +
+        + _guidelines_block(guidelines)
+        # Position awareness (2026-07-29). This path took no position input of
+        # any kind — not size, entry, P&L, high-water mark, nor even whether a
+        # position existed. That is worst exactly here: the E1 router escalates
+        # to this expensive path FOR position reasons ("Open position near loss
+        # warrants judgement check", prod run 811 cycle 55), so the desk was
+        # promoted to judge a holding and handed nothing about it. The light
+        # path got this in #124; the escalated cycles are the ones that need it
+        # most.
+        + position_state +
         "Weigh disagreement, size risk, and be decisive. Respond with ONLY a JSON object:\n"
         # 'entry' is asked for as the desk's VIEW and is recorded as
         # suggested_entry; execution always fills at the live price (P-1).
@@ -713,7 +723,8 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
                  provider: Optional[str] = None,
                  agent_id: Optional[int] = None,
                  progress: Optional[ProgressFn] = None,
-                 llm_tiers: Optional[dict] = None) -> dict[str, Any]:
+                 llm_tiers: Optional[dict] = None,
+                 position_state: str = "") -> dict[str, Any]:
     """Run the full multi-agent pipeline for one symbol and return decision + report.
 
     provider optionally forces a specific LLM provider for this run (automation
@@ -777,7 +788,8 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
     token = set_llm_context(ctx) if ctx is not None else None
     try:
         return _run_analysis_inner(symbol, market, lang, guidelines=guidelines,
-                                   progress=progress, agent_id=agent_id)
+                                   progress=progress, agent_id=agent_id,
+                                   position_state=position_state)
     finally:
         if token is not None:
             reset_llm_context(token)
@@ -806,7 +818,8 @@ def _submit_step(pool: ThreadPoolExecutor, progress: Optional[ProgressFn],
 def _run_analysis_inner(symbol: str, market: str, lang: str,
                         guidelines: Optional[str] = None,
                         progress: Optional[ProgressFn] = None,
-                        agent_id: Optional[int] = None) -> dict[str, Any]:
+                        agent_id: Optional[int] = None,
+                        position_state: str = "") -> dict[str, Any]:
     # Data gathering: technical / news / fundamentals are independent and run
     # concurrently; sentiment needs the news breakdown so it starts after news.
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -856,7 +869,8 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
 
     _emit(progress, "decision", "start")
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
-                                     guidelines=guidelines, memory=memory)
+                                     guidelines=guidelines, memory=memory,
+                                     position_state=position_state)
     _emit(progress, "decision", "done",
           action=decision.get("action"), confidence=decision.get("confidence"))
 
