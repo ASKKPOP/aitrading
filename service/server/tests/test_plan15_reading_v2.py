@@ -166,6 +166,34 @@ class LightAnalysisPromptTests(unittest.TestCase):
         self.assertNotIn("Open P&L on this position", prompt)
         self.assertNotIn("Banking is a first-class action", prompt)
 
+    # ── session close: a gain you cannot act on is a gain you carry ────────
+    # Prod run 818 held +$30.99 across the CME close with every rail out of
+    # reach (brake −$27.15, trail arming at $89.02 against a $35.16 peak). The
+    # pre-gate refuses a CLOSED market; nothing warned it while it could act.
+
+    def _closing_prompt(self, minutes_left):
+        with patch("markets.session_minutes_left", return_value=minutes_left):
+            return self._held_prompt(qty=-0.11, unrealized=30.99, peak=35.16)
+
+    def test_desk_is_warned_while_it_can_still_act(self):
+        prompt = self._closing_prompt(12)
+        self.assertIn("closes in about 12 minute(s)", prompt)
+        self.assertIn("close or reduce it NOW", prompt)
+
+    def test_no_closing_warning_when_the_session_has_hours_left(self):
+        prompt = self._closing_prompt(300)
+        self.assertNotIn("closes in about", prompt)
+
+    def test_no_closing_warning_when_already_shut(self):
+        """0 means shut — the pre-gate handles that; do not tell the desk to
+        act when acting is impossible."""
+        prompt = self._closing_prompt(0)
+        self.assertNotIn("closes in about", prompt)
+
+    def test_a_24x7_market_never_warns(self):
+        prompt = self._closing_prompt(24 * 60)
+        self.assertNotIn("closes in about", prompt)
+
     def test_exit_awareness_is_kill_switchable(self):
         """One env var reverts to the pre-2026-07-29 entry-only prompt."""
         with patch.dict(os.environ, {"RUN_DESK_EXIT_AWARENESS": "false"}):
@@ -181,6 +209,45 @@ class LightAnalysisPromptTests(unittest.TestCase):
         self.assertNotIn("Open P&L on this position", prompt)
         # the verb still stands: it holds a position, it may still close it
         self.assertIn("Banking is a first-class action", prompt)
+
+
+class FullPathSeesThePositionTests(unittest.TestCase):
+    """The E1 router escalates to the FULL path for position reasons — prod run
+    811 cycle 55, "Open position near loss warrants judgement check" — and that
+    path took no position input of any kind. #124 fixed the light path only;
+    the escalated cycles are the ones that need it most."""
+
+    def _trader_prompt(self, position_state):
+        captured = {}
+
+        def fake_generate(prompt, **kwargs):
+            captured["prompt"] = prompt
+            return ('{"action":"hold","confidence":0.5,"scores":'
+                    '{"thesis_alignment":0.5,"momentum_quality":0.5,'
+                    '"entry_quality":0.5,"risk_context":0.5},'
+                    '"rationale":"r","report":"r"}')
+
+        briefs = {k: "brief" for k in ("news", "sentiment",
+                                       "fundamentals_macro", "technical")}
+        import analysis_agents
+        # `from llm_client import generate_text` binds the name into this
+        # module at import, so patching llm_client would miss it.
+        with patch.object(analysis_agents, "llm_configured", return_value=True), \
+                patch.object(analysis_agents, "generate_text",
+                             side_effect=fake_generate):
+            analysis_agents._trader_risk_decision(
+                "BTC", "crypto", briefs, {"current_price": 100.0}, {}, "en",
+                position_state=position_state)
+        return captured.get("prompt", "")
+
+    def test_position_state_reaches_the_trader_prompt(self):
+        state = ("Open P&L on this position: $30.99. Banking is a "
+                 "first-class action.\n")
+        self.assertIn("Open P&L on this position: $30.99",
+                      self._trader_prompt(state))
+
+    def test_flat_book_adds_nothing_to_the_trader_prompt(self):
+        self.assertNotIn("Open P&L on this position", self._trader_prompt(""))
 
 
 class YahooTechnicalsFallbackTests(unittest.TestCase):

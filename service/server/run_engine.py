@@ -1993,6 +1993,17 @@ def _conf_v2_enabled() -> bool:
     return os.getenv("RUN_CONF_V2", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _closing_soon_minutes() -> int:
+    """How close to the session close counts as "act now or carry the gap".
+    One cycle interval plus slack — the desk must be warned while it still has
+    a cycle left to act in, not on the cycle that finds the market already
+    shut."""
+    try:
+        return max(0, int(os.getenv("RUN_CLOSING_SOON_MINUTES", "45")))
+    except ValueError:
+        return 45
+
+
 def _desk_exit_awareness() -> bool:
     """Whether the desk is shown its open position's trajectory and told that
     banking is an action. Default ON — the entry-only prompt is what let three
@@ -2012,44 +2023,82 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
     mark and how much of it survives, and how much of the move the thesis was
     written for has actually arrived.
 
-    Returns "" when flat or when the book cannot be trusted. An unknown P&L
-    must never be rendered as a confident $0.00 — that would read as
-    "breakeven, nothing to bank", the opposite of the truth.
+    Returns "" only when flat or switched off. An untrustworthy mark drops the
+    NUMBERS but keeps the verb: an unknown P&L must never be rendered as a
+    confident $0.00 (that reads as "breakeven, nothing to bank", the opposite
+    of the truth), yet a desk holding a position can still validly close it.
     """
     if not pos_qty or not _desk_exit_awareness():
         return ""
+    bits: list[str] = []
+    pnl: dict = {}
     try:
-        pnl = compute_run_pnl(run)
+        pnl = compute_run_pnl(run) or {}
     except Exception:  # noqa: BLE001
-        return ""
-    if not pnl.get("mark_age_ok"):
-        return ""
-    pos = pnl.get("position") or {}
+        pnl = {}
+    if pnl.get("mark_age_ok"):
+        pos = pnl.get("position") or {}
+        try:
+            upnl = float(pnl.get("unrealized") or 0)
+        except (TypeError, ValueError):
+            upnl = None
+        if upnl is not None:
+            bits.append(f"Open P&L on this position: ${upnl:,.2f}.")
+            try:
+                peak = float(run.get("peak_pnl_usd"))
+            except (TypeError, ValueError):
+                peak = None
+            if peak and peak > 0:
+                bits.append(f"Best this run has reached: ${peak:,.2f} — you "
+                            f"are holding {max(0.0, upnl) / peak:.0%} of that "
+                            f"high-water mark.")
+            try:
+                want = abs(float(thesis.get("expected_move_pct")))
+                ent = float(pos.get("entry_price") or 0)
+                mark = float(pos.get("current_price") or 0)
+                if want > 0 and ent > 0 and mark > 0:
+                    got = (mark - ent) / ent * 100.0
+                    if pos_qty < 0:              # a short profits as price falls
+                        got = -got
+                    bits.append(f"Thesis expected a {want:.2f}% move; "
+                                f"{got:+.2f}% has arrived ({got / want:.0%} "
+                                f"of it).")
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
+    # Session close (2026-07-29). A gain the desk cannot act on is a gain it
+    # carries through the gap. Prod run 818 held +$30.99 across the CME close
+    # with every rail out of reach (brake −$27.15, trail arming at $89.02
+    # against a $35.16 peak), so the only actor that could have banked it was
+    # the desk — and nothing told it the window was shutting. The pre-gate
+    # already refuses to trade a closed market; this is the warning BEFORE
+    # that, while acting is still possible.
     try:
-        upnl = float(pnl.get("unrealized") or 0)
-    except (TypeError, ValueError):
-        return ""
-    bits = [f"Open P&L on this position: ${upnl:,.2f}."]
-    try:
-        peak = float(run.get("peak_pnl_usd"))
-    except (TypeError, ValueError):
-        peak = None
-    if peak and peak > 0:
-        bits.append(f"Best this run has reached: ${peak:,.2f} — you are "
-                    f"holding {max(0.0, upnl) / peak:.0%} of that high-water "
-                    f"mark.")
-    try:
-        want = abs(float(thesis.get("expected_move_pct")))
-        ent = float(pos.get("entry_price") or 0)
-        mark = float(pos.get("current_price") or 0)
-        if want > 0 and ent > 0 and mark > 0:
-            got = (mark - ent) / ent * 100.0
-            if pos_qty < 0:                      # a short profits as price falls
-                got = -got
-            bits.append(f"Thesis expected a {want:.2f}% move; {got:+.2f}% has "
-                        f"arrived ({got / want:.0%} of it).")
-    except (TypeError, ValueError, ZeroDivisionError):
+        import markets
+        left = markets.session_minutes_left(run.get("market"))
+        if 0 < left <= _closing_soon_minutes():
+            bits.append(
+                f"This market closes in about {left} minute(s) and you cannot "
+                f"act again until it reopens. If you would not want to carry "
+                f"this position through the gap unattended, close or reduce it "
+                f"NOW — after the close the choice is no longer yours.")
+    except Exception:  # noqa: BLE001 — a missing calendar must not block the desk
         pass
+    # The verb, stated once, for whichever path is asking. Those four component
+    # scores are ALL entry-framed — entry_quality literally asks how good this
+    # price is as an ENTRY — so without this the deliberation collapses to
+    # add / don't-add. Prod: runs 776, 811 and 816 round-tripped peaks of
+    # $78.58, $33.44 and $75.29 to roughly zero while emitting `hold` or `buy`,
+    # with `sell`/`cover` available on every one of those cycles; 811's own
+    # reports read "...rather than adding". The rails cannot cover it either —
+    # every one is indexed to max_loss, so a run whose peak never clears
+    # 0.70x max_loss has no profit exit at all.
+    bits.append(
+        "Banking is a first-class action, not merely the absence of an add. "
+        "If the move your thesis was paid for has largely happened, or open "
+        "P&L is rolling over from its high-water mark, then reducing or "
+        "closing is the correct answer THIS cycle even while the thesis still "
+        "technically holds — a thesis that is still valid is not a reason to "
+        "keep giving back a gain.")
     return " ".join(bits) + "\n"
 
 
@@ -2130,27 +2179,6 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "and cleanliness of the current move), entry_quality (how good is THIS "
         "price as an entry vs the reference?), risk_context (headroom to "
         "invalidation; 1.0 = very safe).\n"
-        # Exit awareness (2026-07-29). Those four components are ALL
-        # entry-framed — entry_quality literally asks how good this price is
-        # as an entry — so a desk holding a decaying winner had nothing to
-        # reason from and its whole deliberation collapsed to add / don't-add.
-        # Prod: runs 776, 811 and 816 round-tripped peaks of $78.58, $33.44
-        # and $75.29 to roughly zero while emitting `hold` or `buy`, with
-        # `sell`/`cover` available on every one of those cycles. 811's own
-        # reports read "...rather than adding" / "...without adding". The
-        # rails cannot cover this: every one of them is indexed to max_loss,
-        # so a run whose peak never clears 0.70x max_loss has no profit exit
-        # at all. So say it plainly to the only actor that can act inside a
-        # small excursion.
-        + (
-            "Banking is a first-class action, not merely the absence of an "
-            "add. If the move your thesis was paid for has largely happened, "
-            "or open P&L is rolling over from its high-water mark, then "
-            "reducing or closing is the correct answer THIS cycle even while "
-            "the thesis still technically holds — a thesis that is still "
-            "valid is not a reason to keep giving back a gain.\n"
-            if pos_qty and _desk_exit_awareness() else ""
-        ) +
         # Order parameters, minimal edition (2026-07-27). Only the two fields
         # the flat 5%/10% actually overrides — a stop and a target sized to
         # THIS instrument. The full trader prompt asks for the whole block
@@ -2400,11 +2428,24 @@ def run_cycle(run_id: int) -> dict:
             analysis = _light_analysis(run, cfg)
         else:
             from analysis_agents import run_analysis
+            # The router escalates here FOR position reasons, so the expensive
+            # desk must see the same book the cheap one does — same helper, so
+            # the two paths cannot drift apart.
+            try:
+                held = _position_quantity(run["agent_id"], run["market"],
+                                          run["symbol"], run["id"])
+            except Exception:  # noqa: BLE001
+                held = 0.0
             analysis = run_analysis(run["symbol"], run["market"],
                                     cfg.get("lang") or "en",
                                     provider=cfg.get("provider") or None,
                                     agent_id=run["agent_id"],
-                                    llm_tiers=cfg.get("llm_tiers") or None)
+                                    llm_tiers=cfg.get("llm_tiers") or None,
+                                    position_state=_position_state_line(
+                                        run, cfg, held,
+                                        (cfg.get("thesis") or {})
+                                        if isinstance(cfg.get("thesis"), dict)
+                                        else {}))
         analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
         tech_block = analysts.get("technical")
         technical = tech_block.get("data") if isinstance(tech_block, dict) else None
