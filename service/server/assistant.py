@@ -30,6 +30,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from analysis_agents import LANG_NAMES, normalize_lang
 from database import begin_write_transaction, get_db_connection
 
 logger = logging.getLogger(__name__)
@@ -423,10 +424,16 @@ def assistant_turn(agent_id: int, user_message: str, lang: str = "en") -> dict[s
         finally:
             conn.close()
 
+    # The two fallbacks below are the assistant's OWN turn in the chat thread,
+    # not an API error, so they were plain English while every model-generated
+    # reply followed the member's language. Keyed through the error catalogue
+    # (exact-English lookup, English if absent) rather than a second one.
+    from i18n_errors import translate as _t
+
     if not llm_configured():
-        reply = ("The assistant is unavailable right now (no AI model configured on this "
-                 "server). Your message was saved — everything else on the platform keeps "
-                 "working, and your data is unchanged.")
+        reply = _t("The assistant is unavailable right now (no AI model configured on this "
+                   "server). Your message was saved — everything else on the platform keeps "
+                   "working, and your data is unchanged.", lang)
         _add_message(session["id"], "assistant", reply, llm_model=None)
         return {"reply": reply, "llm_model": None, "available": False}
 
@@ -436,7 +443,10 @@ def assistant_turn(agent_id: int, user_message: str, lang: str = "en") -> dict[s
     transcript = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in history)
 
     prompt = (
-        f"USER LANGUAGE: {lang}\n\n"
+        # The language NAME, not the bare code: 'id' reads as "identifier" at
+        # least as readily as "Indonesian", and this line is the only thing
+        # telling the model which language to answer in.
+        f"USER LANGUAGE: {LANG_NAMES.get(normalize_lang(lang), 'English')}\n\n"
         f"THIS USER'S FULL ACCOUNT (JSON):\n"
         f"{json.dumps(profile, ensure_ascii=False, default=str)[:16000]}\n\n"
         + (f"CONVERSATION SO FAR:\n{transcript}\n\n" if transcript else "")
@@ -445,8 +455,8 @@ def assistant_turn(agent_id: int, user_message: str, lang: str = "en") -> dict[s
     reply = generate_text(prompt, system=SYSTEM_PROMPT, max_tokens=800,
                           temperature=0.4, tier="assistant")
     if not reply:
-        reply = ("I couldn't reach the model just now — please try again. Nothing in your "
-                 "account was changed.")
+        reply = _t("I couldn't reach the model just now — please try again. Nothing in your "
+                   "account was changed.", lang)
         _add_message(session["id"], "assistant", reply, llm_model=None)
         return {"reply": reply, "llm_model": None, "available": False}
 

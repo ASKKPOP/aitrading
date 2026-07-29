@@ -142,6 +142,38 @@ class NoBackendModuleKeepsItsOwnLanguageList(unittest.TestCase):
                 self.assertEqual(daemon.LANG_NAMES.get(lang), name)
 
 
+class TheAssistantFallsBackInTheMembersLanguage(unittest.TestCase):
+    """The assistant answers in the member's language on every turn the model
+    handles. Its two failure replies — no model configured, model unreachable —
+    were plain English, so the one turn most likely to confuse a member was
+    also the one turn that stopped speaking their language."""
+
+    REPLIES = (
+        "The assistant is unavailable right now (no AI model configured on this "
+        "server). Your message was saved — everything else on the platform keeps "
+        "working, and your data is unchanged.",
+        "I couldn't reach the model just now — please try again. Nothing in your "
+        "account was changed.",
+    )
+
+    def test_both_fallbacks_translate_into_every_language(self):
+        from i18n_errors import translate
+
+        for reply in self.REPLIES:
+            for lang in LANG_NAMES:
+                with self.subTest(lang=lang, reply=reply[:32]):
+                    out = translate(reply, lang)
+                    self.assertTrue(out)
+                    if lang != "en":
+                        self.assertNotEqual(out, reply,
+                                            "served English to a non-English member")
+
+    # Drift (reword the reply, forget the catalogue, silently serve English)
+    # is already caught by test_i18n_errors.py's
+    # test_every_catalogue_key_still_exists_in_the_backend, which AST-scans
+    # every literal in the backend against every catalogue key. No second copy.
+
+
 class IndonesiaIsServed(unittest.TestCase):
 
     def test_the_region_exists_with_a_real_zone(self):

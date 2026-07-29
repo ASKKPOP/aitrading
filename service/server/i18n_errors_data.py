@@ -2521,4 +2521,44 @@ MESSAGES: dict[str, dict[str, str]] = {
         'vi': '{} quá dài',
         'id': '{} terlalu panjang',
     },
+
+    # ── AI assistant fallback replies (2026-07-29) ───────────────────────
+    # Not raised errors — these are what the assistant SAYS when there is no
+    # model configured or the call fails. They sit in the chat thread as the
+    # assistant's own turn, so an English one is a Korean member being
+    # answered in English by a feature that answers in their language every
+    # other time. Routed through this catalogue rather than a second one:
+    # the lookup is keyed on the exact English, which is all these need.
+    'The assistant is unavailable right now (no AI model configured on this '
+    'server). Your message was saved — everything else on the platform keeps '
+    'working, and your data is unchanged.': {
+        'ko': '지금은 어시스턴트를 사용할 수 없습니다(이 서버에 AI 모델이 '
+              '설정되어 있지 않습니다). 메시지는 저장되었으며, 플랫폼의 나머지 '
+              '기능은 정상 동작하고 회원님의 데이터도 그대로입니다.',
+        'ja': '現在アシスタントはご利用いただけません（このサーバーにAIモデルが'
+              '設定されていません）。メッセージは保存されました。プラットフォーム'
+              'の他の機能は通常どおり動作し、データも変更されていません。',
+        'th': 'ขณะนี้ผู้ช่วยไม่พร้อมใช้งาน (ยังไม่ได้ตั้งค่าโมเดล AI บนเซิร์ฟเวอร์นี้) '
+              'ข้อความของคุณถูกบันทึกไว้แล้ว ส่วนอื่นของแพลตฟอร์มยังทำงานตามปกติ '
+              'และข้อมูลของคุณไม่มีการเปลี่ยนแปลง',
+        'vi': 'Trợ lý hiện không khả dụng (máy chủ này chưa cấu hình mô hình AI). '
+              'Tin nhắn của bạn đã được lưu — mọi phần khác của nền tảng vẫn hoạt '
+              'động bình thường và dữ liệu của bạn không thay đổi.',
+        'id': 'Asisten sedang tidak tersedia (belum ada model AI yang '
+              'dikonfigurasi di server ini). Pesan Anda sudah tersimpan — bagian '
+              'lain platform tetap berjalan dan data Anda tidak berubah.',
+    },
+    "I couldn't reach the model just now — please try again. Nothing in your "
+    'account was changed.': {
+        'ko': '방금 모델에 연결하지 못했습니다. 다시 시도해 주세요. 계정에는 '
+              '아무 변경도 없었습니다.',
+        'ja': 'ただいまモデルに接続できませんでした。もう一度お試しください。'
+              'アカウントには何の変更もありません。',
+        'th': 'ขณะนี้ไม่สามารถเชื่อมต่อกับโมเดลได้ กรุณาลองใหม่อีกครั้ง '
+              'ไม่มีการเปลี่ยนแปลงใด ๆ ในบัญชีของคุณ',
+        'vi': 'Hiện chưa kết nối được tới mô hình — vui lòng thử lại. Không có '
+              'thay đổi nào trong tài khoản của bạn.',
+        'id': 'Saat ini tidak dapat menghubungi model — silakan coba lagi. Tidak '
+              'ada perubahan apa pun pada akun Anda.',
+    },
 }
