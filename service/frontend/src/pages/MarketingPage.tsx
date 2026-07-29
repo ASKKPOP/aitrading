@@ -1060,7 +1060,7 @@ export function MarketingPage() {
             ))}
           </div>
           <p style={{ fontSize: 13.5, color: V.mut, marginTop: 16, maxWidth: '76ch', borderTop: `1px solid ${V.line}`, paddingTop: 16 }}>
-            <span style={{ fontWeight: 700, color: V.ink }}>{tr(language, { ko: '페이퍼 먼저, 그다음 라이브. ', en: 'Paper first, then live. ', ja: 'まず模擬、次にライブ。', th: 'เปเปอร์ก่อน แล้วค่อยไลฟ์ ', vi: 'Paper trước, rồi live. ' })}</span>
+            <span style={{ fontWeight: 700, color: V.ink }}>{tr(language, { ko: '페이퍼 먼저, 그다음 라이브. ', en: 'Paper first, then live. ', ja: 'まず模擬、次にライブ。', th: 'เปเปอร์ก่อน แล้วค่อยไลฟ์ ', vi: 'Paper trước, rồi live. ', id: 'Paper dulu, baru live. ' })}</span>
             {T.mmLive}
           </p>
         </div>

@@ -214,7 +214,7 @@ export function DocsPage({ token, userToken }: Props) {
 
       {langNote && (
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 10px' }}>
-          {tr(language, { ko: '', en: '', ja: 'この文書は現在、韓国語と英語で提供されています（英語版を表示中）。', th: 'เอกสารนี้มีให้ในภาษาเกาหลีและอังกฤษ (กำลังแสดงฉบับภาษาอังกฤษ)', vi: 'Tài liệu hiện có bằng tiếng Hàn và tiếng Anh (đang hiển thị bản tiếng Anh).' })}
+          {tr(language, { ko: '', en: '', ja: 'この文書は現在、韓国語と英語で提供されています（英語版を表示中）。', th: 'เอกสารนี้มีให้ในภาษาเกาหลีและอังกฤษ (กำลังแสดงฉบับภาษาอังกฤษ)', vi: 'Tài liệu hiện có bằng tiếng Hàn và tiếng Anh (đang hiển thị bản tiếng Anh).', id: 'Dokumen ini tersedia dalam bahasa Korea dan Inggris (menampilkan versi bahasa Inggris).' })}
         </p>
       )}
 

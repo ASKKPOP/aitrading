@@ -25,7 +25,7 @@ export function MarketPage({ token }: Props) {
         letterSpacing: '0.08em',
       }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
-        {tr(language, { ko: '에이전트 시그널', en: 'Agent Signals', ja: 'エージェントシグナル', th: 'สัญญาณเอเจนต์', vi: 'Tín hiệu Agent' })}
+        {tr(language, { ko: '에이전트 시그널', en: 'Agent Signals', ja: 'エージェントシグナル', th: 'สัญญาณเอเจนต์', vi: 'Tín hiệu Agent', id: 'Sinyal agen' })}
         <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
       </div>
 

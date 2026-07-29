@@ -103,7 +103,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       try {
         variants = JSON.parse(formData.variants_json)
       } catch {
-        alert(tr(language, { ko: '잘못된 변형 JSON', en: 'Invalid variants JSON', ja: 'バリアント JSON の形式が無効です', th: 'รูปแบบ JSON ของรูปแบบไม่ถูกต้อง', vi: 'JSON biến thể không hợp lệ' }))
+        alert(tr(language, { ko: '잘못된 변형 JSON', en: 'Invalid variants JSON', ja: 'バリアント JSON の形式が無効です', th: 'รูปแบบ JSON ของรูปแบบไม่ถูกต้อง', vi: 'JSON biến thể không hợp lệ', id: 'JSON varian tidak valid' }))
         return
       }
       const res = await fetch(`${API_BASE}/experiments`, {
@@ -128,7 +128,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       await loadExperiments()
       await loadAssignments(data.experiment_key)
     } catch (err: any) {
-      alert(err?.message || tr(language, { ko: '실험 생성에 실패했습니다', en: 'Failed to create experiment', ja: '実験の作成に失敗しました', th: 'สร้างการทดลองล้มเหลว', vi: 'Tạo thí nghiệm thất bại' }))
+      alert(err?.message || tr(language, { ko: '실험 생성에 실패했습니다', en: 'Failed to create experiment', ja: '実験の作成に失敗しました', th: 'สร้างการทดลองล้มเหลว', vi: 'Tạo thí nghiệm thất bại', id: 'Gagal membuat eksperimen' }))
     } finally {
       setBusy(false)
     }
@@ -153,7 +153,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       await loadExperiments()
       await loadAssignments(experimentKey)
     } catch (err: any) {
-      alert(err?.message || tr(language, { ko: '상태 업데이트에 실패했습니다', en: 'Failed to update status', ja: 'ステータスの更新に失敗しました', th: 'อัปเดตสถานะล้มเหลว', vi: 'Cập nhật trạng thái thất bại' }))
+      alert(err?.message || tr(language, { ko: '상태 업데이트에 실패했습니다', en: 'Failed to update status', ja: 'ステータスの更新に失敗しました', th: 'อัปเดตสถานะล้มเหลว', vi: 'Cập nhật trạng thái thất bại', id: 'Gagal memperbarui status' }))
     } finally {
       setBusy(false)
     }
@@ -214,9 +214,9 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
     <div className="experiment-page">
       <div className="header">
         <div>
-          <h1 className="header-title">{tr(language, { ko: '실험 콘솔', en: 'Experiment Console', ja: '実験コンソール', th: 'คอนโซลการทดลอง', vi: 'Bảng điều khiển Thí nghiệm' })}</h1>
+          <h1 className="header-title">{tr(language, { ko: '실험 콘솔', en: 'Experiment Console', ja: '実験コンソール', th: 'คอนโซลการทดลอง', vi: 'Bảng điều khiển Thí nghiệm', id: 'Konsol eksperimen' })}</h1>
           <p className="header-subtitle">
-            {tr(language, { ko: '배정을 생성하고, 변형 규모를 확인하고, 보상 정책을 관리하세요', en: 'Create assignments, inspect variant scale, and manage reward policy', ja: '割り当てを作成し、バリアントの規模と報酬ポリシーを管理します', th: 'สร้างการมอบหมาย ตรวจสอบขนาดของรูปแบบ และจัดการนโยบายรางวัล', vi: 'Tạo phân bổ, kiểm tra quy mô biến thể và quản lý chính sách phần thưởng' })}
+            {tr(language, { ko: '배정을 생성하고, 변형 규모를 확인하고, 보상 정책을 관리하세요', en: 'Create assignments, inspect variant scale, and manage reward policy', ja: '割り当てを作成し、バリアントの規模と報酬ポリシーを管理します', th: 'สร้างการมอบหมาย ตรวจสอบขนาดของรูปแบบ และจัดการนโยบายรางวัล', vi: 'Tạo phân bổ, kiểm tra quy mô biến thể và quản lý chính sách phần thưởng', id: 'Buat penugasan, periksa skala varian, dan kelola kebijakan imbalan' })}
           </p>
         </div>
       </div>
@@ -224,13 +224,13 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       <div className="experiment-grid">
         <section className="experiment-panel experiment-panel-main">
           <div className="experiment-section-header">
-            <h2>{tr(language, { ko: '실험', en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm' })}</h2>
-            <button className="btn btn-ghost" onClick={loadExperiments}>{tr(language, { ko: '새로고침', en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới' })}</button>
+            <h2>{tr(language, { ko: '실험', en: 'Experiments', ja: '実験', th: 'การทดลอง', vi: 'Thí nghiệm', id: 'Eksperimen' })}</h2>
+            <button className="btn btn-ghost" onClick={loadExperiments}>{tr(language, { ko: '새로고침', en: 'Refresh', ja: '更新', th: 'รีเฟรช', vi: 'Làm mới', id: 'Muat ulang' })}</button>
           </div>
           {loading ? (
             <div className="loading"><div className="spinner"></div></div>
           ) : experiments.length === 0 ? (
-            <div className="empty-state"><div className="empty-title">{tr(language, { ko: '아직 실험이 없습니다', en: 'No experiments yet', ja: 'まだ実験がありません', th: 'ยังไม่มีการทดลอง', vi: 'Chưa có thí nghiệm nào' })}</div></div>
+            <div className="empty-state"><div className="empty-title">{tr(language, { ko: '아직 실험이 없습니다', en: 'No experiments yet', ja: 'まだ実験がありません', th: 'ยังไม่มีการทดลอง', vi: 'Chưa có thí nghiệm nào', id: 'Belum ada eksperimen' })}</div></div>
           ) : (
             <div className="experiment-list">
               {experiments.map((experiment) => (
@@ -253,10 +253,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   {token && (
                     <div className="experiment-actions">
                       <button className="btn btn-secondary" disabled={busy} onClick={() => updateStatus(experiment.experiment_key, experiment.status === 'active' ? 'paused' : 'active')}>
-                        {experiment.status === 'active' ? tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'หยุดชั่วคราว', vi: 'Tạm dừng' }) : tr(language, { ko: '시작', en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu' })}
+                        {experiment.status === 'active' ? tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'หยุดชั่วคราว', vi: 'Tạm dừng', id: 'Jeda' }) : tr(language, { ko: '시작', en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu', id: 'Mulai' })}
                       </button>
                       <button className="btn btn-ghost" onClick={() => loadAssignments(experiment.experiment_key)}>
-                        {tr(language, { ko: '배정', en: 'Assignments', ja: '割り当て', th: 'การมอบหมาย', vi: 'Phân bổ' })}
+                        {tr(language, { ko: '배정', en: 'Assignments', ja: '割り当て', th: 'การมอบหมาย', vi: 'Phân bổ', id: 'Penugasan' })}
                       </button>
                     </div>
                   )}
@@ -267,10 +267,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
         </section>
 
         <aside className="experiment-panel">
-          <div className="experiment-section-header"><h2>{tr(language, { ko: '실험 만들기', en: 'Create Experiment', ja: '実験を作成', th: 'สร้างการทดลอง', vi: 'Tạo thí nghiệm' })}</h2></div>
+          <div className="experiment-section-header"><h2>{tr(language, { ko: '실험 만들기', en: 'Create Experiment', ja: '実験を作成', th: 'สร้างการทดลอง', vi: 'Tạo thí nghiệm', id: 'Buat eksperimen' })}</h2></div>
           {token ? (
             <form className="experiment-form" onSubmit={handleCreate}>
-              <input className="form-input" value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} placeholder={tr(language, { ko: '실험 제목', en: 'Experiment title', ja: '実験タイトル', th: 'ชื่อการทดลอง', vi: 'Tiêu đề thí nghiệm' })} required />
+              <input className="form-input" value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} placeholder={tr(language, { ko: '실험 제목', en: 'Experiment title', ja: '実験タイトル', th: 'ชื่อการทดลอง', vi: 'Tiêu đề thí nghiệm', id: 'Judul eksperimen' })} required />
               <input className="form-input" value={formData.experiment_key} onChange={(event) => setFormData({ ...formData, experiment_key: event.target.value })} placeholder="experiment-key" />
               <div className="experiment-form-row">
                 <select className="form-select" value={formData.status} onChange={(event) => setFormData({ ...formData, status: event.target.value })}>
@@ -287,10 +287,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 <input className="form-input" type="datetime-local" value={formData.end_at} onChange={(event) => setFormData({ ...formData, end_at: event.target.value })} />
               </div>
               <textarea className="form-textarea experiment-json" value={formData.variants_json} onChange={(event) => setFormData({ ...formData, variants_json: event.target.value })} />
-              <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { ko: '실험 저장', en: 'Save experiment', ja: '実験を保存', th: 'บันทึกการทดลอง', vi: 'Lưu thí nghiệm' })}</button>
+              <button className="btn btn-primary" disabled={busy} type="submit">{tr(language, { ko: '실험 저장', en: 'Save experiment', ja: '実験を保存', th: 'บันทึกการทดลอง', vi: 'Lưu thí nghiệm', id: 'Simpan eksperimen' })}</button>
             </form>
           ) : (
-            <div className="empty-state"><div className="empty-title">{tr(language, { ko: '로그인 후 실험 만들기', en: 'Login to create experiments', ja: 'ログイン後に実験を作成できます', th: 'เข้าสู่ระบบเพื่อสร้างการทดลอง', vi: 'Đăng nhập để tạo thí nghiệm' })}</div></div>
+            <div className="empty-state"><div className="empty-title">{tr(language, { ko: '로그인 후 실험 만들기', en: 'Login to create experiments', ja: 'ログイン後に実験を作成できます', th: 'เข้าสู่ระบบเพื่อสร้างการทดลอง', vi: 'Đăng nhập để tạo thí nghiệm', id: 'Masuk untuk membuat eksperimen' })}</div></div>
           )}
         </aside>
       </div>
@@ -298,7 +298,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
       {token && (
         <section className="experiment-panel">
           <div className="experiment-section-header">
-            <h2>{tr(language, { ko: '실험 알림', en: 'Experiment Notifications', ja: '実験通知', th: 'การแจ้งเตือนการทดลอง', vi: 'Thông báo thí nghiệm' })}</h2>
+            <h2>{tr(language, { ko: '실험 알림', en: 'Experiment Notifications', ja: '実験通知', th: 'การแจ้งเตือนการทดลอง', vi: 'Thông báo thí nghiệm', id: 'Notifikasi eksperimen' })}</h2>
             <span className="experiment-badge">{notificationPreview?.campaign_id || 'dry-run first'}</span>
           </div>
           <form
@@ -315,7 +315,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 onChange={(event) => setNotificationForm({ ...notificationForm, experiment_key: event.target.value, variant_key: '' })}
                 required
               >
-                <option value="">{tr(language, { ko: '실험 선택', en: 'Select experiment', ja: '実験を選択', th: 'เลือกการทดลอง', vi: 'Chọn thí nghiệm' })}</option>
+                <option value="">{tr(language, { ko: '실험 선택', en: 'Select experiment', ja: '実験を選択', th: 'เลือกการทดลอง', vi: 'Chọn thí nghiệm', id: 'Pilih eksperimen' })}</option>
                 {experiments.map((experiment) => (
                   <option key={experiment.experiment_key} value={experiment.experiment_key}>{experiment.title || experiment.experiment_key}</option>
                 ))}
@@ -325,7 +325,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 value={notificationForm.variant_key}
                 onChange={(event) => setNotificationForm({ ...notificationForm, variant_key: event.target.value })}
               >
-                <option value="">{tr(language, { ko: '전체 변형', en: 'All variants', ja: 'すべてのバリアント', th: 'รูปแบบทั้งหมด', vi: 'Tất cả biến thể' })}</option>
+                <option value="">{tr(language, { ko: '전체 변형', en: 'All variants', ja: 'すべてのバリアント', th: 'รูปแบบทั้งหมด', vi: 'Tất cả biến thể', id: 'Semua varian' })}</option>
                 {notificationVariants.map((variant: any) => (
                   <option key={variant.key} value={variant.key}>{variant.key}</option>
                 ))}
@@ -344,14 +344,14 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
               className="form-input"
               value={notificationForm.title}
               onChange={(event) => setNotificationForm({ ...notificationForm, title: event.target.value })}
-              placeholder={tr(language, { ko: '알림 제목', en: 'Notification title', ja: '通知タイトル', th: 'หัวข้อการแจ้งเตือน', vi: 'Tiêu đề thông báo' })}
+              placeholder={tr(language, { ko: '알림 제목', en: 'Notification title', ja: '通知タイトル', th: 'หัวข้อการแจ้งเตือน', vi: 'Tiêu đề thông báo', id: 'Judul notifikasi' })}
               required
             />
             <textarea
               className="form-textarea"
               value={notificationForm.content}
               onChange={(event) => setNotificationForm({ ...notificationForm, content: event.target.value })}
-              placeholder={tr(language, { ko: '알림 본문을 입력하세요.', en: 'Write the notification body.', ja: '通知本文を入力してください。', th: 'เขียนเนื้อหาการแจ้งเตือน', vi: 'Viết nội dung thông báo.' })}
+              placeholder={tr(language, { ko: '알림 본문을 입력하세요.', en: 'Write the notification body.', ja: '通知本文を入力してください。', th: 'เขียนเนื้อหาการแจ้งเตือน', vi: 'Viết nội dung thông báo.', id: 'Tulis isi notifikasinya.' })}
               required
             />
             <div className="experiment-form-row">
@@ -359,7 +359,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 className="form-input"
                 value={notificationForm.agent_ids}
                 onChange={(event) => setNotificationForm({ ...notificationForm, agent_ids: event.target.value })}
-                placeholder={tr(language, { ko: '에이전트 ID (선택): 1,2,3', en: 'Optional agent ids: 1,2,3', ja: 'エージェントID（任意）: 1,2,3', th: 'รหัสเอเจนต์ (ไม่บังคับ): 1,2,3', vi: 'ID agent (tuỳ chọn): 1,2,3' })}
+                placeholder={tr(language, { ko: '에이전트 ID (선택): 1,2,3', en: 'Optional agent ids: 1,2,3', ja: 'エージェントID（任意）: 1,2,3', th: 'รหัสเอเจนต์ (ไม่บังคับ): 1,2,3', vi: 'ID agent (tuỳ chọn): 1,2,3', id: 'ID agen opsional: 1,2,3' })}
               />
               <input
                 className="form-input"
@@ -377,7 +377,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   checked={notificationForm.dry_run}
                   onChange={(event) => setNotificationForm({ ...notificationForm, dry_run: event.target.checked })}
                 />
-                <span>{tr(language, { ko: '드라이런', en: 'Dry run', ja: 'ドライラン', th: 'ทดลองรัน', vi: 'Chạy thử' })}</span>
+                <span>{tr(language, { ko: '드라이런', en: 'Dry run', ja: 'ドライラン', th: 'ทดลองรัน', vi: 'Chạy thử', id: 'Uji kirim' })}</span>
               </label>
               <label className="experiment-check">
                 <input
@@ -385,7 +385,7 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                   checked={notificationForm.create_task}
                   onChange={(event) => setNotificationForm({ ...notificationForm, create_task: event.target.checked })}
                 />
-                <span>{tr(language, { ko: '작업 생성', en: 'Create task', ja: 'タスク作成', th: 'สร้างงาน', vi: 'Tạo tác vụ' })}</span>
+                <span>{tr(language, { ko: '작업 생성', en: 'Create task', ja: 'タスク作成', th: 'สร้างงาน', vi: 'Tạo tác vụ', id: 'Buat tugas' })}</span>
               </label>
               <select
                 className="form-select"
@@ -402,10 +402,10 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
             </div>
             <div className="experiment-actions">
               <button className="btn btn-secondary" type="button" disabled={notificationBusy} onClick={() => submitNotification(true)}>
-                {tr(language, { ko: '드라이런 미리보기', en: 'Dry run preview', ja: 'ドライランプレビュー', th: 'ตัวอย่างการทดลองรัน', vi: 'Xem trước chạy thử' })}
+                {tr(language, { ko: '드라이런 미리보기', en: 'Dry run preview', ja: 'ドライランプレビュー', th: 'ตัวอย่างการทดลองรัน', vi: 'Xem trước chạy thử', id: 'Pratinjau uji kirim' })}
               </button>
               <button className="btn btn-primary" type="submit" disabled={notificationBusy || notificationForm.dry_run}>
-                {tr(language, { ko: '전송 확인', en: 'Confirm send', ja: '送信を確認', th: 'ยืนยันการส่ง', vi: 'Xác nhận gửi' })}
+                {tr(language, { ko: '전송 확인', en: 'Confirm send', ja: '送信を確認', th: 'ยืนยันการส่ง', vi: 'Xác nhận gửi', id: 'Konfirmasi pengiriman' })}
               </button>
             </div>
           </form>
@@ -436,13 +436,13 @@ export function ExperimentAdminPage({ token }: ExperimentAdminPageProps) {
                 <strong>{row.agent_count || row.count}</strong>
                 {row.quality_score_avg !== undefined && (
                   <small>
-                    {tr(language, { ko: '수익률', en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi nhuận' })} {Number(row.return_pct_avg || 0).toFixed(2)}%
+                    {tr(language, { ko: '수익률', en: 'Return', ja: 'リターン', th: 'ผลตอบแทน', vi: 'Lợi nhuận', id: 'Imbal hasil' })} {Number(row.return_pct_avg || 0).toFixed(2)}%
                     {' · '}
-                    {tr(language, { ko: '낙폭', en: 'DD', ja: 'DD', th: 'DD', vi: 'DD' })} {Number(row.max_drawdown_avg || 0).toFixed(2)}%
+                    {tr(language, { ko: '낙폭', en: 'DD', ja: 'DD', th: 'DD', vi: 'DD', id: 'Penurunan' })} {Number(row.max_drawdown_avg || 0).toFixed(2)}%
                     {' · '}
-                    {tr(language, { ko: '거래', en: 'Trades', ja: '取引', th: 'การซื้อขาย', vi: 'Giao dịch' })} {Number(row.trade_count || 0)}
+                    {tr(language, { ko: '거래', en: 'Trades', ja: '取引', th: 'การซื้อขาย', vi: 'Giao dịch', id: 'Transaksi' })} {Number(row.trade_count || 0)}
                     {' · '}
-                    {tr(language, { ko: '품질', en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng' })} {Number(row.quality_score_avg || 0).toFixed(2)}
+                    {tr(language, { ko: '품질', en: 'Quality', ja: '品質', th: 'คุณภาพ', vi: 'Chất lượng', id: 'Kualitas' })} {Number(row.quality_score_avg || 0).toFixed(2)}
                   </small>
                 )}
               </div>
