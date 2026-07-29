@@ -30,76 +30,81 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </style></head>
 <body><main>
 <!-- machine-translated from research/parameters/3-phase4-backtest-report.md by docs/design/_gen_doc_translations.py — pending native review -->
-<h1>ผลการทดสอบย้อนหลังกลยุทธ์ Phase-4 — ผลการตัดสินใจไป/ไม่ไป</h1>
-<p><strong>วันที่:</strong> 2026-07-16 · <strong>ผลสรุป: INSUFFICIENT_EVIDENCE → แพ็กเกจ flip จะไม่นำไปใช้งาน เกตการทำงานทั้งหมดยังคงปิดใช้งานเป็นค่าเริ่มต้น</strong>
-<strong>ตัวรัน:</strong> <code>service/server/run_phase4_backtest.py</code> · ตัวเลขดิบ: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · เอนจิน: <code>backtest_strategy.py</code> (ผ่านการทดสอบยูนิต; รันสองครั้งอิสระได้ผลลัพธ์เหมือนกันทุกไบต์)
-<strong>แผน:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — เกณฑ์ถูกลงทะเบียนล่วงหน้าก่อนเปิดหน้าต่าง OOS</p>
-<h2>0. สรุปภาษาเกาหลี</h2>
-<p>ตามเกณฑ์ที่ลงทะเบียนล่วงหน้า ผลการประเมินคือ <strong>หลักฐานไม่เพียงพอ (INSUFFICIENT_EVIDENCE)</strong> — แพ็กเกจ flip (เปิดใช้งานเกตการทำงานเป็นค่าเริ่มต้น) จะไม่นำไปใช้งาน การตั้งค่าที่เข้มงวดสำหรับการใช้งานจริง (≥4/6) มีการเทรด OOS เพียง <strong>38 รายการ</strong> ในการทดสอบแบบวอล์กฟอร์เวิร์ด 6 ปี (เกณฑ์คือ 400 รายการ) และขอบล่าง Wilson 90% ของอัตราชนะ 36.8% (0.28) รวมถึงขอบล่างของ PF จากบูตสแตรป (0.64) ต่ำกว่าเกณฑ์ทั้งคู่ แถวที่มีความอ่อนไหว (≥3) เพิ่มขึ้นเป็น 237 รายการ แต่ขอบล่างของ PF ที่ 0.88 ยังคงต่ำกว่า 1.0 — ความสามารถในการทำกำไรยังไม่ได้รับการพิสูจน์ทางสถิติ</p>
-<p><strong>ข้อค้นพบเชิงบวก:</strong> ชุดการจัดการความเสี่ยง (risk stack) ทำงานตามที่งานวิจัยรับประกันไว้ — ค่าความถดถอยสูงสุด (max drawdown) ของสินทรัพย์ที่แย่ที่สุดอยู่ที่ <strong>2.6%</strong>(B&amp;H ในช่วงเดียวกันอยู่ที่ −38%~−47%) 53% ของการปิดสถานะเป็นการใช้ trailing stop (ปล่อยให้กำไรวิ่งต่อ) ระบบรักษาเงินทุนด้วยการตัดขาดทุน ไม่ใช่การคาดการณ์ การคาดการณ์ของ validation panel ผ่านมุมมองทางสถิติ (จำนวนเทรดไม่เพียงพอ) นั้นถูกต้องแม่นยำ</p>
-<p><strong>ขั้นตอนถัดไป:</strong> ฟีเจอร์ทั้งหมดพร้อมใช้งานในโหมดแสดงผล/ให้คำแนะนำ/opt-in อยู่แล้ว เมื่อข้อมูลเทเลเมทรีแบบสด (live telemetry) (confluence vector, factor snapshot) สะสมมากพอ จะประเมินระบบ 6 เงื่อนไขที่รวม B4 ใหม่แบบ live-forward ค่าเกณฑ์ (threshold) จะถูกส่งกลับไปยังงานวิจัย — ไม่ใช่การใช้งานจริง (production)</p>
-<h2>1. การตั้งค่าที่ลงทะเบียนไว้ล่วงหน้า (ไม่เปลี่ยนแปลงหลังจากเห็นผลลัพธ์)</h2>
+<h1>แบ็กเทสต์กลยุทธ์ Phase-4 — ผลการตัดสิน go/no-go</h1>
+<p><strong>วันที่:</strong> 2026-07-16 · <strong>คำตัดสิน: INSUFFICIENT_EVIDENCE → แพ็กเกจ flip จะไม่ถูกนำไปใช้งานจริง เกตการทำงานทั้งหมดยังคงปิดเป็นค่าเริ่มต้น</strong>
+<strong>ตัวรัน:</strong> <code>service/server/run_phase4_backtest.py</code> · ข้อมูลดิบ: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · เอนจิน: <code>backtest_strategy.py</code> (ผ่านการทดสอบยูนิตแล้ว; รันอิสระสองครั้งได้ผลลัพธ์เหมือนกันทุกไบต์)
+<strong>แผน:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — เกณฑ์ต่าง ๆ ถูกลงทะเบียนไว้ล่วงหน้าก่อนที่หน้าต่าง OOS จะถูกเปิดใช้งาน</p>
+<h2>0. สรุป</h2>
+<!-- ส่วนนี้เขียนเป็นภาษาเกาหลีและไม่ได้รับการแปลในเอกสารภาษา ENGLISH
+     จนถึงวันที่ 2026-07-29 ทำให้ผู้อ่านภาษาอังกฤษได้เห็นตัวอักษรภาษาเกาหลีประมาณ ~309 ตัวอักษร
+     ตรงนี้ ข้อความภาษาเกาหลีอยู่ในที่ที่ควรอยู่ คือใน
+     ไฟล์ 3-phase4-backtest-report-ko.md นี่คือฉบับภาษาอังกฤษที่สอดคล้องกัน -->
+
+<p>เมื่อพิจารณาตามเกณฑ์ที่กำหนดไว้ล่วงหน้า ผลลัพธ์คือ <strong>INSUFFICIENT_EVIDENCE</strong> — แพ็กเกจ flip (เปิดใช้งาน execution gates ตามค่าเริ่มต้น) <strong>ไม่</strong> สามารถนำไปใช้งานจริงได้ การตั้งค่าที่สอดคล้องกับการใช้งานจริง (≥4/6) ให้ผลการซื้อขาย OOS เพียง <strong>38</strong> รายการตลอดช่วง walk-forward หกปี เทียบกับเกณฑ์ 400 รายการ และทั้งขอบล่างของ Wilson 90% สำหรับอัตราชนะ 36.8% (0.28) และขอบล่างของ profit factor แบบ bootstrapped (0.64) ต่ำกว่าเกณฑ์ที่กำหนด เมื่อผ่อนปรนไปที่แถว sensitivity (≥3) จำนวนรายการเพิ่มขึ้นเป็น 237 รายการ แต่ขอบล่างของ PF ยังคงอยู่ที่ 0.88 — ต่ำกว่า 1.0 จึงยังไม่สามารถยืนยันความสามารถในการทำกำไรได้ทางสถิติ</p>
+<p><strong>สิ่งที่พิสูจน์ได้ผล:</strong> ระบบจัดการความเสี่ยงทำงานตรงตามที่งานวิจัยคาดการณ์ไว้ — worst-asset maximum drawdown อยู่ที่ <strong>2.6%</strong> เทียบกับ −38% ถึง −47% สำหรับ buy-and-hold ในช่วงเวลาเดียวกัน, 53% ของการออกจากการเทรดเกิดจาก trailing stop (ปล่อยให้กำไรวิ่งต่อ), และเงินทุนได้รับการรักษาไว้ด้วยการตัดขาดทุนมากกว่าการคาดการณ์ กรอบสถิติของแผงตรวจสอบได้ทำนายผลลัพธ์นี้ไว้ล่วงหน้าแล้ว: จำนวนการเทรดน้อยเกินไป</p>
+<p><strong>ขั้นตอนถัดไป:</strong> ทุกฟีเจอร์พร้อมส่งมอบในรูปแบบ display / advisory / opt-in อยู่แล้ว ประเมินระบบ six-condition อีกครั้ง รวมถึง B4 live-forward เมื่อข้อมูล live telemetry (confluence vectors, factor snapshots) สะสมเพียงพอแล้ว ค่า threshold ยังคงอิงตามงานวิจัย — ไม่ใช่การใช้งานจริง</p>
+<h2>1. การตั้งค่าที่ลงทะเบียนล่วงหน้า (ไม่เปลี่ยนแปลงหลังเห็นผลลัพธ์)</h2>
 <ul>
-<li><strong>แถวหลัก:</strong> ค่าเริ่มต้นที่ตรงกับการใช้งานจริง (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>) ไม่เคยถูกปรับแต่ง — ไม่มีการ snooping โดยธรรมชาติของการออกแบบ</li>
-<li><strong>แถว Walk-forward:</strong> แบบ anchored, 4 folds, purge 14 วัน, grid 6 config (ที่รายงาน), ปรับแต่งบนชุด train ด้วย pooled profit factor (≥30 เทรด), ตรึงค่าบนชุด test</li>
-<li><strong>แถว Sensitivity:</strong> กำหนด <code>confluence_min=3</code> ตายตัว (B4 เป็น null ในอดีต → ทำได้เพียง 5 จาก 6 เงื่อนไข ดังนั้น live gate ใน backtest จึง<em>เข้มงวดกว่า</em>การใช้งานจริง)</li>
-<li><strong>เกณฑ์:</strong> ≥400 การเทรด OOS แบบรวมกลุ่ม มิฉะนั้น INSUFFICIENT_EVIDENCE · ขอบล่าง Wilson 90% ของอัตราชนะ &gt; 0.50 · ขอบล่าง bootstrap 90% ของ profit factor &gt; 1.0 · max DD ของสินทรัพย์ที่แย่ที่สุด ≤ 30%</li>
-<li><strong>ความซื่อตรงด้านขอบเขต:</strong> B4 เป็นค่าว่างตลอดทั้งหมด; B3 ลดระดับลงเหลือ MA/RSI/volume; B5 = เฉพาะขา F&amp;G (คลังข้อมูลเต็มตั้งแต่ 2018+ โดยมี lag เพิ่มอีกหนึ่งวัน); S5 เป็นค่าว่าง; events = ปฏิทินปี 2019–2025 ที่ผ่านการตรวจสอบแหล่งที่มาสองทาง สินทรัพย์: แท่งราคา BTC/ETH ตั้งแต่ 2019-01 (สัญญาณ ≈2020-02 หลัง warmup 400 แท่ง), SOL ตั้งแต่ 2020-04 (สัญญาณ ≈2021-05) ค่าธรรมเนียม 0.1%/ขา + สลิปเพจ 0.05%; สัญญาณที่ปิด t จะเข้าเทรดที่เปิด t+1</li>
+<li><strong>แถวหลัก:</strong> ค่าเริ่มต้นที่ตรงกับการใช้งานจริง (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), ไม่เคยถูกปรับแต่ง — ไม่มีการ snooping โดยธรรมชาติของการออกแบบ</li>
+<li><strong>แถว Walk-forward:</strong> anchored, 4 folds, 14-day purge, 6-config grid (รายงานผล), ปรับแต่งบนชุด train ด้วย pooled profit factor (≥30 trades), fix ค่าบนชุด test</li>
+<li><strong>แถว Sensitivity:</strong> <code>confluence_min=3</code> fixed (B4 เป็นค่า null ในเชิงประวัติศาสตร์ → บรรลุได้เพียง 5 จาก 6 เงื่อนไขเท่านั้น; ดังนั้น live gate จึงเข้มงวด<em>กว่า</em>ใน backtest เมื่อเทียบกับการใช้งานจริง)</li>
+<li><strong>เกณฑ์:</strong> ≥400 pooled OOS trades มิฉะนั้น INSUFFICIENT_EVIDENCE · Wilson 90% lower bound ของ win rate &gt; 0.50 · bootstrap 90% lower bound ของ profit factor &gt; 1.0 · worst-asset max DD ≤ 30%</li>
+<li><strong>ความซื่อสัตย์ต่อขอบเขต:</strong> B4 เป็น null ตลอดทั้งช่วง; B3 ลดระดับเหลือ MA/RSI/volume; B5 = F&amp;G leg เท่านั้น (คลังข้อมูลเต็มตั้งแต่ 2018 เป็นต้นไป, มี lag เพิ่มอีกหนึ่งวัน); S5 เป็น null; events = ปฏิทิน 2019–2025 ที่ผ่านการตรวจสอบแหล่งข้อมูลซ้ำสอง สินทรัพย์: BTC/ETH bars ตั้งแต่ 2019-01 (signals ≈2020-02 หลัง warmup 400-bar), SOL ตั้งแต่ 2020-04 (signals ≈2021-05) ค่าธรรมเนียม 0.1%/leg + slippage 0.05%; signal ที่ close-t จะ fill ที่ open t+1</li>
 </ul>
 <h2>2. ผลลัพธ์</h2>
-<h3>หลัก (สอดคล้องกับการใช้งานจริง ≥4/6) — รวมกลุ่มจาก 4 ช่วง OOS × 3 สินทรัพย์</h3>
+<h3>หลัก (deployment-faithful ≥4/6) — รวมกลุ่มจาก 4 OOS folds × 3 assets</h3>
 <table>
 <thead>
 <tr>
 <th>ตัวชี้วัด</th>
 <th>ค่า</th>
 <th>เกณฑ์</th>
-<th>ผ่านหรือไม่?</th>
+<th>ผ่าน?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>การเทรด OOS</td>
+<td>จำนวนการเทรด OOS</td>
 <td><strong>38</strong></td>
 <td>≥ 400</td>
-<td>❌ (ต่ำกว่าเกณฑ์ขั้นต่ำของหลักฐาน)</td>
+<td>❌ (evidence floor)</td>
 </tr>
 <tr>
 <td>อัตราชนะ</td>
 <td>36.8% (14/38)</td>
-<td>ขอบล่าง Wilson90 &gt; 0.50 → ขอบล่าง = <strong>0.276</strong></td>
+<td>Wilson90 LB &gt; 0.50 → LB = <strong>0.276</strong></td>
 <td>❌</td>
 </tr>
 <tr>
-<td>Profit factor</td>
+<td>อัตราส่วนกำไร</td>
 <td>1.13</td>
-<td>ขอบล่าง bootstrap90 &gt; 1.0 → ขอบล่าง = <strong>0.644</strong></td>
+<td>bootstrap90 LB &gt; 1.0 → LB = <strong>0.644</strong></td>
 <td>❌</td>
 </tr>
 <tr>
-<td>Max DD ของสินทรัพย์ที่แย่ที่สุด</td>
+<td>Drawdown สูงสุดของสินทรัพย์ที่แย่ที่สุด</td>
 <td><strong>2.63%</strong></td>
 <td>≤ 30%</td>
 <td>✅</td>
 </tr>
 </tbody>
 </table>
-<p>แยกตามช่วง: F1 (2021-07→2022-12, ขาลง): 19 การเทรด, PF 1.82 · F2: 6 การเทรด, PF 0.69 · F3: 7 การเทรด, PF 6.53 · F4 (2025-07→2026-07, ขาลง): 6 การเทรด, PF 0.0
-สัดส่วนการออก: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — เป็นรูปแบบการเทรดตามเทรนด์ที่งานวิจัยกำหนดไว้ (ชนะในสัดส่วนการเทรดเพียงเล็กน้อย แต่ปล่อยให้กำไรวิ่งต่อ: ค่าเฉลี่ยกำไรที่มากกว่าค่าเฉลี่ยขาดทุนอย่างมากคือสิ่งที่ผลักดันให้ PF สูงกว่า 1 ที่อัตราชนะ 37%)</p>
-<h3>การวิเคราะห์ความไว (≥3 จาก 5 ที่มีอยู่)</h3>
-<p>237 การเทรด · ชนะ 37.1% (ขอบล่าง Wilson 0.332) · PF 1.15 (ขอบล่าง bootstrap <strong>0.884</strong>) · max DD ที่แย่ที่สุด 8.97% หลักฐานที่มากขึ้นให้ข้อสรุปเดียวกัน: มีกำไรตามค่าประมาณจุด แต่ไม่สามารถแยกแยะได้ทางสถิติจากจุดคุ้มทุน</p>
-<h3>Walk-forward (ปรับแต่งตามแต่ละช่วง, 6 การตั้งค่า — คำนึงถึงการ snooping แล้ว)</h3>
-<p>Every fold tuned to <code>confluence_min=3</code>; test PF: F1 1.46, F2 1.82, F3 0.69, F4 0.79. ความได้เปรียบขึ้นอยู่กับสภาวะตลาด (regime-dependent) และไม่คงอยู่ต่อเนื่องข้าม fold — สอดคล้องกับคำเตือนของงานวิจัยที่ว่า "published edges decay"</p>
-<h3>ความสัมพันธ์ระหว่างเงื่อนไข (มุมมองทางสถิติทำนายสิ่งนี้ไว้แล้ว)</h3>
-<p>ความสอดคล้องรายวันระหว่าง B1↔B2 อยู่ที่ <strong>0.709</strong> (ทั้งคู่เป็นตัววัดแนวโน้ม), B1↔B3 0.52, B2↔B3 0.40 เงื่อนไขทั้งหกไม่ได้เป็นอิสระต่อกัน — การคำนวณแบบ "stack independent 53% edges" จึงใช้ไม่ได้ตามตัวเลขที่ปรากฏ</p>
+<p>แยกตาม fold: F1 (2021-07→2022-12, bear): 19 trades, PF 1.82 · F2: 6 trades, PF 0.69 · F3: 7 trades, PF 6.53 · F4 (2025-07→2026-07, bear): 6 trades, PF 0.0.
+รูปแบบการออก: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — เป็นโปรไฟล์แบบ trend-following ตามที่งานวิจัยกำหนดไว้ (ชนะในสัดส่วนน้อยของการเทรด แต่ปล่อยให้ trade ที่ชนะวิ่งต่อไป: mean winner ≫ mean loser คือสิ่งที่ผลักดันให้ PF สูงกว่า 1 ที่อัตราชนะ 37%)</p>
+<h3>ความไว (อย่างน้อย 3 จาก 5 ที่มีอยู่)</h3>
+<p>237 trades · win 37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · worst DD 8.97%. หลักฐานมากขึ้น แต่ข้อสรุปเดิม: ทำกำไรได้ตาม point-estimate แต่ไม่สามารถแยกแยะทางสถิติจาก break-even ได้</p>
+<h3>Walk-forward (ปรับจูนต่อแต่ละ fold, 6 configs — คำนึงถึง snooping แล้ว)</h3>
+<p>ทุก fold ถูกปรับจูนเป็น <code>confluence_min=3</code>; test PF: F1 1.46, F2 1.82, F3 0.69, F4 0.79. Edge ขึ้นอยู่กับ regime และไม่คงอยู่ต่อเนื่องข้าม folds — สอดคล้องกับคำเตือนของงานวิจัยที่ว่า "published edges decay"</p>
+<h3>ความสัมพันธ์ของเงื่อนไข (มุมมองทางสถิติทำนายสิ่งนี้ไว้แล้ว)</h3>
+<p>B1↔B2 daily agreement <strong>0.709</strong> (ทั้งสองเป็น trend measures), B1↔B3 0.52, B2↔B3 0.40. เงื่อนไขทั้งหกไม่เป็นอิสระต่อกัน; สูตรคำนวณแบบ "stack independent 53% edges" จึงใช้ไม่ได้ตามตัวอักษร</p>
 <h3>สิ่งที่ได้ผลจริง</h3>
-<p>ในช่วงตลาดหมี F4 กลยุทธ์ขาดทุน ≈1.1–1.7% ต่อสินทรัพย์ ในขณะที่กลยุทธ์ buy-and-hold ขาดทุน <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong> Max drawdown อยู่ที่ 2–9% เทียบกับ drawdown ทางประวัติศาสตร์ของ B&amp;H ที่ 60%+ Exposure อยู่ที่ 3–6% ของจำนวนวัน <strong>คุณค่าที่ได้รับการยืนยันของระบบคือการรักษาเงินทุนผ่านการกรองสภาวะตลาด (regime filtering) และชุดเงื่อนไขการออก (exit stack) — ตรงกับข้อกล่าวอ้างของงานวิจัยที่ว่า "the edge comes from risk management, not prediction" สิ่งที่ยังไม่ได้รับการยืนยันคือความสามารถในการทำกำไรด้วยตัวเอง</strong></p>
+<p>ในช่วงตลาดหมี F4 กลยุทธ์ขาดทุนประมาณ 1.1–1.7% ต่อสินทรัพย์ ในขณะที่ buy-and-hold ขาดทุน <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong> Max drawdown อยู่ที่ 2–9% เทียบกับ drawdown ในอดีตของ B&amp;H ที่มากกว่า 60% Exposure 3–6% ของจำนวนวัน <strong>คุณค่าที่ได้รับการยืนยันของระบบคือการรักษาเงินทุนผ่านการกรอง regime และชุดคำสั่ง exit — ตรงกับข้อสรุปของงานวิจัยที่ว่า "ความได้เปรียบมาจากการบริหารความเสี่ยง ไม่ใช่การคาดการณ์" สิ่งที่ยังไม่ได้รับการยืนยันคือความสามารถในการทำกำไรแบบเดี่ยว ๆ</strong></p>
 <h2>3. การตัดสินใจ (ตามกฎที่กำหนดไว้ล่วงหน้า)</h2>
 <ol>
-<li><strong>ไม่มีการเปลี่ยนแปลง</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> ยังคง <strong>ปิดเป็นค่าเริ่มต้น</strong> ไม่มีการย้าย preset/<code>min_confidence</code> ไปใช้งานจริง ตามประโยคของแผนงานเองที่ระบุว่า: <em>"If below [criteria], the confluence thresholds go back to research, not production."</em></li>
-<li><strong>สิ่งที่จะเผยแพร่ต่อไป (รวมเข้าแล้ว ไม่มีการเปลี่ยนแปลงพฤติกรรมการทำงานใดๆ):</strong> การแสดงผล confluence + agent API, regime advisory + tile, telemetry (confluence vector ต่อการตัดสินใจ, factor snapshots), การแก้ไขด้านความปลอดภัย (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, risk-direction gating, put_risk_limits repair), ตัวเลขสถิติของ backtester ที่ได้รับการแก้ไข และชุดเครื่องมือ exit แบบเลือกใช้ต่อ agent (trailing/time stops — แต่ละ agent สามารถเปิดใช้งานได้เอง โดยเป็นเครื่องมือบริหารความเสี่ยงเชิงตำแหน่ง ไม่ใช่ข้อกล่าวอ้างเรื่องความสามารถในการทำกำไร)</li>
-<li><strong>เส้นทางการประเมินซ้ำ:</strong> live-forward การรวบรวมข้อมูล telemetry ของ Phase-1 จะสะสมเวกเตอร์เงื่อนไขทั้ง 6 (รวมถึง B4) ในทุกการตัดสินใจ; factor snapshots บันทึก funding/OI/L-S/StockTwits เมื่อมีการตัดสินใจแบบ live ที่ผ่านเกณฑ์คุณภาพ (gated-quality) ≥400 รายการ (หรือเมื่อสามารถทำ backtest ในอนาคตที่รวมเงื่อนไขที่ขาดหายไปได้) ให้รันเกณฑ์ใหม่อีกครั้ง ตาราง calibration (hit rate ต่อจำนวน confluence, Wilson CIs) จะสร้างขึ้นเองจาก telemetry</li>
-<li><strong>งานเรื่อง threshold ย้อนกลับไปสู่การวิจัย:</strong> คำถามที่น่าสนใจที่ยังเปิดอยู่จากข้อมูลคือ <em>exit stack เพียงอย่างเดียว</em> (trail + time stop + regime veto) บนสัญญาณเข้าที่ง่ายกว่าจะมีคุณค่าหรือไม่ — confluence entry gate ที่ ≥4/5 นั้นเข้มงวดมากจนเทรดเพียง 6 ครั้ง/ปี ใน 3 สินทรัพย์</li>
+<li><strong>ไม่มีการเปลี่ยนแปลง</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> ยังคง <strong>ปิดเป็นค่าเริ่มต้น</strong> ไม่มีการย้าย preset/<code>min_confidence</code> ออกใช้งาน ประโยคของแผนงานเองเป็นตัวกำหนด: <em>"หากต่ำกว่า [เกณฑ์] เกณฑ์ confluence จะกลับไปอยู่ในขั้นตอนวิจัย ไม่ใช่ production"</em></li>
+<li><strong>สิ่งที่จะนำออกใช้งานอยู่ดี (ผสานรวมแล้ว ไม่มีการเปลี่ยนแปลงพฤติกรรมการ execution):</strong> การแสดงผล confluence + agent API, regime advisory + tile, telemetry (confluence vector ต่อการตัดสินใจแต่ละครั้ง, factor snapshots), การแก้ไขด้านความปลอดภัย (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, risk-direction gating, การซ่อม put_risk_limits), ตัวชี้วัด backtester ที่ได้รับการแก้ไข และชุดเครื่องมือ exit แบบ opt-in ต่อ agent (trailing/time stops — แต่ละ agent สามารถเปิดใช้งานได้; เครื่องมือเหล่านี้เป็นเครื่องมือบริหารความเสี่ยงเชิงตำแหน่ง ไม่ใช่การรับประกันผลกำไร)</li>
+<li><strong>แนวทางการประเมินซ้ำ:</strong> live-forward telemetry ของ Phase-1 จะสะสม vector ครบ 6 เงื่อนไข (รวมถึง B4) ในทุกการตัดสินใจ; factor snapshots บันทึก funding/OI/L-S/StockTwits เมื่อมีการตัดสินใจ live ที่ผ่านเกณฑ์คุณภาพ (gated-quality) ครบ ≥400 รายการ (หรือเมื่อ backtest ในอนาคตสามารถรวมเงื่อนไขที่ขาดหายไปได้) ให้รันเกณฑ์ใหม่อีกครั้ง ตาราง calibration (hit rate ต่อจำนวน confluence, Wilson CIs) จะถูกสร้างขึ้นเองจาก telemetry</li>
+<li><strong>งานเกี่ยวกับ Threshold กลับไปสู่การวิจัย:</strong> คำถามเปิดที่น่าสนใจจากข้อมูลคือ <em>exit stack เพียงอย่างเดียว</em> (trail + time stop + regime veto) บนสัญญาณเข้าที่ง่ายกว่านั้นเป็นตัวสร้างมูลค่าหรือไม่ — confluence entry gate ที่ ≥4/5 นั้นเข้มงวดมากจนเทรดเพียง 6×/year ใน 3 assets</li>
 </ol>
-<p><em>ไม่ใช่คำแนะนำการลงทุน แพลตฟอร์มจำลอง Edge ในอดีตจะเสื่อมลงตามเวลา; ตัวเลขเหล่านี้อธิบายผลจาก backtest เพียงครั้งเดียวภายใต้ขอบเขตข้อจำกัดที่ระบุไว้</em></p>
+<p><em>ไม่ใช่คำแนะนำการลงทุน แพลตฟอร์มจำลอง ความได้เปรียบในอดีตจะเสื่อมลงตามเวลา ตัวเลขเหล่านี้อธิบายผลการทดสอบย้อนหลังเพียงครั้งเดียวภายใต้ขอบเขตที่ระบุไว้ในเอกสาร</em></p>
 </main></body></html>

@@ -40,7 +40,7 @@ from analysis_agents import normalize_lang
 logger = logging.getLogger(__name__)
 
 # Param names whose values are closed enum keys localized via TOKENS below.
-TOKEN_PARAMS = ['comparator', 'outcome', 'trigger_label', 'action', 'action_upper', 'side', 'final', 'status', 'reason']
+TOKEN_PARAMS = ['comparator', 'outcome', 'trigger_label', 'action', 'action_upper', 'side', 'final', 'status', 'reason', 'metric']
 
 # Param names that carry a whole sentence rather than an enum key. Each is
 # offered to the i18n_errors catalogue; anything it does not recognise passes
@@ -353,6 +353,68 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'SELL': 'JUAL',
             'SHORT': 'SHORT',
             'COVER': 'COVER',
+        },
+    },
+    # Watch metrics (2026-07-29). watch_engine.METRICS is a closed set of 7,
+    # and `metric` was passed straight into the localized sentence — so a
+    # Korean member watching the Fear & Greed index read
+    # 'fear_greed BTC이(가) 29.00입니다', the same raw-enum-in-a-Korean-sentence
+    # shape that `reason` was fixed for on 2026-07-28. A param nobody
+    # re-checked; the sweep now pins every family against its runtime domain.
+    'metric': {
+        'en': {
+            'price': 'price',
+            'fear_greed': 'the Fear & Greed index',
+            'kimchi_premium': 'the kimchi premium',
+            'whale_net_flow': 'whale net flow',
+            'funding_rate': 'the funding rate',
+            'rsi': 'RSI',
+            'basis': 'the basis',
+        },
+        'ko': {
+            'price': '가격',
+            'fear_greed': '공포·탐욕 지수',
+            'kimchi_premium': '김치 프리미엄',
+            'whale_net_flow': '고래 순유입',
+            'funding_rate': '펀딩 비율',
+            'rsi': 'RSI',
+            'basis': '베이시스',
+        },
+        'ja': {
+            'price': '価格',
+            'fear_greed': '恐怖・強欲指数',
+            'kimchi_premium': 'キムチプレミアム',
+            'whale_net_flow': 'クジラ純流入',
+            'funding_rate': '資金調達率',
+            'rsi': 'RSI',
+            'basis': 'ベーシス',
+        },
+        'th': {
+            'price': 'ราคา',
+            'fear_greed': 'ดัชนีความกลัว-ความโลภ',
+            'kimchi_premium': 'คิมจิพรีเมียม',
+            'whale_net_flow': 'กระแสเงินสุทธิของวาฬ',
+            'funding_rate': 'อัตราฟันดิ้ง',
+            'rsi': 'RSI',
+            'basis': 'เบสิส',
+        },
+        'vi': {
+            'price': 'giá',
+            'fear_greed': 'chỉ số Sợ hãi & Tham lam',
+            'kimchi_premium': 'kimchi premium',
+            'whale_net_flow': 'dòng tiền ròng cá voi',
+            'funding_rate': 'tỷ lệ funding',
+            'rsi': 'RSI',
+            'basis': 'basis',
+        },
+        'id': {
+            'price': 'harga',
+            'fear_greed': 'indeks Ketakutan & Keserakahan',
+            'kimchi_premium': 'kimchi premium',
+            'whale_net_flow': 'aliran bersih whale',
+            'funding_rate': 'tingkat funding',
+            'rsi': 'RSI',
+            'basis': 'basis',
         },
     },
     'side': {

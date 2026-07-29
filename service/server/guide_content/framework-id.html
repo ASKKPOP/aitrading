@@ -30,34 +30,34 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </style></head>
 <body><main>
 <!-- machine-translated from research/parameters/2-hybrid-strategy-framework.md by docs/design/_gen_doc_translations.py — pending native review -->
-<h1>Kerangka Hibrida: Memadukan Pola Grafik × Psikologi Manusia</h1>
-<h2>Kerangka Trading Gabungan Pola Grafik × Psikologi Manusia</h2>
-<p><strong>Dibangun dari dua putaran riset mendalam yang terverifikasi (200+ agen, diperiksa faktanya dari sumber utama) · Juli 2026</strong>
+<h1>Kerangka Hibrida: Memadukan Pola Chart × Psikologi Manusia</h1>
+<h2>Kerangka trading yang memadukan pola chart dengan psikologi manusia</h2>
+<p><strong>Disusun dari dua putaran riset mendalam yang terverifikasi (200+ agen, diperiksa faktanya dari sumber utama) · Juli 2026</strong>
 <strong>⚠️ Kerangka edukasi, bukan saran investasi. Ekspektasi realistis: akurasi arah 50–55% — keunggulan berasal dari konfluensi + manajemen risiko, bukan dari satu sinyal tunggal.</strong></p>
 <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
-<b>Bagaimana kerangka ini dipetakan ke implementasi crypto.</b> Daftar periksa ini menyatakan strategi riset; sistem yang berjalan menyesuaikannya untuk crypto.
-<b>VIX → indeks Fear &amp; Greed crypto (F&amp;G)</b>, sebuah skala terbalik — kepanikan adalah <b>F&amp;G &lt; 20</b> (bukan VIX &gt; 30), ketenangan adalah <b>F&amp;G &gt; 30</b>; tidak ada VIX untuk crypto (<code>regime.py</code>, <code>strategy_config.py</code>).
-<b>Pola grafik bernama (double bottom, H&amp;S) → skor teknikal komposit</b> (RSI · MA · funding · basis · long/short) yang dikonfirmasi oleh volume — tidak ada detektor pola candlestick (<code>confluence.py</code> B3/S3).
-<b>Sentimen return semalam → kecenderungan kerumunan StockTwits</b> (B4). Nama B1–B6 / S1–S6 adalah label kondisi mesin yang sebenarnya.
+<b>Bagaimana kerangka ini dipetakan ke implementasi crypto.</b> Daftar periksa ini menyatakan strategi riset; sistem yang berjalan mengadaptasinya untuk crypto.
+<b>VIX → indeks Fear &amp; Greed crypto (F&amp;G)</b>, sebuah skala terbalik — kepanikan adalah <b>F&amp;G &lt; 20</b> (bukan VIX &gt; 30), tenang adalah <b>F&amp;G &gt; 30</b>; tidak ada VIX untuk crypto (<code>regime.py</code>, <code>strategy_config.py</code>).
+<b>Pola chart bernama (double bottom, H&amp;S) → skor teknikal komposit</b> (RSI · MA · funding · basis · long/short) yang dikonfirmasi oleh volume — tidak ada detektor pola candlestick (<code>confluence.py</code> B3/S3).
+<b>Sentimen return semalam → kecenderungan crowd StockTwits</b> (B4). Nama B1–B6 / S1–S6 adalah label kondisi mesin yang sesungguhnya.
 </div>
 
 <hr />
 <h2>1. Prinsip inti yang dibuktikan oleh riset</h2>
-<p>Dua fakta terverifikasi mendorong seluruh desain ini:</p>
+<p>Dua fakta terverifikasi mendorong keseluruhan desain ini:</p>
 <ol>
-<li><strong>Pola grafik bersifat informatif tetapi tidak menguntungkan dengan sendirinya</strong> (Lo–Mamaysky–Wang 2000; Savin 2007). Pola-pola tersebut memberi tahu bahwa <em>sesuatu</em> sedang terjadi, dengan keunggulan 53–54% paling banter — jangan pernah menggunakannya sebagai pemicu tunggal.</li>
-<li><strong>Psikologi menggerakkan pasar tetapi hanya dapat diperdagangkan pada titik ekstrem dan waktu tertentu</strong> (sentimen semalam ~6bp/SD; akurasi sentimen 50–55%; kepanikan/euforia adalah titik di mana efek perilaku terkonsentrasi).</li>
+<li><strong>Pola chart bersifat informatif tetapi tidak menguntungkan jika berdiri sendiri</strong> (Lo–Mamaysky–Wang 2000; Savin 2007). Pola ini memberi tahu bahwa <em>sesuatu</em> sedang terjadi, dengan keunggulan 53–54% paling baik — jangan pernah menggunakannya sebagai pemicu tunggal.</li>
+<li><strong>Psikologi menggerakkan pasar tetapi hanya dapat diperdagangkan pada titik ekstrem dan pada waktu-waktu tertentu</strong> (sentimen semalam ~6bp/SD; akurasi sentimen 50–55%; kepanikan/euforia adalah tempat efek perilaku terkonsentrasi).</li>
 </ol>
-<p>Jadi campurannya adalah: <strong>psikologi menentukan REGIME (kapan, dan seberapa besar risiko); chart menentukan TRIGGER (apa dan pada harga berapa); volume + sentimen MENGKONFIRMASI; volatilitas menentukan SIZE.</strong></p>
-<p>Sinyal bersifat aditif, bukan absolut: setiap kondisi yang terpenuhi menambah satu poin; Anda baru bertindak jika terjadi confluence (4+ dari 6), karena sinyal 53% yang ditumpuk dengan sinyal-sinyal independen 53% lainnya adalah cara sistem nyata bisa melampaui 55%.</p>
+<p>Jadi campurannya adalah: <strong>psikologi menentukan REZIM (kapan, dan seberapa besar risiko); grafik menentukan PEMICU (apa dan pada harga berapa); volume + sentimen MENGONFIRMASI; volatilitas menentukan UKURAN.</strong></p>
+<p>Sinyal bersifat aditif, bukan absolut: setiap kondisi yang terpenuhi menambah satu poin; Anda hanya bertindak pada konfluensi (4+ dari 6), karena sinyal 53% yang ditumpuk dengan sinyal-sinyal 53% independen lainnya adalah cara sistem nyata melampaui 55%.</p>
 <hr />
-<h2>2. Empat lapis tumpukan keputusan</h2>
-<h3>LAYER 1 — Filter regime psikologi (인간 심리 = 국면 판단) — <em>"Apakah saya harus trading sama sekali, dan mode apa?"</em></h3>
+<h2>2. Empat lapisan tumpukan keputusan</h2>
+<h3>LAPISAN 1 — Filter rezim psikologi (psikologi manusia = penentu rezim) — <em>"Haruskah saya bertransaksi sama sekali, dan dalam mode apa?"</em></h3>
 <table>
 <thead>
 <tr>
 <th>Input</th>
-<th>State</th>
+<th>Kondisi</th>
 <th>Mode</th>
 </tr>
 </thead>
@@ -65,109 +65,109 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 <tr>
 <td>VIX / tingkat ketakutan</td>
 <td>&lt; 20 tenang</td>
-<td><strong>Trend mode</strong> — mengikuti chart</td>
+<td><strong>Mode Tren</strong> — mengikuti grafik</td>
 </tr>
 <tr>
 <td></td>
 <td>20–30 gelisah</td>
-<td>Kurangi size 50%, perketat stop</td>
+<td>Kurangi ukuran 50%, perketat stop</td>
 </tr>
 <tr>
 <td></td>
 <td>&gt; 30 panik</td>
-<td><strong>Contrarian mode</strong> — abaikan pola chart bearish, siapkan pembelian mean-reversion</td>
+<td><strong>Mode Kontrarian</strong> — abaikan pola grafik bearish, siapkan pembelian mean-reversion</td>
 </tr>
 <tr>
-<td>Kalender event (FOMC, CPI, pemilu)</td>
+<td>Kalender peristiwa (FOMC, CPI, pemilu)</td>
 <td>dalam ±1 hari</td>
-<td><strong>Tidak ada entry baru</strong>; tahan atau hedge</td>
+<td><strong>Tidak ada entri baru</strong>; tahan atau lindung nilai</td>
 </tr>
 <tr>
-<td>Headline guncangan perang / kebijakan</td>
+<td>Berita kejutan perang / kebijakan</td>
 <td>1–3 hari pertama</td>
 <td>Jangan pernah membeli pantulan pertama; tunggu sinyal stabilisasi</td>
 </tr>
 <tr>
 <td>Nada sentimen sosial/berita</td>
 <td>euforia ekstrem</td>
-<td>Contrarian sell-alert aktif</td>
+<td>Peringatan jual kontrarian aktif</td>
 </tr>
 <tr>
 <td></td>
 <td>ketakutan ekstrem</td>
-<td>Contrarian buy-alert aktif</td>
+<td>Peringatan beli kontrarian aktif</td>
 </tr>
 </tbody>
 </table>
-<h3>LAYER 2 — Mesin arah (chart: APA) — prediktor terkuat yang terverifikasi</h3>
+<h3>LAPISAN 2 — Mesin arah (grafik: APA) — prediktor terkuat yang telah terverifikasi</h3>
 <ul>
-<li>Momentum 12 bulan (lewati bulan terakhir) positif → bias long / negatif → bias short</li>
-<li>Harga vs MA 200-hari (state golden-cross) → arah tren</li>
-<li>Reversal jangka pendek 1 bulan → timing counter-trend di dalam bias</li>
+<li>Momentum 12 bulan (melewatkan bulan terakhir) positif → bias long / negatif → bias short</li>
+<li>Harga vs MA 200 hari (kondisi golden-cross) → arah tren</li>
+<li>Pembalikan jangka pendek 1 bulan → penentuan waktu counter-trend di dalam bias</li>
 </ul>
-<h3>LAYER 3 — Trigger &amp; konfirmasi (chart + psikologi bersama: KAPAN)</h3>
-<p>Sebuah pola hanya dihitung jika <strong>selesai DAN terkonfirmasi volume DAN sentimen tidak bertentangan</strong>:
-- Trigger bullish: breakout double-bottom / H&amp;S-inverse <strong>+ volume naik + sentimen overnight tidak negatif</strong>
-- Trigger bearish: penyelesaian double-top / H&amp;S <strong>+ volume naik + nada berita memburuk</strong>
-- Tidak ada volume = tidak ada transaksi (fitur volume terverifikasi esensial; Dinh &amp; Kwon 2018)</p>
-<h3>LAPISAN 4 — Ukuran &amp; keluar (risiko: BERAPA BANYAK)</h3>
+<h3>LAPISAN 3 — Pemicu &amp; konfirmasi (grafik + psikologi bersama: KAPAN)</h3>
+<p>Suatu pola hanya dihitung jika <strong>selesai DAN dikonfirmasi volume DAN sentimen tidak bertentangan</strong>:
+- Bullish trigger: double-bottom / H&amp;S-inverse breakout <strong>+ volume meningkat + sentimen overnight non-negatif</strong>
+- Bearish trigger: double-top / H&amp;S completion <strong>+ volume meningkat + tone berita memburuk</strong>
+- Tidak ada volume = tidak ada trade (fitur volume terverifikasi esensial; Dinh &amp; Kwon 2018)</p>
+<h3>LAYER 4 — Size &amp; exit (risk: BERAPA BANYAK)</h3>
 <ul>
-<li>Ukuran posisi = anggaran risiko ÷ volatilitas (terverifikasi: volatilitas adalah prediktor top-4 dan input untuk sizing)</li>
-<li>Stop loss ketat di bawah titik invalidasi pola; trailing dengan MA</li>
-<li>Time stop: jika tesis tidak berjalan dalam N hari → keluar (akurasi Anda ~55%, jadi posisi rugi harus dipotong cepat)</li>
+<li>Ukuran posisi = risk budget ÷ volatilitas (terverifikasi: volatilitas adalah top-4 predictor dan input untuk sizing)</li>
+<li>Hard stop di bawah titik invalidasi pattern; trail dengan MA</li>
+<li>Time stop: thesis tidak berjalan dalam N hari → exit (akurasi Anda ~55%, jadi losers harus dipotong dengan cepat)</li>
 </ul>
 <hr />
-<h2>3. Checklist BELI (confluence ≥ 4 dari 6 → beli)</h2>
+<h2>3. Checklist BUY (confluence ≥ 4 dari 6 → buy)</h2>
 <table>
 <thead>
 <tr>
 <th>#</th>
-<th>Sinyal</th>
-<th>Sisi sumber</th>
-<th>Dasar terverifikasi</th>
+<th>Signal</th>
+<th>Source side</th>
+<th>Basis terverifikasi</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>B1</td>
-<td>Harga di atas MA 200 hari / kondisi golden-cross</td>
+<td>Harga di atas 200-day MA / golden-cross state</td>
 <td>Chart</td>
-<td>Brock 1992: hari sinyal-beli +12% tahunan</td>
+<td>Brock 1992: buy-signal days +12% annualized</td>
 </tr>
 <tr>
 <td>B2</td>
 <td>Momentum 12-1 positif</td>
 <td>Chart</td>
-<td>GKX 2020: prediktor ML #1</td>
+<td>GKX 2020: #1 ML predictor</td>
 </tr>
 <tr>
 <td>B3</td>
-<td>Pola bullish selesai DENGAN volume</td>
+<td>Pattern bullish completed WITH volume</td>
 <td>Chart</td>
-<td>LMW 2000 informatif + volume esensial</td>
+<td>LMW 2000 informative + volume esensial</td>
 </tr>
 <tr>
 <td>B4</td>
-<td>Sentimen semalam/berita positif atau pulih</td>
-<td>Psikologi</td>
-<td>Fed: ~6bp/SD hari berikutnya</td>
+<td>Sentimen overnight/news positif atau recovering</td>
+<td>Psychology</td>
+<td>Fed: ~6bp/SD next-day</td>
 </tr>
 <tr>
 <td>B5</td>
-<td>Lonjakan ketakutan memudar (VIX turun dari puncak &gt;30)</td>
-<td>Psikologi</td>
-<td>Literatur overreaction/mean-reversion</td>
+<td>Fear spike memudar (VIX turun dari peak &gt;30)</td>
+<td>Psychology</td>
+<td>Overreaction/mean-reversion literature</td>
 </tr>
 <tr>
 <td>B6</td>
-<td>Tidak ada FOMC/CPI/peristiwa besar dalam 24 jam</td>
-<td>Psikologi</td>
-<td>Waktu risiko peristiwa</td>
+<td>Tidak ada FOMC/CPI/major event dalam 24 jam</td>
+<td>Psychology</td>
+<td>Event-risk timing</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Kontrarian khusus (panic buy):</strong> VIX &gt; 30 + sentimen pada ketakutan ekstrem + harga stabil di atas MA pendek + volume klimaks terlewati → beli mean-reversion dengan setengah ukuran. (Ini adalah kasus "jadilah serakah saat orang lain takut", yang disistematisasi.)</p>
-<h2>4. Checklist JUAL (confluence ≥ 4 dari 6 → jual/hindari)</h2>
+<p><strong>Contrarian special (panic buy):</strong> VIX &gt; 30 + sentimen di extreme fear + harga stabil di atas short MA + volume climax terlewati → mean-reversion buy dengan half size. (Ini adalah kasus "be greedy when others are fearful" yang disistematisasi.)</p>
+<h2>4. Checklist SELL (confluence ≥ 4 dari 6 → sell/avoid)</h2>
 <table>
 <thead>
 <tr>
@@ -179,7 +179,7 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 <tbody>
 <tr>
 <td>S1</td>
-<td>Harga di bawah MA 200 hari / kondisi death-cross</td>
+<td>Harga di bawah 200-day MA / death-cross state</td>
 <td>Chart</td>
 </tr>
 <tr>
@@ -189,17 +189,17 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </tr>
 <tr>
 <td>S3</td>
-<td>Pola bearish (double top / H&amp;S) selesai dengan volume</td>
+<td>Pattern bearish (double top / H&amp;S) completed dengan volume</td>
 <td>Chart</td>
 </tr>
 <tr>
 <td>S4</td>
-<td>Euforia sentimen ekstrem (semua orang bullish, nada mania meme-stock)</td>
+<td>Euforia sentimen ekstrem (semua orang bullish, nuansa mania meme-stock)</td>
 <td>Psikologi — kontrarian</td>
 </tr>
 <tr>
 <td>S5</td>
-<td>Guncangan kebijakan/geopolitik negatif belum terselesaikan</td>
+<td>Guncangan kebijakan/geopolitik negatif yang belum terselesaikan</td>
 <td>Psikologi</td>
 </tr>
 <tr>
@@ -209,55 +209,55 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </tr>
 </tbody>
 </table>
-<h2>5. Matriks skenario WHEN × WHAT</h2>
+<h2>5. Matriks skenario KAPAN × APA</h2>
 <table>
 <thead>
 <tr>
 <th>Skenario (kondisi psikologi pasar)</th>
 <th>Sisi dominan</th>
-<th>Aksi</th>
+<th>Tindakan</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Uptrend tenang, sentimen positif</td>
-<td>Charts</td>
-<td>Ikuti tren: beli saat pullback ke MA dengan volume; hold</td>
+<td>Chart</td>
+<td>Ikuti tren: beli pullback ke MA dengan volume; tahan</td>
 </tr>
 <tr>
 <td>Downtrend tenang</td>
-<td>Charts</td>
-<td>Diam saja atau condong short; jangan menangkap pisau jatuh tanpa sinyal panik Layer-1</td>
+<td>Chart</td>
+<td>Tetap di luar atau bias short; jangan menangkap pisau jatuh tanpa sinyal panik Layer-1</td>
 </tr>
 <tr>
-<td>Panik (headline perang, VIX &gt;30, fear ekstrem)</td>
-<td>Psychology</td>
-<td>Hari 1–3: jangan lakukan apa-apa. Lalu beli kontrarian saat trigger stabilisasi (B5)</td>
+<td>Panik (headline perang, VIX &gt;30, ketakutan ekstrem)</td>
+<td>Psikologi</td>
+<td>Hari 1–3: jangan lakukan apa pun. Lalu beli kontrarian saat trigger stabilisasi (B5)</td>
 </tr>
 <tr>
 <td>Euforia (harga parabolik + semua orang bullish)</td>
-<td>Psychology</td>
-<td>Ambil untung saat kekuatan masih ada; sell trigger S4; jangan pernah menambah posisi</td>
+<td>Psikologi</td>
+<td>Ambil untung saat penguatan; trigger jual S4; jangan pernah menambah posisi</td>
 </tr>
 <tr>
 <td>Jendela FOMC/CPI/pemilu</td>
-<td>Psychology</td>
+<td>Psikologi</td>
 <td>Flat/tidak ada entry baru; lanjutkan keesokan harinya</td>
 </tr>
 <tr>
 <td>Breakout pola tanpa volume</td>
-<td>Neither</td>
-<td>Risiko jebakan — lewati (kebanyakan breakout palsu terjadi di sini)</td>
+<td>Tidak keduanya</td>
+<td>Risiko jebakan — lewati (sebagian besar breakout palsu ada di sini)</td>
 </tr>
 <tr>
-<td>Chart bullish TAPI sentimen runtuh karena berita nyata</td>
-<td>Psychology vetoes</td>
+<td>Chart bullish TAPI sentimen runtuh akibat berita nyata</td>
+<td>Psikologi memveto</td>
 <td>Lewati trade — rezim berita mengalahkan chart yang basi</td>
 </tr>
 <tr>
 <td>Sentimen berisik, tidak ekstrem, chart jelas</td>
-<td>Charts</td>
-<td>Trading berdasarkan chart; sentimen hanya sebagai pemutus seri</td>
+<td>Chart</td>
+<td>Tradingkan chart-nya; sentimen hanya sebagai pemutus seri</td>
 </tr>
 </tbody>
 </table>
@@ -265,10 +265,10 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 <ul>
 <li>Akurasi arah yang diharapkan: <strong>50–55%</strong>, bukan 80%.</li>
 <li>Edge tipe golden-cross: ~4–5 poin win-rate di atas lempar koin, sebelum biaya.</li>
-<li>Edge sentimen: basis poin per hari, nyata hanya pada titik ekstrem dan semalaman.</li>
-<li>Edge yang bertumbuh berasal dari: konfluensi (menumpuk edge-edge lemah yang independen), memotong kerugian dengan cepat, sizing berdasarkan volatilitas, dan melewati jendela event — bukan dari kejeniusan prediksi.</li>
+<li>Edge sentimen: basis poin per hari, nyata hanya pada kondisi ekstrem dan semalam.</li>
+<li>Edge yang bertumbuh berasal dari: konfluensi (menumpuk edge lemah yang independen), memotong posisi rugi dengan cepat, menentukan ukuran posisi berdasarkan volatilitas, dan melewati jendela event — bukan dari kejeniusan prediksi.</li>
 <li>Setiap edge yang dipublikasikan akan meluruh. Backtest, paper-trade, dan validasi ulang out-of-sample sebelum mempertaruhkan uang.</li>
 </ul>
 <h2>7. Sumber utama</h2>
-<p>Gu–Kelly–Xiu (2020) RFS · Lo–Mamaysky–Wang (2000) JF · Brock et al. (1992) JF · Savin et al. (2007) JFEc · Park &amp; Irwin (2007) JES · Sullivan et al. (1999) JF · Bollen et al. (2011) + Lachanski &amp; Pav (2017) replication · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018) · Prata et al. (2024).</p>
+<p>Gu–Kelly–Xiu (2020) RFS · Lo–Mamaysky–Wang (2000) JF · Brock et al. (1992) JF · Savin et al. (2007) JFEc · Park &amp; Irwin (2007) JES · Sullivan et al. (1999) JF · Bollen et al. (2011) + replikasi Lachanski &amp; Pav (2017) · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018) · Prata et al. (2024).</p>
 </main></body></html>

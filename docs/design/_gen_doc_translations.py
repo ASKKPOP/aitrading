@@ -119,6 +119,18 @@ _NON_ASCII = re.compile(r"[^\x00-\x7f]")
 # Hangul surviving into a non-Korean document means the model echoed the input
 # instead of translating it. Cheap to detect, so it is worth a repair pass.
 _HANGUL = re.compile(r"[가-힣]")
+# Languages that render in their own script. For these, a Latin string that
+# came back untouched is an echo no matter how short it is.
+_NATIVE_SCRIPT = {
+    "ko": re.compile(r"[가-힣]"),
+    "ja": re.compile(r"[぀-ヿ一-鿿]"),
+    "th": re.compile(r"[฀-๿]"),
+}
+# A bare `&` that is not already an entity. The model decodes `&amp;` in the
+# text it is handed and returns a literal `&`, which splices back as invalid
+# markup — `guide-id` shipped `Fear & Greed` inside an SVG <text> where every
+# other language had `Fear &amp; Greed`. Browsers tolerated it; XML did not.
+_BARE_AMP = re.compile(r"&(?!(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#\d{1,7}|#[xX][0-9a-fA-F]{1,6});)")
 BANNER = ("<!-- machine-translated from {src} by "
           "docs/design/_gen_doc_translations.py — pending native review -->\n")
 
@@ -142,6 +154,42 @@ def _translatable(text: str) -> bool:
     if re.fullmatch(r"[A-Z0-9_.:\-/]+", s):
         return False          # SCREAMING_IDENTIFIER, ticker, path
     return True
+
+
+def _is_echo(src: str, out: str, lang: str) -> bool:
+    """Did the model hand this string back instead of translating it?
+
+    Hangul surviving into a non-Korean document is the unambiguous case, and
+    it was the only case the first repair pass checked — which is why a
+    Korean-source document came out clean while `STAGE 3 → STAGE 4` sat
+    beside `ステージ1 → ステージ2` in the Japanese one, and ten of fifteen
+    gateway sub-headings stayed English in Thai and Vietnamese. Those are
+    echoes too; they just echo English, which no script test can see.
+
+    So the real signal is simpler: the output is byte-identical to the input.
+    Retrying costs a call and, after the attempts run out, the source is kept
+    anyway — the same outcome as not checking. The false positives are
+    strings that SHOULD come back unchanged (a journal title, a proper noun),
+    and paying a couple of calls to re-confirm those is the cheaper mistake.
+    """
+    if _HANGUL.search(out) and lang != "ko":
+        return True
+    if out.strip() != src.strip():
+        return False
+    # Identical. Only meaningful if there was something to translate: pure
+    # punctuation, digits or a bare ticker is legitimately invariant.
+    words = re.findall(r"[A-Za-z]{2,}", src)
+    if not words:
+        return False
+    native = _NATIVE_SCRIPT.get(lang)
+    if native:
+        # ja/th render in their own script, so ANY Latin word that came back
+        # untouched is an echo. Requiring two words here missed `STAGE 3`,
+        # which sat beside `ステージ1` in the Japanese top-10 document.
+        return not native.search(out)
+    # vi/id/en share the Latin alphabet, so "unchanged" is only suspicious
+    # once there is a phrase rather than a single word.
+    return len(words) >= 2
 
 
 def _chunks(items: list[str]) -> list[list[int]]:
@@ -226,7 +274,7 @@ def _translate_all(strings: list[str], lang: str) -> list[str]:
     if lang == "ko":
         return out
     for attempt in range(3):
-        stale = [i for i, v in enumerate(out) if _HANGUL.search(v)]
+        stale = [i for i, v in enumerate(out) if _is_echo(strings[i], v, lang)]
         if not stale:
             break
         print(f"      repair {attempt + 1}: {len(stale)} untranslated")
@@ -237,9 +285,9 @@ def _translate_all(strings: list[str], lang: str) -> list[str]:
                        for i in stale}
             for future, i in futures.items():
                 out[i] = future.result()[0]
-    left = sum(1 for v in out if _HANGUL.search(v))
+    left = sum(1 for i, v in enumerate(out) if _is_echo(strings[i], v, lang))
     if left:
-        print(f"      ! {left} string(s) still Korean", file=sys.stderr)
+        print(f"      ! {left} string(s) came back unchanged", file=sys.stderr)
     return out
 
 
@@ -287,7 +335,8 @@ def translate_html(source: str, lang: str) -> str:
         return source
     print(f"      {len(payload)} text nodes")
     for i, value in zip(idx, _translate_all(payload, lang)):
-        parts[i] = value
+        # Re-escape any `&` the model decoded on its way through.
+        parts[i] = _BARE_AMP.sub("&amp;", value)
     out = "".join(parts)
     # `lang` is the one attribute we do rewrite, by targeted substitution on
     # the opening <html> tag alone.

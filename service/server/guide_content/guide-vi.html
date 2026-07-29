@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sooppiy — Giao Dịch Tự Động AI: Hướng Dẫn Toàn Bộ Pipeline Đầy Đủ</title>
+<title>Sooppiy — Giao Dịch Tự Động AI: Hướng Dẫn Toàn Bộ Quy Trình Đầy Đủ</title>
 <style>
 :root{
   --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
@@ -87,15 +87,15 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <body>
 
 <header class="doc"><div class="wrap">
-  <div class="kicker">Sooppiy · Hướng Dẫn Toàn Bộ Pipeline</div>
+  <div class="kicker">Sooppiy · Hướng Dẫn Toàn Bộ Quy Trình</div>
   <h1>Giao Dịch Tự Động AI, Từ Đầu Đến Cuối — Hướng Dẫn Đầy Đủ</h1>
-  <div class="meta">2026-07-17 · Chính xác theo mã nguồn (main, đã bao gồm mở rộng tín hiệu) · Tất cả số liệu là giá trị triển khai thực tế · Trực tuyến tại sooppiy.com</div>
+  <div class="meta">2026-07-17 · Chính xác theo mã nguồn (main, đã bao gồm mở rộng tín hiệu) · Tất cả số liệu là giá trị triển khai thực tế · Hoạt động trực tuyến tại sooppiy.com</div>
 </div></header>
 
 <!-- ═══════════════ 0. At a Glance ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">§0</span>Tổng Quan — Pipeline 10 Bước</h2>
-  <p class="sub">Từ thu thập dữ liệu đến đánh giá lại. Mọi giao dịch chỉ khớp lệnh trong tài khoản paper (mô phỏng), mỗi bước được cô lập sau một cờ env, và các sự cố từ nguồn bên ngoài sẽ thất bại một cách nhẹ nhàng — chỉ thành phần bị ảnh hưởng âm thầm ngừng hoạt động.</p>
+  <h2><span class="no">§0</span>Tổng Quan — Quy Trình 10 Bước</h2>
+  <p class="sub">Từ thu thập dữ liệu đến đánh giá. Mọi lệnh giao dịch chỉ khớp trong tài khoản paper (mô phỏng), mỗi bước được cô lập bằng một cờ env, và khi nguồn dữ liệu bên ngoài gặp sự cố sẽ tự động giảm nhẹ — chỉ thành phần bị ảnh hưởng âm thầm ngừng hoạt động.</p>
 
   <div class="steps-strip">
     <div class="st"><b>BƯỚC 1</b><span>Thu Thập Dữ Liệu</span></div>
@@ -103,11 +103,11 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="st"><b>BƯỚC 3</b><span>Phân Tích Định Lượng</span></div>
     <div class="st"><b>BƯỚC 4</b><span>Tâm Lý</span></div>
     <div class="st"><b>BƯỚC 5</b><span>Hợp Nhất Tín Hiệu</span></div>
-    <div class="st"><b>BƯỚC 6</b><span>AI 4 Nhà Phân Tích</span></div>
+    <div class="st"><b>BƯỚC 6</b><span>4 Chuyên Gia Phân Tích AI</span></div>
     <div class="st"><b>BƯỚC 7</b><span>Quy Tắc Tự Động Hóa</span></div>
-    <div class="st"><b>BƯỚC 8</b><span>Cổng Rủi Ro</span></div>
+    <div class="st"><b>BƯỚC 8</b><span>Cổng Kiểm Soát Rủi Ro</span></div>
     <div class="st"><b>BƯỚC 9</b><span>Khớp Lệnh · SL/TP</span></div>
-    <div class="st"><b>BƯỚC 10</b><span>Nhật Ký · Đánh Giá Lại</span></div>
+    <div class="st"><b>BƯỚC 10</b><span>Nhật Ký · Đánh Giá</span></div>
   </div>
 
   <div class="diagram">
@@ -124,20 +124,20 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
 
     <!-- band 1: sources -->
-    <text x="16" y="24" class="sv-lb">NGUỒN DỮ LIỆU BÊN NGOÀI (TẤT CẢ ĐÃ XÁC MINH KHÔNG CẦN KEY)</text>
+    <text x="16" y="24" class="sv-lb">NGUỒN DỮ LIỆU BÊN NGOÀI (TẤT CẢ ĐÃ ĐƯỢC XÁC MINH, KHÔNG CẦN KHÓA API)</text>
     <g>
       <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
-      <text x="102" y="68" text-anchor="middle" class="sv-s">candles·funding·OI·L/S·liquidations</text>
+      <text x="102" y="68" text-anchor="middle" class="sv-s">nến·funding·OI·L/S·thanh lý</text>
       <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
-      <text x="290" y="68" text-anchor="middle" class="sv-s">Chỉ số Fear &amp; Greed + lịch sử</text>
+      <text x="290" y="68" text-anchor="middle" class="sv-s">Chỉ số Sợ Hãi &amp; Tham Lam + lịch sử</text>
       <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits · Polymarket</text>
       <text x="478" y="68" text-anchor="middle" class="sv-s">tâm lý đám đông·Δodds</text>
       <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue · Upbit</text>
-      <text x="666" y="68" text-anchor="middle" class="sv-s">dòng vốn ETF thực·kimchi premium</text>
+      <text x="666" y="68" text-anchor="middle" class="sv-s">dòng vốn ETF thực·chênh lệch giá kimchi</text>
       <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
       <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
       <text x="856" y="68" text-anchor="middle" class="sv-s">tin tức·vĩ mô·DXY</text>
@@ -157,15 +157,15 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <text x="126" y="145" text-anchor="middle" class="sv-s">khối lượng tăng vọt ×2 · lượt đề cập +100%</text>
       <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1h</text>
       <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="362" y="130" text-anchor="middle" class="sv-t">BƯỚC 3 · Quant</text>
+      <text x="362" y="130" text-anchor="middle" class="sv-t">BƯỚC 3 · Định Lượng</text>
       <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·σ·funding·basis·OI·L/S</text>
       <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · theo yêu cầu</text>
       <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="598" y="130" text-anchor="middle" class="sv-t">BƯỚC 4 · Psychology Feed</text>
-      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·đột biến tâm lý·liq. thực</text>
+      <text x="598" y="130" text-anchor="middle" class="sv-t">BƯỚC 4 · Nguồn Cấp Tâm Lý</text>
+      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·biến động tâm lý đột biến·thanh lý thực tế</text>
       <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1h</text>
       <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
-      <text x="834" y="130" text-anchor="middle" class="sv-t">News · Macro Intel</text>
+      <text x="834" y="130" text-anchor="middle" class="sv-t">Tin Tức · Thông Tin Vĩ Mô</text>
       <text x="834" y="145" text-anchor="middle" class="sv-s">tâm lý tin tức·ETF thực·lịch sự kiện</text>
       <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · làm mới định kỳ</text>
     </g>
@@ -176,7 +176,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M598 168 V196" class="sv-line" marker-end="url(#ar)"/>
     <path d="M834 168 V196" class="sv-line" marker-end="url(#ar)"/>
     <rect x="16" y="198" width="928" height="40" rx="9" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="480" y="222" text-anchor="middle" class="sv-t">Kho lưu trữ snapshot — scanner_snapshots · psych_snapshots · market_news/macro/etf/stock_analysis_snapshots (bằng chứng cho mọi quyết định được lưu giữ trong DB)</text>
+    <text x="480" y="222" text-anchor="middle" class="sv-t">Kho lưu trữ snapshot — scanner_snapshots · psych_snapshots · market_news/macro/etf/stock_analysis_snapshots (bằng chứng cho mọi quyết định được lưu trong DB)</text>
 
     <!-- band 3: fusion + AI -->
     <path d="M240 238 V266" class="sv-line" marker-end="url(#ar)"/>
@@ -184,10 +184,10 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="60" y="268" width="360" height="66" rx="9" class="sv-acc"/>
       <text x="240" y="288" text-anchor="middle" class="sv-t">BƯỚC 5 · Hợp Nhất Tín Hiệu</text>
-      <text x="240" y="304" text-anchor="middle" class="sv-s">Trọng số theo AI (dự phòng 0.5/0.3/0.2 · giới hạn psych 0.3)</text>
+      <text x="240" y="304" text-anchor="middle" class="sv-s">Trọng số theo AI (dự phòng 0.5/0.3/0.2 · giới hạn tâm lý 0.3)</text>
       <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py · GET /api/market-intel/fusion</text>
       <rect x="540" y="268" width="360" height="66" rx="9" class="sv-acc"/>
-      <text x="720" y="288" text-anchor="middle" class="sv-t">BƯỚC 6 · AI 4 Nhà Phân Tích + Tranh Luận Trader</text>
+      <text x="720" y="288" text-anchor="middle" class="sv-t">BƯỚC 6 · 4 Chuyên Gia Phân Tích AI + Tranh Luận Giữa Các Trader</text>
       <text x="720" y="304" text-anchor="middle" class="sv-s">tin tức·tâm lý·cơ bản/vĩ mô·kỹ thuật → BUY/SELL/HOLD + độ tin cậy</text>
       <text x="720" y="320" text-anchor="middle" class="sv-m">analysis_agents.py · LLM hoặc dự phòng dựa trên quy tắc</text>
     </g>
@@ -198,14 +198,14 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="40" y="388" width="280" height="66" rx="9" class="sv-card"/>
       <text x="180" y="408" text-anchor="middle" class="sv-t">BƯỚC 7 · Quy Tắc Tự Động Hóa (do người dùng thiết lập)</text>
-      <text x="180" y="424" text-anchor="middle" class="sv-s">khoảng thời gian 5–1440 phút · độ tin cậy tối thiểu 0.65 · tự động thực thi bật/tắt</text>
+      <text x="180" y="424" text-anchor="middle" class="sv-s">khoảng thời gian 5–1440 phút · độ tin cậy tối thiểu 0.65 · bật/tắt tự động thực thi</text>
       <text x="180" y="440" text-anchor="middle" class="sv-m">automation.py · tick 60s</text>
       <rect x="368" y="388" width="256" height="66" rx="9" class="sv-warn"/>
       <text x="496" y="408" text-anchor="middle" class="sv-t">BƯỚC 8 · Cổng Rủi ro</text>
       <text x="496" y="424" text-anchor="middle" class="sv-s">① Định cỡ Kelly → ② giới hạn → ③ ngắt mạch</text>
       <text x="496" y="440" text-anchor="middle" class="sv-m">risk_engine.py · mọi lệnh đều phải vượt qua</text>
       <rect x="672" y="388" width="272" height="66" rx="9" class="sv-good"/>
-      <text x="808" y="408" text-anchor="middle" class="sv-t">BƯỚC 9 · Khớp lệnh Giả lập</text>
+      <text x="808" y="408" text-anchor="middle" class="sv-t">BƯỚC 9 · Khớp lệnh Giấy</text>
       <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% tự động thiết lập · theo dõi 30s</text>
       <text x="808" y="440" text-anchor="middle" class="sv-m">chỉ tài khoản mô phỏng · không khớp lệnh thật</text>
     </g>
@@ -213,31 +213,31 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M624 421 H670" class="sv-goodline" marker-end="url(#arG)"/>
     <text x="643" y="412" text-anchor="middle" class="sv-m" fill="var(--good)">PASS</text>
     <path d="M496 454 V488" class="sv-badline" marker-end="url(#arR)"/>
-    <text x="522" y="474" class="sv-m" fill="var(--critical)">THẤT BẠI → lý do được ghi lại</text>
+    <text x="522" y="474" class="sv-m" fill="var(--critical)">THẤT BẠI → lý do được ghi log</text>
 
     <!-- band 5: journal -->
     <path d="M808 454 V488" class="sv-line" marker-end="url(#ar)"/>
     <g>
       <rect x="368" y="490" width="256" height="54" rx="9" class="sv-card"/>
-      <text x="496" y="510" text-anchor="middle" class="sv-t">BƯỚC 10 · Nhật ký · Đánh giá</text>
+      <text x="496" y="510" text-anchor="middle" class="sv-t">BƯỚC 10 · Nhật ký · Xem lại</text>
       <text x="496" y="526" text-anchor="middle" class="sv-s">automation_runs · sổ cái tín hiệu · sự kiện thử nghiệm</text>
       <rect x="672" y="490" width="272" height="54" rx="9" class="sv-card"/>
       <text x="808" y="510" text-anchor="middle" class="sv-t">Vị thế · Theo dõi P&amp;L</text>
-      <text x="808" y="526" text-anchor="middle" class="sv-s">khảo sát giá → P&amp;L chưa thực hiện · theo dõi SL/TP</text>
+      <text x="808" y="526" text-anchor="middle" class="sv-s">thăm dò giá → P&amp;L chưa thực hiện · theo dõi SL/TP</text>
     </g>
     <path d="M672 517 H626" class="sv-line" marker-end="url(#ar)"/>
 
     <!-- dashboard -->
     <path d="M496 544 V572" class="sv-line" marker-end="url(#ar)"/>
     <rect x="280" y="574" width="432" height="38" rx="9" class="sv-acc"/>
-    <text x="496" y="597" text-anchor="middle" class="sv-t">Bảng điều khiển Signal Board + cảnh báo — luôn có thể kiểm chứng bởi con người</text>
+    <text x="496" y="597" text-anchor="middle" class="sv-t">bảng điều khiển Signal Board + cảnh báo — luôn có thể xác minh bởi con người</text>
   </svg>
   </div>
 
   <div class="kpi-row">
-    <div class="kpi"><div class="lb">Thực thi</div><div class="vl">Chỉ Giả lập</div><div class="hint">Mã lệnh tài khoản thật bị vô hiệu hóa hoàn toàn</div></div>
+    <div class="kpi"><div class="lb">Thực thi</div><div class="vl">Chỉ Giấy</div><div class="hint">Mã lệnh tài khoản thật hoàn toàn bị vô hiệu hóa</div></div>
     <div class="kpi"><div class="lb">Cổng rủi ro</div><div class="vl">Kiểm tra ba lớp</div><div class="hint">Kelly → giới hạn → ngắt mạch</div></div>
-    <div class="kpi"><div class="lb">Kiểm thử</div><div class="vl">Hơn 1.100 lượt vượt qua</div><div class="hint">Bao gồm kiểm thử mở rộng tín hiệu &amp; hướng dẫn</div></div>
+    <div class="kpi"><div class="lb">Kiểm thử</div><div class="vl">Hơn 1,100 vượt qua</div><div class="hint">Bao gồm kiểm thử mở rộng tín hiệu &amp; hướng dẫn</div></div>
     <div class="kpi"><div class="lb">Tác vụ nền</div><div class="vl">23</div><div class="hint">Bao gồm risk_watcher·psych·scanner</div></div>
   </div>
 </div></section>
@@ -245,80 +245,80 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <!-- ═══════════════ STEP 1 ═══════════════ -->
 <section><div class="wrap">
   <h2><span class="no">BƯỚC 1</span>Thu thập Dữ liệu — Nguyên liệu Thô cho Mọi Quyết định</h2>
-  <p class="sub">Mọi thứ bắt đầu từ các nguồn miễn phí hoạt động không cần API key (đã xác minh trực tiếp 2026-07-14). Thêm key và các nguồn trả phí/cao cấp sẽ được lắp vào cùng vị trí. Nếu một nguồn ngừng hoạt động, các bản chụp còn lại vẫn được lưu bình thường (fail-soft).</p>
+  <p class="sub">Mọi thứ bắt đầu từ các nguồn miễn phí hoạt động không cần khóa API (đã xác minh trực tiếp 2026-07-14). Thêm khóa và các nguồn trả phí/cao cấp sẽ được gắn vào cùng những vị trí đó. Nếu một nguồn ngừng hoạt động, các bản chụp còn lại vẫn được lưu bình thường (fail-soft).</p>
   <table>
-    <thead><tr><th>Nguồn</th><th>Thu thập gì</th><th>Dùng trong</th><th>Ghi chú</th></tr></thead>
+    <thead><tr><th>Nguồn</th><th>Thu thập gì</th><th>Được dùng trong</th><th>Ghi chú</th></tr></thead>
     <tbody>
-      <tr><td><b>OKX</b></td><td>Nến ngày/giờ, tỷ lệ funding, giá spot &amp; futures (basis), khối lượng 24h, danh sách niêm yết mới</td><td>BƯỚC 2·3·4</td><td>Bybit chặn IP Mỹ → giải quyết bằng OKX</td></tr>
-      <tr><td><b>alternative.me</b></td><td>Chỉ số Sợ hãi &amp; Tham lam (F&amp;G) + lịch sử hàng ngày</td><td>BƯỚC 4·5</td><td>Quan sát: 22→25 "Extreme Fear"</td></tr>
-      <tr><td><b>StockTwits</b></td><td>Tâm lý đám đông theo từng mã (tăng/giảm), lượt đề cập mỗi giờ</td><td>BƯỚC 2·4·5·6</td><td>BTC.X có 670K người theo dõi</td></tr>
+      <tr><td><b>OKX</b></td><td>Nến theo ngày/giờ, tỷ lệ funding, giá spot &amp; futures (basis), khối lượng 24h, danh sách niêm yết mới</td><td>BƯỚC 2·3·4</td><td>Bybit chặn IP của Mỹ → chuyển sang dùng OKX</td></tr>
+      <tr><td><b>alternative.me</b></td><td>Chỉ số Sợ hãi &amp; Tham lam (F&amp;G) + lịch sử theo ngày</td><td>BƯỚC 4·5</td><td>Quan sát: 22→25 "Sợ hãi Cực độ"</td></tr>
+      <tr><td><b>StockTwits</b></td><td>Tâm lý đám đông theo từng mã (lạc quan/bi quan), số lượt nhắc đến mỗi giờ</td><td>BƯỚC 2·4·5·6</td><td>BTC.X có 670K người theo dõi</td></tr>
       <tr><td><b>Polymarket</b></td><td>Tỷ lệ cược thị trường dự đoán và thay đổi 24h (Δodds)</td><td>BƯỚC 4·6</td><td>Nguồn của tín hiệu kỳ vọng</td></tr>
-      <tr><td><b>Alpha Vantage</b></td><td>Tin tức + điểm số tâm lý, giá cổ phiếu, dòng vốn ETF</td><td>BƯỚC 6, thông tin tin tức</td><td>Các chức năng cơ bản hoạt động ngay cả với key demo</td></tr>
-      <tr><td><b>FRED · FinnHub</b></td><td>Chỉ số vĩ mô, tin tức công ty (tùy chọn)</td><td>BƯỚC 6</td><td>Tự động tham gia chỉ khi có key</td></tr>
-      <tr><td><b>OKX (mở rộng)</b></td><td>Open interest, tỷ lệ long/short, lệnh thanh lý thực tế</td><td>BƯỚC 3·4</td><td>Endpoint công khai không cần key, đã xác minh trực tiếp</td></tr>
-      <tr><td><b>SoSoValue</b></td><td>Dòng tiền USD hàng ngày & lũy kế của BTC spot-ETF (dữ liệu thực)</td><td>BƯỚC 6, tin tức tình báo</td><td>Cần <code>SOSOVALUE_API_KEY</code> (gói miễn phí)</td></tr>
+      <tr><td><b>Alpha Vantage</b></td><td>Tin tức + điểm tâm lý, giá cổ phiếu, dòng vốn ETF</td><td>BƯỚC 6, thông tin tin tức</td><td>Các chức năng cơ bản hoạt động ngay cả với khóa demo</td></tr>
+      <tr><td><b>FRED · FinnHub</b></td><td>Chỉ số vĩ mô, tin tức công ty (tùy chọn)</td><td>BƯỚC 6</td><td>Tự động tham gia chỉ khi có khóa</td></tr>
+      <tr><td><b>OKX (mở rộng)</b></td><td>Open interest, tỷ lệ long/short, lệnh thanh lý thực tế</td><td>BƯỚC 3·4</td><td>Điểm cuối công khai không cần khóa, đã xác minh trực tiếp</td></tr>
+      <tr><td><b>SoSoValue</b></td><td>Dòng tiền vào/ra hằng ngày &amp; lũy kế của BTC spot-ETF (dữ liệu thực)</td><td>BƯỚC 6, thông tin tình báo tin tức</td><td>Cần <code>SOSOVALUE_API_KEY</code> (gói miễn phí)</td></tr>
       <tr><td><b>Upbit · FRED</b></td><td>Phần bù kimchi (Upbit so với OKX · USD/KRW), chỉ số đô la (DXY)</td><td>BƯỚC 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
-      <tr><td><b>Lịch sự kiện</b></td><td>Lịch FOMC·CPI·NFP (tĩnh, có tính đến giờ mùa hè DST)</td><td>BƯỚC 7·8</td><td>Tùy chọn chặn lệnh vào qua <code>EVENT_GUARD_ENABLED</code></td></tr>
-      <tr><td><b>blockchain.info · Etherscan</b></td><td>Theo dõi cá voi: chuyển BTC khối lượng lớn (mempool), dòng ví nóng sàn giao dịch ETH (hướng thực)</td><td>BƯỚC 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC không cần khóa</td></tr>
+      <tr><td><b>Lịch sự kiện</b></td><td>Lịch FOMC·CPI·NFP (cố định, có tính đến giờ tiết kiệm ánh sáng ngày - DST)</td><td>BƯỚC 7·8</td><td>Chặn lệnh vào tùy chọn qua <code>EVENT_GUARD_ENABLED</code></td></tr>
+      <tr><td><b>blockchain.info · Etherscan</b></td><td>Theo dõi cá voi: các giao dịch chuyển BTC lớn (mempool), dòng tiền ví nóng sàn giao dịch ETH (hướng thực)</td><td>BƯỚC 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC không cần khóa riêng tư</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>Nguyên tắc trung thực:</b> Dữ liệu thanh lý hiện được thu thập <b>thực sự (estimated: false, liq_source: okx)</b> từ nguồn dữ liệu thanh lý công khai của OKX. Chỉ khi nguồn đó gián đoạn, hệ thống mới chuyển sang dùng chỉ báo thay thế độ biến động σ + khối lượng, và khi đó giao diện sẽ gắn nhãn "ước tính". Việc theo dõi cá voi on-chain giờ cũng được thu thập thực sự từ các nguồn miễn phí — chuyển BTC khối lượng lớn (blockchain.info mempool, không cần khóa) + dòng ví nóng sàn giao dịch ETH (Etherscan; dòng vào = áp lực bán / dòng ra = tích lũy, có đo hướng). <code>WHALE_FEED_ENABLED</code> · ngưỡng <code>WHALE_MIN_USD</code> (mặc định $5M). Ghi chú trì hoãn cũ đã lỗi thời — phần khung giao diện (<code>fetch_whale_signals</code>) đã được đấu nối sẵn, chỉ cần cắm nguồn dữ liệu vào.</div>
+  <div class="note red"><b>Nguyên tắc trung thực:</b> Dữ liệu thanh lý giờ đây được thu thập <b>một cách thực tế (estimated: false, liq_source: okx)</b> từ nguồn cấp dữ liệu thanh lý công khai của OKX. Chỉ khi nguồn cấp dữ liệu đó bị gián đoạn, hệ thống mới chuyển sang dùng phương án dự phòng độ biến động σ + khối lượng, và khi đó giao diện sẽ gắn nhãn "ước tính". Việc theo dõi cá voi on-chain giờ đây cũng được thu thập thực tế từ các nguồn miễn phí — các giao dịch chuyển BTC lớn (blockchain.info mempool, không cần khóa riêng tư) + dòng tiền ví nóng sàn giao dịch ETH (Etherscan; dòng vào = áp lực bán / dòng ra = tích lũy, có đo hướng). <code>WHALE_FEED_ENABLED</code> · ngưỡng <code>WHALE_MIN_USD</code> (mặc định $5M). Ghi chú hoãn lại cũ đã lỗi thời — phần giao diện tạm (<code>fetch_whale_signals</code>) đã được kết nối sẵn, nên chỉ cần cắm nguồn dữ liệu vào là xong.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 2</span>Khám phá — "Đồng Coin Nào Cần Theo Dõi" (Scanner)</h2>
-  <p class="sub">Câu hỏi trước mọi giao dịch — máy sẽ lọc ra danh sách ứng viên cho bàn giao dịch trước tiên. Mỗi giờ nó quét theo 3 trục vào <code>scanner_snapshots</code>, và mỗi ứng viên đều đi kèm lý do dễ hiểu.</p>
+  <h2><span class="no">BƯỚC 2</span>Khám phá — "Đồng coin nào cần theo dõi" (Bộ quét)</h2>
+  <p class="sub">Câu hỏi cần đặt ra trước mọi giao dịch — máy sẽ lọc ra danh sách ứng viên cho bàn giao dịch trước tiên. Mỗi giờ, nó quét theo 3 trục vào <code>scanner_snapshots</code>, và mỗi ứng viên đều đi kèm một lý do có thể đọc hiểu được.</p>
   <table>
     <thead><tr><th>Trục phát hiện</th><th>Ngưỡng (mặc định)</th><th>Phương pháp</th></tr></thead>
     <tbody>
-      <tr><td><b>Tăng vọt khối lượng</b></td><td>Khối lượng 24h ≥ <b>×2.0</b> mức trung bình 7 ngày của chính nó</td><td>So sánh từng cặp trong 30 cặp USDT perps hàng đầu của OKX với mức trung bình nến 1D trong 7 ngày của chính nó</td></tr>
-      <tr><td><b>Tăng vọt lượt nhắc đến</b></td><td>Số lượt nhắc mỗi giờ ≥ <b>+100%</b> so với mức nền</td><td>So sánh tốc độ lượt nhắc đến trên StockTwits với mức nền lịch sử của chính chúng tôi (chỉ kích hoạt sau khi tích lũy ≥3 lần quét)</td></tr>
-      <tr><td><b>Niêm yết mới</b></td><td>Ứng viên tức thì ngay khi xuất hiện lần đầu trong danh sách</td><td>So sánh danh sách công cụ SWAP của OKX với ảnh chụp trước đó</td></tr>
+      <tr><td><b>Tăng đột biến khối lượng</b></td><td>Khối lượng 24 giờ ≥ <b>×2.0</b> mức trung bình 7 ngày của chính nó</td><td>So sánh từng đồng trong top 30 hợp đồng vĩnh cửu USDT của OKX với mức trung bình nến 1D trong 7 ngày của chính nó</td></tr>
+      <tr><td><b>Tăng đột biến lượt đề cập</b></td><td>Số lượt đề cập mỗi giờ ≥ <b>+100%</b> so với mức cơ sở</td><td>So sánh tốc độ đề cập trên StockTwits với mức cơ sở lịch sử của chính chúng ta (chỉ kích hoạt sau khi tích lũy đủ ≥3 lượt quét)</td></tr>
+      <tr><td><b>Niêm yết mới</b></td><td>Ứng viên tức thì ngay khi xuất hiện lần đầu trong danh sách</td><td>So sánh khác biệt giữa danh sách công cụ SWAP của OKX với ảnh chụp trước đó</td></tr>
     </tbody>
   </table>
-  <div class="note"><b>Móc nối tự động hóa:</b> Đặt biểu tượng của một quy tắc thành <code>SCANNER</code> và mỗi tick nó <b>tự động phân tích ứng viên #1</b> tại thời điểm đó. Đây là nơi mà ngay cả "nên mua gì" cũng trở thành tự động hóa. Ví dụ quan sát được: <code>BSBUSDT — volume x3.52 vs 7d avg</code>.</div>
+  <div class="note"><b>Móc nối tự động hóa:</b> Đặt biểu tượng của một quy tắc thành <code>SCANNER</code> và mỗi tick nó <b>tự động phân tích ứng viên #1</b> tại thời điểm đó. Đây là nơi mà ngay cả "nên mua gì" cũng được tự động hóa. Ví dụ quan sát được: <code>BSBUSDT — khối lượng x3.52 so với TB 7 ngày</code>.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 3 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 3</span>Phân tích định lượng — Con số là trên hết (Crypto Quant)</h2>
-  <p class="sub">Được tính toán nội bộ, không sử dụng thư viện TA bên ngoài. Đầu ra có cùng định dạng với đầu vào của nhà phân tích kỹ thuật trong pipeline 4-nhà-phân-tích hiện có, nhờ đó crypto được xử lý định lượng tương tự như cổ phiếu Mỹ.</p>
+  <h2><span class="no">BƯỚC 3</span>Phân Tích Định Lượng — Con Số Là Trên Hết (Crypto Quant)</h2>
+  <p class="sub">Được tính toán nội bộ, không dùng thư viện TA bên ngoài. Đầu ra có cùng định dạng với đầu vào của technical-analyst trong pipeline 4 chuyên gia hiện có, nhờ đó crypto được xử lý định lượng tương tự như cổ phiếu Mỹ.</p>
   <table>
     <thead><tr><th>Chỉ báo</th><th>Cách tính</th><th>Quy tắc chấm điểm (xác định)</th></tr></thead>
     <tbody>
-      <tr><td><b>RSI(14)</b></td><td>Nến ngày trên OKX, làm mượt Wilder (khớp với mặc định của các trang biểu đồ)</td><td>≥ 70 quá mua <b>−2</b> (kích hoạt bán theo framework) · ≤ 30 <b>+2</b> (ngược dòng)</td></tr>
-      <tr><td><b>MA 5 / 20 / 60</b></td><td>Đường trung bình động đơn giản trên nến ngày</td><td>price&gt;MA20 <b>±1</b> · MA5&gt;MA20 <b>±1</b> · MA20&gt;MA60 <b>±1</b></td></tr>
-      <tr><td><b>σ · Khối lượng</b></td><td>Độ lệch chuẩn của lợi suất theo giờ trong 24h + tỷ lệ khối lượng 1h gần nhất</td><td>Cú sốc 3σ → chuyển tiếp dưới dạng tín hiệu breaker (BƯỚC 8)</td></tr>
-      <tr><td><b>Funding rate</b></td><td>Funding rate hợp đồng vĩnh cửu trên OKX (8h)</td><td>&gt; +0.05% long quá đông <b>−1</b>  ·  &lt; −0.05% <b>+1</b></td></tr>
-      <tr><td><b>Basis</b></td><td>(swap − spot) / spot</td><td>≥ +1.2% <b>+1</b> (ngưỡng kích hoạt buy-gap) · ≤ −0.5% <b>−1</b></td></tr>
+      <tr><td><b>RSI(14)</b></td><td>Nến ngày OKX, làm mượt Wilder (khớp với mặc định của các trang biểu đồ)</td><td>≥ 70 quá mua <b>−2</b> (kích hoạt bán theo khung) · ≤ 30 <b>+2</b> (ngược dòng)</td></tr>
+      <tr><td><b>MA 5 / 20 / 60</b></td><td>Đường trung bình động đơn giản trên nến ngày</td><td>giá&gt;MA20 <b>±1</b> · MA5>MA20 <b>±1</b>MA20>MA60 <b>±1</b></td></tr>
+      <tr><td><b>σ · Khối lượng</b></td><td>Độ lệch chuẩn của lợi suất theo giờ trong 24h + tỷ lệ khối lượng 1h gần nhất</td><td>Sốc 3σ → chuyển tiếp như tín hiệu ngắt mạch (BƯỚC 8)</td></tr>
+      <tr><td><b>Tỷ lệ funding</b></td><td>Tỷ lệ funding hợp đồng perp của OKX (8h)</td><td>&gt; +0.05% long đông đúc <b>−1</b> · &lt; −0.05% <b>+1</b></td></tr>
+      <tr><td><b>Basis</b></td><td>(swap − spot) / spot</td><td>≥ +1.2% <b>+1</b> (kích hoạt khoảng trống mua) · ≤ −0.5% <b>−1</b></td></tr>
     </tbody>
   </table>
-  <div class="formula">Tổng điểm ≥ +2 → BUY &nbsp;·&nbsp; ≤ −2 → SELL &nbsp;·&nbsp; còn lại → HOLD &nbsp;&nbsp;(mỗi yếu tố được lưu lại thành một câu bằng chứng trong danh sách bullish_factors / risk_factors)</div>
-  <div class="note">Quan sát (sooppiy.com ngay sau khi triển khai): BTC RSI 55.05 · funding 0.0001 · basis −0.03% · giá 64,757 — thành phần định lượng +0.25.</div>
+  <div class="formula">Tổng điểm ≥ +2 → MUA &nbsp;·&nbsp; ≤ −2 → BÁN &nbsp;·&nbsp; ngược lại → GIỮ &nbsp;&nbsp;(mỗi yếu tố được lưu lại dưới dạng câu bằng chứng trong danh sách bullish_factors / risk_factors)</div>
+  <div class="note">Quan sát được (sooppiy.com ngay sau khi triển khai): BTC RSI 55.05 · funding 0.0001 · basis −0.03% · giá 64,757 — thành phần quant +0.25.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 4 ═══════════════ -->
 <section><div class="wrap">
   <h2><span class="no">BƯỚC 4</span>Phân Tích Tâm Lý — Đọc Vị Đám Đông, Đừng Chạy Theo Nó</h2>
-  <p class="sub">Tâm lý thị trường là thứ để <b>đo lường</b>, không phải để chạy theo. Mỗi giờ, 4 chỉ báo tâm lý được nạp vào <code>psych_snapshots</code>.</p>
+  <p class="sub">Tâm lý thị trường là thứ cần <b>đo lường</b>, không phải để chạy theo. Mỗi giờ, 4 chỉ báo tâm lý được nạp vào <code>psych_snapshots</code>.</p>
   <table>
     <thead><tr><th>Chỉ báo</th><th>Đó là gì</th><th>Liên kết kích hoạt</th></tr></thead>
     <tbody>
-      <tr><td><b>Fear &amp; Greed</b></td><td>Giá trị chỉ số + phân loại + biến động 3 ngày (Δ3d)</td><td>Δ3d ≥ <b>+10</b> = phục hồi từ sợ hãi → thành phần tín hiệu mua</td></tr>
+      <tr><td><b>Sợ hãi &amp; Tham lam</b></td><td>Giá trị chỉ số + phân loại + thay đổi 3 ngày (Δ3d)</td><td>Δ3d ≥ <b>+10</b> = phục hồi từ sợ hãi → thành phần tín hiệu mua</td></tr>
       <tr><td><b>Đột biến cảm xúc</b></td><td>z-score của cảm xúc trung bình theo từng danh mục tin tức (so với lịch sử news-snapshot của chúng tôi)</td><td>z ≤ <b>−2</b> đột biến âm → thành phần bán + ghi nhật ký sự kiện thử nghiệm</td></tr>
-      <tr><td><b>Sốc (thanh lý thực)</b></td><td>Giá trị danh nghĩa thanh lý thực trên OKX, tổng 1 giờ (<code>estimated: false · liq_source: okx</code>) · chỉ dùng σ+volume proxy khi luồng dữ liệu bị gián đoạn</td><td>Trên ngưỡng (mặc định $5M) → tín hiệu breaker/giảm</td></tr>
-      <tr><td><b>Kỳ vọng (thị trường dự đoán)</b></td><td>Tỷ lệ cược Polymarket chỉ dành cho các thị trường liên quan đến crypto/vĩ mô (lọc theo chủ đề), một Δodds có dấu cho mỗi thị trường so với snapshot trước đó</td><td>Δodds ≥ <b>+0.05</b>/24h = định giá lại → thành phần mua</td></tr>
+      <tr><td><b>Sốc (thanh lý thực)</b></td><td>Tổng giá trị thanh lý thực của OKX, tổng 1h (<code>estimated: false · liq_source: okx</code>σ+volume proxy chỉ khi feed bị gián đoạn</td><td>Vượt ngưỡng (mặc định $5M) → tín hiệu ngắt mạch/giảm</td></tr>
+      <tr><td><b>Anticipation (thị trường dự đoán)</b></td><td>Tỷ lệ cược Polymarket chỉ dành cho các thị trường liên quan đến crypto/macro (đã lọc theo chủ đề), một Δodds có dấu cho mỗi thị trường so với ảnh chụp trước đó</td><td>Δodds ≥ <b>+0.05</b>/24h = định giá lại → thành phần mua</td></tr>
     </tbody>
   </table>
-  <div class="note">Quan sát: F&amp;G <b>25 · Sợ hãi Cực độ</b>, Δ3d −1 — ngay lúc này chính dữ liệu xác nhận trạng thái "chưa kích hoạt trigger phục hồi".</div>
+  <div class="note">Quan sát: F&amp;G <b>25 · Sợ hãi tột độ</b>, Δ3d −1 — ngay lúc này bản thân dữ liệu đã xác nhận trạng thái "chưa kích hoạt tín hiệu phục hồi".</div>
 </div></section>
 
 <!-- ═══════════════ STEP 5 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 5</span>Tổng hợp Tín hiệu — Ba Nhóm, Một Điểm số</h2>
-  <p class="sub">Ba nhóm tín hiệu — quant, sentiment, psychology — được tổng hợp thành một điểm số cho mỗi symbol. Khi AI fusion được bật (mặc định trong production), model tự đánh giá toàn bộ factor snapshot và trả về trọng số thành phần riêng của nó; tổng có trọng số cố định bên dưới là <b>fallback</b> tất định, được dùng khi model không khả dụng. Mỗi kết quả được gắn nhãn theo nguồn (AI / rule / rule-fallback). Chỉ đọc (GET); bước này không bao giờ đặt lệnh.</p>
-  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;(các thành phần được giới hạn trong khoảng −1 ~ +1; thành phần thiếu sẽ bị loại trừ và chuẩn hóa lại). Trên CẢ HAI đường: psychology không bao giờ giao dịch một mình, và trọng số của nó không bao giờ vượt quá 0.3 — một kết luận AI tuyên bố khác sẽ bị loại bỏ.</div>
+  <h2><span class="no">BƯỚC 5</span>Hợp Nhất Tín Hiệu — Ba Nhóm, Một Điểm Số</h2>
+  <p class="sub">Ba nhóm tín hiệu — quant, sentiment, psychology — được hợp nhất thành một điểm số cho mỗi symbol. Khi AI fusion được bật (mặc định trong production), mô hình tự đánh giá toàn bộ ảnh chụp yếu tố và trả về trọng số thành phần riêng của nó; tổng có trọng số cố định dưới đây là <b>fallback</b> tất định, được dùng khi mô hình không khả dụng. Mỗi kết quả được gắn nhãn theo nguồn gốc (AI / rule / rule-fallback). Chỉ đọc (GET); bước này không bao giờ đặt lệnh.</p>
+  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;(các thành phần bị giới hạn −1 ~ +1; thành phần thiếu sẽ bị loại trừ và chuẩn hóa lại). Trên CẢ HAI đường: psychology không bao giờ giao dịch một mình, và trọng số của nó không bao giờ được vượt quá 0.3 — một phán quyết của AI tuyên bố khác đi sẽ bị loại bỏ.</div>
 
   <div class="diagram">
   <svg viewBox="0 0 940 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal fusion">
@@ -331,8 +331,8 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <text x="145" y="48" text-anchor="middle" class="sv-t">Quant (BƯỚC 3)</text>
       <text x="145" y="66" text-anchor="middle" class="sv-s">signal_score ÷ 4 → −1 ~ +1</text>
       <rect x="20" y="112" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="136" text-anchor="middle" class="sv-t">Sentiment (StockTwits)</text>
-      <text x="145" y="154" text-anchor="middle" class="sv-s">(bullish − bearish) ÷ total scored</text>
+      <text x="145" y="136" text-anchor="middle" class="sv-t">Tâm lý thị trường (StockTwits)</text>
+      <text x="145" y="154" text-anchor="middle" class="sv-s">(tăng − giảm) ÷ tổng số được chấm điểm</text>
       <rect x="20" y="200" width="250" height="60" rx="10" class="sv-acc"/>
       <text x="145" y="224" text-anchor="middle" class="sv-t">Psychology (BƯỚC 4)</text>
       <text x="145" y="242" text-anchor="middle" class="sv-s">F&amp;G Δ + spikes + Δodds kết hợp</text>
@@ -342,7 +342,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M270 230 H400 Q430 230 442 166" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
     <text x="330" y="44" class="sv-m" fill="var(--accent)">w = 0.5</text>
     <text x="330" y="132" class="sv-m" fill="var(--accent)">w = 0.3</text>
-    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2 (giới hạn 0.3 — cấu trúc)</text>
+    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2 (giới hạn 0.3 — có tính cấu trúc)</text>
     <circle cx="480" cy="142" r="34" class="sv-card" stroke-width="2"/>
     <text x="480" y="138" text-anchor="middle" class="sv-t" style="font-size:17px">Σ</text>
     <text x="480" y="156" text-anchor="middle" class="sv-s">tổng có trọng số</text>
@@ -351,35 +351,35 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <rect x="584" y="96" width="336" height="92" rx="10" class="sv-card"/>
     <text x="752" y="118" text-anchor="middle" class="sv-t">Ngưỡng quyết định</text>
     <rect x="604" y="132" width="98" height="24" rx="6" class="sv-bad"/>
-    <text x="653" y="148" text-anchor="middle" class="sv-s" fill="var(--critical)">BÁN ≤ −0.25</text>
+    <text x="653" y="148" text-anchor="middle" class="sv-s" fill="var(--critical)">SELL ≤ −0.25</text>
     <rect x="706" y="132" width="92" height="24" rx="6" class="sv-box"/>
     <text x="752" y="148" text-anchor="middle" class="sv-s">HOLD</text>
     <rect x="802" y="132" width="98" height="24" rx="6" class="sv-good"/>
-    <text x="851" y="148" text-anchor="middle" class="sv-s" fill="var(--good-ink)">MUA ≥ +0.25</text>
-    <text x="752" y="176" text-anchor="middle" class="sv-m">mảng missing luôn công bố những gì đang thiếu</text>
+    <text x="851" y="148" text-anchor="middle" class="sv-s" fill="var(--good-ink)">BUY ≥ +0.25</text>
+    <text x="752" y="176" text-anchor="middle" class="sv-m">mảng missing luôn tiết lộ những gì đang thiếu</text>
   </svg>
   </div>
 
-  <h3>Sơ đồ ánh xạ trigger của Framework (triển khai chính xác theo plan §4)</h3>
+  <h3>Ánh xạ kích hoạt khung (implemented exactly as plan §4)</h3>
   <table>
-    <thead><tr><th>Hướng</th><th>Trigger</th><th>Ngưỡng (mặc định)</th></tr></thead>
+    <thead><tr><th>Direction</th><th>Trigger</th><th>Ngưỡng (mặc định)</th></tr></thead>
     <tbody>
-      <tr><td><span class="tag ok">Mua</span></td><td>Phục hồi từ sợ hãi: thay đổi F&amp;G 3 ngày</td><td>Δ3d ≥ +10</td></tr>
-      <tr><td><span class="tag ok">Mua</span></td><td>Sự thống trị của sentiment đám đông</td><td>sentiment &gt; +0.2</td></tr>
-      <tr><td><span class="tag ok">Mua</span></td><td>Chênh lệch Spot–futures</td><td>basis ≥ +1.2%</td></tr>
-      <tr><td><span class="tag ok">Mua</span></td><td>Định giá lại thị trường dự đoán</td><td>Δodds ≥ +0.05 / 24h</td></tr>
-      <tr><td><span class="tag crit">Bán</span></td><td>Quá mua</td><td>RSI ≥ 70</td></tr>
-      <tr><td><span class="tag crit">Bán</span></td><td>Đợt tăng đột biến sentiment tiêu cực</td><td>z ≤ −2</td></tr>
-      <tr><td><span class="tag warn">Giảm</span></td><td>Cú sốc biến động (proxy thanh lý)</td><td>|return| > 3σ → ứng viên breaker</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Fear recovery: thay đổi F&amp;G trong 3 ngày</td><td>Δ3d ≥ +10</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Ưu thế tâm lý đám đông</td><td>mức độ tình cảm &gt; +0.2</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Chênh lệch Spot–futures</td><td>basis ≥ +1.2%</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Định giá lại thị trường dự đoán</td><td>Δodds ≥ +0.05 / 24h</td></tr>
+      <tr><td><span class="tag crit">Sell</span></td><td>Quá mua</td><td>RSI ≥ 70</td></tr>
+      <tr><td><span class="tag crit">Sell</span></td><td>Đột biến tâm lý tiêu cực</td><td>z ≤ −2</td></tr>
+      <tr><td><span class="tag warn">Reduce</span></td><td>Cú sốc biến động (chỉ báo thanh lý)</td><td>|return| &gt; 3σ → ứng viên breaker</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>Mức trần psychology mang tính cấu trúc.</b> Hai đảm bảo được duy trì trên cả hai đường AI và trọng số cố định. Thứ nhất, <b>psychology không bao giờ giao dịch một mình</b>: khi không có quant và không có sentiment, kết luận bị buộc là hold theo cấu trúc — mô hình thậm chí không được tham vấn, nên nó không thể lập luận vượt qua quy tắc. Thứ hai, trọng số psychology không bao giờ được vượt quá 0.3 (<code>PSYCH_WEIGHT_MAX</code>): đường trọng số cố định sẽ chuẩn hóa lại phần vượt; đường AI loại bỏ kết luận nào công bố trọng số psych vượt mức trần và quay về điểm số tất định. "Không giao dịch dựa trên psychology" là một ràng buộc, không phải một hướng dẫn.</div>
+  <div class="note red"><b>Giới hạn tâm lý mang tính cấu trúc.</b> Hai đảm bảo luôn đúng trên cả hai luồng AI và trọng số cố định. Thứ nhất, <b>tâm lý không bao giờ giao dịch một mình</b>: khi không có định lượng và không có tâm lý thị trường, phán quyết bị buộc phải là hold theo thiết kế — mô hình thậm chí không được tham vấn, nên nó không thể lập luận vượt qua quy tắc. Thứ hai, trọng số tâm lý không bao giờ vượt quá 0.3 (<code>PSYCH_WEIGHT_MAX</code>): luồng trọng số cố định sẽ chuẩn hóa lại phần vượt quá; luồng AI sẽ loại bỏ phán quyết nào công bố trọng số tâm lý vượt giới hạn và quay về điểm số tất định. "Không giao dịch dựa trên tâm lý" là một ràng buộc, không phải một khuyến nghị.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 6 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 6</span>AI 4-Analysts + Trader Debate — Quyết Định Cuối Cùng</h2>
-  <p class="sub">Đây là engine đưa ra các quyết định giao dịch thực tế. Bốn analyst mỗi người viết một bản tóm tắt ngắn, sau đó trader + risk team tranh luận để đưa ra một quyết định và một báo cáo bằng văn bản.</p>
+  <h2><span class="no">BƯỚC 6</span>AI 4 Nhà Phân Tích + Tranh Luận Trader — Quyết Định Cuối Cùng</h2>
+  <p class="sub">Đây là bộ máy đưa ra quyết định giao dịch thực tế. Bốn nhà phân tích mỗi người viết một bản tóm tắt ngắn, sau đó nhóm trader + rủi ro tranh luận để đưa ra một quyết định và một báo cáo bằng văn bản.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-analyst structure">
@@ -391,20 +391,20 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
     <g>
       <rect x="20" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="125" y="42" text-anchor="middle" class="sv-t">① News Analyst</text>
-      <text x="125" y="58" text-anchor="middle" class="sv-s">market·macro news + sentiment scores</text>
+      <text x="125" y="42" text-anchor="middle" class="sv-t">① Nhà Phân Tích Tin Tức</text>
+      <text x="125" y="58" text-anchor="middle" class="sv-s">tin tức thị trường·vĩ mô + điểm tâm lý</text>
       <text x="125" y="73" text-anchor="middle" class="sv-m">AV NEWS_SENTIMENT · FinnHub</text>
       <rect x="250" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="355" y="42" text-anchor="middle" class="sv-t">② Sentiment Analyst</text>
-      <text x="355" y="58" text-anchor="middle" class="sv-s">ticker·market sentiment rollup</text>
-      <text x="355" y="73" text-anchor="middle" class="sv-m">StockTwits crowd data</text>
+      <text x="355" y="42" text-anchor="middle" class="sv-t">② Nhà Phân Tích Tâm Lý</text>
+      <text x="355" y="58" text-anchor="middle" class="sv-s">tổng hợp tâm lý ticker·thị trường</text>
+      <text x="355" y="73" text-anchor="middle" class="sv-m">dữ liệu đám đông StockTwits</text>
       <rect x="480" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="585" y="42" text-anchor="middle" class="sv-t">③ Fundamental·Macro</text>
-      <text x="585" y="58" text-anchor="middle" class="sv-s">macro regime + prediction markets</text>
+      <text x="585" y="42" text-anchor="middle" class="sv-t">③ Cơ Bản·Vĩ Mô</text>
+      <text x="585" y="58" text-anchor="middle" class="sv-s">chế độ vĩ mô + thị trường dự đoán</text>
       <text x="585" y="73" text-anchor="middle" class="sv-m">FRED · Polymarket</text>
       <rect x="710" y="20" width="210" height="62" rx="10" class="sv-acc"/>
-      <text x="815" y="42" text-anchor="middle" class="sv-t">④ Technical Analyst</text>
-      <text x="815" y="58" text-anchor="middle" class="sv-s">crypto feeds in STEP 3 quant</text>
+      <text x="815" y="42" text-anchor="middle" class="sv-t">④ Nhà Phân Tích Kỹ Thuật</text>
+      <text x="815" y="58" text-anchor="middle" class="sv-s">dữ liệu crypto trong định lượng BƯỚC 3</text>
       <text x="815" y="73" text-anchor="middle" class="sv-m">RSI·MA·σ·funding·basis</text>
     </g>
     <path d="M125 82 V120 H470" class="sv-line"/>
@@ -412,34 +412,34 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M585 82 V120" class="sv-line"/>
     <path d="M815 82 V120 H470 M470 120 V138" class="sv-line" marker-end="url(#ar3)"/>
     <rect x="290" y="140" width="360" height="56" rx="10" class="sv-warn"/>
-    <text x="470" y="162" text-anchor="middle" class="sv-t">Trader + Risk Team Debate</text>
+    <text x="470" y="162" text-anchor="middle" class="sv-t">Tranh Luận Nhóm Trader + Rủi Ro</text>
     <text x="470" y="180" text-anchor="middle" class="sv-s">tổng hợp bốn bản tóm tắt thành một quyết định (một lệnh gọi LLM duy nhất)</text>
     <path d="M470 196 V222" class="sv-goodline" marker-end="url(#ar3g)"/>
     <rect x="270" y="224" width="400" height="30" rx="8" class="sv-good"/>
-    <text x="470" y="244" text-anchor="middle" class="sv-t">Decision: BUY / SELL / HOLD + confidence (0~1) + báo cáo bằng văn bản</text>
+    <text x="470" y="244" text-anchor="middle" class="sv-t">Quyết định: BUY / SELL / HOLD + độ tin cậy (0~1) + báo cáo bằng văn bản</text>
   </svg>
   </div>
 
   <ul>
     <li><b>Với một LLM</b> — nhà cung cấp đã cấu hình (OpenAI, Gemini, Grok, Qwen, GLM, local, OpenRouter, Anthropic) tạo ra các bản tóm tắt và cuộc tranh luận.</li>
-    <li><b>Không có LLM</b> — một <b>cơ chế dự phòng dựa trên quy tắc tất định</b> theo từng vai trò tạo ra các bản tóm tắt và quyết định theo cùng định dạng từ cùng dữ liệu. Engine không bao giờ bị đình trệ.</li>
-    <li>Lỗi thực tế được tìm thấy và sửa trong red-team review: confidence dựa trên quy tắc sử dụng score thay vì |score|, khiến <b>quyết định sell không thể đạt tới</b> → đã sửa (<code>105d7e6</code>).</li>
+    <li><b>Không có LLM</b> — một <b>cơ chế dự phòng dựa trên quy tắc tất định</b> theo từng vai trò tạo ra các bản tóm tắt và quyết định theo cùng định dạng từ cùng dữ liệu. Bộ máy không bao giờ bị đình trệ.</li>
+    <li>Lỗi thực tế được phát hiện và sửa trong đánh giá red-team: độ tin cậy dựa trên quy tắc dùng score thay vì |score|, khiến <b>quyết định sell không thể đạt được</b> → đã sửa (<code>105d7e6</code>).</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 7 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 7</span>Automation Rules — Người Dùng Quyết Định Điều Gì</h2>
-  <p class="sub">Phạm vi và mức độ tự động hóa hoàn toàn do người dùng cấu hình. Một tick tự động hóa chạy mỗi 60 giây và chỉ thực thi các quy tắc "enabled and due". Giao diện cung cấp ba chế độ — ① Simple (chỉ chọn coin & khẩu vị rủi ro), ② Standard (tinh chỉnh các preset được đề xuất), ③ Expert (kiểm soát toàn bộ tham số).</p>
+  <h2><span class="no">BƯỚC 7</span>Quy Tắc Tự Động Hóa — Người Dùng Quyết Định Điều Gì</h2>
+  <p class="sub">Phạm vi và mức độ tự động hóa hoàn toàn do người dùng cấu hình. Một tick tự động hóa chạy mỗi 60 giây và chỉ thực thi các quy tắc "đã bật và đến hạn". Giao diện cung cấp ba chế độ — ① Đơn giản (chỉ chọn coin &amp; khẩu vị rủi ro), ② Tiêu chuẩn (tinh chỉnh các preset được đề xuất), ③ Chuyên gia (kiểm soát toàn bộ tham số).</p>
   <table>
-    <thead><tr><th>Thiết lập</th><th>Phạm vi / mặc định</th><th>Ý nghĩa</th></tr></thead>
+    <thead><tr><th>Cài đặt</th><th>Phạm vi / mặc định</th><th>Ý nghĩa</th></tr></thead>
     <tbody>
       <tr><td><code>symbol</code></td><td>BTC, NVDA … hoặc <b>SCANNER</b></td><td>Mục tiêu phân tích. Với SCANNER, tự động chọn ứng viên #1 của scanner tại thời điểm đó</td></tr>
-      <tr><td><code>market</code></td><td>crypto · us-stock</td><td>Cổ phiếu Mỹ bỏ qua việc khớp lệnh khi thị trường đóng cửa (phân tích vẫn chạy, lý do được ghi log)</td></tr>
+      <tr><td><code>market</code></td><td>crypto · cổ phiếu Mỹ</td><td>Cổ phiếu Mỹ bỏ qua khớp lệnh khi thị trường đóng cửa (vẫn chạy phân tích, lý do được ghi lại)</td></tr>
       <tr><td><code>interval_minutes</code></td><td>5 ~ 1440 (mặc định 60)</td><td>Khoảng thời gian phân tích</td></tr>
-      <tr><td><code>min_confidence</code></td><td>0 ~ 1 (mặc định <b>0.65</b>)</td><td>Các quyết định dưới mức độ tin cậy này chỉ được ghi log, không bao giờ khớp lệnh</td></tr>
-      <tr><td><code>auto_execute</code></td><td>on / off (mặc định <b>off</b>)</td><td>Off = chế độ chỉ tạo tín hiệu thuần túy — con người xem xét và quyết định</td></tr>
-      <tr><td><code>account_type</code></td><td>simulator · real</td><td><b>Chỉ simulator mới khớp lệnh.</b> real chỉ chạy phân tích và ghi log, không bao giờ đặt lệnh (bất biến trong code)</td></tr>
+      <tr><td><code>min_confidence</code></td><td>0 ~ 1 (mặc định <b>0.65</b>)</td><td>Các quyết định dưới mức độ tin cậy này chỉ được ghi lại, không bao giờ khớp lệnh</td></tr>
+      <tr><td><code>auto_execute</code></td><td>on / off (mặc định <b>off</b>)</td><td>Off = chế độ thuần tạo tín hiệu — con người xem xét và quyết định</td></tr>
+      <tr><td><code>account_type</code></td><td>mô phỏng · thực</td><td><b>Chỉ simulator khớp lệnh.</b> real chỉ chạy phân tích và ghi log, không bao giờ đặt lệnh (bất biến trong code)</td></tr>
     </tbody>
   </table>
 
@@ -450,19 +450,19 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <line x1="30" y1="75" x2="910" y2="75" class="sv-line" marker-end="url(#ar4)"/>
     <g>
       <circle cx="70" cy="75" r="5" fill="var(--accent)"/>
-      <text x="70" y="52" text-anchor="middle" class="sv-t">60s tick</text>
+      <text x="70" y="52" text-anchor="middle" class="sv-t">tick 60s</text>
       <text x="70" y="102" text-anchor="middle" class="sv-s">chọn các quy tắc đến hạn</text>
       <circle cx="240" cy="75" r="5" fill="var(--accent)"/>
       <text x="240" y="52" text-anchor="middle" class="sv-t">Chạy phân tích</text>
-      <text x="240" y="102" text-anchor="middle" class="sv-s">STEP 6 (4-analysts)</text>
+      <text x="240" y="102" text-anchor="middle" class="sv-s">BƯỚC 6 (4 chuyên gia phân tích)</text>
       <circle cx="410" cy="75" r="5" fill="var(--accent)"/>
-      <text x="410" y="52" text-anchor="middle" class="sv-t">Kiểm tra điều kiện ba lớp</text>
+      <text x="410" y="52" text-anchor="middle" class="sv-t">Kiểm tra điều kiện bộ ba</text>
       <text x="410" y="102" text-anchor="middle" class="sv-s">auto_execute ∧ BUY/SELL ∧ confidence≥min</text>
       <circle cx="600" cy="75" r="5" fill="var(--yellow)"/>
-      <text x="600" y="52" text-anchor="middle" class="sv-t">Cổng kiểm soát rủi ro</text>
-      <text x="600" y="102" text-anchor="middle" class="sv-s">STEP 8 phải vượt qua</text>
+      <text x="600" y="52" text-anchor="middle" class="sv-t">Cổng rủi ro</text>
+      <text x="600" y="102" text-anchor="middle" class="sv-s">BƯỚC 8 phải vượt qua</text>
       <circle cx="760" cy="75" r="5" fill="var(--good)"/>
-      <text x="760" y="52" text-anchor="middle" class="sv-t">Khớp lệnh giả lập (Paper fill)</text>
+      <text x="760" y="52" text-anchor="middle" class="sv-t">Khớp lệnh mô phỏng</text>
       <text x="760" y="102" text-anchor="middle" class="sv-s">SL/TP được thiết lập cùng nhau</text>
       <circle cx="880" cy="75" r="5" fill="var(--muted)"/>
       <text x="880" y="52" text-anchor="middle" class="sv-t">Nhật ký</text>
@@ -470,13 +470,13 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </g>
   </svg>
   </div>
-  <div class="note">Nếu bất kỳ điều kiện nào trong ba điều kiện không đạt, <b>quyết định được ghi log mà không khớp lệnh</b> — lý do tại sao chúng ta không mua cũng trở thành dữ liệu.</div>
+  <div class="note">Nếu bất kỳ điều kiện nào trong ba điều kiện không đạt, <b>quyết định được ghi lại mà không khớp lệnh</b> — lý do vì sao chúng ta không mua cũng trở thành dữ liệu.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 8 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 8</span>Risk Gate — Mục "Bắt buộc" của Framework</h2>
-  <p class="sub">Mọi lệnh tự động phải vượt qua cổng kiểm soát ba lớp, không có ngoại lệ. Cổng này chỉ có thể <b>thu nhỏ</b> hoặc <b>từ chối</b> một lệnh — không bao giờ mở rộng nó.</p>
+  <h2><span class="no">BƯỚC 8</span>Cổng Rủi ro — Mục "Bắt buộc" của Framework</h2>
+  <p class="sub">Mọi lệnh tự động phải vượt qua cổng bộ ba, không có ngoại lệ. Cổng chỉ có thể <b>thu nhỏ</b> hoặc <b>từ chối</b> một lệnh — không bao giờ phóng to nó.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk gate flow">
@@ -490,86 +490,86 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
     <rect x="20" y="30" width="150" height="52" rx="10" class="sv-card"/>
     <text x="95" y="52" text-anchor="middle" class="sv-t">Ý định lệnh</text>
-    <text x="95" y="69" text-anchor="middle" class="sv-s">symbol·side·qty·price</text>
+    <text x="95" y="69" text-anchor="middle" class="sv-s">ký hiệu·chiều·khối lượng·giá</text>
     <path d="M170 56 H206" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="208" y="18" width="222" height="86" rx="10" class="sv-warn"/>
-    <text x="319" y="40" text-anchor="middle" class="sv-t">① Kelly Sizing</text>
-    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½-Kelly × equity cap</text>
-    <text x="319" y="74" text-anchor="middle" class="sv-s">nhật ký riêng (tối thiểu 10 lệnh) · f*≤0 từ chối lệnh mua</text>
+    <text x="319" y="40" text-anchor="middle" class="sv-t">① Định cỡ Kelly</text>
+    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½-Kelly × giới hạn vốn</text>
+    <text x="319" y="74" text-anchor="middle" class="sv-s">nhật ký riêng (tối thiểu 10 giao dịch) · f*≤0 từ chối lệnh mua</text>
     <text x="319" y="92" text-anchor="middle" class="sv-m">tùy chọn không tham gia theo từng agent qua use_kelly=0</text>
     <path d="M430 56 H466" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="468" y="18" width="212" height="86" rx="10" class="sv-warn"/>
-    <text x="574" y="40" text-anchor="middle" class="sv-t">② Kiểm tra giới hạn</text>
+    <text x="574" y="40" text-anchor="middle" class="sv-t">② Kiểm tra Giới hạn</text>
     <text x="574" y="58" text-anchor="middle" class="sv-s">lỗ thực hiện hàng ngày ≤ $1,000 (UTC)</text>
     <text x="574" y="72" text-anchor="middle" class="sv-s">mỗi symbol ≤ $10,000 · danh mục ≤ 60% vốn · ≤ 8 vị thế</text>
     <text x="574" y="90" text-anchor="middle" class="sv-m">giới hạn danh mục mặc định bật · tinh chỉnh qua PUT /api/risk/limits</text>
     <path d="M680 56 H716" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="718" y="18" width="202" height="86" rx="10" class="sv-warn"/>
-    <text x="819" y="40" text-anchor="middle" class="sv-t">③ Circuit Breaker</text>
-    <text x="819" y="58" text-anchor="middle" class="sv-s">phạm vi toàn hệ thống (system·3σ shock)</text>
+    <text x="819" y="40" text-anchor="middle" class="sv-t">③ Bộ ngắt mạch</text>
+    <text x="819" y="58" text-anchor="middle" class="sv-s">phạm vi toàn cục (system·cú sốc 3σ)</text>
     <text x="819" y="74" text-anchor="middle" class="sv-s">phạm vi agent (HALT thủ công)</text>
     <text x="819" y="92" text-anchor="middle" class="sv-m">một trong hai bị dừng → từ chối</text>
 
     <path d="M819 104 V150" class="sv-goodline" marker-end="url(#ar5g)"/>
     <text x="848" y="132" class="sv-m" fill="var(--good)">PASS</text>
     <rect x="640" y="152" width="286" height="64" rx="10" class="sv-good"/>
-    <text x="783" y="176" text-anchor="middle" class="sv-t">Khớp lệnh (qty có thể bị giảm theo Kelly)</text>
-    <text x="783" y="194" text-anchor="middle" class="sv-s">vị thế mua được tự động thiết lập SL −5% · TP +10%</text>
+    <text x="783" y="176" text-anchor="middle" class="sv-t">Khớp lệnh (số lượng có thể bị giảm theo Kelly)</text>
+    <text x="783" y="194" text-anchor="middle" class="sv-s">vị thế mua được tự động đặt SL −5% · TP +10%</text>
 
     <path d="M319 104 V178 H240" class="sv-badline" marker-end="url(#ar5r)"/>
     <text x="345" y="140" class="sv-m" fill="var(--critical)">THẤT BẠI (ở bất kỳ giai đoạn nào)</text>
     <rect x="30" y="152" width="208" height="52" rx="10" class="sv-bad"/>
-    <text x="134" y="174" text-anchor="middle" class="sv-t">Từ chối + lý do được ghi nhận</text>
+    <text x="134" y="174" text-anchor="middle" class="sv-t">Từ chối + lý do được ghi nhật ký</text>
     <text x="134" y="191" text-anchor="middle" class="sv-s">"lý do không" cũng được ghi lại</text>
 
     <!-- watcher loop -->
     <rect x="20" y="240" width="900" height="70" rx="10" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="470" y="264" text-anchor="middle" class="sv-t">Bộ giám sát SL/TP — quét toàn bộ vị thế đang mở mỗi 30 giây</text>
-    <text x="470" y="284" text-anchor="middle" class="sv-s">Nếu giá được thăm dò vượt qua stop_loss / take_profit, nó sẽ tự động đóng lệnh. Việc đóng lệnh làm giảm rủi ro, nên nó cố ý bỏ qua cổng kiểm soát —</text>
-    <text x="470" y="300" text-anchor="middle" class="sv-s">một giới hạn lỗ hằng ngày bị vi phạm hoặc trạng thái HALT không bao giờ có thể giữ kẹt một vị thế đang mở, theo thiết kế</text>
+    <text x="470" y="264" text-anchor="middle" class="sv-t">trình theo dõi SL/TP — quét tất cả các vị thế đang mở mỗi 30 giây</text>
+    <text x="470" y="284" text-anchor="middle" class="sv-s">Nếu giá được thăm dò vượt qua stop_loss / take_profit, nó sẽ tự động đóng. Việc đóng vị thế làm giảm rủi ro, do đó nó cố ý bỏ qua cổng kiểm soát —</text>
+    <text x="470" y="300" text-anchor="middle" class="sv-s">một giới hạn lỗ hàng ngày bị vi phạm hoặc trạng thái HALT không bao giờ có thể giữ kẹt một vị thế đang mở, theo thiết kế</text>
   </svg>
   </div>
 
-  <h3>Công thức Kelly hoạt động như thế nào</h3>
-  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = tỷ lệ thắng, R = trung bình lãi/trung bình lỗ &nbsp;&nbsp;·&nbsp;&nbsp; mức trần lệnh = ½ f* × vốn chủ sở hữu (tiền mặt + giá trị nắm giữ)</div>
+  <h3>Công thức Kelly làm gì</h3>
+  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = tỷ lệ thắng, R = mức thắng TB/mức thua TB &nbsp;&nbsp;·&nbsp;&nbsp; giới hạn lệnh = ½ f* × vốn chủ sở hữu (tiền mặt + giá trị nắm giữ)</div>
   <ul>
-    <li>W và R được tính từ <b>nhật ký chốt lệnh của chính agent</b> (phát lại theo giá vốn bình quân, giới hạn ở 5.000 bản ghi gần nhất) — thành tích của chính nó, không phải của ai khác.</li>
-    <li>Dưới 10 giao dịch đã đóng thì không có cơ sở thống kê, nên không có điều chỉnh nào được thực hiện (để tránh sự tự tin thái quá).</li>
-    <li>f* ≤ 0 nghĩa là "không có lợi thế" — lệnh mua đó bị từ chối. Một lệnh đã giảm dưới $1 là vô nghĩa, nên nó cũng bị từ chối.</li>
+    <li>W và R được tính từ <b>nhật ký đóng vị thế của chính tác nhân</b> (phát lại theo giá vốn bình quân, giới hạn ở 5.000 bản ghi gần nhất) — thành tích của chính nó, không phải của ai khác.</li>
+    <li>Dưới 10 giao dịch đã đóng thì không có cơ sở thống kê, nên không có điều chỉnh nào được thực hiện (đề phòng sự tự tin thái quá).</li>
+    <li>f* ≤ 0 nghĩa là "không có lợi thế" — lệnh mua đó bị từ chối. Một lệnh đã giảm dưới $1 là vô nghĩa, nên cũng bị từ chối.</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 9 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 9</span>Khớp lệnh và Quản lý Vị thế — Toàn Bộ Trên Giấy, Toàn Bộ Trên Sổ Cái</h2>
-  <p class="sub">Khớp lệnh dùng chính xác cùng một sổ cái như giao dịch thủ công: một dòng signals (signal_type='automation') + cập nhật vị thế + cập nhật tiền mặt + phí — trong cùng một giao dịch.</p>
+  <h2><span class="no">BƯỚC 9</span>Khớp lệnh và Quản lý Vị thế — Toàn bộ Ảo, Toàn bộ trên Sổ cái</h2>
+  <p class="sub">Khớp lệnh sử dụng chính xác cùng một sổ cái như giao dịch thủ công: một dòng signals (signal_type='automation') + cập nhật vị thế + cập nhật tiền mặt + phí — bên trong một giao dịch (transaction).</p>
   <ul>
-    <li><b>Mua:</b> kiểm tra tiền mặt → khớp lệnh → đăng ký SL/TP trên dòng vị thế trong cùng một giao dịch (giá trị được tính bởi cổng kiểm soát, mặc định −5% / +10%).</li>
-    <li><b>Bán:</b> chỉ thực hiện với một vị thế mua hiện có — nếu không sẽ bị bỏ qua với "không có vị thế mua để bán". Không bán khống.</li>
-    <li><b>Cổ phiếu Mỹ:</b> không khớp lệnh khi thị trường đóng cửa — chỉ phân tích và ghi nhật ký (skip_reason được lưu).</li>
-    <li><b>Theo dõi giá:</b> lãi/lỗ chưa thực hiện được tính từ việc <code>price_fetcher</code>thăm dò, không qua broker — bộ giám sát đánh giá SL/TP dựa trên các mức giá này.</li>
-    <li><b>Tài khoản thật:</b> các quy tắc account_type='real' vẫn chạy phân tích, nhưng <b>mã lệnh đơn giản là chưa được kết nối.</b>Việc tích hợp sàn giao dịch thực (real broker) là một giai đoạn trong tương lai, dưới dạng một hệ thống con riêng biệt.</li>
+    <li><b>Mua:</b> kiểm tra tiền mặt → khớp lệnh → đăng ký SL/TP trên dòng vị thế trong cùng một giao dịch (giá trị được tính bởi gate, mặc định −5% / +10%).</li>
+    <li><b>Bán:</b> chỉ thực thi đối với vị thế mua (long) hiện có — nếu không sẽ bị bỏ qua với "no long position to sell". Không bán khống (shorting).</li>
+    <li><b>Cổ phiếu Mỹ:</b> không khớp lệnh khi thị trường đóng cửa — chỉ phân tích và ghi log (skip_reason được lưu).</li>
+    <li><b>Theo dõi giá:</b> lãi/lỗ chưa thực hiện được tính từ <code>price_fetcher</code> polling, không qua broker — bộ theo dõi (watcher) đánh giá SL/TP dựa trên các mức giá này.</li>
+    <li><b>Tài khoản thật:</b> các quy tắc account_type='real' vẫn chạy phân tích, nhưng <b>mã lệnh giao dịch (order code) đơn giản là không được kết nối chút nào.</b>Việc tích hợp broker thực sẽ là một giai đoạn trong tương lai, dưới dạng một hệ thống con riêng biệt.</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 10 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">BƯỚC 10</span>Nhật ký · Đánh giá — Một Tín Hiệu Là Một Phép Đo, Không Phải Một Dự Đoán</h2>
-  <p class="sub">Hệ thống chỉ cải thiện khi mọi quyết định đều có thể được tái dựng lại. Những gì mỗi lớp ghi lại:</p>
+  <h2><span class="no">BƯỚC 10</span>Nhật ký · Đánh giá — Tín Hiệu Là Một Phép Đo, Không Phải Một Dự Đoán</h2>
+  <p class="sub">Hệ thống chỉ cải thiện khi mọi quyết định đều có thể được tái dựng. Những gì mỗi lớp ghi lại:</p>
   <table>
     <thead><tr><th>Bản ghi</th><th>Nội dung</th><th>Xem ở đâu</th></tr></thead>
     <tbody>
-      <tr><td><code>signals</code> sổ cái</td><td>Khớp lệnh, khối lượng, giá, phí, SL/TP — cùng định dạng như giao dịch thủ công</td><td>Hồ sơ agent · feed</td></tr>
+      <tr><td><code>signals</code> sổ cái</td><td>Khớp lệnh, số lượng, giá, phí, SL/TP — cùng định dạng với giao dịch thủ công</td><td>Hồ sơ agent · feed</td></tr>
       <tr><td><code>automation_runs</code></td><td>Quyết định của mỗi lần chạy, độ tin cậy, lý do khớp/bỏ qua</td><td>Chi tiết quy tắc tự động hóa</td></tr>
-      <tr><td>6 loại snapshot</td><td>Tin tức, vĩ mô, ETF, phân tích cổ phiếu, tâm lý, scanner — lưu giữ bằng chứng tại thời điểm ra quyết định</td><td>API · Signal Board</td></tr>
-      <tr><td>Sự kiện thử nghiệm</td><td>Nhật ký về thời điểm một trigger kích hoạt (ví dụ: sentiment spike)</td><td>experiments</td></tr>
-      <tr><td>Sự kiện rủi ro</td><td>Lý do từ chối tại gate · lần kích hoạt breaker · watcher đóng lệnh</td><td>/api/risk/* · logs</td></tr>
+      <tr><td>6 loại snapshot</td><td>Tin tức, vĩ mô, ETF, phân tích cổ phiếu, tâm lý, scanner — lưu giữ bằng chứng tại thời điểm ra quyết định</td><td>API · Bảng tín hiệu</td></tr>
+      <tr><td>Sự kiện thực nghiệm</td><td>Nhật ký của thời điểm một trigger kích hoạt (ví dụ: sentiment tăng đột biến)</td><td>experiments</td></tr>
+      <tr><td>Sự kiện rủi ro</td><td>Lý do gate từ chối · breaker kích hoạt · watcher đóng lệnh</td><td>/api/risk/* · logs</td></tr>
     </tbody>
   </table>
-  <div class="note green"><b>Signal Board</b> tập hợp tất cả những điều này trên một màn hình: điểm fusion, các trigger đã/chưa kích hoạt, F&G, các ứng viên từ scanner, các lần chạy tự động gần đây — một cấu trúc cho phép con người kiểm tra phán đoán của máy bất cứ lúc nào.</div>
+  <div class="note green"><b>Signal Board</b> tổng hợp tất cả những điều này trên một màn hình: điểm fusion, các trigger đã/chưa kích hoạt, F&amp;G, các ứng viên từ scanner, các lần chạy tự động gần đây — một cấu trúc cho phép con người kiểm tra phán đoán của máy bất cứ lúc nào.</div>
 </div></section>
 
 <!-- ═══════════════ Three Perspectives ═══════════════ -->
@@ -577,41 +577,41 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <h2><span class="no">§11</span>Ba Góc Nhìn — Trader · CEO · QA</h2>
 
   <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--accent)">T</span><b>Góc nhìn của Trader — "Làm sao để tôi tin tưởng và sử dụng hệ thống này?"</b></div>
+    <div class="persona-head"><span class="persona-icon" style="background:var(--accent)">T</span><b>Góc nhìn của Trader — "Làm sao tôi tin tưởng và sử dụng hệ thống này?"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>Kỷ luật được thực thi trong code.</b> Mức trần trọng số tâm lý (0.3), số mẫu tối thiểu của Kelly (10 giao dịch), gate độ tin cậy (0.65) — ngay cả khi con người phấn khích, hệ thống cũng không thể.</li>
-        <li><b>Mỗi tín hiệu đều đi kèm các câu bằng chứng.</b> Không chỉ là "BUY 0.36" mà là "giá trên MA20 + funding trung tính + F&G extreme fear, recovery chưa kích hoạt" — đọc và tự quyết định xem bạn có đồng ý hay không.</li>
-        <li><b>Thua lỗ được cắt ở hai lớp.</b> Theo từng vị thế (SL −5%) và theo từng tài khoản (1.000 đô-la mỗi ngày). Watcher đóng lệnh bỏ qua gate, nên việc thoát lệnh luôn khả thi ngay cả trong trạng thái lockout.</li>
-        <li><b>Lộ trình được khuyến nghị:</b> ① chỉ theo dõi tín hiệu trong vài tuần với auto_execute tắt → ② khi nhật ký giao dịch của bạn đạt 10 lệnh và Kelly bật lên, tự động hóa với khối lượng nhỏ → ③ điều chỉnh min_confidence theo tính khí của riêng bạn. Đừng vội hạ xuống 0.5 — mức mặc định thận trọng 0.65 tồn tại là có lý do.</li>
+        <li><b>Kỷ luật được thực thi bằng code.</b> Giới hạn trọng số tâm lý (0.3), số mẫu tối thiểu Kelly (10 giao dịch), ngưỡng độ tin cậy (0.65) — ngay cả khi con người phấn khích, hệ thống cũng không thể.</li>
+        <li><b>Mọi tín hiệu đều đi kèm các câu bằng chứng.</b> Không chỉ là "BUY 0.36" mà là "giá trên MA20 + funding trung tính + F&amp;G sợ hãi cực độ, phục hồi chưa kích hoạt" — đọc và tự quyết định xem bạn có đồng ý hay không.</li>
+        <li><b>Thua lỗ được cắt ở hai lớp.</b> Theo từng vị thế (SL −5%) và theo từng tài khoản (mỗi ngày $1,000). Watcher đóng lệnh bỏ qua gate, vì vậy việc thoát lệnh luôn khả thi ngay cả trong trạng thái lockout.</li>
+        <li><b>Lộ trình được đề xuất:</b>  ① chỉ theo dõi tín hiệu trong vài tuần với auto_execute tắt → ② khi nhật ký giao dịch của bạn đạt 10 lệnh và Kelly được bật, tự động hóa với kích thước nhỏ → ③ tinh chỉnh min_confidence theo tính khí của riêng bạn. Đừng vội hạ xuống 0.5 — mức mặc định thận trọng 0.65 tồn tại là có lý do.</li>
       </ul>
     </div>
   </div>
 
   <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>Góc nhìn của CEO — "Vì sao thiết kế này là lợi thế sản phẩm"</b></div>
+    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>Góc nhìn của CEO — "Tại sao thiết kế này là lợi thế cạnh tranh của sản phẩm"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>Định vị:</b> không phải một "bot bảo đảm lợi nhuận" mà là một <b>Intelligent Automate Agent — một nền tảng thu thập tín hiệu có thể đo lường + tự động hóa có kỷ luật</b>. Các câu bằng chứng, ảnh chụp nhanh, và khả năng xem xét lại là các yếu tố khác biệt, và chúng đồng thời giảm rủi ro quy định lẫn rủi ro tin cậy.</li>
-        <li><b>Paper-first là một chiến lược.</b> Việc chưa kết nối tài khoản thật không phải là sự chưa hoàn thiện mà là thiết kế theo giai đoạn — người dùng kiểm chứng năng lực của hệ thống mà không chịu rủi ro, chúng tôi cải tiến engine dựa trên dữ liệu quan sát được, sau đó mới bổ sung tích hợp broker (một hệ thống con riêng biệt).</li>
-        <li><b>Cấu trúc chi phí:</b> toàn bộ pipeline hiện tại chạy trên các nguồn miễn phí — mở rộng quy mô với chi phí biên bằng 0. LLM và dữ liệu trả phí (whale/liquidation) là các lớp tùy chọn được thêm vào sau khi có doanh thu.</li>
-        <li><b>Thứ tự lộ trình:</b> P6 whale/liquidation (nguồn trả phí) → kiểm thử ngược chuyên sâu hơn → tích hợp broker thật → chợ agent. Mỗi giai đoạn xây dựng dựa trên dữ liệu của giai đoạn trước.</li>
-        <li><b>Quản lý rủi ro là thương hiệu:</b> "một nền tảng nơi giao dịch bị chi phối bởi tâm lý là điều không thể xảy ra về mặt cấu trúc" vừa là một câu marketing vừa là một sự thật — có thể chứng minh bằng code.</li>
+        <li><b>Định vị:</b> không phải một "bot đảm bảo lợi nhuận" mà là một <b>Intelligent Automate Agent — một nền tảng thu thập tín hiệu có thể đo lường + tự động hóa có kỷ luật</b>. Các câu bằng chứng, ảnh chụp nhanh, và khả năng xem lại là những yếu tố khác biệt, đồng thời giúp giảm rủi ro pháp lý và rủi ro niềm tin.</li>
+        <li><b>Paper-first là một chiến lược.</b> Việc chưa kết nối tài khoản thật không phải là sự chưa hoàn thiện mà là thiết kế theo giai đoạn — người dùng kiểm chứng năng lực của hệ thống mà không chịu rủi ro thật, chúng tôi cải thiện engine dựa trên dữ liệu quan sát được, sau đó mới bổ sung tích hợp broker (một hệ thống con riêng biệt).</li>
+        <li><b>Cấu trúc chi phí:</b> toàn bộ pipeline hiện tại chạy trên các nguồn miễn phí — mở rộng quy mô với chi phí cận biên bằng 0. LLMs và dữ liệu trả phí (whale/liquidation) là các lớp tùy chọn được thêm vào sau khi có doanh thu.</li>
+        <li><b>Thứ tự lộ trình:</b> P6 whale/liquidation (nguồn trả phí) → backtesting sâu hơn → tích hợp broker thật → chợ agent (agent marketplace). Mỗi giai đoạn xây dựng dựa trên dữ liệu của giai đoạn trước.</li>
+        <li><b>Quản lý rủi ro là thương hiệu:</b> "một nền tảng nơi giao dịch theo cảm xúc là điều không thể xảy ra về mặt cấu trúc" vừa là một câu marketing vừa là một sự thật — có thể chứng minh được bằng code.</li>
       </ul>
     </div>
   </div>
 
   <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>Góc nhìn của QA — "Điều gì được xác minh, và bằng cách nào"</b></div>
+    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>Góc nhìn của QA — "Điều gì đã được xác minh, và bằng cách nào"</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>hơn 1.100 bài kiểm thử đạt</b> (bao gồm 126 bài kiểm thử giai đoạn mới: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
-        <li><b>Các bất biến an toàn được cố định bởi kiểm thử:</b> chỉ khớp lệnh mô phỏng · lệnh bán yêu cầu đang giữ vị thế · bỏ qua khi thị trường đóng cửa · không đặt lệnh trên tài khoản thật · cổng chỉ có thể thu hẹp/từ chối.</li>
-        <li><b>Fail-soft được áp dụng xuyên suốt:</b> khi một nguồn bên ngoài gặp lỗi, chỉ thành phần đó bị loại bỏ (được nêu tên trong mảng missing) và phần còn lại của snapshot vẫn được lưu. Trọng số env bị lỗi sẽ quay về giá trị mặc định thay vì trả về lỗi 500.</li>
-        <li><b>Cô lập giai đoạn:</b> cả 5 giai đoạn mặc định tắt qua env-flag — trong một sự cố production, chỉ cần một flag để tắt riêng giai đoạn đó.</li>
-        <li><b>Thành tích của red-team:</b> 6 góc nhìn chuyên gia + đánh giá red-team đã phát hiện và sửa lỗi "sell unreachable" trước khi deploy — bằng chứng cho thấy quy trình đánh giá thực sự hiệu quả.</li>
-        <li><b>Xác minh trực tiếp (2026-07-15):</b> các endpoint fusion, psychology, scanner, và risk đều được xác nhận phục vụ dữ liệu thực trên sooppiy.com (F&amp;G 25, BTC RSI 55.05, ứng viên scanner BSBUSDT ×3.52), không có regression.</li>
-        <li><b>Xác minh còn lại:</b> quan sát dài hạn các lần đóng của watcher (thu thập các lần kích hoạt SL thực trên staging), tích lũy mention-baseline của scanner (≥3 lần quét), theo dõi một lần ngắt tự động thực sự (3σ).</li>
+        <li><b>Hơn 1.100 bài kiểm thử (tests) đạt yêu cầu</b> (bao gồm 126 bài kiểm thử giai đoạn mới: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
+        <li><b>Các bất biến an toàn (safety invariants) được cố định bởi các bài kiểm thử:</b> chỉ khớp lệnh bằng simulator · lệnh bán yêu cầu phải có vị thế đang nắm giữ · bỏ qua khi thị trường đóng cửa · không có lệnh nào trên tài khoản thật · cổng kiểm soát (the gate) chỉ có thể thu hẹp/từ chối.</li>
+        <li><b>Fail-soft được áp dụng xuyên suốt:</b>Khi một nguồn bên ngoài gặp lỗi, chỉ thành phần đó bị loại bỏ (được nêu tên trong mảng missing) và phần còn lại của snapshot vẫn được lưu. Trọng số env bị lỗi sẽ quay về giá trị mặc định thay vì trả về lỗi 500.</li>
+        <li><b>Cách ly theo giai đoạn:</b> cả 5 giai đoạn đều mặc định tắt qua env-flag — trong một sự cố production, chỉ cần một flag để tắt riêng giai đoạn đó.</li>
+        <li><b>Thành tích red-team:</b> 6 góc nhìn chuyên gia + đánh giá red-team đã phát hiện và sửa lỗi "sell unreachable" trước khi triển khai — bằng chứng cho thấy quy trình đánh giá thực sự hiệu quả.</li>
+        <li><b>Xác minh trực tiếp (2026-07-15):</b> các endpoint fusion, psychology, scanner, và risk đều đã được xác nhận cung cấp dữ liệu thực trên sooppiy.com (F&amp;G 25, BTC RSI 55.05, ứng viên scanner BSBUSDT ×3.52), không có hồi quy.</li>
+        <li><b>Xác minh còn lại:</b> quan sát dài hạn các lệnh đóng của watcher (thu thập các lần kích hoạt SL thực trên staging), tích lũy mention-baseline của scanner (≥3 lần scan), theo dõi để có một lần ngắt breaker tự động thực sự (3σ).</li>
       </ul>
     </div>
   </div>
@@ -619,38 +619,38 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 
 <!-- ═══════════════ Reference ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">§12</span>Tham khảo — API · Config Flags</h2>
+  <h2><span class="no">§12</span>Tham khảo — API · Cờ cấu hình</h2>
   <h3>Các API chính</h3>
   <table>
     <thead><tr><th>Endpoint</th><th>Vai trò</th><th>Xác thực</th></tr></thead>
     <tbody>
       <tr><td><code>GET /api/market-intel/fusion</code></td><td>Điểm fusion + trạng thái kích hoạt trigger (STEP 5)</td><td>Công khai</td></tr>
-      <tr><td><code>GET /api/market-intel/psych</code></td><td>F&amp;G, spikes, shock, Δodds (STEP 4)</td><td>Công khai</td></tr>
-      <tr><td><code>GET /api/scanner/candidates</code></td><td>Ứng viên đã xếp hạng + lý do (STEP 2)</td><td>Công khai</td></tr>
-      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>Giới hạn theo từng agent, SL/TP, tùy chọn không dùng Kelly (STEP 8)</td><td>claw_ token</td></tr>
-      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>HALT / resume breaker thủ công</td><td>claw_ token</td></tr>
-      <tr><td><code>/api/automation/*</code></td><td>Tạo/cập nhật rule + lịch sử chạy (STEP 7)</td><td>claw_ token</td></tr>
+      <tr><td><code>GET /api/market-intel/psych</code></td><td>F&amp;G, các đợt tăng đột biến, shock, Δodds (STEP 4)</td><td>Công khai</td></tr>
+      <tr><td><code>GET /api/scanner/candidates</code></td><td>Các ứng viên xếp hạng + lý giải (STEP 2)</td><td>Công khai</td></tr>
+      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>Giới hạn theo từng agent, SL/TP, tùy chọn không dùng Kelly (STEP 8)</td><td>claw_token</td></tr>
+      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>Ngắt HALT / khôi phục thủ công</td><td>claw_token</td></tr>
+      <tr><td><code>/api/automation/*</code></td><td>Tạo/cập nhật quy tắc + lịch sử chạy (STEP 7)</td><td>claw_token</td></tr>
     </tbody>
   </table>
-  <h3>Các flag cô lập giai đoạn (mặc định tất cả tắt · tất cả bật cho server test hiện tại)</h3>
+  <h3>Các cờ cách ly giai đoạn (tất cả mặc định tắt · tất cả bật trên server thử nghiệm hiện tại)</h3>
   <table>
-    <thead><tr><th>Flag</th><th>Giai đoạn</th><th>Cài đặt Companion</th></tr></thead>
+    <thead><tr><th>Cờ</th><th>Giai đoạn</th><th>Cài đặt Companion</th></tr></thead>
     <tbody>
       <tr><td><code>RISK_ENGINE_ENABLED</code></td><td>Cổng STEP 8·9 + watcher</td><td><code>RISK_WATCHER_INTERVAL=30</code></td></tr>
-      <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>Vòng lặp thu thập tâm lý STEP 4</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
+      <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>Vòng lặp thu thập psychology STEP 4</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
       <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>Đường xử lý định lượng crypto STEP 3</td><td>—</td></tr>
       <tr><td><code>SCANNER_ENABLED</code></td><td>Vòng lặp scanner STEP 2</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
       <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>Tín hiệu liên thị trường Kimchi-premium · DXY</td><td>—</td></tr>
-      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>Chặn lệnh vào mới trong khung thời gian sự kiện vĩ mô (mặc định tắt)</td><td>—</td></tr>
-      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>Khóa nguồn ETF-flow thực (gói miễn phí)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
-      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>Theo dõi cá voi (BTC mempool · ETH exchange wallets)</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
-      <tr><td><code>FUSION_W_*</code></td><td>Điều chỉnh trọng số STEP 5</td><td>psych bị giới hạn cứng ở mức 0.3 — config không thể vượt quá</td></tr>
+      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>Chặn các lệnh vào mới trong khung thời gian sự kiện vĩ mô (mặc định tắt)</td><td>—</td></tr>
+      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>Khóa API nguồn ETF-flow thực (gói miễn phí)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
+      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>Theo dõi cá voi (BTC mempool · ví sàn ETH)</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
+      <tr><td><code>FUSION_W_*</code></td><td>Điều chỉnh trọng số STEP 5</td><td>psych bị giới hạn cứng ở mức 0.3 — cấu hình không thể vượt quá</td></tr>
     </tbody>
   </table>
 </div></section>
 
 <footer><div class="wrap">
-  Sooppiy · Hướng dẫn Toàn bộ Quy trình Giao dịch Tự động AI · 2026-07-16 · Mọi con số trong tài liệu này là giá trị thực tế đã được triển khai trong mã nguồn nhánh main; các giá trị thực tế được quan sát trên sooppiy.com vào ngày triển khai. Tài liệu liên quan: <a href="/plan.html" style="color:var(--accent)">Kế hoạch Triển khai</a> · <a href="/framework.html" style="color:var(--accent)">Đặc tả Khung</a>
+  Sooppiy · Hướng Dẫn Toàn Diện Về Giao Dịch Tự Động AI · 2026-07-16 · Mọi số liệu trong tài liệu này là giá trị thực tế đã được triển khai trong mã nguồn nhánh main; các giá trị thực tế được quan sát trên sooppiy.com vào ngày triển khai. Tài liệu liên quan: <a href="/plan.html" style="color:var(--accent)">Kế Hoạch Triển Khai</a> · <a href="/framework.html" style="color:var(--accent)">Đặc Tả Khung</a>
 </div></footer>
 
 </body>

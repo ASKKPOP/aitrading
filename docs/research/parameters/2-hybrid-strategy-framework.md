@@ -1,5 +1,5 @@
 # The Hybrid Framework: Mixing Chart Patterns × Human Psychology
-## 차트 패턴 × 인간 심리 융합 매매 프레임워크
+## A trading framework fusing chart patterns with human psychology
 
 **Built from two rounds of verified deep research (200+ agents, primary-source fact-checked) · July 2026**
 **⚠️ Educational framework, not investment advice. Realistic expectation: 50–55% directional accuracy — the edge comes from confluence + risk management, not any single signal.**
@@ -28,7 +28,7 @@ Signals are additive, not absolute: each satisfied condition adds a point; you a
 
 ## 2. The four-layer decision stack
 
-### LAYER 1 — Psychology regime filter (인간 심리 = 국면 판단) — *"Should I trade at all, and which mode?"*
+### LAYER 1 — Psychology regime filter (human psychology = the regime call) — *"Should I trade at all, and which mode?"*
 | Input | State | Mode |
 |---|---|---|
 | VIX / fear level | < 20 calm | **Trend mode** — follow charts |

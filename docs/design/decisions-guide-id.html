@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bagaimana armada Anda memutuskan untuk berdagang</title>
+<title>Bagaimana armada Anda memutuskan untuk bertransaksi</title>
 <style>
 :root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
  --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
@@ -67,27 +67,27 @@ td strong{color:var(--ink)}
 <body><main>
 
 <div class="eyebrow">Sooppiy · Panduan Anggota</div>
-<h1>Bagaimana armada Anda memutuskan untuk berdagang</h1>
-<p class="lede">Apa yang terjadi di setiap siklus, dari analisis hingga pesanan nyata — dan <strong>bagian mana yang diputuskan oleh AI dibandingkan sistem keamanan</strong>.</p>
+<h1>Bagaimana armada Anda memutuskan untuk bertransaksi</h1>
+<p class="lede">Apa yang terjadi dalam setiap siklus, dari analisis hingga order nyata — dan <strong>bagian mana yang diputuskan AI dibandingkan sistem keamanan</strong>.</p>
 
-<div class="rule"><b>Aturan inti</b><p>Sebuah pesanan diputuskan oleh AI, atau tidak ditempatkan. AI memutuskan <em>apakah</em> untuk berdagang, <em>arah mana</em>, <em>seberapa besar</em>, dan <em>di mana memotong kerugian</em>. Sistem keamanan hanya memutuskan apakah pesanan tersebut <em>diizinkan</em> — pesanan dapat diperkecil atau diperketat, tidak pernah diperbesar.</p></div>
+<div class="rule"><b>Aturan inti</b><p>Sebuah order diputuskan oleh AI, atau tidak ditempatkan. AI memutuskan <em>apakah</em> untuk bertransaksi, <em>ke arah mana</em>, <em>seberapa besar</em>, dan <em>di mana memotong kerugian</em>. Sistem keamanan hanya memutuskan apakah order tersebut <em>diizinkan</em> — sistem ini dapat membuat order lebih kecil atau lebih ketat, tidak pernah lebih besar.</p></div>
 
 <h2>Satu siklus, dari awal hingga akhir</h2>
-<p>Ini berulang pada interval tertentu untuk setiap simbol yang Anda pegang. Setiap langkah baik berhasil dilalui, atau mengakhiri siklus dengan alasan yang tercatat.</p>
+<p>Ini berulang pada interval tertentu untuk setiap simbol yang Anda pegang. Setiap langkah baik lolos, atau mengakhiri siklus dengan alasan yang tercatat.</p>
 <div class="fig">
-  <div class="ft">Dari analisis hingga pesanan</div><div class="fs">Biru = AI yang memutuskan · Oranye = pemeriksaan keamanan</div>
+  <div class="ft">Dari analisis hingga order</div><div class="fs">Biru = AI yang memutuskan · Oranye = pemeriksaan keamanan</div>
   <div class="flow">
     <div class="fr"><div class="fn">1</div><div class="fb ai"><b>Pemeriksaan situasi</b><span>momen biasa, atau kritis?</span></div></div>
     <div class="ar">↓</div>
-    <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Analisis</b><span>pembacaan cepat, atau meja empat analis lengkap</span></div></div>
+    <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Analisis</b><span>pembacaan cepat, atau meja empat analis penuh</span></div></div>
     <div class="ar">↓</div>
     <div class="fr"><div class="fn">3</div><div class="fb ai"><b>Keputusan</b><span>beli · jual · tahan, dengan tingkat keyakinan</span></div></div>
     <div class="ar">↓</div>
-    <div class="fr"><div class="fn">4</div><div class="fb ai"><b>Desain pesanan</b><span>ukuran · stop · target, disesuaikan dengan simbol ini</span></div></div>
+    <div class="fr"><div class="fn">4</div><div class="fb ai"><b>Desain order</b><span>ukuran · stop · target, disesuaikan untuk simbol ini</span></div></div>
     <div class="ar">↓</div>
-    <div class="fr"><div class="fn">5</div><div class="fb sf"><b>Pemeriksaan keamanan</b><span>batas risiko · batas eksposur · imbal hasil vs risiko</span></div></div>
+    <div class="fr"><div class="fn">5</div><div class="fb sf"><b>Pemeriksaan keamanan</b><span>batas risiko · batas eksposur · imbalan vs risiko</span></div></div>
     <div class="ar">↓</div>
-    <div class="fr"><div class="fn">6</div><div class="fb ex"><b>Pesanan</b><span>eksekusi, dicatat beserta alasannya</span></div></div>
+    <div class="fr"><div class="fn">6</div><div class="fb ex"><b>Order</b><span>hasil eksekusi, tercatat dengan alasannya</span></div></div>
   </div>
 </div>
 
@@ -100,66 +100,66 @@ td strong{color:var(--ink)}
     <div class="sg" style="width:4.8%;background:color-mix(in srgb,var(--go) 78%,#000)"><span>1</span></div>
   </div>
   <div class="lgd">
-    <span><i style="background:var(--ai)"></i>AI yang memutuskan — 6 langkah</span>
+    <span><i style="background:var(--ai)"></i>AI memutuskan — 6 langkah</span>
     <span><i style="background:var(--safe)"></i>Pemeriksaan keamanan — 14 langkah</span>
     <span><i style="background:color-mix(in srgb,var(--go) 78%,#000)"></i>Eksekusi — 1</span>
   </div>
-  <p class="cap">Jumlah ini bisa menyesatkan jika berdiri sendiri. 14 langkah keamanan hanya bisa <em>menolak atau memperkecil</em>. Tidak satu pun dari langkah tersebut dapat menciptakan perdagangan atau memilih arah.</p>
+  <p class="cap">Jumlah ini menyesatkan jika dilihat sendiri. 14 langkah keamanan hanya <em>menolak atau memperkecil</em>. Tidak satu pun dari langkah ini dapat menciptakan transaksi atau memilih arah.</p>
 </div>
 <div class="sw"><table>
 <thead><tr><th>Keputusan</th><th>Pemilik</th><th>Apa yang boleh dilakukan pihak lain</th></tr></thead>
 <tbody>
-<tr><td><strong>Berdagang atau tidak</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan dapat memveto, tidak pernah memulai</td></tr>
-<tr><td><strong>Arah mana</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan tidak pernah memilih sisi</td></tr>
+<tr><td><strong>Bertransaksi atau tidak</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan dapat memveto, tidak pernah memulai</td></tr>
+<tr><td><strong>Ke arah mana</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan tidak pernah memilih sisi</td></tr>
 <tr><td><strong>Seberapa besar</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan hanya memperkecil — batas, eksposur, ukuran minimum</td></tr>
-<tr><td><strong>Di mana posisi stop berada</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan menegakkan batas minimum imbal hasil vs risiko</td></tr>
+<tr><td><strong>Di mana posisi stop berada</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan menegakkan batas minimum imbalan-vs-risiko</td></tr>
 <tr><td><strong>Di mana posisi target berada</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan dapat mendorongnya lebih jauh, tidak pernah lebih dekat</td></tr>
-<tr><td>Apakah pesanan ini diizinkan</td><td><span class="pill p-sf">SAFETY</span></td><td>AI tidak dapat melampaui batas risiko</td></tr>
+<tr><td>Apakah order ini diizinkan</td><td><span class="pill p-sf">SAFETY</span></td><td>AI tidak dapat melampaui batas risiko</td></tr>
 <tr><td>Menutup pada stop</td><td><span class="pill p-sf">SAFETY</span></td><td>Sengaja dilakukan oleh sistem keamanan — lihat di bawah</td></tr>
 </tbody></table></div>
 
-<h2>Kapan meja lengkap dipanggil</h2>
-<p>Empat sinyal dapat mengirim siklus ke analisis mendalam. Munculnya satu sinyal tidak dengan sendirinya memanggil meja lengkap — <strong>desk itu sendiri menilai apakah hal ini benar-benar penting untuk simbol ini.</strong></p>
+<h2>Kapan meja penuh dipanggil</h2>
+<p>Empat sinyal dapat mengirim siklus ke analisis mendalam. Satu sinyal yang aktif tidak memanggil meja dengan sendirinya — <strong>desk itu sendiri menilai apakah ini benar-benar penting untuk simbol ini.</strong></p>
 <div class="trig">
   <div class="tg"><b>📅 Jendela peristiwa</b>rilis ekonomi besar akan segera terjadi</div>
-  <div class="tg"><b>⚡ Guncangan pasar</b>pergerakan abnormal dengan volume tidak wajar</div>
-  <div class="tg"><b>🎭 Ekstrem massa</b>pembacaan rasa takut atau serakah pada titik ekstrem</div>
-  <div class="tg"><b>🎯 Mendekati stop Anda</b>posisi Anda mendekati stop amannya</div>
+  <div class="tg"><b>⚡ Guncangan pasar</b>pergerakan tidak normal dengan volume tidak biasa</div>
+  <div class="tg"><b>🎭 Ekstrem kerumunan</b>pembacaan rasa takut atau serakah pada tingkat ekstrem</div>
+  <div class="tg"><b>🎯 Mendekati stop Anda</b>posisi Anda mendekati stop pengamannya</div>
 </div>
 
 <h2>Order yang ditulis AI</h2>
-<p>Platform yang digunakan untuk menerapkan stop 5% dan target 10% yang sama untuk semua. AI kini menyesuaikan ukurannya <strong>dengan simbol</strong>. Contoh nyata:</p>
+<p>Platform yang digunakan untuk menerapkan stop 5% dan target 10% yang sama untuk semuanya. AI kini menyesuaikan ukurannya <strong>dengan simbol</strong>. Contoh nyata:</p>
 <div class="fig"><div class="sw"><table>
 <thead><tr><th>Simbol</th><th>Volatilitas</th><th>Stop AI</th><th>Target AI</th><th>Nilai tetap lama</th></tr></thead>
 <tbody><tr><td><strong>ETHUSDT</strong></td><td>3.4%</td><td><strong>2.80%</strong></td><td><strong>6.50%</strong></td><td>5% / 10%</td></tr><tr><td><strong>KAITOUSDT</strong></td><td>12.8%</td><td><strong>5.50%</strong></td><td><strong>15.00%</strong></td><td>5% / 10%</td></tr></tbody></table></div>
 <p class="cap">Hari yang sama, desk yang sama. Nama yang volatil mendapat stop hampir <strong>dua kali lebih lebar</strong>. Nilai tetap memperlakukan keduanya sebagai 5%.</p></div>
 
 <h2>Ketika AI tidak dapat dibaca</h2>
-<p>Setiap jalur kegagalan berakhir dengan <strong>tidak ada posisi baru</strong>. Ia tidak pernah bertransaksi berdasarkan tebakan.</p>
+<p>Setiap jalur kegagalan berakhir dengan <strong>tidak ada posisi baru</strong>. AI tidak pernah bertransaksi berdasarkan tebakan.</p>
 <div class="sw"><table>
 <thead><tr><th>Situasi</th><th>Hasil</th></tr></thead>
 <tbody>
 <tr><td>AI tidak menjawab</td><td><strong>Tahan — aturan tidak boleh mengarang arah</strong></td></tr>
 <tr><td>Jawaban tidak lengkap</td><td>Pulihkan yang dapat dibaca, jika tidak tahan</td></tr>
-<tr><td>AI menunda keputusan desain order</td><td>Berlaku default rumah</td></tr>
+<tr><td>AI menyerahkan desain order</td><td>Default rumah berlaku</td></tr>
 <tr><td>Batas keamanan terlampaui</td><td>Diperkecil hingga batas, atau ditolak</td></tr>
-<tr><td>Imbal hasil tidak melampaui risiko</td><td><strong>Entry ditolak</strong></td></tr>
+<tr><td>Imbal hasil tidak melebihi risiko</td><td><strong>Entry ditolak</strong></td></tr>
 </tbody></table></div>
 
 <h2>Mengapa exit tetap berada di sistem keamanan</h2>
-<p>Stop yang bergantung pada jawaban AI tidak akan aktif saat terjadi gangguan — justru saat hal itu paling penting. Aturan inti mengatur <strong>pembukaan</strong> posisi: itu adalah keputusan penilaian. Menutup posisi untuk membatasi kerugian adalah aritmetika.</p>
+<p>Stop yang bergantung pada jawaban AI tidak akan aktif saat terjadi gangguan — justru pada saat itulah hal ini paling penting. Aturan inti mengatur <strong>pembukaan</strong> posisi: itu adalah keputusan penilaian. Menutup posisi untuk membatasi kerugian adalah aritmatika.</p>
 
-<h2>Peringatan isu-panas pribadi</h2>
-<p>Sebuah peristiwa pasar adalah <strong>fakta tentang pasar</strong>; apakah itu penting adalah <strong>fakta tentang Anda</strong>. Setiap peringatan diperiksa terhadap posisi Anda sendiri sebelum dikirim.</p>
+<h2>Peringatan isu-hangat pribadi</h2>
+<p>Peristiwa pasar adalah <strong>fakta tentang pasar</strong>; apakah itu penting adalah <strong>fakta tentang Anda</strong>. Setiap peringatan diperiksa terhadap posisi Anda sendiri sebelum dikirim.</p>
 <div class="fig">
   <div class="flow">
-    <div class="fr"><div class="fn">1</div><div class="fb ai"><b>Deteksi</b><span>setiap jam, di semua simbol</span></div></div>
+    <div class="fr"><div class="fn">1</div><div class="fb ai"><b>Deteksi</b><span>setiap jam, di seluruh simbol</span></div></div>
     <div class="ar">↓</div>
     <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Verifikasi</b><span>arah Anda · leverage · jarak ke stop Anda</span></div></div>
   </div>
   <div class="fan">
     <div class="g"><b>Mendukung Anda</b>catatan lembut</div>
-    <div class="b"><b>Melawan Anda</b>peringatan mendesak</div>
+    <div class="b"><b>Berlawanan dengan Anda</b>peringatan mendesak</div>
     <div class="m"><b>Tidak material</b>tanpa peringatan</div>
   </div>
   <p class="cap">Satu peristiwa, tiga hasil. Sebagian besar anggota dengan benar tidak menerima apa pun.</p>
@@ -169,11 +169,11 @@ td strong{color:var(--ink)}
 <div class="sw"><table>
 <thead><tr><th>Anda mungkin memperhatikan</th><th>Mengapa</th></tr></thead>
 <tbody>
-<tr><td><strong>Beberapa siklus bertindak seketika, yang lain membutuhkan waktu lebih lama</strong></td><td>Momen biasa mengambil jalur cepat; momen kritis mengambil desk penuh</td></tr>
-<tr><td><strong>Posisi yang menang ditutup dengan sendirinya</strong></td><td>Proteksi keuntungan mengamankan keuntungan sebelum hilang</td></tr>
-<tr><td><strong>Posisi yang merugi ditutup lebih awal</strong></td><td>Stop terpicu — kerugian terkendali alih-alih kerugian besar</td></tr>
-<tr><td><strong>Tidak ada peringatan saat berita besar</strong></td><td>Itu diperiksa terhadap posisi Anda dan tidak material. Itulah sistem yang bekerja</td></tr>
-<tr><td><strong>Sebuah run tidak pernah membuka transaksi</strong></td><td>Tidak ada yang menutupi biaya perdagangan. Tidak melakukan perdagangan adalah hasil yang valid</td></tr>
+<tr><td><strong>Beberapa siklus bertindak secara instan, yang lain memerlukan waktu lebih lama</strong></td><td>Momen biasa mengambil jalur cepat; momen kritis mengambil desk penuh</td></tr>
+<tr><td><strong>Posisi yang menguntungkan ditutup dengan sendirinya</strong></td><td>Perlindungan profit mengamankan keuntungan sebelum hilang</td></tr>
+<tr><td><strong>Posisi yang merugi ditutup lebih awal</strong></td><td>Stop terpicu — kerugian terkendali, bukan kerugian besar</td></tr>
+<tr><td><strong>Tidak ada peringatan saat berita besar</strong></td><td>Ini diperiksa terhadap posisi Anda dan tidak material. Itulah sistem yang bekerja</td></tr>
+<tr><td><strong>Sebuah run tidak pernah membuka trade</strong></td><td>Tidak ada yang menutupi biaya trading. Tidak trading adalah hasil yang valid</td></tr>
 </tbody></table></div>
 
 <div class="note"><b>Keamanan, selalu</b> AI merekomendasikan — batas risiko Anda yang memutuskan. Setiap tindakan melewati pemeriksaan risiko akun Anda, batas posisi dan stop, dan Anda dapat menghentikan semuanya dengan satu tombol kapan saja.</div>
