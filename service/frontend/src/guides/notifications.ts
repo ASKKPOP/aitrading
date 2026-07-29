@@ -8,6 +8,7 @@ export const notificationsGuide: PageGuide = {
     ja: '取引・リスク・ウォッチ・サポート・お知らせの通知が1本の流れに集まる個人用の受信箱です。ルールや監視条件を運用しながら、何が起きたかを取りこぼしたくない会員のためのページです。',
     th: 'กล่องแจ้งเตือนส่วนตัวของคุณ ที่การแจ้งเตือนเรื่องเทรด ความเสี่ยง การเฝ้าดู การสนับสนุน และประกาศ มารวมกันในสายเดียว สำหรับสมาชิกที่รันกฎและเงื่อนไขเฝ้าดูและไม่อยากพลาดว่าเกิดอะไรขึ้น',
     vi: 'Hộp thông báo cá nhân của bạn, nơi cảnh báo giao dịch, rủi ro, theo dõi, hỗ trợ và thông báo chung đổ về cùng một dòng. Dành cho thành viên đang chạy quy tắc và điều kiện theo dõi mà không muốn bỏ lỡ điều gì.',
+    id: 'Kotak masuk notifikasi pribadi Anda, tempat peringatan transaksi, risiko, pantauan, dukungan, dan pengumuman berkumpul dalam satu aliran. Untuk anggota yang menjalankan aturan dan pantauan serta tidak ingin melewatkan apa pun yang terjadi.',
   },
   sections: [
     {
@@ -47,6 +48,13 @@ export const notificationsGuide: PageGuide = {
           'Huy hiệu số bo tròn cạnh tiêu đề là số thông báo chưa đọc. Khi không còn mục chưa đọc, huy hiệu biến mất hoàn toàn.',
           'Nút ⚙ Cài đặt thông báo ở góc trên bên phải đưa bạn tới trang Cài đặt, nơi chọn loại thông báo muốn nhận.',
           'Danh sách này không tự làm mới. Để thấy thứ vừa đến, hãy bấm lại một bộ lọc hoặc mở lại trang.',
+        ],
+        id: [
+          'Hanya notifikasi yang dicatat untuk akun anggota yang sedang Anda masuki yang muncul. Ini memerlukan sesi masuk anggota, bukan token agen.',
+          'Halaman ini memuat hingga 100 notifikasi terbaru, dari yang terbaru. Apa pun yang lebih lama dari itu tidak muncul di layar ini.',
+          'Lencana angka bulat di samping judul adalah jumlah yang belum dibaca. Ketika tidak ada lagi yang belum dibaca, lencananya hilang sepenuhnya.',
+          'Tombol ⚙ Pengaturan notifikasi di kanan atas membawa Anda ke Pengaturan, tempat Anda memilih jenis mana yang ingin diterima.',
+          'Daftar ini tidak memperbarui dirinya sendiri. Untuk melihat sesuatu yang baru saja tiba, tekan lagi salah satu filter atau buka ulang halamannya.',
         ],
       },
     },
@@ -93,6 +101,14 @@ export const notificationsGuide: PageGuide = {
           '📣 Thông báo — thông báo dịch vụ đội ngũ gửi tới tất cả hoặc tới một thành viên cụ thể.',
           'Biểu tượng và màu bên trái, cùng nhãn nhỏ cạnh tiêu đề, cho biết loại thông báo. Mục chưa đọc có một vạch dọc cùng màu ở mép trái thẻ và tiêu đề in đậm.',
         ],
+        id: [
+          '◈ Transaksi — eksekusi dan penutupan posisi dari aturan otomatisasi Anda. Ini adalah catatan pelacakan sinyal, bukan order broker sungguhan.',
+          '⚠ Risiko — muncul ketika mekanisme pengaman bertindak: penghentian oleh pemutus sirkuit, atau keputusan yang ditolak pada verifikasi pra-transaksi.',
+          '◉ Pantauan — muncul ketika kondisi pantauan yang Anda buat di halaman Pemantauan melewati ambangnya.',
+          '💬 Dukungan — muncul ketika tim Sooppiy membalas pertanyaan Anda. Buka → langsung masuk ke percakapan dukungan.',
+          '📣 Pengumuman — pemberitahuan layanan yang dikirim tim ke semua orang atau ke anggota tertentu.',
+          'Ikon dan warna di sebelah kiri, ditambah label kecil di samping judul, menunjukkan jenisnya. Item yang belum dibaca mendapat batang vertikal berwarna di tepi kiri kartu dan judul bercetak tebal.',
+        ],
       },
     },
     {
@@ -127,6 +143,12 @@ export const notificationsGuide: PageGuide = {
           'Bộ lọc không phải là ẩn ở phía trình duyệt — nó yêu cầu lại từ máy chủ. Mỗi lần bấm sẽ lấy trạng thái mới, nên bấm lại cùng một nút là cách làm mới danh sách hoàn toàn hợp lệ.',
           'Đánh dấu đã đọc khi đang ở Chưa đọc sẽ tải lại danh sách và dòng đó biến mất. Nó không bị xoá, chỉ chuyển sang mục Tất cả.',
           'Chưa đọc trống hiện "Không có thông báo chưa đọc"; tài khoản chưa có gì hiện "Chưa có thông báo". Đó là hai tình huống khác nhau, hãy đọc kỹ câu chữ.',
+        ],
+        id: [
+          'Dua tombol pil di atas daftar mengalihkan antara Semua dan Belum dibaca. Yang sedang dipilih ditampilkan tersorot.',
+          'Filter ini bukan penyembunyian di sisi klien — ia meminta ulang ke server. Setiap ketukan mengambil status terbaru, jadi menekan tombol yang sama lagi adalah cara yang sangat baik untuk memuat ulang daftarnya.',
+          'Menandai sesuatu sudah dibaca saat berada di Belum dibaca akan memuat ulang daftar dan barisnya menghilang. Itu tidak terhapus, hanya berpindah ke Semua.',
+          'Belum dibaca yang kosong menampilkan "Tidak ada notifikasi yang belum dibaca"; akun yang benar-benar kosong menampilkan "Belum ada notifikasi". Keduanya situasi yang berbeda, jadi bacalah kalimatnya dengan cermat.',
         ],
       },
     },
@@ -168,6 +190,13 @@ export const notificationsGuide: PageGuide = {
           'Đánh dấu đã đọc chỉ thay đổi trạng thái — không xoá gì, nên thông báo vẫn hiện dưới bộ lọc Tất cả.',
           'Chỉ mở trang xem thôi không đánh dấu gì là đã đọc. Muốn xoá huy hiệu ở trên, bạn phải tự bấm liên kết hoặc nút.',
         ],
+        id: [
+          'Tautan Tandai sudah dibaca hanya muncul di bagian bawah item yang belum dibaca. Item yang sudah dibaca tidak membawa tautan itu.',
+          'Ketika setidaknya ada satu notifikasi belum dibaca, tombol Tandai semua sudah dibaca muncul di kanan baris filter. Bila tidak ada yang belum dibaca, tombolnya hilang.',
+          'Tandai semua sudah dibaca mengubah seluruh notifikasi belum dibaca pada akun sekaligus, tanpa dialog konfirmasi. Tidak ada pembatalan.',
+          'Menandai sudah dibaca hanya mengubah status — tidak ada yang dihapus, jadi notifikasinya tetap terlihat di filter Semua.',
+          'Sekadar membuka halaman ini tidak menandai apa pun sudah dibaca. Untuk menghapus lencana di bagian atas, Anda harus menekan tautan atau tombolnya sendiri.',
+        ],
       },
     },
     {
@@ -208,6 +237,13 @@ export const notificationsGuide: PageGuide = {
           'Mặc định cả năm loại đều bật, và riêng phản hồi hỗ trợ còn bật thêm email.',
           'Nếu lượng thông báo quá nhiều, hãy thử tỉa bớt điều kiện theo dõi ở trang Giám sát trước khi tắt hẳn một loại — cảnh báo theo dõi thường là thứ chồng chất nhanh nhất.',
         ],
+        id: [
+          'Masing-masing dari lima jenis punya tiga sakelar — aktif, email, dan SMS — semuanya diatur di halaman Pengaturan.',
+          'Jenis yang dinonaktifkan sama sekali tidak dicatat: tidak lewat email, tidak lewat SMS, dan tidak juga di daftar ini. Mengaktifkannya kembali nanti tidak memulihkan apa yang terjadi selama nonaktif.',
+          'Email dikirim ke alamat pada akun Anda; SMS dikirim ke nomor telepon yang tersimpan di pengaturan peringatan Anda. Tanpa nomor tersimpan, mengaktifkan SMS tidak mengirim apa pun.',
+          'Secara bawaan kelima jenis aktif, dan balasan dukungan tambahan mengaktifkan email.',
+          'Jika volumenya terlalu tinggi, coba pangkas dulu kondisi pantauan Anda di halaman Pemantauan sebelum menonaktifkan satu jenis penuh — peringatan pantauan biasanya yang paling cepat menumpuk.',
+        ],
       },
     },
   ],
@@ -227,6 +263,7 @@ export const notificationsGuide: PageGuide = {
         ja: '最も多い原因は、設定ページで該当する種類のオンスイッチが切れていることです。オフの種類は配信されないだけでなく、この一覧にも記録されないため、後でオンにしても過去分は現れません。すべてオンなのに空の場合、このページは会員のログインセッションでのみ読み込まれるので、再度ログインしてみてください。それでも空なら、まだ該当する出来事が起きていないということです。',
         th: 'สาเหตุที่พบบ่อยที่สุดคือสวิตช์เปิดของประเภทนั้นถูกปิดไว้ในหน้าตั้งค่า ประเภทที่ปิดอยู่ไม่ใช่แค่ไม่ถูกส่ง แต่ไม่ถูกบันทึกไว้ที่นี่ด้วย การเปิดกลับมาจึงไม่ทำให้รายการเก่าโผล่ขึ้นมา หากเปิดทุกสวิตช์แล้วยังว่าง โปรดทราบว่าหน้านี้อ่านผ่านเซสชันล็อกอินของสมาชิกเท่านั้น ลองเข้าสู่ระบบใหม่ หากยังว่างอยู่ แปลว่ายังไม่มีเหตุการณ์ที่เข้าเงื่อนไขเกิดขึ้นจริง',
         vi: 'Nguyên nhân thường gặp là công tắc bật của loại đó đang tắt trong Cài đặt. Loại đã tắt không chỉ không được gửi đi — nó cũng không bao giờ được ghi lại ở đây, nên bật lại cũng không làm hiện các mục cũ. Nếu mọi công tắc đều bật mà vẫn trống, lưu ý trang này chỉ đọc qua phiên đăng nhập thành viên, hãy thử đăng nhập lại. Nếu vẫn trống, tức là thực sự chưa có sự kiện nào khớp.',
+        id: 'Penyebab paling umum adalah sakelar aktif untuk jenis tersebut dimatikan di Pengaturan. Jenis yang dimatikan bukan sekadar tidak terkirim — ia juga tidak pernah dicatat di sini, sehingga mengaktifkannya kembali tidak akan memunculkan yang sudah lewat. Jika semua sakelar aktif dan tetap kosong, perlu diketahui bahwa halaman ini hanya membaca lewat sesi masuk anggota, jadi cobalah masuk ulang. Jika masih kosong, memang belum ada kejadian yang cocok.',
       },
     },
     {
@@ -236,6 +273,7 @@ export const notificationsGuide: PageGuide = {
         ja: 'ページを開いたままにしても、新しい通知が勝手に出てきません。',
         th: 'เปิดหน้าทิ้งไว้แล้วการแจ้งเตือนใหม่ก็ไม่ขึ้นเอง',
         vi: 'Để mở trang mà thông báo mới không tự hiện ra.',
+        id: 'Notifikasi baru tidak muncul dengan sendirinya selama halaman terbuka.',
       },
       a: {
         ko: '정상입니다. 이 목록은 페이지를 열 때와 필터를 누를 때만 서버에서 다시 불러옵니다. 자동 갱신 주기가 없으므로, 지금 상태를 확인하려면 전체나 읽지 않음 버튼을 한 번 누르세요. 같은 버튼을 다시 눌러도 새로 불러오므로 그것이 가장 빠른 새로고침 방법입니다.',
@@ -243,6 +281,7 @@ export const notificationsGuide: PageGuide = {
         ja: '仕様どおりです。この一覧はページを開いたときと、フィルターを押したときにのみサーバーから読み直します。自動更新の周期はないので、現在の状態を確認するには「すべて」か「未読」を一度押してください。同じボタンをもう一度押しても読み直すので、それが最も手早い更新方法です。',
         th: 'เป็นเรื่องปกติ รายการจะดึงข้อมูลใหม่เฉพาะตอนเปิดหน้าและตอนที่คุณกดตัวกรองเท่านั้น ไม่มีรอบรีเฟรชอัตโนมัติ ดังนั้นหากต้องการดูสถานะปัจจุบัน ให้กดทั้งหมดหรือยังไม่อ่านหนึ่งครั้ง การกดปุ่มเดิมซ้ำก็ดึงข้อมูลใหม่เช่นกัน ซึ่งเป็นวิธีรีเฟรชที่เร็วที่สุด',
         vi: 'Đó là điều bình thường. Danh sách chỉ tải lại khi mở trang và khi bạn bấm một bộ lọc. Không có chu kỳ tự làm mới, nên để xem trạng thái hiện tại hãy bấm Tất cả hoặc Chưa đọc một lần. Bấm lại cùng nút cũng tải lại, đó là cách làm mới nhanh nhất.',
+        id: 'Itu wajar. Daftar ini hanya mengambil ulang saat halaman dibuka dan saat Anda menekan filter. Tidak ada interval polling, jadi untuk melihat kondisi terkini tekan Semua atau Belum dibaca sekali. Menekan tombol yang sama lagi juga mengambil ulang, dan itulah cara tercepat memperbaruinya.',
       },
     },
     {
@@ -260,6 +299,7 @@ export const notificationsGuide: PageGuide = {
         ja: '通知の時刻は、サーバーが記録したUTCのタイムスタンプをそのまま分単位で表示しています。現地時間へ変換されないため、日本時間とは9時間ずれます。通知どうしの間隔や順序は正確なので、他のページの時刻と比べるときだけこの差を考慮してください。',
         th: 'เวลาของการแจ้งเตือนแสดงเวลาแบบ UTC ที่เซิร์ฟเวอร์บันทึกไว้ตรง ๆ ถึงระดับนาที ไม่มีการแปลงเป็นเขตเวลาท้องถิ่นของคุณ เวลาไทยจึงเร็วกว่าที่เห็น 7 ชั่วโมง ช่วงห่างและลำดับยังถูกต้อง เพียงคำนึงถึงส่วนต่างนี้เมื่อเทียบกับเวลาในหน้าอื่น',
         vi: 'Thời gian thông báo hiển thị đúng dấu thời gian UTC mà máy chủ ghi lại, tới từng phút. Chúng không được đổi sang múi giờ của bạn, nên giờ Việt Nam sớm hơn 7 tiếng so với con số bạn thấy. Khoảng cách và thứ tự vẫn chính xác; chỉ cần nhớ độ lệch này khi so với thời gian ở các trang khác.',
+        id: 'Waktu notifikasi menampilkan persis cap waktu UTC yang dicatat server, hingga satuan menit. Waktu itu tidak dikonversi ke zona lokal Anda, jadi waktu Korea sembilan jam lebih awal dari yang Anda lihat. Selang waktu dan urutannya tetap akurat; cukup ingat selisih ini saat membandingkan dengan waktu di halaman lain.',
       },
     },
   ],

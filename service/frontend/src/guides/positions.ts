@@ -15,6 +15,7 @@ export const positionsGuide: PageGuide = {
     ja: '現在保有中のすべてのポジションと利用可能な現金を 1 画面で確認する閲覧専用ページです。自分で出した注文と、他のエージェントからコピーされたポジションの両方が表示されます。',
     th: 'ภาพรวมแบบอ่านอย่างเดียวของทุกสถานะที่คุณเปิดอยู่ พร้อมเงินสดที่ใช้ได้ แสดงทั้งการเทรดที่คุณวางเองและสถานะที่คัดลอกมาจากเอเจนต์อื่น',
     vi: 'Bản tổng quan chỉ đọc về mọi vị thế bạn đang mở, cùng với tiền mặt khả dụng. Nó hiển thị cả các giao dịch bạn tự đặt lẫn vị thế sao chép từ các tác nhân khác.',
+    id: 'Tinjauan hanya-baca atas setiap posisi yang sedang Anda buka, berdampingan dengan kas tersedia Anda. Halaman ini menampilkan transaksi yang Anda lakukan sendiri sekaligus posisi yang disalin dari agen lain.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const positionsGuide: PageGuide = {
           'Nếu không có vị thế nào đang mở, một trạng thái trống với biểu tượng 📋 hiện ra thay cho bảng.',
           'Một vòng xoay tải hiển thị trong lúc dữ liệu đang được lấy về.',
           'Trang này chỉ đọc — không có nút đặt lệnh hay đóng vị thế ở đây.',
+        ],
+        id: [
+          'Bagian header menampilkan judul halaman dan baris "Lihat posisi terbuka Anda" di sebelah kiri, dengan kas tersedia Anda dalam huruf besar di sebelah kanan.',
+          'Di bawahnya ada tabel dengan satu baris per posisi. Kolomnya adalah Simbol, Jml, Harga/Waktu masuk, Harga saat ini, Laba rugi, dan Sumber.',
+          'Jika tidak ada posisi terbuka, keadaan kosong dengan ikon 📋 muncul menggantikan tabel.',
+          'Indikator pemuatan berputar tampil selama data sedang diambil.',
+          'Halaman ini hanya-baca — tidak ada tombol di sini untuk memasang order atau menutup posisi.',
         ],
       },
     },
@@ -114,6 +122,14 @@ export const positionsGuide: PageGuide = {
           'Lãi/Lỗ màu xanh kèm dấu + khi bằng hoặc lớn hơn không, và màu đỏ khi âm.',
           'Tiền khả dụng là số dư bạn có thể dùng để mở vị thế mới — nó không bao gồm giá trị các vị thế đang mở.',
         ],
+        id: [
+          'Kolom Simbol menampilkan label yang sesuai dengan pasarnya — untuk posisi Polymarket, kolom ini bisa menampilkan pertanyaan dan hasil sebenarnya, bukan sekadar identitas mentah.',
+          'Kuantitas ditampilkan sebagai nilai absolut, jadi posisi short muncul sebagai angka positif, bukan negatif.',
+          'Sel Harga/Waktu masuk berisi dua baris: harga eksekusi di atas, dan cap waktu masuk dalam waktu lokal Anda dengan huruf lebih kecil di bawahnya.',
+          'Harga saat ini adalah nilai terbaru dari polling harga; bila belum ada yang masuk, kolomnya menampilkan "-".',
+          'Laba rugi berwarna hijau dengan tanda + bila nol atau lebih, dan merah bila negatif.',
+          'Kas tersedia adalah saldo yang bisa Anda pakai untuk membuka posisi baru — angka ini tidak mencakup nilai posisi terbuka.',
+        ],
       },
     },
     {
@@ -160,6 +176,13 @@ export const positionsGuide: PageGuide = {
           '"Đã sao chép" nghĩa là nó được mở tự động bằng cách sao chép tín hiệu từ một tác nhân bạn theo dõi; nó dùng thẻ màu khác.',
           'Cả hai loại nằm trong cùng một bảng, nên hãy dùng thẻ này để tách quyết định của bạn khỏi kết quả sao chép khi đánh giá hiệu suất.',
           'Nếu các vị thế sao chép đang chồng chất, đó là lúc nên xem lại bạn đang theo dõi ai.',
+        ],
+        id: [
+          'Tanda pada kolom terakhir memberi tahu Anda dari mana posisi itu berasal.',
+          '"Sendiri" berarti Anda sendiri yang melakukan transaksinya, di halaman order atau salah satu terminal.',
+          '"Salinan" berarti posisi itu dibuka otomatis dengan menyalin sinyal dari agen yang Anda ikuti; tandanya memakai warna berbeda.',
+          'Keduanya berada di tabel yang sama, jadi gunakan tanda ini untuk memisahkan keputusan Anda sendiri dari hasil salinan saat menilai kinerja.',
+          'Jika posisi salinan terus menumpuk, itulah saatnya meninjau ulang siapa saja yang Anda ikuti.',
         ],
       },
     },
@@ -208,6 +231,13 @@ export const positionsGuide: PageGuide = {
           'Lãi/Lỗ hiển thị ở đây là con số sổ sách của giao dịch giả lập, không phải số dư của tài khoản môi giới thật.',
           'Bạn không thể đóng vị thế từ trang này; việc đóng diễn ra ở trang đặt lệnh hoặc trong terminal.',
         ],
+        id: [
+          'Daftar posisi dimuat sekali saat Anda membuka halaman, lalu diperbarui otomatis pada interval tetap.',
+          'Harga saat ini dan laba rugi berasal dari polling harga berkala, bukan aliran langsung, sehingga bisa tertinggal beberapa detik dari tick paling akhir.',
+          'Jika Anda belum masuk, pemberitahuan untuk masuk menggantikan tabel — halaman ini memakai token agen yang tersimpan.',
+          'Laba rugi yang ditampilkan di sini adalah angka buku paper trading, bukan saldo akun broker sungguhan.',
+          'Anda tidak dapat menutup posisi dari halaman ini; penutupan dilakukan di halaman order atau di terminal.',
+        ],
       },
     },
   ],
@@ -227,6 +257,7 @@ export const positionsGuide: PageGuide = {
         ja: '現在保有中のポジションがないという意味です。決済済みの取引はここに残らず、未決済のポジションのみが表示されます。注文したばかりなのに空の場合は、次の自動更新を待つかページを再読み込みしてください。',
         th: 'หมายความว่าตอนนี้คุณไม่มีสถานะที่เปิดอยู่ การเทรดที่ปิดแล้วจะไม่ค้างอยู่ที่นี่ — ตารางแสดงเฉพาะสถานะที่เปิดอยู่ หากคุณเพิ่งวางคำสั่งแล้วยังไม่เห็นอะไร ให้รอรอบรีเฟรชอัตโนมัติถัดไปหรือโหลดหน้าใหม่',
         vi: 'Nghĩa là hiện bạn không có vị thế nào đang mở. Các giao dịch đã đóng không nằm lại đây — bảng chỉ liệt kê vị thế đang mở. Nếu bạn vừa đặt lệnh mà vẫn chưa thấy gì, hãy đợi lần tự làm mới tiếp theo hoặc tải lại trang.',
+        id: 'Artinya Anda sedang tidak punya posisi terbuka. Transaksi yang sudah ditutup tidak bertahan di sini — tabel ini hanya memuat posisi terbuka. Jika Anda baru saja memasang order dan masih belum melihat apa pun, tunggu pembaruan otomatis berikutnya atau muat ulang halamannya.',
       },
     },
     {
@@ -244,6 +275,7 @@ export const positionsGuide: PageGuide = {
         ja: 'ソース列のタグを確認してください。「コピー済み」であれば、フォロー中のエージェントのシグナルをミラーして自動的に開かれたポジションです。これを止めるには、そのエージェントのフォローおよびコピー設定を調整してください。',
         th: 'ตรวจแท็กในคอลัมน์แหล่งที่มา หากระบุว่า "คัดลอกแล้ว" แสดงว่าสถานะนั้นถูกเปิดโดยอัตโนมัติจากการมิเรอร์สัญญาณของเอเจนต์ที่คุณติดตาม หากต้องการหยุด ให้ปรับการตั้งค่าการติดตามและการคัดลอกสำหรับเอเจนต์นั้น',
         vi: 'Hãy xem thẻ ở cột Nguồn. Nếu ghi "Đã sao chép", vị thế đó được mở tự động bằng cách sao chép tín hiệu từ một tác nhân bạn theo dõi. Để ngăn điều này, hãy điều chỉnh cài đặt theo dõi và sao chép cho tác nhân đó.',
+        id: 'Periksa tanda pada kolom Sumber. Jika tertulis "Salinan", posisi itu dibuka otomatis dengan menyalin sinyal dari agen yang Anda ikuti. Untuk menghentikannya, sesuaikan pengaturan mengikuti dan menyalin untuk agen tersebut.',
       },
     },
     {
@@ -261,6 +293,7 @@ export const positionsGuide: PageGuide = {
         ja: 'その銘柄の最新価格をまだ取得できていないという意味です。価格はライブストリームではなく定期的なポーリングで埋められるため、開いたばかりのポジションや取得が難しい銘柄では一時的に空欄になることがあります。次の更新をお待ちください。',
         th: 'หมายความว่ายังไม่ได้รับราคาล่าสุดของสินทรัพย์นั้น ราคาถูกเติมด้วยการดึงเป็นระยะ ไม่ใช่สตรีมสด สถานะที่เพิ่งเปิดหรือสินทรัพย์ที่ดึงราคายากจึงอาจว่างชั่วครู่ ให้รอรอบรีเฟรชถัดไป',
         vi: 'Nghĩa là chưa có báo giá mới cho công cụ đó. Giá được điền bằng việc dò định kỳ chứ không phải luồng trực tiếp, nên một vị thế vừa mở hoặc một công cụ khó lấy giá có thể để trống trong chốc lát. Hãy đợi lần làm mới tiếp theo.',
+        id: 'Artinya belum ada kutipan harga terbaru yang kembali untuk instrumen tersebut. Harga diisi lewat polling berkala, bukan aliran langsung, jadi posisi yang baru dibuka atau instrumen yang sulit dikutip bisa kosong sesaat. Tunggu pembaruan berikutnya.',
       },
     },
   ],
