@@ -1,0 +1,271 @@
+<!-- machine-translated from research/parameters/2-hybrid-strategy-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chiến Lược Kết Hợp — Mô Hình Biểu Đồ × Tâm Lý Con Người</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — charts */
+    --series-3: #e87ba4; /* magenta — psychology */
+    --series-4: #eda100; /* yellow — risk */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #0ca30c; --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  /* concept merge diagram */
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  /* layer stack */
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 0; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  /* checklists */
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  /* matrix */
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  /* expectation bars */
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>Chiến Lược Kết Hợp: Mô Hình Biểu Đồ × Tâm Lý Con Người</h1>
+      <p class="sub">Một khung quyết định mua/bán kết hợp cả hai yếu tố dựa trên những gì nghiên cứu đã được xác minh thực sự chứng minh: <b>tâm lý thiết lập chế độ</b> (khi nào giao dịch, rủi ro bao nhiêu), <b>biểu đồ thiết lập điểm kích hoạt</b> (giao dịch cái gì và ở mức giá nào), <b>khối lượng + tâm lý xác nhận</b>, và <b>biến động thiết lập quy mô</b>. Không có tín hiệu đơn lẻ nào được tin tưởng — bạn chỉ hành động khi có sự đồng thuận.</p>
+      <span class="stamp">Xây dựng từ 2 vòng nghiên cứu chuyên sâu đã được xác minh · Tháng 7 năm 2026 · Mang tính giáo dục — không phải lời khuyên đầu tư</span>
+      <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12.5px;line-height:1.6">
+        <b>Khung này được ánh xạ như thế nào vào triển khai cho tiền mã hóa.</b> Trang này mô tả chiến lược dựa trên nghiên cứu; hệ thống đang vận hành điều chỉnh nó cho tiền mã hóa.
+        <b>VIX → chỉ số Sợ Hãi &amp; Tham Lam (F&amp;G) của tiền mã hóa</b> — một thang đo đảo ngược: hoảng loạn là <b>F&amp;G &lt; 20</b> (không phải VIX &gt; 30), bình tĩnh là <b>F&amp;G &gt; 30</b>. Không có VIX cho tiền mã hóa (<code>regime.py</code>, <code>strategy_config.py</code>).
+        <b>Các mô hình biểu đồ có tên (đáy đôi, H&amp;S) → một điểm số kỹ thuật tổng hợp</b> (RSI · MA · funding · basis · long/short) được xác nhận bởi khối lượng — công cụ không có bộ phát hiện mô hình nến (<code>confluence.py</code> B3/S3).
+        <b>Tâm lý lợi nhuận qua đêm → xu hướng đám đông StockTwits.</b> Các nhãn B1–B6 / S1–S6 bên dưới là các nhãn điều kiện thực tế của công cụ.
+      </div>
+    </header>
+
+    <!-- ① CONCEPT -->
+    <section class="card">
+      <h2 class="sec">① Sự Kết Hợp: Ai Làm Việc Gì</h2>
+      <p class="secnote">Kết luận nghiên cứu: mô hình biểu đồ mang tính thông tin về mặt thống kê nhưng không sinh lời khi đứng một mình (tối đa 53–54% lợi thế); tín hiệu tâm lý yếu trong ngắn hạn hàng ngày nhưng mạnh mẽ ở các điểm cực đoan và quanh các sự kiện. Vì vậy mỗi bên làm công việc mà nó đã được xác minh là giỏi.</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>BIỂU ĐỒ — điểm kích hoạt</h3>
+          <ul>
+            <li>Động lượng 12-1 &amp; xu hướng (MA 200 ngày) — các yếu tố dự báo #1 đã được xác minh</li>
+            <li>Mô hình (đáy đôi, H&amp;S) — chỉ khi đã hoàn thành + có khối lượng</li>
+            <li>Thực tế tỷ lệ thắng: 53–54% (Brock 1992)</li>
+            <li>Đảo chiều trung bình / đảo chiều 1 tháng để định thời điểm</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">Trả lời: GIAO DỊCH CÁI GÌ, ở MỨC GIÁ NÀO</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>TÂM LÝ — chế độ</h3>
+          <ul>
+            <li>Mức độ sợ hãi/tham lam (VIX), tin tức &amp; giọng điệu tâm lý xã hội</li>
+            <li>Lịch chính sách &amp; sự kiện (FOMC, CPI, bầu cử, tin tức chiến sự)</li>
+            <li>Thực tế về edge: độ chính xác 50–55%; ~6bp/SD tâm lý qua đêm</li>
+            <li>Mạnh nhất ở các điểm cực đoan: hoảng loạn và hưng phấn</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">Trả lời: KHI NÀO giao dịch, KHI NÀO làm ngược lại</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>CONFLUENCE ENGINE — chỉ hành động khi ≥ 4 trong 6 điều kiện đồng thuận</h3>
+        <p>Xếp chồng các edge độc lập ~53% là cách duy nhất đã được kiểm chứng để vượt qua 55%. Một tín hiệu đơn lẻ = không giao dịch. Các quy tắc rủi ro (định cỡ theo biến động, dừng lỗ) được ưu tiên trên tất cả.</p>
+      </div>
+    </section>
+
+    <!-- ② LAYER FLOW -->
+    <section class="card">
+      <h2 class="sec">② Luồng Quyết Định: Ngăn Xếp 4 Lớp</h2>
+      <p class="secnote">Mỗi giao dịch tiềm năng đi qua từ trên xuống dưới. Bất kỳ lớp nào cũng có thể phủ quyết.</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">LỚP 1</span> Bộ Lọc Chế Độ Tâm Lý <span class="q">— "Có nên giao dịch không? Chế độ nào?"</span></h4>
+        <p>VIX &lt; 20 → <b>chế độ xu hướng</b> (theo biểu đồ). VIX 20–30 → giảm nửa quy mô, dừng lỗ chặt hơn. VIX &gt; 30 + sợ hãi cực độ → <b>chế độ ngược dòng</b> (bỏ qua các mẫu hình giảm giá, chuẩn bị mua khi giá đảo chiều về trung bình). FOMC/CPI/bầu cử trong vòng ±1 ngày → không vào lệnh mới. Sốc chiến sự/chính sách → không bao giờ mua nhịp hồi đầu tiên; chờ 1–3 ngày.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LỚP 2</span> Bộ Máy Xác Định Hướng (Biểu Đồ) <span class="q">— "Thiên hướng mua hay bán?"</span></h4>
+        <p>Động lượng 12 tháng (bỏ qua tháng gần nhất) dương VÀ giá trên MA 200 ngày → thiên hướng mua. Cả hai âm → thiên hướng bán/tránh. Trái chiều → không có thiên hướng, bỏ qua. Đây là hai chỉ báo dự đoán được kiểm chứng nhiều nhất trong toàn bộ tài liệu nghiên cứu.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LỚP 3</span> Kích Hoạt + Xác Nhận (Biểu Đồ × Tâm Lý) <span class="q">— "Chính xác khi nào?"</span></h4>
+        <p>Mẫu hình hoàn tất (breakout đáy đôi, phá vỡ đường viền cổ của H&amp;S) <b>AND</b> khối lượng tăng khi phá vỡ <b>AND</b> tâm lý qua đêm/tin tức không mâu thuẫn. Mẫu hình không có khối lượng = bẫy, bỏ qua. Biểu đồ tăng giá nhưng tâm lý sụp đổ do tin tức thực = tâm lý phủ quyết.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">LỚP 4</span> Quy Mô &amp; Thoát Lệnh (Rủi Ro) <span class="q">— "Bao nhiêu? Khi nào ra?"</span></h4>
+        <p>Quy mô vị thế = ngân sách rủi ro ÷ biến động. Dừng lỗ cứng dưới điểm vô hiệu hóa mẫu hình. Theo sát bằng MA. Dừng theo thời gian: không hiệu quả trong N ngày → thoát lệnh. Với độ chính xác ~55%, cắt lỗ nhanh CHÍNH LÀ edge.</p>
+      </div>
+      <div class="arrow">▼<small>lệnh</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">BUY</span> · GIỮ · <span style="color:var(--sell)">SELL</span></h3><p>Kết quả được ghi lại và phản hồi — cần xác thực lại các quy tắc ngoài mẫu (out-of-sample) thường xuyên, vì các lợi thế đã công bố sẽ suy giảm theo thời gian.</p></div>
+    </section>
+
+    <!-- ③ CHECKLISTS -->
+    <section class="card">
+      <h2 class="sec">③ Danh sách kiểm tra Mua &amp; Bán</h2>
+      <p class="secnote">Mỗi điều kiện thỏa mãn = 1 điểm. Hành động khi đạt 4/6 điểm trở lên. Các thẻ (tags) cho biết tín hiệu đến từ phía nào.</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">MUA — hội tụ ≥ 4/6</h3>
+          <div class="rule">Xu hướng + động lượng + mô hình đã xác nhận + tâm lý ủng hộ</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">Giá trên MA 200 ngày / trạng thái golden-cross<small>Brock 1992: các ngày có tín hiệu mua ≈ +12% hàng năm</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">Động lượng 12-1 dương<small>Gu–Kelly–Xiu: yếu tố dự báo ML #1</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">Mô hình tăng giá hoàn thành CÙNG với khối lượng tăng<small>Chỉ riêng mô hình thì chưa đủ (LMW 2000)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">Tâm lý qua đêm/tin tức tích cực hoặc đang hồi phục<small>Fed: ~6bp mỗi độ lệch chuẩn (SD) vào ngày sau</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">Cơn hoảng loạn đang giảm dần (VIX giảm từ đỉnh &gt;30)<small>Phản ứng thái quá → giai đoạn đảo chiều về trung bình (mean-reversion)</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">Không có FOMC / CPI / sự kiện lớn trong vòng 24 giờ<small>Kiểm soát rủi ro trong khung thời gian sự kiện</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Trường hợp đặc biệt ngược dòng (mua khi hoảng loạn):</b> VIX &gt; 30 + tâm lý sợ hãi cực độ + giá đang ổn định trên MA ngắn hạn + đỉnh điểm khối lượng đã qua → mua đảo chiều về trung bình với <b>nửa khối lượng vị thế</b>. "Tham lam khi người khác sợ hãi," được hệ thống hóa.</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">BÁN / TRÁNH — hội tụ ≥ 4/6</h3>
+          <div class="rule">Xu hướng bị phá vỡ + động lượng bị phá vỡ + hưng phấn hoặc sốc</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">Giá dưới MA 200 ngày / trạng thái death-cross<small>Các ngày có tín hiệu bán ≈ −7% hàng năm (Brock 1992)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">Động lượng chuyển sang âm<small>Cơ chế xác định hướng đảo chiều</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">Mô hình giảm giá (double top / H&amp;S) hoàn thành cùng khối lượng<small>Cần xác nhận, tương tự như tín hiệu mua</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">Tâm lý hưng phấn cực độ<small>Mọi người đều lạc quan = tín hiệu bán ngược dòng</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">Cú sốc chính sách / địa chính trị tiêu cực chưa được giải quyết<small>Rủi ro chế độ (regime risk) vẫn cao trong ngày 1–3</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">Đạt mức cắt lỗ hoặc mục tiêu biến động<small>LUÔN LUÔN được ưu tiên hơn tất cả — không có ngoại lệ</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Quy tắc phủ quyết:</b> biểu đồ báo mua nhưng tâm lý đang sụp đổ vì tin tức thực → <b>bỏ qua giao dịch</b>. Chế độ tin tức mới thắng biểu đồ cũ.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ WHEN × WHAT -->
+    <section class="card">
+      <h2 class="sec">④ Ma trận tình huống WHEN × WHAT</h2>
+      <p class="secnote">Bên nào dẫn dắt quyết định trong mỗi trạng thái tâm lý thị trường.</p>
+      <table class="mx">
+        <thead><tr><th>Tình huống (trạng thái tâm lý)</th><th>Bên dẫn dắt</th><th>Hành động</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">Xu hướng tăng ổn định, tâm lý tích cực</td><td><span class="who wc">CHARTS</span></td><td>Xu hướng đi theo: mua khi giá điều chỉnh về MA kèm khối lượng; giữ các lệnh có lãi</td></tr>
+          <tr><td class="scn">Xu hướng giảm nhẹ nhàng</td><td><span class="who wc">CHARTS</span></td><td>Đứng ngoài / thiên hướng bán. Không bắt dao rơi nếu không có tín hiệu hoảng loạn Layer-1</td></tr>
+          <tr><td class="scn">Hoảng loạn — tin chiến sự, VIX &gt; 30, sợ hãi cực độ</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Ngày 1–3: không làm gì. Sau đó mua ngược xu hướng khi có tín hiệu ổn định (B5), với nửa khối lượng</td></tr>
+          <tr><td class="scn">Hưng phấn tột độ — giá tăng dựng đứng, ai cũng lạc quan</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Chốt lời khi giá còn mạnh (S4). Không bao giờ mua thêm. Siết chặt điểm dừng lỗ</td></tr>
+          <tr><td class="scn">Khung thời gian FOMC / CPI / bầu cử</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Đi ngang — không vào lệnh mới; tiếp tục vào ngày hôm sau</td></tr>
+          <tr><td class="scn">Mẫu hình phá vỡ mà không có khối lượng</td><td><span class="who wn">NEITHER</span></td><td>Bỏ qua — đây là nơi hầu hết các cú phá vỡ giả xảy ra</td></tr>
+          <tr><td class="scn">Biểu đồ tăng giá NHƯNG tâm lý sụp đổ do tin tức thực</td><td><span class="who wp">PHỦ QUYẾT TÂM LÝ</span></td><td>Bỏ qua giao dịch — chế độ tin tức thắng biểu đồ đã cũ</td></tr>
+          <tr><td class="scn">Tâm lý nhiễu, không cực đoan, biểu đồ rõ ràng</td><td><span class="who wc">CHARTS</span></td><td>Giao dịch theo biểu đồ; tâm lý chỉ là yếu tố phân định</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ EXPECTATIONS -->
+    <section class="card">
+      <h2 class="sec">⑤ Kiểm Tra Kỳ Vọng: Độ Chính Xác Thực Sự Là Bao Nhiêu</h2>
+      <p class="secnote">Độ chính xác về hướng — số liệu đã kiểm chứng so với truyền miệng. Đường thẳng đứng là tung đồng xu (50%). Thang đo 40–90%.</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">Tung đồng xu<small>mức cơ sở</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">Mô hình tâm lý xã hội<small>đã kiểm chứng, 8 thị trường (2025)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">Quy tắc đường trung bình động<small>tỷ lệ thắng đã kiểm chứng (Brock 1992)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">Mô hình ML đa tín hiệu tốt<small>mục tiêu thực tế của khung này</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">~55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Truyền miệng về mẫu hình biểu đồ<small>không có bằng chứng bình duyệt</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Tâm trạng Twitter (Bollen 2011)<small>tái lập thất bại, ~15 ngày kiểm thử</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">Lợi thế của khung này KHÔNG đến từ việc dự đoán tốt hơn 55–58% — mà đến từ việc xếp chồng các tín hiệu yếu độc lập, bỏ qua các khung thời gian sự kiện, định cỡ theo biến động, và cắt lỗ nhanh. Hãy kiểm thử lịch sử và giao dịch thử trước khi mạo hiểm tiền thật; các lợi thế đã công bố sẽ suy giảm theo thời gian.</p>
+    </section>
+
+    <footer class="src">
+      <b>Được xây dựng từ các nguồn đã kiểm chứng:</b> Gu–Kelly–Xiu (2020) <i>RFS</i> · Lo–Mamaysky–Wang (2000), Brock et al. (1992), Sullivan et al. (1999) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i>  · Bollen et al. (2011) + Lachanski &amp; Pav (2017) tái lặp thất bại · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018).
+      <br><b>Miễn trừ trách nhiệm:</b> khung giáo dục mô tả các nghiên cứu đã công bố. Không phải lời khuyên đầu tư, không phải lời hứa về lợi nhuận. Các tác động định lượng về Chính sách/chiến tranh/FOMC không vượt qua được kiểm chứng và chỉ được sử dụng ở đây như bộ lọc thời điểm/rủi ro, không phải yếu tố dự báo lợi nhuận.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

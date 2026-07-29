@@ -1,0 +1,271 @@
+<!-- machine-translated from research/parameters/2-hybrid-strategy-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategi Hibrida — Pola Grafik × Psikologi Manusia</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — charts */
+    --series-3: #e87ba4; /* magenta — psychology */
+    --series-4: #eda100; /* yellow — risk */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #0ca30c; --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  /* concept merge diagram */
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  /* layer stack */
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 0; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  /* checklists */
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  /* matrix */
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  /* expectation bars */
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>Strategi Hibrida: Pola Grafik × Psikologi Manusia</h1>
+      <p class="sub">Kerangka kerja keputusan beli/jual yang menggabungkan kedua sisi sesuai dengan apa yang benar-benar didukung oleh riset terverifikasi: <b>psikologi menentukan rezim</b> (kapan bertransaksi, berapa besar risiko), <b>grafik menentukan pemicu</b> (apa dan pada harga berapa), <b>volume + sentimen mengonfirmasi</b>, dan <b>volatilitas menentukan ukuran</b>. Tidak ada sinyal tunggal yang dipercaya sepenuhnya — Anda hanya bertindak berdasarkan konfluensi.</p>
+      <span class="stamp">Dibangun dari 2 putaran riset mendalam terverifikasi · Juli 2026 · Edukasi — bukan saran investasi</span>
+      <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12.5px;line-height:1.6">
+        <b>Bagaimana kerangka kerja ini dipetakan ke implementasi kripto.</b> Halaman ini menjelaskan strategi yang didukung riset; sistem yang berjalan mengadaptasinya untuk kripto.
+        <b>VIX → indeks Fear &amp; Greed kripto (F&amp;G)</b> — skala terbalik: panik adalah <b>F&amp;G &lt; 20</b> (bukan VIX &gt; 30), tenang adalah <b>F&amp;G &gt; 30</b>. Tidak ada VIX untuk kripto (<code>regime.py</code>, <code>strategy_config.py</code>).
+        <b>Pola grafik bernama (double bottom, H&amp;S) → skor teknikal komposit</b> (RSI · MA · funding · basis · long/short) yang dikonfirmasi oleh volume — mesin ini tidak memiliki pendeteksi pola candlestick (<code>confluence.py</code> B3/S3).
+        <b>Sentimen return semalam → kecenderungan crowd StockTwits.</b> Nama-nama B1–B6 / S1–S6 di bawah ini adalah label kondisi mesin yang sesungguhnya.
+      </div>
+    </header>
+
+    <!-- ① CONCEPT -->
+    <section class="card">
+      <h2 class="sec">① Campuran: Siapa Melakukan Apa</h2>
+      <p class="secnote">Vonis riset: pola grafik secara statistik informatif tetapi tidak menguntungkan jika berdiri sendiri (53–54% keunggulan paling baik); sinyal psikologi lemah dalam basis harian tetapi kuat pada titik ekstrem dan di sekitar peristiwa. Jadi masing-masing sisi melakukan tugas yang telah terverifikasi baik untuknya.</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>GRAFIK — pemicunya</h3>
+          <ul>
+            <li>Momentum 12-1 &amp; tren (MA 200 hari) — prediktor #1 yang terverifikasi</li>
+            <li>Pola (double bottom, H&amp;S) — hanya ketika selesai + volume</li>
+            <li>Realita tingkat kemenangan: 53–54% (Brock 1992)</li>
+            <li>Mean-reversion / pembalikan 1 bulan untuk timing</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">Menjawab: APA yang diperdagangkan, pada HARGA berapa</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>PSIKOLOGI — rezimnya</h3>
+          <ul>
+            <li>Tingkat takut/serakah (VIX), nada sentimen berita &amp; sosial</li>
+            <li>Kalender kebijakan &amp; peristiwa (FOMC, CPI, pemilu, berita perang)</li>
+            <li>Realita edge: akurasi 50–55%; ~6bp/SD sentimen semalam</li>
+            <li>Paling kuat pada titik ekstrem: panik dan euforia</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">Jawaban: KAPAN untuk trading, KAPAN untuk melakukan sebaliknya</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>MESIN KONFLUENSI — bertindak hanya ketika ≥ 4 dari 6 kondisi terpenuhi</h3>
+        <p>Menumpuk edge independen ~53% adalah satu-satunya cara terverifikasi untuk melampaui 55%. Satu sinyal saja = tidak ada trade. Aturan risiko (ukuran volatilitas, stop) mengesampingkan segalanya.</p>
+      </div>
+    </section>
+
+    <!-- ② LAYER FLOW -->
+    <section class="card">
+      <h2 class="sec">② Alur Keputusan: Tumpukan 4 Lapisan</h2>
+      <p class="secnote">Setiap kandidat trade melewati dari atas ke bawah. Setiap lapisan dapat memveto.</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">LAPISAN 1</span> Filter Rezim Psikologi <span class="q">— "Haruskah saya trading sama sekali? Mode yang mana?"</span></h4>
+        <p>VIX &lt; 20 → <b>mode tren</b> (ikuti chart). VIX 20–30 → setengah ukuran, stop lebih ketat. VIX &gt; 30 + ketakutan ekstrem → <b>mode kontrarian</b> (abaikan pola bearish, siapkan pembelian mean-reversion). FOMC/CPI/pemilu dalam ±1 hari → tidak ada entry baru. Guncangan perang/kebijakan → jangan pernah membeli bounce pertama; tunggu hari 1–3.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LAPISAN 2</span> Mesin Arah (Chart) <span class="q">— "Bias long atau short?"</span></h4>
+        <p>Momentum 12 bulan (lewati bulan terakhir) positif DAN harga di atas MA 200 hari → bias long. Keduanya negatif → bias short/hindari. Campuran → tidak ada bias, lewati. Ini adalah dua prediktor paling terverifikasi dalam seluruh literatur.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">LAPISAN 3</span> Pemicu + Konfirmasi (Chart × Psikologi) <span class="q">— "Kapan tepatnya?"</span></h4>
+        <p>Pola selesai (breakout double bottom, penembusan neckline H&amp;S) <b>AND</b> volume naik saat penembusan <b>AND</b> sentimen semalam/berita tidak bertentangan. Pola tanpa volume = jebakan, lewati. Chart bullish tapi sentimen runtuh karena berita nyata = psikologi memveto.</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">LAPISAN 4</span> Ukuran &amp; Keluar (Risiko) <span class="q">— "Berapa banyak? Kapan keluar?"</span></h4>
+        <p>Ukuran posisi = anggaran risiko ÷ volatilitas. Hard stop di bawah invalidasi pola. Trailing dengan MA. Time stop: tidak berjalan dalam N hari → keluar. Dengan akurasi ~55%, memotong kerugian dengan cepat ADALAH edge-nya.</p>
+      </div>
+      <div class="arrow">▼<small>order</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">BUY</span> · HOLD · <span style="color:var(--sell)">SELL</span></h3><p>Hasil dicatat dan diumpankan kembali — validasi ulang aturan secara out-of-sample secara berkala, karena edge yang telah dipublikasikan akan memudar.</p></div>
+    </section>
+
+    <!-- ③ CHECKLISTS -->
+    <section class="card">
+      <h2 class="sec">③ Daftar Periksa Beli &amp; Jual</h2>
+      <p class="secnote">Setiap kondisi yang terpenuhi = 1 poin. Bertindak pada 4+ dari 6. Tag menunjukkan sisi mana sinyal berasal.</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">BELI — konfluensi ≥ 4/6</h3>
+          <div class="rule">Tren + momentum + pola terkonfirmasi + psikologi yang mendukung</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">Harga di atas MA 200 hari / kondisi golden-cross<small>Brock 1992: hari sinyal beli ≈ +12% tahunan</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">Momentum 12-1 positif<small>Gu–Kelly–Xiu: prediktor ML #1</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">Pola bullish selesai DENGAN volume naik<small>Pola saja = tidak cukup (LMW 2000)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">Sentimen semalam/berita positif atau pulih<small>Fed: ~6bp per SD keesokan harinya</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">Lonjakan ketakutan mereda (VIX turun dari puncak &gt;30)<small>Overreaksi → jendela mean-reversion</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">Tidak ada FOMC / CPI / peristiwa besar dalam 24 jam<small>Kontrol risiko jendela peristiwa</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Kontrarian khusus (beli saat panik):</b> VIX &gt; 30 + ketakutan ekstrem + harga stabil di atas MA pendek + klimaks volume telah lewat → beli mean-reversion pada <b>setengah ukuran</b>. "Serakah saat orang lain takut," disistematiskan.</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">JUAL / HINDARI — konfluensi ≥ 4/6</h3>
+          <div class="rule">Tren rusak + momentum rusak + euforia atau guncangan</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">Harga di bawah MA 200 hari / kondisi death-cross<small>Hari sinyal jual ≈ −7% tahunan (Brock 1992)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">Momentum berbalik negatif<small>Mesin arah berbalik</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">Pola bearish (double top / H&amp;S) selesai dengan volume<small>Konfirmasi diperlukan, sama seperti beli</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">Euforia sentimen ekstrem<small>Semua orang bullish = sinyal jual kontrarian</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">Guncangan kebijakan / geopolitik negatif belum terselesaikan<small>Risiko rezim tetap tinggi pada hari 1–3</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">Stop-loss atau target volatilitas tercapai<small>SELALU mengesampingkan semua hal lain — tanpa pengecualian</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>Aturan veto:</b> chart mengatakan beli tetapi sentimen runtuh karena berita nyata → <b>lewati transaksi</b>. Rezim berita terbaru mengalahkan chart yang usang.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ WHEN × WHAT -->
+    <section class="card">
+      <h2 class="sec">④ Matriks Skenario KAPAN × APA</h2>
+      <p class="secnote">Sisi mana yang memimpin keputusan pada setiap kondisi psikologi pasar.</p>
+      <table class="mx">
+        <thead><tr><th>Skenario (kondisi psikologi)</th><th>Siapa yang memimpin</th><th>Tindakan</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">Tren naik tenang, sentimen positif</td><td><span class="who wc">CHARTS</span></td><td>Trend-follow: beli pullback ke MA dengan volume; tahan posisi untung</td></tr>
+          <tr><td class="scn">Downtrend tenang</td><td><span class="who wc">CHARTS</span></td><td>Diam / bias short. Jangan menangkap pisau jatuh tanpa sinyal panik Layer-1</td></tr>
+          <tr><td class="scn">Panik — berita perang, VIX &gt; 30, ketakutan ekstrem</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Hari 1–3: jangan lakukan apa-apa. Lalu beli kontrarian saat trigger stabilisasi (B5), setengah ukuran</td></tr>
+          <tr><td class="scn">Euforia — harga parabolik, semua orang bullish</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Ambil untung saat penguatan (S4). Jangan pernah menambah posisi. Perketat stop</td></tr>
+          <tr><td class="scn">Jendela FOMC / CPI / pemilu</td><td><span class="who wp">PSYCHOLOGY</span></td><td>Datar — tidak ada entry baru; lanjutkan keesokan harinya</td></tr>
+          <tr><td class="scn">Breakout pola tanpa volume</td><td><span class="who wn">NEITHER</span></td><td>Lewati — di sinilah kebanyakan breakout palsu terjadi</td></tr>
+          <tr><td class="scn">Chart bullish TAPI sentimen runtuh karena berita nyata</td><td><span class="who wp">PSIKOLOGI memveto</span></td><td>Lewati trade — rezim berita mengalahkan chart yang basi</td></tr>
+          <tr><td class="scn">Sentimen berisik, tidak ekstrem, chart jelas</td><td><span class="who wc">CHARTS</span></td><td>Trading berdasarkan chart; sentimen hanya sebagai penentu seri</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ EXPECTATIONS -->
+    <section class="card">
+      <h2 class="sec">⑤ Pemeriksaan Ekspektasi: Akurasi Apa yang Nyata</h2>
+      <p class="secnote">Akurasi arah — angka terverifikasi vs mitos. Garis vertikal adalah lempar koin (50%). Skala 40–90%.</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">Lempar koin<small>dasar acuan</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">Model sentimen sosial<small>terverifikasi, 8 pasar (2025)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">Aturan moving-average<small>win rate terverifikasi (Brock 1992)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">Model ML multi-sinyal yang baik<small>target realistis dari kerangka ini</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">~55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Mitos pola chart<small>tidak ada dukungan peer-review</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Mood Twitter (Bollen 2011)<small>replikasi gagal, ~15 hari uji</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">Keunggulan kerangka ini TIDAK berasal dari memprediksi lebih baik dari 55–58% — melainkan dari menumpuk sinyal lemah yang independen, melewati jendela peristiwa, menentukan ukuran posisi berdasarkan volatilitas, dan memotong kerugian dengan cepat. Backtest dan paper-trade sebelum mempertaruhkan uang; keunggulan yang dipublikasikan akan memudar.</p>
+    </section>
+
+    <footer class="src">
+      <b>Dibangun dari sumber terverifikasi:</b> Gu–Kelly–Xiu (2020) <i>RFS</i> · Lo–Mamaysky–Wang (2000), Brock et al. (1992), Sullivan et al. (1999) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i>  · Bollen et al. (2011) + Lachanski &amp; Pav (2017) replikasi gagal · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018).
+      <br><b>Penafian:</b> kerangka edukasi yang menjelaskan penelitian yang telah dipublikasikan. Bukan nasihat investasi, bukan janji keuntungan. Efek terukur dari Kebijakan/perang/FOMC tidak lolos verifikasi dan di sini hanya digunakan sebagai filter waktu/risiko, bukan prediktor return.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

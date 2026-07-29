@@ -1,0 +1,264 @@
+<!-- machine-translated from design/smart-trading-features-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart AI Decisions &amp; Personal Alerts</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --good:#1a8f5e; --warn:#c88a1a;
+  --bad:#d03b3b; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --muted:#8f8d85; --accent:#3987e5; --good:#3fd08a; --warn:#e0a53a;
+    --bad:#e66767; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px}
+h2{font-size:19px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2)}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td strong{color:var(--ink)}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;
+  padding:2px 10px;vertical-align:3px;margin-left:8px;letter-spacing:.03em}
+.live{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good);border:1px solid var(--good)}
+.soon{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn);border:1px solid var(--warn)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:14px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.mode{border-radius:12px;padding:14px 16px;border:1.5px solid var(--grid);background:var(--card)}
+.mode h3{margin:0 0 6px;font-size:14.5px}
+.mode.calm{border-color:var(--accent)} .mode.hot{border-color:var(--warn)}
+.mode ul{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}
+.steps li{counter-increment:s;position:relative;padding:10px 14px 10px 46px;margin:8px 0;
+  background:var(--card);border:1px solid var(--border);border-radius:10px}
+.steps li::before{content:counter(s);position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;
+  font-size:12.5px;display:grid;place-items:center}
+.note{border-left:3px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;
+  padding:10px 14px;margin:14px 0;font-size:13.5px;color:var(--ink2)}
+.safe{border-left-color:var(--good)}
+.trig{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
+.trig .t{background:var(--card);border:1.5px solid var(--warn);border-radius:11px;padding:12px 13px;font-size:12.8px}
+.trig .t b{display:block;color:var(--ink);font-size:13.2px;margin-bottom:3px}
+.trig .t i{font-style:normal;font-size:19px;display:block;margin-bottom:5px}
+.fan{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
+@media (max-width:640px){.fan{grid-template-columns:1fr}}
+.fan .u{border-radius:11px;border:1.5px solid var(--grid);background:var(--card);padding:11px 13px;font-size:12.5px}
+.fan .u b{display:block;font-size:13px;color:var(--ink);margin-bottom:3px}
+.fan .good{border-color:var(--good)} .fan .bad{border-color:var(--warn)} .fan .mute{opacity:.75;border-style:dashed}
+figure{margin:16px 0} figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+svg{display:block;width:100%;height:auto}
+</style></head>
+<body><main>
+
+<h1>การตัดสินใจอัจฉริยะด้วย AI และการแจ้งเตือนส่วนตัว</h1>
+<p>ระบบเทรดอัตโนมัติของคุณคิดอย่างไร พูดง่ายๆ คือ แพลตฟอร์มจะตัดสินใจว่า <em>ใคร</em> ควรเป็นผู้ตัดสินใจในแต่ละครั้ง — ระบบกฎเกณฑ์ที่รวดเร็ว หรือทีมนักวิเคราะห์ AI เต็มรูปแบบ — และคอยจับตาดูสัญลักษณ์ของคุณตลอดเวลา
+โดยตรวจสอบทุกเหตุการณ์เทียบกับ <strong>ตำแหน่งการลงทุนของคุณเอง</strong> ก่อนที่จะแจ้งเตือนคุณเสมอ</p>
+
+<h2>สองความคิด หนึ่งกองเรือ — การกำหนดเส้นทางการตัดสินใจอัจฉริยะ <span class="badge live">LIVE</span></h2>
+<p>ทุกรอบการเทรดเริ่มต้นด้วยคำถามเดียว: <strong>นี่คือช่วงเวลาปกติ หรือเป็นช่วงเวลาวิกฤต?</strong>
+คำตอบจะเป็นตัวกำหนดว่าใครจะเป็นผู้ตัดสินใจ ไม่ว่าคำตอบจะเป็นอย่างไร ก็จะต้องผ่านชั้นความปลอดภัยเดียวกัน</p>
+
+<figure>
+  <svg viewBox="0 0 720 372" role="img" aria-label="Each cycle is classified as ordinary or critical; ordinary goes to the rules engine, critical to the AI desk, and both pass through safety checks before any action">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="250" y="8" width="220" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="360" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">⏱ ทุกรอบการเทรด</text>
+    <text x="360" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">ราคาและฟีดตลาดรีเฟรช</text>
+    <line x1="360" y1="54" x2="360" y2="76" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="235" y="80" width="250" height="48" rx="10" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="360" y="100" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">ตรวจสอบสถานการณ์</text>
+    <text x="360" y="117" font-size="11.5" fill="var(--ink2)" text-anchor="middle">ช่วงเวลาปกติ — หรือวิกฤต?</text>
+
+    <path d="M300 128 L300 150 L150 150 L150 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <path d="M420 128 L420 150 L570 150 L570 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="26" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="150" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧭 ระบบกฎเกณฑ์</text>
+    <text x="150" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">แผนกลยุทธ์ของคุณ ถูกนำมาใช้</text>
+    <text x="150" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">รวดเร็ว · สม่ำเสมอ · ไม่มีค่าใช้จ่าย AI</text>
+
+    <rect x="446" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="570" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 ทีม AI เต็มรูปแบบ</text>
+    <text x="570" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">นักวิเคราะห์ 4 คน + การถกเถียงระหว่างเทรดเดอร์และฝ่ายบริหารความเสี่ยง</text>
+    <text x="570" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">การตัดสินใจโดยใช้วิจารณญาณ ไม่ใช่แค่กฎเกณฑ์</text>
+
+    <path d="M150 248 L150 272 L360 272 L360 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M570 248 L570 272 L360 272" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="360" y1="272" x2="360" y2="290" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="210" y="294" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--good) 10%,var(--card))" stroke="var(--good)" stroke-width="2"/>
+    <text x="360" y="314" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🛡️ การตรวจสอบความปลอดภัย — เสมอ</text>
+    <text x="360" y="331" font-size="11" fill="var(--ink2)" text-anchor="middle">ขีดจำกัดความเสี่ยง · เพดานตำแหน่ง · จุดตัดขาดทุน · การล็อกกำไร</text>
+    <line x1="360" y1="340" x2="360" y2="360" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="360" y="370" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">การดำเนินการ — เทรด ถือครอง หรือป้องกัน</text>
+  </svg>
+  <figcaption>ไม่ว่าฝ่ายใดจะเป็นผู้ตัดสินใจ คำตอบนั้นก็ยังต้องผ่านชั้นความปลอดภัยของคุณ AI ไม่สามารถข้ามขั้นตอนนี้ได้</figcaption>
+</figure>
+
+<h3>อะไรที่นับว่าเป็น "ช่วงเวลาวิกฤต"</h3>
+<p>มีสี่สิ่งที่ทำให้การตัดสินใจถูกส่งไปยังทีม AI เต็มรูปแบบ แต่ละอย่างวัดจากข้อมูลตลาดแบบเรียลไทม์ — ไม่ใช่การเดา:</p>
+<div class="trig">
+  <div class="t"><i>📅</i><b>ช่วงเวลาเหตุการณ์</b>การประกาศข้อมูลเศรษฐกิจสำคัญกำลังจะเกิดขึ้น — การตัดสินใจเรื่องอัตราดอกเบี้ย เงินเฟ้อ ข้อมูลการจ้างงาน</div>
+  <div class="t"><i>⚡</i><b>ตลาดช็อก</b>การเคลื่อนไหวของราคาที่ผิดปกติพร้อมปริมาณการซื้อขายที่ผิดปกติ — มีบางอย่างเกิดขึ้นจริง</div>
+  <div class="t"><i>🎭</i><b>ความสุดโต่งของฝูงชน</b>ระดับความกลัวหรือความคลั่งไคล้ที่สุดขั้ว — ฝูงชนกำลังมีพฤติกรรมที่ไม่ปกติ</div>
+  <div class="t"><i>🎯</i><b>ใกล้จุดตัดขาดทุนของคุณ</b>ตำแหน่งของคุณกำลังเข้าใกล้จุดตัดขาดทุนเพื่อความปลอดภัย — ช่วงเวลาที่วิจารณญาณสำคัญที่สุด</div>
+</div>
+<div class="note"><strong>ทำไมต้องมีการกำหนดเส้นทาง?</strong> กฎเกณฑ์ตายตัวนั้นยอดเยี่ยมสำหรับสภาวะปกติ — รวดเร็ว
+สม่ำเสมอ และไม่มีค่าใช้จ่ายในการทำงาน แต่สถานการณ์ที่ผิดปกติคือจุดที่กฎเกณฑ์ตายตัวไม่มี
+คำตอบพอดี การกำหนดเส้นทางจะใช้การวิเคราะห์เชิงลึกในจุดที่สามารถเปลี่ยนแปลงผลลัพธ์ได้จริง</div>
+
+<h2>สิ่งที่โต๊ะ AI ฉบับเต็มอ่าน <span class="badge live">LIVE</span></h2>
+<p>เมื่อโต๊ะ AI ตัดสินใจ มันไม่ได้ดูแค่กราฟเท่านั้น นักวิเคราะห์สี่คนแต่ละคนเขียนบทสรุปสั้น ๆ
+จากนั้นเทรดเดอร์และผู้จัดการความเสี่ยงจะถกกันเพื่อสรุปผลการตัดสินใจสุดท้าย:</p>
+
+<figure>
+  <svg viewBox="0 0 720 232" role="img" aria-label="Four analysts - news, psychology, macro and technical - feed a trader and risk manager who debate and produce a decision with a written reason">
+    <rect x="8"   y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="91" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📰 ข่าว</text>
+    <text x="91" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">พาดหัวข่าวและเศรษฐกิจมหภาค,</text>
+    <text x="91" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">พร้อมความรู้สึกของตลาด</text>
+
+    <rect x="190" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="273" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🎭 จิตวิทยา</text>
+    <text x="273" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">อารมณ์ของฝูงชน, ความกลัว</text>
+    <text x="273" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">และความโลภ, กระแสในโซเชียล</text>
+
+    <rect x="372" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="455" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🏛 เศรษฐกิจมหภาคและนโยบาย</text>
+    <text x="455" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ระบอบเศรษฐกิจ,</text>
+    <text x="455" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">การเปลี่ยนแปลงนโยบาย</text>
+
+    <rect x="554" y="8" width="158" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="633" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📈 เทคนิค</text>
+    <text x="633" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">โครงสร้าง, โมเมนตัม,</text>
+    <text x="633" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ความผันผวน</text>
+
+    <path d="M91 74 L91 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M273 74 L273 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M455 74 L455 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M633 74 L633 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <line x1="360" y1="96" x2="360" y2="118" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="212" y="122" width="296" height="50" rx="11" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="143" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⚖️ การถกเถียงระหว่างเทรดเดอร์และผู้จัดการความเสี่ยง</text>
+    <text x="360" y="161" font-size="11" fill="var(--ink2)" text-anchor="middle">การตัดสินใจ และเหตุผลที่คัดค้าน</text>
+    <line x1="360" y1="172" x2="360" y2="192" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <rect x="248" y="194" width="224" height="34" rx="9" fill="var(--card)" stroke="var(--accent)" stroke-width="1.8"/>
+    <text x="360" y="216" font-size="12.5" font-weight="700" fill="var(--accent)" text-anchor="middle">การตัดสินใจ + เหตุผลที่บันทึกไว้</text>
+  </svg>
+  <figcaption>ปัจจัยมนุษย์ — วิธีที่ผู้คน <em>รู้สึก</em> เกี่ยวกับตลาด — เป็นส่วนหนึ่งของทุกการตัดสินใจสำคัญ ไม่ใช่แค่กราฟ</figcaption>
+</figure>
+
+<p>ทุกการตัดสินใจจะถูกบันทึกพร้อมเหตุผลที่ตัดสินใจ และระบุว่าความคิดใดเป็นผู้ตัดสิน คุณสามารถย้อนอ่านได้ว่า
+เหตุใดฟลีทของคุณจึงกระทำเช่นนั้น</p>
+
+<h2>การป้องกันกำไรอัตโนมัติ <span class="badge live">LIVE</span></h2>
+<p>การป้องกันสองแบบทำงานกับทุกฟลีทใหม่ โดยที่คุณไม่ต้องทำอะไรเลย:</p>
+<div class="card">
+  <p style="margin:0 0 8px"><strong>🛡️ จุดตัดขาดทุนเพื่อความปลอดภัยที่กำหนดขนาดตามโพซิชันจริงของคุณ</strong> หากการเทรดเคลื่อนไหว
+  สวนทางกับคุณอย่างแท้จริง มันจะถูกตัดออกตั้งแต่เนิ่น ๆ — ขาดทุนเล็กน้อยที่ควบคุมได้แทนที่จะเป็นการขาดทุนก้อนใหญ่</p>
+  <p style="margin:0"><strong>🔒 การล็อกกำไรแบบตาม (Trailing profit lock)</strong> เมื่อโพซิชันสร้างกำไรที่มีนัยสำคัญ
+  แพลตฟอร์มจะติดตามระดับสูงสุดของมัน หากกำไรเริ่มลดลงเกินสัดส่วนที่กำหนดไว้จากจุดสูงสุดนั้น กำไร
+  จะถูกล็อกเก็บโดยอัตโนมัติ — เพื่อไม่ให้ผู้ชนะค่อย ๆ วนกลับไปเป็นศูนย์ในขณะที่คุณหลับอยู่</p>
+</div>
+
+<figure>
+  <svg viewBox="0 0 700 220" role="img" aria-label="Profit rises to a peak, retraces, and is banked at the lock level instead of falling back to zero">
+    <line x1="30" y1="180" x2="670" y2="180" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="34" y="196" font-size="11" fill="var(--muted)">จุดเข้า (±0)</text>
+    <path d="M30 180 C 140 158, 240 110, 330 72 C 355 62, 372 58, 385 58 C 430 62, 500 92, 560 118"
+          fill="none" stroke="var(--good)" stroke-width="3" stroke-linecap="round"/>
+    <line x1="385" y1="118" x2="650" y2="118" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <circle cx="385" cy="58" r="5" fill="var(--good)"/>
+    <text x="385" y="42" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">กำไรสูงสุด</text>
+    <circle cx="560" cy="118" r="6" fill="var(--accent)"/>
+    <text x="572" y="112" font-size="12" font-weight="700" fill="var(--accent)">กำไรถูกล็อกเก็บแล้ว ✓</text>
+    <text x="572" y="128" font-size="10.5" fill="var(--muted)">ระดับล็อก (% ของจุดสูงสุด)</text>
+    <path d="M560 118 C 590 140, 620 165, 650 178" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 4"/>
+    <text x="648" y="168" font-size="10.5" fill="var(--muted)" text-anchor="end">สิ่งที่จะเกิดขึ้นถ้าไม่มีการป้องกัน…</text>
+  </svg>
+  <figcaption>การล็อกแบบตาม: กำไรจะถูกติดตามที่จุดสูงสุด — หากมันลดลงเกินระดับล็อก กำไรจะถูกรับรู้จริงแทนที่จะวนกลับไปเป็นศูนย์</figcaption>
+</figure>
+
+<div class="note"><strong>การปรับปรุงล่าสุด</strong> เดิมทีการล็อกกำไรจะเริ่มทำงานเร็วเกินไป ซึ่งหมายความว่า
+มันอาจล็อกกำไรจำนวนเล็กน้อยไว้ ในขณะที่จุดตัดขาดทุนเพื่อความปลอดภัยยังคงยอมให้ขาดทุนก้อนใหญ่กว่ามาก ตอนนี้มันจะรอ
+จนกว่าโพซิชันจะทำกำไรได้อย่างน้อยเท่ากับความเสี่ยงที่รับอยู่ก่อนที่จะเริ่มทำงาน — เพื่อให้ชัยชนะที่ได้รับการป้องกันนั้นคุ้มค่าจริง ๆ</div>
+
+<h2>การแจ้งเตือนประเด็นร้อนส่วนบุคคล <span class="badge live">LIVE</span></h2>
+<p>การเฝ้าระวังตลอด 24 ชั่วโมงสำหรับสัญลักษณ์ใน <strong>your</strong> RUNs ของคุณ แนวคิดหลักคือ เหตุการณ์ตลาดคือ
+ข้อเท็จจริงเกี่ยวกับตลาด — <strong>ส่วนว่ามันสำคัญกับคุณหรือไม่นั้นเป็นข้อเท็จจริงเกี่ยวกับตัวคุณ</strong> ดังนั้นการแจ้งเตือนทุกครั้งจะถูกตรวจสอบ
+กับบัญชีของคุณเองก่อนที่จะส่งออกไป</p>
+
+<figure>
+  <svg viewBox="0 0 720 250" role="img" aria-label="Three stages: hourly detection across all symbols, per-member verification against each position, then a personal alert only when it matters">
+    <rect x="30" y="10" width="660" height="52" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="52" y="33" font-size="13" font-weight="700" fill="var(--ink)">① ตรวจจับ — ทุกชั่วโมง ครอบคลุมทุกสัญลักษณ์ที่ใช้งานอยู่</text>
+    <text x="52" y="51" font-size="11.3" fill="var(--ink2)">ข่าวนโยบาย · พาดหัวข่าวด่วน · การเคลื่อนไหวทางเทคนิคที่รุนแรง · ความรู้สึกฝูงชนที่ผิดปกติ</text>
+    <line x1="360" y1="62" x2="360" y2="82" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="30" y="86" width="660" height="52" rx="11" fill="color-mix(in srgb,var(--accent) 8%,var(--card))" stroke="var(--accent)" stroke-width="2"/>
+    <text x="52" y="109" font-size="13" font-weight="700" fill="var(--ink)">② ตรวจสอบ — เทียบกับสถานะของคุณ</text>
+    <text x="52" y="127" font-size="11.3" fill="var(--ink2)">คุณถือทิศทางใด · เลเวอเรจของคุณ · จุดหยุดขาดทุนของคุณอยู่ห่างแค่ไหน</text>
+
+    <path d="M180 138 L180 160 L140 160 L140 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M360 138 L360 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M540 138 L540 160 L580 160 L580 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+
+    <rect x="30" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--good)" stroke-width="1.8"/>
+    <text x="140" y="205" font-size="12" font-weight="700" fill="var(--good)" text-anchor="middle">สนับสนุนสถานะของคุณ</text>
+    <text x="140" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">แจ้งให้ทราบแบบเบาๆ,</text>
+    <text x="140" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ความเร่งด่วนต่ำ</text>
+
+    <rect x="262" y="184" width="196" height="58" rx="10" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="205" font-size="12" font-weight="700" fill="var(--warn)" text-anchor="middle">ขัดแย้งกับสถานะของคุณ</text>
+    <text x="360" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">การแจ้งเตือนส่วนตัวแบบเร่งด่วน</text>
+    <text x="360" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">+ จุดตัดสินใจ</text>
+
+    <rect x="470" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.8" stroke-dasharray="5 4"/>
+    <text x="580" y="205" font-size="12" font-weight="700" fill="var(--muted)" text-anchor="middle">ไม่มีนัยสำคัญสำหรับคุณ</text>
+    <text x="580" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ไม่มีการแจ้งเตือนใดๆ —</text>
+    <text x="580" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ความเงียบคือคุณสมบัติสำคัญ</text>
+  </svg>
+  <figcaption>เหตุการณ์เดียว สามผลลัพธ์ที่แตกต่างกัน สมาชิกส่วนใหญ่ไม่ได้รับการแจ้งเตือนอย่างถูกต้อง</figcaption>
+</figure>
+
+<h3>ข่าวเดียวกัน สมาชิกสามคน</h3>
+<div class="fan">
+  <div class="u good"><b>สมาชิก A — short ETH</b>ข่าวสนับสนุนโพซิชัน → แจ้งเตือนแบบเบา ๆ ความเร่งด่วนต่ำ</div>
+  <div class="u bad"><b>Member B — long ETH ×2</b>ข่าวขัดแย้งกับโพซิชัน สต็อปห่างออกไป 1.1% → <strong>การแจ้งเตือนส่วนตัวแบบเร่งด่วน</strong> + จุดตัดสินใจ</div>
+  <div class="u mute"><b>Member C — สต็อปไกล ขนาดเล็ก</b>ไม่มีนัยสำคัญสำหรับบัญชีนี้ → <strong>ไม่มีการแจ้งเตือนเลย</strong>.</div>
+</div>
+
+<p>เมื่อการแจ้งเตือนมีความสำคัญจริง Trading Master ของคุณจะเห็นสัญญาณเดียวกันนี้เป็นจุดตัดสินใจ และรอบถัดไปของ
+RUN ที่ได้รับผลกระทบจะถูกยกระดับไปยังทีม AI desk เต็มรูปแบบโดยอัตโนมัติ</p>
+
+<h2>สิ่งนี้มีความหมายต่อคุณอย่างไร</h2>
+<table>
+  <thead><tr><th>สิ่งที่คุณอาจสังเกตเห็น</th><th>เหตุใดจึงเป็นเช่นนั้น</th></tr></thead>
+  <tbody>
+    <tr><td><strong>บางรอบทำงานทันที บางรอบหยุดคิดก่อน</strong></td><td>ช่วงเวลาปกติจะเดินตามเส้นทางกฎเกณฑ์ ส่วนช่วงเวลาสำคัญจะเข้าสู่ AI desk ซึ่งอ่านข้อมูลมากขึ้นก่อนตอบสนอง</td></tr>
+    <tr><td><strong>โพซิชันที่กำไรปิดตัวเองโดยอัตโนมัติ</strong></td><td>ระบบล็อกกำไรแบบ trailing เก็บกำไรไว้ได้ก่อนที่มันจะลดลง</td></tr>
+    <tr><td><strong>โพซิชันที่ขาดทุนปิดตัวก่อนกำหนด</strong></td><td>สต็อปเพื่อความปลอดภัยตัดขาดทุน — ขาดทุนเล็กน้อยแบบควบคุมได้แทนที่จะเป็นขาดทุนก้อนใหญ่</td></tr>
+    <tr><td><strong>คุณไม่ได้รับการแจ้งเตือนในช่วงข่าวใหญ่</strong></td><td>มีการตรวจสอบกับโพซิชันของคุณแล้วและพบว่าไม่มีนัยสำคัญสำหรับคุณ นั่นคือระบบกำลังทำงานตามปกติ</td></tr>
+    <tr><td><strong>RUN ไม่เคยเปิดการเทรดเลย</strong></td><td>แผนของมันไม่สามารถชดเชยต้นทุนการเทรดได้ หรือไม่มีจังหวะใดผ่านเกณฑ์ความเชื่อมั่น การไม่เทรดก็เป็นผลลัพธ์ที่ใช้ได้</td></tr>
+  </tbody>
+</table>
+
+<div class="note safe"><strong>ความปลอดภัย เสมอ:</strong> AI แนะนำ — ขีดจำกัดความเสี่ยงของคุณเป็นผู้ตัดสิน ทุก
+การกระทำ ไม่ว่าจะมาจากเอนจินกฎเกณฑ์หรือเดสก์ AI ยังคงต้องผ่านการตรวจสอบความเสี่ยง
+ขีดจำกัดโพซิชัน และจุดหยุดความปลอดภัยของบัญชีคุณ และคุณสามารถหยุดทุกอย่างได้ทุกเมื่อด้วยปุ่มเดียว</div>
+
+</main></body></html>

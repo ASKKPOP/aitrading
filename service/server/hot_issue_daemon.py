@@ -29,6 +29,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+from analysis_agents import LANG_NAMES
 from database import begin_write_transaction, get_db_connection
 from notifications_i18n import (normalize_lang, triggers_text,
                                 verdict_default as _verdict_default,
@@ -103,8 +104,15 @@ def _recipient_lang(agent_id: int) -> str:
             pass
 
 
-_LANG_NAMES = {"en": "English", "ko": "Korean", "ja": "Japanese",
-               "th": "Thai", "vi": "Vietnamese"}
+# The language the LLM is told to write the note in. This is deliberately
+# analysis_agents.LANG_NAMES and not a local copy: a private list here silently
+# dropped Indonesian, so an `id` reader was asked for an English note that was
+# then welded into an Indonesian template —
+#
+#     NETRAL bagi posisi beli (long) Anda (tingkat urgensi tinggi): <English>
+#
+# which is the exact half-and-half sentence #109 set out to kill, surviving in
+# the one language that shipped after it.
 
 
 def _personal_verdict(run: dict[str, Any], side: str,
@@ -139,7 +147,7 @@ def _personal_verdict(run: dict[str, Any], side: str,
             "Respond with ONLY the JSON object, no prose before or after: "
             '{"stance": "for"|"against"|"neutral", '
             '"urgency": "low"|"medium"|"high", "note": "<one short sentence>"}'
-            f'\nWrite the "note" value in {_LANG_NAMES.get(lang, "English")}. '
+            f'\nWrite the "note" value in {LANG_NAMES.get(lang, "English")}. '
             'The stance and urgency values stay in English exactly as listed.')
         text = generate_text(prompt, max_tokens=120, temperature=0.2,
                              tier="decision")

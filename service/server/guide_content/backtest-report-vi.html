@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest chiến lược Phase-4 — Kết quả Go/No-Go</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/3-phase4-backtest-report.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>Backtest chiến lược Phase-4 — kết quả go/no-go</h1>
+<p><strong>Ngày:</strong> 2026-07-16 · <strong>Kết luận: INSUFFICIENT_EVIDENCE → gói flip KHÔNG được triển khai. Tất cả các execution gate vẫn giữ mặc định tắt.</strong>
+<strong>Trình chạy:</strong> <code>service/server/run_phase4_backtest.py</code> · số liệu thô: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · engine: <code>backtest_strategy.py</code> (đã unit-test; hai lần chạy độc lập giống hệt nhau từng byte).
+<strong>Kế hoạch:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — các tiêu chí đã được đăng ký trước khi các cửa sổ OOS được mở.</p>
+<h2>0. 한국어 요약</h2>
+<p>사전 등록 기준으로 평가한 결과 <strong>증거 불충분(INSUFFICIENT_EVIDENCE)</strong> — 플립 패키지(실행 게이트 기본 활성화)는 배포하지 않습니다. 배포-충실 설정(≥4/6)은 6년 워크포워드에서 OOS 거래가 <strong>38건</strong>뿐(기준 400건)이고, 승률 36.8%의 Wilson 90% 하한(0.28)과 PF 부트스트랩 하한(0.64) 모두 기준 미달. 민감도 행(≥3)은 237건으로 늘지만 PF 하한 0.88로 여전히 1.0 미만 — 수익성이 통계적으로 입증되지 않음.</p>
+<p><strong>Phát hiện tích cực:</strong> Risk stack hoạt động đúng như nghiên cứu đã hứa hẹn — mức sụt giảm tối đa tệ nhất của tài sản là <strong>2.6%</strong> (B&amp;H là −38%~−47% trong cùng giai đoạn), 53% số lần thoát lệnh là trailing stop (để lệnh thắng chạy), hệ thống bảo toàn vốn bằng cách chặn lỗ chứ không phải bằng dự đoán. Dự đoán của lăng kính thống kê trong bảng xác thực (thiếu số lượng giao dịch) đã đúng chính xác.</p>
+<p><strong>Bước tiếp theo:</strong> Tất cả các tính năng đã sẵn sàng triển khai ở chế độ hiển thị/tư vấn/opt-in. Khi dữ liệu telemetry trực tiếp (vector confluence, factor snapshot) được tích lũy, hệ thống 6 điều kiện bao gồm B4 sẽ được đánh giá lại theo live-forward. Ngưỡng giá trị quay về nghiên cứu — không phải production.</p>
+<h2>1. Thiết lập đăng ký trước (không thay đổi sau khi thấy kết quả)</h2>
+<ul>
+<li><strong>Hàng chính:</strong> các giá trị mặc định trung thực với triển khai (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), không bao giờ được tinh chỉnh — không có snooping theo thiết kế.</li>
+<li><strong>Hàng walk-forward:</strong> có neo (anchored), 4 folds, purge 14 ngày, lưới 6 cấu hình (được báo cáo), được tinh chỉnh trên tập train theo profit factor gộp (≥30 giao dịch), cố định trên tập test.</li>
+<li><strong>Hàng độ nhạy:</strong> <code>confluence_min=3</code> cố định (B4 về mặt lịch sử là null → chỉ có thể đạt 5 trên 6 điều kiện; do đó cổng live <em>nghiêm ngặt hơn</em> trong backtest so với khi triển khai).</li>
+<li><strong>Tiêu chí:</strong> ≥400 giao dịch OOS gộp, nếu không thì INSUFFICIENT_EVIDENCE · cận dưới Wilson 90% của tỷ lệ thắng &gt; 0.50 · cận dưới bootstrap 90% của hệ số lợi nhuận &gt; 1.0 · DD tối đa của tài sản tệ nhất ≤ 30%.</li>
+<li><strong>Tính trung thực về phạm vi:</strong> B4 null trong suốt; B3 giảm cấp xuống MA/RSI/volume; B5 = chỉ nhánh F&amp;G (kho lưu trữ đầy đủ từ 2018+, thêm một ngày độ trễ); S5 null; sự kiện = lịch 2019–2025 đã được xác minh từ hai nguồn. Tài sản: các nến BTC/ETH từ 2019-01 (tín hiệu ≈2020-02 sau 400 nến khởi động), SOL từ 2020-04 (tín hiệu ≈2021-05). Phí 0.1%/lệnh + 0.05% trượt giá; tín hiệu tại đóng nến t được khớp lệnh tại mở nến t+1.</li>
+</ul>
+<h2>2. Kết quả</h2>
+<h3>Chính (đúng-với-triển khai thực tế ≥4/6) — gộp trên 4 kỳ OOS × 3 tài sản</h3>
+<table>
+<thead>
+<tr>
+<th>Chỉ số</th>
+<th>Giá trị</th>
+<th>Tiêu chí</th>
+<th>Đạt?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Giao dịch OOS</td>
+<td><strong>38</strong></td>
+<td>≥ 400</td>
+<td>❌ (ngưỡng bằng chứng)</td>
+</tr>
+<tr>
+<td>Tỷ lệ thắng</td>
+<td>36.8% (14/38)</td>
+<td>Wilson90 LB &gt; 0.50 → LB = <strong>0.276</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Hệ số lợi nhuận</td>
+<td>1.13</td>
+<td>bootstrap90 LB &gt; 1.0 → LB = <strong>0.644</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>DD tối đa của tài sản tệ nhất</td>
+<td><strong>2.63%</strong></td>
+<td>≤ 30%</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>Theo từng kỳ: F1 (2021-07→2022-12, giá xuống): 19 giao dịch, PF 1.82 · F2: 6 giao dịch, PF 0.69 · F3: 7 giao dịch, PF 6.53 · F4 (2025-07→2026-07, giá xuống): 6 giao dịch, PF 0.0.
+Cơ cấu thoát lệnh: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — đúng hồ sơ theo xu hướng mà nghiên cứu đề ra (thắng một tỷ lệ nhỏ giao dịch, để các lệnh thắng chạy dài: mức thắng trung bình ≫ mức thua trung bình chính là yếu tố đẩy PF vượt trên 1 ở tỷ lệ thắng 37%).</p>
+<h3>Độ nhạy (≥3 trong số 5 có sẵn)</h3>
+<p>237 giao dịch · thắng 37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · DD tệ nhất 8.97%. Nhiều bằng chứng hơn, kết luận vẫn vậy: khả năng sinh lời theo ước tính điểm, không thể phân biệt về mặt thống kê so với hòa vốn.</p>
+<h3>Walk-forward (tinh chỉnh theo từng kỳ, 6 cấu hình — đã tính đến snooping)</h3>
+<p>Mỗi fold được tinh chỉnh với <code>confluence_min=3</code>; PF kiểm thử: F1 1.46, F2 1.82, F3 0.69, F4 0.79. Edge phụ thuộc vào regime và không duy trì ổn định qua các fold — nhất quán với cảnh báo "published edges decay" của nghiên cứu.</p>
+<h3>Tương quan điều kiện (thấu kính thống kê đã dự đoán điều này)</h3>
+<p>Mức đồng thuận hàng ngày B1↔B2 <strong>0.709</strong> (cả hai đều là chỉ số xu hướng), B1↔B3 0.52, B2↔B3 0.40. Sáu điều kiện này không độc lập; phép tính số học "stack independent 53% edges" không áp dụng đúng theo nghĩa đen.</p>
+<h3>Điều GÌ đã thực sự hiệu quả</h3>
+<p>Trong giai đoạn thị trường giảm F4, chiến lược lỗ ≈1.1–1.7% mỗi tài sản trong khi buy-and-hold lỗ <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong>. Drawdown tối đa 2–9% so với drawdown lịch sử hơn 60% của B&amp;H. Mức độ tiếp xúc 3–6% số ngày. <strong>Giá trị đã được xác thực của hệ thống là bảo toàn vốn thông qua bộ lọc regime và chuỗi thoát lệnh — đúng như tuyên bố của nghiên cứu rằng "edge đến từ quản lý rủi ro, không phải dự đoán." Điều KHÔNG được xác thực là khả năng sinh lời độc lập.</strong></p>
+<h2>3. Quyết định (theo quy tắc đã đăng ký trước)</h2>
+<ol>
+<li><strong>Không đảo chiều.</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> vẫn <strong>mặc định tắt</strong>. Không triển khai việc di chuyển preset/<code>min_confidence</code>. Câu văn của chính kế hoạch này chi phối: <em>"Nếu dưới [tiêu chí], các ngưỡng confluence sẽ quay trở lại nghiên cứu, không phải sản xuất."</em></li>
+<li><strong>Những gì vẫn được triển khai (đã hợp nhất, không thay đổi hành vi thực thi):</strong> hiển thị confluence + agent API, tư vấn regime + tile, telemetry (vector confluence theo từng quyết định, ảnh chụp nhanh yếu tố), các bản sửa lỗi an toàn (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, kiểm soát hướng rủi ro, sửa lỗi put_risk_limits), các chỉ số backtester đã được sửa, và bộ công cụ thoát lệnh tùy chọn theo từng agent (trailing/time stops — từng agent riêng lẻ có thể bật chúng; đây là công cụ quản lý rủi ro theo vị thế, không phải tuyên bố về khả năng sinh lời).</li>
+<li><strong>Đường hướng đánh giá lại:</strong> live-forward. Telemetry Giai đoạn 1 tích lũy đầy đủ vector 6 điều kiện (bao gồm B4) với mỗi quyết định; các factor snapshot ghi lại funding/OI/L-S/StockTwits. Khi có ≥400 quyết định live đạt gated-quality (hoặc một backtest trong tương lai có thể bao gồm các điều kiện còn thiếu), chạy lại các tiêu chí. Bảng hiệu chỉnh (hit rate theo confluence count, Wilson CIs) tự xây dựng từ telemetry.</li>
+<li><strong>Công việc về ngưỡng quay trở lại nghiên cứu:</strong> câu hỏi mở thú vị từ dữ liệu là liệu <em>chỉ riêng exit stack</em> (trail + time stop + regime veto) trên một tín hiệu entry đơn giản hơn có mang lại giá trị hay không — confluence entry gate ở ≥4/5 quá nghiêm ngặt đến mức chỉ giao dịch 6 lần/năm trên 3 tài sản.</li>
+</ol>
+<p><em>Không phải lời khuyên đầu tư. Nền tảng mô phỏng. Các edge lịch sử sẽ suy giảm; các con số này mô tả một backtest trong giới hạn phạm vi đã ghi nhận.</em></p>
+</main></body></html>

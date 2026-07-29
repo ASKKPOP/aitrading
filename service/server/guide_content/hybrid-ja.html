@@ -1,0 +1,271 @@
+<!-- machine-translated from research/parameters/2-hybrid-strategy-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハイブリッド戦略 — チャートパターン × 人間心理</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — charts */
+    --series-3: #e87ba4; /* magenta — psychology */
+    --series-4: #eda100; /* yellow — risk */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #0ca30c; --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  /* concept merge diagram */
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  /* layer stack */
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 0; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  /* checklists */
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  /* matrix */
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  /* expectation bars */
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>ハイブリッド戦略：チャートパターン × 人間心理</h1>
+      <p class="sub">検証済みの研究が実際に裏付ける内容に従って両サイドを組み合わせた売買判断フレームワーク：<b>心理がレジームを設定し</b>（いつ取引するか、どれだけリスクを取るか）、<b>チャートがトリガーを設定し</b>（何を、いくらで）、<b>出来高とセンチメントが確認し</b>、そして<b>ボラティリティがサイズを設定する</b>。単一のシグナルは信頼されません——コンフルエンス（重なり）がある場合にのみ行動します。</p>
+      <span class="stamp">検証済みディープリサーチ2ラウンドをもとに構築 · 2026年7月 · 教育目的 — 投資助言ではありません</span>
+      <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12.5px;line-height:1.6">
+        <b>このフレームワークが暗号資産の実装にどのようにマッピングされるか。</b>このページは研究に基づく戦略を説明しています。稼働中のシステムはこれを暗号資産向けに適応させています。
+        <b>VIX → 暗号資産のFear &amp; Greed指数（F&amp;G）</b> — 反転したスケール：パニックは<b>F&amp;G &lt; 20</b>（VIX &gt; 30ではなく）、平静は<b>F&amp;G &gt; 30</b>です。暗号資産にはVIXが存在しません（<code>regime.py</code>, <code>strategy_config.py</code>).
+        <b>名称付きチャートパターン（double bottom、H&amp;S） → 複合テクニカルスコア</b>（RSI・MA・funding・basis・long/short）を出来高で確認——このエンジンにはローソク足パターン検出器はありません（<code>confluence.py</code> B3/S3）。
+        <b>オーバーナイトリターン・センチメント → StockTwitsの群衆傾向。</b> 以下のB1〜B6 / S1〜S6の名称は、実際のエンジンの条件ラベルです。
+      </div>
+    </header>
+
+    <!-- ① CONCEPT -->
+    <section class="card">
+      <h2 class="sec">① ミックス：誰が何をするか</h2>
+      <p class="secnote">研究の結論：チャートパターンは統計的に有意な情報を持つが、それ単独では利益を生まない（せいぜい53〜54%のエッジ）；心理シグナルは日々のレベルでは弱いが、極端な状況やイベント前後では強力です。したがって、各サイドは検証済みで得意な役割を担います。</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>チャート — トリガー</h3>
+          <ul>
+            <li>モメンタム 12-1 ＆ トレンド（200日MA）— 検証済みの第1位予測因子</li>
+            <li>パターン（double bottom、H&amp;S）— 完成時＋出来高がある場合のみ</li>
+            <li>勝率の実態：53〜54%（Brock 1992）</li>
+            <li>タイミングのための平均回帰／1ヶ月リバーサル</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">回答：何を、いくらで取引するか</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>心理 — レジーム</h3>
+          <ul>
+            <li>恐怖・強欲レベル（VIX）、ニュースおよびソーシャルセンチメントのトーン</li>
+            <li>政策 &amp; イベントカレンダー（FOMC、CPI、選挙、戦争関連の見出し）</li>
+            <li>エッジの実態：50–55%の精度；オーバーナイトセンチメントで約6bp/SD</li>
+            <li>極端な状況で最も強い：パニックと陶酔</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">答え：いつ取引すべきか、いつ逆をすべきか</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>コンフルエンス・エンジン — 6条件中4つ以上が一致したときのみ実行</h3>
+        <p>独立した約53%のエッジを積み重ねることが、55%を超えるための唯一の実証済みの方法である。シグナル単独では取引しない。リスクルール（ボラティリティに基づくサイジング、ストップ）がすべてに優先する。</p>
+      </div>
+    </section>
+
+    <!-- ② LAYER FLOW -->
+    <section class="card">
+      <h2 class="sec">② 意思決定フロー：4層スタック</h2>
+      <p class="secnote">すべての候補トレードは上から下へ通過する。どの層も拒否権を持つ。</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">レイヤー1</span> 心理レジームフィルター <span class="q">— "そもそも取引すべきか？ どのモードか？"</span></h4>
+        <p>VIX &lt; 20 → <b>トレンドモード</b> （チャートに従う）。VIX 20–30 → ハーフサイズ、タイトなストップ。VIX &gt; 30 + 恐怖の極限 → <b>逆張りモード</b> （弱気パターンを無視し、平均回帰の買いを準備する）。FOMC/CPI/選挙の±1日以内 → 新規エントリーなし。戦争・政策ショック → 最初の反発では絶対に買わない；1～3日待つ。</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">レイヤー2</span> 方向性エンジン（チャート） <span class="q">— "ロングかショートか？"</span></h4>
+        <p>12ヶ月モメンタム（直近1ヶ月を除く）がプラスで、かつ価格が200日移動平均線を上回っている → ロングバイアス。両方がマイナス → ショート／回避バイアス。混在 → バイアスなし、スキップ。これらは全文献の中で最も実証されている2つの予測因子である。</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">レイヤー3</span> トリガー＋確認（チャート×心理） <span class="q">— "正確にいつか？"</span></h4>
+        <p>パターンが完成する（ダブルボトムのブレイクアウト、H&amp;Sのネックラインブレイク） <b>AND</b> ブレイク時に出来高が増加する <b>AND</b> オーバーナイト／ニュースセンチメントが矛盾しない。出来高を伴わないパターン＝罠、スキップ。チャートは強気だが、実際のニュースでセンチメントが崩れている場合＝心理が拒否する。</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">レイヤー4</span> サイズ＆エグジット（リスク） <span class="q">— "どれくらい？ いつ手仕舞うか？"</span></h4>
+        <p>ポジションサイズ＝リスク予算 ÷ ボラティリティ。パターン無効化ラインの下にハードストップを置く。移動平均線でトレーリングする。タイムストップ：N日以内に機能しなければ → 手仕舞い。約55%の精度では、損失を素早く切ることこそがエッジである。</p>
+      </div>
+      <div class="arrow">▼<small>注文</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">BUY</span> · HOLD · <span style="color:var(--sell)">SELL</span></h3><p>結果は記録され、フィードバックされます — 公開された優位性は劣化するため、定期的にアウトオブサンプルでルールを再検証してください。</p></div>
+    </section>
+
+    <!-- ③ CHECKLISTS -->
+    <section class="card">
+      <h2 class="sec">③ 売買チェックリスト</h2>
+      <p class="secnote">各条件を満たすごとに1ポイント。6項目中4項目以上で実行。タグはシグナルがどちら側から来ているかを示します。</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">買い — コンフルエンス ≥ 4/6</h3>
+          <div class="rule">トレンド + モメンタム + 確認済みパターン + 支持的な心理</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">価格が200日移動平均線の上／ゴールデンクロス状態<small>Brock 1992: 買いシグナル日 ≈ 年率+12%</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">12-1モメンタムがプラス<small>Gu–Kelly–Xiu: 機械学習予測因子No.1</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">強気パターンが出来高増加を伴って完成<small>パターン単独では不十分（LMW 2000）</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">オーバーナイト／ニュースセンチメントがプラスまたは回復中<small>Fed: 翌日に1標準偏差あたり約6bp</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">恐怖のスパイクが収まりつつある（VIXが30超のピークから下落中）<small>オーバーリアクション → 平均回帰の窓</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">24時間以内にFOMC／CPI／主要イベントなし<small>イベントウィンドウのリスク管理</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>コントラリアン特例（パニック買い）：</b> VIX &gt; 30 + 極度の恐怖 + 価格が短期移動平均線を上回って安定 + 出来高クライマックスが過ぎた → <b>半分のサイズ</b>で平均回帰の買い。「他人が恐れているときに貪欲に」を体系化したもの。</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">売り／回避 — コンフルエンス ≥ 4/6</h3>
+          <div class="rule">トレンド崩壊 + モメンタム崩壊 + 陶酔またはショック</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">価格が200日移動平均線の下／デスクロス状態<small>売りシグナル日 ≈ 年率−7%（Brock 1992）</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">モメンタムがマイナスに転じた<small>方向性エンジンが反転</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">弱気パターン（ダブルトップ／ヘッド・アンド・ショルダーズ）が出来高を伴って完成<small>買いと同様に確認が必要</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">センチメントが極度の陶酔状態<small>全員が強気 = コントラリアンの売りシグナル</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">ネガティブな政策／地政学的ショックが未解決<small>1〜3日目はレジームリスクが高止まり</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">ストップロスまたはボラティリティ目標に到達<small>常に他のすべてに優先 — 例外なし</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>拒否権ルール：</b> チャートは買いを示しているが、実際のニュースでセンチメントが崩壊している → <b>取引を見送る</b>。新鮮なニュースレジームは古いチャートに勝る。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ WHEN × WHAT -->
+    <section class="card">
+      <h2 class="sec">④ WHEN × WHAT シナリオマトリックス</h2>
+      <p class="secnote">各市場心理状態において、どちら側が意思決定を主導するか。</p>
+      <table class="mx">
+        <thead><tr><th>シナリオ（心理状態）</th><th>主導する側</th><th>アクション</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">落ち着いた上昇トレンド、ポジティブなセンチメント</td><td><span class="who wc">CHARTS</span></td><td>トレンドフォロー：出来高を伴うMAへの押し目を買い、勝ちトレードは保持する</td></tr>
+          <tr><td class="scn">落ち着いた下降トレンド</td><td><span class="who wc">CHARTS</span></td><td>様子見・ショートバイアス。レイヤー1のパニックシグナルなしに落ちてくるナイフを掴まない</td></tr>
+          <tr><td class="scn">パニック — 戦争関連の見出し、VIX &gt; 30、恐怖の極致</td><td><span class="who wp">PSYCHOLOGY</span></td><td>1〜3日目：何もしない。その後、安定化トリガー（B5）で逆張り買い、ハーフサイズ</td></tr>
+          <tr><td class="scn">陶酔感 — 放物線的な価格上昇、誰もが強気</td><td><span class="who wp">PSYCHOLOGY</span></td><td>強さの中で利益を確定（S4）。決して追加しない。ストップを引き締める</td></tr>
+          <tr><td class="scn">FOMC・CPI・選挙のウィンドウ</td><td><span class="who wp">PSYCHOLOGY</span></td><td>手仕舞い — 新規エントリーなし。翌日から再開</td></tr>
+          <tr><td class="scn">出来高を伴わないパターンブレイクアウト</td><td><span class="who wn">NEITHER</span></td><td>スキップ — ここは大半のフェイクブレイクアウトが潜む場所</td></tr>
+          <tr><td class="scn">チャートは強気だが、実際のニュースでセンチメントが崩壊</td><td><span class="who wp">心理面での拒否権</span></td><td>トレードをスキップ — ニュースのレジームが古びたチャートに勝る</td></tr>
+          <tr><td class="scn">センチメントはノイジーで極端ではなく、チャートは明瞭</td><td><span class="who wc">CHARTS</span></td><td>チャートでトレードする。センチメントはタイブレーカーに過ぎない</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ EXPECTATIONS -->
+    <section class="card">
+      <h2 class="sec">⑤ 期待値チェック：実際の精度とは</h2>
+      <p class="secnote">方向性の的中率 — 検証済みの数値と俗説の比較。縦線はコイントス（50%）。スケールは40〜90%。</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">コイントス<small>ベースライン</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">ソーシャルセンチメントモデル<small>検証済み、8市場（2025年）</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">移動平均ルール<small>検証済み勝率（Brock 1992）</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">優れたマルチシグナルMLモデル<small>本フレームワークの現実的な目標値</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">~55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">チャートパターンの俗説<small>査読支持なし</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">Twitterムード（Bollen 2011）<small>再現失敗、テスト期間約15日</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">本フレームワークのエッジは55〜58%より優れた予測から生まれるのではなく、独立した弱いシグナルを積み重ね、イベントウィンドウを避け、ボラティリティに応じてサイズを調整し、負けトレードを素早く切ることから生まれる。資金を投じる前にバックテストとペーパートレードを行うこと。公表されたエッジは劣化する。</p>
+    </section>
+
+    <footer class="src">
+      <b>検証済みの情報源から構築：</b> Gu–Kelly–Xiu（2020） <i>RFS</i> ・ Lo–Mamaysky–Wang（2000）、Brock et al.（1992）、Sullivan et al.（1999） <i>Journal of Finance</i> ・ Savin et al.（2007） <i>J. Financial Econometrics</i> ・ Park &amp; Irwin（2007） <i>J. Economic Surveys</i>  · Bollen et al. (2011) + Lachanski & Pav (2017) の再現失敗 · Greyling & Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh & Kwon (2018)。
+      <br><b>免責事項:</b> 発表された研究を説明する教育的フレームワークです。投資助言ではなく、利益を保証するものでもありません。政策・戦争・FOMCの定量化された効果は検証に耐えられなかったため、ここではリターン予測因子としてではなく、タイミング/リスクフィルターとしてのみ使用しています。
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

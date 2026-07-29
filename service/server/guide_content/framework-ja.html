@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ハイブリッド・フレームワーク — 意思決定スタックとチェックリスト</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/2-hybrid-strategy-framework.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>ハイブリッドフレームワーク：チャートパターン×人間心理の融合</h1>
+<h2>チャートパターン×人間心理融合売買フレームワーク</h2>
+<p><strong>2回にわたる検証済みの詳細調査（200以上のエージェント、一次情報源によるファクトチェック済み）に基づく・2026年7月</strong>
+<strong>⚠️ 教育目的のフレームワークであり、投資助言ではありません。現実的な期待値：方向性の的中率50〜55%——優位性は単一のシグナルではなく、複合的な要因とリスク管理から生まれます。</strong></p>
+<div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
+<b>このフレームワークが暗号資産の実装にどう対応するか。</b>このチェックリストは調査戦略を示しており、稼働中のシステムはそれを暗号資産向けに適応させています。
+<b>VIX→暗号資産のFear &amp; Greedインデックス（F&amp;G）</b>は逆転したスケールです——パニックは<b>F&amp;G &lt; 20</b>（VIX &gt; 30ではありません）、落ち着きは<b>F&amp;G &gt; 30</b>；暗号資産にはVIXが存在しません（<code>regime.py</code>、<code>strategy_config.py</code>）。
+<b>名前付きチャートパターン（ダブルボトム、H&amp;S）→複合テクニカルスコア</b>（RSI・MA・ファンディング・ベーシス・ロング/ショート）は出来高で確認されます——ローソク足パターン検出器は存在しません（<code>confluence.py</code> B3/S3）。
+<b>オーバーナイトリターンのセンチメント→StockTwitsの群衆傾向</b>（B4）。B1〜B6 / S1〜S6という名称は実際のエンジン条件ラベルです。
+</div>
+
+<hr />
+<h2>1. 調査で実証された基本原則</h2>
+<p>全体の設計は2つの検証済み事実によって決まります：</p>
+<ol>
+<li><strong>チャートパターンは情報価値があるものの、単独では収益を生みません</strong>（Lo–Mamaysky–Wang 2000；Savin 2007）。何かが起きていることを示唆しますが、優位性はせいぜい53〜54%程度——単独のトリガーとして使ってはいけません。</li>
+<li><strong>心理は市場を動かしますが、極端な状況や特定のタイミングでしか取引に活用できません</strong>（オーバーナイトのセンチメントは約6bp/SD；センチメントの的中率は50〜55%；行動的効果はパニックや陶酔の局面に集中します）。</li>
+</ol>
+<p>ですので組み合わせは以下の通りです：<strong>心理学がREGIME（いつ、どれだけのリスクを取るか）を決定し、チャートがTRIGGER（何を、いくらで）を決定し、出来高＋センチメントがCONFIRMし、ボラティリティがSIZEを決定する。</strong></p>
+<p>シグナルは絶対的ではなく加算的です：各条件が満たされるごとに1点が加算され、コンフルエンス（6項目中4項目以上）がある場合にのみ行動します。なぜなら、独立した53%のシグナルが積み重なることで、実際のシステムは55%を超えることができるからです。</p>
+<hr />
+<h2>2. 4層の意思決定スタック</h2>
+<h3>LAYER 1 — 心理レジームフィルター（인간 심리 = 국면 판단）— <em>「そもそもトレードすべきか、どのモードで行うか？」</em></h3>
+<table>
+<thead>
+<tr>
+<th>入力</th>
+<th>状態</th>
+<th>モード</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VIX / 恐怖レベル</td>
+<td>&lt; 20 平穏</td>
+<td><strong>トレンドモード</strong> — チャートに従う</td>
+</tr>
+<tr>
+<td></td>
+<td>20–30 神経質</td>
+<td>サイズを50%削減、ストップをタイトに</td>
+</tr>
+<tr>
+<td></td>
+<td>&gt; 30 パニック</td>
+<td><strong>逆張りモード</strong> — 弱気のチャートパターンを無視し、平均回帰の買いを準備</td>
+</tr>
+<tr>
+<td>イベントカレンダー（FOMC、CPI、選挙）</td>
+<td>±1日以内</td>
+<td><strong>新規エントリーなし</strong>；保有またはヘッジ</td>
+</tr>
+<tr>
+<td>戦争／政策ショックの見出し</td>
+<td>最初の1〜3日</td>
+<td>最初の反発では絶対に買わない；安定化シグナルを待つ</td>
+</tr>
+<tr>
+<td>SNS／ニュースセンチメントのトーン</td>
+<td>極度の熱狂</td>
+<td>逆張り売りアラートON</td>
+</tr>
+<tr>
+<td></td>
+<td>極度の恐怖</td>
+<td>逆張り買いアラートON</td>
+</tr>
+</tbody>
+</table>
+<h3>LAYER 2 — 方向エンジン（チャート：WHAT）— 検証済みの最強予測因子</h3>
+<ul>
+<li>12ヶ月モメンタム（直近1ヶ月を除く）がプラス → ロングバイアス／マイナス → ショートバイアス</li>
+<li>価格と200日移動平均線の関係（ゴールデンクロス状態）→ トレンド方向</li>
+<li>1ヶ月短期リバーサル → バイアス内での逆張りタイミング</li>
+</ul>
+<h3>LAYER 3 — トリガー＆確認（チャート＋心理学の組み合わせ：WHEN）</h3>
+<p>パターンは<strong>完成し、かつ出来高で確認され、かつセンチメントが矛盾しない</strong>場合にのみカウントされます：
+- 強気トリガー：ダブルボトム／逆H&amp;Sのブレイクアウト <strong>＋出来高増加＋オーバーナイトセンチメントが非ネガティブ</strong>
+- 弱気トリガー：ダブルトップ／H&amp;Sの完成 <strong>＋出来高増加＋ニュースのトーン悪化</strong>
+- 出来高なし＝取引なし（出来高特徴量は検証済みで必須；Dinh &amp; Kwon 2018）</p>
+<h3>レイヤー4 — サイズと決済（リスク：どれだけ）</h3>
+<ul>
+<li>ポジションサイズ＝リスク予算 ÷ ボラティリティ（検証済み：ボラティリティは上位4予測因子の一つであり、サイジングの入力値）</li>
+<li>パターン無効化ポイントの下にハードストップを設定；MAでトレール</li>
+<li>タイムストップ：N日以内に想定が機能しない場合→決済（精度は約55%のため、損失は素早く切る必要がある）</li>
+</ul>
+<hr />
+<h2>3. 買いチェックリスト（6項目中4項目以上の一致→買い）</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>シグナル</th>
+<th>ソース側</th>
+<th>検証済みの根拠</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1</td>
+<td>価格が200日MAより上／ゴールデンクロス状態</td>
+<td>チャート</td>
+<td>Brock 1992：買いシグナル日は年率+12%</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>12-1モメンタムがプラス</td>
+<td>チャート</td>
+<td>GKX 2020：ML予測因子第1位</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>出来高を伴って強気パターンが完成</td>
+<td>チャート</td>
+<td>LMW 2000で有効性が示され、出来高が必須</td>
+</tr>
+<tr>
+<td>B4</td>
+<td>夜間／ニュースセンチメントがポジティブまたは回復中</td>
+<td>心理</td>
+<td>Fed：翌日で約6bp/SD</td>
+</tr>
+<tr>
+<td>B5</td>
+<td>恐怖のスパイクが収まりつつある（VIXが30超のピークから下落）</td>
+<td>心理</td>
+<td>過剰反応／平均回帰に関する文献</td>
+</tr>
+<tr>
+<td>B6</td>
+<td>24時間以内にFOMC／CPI／主要イベントなし</td>
+<td>心理</td>
+<td>イベントリスクのタイミング</td>
+</tr>
+</tbody>
+</table>
+<p><strong>逆張りスペシャル（パニック買い）：</strong> VIX &gt; 30 ＋ センチメントが極度の恐怖 ＋ 価格が短期MAより上で安定 ＋ 出来高のクライマックスが過ぎた → 半分のサイズで平均回帰の買い。（これは「他人が恐れているときに貪欲になれ」というケースを体系化したものです。）</p>
+<h2>4. 売りチェックリスト（6項目中4項目以上の一致→売り／回避）</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>シグナル</th>
+<th>ソース側</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>価格が200日MAより下／デッドクロス状態</td>
+<td>チャート</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>モメンタムがマイナスに転じた</td>
+<td>チャート</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>出来高を伴って弱気パターン（ダブルトップ／ヘッド・アンド・ショルダーズ）が完成</td>
+<td>チャート</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>センチメントの陶酔感が極端（全員が強気、ミーム株的な熱狂の様相）</td>
+<td>心理 — 逆張り</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>ネガティブな政策／地政学的ショックが未解決</td>
+<td>心理</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>ストップロス／ボラティリティ目標に到達</td>
+<td>リスク（常にすべてに優先）</td>
+</tr>
+</tbody>
+</table>
+<h2>5. WHEN × WHAT シナリオマトリクス</h2>
+<table>
+<thead>
+<tr>
+<th>シナリオ（市場心理状態）</th>
+<th>優勢な側</th>
+<th>アクション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>落ち着いた上昇トレンド、ポジティブなセンチメント</td>
+<td>チャート</td>
+<td>トレンドフォロー：出来高を伴う押し目でMAまで買い、保持</td>
+</tr>
+<tr>
+<td>落ち着いた下降トレンド</td>
+<td>チャート</td>
+<td>手を出さないかショートバイアス；Layer-1のパニックシグナルなしにナイフを掴まない</td>
+</tr>
+<tr>
+<td>パニック（戦争ヘッドライン、VIX &gt;30、極度の恐怖）</td>
+<td>心理</td>
+<td>1〜3日目：何もしない。その後、安定化トリガー（B5）で逆張り買い</td>
+</tr>
+<tr>
+<td>陶酔（パラボリックな価格上昇＋皆が強気）</td>
+<td>心理</td>
+<td>強さの中で利益確定；売りトリガーS4；決して追加しない</td>
+</tr>
+<tr>
+<td>FOMC/CPI/選挙ウィンドウ</td>
+<td>心理</td>
+<td>フラット／新規エントリーなし；翌日再開</td>
+</tr>
+<tr>
+<td>出来高を伴わないパターンブレイクアウト</td>
+<td>どちらでもない</td>
+<td>罠のリスク — スキップ（ほとんどの偽ブレイクアウトはここに存在する）</td>
+</tr>
+<tr>
+<td>チャートは強気だが、実際のニュースでセンチメントが崩壊</td>
+<td>心理が拒否権を行使</td>
+<td>取引をスキップ — ニュースレジームは古いチャートに勝る</td>
+</tr>
+<tr>
+<td>センチメントはノイジーで極端なし、チャートは明確</td>
+<td>チャート</td>
+<td>チャートを取引する；センチメントはタイブレーカーに過ぎない</td>
+</tr>
+</tbody>
+</table>
+<h2>6. 期待値の管理（検証済みの数値）</h2>
+<ul>
+<li>期待すべき方向性の精度：<strong>50〜55%</strong>、80%ではない。</li>
+<li>ゴールデンクロス型のエッジ：コストを差し引く前で、コイントスに対して勝率にして約4〜5ポイント。</li>
+<li>センチメントエッジ：1日あたり数ベーシスポイント、極端な状況とオーバーナイトでのみ本物。</li>
+<li>複利的なエッジの源泉：コンフルエンス（独立した弱いエッジの積み重ね）、負けをすばやく切ること、ボラティリティによるサイジング、イベントウィンドウのスキップ — 予測の天才性からではない。</li>
+<li>発表されたすべてのエッジは劣化する。資金をリスクにさらす前に、バックテスト、ペーパートレード、そしてアウトオブサンプルでの再検証を行うこと。</li>
+</ul>
+<h2>7. 主要な情報源</h2>
+<p>Gu–Kelly–Xiu (2020) RFS · Lo–Mamaysky–Wang (2000) JF · Brock et al. (1992) JF · Savin et al. (2007) JFEc · Park &amp; Irwin (2007) JES · Sullivan et al. (1999) JF · Bollen et al. (2011) + Lachanski &amp; Pav (2017) replication · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018) · Prata et al. (2024).</p>
+</main></body></html>

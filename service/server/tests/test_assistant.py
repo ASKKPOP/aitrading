@@ -202,7 +202,10 @@ class TurnTests(AssistantTestCase):
         # the prompt carried the account + language, on the assistant tier
         self.assertIn("owner", captured["prompt"])
         self.assertIn("Never trade weekends.", captured["prompt"])
-        self.assertIn("USER LANGUAGE: ko", captured["prompt"])
+        # The NAME, not the code. This line is the only thing telling the model
+        # which language to answer in, and a bare 'id' reads as "identifier" at
+        # least as readily as "Indonesian".
+        self.assertIn("USER LANGUAGE: Korean", captured["prompt"])
         self.assertIn("never execute", captured["system"])
         self.assertEqual(captured["tier"], "assistant")
         self.assertNotIn(SECRET_KEY, captured["prompt"])   # key never reaches the model

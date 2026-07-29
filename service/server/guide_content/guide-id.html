@@ -1,0 +1,657 @@
+<!-- machine-translated from design/ai-trading-guide-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — Perdagangan Otomatis AI: Panduan Lengkap Full-Pipeline</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.formula{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0;font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+.persona{border:1px solid var(--border);border-radius:14px;background:var(--card);margin-top:14px;overflow:hidden}
+.persona-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--grid)}
+.persona-icon{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;font-weight:800}
+.persona-body{padding:13px 16px;font-size:13.5px;color:var(--ink-2)}
+.persona-body b{color:var(--ink)}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+.kpi .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.kpi .vl{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .hint{font-size:11px;color:var(--muted)}
+/* SVG shared */
+.sv-t{font:600 12px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink)}
+.sv-s{font:500 10.5px system-ui,"Apple SD Gothic Neo",sans-serif;fill:var(--ink-2)}
+.sv-m{font:600 10px ui-monospace,Menlo,monospace;fill:var(--muted)}
+.sv-lb{font:700 10px system-ui,sans-serif;fill:var(--muted);letter-spacing:.08em}
+.sv-box{fill:var(--surface);stroke:var(--border)}
+.sv-card{fill:var(--card);stroke:var(--baseline)}
+.sv-acc{fill:color-mix(in srgb,var(--accent) 12%,var(--card));stroke:var(--accent)}
+.sv-good{fill:color-mix(in srgb,var(--good) 12%,var(--card));stroke:var(--good)}
+.sv-bad{fill:color-mix(in srgb,var(--critical) 10%,var(--card));stroke:var(--critical)}
+.sv-warn{fill:color-mix(in srgb,var(--yellow) 14%,var(--card));stroke:var(--yellow)}
+.sv-line{stroke:var(--baseline);stroke-width:1.4;fill:none}
+.sv-accline{stroke:var(--accent);stroke-width:1.6;fill:none}
+.sv-goodline{stroke:var(--good);stroke-width:1.6;fill:none}
+.sv-badline{stroke:var(--critical);stroke-width:1.6;fill:none}
+footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
+@media (max-width:640px){ .formula{font-size:12px} }
+</style>
+</head>
+<body>
+
+<header class="doc"><div class="wrap">
+  <div class="kicker">Sooppiy · Panduan Full Pipeline</div>
+  <h1>Perdagangan Otomatis AI, Dari Awal hingga Akhir — Panduan Lengkap</h1>
+  <div class="meta">2026-07-17 · Akurat sesuai kode (main, termasuk perluasan sinyal) · Semua angka adalah nilai implementasi aktual · Aktif di sooppiy.com</div>
+</div></header>
+
+<!-- ═══════════════ 0. At a Glance ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">§0</span>Sekilas — Pipeline 10 Langkah</h2>
+  <p class="sub">Dari pengumpulan data hingga peninjauan. Setiap transaksi hanya dieksekusi pada akun paper (simulator), setiap langkah diisolasi di balik flag env, dan gangguan sumber eksternal gagal secara lunak — hanya komponen yang terdampak yang diam-diam tidak aktif.</p>
+
+  <div class="steps-strip">
+    <div class="st"><b>LANGKAH 1</b><span>Pengumpulan Data</span></div>
+    <div class="st"><b>LANGKAH 2</b><span>Penemuan</span></div>
+    <div class="st"><b>LANGKAH 3</b><span>Analisis Kuantitatif</span></div>
+    <div class="st"><b>LANGKAH 4</b><span>Psikologi</span></div>
+    <div class="st"><b>LANGKAH 5</b><span>Fusi Sinyal</span></div>
+    <div class="st"><b>LANGKAH 6</b><span>AI 4-Analis</span></div>
+    <div class="st"><b>LANGKAH 7</b><span>Aturan Otomatisasi</span></div>
+    <div class="st"><b>LANGKAH 8</b><span>Gerbang Risiko</span></div>
+    <div class="st"><b>LANGKAH 9</b><span>Eksekusi · SL/TP</span></div>
+    <div class="st"><b>LANGKAH 10</b><span>Jurnal · Tinjauan</span></div>
+  </div>
+
+  <div class="diagram">
+  <svg viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Full pipeline">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+      <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
+      <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
+      <marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--critical)"/></marker>
+    </defs>
+
+    <!-- band 1: sources -->
+    <text x="16" y="24" class="sv-lb">SUMBER DATA EKSTERNAL (SEMUA TERVERIFIKASI TANPA KUNCI)</text>
+    <g>
+      <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
+      <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
+      <text x="102" y="68" text-anchor="middle" class="sv-s">candles·funding·OI·L/S·liquidations</text>
+      <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
+      <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
+      <text x="290" y="68" text-anchor="middle" class="sv-s">Indeks Fear & Greed + riwayat</text>
+      <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
+      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits · Polymarket</text>
+      <text x="478" y="68" text-anchor="middle" class="sv-s">sentimen crowd·Δodds</text>
+      <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
+      <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue · Upbit</text>
+      <text x="666" y="68" text-anchor="middle" class="sv-s">arus ETF riil·kimchi premium</text>
+      <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
+      <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
+      <text x="856" y="68" text-anchor="middle" class="sv-s">berita·makro·DXY</text>
+    </g>
+
+    <path d="M102 80 V108" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M290 80 V108" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M478 80 V108" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M666 80 V108" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M856 80 V108" class="sv-line" marker-end="url(#ar)"/>
+
+    <!-- band 2: collectors -->
+    <text x="16" y="104" class="sv-lb" fill="var(--accent)"></text>
+    <g>
+      <rect x="16" y="110" width="220" height="58" rx="9" class="sv-acc"/>
+      <text x="126" y="130" text-anchor="middle" class="sv-t">LANGKAH 2 · Scanner</text>
+      <text x="126" y="145" text-anchor="middle" class="sv-s">lonjakan volume ×2 · mentions +100%</text>
+      <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1h</text>
+      <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
+      <text x="362" y="130" text-anchor="middle" class="sv-t">LANGKAH 3 · Kuantitatif</text>
+      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·σ·funding·basis·OI·L/S</text>
+      <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · on-demand</text>
+      <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
+      <text x="598" y="130" text-anchor="middle" class="sv-t">LANGKAH 4 · Psychology Feed</text>
+      <text x="598" y="145" text-anchor="middle" class="sv-s">F&G·lonjakan sentimen·likuidasi riil</text>
+      <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1h</text>
+      <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
+      <text x="834" y="130" text-anchor="middle" class="sv-t">News · Macro Intel</text>
+      <text x="834" y="145" text-anchor="middle" class="sv-s">sentimen berita·ETF riil·kalender peristiwa</text>
+      <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · penyegaran berkala</text>
+    </g>
+
+    <!-- snapshot store -->
+    <path d="M126 168 V196" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M362 168 V196" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M598 168 V196" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M834 168 V196" class="sv-line" marker-end="url(#ar)"/>
+    <rect x="16" y="198" width="928" height="40" rx="9" class="sv-card" stroke-dasharray="5 4"/>
+    <text x="480" y="222" text-anchor="middle" class="sv-t">Penyimpanan snapshot — scanner_snapshots · psych_snapshots · market_news/macro/etf/stock_analysis_snapshots (bukti untuk setiap keputusan tetap ada di DB)</text>
+
+    <!-- band 3: fusion + AI -->
+    <path d="M240 238 V266" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M720 238 V266" class="sv-line" marker-end="url(#ar)"/>
+    <g>
+      <rect x="60" y="268" width="360" height="66" rx="9" class="sv-acc"/>
+      <text x="240" y="288" text-anchor="middle" class="sv-t">LANGKAH 5 · Fusi Sinyal</text>
+      <text x="240" y="304" text-anchor="middle" class="sv-s">Berbobot AI (fallback 0.5/0.3/0.2 · batas psych 0.3)</text>
+      <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py · GET /api/market-intel/fusion</text>
+      <rect x="540" y="268" width="360" height="66" rx="9" class="sv-acc"/>
+      <text x="720" y="288" text-anchor="middle" class="sv-t">LANGKAH 6 · AI 4-Analis + Debat Trader</text>
+      <text x="720" y="304" text-anchor="middle" class="sv-s">berita·sentimen·fundamental/makro·teknikal → BUY/SELL/HOLD + confidence</text>
+      <text x="720" y="320" text-anchor="middle" class="sv-m">analysis_agents.py · LLM atau fallback berbasis aturan</text>
+    </g>
+
+    <!-- band 4: automation → gate → execution -->
+    <path d="M240 334 V360 H180 V386" class="sv-line" marker-end="url(#ar)"/>
+    <path d="M720 334 V360 H180 M180 360 V386" class="sv-line"/>
+    <g>
+      <rect x="40" y="388" width="280" height="66" rx="9" class="sv-card"/>
+      <text x="180" y="408" text-anchor="middle" class="sv-t">LANGKAH 7 · Aturan Otomatisasi (diatur pengguna)</text>
+      <text x="180" y="424" text-anchor="middle" class="sv-s">interval 5–1440 menit · confidence minimum 0.65 · eksekusi otomatis on/off</text>
+      <text x="180" y="440" text-anchor="middle" class="sv-m">automation.py · tick 60d</text>
+      <rect x="368" y="388" width="256" height="66" rx="9" class="sv-warn"/>
+      <text x="496" y="408" text-anchor="middle" class="sv-t">LANGKAH 8 · Risk Gate</text>
+      <text x="496" y="424" text-anchor="middle" class="sv-s">① Kelly sizing → ② limits → ③ breaker</text>
+      <text x="496" y="440" text-anchor="middle" class="sv-m">risk_engine.py · setiap order harus lolos</text>
+      <rect x="672" y="388" width="272" height="66" rx="9" class="sv-good"/>
+      <text x="808" y="408" text-anchor="middle" class="sv-t">LANGKAH 9 · Paper Fill</text>
+      <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% otomatis diatur · pemantau 30d</text>
+      <text x="808" y="440" text-anchor="middle" class="sv-m">hanya akun simulator · tidak ada fill nyata</text>
+    </g>
+    <path d="M320 421 H366" class="sv-accline" marker-end="url(#arA)"/>
+    <path d="M624 421 H670" class="sv-goodline" marker-end="url(#arG)"/>
+    <text x="643" y="412" text-anchor="middle" class="sv-m" fill="var(--good)">PASS</text>
+    <path d="M496 454 V488" class="sv-badline" marker-end="url(#arR)"/>
+    <text x="522" y="474" class="sv-m" fill="var(--critical)">GAGAL → alasan dicatat</text>
+
+    <!-- band 5: journal -->
+    <path d="M808 454 V488" class="sv-line" marker-end="url(#ar)"/>
+    <g>
+      <rect x="368" y="490" width="256" height="54" rx="9" class="sv-card"/>
+      <text x="496" y="510" text-anchor="middle" class="sv-t">LANGKAH 10 · Jurnal · Tinjauan</text>
+      <text x="496" y="526" text-anchor="middle" class="sv-s">automation_runs · buku besar sinyal · peristiwa eksperimen</text>
+      <rect x="672" y="490" width="272" height="54" rx="9" class="sv-card"/>
+      <text x="808" y="510" text-anchor="middle" class="sv-t">Position · Pelacakan P&amp;L</text>
+      <text x="808" y="526" text-anchor="middle" class="sv-s">polling harga → P&amp;L belum terealisasi · pemantau SL/TP</text>
+    </g>
+    <path d="M672 517 H626" class="sv-line" marker-end="url(#ar)"/>
+
+    <!-- dashboard -->
+    <path d="M496 544 V572" class="sv-line" marker-end="url(#ar)"/>
+    <rect x="280" y="574" width="432" height="38" rx="9" class="sv-acc"/>
+    <text x="496" y="597" text-anchor="middle" class="sv-t">Dasbor Signal Board + notifikasi — selalu dapat diverifikasi manusia</text>
+  </svg>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="lb">Eksekusi</div><div class="vl">Hanya Paper</div><div class="hint">Kode order akun nyata dinonaktifkan sepenuhnya</div></div>
+    <div class="kpi"><div class="lb">Risk gate</div><div class="vl">Triple check</div><div class="hint">Kelly → limits → breaker</div></div>
+    <div class="kpi"><div class="lb">Tes</div><div class="vl">1.100+ lolos</div><div class="hint">Termasuk tes signal-expansion &amp; guide</div></div>
+    <div class="kpi"><div class="lb">Tugas latar belakang</div><div class="vl">23</div><div class="hint">Termasuk risk_watcher·psych·scanner</div></div>
+  </div>
+</div></section>
+
+<!-- ═══════════════ STEP 1 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 1</span>Pengumpulan Data — Bahan Baku untuk Setiap Keputusan</h2>
+  <p class="sub">Semuanya dimulai dengan sumber gratis yang berfungsi tanpa kunci API (diverifikasi langsung 2026-07-14). Tambahkan kunci dan sumber berbayar/premium masuk ke tempat yang sama. Jika satu sumber mati, snapshot yang tersisa tetap tersimpan normal (fail-soft).</p>
+  <table>
+    <thead><tr><th>Sumber</th><th>Apa yang dikumpulkan</th><th>Digunakan di</th><th>Catatan</th></tr></thead>
+    <tbody>
+      <tr><td><b>OKX</b></td><td>Candle harian/jam-an, funding rates, harga spot &amp; futures (basis), volume 24 jam, daftar listing baru</td><td>LANGKAH 2·3·4</td><td>Bybit memblokir IP AS → beralih ke OKX</td></tr>
+      <tr><td><b>alternative.me</b></td><td>Indeks Fear &amp; Greed (F&amp;G) + riwayat harian</td><td>LANGKAH 4·5</td><td>Teramati: 22→25 "Extreme Fear"</td></tr>
+      <tr><td><b>StockTwits</b></td><td>Sentimen kerumunan per simbol (bullish/bearish), mentions per jam</td><td>LANGKAH 2·4·5·6</td><td>BTC.X memiliki 670K watchers</td></tr>
+      <tr><td><b>Polymarket</b></td><td>Peluang prediction-market dan perubahan 24 jam (Δodds)</td><td>LANGKAH 4·6</td><td>Sumber sinyal antisipasi</td></tr>
+      <tr><td><b>Alpha Vantage</b></td><td>Berita + skor sentimen, harga saham, arus ETF</td><td>LANGKAH 6, intel berita</td><td>Fitur dasar berfungsi bahkan dengan demo key</td></tr>
+      <tr><td><b>FRED · FinnHub</b></td><td>Indikator makro, berita perusahaan (opsional)</td><td>LANGKAH 6</td><td>Otomatis bergabung hanya jika kunci tersedia</td></tr>
+      <tr><td><b>OKX (extended)</b></td><td>Open interest, rasio long/short, order likuidasi nyata</td><td>LANGKAH 3·4</td><td>Endpoint publik tanpa kunci, diverifikasi langsung</td></tr>
+      <tr><td><b>SoSoValue</b></td><td>Aliran dolar harian & kumulatif ETF spot BTC (data nyata)</td><td>STEP 6, intelijen berita</td><td>Membutuhkan <code>SOSOVALUE_API_KEY</code> (tingkat gratis)</td></tr>
+      <tr><td><b>Upbit · FRED</b></td><td>Premium kimchi (Upbit vs OKX · USD/KRW), indeks dolar (DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
+      <tr><td><b>Kalender acara</b></td><td>Jadwal FOMC·CPI·NFP (statis, sadar DST)</td><td>STEP 7·8</td><td>Pemblokiran entri opsional melalui <code>EVENT_GUARD_ENABLED</code></td></tr>
+      <tr><td><b>blockchain.info · Etherscan</b></td><td>Pelacakan whale: transfer BTC besar (mempool), aliran hot-wallet exchange ETH (arah nyata)</td><td>STEP 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC tanpa kunci</td></tr>
+    </tbody>
+  </table>
+  <div class="note red"><b>Prinsip kejujuran:</b> Data likuidasi kini dikumpulkan <b>secara nyata (estimated: false, liq_source: okx)</b> dari feed likuidasi publik OKX. Hanya ketika feed itu down kami beralih ke proksi volatilitas σ + volume, dan UI kemudian melabelinya "estimated". Pelacakan whale on-chain kini juga dikumpulkan secara nyata dari sumber gratis — transfer BTC besar (blockchain.info mempool, tanpa kunci) + aliran hot-wallet exchange ETH (Etherscan; inflow = tekanan jual / outflow = akumulasi, arah terukur). <code>WHALE_FEED_ENABLED</code> · ambang batas <code>WHALE_MIN_USD</code> (default $5M). Catatan penundaan lama sudah usang — stub antarmuka (<code>fetch_whale_signals</code>) sudah terpasang, jadi sumber tinggal dicolokkan.</div>
+</div></section>
+
+<!-- ═══════════════ STEP 2 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">STEP 2</span>Discovery — "Which Coins to Watch" (Scanner)</h2>
+  <p class="sub">Pertanyaan sebelum trade apa pun — mesin menyusun daftar pendek kandidat untuk desk terlebih dahulu. Setiap jam ia memindai sepanjang 3 sumbu ke <code>scanner_snapshots</code>, dan setiap kandidat membawa alasan yang dapat dibaca manusia.</p>
+  <table>
+    <thead><tr><th>Sumbu deteksi</th><th>Ambang batas (default)</th><th>Metode</th></tr></thead>
+    <tbody>
+      <tr><td><b>Lonjakan volume</b></td><td>Volume 24 jam ≥ <b>×2.0</b> rata-rata 7 harinya sendiri</td><td>Bandingkan masing-masing dari 30 perps USDT teratas OKX terhadap rata-rata candle 1D 7 hari miliknya sendiri</td></tr>
+      <tr><td><b>Lonjakan sebutan</b></td><td>Sebutan per jam ≥ <b>+100%</b> vs baseline</td><td>Bandingkan kecepatan sebutan StockTwits terhadap baseline snapshot historis kami sendiri (aktif hanya setelah ≥3 scan terkumpul)</td></tr>
+      <tr><td><b>Listing baru</b></td><td>Kandidat instan pada kemunculan pertama dalam daftar</td><td>Bandingkan (diff) daftar instrumen OKX SWAP terhadap snapshot sebelumnya</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Kait otomatisasi:</b> Atur simbol sebuah rule ke <code>SCANNER</code> dan setiap tick ia <b>auto-analisis kandidat #1</b> pada saat itu. Di sinilah bahkan "apa yang harus dibeli" pun menjadi otomatis. Contoh yang diamati: <code>BSBUSDT — volume x3.52 vs 7d avg</code>.</div>
+</div></section>
+
+<!-- ═══════════════ STEP 3 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 3</span>Analisis Kuantitatif — Angka Lebih Dulu (Crypto Quant)</h2>
+  <p class="sub">Dihitung secara internal, tanpa pustaka TA eksternal. Outputnya memiliki bentuk yang sama dengan input analis teknikal ke pipeline 4-analis yang sudah ada, sehingga crypto mendapatkan perlakuan kuantitatif yang sama seperti saham AS.</p>
+  <table>
+    <thead><tr><th>Indikator</th><th>Perhitungan</th><th>Aturan penilaian (deterministik)</th></tr></thead>
+    <tbody>
+      <tr><td><b>RSI(14)</b></td><td>Candle harian OKX, penghalusan Wilder (sesuai default situs charting)</td><td>≥ 70 overbought <b>−2</b> (pemicu sell framework) · ≤ 30 <b>+2</b> (kontrarian)</td></tr>
+      <tr><td><b>MA 5 / 20 / 60</b></td><td>Simple moving average pada candle harian</td><td>price&gt;MA20 <b>±1</b> · MA5&gt;MA20 <b>±1</b> · MA20&gt;MA60 <b>±1</b></td></tr>
+      <tr><td><b>σ · Volume</b></td><td>Standar deviasi return per jam 24 jam + rasio volume 1 jam terbaru</td><td>Guncangan 3σ → diteruskan sebagai sinyal breaker (LANGKAH 8)</td></tr>
+      <tr><td><b>Funding rate</b></td><td>Funding rate perp OKX (8 jam)</td><td>&gt; +0.05% posisi long ramai <b>−1</b> · &lt; −0.05% <b>+1</b></td></tr>
+      <tr><td><b>Basis</b></td><td>(swap − spot) / spot</td><td>≥ +1.2% <b>+1</b> (pemicu buy-gap) · ≤ −0.5% <b>−1</b></td></tr>
+    </tbody>
+  </table>
+  <div class="formula">Skor total ≥ +2 → BUY &nbsp;·&nbsp; ≤ −2 → SELL &nbsp;·&nbsp; selain itu → HOLD &nbsp;&nbsp;(setiap faktor tersimpan sebagai kalimat bukti dalam daftar bullish_factors / risk_factors)</div>
+  <div class="note">Diamati (sooppiy.com tepat setelah deploy): BTC RSI 55.05 · funding 0.0001 · basis −0.03% · price 64,757 — komponen quant +0.25.</div>
+</div></section>
+
+<!-- ═══════════════ STEP 4 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 4</span>Analisis Psikologi — Baca Pasar, Jangan Ikuti</h2>
+  <p class="sub">Psikologi pasar adalah sesuatu yang harus <b>diukur</b>, bukan diikuti. Setiap jam, 4 indikator psikologi dimuat ke dalam <code>psych_snapshots</code>.</p>
+  <table>
+    <thead><tr><th>Indikator</th><th>Apa itu</th><th>Tautan pemicu</th></tr></thead>
+    <tbody>
+      <tr><td><b>Fear &amp; Greed</b></td><td>Nilai indeks + klasifikasi + perubahan 3 hari (Δ3d)</td><td>Δ3d ≥ <b>+10</b> = pemulihan dari fear → komponen sinyal beli</td></tr>
+      <tr><td><b>Lonjakan sentimen</b></td><td>z-score dari rata-rata sentimen per kategori berita (dibandingkan riwayat news-snapshot kami sendiri)</td><td>z ≤ <b>−2</b> lonjakan negatif → komponen sell + pencatatan experiment-event</td></tr>
+      <tr><td><b>Shock (likuidasi nyata)</b></td><td>Nosional likuidasi nyata OKX, jumlah 1 jam (<code>estimated: false · liq_source: okx</code>) · proxy σ+volume hanya jika feed sedang down</td><td>Di atas ambang batas (default $5M) → sinyal breaker/reduce</td></tr>
+      <tr><td><b>Antisipasi (pasar prediksi)</b></td><td>Odds Polymarket hanya untuk pasar yang relevan dengan crypto/makro (difilter berdasarkan topik), satu Δodds bertanda per pasar dibandingkan snapshot sebelumnya</td><td>Δodds ≥ <b>+0.05</b>/24 jam = repricing → komponen buy</td></tr>
+    </tbody>
+  </table>
+  <div class="note">Diamati: F&amp;G <b>25 · Extreme Fear</b>, Δ3h −1 — saat ini data itu sendiri mengonfirmasi kondisi "recovery trigger belum terpicu".</div>
+</div></section>
+
+<!-- ═══════════════ STEP 5 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 5</span>Fusi Sinyal — Tiga Keluarga, Satu Skor</h2>
+  <p class="sub">Ketiga keluarga sinyal — quant, sentiment, psychology — difusikan menjadi satu skor per simbol. Ketika AI fusion aktif (default pada produksi), model menimbang seluruh snapshot faktor itu sendiri dan mengembalikan bobot komponennya sendiri; jumlah berbobot tetap di bawah ini adalah <b>fallback</b> deterministik, digunakan ketika model tidak tersedia. Setiap hasil diberi label sesuai sumbernya (AI / rule / rule-fallback). Hanya-baca (GET); langkah ini tidak pernah menempatkan order.</p>
+  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;(komponen dibatasi −1 ~ +1; yang hilang dikecualikan dan dinormalisasi ulang). Pada KEDUA jalur: psychology tidak pernah berdagang sendiri, dan bobotnya tidak pernah melebihi 0.3 — putusan AI yang menyatakan sebaliknya akan diabaikan.</div>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal fusion">
+    <defs>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
+    </defs>
+    <g>
+      <rect x="20" y="24" width="250" height="60" rx="10" class="sv-acc"/>
+      <text x="145" y="48" text-anchor="middle" class="sv-t">Quant (LANGKAH 3)</text>
+      <text x="145" y="66" text-anchor="middle" class="sv-s">signal_score ÷ 4 → −1 ~ +1</text>
+      <rect x="20" y="112" width="250" height="60" rx="10" class="sv-acc"/>
+      <text x="145" y="136" text-anchor="middle" class="sv-t">Sentiment (StockTwits)</text>
+      <text x="145" y="154" text-anchor="middle" class="sv-s">(bullish − bearish) ÷ total dinilai</text>
+      <rect x="20" y="200" width="250" height="60" rx="10" class="sv-acc"/>
+      <text x="145" y="224" text-anchor="middle" class="sv-t">Psychology (LANGKAH 4)</text>
+      <text x="145" y="242" text-anchor="middle" class="sv-s">F&amp;G Δ + lonjakan + Δodds digabungkan</text>
+    </g>
+    <path d="M270 54 H400 Q430 54 442 118" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
+    <path d="M270 142 H436" class="sv-accline" marker-end="url(#ar2)"/>
+    <path d="M270 230 H400 Q430 230 442 166" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
+    <text x="330" y="44" class="sv-m" fill="var(--accent)">w = 0.5</text>
+    <text x="330" y="132" class="sv-m" fill="var(--accent)">w = 0.3</text>
+    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2 (batas 0.3 — struktural)</text>
+    <circle cx="480" cy="142" r="34" class="sv-card" stroke-width="2"/>
+    <text x="480" y="138" text-anchor="middle" class="sv-t" style="font-size:17px">Σ</text>
+    <text x="480" y="156" text-anchor="middle" class="sv-s">jumlah berbobot</text>
+    <path d="M514 142 H580" class="sv-accline" marker-end="url(#ar2)"/>
+    <!-- threshold gauge -->
+    <rect x="584" y="96" width="336" height="92" rx="10" class="sv-card"/>
+    <text x="752" y="118" text-anchor="middle" class="sv-t">Ambang batas keputusan</text>
+    <rect x="604" y="132" width="98" height="24" rx="6" class="sv-bad"/>
+    <text x="653" y="148" text-anchor="middle" class="sv-s" fill="var(--critical)">SELL ≤ −0.25</text>
+    <rect x="706" y="132" width="92" height="24" rx="6" class="sv-box"/>
+    <text x="752" y="148" text-anchor="middle" class="sv-s">HOLD</text>
+    <rect x="802" y="132" width="98" height="24" rx="6" class="sv-good"/>
+    <text x="851" y="148" text-anchor="middle" class="sv-s" fill="var(--good-ink)">BUY ≥ +0.25</text>
+    <text x="752" y="176" text-anchor="middle" class="sv-m">array missing selalu mengungkapkan apa yang tidak ada</text>
+  </svg>
+  </div>
+
+  <h3>Pemetaan trigger framework (diimplementasikan persis sesuai plan §4)</h3>
+  <table>
+    <thead><tr><th>Arah</th><th>Trigger</th><th>Ambang batas (default)</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag ok">Buy</span></td><td>Fear recovery: perubahan 3 hari F&amp;G</td><td>Δ3h ≥ +10</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Dominasi sentimen crowd</td><td>sentiment &gt; +0.2</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Selisih spot–futures</td><td>basis ≥ +1.2%</td></tr>
+      <tr><td><span class="tag ok">Buy</span></td><td>Repricing pasar prediksi</td><td>Δodds ≥ +0.05 / 24 jam</td></tr>
+      <tr><td><span class="tag crit">Sell</span></td><td>Overbought</td><td>RSI ≥ 70</td></tr>
+      <tr><td><span class="tag crit">Sell</span></td><td>Lonjakan sentimen negatif</td><td>z ≤ −2</td></tr>
+      <tr><td><span class="tag warn">Reduce</span></td><td>Guncangan volatilitas (proksi likuidasi)</td><td>|return| &gt; 3σ → kandidat breaker</td></tr>
+    </tbody>
+  </table>
+  <div class="note red"><b>Batas psikologi bersifat struktural.</b> Dua jaminan berlaku pada jalur AI maupun jalur bobot-tetap. Pertama, <b>psikologi tidak pernah berdagang sendirian</b>: tanpa kuant dan tanpa sentimen, keputusan dipaksa menjadi hold secara konstruksi — model bahkan tidak dikonsultasikan, sehingga tidak bisa berargumen melewati aturan tersebut. Kedua, bobot psikologi tidak pernah bisa melebihi 0.3 (<code>PSYCH_WEIGHT_MAX</code>): jalur bobot-tetap menormalisasi ulang kelebihannya; jalur AI membuang keputusan yang menyatakan bobot psikologi di atas batas dan kembali ke skor deterministik. "Tidak ada perdagangan yang digerakkan oleh psikologi" adalah sebuah batasan, bukan sekadar pedoman.</div>
+</div></section>
+
+<!-- ═══════════════ STEP 6 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 6</span>AI 4-Analis + Debat Trader — Keputusan Akhir</h2>
+  <p class="sub">Ini adalah mesin yang membuat keputusan perdagangan sebenarnya. Empat analis masing-masing menulis ringkasan singkat, lalu tim trader + risiko berdebat untuk menghasilkan satu keputusan dan laporan tertulis.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-analyst structure">
+    <defs>
+      <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+      <marker id="ar3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
+    </defs>
+    <g>
+      <rect x="20" y="20" width="210" height="62" rx="10" class="sv-card"/>
+      <text x="125" y="42" text-anchor="middle" class="sv-t">① Analis Berita</text>
+      <text x="125" y="58" text-anchor="middle" class="sv-s">berita market·makro + skor sentimen</text>
+      <text x="125" y="73" text-anchor="middle" class="sv-m">AV NEWS_SENTIMENT · FinnHub</text>
+      <rect x="250" y="20" width="210" height="62" rx="10" class="sv-card"/>
+      <text x="355" y="42" text-anchor="middle" class="sv-t">② Analis Sentimen</text>
+      <text x="355" y="58" text-anchor="middle" class="sv-s">rollup sentimen ticker·market</text>
+      <text x="355" y="73" text-anchor="middle" class="sv-m">data crowd StockTwits</text>
+      <rect x="480" y="20" width="210" height="62" rx="10" class="sv-card"/>
+      <text x="585" y="42" text-anchor="middle" class="sv-t">③ Fundamental·Makro</text>
+      <text x="585" y="58" text-anchor="middle" class="sv-s">rezim makro + prediction markets</text>
+      <text x="585" y="73" text-anchor="middle" class="sv-m">FRED · Polymarket</text>
+      <rect x="710" y="20" width="210" height="62" rx="10" class="sv-acc"/>
+      <text x="815" y="42" text-anchor="middle" class="sv-t">④ Analis Teknikal</text>
+      <text x="815" y="58" text-anchor="middle" class="sv-s">feed crypto pada LANGKAH 3 kuant</text>
+      <text x="815" y="73" text-anchor="middle" class="sv-m">RSI·MA·σ·funding·basis</text>
+    </g>
+    <path d="M125 82 V120 H470" class="sv-line"/>
+    <path d="M355 82 V120" class="sv-line"/>
+    <path d="M585 82 V120" class="sv-line"/>
+    <path d="M815 82 V120 H470 M470 120 V138" class="sv-line" marker-end="url(#ar3)"/>
+    <rect x="290" y="140" width="360" height="56" rx="10" class="sv-warn"/>
+    <text x="470" y="162" text-anchor="middle" class="sv-t">Debat Tim Trader + Risiko</text>
+    <text x="470" y="180" text-anchor="middle" class="sv-s">menyintesis empat ringkasan menjadi satu keputusan (satu kali panggilan LLM)</text>
+    <path d="M470 196 V222" class="sv-goodline" marker-end="url(#ar3g)"/>
+    <rect x="270" y="224" width="400" height="30" rx="8" class="sv-good"/>
+    <text x="470" y="244" text-anchor="middle" class="sv-t">Keputusan: BUY / SELL / HOLD + confidence (0~1) + laporan tertulis</text>
+  </svg>
+  </div>
+
+  <ul>
+    <li><b>Dengan LLM</b> — penyedia yang dikonfigurasi (OpenAI, Gemini, Grok, Qwen, GLM, local, OpenRouter, Anthropic) menghasilkan ringkasan dan debat.</li>
+    <li><b>Tanpa LLM</b> — sebuah <b>fallback berbasis aturan deterministik</b> per peran menghasilkan ringkasan dan keputusan dalam format yang sama dari data yang sama. Mesin ini tidak pernah macet.</li>
+    <li>Bug nyata ditemukan dan diperbaiki dalam peninjauan red-team: confidence berbasis aturan menggunakan score alih-alih |score|, membuat <b>keputusan sell tidak dapat dicapai</b> → diperbaiki (<code>105d7e6</code>).</li>
+  </ul>
+</div></section>
+
+<!-- ═══════════════ STEP 7 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 7</span>Aturan Otomasi — Apa yang Ditentukan Pengguna</h2>
+  <p class="sub">Cakupan dan intensitas otomatisasi sepenuhnya dikonfigurasi oleh pengguna. Satu tick otomatisasi berjalan setiap 60 detik dan hanya mengeksekusi rule yang "enabled and due". UI menyediakan tiga mode — ① Simple (pilih koin & selera risiko saja), ② Standard (atur preset yang direkomendasikan), ③ Expert (kontrol parameter penuh).</p>
+  <table>
+    <thead><tr><th>Setting</th><th>Range / default</th><th>Arti</th></tr></thead>
+    <tbody>
+      <tr><td><code>symbol</code></td><td>BTC, NVDA … atau <b>SCANNER</b></td><td>Target analisis. Dengan SCANNER, otomatis memilih kandidat #1 dari scanner pada saat itu</td></tr>
+      <tr><td><code>market</code></td><td>crypto · us-stock</td><td>Saham AS melewati fill saat pasar tutup (analisis tetap berjalan, alasan dicatat)</td></tr>
+      <tr><td><code>interval_minutes</code></td><td>5 ~ 1440 (default 60)</td><td>Interval analisis</td></tr>
+      <tr><td><code>min_confidence</code></td><td>0 ~ 1 (default <b>0.65</b>)</td><td>Keputusan di bawah confidence ini hanya dicatat, tidak pernah difill</td></tr>
+      <tr><td><code>auto_execute</code></td><td>on / off (default <b>off</b>)</td><td>Off = mode pure signal-generation — manusia meninjau dan memutuskan</td></tr>
+      <tr><td><code>account_type</code></td><td>simulator · real</td><td><b>Hanya simulator yang fill.</b> real hanya menjalankan analisis dan logging, tidak pernah menempatkan order (code invariant)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Automation tick sequence">
+    <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker></defs>
+    <line x1="30" y1="75" x2="910" y2="75" class="sv-line" marker-end="url(#ar4)"/>
+    <g>
+      <circle cx="70" cy="75" r="5" fill="var(--accent)"/>
+      <text x="70" y="52" text-anchor="middle" class="sv-t">60s tick</text>
+      <text x="70" y="102" text-anchor="middle" class="sv-s">pilih rule yang due</text>
+      <circle cx="240" cy="75" r="5" fill="var(--accent)"/>
+      <text x="240" y="52" text-anchor="middle" class="sv-t">Jalankan analisis</text>
+      <text x="240" y="102" text-anchor="middle" class="sv-s">STEP 6 (4-analysts)</text>
+      <circle cx="410" cy="75" r="5" fill="var(--accent)"/>
+      <text x="410" y="52" text-anchor="middle" class="sv-t">Pemeriksaan triple condition</text>
+      <text x="410" y="102" text-anchor="middle" class="sv-s">auto_execute ∧ BUY/SELL ∧ confidence≥min</text>
+      <circle cx="600" cy="75" r="5" fill="var(--yellow)"/>
+      <text x="600" y="52" text-anchor="middle" class="sv-t">Risk gate</text>
+      <text x="600" y="102" text-anchor="middle" class="sv-s">STEP 8 harus lulus</text>
+      <circle cx="760" cy="75" r="5" fill="var(--good)"/>
+      <text x="760" y="52" text-anchor="middle" class="sv-t">Paper fill</text>
+      <text x="760" y="102" text-anchor="middle" class="sv-s">SL/TP diatur bersamaan</text>
+      <circle cx="880" cy="75" r="5" fill="var(--muted)"/>
+      <text x="880" y="52" text-anchor="middle" class="sv-t">Jurnal</text>
+      <text x="880" y="102" text-anchor="middle" class="sv-s">automation_runs</text>
+    </g>
+  </svg>
+  </div>
+  <div class="note">Jika salah satu dari tiga kondisi tidak terpenuhi, <b>keputusan dicatat tanpa eksekusi</b> — alasan mengapa kita tidak membeli juga menjadi data.</div>
+</div></section>
+
+<!-- ═══════════════ STEP 8 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 8</span>Risk Gate — Item "Wajib" dalam Framework</h2>
+  <p class="sub">Setiap order otomatis harus melewati triple gate, tanpa pengecualian. Gate hanya dapat <b>mengecilkan</b> atau <b>menolak</b> sebuah order — tidak pernah memperbesarnya.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk gate flow">
+    <defs>
+      <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+      <marker id="ar5g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
+      <marker id="ar5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="var(--critical)"/></marker>
+    </defs>
+    <rect x="20" y="30" width="150" height="52" rx="10" class="sv-card"/>
+    <text x="95" y="52" text-anchor="middle" class="sv-t">Niat order</text>
+    <text x="95" y="69" text-anchor="middle" class="sv-s">symbol·side·qty·price</text>
+    <path d="M170 56 H206" class="sv-line" marker-end="url(#ar5)"/>
+
+    <rect x="208" y="18" width="222" height="86" rx="10" class="sv-warn"/>
+    <text x="319" y="40" text-anchor="middle" class="sv-t">① Kelly Sizing</text>
+    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½-Kelly × equity cap</text>
+    <text x="319" y="74" text-anchor="middle" class="sv-s">jurnal sendiri (min 10 trade) · f*≤0 menolak pembelian</text>
+    <text x="319" y="92" text-anchor="middle" class="sv-m">opt-out per-agent via use_kelly=0</text>
+    <path d="M430 56 H466" class="sv-line" marker-end="url(#ar5)"/>
+
+    <rect x="468" y="18" width="212" height="86" rx="10" class="sv-warn"/>
+    <text x="574" y="40" text-anchor="middle" class="sv-t">② Pemeriksaan Limit</text>
+    <text x="574" y="58" text-anchor="middle" class="sv-s">kerugian terealisasi harian ≤ $1,000 (UTC)</text>
+    <text x="574" y="72" text-anchor="middle" class="sv-s">per-symbol ≤ $10,000 · portfolio ≤ 60% equity · ≤ 8 posisi</text>
+    <text x="574" y="90" text-anchor="middle" class="sv-m">batas portfolio default-on · atur via PUT /api/risk/limits</text>
+    <path d="M680 56 H716" class="sv-line" marker-end="url(#ar5)"/>
+
+    <rect x="718" y="18" width="202" height="86" rx="10" class="sv-warn"/>
+    <text x="819" y="40" text-anchor="middle" class="sv-t">③ Circuit Breaker</text>
+    <text x="819" y="58" text-anchor="middle" class="sv-s">lingkup global (system·3σ shock)</text>
+    <text x="819" y="74" text-anchor="middle" class="sv-s">lingkup agent (manual HALT)</text>
+    <text x="819" y="92" text-anchor="middle" class="sv-m">salah satu dihentikan → tolak</text>
+
+    <path d="M819 104 V150" class="sv-goodline" marker-end="url(#ar5g)"/>
+    <text x="848" y="132" class="sv-m" fill="var(--good)">PASS</text>
+    <rect x="640" y="152" width="286" height="64" rx="10" class="sv-good"/>
+    <text x="783" y="176" text-anchor="middle" class="sv-t">Fill (qty dapat dikurangi oleh Kelly)</text>
+    <text x="783" y="194" text-anchor="middle" class="sv-s">posisi buy mendapat SL −5% · TP +10% otomatis</text>
+
+    <path d="M319 104 V178 H240" class="sv-badline" marker-end="url(#ar5r)"/>
+    <text x="345" y="140" class="sv-m" fill="var(--critical)">GAGAL (tahap mana pun)</text>
+    <rect x="30" y="152" width="208" height="52" rx="10" class="sv-bad"/>
+    <text x="134" y="174" text-anchor="middle" class="sv-t">Ditolak + alasan dicatat</text>
+    <text x="134" y="191" text-anchor="middle" class="sv-s">"alasan penolakan" juga dicatat</text>
+
+    <!-- watcher loop -->
+    <rect x="20" y="240" width="900" height="70" rx="10" class="sv-card" stroke-dasharray="5 4"/>
+    <text x="470" y="264" text-anchor="middle" class="sv-t">Pemantau SL/TP — memindai semua posisi terbuka setiap 30 detik</text>
+    <text x="470" y="284" text-anchor="middle" class="sv-s">Jika harga yang dipantau melewati stop_loss / take_profit, posisi otomatis ditutup. Karena menutup posisi mengurangi risiko, proses ini sengaja melewati gate —</text>
+    <text x="470" y="300" text-anchor="middle" class="sv-s">batas kerugian harian yang terlampaui atau status HALT tidak akan pernah bisa mengunci posisi terbuka, secara desain</text>
+  </svg>
+  </div>
+
+  <h3>Cara kerja rumus Kelly</h3>
+  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = win rate, R = rata-rata untung/rata-rata rugi &nbsp;&nbsp;·&nbsp;&nbsp; batas order = ½ f* × ekuitas (kas + nilai kepemilikan)</div>
+  <ul>
+    <li>W dan R dihitung dari <b>jurnal penutupan posisi milik agent sendiri</b> (replay average-cost, dibatasi hingga 5.000 catatan terbaru) — rekam jejaknya sendiri, bukan milik pihak lain.</li>
+    <li>Di bawah 10 trade yang selesai belum ada dasar statistik, sehingga tidak dilakukan penyesuaian (mencegah overconfidence).</li>
+    <li>f* ≤ 0 berarti "tidak ada edge" — buy tersebut ditolak. Order yang sudah dikurangi namun di bawah $1 tidak berarti apa-apa, sehingga juga ditolak.</li>
+  </ul>
+</div></section>
+
+<!-- ═══════════════ STEP 9 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 9</span>Eksekusi dan Manajemen Posisi — Semua Paper, Semua di Ledger</h2>
+  <p class="sub">Eksekusi menggunakan ledger yang persis sama dengan trading manual: baris signals (signal_type='automation') + pembaruan posisi + pembaruan kas + fee — dalam satu transaksi.</p>
+  <ul>
+    <li><b>Buy:</b> periksa kas → eksekusi → daftarkan SL/TP pada baris posisi dalam transaksi yang sama (nilai hasil perhitungan gate, default −5% / +10%).</li>
+    <li><b>Sell:</b> hanya dieksekusi terhadap posisi long yang sudah ada — jika tidak, dilewati dengan "no long position to sell". Tidak ada short selling.</li>
+    <li><b>Saham AS:</b> tidak ada eksekusi saat market tutup — hanya analisis dan pencatatan (skip_reason disimpan).</li>
+    <li><b>Pelacakan harga:</b> P&amp;L belum terealisasi dihitung dari <code>price_fetcher</code> polling, tanpa broker — pemantau menilai SL/TP berdasarkan harga-harga ini.</li>
+    <li><b>Akun real:</b> aturan account_type='real' tetap menjalankan analisis, tetapi <b>kode order memang sama sekali tidak dihubungkan.</b>Integrasi broker sungguhan adalah fase mendatang sebagai subsistem terpisah.</li>
+  </ul>
+</div></section>
+
+<!-- ═══════════════ STEP 10 ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">LANGKAH 10</span>Jurnal · Tinjauan — Sinyal Adalah Pengukuran, Bukan Prediksi</h2>
+  <p class="sub">Sistem hanya membaik ketika setiap keputusan dapat direkonstruksi. Apa yang direkam setiap lapisan:</p>
+  <table>
+    <thead><tr><th>Rekam</th><th>Isi</th><th>Di mana melihatnya</th></tr></thead>
+    <tbody>
+      <tr><td><code>signals</code> buku besar</td><td>Fill, kuantitas, harga, biaya, SL/TP — format sama seperti transaksi manual</td><td>Profil agen · feed</td></tr>
+      <tr><td><code>automation_runs</code></td><td>Keputusan setiap jalankan, kepercayaan, alasan fill/skip</td><td>Detail aturan otomatisasi</td></tr>
+      <tr><td>6 jenis snapshot</td><td>Berita, makro, ETF, analisis saham, psikologi, scanner — menyimpan bukti sesuai waktu keputusan</td><td>API · Signal Board</td></tr>
+      <tr><td>Peristiwa eksperimen</td><td>Jurnal saat pemicu terpicu (misalnya lonjakan sentimen)</td><td>eksperimen</td></tr>
+      <tr><td>Peristiwa risiko</td><td>Alasan penolakan gate · pemicu breaker · penutupan watcher</td><td>/api/risk/* · logs</td></tr>
+    </tbody>
+  </table>
+  <div class="note green"><b>Signal Board</b> mengumpulkan semua ini dalam satu layar: skor fusi, trigger yang terpicu/tidak terpicu, F&amp;G, kandidat scanner, jalankan otomatis terbaru — sebuah struktur di mana manusia dapat mengaudit penilaian mesin kapan saja.</div>
+</div></section>
+
+<!-- ═══════════════ Three Perspectives ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">§11</span>Tiga Perspektif — Trader · CEO · QA</h2>
+
+  <div class="persona">
+    <div class="persona-head"><span class="persona-icon" style="background:var(--accent)">T</span><b>Sudut pandang Trader — "Bagaimana saya mempercayai dan menggunakan sistem ini?"</b></div>
+    <div class="persona-body">
+      <ul>
+        <li><b>Disiplin diterapkan dalam kode.</b> Batas bobot psikologi (0.3), sampel minimum Kelly (10 transaksi), gate kepercayaan (0.65) — bahkan ketika manusia bersemangat, sistem tidak bisa.</li>
+        <li><b>Setiap sinyal membawa kalimat bukti.</b> Bukan sekadar "BUY 0.36" tetapi "harga di atas MA20 + funding netral + F&amp;G extreme fear, recovery belum terpicu" — baca dan tentukan apakah Anda setuju.</li>
+        <li><b>Kerugian dipotong pada dua lapisan.</b> Per posisi (SL −5%) dan per akun (harian $1,000). Penutupan watcher melewati gate, sehingga keluar selalu memungkinkan bahkan dalam kondisi lockout.</li>
+        <li><b>Progresi yang disarankan:</b>  ① amati sinyal saja selama beberapa minggu dengan auto_execute mati → ② setelah jurnal Anda sendiri mencapai 10 trades dan Kelly aktif, otomatiskan dengan ukuran kecil → ③ sesuaikan min_confidence dengan temperamen Anda sendiri. Jangan buru-buru menurunkannya ke 0.5 — default konservatif 0.65 ada karena suatu alasan.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="persona">
+    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>Pandangan CEO — "Mengapa desain ini adalah keunggulan produk"</b></div>
+    <div class="persona-body">
+      <ul>
+        <li><b>Positioning:</b> bukan "bot untung-terjamin" melainkan sebuah <b>Intelligent Automate Agent — sebuah platform berupa pengumpulan sinyal yang terukur + otomasi yang disiplin</b>. Kalimat bukti, snapshot, dan kemampuan untuk ditinjau kembali adalah pembeda utama, dan hal-hal ini sekaligus menurunkan risiko regulasi dan risiko kepercayaan.</li>
+        <li><b>Paper-first adalah sebuah strategi.</b> Belum adanya hubungan ke akun real bukan berarti belum lengkap, melainkan desain bertahap — pengguna memverifikasi kemampuan sistem tanpa risiko, kami menyempurnakan mesinnya berdasarkan data yang diamati, lalu menambahkan integrasi broker (subsistem terpisah).</li>
+        <li><b>Struktur biaya:</b> seluruh pipeline yang berjalan saat ini menggunakan sumber gratis — dapat berskala dengan biaya marjinal nol. LLM dan data berbayar (whale/liquidation) adalah lapisan opsional yang ditambahkan setelah ada pendapatan.</li>
+        <li><b>Urutan roadmap:</b> P6 whale/liquidation (sumber berbayar) → backtesting yang lebih mendalam → integrasi broker real → agent marketplace. Setiap tahap dibangun di atas data dari tahap sebelumnya.</li>
+        <li><b>Manajemen risiko adalah brand:</b> "sebuah platform di mana trading yang didorong psikologi secara struktural tidak mungkin terjadi" adalah sekaligus jargon pemasaran dan fakta — dapat dibuktikan lewat kode.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="persona">
+    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>Pandangan QA — "Apa yang telah diverifikasi, dan bagaimana caranya"</b></div>
+    <div class="persona-body">
+      <ul>
+        <li><b>1.100+ tes lulus</b> (termasuk 126 tes fase baru: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot).</li>
+        <li><b>Invarian keamanan yang dikunci oleh tes:</b> hanya fill dari simulator · sell mengharuskan adanya posisi yang dipegang · dilewati saat market tutup · tidak ada order pada akun real · gate hanya bisa mengecilkan/menolak.</li>
+        <li><b>Fail-soft diterapkan di seluruh bagian:</b> ketika sumber eksternal gagal, hanya komponen tersebut yang gugur (disebutkan dalam array missing) dan sisa snapshot tetap tersimpan. Bobot env yang salah akan kembali ke default, bukan menghasilkan 500.</li>
+        <li><b>Isolasi tahap:</b> kelima fase secara default menggunakan env-flag off — pada insiden produksi, satu flag mematikan hanya tahap itu.</li>
+        <li><b>Rekam jejak red-team:</b> 6 perspektif ahli + tinjauan red-team menemukan dan memperbaiki bug "sell unreachable" sebelum deploy — bukti bahwa proses tinjauan benar-benar berfungsi.</li>
+        <li><b>Verifikasi langsung (2026-07-15):</b> endpoint fusion, psychology, scanner, dan risk semuanya terkonfirmasi menyajikan data nyata di sooppiy.com (F&amp;G 25, BTC RSI 55.05, kandidat scanner BSBUSDT ×3.52), tanpa regresi.</li>
+        <li><b>Verifikasi yang tersisa:</b> pengamatan jangka panjang terhadap penutupan watcher (mengumpulkan SL firing nyata di staging), akumulasi baseline sebutan scanner (≥3 scan), pemantauan untuk trip breaker otomatis nyata (3σ).</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- ═══════════════ Reference ═══════════════ -->
+<section><div class="wrap">
+  <h2><span class="no">§12</span>Referensi — API · Config Flags</h2>
+  <h3>API Utama</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Peran</th><th>Auth</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/market-intel/fusion</code></td><td>Skor fusion + status pemicu trigger (STEP 5)</td><td>Publik</td></tr>
+      <tr><td><code>GET /api/market-intel/psych</code></td><td>F&amp;G, spikes, shock, Δodds (STEP 4)</td><td>Publik</td></tr>
+      <tr><td><code>GET /api/scanner/candidates</code></td><td>Kandidat yang diperingkat + alasan (STEP 2)</td><td>Publik</td></tr>
+      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>Batas per-agen, SL/TP, opt-out Kelly (STEP 8)</td><td>claw_ token</td></tr>
+      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>HALT / resume breaker manual</td><td>claw_ token</td></tr>
+      <tr><td><code>/api/automation/*</code></td><td>Pembuatan/pembaruan rule + riwayat eksekusi (STEP 7)</td><td>claw_ token</td></tr>
+    </tbody>
+  </table>
+  <h3>Flag isolasi tahap (semua default off · semua on untuk server uji saat ini)</h3>
+  <table>
+    <thead><tr><th>Flag</th><th>Tahap</th><th>Pengaturan pendamping</th></tr></thead>
+    <tbody>
+      <tr><td><code>RISK_ENGINE_ENABLED</code></td><td>Gerbang STEP 8·9 + watcher</td><td><code>RISK_WATCHER_INTERVAL=30</code></td></tr>
+      <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>Loop pengumpulan psychology STEP 4</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
+      <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>Jalur kuant kripto STEP 3</td><td>—</td></tr>
+      <tr><td><code>SCANNER_ENABLED</code></td><td>Loop scanner STEP 2</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
+      <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>Sinyal lintas-pasar kimchi-premium · DXY</td><td>—</td></tr>
+      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>Blokir entri baru di dalam jendela peristiwa makro (default off)</td><td>—</td></tr>
+      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>Kunci sumber ETF-flow nyata (tingkat gratis)</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
+      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>Pelacakan whale (BTC mempool · ETH exchange wallets)</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
+      <tr><td><code>FUSION_W_*</code></td><td>Penyesuaian bobot STEP 5</td><td>psych dibatasi keras pada 0.3 — config tidak dapat melebihinya</td></tr>
+    </tbody>
+  </table>
+</div></section>
+
+<footer><div class="wrap">
+  Sooppiy · Panduan Full-Pipeline Perdagangan Otomatis AI · 2026-07-16 · Setiap angka dalam dokumen ini adalah nilai aktual yang diterapkan dalam kode main-branch; nilai live diamati di sooppiy.com pada hari deploy. Dokumen terkait: <a href="/plan.html" style="color:var(--accent)">Rencana Implementasi</a> · <a href="/framework.html" style="color:var(--accent)">Spesifikasi Framework</a>
+</div></footer>
+
+</body>
+</html>

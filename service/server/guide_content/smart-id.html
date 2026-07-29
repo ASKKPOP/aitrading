@@ -1,0 +1,265 @@
+<!-- machine-translated from design/smart-trading-features-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keputusan AI Cerdas &amp; Notifikasi Pribadi</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --good:#1a8f5e; --warn:#c88a1a;
+  --bad:#d03b3b; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --muted:#8f8d85; --accent:#3987e5; --good:#3fd08a; --warn:#e0a53a;
+    --bad:#e66767; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px}
+h2{font-size:19px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2)}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td strong{color:var(--ink)}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;
+  padding:2px 10px;vertical-align:3px;margin-left:8px;letter-spacing:.03em}
+.live{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good);border:1px solid var(--good)}
+.soon{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn);border:1px solid var(--warn)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:14px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.mode{border-radius:12px;padding:14px 16px;border:1.5px solid var(--grid);background:var(--card)}
+.mode h3{margin:0 0 6px;font-size:14.5px}
+.mode.calm{border-color:var(--accent)} .mode.hot{border-color:var(--warn)}
+.mode ul{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}
+.steps li{counter-increment:s;position:relative;padding:10px 14px 10px 46px;margin:8px 0;
+  background:var(--card);border:1px solid var(--border);border-radius:10px}
+.steps li::before{content:counter(s);position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;
+  font-size:12.5px;display:grid;place-items:center}
+.note{border-left:3px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;
+  padding:10px 14px;margin:14px 0;font-size:13.5px;color:var(--ink2)}
+.safe{border-left-color:var(--good)}
+.trig{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
+.trig .t{background:var(--card);border:1.5px solid var(--warn);border-radius:11px;padding:12px 13px;font-size:12.8px}
+.trig .t b{display:block;color:var(--ink);font-size:13.2px;margin-bottom:3px}
+.trig .t i{font-style:normal;font-size:19px;display:block;margin-bottom:5px}
+.fan{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
+@media (max-width:640px){.fan{grid-template-columns:1fr}}
+.fan .u{border-radius:11px;border:1.5px solid var(--grid);background:var(--card);padding:11px 13px;font-size:12.5px}
+.fan .u b{display:block;font-size:13px;color:var(--ink);margin-bottom:3px}
+.fan .good{border-color:var(--good)} .fan .bad{border-color:var(--warn)} .fan .mute{opacity:.75;border-style:dashed}
+figure{margin:16px 0} figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+svg{display:block;width:100%;height:auto}
+</style></head>
+<body><main>
+
+<h1>Keputusan AI Cerdas &amp; Notifikasi Pribadi</h1>
+<p>Bagaimana trading otomatis Anda berpikir. Dalam bahasa sederhana: platform memutuskan <em>siapa</em> yang harus mengambil setiap
+keputusan — mesin aturan yang cepat, atau tim analis AI lengkap — dan memantau simbol Anda sepanjang waktu,
+memeriksa setiap peristiwa terhadap <strong>posisi Anda sendiri</strong> sebelum memberi notifikasi kepada Anda.</p>
+
+<h2>Dua pemikiran, satu armada — perutean keputusan cerdas <span class="badge live">LIVE</span></h2>
+<p>Setiap siklus trading dimulai dengan satu pertanyaan: <strong>apakah ini momen biasa, atau momen kritis?</strong>
+Jawabannya menentukan siapa yang mengambil keputusan. Kedua jawaban tetap melewati lapisan keamanan yang sama.</p>
+
+<figure>
+  <svg viewBox="0 0 720 372" role="img" aria-label="Each cycle is classified as ordinary or critical; ordinary goes to the rules engine, critical to the AI desk, and both pass through safety checks before any action">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="250" y="8" width="220" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="360" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">⏱ Setiap siklus trading</text>
+    <text x="360" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">harga &amp; feed pasar diperbarui</text>
+    <line x1="360" y1="54" x2="360" y2="76" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="235" y="80" width="250" height="48" rx="10" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="360" y="100" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Pemeriksaan situasi</text>
+    <text x="360" y="117" font-size="11.5" fill="var(--ink2)" text-anchor="middle">momen biasa — atau kritis?</text>
+
+    <path d="M300 128 L300 150 L150 150 L150 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <path d="M420 128 L420 150 L570 150 L570 172" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="26" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="150" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧭 Mesin aturan</text>
+    <text x="150" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">rencana strategi Anda, diterapkan</text>
+    <text x="150" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">cepat · konsisten · tanpa biaya AI</text>
+
+    <rect x="446" y="176" width="248" height="72" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="570" y="199" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 Tim AI lengkap</text>
+    <text x="570" y="217" font-size="11.5" fill="var(--ink2)" text-anchor="middle">4 analis + trader &amp; diskusi risiko</text>
+    <text x="570" y="234" font-size="11.5" fill="var(--ink2)" text-anchor="middle">penilaian, bukan hanya aturan</text>
+
+    <path d="M150 248 L150 272 L360 272 L360 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M570 248 L570 272 L360 272" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="360" y1="272" x2="360" y2="290" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="210" y="294" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--good) 10%,var(--card))" stroke="var(--good)" stroke-width="2"/>
+    <text x="360" y="314" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🛡️ Pemeriksaan keamanan — selalu</text>
+    <text x="360" y="331" font-size="11" fill="var(--ink2)" text-anchor="middle">batas risiko · batas posisi · stop · penguncian profit</text>
+    <line x1="360" y1="340" x2="360" y2="360" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="360" y="370" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">Tindakan — trading, tahan, atau lindungi</text>
+  </svg>
+  <figcaption>Pemikiran mana pun yang memutuskan, jawabannya tetap harus lolos lapisan keamanan Anda. AI tidak pernah bisa melewatinya.</figcaption>
+</figure>
+
+<h3>Apa yang termasuk "momen kritis"</h3>
+<p>Empat hal yang mengirim keputusan ke tim AI lengkap. Setiap hal diukur dari data pasar langsung — tanpa menerka-nerka:</p>
+<div class="trig">
+  <div class="t"><i>📅</i><b>Jendela peristiwa</b>Rilis ekonomi besar akan segera terjadi — keputusan suku bunga, inflasi, data pekerjaan.</div>
+  <div class="t"><i>⚡</i><b>Kejutan pasar</b>Pergerakan harga yang tidak normal dengan volume tidak biasa — sesuatu yang nyata baru saja terjadi.</div>
+  <div class="t"><i>🎭</i><b>Ekstrem kerumunan</b>Pembacaan ketakutan atau euforia pada level ekstrem — kerumunan tidak berperilaku normal.</div>
+  <div class="t"><i>🎯</i><b>Mendekati stop Anda</b>Posisi Anda mendekati stop keamanannya — momen di mana penilaian paling penting.</div>
+</div>
+<div class="note"><strong>Mengapa harus melakukan perutean?</strong> Aturan tetap sangat baik untuk kondisi biasa — cepat,
+konsisten, dan tidak memerlukan biaya untuk dijalankan. Namun situasi yang tidak biasa justru adalah saat aturan tetap tidak memiliki
+jawaban. Perutean menggunakan analisis mendalam di tempat yang benar-benar dapat mengubah hasil.</div>
+
+<h2>Apa yang dibaca oleh meja AI secara penuh <span class="badge live">LIVE</span></h2>
+<p>Ketika meja AI mengambil keputusan, ia tidak hanya melihat grafik. Empat analis masing-masing menulis ringkasan,
+kemudian seorang trader dan manajer risiko mendiskusikan keputusan akhir:</p>
+
+<figure>
+  <svg viewBox="0 0 720 232" role="img" aria-label="Four analysts - news, psychology, macro and technical - feed a trader and risk manager who debate and produce a decision with a written reason">
+    <rect x="8"   y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="91" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📰 Berita</text>
+    <text x="91" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">berita utama &amp; makro,</text>
+    <text x="91" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">dengan sentimen</text>
+
+    <rect x="190" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="273" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🎭 Psikologi</text>
+    <text x="273" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">suasana hati pasar, ketakutan</text>
+    <text x="273" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">&amp; keserakahan, perbincangan sosial</text>
+
+    <rect x="372" y="8" width="166" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="455" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">🏛 Makro &amp; kebijakan</text>
+    <text x="455" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">rezim ekonomi,</text>
+    <text x="455" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">perubahan kebijakan</text>
+
+    <rect x="554" y="8" width="158" height="66" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="633" y="32" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">📈 Teknikal</text>
+    <text x="633" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">struktur, momentum,</text>
+    <text x="633" y="64" font-size="10.8" fill="var(--ink2)" text-anchor="middle">volatilitas</text>
+
+    <path d="M91 74 L91 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M273 74 L273 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M455 74 L455 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <path d="M633 74 L633 96 L360 96" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+    <line x1="360" y1="96" x2="360" y2="118" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="212" y="122" width="296" height="50" rx="11" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="143" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⚖️ Diskusi Trader &amp; Manajer Risiko</text>
+    <text x="360" y="161" font-size="11" fill="var(--ink2)" text-anchor="middle">keputusan, dan argumen yang menentangnya</text>
+    <line x1="360" y1="172" x2="360" y2="192" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <rect x="248" y="194" width="224" height="34" rx="9" fill="var(--card)" stroke="var(--accent)" stroke-width="1.8"/>
+    <text x="360" y="216" font-size="12.5" font-weight="700" fill="var(--accent)" text-anchor="middle">Keputusan + alasan tertulis</text>
+  </svg>
+  <figcaption>Faktor manusia — bagaimana perasaan orang <em>tentang</em> pasar — adalah bagian dari setiap keputusan penting, bukan hanya grafik.</figcaption>
+</figure>
+
+<p>Setiap keputusan dicatat beserta alasan pengambilannya, dan pikiran mana yang membuatnya. Anda dapat membaca kembali persis
+mengapa armada Anda bertindak seperti itu.</p>
+
+<h2>Perlindungan keuntungan otomatis <span class="badge live">LIVE</span></h2>
+<p>Dua perlindungan berjalan pada setiap armada baru, tanpa Anda perlu melakukan apa pun:</p>
+<div class="card">
+  <p style="margin:0 0 8px"><strong>🛡️ Stop keamanan yang disesuaikan dengan posisi aktual Anda.</strong> Jika sebuah transaksi bergerak
+  benar-benar melawan Anda, transaksi tersebut dipotong lebih awal — kerugian kecil dan terkendali, bukan kerugian besar.</p>
+  <p style="margin:0"><strong>🔒 Penguncian keuntungan trailing.</strong> Ketika sebuah posisi membangun keuntungan yang berarti, platform
+  melacak level terbaiknya. Jika keuntungan mulai tergelincir melewati sebagian yang ditetapkan dari puncak tersebut, keuntungan
+  tersebut diamankan secara otomatis — sehingga kemenangan tidak diam-diam kembali ke nol saat Anda tidur.</p>
+</div>
+
+<figure>
+  <svg viewBox="0 0 700 220" role="img" aria-label="Profit rises to a peak, retraces, and is banked at the lock level instead of falling back to zero">
+    <line x1="30" y1="180" x2="670" y2="180" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="34" y="196" font-size="11" fill="var(--muted)">entri (±0)</text>
+    <path d="M30 180 C 140 158, 240 110, 330 72 C 355 62, 372 58, 385 58 C 430 62, 500 92, 560 118"
+          fill="none" stroke="var(--good)" stroke-width="3" stroke-linecap="round"/>
+    <line x1="385" y1="118" x2="650" y2="118" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <circle cx="385" cy="58" r="5" fill="var(--good)"/>
+    <text x="385" y="42" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">keuntungan puncak</text>
+    <circle cx="560" cy="118" r="6" fill="var(--accent)"/>
+    <text x="572" y="112" font-size="12" font-weight="700" fill="var(--accent)">keuntungan diamankan ✓</text>
+    <text x="572" y="128" font-size="10.5" fill="var(--muted)">level kunci (% dari puncak)</text>
+    <path d="M560 118 C 590 140, 620 165, 650 178" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 4"/>
+    <text x="648" y="168" font-size="10.5" fill="var(--muted)" text-anchor="end">apa yang akan terjadi…</text>
+  </svg>
+  <figcaption>Penguncian trailing: keuntungan dilacak pada puncaknya — jika keuntungan tersebut mundur melewati level kunci, keuntungan direalisasikan alih-alih kembali ke nol.</figcaption>
+</figure>
+
+<div class="note"><strong>Peningkatan terbaru.</strong> Penguncian keuntungan dahulu aktif sangat awal, yang berarti
+ia bisa mengamankan keuntungan kecil sementara stop keamanan masih memungkinkan kerugian yang jauh lebih besar. Sekarang ia menunggu sampai sebuah posisi
+telah mendapatkan setidaknya sebanyak yang dipertaruhkan sebelum aktif — sehingga kemenangan yang terlindungi benar-benar berharga.</div>
+
+<h2>Peringatan isu-hangat pribadi <span class="badge live">LIVE</span></h2>
+<p>Pengawasan sepanjang waktu terhadap simbol-simbol dalam <strong>your</strong> RUN Anda. Ide utamanya: peristiwa pasar adalah
+fakta tentang pasar — <strong>apakah itu penting atau tidak adalah fakta tentang Anda.</strong> Jadi setiap peringatan diverifikasi
+terhadap akun Anda sendiri sebelum dikirim.</p>
+
+<figure>
+  <svg viewBox="0 0 720 250" role="img" aria-label="Three stages: hourly detection across all symbols, per-member verification against each position, then a personal alert only when it matters">
+    <rect x="30" y="10" width="660" height="52" rx="11" fill="var(--card)" stroke="var(--grid)" stroke-width="1.5"/>
+    <text x="52" y="33" font-size="13" font-weight="700" fill="var(--ink)">① Deteksi — setiap jam, di semua simbol aktif</text>
+    <text x="52" y="51" font-size="11.3" fill="var(--ink2)">berita kebijakan · headline besar · pergerakan teknikal tajam · sentimen crowd yang tidak biasa</text>
+    <line x1="360" y1="62" x2="360" y2="82" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="30" y="86" width="660" height="52" rx="11" fill="color-mix(in srgb,var(--accent) 8%,var(--card))" stroke="var(--accent)" stroke-width="2"/>
+    <text x="52" y="109" font-size="13" font-weight="700" fill="var(--ink)">② Verifikasi — terhadap posisi ANDA</text>
+    <text x="52" y="127" font-size="11.3" fill="var(--ink2)">arah posisi yang Anda pegang · leverage Anda · seberapa jauh stop pengaman Anda</text>
+
+    <path d="M180 138 L180 160 L140 160 L140 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M360 138 L360 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+    <path d="M540 138 L540 160 L580 160 L580 180" fill="none" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ar)"/>
+
+    <rect x="30" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--good)" stroke-width="1.8"/>
+    <text x="140" y="205" font-size="12" font-weight="700" fill="var(--good)" text-anchor="middle">Mendukung posisi Anda</text>
+    <text x="140" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">info ringan,</text>
+    <text x="140" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">urgensi rendah</text>
+
+    <rect x="262" y="184" width="196" height="58" rx="10" fill="color-mix(in srgb,var(--warn) 10%,var(--card))" stroke="var(--warn)" stroke-width="2"/>
+    <text x="360" y="205" font-size="12" font-weight="700" fill="var(--warn)" text-anchor="middle">Berlawanan dengan posisi Anda</text>
+    <text x="360" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">peringatan pribadi mendesak</text>
+    <text x="360" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">+ titik keputusan</text>
+
+    <rect x="470" y="184" width="220" height="58" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.8" stroke-dasharray="5 4"/>
+    <text x="580" y="205" font-size="12" font-weight="700" fill="var(--muted)" text-anchor="middle">Tidak material bagi Anda</text>
+    <text x="580" y="223" font-size="10.8" fill="var(--ink2)" text-anchor="middle">tidak ada peringatan sama sekali —</text>
+    <text x="580" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">keheningan adalah fiturnya</text>
+  </svg>
+  <figcaption>Satu peristiwa, tiga hasil berbeda. Sebagian besar member dengan tepat tidak menerima apa pun.</figcaption>
+</figure>
+
+<h3>Berita yang sama, tiga member</h3>
+<div class="fan">
+  <div class="u good"><b>Member A — short ETH</b>Berita mendukung posisi → info ringan, urgensi rendah.</div>
+  <div class="u bad"><b>Member B — long ETH ×2</b>Berita berlawanan dengan posisi, stop 1.1% lagi → <strong>peringatan pribadi mendesak</strong> + titik keputusan.</div>
+  <div class="u mute"><b>Member C — stop jauh, ukuran kecil</b>Tidak material untuk akun ini → <strong>tidak ada peringatan sama sekali</strong>.</div>
+</div>
+
+<p>Ketika sebuah peringatan memang penting, Trading Master Anda melihat sinyal yang sama sebagai titik keputusan, dan siklus
+berikutnya dari RUN yang terpengaruh secara otomatis dieskalasi ke full AI desk.</p>
+
+<h2>Apa artinya ini bagi Anda</h2>
+<table>
+  <thead><tr><th>Yang mungkin Anda perhatikan</th><th>Mengapa ini terjadi</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Beberapa siklus bertindak secara instan, yang lain berhenti sejenak untuk berpikir</strong></td><td>Momen-momen biasa mengikuti jalur aturan; momen kritis mengikuti jalur AI desk, yang membaca lebih banyak sebelum menjawab.</td></tr>
+    <tr><td><strong>Posisi yang untung menutup dengan sendirinya</strong></td><td>Trailing profit lock mengamankan keuntungan sebelum bisa hilang.</td></tr>
+    <tr><td><strong>Posisi yang rugi ditutup lebih awal</strong></td><td>Safety stop memotongnya — kerugian kecil yang terkendali alih-alih kerugian besar.</td></tr>
+    <tr><td><strong>Anda tidak menerima peringatan saat ada berita besar</strong></td><td>Itu sudah diperiksa terhadap posisi Anda dan tidak material bagi Anda. Itulah sistem yang bekerja.</td></tr>
+    <tr><td><strong>Sebuah RUN tidak pernah membuka transaksi</strong></td><td>Rencananya tidak dapat menutup biaya trading, atau tidak ada momen yang memenuhi batas keyakinan. Tidak melakukan trading adalah hasil yang valid.</td></tr>
+  </tbody>
+</table>
+
+<div class="note safe"><strong>Keamanan, selalu:</strong> AI merekomendasikan — batas risiko Anda yang memutuskan. Setiap
+tindakan, baik yang berasal dari rules engine atau AI desk, tetap melewati pemeriksaan
+risiko, batas posisi, dan safety stop akun Anda. Dan Anda dapat menghentikan semuanya kapan saja dengan satu tombol.</div>
+
+</main></body></html>
