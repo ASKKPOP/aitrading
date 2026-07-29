@@ -51,7 +51,7 @@ Suatu pola hanya dihitung jika **selesai DAN dikonfirmasi volume DAN sentimen ti
 - Bearish trigger: double-top / H&S completion **+ volume meningkat + tone berita memburuk**
 - Tidak ada volume = tidak ada trade (fitur volume terverifikasi esensial; Dinh & Kwon 2018)
 
-### LAYER 4 — Size & exit (risk: BERAPA BANYAK)
+### LAPISAN 4 — Ukuran & keluar (risiko: BERAPA BANYAK)
 - Ukuran posisi = risk budget ÷ volatilitas (terverifikasi: volatilitas adalah top-4 predictor dan input untuk sizing)
 - Hard stop di bawah titik invalidasi pattern; trail dengan MA
 - Time stop: thesis tidak berjalan dalam N hari → exit (akurasi Anda ~55%, jadi losers harus dipotong dengan cepat)

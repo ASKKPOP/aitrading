@@ -66,6 +66,11 @@ _TAG_NAME = re.compile(r"<\s*(/?)\s*([a-zA-Z][a-zA-Z0-9]*)")
 # it is the language these documents were drafted in, so it is the shortest
 # path to the target. `gateway` has only ever existed in Korean.
 SOURCES: dict[str, tuple[str, str]] = {
+    # owner_only groups (2026-07-29): operator material, English-only until
+    # Henry asked for full localization. Same pipeline, same caveats.
+    "ops-keys": ("design/api-keys-reference-en.html", "en"),
+    "architecture": ("12-system-architecture-report.html", "en"),
+    "extensions": ("reports/2026-07-25-extension-e1-e2-analysis.html", "en"),
     "guide": ("design/ai-trading-guide-en.html", "en"),
     "gateway": ("design/live-trading-gateway-guide.html", "ko"),
     "smart": ("design/smart-trading-features-en.html", "en"),
@@ -84,6 +89,9 @@ MD_SOURCES: dict[str, tuple[str, str]] = {
 
 # Where each generated file lands: group -> (template, is_markdown).
 OUT_PATTERN: dict[str, str] = {
+    "ops-keys": "design/api-keys-reference-{lang}.html",
+    "architecture": "12-system-architecture-report-{lang}.html",
+    "extensions": "reports/2026-07-25-extension-e1-e2-analysis-{lang}.html",
     "guide": "design/ai-trading-guide-{lang}.html",
     "gateway": "design/live-trading-gateway-guide-{lang}.html",
     "smart": "design/smart-trading-features-{lang}.html",
@@ -97,6 +105,9 @@ OUT_PATTERN: dict[str, str] = {
 
 # Languages each group already publishes (from build_guide_content.SOURCES).
 EXISTING: dict[str, set[str]] = {
+    "ops-keys": {"en"},
+    "architecture": {"en"},
+    "extensions": {"en"},
     "guide": {"en", "ko"},
     "gateway": {"ko"},
     "smart": {"en", "ko"},

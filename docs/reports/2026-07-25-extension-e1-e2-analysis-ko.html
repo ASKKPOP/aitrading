@@ -1,0 +1,331 @@
+<!-- machine-translated from reports/2026-07-25-extension-e1-e2-analysis.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extension Analysis — AI 라우팅 &amp; 핫이슈 데몬 · Sooppiy</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+    --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+      --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+      --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+      --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+    --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+    --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+    --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-size:29px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink-2);font-size:15.5px;max-width:68ch}
+  h2{font-size:20px;margin:46px 0 4px;letter-spacing:-.01em}
+  h2 .tag{font-size:12px;font-weight:700;vertical-align:3px;margin-left:8px;padding:3px 9px;border-radius:999px}
+  .tag-go{background:var(--pos-soft);color:var(--pos);border:1px solid var(--pos)}
+  .sectnote{color:var(--ink-2);margin:0 0 18px;max-width:72ch;font-size:14.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:20px 22px}
+  /* verdict tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:12px;color:var(--muted);font-weight:600}
+  .tile .v{font-size:22px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+  .tile .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .acc{color:var(--accent)}
+  /* flow diagram */
+  .flow{display:flex;flex-direction:column;gap:0;margin:18px 0 6px}
+  .frow{display:flex;gap:10px;align-items:stretch;justify-content:center;flex-wrap:wrap}
+  .fbox{background:var(--surface-2);border:1.5px solid var(--border);border-radius:11px;padding:10px 14px;
+    font-size:13px;text-align:center;min-width:130px;flex:1;max-width:250px}
+  .fbox b{display:block;font-size:13.5px}
+  .fbox .s{color:var(--ink-2);font-size:11.5px;margin-top:2px;display:block}
+  .fbox.ai{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 9%,var(--surface))}
+  .fbox.algo{border-color:var(--accent);background:var(--accent-soft)}
+  .fbox.gate{border-color:var(--amber)}
+  .fbox.hot{border-color:var(--neg);background:var(--neg-soft)}
+  .fbox.ok{border-color:var(--pos);background:var(--pos-soft)}
+  .farrow{text-align:center;color:var(--muted);font-size:16px;line-height:1;padding:6px 0}
+  .fsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;margin:0 auto}
+  .flabel{font-size:11px;font-weight:700;text-align:center;letter-spacing:.04em;text-transform:uppercase;padding-bottom:4px}
+  .fl-a{color:var(--accent)} .fl-b{color:var(--purple)}
+  /* tables */
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+  .c-have{background:var(--pos-soft);color:var(--pos)}
+  .c-build{background:var(--accent-soft);color:var(--accent)}
+  /* badges row */
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 14px}
+  .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2)}
+  .badge b{color:var(--ink)}
+  /* chart */
+  figure{margin:0}
+  .chart-card{padding:18px 18px 8px;margin-top:14px}
+  .cap{color:var(--ink-2);font-size:13px;margin:2px 4px 14px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+  .blabel{fill:var(--ink);font-size:12.5px;font-weight:650}
+  .bval{fill:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .warn{background:var(--neg-soft);border-left:3px solid var(--neg);padding:10px 14px;border-radius:8px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .warn b{color:var(--ink)}
+  .note{background:var(--surface-2);border-radius:9px;padding:10px 14px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .note b{color:var(--ink)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:44px;border-top:1px solid var(--border);padding-top:16px}
+  @media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.cols2{grid-template-columns:1fr}.fsplit{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Sooppiy · 확장 제안 · 타당성 &amp; 설계</div>
+    <h1>E1 — AI/알고리즘 결정 라우팅 &nbsp;·&nbsp; E2 — 핫이슈 데몬</h1>
+    <p class="sub">실제 코드베이스를 기준으로 두 가지 제안된 확장을 분석합니다. 결론을 먼저 말씀드리면:
+    <b>둘 다 실현 가능하며 권장됩니다</b> — 그리고 대부분의 메커니즘이 이미 존재합니다. E1은 방금 활성화한 전면적인
+    <code>FLEET_CYCLE_MODE=full</code>의 더 스마트한 후속 방안이며, E2는 워커가 이미 매시간 스냅샷하는
+    피드를 대부분 조합한 것입니다.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">E1 · AI 라우팅</div><div class="v pos">✅ 구축</div><div class="d">~1–2주 · 대부분 기존 신호 활용</div></div>
+    <div class="tile"><div class="k">E2 · 핫이슈 데몬</div><div class="v pos">✅ 구축</div><div class="d">~1.5–2주 · 3단계, 사용자별 검증</div></div>
+    <div class="tile"><div class="k">전체 모드 대비 LLM 비용</div><div class="v acc">−80%</div><div class="d">필요할 때만 AI 사용</div></div>
+    <div class="tile"><div class="k">시너지</div><div class="v">E2 → E1</div><div class="d">데몬 신호 = 라우팅 트리거</div></div>
+  </div>
+
+  <!-- ══════════════ E1 ══════════════ -->
+  <h2>E1 — 상황별 라우팅: 극단 상황엔 AI, 중간 상황엔 알고리즘 <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>아이디어:</b> 분석 결과가 <b>고이벤트 / 고위험 / 고수익</b>으로 나타나면, AI가 권장하고 실행하도록 합니다
+  (알고리즘은 극단 상황의 모든 파라미터를 다 담아낼 수 없습니다). <b>일반</b> 상황(보유 / 통상)에서는
+  <b>프로그래밍된 결정론적 알고리즘</b>으로 실행합니다 — 저렴하고, 감사 가능하며, 예측 가능합니다. 이는 타당한 아키텍처이며, 매 주기마다 전체 분석을 실행하는 비용 문제를 직접 해결합니다.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>매 실행 주기</b><span class="s">가격 + 피드 갱신 (LLM 0회)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>상황 분류기</b><span class="s">결정론적 · LLM 0회 · 이미 존재하는 신호 기반</span></div></div>
+      <div class="farrow">↓ &nbsp; 라우팅 &nbsp; ↓</div>
+      <div class="fsplit">
+        <div>
+          <div class="flabel fl-a">정상 (전체 주기의 ~80–85%)</div>
+          <div class="fbox algo" style="max-width:none"><b>프로그래밍된 알고리즘이 실행</b>
+            <span class="s">테제 규칙 + 기술적 지표 + 손절/트레일링 · LLM 호출 0회 · 완전히 감사 가능</span></div>
+        </div>
+        <div>
+          <div class="flabel fl-b">고이벤트 / 고위험 / 고수익 (~15–20%)</div>
+          <div class="fbox ai" style="max-width:none"><b>전체 AI 데스크가 결정</b>
+            <span class="s">모든 분석가(뉴스 · 심리/센티먼트 · 매크로 · 기술적 분석) + 트레이더/리스크 논의</span></div>
+        </div>
+      </div>
+      <div class="farrow">↓ &nbsp; 두 경로 모두 &nbsp; ↓</div>
+      <div class="frow"><div class="fbox ok"><b>리스크 게이트 (변경 없음, 항상 적용)</b><span class="s">실행당 켈리 비율 · 노출 한도 · 손절 · 트레일링 락 — AI가 절대 우회할 수 없음</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>주문 / 보유</b><span class="s">라우팅 결정과 함께 기록됨 (왜 AI인지 / 왜 알고리즘인지)</span></div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 6px">분류기는 LLM 호출 비용이 전혀 들지 않습니다 — 모든 트리거는 이미 프로덕션에 존재합니다</h3>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>트리거 → AI로 라우팅</th><th>소스 (이미 적용됨)</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>예정된 매크로 발표 구간 (FOMC / CPI / jobs)</td><td><code>market_events.active_event_window</code> (이벤트 가드)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>청산 쇼크 — |return| ≥ 3σ 또는 거래량 급증</td><td><code>psych_feed</code> 쇼크 프록시 (OKX 시간별 σ + 거래량)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>레짐 = 패닉 / 유포리아 / 이벤트 (F&amp;G &lt;20 또는 ≥80, vol pct ≥90)</td><td><code>regime.py</code> — 6개 레짐, 저장된 스냅샷</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>포지션 P&amp;L이 스탑 또는 트레일락 수준에 근접</td><td><code>peak_pnl_usd</code> + 스탑 거리 (이번 세션에 배포됨)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>이 심볼에 대한 핫이슈 신호</td><td><b>E2 데몬</b> (아래)</td><td><span class="chip c-build">BUILD</span></td></tr>
+      <tr><td>테제 무효화 가격 돌파</td><td>테제 <code>invalidation</code> 필드 대 마크</td><td><span class="chip c-build">BUILD (소규모)</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols2" style="margin-top:16px">
+    <div class="card pad">
+      <b>이것이 맞는 이유</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>비용:</b> 전체 사이클 중 약 15~20%에서만 풀 AI를 사용 → 현재 실행 중인 전면 풀 모드보다 약 80% 저렴하면서도, 인간 요인 판단이 중요한 곳에는 정확히 AI를 유지합니다.</li>
+        <li><b>감사 가능성:</b> 일반 운영은 결정론적입니다 — 재현 가능하고, 백테스트 가능하며, 설명 가능합니다.</li>
+        <li><b>테일 품질:</b> 테일은 Fleet 16이 손실을 본 지점입니다 (전량 숏 북에 대한 랠리) — 바로 풀 데스크가 사고해야 할 지점입니다.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>위험 &amp; 가드레일</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>AI는 리스크 엔진을 절대 우회하지 않습니다</b> — 두 경로 모두 동일한 게이트에서 끝납니다 (Kelly, 익스포저, 스탑, 트레일링). 타협 불가능한 불변 조건입니다.</li>
+        <li><b>페일-클로즈드:</b> 핫 사이클에서 AI 호출이 실패하면 → 보류 + 스탑 유지, 이벤트 도중 알고리즘으로 조용히 넘어가지 않습니다.</li>
+        <li><b>임계값 보정</b> 백테스트 하네스가 필요합니다 (plan&nbsp;#1) — 위의 보수적인 트리거로 v1을 배포하고, 데이터로 튜닝합니다.</li>
+        <li><b>경로 기록</b> (<code>route: ai|algo + trigger</code>) 모든 결정 이벤트에서, 사이클별로 동작을 설명할 수 있도록 합니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ E2 ══════════════ -->
+  <h2>E2 — 핫이슈 데몬: 모든 사용자의 RUN 심볼에 대한 시간별 AI 감시 <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>당신의 아이디어:</b>  Sooppiy는 매시간 모든 사용자의 실행에서 전체 심볼을 스캔하여
+  (예: 사용자 3명 · 심볼 11개), 핫 이슈(ROI 변동, 모든 기관의 경제/정책 변화, 기술적
+  브레이크아웃, 뉴스 및 소셜 급증)를 감지하고, 영향을 받은 각 사용자에게 알리며, 각 사용자의 Trading Master에게 의사결정 지점을 전달하는 데몬입니다.
+  워커는 이미 모든 입력 피드를 스냅샷하고 있으므로 — 이는 대부분 조립과 팬아웃 레이어입니다.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>시간별 데몬 틱</b><span class="s">새 워커 작업 <code>hot_issue_daemon</code></span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>모든 사용자의 활성 실행에서 DISTINCT 심볼 수집</b><span class="s">사용자 3명 · 심볼 11개 → 11개를 한 번 분석 후 사용자별로 팬아웃 (중복 제거 = 비용 ÷ 사용자 수)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>저비용 트리거 스캔 · LLM 0회</b><span class="s">뉴스 급증 · policy_feed 변화량 · 심리적 충격/F&amp;G 급등 · 소셜 z-score · 기술적 브레이크(MA/σ) · ETF 자금 흐름</span></div></div>
+      <div class="farrow">↓ 트리거된 심볼만 (~15%) ↓</div>
+      <div class="frow"><div class="fbox ai"><b>1단계 · 이벤트에 대한 AI 심층 분석 (전역, 공유)</b><span class="s">무엇이 변했는지 · 방향 · 규모 · 긴급도 — 아직 특정 사용자가 아닌 시장에 대한 사실</span></div></div>
+      <div class="farrow">↓ 영향을 받은 사용자별로 — 개별 사례로 ↓</div>
+      <div class="frow"><div class="fbox gate"><b>2단계 · 사용자별 검증 — 사용자별로 결정 (결정론적 우선 · LLM 0회)</b><span class="s">심볼을 보유/실행 중인가? · 영향 방향 대비 <b>그들의</b> 포지션 방향(약세 뉴스 + 그들의 숏 = 우호적; + 그들의 롱 = 불리) · 중요도 대 <b>그들의</b> 레버리지 &amp; 손절까지 거리 → <b>임계값 미만 = 무음, 알림 없음</b></span></div></div>
+      <div class="farrow">↓ 중요 사용자만 ↓</div>
+      <div class="frow"><div class="fbox ai"><b>2단계′ · 개인화 AI 검증</b><span class="s">(핫 심볼 × 중요 사용자)마다 소규모 호출 1회: "이 북(book) 기준 — 유리/불리/중립 · 긴급도 · 권장 조치"</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="fsplit">
+        <div><div class="fbox hot" style="max-width:none"><b>3단계 · 개인화 알림</b><span class="s"><code>send_alert</code> — i18n (5개 언어), 그들의 포지션에 맞춘 문구 ("귀하의 2배 숏에 불리, 손절까지 1.1% 남음"), 중복 제거 + 쿨다운 + 심각도 하한</span></div></div>
+        <div><div class="fbox ai" style="max-width:none"><b>3단계 · 결정 지점 → Trading Master</b><span class="s"><code>hot_issues</code> 행 + run_event; 다음 주기에서 전체 데스크로 라우팅 <b>해당 사용자 본인의 북(book)과 함께</b> (E1) — 최종 검증은 구조적으로 사용자별로 이루어짐</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>안내 (귀하의 예시를 사례별로):</b> 3명의 사용자가 11개의 개별 심볼을 보유하고 있습니다. 시간별 틱은 11개 전체를 제로
+  LLM 비용으로 스캔합니다; ETH가 트립됩니다 (약세 정책 헤드라인 + 뉴스 급증). Stage-1이 이벤트를 한 번 깊이 읽습니다. Stage-2가 그다음 검증합니다 <em>사용자별</em>:
+  사용자 A는 <b>숏 ETH</b> → 뉴스가 포지션을 지지함 → 낮은 긴급도 FYI (또는 무음); 사용자 B는 <b>롱 ETH 2×</b> 이며 스탑이
+  1.1% 남았음 → 포지션에 불리하고 중대함 → 개인화된 긴급 알림 + Master 결정 지점 + 다음 사이클이 전체 데스크로 라우팅됨;
+  사용자 C는 ETH를 먼 스탑과 작은 크기로 보유 → 중대성 이하 → <b>알림 전혀 없음</b>. 동일한 글로벌 사실, 세 가지 다른 결과 —
+  그리고 나머지 10개 심볼은 비용이 들지 않습니다.</div>
+
+  <div class="cols2">
+    <div class="card pad">
+      <b>이미 존재함 (프로덕션에서 검증됨)</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li>피드: <code>policy_feed</code> · <code>psych_feed</code> (F&amp;G, 쇼크) · <code>social_feed</code> · 시장 뉴스 / 매크로 / ETF 흐름 스냅샷 — 모두 워커 스케줄에서.</li>
+        <li>알림: <code>send_alert</code> 사용자별 언어 포함 (5개 언어 카탈로그가 프로덕션에서 운영 중), 중복 제거 키.</li>
+        <li>Master 레이어: <code>ai_automation_state</code> + 신호를 수신/처리하는 fleet supervisor.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>구축할 항목</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><code>hot_issue_daemon.py</code> 워커 태스크 + <code>hot_issues</code> 테이블 (symbol, trigger, severity, ai_read, ts).</li>
+        <li>트리거 임계값 (각 피드 자체 히스토리 대비 z-점수) + 심볼별 쿨다운 (동일 심각도에서 N시간 미만 재알림 없음).</li>
+        <li><b>E2-B′ 사용자별 검증 레이어</b> — 핫 이슈 × 각 사용자의 북(포지션 방향, 레버리지, 스탑까지의 거리, 논제)을 조인함; 결정론적 관련성/중대성 필터, 그다음 중대한 사용자당 하나의 개인화된 AI 검증. 임계값 이하에서는 무음.</li>
+        <li>알림 카탈로그를 위한 새로운 i18n 메시지 id (메모 노트에 따라 네이티브 검토 필요) — 포지션별 문구로 매개변수화됨.</li>
+        <li>Master "신호에 따라 행동" — v1: 알림 + 결정 지점 노출 + 다음 사이클을 AI로 라우팅. 신호에 따른 자동 거래는 옵트인 phase 2에서만.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warn"><b>주요 리스크 — 알림 피로:</b> 과도하게 알리는 시간별 AI 워처는 일주일 이내에 음소거됩니다. 심각도 하한선,
+  심볼별 쿨다운, 그리고 "상태 <em>변경</em>" 규칙은 탐지 자체만큼 중요합니다.</div>
+
+  <!-- ══════════════ COST ══════════════ -->
+  <h2>LLM 비용 — 라우팅이 전면 풀 모드보다 나은 이유</h2>
+  <p class="sectnote">45분 주기로 동작하는 4-run 플릿의 일일 결정 계층 LLM 호출 수(32 cycles/run/day), 그리고 11개 심볼에 대한 데몬 호출 수.
+  E1은 항상-풀 모드 대비 약 ⅕ 비용으로, 풀 데스크가 실제로 이익이 되는 곳에서만 이를 유지합니다. E2의 사전 필터는 시간당 AI 감시를 경제적으로 가능하게 만듭니다.</p>
+  <figure class="card chart-card">
+    <svg id="cost" viewBox="0 0 920 300" role="img" aria-label="Daily LLM calls: light 128, routed 134, full 768; daemon naive 1584 vs prefiltered 80"></svg>
+    <figcaption class="cap">왼쪽: 주기별 결정 호출(4-run 플릿). 오른쪽: 11개 심볼에 대한 시간당 데몬. 낮을수록 저렴함; 보라색 = AI 판단이 실제로 적용되는 곳.</figcaption>
+  </figure>
+
+  <!-- ══════════════ INTEGRATION ══════════════ -->
+  <h2>연동 지점 — 파일 단위 계획</h2>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>단계</th><th>변경 사항</th><th>위치</th></tr></thead>
+    <tbody>
+      <tr><td><b>E1-A</b></td><td>상황 분류기(기존 피드에 대한 순수 함수; 반환값 <code>route + trigger</code>)</td><td><code>run_engine.py</code> 신규 <code>_classify_situation()</code>, 호출 위치: <code>_fleet_cycle_mode</code> 를 읽는 곳</td></tr>
+      <tr><td><b>E1-B</b></td><td>일반 경로 알고리즘 v1(논지 + 기술적 규칙; 진입은 보수적, 청산 = 기존 스톱/트레일링)</td><td><code>run_engine.py</code> (라이트 경로 일반화, LLM 제외)</td></tr>
+      <tr><td><b>E1-C</b></td><td>결정별 저널 라우트; 환경 변수 킬 스위치 <code>DECISION_ROUTING_ENABLED</code></td><td><code>run_events</code> 결정 페이로드</td></tr>
+      <tr><td><b>E2-A</b></td><td><code>hot_issue_daemon</code> 작업 + <code>hot_issues</code> 테이블 + 트리거 z-score</td><td>신규 <code>hot_issue_daemon.py</code>, 워커 작업에 등록</td></tr>
+      <tr><td><b>E2-B</b></td><td>사용자별 팬아웃 알림(i18n id, 중복 제거, 쿨다운, 심각도 하한)</td><td><code>alerts.send_alert</code> + 카탈로그 항목</td></tr>
+      <tr><td><b>E2-B′</b></td><td><b>사용자별 검증</b> — 결정론적 관련성/중요도 필터(포지션 부호 × 영향 방향, 레버리지, 스톱 거리; 임계값 미만은 무시) + 중요 사용자별 맞춤형 AI 검증 1회</td><td><code>hot_issue_daemon.py</code> 검증 단계, 조인 <code>positions</code>/<code>trading_runs</code> 사용자별</td></tr>
+      <tr><td><b>E2-C</b></td><td>마스터 결정 지점 + 다음 주기를 AI로 라우팅하는 플래그</td><td><code>fleet_supervisor</code> / E1 분류기가 소비하는 run_event</td></tr>
+    </tbody>
+  </table>
+
+  <h2>순서 — 수익 계획과 병합</h2>
+  <p class="sectnote">이는 기존 4주 계획에 깔끔하게 들어맞습니다. 백테스트 하네스(#1)는 보수적인 v1을 넘어
+  E1의 임계값을 조정하기 위한 전제 조건으로 남아 있으며; 집중 한도(#2)는 1주차의 빠른 성과로 유지됩니다.</p>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>주차</th><th>출시</th><th>출처</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>집중 한도 · E1-A/B v1(보수적 트리거, 알고리즘 일반 경로)</td><td>계획 #2 · <b>E1</b></td></tr>
+      <tr><td>2</td><td>백테스트 엔진 · E1-C 롤아웃(전면 풀 모드를 라우팅으로 대체)</td><td>계획 #1 · <b>E1</b></td></tr>
+      <tr><td>3</td><td>포워드 평가 + 기대값 게이트 · E2-A/B/<b>B′</b> daemon + 사용자별 검증된 알림 (B′는 알림과 함께 출시됨 — 검증되지 않은 브로드캐스트는 절대 출시되지 않음)</td><td>플랜 #1 · <b>E2</b></td></tr>
+      <tr><td>4</td><td>확신도 보정 · E2-C 마스터 통합 · 백테스트 데이터로 E1 임계값 조정</td><td>플랜 #3 · <b>E1+E2</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <b>결론:</b> 둘 다 구축. E1 (~1–2주, <b>E1-A 출시 &amp; 2026-07-25 라이브 중</b>) "항상 전체 분석"을 "중요할 때
+    전체 분석"으로 전환. E2 (~1.5–2주)는 이벤트 레이더 — 이제 3단계: <b>탐지는 전역적이며; 판단은 항상 사용자별로 이루어짐</b> (핫 이슈는
+    시장에 관한 사실이며; 중요한지 여부는 각 사용자 포트폴리오에 관한 사실 — 알림이나 조치 전에 사례별로 검증됨). 전 과정에서
+    안전 불변성: <b>AI가 추천하고; 리스크 엔진이 항상 최종 결정한다.</b><br>
+    Sooppiy 확장 분석 · 2026-07-25 · 프로덕션 대비 검증됨 (market_events, psych_feed, regime, policy_feed, social_feed, alerts i18n 모두 라이브).
+  </div>
+</div>
+
+<script>
+(function(){
+  function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+  function draw(){
+    var svg=document.getElementById('cost'); if(!svg)return; svg.innerHTML='';
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc){var t=el('text',{x:x,y:y,class:c||'tick'});if(anc)t.setAttribute('text-anchor',anc);t.textContent=s;return t;}
+    var acc=css('--accent'),pur=css('--purple'),mut=css('--muted'),brd=css('--border');
+    var W=920,H=300, baseY=240, top=40;
+    // two groups: fleet cycles (light/routed/full), daemon (naive/prefiltered)
+    var groups=[
+      {x0:70, w:340, title:'Fleet decision calls / day (4 runs)',
+       bars:[{l:'Light (old)',v:128,c:mut},{l:'E1 Routed',v:134,c:pur,star:true},{l:'Full (now)',v:768,c:acc}]},
+      {x0:520, w:330, title:'Daemon calls / day (11 symbols)',
+       bars:[{l:'E2 Pre-filtered',v:80,c:pur,star:true},{l:'Naive hourly full',v:1584,c:mut}]}
+    ];
+    var vmax=1584;
+    var scale=v=>Math.max(4,(v/vmax)*(baseY-top));
+    groups.forEach(function(g){
+      svg.appendChild(txt(g.x0+g.w/2,24,g.title,'blabel','middle'));
+      svg.appendChild(el('line',{x1:g.x0-10,x2:g.x0+g.w+10,y1:baseY,y2:baseY,stroke:brd,'stroke-width':1}));
+      var n=g.bars.length, bw=Math.min(86,(g.w-(n-1)*26)/n), gap=(g.w-n*bw)/(n-1||1);
+      g.bars.forEach(function(b,i){
+        var x=g.x0+i*(bw+gap), h=scale(b.v), y=baseY-h;
+        var r=el('path',{d:'M'+x+' '+baseY+' L'+x+' '+(y+4)+' Q'+x+' '+y+' '+(x+4)+' '+y+' L'+(x+bw-4)+' '+y+' Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+4)+' L'+(x+bw)+' '+baseY+' Z',fill:b.c,'fill-opacity':.85});
+        svg.appendChild(r);
+        svg.appendChild(txt(x+bw/2,y-8,b.v.toLocaleString(),'bval','middle'));
+        var lt=txt(x+bw/2,baseY+18,(b.star?'★ ':'')+b.l,'tick','middle'); svg.appendChild(lt);
+      });
+    });
+    svg.appendChild(txt(70,H-8,'★ = recommended architecture · purple = AI applied selectively','tick','start'));
+  }
+  draw();
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);}
+})();
+</script>
+</body>
+</html>

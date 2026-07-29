@@ -1,0 +1,333 @@
+<!-- machine-translated from reports/2026-07-25-extension-e1-e2-analysis.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analisis Ekstensi — Perutean AI &amp; Daemon Isu-Panas · Sooppiy</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+    --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+      --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+      --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+      --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1016; --surface:#161b22; --surface-2:#1c222b; --border:#252c37;
+    --ink:#e8ecf1; --ink-2:#aab3c0; --muted:#6b7583;
+    --pos:#3fd08a; --pos-soft:#3fd08a1f; --neg:#f2695f; --neg-soft:#f2695f1f;
+    --accent:#5b86f7; --accent-soft:#5b86f71f; --amber:#e0a53a; --purple:#a78bfa;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e6eb;
+    --ink:#12161c; --ink-2:#48515e; --muted:#8a94a3;
+    --pos:#1a8f5e; --pos-soft:#1a8f5e22; --neg:#d1443b; --neg-soft:#d1443b1f;
+    --accent:#3b6ef5; --accent-soft:#3b6ef51a; --amber:#c88a1a; --purple:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-size:29px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink-2);font-size:15.5px;max-width:68ch}
+  h2{font-size:20px;margin:46px 0 4px;letter-spacing:-.01em}
+  h2 .tag{font-size:12px;font-weight:700;vertical-align:3px;margin-left:8px;padding:3px 9px;border-radius:999px}
+  .tag-go{background:var(--pos-soft);color:var(--pos);border:1px solid var(--pos)}
+  .sectnote{color:var(--ink-2);margin:0 0 18px;max-width:72ch;font-size:14.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:20px 22px}
+  /* verdict tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:12px;color:var(--muted);font-weight:600}
+  .tile .v{font-size:22px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+  .tile .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .acc{color:var(--accent)}
+  /* flow diagram */
+  .flow{display:flex;flex-direction:column;gap:0;margin:18px 0 6px}
+  .frow{display:flex;gap:10px;align-items:stretch;justify-content:center;flex-wrap:wrap}
+  .fbox{background:var(--surface-2);border:1.5px solid var(--border);border-radius:11px;padding:10px 14px;
+    font-size:13px;text-align:center;min-width:130px;flex:1;max-width:250px}
+  .fbox b{display:block;font-size:13.5px}
+  .fbox .s{color:var(--ink-2);font-size:11.5px;margin-top:2px;display:block}
+  .fbox.ai{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 9%,var(--surface))}
+  .fbox.algo{border-color:var(--accent);background:var(--accent-soft)}
+  .fbox.gate{border-color:var(--amber)}
+  .fbox.hot{border-color:var(--neg);background:var(--neg-soft)}
+  .fbox.ok{border-color:var(--pos);background:var(--pos-soft)}
+  .farrow{text-align:center;color:var(--muted);font-size:16px;line-height:1;padding:6px 0}
+  .fsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;margin:0 auto}
+  .flabel{font-size:11px;font-weight:700;text-align:center;letter-spacing:.04em;text-transform:uppercase;padding-bottom:4px}
+  .fl-a{color:var(--accent)} .fl-b{color:var(--purple)}
+  /* tables */
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+  .c-have{background:var(--pos-soft);color:var(--pos)}
+  .c-build{background:var(--accent-soft);color:var(--accent)}
+  /* badges row */
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 14px}
+  .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2)}
+  .badge b{color:var(--ink)}
+  /* chart */
+  figure{margin:0}
+  .chart-card{padding:18px 18px 8px;margin-top:14px}
+  .cap{color:var(--ink-2);font-size:13px;margin:2px 4px 14px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+  .blabel{fill:var(--ink);font-size:12.5px;font-weight:650}
+  .bval{fill:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .warn{background:var(--neg-soft);border-left:3px solid var(--neg);padding:10px 14px;border-radius:8px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .warn b{color:var(--ink)}
+  .note{background:var(--surface-2);border-radius:9px;padding:10px 14px;font-size:13.5px;color:var(--ink-2);margin:14px 0}
+  .note b{color:var(--ink)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:44px;border-top:1px solid var(--border);padding-top:16px}
+  @media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.cols2{grid-template-columns:1fr}.fsplit{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Sooppiy · Proposal Ekstensi · Kelayakan &amp; Desain</div>
+    <h1>E1 — Perutean keputusan AI/Algoritma &nbsp;·&nbsp; E2 — Daemon isu-panas</h1>
+    <p class="sub">Analisis dua ekstensi yang diusulkan terhadap basis kode yang aktif. Kesimpulan di awal:
+    <b>keduanya layak dan direkomendasikan</b> — dan sebagian besar mekanismenya sudah ada. E1 adalah
+    penerus yang lebih cerdas dari <code>FLEET_CYCLE_MODE=full</code> yang baru saja kita aktifkan; E2 sebagian besar merupakan rakitan
+    dari feed yang sudah di-snapshot oleh worker setiap jam.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">E1 · Perutean AI</div><div class="v pos">✅ Bangun</div><div class="d">~1–2 minggu · sebagian besar sinyal yang sudah ada</div></div>
+    <div class="tile"><div class="k">E2 · Daemon isu-panas</div><div class="v pos">✅ Bangun</div><div class="d">~1,5–2 minggu · 3 tahap, terverifikasi per-pengguna</div></div>
+    <div class="tile"><div class="k">Biaya LLM vs mode penuh</div><div class="v acc">−80%</div><div class="d">AI hanya saat diperlukan</div></div>
+    <div class="tile"><div class="k">Sinergi</div><div class="v">E2 → E1</div><div class="d">sinyal daemon = pemicu perutean</div></div>
+  </div>
+
+  <!-- ══════════════ E1 ══════════════ -->
+  <h2>E1 — Rutekan berdasarkan situasi: AI untuk kondisi ekstrem, algoritma untuk kondisi normal <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Ide Anda:</b> ketika analisis menunjukkan <b>peristiwa tinggi / risiko tinggi / profit tinggi</b>, biarkan AI merekomendasikan dan bertindak
+  (algoritma tidak dapat mengkodekan setiap parameter dari situasi ekstrem). Dalam kondisi
+  <b>normal</b> (hold / rutin), bertindaklah dengan
+  <b>algoritma deterministik terprogram</b> — murah, dapat diaudit, dapat diprediksi. Ini adalah arsitektur yang solid, dan secara langsung
+  mengatasi masalah biaya menjalankan analisis penuh pada setiap siklus.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Setiap siklus jalan</b><span class="s">harga + feed diperbarui (0 LLM)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Pengklasifikasi Situasi</b><span class="s">deterministik · 0 LLM · dari sinyal yang sudah ada</span></div></div>
+      <div class="farrow">↓ &nbsp; merutekan &nbsp; ↓</div>
+      <div class="fsplit">
+        <div>
+          <div class="flabel fl-a">NORMAL (~80–85% dari siklus)</div>
+          <div class="fbox algo" style="max-width:none"><b>Algoritma terprogram bertindak</b>
+            <span class="s">aturan tesis + teknikal + stop/trailing · 0 panggilan LLM · sepenuhnya dapat diaudit</span></div>
+        </div>
+        <div>
+          <div class="flabel fl-b">PERISTIWA / RISIKO / PROFIT TINGGI (~15–20%)</div>
+          <div class="fbox ai" style="max-width:none"><b>Meja AI penuh memutuskan</b>
+            <span class="s">semua analis (berita · sentimen/psikologi · makro · teknikal) + debat Trader/Risk</span></div>
+        </div>
+      </div>
+      <div class="farrow">↓ &nbsp; kedua jalur &nbsp; ↓</div>
+      <div class="frow"><div class="fbox ok"><b>Gerbang risiko (tidak berubah, selalu)</b><span class="s">Kelly per-run · batas eksposur · stop · trailing lock — AI tidak pernah dapat melewatinya</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Order / tahan</b><span class="s">dicatat dalam jurnal beserta keputusan rute (mengapa AI / mengapa algoritma)</span></div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 6px">Classifier tidak memerlukan panggilan LLM sama sekali — setiap trigger sudah ada di prod</h3>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Trigger → arahkan ke AI</th><th>Sumber (sudah live)</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Jendela rilis makro terjadwal (FOMC / CPI / jobs)</td><td><code>market_events.active_event_window</code> (pengaman peristiwa)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Guncangan likuidasi — |return| ≥ 3σ atau lonjakan volume</td><td><code>psych_feed</code> proxy guncangan (OKX hourly σ + volume)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Regime = panic / euphoria / event (F&amp;G &lt;20 atau ≥80, vol pct ≥90)</td><td><code>regime.py</code> — 6 regime, snapshot yang dipersist</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>P&amp;L posisi mendekati stop atau mendekati level trail-lock</td><td><code>peak_pnl_usd</code> + jarak stop (dirilis sesi ini)</td><td><span class="chip c-have">HAVE</span></td></tr>
+      <tr><td>Sinyal hot-issue pada simbol ini</td><td><b>E2 daemon</b> (di bawah)</td><td><span class="chip c-build">BUILD</span></td></tr>
+      <tr><td>Harga invalidasi thesis terlampaui</td><td>thesis <code>invalidation</code>Bidang vs mark</td><td><span class="chip c-build">BUILD (kecil)</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols2" style="margin-top:16px">
+    <div class="card pad">
+      <b>Mengapa ini tepat</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>Biaya:</b> AI penuh hanya pada ~15–20% siklus → ~80% lebih murah dibanding mode penuh menyeluruh yang berjalan sekarang, sambil tetap menempatkan AI persis di titik yang membutuhkan penilaian faktor manusia.</li>
+        <li><b>Auditabilitas:</b> operasi normal bersifat deterministik — dapat direproduksi, dapat di-backtest, dapat dijelaskan.</li>
+        <li><b>Kualitas tail:</b> tail adalah tempat Fleet 16 merugi (rally melawan buku all-short) — persis di titik itulah desk penuh seharusnya berpikir.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>Risiko &amp; guardrail</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>AI tidak pernah melewati risk engine</b> — kedua jalur berakhir di gate yang sama (Kelly, exposure, stop, trailing). Invariant yang tidak dapat ditawar.</li>
+        <li><b>Gagal-tertutup:</b> panggilan AI gagal pada siklus hot → hold + pertahankan stop, jangan pernah diam-diam jatuh ke algoritma di tengah event.</li>
+        <li><b>Kalibrasi threshold</b> memerlukan backtest harness (plan&nbsp;#1) — rilis v1 dengan trigger konservatif di atas, sesuaikan dengan data.</li>
+        <li><b>Catat rute</b> (<code>route: ai|algo + trigger</code>) di setiap decision event agar perilaku dapat dijelaskan per siklus.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ E2 ══════════════ -->
+  <h2>E2 — Hot-issue daemon: pemantauan AI setiap jam atas semua simbol RUN milik pengguna <span class="tag tag-go">RECOMMENDED</span></h2>
+  <p class="sectnote"><b>Ide Anda:</b> daemon yang, setiap jam, menyapu semua simbol di semua run milik semua pengguna
+  (mis. 3 pengguna · 11 simbol), mendeteksi isu panas (pergeseran ROI, perubahan ekonomi/kebijakan dari organisasi mana pun,
+  breakout teknikal, lonjakan berita &amp; sosial), memberi notifikasi ke setiap pengguna yang terdampak, dan menyerahkan titik keputusan ke Trading Master masing-masing pengguna.
+  Worker sudah mengambil snapshot setiap input feed — ini sebagian besar hanya perakitan plus lapisan fan-out.</p>
+
+  <div class="card pad">
+    <div class="flow">
+      <div class="frow"><div class="fbox"><b>Tick daemon per jam</b><span class="s">task worker baru <code>hot_issue_daemon</code></span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox"><b>Kumpulkan simbol DISTINCT di semua run aktif milik semua pengguna</b><span class="s">3 pengguna · 11 simbol → analisis 11 sekali, fan out per pengguna (dedupe = biaya ÷ pengguna)</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="frow"><div class="fbox gate"><b>Pemindaian pemicu murah · 0 LLM</b><span class="s">lonjakan berita · delta policy_feed · guncangan psikologis/lonjakan F&amp;G · z-score sosial · technical break (MA/σ) · aliran ETF</span></div></div>
+      <div class="farrow">↓ hanya simbol yang tertrigger (~15%) ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Tahap 1 · Pembacaan mendalam AI atas EVENT (global, bersama)</b><span class="s">apa yang berubah · arah · magnitudo · urgensi — sebuah fakta tentang pasar, belum tentang pengguna mana pun</span></div></div>
+      <div class="farrow">↓ per pengguna terdampak — kasus per kasus ↓</div>
+      <div class="frow"><div class="fbox gate"><b>Tahap 2 · Verifikasi per pengguna — diputuskan per pengguna (deterministik dulu · 0 LLM)</b><span class="s">memegang/menjalankan simbol? · arah dampak vs <b>milik mereka</b> tanda posisi (berita bearish + posisi short mereka = mendukung; + posisi long mereka = berlawanan) · materialitas vs <b>milik mereka</b> leverage &amp; jarak-ke-stop → <b>di bawah ambang = SILENT, tanpa alert</b></span></div></div>
+      <div class="farrow">↓ hanya pengguna yang material ↓</div>
+      <div class="frow"><div class="fbox ai"><b>Tahap 2′ · Verifikasi AI yang dipersonalisasi</b><span class="s">satu panggilan kecil per (simbol panas × pengguna material): "untuk BOOK INI — mendukung/menentang/netral · urgensi · tindakan yang disarankan"</span></div></div>
+      <div class="farrow">↓</div>
+      <div class="fsplit">
+        <div><div class="fbox hot" style="max-width:none"><b>Tahap 3 · Notifikasi yang dipersonalisasi</b><span class="s"><code>send_alert</code> — i18n (5 bahasa), teks ditulis untuk posisi MEREKA ("berlawanan dengan short 2× Anda, stop 1.1% lagi"), dedupe + cooldown + severity floor</span></div></div>
+        <div><div class="fbox ai" style="max-width:none"><b>Tahap 3 · Titik keputusan → Trading Master</b><span class="s"><code>hot_issues</code> baris + run_event; siklus berikutnya merutekan ke desk penuh <b>dengan book milik pengguna itu sendiri</b> (E1) — verifikasi akhir adalah per-pengguna secara konstruksi</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>Walk-through (contoh Anda, sekarang kasus per kasus):</b>3 pengguna memegang 11 simbol berbeda. Pemindaian per jam memindai ke-11 simbol dengan biaya
+  LLM nol; ETH terpicu (headline kebijakan bearish + lonjakan berita). Stage-1 membaca mendalam kejadian tersebut satu kali. Stage-2 kemudian memverifikasi <em>per pengguna</em>:
+  pengguna A <b>short ETH</b> → berita tersebut mendukung posisi → notifikasi urgensi rendah (atau senyap); pengguna B <b>long ETH 2×</b> dengan stop
+  sejauh 1.1% → berlawanan dengan posisi dan bersifat material → peringatan mendesak yang dipersonalisasi + titik keputusan Master + siklus berikutnya dirutekan ke desk penuh;
+  pengguna C memegang ETH dengan stop yang jauh dan ukuran kecil → di bawah materialitas → <b>tidak ada peringatan sama sekali</b>. Fakta global yang sama, tiga hasil berbeda —
+  dan 10 simbol lainnya tidak memakan biaya apa pun.</div>
+
+  <div class="cols2">
+    <div class="card pad">
+      <b>Sudah ada (terverifikasi di prod)</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li>Feed: <code>policy_feed</code> · <code>psych_feed</code> (F&amp;G, guncangan) · <code>social_feed</code> · berita pasar / makro / snapshot arus ETF — semua pada jadwal worker.</li>
+        <li>Notifikasi: <code>send_alert</code> dengan bahasa per pengguna (katalog 5-bahasa aktif di prod), kunci dedupe.</li>
+        <li>Lapisan Master: <code>ai_automation_state</code> + fleet supervisor untuk menerima/bertindak atas sinyal tersebut.</li>
+      </ul>
+    </div>
+    <div class="card pad">
+      <b>Yang perlu dibangun</b>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)">
+        <li><code>hot_issue_daemon.py</code>worker task<code>hot_issues</code> tabel (symbol, trigger, severity, ai_read, ts).</li>
+        <li>Ambang batas trigger (z-score vs riwayat masing-masing feed) + cooldown per simbol (tidak ada peringatan ulang &lt; N jam pada severity yang sama).</li>
+        <li><b>Lapisan verifikasi per pengguna E2-B′</b> — menggabungkan isu hangat × buku posisi masing-masing pengguna (arah posisi, leverage, jarak-ke-stop, tesis); filter relevansi/materialitas deterministik, lalu satu verifikasi AI yang dipersonalisasi per pengguna material. Senyap di bawah ambang batas.</li>
+        <li>ID pesan i18n baru untuk katalog peringatan (perlu tinjauan native per catatan memori) — penulisan terparameterisasi per posisi.</li>
+        <li>Master "bertindak atas sinyal" — v1: notifikasi + tampilkan titik keputusan + rutekan siklus berikutnya ke AI. Auto-trade atas sinyal hanya sebagai fase 2 opt-in.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warn"><b>Risiko utama — kelelahan peringatan:</b> pengawas AI per jam yang terlalu banyak memberi notifikasi akan dibisukan dalam waktu seminggu. Batas severity,
+  cooldown per simbol, dan "hanya pada saat state <em>berubah</em>" rule sama pentingnya dengan deteksi itu sendiri.</div>
+
+  <!-- ══════════════ COST ══════════════ -->
+  <h2>Biaya LLM — mengapa routing lebih unggul daripada mode penuh secara menyeluruh</h2>
+  <p class="sectnote">Panggilan LLM tingkat keputusan harian untuk armada 4-run pada siklus 45 menit (32 siklus/run/hari), ditambah daemon pada 11 simbol.
+  E1 mempertahankan desk penuh persis di tempat yang menguntungkan, dengan ~⅕ biaya dibandingkan selalu-penuh. Pre-filter E2 membuat pengawasan AI per jam menjadi terjangkau.</p>
+  <figure class="card chart-card">
+    <svg id="cost" viewBox="0 0 920 300" role="img" aria-label="Daily LLM calls: light 128, routed 134, full 768; daemon naive 1584 vs prefiltered 80"></svg>
+    <figcaption class="cap">Kiri: panggilan keputusan per siklus (armada 4-run). Kanan: daemon per jam pada 11 simbol. Lebih rendah berarti lebih murah; ungu = tempat penilaian AI benar-benar diterapkan.</figcaption>
+  </figure>
+
+  <!-- ══════════════ INTEGRATION ══════════════ -->
+  <h2>Di mana ini terhubung — rencana tingkat file</h2>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Langkah</th><th>Perubahan</th><th>Di Mana</th></tr></thead>
+    <tbody>
+      <tr><td><b>E1-A</b></td><td>Pengklasifikasi situasi (fungsi murni atas feed yang ada; mengembalikan <code>route + trigger</code>)</td><td><code>run_engine.py</code> baru <code>_classify_situation()</code>, dipanggil di mana <code>_fleet_cycle_mode</code> dibaca</td></tr>
+      <tr><td><b>E1-B</b></td><td>Algoritma jalur normal v1 (tesis + aturan teknis; entri konservatif, keluar = stop/trailing yang sudah ada)</td><td><code>run_engine.py</code> (jalur ringan digeneralisasi, dikurangi LLM)</td></tr>
+      <tr><td><b>E1-C</b></td><td>Rute jurnal per keputusan; kill-switch env <code>DECISION_ROUTING_ENABLED</code></td><td><code>run_events</code> payload keputusan</td></tr>
+      <tr><td><b>E2-A</b></td><td><code>hot_issue_daemon</code> tugas + <code>hot_issues</code> tabel + z-score pemicu</td><td> baru <code>hot_issue_daemon.py</code>, daftarkan dalam worker tasks</td></tr>
+      <tr><td><b>E2-B</b></td><td>Peringatan fan-out per pengguna (id i18n, dedupe, cooldown, batas minimum keparahan)</td><td><code>alerts.send_alert</code> + entri katalog</td></tr>
+      <tr><td><b>E2-B′</b></td><td><b>Verifikasi per pengguna</b> — filter relevansi/materialitas deterministik (tanda posisi × arah dampak, leverage, jarak stop; diam di bawah ambang batas) + satu verifikasi AI personal per pengguna material</td><td><code>hot_issue_daemon.py</code> tahap verifikasi, bergabung dengan <code>positions</code>/<code>trading_runs</code> per pengguna</td></tr>
+      <tr><td><b>E2-C</b></td><td>Titik keputusan utama + flag route-next-cycle-to-AI</td><td><code>fleet_supervisor</code> / run_event dikonsumsi oleh classifier E1</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Pengurutan — digabung dengan rencana profit</h2>
+  <p class="sectnote">Ini cocok dengan rapi ke dalam rencana 4 minggu yang sudah ada. Backtest harness (#1) tetap menjadi prasyarat untuk menyetel
+  ambang batas E1 di luar v1 yang konservatif; batas konsentrasi (#2) tetap menjadi kemenangan cepat minggu pertama.</p>
+  <table class="card" style="border-radius:12px;overflow:hidden">
+    <thead><tr><th>Minggu</th><th>Rilis</th><th>Dari</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Batas konsentrasi · E1-A/B v1 (pemicu konservatif, jalur normal algoritma)</td><td>rencana #2 · <b>E1</b></td></tr>
+      <tr><td>2</td><td>Mesin backtest · rollout E1-C (mengganti mode penuh menyeluruh dengan routing)</td><td>rencana #1 · <b>E1</b></td></tr>
+      <tr><td>3</td><td>Forward-eval + gerbang expectancy · E2-A/B/<b>B′</b>daemon + peringatan yang terverifikasi per pengguna (B′ dirilis BERSAMA peringatan — siaran yang tidak terverifikasi tidak pernah dirilis)</td><td>rencana #1 · <b>E2</b></td></tr>
+      <tr><td>4</td><td>Kalibrasi keyakinan · integrasi master E2-C · menyetel ambang batas E1 pada data backtest</td><td>rencana #3 · <b>E1+E2</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <b>Putusan:</b> bangun keduanya. E1 (~1–2 mgg, <b>E1-A dirilis &amp; live 2026-07-25</b>) mengubah "analisis penuh selalu" menjadi "analisis penuh saat
+    hal itu penting". E2 (~1.5–2 mgg) adalah radar peristiwa — kini 3 tahap: <b>deteksi bersifat global; penilaian selalu per-pengguna</b> (isu hangat adalah
+    fakta tentang pasar; apakah hal itu penting adalah fakta tentang portofolio masing-masing pengguna — diverifikasi kasus per kasus sebelum ada peringatan atau tindakan apa pun). Invarian
+    keamanan yang berlaku di seluruh proses: <b>AI merekomendasikan; mesin risiko selalu yang memutuskan.</b><br>
+    Analisis ekstensi Sooppiy · 2026-07-25 · diverifikasi terhadap prod (market_events, psych_feed, regime, policy_feed, social_feed, alerts i18n semuanya live).
+  </div>
+</div>
+
+<script>
+(function(){
+  function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+  function draw(){
+    var svg=document.getElementById('cost'); if(!svg)return; svg.innerHTML='';
+    var NS='http://www.w3.org/2000/svg';
+    function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+    function txt(x,y,s,c,anc){var t=el('text',{x:x,y:y,class:c||'tick'});if(anc)t.setAttribute('text-anchor',anc);t.textContent=s;return t;}
+    var acc=css('--accent'),pur=css('--purple'),mut=css('--muted'),brd=css('--border');
+    var W=920,H=300, baseY=240, top=40;
+    // two groups: fleet cycles (light/routed/full), daemon (naive/prefiltered)
+    var groups=[
+      {x0:70, w:340, title:'Fleet decision calls / day (4 runs)',
+       bars:[{l:'Light (old)',v:128,c:mut},{l:'E1 Routed',v:134,c:pur,star:true},{l:'Full (now)',v:768,c:acc}]},
+      {x0:520, w:330, title:'Daemon calls / day (11 symbols)',
+       bars:[{l:'E2 Pre-filtered',v:80,c:pur,star:true},{l:'Naive hourly full',v:1584,c:mut}]}
+    ];
+    var vmax=1584;
+    var scale=v=>Math.max(4,(v/vmax)*(baseY-top));
+    groups.forEach(function(g){
+      svg.appendChild(txt(g.x0+g.w/2,24,g.title,'blabel','middle'));
+      svg.appendChild(el('line',{x1:g.x0-10,x2:g.x0+g.w+10,y1:baseY,y2:baseY,stroke:brd,'stroke-width':1}));
+      var n=g.bars.length, bw=Math.min(86,(g.w-(n-1)*26)/n), gap=(g.w-n*bw)/(n-1||1);
+      g.bars.forEach(function(b,i){
+        var x=g.x0+i*(bw+gap), h=scale(b.v), y=baseY-h;
+        var r=el('path',{d:'M'+x+' '+baseY+' L'+x+' '+(y+4)+' Q'+x+' '+y+' '+(x+4)+' '+y+' L'+(x+bw-4)+' '+y+' Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+4)+' L'+(x+bw)+' '+baseY+' Z',fill:b.c,'fill-opacity':.85});
+        svg.appendChild(r);
+        svg.appendChild(txt(x+bw/2,y-8,b.v.toLocaleString(),'bval','middle'));
+        var lt=txt(x+bw/2,baseY+18,(b.star?'★ ':'')+b.l,'tick','middle'); svg.appendChild(lt);
+      });
+    });
+    svg.appendChild(txt(70,H-8,'★ = recommended architecture · purple = AI applied selectively','tick','start'));
+  }
+  draw();
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);}
+})();
+</script>
+</body>
+</html>

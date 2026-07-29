@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr, type TrMap } from '../i18n'
+import { tr, type PartialTrMap } from '../i18n'
 
 // Login-gated guide & research documents (backend: routes_guide.py).
 // URL slugs are stable product names; manifest groups are the build keys.
@@ -27,7 +27,7 @@ interface ManifestDoc { key: string; lang: string; group: string; title: string 
 // ja/th/vi/id member browsed the documentation in English even for the groups
 // published in their own language. TrMap + tr() is the same fallback the rest
 // of the product uses: a language the manifest omits degrades to English.
-type ManifestGroup = { group: string } & TrMap
+type ManifestGroup = { group: string } & PartialTrMap
 interface Manifest { groups: ManifestGroup[]; docs: ManifestDoc[] }
 
 interface Props {

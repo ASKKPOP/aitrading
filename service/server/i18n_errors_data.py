@@ -2514,6 +2514,13 @@ MESSAGES: dict[str, dict[str, str]] = {
         'vi': '{0} phải là một trong: {1}',
         'id': '{0} harus salah satu dari: {1}',
     },
+    'Unsupported language: {}': {
+        'ko': '지원하지 않는 언어입니다: {}',
+        'ja': 'サポートされていない言語です: {}',
+        'th': 'ไม่รองรับภาษานี้: {}',
+        'vi': 'Ngôn ngữ không được hỗ trợ: {}',
+        'id': 'Bahasa tidak didukung: {}',
+    },
     '{} too long': {
         'ko': '{}이(가) 너무 깁니다',
         'ja': '{} が長すぎます',

@@ -18,6 +18,8 @@ This folder is the durable thinking for Sooppiy: where we are, who we're competi
 | 7 | [plan/10-ai-auto-trading-runs.md](plan/10-ai-auto-trading-runs.md) | **AI Auto-Trading Runs** — per-run settings (max bet, symbol, spot/futures, start/stop events), server-side background execution, SMS/email P&L reporting, WebGL2 live monitoring. v2, verified by a 16-agent pipeline (5 scan / 3 plan / 3 verify / 5 QA, 67 findings folded in, 2026-07-18). Visual companion: [plan/10-ai-auto-trading-runs.html](plan/10-ai-auto-trading-runs.html). | ~4,500 |
 | 8 | [plan/15-run-ai-reading-algorithm-fix.html](plan/15-run-ai-reading-algorithm-fix.html) | **RUN AI Reading Algorithm Fix** — 5 targets (confidence-signal redesign, us-stock data feed, fleet thesis/gate coherence, inventory awareness, adapt-loop rescale) in a 4-phase flagged rollout, each file-anchored with exit criteria. Derived from the 2026-07-22 monitoring window; evidence: [reports/2026-07-22-automation-run-monitoring.html](reports/2026-07-22-automation-run-monitoring.html). | HTML |
 
+| 9 | [i18n-review-status.md](i18n-review-status.md) | The six-language localization ledger: what is machine-authored and pending native review, the enforced trading-term glossary, deliberate bilingual conventions, and how to re-run the translation pipeline. | ~600 |
+
 ### Design documents (HTML)
 
 All HTML documents live under [design/](design/) — this is the standing convention; new documents always go somewhere under `docs/`.
