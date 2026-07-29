@@ -39,6 +39,15 @@ class LeaderboardMetricTests(unittest.TestCase):
             (name, f"token-{name}", cash, now, now),
         )
         agent_id = cursor.lastrowid
+        # The board ranks track records (2026-07-28), so a fixture agent needs
+        # one operation before any metric can rank it. These tests are about
+        # sort order, not eligibility.
+        cursor.execute(
+            "INSERT INTO signals (signal_id, agent_id, message_type, market,"
+            " symbol, timestamp, created_at) VALUES "
+            "(?, ?, 'operation', 'crypto', 'BTCUSDT', 0, ?)",
+            (agent_id * 100000, agent_id, now),
+        )
         conn.commit()
         conn.close()
         return agent_id

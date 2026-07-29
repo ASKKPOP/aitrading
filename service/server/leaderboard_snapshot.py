@@ -32,6 +32,30 @@ import database
 # (routes_trading imports from this module via the endpoint hot path).
 INITIAL_CAPITAL = 100_000.0
 
+# Who belongs on a public performance board (2026-07-28). ONE definition,
+# because three separate code paths rank agents — the materialized snapshot
+# here, the live fallback in /api/profit/history, and /api/leaderboard/
+# position-pnl — and filtering only this one left the junk on the live board.
+#
+# The rule is a TRACK RECORD, and deliberately nothing else.
+#
+# It is tempting to also require an owner, since the nine deploy-check agents
+# all have user_id NULL. That would be wrong: routes_agent.py registers
+# third-party agents with no user_id at all, and an agent-native platform
+# whose whole premise is "agents register, publish signals, followers mirror
+# trades" cannot hide every external agent from its own leaderboard. The junk
+# rows are a data problem, not a schema signal.
+#
+# trade_count > 0 also removes the phantom-loss class: profit_percent is
+# measured against a hardcoded INITIAL_CAPITAL and `agents` has no
+# starting-capital column, so an agent seeded with anything else reports a
+# collapse it never took (cash 1,000 read as -99.00% on zero trades).
+def rankable_where(alias: str = "a") -> str:
+    """SQL predicate for a rankable agent, for callers building their own
+    aggregate. Keep every board path on this one definition."""
+    return (f"(SELECT COUNT(*) FROM signals ops WHERE ops.agent_id = {alias}.id "
+            f"AND ops.message_type = 'operation') > 0")
+
 METRICS: tuple[str, ...] = ("return", "risk", "collaboration", "quality")
 
 
@@ -102,10 +126,6 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                 ) AS trade_count
             FROM agents a
             LEFT JOIN positions p ON p.agent_id = a.id
-            -- Owned agents only (2026-07-28). An agent with no user_id was
-            -- created by a script — deploy checks, e2e probes, canaries — and
-            -- is not a member. Nine of them were sitting on the public board.
-            WHERE a.user_id IS NOT NULL
             GROUP BY a.id, a.name, a.cash, a.deposited
         )
         SELECT

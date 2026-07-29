@@ -88,6 +88,13 @@ def _annualized_sharpe(history: list[dict]) -> float:
     return max(-10.0, min(10.0, sharpe))
 
 
+def _rankable(alias: str = "a") -> str:
+    """The one definition of a rankable agent, shared with the materialized
+    snapshot so the three board paths cannot drift apart."""
+    from leaderboard_snapshot import rankable_where
+    return rankable_where(alias)
+
+
 def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get('/api/profit/history')
     async def get_profit_history(
@@ -131,7 +138,8 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor.execute(
             """
             SELECT COUNT(*) AS total
-            FROM agents
+            FROM agents a
+            WHERE """ + _rankable() + """
             """
         )
         total_row = cursor.fetchone()
@@ -253,6 +261,12 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                     ) AS trade_count
                 FROM agents a
                 LEFT JOIN positions p ON p.agent_id = a.id
+                -- Same rule as the materialized snapshot; see
+                -- leaderboard_snapshot.rankable_where. This fallback runs
+                -- whenever the snapshot is empty or the page is past its
+                -- top_n, so leaving it unfiltered put the deploy-check agents
+                -- straight back on the board.
+                WHERE {_rankable()}
                 GROUP BY a.id, a.name, a.cash, a.deposited
             )
             SELECT
@@ -482,7 +496,8 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def get_leaderboard_position_pnl(limit: int = 10):
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, name FROM agents')
+        # Same rankable rule as every other board path.
+        cursor.execute('SELECT a.id, a.name FROM agents a WHERE ' + _rankable())
         agents = cursor.fetchall()
 
         result = []
