@@ -342,15 +342,15 @@ export function BacktestPage({ token }: { token?: string | null }) {
   }, [curveData, benchmark, result])
 
   const runBtnLabel = loading
-    ? (runStatus ? (RUN_STATUS_LABEL[runStatus] ?? 'Running…') : tr(language, { ko: '실행 중…', en: 'Running…', ja: '実行中…', th: 'กำลังรัน…', vi: 'Đang chạy…' }))
-    : tr(language, { ko: '백테스트 실행', en: 'Run Backtest', ja: 'バックテスト実行', th: 'รันแบ็คเทสต์', vi: 'Chạy Backtest' })
+    ? (runStatus ? (RUN_STATUS_LABEL[runStatus] ?? 'Running…') : tr(language, { ko: '실행 중…', en: 'Running…', ja: '実行中…', th: 'กำลังรัน…', vi: 'Đang chạy…', id: 'Menjalankan…' }))
+    : tr(language, { ko: '백테스트 실행', en: 'Run Backtest', ja: 'バックテスト実行', th: 'รันแบ็คเทสต์', vi: 'Chạy Backtest', id: 'Jalankan backtest' })
 
   return (
     <div className="experiment-page">
       <div className="header">
         <div>
           <h1 className="header-title">
-            {tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' })}
+            {tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest', id: 'Backtest' })}
           </h1>
           <p className="header-subtitle">
             {tr(language, {
@@ -358,6 +358,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
               ja: 'エージェントの記録済みトレードを保存された執行価格でリプレイ',
               th: 'เล่นซ้ำการเทรดที่บันทึกไว้ของเอเจนต์กับราคาที่จัดเก็บ',
               vi: 'Phát lại giao dịch đã ghi của agent với giá thực thi đã lưu',
+              id: 'Putar ulang transaksi tercatat sebuah agen terhadap harga eksekusi yang tersimpan',
             })}
           </p>
         </div>
@@ -366,14 +367,14 @@ export function BacktestPage({ token }: { token?: string | null }) {
       {/* Parameters */}
       <section className="experiment-panel">
         <div className="experiment-section-header">
-          <h2>{tr(language, { ko: '파라미터', en: 'Parameters', ja: 'パラメーター', th: 'พารามิเตอร์', vi: 'Tham số' })}</h2>
+          <h2>{tr(language, { ko: '파라미터', en: 'Parameters', ja: 'パラメーター', th: 'พารามิเตอร์', vi: 'Tham số', id: 'Parameter' })}</h2>
         </div>
         <div className="research-filter-grid">
           <input
             className="form-input"
             type="number"
             min="1"
-            placeholder={tr(language, { ko: '에이전트 ID', en: 'Agent ID', ja: 'エージェントID', th: 'รหัสเอเจนต์', vi: 'ID đại lý' })}
+            placeholder={tr(language, { ko: '에이전트 ID', en: 'Agent ID', ja: 'エージェントID', th: 'รหัสเอเจนต์', vi: 'ID đại lý', id: 'ID agen' })}
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
           />
@@ -395,12 +396,12 @@ export function BacktestPage({ token }: { token?: string | null }) {
             className="form-input"
             type="number"
             min="1"
-            placeholder={tr(language, { ko: '초기 자금', en: 'Initial cash', ja: '初期資金', th: 'เงินเริ่มต้น', vi: 'Tiền ban đầu' })}
+            placeholder={tr(language, { ko: '초기 자금', en: 'Initial cash', ja: '初期資金', th: 'เงินเริ่มต้น', vi: 'Tiền ban đầu', id: 'Kas awal' })}
             value={initialCash}
             onChange={(e) => setInitialCash(e.target.value)}
           />
           <select className="form-select" value={market} onChange={(e) => setMarket(e.target.value)}>
-            <option value="">{tr(language, { ko: '전체 시장', en: 'All markets', ja: 'すべての市場', th: 'ตลาดทั้งหมด', vi: 'Tất cả thị trường' })}</option>
+            <option value="">{tr(language, { ko: '전체 시장', en: 'All markets', ja: 'すべての市場', th: 'ตลาดทั้งหมด', vi: 'Tất cả thị trường', id: 'Semua pasar' })}</option>
             {MARKETS.filter((m) => m.value !== 'all').map((m) => (
               <option key={m.value} value={m.value} disabled={!m.supported}>{m.labels[language]}</option>
             ))}
@@ -408,7 +409,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
           <SymbolSelect
             className="form-select"
             market={market}
-            placeholder={tr(language, { ko: '종목 (선택)', en: 'Symbol (optional)', ja: 'シンボル（任意）', th: 'สัญลักษณ์ (ไม่บังคับ)', vi: 'Mã (tuỳ chọn)' })}
+            placeholder={tr(language, { ko: '종목 (선택)', en: 'Symbol (optional)', ja: 'シンボル（任意）', th: 'สัญลักษณ์ (ไม่บังคับ)', vi: 'Mã (tuỳ chọn)', id: 'Simbol (opsional)' })}
             value={symbol}
             onChange={setSymbol}
           />
@@ -428,7 +429,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
       {token && runs.length > 0 && (
         <section className="experiment-panel">
           <div className="experiment-section-header">
-            <h2>{tr(language, { ko: '실행 기록', en: 'Run History', ja: '実行履歴', th: 'ประวัติการรัน', vi: 'Lịch sử chạy' })}</h2>
+            <h2>{tr(language, { ko: '실행 기록', en: 'Run History', ja: '実行履歴', th: 'ประวัติการรัน', vi: 'Lịch sử chạy', id: 'Riwayat run' })}</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {runs.map((run) => (
@@ -460,10 +461,10 @@ export function BacktestPage({ token }: { token?: string | null }) {
                   {run.status === 'completed' && run.result && (
                     <>
                       <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: 12 }} onClick={() => loadRunResult(run)}>
-                        {tr(language, { ko: '보기', en: 'View', ja: '表示', th: 'ดู', vi: 'Xem' })}
+                        {tr(language, { ko: '보기', en: 'View', ja: '表示', th: 'ดู', vi: 'Xem', id: 'Lihat' })}
                       </button>
                       <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: 12 }} onClick={() => openPromote(run.run_id)}>
-                        {tr(language, { ko: '승격', en: 'Promote', ja: '昇格', th: 'โปรโมต', vi: 'Thăng cấp' })}
+                        {tr(language, { ko: '승격', en: 'Promote', ja: '昇格', th: 'โปรโมต', vi: 'Thăng cấp', id: 'Naikkan' })}
                       </button>
                     </>
                   )}
@@ -478,25 +479,25 @@ export function BacktestPage({ token }: { token?: string | null }) {
       {promotingRunId !== null && (
         <section className="experiment-panel">
           <div className="experiment-section-header">
-            <h2>{tr(language, { ko: '전략으로 승격', en: 'Promote to Strategy', ja: 'ストラテジーに昇格', th: 'โปรโมตเป็นกลยุทธ์', vi: 'Thăng cấp thành chiến lược' })}</h2>
+            <h2>{tr(language, { ko: '전략으로 승격', en: 'Promote to Strategy', ja: 'ストラテジーに昇格', th: 'โปรโมตเป็นกลยุทธ์', vi: 'Thăng cấp thành chiến lược', id: 'Naikkan menjadi strategi' })}</h2>
           </div>
           {strategies.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-              {tr(language, { ko: '전략을 찾을 수 없습니다.', en: 'No strategies found.', ja: 'ストラテジーが見つかりません。', th: 'ไม่พบกลยุทธ์', vi: 'Không tìm thấy chiến lược.' })}
+              {tr(language, { ko: '전략을 찾을 수 없습니다.', en: 'No strategies found.', ja: 'ストラテジーが見つかりません。', th: 'ไม่พบกลยุทธ์', vi: 'Không tìm thấy chiến lược.', id: 'Tidak ada strategi ditemukan.' })}
             </p>
           ) : (
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
               <select className="form-select" value={selectedStrategyId} onChange={(e) => setSelectedStrategyId(e.target.value)} style={{ minWidth: 200 }}>
-                <option value="">— {tr(language, { ko: '전략 선택', en: 'Select strategy', ja: 'ストラテジーを選択', th: 'เลือกกลยุทธ์', vi: 'Chọn chiến lược' })} —</option>
+                <option value="">— {tr(language, { ko: '전략 선택', en: 'Select strategy', ja: 'ストラテジーを選択', th: 'เลือกกลยุทธ์', vi: 'Chọn chiến lược', id: 'Pilih strategi' })} —</option>
                 {strategies.map((s) => (
                   <option key={s.strategy_id} value={s.strategy_id}>{s.name}{s.backtest_validated ? ' ✅' : ''}</option>
                 ))}
               </select>
               <button className="btn btn-primary" onClick={doPromote} disabled={!selectedStrategyId}>
-                {tr(language, { ko: '확인', en: 'Confirm', ja: '確認', th: 'ยืนยัน', vi: 'Xác nhận' })}
+                {tr(language, { ko: '확인', en: 'Confirm', ja: '確認', th: 'ยืนยัน', vi: 'Xác nhận', id: 'Konfirmasi' })}
               </button>
               <button className="btn btn-secondary" onClick={() => setPromotingRunId(null)}>
-                {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy' })}
+                {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy', id: 'Batal' })}
               </button>
             </div>
           )}
@@ -521,30 +522,30 @@ export function BacktestPage({ token }: { token?: string | null }) {
           {/* Summary */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, margin: '16px 0' }}>
             <SummaryCard
-              label={tr(language, { ko: '총 수익률', en: 'Total Return', ja: 'トータルリターン', th: 'ผลตอบแทนรวม', vi: 'Lợi nhuận tổng' })}
+              label={tr(language, { ko: '총 수익률', en: 'Total Return', ja: 'トータルリターン', th: 'ผลตอบแทนรวม', vi: 'Lợi nhuận tổng', id: 'Total imbal hasil' })}
               value={pct(result.summary.total_return_pct)}
               color={returnColor}
             />
             <SummaryCard
-              label={tr(language, { ko: '최종 가치', en: 'Final Value', ja: '最終価値', th: 'มูลค่าสุดท้าย', vi: 'Giá trị cuối' })}
+              label={tr(language, { ko: '최종 가치', en: 'Final Value', ja: '最終価値', th: 'มูลค่าสุดท้าย', vi: 'Giá trị cuối', id: 'Nilai akhir' })}
               value={`$${fmt(result.summary.final_value)}`}
             />
             <SummaryCard
-              label={tr(language, { ko: '최대 낙폭', en: 'Max Drawdown', ja: '最大ドローダウン', th: 'ดรอดาวน์สูงสุด', vi: 'Sụt giảm tối đa' })}
+              label={tr(language, { ko: '최대 낙폭', en: 'Max Drawdown', ja: '最大ドローダウン', th: 'ดรอดาวน์สูงสุด', vi: 'Sụt giảm tối đa', id: 'Penurunan maksimum' })}
               value={`−${fmt(result.summary.max_drawdown_pct)}%`}
               color="var(--error)"
             />
             <SummaryCard
-              label={tr(language, { ko: '거래', en: 'Trades', ja: 'トレード数', th: 'จำนวนการเทรด', vi: 'Số giao dịch' })}
+              label={tr(language, { ko: '거래', en: 'Trades', ja: 'トレード数', th: 'จำนวนการเทรด', vi: 'Số giao dịch', id: 'Transaksi' })}
               value={`${result.summary.trade_count} (${result.summary.winning_trades}W / ${result.summary.losing_trades}L)`}
             />
             <SummaryCard
-              label={tr(language, { ko: '승률', en: 'Win Rate', ja: '勝率', th: 'อัตราชนะ', vi: 'Tỷ lệ thắng' })}
+              label={tr(language, { ko: '승률', en: 'Win Rate', ja: '勝率', th: 'อัตราชนะ', vi: 'Tỷ lệ thắng', id: 'Tingkat kemenangan' })}
               value={pct(result.summary.win_rate * 100)}
             />
             {result.summary.sharpe_ratio !== null && (
               <SummaryCard
-                label={tr(language, { ko: '샤프', en: 'Sharpe', ja: 'シャープ比', th: 'ชาร์ป', vi: 'Sharpe' })}
+                label={tr(language, { ko: '샤프', en: 'Sharpe', ja: 'シャープ比', th: 'ชาร์ป', vi: 'Sharpe', id: 'Sharpe' })}
                 value={fmt(result.summary.sharpe_ratio, 3)}
               />
             )}
@@ -561,13 +562,13 @@ export function BacktestPage({ token }: { token?: string | null }) {
           {curveData.length > 1 && (
             <section className="experiment-panel">
               <div className="experiment-section-header">
-                <h2>{tr(language, { ko: '포트폴리오 곡선', en: 'Portfolio Curve', ja: 'ポートフォリオ推移', th: 'กราฟพอร์ตโฟลิโอ', vi: 'Đường cong danh mục' })}</h2>
+                <h2>{tr(language, { ko: '포트폴리오 곡선', en: 'Portfolio Curve', ja: 'ポートフォリオ推移', th: 'กราฟพอร์ตโฟลิโอ', vi: 'Đường cong danh mục', id: 'Kurva portofolio' })}</h2>
               </div>
               {benchmark && (
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ display: 'inline-block', width: 20, height: 2, background: returnColor }} />
-                    {tr(language, { ko: '에이전트', en: 'Agent', ja: 'エージェント', th: 'เอเจนต์', vi: 'Agent' })}
+                    {tr(language, { ko: '에이전트', en: 'Agent', ja: 'エージェント', th: 'เอเจนต์', vi: 'Agent', id: 'Agen' })}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ display: 'inline-block', width: 20, height: 2, background: 'var(--text-muted, #888)', borderTop: '2px dashed var(--text-muted, #888)' }} />
@@ -591,7 +592,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                         `$${fmt(Number(v))}`,
                         name === 'bh'
                           ? `Buy & Hold ${benchmark?.symbol ?? ''}`
-                          : tr(language, { ko: '포트폴리오', en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ตโฟลิโอ', vi: 'Danh mục' }),
+                          : tr(language, { ko: '포트폴리오', en: 'Portfolio', ja: 'ポートフォリオ', th: 'พอร์ตโฟลิโอ', vi: 'Danh mục', id: 'Portofolio' }),
                       ]}
                     />
                     <ReferenceLine y={result.summary.initial_cash} stroke="var(--text-muted, #888)" strokeDasharray="4 2" />
@@ -626,7 +627,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
             <section className="experiment-panel">
               <div className="experiment-section-header">
                 <h2>
-                  {tr(language, { ko: '미결제 포지션', en: 'Open Positions', ja: 'オープンポジション', th: 'โพซิชันที่เปิดอยู่', vi: 'Vị thế đang mở' })}
+                  {tr(language, { ko: '미결제 포지션', en: 'Open Positions', ja: 'オープンポジション', th: 'โพซิชันที่เปิดอยู่', vi: 'Vị thế đang mở', id: 'Posisi terbuka' })}
                   <span className="experiment-badge" style={{ marginLeft: 8 }}>{result.open_positions.length}</span>
                 </h2>
               </div>
@@ -663,7 +664,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
             <section className="experiment-panel">
               <div className="experiment-section-header" style={{ cursor: 'pointer' }} onClick={() => setShowTrades(!showTrades)}>
                 <h2>
-                  {tr(language, { ko: '청산된 거래', en: 'Closed Trades', ja: 'クローズトレード', th: 'การเทรดที่ปิดแล้ว', vi: 'Giao dịch đã đóng' })}
+                  {tr(language, { ko: '청산된 거래', en: 'Closed Trades', ja: 'クローズトレード', th: 'การเทรดที่ปิดแล้ว', vi: 'Giao dịch đã đóng', id: 'Transaksi tertutup' })}
                   <span className="experiment-badge" style={{ marginLeft: 8 }}>{result.closed_trades.length}</span>
                 </h2>
                 <span>{showTrades ? '▲' : '▼'}</span>
@@ -704,6 +705,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
                 ja: 'この期間にクローズトレードはありません。日付範囲を広げてみてください。',
                 th: 'ไม่มีการเทรดที่ปิดแล้วในช่วงนี้ ลองขยายช่วงวันที่',
                 vi: 'Không có giao dịch đã đóng trong kỳ này. Hãy thử mở rộng phạm vi ngày.',
+                id: 'Tidak ada transaksi tertutup pada periode ini. Coba perlebar rentang tanggalnya.',
               })}
               {result.open_positions.length > 0 && (
                 <div style={{ marginTop: 8, fontSize: 13 }}>
@@ -736,11 +738,12 @@ export function BacktestPage({ token }: { token?: string | null }) {
                     ja: 'このエージェントをフォローしてシグナルと活動を追跡。',
                     th: 'ติดตามเอเจนต์นี้เพื่อดูสัญญาณและกิจกรรม',
                     vi: 'Theo dõi agent này để xem tín hiệu và hoạt động.',
+                    id: 'Ikuti agen ini untuk memantau sinyal dan aktivitasnya.',
                   })}
                 </div>
               </div>
               <a href={`/agent/${result.agent_id}`} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
-                {tr(language, { ko: '프로필 보기', en: 'View Profile', ja: 'プロフィールを見る', th: 'ดูโปรไฟล์', vi: 'Xem hồ sơ' })}
+                {tr(language, { ko: '프로필 보기', en: 'View Profile', ja: 'プロフィールを見る', th: 'ดูโปรไฟล์', vi: 'Xem hồ sơ', id: 'Lihat profil' })}
               </a>
             </section>
           )}
