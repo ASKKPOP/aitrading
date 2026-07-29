@@ -8,6 +8,7 @@ export const accountsGuide: PageGuide = {
     ja: '取引の処理方法を選ぶ画面です。シミュレーター口座と実口座の2枚のカードが並び、現在選択中の方に「有効」バッジが付きます。',
     th: 'หน้าสำหรับเลือกว่าการเทรดของคุณจะถูกจัดการอย่างไร มีสองการ์ดวางคู่กันคือบัญชีจำลองและบัญชีจริง โดยฝั่งที่เลือกอยู่จะมีป้าย ใช้งาน',
     vi: 'Trang để bạn chọn cách xử lý giao dịch. Hai thẻ nằm cạnh nhau — tài khoản mô phỏng và tài khoản thật — và thẻ đang chọn mang huy hiệu Đang dùng.',
+    id: 'Halaman tempat Anda memilih bagaimana transaksi Anda ditangani. Dua kartu berdampingan — akun simulator dan akun asli — dan yang sedang dipilih membawa lencana Aktif.',
   },
   sections: [
     {
@@ -42,6 +43,12 @@ export const accountsGuide: PageGuide = {
           'Lựa chọn loại tài khoản được lưu trong trình duyệt, nên vẫn giữ nguyên khi bạn rời trang rồi quay lại.',
           'Nếu chưa đăng nhập, các thẻ được thay bằng lời nhắc đăng nhập.',
           'Chuyển tài khoản ở đây có hiệu lực ngay; không có nút lưu riêng.',
+        ],
+        id: [
+          'Hanya ada dua kartu — ◐ Akun simulator dan ● Akun asli. Kartu yang dipilih memiliki bingkai tersorot dan lencana Aktif di pojok kanan atasnya.',
+          'Pilihan jenis akun Anda disimpan di peramban, sehingga tetap bertahan saat Anda berpindah halaman lalu kembali lagi.',
+          'Jika Anda belum masuk, kedua kartu diganti dengan ajakan untuk masuk.',
+          'Berpindah akun di sini langsung berlaku; tidak ada tombol simpan terpisah.',
         ],
       },
     },
@@ -83,6 +90,13 @@ export const accountsGuide: PageGuide = {
           'Quy tắc tự động, giao dịch thủ công và tín hiệu sao chép đều tính lãi lỗ dựa trên số dư mô phỏng này.',
           'Đây là lựa chọn mặc định được khuyến nghị khi bạn đang làm quen nền tảng hoặc thử chiến lược — không có tiền thật để mất.',
         ],
+        id: [
+          'Ini adalah dompet simulasi. Pembelian dan penjualan dijalankan sebagai paper trading terhadap harga pasar langsung, dan tidak ada uang sungguhan yang berpindah sama sekali.',
+          'Kartu ini menampilkan Saldo simulasi Anda — kas paper yang tersisa di akun. Akun baru dimulai dari saldo bawaan.',
+          'Tombol Gunakan akun ini hanya muncul ketika kartu ini tidak aktif; menekannya langsung memindahkan Anda ke simulator.',
+          'Aturan otomatisasi, transaksi manual, dan sinyal yang disalin semuanya menghitung laba ruginya terhadap saldo simulasi ini.',
+          'Ini adalah pilihan bawaan yang dianjurkan selama Anda mempelajari platform atau menguji strategi — tidak ada uang sungguhan yang bisa hilang.',
+        ],
       },
     },
     {
@@ -122,6 +136,13 @@ export const accountsGuide: PageGuide = {
           'Bên dưới là các ô Khóa API và Bí mật API. Ô bí mật là kiểu mật khẩu nên nội dung được che khi bạn gõ.',
           'Bấm Kết nối sẽ ghi sàn và loại tài khoản đã chọn vào trình duyệt này và chuyển thẻ tài khoản thật sang trạng thái đang dùng.',
           'Sau khi kết nối, một ghi chú hiện dưới thẻ: thiết lập đã lưu, nhưng thực thi lệnh thật bị tắt có chủ đích trong bản dựng này.',
+        ],
+        id: [
+          'Kartu ini dibuka dengan kotak peringatan oranye. Bacalah — trading sungguhan mempertaruhkan uang sungguhan.',
+          'Menu Broker menampilkan daftar broker yang didukung server; daftarnya dimuat dari server, bukan ditulis permanen di kode.',
+          'Di bawahnya ada kolom kunci API dan secret API. Kolom secret adalah input kata sandi, sehingga isinya tetap tersamar saat Anda mengetik.',
+          'Menekan Hubungkan gateway mengirim kunci dan secret ke server, yang mengenkripsinya saat disimpan. Keduanya tidak pernah disimpan di peramban dan tidak pernah ditampilkan lagi.',
+          'Anda harus mencentang kotak persetujuan trading live terlebih dahulu; otomatisasi menolak mengirim order live tanpa catatan persetujuan itu.',
         ],
       },
     },
@@ -168,6 +189,14 @@ export const accountsGuide: PageGuide = {
           'Nếu bạn quyết định dùng tài khoản thật, hãy bắt đầu với số tiền nhỏ, xác nhận cách hoạt động, rồi mới mở rộng.',
           'Nếu nhập nhầm khóa hoặc muốn thu hồi, thu hồi khóa đó trong bảng điều khiển của sàn là cách chắc chắn nhất.',
         ],
+        id: [
+          'Kunci API adalah kredensial yang diterbitkan bursa Anda. Buat sendiri di akun bursa Anda dan batasi izinnya hanya untuk TRADE.',
+          'Jangan pernah memakai kunci yang memiliki izin penarikan dana. Jika kunci semacam itu bocor, dana bisa ditarik keluar.',
+          'Bila bursanya mendukung, tambahkan daftar izin IP, dan cabut kunci yang tidak lagi Anda pakai dari konsol bursa.',
+          'Jangan membagikan kunci atau secret Anda kepada siapa pun — sebagai aturan, jangan pernah menempelkannya ke obrolan dukungan, pesan, atau tangkapan layar.',
+          'Jika Anda memang memakai akun asli, mulailah dengan jumlah kecil, pastikan perilakunya sesuai, dan baru tingkatkan setelah itu.',
+          'Jika Anda salah memasukkan kunci atau ingin menariknya kembali, mencabut kunci tersebut di konsol bursa adalah langkah yang paling dapat diandalkan.',
+        ],
       },
     },
     {
@@ -208,6 +237,13 @@ export const accountsGuide: PageGuide = {
           'Giao dịch thật có rủi ro mất tiền thật. Chỉ dùng khóa API giới hạn quyền TRADE, không bao giờ cấp quyền rút tiền. Hãy kiểm chứng bằng shadow trước rồi bắt đầu với số nhỏ.',
           'Xem khớp lệnh và thay đổi số dư ở trang Tài sản, còn thiết lập quy tắc và lịch sử chạy ở trang Automation.',
         ],
+        id: [
+          'Menghubungkan broker dan menerima ketentuan trading live akan mengaktifkan eksekusi order live. Kunci API Anda dienkripsi di sisi server dan tidak pernah ditampilkan lagi.',
+          'Di mana sebuah order tereksekusi ditentukan oleh pengaturan akun pada aturan otomatisasi — simulator memakai buku simulasi, shadow berjalan secara simulasi sambil mengirim order pembanding ke sandbox broker, dan live mengirim order sungguhan lewat gateway yang Anda hubungkan.',
+          'Aturan yang disetel ke live tanpa gateway terhubung, atau tanpa ketentuan yang disetujui, tidak akan tereksekusi; alasannya muncul di riwayat run-nya. Aturan itu tidak pernah diturunkan diam-diam menjadi simulasi.',
+          'Trading sungguhan mempertaruhkan uang sungguhan. Selalu gunakan kunci API yang dibatasi hanya untuk TRADE, jangan untuk penarikan dana. Validasikan dulu dengan shadow, lalu mulai dari nominal kecil.',
+          'Periksa eksekusi dan perubahan saldo di halaman Aset Saya, serta pengaturan aturan dan riwayat run di halaman Otomatisasi.',
+        ],
       },
     },
   ],
@@ -227,6 +263,7 @@ export const accountsGuide: PageGuide = {
         ja: 'ゲートウェイの接続と規約同意だけでは足りません。自動売買ルールの口座も live にする必要があります。simulator や shadow のままなら実資金は動きません。',
         th: 'การเชื่อมต่อเกตเวย์และยอมรับข้อกำหนดเป็นเพียงครึ่งเดียว กฎอัตโนมัติต้องตั้งเป็น live ด้วย ถ้ายังเป็น simulator หรือ shadow จะไม่มีเงินจริงเคลื่อนไหว',
         vi: 'Kết nối cổng và chấp nhận điều khoản mới chỉ là một nửa — quy tắc tự động cũng phải được đặt là live. Quy tắc để ở simulator hoặc shadow không bao giờ làm dịch chuyển tiền thật.',
+        id: 'Menghubungkan gateway dan menyetujui ketentuannya baru separuh jalan — aturan otomatisasinya sendiri juga harus disetel ke live. Aturan yang dibiarkan di simulator atau shadow tidak pernah menggerakkan uang sungguhan.',
       },
     },
     {
@@ -244,6 +281,7 @@ export const accountsGuide: PageGuide = {
         ja: '自動売買ルールはルールごとに口座種別を持ちます。かんたんモードと標準モードで作ったルールは常にsimulatorとして保存され、simulator/realを選べるのはプロモードだけです。この画面の選択はアプリ全体で表示される既定口座に使われ、既に保存済みルールの口座種別を遡って変更することはありません。',
         th: 'กฎอัตโนมัติมีประเภทบัญชีของตัวเองแยกตามกฎ กฎที่สร้างในโหมดง่ายและโหมดมาตรฐานจะถูกบันทึกเป็น simulator เสมอ มีเพียงโหมดมืออาชีพที่เลือก simulator หรือ real ได้ การเลือกในหน้านี้ใช้กำหนดบัญชีเริ่มต้นที่แสดงทั่วแอป และไม่เปลี่ยนประเภทบัญชีของกฎที่บันทึกไว้แล้วย้อนหลัง',
         vi: 'Quy tắc tự động mang loại tài khoản riêng cho từng quy tắc. Quy tắc tạo ở chế độ Đơn giản và Tiêu chuẩn luôn được lưu là simulator; chỉ chế độ Chuyên nghiệp mới cho chọn simulator hoặc real. Lựa chọn trên trang này quyết định tài khoản mặc định hiển thị trong ứng dụng và không thay đổi hồi tố loại tài khoản của các quy tắc đã lưu.',
+        id: 'Aturan otomatisasi membawa jenis akunnya masing-masing per aturan. Aturan yang dibuat di mode Sederhana dan Terpandu selalu disimpan sebagai simulator; hanya mode Pro yang memungkinkan Anda memilih simulator atau asli. Pilihan pada halaman ini menentukan akun bawaan yang ditampilkan di seluruh aplikasi dan tidak mengubah secara surut jenis akun pada aturan yang sudah Anda simpan.',
       },
     },
     {
@@ -261,6 +299,7 @@ export const accountsGuide: PageGuide = {
         ja: 'この画面に残高を補充するボタンはありません。模擬残高は模擬約定とポジション損益に応じて動き、カードには現在値がそのまま表示されます。変動の理由は資産ページの最近の取引とポジション損益で追えます。',
         th: 'หน้านี้ไม่มีปุ่มเติมยอด ยอดจำลองจะขยับตามการเทรดจำลองที่เกิดขึ้นและกำไรขาดทุนของสถานะ การ์ดแสดงค่าปัจจุบันตามจริง หากอยากรู้ว่าทำไมเปลี่ยน ให้ไล่ดูกิจกรรมล่าสุดและกำไรขาดทุนของสถานะที่หน้าทรัพย์สินของฉัน',
         vi: 'Trang này không có nút nạp thêm. Số dư mô phỏng thay đổi theo các lệnh khớp mô phỏng và lãi lỗ vị thế, và thẻ chỉ hiển thị giá trị hiện tại. Để hiểu vì sao nó đổi, hãy lần theo hoạt động gần đây và lãi lỗ vị thế ở trang Tài sản.',
+        id: 'Tidak ada tombol isi ulang di halaman ini. Saldo simulasi bergerak mengikuti eksekusi paper dan laba rugi posisi Anda, dan kartu itu sekadar menampilkan nilai saat ini. Untuk memahami mengapa nilainya berubah, telusuri aktivitas terkini dan laba rugi posisi di halaman Aset Saya.',
       },
     },
   ],
