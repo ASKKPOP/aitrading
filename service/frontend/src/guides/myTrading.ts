@@ -15,6 +15,7 @@ export const myTradingGuide: PageGuide = {
     ja: 'ログイン中のアカウント状況、ポジション、フォロー中のエージェント、戦略を 1 画面にまとめた個人ダッシュボードです。ログイン済みの会員が自分の状況を確認するために使います。',
     th: 'แดชบอร์ดส่วนตัวที่รวมสถานะบัญชี ตำแหน่ง เอเจนต์ที่ติดตาม และกลยุทธ์ไว้ในหน้าเดียว สมาชิกที่เข้าสู่ระบบแล้วใช้ดูสถานะของตัวเอง',
     vi: 'Bảng điều khiển cá nhân gom trạng thái tài khoản, vị thế, agent đang theo dõi và chiến lược của bạn vào một màn hình. Mọi thành viên đã đăng nhập đều dùng nó để xem tình hình của mình.',
+    id: 'Dasbor pribadi yang mengumpulkan status akun, posisi, agen yang Anda ikuti, dan strategi Anda dalam satu layar. Setiap anggota yang sudah masuk memakainya untuk memeriksa posisinya saat ini.',
   },
   sections: [
     {
@@ -56,6 +57,12 @@ export const myTradingGuide: PageGuide = {
           'Giá trị "Điểm" bên dưới là số điểm hiện tại tích lũy từ hoạt động trên nền tảng.',
           'Nếu đã bật 2FA, số mã dự phòng còn lại hiện màu xanh; nếu chưa bật, thay vào đó là liên kết "Bật 2FA".',
           'Nút "Đăng xuất" ở góc trên bên phải xóa token và đưa bạn về trang đăng nhập.',
+        ],
+        id: [
+          'Kartu gelap di bagian atas menampilkan alamat email akun yang sedang masuk dengan huruf besar.',
+          'Nilai "Poin" di bawahnya adalah saldo poin Anda saat ini yang diperoleh dari aktivitas di platform.',
+          'Jika 2FA aktif, jumlah kode cadangan yang tersisa muncul berwarna hijau; jika nonaktif, tautan "Aktifkan 2FA" yang muncul sebagai gantinya.',
+          'Tombol "Keluar" di kanan atas menghapus token Anda dan mengembalikan Anda ke halaman masuk.',
         ],
       },
     },
@@ -104,6 +111,13 @@ export const myTradingGuide: PageGuide = {
           'Dùng liên kết "Xem tất cả →" bên phải để mở trang vị thế xem danh sách đầy đủ và chi tiết.',
           'Nếu bạn chưa có vị thế nào, thay vào đó là lời nhắc theo dõi một agent từ bảng xếp hạng.',
         ],
+        id: [
+          'Angka dalam kurung di samping judul adalah total posisi terbuka Anda; tabelnya sendiri menampilkan paling banyak sepuluh.',
+          'Kolomnya berurutan Simbol · Pasar · Arah · Jml · Harga masuk · Saat ini, dengan long berwarna hijau dan short berwarna merah.',
+          'Kolom "Saat ini" diisi dari harga yang di-polling secara berkala. Jika belum ada harga yang diambil, kolomnya menampilkan —.',
+          'Gunakan tautan "Lihat semua →" di sebelah kanan untuk membuka halaman posisi berisi daftar dan detail lengkapnya.',
+          'Jika Anda sama sekali belum punya posisi, ajakan untuk mengikuti agen dari papan peringkat muncul sebagai gantinya.',
+        ],
       },
     },
     {
@@ -150,6 +164,13 @@ export const myTradingGuide: PageGuide = {
           'Nếu bạn thấy "Nhà cung cấp #12" thay vì tên, tài khoản đó chưa đăng ký tên hiển thị.',
           'Để tìm agent mới, dùng liên kết "Tìm agent →" bên phải để mở bảng xếp hạng.',
           'Theo dõi nghĩa là sao chép tín hiệu của agent đó — không phải gửi lệnh đến một công ty môi giới thật.',
+        ],
+        id: [
+          'Bagian "Following" memuat penyedia (agen) yang sinyalnya sedang Anda salin, hingga delapan di antaranya.',
+          'Persentase di samping sebuah nama adalah imbal hasil kumulatif penyedia tersebut — hijau bila positif, merah bila negatif.',
+          'Jika Anda melihat "Provider #12" alih-alih sebuah nama, akun itu belum mendaftarkan nama tampilan.',
+          'Untuk menemukan agen baru yang bisa diikuti, gunakan tautan "Cari agen →" di sebelah kanan untuk membuka papan peringkat.',
+          'Mengikuti berarti menyalin sinyal agen tersebut — ini tidak mengirim order ke broker sungguhan.',
         ],
       },
     },
@@ -198,6 +219,13 @@ export const myTradingGuide: PageGuide = {
           'Không có giá trị Sharpe nghĩa là chiến lược đó chưa từng được backtest.',
           'Liên kết "Tất cả →" bên phải mở trang chiến lược với danh sách đầy đủ và màn hình chỉnh sửa.',
         ],
+        id: [
+          'Bagian "Strategi" memuat hingga delapan strategi yang Anda daftarkan sendiri.',
+          'Lencana "✓ tervalidasi backtest" di samping sebuah nama berarti strategi itu lolos backtest.',
+          'Jika backtest sudah dijalankan, rasio Sharpe terbaru ditampilkan di sampingnya dengan dua desimal.',
+          'Nilai Sharpe yang tidak ada berarti strategi itu belum pernah di-backtest.',
+          'Tautan "Semua →" di sebelah kanan membuka halaman strategi berisi daftar lengkap dan layar penyuntingannya.',
+        ],
       },
     },
     {
@@ -240,6 +268,12 @@ export const myTradingGuide: PageGuide = {
           'Nếu bạn mới bắt đầu, thứ tự nên làm là: bật 2FA → theo dõi một agent trên bảng xếp hạng → xem vị thế tích lũy dần.',
           'Mọi phần chỉ tải một lần khi mở trang, nên hãy làm mới trình duyệt nếu các con số có vẻ cũ.',
         ],
+        id: [
+          'Bagian "Riwayat laba rugi" tidak menggambar grafik di sini — ia hanya mengarahkan Anda ke profil papan peringkat Anda.',
+          'Mengeklik "Buka grafik →" membawa Anda ke layar papan peringkat tempat kurva keuntungan terperinci berada.',
+          'Jika Anda baru mulai, urutan yang disarankan adalah: aktifkan 2FA → ikuti seorang agen dari papan peringkat → amati posisi terkumpul.',
+          'Semua bagian dimuat sekali saat halaman dibuka, jadi muat ulang peramban bila angkanya tampak usang.',
+        ],
       },
     },
   ],
@@ -259,6 +293,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'このページはログインが必須です。トークンが無い、期限切れ、または失効している場合は自動的にログアウトされ、サインイン画面に移動します。再度ログインすればそのまま戻れます。',
         th: 'หน้านี้ต้องเข้าสู่ระบบก่อน ถ้าโทเค็นหายไป หมดอายุ หรือถูกเพิกถอน ระบบจะออกจากระบบให้อัตโนมัติและพาไปหน้าเข้าสู่ระบบ เข้าสู่ระบบใหม่แล้วกลับมาได้ทันที',
         vi: 'Trang này yêu cầu phiên đã đăng nhập. Nếu token bị thiếu, hết hạn hoặc bị thu hồi, bạn sẽ tự động bị đăng xuất và chuyển tới màn hình đăng nhập. Đăng nhập lại là quay về được ngay.',
+        id: 'Halaman ini memerlukan sesi yang sudah masuk. Jika token Anda hilang, kedaluwarsa, atau dicabut, Anda otomatis dikeluarkan dan diarahkan ke layar masuk. Masuk kembali dan Anda bisa langsung kembali ke sini.',
       },
     },
     {
@@ -276,6 +311,7 @@ export const myTradingGuide: PageGuide = {
         ja: '現在価格はライブ配信ではなく、定期的な価格取得で埋められます。その銘柄の価格をまだ取得できていない、または市場が閉じている場合は — のままです。少し経ってから再読み込みしてください。',
         th: 'ราคาปัจจุบันมาจากการดึงราคาเป็นระยะ ไม่ใช่สตรีมสด ถ้ายังไม่ได้ดึงราคาของสัญลักษณ์นั้น หรือตลาดปิดอยู่ ช่องจะยังเป็น — ลองรีเฟรชอีกครั้งภายหลัง',
         vi: 'Giá hiện tại đến từ việc lấy giá định kỳ, không phải luồng trực tiếp. Nếu chưa lấy được giá cho mã đó, hoặc thị trường đang đóng, ô sẽ giữ dấu —. Hãy làm mới lại sau một lúc.',
+        id: 'Harga saat ini berasal dari polling harga berkala, bukan aliran langsung. Jika harga untuk simbol itu belum terambil, atau pasarnya sedang tutup, selnya tetap —. Muat ulang lagi beberapa saat kemudian.',
       },
     },
     {
@@ -293,6 +329,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'いいえ。このページは読み取り専用のサマリーです。Sooppiy はシグナル・コピートレードのプラットフォームであり、実際の証券会社に注文を送りません。ここに表示されるポジションは価格取得で追跡される記録です。',
         th: 'ไม่ได้ หน้านี้เป็นสรุปแบบอ่านอย่างเดียว Sooppiy เป็นแพลตฟอร์มสัญญาณและคัดลอกการเทรด ไม่ได้ส่งคำสั่งไปยังโบรกเกอร์จริง ตำแหน่งที่แสดงคือบันทึกที่ติดตามด้วยการดึงราคา',
         vi: 'Không. Trang này chỉ là bản tóm tắt chỉ đọc. Sooppiy là nền tảng tín hiệu và sao chép giao dịch — nó không chuyển lệnh tới công ty môi giới thật, và các vị thế hiển thị ở đây là bản ghi được theo dõi bằng cách lấy giá.',
+        id: 'Tidak. Halaman ini adalah ringkasan hanya-baca. Sooppiy adalah platform sinyal dan copy trading — ia tidak mengirim order ke broker sungguhan, dan posisi yang ditampilkan di sini adalah catatan yang dilacak lewat polling harga.',
       },
     },
     {
@@ -310,6 +347,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'ポジション・フォロー中・戦略はそれぞれ別々に読み込まれ、片方が失敗しても他は表示されます。上部に赤いエラー行が出るのは、アカウント情報自体を読み込めなかった場合だけです。多くの場合、空欄はまだデータが無いだけです。',
         th: 'ตำแหน่ง การติดตาม และกลยุทธ์ถูกดึงแยกกัน ถ้าอันหนึ่งล้มเหลวอันอื่นยังแสดงตามปกติ บรรทัดข้อผิดพลาดสีแดงด้านบนจะขึ้นเฉพาะเมื่อโหลดข้อมูลบัญชีไม่ได้ ส่วนใหญ่ที่ว่างคือยังไม่มีข้อมูลจริง ๆ',
         vi: 'Vị thế, đang theo dõi và chiến lược được tải riêng biệt; một phần lỗi không làm trống các phần còn lại. Dòng lỗi đỏ ở trên chỉ xuất hiện khi không tải được thông tin tài khoản. Phần lớn trường hợp, phần trống đơn giản là bạn chưa có dữ liệu.',
+        id: 'Posisi, following, dan strategi masing-masing diambil terpisah, dan satu yang gagal tidak mengosongkan yang lain. Baris galat merah hanya muncul di bagian atas ketika informasi akun itu sendiri gagal dimuat. Umumnya, bagian yang kosong sekadar berarti Anda belum punya data di sana.',
       },
     },
   ],

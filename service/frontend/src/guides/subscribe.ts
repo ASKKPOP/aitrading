@@ -15,6 +15,7 @@ export const subscribeGuide: PageGuide = {
     ja: 'Sooppiy は購読会員専用サービスで、このページでプランを選び支払い方法を決めます。ログイン済みでまだ有効な購読が無いユーザーが到達する画面です。',
     th: 'Sooppiy เป็นแพลตฟอร์มสำหรับสมาชิกเท่านั้น หน้านี้คือที่ที่คุณเลือกแพลนและวิธีชำระเงิน ผู้ใช้ที่เข้าสู่ระบบแล้วแต่ยังไม่มีสมาชิกภาพที่ใช้งานอยู่จะมาที่นี่',
     vi: 'Sooppiy là nền tảng chỉ dành cho thành viên; đây là nơi bạn chọn gói và cách thanh toán. Người dùng đã đăng nhập nhưng chưa có gói hoạt động sẽ đến trang này.',
+    id: 'Sooppiy adalah platform khusus anggota; di sinilah Anda memilih paket dan menentukan cara pembayaran. Pengguna yang sudah masuk tetapi belum berlangganan aktif akan diarahkan ke sini.',
   },
   sections: [
     {
@@ -62,6 +63,13 @@ export const subscribeGuide: PageGuide = {
           'Nhấn "Chọn" trên thẻ sẽ làm nổi viền và đổi nhãn thành "✓ Đã chọn".',
           'Khu vực thanh toán bên dưới chỉ xuất hiện sau khi đã chọn một gói.',
         ],
+        id: [
+          'Daftar paket diambil dari server dan ditampilkan secara langsung, jadi nama dan harga bulanan pada kartu adalah yang berlaku saat ini.',
+          'Kartu paket biasa menampilkan harga bulanan dalam dolar AS diikuti label "/bulan".',
+          'Paket yang disetel sebagai hubungi-kami saja, seperti enterprise, menampilkan — alih-alih harga dan membawa tombol "Hubungi kami".',
+          'Menekan "Pilih" pada sebuah kartu akan menyorot bingkainya dan mengubah labelnya menjadi "✓ Terpilih".',
+          'Area pembayaran baru muncul di bawah setelah sebuah paket dipilih.',
+        ],
       },
     },
     {
@@ -103,6 +111,12 @@ export const subscribeGuide: PageGuide = {
           'Nếu bạn bắt đầu một mình, an toàn hơn là chọn gói giá thấp nhất rồi đăng ký lại ở bậc cao hơn khi thực sự cần.',
           'Với triển khai theo nhóm, hợp đồng riêng hoặc hỗ trợ chuyên biệt, nhấn "Liên hệ" để tới biểu mẫu yêu cầu enterprise.',
           'Nếu bạn cần điều khoản không ghi trên thẻ, đừng đoán — hãy hỏi qua biểu mẫu yêu cầu enterprise.',
+        ],
+        id: [
+          'Setiap paket yang terdaftar dibayar dengan cara yang sama; nama dan harga bulanan pada kartu adalah satu-satunya pembanding yang ditampilkan.',
+          'Jika Anda memulai sendirian, lebih aman mulai dari paket termurah dan berlangganan ulang di tingkat lebih tinggi ketika benar-benar dibutuhkan.',
+          'Untuk penerapan tim, kontrak khusus, atau dukungan khusus, tekan "Hubungi kami" untuk menuju formulir permintaan enterprise.',
+          'Jika Anda membutuhkan ketentuan yang tidak tertulis pada kartu, jangan menebak — tanyakan lewat formulir permintaan enterprise.',
         ],
       },
     },
@@ -151,6 +165,13 @@ export const subscribeGuide: PageGuide = {
           'Sau khi xác nhận, thông báo thành công xuất hiện và ứng dụng tải lại về màn hình chính, mở khóa quyền truy cập.',
           'Nếu bạn hủy ở PayPal, bạn quay về đây với thông báo hủy và có thể chọn lại gói.',
         ],
+        id: [
+          'Tombol PayPal muncul di bagian atas area pembayaran hanya bila PayPal diaktifkan di server.',
+          'Menekan "Bayar dengan PayPal" membuat sebuah order dan mengarahkan peramban Anda ke halaman persetujuan PayPal.',
+          'Ketika Anda kembali setelah membayar, proses penarikan dana berjalan otomatis dan halaman menampilkan "Mengonfirmasi pembayaran PayPal Anda…".',
+          'Setelah terkonfirmasi, pesan berhasil muncul dan aplikasi memuat ulang ke layar utama tak lama kemudian, membuka gerbang langganan.',
+          'Jika Anda membatalkan di PayPal, Anda kembali ke sini dengan pemberitahuan pembatalan dan dapat memilih paket lagi.',
+        ],
       },
     },
     {
@@ -197,6 +218,13 @@ export const subscribeGuide: PageGuide = {
           'Để trống ô tham chiếu sẽ khiến nút "Tôi đã chuyển khoản — yêu cầu duyệt" bị vô hiệu.',
           'Nhấn nút sẽ gửi yêu cầu và chuyển trạng thái sang "Chờ duyệt", đồng thời ẩn các thẻ gói.',
           'Quản trị viên kích hoạt gói sau khi xác nhận khoản chuyển, vậy nên hãy mở lại trang này sau một lúc.',
+        ],
+        id: [
+          'Blok "Bayar lewat transfer bank" di bagian bawah area pembayaran menampilkan detail setoran persis seperti yang dikonfigurasi di server.',
+          'Transfer ke rekening yang ditampilkan, lalu ketik referensi transfer (nama pengirim, memo, dan sebagainya) ke dalam kolom isian.',
+          'Membiarkan referensi kosong membuat tombol "Saya sudah transfer — ajukan persetujuan" tetap nonaktif.',
+          'Menekan tombol itu mencatat permintaan Anda dan mengubah status Anda menjadi "Menunggu persetujuan", yang menyembunyikan kartu-kartu paket.',
+          'Administrator mengaktifkan langganan setelah transfer terkonfirmasi, jadi periksa kembali halaman ini beberapa saat kemudian.',
         ],
       },
     },
@@ -250,6 +278,14 @@ export const subscribeGuide: PageGuide = {
           'Khi lỗi, một cảnh báo viền đỏ hiện ở trên, mang nguyên văn thông báo do máy chủ trả về.',
           'Liên kết "Đăng xuất" dưới cùng cho phép bạn chuyển sang tài khoản khác.',
         ],
+        id: [
+          'Ketika langganan aktif, kartu hijau "Langganan aktif" muncul beserta kode paket dan tanggal berakhirnya.',
+          'Tombol "Buka aplikasi" pada kartu itu membawa Anda langsung ke dalam produk.',
+          'Kartu kuning "Menunggu persetujuan" menampilkan kode paket yang Anda ajukan dan metode pembayaran yang dipakai.',
+          'Selama aktif atau tertunda, kartu paket dan area pembayaran disembunyikan — itu berarti permintaan Anda sudah berjalan.',
+          'Bila gagal, peringatan bertepi merah muncul di bagian atas memuat pesan dari server apa adanya.',
+          'Tautan "Keluar" di paling bawah memungkinkan Anda berpindah ke akun lain.',
+        ],
       },
     },
   ],
@@ -269,6 +305,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'Sooppiy は購読会員専用のため、ログイン済みでも有効な購読が無いアカウントはこの画面に案内されます。決済が完了するか管理者が承認すると、他の機能が開放されます。',
         th: 'Sooppiy เปิดให้เฉพาะสมาชิก บัญชีที่เข้าสู่ระบบแล้วแต่ยังไม่มีสมาชิกภาพที่ใช้งานอยู่จึงถูกพามาที่นี่ ส่วนที่เหลือจะปลดล็อกเมื่อชำระเงินสำเร็จหรือผู้ดูแลอนุมัติ',
         vi: 'Sooppiy chỉ dành cho thành viên, nên tài khoản đã đăng nhập mà chưa có gói hoạt động sẽ được đưa tới đây. Phần còn lại của sản phẩm mở khóa khi thanh toán hoàn tất hoặc quản trị viên duyệt.',
+        id: 'Sooppiy khusus anggota, jadi akun yang sudah masuk tanpa langganan aktif diarahkan ke sini. Sisa produknya terbuka begitu pembayaran selesai atau administrator menyetujui Anda.',
       },
     },
     {
@@ -286,6 +323,7 @@ export const subscribeGuide: PageGuide = {
         ja: '理由は 2 つあります。まだプランを選択していない場合は支払い領域自体が表示されず、サーバーで PayPal が有効になっていない場合はボタンだけが省かれます。後者なら銀行振込で申し込んでください。',
         th: 'มีสองกรณี ถ้ายังไม่ได้เลือกแพลน ส่วนชำระเงินทั้งหมดจะถูกซ่อน และถ้าเซิร์ฟเวอร์ยังไม่เปิดใช้ PayPal จะขาดเฉพาะปุ่มนั้น กรณีหลังให้ใช้การโอนเงินแทน',
         vi: 'Có hai khả năng: nếu bạn chưa chọn gói, toàn bộ khu vực thanh toán bị ẩn; còn nếu máy chủ chưa bật PayPal thì chỉ thiếu nút đó. Trường hợp sau, hãy dùng chuyển khoản ngân hàng.',
+        id: 'Ada dua kemungkinan: jika Anda belum memilih paket, seluruh area pembayaran disembunyikan, dan jika PayPal tidak diaktifkan di server, hanya tombolnya yang dihilangkan. Untuk kasus kedua, gunakan transfer bank sebagai gantinya.',
       },
     },
     {
@@ -303,6 +341,7 @@ export const subscribeGuide: PageGuide = {
         ja: '銀行振込は即時に有効化されず、管理者が入金を確認して手動で承認します。ページには「承認待ち」とだけ表示され所要時間の案内はないため、しばらく経っても状態が変わらない場合はエンタープライズ問い合わせフォームから連絡してください。',
         th: 'การโอนเงินไม่ได้เปิดใช้งานทันที ผู้ดูแลจะยืนยันยอดเงินและอนุมัติด้วยตนเอง หน้าจะแสดงเพียง "รออนุมัติ" โดยไม่ระบุเวลาโดยประมาณ ถ้าผ่านไปนานแล้วสถานะยังไม่เปลี่ยน ให้ติดต่อผ่านฟอร์มคำขอเอนเทอร์ไพรส์',
         vi: 'Chuyển khoản không được kích hoạt tức thì — quản trị viên xác nhận khoản tiền và duyệt thủ công. Trang chỉ hiển thị "Chờ duyệt" mà không nêu thời gian ước tính, nên nếu trạng thái không đổi sau một lúc, hãy liên hệ qua biểu mẫu yêu cầu enterprise.',
+        id: 'Transfer bank tidak diaktifkan seketika — administrator memastikan setorannya dan menyetujuinya secara manual. Halaman ini hanya menampilkan "Menunggu persetujuan" tanpa perkiraan waktu, jadi bila statusnya tak berubah setelah beberapa lama, hubungi kami lewat formulir permintaan enterprise.',
       },
     },
     {
@@ -320,6 +359,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'いいえ。ここで支払う金額はプラットフォーム利用のためのメンバーシップ料金です。Sooppiy はシグナルおよびコピートレードのサービスであり、証券口座の資金とは無関係です。',
         th: 'ไม่ใช่ เงินที่จ่ายที่นี่คือค่าสมาชิกสำหรับใช้แพลตฟอร์ม Sooppiy เป็นบริการสัญญาณและคัดลอกการเทรด ไม่เกี่ยวกับการเติมเงินเข้าบัญชีโบรกเกอร์',
         vi: 'Không. Khoản bạn trả ở đây là phí thành viên để dùng nền tảng. Sooppiy là dịch vụ tín hiệu và sao chép giao dịch, không liên quan đến việc nạp tiền vào tài khoản môi giới.',
+        id: 'Bukan. Yang Anda bayar di sini adalah biaya keanggotaan untuk memakai platform. Sooppiy adalah layanan sinyal dan copy trading dan tidak ada kaitannya dengan menyetor dana ke akun broker.',
       },
     },
   ],
