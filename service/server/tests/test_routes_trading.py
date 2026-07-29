@@ -14,6 +14,24 @@ import database
 from routes import create_app
 
 
+def _give_track_record(agent_id: int, n: int = 1) -> None:
+    """The board ranks track records, so a fixture agent needs one trade
+    before it can appear. Nothing else about these tests changes."""
+    import database
+    conn = database.get_db_connection()
+    try:
+        cur = conn.cursor()
+        for i in range(n):
+            cur.execute(
+                "INSERT INTO signals (signal_id, agent_id, message_type, market,"
+                " symbol, timestamp, created_at) VALUES "
+                "(?, ?, 'operation', 'crypto', 'BTCUSDT', 0, '2026-07-28T00:00:00Z')",
+                (agent_id * 100000 + i, agent_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _register(client: TestClient, name: str = "trader", password: str = "pw123") -> dict:
     resp = client.post(
         "/api/claw/agents/selfRegister",
@@ -48,7 +66,8 @@ class TradingRouteTests(unittest.TestCase):
         self.assertEqual(resp.json()["top_agents"], [])
 
     def test_profit_history_includes_registered_agent(self) -> None:
-        _register(self.client, name="leaderboard-agent")
+        body = _register(self.client, name="leaderboard-agent")
+        _give_track_record(body["agent_id"] if "agent_id" in body else body["id"])
         resp = self.client.get("/api/profit/history?limit=10")
         self.assertEqual(resp.status_code, 200)
         names = [a["name"] for a in resp.json()["top_agents"]]

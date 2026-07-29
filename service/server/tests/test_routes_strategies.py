@@ -32,6 +32,24 @@ def _create_agent(name: str = "strat-agent", token_raw: str = "tok-strat") -> tu
     return agent_id, token_raw
 
 
+def _give_track_record(agent_id: int, n: int = 1) -> None:
+    """The board ranks track records, so a fixture agent needs one trade
+    before it can appear. Nothing else about these tests changes."""
+    import database
+    conn = database.get_db_connection()
+    try:
+        cur = conn.cursor()
+        for i in range(n):
+            cur.execute(
+                "INSERT INTO signals (signal_id, agent_id, message_type, market,"
+                " symbol, timestamp, created_at) VALUES "
+                "(?, ?, 'operation', 'crypto', 'BTCUSDT', 0, '2026-07-28T00:00:00Z')",
+                (agent_id * 100000 + i, agent_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 class StrategyCRUDTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -306,6 +324,7 @@ class LeaderboardBadgeTests(unittest.TestCase):
             json={"sharpe": 1.5},
             headers=self.auth,
         )
+        _give_track_record(self.agent_id)   # the board ranks track records
         resp = self.client.get("/api/profit/history?limit=50")
         agents = resp.json().get("top_agents", [])
         entry = next((a for a in agents if a["agent_id"] == self.agent_id), None)

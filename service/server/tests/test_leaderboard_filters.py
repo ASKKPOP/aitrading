@@ -2,11 +2,10 @@
 
 Two defects, visible together on prod:
 
-1. NINE script-created agents were ranked publicly — `guide-deploy-check`,
-   `gate-verify-1784328779`, `intruder-verify-e2e`, `cfgprobe-9257`,
-   `fleet-deploy-check`, `pnl-deploy-check`, `stranger-v`, `bostonbc`,
-   `assistant-verify-e2e`. None has an owner; every one was created by a
-   deploy check or an e2e probe.
+1. Fifteen agents were ranked publicly and fourteen had never traded —
+   `guide-deploy-check`, `gate-verify-1784328779`, `intruder-verify-e2e`,
+   `cfgprobe-9257`, `fleet-deploy-check`, `stranger-v`, `bostonbc`,
+   `assistant-verify-e2e` and others left by deploy checks and e2e probes.
 
 2. They showed catastrophic losses they never took. profit_percent is measured
    against a hardcoded INITIAL_CAPITAL of 100,000 and `agents` has NO
@@ -19,9 +18,14 @@ Two defects, visible together on prod:
    This is not a test-data problem. Any real member funded with other than
    exactly 100,000 reads the same way.
 
-Both are fixed by asking what a performance board is for: an owner, and a
-track record. `trade_count > 0` removes the phantom-loss class entirely,
-because an agent with no trades has no performance to rank.
+Both are fixed by asking what a performance board is for: a TRACK RECORD.
+`trade_count > 0` removes the phantom-loss class entirely, because an agent
+with no trades has no performance to rank.
+
+Requiring an OWNER as well was my first attempt and it was wrong.
+routes_agent.py registers third-party agents with no user_id, so that rule
+would have hidden every external agent — the population an agent-native
+platform exists to showcase. Ownership is not a quality signal here.
 """
 from __future__ import annotations
 
@@ -72,22 +76,22 @@ class Base(unittest.TestCase):
         return {r["name"] for r in lb._compute_agent_rows()}
 
 
-class UnownedAgentsAreNotMembers(Base):
+class OwnershipIsNotTheSignal(Base):
+    """The correction: an agent without a user_id is a third-party agent, not
+    junk. routes_agent.py creates them that way on purpose."""
 
-    def test_a_script_created_agent_is_excluded(self):
-        """The nine on prod all had user_id NULL."""
-        self._agent("guide-deploy-check", None, cash=1000.0, trades=3)
+    def test_an_unowned_agent_that_trades_is_ranked(self):
+        self._agent("third-party-bot", None, cash=1000.0, trades=3)
+        self.assertIn("third-party-bot", self.names())
+
+    def test_an_unowned_agent_that_never_traded_is_not(self):
+        """Excluded for the absence of a record, not the absence of an owner."""
+        self._agent("guide-deploy-check", None, cash=1000.0)
         self.assertNotIn("guide-deploy-check", self.names())
 
     def test_an_owned_agent_with_trades_is_included(self):
         self._agent("real-member", 1, trades=2)
         self.assertIn("real-member", self.names())
-
-    def test_ownership_is_checked_not_the_name(self):
-        """Excluding by name pattern would be a denylist that the next probe
-        walks straight past."""
-        self._agent("totally-normal-name", None, trades=5)
-        self.assertNotIn("totally-normal-name", self.names())
 
 
 class NoTrackRecordNoRanking(Base):
@@ -107,9 +111,7 @@ class PhantomLoss(Base):
     def test_an_underfunded_agent_is_not_shown_at_minus_99(self):
         self._agent("cfgprobe-9257", None, cash=5000.0, trades=0)
         self._agent("fleet-canary", 5, cash=50_000.0, trades=0)
-        self._agent("pnl-deploy-check", None, cash=999.89, trades=0)
-        self.assertEqual(self.names() & {"cfgprobe-9257", "fleet-canary",
-                                         "pnl-deploy-check"}, set())
+        self.assertEqual(self.names() & {"cfgprobe-9257", "fleet-canary"}, set())
 
     def test_the_underlying_arithmetic_is_still_wrong_when_it_does_trade(self):
         """Documents the REMAINING defect rather than pretending it is fixed:
@@ -131,19 +133,20 @@ class PhantomLoss(Base):
 class TheProdBoard(Base):
     """Reproduce prod's agent table and assert what survives."""
 
-    def test_only_the_one_agent_that_ever_traded_is_ranked(self):
+    def test_only_agents_that_ever_traded_are_ranked(self):
         for name in ("guide-deploy-check", "cfgprobe-9257",
                      "gate-verify-1784328779", "assistant-verify-e2e",
                      "intruder-verify-e2e", "fleet-deploy-check",
-                     "stranger-v", "pnl-deploy-check", "bostonbc"):
+                     "stranger-v", "bostonbc"):
             self._agent(name, None, cash=1000.0)
+        self._agent("pnl-deploy-check", None, cash=999.89, trades=2)
         self._agent("yoojinbe", 4, trades=0)
         self._agent("junekimsop", 7, trades=0)
         self._agent("boardcheck", 6, trades=0)
         self._agent("fleet-canary", 5, cash=50_000.0, trades=0)
         self._agent("scope-verify", 5, trades=0)
         self._agent("info", 5, cash=96_436.7, trades=155)
-        self.assertEqual(self.names(), {"info"})
+        self.assertEqual(self.names(), {"info", "pnl-deploy-check"})
 
 
 if __name__ == "__main__":
