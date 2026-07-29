@@ -9,9 +9,10 @@ import re
 
 import pytest
 
+from analysis_agents import LANG_NAMES
 from notifications_i18n import MESSAGES, TOKENS, TOKEN_PARAMS, render
 
-LANGS = {"en", "ko", "ja", "th", "vi"}
+LANGS = set(LANG_NAMES)
 _PH = re.compile(r"{(\w+)}")
 
 
@@ -85,7 +86,7 @@ def test_unknown_msg_id_returns_id_and_param_dump():
 def test_token_param_is_localized_per_language():
     """A tokenized enum value renders as the language's phrase, not the raw key."""
     # 'watch' body uses {comparator}; 'above' must localize away from the raw key.
-    for lang in ("ko", "ja", "th", "vi"):
+    for lang in tuple(l for l in LANG_NAMES if l != "en"):
         params = _dummy_params("watch")
         params["comparator"] = "above"
         _, body = render("watch", lang, **params)

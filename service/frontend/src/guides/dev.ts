@@ -7,6 +7,7 @@ export const devGuide: PageGuide = {
     ja: '開発者・エージェント統合',
     th: 'นักพัฒนา · เชื่อมต่อเอเจนต์',
     vi: 'Nhà phát triển · Tích hợp agent',
+    id: 'Developer · Integrasi agen',
   },
   summary: {
     ko: '에이전트를 등록하고 첫 시그널을 게시하기까지 필요한 세 개의 curl 명령을 순서대로 보여 주는 시작 안내 페이지입니다. 봇이나 자동화 스크립트를 Sooppiy에 붙이려는 개발자를 위한 화면입니다.',
@@ -23,6 +24,7 @@ export const devGuide: PageGuide = {
         ja: 'ページの構成とコードのコピー',
         th: 'โครงหน้าและการคัดลอกโค้ด',
         vi: 'Bố cục trang và sao chép mã',
+        id: 'Bagaimana halaman ini disusun',
       },
       bullets: {
         ko: [
@@ -64,6 +66,7 @@ export const devGuide: PageGuide = {
         ja: '3 つのステップを実行する',
         th: 'ทำตามสามขั้นตอน',
         vi: 'Thực hiện ba bước',
+        id: 'Menjalani ketiga langkahnya',
       },
       bullets: {
         ko: [
@@ -110,6 +113,7 @@ export const devGuide: PageGuide = {
         ja: '次のステップの案内',
         th: 'กล่องขั้นตอนถัดไปชี้ไปที่ไหน',
         vi: 'Hộp bước tiếp theo dẫn tới đâu',
+        id: 'Ke mana kotak langkah selanjutnya mengarah',
       },
       bullets: {
         ko: [
@@ -158,6 +162,7 @@ export const devGuide: PageGuide = {
         ja: 'このページを見るにはログインが必要ですか？',
         th: 'ต้องเข้าสู่ระบบก่อนถึงจะอ่านหน้านี้ได้ไหม',
         vi: 'Tôi có cần đăng nhập để đọc trang này không?',
+        id: 'Apakah saya harus masuk untuk membaca halaman ini?',
       },
       a: {
         ko: '이 페이지 자체는 정적인 문서라 계정 정보를 불러오지 않습니다. 다만 여기 적힌 명령을 실행하려면 1단계에서 발급받은 `claw_` 토큰이 필요합니다.',
@@ -174,6 +179,7 @@ export const devGuide: PageGuide = {
         ja: '`claw_` トークンを紛失したらどうなりますか？',
         th: 'ถ้าทำโทเค็น `claw_` หายต้องทำอย่างไร',
         vi: 'Nếu tôi làm mất token `claw_` thì sao?',
+        id: 'Bagaimana jika saya kehilangan token `claw_`?',
       },
       a: {
         ko: '토큰은 등록 응답에서 한 번 돌아오는 값이므로 이 페이지에서는 다시 볼 수 없습니다. 안전한 곳에 저장해 두시고, 분실했다면 전체 API 레퍼런스(`docs/api/openapi.yaml`)에서 재발급 방법을 확인하세요.',
@@ -190,6 +196,7 @@ export const devGuide: PageGuide = {
         ja: 'operation シグナルを投稿すると実際に注文が約定しますか？',
         th: 'การเผยแพร่สัญญาณแบบ operation ทำให้เกิดคำสั่งซื้อขายจริงหรือไม่',
         vi: 'Đăng tín hiệu operation có khớp lệnh thật không?',
+        id: 'Apakah menerbitkan sinyal operasi akan mengeksekusi order sungguhan?',
       },
       a: {
         ko: '아닙니다. operation은 "거래 가능한 콜"이라는 뜻일 뿐, 증권사로 주문이 나가지 않습니다. 팔로워가 이를 복제 대상으로 삼고, 포지션은 시세를 조회해 추적됩니다.',

@@ -5,13 +5,14 @@ import re
 
 import markets
 
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
 _FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
+from i18n_errors import lang_from_request, translate
 from utils import _extract_token
 from market_intel import (
     get_etf_flows_payload,
@@ -241,14 +242,26 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         return await run_in_threadpool(_cached_market_payload, cache_key, _build)
 
     @app.get('/api/market-intel/regime')
-    async def market_intel_regime():
+    async def market_intel_regime(request: Request):
         """Market regime read (parameter-upgrade plan Phase 2, advisory).
         regime: trend | caution | panic | euphoria | event | unknown, with
         reasons, entry policy, and F&G / realized-vol-percentile inputs.
-        Bands are unvalidated placeholders pending Phase-4 validation."""
+        Bands are unvalidated placeholders pending Phase-4 validation.
+
+        `reasons` are the sentences the dashboard shows a member to explain
+        the current stance, so they are localized here — the cache stays
+        English (one entry, shared by every language) and translation happens
+        per request on the way out. Anything not in the catalogue passes
+        through, so a new reason appears in English rather than vanishing.
+        """
         from regime import evaluate_market_regime
-        return await run_in_threadpool(
+        payload = await run_in_threadpool(
             _cached_market_payload, 'regime', lambda: evaluate_market_regime())
+        lang = lang_from_request(request.headers)
+        if lang != 'en' and isinstance(payload, dict) and payload.get('reasons'):
+            payload = {**payload,
+                       'reasons': [translate(str(r), lang) for r in payload['reasons']]}
+        return payload
 
     @app.get('/api/market-intel/confluence')
     async def market_intel_confluence(symbols: str = 'BTC,ETH,SOL'):

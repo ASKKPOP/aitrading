@@ -31,11 +31,13 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel
 
 import notifications
+import notifications_i18n
 from admin_auth import audit, require_admin
+from i18n_errors import lang_from_request, translate
 from database import get_db_connection
 from routes_shared import RouteContext
 from services import _get_user_by_token
@@ -175,7 +177,8 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {'success': True, 'categories': notifications.catalog_for_user(user['id'])}
 
     @app.post('/api/notifications/test')
-    async def send_test_notification(data: dict = None,  # type: ignore[assignment]
+    async def send_test_notification(request: Request,
+                                     data: dict = None,  # type: ignore[assignment]
                                      authorization: str = Header(None)):
         """Prove the member's email/SMS channel works BEFORE a live trading
         run depends on it (Plan 10 D8). Throttled with its own tight per-user
@@ -206,15 +209,18 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
                                     detail='Test-send limit reached (3/hour)')
             sent = False
             detail = None
+            # The whole point of this endpoint is to show the member what a
+            # real notification looks like — sending it in English to a
+            # Korean account proves the wrong thing.
+            test_title, test_body = notifications_i18n.render(
+                'notification_test', notifications.user_lang(user['id']))
             if channel == 'email':
                 email = user.get('email')
                 if not email:
                     detail = 'no email on account'
                 else:
                     try:
-                        sent = _send_email(email, '[Sooppiy] Notification test',
-                                           'This is a test of your Sooppiy email '
-                                           'notifications. Channel is working.')
+                        sent = _send_email(email, f'[Sooppiy] {test_title}', test_body)
                         detail = None if sent else 'provider not configured or rejected'
                     except Exception as exc:  # noqa: BLE001
                         detail = str(exc)
@@ -234,8 +240,7 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
                     detail = 'SMS is not included in your current plan'
                 else:
                     try:
-                        sent = _send_sms(phone, '[Sooppiy] Notification test — '
-                                                'your SMS channel is working.')
+                        sent = _send_sms(phone, f'[Sooppiy] {test_title} — {test_body}')
                         detail = None if sent else 'provider not configured or rejected'
                     except Exception as exc:  # noqa: BLE001
                         detail = str(exc)
@@ -256,7 +261,12 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.commit()
         finally:
             conn.close()
-        return {'success': bool(sent), 'channel': channel, 'detail': detail}
+        # `detail` is rendered straight into the Settings page, so it needs the
+        # same treatment an HTTPException detail gets from the route handler.
+        # alert_log above deliberately keeps the English for operators.
+        return {'success': bool(sent), 'channel': channel,
+                'detail': translate(detail, lang_from_request(request.headers))
+                if detail else detail}
 
     # ───────────────────────── member: support chat ─────────────────────────
 
@@ -394,8 +404,10 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
 
         # Off the event loop — notify() may do a blocking SendGrid/Twilio call.
-        await asyncio.to_thread(notifications.notify, thread['user_id'], 'support',
-                                'Support replied', body[:300], link='/support')
+        # The headline is localized; the admin's actual reply cannot be, so it
+        # rides along as the suffix.
+        await asyncio.to_thread(notifications.notify_i18n, thread['user_id'], 'support',
+                                'support_replied', None, '/support', True, body[:300])
         audit(admin, 'support.reply', f'thread:{thread_id}', body[:200])
         return {'success': True, 'messages': messages}
 

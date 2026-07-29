@@ -29,10 +29,11 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+from analysis_agents import LANG_NAMES
 import hot_issue_daemon
 import notifications_i18n as n
 
-LANGS = ("en", "ko", "ja", "th", "vi")
+LANGS = tuple(LANG_NAMES)
 # every value _evaluate_stop can return plus the terminals control_pass writes
 REASONS = ("idle_retired", "fee_infeasible_retired", "adapt_retired",
            "thesis_invalidated", "thesis_decayed", "synthetic_liquidation",

@@ -23,9 +23,11 @@ import json as _json
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, field_validator
 
 import markets
+from database import get_db_connection
 import trading_runs
 from routes_shared import RouteContext
 from services import _get_agent_by_token
@@ -656,3 +658,33 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
             except Exception:  # noqa: BLE001
                 pass
         return {"events": events}
+
+    @app.get("/api/dashboard/desk")
+    async def dashboard_desk(metric: str = "return",
+                             authorization: str = Header(None)):
+        """The four after-login panels the dashboard design specifies
+        (docs/design/dashboard-gate-preview.html): what needs attention, what
+        the AI did and why, which of my markets are open on my clock, and
+        where my book stands.
+
+        The timezone is read from the member's own `users.timezone` rather
+        than taken as a parameter — it is the value Settings writes and the
+        clock the rest of the product shows, and a client-supplied zone would
+        let one member render another member's day.
+        """
+        import dashboard as dashboard_panels
+
+        agent = _auth(authorization)
+        tz = None
+        if agent.get("user_id"):
+            conn = get_db_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT timezone FROM users WHERE id = ?",
+                            (agent["user_id"],))
+                row = cur.fetchone()
+                tz = row["timezone"] if row else None
+            finally:
+                conn.close()
+        return await run_in_threadpool(
+            dashboard_panels.desk_view, agent["id"], tz, metric)

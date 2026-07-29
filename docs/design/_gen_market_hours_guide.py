@@ -1,9 +1,9 @@
-"""Generate the member guide "When your markets are open" in all 5 languages.
+"""Generate the member guide "When your markets are open" in all 6 languages.
 
 Run from the repo root:
     .venv/bin/python docs/design/_gen_market_hours_guide.py
 
-Writes docs/design/market-hours-{en,ko,ja,th,vi}.html, which
+Writes docs/design/market-hours-{en,ko,ja,th,vi,id}.html, which
 build_guide_content.py then copies into service/server/guide_content/.
 
 Why generated rather than five hand-written files: every number in this guide
@@ -37,6 +37,7 @@ BY_LANG = {
     "ja": [("日本", "Asia/Tokyo")],
     "th": [("ประเทศไทย", "Asia/Bangkok")],
     "vi": [("Việt Nam", "Asia/Ho_Chi_Minh")],
+    "id": [("Indonesia", "Asia/Jakarta")],
 }
 
 # A plain midweek day: every session at its normal hours, no weekend edges.
@@ -48,71 +49,91 @@ T = {
         "ko": "내 시장은 언제 열리나요",
         "ja": "あなたの市場が開く時間",
         "th": "ตลาดของคุณเปิดเมื่อไหร่",
-        "vi": "Thị trường của bạn mở khi nào"},
+        "vi": "Thị trường của bạn mở khi nào",
+        "id": "Kapan pasar Anda buka"},
     "lede": {
         "en": "Exchanges open on their own clock, not yours. This page shows every market's hours in <b>your</b> local time, so you know when your automation can actually trade.",
         "ko": "거래소는 자기 시간에 맞춰 열립니다. 이 페이지는 각 시장이 <b>내 현지 시각</b>으로 몇 시에 열리는지 보여줍니다. 자동매매가 실제로 거래할 수 있는 시간대를 알 수 있습니다.",
         "ja": "取引所は自分の時間で開きます。このページでは各市場の時間を<b>あなたの現地時刻</b>で示します。自動売買が実際に取引できる時間がわかります。",
         "th": "ตลาดหลักทรัพย์เปิดตามเวลาของตัวเอง ไม่ใช่ของคุณ หน้านี้แสดงเวลาทำการของแต่ละตลาดตาม<b>เวลาท้องถิ่นของคุณ</b> เพื่อให้รู้ว่าระบบอัตโนมัติเทรดได้จริงตอนไหน",
-        "vi": "Các sàn mở cửa theo giờ của họ, không phải giờ của bạn. Trang này hiển thị giờ giao dịch của từng thị trường theo <b>giờ địa phương của bạn</b>, để bạn biết khi nào hệ thống tự động thực sự có thể giao dịch."},
+        "vi": "Các sàn mở cửa theo giờ của họ, không phải giờ của bạn. Trang này hiển thị giờ giao dịch của từng thị trường theo <b>giờ địa phương của bạn</b>, để bạn biết khi nào hệ thống tự động thực sự có thể giao dịch.",
+        "id": "Bursa buka menurut jamnya sendiri, bukan jam Anda. Halaman ini menampilkan jam buka setiap pasar dalam <b>waktu lokal Anda</b>, sehingga Anda tahu kapan otomatisasi Anda benar-benar bisa bertransaksi."},
     "always_h": {
         "en": "Always open", "ko": "항상 열려 있는 시장", "ja": "常に開いている市場",
-        "th": "เปิดตลอดเวลา", "vi": "Luôn mở cửa"},
+        "th": "เปิดตลอดเวลา", "vi": "Luôn mở cửa",
+        "id": "Selalu buka"},
     "always_p": {
         "en": "These never close during the week, so they are available whenever you are — whatever your region.",
         "ko": "이 시장들은 주중에 닫히지 않습니다. 지역과 관계없이 언제든 거래할 수 있습니다.",
         "ja": "これらは平日は閉じません。地域を問わず、いつでも取引できます。",
         "th": "ตลาดเหล่านี้ไม่ปิดในวันธรรมดา จึงเทรดได้ทุกเมื่อไม่ว่าคุณอยู่ภูมิภาคใด",
-        "vi": "Những thị trường này không đóng cửa trong tuần, nên luôn sẵn sàng dù bạn ở khu vực nào."},
+        "vi": "Những thị trường này không đóng cửa trong tuần, nên luôn sẵn sàng dù bạn ở khu vực nào.",
+        "id": "Pasar ini tidak pernah tutup pada hari kerja, jadi tersedia kapan pun Anda siap — di wilayah mana pun Anda berada."},
     "sched_h": {
         "en": "Markets with fixed hours — in your time",
         "ko": "정해진 시간에만 열리는 시장 — 내 시각 기준",
         "ja": "決まった時間に開く市場 — あなたの時刻で",
         "th": "ตลาดที่มีเวลาทำการแน่นอน — ตามเวลาของคุณ",
-        "vi": "Thị trường có giờ cố định — theo giờ của bạn"},
+        "vi": "Thị trường có giờ cố định — theo giờ của bạn",
+        "id": "Pasar dengan jam tetap — dalam waktu Anda"},
     "region_h": {
-        "en": "Region", "ko": "지역", "ja": "地域", "th": "ภูมิภาค", "vi": "Khu vực"},
+        "en": "Region", "ko": "지역", "ja": "地域", "th": "ภูมิภาค", "vi": "Khu vực",
+        "id": "Wilayah"},
     "market_h": {
-        "en": "Market", "ko": "시장", "ja": "市場", "th": "ตลาด", "vi": "Thị trường"},
+        "en": "Market", "ko": "시장", "ja": "市場", "th": "ตลาด", "vi": "Thị trường",
+        "id": "Pasar"},
     "hours_h": {
         "en": "Your local hours", "ko": "내 현지 시각", "ja": "現地時刻",
-        "th": "เวลาท้องถิ่นของคุณ", "vi": "Giờ địa phương của bạn"},
+        "th": "เวลาท้องถิ่นของคุณ", "vi": "Giờ địa phương của bạn",
+        "id": "Jam lokal Anda"},
     "awake_h": {
         "en": "While you're awake", "ko": "깨어 있는 동안", "ja": "起きている時間帯",
-        "th": "ช่วงที่คุณตื่น", "vi": "Khi bạn thức"},
+        "th": "ช่วงที่คุณตื่น", "vi": "Khi bạn thức",
+        "id": "Saat Anda terjaga"},
     "nextday": {
-        "en": "next day", "ko": "다음 날", "ja": "翌日", "th": "วันถัดไป", "vi": "hôm sau"},
+        "en": "next day", "ko": "다음 날", "ja": "翌日", "th": "วันถัดไป", "vi": "hôm sau",
+        "id": "hari berikutnya"},
     "note_h": {
         "en": "What this means for you",
         "ko": "이것이 의미하는 것",
         "ja": "これが意味すること",
         "th": "สิ่งนี้หมายความว่าอย่างไรกับคุณ",
-        "vi": "Điều này có ý nghĩa gì với bạn"},
+        "vi": "Điều này có ý nghĩa gì với bạn",
+        "id": "Apa artinya ini bagi Anda"},
     "set_h": {
         "en": "Setting your region",
         "ko": "지역 설정하기", "ja": "地域の設定",
-        "th": "การตั้งค่าภูมิภาค", "vi": "Thiết lập khu vực"},
+        "th": "การตั้งค่าภูมิภาค", "vi": "Thiết lập khu vực",
+        "id": "Mengatur wilayah Anda"},
     "set_p": {
         "en": "You choose your region and language when you first sign in, and can change either at any time in <b>Settings → Region &amp; Language</b>. Your region sets the clock every time on the site is shown in.",
         "ko": "처음 로그인할 때 지역과 언어를 선택하며, <b>설정 → 지역과 언어</b>에서 언제든지 바꿀 수 있습니다. 사이트에 표시되는 모든 시각은 선택한 지역의 시간대를 따릅니다.",
         "ja": "初回ログイン時に地域と言語を選択します。<b>設定 → 地域と言語</b>からいつでも変更できます。サイト上のすべての時刻は選択した地域のタイムゾーンで表示されます。",
         "th": "คุณเลือกภูมิภาคและภาษาเมื่อเข้าสู่ระบบครั้งแรก และเปลี่ยนได้ทุกเมื่อที่ <b>การตั้งค่า → ภูมิภาคและภาษา</b> ภูมิภาคของคุณกำหนดเวลาที่แสดงทั้งหมดบนเว็บไซต์",
-        "vi": "Bạn chọn khu vực và ngôn ngữ khi đăng nhập lần đầu, và có thể đổi bất cứ lúc nào tại <b>Cài đặt → Khu vực &amp; Ngôn ngữ</b>. Khu vực quyết định múi giờ của mọi thời điểm hiển thị trên trang."},
+        "vi": "Bạn chọn khu vực và ngôn ngữ khi đăng nhập lần đầu, và có thể đổi bất cứ lúc nào tại <b>Cài đặt → Khu vực &amp; Ngôn ngữ</b>. Khu vực quyết định múi giờ của mọi thời điểm hiển thị trên trang.",
+        "id": "Anda memilih wilayah dan bahasa saat pertama kali masuk, dan dapat mengubah keduanya kapan saja di <b>Pengaturan → Wilayah &amp; Bahasa</b>. Wilayah Anda menentukan zona waktu untuk setiap waktu yang ditampilkan di situs ini."},
     "dst": {
         "en": "US, Canadian and Australian hours shift by an hour when daylight saving starts or ends — and Australia's runs opposite to the northern hemisphere. The site always shows the current, correct time.",
         "ko": "미국·캐나다·호주는 서머타임 시작과 종료에 따라 한 시간씩 이동합니다. 호주는 북반구와 반대로 적용됩니다. 사이트는 항상 현재 기준의 정확한 시각을 표시합니다.",
         "ja": "米国・カナダ・オーストラリアの時間は夏時間の開始と終了で1時間ずれます。オーストラリアは北半球と逆です。サイトでは常に現在の正しい時刻を表示します。",
         "th": "เวลาของสหรัฐฯ แคนาดา และออสเตรเลียจะเลื่อนหนึ่งชั่วโมงเมื่อเริ่มหรือสิ้นสุดเวลาออมแสง และของออสเตรเลียสวนทางกับซีกโลกเหนือ เว็บไซต์แสดงเวลาที่ถูกต้องตามปัจจุบันเสมอ",
-        "vi": "Giờ của Mỹ, Canada và Úc dịch một tiếng khi bắt đầu hoặc kết thúc giờ mùa hè — và của Úc ngược với bắc bán cầu. Trang luôn hiển thị thời gian đúng ở hiện tại."},
-    "hrs": {"en": "{h}h", "ko": "{h}시간", "ja": "{h}時間", "th": "{h} ชม.", "vi": "{h} giờ"},
+        "vi": "Giờ của Mỹ, Canada và Úc dịch một tiếng khi bắt đầu hoặc kết thúc giờ mùa hè — và của Úc ngược với bắc bán cầu. Trang luôn hiển thị thời gian đúng ở hiện tại.",
+        "id": "Jam Amerika Serikat, Kanada, dan Australia bergeser satu jam saat waktu musim panas dimulai atau berakhir — dan Australia berlawanan dengan belahan bumi utara. Situs ini selalu menampilkan waktu yang benar saat itu."},
+    "hrs": {"en": "{h}h", "ko": "{h}시간", "ja": "{h}時間", "th": "{h} ชม.", "vi": "{h} giờ",
+        "id": "{h} jam"},
 }
 
 MARKET_NAME = {
-    "crypto": {"en": "Crypto", "ko": "가상자산", "ja": "暗号資産", "th": "คริปโต", "vi": "Tiền mã hoá"},
-    "forex": {"en": "Forex", "ko": "외환", "ja": "外国為替", "th": "ฟอเร็กซ์", "vi": "Ngoại hối"},
-    "futures": {"en": "Futures", "ko": "선물", "ja": "先物", "th": "ฟิวเจอร์ส", "vi": "Hợp đồng tương lai"},
-    "us-stock": {"en": "US stocks", "ko": "미국 주식", "ja": "米国株", "th": "หุ้นสหรัฐฯ", "vi": "Cổ phiếu Mỹ"},
-    "a-stock": {"en": "China A-shares", "ko": "중국 A주", "ja": "中国A株", "th": "หุ้น A จีน", "vi": "Cổ phiếu A Trung Quốc"},
+    "crypto": {"en": "Crypto", "ko": "가상자산", "ja": "暗号資産", "th": "คริปโต", "vi": "Tiền mã hoá",
+        "id": "Kripto"},
+    "forex": {"en": "Forex", "ko": "외환", "ja": "外国為替", "th": "ฟอเร็กซ์", "vi": "Ngoại hối",
+        "id": "Forex"},
+    "futures": {"en": "Futures", "ko": "선물", "ja": "先物", "th": "ฟิวเจอร์ส", "vi": "Hợp đồng tương lai",
+        "id": "Futures"},
+    "us-stock": {"en": "US stocks", "ko": "미국 주식", "ja": "米国株", "th": "หุ้นสหรัฐฯ", "vi": "Cổ phiếu Mỹ",
+        "id": "Saham AS"},
+    "a-stock": {"en": "China A-shares", "ko": "중국 A주", "ja": "中国A株", "th": "หุ้น A จีน", "vi": "Cổ phiếu A Trung Quốc",
+        "id": "Saham A Tiongkok"},
 }
 ALWAYS = ["crypto", "forex", "futures"]
 SCHEDULED = ["us-stock", "a-stock"]

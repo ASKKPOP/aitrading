@@ -7,6 +7,7 @@ export const docsGuide: PageGuide = {
     ja: 'ガイド・リサーチ文書',
     th: 'คู่มือและเอกสารวิจัย',
     vi: 'Hướng dẫn & tài liệu nghiên cứu',
+    id: 'Dokumen panduan & riset',
   },
   summary: {
     ko: '플랫폼 가이드와 리서치 리포트를 모아 둔 회원 전용 문서 열람 페이지입니다. 상단 버튼으로 문서를 고르면 본문이 바로 아래에 펼쳐집니다.',
@@ -23,6 +24,7 @@ export const docsGuide: PageGuide = {
         ja: 'ページの構成',
         th: 'สิ่งที่อยู่บนหน้านี้',
         vi: 'Trang này có gì',
+        id: 'Apa yang ada di halaman ini',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const docsGuide: PageGuide = {
         ja: '文書の選び方',
         th: 'การเลือกเอกสาร',
         vi: 'Chọn tài liệu',
+        id: 'Memilih dokumen',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const docsGuide: PageGuide = {
         ja: '言語とアクセス権',
         th: 'ภาษาและสิทธิ์เข้าถึง',
         vi: 'Ngôn ngữ và quyền truy cập',
+        id: 'Bahasa dan akses',
       },
       bullets: {
         ko: [
@@ -161,6 +165,7 @@ export const docsGuide: PageGuide = {
         ja: '次にすること',
         th: 'ทำอะไรต่อ',
         vi: 'Bước tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -204,6 +209,7 @@ export const docsGuide: PageGuide = {
         ja: '「文書を読み込めませんでした」と出ます。',
         th: 'ขึ้นว่า "โหลดเอกสารไม่สำเร็จ"',
         vi: 'Hiện dòng "Không tải được tài liệu".',
+        id: 'Muncul pesan "Tidak dapat memuat dokumen".',
       },
       a: {
         ko: '문서는 회원 전용이라 유효한 로그인 토큰이 필요합니다. 로그아웃 상태이거나 세션이 만료됐으면 이 오류가 납니다. 안내대로 다시 로그인한 뒤 페이지를 새로 여세요. 요청한 문서 자체가 없을 때도 같은 메시지가 표시됩니다.',
@@ -220,6 +226,7 @@ export const docsGuide: PageGuide = {
         ja: 'ボタンが1つも表示されません。',
         th: 'ไม่เห็นปุ่มเลยสักอัน',
         vi: 'Không thấy nút nào cả.',
+        id: 'Tidak ada tombol yang muncul sama sekali.',
       },
       a: {
         ko: '버튼 줄은 서버에서 받은 문서 목록으로 만들어집니다. 목록 요청이 실패했거나 아직 도착하지 않았다면 버튼이 비어 있을 수 있습니다. 로그인 상태를 확인하고 페이지를 새로고침해 보세요.',
@@ -236,6 +243,7 @@ export const docsGuide: PageGuide = {
         ja: '日本語・タイ語・ベトナム語の文書はありませんか？',
         th: 'มีเอกสารภาษาญี่ปุ่น ไทย หรือเวียดนามไหม?',
         vi: 'Có tài liệu tiếng Nhật, Thái hay Việt không?',
+        id: 'Apakah ada dokumen berbahasa Jepang, Thai, atau Vietnam?',
       },
       a: {
         ko: '문서 본문은 현재 한국어와 영어로만 제공됩니다. 다른 UI 언어를 쓰고 있으면 영어 문서가 대신 열리고, 버튼 아래에 그 사실을 알리는 안내가 표시됩니다. 화면의 메뉴와 버튼은 선택한 언어 그대로 유지됩니다.',

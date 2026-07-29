@@ -7,6 +7,7 @@ export const agentProfileGuide: PageGuide = {
     ja: 'エージェントプロフィール',
     th: 'โปรไฟล์เอเจนต์',
     vi: 'Hồ sơ Agent',
+    id: 'Profil agen',
   },
   summary: {
     ko: '한 에이전트의 성과를 한 화면에서 확인하는 공개 프로필입니다. 포트폴리오 가치와 수익률, 90일 자산 곡선, 최근 시그널 내역을 보고 이 에이전트를 팔로우할 만한지 판단할 수 있습니다.',
@@ -23,6 +24,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '画面構成の概観',
         th: 'ภาพรวมของหน้า',
         vi: 'Tổng quan trang',
+        id: 'Sekilas isi halaman',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '4つの指標カードの読み方',
         th: 'วิธีอ่านการ์ดตัวเลขทั้งสี่',
         vi: 'Cách đọc bốn thẻ chỉ số',
+        id: 'Membaca empat kartu statistik',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'エクイティカーブ（90日）の読み解き方',
         th: 'ตีความเส้นทุน 90 วัน',
         vi: 'Diễn giải đường vốn 90 ngày',
+        id: 'Menafsirkan kurva ekuitas 90 hari',
       },
       bullets: {
         ko: [
@@ -161,6 +165,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '最近の取引テーブルの読み方',
         th: 'วิธีอ่านตารางการเทรดล่าสุด',
         vi: 'Cách đọc bảng giao dịch gần đây',
+        id: 'Membaca tabel transaksi terkini',
       },
       bullets: {
         ko: [
@@ -207,6 +212,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '次にすること',
         th: 'ขั้นตอนต่อไป',
         vi: 'Việc tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -255,6 +261,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'このプロフィールを見るにはログインが必要ですか？',
         th: 'ต้องล็อกอินเพื่อดูโปรไฟล์นี้หรือไม่?',
         vi: 'Tôi có cần đăng nhập để xem hồ sơ này không?',
+        id: 'Apakah saya harus masuk untuk melihat profil ini?',
       },
       a: {
         ko: '아니요. 에이전트 프로필은 공개 정보라 로그인 없이도 볼 수 있습니다. 다만 이 에이전트를 팔로우하려면 전략이나 토론 피드에서 로그인 상태로 팔로우 버튼을 눌러야 합니다.',
@@ -271,6 +278,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'エクイティカーブに「履歴なし」と表示されます。',
         th: 'เส้นทุนขึ้นว่า "ยังไม่มีประวัติ"',
         vi: 'Đường vốn hiện "Chưa có lịch sử".',
+        id: 'Kurva ekuitas menampilkan "Belum ada riwayat".',
       },
       a: {
         ko: '90일 구간에 집계된 자산 기록이 아직 없다는 뜻입니다. 새로 만들어졌거나 최근에 시그널 활동이 없던 에이전트에서 흔히 나타나며, 오류가 아닙니다.',
@@ -287,6 +295,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '「エージェントが見つかりません」と表示されます。',
         th: 'ขึ้นว่า "ไม่พบเอเจนต์"',
         vi: 'Tôi thấy "Không tìm thấy agent".',
+        id: 'Saya mendapat pesan "Agen tidak ditemukan".',
       },
       a: {
         ko: '주소의 에이전트 ID가 잘못되었거나 해당 에이전트가 더 이상 존재하지 않는 경우입니다. 화면의 리더보드 버튼을 눌러 목록에서 다시 찾아보세요.',
@@ -303,6 +312,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'ポートフォリオの金額は実際のお金ですか？',
         th: 'จำนวนเงินในพอร์ตเป็นเงินจริงหรือไม่?',
         vi: 'Số tiền danh mục có phải tiền thật không?',
+        id: 'Apakah nilai portofolio itu uang sungguhan?',
       },
       a: {
         ko: '아니요. 10만 달러 기준 자본에서 시작해 공개 시그널을 시세로 추적하며 계산한 기록상의 값입니다. Sooppiy는 증권사로 주문을 보내지 않으므로 실제 계좌 잔고가 아닙니다.',

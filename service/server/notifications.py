@@ -93,6 +93,7 @@ ALERT_KIND_CATEGORY = {
     "fleet_watchdog": "auto_trading_safety",
     "fleet_slot_dormant": "auto_trading_reports",
     "fleet_sms_unavailable": "auto_trading_safety",
+    "fleet_profit_target": "auto_trading_reports",
 }
 
 
@@ -345,6 +346,43 @@ def notify(user_id: Optional[int], category: str, title: str, body: str = "",
     except Exception as exc:  # noqa: BLE001
         logger.exception("notify failed (user %s, category %s): %s", user_id, category, exc)
         return {"error": str(exc), "channels": []}
+
+
+def user_lang(user_id: Optional[int]) -> str:
+    """The member's stored notification language; 'en' on anything unknown."""
+    if user_id is None:
+        return "en"
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT lang FROM users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        from analysis_agents import normalize_lang
+        return normalize_lang(row["lang"] if row else None)
+    except Exception:  # noqa: BLE001 — language lookup must never break a send
+        return "en"
+
+
+def notify_i18n(user_id: Optional[int], category: str, msg_id: str,
+                params: Optional[dict[str, Any]] = None,
+                link: Optional[str] = None, external: bool = True,
+                body_suffix: str = "") -> dict[str, Any]:
+    """notify(), with title/body rendered from the catalogue in the member's
+    language. The alert path got this at C3; the notification-centre path was
+    left raising English literals ('Support replied'), so a Korean member saw
+    an English headline over a Korean-language support reply.
+
+    `body_suffix` appends caller-supplied free text (an admin's actual reply)
+    after the rendered body — that text is genuinely untranslatable.
+    """
+    from notifications_i18n import render
+    title, body = render(msg_id, user_lang(user_id), **(params or {}))
+    if body_suffix:
+        body = f"{body}\n\n{body_suffix}" if body else body_suffix
+    return notify(user_id, category, title, body, link=link, external=external)
 
 
 # ─────────────────────────── feed reads ───────────────────────────

@@ -7,6 +7,7 @@ export const leaderboardGuide: PageGuide = {
     ja: 'トップトレーダー（リーダーボード）',
     th: 'เทรดเดอร์อันดับต้น (ลีดเดอร์บอร์ด)',
     vi: 'Trader hàng đầu (Bảng xếp hạng)',
+    id: 'Trader teratas (papan peringkat)',
   },
   summary: {
     ko: '에이전트를 수익률·위험조정·협업·품질 네 가지 기준으로 줄 세워 보여 주는 페이지입니다. 어떤 에이전트를 따라갈지 고르기 전에 성과를 비교하는 곳이며, 로그인 없이도 전부 볼 수 있습니다.',
@@ -23,6 +24,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'ページの構成',
         th: 'สิ่งที่อยู่บนหน้านี้',
         vi: 'Trang này có gì',
+        id: 'Apa yang ada di halaman ini',
       },
       bullets: {
         ko: [
@@ -74,6 +76,7 @@ export const leaderboardGuide: PageGuide = {
         ja: '4つの指標タブの読み方',
         th: 'วิธีอ่านแท็บตัวชี้วัดทั้งสี่',
         vi: 'Cách đọc bốn tab chỉ số',
+        id: 'Membaca empat tab metrik',
       },
       bullets: {
         ko: [
@@ -125,6 +128,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'チャートとカードの数値の読み解き方',
         th: 'ตีความกราฟและตัวเลขบนการ์ด',
         vi: 'Diễn giải biểu đồ và các con số trên thẻ',
+        id: 'Menafsirkan grafik dan angka pada kartu',
       },
       bullets: {
         ko: [
@@ -176,6 +180,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'ペーパーフォローの使い方',
         th: 'การใช้ติดตามแบบเปเปอร์',
         vi: 'Dùng theo dõi giả lập',
+        id: 'Menggunakan paper follow',
       },
       bullets: {
         ko: [
@@ -222,6 +227,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'ナビゲーションとページ送り',
         th: 'การนำทางและการเปลี่ยนหน้า',
         vi: 'Điều hướng và phân trang',
+        id: 'Navigasi dan halaman',
       },
       bullets: {
         ko: [
@@ -268,6 +274,7 @@ export const leaderboardGuide: PageGuide = {
         ja: '次にすること',
         th: 'ทำอะไรต่อ',
         vi: 'Bước tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -316,6 +323,7 @@ export const leaderboardGuide: PageGuide = {
         ja: '「データはまだありません」しか出ません。なぜですか？',
         th: 'เห็นแค่ "ยังไม่มีข้อมูล" เพราะอะไร?',
         vi: 'Tôi chỉ thấy "Chưa có dữ liệu". Vì sao?',
+        id: 'Saya hanya melihat "Belum ada data". Kenapa?',
       },
       a: {
         ko: '순위는 수집된 손익 기록에서 계산됩니다. 아직 기록이 쌓인 에이전트가 없으면 카드도 차트도 비어 있습니다. 차트 자체는 데이터가 하나도 없으면 아예 표시되지 않습니다.',
@@ -364,6 +372,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'リーダーボードを見るのにログインは必要ですか？',
         th: 'ต้องเข้าสู่ระบบเพื่อดูลีดเดอร์บอร์ดไหม?',
         vi: 'Tôi có cần đăng nhập để xem bảng xếp hạng không?',
+        id: 'Apakah saya harus masuk untuk melihat papan peringkat?',
       },
       a: {
         ko: '아니요. 순위, 차트, 카드, 모의 팔로우까지 게스트로 모두 사용할 수 있습니다. 로그인은 자신의 AI 에이전트를 설정하고 전략을 자동화하며 계정을 관리할 때 필요합니다.',

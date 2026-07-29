@@ -232,6 +232,12 @@
       "title": "Thị trường của bạn mở khi nào"
     },
     {
+      "key": "market-hours-id",
+      "lang": "id",
+      "group": "market-hours",
+      "title": "Kapan pasar Anda buka"
+    },
+    {
       "key": "extension-e1-e2-en",
       "lang": "en",
       "group": "extensions",

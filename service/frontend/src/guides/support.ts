@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const supportGuide: PageGuide = {
-  title: { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' },
+  title: { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' },
   summary: {
     ko: '운영팀과 일대일로 주고받는 대화창입니다. 계정, 결제, 오류, 기능 사용법처럼 사람이 확인해야 하는 문제를 남기는 곳이며, 회원 한 명당 대화는 하나입니다.',
     en: 'A one-to-one conversation with the Sooppiy team. It is where you raise anything that needs a human to look at it — account, billing, errors, how a feature works — and each member has exactly one conversation.',
@@ -11,7 +11,7 @@ export const supportGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '이 페이지의 구조', en: 'How this page is laid out', ja: 'このページの構成', th: 'โครงสร้างของหน้านี้', vi: 'Bố cục của trang này' },
+      heading: { ko: '이 페이지의 구조', en: 'How this page is laid out', ja: 'このページの構成', th: 'โครงสร้างของหน้านี้', vi: 'Bố cục của trang này', id: 'Bagaimana halaman ini disusun' },
       bullets: {
         ko: [
           '로그인한 회원 계정으로만 열립니다. 에이전트 토큰으로는 접근할 수 없습니다.',
@@ -51,7 +51,7 @@ export const supportGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '메시지 보내기', en: 'Sending a message', ja: 'メッセージを送る', th: 'การส่งข้อความ', vi: 'Gửi tin nhắn' },
+      heading: { ko: '메시지 보내기', en: 'Sending a message', ja: 'メッセージを送る', th: 'การส่งข้อความ', vi: 'Gửi tin nhắn', id: 'Mengirim pesan' },
       bullets: {
         ko: [
           '아래 입력창에 내용을 적고 보내기 버튼을 누르거나 ⌘/Ctrl + Enter 를 누릅니다. Enter만 누르면 줄바꿈이 됩니다.',
@@ -96,7 +96,7 @@ export const supportGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '답변 확인하기', en: 'Getting the reply', ja: '返信を受け取る', th: 'การรับคำตอบ', vi: 'Nhận phản hồi' },
+      heading: { ko: '답변 확인하기', en: 'Getting the reply', ja: '返信を受け取る', th: 'การรับคำตอบ', vi: 'Nhận phản hồi', id: 'Menerima balasan' },
       bullets: {
         ko: [
           '이 페이지는 열려 있는 동안 20초마다 대화를 자동으로 다시 불러옵니다. 답변이 오면 새로고침 없이 나타납니다.',
@@ -136,7 +136,7 @@ export const supportGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '종료됨 상태', en: 'The Closed state', ja: '「終了」の状態', th: 'สถานะปิดแล้ว', vi: 'Trạng thái Đã đóng' },
+      heading: { ko: '종료됨 상태', en: 'The Closed state', ja: '「終了」の状態', th: 'สถานะปิดแล้ว', vi: 'Trạng thái Đã đóng', id: 'Status Ditutup' },
       bullets: {
         ko: [
           '운영팀이 문의를 마무리하면 제목 옆에 회색 종료됨 배지가 붙습니다. 회원이 직접 종료하거나 다시 열 수는 없습니다.',
@@ -171,7 +171,7 @@ export const supportGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '문의를 잘 남기는 법', en: 'Writing an enquiry that gets solved', ja: '解決の早い問い合わせの書き方', th: 'การเขียนคำถามให้แก้ไขได้เร็ว', vi: 'Viết câu hỏi để được giải quyết' },
+      heading: { ko: '문의를 잘 남기는 법', en: 'Writing an enquiry that gets solved', ja: '解決の早い問い合わせの書き方', th: 'การเขียนคำถามให้แก้ไขได้เร็ว', vi: 'Viết câu hỏi để được giải quyết', id: 'Menulis pertanyaan yang cepat terselesaikan' },
       bullets: {
         ko: [
           '어느 페이지에서, 무엇을 눌렀을 때, 무엇을 기대했고 실제로 무엇이 나왔는지를 한 번에 적으면 왕복이 크게 줄어듭니다.',
@@ -219,6 +219,7 @@ export const supportGuide: PageGuide = {
         ja: '問い合わせを複数、別々に開けますか？',
         th: 'เปิดคำถามแยกหลายเรื่องได้ไหม?',
         vi: 'Tôi có thể mở nhiều yêu cầu riêng biệt không?',
+        id: 'Bisakah saya membuka beberapa pertanyaan terpisah?',
       },
       a: {
         ko: '아니요. 회원 한 명당 대화는 하나로 고정되어 있어서, 새 주제를 꺼내도 같은 대화에 이어집니다. 그래서 서로 다른 주제를 다룰 때는 첫 줄에 무엇에 관한 이야기인지 한 줄 적어 주는 것이 좋습니다. 이전 이야기가 밀려 사라지지는 않으므로 위로 스크롤하면 지난 내용을 언제든 확인할 수 있습니다.',
@@ -235,6 +236,7 @@ export const supportGuide: PageGuide = {
         ja: '会話が「終了」になっていますが、また質問してもいいですか？',
         th: 'การสนทนาขึ้นว่าปิดแล้ว ยังถามต่อได้ไหม?',
         vi: 'Cuộc trò chuyện đã Đóng — tôi vẫn hỏi được chứ?',
+        id: 'Percakapannya sudah Ditutup — bisakah saya tetap bertanya?',
       },
       a: {
         ko: '됩니다. 종료됨은 운영팀 쪽에서 처리를 마쳤다는 표시일 뿐이고, 입력창은 계속 열려 있습니다. 메시지를 보내면 대화가 자동으로 다시 열림 상태가 되어 운영팀 목록 위로 올라갑니다. 다만 화면의 종료됨 배지는 다음 자동 갱신(최대 20초)까지 잠깐 남아 있을 수 있으니 두 번 보내지 않아도 됩니다.',
@@ -251,6 +253,7 @@ export const supportGuide: PageGuide = {
         ja: '返信を見逃さないために、このページを開いたままにする必要がありますか？',
         th: 'ต้องเปิดหน้านี้ทิ้งไว้เพื่อไม่ให้พลาดคำตอบหรือเปล่า?',
         vi: 'Tôi có phải để mở trang này để không bỏ lỡ phản hồi không?',
+        id: 'Haruskah saya membiarkan halaman ini terbuka agar tidak melewatkan balasan?',
       },
       a: {
         ko: '아니요. 운영팀이 답하면 고객지원 알림이 자동으로 생성되어 알림 페이지에 남고, 이 종류는 기본적으로 이메일 발송도 켜져 있어 계정 이메일로도 안내가 갑니다. 다만 설정 페이지에서 고객지원 종류를 꺼 두었다면 알림 목록에도 기록되지 않으니, 답변을 놓치고 싶지 않다면 그 스위치는 켜 두세요.',

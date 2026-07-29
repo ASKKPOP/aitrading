@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const accountsGuide: PageGuide = {
-  title: { ko: '계정', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' },
+  title: { ko: '계정', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản', id: 'Akun' },
   summary: {
     ko: '거래가 어떤 방식으로 처리될지 고르는 페이지입니다. 시뮬레이터 계정과 실계좌 두 장의 카드가 나란히 있고, 지금 선택된 쪽에 「활성」 배지가 붙습니다.',
     en: 'The page where you choose how your trades are handled. Two cards sit side by side — the simulator account and the real account — and the one currently selected carries an Active badge.',
@@ -11,7 +11,7 @@ export const accountsGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '이 페이지에서 보이는 것', en: 'What you see on this page', ja: 'この画面に表示されるもの', th: 'สิ่งที่เห็นบนหน้านี้', vi: 'Những gì bạn thấy trên trang' },
+      heading: { ko: '이 페이지에서 보이는 것', en: 'What you see on this page', ja: 'この画面に表示されるもの', th: 'สิ่งที่เห็นบนหน้านี้', vi: 'Những gì bạn thấy trên trang', id: 'Apa yang Anda lihat di halaman ini' },
       bullets: {
         ko: [
           '카드는 두 장뿐입니다 — ◐ 시뮬레이터 계정과 ● 실계좌. 현재 선택된 카드는 테두리가 강조되고 오른쪽 위에 「활성」 배지가 표시됩니다.',
@@ -46,7 +46,7 @@ export const accountsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '시뮬레이터 계정', en: 'The simulator account', ja: 'シミュレーター口座', th: 'บัญชีจำลอง', vi: 'Tài khoản mô phỏng' },
+      heading: { ko: '시뮬레이터 계정', en: 'The simulator account', ja: 'シミュレーター口座', th: 'บัญชีจำลอง', vi: 'Tài khoản mô phỏng', id: 'Akun simulator' },
       bullets: {
         ko: [
           '모의 지갑입니다. 매수와 매도는 실시간 시장 가격을 기준으로 모의 체결되며, 실제 자금은 전혀 움직이지 않습니다.',
@@ -86,7 +86,7 @@ export const accountsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '실계좌 카드와 연결 폼', en: 'The real account card and connect form', ja: '実口座カードと接続フォーム', th: 'การ์ดบัญชีจริงและฟอร์มเชื่อมต่อ', vi: 'Thẻ tài khoản thật và biểu mẫu kết nối' },
+      heading: { ko: '실계좌 카드와 연결 폼', en: 'The real account card and connect form', ja: '実口座カードと接続フォーム', th: 'การ์ดบัญชีจริงและฟอร์มเชื่อมต่อ', vi: 'Thẻ tài khoản thật và biểu mẫu kết nối', id: 'Kartu akun asli dan formulir koneksi' },
       bullets: {
         ko: [
           '카드 상단에는 주황색 경고 상자가 있습니다. 실거래는 실제 자금을 위험에 노출시키니 반드시 읽으세요.',
@@ -126,7 +126,7 @@ export const accountsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: 'API 키를 다룰 때의 안전 수칙', en: 'Handling API keys safely', ja: 'APIキーを扱う際の安全策', th: 'การจัดการคีย์ API อย่างปลอดภัย', vi: 'Xử lý khóa API an toàn' },
+      heading: { ko: 'API 키를 다룰 때의 안전 수칙', en: 'Handling API keys safely', ja: 'APIキーを扱う際の安全策', th: 'การจัดการคีย์ API อย่างปลอดภัย', vi: 'Xử lý khóa API an toàn', id: 'Menangani kunci API dengan aman' },
       bullets: {
         ko: [
           'API 키는 거래소가 발급하는 자격 증명입니다. 거래소 계정에서 직접 발급하고, 권한은 거래(TRADE)로만 한정하세요.',
@@ -171,7 +171,7 @@ export const accountsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '라이브 실행 게이트와 다음에 할 일', en: 'The live execution gate and what to do next', ja: '実発注ゲートと次のステップ', th: 'ประตูการส่งคำสั่งจริงและขั้นถัดไป', vi: 'Cổng thực thi lệnh thật và bước tiếp theo' },
+      heading: { ko: '라이브 실행 게이트와 다음에 할 일', en: 'The live execution gate and what to do next', ja: '実発注ゲートと次のステップ', th: 'ประตูการส่งคำสั่งจริงและขั้นถัดไป', vi: 'Cổng thực thi lệnh thật và bước tiếp theo', id: 'Gerbang eksekusi live dan langkah selanjutnya' },
       bullets: {
         ko: [
           '브로커를 연결하고 실거래 약관에 동의하면 라이브 주문 실행이 켜집니다. API 키는 서버에 암호화되어 저장되며 다시 표시되지 않습니다.',
@@ -219,6 +219,7 @@ export const accountsGuide: PageGuide = {
         ja: '取引所を接続したのに実取引にならないのはなぜ?',
         th: 'เชื่อมต่อกระดานเทรดแล้ว ทำไมยังไม่มีการเทรดจริง',
         vi: 'Tôi đã kết nối sàn — sao vẫn không giao dịch thật?',
+        id: 'Saya sudah menghubungkan bursa — kenapa tidak ada yang benar-benar diperdagangkan?',
       },
       a: {
         ko: '게이트웨이를 연결하고 실거래 약관에 동의했다면, 자동화 규칙의 계정을 live로 바꿔야 실제 주문이 나갑니다. 규칙이 simulator나 shadow로 남아 있으면 실제 자금은 움직이지 않습니다.',
@@ -235,6 +236,7 @@ export const accountsGuide: PageGuide = {
         ja: 'ここで選んだ口座は自動売買ルールにも適用されますか?',
         th: 'บัญชีที่เลือกที่นี่มีผลกับกฎอัตโนมัติด้วยไหม',
         vi: 'Tài khoản tôi chọn ở đây có áp dụng cho quy tắc tự động không?',
+        id: 'Apakah akun yang saya pilih di sini berlaku untuk aturan otomatisasi saya?',
       },
       a: {
         ko: '자동화 규칙은 규칙마다 계정 유형을 따로 가집니다. 간편 모드와 표준 모드로 만든 규칙은 항상 simulator로 저장되고, 전문가 모드에서만 simulator/real을 직접 고를 수 있습니다. 이 페이지의 선택은 페이지 전반의 기본 계정 표시에 쓰이며, 이미 저장된 규칙의 계정 유형을 소급해서 바꾸지는 않습니다.',
@@ -251,6 +253,7 @@ export const accountsGuide: PageGuide = {
         ja: '模擬残高が減りました。補充できますか?',
         th: 'ยอดจำลองลดลง เติมกลับได้ไหม',
         vi: 'Số dư mô phỏng của tôi giảm — có nạp lại được không?',
+        id: 'Saldo simulasi saya berkurang — bisakah saya menambahnya?',
       },
       a: {
         ko: '이 페이지에는 잔고를 충전하는 버튼이 없습니다. 모의 잔고는 체결된 모의 거래와 포지션 손익에 따라 움직이며, 카드에는 현재 값이 그대로 표시됩니다. 잔고가 왜 그렇게 변했는지는 내 자산 페이지의 최근 활동과 포지션 손익에서 추적할 수 있습니다.',

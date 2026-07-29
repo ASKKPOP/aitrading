@@ -202,11 +202,16 @@ def _gather_fundamentals_macro(symbol: str, market: str) -> dict[str, Any]:
 
 # ─────────────────────────── output language ───────────────────────────
 
-# The UI ships five languages (frontend i18n.ts); the analyst briefs and the
+# The UI ships six languages (frontend i18n.ts); the analyst briefs and the
 # trader report are the only free-text the LLM writes, so they have to follow
 # the same top-bar selection. Anything unknown falls back to English.
+#
+# This dict is the single source of truth for "which languages exist" — the
+# error catalogue, the alert catalogue and the Accept-Language parser all
+# derive their supported set from normalize_lang rather than keeping a second
+# list that could drift.
 LANG_NAMES = {"ko": "Korean", "en": "English", "ja": "Japanese",
-              "th": "Thai", "vi": "Vietnamese"}
+              "th": "Thai", "vi": "Vietnamese", "id": "Indonesian"}
 
 
 def normalize_lang(value: Optional[str]) -> str:

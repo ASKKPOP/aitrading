@@ -7,6 +7,7 @@ export const researchExportsGuide: PageGuide = {
     ja: 'リサーチエクスポート',
     th: 'ส่งออกงานวิจัย',
     vi: 'Xuất nghiên cứu',
+    id: 'Ekspor riset',
   },
   summary: {
     ko: '기간·실험·변형·시장으로 범위를 좁혀 플랫폼 데이터를 CSV로 내려받는 페이지입니다. 논문이나 분석용 데이터셋이 필요한 연구자와 운영자가 사용합니다.',
@@ -23,6 +24,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'フィルターで範囲を決める',
         th: 'กำหนดขอบเขตด้วยตัวกรอง',
         vi: 'Đặt phạm vi bằng bộ lọc',
+        id: 'Menentukan cakupan dengan filter',
       },
       bullets: {
         ko: [
@@ -74,6 +76,7 @@ export const researchExportsGuide: PageGuide = {
         ja: '4 種類の CSV ダウンロード',
         th: 'ไฟล์ CSV ทั้งสี่ชุด',
         vi: 'Bốn tệp CSV có thể tải',
+        id: 'Empat unduhan CSV',
       },
       bullets: {
         ko: [
@@ -120,6 +123,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'イベントプレビューで検証する',
         th: 'ตรวจสอบด้วยตัวอย่างเหตุการณ์',
         vi: 'Kiểm chứng bằng phần xem trước sự kiện',
+        id: 'Memverifikasi lewat pratinjau peristiwa',
       },
       bullets: {
         ko: [
@@ -168,6 +172,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'プレビューが空です。エラーでしょうか？',
         th: 'ตัวอย่างว่างเปล่า นี่คือข้อผิดพลาดหรือไม่',
         vi: 'Phần xem trước trống rỗng. Có phải bị lỗi không?',
+        id: 'Pratinjaunya kosong. Apakah ada yang rusak?',
       },
       a: {
         ko: '대부분은 필터가 너무 좁아서입니다. 기간을 넓히거나 실험·변형·시장을 전체로 되돌려 보세요. 변형은 직접 입력하는 값이라 오타가 있으면 결과가 0건이 됩니다. offset이 실제 데이터 수보다 크게 잡혀 있어도 비어 보입니다.',
@@ -184,6 +189,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'プレビューに表示された件数だけが CSV に入るのですか？',
         th: 'จะได้เฉพาะแถวที่เห็นในตัวอย่างเท่านั้นหรือไม่',
         vi: 'Tôi chỉ nhận được các dòng hiển thị trong phần xem trước phải không?',
+        id: 'Apakah saya hanya mendapat baris yang tampil di pratinjau?',
       },
       a: {
         ko: '아닙니다. 표에 그려지는 80행은 화면 표시용 제한일 뿐이고, CSV는 필터의 limit 값까지 받습니다. 더 많이 필요하면 limit을 올리거나 offset을 옮겨 가며 나눠 받으세요.',
@@ -200,6 +206,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'このデータは実際の約定記録ですか？',
         th: 'ข้อมูลนี้เป็นบันทึกการซื้อขายจริงหรือไม่',
         vi: 'Dữ liệu này có phải bản ghi khớp lệnh thật không?',
+        id: 'Apakah data ini catatan eksekusi sungguhan?',
       },
       a: {
         ko: '아닙니다. Sooppiy는 시그널·복제 트레이딩 플랫폼이라 증권사로 주문을 보내지 않습니다. 내보내는 데이터는 게시된 시그널, 에이전트 활동 이벤트, 에이전트 간 연결 관계 같은 플랫폼 내부 기록입니다.',

@@ -7,6 +7,7 @@ export const exchangeGuide: PageGuide = {
     ja: 'ポイント交換',
     th: 'แลกคะแนน',
     vi: 'Đổi điểm',
+    id: 'Penukaran poin',
   },
   summary: {
     ko: '보유한 포인트를 거래에 쓸 수 있는 현금으로 바꾸는 페이지입니다. 주문을 넣으려는데 현금이 부족하다는 경고를 받았다면 여기서 잔고를 채우면 됩니다.',
@@ -23,6 +24,7 @@ export const exchangeGuide: PageGuide = {
         ja: 'このページに表示されるもの',
         th: 'สิ่งที่คุณเห็นบนหน้านี้',
         vi: 'Những gì bạn thấy trên trang này',
+        id: 'Apa yang Anda lihat di halaman ini',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const exchangeGuide: PageGuide = {
         ja: '交換の手順',
         th: 'วิธีแลกคะแนน',
         vi: 'Cách đổi điểm',
+        id: 'Cara menukar',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const exchangeGuide: PageGuide = {
         ja: '注意点',
         th: 'สิ่งที่ควรทราบ',
         vi: 'Những điều cần biết',
+        id: 'Hal yang perlu diketahui',
       },
       bullets: {
         ko: [
@@ -161,6 +165,7 @@ export const exchangeGuide: PageGuide = {
         ja: '交換後にすること',
         th: 'สิ่งที่ควรทำต่อ',
         vi: 'Việc cần làm tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -204,6 +209,7 @@ export const exchangeGuide: PageGuide = {
         ja: '送信ボタンが押せません。',
         th: 'ปุ่มส่งกดไม่ได้',
         vi: 'Nút gửi không nhấn được.',
+        id: 'Tombol kirim tidak bisa ditekan.',
       },
       a: {
         ko: '입력 칸이 비어 있거나, 입력한 값이 보유 포인트보다 많으면 버튼이 비활성화됩니다. 위쪽 왼쪽 카드의 포인트 수를 확인하고 그 이하의 값을 넣으세요. 교환이 진행 중일 때도 잠시 눌리지 않습니다.',
@@ -220,6 +226,7 @@ export const exchangeGuide: PageGuide = {
         ja: '交換した現金は実際に出金できますか？',
         th: 'ฉันถอนเงินสดที่ได้รับออกมาได้ไหม?',
         vi: 'Tôi có thể rút số tiền mặt nhận được không?',
+        id: 'Bisakah saya menarik kas yang saya terima?',
       },
       a: {
         ko: '없습니다. 이 현금은 플랫폼 안에서 모의 거래의 잔고 역할만 하는 숫자입니다. 실제 자금이 아니며 은행이나 거래소로 이체되지 않습니다. 오직 주문 규모를 정하는 데만 쓰입니다.',
@@ -236,6 +243,7 @@ export const exchangeGuide: PageGuide = {
         ja: '誤って交換しすぎました。取り消せますか？',
         th: 'ฉันแลกมากเกินไปโดยไม่ตั้งใจ ยกเลิกได้ไหม?',
         vi: 'Tôi lỡ đổi quá nhiều. Có hoàn tác được không?',
+        id: 'Saya salah menukar terlalu banyak. Bisakah dibatalkan?',
       },
       a: {
         ko: '이 페이지에는 되돌리기 기능이 없습니다. 교환은 포인트에서 현금으로 가는 한 방향이며 반대 방향 폼이 존재하지 않습니다. 제출 전에 "받게 될 항목" 미리보기 금액을 꼭 확인하세요.',

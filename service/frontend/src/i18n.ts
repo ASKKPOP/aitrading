@@ -1,7 +1,11 @@
 // i18n translations for Sooppiy (Sooppiy)
-// Supported languages: Korean (default), English, Japanese, Thai, Vietnamese
+// Supported languages: Korean (default), English, Japanese, Thai, Vietnamese,
+// Indonesian. This list must stay in step with LANG_NAMES in
+// service/server/analysis_agents.py — that dict is what the backend uses to
+// decide which language an alert, email or error message renders in, so a
+// language offered here but missing there silently serves English.
 
-export type Language = 'ko' | 'en' | 'ja' | 'th' | 'vi'
+export type Language = 'ko' | 'en' | 'ja' | 'th' | 'vi' | 'id'
 
 export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'ko', label: '한국어' },
@@ -9,6 +13,7 @@ export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'ja', label: '日本語' },
   { value: 'th', label: 'ไทย' },
   { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'id', label: 'Bahasa Indonesia' },
 ]
 
 export const DEFAULT_LANGUAGE: Language = 'ko'
@@ -20,6 +25,7 @@ export const LOCALE_BY_LANGUAGE: Record<Language, string> = {
   ja: 'ja-JP',
   th: 'th-TH',
   vi: 'vi-VN',
+  id: 'id-ID',
 }
 
 export interface Translations {
@@ -606,6 +612,103 @@ export const translations: Record<Language, Translations> = {
       operationFailed: 'Thao tác thất bại',
     },
   },
+  id: {
+    nav: {
+      signals: 'Pasar sinyal',
+      strategies: 'Strategi',
+      discussions: 'Diskusi',
+      positions: 'Posisi',
+      trade: 'Transaksi',
+      exchange: 'Tukar',
+      create: 'Buat',
+    },
+    common: {
+      login: 'Masuk',
+      logout: 'Keluar',
+      connected: 'Terhubung',
+      balance: 'Saldo',
+      claw: 'CLAW',
+      points: 'poin',
+      loading: 'Memuat...',
+      cancel: 'Batal',
+      confirm: 'Konfirmasi',
+      submit: 'Kirim',
+      close: 'Tutup',
+      back: 'Kembali',
+      next: 'Berikutnya',
+      refresh: 'Muat ulang',
+    },
+    signals: {
+      operations: 'Riwayat operasi',
+      noSignals: 'Belum ada sinyal',
+      publish: 'Terbitkan',
+    },
+    strategies: {
+      title: 'Strategi',
+      market: 'Pasar',
+      noStrategies: 'Belum ada strategi',
+      publish: 'Terbitkan strategi',
+      publishSuccess: 'Strategi telah diterbitkan!',
+      submit: 'Terbitkan',
+      content: 'Isi strategi',
+      symbols: 'Simbol terkait',
+      tags: 'Tagar',
+    },
+    discussions: {
+      title: 'Diskusi',
+      market: 'Pasar',
+      noDiscussions: 'Belum ada diskusi',
+      post: 'Kirim diskusi',
+      postSuccess: 'Diskusi telah diterbitkan!',
+      submit: 'Terbitkan',
+      content: 'Isi diskusi',
+      tags: 'Tagar',
+    },
+    positions: {
+      title: 'Posisi saya',
+      noPositions: 'Belum ada posisi',
+    },
+    trade: {
+      title: 'Pasang order',
+      market: 'Pasar',
+      action: 'Aksi',
+      symbol: 'Simbol',
+      price: 'Harga',
+      quantity: 'Kuantitas',
+      content: 'Catatan',
+      executedAt: 'Waktu eksekusi',
+      submit: 'Kirim order',
+      success: 'Order berhasil dipasang!',
+      buy: 'Beli',
+      sell: 'Jual',
+      short: 'Jual kosong (short)',
+      cover: 'Tutup short',
+    },
+    exchange: {
+      title: 'Tukar poin',
+      currentPoints: 'Poin saat ini',
+      currentCash: 'Kas saat ini',
+      exchangeRate: 'Kurs: 1 poin = 1.000 USD',
+      amount: 'Jumlah poin yang ditukar',
+      submit: 'Tukar sekarang',
+      success: 'Penukaran berhasil!',
+      insufficientPoints: 'Poin tidak mencukupi',
+      enterAmount: 'Masukkan jumlah poin yang ingin ditukar',
+    },
+    login: {
+      title: 'Daftar / Masuk',
+      name: 'Nama',
+      email: 'Email',
+      register: 'Daftar',
+      registering: 'Sedang mendaftar...',
+      success: 'Berhasil masuk!',
+      failed: 'Gagal masuk',
+    },
+    errors: {
+      pleaseLogin: 'Silakan masuk terlebih dahulu',
+      operationFailed: 'Operasi gagal',
+    },
+  },
 }
 
 // Get translation function
@@ -616,6 +719,61 @@ export const getT = (lang: Language): Translations => translations[lang]
 // Falls back to English if a translation is missing.
 export type TrMap = { en: string } & Partial<Record<Language, string>>
 export const tr = (lang: Language, m: TrMap): string => m[lang] ?? m.en
+
+// alternative.me's `value_classification`, rendered straight into the UI in
+// three places (home, Signals Board, Dashboard) — so a Korean member read
+// "29 Fear". It is third-party text, but it is a CLOSED set of five bands, so
+// it is ours to translate; only an unrecognised band falls through verbatim,
+// which keeps a new vendor label visible instead of blank.
+const FEAR_GREED: Record<string, TrMap> = {
+  'extreme fear': { en: 'Extreme Fear', ko: '극단적 공포', ja: '極度の恐怖', th: 'ความกลัวขั้นสุด', vi: 'Cực kỳ sợ hãi', id: 'Ketakutan Ekstrem' },
+  'fear': { en: 'Fear', ko: '공포', ja: '恐怖', th: 'ความกลัว', vi: 'Sợ hãi', id: 'Ketakutan' },
+  'neutral': { en: 'Neutral', ko: '중립', ja: '中立', th: 'เป็นกลาง', vi: 'Trung lập', id: 'Netral' },
+  'greed': { en: 'Greed', ko: '탐욕', ja: '強欲', th: 'ความโลภ', vi: 'Tham lam', id: 'Keserakahan' },
+  'extreme greed': { en: 'Extreme Greed', ko: '극단적 탐욕', ja: '極度の強欲', th: 'ความโลภขั้นสุด', vi: 'Cực kỳ tham lam', id: 'Keserakahan Ekstrem' },
+}
+
+export const fearGreedLabel = (lang: Language, classification: string | null | undefined): string => {
+  if (!classification) return ''
+  const m = FEAR_GREED[classification.trim().toLowerCase()]
+  return m ? tr(lang, m) : classification
+}
+
+// The desk's stance code from /api/market-intel/regime. Dashboard rendered it
+// raw ("caution" under a Korean heading); Signals Board had its own inline map
+// where th/vi merely upper-cased the English. One table, six languages, both
+// callers — an unknown regime falls through so a new one stays visible.
+const REGIME: Record<string, TrMap> = {
+  trend: { en: 'Trend', ko: '추세', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' },
+  caution: { en: 'Caution', ko: '주의', ja: '注意', th: 'ระวัง', vi: 'Thận trọng', id: 'Waspada' },
+  panic: { en: 'Panic', ko: '패닉', ja: 'パニック', th: 'ตื่นตระหนก', vi: 'Hoảng loạn', id: 'Panik' },
+  euphoria: { en: 'Euphoria', ko: '과열', ja: '過熱', th: 'ร้อนแรงเกินไป', vi: 'Hưng phấn', id: 'Euforia' },
+  event: { en: 'Event', ko: '이벤트', ja: 'イベント', th: 'เหตุการณ์', vi: 'Sự kiện', id: 'Peristiwa' },
+  unknown: { en: 'Unknown', ko: '미확정', ja: '不明', th: 'ไม่ทราบ', vi: 'Chưa xác định', id: 'Belum pasti' },
+}
+
+export const regimeLabel = (lang: Language, regime: string | null | undefined): string => {
+  if (!regime) return ''
+  const m = REGIME[regime.trim().toLowerCase()]
+  return m ? tr(lang, m) : regime
+}
+
+// Position side / order action. Closed set, and it appears next to a symbol on
+// most surfaces — "USDZAR forex · long" under a Korean heading is the same
+// leak as a raw stop reason, just smaller and far more frequent.
+const SIDE: Record<string, TrMap> = {
+  long: { en: 'long', ko: '롱', ja: 'ロング', th: 'ลอง', vi: 'mua (long)', id: 'beli (long)' },
+  short: { en: 'short', ko: '숏', ja: 'ショート', th: 'ชอร์ต', vi: 'bán (short)', id: 'jual (short)' },
+  buy: { en: 'buy', ko: '매수', ja: '買い', th: 'ซื้อ', vi: 'mua', id: 'beli' },
+  sell: { en: 'sell', ko: '매도', ja: '売り', th: 'ขาย', vi: 'bán', id: 'jual' },
+  cover: { en: 'cover', ko: '커버', ja: '買い戻し', th: 'ปิดชอร์ต', vi: 'mua bù', id: 'tutup short' },
+}
+
+export const sideLabel = (lang: Language, side: string | null | undefined): string => {
+  if (!side) return ''
+  const m = SIDE[side.trim().toLowerCase()]
+  return m ? tr(lang, m) : side
+}
 
 // Category translations
 export const categoryTranslations: Record<Language, Record<string, string>> = {
@@ -658,5 +816,13 @@ export const categoryTranslations: Record<Language, Record<string, string>> = {
     'analysis': 'Phân tích',
     'tool': 'Công cụ',
     'all': 'Tất cả danh mục',
+  },
+  id: {
+    'trading-signal': 'Sinyal trading',
+    'data-feed': 'Umpan data',
+    'model-access': 'Akses model',
+    'analysis': 'Analisis',
+    'tool': 'Alat',
+    'all': 'Semua kategori',
   },
 }

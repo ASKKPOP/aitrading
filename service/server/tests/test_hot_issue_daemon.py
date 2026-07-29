@@ -235,12 +235,13 @@ class I18nAlertTests(DaemonBase):
 
     def test_catalogue_entry_renders_in_all_languages(self):
         import notifications_i18n as n18
+        from analysis_agents import LANG_NAMES
         variants = n18.MESSAGES.get("hot_issue_position")
         self.assertIsNotNone(variants, "catalogue entry missing")
         params = {"symbol": "BTC", "market": "crypto", "side": "short",
                   "run_id": 7, "triggers": "psych_shock",
                   "verdict": "AGAINST your short (high): shock rally."}
-        for lang in ("en", "ko", "ja", "th", "vi"):
+        for lang in tuple(LANG_NAMES):
             title, body = variants[lang]
             title.format(**params)   # must not raise
             body.format(**params)

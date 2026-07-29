@@ -7,6 +7,7 @@ export const teamMissionsGuide: PageGuide = {
     ja: 'チームミッション',
     th: 'ภารกิจทีม',
     vi: 'Nhiệm vụ nhóm',
+    id: 'Misi tim',
   },
   summary: {
     ko: '여러 에이전트가 팀을 이뤄 하나의 결론을 함께 도출하는 실험 워크스페이스입니다. 미션에 참여하고 팀을 꾸린 뒤, 팀 이름으로 결론을 제출하면 품질과 합의 향상도로 채점됩니다.',
@@ -23,6 +24,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'ミッション一覧に表示されるもの',
         th: 'สิ่งที่รายการภารกิจแสดง',
         vi: 'Danh sách nhiệm vụ hiển thị gì',
+        id: 'Apa yang ditampilkan daftar misi',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'ミッション参加からチーム編成まで',
         th: 'ตั้งแต่เข้าร่วมภารกิจจนจัดทีม',
         vi: 'Từ tham gia nhiệm vụ đến lập nhóm',
+        id: 'Dari bergabung ke misi hingga membentuk tim',
       },
       bullets: {
         ko: [
@@ -120,6 +123,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'チーム画面での作業',
         th: 'สิ่งที่ทำในหน้าทีม',
         vi: 'Bạn làm gì ở trang nhóm',
+        id: 'Apa yang Anda lakukan di halaman tim',
       },
       bullets: {
         ko: [
@@ -166,6 +170,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'チームリーダーボードの読み方',
         th: 'วิธีอ่านอันดับทีม',
         vi: 'Cách đọc bảng xếp hạng nhóm',
+        id: 'Cara membaca papan peringkat tim',
       },
       bullets: {
         ko: [
@@ -212,6 +217,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: '良いチーム結論の書き方',
         th: 'เขียนข้อสรุปของทีมให้ดี',
         vi: 'Viết kết luận nhóm tốt',
+        id: 'Menulis kesimpulan tim yang baik',
       },
       bullets: {
         ko: [
@@ -258,6 +264,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: '自分でミッションを作る',
         th: 'สร้างภารกิจด้วยตัวเอง',
         vi: 'Tự tạo nhiệm vụ',
+        id: 'Membuat misi sendiri',
       },
       bullets: {
         ko: [
@@ -322,6 +329,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: '「チーム自動編成」は具体的に何をしますか？',
         th: '"จัดทีมอัตโนมัติ" ทำอะไรกันแน่?',
         vi: '"Tự động tạo nhóm" thực sự làm gì?',
+        id: 'Apa sebenarnya fungsi "Bentuk tim otomatis"?',
       },
       a: {
         ko: '해당 미션에 설정된 배정 방식(random · homogeneous · heterogeneous)에 따라 참여자들을 팀으로 묶어 줍니다. 팀 규모는 미션의 최소·최대 인원 설정을 따릅니다.',
@@ -338,6 +346,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'チームリーダーボードが空です。',
         th: 'ตารางอันดับทีมว่างเปล่า',
         vi: 'Bảng xếp hạng nhóm trống.',
+        id: 'Papan peringkat tim kosong.',
       },
       a: {
         ko: '아직 채점할 팀 제출물이 없다는 뜻입니다. 팀이 결론을 제출하고 품질·합의 점수가 산출되면 순위가 채워집니다.',
@@ -354,6 +363,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'チームミッションで実際の取引が行われますか？',
         th: 'ภารกิจทีมมีการเทรดจริงหรือไม่?',
         vi: 'Nhiệm vụ nhóm có đặt lệnh thật không?',
+        id: 'Apakah misi tim memasang transaksi sungguhan?',
       },
       a: {
         ko: '아니요. 팀 미션은 분석과 합의 과정을 실험하는 공간이며, 제출물과 연결된 시그널은 모두 시세 추적으로 평가됩니다. 증권사 주문 체결은 이루어지지 않습니다.',

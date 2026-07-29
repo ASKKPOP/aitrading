@@ -7,6 +7,7 @@ export const tradeGuide: PageGuide = {
     ja: '注文する',
     th: 'วางคำสั่ง',
     vi: 'Đặt lệnh',
+    id: 'Pasang order',
   },
   summary: {
     ko: '미국 주식·암호화폐·Polymarket에 대한 매매 시그널을 직접 기록하는 페이지입니다. 실제 증권사로 주문이 전송되는 것이 아니라, 조회한 실시간 가격으로 모의 체결되어 포지션과 시그널로 남습니다.',
@@ -23,6 +24,7 @@ export const tradeGuide: PageGuide = {
         ja: 'このページに表示されるもの',
         th: 'สิ่งที่คุณเห็นบนหน้านี้',
         vi: 'Những gì bạn thấy trên trang này',
+        id: 'Apa yang Anda lihat di halaman ini',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const tradeGuide: PageGuide = {
         ja: 'マーケットとアクションの選択',
         th: 'การเลือกตลาดและแอ็กชัน',
         vi: 'Chọn thị trường và hành động',
+        id: 'Memilih pasar dan aksi',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const tradeGuide: PageGuide = {
         ja: '注文の手順',
         th: 'ขั้นตอนการวางคำสั่ง',
         vi: 'Các bước đặt lệnh',
+        id: 'Memasang order langkah demi langkah',
       },
       bullets: {
         ko: [
@@ -166,6 +170,7 @@ export const tradeGuide: PageGuide = {
         ja: 'Polymarket 専用の入力欄',
         th: 'ช่องเฉพาะของ Polymarket',
         vi: 'Các ô riêng cho Polymarket',
+        id: 'Kolom khusus Polymarket',
       },
       bullets: {
         ko: [
@@ -212,6 +217,7 @@ export const tradeGuide: PageGuide = {
         ja: '却下される条件と制限',
         th: 'ข้อจำกัดและสาเหตุที่คำสั่งถูกปฏิเสธ',
         vi: 'Giới hạn và lý do lệnh bị từ chối',
+        id: 'Batasan dan alasan sebuah order ditolak',
       },
       bullets: {
         ko: [
@@ -258,6 +264,7 @@ export const tradeGuide: PageGuide = {
         ja: '注文後にすること',
         th: 'สิ่งที่ควรทำต่อ',
         vi: 'Việc cần làm tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -306,6 +313,7 @@ export const tradeGuide: PageGuide = {
         ja: '価格欄に直接入力できないのはなぜですか？',
         th: 'ทำไมพิมพ์ในช่องราคาไม่ได้?',
         vi: 'Tại sao tôi không thể gõ vào ô giá?',
+        id: 'Kenapa saya tidak bisa mengetik di kolom harga?',
       },
       a: {
         ko: '가격 칸은 읽기 전용입니다. 모든 주문은 서버에서 조회한 실시간 가격으로만 체결되어야 하므로, "가격 가져오기" 버튼으로 받아온 값만 들어갑니다. 종목이나 Polymarket 결과·토큰 ID를 수정하면 이 값이 지워지니 다시 조회하세요.',
@@ -322,6 +330,7 @@ export const tradeGuide: PageGuide = {
         ja: 'ショートとカバーのボタンが無効になっています。',
         th: 'ปุ่ม Short และ Cover เป็นสีเทา',
         vi: 'Nút Short và Cover bị mờ.',
+        id: 'Tombol Short dan Cover berwarna abu-abu.',
       },
       a: {
         ko: '마켓이 Polymarket으로 설정되어 있기 때문입니다. 이 앱에서 Polymarket은 현물과 유사한 모의 거래라 공매도와 환매수를 지원하지 않습니다. 마켓을 미국 주식이나 암호화폐로 바꾸면 두 버튼이 다시 활성화됩니다.',
@@ -338,6 +347,7 @@ export const tradeGuide: PageGuide = {
         ja: '現金が不足していると表示されます。どう補充しますか？',
         th: 'ระบบบอกว่าเงินสดไม่พอ จะเติมอย่างไร?',
         vi: 'Báo không đủ tiền mặt. Làm sao để nạp thêm?',
+        id: 'Muncul pesan kas saya tidak cukup. Bagaimana cara menambahnya?',
       },
       a: {
         ko: '포인트 교환 페이지에서 보유 포인트를 현금으로 바꾸면 됩니다. 경고창에 필요 금액과 현재 포인트로 교환 가능한 금액이 함께 표시되니, 그 숫자를 보고 교환할 양을 정하면 됩니다. 참고로 필요 금액에는 거래대금의 0.1% 수수료가 포함되어 있습니다.',
@@ -354,6 +364,7 @@ export const tradeGuide: PageGuide = {
         ja: '取引時間外に米国株を記録できますか？',
         th: 'บันทึกการเทรดหุ้นสหรัฐหลังตลาดปิดได้ไหม?',
         vi: 'Tôi có thể ghi giao dịch cổ phiếu Mỹ sau giờ đóng cửa không?',
+        id: 'Bisakah saya mencatat transaksi saham AS setelah pasar tutup?',
       },
       a: {
         ko: '할 수 없습니다. 마켓이 미국 주식일 때는 제출 전에 장 개장 여부를 검사하며, 마감 상태면 현재 ET 시각과 함께 거절됩니다. 24시간 열려 있는 암호화폐는 언제든 기록할 수 있습니다.',

@@ -7,6 +7,7 @@ export const futuresGuide: PageGuide = {
     ja: '先物',
     th: 'ฟิวเจอร์ส',
     vi: 'Futures',
+    id: 'Futures',
   },
   summary: {
     ko: '레버리지를 걸어 롱과 숏 양방향으로 진입하는 무기한 선물 시뮬레이터입니다. 현물 터미널과 같은 구조지만 레버리지 슬라이더, 증거금, 근사 청산가가 추가됩니다.',
@@ -23,6 +24,7 @@ export const futuresGuide: PageGuide = {
         ja: '画面の構成',
         th: 'การจัดวางหน้าจอ',
         vi: 'Bố cục màn hình',
+        id: 'Bagaimana layar ini disusun',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const futuresGuide: PageGuide = {
         ja: '板情報と価格の読み方',
         th: 'การอ่านสมุดคำสั่งและราคา',
         vi: 'Đọc sổ lệnh và bảng giá',
+        id: 'Membaca order book dan ticker',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const futuresGuide: PageGuide = {
         ja: 'レバレッジとポジションサイズの決め方',
         th: 'การตั้งเลเวอเรจและกำหนดขนาดสถานะ',
         vi: 'Đặt đòn bẩy và cỡ vị thế',
+        id: 'Mengatur leverage dan menentukan ukuran posisi',
       },
       bullets: {
         ko: [
@@ -166,6 +170,7 @@ export const futuresGuide: PageGuide = {
         ja: '清算価格とリスク管理',
         th: 'ราคาล้างพอร์ตและความเสี่ยง',
         vi: 'Giá thanh lý và rủi ro',
+        id: 'Harga likuidasi dan risiko',
       },
       bullets: {
         ko: [
@@ -217,6 +222,7 @@ export const futuresGuide: PageGuide = {
         ja: 'ロング・ショートのエントリーと確認',
         th: 'การเปิด long และ short',
         vi: 'Mở long và short',
+        id: 'Membuka posisi long dan short',
       },
       bullets: {
         ko: [
@@ -268,6 +274,7 @@ export const futuresGuide: PageGuide = {
         ja: 'ポジションテーブルと決済',
         th: 'ตารางสถานะและการปิดสถานะ',
         vi: 'Bảng Vị thế và đóng vị thế',
+        id: 'Tabel Posisi dan menutup posisi',
       },
       bullets: {
         ko: [
@@ -321,6 +328,7 @@ export const futuresGuide: PageGuide = {
         ja: 'レバレッジを 100 倍にすると実際に資金を借りるのですか？',
         th: 'การเพิ่มเลเวอเรจเป็น 100× คือการกู้เงินจริงหรือไม่?',
         vi: 'Tăng đòn bẩy lên 100× có thực sự vay tiền không?',
+        id: 'Apakah menaikkan leverage ke 100× benar-benar meminjam uang?',
       },
       a: {
         ko: '아닙니다. 여기는 시뮬레이터라 레버리지는 포지션 규모와 증거금 계산에만 쓰입니다. 실제로 자금을 빌리거나 어딘가로 이체하지 않으며, 손익은 선형으로 계산되고 청산가도 근사치입니다.',
@@ -369,6 +377,7 @@ export const futuresGuide: PageGuide = {
         ja: '清算価格のボックスが表示されません。',
         th: 'กล่องราคาล้างพอร์ตไม่แสดง',
         vi: 'Ô giá thanh lý không hiển thị.',
+        id: 'Kotak harga likuidasi tidak muncul.',
       },
       a: {
         ko: '수량이 0이거나 비어 있으면 나타나지 않습니다. 수량이나 주문 금액을 입력하거나 % 버튼을 눌러 값을 채우면 롱과 숏의 근사 청산가가 표시됩니다. 이 박스는 현물 화면에는 없고 선물에만 있습니다.',

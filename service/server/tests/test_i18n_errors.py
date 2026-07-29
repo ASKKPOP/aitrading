@@ -12,11 +12,12 @@ import re
 
 import pytest
 
+from analysis_agents import LANG_NAMES
 from i18n_errors import _parse_accept_language, translate
 from i18n_errors_data import MESSAGES
 
 SERVER = pathlib.Path(__file__).resolve().parent.parent
-LANGS = ("ko", "ja", "th", "vi")
+LANGS = tuple(l for l in LANG_NAMES if l != "en")
 
 # A bare "{}" or an indexed "{0}"; anything else in the string is literal.
 _SLOT = re.compile(r"\{(\d*)\}")
@@ -26,32 +27,42 @@ def _slots(text: str) -> list[str]:
     return _SLOT.findall(text)
 
 
+def _literal(node):
+    """A string literal, with f-string slots collapsed to the "{}" form the
+    catalogue keys use. None for anything that is not a plain string."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        return "".join(
+            v.value if isinstance(v, ast.Constant) and isinstance(v.value, str)
+            else "{}"
+            for v in node.values
+        )
+    return None
+
+
+# The catalogues themselves hold every key as a literal, so scanning them
+# would make the staleness guard below match itself and pass vacuously.
+_CATALOGUE_MODULES = {"i18n_errors_data.py", "notifications_i18n.py", "email_i18n.py"}
+
+
+def _backend_trees():
+    for path in SERVER.rglob("*.py"):
+        if "tests" in path.parts or path.name in _CATALOGUE_MODULES:
+            continue
+        try:
+            yield ast.parse(path.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+
+
 def _raised_strings() -> set[str]:
-    """Every literal error message the backend raises, f-strings collapsed to
-    the same "{}" form the catalogue keys use."""
+    """Every literal error message the backend raises."""
     found: set[str] = set()
-
-    def literal(node):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.JoinedStr):
-            return "".join(
-                v.value if isinstance(v, ast.Constant) and isinstance(v.value, str)
-                else "{}"
-                for v in node.values
-            )
-        return None
-
     raisers = {"HTTPException", "ValueError", "StartConflict",
                "EntitlementDenied", "LookupError", "PermissionError",
                "FleetConflict"}
-    for path in SERVER.rglob("*.py"):
-        if "tests" in path.parts:
-            continue
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-        except (SyntaxError, UnicodeDecodeError):
-            continue
+    for tree in _backend_trees():
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -60,9 +71,28 @@ def _raised_strings() -> set[str]:
                 continue
             if name == "HTTPException":
                 for kw in node.keywords:
-                    if kw.arg == "detail" and (text := literal(kw.value)):
+                    if kw.arg == "detail" and (text := _literal(kw.value)):
                         found.add(text)
-            elif node.args and (text := literal(node.args[0])):
+            elif node.args and (text := _literal(node.args[0])):
+                found.add(text)
+    return found
+
+
+def _authored_strings() -> set[str]:
+    """Every string literal in the backend.
+
+    Since 2026-07-28 the catalogue is no longer only "things we raise": the
+    free-form alert params (exc / why / detail / filled_txt) are offered to it
+    too, and those sentences reach a member by being returned from a helper or
+    assigned to a local — never by being raised. Scanning every literal keeps
+    the guard below honest about the property it actually protects (reword a
+    string and its key stops matching) without the test needing to model each
+    new way a sentence can travel.
+    """
+    found: set[str] = set()
+    for tree in _backend_trees():
+        for node in ast.walk(tree):
+            if (text := _literal(node)) is not None:
                 found.add(text)
     return found
 
@@ -118,12 +148,12 @@ def test_indexed_placeholders_are_in_range(lang):
                 )
 
 
-def test_every_catalogue_key_is_actually_raised():
+def test_every_catalogue_key_still_exists_in_the_backend():
     """Catches the reworded-error case: the key drifts, the lookup silently
     stops matching, and the user quietly gets English again."""
-    stale = sorted(set(MESSAGES) - _raised_strings())
+    stale = sorted(set(MESSAGES) - _raised_strings() - _authored_strings())
     assert not stale, (
-        "catalogue keys no longer raised anywhere (reworded or removed?):\n  "
+        "catalogue keys no longer written anywhere (reworded or removed?):\n  "
         + "\n  ".join(repr(s) for s in stale)
     )
 

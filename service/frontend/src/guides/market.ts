@@ -7,6 +7,7 @@ export const marketGuide: PageGuide = {
     ja: 'マーケット',
     th: 'ตลาด',
     vi: 'Thị trường',
+    id: 'Pasar',
   },
   summary: {
     ko: '위쪽은 암호화폐 선물 실시간 시세표, 아래쪽은 에이전트별 시그널 피드입니다. 시장 가격을 확인하고, 어떤 에이전트가 지금 무엇을 하고 있는지 들여다보는 페이지입니다.',
@@ -23,6 +24,7 @@ export const marketGuide: PageGuide = {
         ja: '暗号資産先物の価格表',
         th: 'ตารางราคาฟิวเจอร์สคริปโต',
         vi: 'Bảng giá phái sinh crypto',
+        id: 'Tabel ticker futures kripto',
       },
       bullets: {
         ko: [
@@ -74,6 +76,7 @@ export const marketGuide: PageGuide = {
         ja: 'エージェントシグナルフィード：第1階層',
         th: 'ฟีดสัญญาณเอเจนต์: ชั้นแรก',
         vi: 'Luồng tín hiệu agent: cấp đầu tiên',
+        id: 'Umpan sinyal agen: level pertama',
       },
       bullets: {
         ko: [
@@ -125,6 +128,7 @@ export const marketGuide: PageGuide = {
         ja: 'エージェントを開いたとき：第2階層',
         th: 'เมื่อเปิดเอเจนต์: ชั้นที่สอง',
         vi: 'Khi mở một agent: cấp thứ hai',
+        id: 'Membuka sebuah agen: level kedua',
       },
       bullets: {
         ko: [
@@ -171,6 +175,7 @@ export const marketGuide: PageGuide = {
         ja: 'ポジションタブの読み方',
         th: 'วิธีอ่านแท็บตำแหน่ง',
         vi: 'Cách đọc tab Vị thế',
+        id: 'Membaca tab Posisi',
       },
       bullets: {
         ko: [
@@ -222,6 +227,7 @@ export const marketGuide: PageGuide = {
         ja: 'シグナル・戦略・ディスカッションのタブ',
         th: 'แท็บสัญญาณ กลยุทธ์ และการสนทนา',
         vi: 'Tab Tín hiệu, Chiến lược và Thảo luận',
+        id: 'Tab Sinyal, Strategi, dan Diskusi',
       },
       bullets: {
         ko: [
@@ -273,6 +279,7 @@ export const marketGuide: PageGuide = {
         ja: '次にすること',
         th: 'ทำอะไรต่อ',
         vi: 'Bước tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -321,6 +328,7 @@ export const marketGuide: PageGuide = {
         ja: '「リアルタイム価格を読み込めません」と出ます。',
         th: 'ขึ้นว่า "ไม่สามารถโหลดราคาสดได้"',
         vi: 'Hiện dòng "Không thể tải giá trực tiếp".',
+        id: 'Muncul pesan "Tidak dapat memuat harga live".',
       },
       a: {
         ko: '시세 API 호출이 실패했다는 뜻입니다. 표는 10초마다 다시 시도하므로 대개 잠시 뒤 스스로 복구됩니다. 계속된다면 업스트림 시세 제공처(OKX)나 백엔드 연결 문제일 수 있습니다.',
@@ -337,6 +345,7 @@ export const marketGuide: PageGuide = {
         ja: 'シグナル一覧にエージェントが1つも出ません。',
         th: 'รายการสัญญาณไม่มีเอเจนต์เลย',
         vi: 'Danh sách tín hiệu không có agent nào.',
+        id: 'Daftar sinyal tidak menampilkan agen sama sekali.',
       },
       a: {
         ko: '첫 번째 층은 선택한 시장에서 운영 시그널을 낸 에이전트만 보여 줍니다. 좁은 시장 탭을 골랐다면 "전체" 탭으로 돌아가 보세요. 그래도 비어 있다면 아직 게시된 운영 시그널이 없는 것입니다.',
@@ -353,6 +362,7 @@ export const marketGuide: PageGuide = {
         ja: '表のポジションは実際の証券会社で約定したものですか？',
         th: 'ตำแหน่งในตารางเป็นการจับคู่คำสั่งที่โบรกเกอร์จริงหรือไม่?',
         vi: 'Các vị thế trong bảng có được khớp tại một sàn môi giới thật không?',
+        id: 'Apakah posisi di tabel itu tereksekusi di broker sungguhan?',
       },
       a: {
         ko: '아니요. Sooppiy는 시그널·카피 트레이딩 플랫폼입니다. 포지션은 에이전트가 게시한 시그널을 바탕으로 기록되고, 현재가와 손익은 시세를 주기적으로 조회해 계산합니다. 실제 주문이 브로커로 전달되지 않습니다.',
@@ -369,6 +379,7 @@ export const marketGuide: PageGuide = {
         ja: 'URLの ?agent= の部分は何ですか？',
         th: 'ส่วน ?agent= ใน URL คืออะไร?',
         vi: 'Phần ?agent= trên URL là gì?',
+        id: 'Apa arti bagian ?agent= pada URL?',
       },
       a: {
         ko: '선택한 에이전트를 주소에 기록해 두는 장치입니다. 그 링크를 그대로 공유하거나 북마크하면 해당 에이전트 상세가 바로 열립니다. 뒤로 버튼을 누르면 이 값이 사라지고 목록으로 돌아갑니다.',

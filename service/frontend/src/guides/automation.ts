@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const automationGuide: PageGuide = {
-  title: { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' },
+  title: { ko: '자동화', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa', id: 'Otomatisasi' },
   summary: {
     ko: 'AI 분석을 정해진 주기로 반복 실행하고, 결정이 내가 정한 조건에 부합할 때만 모의 거래를 남기는 규칙을 만드는 곳입니다. 매번 직접 분석 버튼을 누르지 않고 전략을 굴리고 싶은 사용자를 위한 페이지입니다.',
     en: 'Where you create rules that re-run the AI analysis on a schedule and paper-trade only when the decision meets the conditions you set. For users who want a strategy running without pressing Analyze every time.',
@@ -11,7 +11,7 @@ export const automationGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: 'AI 애널리스트 — 일회성 분석 실행', en: 'AI Analyst — running a one-off analysis', ja: 'AIアナリスト — 1回限りの分析', th: 'นักวิเคราะห์ AI — วิเคราะห์ครั้งเดียว', vi: 'Nhà phân tích AI — phân tích một lần' },
+      heading: { ko: 'AI 애널리스트 — 일회성 분석 실행', en: 'AI Analyst — running a one-off analysis', ja: 'AIアナリスト — 1回限りの分析', th: 'นักวิเคราะห์ AI — วิเคราะห์ครั้งเดียว', vi: 'Nhà phân tích AI — phân tích một lần', id: 'Analis AI — menjalankan analisis sekali jalan' },
       bullets: {
         ko: [
           '페이지 맨 위의 AI 애널리스트 패널에서 종목과 시장을 고르고 「분석 실행」을 누르면, 네 명의 AI 애널리스트(뉴스·심리·펀더멘털&매크로·기술적 분석)가 각자 브리프를 쓰고 트레이더와 리스크 담당이 이를 종합해 매수·매도·관망 결정과 리포트를 내놓습니다.',
@@ -51,7 +51,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '페이지 구성과 4가지 모드', en: 'Page layout and the four modes', ja: '画面構成と4つのモード', th: 'โครงหน้าและ 4 โหมด', vi: 'Bố cục trang và bốn chế độ' },
+      heading: { ko: '페이지 구성과 4가지 모드', en: 'Page layout and the four modes', ja: '画面構成と4つのモード', th: 'โครงหน้าและ 4 โหมด', vi: 'Bố cục trang và bốn chế độ', id: 'Tata letak halaman dan empat mode' },
       bullets: {
         ko: [
           '상단의 알약 버튼 4개가 모드 선택기입니다 — ⓪ 완전 위임 · ① 간편 · ② 표준 · ③ 전문가. 아래 설명 줄이 선택한 모드에 맞춰 바뀝니다.',
@@ -91,7 +91,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '⓪ 완전 위임 모드 — 예산만 정하기', en: 'Mode ⓪ Agent — set only a budget', ja: 'モード⓪ 完全委任 — 予算だけ設定', th: 'โหมด ⓪ มอบหมายเต็มรูปแบบ — ตั้งแค่งบ', vi: 'Chế độ ⓪ Ủy quyền — chỉ đặt ngân sách' },
+      heading: { ko: '⓪ 완전 위임 모드 — 예산만 정하기', en: 'Mode ⓪ Agent — set only a budget', ja: 'モード⓪ 完全委任 — 予算だけ設定', th: 'โหมด ⓪ มอบหมายเต็มรูปแบบ — ตั้งแค่งบ', vi: 'Chế độ ⓪ Ủy quyền — chỉ đặt ngân sách', id: 'Mode ⓪ Agen — cukup tetapkan anggaran' },
       bullets: {
         ko: [
           '입력값은 「총 예산 ($)」 하나뿐입니다. 최소 100달러부터 입력할 수 있고, 그보다 작으면 시작 버튼이 비활성화됩니다.',
@@ -136,7 +136,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '① 간편 모드 — 코인과 위험 성향만 선택', en: 'Mode ① Simple — pick a coin and a risk level', ja: 'モード① かんたん — コインとリスクだけ選択', th: 'โหมด ① ง่าย — เลือกเหรียญและความเสี่ยง', vi: 'Chế độ ① Đơn giản — chọn coin và mức rủi ro' },
+      heading: { ko: '① 간편 모드 — 코인과 위험 성향만 선택', en: 'Mode ① Simple — pick a coin and a risk level', ja: 'モード① かんたん — コインとリスクだけ選択', th: 'โหมด ① ง่าย — เลือกเหรียญและความเสี่ยง', vi: 'Chế độ ① Đơn giản — chọn coin và mức rủi ro', id: 'Mode ① Sederhana — pilih koin dan tingkat risiko' },
       bullets: {
         ko: [
           '종목은 BTC · ETH · SOL · 🔍 AI 자동 선택(SCANNER) 중에서 고릅니다. SCANNER를 고르면 스캐너가 거래량 급증과 신규 상장에서 후보를 찾아 매 사이클 종목을 정합니다.',
@@ -176,7 +176,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '② 표준 모드 — 핵심 4개 값 직접 조정', en: 'Mode ② Guided — set the four key values yourself', ja: 'モード② 標準 — 主要4項目を自分で調整', th: 'โหมด ② มาตรฐาน — ปรับ 4 ค่าหลักเอง', vi: 'Chế độ ② Tiêu chuẩn — tự chỉnh bốn giá trị chính' },
+      heading: { ko: '② 표준 모드 — 핵심 4개 값 직접 조정', en: 'Mode ② Guided — set the four key values yourself', ja: 'モード② 標準 — 主要4項目を自分で調整', th: 'โหมด ② มาตรฐาน — ปรับ 4 ค่าหลักเอง', vi: 'Chế độ ② Tiêu chuẩn — tự chỉnh bốn giá trị chính', id: 'Mode ② Terpandu — tetapkan sendiri empat nilai utamanya' },
       bullets: {
         ko: [
           '종목 드롭다운에서 BTC · ETH · SOL · XRP · DOGE · SCANNER를 고를 수 있습니다. 추천: BTC·ETH가 데이터가 가장 풍부합니다.',
@@ -221,7 +221,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '③ 전문가 모드 — 시장 · 제공자 · 계정 · 시간대', en: 'Mode ③ Pro — market, provider, account, schedule', ja: 'モード③ プロ — 市場・プロバイダー・口座・時間帯', th: 'โหมด ③ มืออาชีพ — ตลาด ผู้ให้บริการ บัญชี ตาราง', vi: 'Chế độ ③ Chuyên nghiệp — thị trường, nhà cung cấp, tài khoản, lịch' },
+      heading: { ko: '③ 전문가 모드 — 시장 · 제공자 · 계정 · 시간대', en: 'Mode ③ Pro — market, provider, account, schedule', ja: 'モード③ プロ — 市場・プロバイダー・口座・時間帯', th: 'โหมด ③ มืออาชีพ — ตลาด ผู้ให้บริการ บัญชี ตาราง', vi: 'Chế độ ③ Chuyên nghiệp — thị trường, nhà cung cấp, tài khoản, lịch', id: 'Mode ③ Pro — pasar, penyedia, akun, jadwal' },
       bullets: {
         ko: [
           '표준 모드의 네 값에 더해 시장(crypto / us-stock), AI 제공자, 계정 유형을 직접 지정합니다. 종목은 검색형 선택기로 시장에 맞는 목록에서 고릅니다.',
@@ -266,7 +266,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '내 자동화 규칙 목록과 테스트 실행', en: 'Your automation rules and test runs', ja: '自動売買ルール一覧とテスト実行', th: 'รายการกฎอัตโนมัติและการทดสอบ', vi: 'Danh sách quy tắc và chạy thử' },
+      heading: { ko: '내 자동화 규칙 목록과 테스트 실행', en: 'Your automation rules and test runs', ja: '自動売買ルール一覧とテスト実行', th: 'รายการกฎอัตโนมัติและการทดสอบ', vi: 'Danh sách quy tắc và chạy thử', id: 'Aturan otomatisasi dan uji coba Anda' },
       bullets: {
         ko: [
           '규칙 한 줄에는 종목(또는 🤖 완전 위임 · 예산, 🔍 AI 자동 선택), 시장 · 제공자 · 주기 · 최소 신뢰도(%) · 금액 · 계정이 순서대로 표시됩니다.',
@@ -311,7 +311,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '최근 실행 기록과 스킵 사유 읽기', en: 'Reading recent runs and skip reasons', ja: '実行履歴とスキップ理由の読み方', th: 'อ่านประวัติล่าสุดและเหตุผลที่ข้าม', vi: 'Đọc lần chạy gần đây và lý do bỏ qua' },
+      heading: { ko: '최근 실행 기록과 스킵 사유 읽기', en: 'Reading recent runs and skip reasons', ja: '実行履歴とスキップ理由の読み方', th: 'อ่านประวัติล่าสุดและเหตุผลที่ข้าม', vi: 'Đọc lần chạy gần đây và lý do bỏ qua', id: 'Membaca run terkini dan alasan dilewati' },
       bullets: {
         ko: [
           '최근 실행은 최대 15건이 시각 · 결정 · 신뢰도 순으로 표시됩니다. 결정은 buy가 초록, sell이 빨강, 그 외가 노랑입니다.',
@@ -356,7 +356,7 @@ export const automationGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '안전장치와 다음에 할 일', en: 'Safety rails and what to do next', ja: '安全装置と次のステップ', th: 'กลไกความปลอดภัยและขั้นถัดไป', vi: 'Rào an toàn và bước tiếp theo' },
+      heading: { ko: '안전장치와 다음에 할 일', en: 'Safety rails and what to do next', ja: '安全装置と次のステップ', th: 'กลไกความปลอดภัยและขั้นถัดไป', vi: 'Rào an toàn và bước tiếp theo', id: 'Pengaman dan langkah selanjutnya' },
       bullets: {
         ko: [
           '이 페이지의 거래는 전부 모의 자금입니다. 결정이 나오면 시그널로 기록되고 가격 폴링으로 손익이 추적될 뿐, 실제 브로커에 주문이 나가지 않습니다.',
@@ -409,6 +409,7 @@ export const automationGuide: PageGuide = {
         ja: 'ルールを作ったのに実行履歴に何も出ません。なぜ?',
         th: 'สร้างกฎแล้วแต่ประวัติล่าสุดยังว่าง เพราะอะไร',
         vi: 'Tôi đã tạo quy tắc nhưng lần chạy gần đây trống. Tại sao?',
+        id: 'Saya membuat aturan tetapi tidak ada yang muncul di run terkini. Kenapa?',
       },
       a: {
         ko: '워커는 매분 만기된 규칙을 확인하지만, 규칙은 설정한 주기가 지나야 처음 실행됩니다. 예를 들어 주기가 60분이면 최대 한 시간을 기다려야 합니다. 전문가 모드에서 거래 시간대를 켰다면 지정한 요일·시간 밖에서는 실행되지 않습니다. 기다리기 싫다면 「▶ 지금 테스트 실행」으로 파이프라인이 정상 동작하는지 바로 확인하세요.',
@@ -425,6 +426,7 @@ export const automationGuide: PageGuide = {
         ja: '実行はされるのに毎回スキップされます。どう直しますか?',
         th: 'กฎทำงานแต่ถูกข้ามตลอด แก้อย่างไร',
         vi: 'Quy tắc có chạy nhưng luôn bị bỏ qua. Sửa thế nào?',
+        id: 'Run berjalan tetapi terus dilewati. Bagaimana memperbaikinya?',
       },
       a: {
         ko: '실행 줄에 표시된 스킵 사유부터 읽으세요. 「자동 실행 꺼짐」이면 규칙의 자동 실행 체크박스를 켜야 하고, 「신뢰도 … 임계값 미달」이면 최소 신뢰도를 낮추거나 그대로 두고 더 강한 신호를 기다리면 됩니다. 게이트웨이 미설정이나 약관 미동의로 라이브가 거부됐다면 계좌 페이지에서 브로커를 연결하고 약관에 동의하세요 — 실제 자금을 쓰기 전에 shadow로 먼저 검증하는 것을 권합니다.',
@@ -441,6 +443,7 @@ export const automationGuide: PageGuide = {
         ja: 'テスト実行で買いと出たのにポジションができないのはなぜ?',
         th: 'ทดสอบแล้วได้ผลว่าซื้อ ทำไมไม่มีสถานะเกิดขึ้น',
         vi: 'Chạy thử ra kết quả mua — sao không có vị thế nào?',
+        id: 'Uji coba menyarankan beli — kenapa tidak ada posisi yang muncul?',
       },
       a: {
         ko: '테스트 실행은 분석 파이프라인만 돌립니다. 워커가 예약 실행에서 적용하는 자동 실행 여부, 최소 신뢰도, 리스크 게이트 같은 체결 조건은 테스트 실행 경로에 포함되지 않으며, 어떤 주문도 남지 않습니다. 실제 모의 체결은 예약된 사이클에서만 생깁니다.',

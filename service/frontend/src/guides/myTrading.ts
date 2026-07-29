@@ -7,6 +7,7 @@ export const myTradingGuide: PageGuide = {
     ja: 'マイトレード',
     th: 'การเทรดของฉัน',
     vi: 'Giao dịch của tôi',
+    id: 'Trading saya',
   },
   summary: {
     ko: '로그인한 본인의 계정 상태와 포지션, 팔로우 중인 에이전트, 전략을 한 화면에 모아 보는 개인 대시보드입니다. 로그인한 회원이라면 누구나 자신의 현황을 확인할 때 사용합니다.',
@@ -23,6 +24,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'アカウントヘッダーの見方',
         th: 'สิ่งที่ส่วนหัวบัญชีแสดง',
         vi: 'Phần đầu tài khoản hiển thị gì',
+        id: 'Apa yang ditampilkan header akun',
       },
       bullets: {
         ko: [
@@ -64,6 +66,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'ポジションセクションの読み方',
         th: 'อ่านส่วนตำแหน่ง',
         vi: 'Đọc phần Vị thế',
+        id: 'Membaca bagian Posisi',
       },
       bullets: {
         ko: [
@@ -110,6 +113,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'フォロー中 — コピー対象の管理',
         th: 'กำลังติดตาม — เป้าหมายที่คัดลอก',
         vi: 'Đang theo dõi — mục tiêu sao chép',
+        id: 'Following — target salinan Anda',
       },
       bullets: {
         ko: [
@@ -156,6 +160,7 @@ export const myTradingGuide: PageGuide = {
         ja: '戦略リストとバックテストバッジ',
         th: 'รายการกลยุทธ์และป้ายแบ็คเทสต์',
         vi: 'Danh sách chiến lược và huy hiệu backtest',
+        id: 'Strategi dan lencana backtest',
       },
       bullets: {
         ko: [
@@ -202,6 +207,7 @@ export const myTradingGuide: PageGuide = {
         ja: '損益履歴と次のステップ',
         th: 'ประวัติกำไรขาดทุนและขั้นตอนถัดไป',
         vi: 'Lịch sử lãi lỗ và bước tiếp theo',
+        id: 'Riwayat laba rugi dan langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -245,6 +251,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'なぜサインインページに戻されるのですか？',
         th: 'ทำไมถึงถูกดีดกลับไปหน้าเข้าสู่ระบบ',
         vi: 'Vì sao tôi bị đưa về trang đăng nhập?',
+        id: 'Kenapa saya dilempar ke halaman masuk?',
       },
       a: {
         ko: '이 페이지는 로그인이 필수입니다. 토큰이 없거나 만료·해지된 경우 자동으로 로그아웃 처리되고 로그인 화면으로 이동합니다. 다시 로그인하면 그대로 돌아올 수 있습니다.',
@@ -261,6 +268,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'ポジションの「現在」価格が — のままです。',
         th: 'ราคา "ปัจจุบัน" ของตำแหน่งขึ้นเป็น — ตลอด',
         vi: 'Giá "Hiện tại" của vị thế cứ hiện dấu —.',
+        id: 'Harga "Saat ini" pada sebuah posisi terus menampilkan —.',
       },
       a: {
         ko: '현재가는 실시간 스트리밍이 아니라 주기적인 시세 조회로 채워집니다. 해당 종목의 가격을 아직 가져오지 못했거나 시장이 닫혀 있으면 —로 남습니다. 잠시 후 새로고침해 보세요.',
@@ -277,6 +285,7 @@ export const myTradingGuide: PageGuide = {
         ja: 'ここから直接注文したりポジションを閉じたりできますか？',
         th: 'สั่งซื้อขายหรือปิดตำแหน่งจากหน้านี้ได้ไหม',
         vi: 'Tôi có thể đặt lệnh hoặc đóng vị thế từ đây không?',
+        id: 'Bisakah saya memasang order atau menutup posisi dari sini?',
       },
       a: {
         ko: '아니요. 이 페이지는 읽기 전용 요약 화면입니다. Sooppiy는 시그널·복제 트레이딩 플랫폼이라 실제 증권사로 주문을 보내지 않으며, 여기 표시되는 포지션은 시세 조회로 추적되는 기록입니다.',
@@ -293,6 +302,7 @@ export const myTradingGuide: PageGuide = {
         ja: '一部のセクションだけ空ですが、エラーメッセージは出ていません。',
         th: 'บางส่วนว่างเปล่าแต่ไม่มีข้อความแสดงข้อผิดพลาด',
         vi: 'Một vài phần trống nhưng không có thông báo lỗi.',
+        id: 'Beberapa bagian kosong tetapi tidak ada pesan galat.',
       },
       a: {
         ko: '포지션·팔로잉·전략은 각각 따로 불러오며 한쪽이 실패해도 나머지는 그대로 표시됩니다. 계정 정보를 불러오지 못했을 때만 상단에 붉은 오류 문구가 나타납니다. 실제로 아직 데이터가 없는 경우가 대부분입니다.',

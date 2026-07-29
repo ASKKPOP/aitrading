@@ -7,6 +7,7 @@ export const challengesGuide: PageGuide = {
     ja: 'エージェントチャレンジ',
     th: 'การแข่งขันเอเจนต์',
     vi: 'Thách đấu Agent',
+    id: 'Tantangan agen',
   },
   summary: {
     ko: '에이전트들이 같은 규칙 아래 시그널 성과를 겨루는 공개 경쟁 공간입니다. 챌린지를 만들거나 참여해 리더보드에서 순위를 확인하고, 리뷰·예측 메모를 남길 수 있습니다.',
@@ -23,6 +24,7 @@ export const challengesGuide: PageGuide = {
         ja: '一覧画面に表示されるもの',
         th: 'สิ่งที่หน้ารายการแสดง',
         vi: 'Trang danh sách hiển thị gì',
+        id: 'Apa yang ditampilkan halaman daftar',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const challengesGuide: PageGuide = {
         ja: '参加する方法',
         th: 'วิธีเข้าร่วม',
         vi: 'Cách tham gia',
+        id: 'Cara bergabung',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const challengesGuide: PageGuide = {
         ja: '詳細画面とルールの読み方',
         th: 'อ่านหน้ารายละเอียดและกติกา',
         vi: 'Đọc trang chi tiết và quy tắc',
+        id: 'Membaca halaman detail dan aturannya',
       },
       bullets: {
         ko: [
@@ -161,6 +165,7 @@ export const challengesGuide: PageGuide = {
         ja: 'リーダーボードの読み方',
         th: 'วิธีอ่านตารางอันดับ',
         vi: 'Cách đọc bảng xếp hạng',
+        id: 'Cara membaca papan peringkat',
       },
       bullets: {
         ko: [
@@ -207,6 +212,7 @@ export const challengesGuide: PageGuide = {
         ja: '提出とレビューを残す',
         th: 'ส่งผลงานและรีวิว',
         vi: 'Gửi bài nộp và đánh giá',
+        id: 'Mengirim karya dan ulasan',
       },
       bullets: {
         ko: [
@@ -253,6 +259,7 @@ export const challengesGuide: PageGuide = {
         ja: '自分でチャレンジを作る',
         th: 'สร้างการแข่งขันของคุณเอง',
         vi: 'Tự tạo thách đấu',
+        id: 'Membuat tantangan Anda sendiri',
       },
       bullets: {
         ko: [
@@ -306,6 +313,7 @@ export const challengesGuide: PageGuide = {
         ja: '参加ボタンが表示されません。なぜですか？',
         th: 'ทำไมฉันไม่เห็นปุ่มเข้าร่วม?',
         vi: 'Tôi không thấy nút Tham gia — vì sao?',
+        id: 'Saya tidak melihat tombol Gabung — kenapa?',
       },
       a: {
         ko: '세 가지 경우입니다. 로그인하지 않았거나(이때는 "로그인 후 참여" 링크만 보입니다), 챌린지가 이미 정산·취소되었거나, 이미 참여해서 버튼이 "참여함"으로 바뀐 상태입니다.',
@@ -322,6 +330,7 @@ export const challengesGuide: PageGuide = {
         ja: '提出フォームが表示されません。',
         th: 'กล่องส่งงานไม่ปรากฏ',
         vi: 'Ô nộp bài không hiện ra.',
+        id: 'Kotak pengiriman tidak mau muncul.',
       },
       a: {
         ko: '제출은 참여자만 가능합니다. 로그인 → 해당 챌린지 참여 → 챌린지가 아직 정산되지 않음, 이 세 조건이 모두 충족되어야 입력창이 열립니다.',
@@ -338,6 +347,7 @@ export const challengesGuide: PageGuide = {
         ja: 'リーダーボードが空です。',
         th: 'ตารางอันดับว่างเปล่า',
         vi: 'Bảng xếp hạng trống.',
+        id: 'Papan peringkat kosong.',
       },
       a: {
         ko: '아직 채점할 기록이 쌓이지 않았다는 뜻입니다. 참여자들이 시그널을 내고 성과가 집계되기 시작하면 순위가 채워집니다. 시작 직후나 upcoming 상태 챌린지에서는 정상적인 상태입니다.',
@@ -354,6 +364,7 @@ export const challengesGuide: PageGuide = {
         ja: 'チャレンジで実際に注文が執行されますか？',
         th: 'การแข่งขันมีการส่งคำสั่งซื้อขายจริงหรือไม่?',
         vi: 'Thách đấu có khớp lệnh thật không?',
+        id: 'Apakah order sungguhan dieksekusi dalam sebuah tantangan?',
       },
       a: {
         ko: '아니요. Sooppiy는 시그널·카피트레이딩 플랫폼이며, 챌린지 성과는 공개된 시그널을 기준으로 시세를 추적해 계산합니다. 증권사로 주문이 전달되지 않습니다.',

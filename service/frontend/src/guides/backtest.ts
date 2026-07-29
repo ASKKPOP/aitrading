@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const backtestGuide: PageGuide = {
-  title: { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' },
+  title: { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest', id: 'Backtest' },
   summary: {
     ko: '특정 에이전트가 실제로 기록한 거래를 선택한 기간 동안 저장된 체결 가격으로 되짚어 성과를 계산합니다. 팔로우할 에이전트를 고르기 전에 검증하려는 사용자와, 자기 전략의 실적을 증명하려는 에이전트 운영자를 위한 페이지입니다.',
     en: 'Replays the trades an agent actually recorded over a chosen window against stored execution prices, then scores the result. Built for followers vetting an agent before copying, and for agent operators proving a strategy has a track record.',
@@ -11,7 +11,7 @@ export const backtestGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '이 페이지가 하는 일 (그리고 하지 않는 일)', en: 'What this page does — and does not — do', ja: 'このページができること・できないこと', th: 'หน้านี้ทำอะไร และไม่ทำอะไร', vi: 'Trang này làm gì — và không làm gì' },
+      heading: { ko: '이 페이지가 하는 일 (그리고 하지 않는 일)', en: 'What this page does — and does not — do', ja: 'このページができること・できないこと', th: 'หน้านี้ทำอะไร และไม่ทำอะไร', vi: 'Trang này làm gì — và không làm gì', id: 'Apa yang halaman ini lakukan — dan tidak lakukan' },
       bullets: {
         ko: [
           '이미 기록된 에이전트의 거래를 재생하는 도구입니다. 임의의 규칙이나 새 전략을 시뮬레이션하는 곳이 아닙니다.',
@@ -46,7 +46,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '파라미터 입력하기', en: 'Filling in the parameters', ja: 'パラメーターの入力', th: 'การกรอกพารามิเตอร์', vi: 'Điền tham số' },
+      heading: { ko: '파라미터 입력하기', en: 'Filling in the parameters', ja: 'パラメーターの入力', th: 'การกรอกพารามิเตอร์', vi: 'Điền tham số', id: 'Mengisi parameter' },
       bullets: {
         ko: [
           '에이전트 ID — 필수. 재생할 에이전트의 숫자 ID입니다. 리더보드나 에이전트 프로필 주소(/agent/123)에서 확인할 수 있습니다.',
@@ -91,7 +91,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '실행 방식: 로그인 여부에 따라 달라집니다', en: 'How a run executes — it depends on whether you are logged in', ja: '実行方式はログイン状態で変わります', th: 'วิธีการรัน ขึ้นกับว่าคุณล็อกอินหรือไม่', vi: 'Cách chạy — tuỳ vào bạn đã đăng nhập hay chưa' },
+      heading: { ko: '실행 방식: 로그인 여부에 따라 달라집니다', en: 'How a run executes — it depends on whether you are logged in', ja: '実行方式はログイン状態で変わります', th: 'วิธีการรัน ขึ้นกับว่าคุณล็อกอินหรือไม่', vi: 'Cách chạy — tuỳ vào bạn đã đăng nhập hay chưa', id: 'Cara sebuah run dieksekusi — tergantung apakah Anda sudah masuk' },
       bullets: {
         ko: [
           '로그인 상태에서는 백테스트가 서버에 작업으로 등록되고, 페이지가 1.5초마다 상태를 확인합니다. 버튼 문구가 대기 중 → 실행 중 → 완료 순으로 바뀝니다.',
@@ -131,7 +131,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '요약 카드 읽는 법', en: 'Reading the summary cards', ja: 'サマリーカードの読み方', th: 'วิธีอ่านการ์ดสรุป', vi: 'Đọc các thẻ tóm tắt' },
+      heading: { ko: '요약 카드 읽는 법', en: 'Reading the summary cards', ja: 'サマリーカードの読み方', th: 'วิธีอ่านการ์ดสรุป', vi: 'Đọc các thẻ tóm tắt', id: 'Membaca kartu ringkasan' },
       bullets: {
         ko: [
           '총 수익률 — 초기 자금 대비 기간 전체 손익 비율. 양수면 초록, 음수면 빨강으로 표시되고 같은 색이 포트폴리오 곡선에도 쓰입니다.',
@@ -176,7 +176,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '포트폴리오 곡선과 벤치마크', en: 'The portfolio curve and its benchmark', ja: 'ポートフォリオ推移とベンチマーク', th: 'กราฟพอร์ตโฟลิโอและเกณฑ์เปรียบเทียบ', vi: 'Đường cong danh mục và mốc so sánh' },
+      heading: { ko: '포트폴리오 곡선과 벤치마크', en: 'The portfolio curve and its benchmark', ja: 'ポートフォリオ推移とベンチマーク', th: 'กราฟพอร์ตโฟลิโอและเกณฑ์เปรียบเทียบ', vi: 'Đường cong danh mục và mốc so sánh', id: 'Kurva portofolio dan tolok ukurnya' },
       bullets: {
         ko: [
           '실선은 시점별 포트폴리오 총가치이며, 총 수익률과 같은 색(초록/빨강)을 씁니다. 데이터 포인트가 둘 이상일 때만 차트가 그려집니다.',
@@ -216,7 +216,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '포지션과 거래 내역 표', en: 'The positions and trades tables', ja: 'ポジションとトレード履歴の表', th: 'ตารางโพซิชันและการเทรด', vi: 'Bảng vị thế và giao dịch' },
+      heading: { ko: '포지션과 거래 내역 표', en: 'The positions and trades tables', ja: 'ポジションとトレード履歴の表', th: 'ตารางโพซิชันและการเทรด', vi: 'Bảng vị thế và giao dịch', id: 'Tabel posisi dan transaksi' },
       bullets: {
         ko: [
           '미결제 포지션 — 기간이 끝난 시점에도 열려 있던 포지션입니다. 종목, 방향, 수량, 평균 진입가, 마지막 가격, 미실현 손익을 보여주며 손익은 초기 자금 대비 비율과 금액을 함께 표시합니다.',
@@ -261,7 +261,7 @@ export const backtestGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '실행 기록과 전략 승격', en: 'Run history and promoting to a strategy', ja: '実行履歴とストラテジー昇格', th: 'ประวัติการรันและการโปรโมตเป็นกลยุทธ์', vi: 'Lịch sử chạy và thăng cấp thành chiến lược' },
+      heading: { ko: '실행 기록과 전략 승격', en: 'Run history and promoting to a strategy', ja: '実行履歴とストラテジー昇格', th: 'ประวัติการรันและการโปรโมตเป็นกลยุทธ์', vi: 'Lịch sử chạy và thăng cấp thành chiến lược', id: 'Riwayat run dan menaikkannya menjadi strategi' },
       bullets: {
         ko: [
           '실행 기록은 로그인했고 저장된 실행이 하나 이상 있을 때만 표시됩니다. 각 줄에 실행 번호, 상태, 기간, 종목, 총 수익률이 담깁니다.',
@@ -362,6 +362,7 @@ export const backtestGuide: PageGuide = {
         ja: '実行履歴のセクションがまったく表示されません。',
         th: 'ส่วนประวัติการรันไม่ปรากฏเลย',
         vi: 'Mục Lịch sử chạy hoàn toàn không xuất hiện.',
+        id: 'Bagian Riwayat Run tidak muncul sama sekali.',
       },
       a: {
         ko: '실행 기록은 로그인한 사용자에게만, 그리고 저장된 실행이 하나 이상 있을 때만 나타납니다. 로그아웃 상태의 실행은 서버에 저장되지 않으므로 기록도 승격도 남지 않습니다. 로그인한 뒤 한 번 실행하면 목록이 생깁니다.',
