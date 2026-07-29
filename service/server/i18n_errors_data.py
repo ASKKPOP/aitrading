@@ -1797,4 +1797,302 @@ MESSAGES: dict[str, dict[str, str]] = {
         'th': '{} ต้องระบุ api_key และ api_secret',
         'vi': '{} yêu cầu api_key và api_secret',
     },
+
+    # ── engine sentences that land INSIDE a localized alert (2026-07-28) ──
+    # These are never raised as HTTPException; they reach a member through the
+    # free-form params of notifications_i18n (exc / why / detail / reason /
+    # filled_txt), which now offer their value to this catalogue. Before that,
+    # a Korean member read
+    #   '스탑 조건 평가에 실패(marks stale beyond 900s — refusing to evaluate
+    #    P&L stops on frozen prices)하여 …'
+    # — a localized sentence with an English one welded into the middle. They
+    # live here rather than in a second catalogue because the pattern index
+    # already handles the interpolated forms.
+    'marks stale beyond {}s — refusing to evaluate P&L stops on frozen prices': {
+        'ko': '시세가 {}초 넘게 갱신되지 않았습니다 — 멈춘 가격으로는 손익 스탑을 평가하지 않습니다',
+        'ja': '相場が{}秒以上更新されていません — 止まった価格で損益ストップを評価することはできません',
+        'th': 'ราคาไม่อัปเดตนานเกิน {} วินาที — ระบบจะไม่ประเมินจุดหยุดกำไร/ขาดทุนจากราคาที่ค้างอยู่',
+        'vi': 'Giá đã không cập nhật quá {} giây — không đánh giá điểm dừng lãi/lỗ trên giá đóng băng',
+    },
+    'an unknown amount': {
+        'ko': '알 수 없는 수량',
+        'ja': '不明な数量',
+        'th': 'จำนวนที่ไม่ทราบแน่ชัด',
+        'vi': 'một khối lượng không xác định',
+    },
+    'manual halt': {
+        'ko': '수동 중단',
+        'ja': '手動停止',
+        'th': 'การหยุดด้วยตนเอง',
+        'vi': 'lệnh dừng thủ công',
+    },
+    'auto: consecutive real liquidation shocks (panic regime)': {
+        'ko': '자동: 실제 강제청산 충격이 연속 발생 (패닉 국면)',
+        'ja': '自動: 実際の強制清算ショックが連続発生（パニック局面）',
+        'th': 'อัตโนมัติ: เกิดแรงกระแทกจากการบังคับปิดสถานะจริงต่อเนื่อง (ภาวะตื่นตระหนก)',
+        'vi': 'tự động: các cú sốc thanh lý thực tế liên tiếp (trạng thái hoảng loạn)',
+    },
+    'gateway session down': {
+        'ko': '게이트웨이 세션이 끊어졌습니다',
+        'ja': 'ゲートウェイのセッションが切断されています',
+        'th': 'เซสชันของเกตเวย์หลุด',
+        'vi': 'phiên kết nối gateway đã ngắt',
+    },
+    'no mark price to flatten at': {
+        'ko': '청산에 사용할 기준가가 없습니다',
+        'ja': '手仕舞いに使う基準価格がありません',
+        'th': 'ไม่มีราคาอ้างอิงสำหรับปิดสถานะ',
+        'vi': 'không có giá tham chiếu để đóng vị thế',
+    },
+    'manual breaker halt blocks exits': {
+        'ko': '수동 서킷 브레이커가 청산을 막고 있습니다',
+        'ja': '手動サーキットブレーカーが決済を妨げています',
+        'th': 'เซอร์กิตเบรกเกอร์แบบตั้งเองกำลังขวางการปิดสถานะ',
+        'vi': 'ngắt mạch thủ công đang chặn việc thoát vị thế',
+    },
+    'duplicate client_order_id (cycle already executed)': {
+        'ko': 'client_order_id가 중복되었습니다 (이미 실행된 사이클)',
+        'ja': 'client_order_id が重複しています（実行済みのサイクル）',
+        'th': 'client_order_id ซ้ำ (รอบนี้ถูกดำเนินการไปแล้ว)',
+        'vi': 'client_order_id bị trùng (chu kỳ đã được thực thi)',
+    },
+    'invalid quantity/price': {
+        'ko': '수량 또는 가격이 올바르지 않습니다',
+        'ja': '数量または価格が不正です',
+        'th': 'จำนวนหรือราคาไม่ถูกต้อง',
+        'vi': 'khối lượng hoặc giá không hợp lệ',
+    },
+    'no long position to sell': {
+        'ko': '매도할 롱 포지션이 없습니다',
+        'ja': '売却できるロングポジションがありません',
+        'th': 'ไม่มีสถานะลองให้ขาย',
+        'vi': 'không có vị thế mua để bán',
+    },
+    'no short position to cover': {
+        'ko': '커버할 숏 포지션이 없습니다',
+        'ja': '買い戻せるショートポジションがありません',
+        'th': 'ไม่มีสถานะชอร์ตให้ปิด',
+        'vi': 'không có vị thế bán để mua lại',
+    },
+    'short position entry price missing': {
+        'ko': '숏 포지션의 진입가가 없습니다',
+        'ja': 'ショートポジションの建値がありません',
+        'th': 'ไม่พบราคาเข้าของสถานะชอร์ต',
+        'vi': 'thiếu giá vào lệnh của vị thế bán',
+    },
+    "action '{}' is not executable": {
+        'ko': "'{}' 동작은 실행할 수 없습니다",
+        'ja': "'{}' のアクションは実行できません",
+        'th': "ไม่สามารถดำเนินการ '{}' ได้",
+        'vi': "hành động '{}' không thể thực thi",
+    },
+    'insufficient cash (${} < ${})': {
+        'ko': '현금이 부족합니다 (${0} < ${1})',
+        'ja': '現金が不足しています (${0} < ${1})',
+        'th': 'เงินสดไม่เพียงพอ (${0} < ${1})',
+        'vi': 'không đủ tiền mặt (${0} < ${1})',
+    },
+    'gateway rejected order: {}': {
+        'ko': '게이트웨이가 주문을 거부했습니다: {}',
+        'ja': 'ゲートウェイが注文を拒否しました: {}',
+        'th': 'เกตเวย์ปฏิเสธคำสั่ง: {}',
+        'vi': 'gateway đã từ chối lệnh: {}',
+    },
+
+    # ── notification self-test outcomes (2026-07-28) ─────────────────────
+    # Returned in the response BODY rather than raised, so they bypassed the
+    # exception handler and reached the Settings page in English.
+    'no email on account': {
+        'ko': '계정에 등록된 이메일이 없습니다',
+        'ja': 'アカウントにメールアドレスが登録されていません',
+        'th': 'ไม่มีอีเมลในบัญชี',
+        'vi': 'tài khoản chưa có email',
+    },
+    'no phone number saved in Settings': {
+        'ko': '설정에 저장된 전화번호가 없습니다',
+        'ja': '設定に電話番号が保存されていません',
+        'th': 'ยังไม่ได้บันทึกหมายเลขโทรศัพท์ในหน้าตั้งค่า',
+        'vi': 'chưa lưu số điện thoại trong phần Cài đặt',
+    },
+    'provider not configured or rejected': {
+        'ko': '발송 제공업체가 설정되지 않았거나 요청을 거부했습니다',
+        'ja': '送信プロバイダーが未設定か、送信を拒否されました',
+        'th': 'ผู้ให้บริการส่งยังไม่ได้ตั้งค่า หรือปฏิเสธคำขอ',
+        'vi': 'nhà cung cấp chưa được cấu hình hoặc đã từ chối',
+    },
+    'SMS is not included in your current plan': {
+        'ko': '현재 요금제에는 SMS가 포함되어 있지 않습니다',
+        'ja': '現在のプランにはSMSが含まれていません',
+        'th': 'แพ็กเกจปัจจุบันของคุณไม่รวมบริการ SMS',
+        'vi': 'gói hiện tại của bạn không bao gồm SMS',
+    },
+
+    # ── member-facing validation that had no catalogue entry (2026-07-28) ─
+    'unsupported region': {
+        'ko': '지원하지 않는 지역입니다',
+        'ja': 'サポートされていない地域です',
+        'th': 'ไม่รองรับภูมิภาคนี้',
+        'vi': 'khu vực không được hỗ trợ',
+    },
+    'Agent token required': {
+        'ko': '에이전트 토큰이 필요합니다',
+        'ja': 'エージェントトークンが必要です',
+        'th': 'ต้องใช้โทเคนของเอเจนต์',
+        'vi': 'Yêu cầu token của agent',
+    },
+    'No candidates available': {
+        'ko': '사용 가능한 후보가 없습니다',
+        'ja': '利用できる候補がありません',
+        'th': 'ไม่มีรายการที่เข้าเงื่อนไข',
+        'vi': 'Không có ứng viên khả dụng',
+    },
+    'No option chain for {}': {
+        'ko': '{}의 옵션 체인이 없습니다',
+        'ja': '{} のオプションチェーンがありません',
+        'th': 'ไม่มีออปชันเชนสำหรับ {}',
+        'vi': 'Không có chuỗi quyền chọn cho {}',
+    },
+    'Option chain temporarily unavailable': {
+        'ko': '옵션 체인을 일시적으로 사용할 수 없습니다',
+        'ja': 'オプションチェーンは一時的に利用できません',
+        'th': 'ออปชันเชนไม่พร้อมใช้งานชั่วคราว',
+        'vi': 'Chuỗi quyền chọn tạm thời không khả dụng',
+    },
+    'only {} bars for {}:{}': {
+        'ko': '{1}:{2}의 데이터가 {0}개 봉뿐입니다',
+        'ja': '{1}:{2} のデータが {0} 本しかありません',
+        'th': 'มีแท่งข้อมูลเพียง {0} แท่งสำหรับ {1}:{2}',
+        'vi': 'chỉ có {0} nến cho {1}:{2}',
+    },
+    'no quantity or no mark to close against': {
+        'ko': '청산할 수량이 없거나 기준가가 없습니다',
+        'ja': '決済する数量がないか、基準価格がありません',
+        'th': 'ไม่มีจำนวนหรือไม่มีราคาอ้างอิงสำหรับปิดสถานะ',
+        'vi': 'không có khối lượng hoặc không có giá tham chiếu để đóng',
+    },
+    'n_runs must be between {} and {}': {
+        'ko': 'n_runs는 {0}에서 {1} 사이여야 합니다',
+        'ja': 'n_runs は {0} から {1} の範囲で指定してください',
+        'th': 'n_runs ต้องอยู่ระหว่าง {0} ถึง {1}',
+        'vi': 'n_runs phải nằm trong khoảng {0} đến {1}',
+    },
+    'total_budget_usd must be between {} and {}': {
+        'ko': 'total_budget_usd는 {0}에서 {1} 사이여야 합니다',
+        'ja': 'total_budget_usd は {0} から {1} の範囲で指定してください',
+        'th': 'total_budget_usd ต้องอยู่ระหว่าง {0} ถึง {1}',
+        'vi': 'total_budget_usd phải nằm trong khoảng {0} đến {1}',
+    },
+    'profit_target_frac must be between {} and {}': {
+        'ko': 'profit_target_frac는 {0}에서 {1} 사이여야 합니다',
+        'ja': 'profit_target_frac は {0} から {1} の範囲で指定してください',
+        'th': 'profit_target_frac ต้องอยู่ระหว่าง {0} ถึง {1}',
+        'vi': 'profit_target_frac phải nằm trong khoảng {0} đến {1}',
+    },
+    'risk_appetite must be stable|balanced|aggressive': {
+        'ko': 'risk_appetite는 stable, balanced, aggressive 중 하나여야 합니다',
+        'ja': 'risk_appetite は stable / balanced / aggressive のいずれかを指定してください',
+        'th': 'risk_appetite ต้องเป็น stable, balanced หรือ aggressive',
+        'vi': 'risk_appetite phải là stable, balanced hoặc aggressive',
+    },
+    'risk_appetite must be one of {}': {
+        'ko': 'risk_appetite는 다음 중 하나여야 합니다: {}',
+        'ja': 'risk_appetite は次のいずれかを指定してください: {}',
+        'th': 'risk_appetite ต้องเป็นหนึ่งใน {}',
+        'vi': 'risk_appetite phải là một trong {}',
+    },
+    'markets must be within {}': {
+        'ko': 'markets는 다음 범위 안에 있어야 합니다: {}',
+        'ja': 'markets は次の範囲内で指定してください: {}',
+        'th': 'markets ต้องอยู่ภายใน {}',
+        'vi': 'markets phải nằm trong {}',
+    },
+    'trail must be an object': {
+        'ko': 'trail은 객체여야 합니다',
+        'ja': 'trail はオブジェクトである必要があります',
+        'th': 'trail ต้องเป็นอ็อบเจกต์',
+        'vi': 'trail phải là một đối tượng',
+    },
+    'trail.giveback_frac must be between 0 and 1': {
+        'ko': 'trail.giveback_frac는 0에서 1 사이여야 합니다',
+        'ja': 'trail.giveback_frac は 0 から 1 の範囲で指定してください',
+        'th': 'trail.giveback_frac ต้องอยู่ระหว่าง 0 ถึง 1',
+        'vi': 'trail.giveback_frac phải nằm trong khoảng 0 đến 1',
+    },
+    'trail.tighten_giveback_frac must be between 0 and 1': {
+        'ko': 'trail.tighten_giveback_frac는 0에서 1 사이여야 합니다',
+        'ja': 'trail.tighten_giveback_frac は 0 から 1 の範囲で指定してください',
+        'th': 'trail.tighten_giveback_frac ต้องอยู่ระหว่าง 0 ถึง 1',
+        'vi': 'trail.tighten_giveback_frac phải nằm trong khoảng 0 đến 1',
+    },
+    'trail.tighten_giveback_frac must be tighter than giveback_frac': {
+        'ko': 'trail.tighten_giveback_frac는 giveback_frac보다 더 촘촘해야 합니다',
+        'ja': 'trail.tighten_giveback_frac は giveback_frac より厳しい値にしてください',
+        'th': 'trail.tighten_giveback_frac ต้องแคบกว่า giveback_frac',
+        'vi': 'trail.tighten_giveback_frac phải chặt hơn giveback_frac',
+    },
+    "llm_tiers keys must be 'brief' or 'decision'": {
+        'ko': "llm_tiers의 키는 'brief' 또는 'decision'이어야 합니다",
+        'ja': "llm_tiers のキーは 'brief' または 'decision' である必要があります",
+        'th': "คีย์ของ llm_tiers ต้องเป็น 'brief' หรือ 'decision'",
+        'vi': "khóa của llm_tiers phải là 'brief' hoặc 'decision'",
+    },
+    'llm_tiers[{}] must be an object': {
+        'ko': 'llm_tiers[{}]는 객체여야 합니다',
+        'ja': 'llm_tiers[{}] はオブジェクトである必要があります',
+        'th': 'llm_tiers[{}] ต้องเป็นอ็อบเจกต์',
+        'vi': 'llm_tiers[{}] phải là một đối tượng',
+    },
+    'llm_tiers[{}].provider must be one of {}': {
+        'ko': 'llm_tiers[{0}].provider는 다음 중 하나여야 합니다: {1}',
+        'ja': 'llm_tiers[{0}].provider は次のいずれかを指定してください: {1}',
+        'th': 'llm_tiers[{0}].provider ต้องเป็นหนึ่งใน {1}',
+        'vi': 'llm_tiers[{0}].provider phải là một trong {1}',
+    },
+    'llm_tiers[{}].model too long': {
+        'ko': 'llm_tiers[{}].model이 너무 깁니다',
+        'ja': 'llm_tiers[{}].model が長すぎます',
+        'th': 'llm_tiers[{}].model ยาวเกินไป',
+        'vi': 'llm_tiers[{}].model quá dài',
+    },
+
+    # ── admin console (2026-07-28) ───────────────────────────────────────
+    'Bank transfer details must be under 2000 characters.': {
+        'ko': '계좌이체 안내는 2000자 미만이어야 합니다.',
+        'ja': '銀行振込の案内は2000文字未満にしてください。',
+        'th': 'รายละเอียดการโอนเงินต้องน้อยกว่า 2000 ตัวอักษร',
+        'vi': 'Thông tin chuyển khoản phải dưới 2000 ký tự.',
+    },
+    "Alert email must contain '@', or be empty to disable email alerts.": {
+        'ko': "알림 이메일에는 '@'가 포함되어야 합니다. 이메일 알림을 끄려면 비워 두세요.",
+        'ja': "アラート用メールアドレスには '@' が必要です。メール通知を無効にするには空欄にしてください。",
+        'th': "อีเมลแจ้งเตือนต้องมี '@' หรือเว้นว่างไว้เพื่อปิดการแจ้งเตือนทางอีเมล",
+        'vi': "Email cảnh báo phải chứa '@', hoặc để trống để tắt cảnh báo qua email.",
+    },
+    'Alert phone must be 7-20 characters (digits, spaces, +, -, () only), or empty to disable SMS alerts.': {
+        'ko': '알림 전화번호는 7~20자여야 합니다 (숫자, 공백, +, -, () 만 허용). SMS 알림을 끄려면 비워 두세요.',
+        'ja': 'アラート用電話番号は7〜20文字で入力してください（数字・スペース・+・-・() のみ）。SMS通知を無効にするには空欄にしてください。',
+        'th': 'หมายเลขโทรศัพท์สำหรับแจ้งเตือนต้องมี 7-20 ตัวอักษร (เฉพาะตัวเลข ช่องว่าง + - และวงเล็บ) หรือเว้นว่างไว้เพื่อปิดการแจ้งเตือนทาง SMS',
+        'vi': 'Số điện thoại cảnh báo phải có 7-20 ký tự (chỉ chữ số, khoảng trắng, +, -, ()), hoặc để trống để tắt cảnh báo SMS.',
+    },
+    'Local AI server URL must start with http:// or https:// (e.g. http://100.64.0.7:11434/v1)': {
+        'ko': '로컬 AI 서버 URL은 http:// 또는 https:// 로 시작해야 합니다 (예: http://100.64.0.7:11434/v1)',
+        'ja': 'ローカルAIサーバーのURLは http:// または https:// で始まる必要があります（例: http://100.64.0.7:11434/v1）',
+        'th': 'URL ของเซิร์ฟเวอร์ AI ในเครื่องต้องขึ้นต้นด้วย http:// หรือ https:// (เช่น http://100.64.0.7:11434/v1)',
+        'vi': 'URL máy chủ AI cục bộ phải bắt đầu bằng http:// hoặc https:// (ví dụ: http://100.64.0.7:11434/v1)',
+    },
+    # Deliberately last: these two are the broadest patterns in the catalogue
+    # and would shadow any specific message ending in the same words. The
+    # pattern list is scanned in insertion order, so keep them at the bottom.
+    '{} must be one of: {}': {
+        'ko': '{0}은(는) 다음 중 하나여야 합니다: {1}',
+        'ja': '{0} は次のいずれかを指定してください: {1}',
+        'th': '{0} ต้องเป็นหนึ่งใน: {1}',
+        'vi': '{0} phải là một trong: {1}',
+    },
+    '{} too long': {
+        'ko': '{}이(가) 너무 깁니다',
+        'ja': '{} が長すぎます',
+        'th': '{} ยาวเกินไป',
+        'vi': '{} quá dài',
+    },
 }

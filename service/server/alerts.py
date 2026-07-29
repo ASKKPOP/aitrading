@@ -45,7 +45,11 @@ ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected"
                # churny day); the informational kinds share the general pool.
                "fleet_drawdown_warning", "fleet_breaker",
                "fleet_churn", "fleet_watchdog", "fleet_slot_dormant",
-               "fleet_sms_unavailable")
+               "fleet_sms_unavailable",
+               # The profit rail. _harvest has emitted this since it shipped,
+               # but it was never registered, so every fleet win was filed
+               # under "custom" and lost its own category and dedupe budget.
+               "fleet_profit_target")
 
 # run_stopped is the one alert that matters (a run halted on losses) — it gets
 # its own reserved hourly budget so digests/thresholds can never starve it.
