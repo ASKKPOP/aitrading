@@ -10,6 +10,7 @@ Market intelligence snapshots and read models.
 from __future__ import annotations
 
 import json
+import math
 import os
 import threading
 import time
@@ -28,6 +29,7 @@ except ImportError:  # pragma: no cover - Python < 3.9 fallback
 from cache import delete_pattern, get_json, set_json
 from config import ALPHA_VANTAGE_API_KEY
 from database import get_db_connection
+from json_safe import json_safe
 
 ALPHA_VANTAGE_BASE_URL = os.getenv("ALPHA_VANTAGE_BASE_URL", "https://www.alphavantage.co/query").strip()
 MARKET_NEWS_LOOKBACK_HOURS = int(os.getenv("MARKET_NEWS_LOOKBACK_HOURS", "48"))
@@ -970,20 +972,26 @@ def _build_stock_long_window_features(symbol: str) -> dict[str, Any]:
         volumes = [b.volume for b in bars]
         if len(closes) < 30:
             return none
-        ma50 = compute_ma(closes, 50)
-        ma200 = compute_ma(closes, 200)
-        latest = closes[-1]
+        # NaN is not None, so it satisfies every `is not None` guard below and
+        # then silently answers False to `latest > ma200`. Collapse it to None
+        # at the boundary so "not computable" stays distinguishable from False.
+        def _finite(value: Any) -> Optional[float]:
+            return value if isinstance(value, (int, float)) and math.isfinite(value) else None
+
+        ma50 = _finite(compute_ma(closes, 50))
+        ma200 = _finite(compute_ma(closes, 200))
+        latest = _finite(closes[-1])
         vol_window = volumes[-21:-1]
         avg_volume = sum(vol_window) / len(vol_window) if vol_window else 0
         return {
-            "momentum_12_1_pct": compute_momentum_12_1_pct(closes, skip=21, lookback=252),
-            "reversal_1m_pct": compute_return_pct(closes, 21),
+            "momentum_12_1_pct": _finite(compute_momentum_12_1_pct(closes, skip=21, lookback=252)),
+            "reversal_1m_pct": _finite(compute_return_pct(closes, 21)),
             "ma50": ma50,
             "ma200": ma200,
-            "price_above_ma200": (latest > ma200) if ma200 is not None else None,
+            "price_above_ma200": (latest > ma200) if (latest is not None and ma200 is not None) else None,
             "golden_cross_state": (ma50 > ma200) if (ma50 is not None and ma200 is not None) else None,
-            "sigma_daily_pct": compute_daily_sigma_pct(closes),
-            "volume_ratio": (volumes[-1] / avg_volume) if avg_volume > 0 else None,
+            "sigma_daily_pct": _finite(compute_daily_sigma_pct(closes)),
+            "volume_ratio": _finite(volumes[-1] / avg_volume) if avg_volume > 0 else None,
         }
     except Exception:  # noqa: BLE001
         return none
@@ -1613,7 +1621,10 @@ def refresh_stock_analysis_snapshots() -> dict[str, Any]:
 
     for symbol in symbols:
         try:
-            analysis = _build_stock_analysis(symbol)
+            # json.dumps writes a bare NaN literal that json.loads reads back as
+            # a float, so an un-computable indicator would persist as a row that
+            # 500s every read of it forever. null is the right stored value.
+            analysis = json_safe(_build_stock_analysis(symbol))
             analysis_id = f"{symbol}:{created_at}"
             rows_to_insert.append((
                 symbol,

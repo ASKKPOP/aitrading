@@ -15,30 +15,17 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import threading
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 from analysis_agents import run_analysis
 from database import begin_write_transaction, get_db_connection, using_mysql
+# Shared with market_intel — a NaN indicator (ma200 on <200 bars, sigma on a
+# gappy feed) 500s Starlette's allow_nan=False renderer wherever it is stored.
+from json_safe import json_safe as _json_safe
 
 logger = logging.getLogger(__name__)
-
-
-def _json_safe(obj: Any) -> Any:
-    """Recursively replace NaN/Inf floats with None so a job result survives
-    Starlette's allow_nan=False JSON renderer. A technical indicator that is
-    undefined (ma200 on <200 bars, sigma on a gappy feed) arrives here as NaN;
-    left in place it 500s /api/analysis/jobs/current on every poll. null is the
-    correct wire value for "not computable"."""
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
-    if isinstance(obj, dict):
-        return {k: _json_safe(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_json_safe(v) for v in obj]
-    return obj
 
 # A running job older than this is presumed dead (crashed thread / killed
 # process) and is replaced instead of blocking new runs forever.
