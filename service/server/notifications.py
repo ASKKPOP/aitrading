@@ -363,6 +363,11 @@ def user_lang(user_id: Optional[int]) -> str:
         from analysis_agents import normalize_lang
         return normalize_lang(row["lang"] if row else None)
     except Exception:  # noqa: BLE001 — language lookup must never break a send
+        # Logged, not swallowed: hot_issue_daemon carried a wrong table name
+        # here for weeks and the silent except turned it into "everyone gets
+        # English", which no output test could tell from correct behaviour.
+        logger.warning("user_lang lookup failed for user %s — falling back to "
+                       "English", user_id, exc_info=True)
         return "en"
 
 

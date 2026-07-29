@@ -69,17 +69,31 @@ def _recipient_lang(agent_id: int) -> str:
 
     send_alert resolves users.lang at render time, but the LLM note is written
     BEFORE that — so the daemon has to look it up itself or the note is
-    English no matter who receives it. Fail-soft to 'en'."""
+    English no matter who receives it. Fail-soft to 'en'.
+
+    The table is `agents`. It read `ai_agents` from the day #109 shipped until
+    2026-07-29 — a table that has never existed. Every call raised, the
+    except swallowed it, and this returned 'en' for ALL recipients, which is
+    precisely the bug #109 set out to fix:
+
+        ETHUSDT(crypto): sentiment shock. NEUTRAL your long (high): <English>
+        런 #811의 다음 사이클은 …
+
+    The fail-soft except is what hid it — a wrong table name is not a
+    transient fault, so the miss is now logged rather than silently absorbed.
+    """
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT u.lang FROM ai_agents a JOIN users u ON u.id = a.user_id
+            """SELECT u.lang FROM agents a JOIN users u ON u.id = a.user_id
                WHERE a.id = ?""", (agent_id,))
         row = cursor.fetchone()
         return (row["lang"] if row and row["lang"] else "en") or "en"
     except Exception:  # noqa: BLE001
+        logger.warning("recipient lang lookup failed for agent %s — "
+                       "falling back to English", agent_id, exc_info=True)
         return "en"
     finally:
         try:
