@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>フェーズ4 戦略バックテスト — Go/No-Go 結果</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/3-phase4-backtest-report.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>フェーズ4戦略バックテスト — go/no-go 判定結果</h1>
+<p><strong>日付:</strong> 2026-07-16 · <strong>判定: INSUFFICIENT_EVIDENCE → フリップパッケージは出荷しない。すべての実行ゲートはデフォルトでオフのまま。</strong>
+<strong>実行スクリプト:</strong> <code>service/server/run_phase4_backtest.py</code> · 生データ: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · エンジン: <code>backtest_strategy.py</code>（ユニットテスト済み、独立した2回の実行結果はバイト単位で一致）。
+<strong>計画:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §フェーズ4 — 基準はOOSウィンドウを開く前に事前登録されました。</p>
+<h2>0. 韓国語要約</h2>
+<p>事前登録された基準に基づく評価の結果、<strong>証拠不十分(INSUFFICIENT_EVIDENCE)</strong> — フリップパッケージ（実行ゲートをデフォルトで有効化）は展開しません。デプロイ忠実設定（≥4/6）では、6年間のウォークフォワードでOOS取引が<strong>38件</strong>のみ（基準は400件）であり、勝率36.8%のWilson 90%下限（0.28）とPFブートストラップ下限（0.64）のいずれも基準未達です。感度行（≥3）では237件に増加しますが、PF下限は0.88で依然として1.0未満 — 収益性は統計的に証明されていません。</p>
+<p><strong>肯定的な発見:</strong> リスクスタックはリサーチが約束した通りに機能 — 最悪ケースの資産最大ドローダウン<strong>2.6%</strong>（B&amp;Hは同期間で−38%〜−47%）、決済の53%がトレーリングストップ（勝ちトレードを伸ばす）、システムは予測ではなく損失遮断によって資本を保全。検証パネルの統計レンズによる予測（取引数不足）がまさに的中。</p>
+<p><strong>次のステップ:</strong> すべての機能は表示/アドバイザリー/オプトインとしてすでに展開可能な状態です。ライブテレメトリ（コンフルエンスベクトル、ファクタースナップショット）が蓄積されたら、B4を含む6条件システムをライブフォワードで再評価します。閾値はリサーチに戻ります — 本番環境ではなく。</p>
+<h2>1. 事前登録されたセットアップ（結果を見た後も変更なし）</h2>
+<ul>
+<li><strong>プライマリ行:</strong> デプロイ忠実なデフォルト設定（<code>confluence_min=4</code>、<code>volume_confirm_min=1.5</code>）、一切チューニングなし — 構造上スヌーピングはゼロ。</li>
+<li><strong>ウォークフォワード行:</strong> アンカー方式、4フォールド、14日パージ、6コンフィググリッド(報告済み)、トレーニングでプールされたプロフィットファクターによりチューニング（≥30取引）、テストでは固定。</li>
+<li><strong>感度行:</strong> <code>confluence_min=3</code>固定（B4は歴史的にnull → 6条件中5条件のみ達成可能。したがってライブゲートはデプロイ時よりもバックテストの方が<em>厳格</em>）。</li>
+<li><strong>基準:</strong> プールされたOOSトレード数≥400、それ未満はINSUFFICIENT_EVIDENCE · 勝率のWilson 90%下限 &gt; 0.50 · プロフィットファクターのブートストラップ90%下限 &gt; 1.0 · 最悪資産の最大DD ≤ 30%。</li>
+<li><strong>スコープの正直な開示:</strong> B4は全期間null、B3はMA/RSI/volumeに縮退、B5 = F&amp;Gレッグのみ（2018年以降のフルアーカイブ、追加で1日のラグ）、S5はnull、イベントは二重ソース検証済みの2019–2025カレンダー。資産: BTC/ETHのバーは2019-01から（シグナルは400バーのウォームアップ後、約2020-02）、SOLは2020-04から（シグナルは約2021-05）。手数料0.1%/レッグ + スリッページ0.05%、close-tのシグナルはopen t+1で約定。</li>
+</ul>
+<h2>2. 結果</h2>
+<h3>プライマリ（デプロイメント忠実 ≥4/6） — 4つのOOSフォールド × 3資産でプール</h3>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>値</th>
+<th>基準</th>
+<th>達成？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OOSトレード数</td>
+<td><strong>38</strong></td>
+<td>≥ 400</td>
+<td>❌ (エビデンスフロア)</td>
+</tr>
+<tr>
+<td>勝率</td>
+<td>36.8% (14/38)</td>
+<td>Wilson90 LB &gt; 0.50 → LB = <strong>0.276</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>プロフィットファクター</td>
+<td>1.13</td>
+<td>bootstrap90 LB &gt; 1.0 → LB = <strong>0.644</strong></td>
+<td>❌</td>
+</tr>
+<tr>
+<td>最悪資産の最大DD</td>
+<td><strong>2.63%</strong></td>
+<td>≤ 30%</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>フォールドごと: F1 (2021-07→2022-12, ベア): 19トレード、PF 1.82 · F2: 6トレード、PF 0.69 · F3: 7トレード、PF 6.53 · F4 (2025-07→2026-07, ベア): 6トレード、PF 0.0。
+エグジット内訳: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — リサーチが規定するトレンドフォロー型のプロファイル（トレードの一部で小さく勝ち、勝ちトレードを伸ばす: 平均勝ちトレード ≫ 平均負けトレードであることが、37%の勝率でもPFを1超に押し上げている）。</p>
+<h3>感度分析（5つ中≥3が利用可能）</h3>
+<p>237トレード · 勝率37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · 最悪DD 8.97%。より多くのエビデンスでも、結論は同じ: 点推定では収益性があるが、統計的にはブレークイーブンと区別できない。</p>
+<h3>ウォークフォワード（フォールドごとにチューニング、6構成 — スヌーピングを考慮済み）</h3>
+<p>Every foldは<code>confluence_min=3</code>に調整済み；テストPF: F1 1.46、F2 1.82、F3 0.69、F4 0.79。エッジはレジーム依存であり、フォールドをまたいで持続しない — これは研究における「公表されたエッジは減衰する」という警告と一致する。</p>
+<h3>条件相関（統計的観点はこれを予測していた）</h3>
+<p>B1↔B2の日次一致率<strong>0.709</strong>（両方ともトレンド指標）、B1↔B3 0.52、B2↔B3 0.40。6つの条件は独立ではなく、「独立した53%のエッジを積み重ねる」という算術は額面通りには適用されない。</p>
+<h3>実際に機能したもの</h3>
+<p>F4のベア相場ウィンドウでは、戦略は資産ごとに約1.1〜1.7%の損失を出した一方、バイ・アンド・ホールドは<strong>−21%（ETH）、−38%（BTC）、−47%（SOL）</strong>の損失を出した。最大ドローダウンは2〜9%で、B&amp;Hの過去のドローダウン60%以上と比較される。エクスポージャーは日数の3〜6%。<strong>このシステムの検証された価値は、レジームフィルタリングとエグジットスタックによる資本保全であり — まさに研究が主張する「エッジはリスク管理から来るものであり、予測からではない」という点である。検証されていないのは単独での収益性である。</strong></p>
+<h2>3. 決定（事前登録されたルールに従って）</h2>
+<ol>
+<li><strong>転換なし。</strong> <code>CONFLUENCE_GATE_ENABLED</code>、<code>REGIME_FILTER_ENABLED</code>、<code>VOL_SIZING_ENABLED</code>は<strong>デフォルトでオフ</strong>のままとする。プリセット／<code>min_confidence</code>の移行は出荷されない。計画自身の文言が支配する：<em>「[基準]を下回る場合、confluenceの閾値は本番ではなく研究に差し戻される。」</em></li>
+<li><strong>それでも出荷されるもの（すでにマージ済み、実行動作の変更はゼロ）：</strong> confluence表示 + エージェントAPI、レジームアドバイザリー + タイル、テレメトリー（決定ごとのconfluenceベクトル、ファクタースナップショット）、安全性の修正（breakerのtripped_by/expires_at、SL/TPを緩めない、first_opened_at、リスク方向ゲーティング、put_risk_limitsの修復）、修復済みのバックテスターメトリクス、そしてオプトインのエージェントごとのエグジットツールキット（トレーリング／タイムストップ — 個々のエージェントがこれらを有効化できる；これらはポジショナルなリスクツールであり、収益性の主張ではない）。</li>
+<li><strong>再評価パス:</strong> ライブフォワード。Phase-1のテレメトリは、すべての決定について（B4を含む）完全な6条件ベクトルを蓄積する。ファクタースナップショットはfunding/OI/L-S/StockTwitsを記録する。≥400件のゲート済み品質のライブ決定が存在する場合（または将来のバックテストで欠落している条件を含められる場合）、基準を再実行する。キャリブレーションテーブル（コンフルエンス数ごとのヒット率、Wilson CI）はテレメトリから自動的に構築される。</li>
+<li><strong>閾値の作業は研究に差し戻される：</strong> データから浮かび上がる興味深い未解決の問いは、より単純なエントリーシグナルにおいて<em>エグジットスタック単体</em>（トレール＋タイムストップ＋レジーム拒否）が価値を持つかどうかである — ≥4/5のコンフルエンスエントリーゲートは非常に厳格で、3資産にわたり年6回しか取引されなかった。</li>
+</ol>
+<p><em>投資助言ではありません。シミュレータープラットフォームです。過去のエッジは劣化します。これらの数値は、記載されたスコープ制限のもとでの1回のバックテストを説明するものです。</em></p>
+</main></body></html>

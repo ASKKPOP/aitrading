@@ -1,0 +1,182 @@
+<!-- machine-translated from design/decisions-guide-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bagaimana armada Anda memutuskan untuk berdagang</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --bd:rgba(255,255,255,.1)}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.72;font-size:14.5px}
+main{max-width:880px;margin:0 auto;padding:38px 22px 80px}
+h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+p,li{color:var(--ink2)}strong{color:var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.lede{font-size:16px;margin-bottom:22px}
+.rule{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:15px 18px;margin:16px 0 26px}
+.rule b{display:block;color:var(--ink);margin-bottom:5px;font-size:14.5px}
+.rule p{margin:0;font-size:13.8px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
+.fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
+.cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
+.flow{display:grid;gap:5px}
+.fr{display:grid;grid-template-columns:30px 1fr;gap:11px;align-items:stretch}
+.fn{display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink2);
+ background:var(--surf);border-radius:7px}
+.fb{border:1.5px solid var(--grid);border-left-width:4px;border-radius:9px;background:var(--page);padding:9px 13px}
+.fb.ai{border-left-color:var(--ai)}.fb.sf{border-left-color:var(--safe)}
+.fb.ex{border-left-color:var(--go);background:color-mix(in srgb,var(--go) 8%,var(--page))}
+.fb b{font-size:13.5px;color:var(--ink);display:block}
+.fb span{font-size:12.3px;color:var(--ink2)}
+.ar{grid-column:2;color:var(--muted);font-size:12px;line-height:1;padding:1px 0 1px 12px}
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surf)}
+.sg{display:grid;place-items:center;min-width:28px}
+.sg span{font-size:12px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.trig{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px;margin:12px 0}
+.tg{background:var(--card);border:1.5px solid var(--warn);border-radius:11px;padding:11px 12px;font-size:12.5px;color:var(--ink2)}
+.tg b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+.fan{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:12px 0}
+.fan div{border-radius:10px;border:1.5px solid var(--grid);background:var(--card);padding:10px 12px;font-size:12.3px;color:var(--ink2)}
+.fan b{display:block;color:var(--ink);font-size:12.8px;margin-bottom:2px}
+.fan .g{border-color:var(--go)}.fan .b{border-color:var(--warn)}.fan .m{opacity:.72;border-style:dashed}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.2px;margin:8px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2);vertical-align:top}
+th{font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td strong{color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ai{background:color-mix(in srgb,var(--ai) 15%,transparent);color:color-mix(in srgb,var(--ai) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--ai) 42%,transparent)}
+.p-sf{background:color-mix(in srgb,var(--safe) 15%,transparent);color:color-mix(in srgb,var(--safe) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--safe) 42%,transparent)}
+.note{border-left:3px solid var(--go);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.note b{color:var(--ink)}
+.mt{margin-top:30px;padding-top:14px;border-top:1px solid var(--grid);font-size:11.5px;color:var(--muted)}
+@media (max-width:620px){.fan{grid-template-columns:1fr}.fr{grid-template-columns:26px 1fr;gap:8px}}
+</style></head>
+<body><main>
+
+<div class="eyebrow">Sooppiy · Panduan Anggota</div>
+<h1>Bagaimana armada Anda memutuskan untuk berdagang</h1>
+<p class="lede">Apa yang terjadi di setiap siklus, dari analisis hingga pesanan nyata — dan <strong>bagian mana yang diputuskan oleh AI dibandingkan sistem keamanan</strong>.</p>
+
+<div class="rule"><b>Aturan inti</b><p>Sebuah pesanan diputuskan oleh AI, atau tidak ditempatkan. AI memutuskan <em>apakah</em> untuk berdagang, <em>arah mana</em>, <em>seberapa besar</em>, dan <em>di mana memotong kerugian</em>. Sistem keamanan hanya memutuskan apakah pesanan tersebut <em>diizinkan</em> — pesanan dapat diperkecil atau diperketat, tidak pernah diperbesar.</p></div>
+
+<h2>Satu siklus, dari awal hingga akhir</h2>
+<p>Ini berulang pada interval tertentu untuk setiap simbol yang Anda pegang. Setiap langkah baik berhasil dilalui, atau mengakhiri siklus dengan alasan yang tercatat.</p>
+<div class="fig">
+  <div class="ft">Dari analisis hingga pesanan</div><div class="fs">Biru = AI yang memutuskan · Oranye = pemeriksaan keamanan</div>
+  <div class="flow">
+    <div class="fr"><div class="fn">1</div><div class="fb ai"><b>Pemeriksaan situasi</b><span>momen biasa, atau kritis?</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Analisis</b><span>pembacaan cepat, atau meja empat analis lengkap</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">3</div><div class="fb ai"><b>Keputusan</b><span>beli · jual · tahan, dengan tingkat keyakinan</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">4</div><div class="fb ai"><b>Desain pesanan</b><span>ukuran · stop · target, disesuaikan dengan simbol ini</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">5</div><div class="fb sf"><b>Pemeriksaan keamanan</b><span>batas risiko · batas eksposur · imbal hasil vs risiko</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">6</div><div class="fb ex"><b>Pesanan</b><span>eksekusi, dicatat beserta alasannya</span></div></div>
+  </div>
+</div>
+
+<h2>Siapa yang memutuskan apa</h2>
+<div class="fig">
+  <div class="ft">Kepemilikan keputusan</div><div class="fs">21 langkah dalam satu siklus</div>
+  <div class="stack">
+    <div class="sg" style="width:28.6%;background:var(--ai)"><span>6</span></div>
+    <div class="sg" style="width:66.6%;background:var(--safe)"><span>14</span></div>
+    <div class="sg" style="width:4.8%;background:color-mix(in srgb,var(--go) 78%,#000)"><span>1</span></div>
+  </div>
+  <div class="lgd">
+    <span><i style="background:var(--ai)"></i>AI yang memutuskan — 6 langkah</span>
+    <span><i style="background:var(--safe)"></i>Pemeriksaan keamanan — 14 langkah</span>
+    <span><i style="background:color-mix(in srgb,var(--go) 78%,#000)"></i>Eksekusi — 1</span>
+  </div>
+  <p class="cap">Jumlah ini bisa menyesatkan jika berdiri sendiri. 14 langkah keamanan hanya bisa <em>menolak atau memperkecil</em>. Tidak satu pun dari langkah tersebut dapat menciptakan perdagangan atau memilih arah.</p>
+</div>
+<div class="sw"><table>
+<thead><tr><th>Keputusan</th><th>Pemilik</th><th>Apa yang boleh dilakukan pihak lain</th></tr></thead>
+<tbody>
+<tr><td><strong>Berdagang atau tidak</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan dapat memveto, tidak pernah memulai</td></tr>
+<tr><td><strong>Arah mana</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan tidak pernah memilih sisi</td></tr>
+<tr><td><strong>Seberapa besar</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan hanya memperkecil — batas, eksposur, ukuran minimum</td></tr>
+<tr><td><strong>Di mana posisi stop berada</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan menegakkan batas minimum imbal hasil vs risiko</td></tr>
+<tr><td><strong>Di mana posisi target berada</strong></td><td><span class="pill p-ai">AI</span></td><td>Keamanan dapat mendorongnya lebih jauh, tidak pernah lebih dekat</td></tr>
+<tr><td>Apakah pesanan ini diizinkan</td><td><span class="pill p-sf">SAFETY</span></td><td>AI tidak dapat melampaui batas risiko</td></tr>
+<tr><td>Menutup pada stop</td><td><span class="pill p-sf">SAFETY</span></td><td>Sengaja dilakukan oleh sistem keamanan — lihat di bawah</td></tr>
+</tbody></table></div>
+
+<h2>Kapan meja lengkap dipanggil</h2>
+<p>Empat sinyal dapat mengirim siklus ke analisis mendalam. Munculnya satu sinyal tidak dengan sendirinya memanggil meja lengkap — <strong>desk itu sendiri menilai apakah hal ini benar-benar penting untuk simbol ini.</strong></p>
+<div class="trig">
+  <div class="tg"><b>📅 Jendela peristiwa</b>rilis ekonomi besar akan segera terjadi</div>
+  <div class="tg"><b>⚡ Guncangan pasar</b>pergerakan abnormal dengan volume tidak wajar</div>
+  <div class="tg"><b>🎭 Ekstrem massa</b>pembacaan rasa takut atau serakah pada titik ekstrem</div>
+  <div class="tg"><b>🎯 Mendekati stop Anda</b>posisi Anda mendekati stop amannya</div>
+</div>
+
+<h2>Order yang ditulis AI</h2>
+<p>Platform yang digunakan untuk menerapkan stop 5% dan target 10% yang sama untuk semua. AI kini menyesuaikan ukurannya <strong>dengan simbol</strong>. Contoh nyata:</p>
+<div class="fig"><div class="sw"><table>
+<thead><tr><th>Simbol</th><th>Volatilitas</th><th>Stop AI</th><th>Target AI</th><th>Nilai tetap lama</th></tr></thead>
+<tbody><tr><td><strong>ETHUSDT</strong></td><td>3.4%</td><td><strong>2.80%</strong></td><td><strong>6.50%</strong></td><td>5% / 10%</td></tr><tr><td><strong>KAITOUSDT</strong></td><td>12.8%</td><td><strong>5.50%</strong></td><td><strong>15.00%</strong></td><td>5% / 10%</td></tr></tbody></table></div>
+<p class="cap">Hari yang sama, desk yang sama. Nama yang volatil mendapat stop hampir <strong>dua kali lebih lebar</strong>. Nilai tetap memperlakukan keduanya sebagai 5%.</p></div>
+
+<h2>Ketika AI tidak dapat dibaca</h2>
+<p>Setiap jalur kegagalan berakhir dengan <strong>tidak ada posisi baru</strong>. Ia tidak pernah bertransaksi berdasarkan tebakan.</p>
+<div class="sw"><table>
+<thead><tr><th>Situasi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td>AI tidak menjawab</td><td><strong>Tahan — aturan tidak boleh mengarang arah</strong></td></tr>
+<tr><td>Jawaban tidak lengkap</td><td>Pulihkan yang dapat dibaca, jika tidak tahan</td></tr>
+<tr><td>AI menunda keputusan desain order</td><td>Berlaku default rumah</td></tr>
+<tr><td>Batas keamanan terlampaui</td><td>Diperkecil hingga batas, atau ditolak</td></tr>
+<tr><td>Imbal hasil tidak melampaui risiko</td><td><strong>Entry ditolak</strong></td></tr>
+</tbody></table></div>
+
+<h2>Mengapa exit tetap berada di sistem keamanan</h2>
+<p>Stop yang bergantung pada jawaban AI tidak akan aktif saat terjadi gangguan — justru saat hal itu paling penting. Aturan inti mengatur <strong>pembukaan</strong> posisi: itu adalah keputusan penilaian. Menutup posisi untuk membatasi kerugian adalah aritmetika.</p>
+
+<h2>Peringatan isu-panas pribadi</h2>
+<p>Sebuah peristiwa pasar adalah <strong>fakta tentang pasar</strong>; apakah itu penting adalah <strong>fakta tentang Anda</strong>. Setiap peringatan diperiksa terhadap posisi Anda sendiri sebelum dikirim.</p>
+<div class="fig">
+  <div class="flow">
+    <div class="fr"><div class="fn">1</div><div class="fb ai"><b>Deteksi</b><span>setiap jam, di semua simbol</span></div></div>
+    <div class="ar">↓</div>
+    <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Verifikasi</b><span>arah Anda · leverage · jarak ke stop Anda</span></div></div>
+  </div>
+  <div class="fan">
+    <div class="g"><b>Mendukung Anda</b>catatan lembut</div>
+    <div class="b"><b>Melawan Anda</b>peringatan mendesak</div>
+    <div class="m"><b>Tidak material</b>tanpa peringatan</div>
+  </div>
+  <p class="cap">Satu peristiwa, tiga hasil. Sebagian besar anggota dengan benar tidak menerima apa pun.</p>
+</div>
+
+<h2>Apa yang mungkin Anda perhatikan</h2>
+<div class="sw"><table>
+<thead><tr><th>Anda mungkin memperhatikan</th><th>Mengapa</th></tr></thead>
+<tbody>
+<tr><td><strong>Beberapa siklus bertindak seketika, yang lain membutuhkan waktu lebih lama</strong></td><td>Momen biasa mengambil jalur cepat; momen kritis mengambil desk penuh</td></tr>
+<tr><td><strong>Posisi yang menang ditutup dengan sendirinya</strong></td><td>Proteksi keuntungan mengamankan keuntungan sebelum hilang</td></tr>
+<tr><td><strong>Posisi yang merugi ditutup lebih awal</strong></td><td>Stop terpicu — kerugian terkendali alih-alih kerugian besar</td></tr>
+<tr><td><strong>Tidak ada peringatan saat berita besar</strong></td><td>Itu diperiksa terhadap posisi Anda dan tidak material. Itulah sistem yang bekerja</td></tr>
+<tr><td><strong>Sebuah run tidak pernah membuka transaksi</strong></td><td>Tidak ada yang menutupi biaya perdagangan. Tidak melakukan perdagangan adalah hasil yang valid</td></tr>
+</tbody></table></div>
+
+<div class="note"><b>Keamanan, selalu</b> AI merekomendasikan — batas risiko Anda yang memutuskan. Setiap tindakan melewati pemeriksaan risiko akun Anda, batas posisi dan stop, dan Anda dapat menghentikan semuanya dengan satu tombol kapan saja.</div>
+<p class="mt">Dokumen ini ditulis dalam bahasa Inggris.</p>
+
+</main></body></html>

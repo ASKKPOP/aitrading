@@ -48,7 +48,28 @@ def _run_row(market="crypto", stop_conditions=None):
 
 
 class ClassifierUnitTests(unittest.TestCase):
-    """_classify_situation is pure routing logic over patchable signals."""
+    """_classify_situation is pure routing logic over patchable signals.
+
+    That claim was false from 2026-07-27 until 2026-07-29. `RUN_AI_ROUTING`
+    defaults to ON, and with it on a triggered cycle is handed to
+    `_ai_route_verdict`, which makes a REAL model call — so these "unit" tests
+    were asserting the model's opinion of the signals, not the classifier's
+    reading of them. They passed in CI (no API key => llm_configured() false
+    => deterministic fallback) and failed on any machine whose .env mirrors a
+    key into the environment, with a split that gave the game away: the
+    event_window case passed while psych_shock and regime:panic failed,
+    because the routing prompt names psych_shock as ambient and event_window
+    as specific.
+
+    Routing is therefore pinned off here. The desk's override is a separate
+    behaviour and is covered below with the verdict stubbed, so no test in
+    this file spends a model call or changes answer with the weather.
+    """
+
+    def setUp(self):
+        self._routing = patch.dict(os.environ, {"RUN_AI_ROUTING": "false"})
+        self._routing.start()
+        self.addCleanup(self._routing.stop)
 
     def _classify(self, run=None, **overrides):
         patches = dict(QUIET)
@@ -61,6 +82,35 @@ class ClassifierUnitTests(unittest.TestCase):
         finally:
             for c in ctxs:
                 c.stop()
+
+    def test_the_desk_can_downgrade_a_trigger_but_the_rule_is_recorded(self):
+        with patch.dict(os.environ, {"RUN_AI_ROUTING": "true"}), \
+                patch.object(run_engine, "_ai_route_verdict",
+                             return_value=("light", "ambient market-wide flag")):
+            out = self._classify(psych=("psych_feed.get_psych_payload",
+                                        {"available": True,
+                                         "shock": [{"symbol": "BTC"}]}))
+        self.assertEqual(out["route"], "light")
+        self.assertEqual(out["rule_route"], "full")
+        self.assertEqual(out["route_by"], "ai")
+        self.assertIn("psych_shock", out["triggers"])
+
+    def test_a_quiet_cycle_never_reaches_the_desk(self):
+        """No trigger means no verdict call — routing must not add a model
+        call to the very cycles it exists to make cheap."""
+        with patch.dict(os.environ, {"RUN_AI_ROUTING": "true"}), \
+                patch.object(run_engine, "_ai_route_verdict") as verdict:
+            out = self._classify()
+        verdict.assert_not_called()
+        self.assertEqual(out["route"], "light")
+
+    def test_an_unreachable_desk_keeps_the_deterministic_answer(self):
+        with patch.dict(os.environ, {"RUN_AI_ROUTING": "true"}), \
+                patch.object(run_engine, "_ai_route_verdict", return_value=None):
+            out = self._classify(event=("market_events.active_event_window",
+                                        {"title": "FOMC"}))
+        self.assertEqual(out["route"], "full")
+        self.assertEqual(out["route_by"], "rule")
 
     def test_quiet_signals_route_light(self):
         out = self._classify()
@@ -138,10 +188,15 @@ class RoutingCycleTests(FleetTestBase):
         super().setUp()
         os.environ["DECISION_ROUTING_ENABLED"] = "true"
         os.environ["FLEET_CYCLE_MODE"] = "full"   # routing must override this
+        # What this class pins is the DETERMINISTIC route reaching the cycle.
+        # Left on, RUN_AI_ROUTING puts a live model call between the trigger
+        # and the assertion — see ClassifierUnitTests for the full story.
+        os.environ["RUN_AI_ROUTING"] = "false"
 
     def tearDown(self):
         os.environ.pop("DECISION_ROUTING_ENABLED", None)
         os.environ.pop("FLEET_CYCLE_MODE", None)
+        os.environ.pop("RUN_AI_ROUTING", None)
         super().tearDown()
 
     def _member(self):

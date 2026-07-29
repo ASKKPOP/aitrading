@@ -1,0 +1,391 @@
+<!-- machine-translated from design/live-trading-gateway-guide.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — Hướng dẫn đầy đủ về Cổng giao dịch thực (Live Trading Gateway Guide)</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.diagram .cap{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+svg text{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif}
+svg .box{fill:var(--card);stroke:var(--border)}
+svg .lbl{fill:var(--ink);font-size:12px;font-weight:700}
+svg .sm{fill:var(--ink-2);font-size:10.5px}
+svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="kicker">Sooppiy · Live Trading Gateway</div>
+  <h1>Hướng dẫn đầy đủ về Cổng giao dịch thực</h1>
+  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · Được viết sau khi kiểm tra QA bởi 3 agent · Phụ đề tiếng Anh cho mỗi phần</div>
+  <p class="sub" style="margin-top:10px">
+    Toàn bộ lộ trình mà quy tắc giao dịch tự động đi qua <b>mô phỏng (simulator)</b> → <b>bóng (shadow)</b> → <b>thực (live)</b>:
+    Tài liệu này giải thích những gì cần thiết lập, lệnh đi qua những cổng kiểm soát nào, và hệ thống tuyệt đối không làm gì.
+  </p>
+</header>
+
+<!-- ═══ 1. 세 가지 모드 ═══ -->
+<section>
+  <h2><span class="no">01</span>Ba chế độ thực thi <span class="sub" style="display:inline">/ The three execution modes</span></h2>
+  <p class="sub">Trong quy tắc (trang tự động hóa), thiết lập <code>tài khoản (account)</code> duy nhất quyết định lệnh khớp sẽ đi đến đâu. Không có thiết lập nào khác có thể thay đổi điều này.</p>
+
+  <table>
+    <tr><th>Chế độ</th><th>Nơi khớp lệnh</th><th>Vốn thực</th><th>Điều kiện cần</th><th>Mục đích</th></tr>
+    <tr>
+      <td><span class="tag hold">simulator</span></td>
+      <td>Chỉ sổ cái mô phỏng của nền tảng</td><td>Không có</td><td>Không có (mặc định)</td>
+      <td>Kiểm chứng chiến lược, làm quen với nền tảng</td>
+    </tr>
+    <tr>
+      <td><span class="tag new">shadow</span></td>
+      <td>Sổ cái mô phỏng (làm chuẩn) + đối chiếu lệnh với <b>sandbox</b> của broker</td><td>Không có</td>
+      <td>Kết nối cổng giao dịch (tùy chọn — nếu không có thì chỉ là mô phỏng thuần túy)</td>
+      <td>So sánh mức trượt giá và tỷ lệ khớp lệnh thực tế mà không chịu rủi ro</td>
+    </tr>
+    <tr>
+      <td><span class="tag crit">live</span></td>
+      <td>Thông qua cổng giao dịch đã kết nối tới <b>broker thực</b></td><td><b>Có</b></td>
+      <td>Kết nối cổng giao dịch + thông tin xác thực + đồng ý điều khoản giao dịch thực</td>
+      <td>Giao dịch tự động thực chiến</td>
+    </tr>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- rule -->
+    <rect class="box" x="20" y="120" width="150" height="70" rx="12"/>
+    <text class="lbl" x="95" y="148" text-anchor="middle">Quy tắc tự động hóa</text>
+    <text class="sm" x="95" y="166" text-anchor="middle">Automation rule</text>
+    <!-- gates -->
+    <rect class="box" x="215" y="120" width="150" height="70" rx="12" stroke="var(--accent)"/>
+    <text class="lbl" x="290" y="143" text-anchor="middle">Chuỗi cổng thực thi</text>
+    <text class="sm" x="290" y="160" text-anchor="middle">Chuỗi 12 bước kiểm soát (12-step gate chain)</text>
+    <text class="sm" x="290" y="175" text-anchor="middle">(xem §4)</text>
+    <!-- router -->
+    <rect class="box" x="410" y="120" width="140" height="70" rx="12" stroke="var(--violet)"/>
+    <text class="lbl" x="480" y="148" text-anchor="middle">account_type</text>
+    <text class="sm" x="480" y="166" text-anchor="middle">execution/gateway.py</text>
+    <!-- three lanes -->
+    <rect class="box" x="620" y="20" width="255" height="66" rx="12"/>
+    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → Sổ cái mô phỏng</text>
+    <text class="sm" x="747" y="63" text-anchor="middle">signals + positions + cash (DB nội bộ)</text>
+
+    <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
+    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → Sổ cái + sandbox</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Sổ cái là chuẩn · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="178" text-anchor="middle">Độ lệch được ghi lại trong position_reconciliations</text>
+
+    <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="747" y="254" text-anchor="middle">live → Broker thực ⚠ Vốn thực</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">Broker là chuẩn — chỉ ghi vào sổ cái sau khi được chấp nhận</text>
+    <text class="sm" x="747" y="286" text-anchor="middle">Không tạo vị thế khi bị từ chối</text>
+
+    <path class="arrow" d="M170,155 L213,155"/>
+    <path class="arrow" d="M365,155 L408,155"/>
+    <path class="arrow" d="M550,140 C590,110 590,70 618,55"/>
+    <path class="arrow" d="M550,155 L618,158"/>
+    <path class="arrow" d="M550,172 C590,205 590,245 618,262"/>
+    <text class="sm" x="580" y="45">simulator</text>
+    <text class="sm" x="572" y="147">shadow</text>
+    <text class="sm" x="588" y="280">live</text>
+  </svg>
+  <div class="cap">Hình 1 — Sau khi một quy tắc đi qua chuỗi gate (gate chain), nó sẽ được định tuyến theo account_type vào một trong ba đường.</div>
+  </div>
+
+  <div class="note red"><b>Điều không bao giờ xảy ra:</b> Một quy tắc live không có gateway bị âm thầm hạ xuống chế độ mô phỏng. live sẽ <b>bị từ chối kèm lý do rõ ràng</b>và lý do đó được ghi lại trong nhật ký thực thi — vì lệnh khớp giả trông như thật là điều tệ nhất.</div>
+</section>
+
+<!-- ═══ 2. 단계별 설정 ═══ -->
+<section>
+  <h2><span class="no">02</span>7 bước để giao dịch thực <span class="sub" style="display:inline">/ Bảy bước để giao dịch thực</span></h2>
+
+  <div class="steps-strip">
+    <div class="st"><b>BƯỚC 1</b><span>Cấp khóa broker</span></div>
+    <div class="st"><b>BƯỚC 2</b><span>Kết nối gateway</span></div>
+    <div class="st"><b>BƯỚC 3</b><span>Đồng ý điều khoản</span></div>
+    <div class="st"><b>BƯỚC 4</b><span>Kiểm tra trạng thái</span></div>
+    <div class="st"><b>BƯỚC 5</b><span>Xác thực shadow</span></div>
+    <div class="st"><b>BƯỚC 6</b><span>Chuyển sang live</span></div>
+    <div class="st"><b>BƯỚC 7</b><span>Giám sát</span></div>
+  </div>
+
+  <h3>BƯỚC 1 — Chuẩn bị thông tin xác thực từ broker <span class="sub" style="display:inline">/ Chuẩn bị thông tin xác thực broker</span></h3>
+  <table>
+    <tr><th>Broker</th><th>Những gì cần thiết</th><th>Ở đâu</th><th>Lưu ý</th></tr>
+    <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (khóa paper và live là riêng biệt)</td><td>Chỉ quyền giao dịch. shadow tự động sử dụng endpoint paper</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Tài khoản → API Management</td><td><b>Tuyệt đối không cấp quyền rút tiền.</b> Chỉ chọn giao dịch (TRADE). shadow sử dụng testnet</td></tr>
+    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + số tài khoản</td><td>Tự chạy và đăng nhập vào Client Portal Gateway do IBKR phân phối</td><td>Không có API key — <b>Phiên gateway chính là thông tin xác thực.</b> Phải là địa chỉ mà server có thể truy cập được. Nếu số tài khoản bắt đầu bằng <code>D</code>thì đó là tài khoản giả lập (shadow chỉ hoạt động với tài khoản giả lập)</td></tr>
+  </table>
+
+  <h3>BƯỚC 2 — Kết nối gateway trên trang tài khoản <span class="sub" style="display:inline">/ Kết nối trên trang Accounts</span></h3>
+  <ul>
+    <li><b>Tài khoản (Accounts)</b> trang → <b>Gateway giao dịch</b> Chọn broker trong card. Danh sách được tải từ server(<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: nhập Key + Secret. IBKR: nhập URL cổng kết nối + số tài khoản (có tùy chọn chứng chỉ tự ký cho cổng kết nối cục bộ).</li>
+    <li>Khóa được <b>mã hóa lưu trữ bằng AES-GCM</b> trên máy chủ, không lưu lại trong localStorage của trình duyệt và bị xóa khỏi ô nhập ngay sau khi lưu, không hiển thị lại.</li>
+  </ul>
+
+  <h3>BƯỚC 3 — Đồng ý điều khoản giao dịch thực <span class="sub" style="display:inline">/ Accept the live-trading terms</span></h3>
+  <ul>
+    <li>Ô chọn phía trên nút kết nối là bước đồng ý. Nếu không đồng ý, việc kết nối sẽ không thể tiến hành.</li>
+    <li>Sự đồng ý được ghi lại thành bản ghi <b>không thể thay đổi theo từng broker</b> (<code>broker_live_optins</code>) — dù đã đồng ý với Alpaca, vẫn cần đồng ý riêng cho Binance live.</li>
+  </ul>
+
+  <h3>BƯỚC 4 — Kiểm tra biểu ngữ trạng thái <span class="sub" style="display:inline">/ Check the health banner</span></h3>
+  <ul>
+    <li>Sau khi kết nối, biểu ngữ xanh (bình thường)/đỏ (không thể) sẽ hiện ở đầu trang tài khoản (<code>GET /api/execution/health</code>).</li>
+    <li>IBKR còn hiển thị cả trạng thái phiên (hết hạn/tranh chấp). Alpaca/Binance không có khái niệm phiên nên chỉ kiểm tra sự tồn tại của thông tin xác thực.</li>
+  </ul>
+
+  <h3>BƯỚC 5 — Xác thực trước bằng shadow <span class="sub" style="display:inline">/ Validate in shadow first</span></h3>
+  <ul>
+    <li>Trang tự động hóa (chế độ chuyên gia) → của quy tắc <b>account = shadow</b> + Tự động thực thi ON.</li>
+    <li>Trong khi sổ cái mô phỏng vẫn được giữ làm chuẩn, cùng lệnh đó cũng được gửi tới <b>sandbox</b> của broker, và sự khác biệt về khớp lệnh được tích lũy trong <b>bản ghi drift</b>. Bạn có thể quan sát trượt giá và tỷ lệ khớp mà không cần vốn thật.</li>
+  </ul>
+
+  <h3>BƯỚC 6 — Chuyển sang live <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <ul>
+    <li>của quy tắc <b>account = live</b>. Các quy tắc live có bật tự động thực thi sẽ được gắn nhãn đỏ <b>TIỀN THẬT (REAL MONEY)</b> trong danh sách.</li>
+    <li>Từ lúc này, chỉ những quyết định đã vượt qua toàn bộ chuỗi cổng mới được gửi đến broker thực. Sổ cái của nền tảng chỉ được ghi nhận sau khi broker chấp nhận.</li>
+  </ul>
+
+  <h3>BƯỚC 7 — Giám sát <span class="sub" style="display:inline">/ Monitor</span></h3>
+  <ul>
+    <li><b>Nhật ký thực thi trang tự động hóa</b>: quyết định, khớp lệnh, lý do bỏ qua ở mỗi tick.</li>
+    <li><b>Lịch sử lệnh broker ở trang tài khoản</b>: số lượng yêu cầu so với số lượng khớp lệnh được broker xác nhận, màu theo trạng thái.</li>
+    <li><b>Bản ghi drift (thẻ đỏ)</b>: trường hợp sổ cái và broker không khớp nhau — xem thêm §5.</li>
+    <li><b>Thông báo</b>: khớp lệnh (trade_executed), cổng kết nối bị gián đoạn (gateway_down), lệch lệnh (order_drift) — tuân theo kênh email/SMS trong thiết lập thông báo.</li>
+  </ul>
+</section>
+
+<!-- ═══ 3. 게이트 체인 ═══ -->
+<section>
+  <h2><span class="no">03</span>12 cổng kiểm soát mà lệnh phải đi qua <span class="sub" style="display:inline">/ The 12-step gate chain</span></h2>
+  <p class="sub">Ở mỗi tick của quy tắc đã bật tự động thực thi, để một quyết định (buy/sell) thực sự được khớp lệnh, nó phải đi qua <b>toàn bộ theo thứ tự</b> các cổng dưới đây. Nếu bị chặn ở bất kỳ cổng nào, lý do sẽ được ghi lại trong nhật ký thực thi và lệnh sẽ không được gửi đi.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- column of gates, 2 columns of 6 -->
+    <g>
+      <!-- left column -->
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① Tự động thực thi đã bật?</text><text class="sm" x="45" y="59">auto_execute off → bỏ qua</text>
+      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② Cổng kết nối có sẵn sàng? (chỉ live)</text><text class="sm" x="45" y="145">Cả 3 yếu tố: kết nối, thông tin xác thực, đồng ý điều khoản</text>
+      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ Đăng ký/quyền sử dụng còn hiệu lực?</text><text class="sm" x="45" y="231">khi ENTITLEMENTS_ENFORCED</text>
+      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ Quyết định là buy/sell?</text><text class="sm" x="45" y="317">hold không phải đối tượng khớp lệnh</text>
+      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ Độ tin cậy ≥ ngưỡng?</text><text class="sm" x="45" y="403">min_confidence của quy tắc</text>
+      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ Thị trường đang mở?</text><text class="sm" x="45" y="489">bỏ qua nếu thị trường us-stock đã đóng</text>
+      <!-- right column -->
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ Bảo vệ sự kiện</text><text class="sm" x="345" y="59">chặn 1 giờ trước/sau công bố FOMC·CPI (tùy chọn)</text>
+      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ Thời gian chờ (timestop cooldown)</text><text class="sm" x="345" y="145">chờ để tái vào lại cùng mã</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ Bộ lọc regime</text><text class="sm" x="345" y="231">chặn mua mới trong giai đoạn hoảng loạn/quá nóng (tùy chọn)</text>
+      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ Giá hợp lệ?</text><text class="sm" x="345" y="317">quyết định cần có giá vào lệnh</text>
+      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ Ngân sách agent (chế độ agent)</text><text class="sm" x="345" y="403">hạn mức budget_usd</text>
+      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ Cơ chế rủi ro</text><text class="sm" x="345" y="489">breaker→hạn mức→định cỡ theo biến động→SL/TP</text>
+    </g>
+    <!-- arrows down left col -->
+    <path class="arrow" d="M155,72 L155,104" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,158 L155,190" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,244 L155,276" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,330 L155,362" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,416 L155,448" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,502 C155,530 455,540 455,504" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,450 L455,418" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,364 L455,332" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,278 L455,246" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,192 L455,160" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,106 L455,74" marker-end="url(#arr2)"/>
+    <!-- execute -->
+    <rect x="660" y="230" width="210" height="90" rx="14" fill="color-mix(in srgb,var(--good) 12%,var(--card))" stroke="var(--good)"/>
+    <text class="lbl" x="765" y="266" text-anchor="middle">✓ Thực thi khớp lệnh</text>
+    <text class="sm" x="765" y="286" text-anchor="middle">định tuyến account_type (§1)</text>
+    <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
+    <text class="sm" x="640" y="120">12/12 vượt qua</text>
+  </svg>
+  <div class="cap">Hình 2 — Chuỗi cổng thực thi (evaluate_execution_gates). ⑫ Đi từ dưới cột trái lên đầu cột phải, phải vượt qua tất cả mới được khớp lệnh. Chạy thử (▶) chỉ phân tích và không đi qua chuỗi cổng này.</div>
+  </div>
+
+  <div class="note">Thứ tự rất quan trọng: các quy tắc đã tắt tự động thực thi sẽ được ghi lại là「Tự động thực thi tắt」chứ không phải là lỗi gateway. Đọc lý do bỏ qua sẽ giúp bạn biết ngay quy tắc dừng lại ở cổng kiểm soát nào.</div>
+</section>
+
+<!-- ═══ 4. 주문 수명주기 ═══ -->
+<section>
+  <h2><span class="no">04</span>Vòng đời của một lệnh live <span class="sub" style="display:inline">/ Life of a live order</span></h2>
+  <p class="sub">Nếu broker không xác nhận khớp lệnh ngay lập tức (SUBMITTED) <b>Bộ đối soát lệnh (Order Reconciler)</b> sẽ hỏi kết quả từ broker mỗi 2 phút để xác định trạng thái cuối cùng.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- lifelines -->
+    <text class="lbl" x="90" y="28" text-anchor="middle">Worker (nhịp quy tắc)</text>
+    <text class="lbl" x="330" y="28" text-anchor="middle">Bộ định tuyến gateway</text>
+    <text class="lbl" x="570" y="28" text-anchor="middle">Broker</text>
+    <text class="lbl" x="800" y="28" text-anchor="middle">Sổ cái nền tảng</text>
+    <line x1="90" y1="40" x2="90" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="330" y1="40" x2="330" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="570" y1="40" x2="570" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="800" y1="40" x2="800" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <!-- messages -->
+    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(số lượng, giá)</text>
+    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">POST lệnh thực</text>
+    <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED hoặc SUBMITTED (hoặc bị từ chối)</text>
+    <!-- branch: rejected -->
+    <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
+    <text class="sm" x="122" y="161">Nếu bị từ chối → ghi vào sổ cái <tspan font-weight="700">không có gì</tspan> + cảnh báo gateway_down. Cấm vị thế ma.</text>
+    <!-- filled path -->
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">Được chấp nhận → phản chiếu sổ cái theo số lượng đã khớp</text>
+    <!-- reconciler -->
+    <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
+    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">Bộ đối soát</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">chu kỳ 2 phút</text>
+    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">Truy vấn trạng thái lệnh SUBMITTED</text>
+    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">Trạng thái cuối cùng + số lượng khớp thực tế</text>
+    <!-- outcomes -->
+    <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">Khớp hoàn toàn (khớp)</tspan> → chỉ ghi trạng thái, kết thúc lặng lẽ · <tspan font-weight="700" fill="#a16800">Khớp một phần</tspan> → ghi filled_qty + cảnh báo order_drift</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">Hủy/từ chối sau đó</tspan> → cảnh báo order_drift + ghi nhận sai lệch. <tspan font-weight="700">Sổ cái tuyệt đối không tự động sửa</tspan> — con người phải kiểm tra.</text>
+  </svg>
+  <div class="cap">Hình 3 — Gửi → (ngay lập tức hoặc qua bộ đối soát) xác nhận → nếu lệch thì cảnh báo ồn ào. Số lượng yêu cầu (quantity) và số lượng xác nhận từ broker (filled_qty) là hai cột riêng biệt nên chênh lệch luôn hiển thị rõ.</div>
+  </div>
+
+  <div class="note red"><b>Nguyên tắc thiết kế — chỉ phát hiện, con người mới sửa:</b> Bộ đối soát tuyệt đối không chạm vào vị thế hay tiền mặt. Việc để một tác vụ nền tự sửa các con số tiền bạc là con đường làm hỏng sổ cái hai lần, vì vậy sai lệch được hiển thị to bằng thẻ đỏ và cảnh báo, còn việc sửa lại do người dùng tự thực hiện sau khi kiểm tra tài khoản broker.</div>
+</section>
+
+<!-- ═══ 5. IBKR 세션 유지 ═══ -->
+<section>
+  <h2><span class="no">05</span>Duy trì phiên IBKR (keepalive) <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
+  <p class="sub">Phiên IBKR Client Portal sẽ ngắt kết nối chỉ sau vài phút không hoạt động. Worker sẽ tickle phiên mỗi 60 giây, thử xác thực lại nếu bị ngắt, và cảnh báo một lần mỗi ngày nếu không thể khôi phục.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <rect class="box" x="30" y="80" width="170" height="70" rx="12" stroke="var(--good)"/>
+    <text class="lbl" x="115" y="108" text-anchor="middle">Bình thường (authenticated)</text>
+    <text class="sm" x="115" y="126" text-anchor="middle">duy trì bằng tickle mỗi 60 giây</text>
+
+    <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
+    <text class="lbl" x="450" y="103" text-anchor="middle">Phiên hết hạn (lapsed)</text>
+    <text class="sm" x="450" y="121" text-anchor="middle">Gateway vẫn còn sống nhưng</text>
+    <text class="sm" x="450" y="136" text-anchor="middle">xác thực đã bị mất</text>
+
+    <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="785" y="103" text-anchor="middle">Không thể khôi phục (dead)</text>
+    <text class="sm" x="785" y="121" text-anchor="middle">Cảnh báo gateway_down (1 lần/ngày)</text>
+    <text class="sm" x="785" y="136" text-anchor="middle">Con người đăng nhập lại gateway</text>
+
+    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">Không hoạt động/hết thời gian chờ</text>
+    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate thành công (tự động khôi phục)</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">Xác thực lại thất bại</text>
+    <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">Người dùng đăng nhập lại vào Client Portal Gateway</text>
+  </svg>
+  <div class="cap">Hình 4 — Sơ đồ trạng thái phiên. Phiên cạnh tranh (competing) cũng được coi là dead (vì nếu một lượt đăng nhập khác chiếm tài khoản thì lệnh sẽ bị từ chối).</div>
+  </div>
+
+  <div class="note"><b>Cơ chế an toàn shadow:</b> Khác với Alpaca/Binance, IBKR không có host sandbox riêng, mà <b>tài khoản</b> mới quyết định đó có phải là tiền thật hay không. Vì vậy ở chế độ shadow, nếu số tài khoản không phải là tài khoản mô phỏng (tiền tố <code>D</code>), adapter sẽ <b>từ chối gửi yêu cầu ngay từ đầu</b>.</div>
+</section>
+
+<!-- ═══ 6. 스킵 사유 사전 ═══ -->
+<section>
+  <h2><span class="no">06</span>Lý do bỏ qua → cách khắc phục <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <table>
+    <tr><th>Lý do trong bản ghi thực thi</th><th>Ý nghĩa</th><th>Cách khắc phục</th></tr>
+    <tr><td>Tự động thực thi tắt</td><td>Quy tắc chỉ ở chế độ phân tích</td><td>Bật ô kiểm tự động thực thi của quy tắc</td></tr>
+    <tr><td>Đã chọn live nhưng gateway giao dịch chưa được thiết lập</td><td>Không có tài khoản broker được kết nối</td><td>Kết nối gateway ở trang Tài khoản (STEP 2)</td></tr>
+    <tr><td>Không có thông tin xác thực API khả dụng cho gateway đã kết nối</td><td>Không có khóa đã lưu hoặc không thể giải mã (ví dụ do đổi khóa server)</td><td>Kết nối lại broker</td></tr>
+    <tr><td>Chưa đồng ý điều khoản giao dịch thực</td><td>Không có bản ghi đồng ý cho broker này</td><td>Đồng ý rồi kết nối lại ở trang Tài khoản (STEP 3)</td></tr>
+    <tr><td>Gateway đã từ chối lệnh — …</td><td>Broker từ chối lệnh (kèm lý do như thiếu số dư, phiên hết hạn, v.v.)</td><td>Kiểm tra lý do — nếu là lỗi 401 của IBKR thì đăng nhập lại gateway</td></tr>
+    <tr><td>Quyết định là hold</td><td>AI đánh giá nên chờ quan sát</td><td>Bình thường — không cần hành động</td></tr>
+    <tr><td>Độ tin cậy X — dưới ngưỡng Y</td><td>Thiếu độ tin cậy</td><td>Chờ (khuyến nghị) hoặc giảm min_confidence</td></tr>
+    <tr><td>Thị trường đã đóng cửa</td><td>Sàn giao dịch Mỹ đã đóng cửa</td><td>Bình thường — thử lại khi mở cửa</td></tr>
+    <tr><td>từ chối đặt lệnh shadow trên tài khoản IBKR …</td><td>Cố gắng shadow vào tài khoản thực IBKR</td><td>Kết nối đến tài khoản mô phỏng (DU…) hoặc dùng simulator thay vì shadow</td></tr>
+  </table>
+</section>
+
+<!-- ═══ 7. 안전 불변식 ═══ -->
+<section>
+  <h2><span class="no">07</span>Những điều hệ thống tuyệt đối không làm <span class="sub" style="display:inline">/ Bất biến an toàn (test-pinned)</span></h2>
+  <table>
+    <tr><th>Bất biến</th><th>Lý do</th><th>Cách đảm bảo</th></tr>
+    <tr><td>Không âm thầm hạ live xuống thành mô phỏng</td><td>Tệ nhất là khi lệnh khớp giả trông giống như thật</td><td>Từ chối rõ ràng tại cổng ② + ghi lại lý do</td></tr>
+    <tr><td>Lệnh shadow không chạm đến sàn giao dịch thực</td><td>"Thực thi mô phỏng" không được dùng tiền thật</td><td>Chế độ quy tắc cố định endpoint (bỏ qua chế độ tài khoản đã lưu), IBKR bắt buộc dùng tài khoản mô phỏng</td></tr>
+    <tr><td>Không tạo vị thế khi broker từ chối</td><td>Ngăn chặn vị thế ảo từ lệnh không chạm đến thị trường</td><td>live chỉ ghi vào sổ cái sau khi broker chấp nhận</td></tr>
+    <tr><td>Bộ đối soát không chỉnh sửa sổ cái</td><td>Sửa tính toán tiền ở nền = rủi ro hỏng dữ liệu kép</td><td>Chỉ phát hiện, ghi lại, cảnh báo; việc sửa lỗi do con người thực hiện</td></tr>
+    <tr><td>Khóa broker không được trả về cho client</td><td>Giảm thiểu bề mặt rò rỉ</td><td>Lưu trữ bằng AES-GCM, API truy vấn chỉ trả về metadata</td></tr>
+    <tr><td>Khóa mã hóa (EXECUTION_ENCRYPTION_KEY) chỉ ghi một lần</td><td>Khi thay thế, tất cả thông tin xác thực đã lưu sẽ bị vô hiệu vĩnh viễn</td><td>Quy trình vận hành + sao lưu bằng trình quản lý mật khẩu</td></tr>
+    <tr><td>Lỗi live không bị im lặng bỏ qua</td><td>Cổng kết nối đã chết không thể phân biệt với thị trường im ắng</td><td>Cảnh báo gateway_down/order_drift (loại bỏ trùng lặp theo giờ/ngày)</td></tr>
+  </table>
+  <div class="note green">Các bất biến nêu trên được cố định bằng các bài kiểm tra tự động (tổng 1,386 bài, trong đó ngăn xếp thực thi ~100 bài) và đã được xác minh lại bằng QA 3 tác nhân (kiểm tra đối kháng backend · luồng frontend · trạng thái production).</div>
+</section>
+
+<!-- ═══ 8. 운영 참고 ═══ -->
+<section style="border-bottom:none">
+  <h2><span class="no">08</span>Ghi chú vận hành <span class="sub" style="display:inline">/ Ghi chú vận hành</span></h2>
+  <table>
+    <tr><th>Mục</th><th>Giá trị/Vị trí</th><th>Ghi chú</th></tr>
+    <tr><td>Biến môi trường</td><td>Sản xuất <code>~/sooppiy/.env</code> Tệp đơn (mode 600)</td><td>Có chú thích theo từng phần. Container phải được tạo lại để áp dụng</td></tr>
+    <tr><td>Chu kỳ keepalive</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (mặc định 60 giây)</td><td>Không tốn chi phí, no-op nếu không có tài khoản IBKR</td></tr>
+    <tr><td>Chu kỳ đối soát</td><td><code>ORDER_RECONCILE_INTERVAL</code> (mặc định 120 giây)</td><td>Không tốn chi phí nếu không có lệnh submitted</td></tr>
+    <tr><td>Endpoint broker</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>Không hard-code — được inject từ .env</td></tr>
+    <tr><td>Triển khai</td><td>Build tag → của .env <code>SOOPPIY_IMAGE</code> sửa đổi → <code>docker compose --profile prod up -d</code></td><td>0 giá trị literal trong file compose</td></tr>
+    <tr><td>Container API</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>Vòng lặp chỉ dành cho worker — nếu true thì mọi thứ sẽ chạy trùng lặp</td></tr>
+  </table>
+</section>
+
+<footer style="padding:26px 0 60px;color:var(--muted);font-size:12px">
+  Sooppiy · docs/design/live-trading-gateway-guide.html · Nguồn: service/server/execution/ · service/server/automation.py · Xác minh: 3-agent QA 2026-07-19
+</footer>
+
+</div>
+</body>
+</html>

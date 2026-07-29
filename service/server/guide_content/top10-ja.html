@@ -1,0 +1,391 @@
+<!-- machine-translated from research/parameters/2-ai-trading-parameters-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIトレーディング — 上位10の判断パラメータ</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue  — price & market data */
+    --series-2: #008300; /* green — microstructure / order book */
+    --series-3: #e87ba4; /* magenta — text & sentiment */
+    --series-4: #eda100; /* yellow — macro & fundamentals */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --seq-650: #104281;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #008300;
+      --series-3: #d55181;
+      --series-4: #c98500;
+      --seq-100: #0d366b;
+      --seq-250: #1c5cab;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+      --buy: #0ca30c;
+      --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 70ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 80ch; }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ranked bars */
+  .rankrow { display: grid; grid-template-columns: 34px 240px 1fr; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; position: relative; cursor: default; }
+  .rankrow:hover { background: color-mix(in oklab, var(--text-primary) 5%, transparent); }
+  .rk { font-size: 15px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .rname { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .rname small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .bartrack { position: relative; height: 18px; }
+  .bar { position: absolute; left: 0; top: 2px; height: 14px; border-radius: 0 4px 4px 0; }
+  .tier { position: absolute; top: 1px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  .tip { display: none; position: absolute; z-index: 5; left: 290px; top: calc(100% - 4px); background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 12px; width: min(460px, 60vw); font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .rankrow:hover .tip { display: block; }
+  .tip b { color: var(--text-primary); }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inbox { border: 1.5px solid; border-radius: 10px; padding: 12px; background: color-mix(in oklab, var(--surface-1) 92%, transparent); }
+  .inbox h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .inbox ul { list-style: none; }
+  .inbox li { font-size: 11.5px; color: var(--text-secondary); padding: 2px 0; }
+  .inbox li b.rkb { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+  .stage { border: 1px solid var(--border); background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); border-radius: 10px; padding: 14px 18px; text-align: center; }
+  .stage h4 { font-size: 13.5px; font-weight: 700; }
+  .stage p { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; max-width: 72ch; margin-left: auto; margin-right: auto; }
+  .stageno { display: inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dbox { border-radius: 10px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .dbox h4 { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; }
+  .dbox p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .dbuy { border-color: var(--buy); }
+  .dbuy h4 { color: var(--buy); }
+  .dsell { border-color: var(--sell); }
+  .dsell h4 { color: var(--sell); }
+  .dhold { border-color: var(--baseline); }
+  .dhold h4 { color: var(--text-secondary); }
+  .loopnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* horizon matrix */
+  table.hz { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .hz th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: center; }
+  .hz th.rowh { text-align: left; font-weight: 600; color: var(--text-primary); font-size: 12px; width: 240px; }
+  .hz td { border-radius: 6px; text-align: center; font-size: 11px; padding: 9px 6px; font-weight: 600; }
+  .hz .c3 { background: var(--seq-450); color: #fff; }
+  .hz .c2 { background: var(--seq-250); color: #0b0b0b; }
+  .hz .c1 { background: var(--seq-100); color: var(--text-primary); }
+  .hz .c0 { background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); color: var(--muted); font-weight: 400; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .hz .c2 { color: #fff; }
+    :root:where(:not([data-theme="light"])) .hz .c1 { color: #c3c2b7; }
+  }
+  .famchip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  footer.src a { color: inherit; }
+  @media (max-width: 720px) {
+    .inputs { grid-template-columns: 1fr 1fr; }
+    .rankrow { grid-template-columns: 26px 150px 1fr; }
+    .tip { left: 10px; width: calc(100vw - 60px); }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>AIトレーディング：売買判断の上位10パラメータ</h1>
+      <p class="sub">AIおよびアルゴリズム取引システムが売買のタイミングを決定するために実際にモデルへ投入しているシグナルとは何か——世界の学術文献と業界実務を対象とした徹底調査により順位付けし、すべての主張を一次資料と照合して敵対的に事実確認した。</p>
+      <span class="stamp">詳細調査 · 100以上の情報源を検証 · 2026年7月 · 投資助言ではありません</span>
+    </header>
+
+    <!-- ============ 1. RANKING ============ -->
+    <section class="card">
+      <h2 class="sec">① 上位10パラメータ・ランキング</h2>
+      <p class="secnote">色はそのパラメータが属するデータファミリーを示す。各行にカーソルを合わせると、それが何を測定し、AIモデルがどのように使用するかが表示される。</p>
+      <div class="legend" role="list">
+        <span><i class="chip" style="background:var(--series-1)"></i>価格＆市場データ</span>
+        <span><i class="chip" style="background:var(--series-2)"></i>マーケットマイクロストラクチャー</span>
+        <span><i class="chip" style="background:var(--series-3)"></i>テキスト＆センチメント</span>
+        <span><i class="chip" style="background:var(--series-4)"></i>マクロ＆ファンダメンタルズ</span>
+      </div>
+
+      <div class="rankrow"><div class="rk">1</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>価格モメンタム／トレンド<small>12か月リターン（直近1か月を除く）、業種モメンタム</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:100%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象：</b> 価格が持続的に上昇または下落しているか（トレンドの継続性）。<br><b>第1位の理由：</b> ベンチマーク研究におけるあらゆるMLモデルクラスにおいて、最も情報量の多い予測変数ファミリーである（Gu–Kelly–Xiu, RFS 2020）。<br><b>AIによる活用方法：</b> リターン予測の中核となる特徴量。単純なルールでは直接使用される（「価格がSMAを上回れば → 買い」）。</div>
+      </div>
+      <div class="rankrow"><div class="rk">2</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>テクニカル指標<small>RSI、MACD、SMA／EMA、ストキャスティクス、Williams %R</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:93%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象：</b> エンジニアリングされた価格・出来高の変換を通じた買われすぎ／売られすぎの状態とトレンドの強さ。<br><b>第2位の理由：</b> 調査対象となった138件の研究（2,173個のカタログ化された変数）の中で最も一般的なML入力特徴量である。ML株価予測研究の約66%がこれらを使用している。<br><b>AIによる活用方法：</b> 分類器・回帰モデルに投入されるエンジニアリング特徴量。</div>
+      </div>
+      <div class="rankrow"><div class="rk">3</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>出来高＆流動性<small>ドル出来高、時価総額、ビッド・アスク・スプレッド</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:86%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象：</b> 値動きの背後にある参加度・確信度と、ポジションをどれだけ低コストで取引できるか。<br><b>第3位の理由：</b> ML特徴量重要度の第2階層。出来高特徴量を除去するとパフォーマンスが低下することがアブレーションテストで示されている。<br><b>AIによる活用方法：</b> ポジションサイジングのための予測変数＋取引可能性フィルター。</div>
+      </div>
+      <div class="rankrow"><div class="rk">4</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>ボラティリティ＆リスク<small>リターンボラティリティ、固有ボラティリティ、ベータ</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:79%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象:</b> リターンの分散とシステマティックリスクへのエクスポージャー。<br><b>理由その4:</b> すべてのMLモデルクラスにおける先行予測因子の第3階層。<br><b>AIによる活用方法:</b> リターン予測因子 + ポジションサイジング / リスク調整済みシグナルウェイティング。</div>
+      </div>
+      <div class="rankrow"><div class="rk">5</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>生のOHLCV価格系列<small>Open, High, Low, Close, Volume</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:72%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象:</b> 未加工の市場記録。<br><b>理由その5:</b> ディープラーニングの基本入力であり、分足レベルでは生の価格特徴量が13種類のテクニカル指標を上回った。<br><b>AIによる活用方法:</b> LSTM/CNNモデルが生の系列を取り込み、end-to-endで表現を学習する。</div>
+      </div>
+      <div class="rankrow"><div class="rk">6</div>
+        <div class="rname"><i class="chip" style="background:var(--series-2)"></i><span>指値注文板の深さ<small>10段階の売買気配 = 40特徴量入力</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:65%;background:var(--series-2)"></div></div>
+        <div class="tip"><b>測定対象:</b> リアルタイムの需給——各深度レベルで待機している価格と数量。<br><b>理由その6:</b> 最良気配の背後にある注文はプライスディスカバリーの約22%を担い、日中/HFT時間軸において支配的な入力となる。<br><b>AIによる活用方法:</b> 短期ホライズンのディープモデル(DeepLOB)や執行アルゴリズムの標準入力。</div>
+      </div>
+      <div class="rankrow"><div class="rk">7</div>
+        <div class="rname"><i class="chip" style="background:var(--series-3)"></i><span>ニュース &amp; ソーシャルセンチメント<small>ニュースワイヤー、X/Twitter、StockTwits、RedditをNLPで解析</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:58%;background:var(--series-3)"></div></div>
+        <div class="tip"><b>測定対象:</b> NLPモデルによって抽出された市場全体のムード。<br><b>理由その7:</b> 業界標準の入力であり、夜間のセンチメントは翌日のS&amp;P 500リターンを予測する(標準偏差あたり約6bp、FRB調査による)。<br><b>AIによる活用方法:</b> 資産・日ごとに数値化されたセンチメントスコアに変換され、価格特徴量と統合される。</div>
+      </div>
+      <div class="rankrow"><div class="rk">8</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>マクロ経済データ<small>金利、10年債利回り、PMI、GDP、不確実性指数</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:51%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>測定対象:</b> 割引率と成長環境。<br><b>理由その8:</b> 3大特徴量ファミリーの1つであり、指数レベルおよび長期ホライズンの予測に最も有用。<br><b>AIによる活用方法:</b> モデルのレジーム(リスクオン/リスクオフ)を変化させる、緩やかに動く条件付け特徴量。</div>
+      </div>
+      <div class="rankrow"><div class="rk">9</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>ファンダメンタルデータ<small>ROE、EPS、バリュエーション比率</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:44%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>測定対象:</b> 財務諸表から見た企業の質と価値。<br><b>理由その9:</b>canonical familyだが約23%の研究で使用される一方、テクニカルでは約66%; バリューはどこでも通用するリターン予測因子である。<br><b>AIの活用方法:</b>週次〜月次のホライズンでのクロスセクショナル・ランキング — 割安/高品質を買い、割高/低品質を空売りする。</div>
+      </div>
+      <div class="rankrow"><div class="rk">10</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>平均回帰シグナル<small>平均からの乖離、ペアスプレッド、1ヶ月リバーサル</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:37%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>測定対象:</b>価格(または関連資産間のスプレッド)が過去の平均からどれだけ乖離しているか。<br><b>理由 #10:</b>モメンタムの対極にある代表的な指標; 短期リバーサルもMLの特徴量として上位にランクされる。<br><b>AIの活用方法:</b>ペアトレーディング / 統計的裁定取引 — 割安な方を買い、割高な方を売る。</div>
+      </div>
+
+      <p class="axisnote">バーの長さは順位(ランク1〜4は測定されたML特徴量重要度の合成値、ランク5〜10は文献での使用頻度に基づく)を反映しており、測定値そのものではない。出典: Gu–Kelly–Xiu (RFS 2020); Kumbure et al. (2022); Sezer et al. (2020)。</p>
+    </section>
+
+    <!-- ============ 2. FLOW ============ -->
+    <section class="card">
+      <h2 class="sec">② 意思決定フロー: データから売買注文へ</h2>
+      <p class="secnote">典型的なAIトレーディングシステムが10のパラメータをどのように注文へと変換するか。括弧内の数字は上記のランキングを指す。</p>
+
+      <div class="flow">
+        <div class="inputs">
+          <div class="inbox" style="border-color:var(--series-1)">
+            <h4><i class="chip" style="background:var(--series-1)"></i>価格 & 市場データ</h4>
+            <ul>
+              <li><b class="rkb">#1</b>モメンタム / トレンド</li>
+              <li><b class="rkb">#2</b>テクニカル指標</li>
+              <li><b class="rkb">#3</b>出来高 & 流動性</li>
+              <li><b class="rkb">#4</b>ボラティリティ</li>
+              <li><b class="rkb">#5</b>生のOHLCV</li>
+              <li><b class="rkb">#10</b>平均回帰</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-2)">
+            <h4><i class="chip" style="background:var(--series-2)"></i>マイクロストラクチャー</h4>
+            <ul>
+              <li><b class="rkb">#6</b>板の厚み</li>
+              <li>気配値の不均衡</li>
+              <li>取引フロー</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-3)">
+            <h4><i class="chip" style="background:var(--series-3)"></i>テキスト & センチメント</h4>
+            <ul>
+              <li><b class="rkb">#7</b>ニュースセンチメント</li>
+              <li><b class="rkb">#7</b>ソーシャルメディア (X, Reddit)</li>
+              <li>NLPスコアリング (BERT, LSTM)</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-4)">
+            <h4><i class="chip" style="background:var(--series-4)"></i>マクロ & ファンダメンタルズ</h4>
+            <ul>
+              <li><b class="rkb">#8</b>金利、PMI、GDP</li>
+              <li><b class="rkb">#9</b>ROE、EPS、バリュエーション</li>
+              <li>不確実性指数</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="arrow">▼<small>タイムスタンプで収集・整合</small></div>
+
+        <div class="stage">
+          <span class="stageno">ステージ1</span>
+          <h4>特徴量エンジニアリング</h4>
+          <p>指標値、モメンタムウィンドウ(例: 12ヶ月スキップマンス)を計算し、銘柄間で正規化し、テキストをセンチメント数値にスコアリングし、先読みバイアスを避けるため特徴量にラグを設ける。</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">ステージ2</span>
+          <h4>AIモデル — リターン予測</h4>
+          <p>勾配ブースティング木/ニューラルネットワーク（LSTM、CNN）は、資産ごとの期待リターンまたは上昇/下降確率を予測します。非線形モデルは、同じ入力に対して線形回帰と比較してアウトオブサンプルのシャープレシオをおよそ2倍にします（1.35対0.61）。</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 3</span>
+          <h4>シグナル生成</h4>
+          <p>予測はランク付けまたは閾値処理されます：強い正の予測 → 買い候補；強い負の予測 → 売り/空売り候補；弱いシグナル → 取引なし。</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">STAGE 4</span>
+          <h4>リスクとポジションサイジング</h4>
+          <p>ボラティリティ（#4）がポジションサイズを決定し、流動性（#3）が注文サイズの上限を設定します。ポートフォリオ制約とドローダウン限度が適用されます。取引不可能な銘柄における優れたシグナルはここで破棄されます。</p>
+        </div>
+
+        <div class="arrow">▼<small>注文を送信</small></div>
+
+        <div class="decide">
+          <div class="dbox dbuy"><h4>BUY</h4><p>執行アルゴリズムは、影響を最小化するために板情報の深さ（#6）を使って注文を処理します</p></div>
+          <div class="dbox dhold"><h4>HOLD / NO TRADE</h4><p>シグナルが閾値未満、または取引コストが期待エッジを上回る</p></div>
+          <div class="dbox dsell"><h4>SELL / SHORT</h4><p>反転シグナル、ストップロス、目標達成、または負の予測での決済</p></div>
+        </div>
+
+        <div class="loopnote">↻ 結果はモデルにフィードバックされます — 再学習とウォークフォワード検証がループを閉じます。</div>
+      </div>
+    </section>
+
+    <!-- ============ 3. HORIZON MAP ============ -->
+    <section class="card">
+      <h2 class="sec">③ どのパラメータがどの時間軸で重要か</h2>
+      <p class="secnote">シグナルの有用性は時間軸に依存します：板情報のマイクロストラクチャーは秒～分で優勢となり、モメンタムとテクニカルは日次時間軸で、ファンダメンタルズとマクロは週～月次時間軸で優勢となります。セルの網掛けとラベルが重要度を示します。</p>
+      <table class="hz">
+        <thead>
+          <tr>
+            <th class="rowh">パラメータファミリー</th>
+            <th>HFT/日中<br>（秒～分）</th>
+            <th>短期<br>（日次）</th>
+            <th>中～長期<br>（週～月次）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-2)"></i>板情報の深さ（#6）</th><td class="c3">支配的</td><td class="c1">小さい</td><td class="c0">—</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>生のOHLCV（#5）</th><td class="c3">支配的</td><td class="c2">有用</td><td class="c1">小さい</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>テクニカル指標（#2）</th><td class="c1">小さい・過学習リスク</td><td class="c3">支配的</td><td class="c2">有用</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>モメンタムと反転（#1、#10）</th><td class="c1">小さい</td><td class="c3">支配的</td><td class="c3">支配的</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>出来高と流動性（#3）</th><td class="c2">有用</td><td class="c2">有用</td><td class="c2">有用</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>ボラティリティ（#4）</th><td class="c2">有用</td><td class="c2">有用</td><td class="c2">有用</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>センチメント（#7）</th><td class="c1">小さい</td><td class="c3">支配的</td><td class="c1">小さい</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>ファンダメンタルズ（#9）</th><td class="c0">—</td><td class="c1">小さい</td><td class="c3">支配的</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>マクロデータ（#8）</th><td class="c0">—</td><td class="c1">小さい</td><td class="c3">支配的</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote">時間軸依存性に関する証拠の定性的統合（Sezer et al. 2020; Prata et al. 2024; Rachev et al. 2025）。「—」はその時間軸ではほとんど使用されないことを意味します。</p>
+    </section>
+
+    <!-- ============ 4. VERIFIED SUCCESS RATES ============ -->
+    <section class="card">
+      <h2 class="sec">④ 検証済み成功率：チャートパターン vs 人間心理</h2>
+      <p class="secnote">ディープリサーチ第2ラウンド：各パラメータの有名な「成功率%」の数字を、査読済み一次資料と照合し、敵対的にファクトチェックしました。世間に広まっている数字と、実際にエビデンスが示す数字を並べて表示しています。両陣営の看板数字は、いずれも検証に耐えられませんでした。</p>
+      <table class="hz" style="border-spacing:2px">
+        <thead>
+          <tr>
+            <th class="rowh">パラメータ／シグナル</th>
+            <th>俗説の主張</th>
+            <th>検証済みの数字（査読済み）</th>
+            <th>単体で利益が出るか？</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Head & Shoulders</th><td class="c0">「80%以上の成功率」</td><td class="c2">年率5～7%のヘッジ後超過リターン（Savin 2007）</td><td class="c0">いいえ — S&P 500構成銘柄では成立せず</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Double Bottom</th><td class="c0">「80%以上の成功率」</td><td class="c1">NYSE/AMEXでは統計的に有意でない（LMW 2000）</td><td class="c0">未実証</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>古典的チャートパターン10種</th><td class="c0">「高い信頼性」</td><td class="c2">10件中7件が情報価値あり（NYSE）・10件中10件（Nasdaq）— 情報価値 ≠ 利益</td><td class="c0">著者ら：利益を示唆するものではない</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>ゴールデンクロス／移動平均</th><td class="c0">「高い勝率」</td><td class="c3">売りシグナル後、勝率53～54% vs 49%（Brock 1992）</td><td class="c0">コストとデータスヌーピング補正後には消失</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD単体</th><td class="c0">一般的な標準設定</td><td class="c1">勝率37～68%、シャープレシオ0.28～0.50（プレプリント）</td><td class="c0">「強力な予測ツールではない」</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD＋RSI併用</th><td class="c0">—</td><td class="c2">勝率78～86% — ただしバイ・アンド・ホールドとの比較なし、コスト考慮なし</td><td class="c0">未実証</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>テクニカル分析全般</th><td class="c0">「効果がある」</td><td class="c2">95件中56件が肯定的（59%）— ただしエビデンスは決定的でない（Park & Irwin 2007）</td><td class="c0">結論は出ず</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Twitterムード（Bollen 2011）</th><td class="c0">「87.6%の精度」</td><td class="c1">テスト日数は約15日ベース・再現に失敗：アウトオブサンプルでの検証力ゼロ</td><td class="c0">ヘッジファンドは2012年に閉鎖</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>ソーシャルセンチメント（現実的な数値）</th><td class="c0">—</td><td class="c3">方向性的中率50～55%、8市場、約300万ツイート（2025年）</td><td class="c0">限定的</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>夜間ニュース／ソーシャルセンチメント</th><td class="c0">—</td><td class="c2">1標準偏差あたり翌日のS&P 500への影響は約6bp（連邦準備制度の調査）</td><td class="c0">実在するがごく小さい</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>政策／戦争／FOMC／VIXの影響</th><td class="c0">多くの主張</td><td class="c0">今回の検証を通過した定量的な主張はなし</td><td class="c0">未解決の問題</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>結論：</b>チャートパターンは統計的に有益ではあるが、単独で利益が証明されているわけではない。人間心理シグナルは実際に、しかしわずかな情報を追加する（87.6%ではなく、方向性の精度は50〜55%程度と見込まれる）。測定される優位性は、単一のパラメータからではなく、多数の弱いシグナルを非線形モデルで組み合わせることから生まれる。アウトオブサンプルかつコスト調整済みで再現された裏付けのない、約60%を超える精度の主張は信用しないこと。</p>
+    </section>
+
+    <!-- ============ 5. FINAL HYBRID STRATEGY ============ -->
+    <section class="card">
+      <h2 class="sec">⑤ 最終ハイブリッド戦略：トップ10パラメータの実装</h2>
+      <p class="secnote">全ての研究ラウンドの結論を、一つの戦略へと統合したもの。<b>心理がレジームを決定する（いつ）</b>, <b>チャートがトリガーを決定する（何を／どの価格で）</b>, <b>出来高とセンチメントが確認する</b>、そして<b>ボラティリティがサイズを決定する</b>。これは、トップ10の各パラメータを4層構造の中の位置にマッピングするものである。合流（コンフルエンス）がある場合のみトレードすること — 6条件中4つ以上が一致すること。</p>
+      <table class="mx" style="width:100%; border-collapse:separate; border-spacing:2px">
+        <thead>
+          <tr>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">トップ10パラメータ</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">ハイブリッド戦略における役割</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">買い/売り条件</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:11.5px">
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#1 モメンタム／トレンド</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>第2層 — 方向性エンジン。</b> 12-1モメンタムと200日移動平均がロング/ショートのバイアスを決定する（最も検証された予測因子）</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">買い B1・B2 ／ 売り S1・S2</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#2 テクニカル指標／パターン</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>第3層 — トリガー。</b> パターン完成がエントリーのタイミングを決める。単独では使用しない — 勝率は最良でも53〜54%程度であり、常に出来高による確認が必要</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">買い B3 ／ 売り S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#3 出来高＆流動性</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>第3層 — 確認（必須）。</b> 出来高を伴わないブレイクアウトは罠なので見送る。流動性は第4層での注文サイズの上限を定める</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">B3・S3を確認</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#4 ボラティリティ＆リスク</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>第4層 — サイジング。</b> ポジションサイズ ＝ リスク予算 ÷ ボラティリティ。ストップとボラティリティ目標は、他の全てのシグナルに優先する</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">売り S6（絶対的ルール）</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#5 生のOHLCVデータ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>全ての層の基礎データ。</b> モメンタム、指標、パターン、ボラティリティのための原材料</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">基盤</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-2)"></i>#6 板情報（オーダーブックの深さ）</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>執行段階。</b> 意思決定の後、市場への影響を最小化するように注文を執行する。デイトレードでない限り、予測には使用しない</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">執行</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-3)"></i>#7 ニュース＆ソーシャルセンチメント</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>レイヤー1のレジーム＋レイヤー3の確認＋拒否権。</b> オーバーナイトのセンチメントが確認（B4）、陶酔感が極値なら逆張り売り（S4）、実際のニュースでセンチメントが崩壊すると買いシグナルを拒否</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B4·B5 / Sell S4·S5 / Veto</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#8 マクロデータ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>レイヤー1 — イベントカレンダー。</b> FOMC/CPI/選挙の前後±1日は新規エントリーなし。リターン予測ではなく、タイミング・リスクフィルターとしてのみ使用</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B6 / Sell S5</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#9 ファンダメンタルズ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>レイヤー2サポート — 銘柄選定。</b> 週次〜月次のホライズンで、どの銘柄が候補プールに入るかを決定する（割安・高品質を優先）</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">候補フィルター</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#10 平均回帰</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>逆張りスペシャル。</b> VIX &gt; 30 ＋極度の恐怖＋価格の安定化 → ハーフサイズのパニック買い。心理の極値でのみ発動</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B5（パニック買い）</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>実行サマリー：</b> ① VIXとイベントがモード（トレンド／逆張り／様子見）を設定 → ② モメンタム＋MAが方向を設定 → ③ パターン＋出来高＋センチメントがトリガーを確認 → ④ ボラティリティがサイズを設定、ストップロスは絶対的なもの。6条件中4つ以上で行動する。現実的な目標精度は55〜58%——優位性は予測からではなく、シグナルの積み重ね、イベントウィンドウのスキップ、負けトレードの早期損切りから生まれる。全チェックリストは「hybrid-strategy」アーティファクトを参照。投資助言ではありません。</p>
+    </section>
+
+    <footer class="src">
+      <b>主要な情報源：</b> Gu, Kelly &amp; Xiu (2020) <i>Review of Financial Studies</i> · Asness, Moskowitz &amp; Pedersen (2013) <i>Journal of Finance</i> · Kumbure et al. (2022) <i>Expert Systems with Applications</i> · Sezer et al. (2020) <i>Applied Soft Computing</i> · <i>Communications of the ACM</i> Algorithmic Trading Review · Prata et al. (2024) <i>Artificial Intelligence Review</i> · Dinh &amp; Kwon (2018) <i>Informatics</i> · Lo, Mamaysky &amp; Wang (2000) &amp; Brock et al. (1992) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Lachanski &amp; Pav (2017) <i>Econ Journal Watch</i>.
+      <br><b>注意事項：</b>ランク1～4は測定されたML特徴量重要度（2016年までの米国データ、グロスリターン）に基づき、ランク5～10は使用頻度を反映しています。利益は小型株に集中し、取引コスト差し引き後は縮小します。ヘッジファンド独自の特徴量セットは一般に観測できません。これはシステムが入力として使用するものの説明であり、投資助言ではなく、収益性を保証するものでもありません。
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

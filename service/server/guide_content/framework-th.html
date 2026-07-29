@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เฟรมเวิร์กไฮบริด — สแต็กการตัดสินใจ & เช็กลิสต์</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/2-hybrid-strategy-framework.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>กรอบแนวคิดแบบผสมผสาน: การผสาน Chart Patterns × จิตวิทยามนุษย์</h1>
+<h2>차트 패턴 × 인간 심리 융합 매매 프레임워크</h2>
+<p><strong>สร้างขึ้นจากงานวิจัยเชิงลึกที่ผ่านการตรวจสอบแล้วสองรอบ (ตัวแทนกว่า 200 ตัว ตรวจสอบข้อเท็จจริงจากแหล่งข้อมูลปฐมภูมิ) · กรกฎาคม 2026</strong>
+<strong>⚠️ กรอบแนวคิดเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความคาดหวังที่สมจริง: ความแม่นยำเชิงทิศทาง 50–55% — ความได้เปรียบมาจากการบรรจบกัน (confluence) รวมกับการบริหารความเสี่ยง ไม่ใช่จากสัญญาณเดี่ยวใด ๆ</strong></p>
+<div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
+<b>กรอบแนวคิดนี้เชื่อมโยงกับการใช้งานจริงในคริปโตอย่างไร</b> รายการตรวจสอบนี้ระบุกลยุทธ์การวิจัย ส่วนระบบที่ใช้งานจริงจะปรับให้เหมาะกับคริปโต
+<b>VIX → ดัชนีความกลัวและความโลภของคริปโต (F&amp;G)</b> ซึ่งเป็นสเกลกลับด้าน — ความตื่นตระหนกคือ <b>F&amp;G &lt; 20</b> (ไม่ใช่ VIX &gt; 30) ความสงบคือ <b>F&amp;G &gt; 30</b>; ไม่มี VIX สำหรับคริปโต (<code>regime.py</code>, <code>strategy_config.py</code>)
+<b>รูปแบบกราฟที่มีชื่อเรียก (double bottom, H&amp;S) → คะแนนทางเทคนิคแบบผสม</b> (RSI · MA · funding · basis · long/short) ที่ยืนยันด้วยปริมาณการซื้อขาย — ไม่มีตัวตรวจจับรูปแบบแท่งเทียน (<code>confluence.py</code> B3/S3)
+<b>ความรู้สึกจากผลตอบแทนข้ามคืน → แนวโน้มฝูงชนจาก StockTwits</b> (B4) ชื่อ B1–B6 / S1–S6 คือป้ายกำกับเงื่อนไขของเอนจินตัวจริง
+</div>
+
+<hr />
+<h2>1. หลักการหลักที่งานวิจัยพิสูจน์ได้</h2>
+<p>ข้อเท็จจริงที่ผ่านการตรวจสอบสองข้อเป็นตัวขับเคลื่อนการออกแบบทั้งหมด:</p>
+<ol>
+<li><strong>รูปแบบกราฟให้ข้อมูลได้แต่ไม่สามารถทำกำไรได้ด้วยตัวมันเองเพียงลำพัง</strong> (Lo–Mamaysky–Wang 2000; Savin 2007) มันบอกคุณว่า <em>บางสิ่งบางอย่าง</em> กำลังเกิดขึ้น โดยมีความได้เปรียบสูงสุด 53–54% — อย่าใช้มันเป็นตัวกระตุ้นแบบเดี่ยว ๆ เด็ดขาด</li>
+<li><strong>จิตวิทยาขับเคลื่อนตลาดได้ แต่สามารถนำมาซื้อขายได้เฉพาะในภาวะสุดขั้วและในช่วงเวลาเฉพาะเท่านั้น</strong> (ความรู้สึกข้ามคืน ~6bp/SD; ความแม่นยำของความรู้สึก 50–55%; ความตื่นตระหนก/ความอิ่มเอิบใจคือจุดที่ผลกระทบเชิงพฤติกรรมรวมตัวกันหนาแน่น)</li>
+</ol>
+<p>ดังนั้นส่วนผสมคือ: <strong>จิตวิทยาเป็นตัวกำหนด REGIME (เมื่อไหร่ และความเสี่ยงมากน้อยแค่ไหน); กราฟเป็นตัวกำหนด TRIGGER (อะไร และที่ราคาเท่าไหร่); ปริมาณการซื้อขาย + ความรู้สึกตลาด CONFIRM (ยืนยัน); ความผันผวนเป็นตัวกำหนด SIZE (ขนาด)</strong></p>
+<p>สัญญาณเป็นแบบสะสม ไม่ใช่แบบเด็ดขาด: แต่ละเงื่อนไขที่เป็นจริงจะเพิ่มคะแนน; คุณจะลงมือทำก็ต่อเมื่อมีความสอดคล้องกัน (4 จาก 6 ขึ้นไป) เพราะสัญญาณที่มีความแม่นยำ 53% เมื่อนำมาซ้อนกับสัญญาณอิสระที่แม่นยำ 53% อีกตัว จะทำให้ระบบจริงมีความแม่นยำเกิน 55% ได้</p>
+<hr />
+<h2>2. โครงสร้างการตัดสินใจสี่ชั้น</h2>
+<h3>LAYER 1 — ตัวกรองสภาวะจิตวิทยา (인간 심리 = 국면 판단) — <em>"ควรเทรดหรือไม่ และควรใช้โหมดไหน?"</em></h3>
+<table>
+<thead>
+<tr>
+<th>ปัจจัยนำเข้า</th>
+<th>สถานะ</th>
+<th>โหมด</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VIX / ระดับความกลัว</td>
+<td>&lt; 20 สงบ</td>
+<td><strong>Trend mode</strong> — ตามกราฟ</td>
+</tr>
+<tr>
+<td></td>
+<td>20–30 กังวล</td>
+<td>ลดขนาด 50%, ตั้ง stop ให้แคบลง</td>
+</tr>
+<tr>
+<td></td>
+<td>&gt; 30 ตื่นตระหนก</td>
+<td><strong>Contrarian mode</strong> — เพิกเฉยต่อรูปแบบกราฟขาลง, เตรียมซื้อแบบ mean-reversion</td>
+</tr>
+<tr>
+<td>ปฏิทินเหตุการณ์ (FOMC, CPI, การเลือกตั้ง)</td>
+<td>ภายใน ±1 วัน</td>
+<td><strong>ไม่เปิดสถานะใหม่</strong>; ถือหรือป้องกันความเสี่ยง</td>
+</tr>
+<tr>
+<td>ข่าวช็อกด้านสงคราม/นโยบาย</td>
+<td>1–3 วันแรก</td>
+<td>ห้ามซื้อการดีดตัวครั้งแรกเด็ดขาด; รอสัญญาณการทรงตัว</td>
+</tr>
+<tr>
+<td>น้ำเสียงความรู้สึกจากโซเชียล/ข่าว</td>
+<td>ความอิ่มเอิบสุดขั้ว</td>
+<td>เปิดสัญญาณเตือนขายแบบ Contrarian</td>
+</tr>
+<tr>
+<td></td>
+<td>ความกลัวสุดขั้ว</td>
+<td>เปิดสัญญาณเตือนซื้อแบบ Contrarian</td>
+</tr>
+</tbody>
+</table>
+<h3>LAYER 2 — เครื่องมือกำหนดทิศทาง (กราฟ: WHAT) — ตัวชี้วัดที่แม่นยำที่สุดที่ผ่านการยืนยันแล้ว</h3>
+<ul>
+<li>โมเมนตัม 12 เดือน (ข้ามเดือนล่าสุด) เป็นบวก → เอนเอียงไปทาง long / เป็นลบ → เอนเอียงไปทาง short</li>
+<li>ราคาเทียบกับ MA 200 วัน (สถานะ golden-cross) → ทิศทางแนวโน้ม</li>
+<li>การกลับตัวระยะสั้น 1 เดือน → จังหวะสวนแนวโน้มภายในกรอบทิศทางหลัก</li>
+</ul>
+<h3>LAYER 3 — สัญญาณกระตุ้นและการยืนยัน (กราฟ + จิตวิทยาร่วมกัน: WHEN)</h3>
+<p>รูปแบบจะนับได้ก็ต่อเมื่อ <strong>สมบูรณ์ AND ได้รับการยืนยันด้วยปริมาณการซื้อขาย AND ความรู้สึกตลาดไม่ขัดแย้ง</strong>:
+- สัญญาณขาขึ้น: การทะลุแบบ double-bottom / H&amp;S-inverse <strong>+ ปริมาณการซื้อขายเพิ่มขึ้น + ความรู้สึกข้ามคืนที่ไม่เป็นลบ</strong>
+- สัญญาณขาลง: การเกิดรูปแบบ double-top / H&amp;S สมบูรณ์ <strong>+ ปริมาณการซื้อขายเพิ่มขึ้น + น้ำเสียงข่าวแย่ลง</strong>
+- No volume = no trade (volume features are verified essential; Dinh &amp; Kwon 2018)</p>
+<h3>เลเยอร์ 4 — ขนาดและการออก (ความเสี่ยง: HOW MUCH)</h3>
+<ul>
+<li>ขนาดโพซิชัน = งบประมาณความเสี่ยง ÷ ความผันผวน (ยืนยันแล้ว: ความผันผวนเป็นตัวทำนายอันดับต้น 4 อันดับแรก และเป็นข้อมูลนำเข้าสำหรับการกำหนดขนาด)</li>
+<li>Hard stop ต่ำกว่าจุดที่รูปแบบเสียความถูกต้อง; trail ด้วย MA</li>
+<li>Time stop: หากสมมติฐานไม่เป็นไปตามคาดภายใน N วัน → ออก (ความแม่นยำของคุณอยู่ที่ประมาณ 55% ดังนั้นการขาดทุนต้องตัดให้เร็ว)</li>
+</ul>
+<hr />
+<h2>3. เช็คลิสต์การซื้อ (BUY) (confluence ≥ 4 จาก 6 → ซื้อ)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>สัญญาณ</th>
+<th>ฝั่งแหล่งที่มา</th>
+<th>พื้นฐานที่ยืนยันแล้ว</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1</td>
+<td>ราคาสูงกว่า MA 200 วัน / สถานะ golden-cross</td>
+<td>Chart</td>
+<td>Brock 1992: วันที่มีสัญญาณซื้อ +12% ต่อปี</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>โมเมนตัม 12-1 เป็นบวก</td>
+<td>Chart</td>
+<td>GKX 2020: ตัวทำนาย ML อันดับ 1</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>รูปแบบขาขึ้นเสร็จสมบูรณ์พร้อมปริมาณการซื้อขาย</td>
+<td>Chart</td>
+<td>LMW 2000 ให้ข้อมูลเชิงลึก + ปริมาณการซื้อขายจำเป็น</td>
+</tr>
+<tr>
+<td>B4</td>
+<td>ความรู้สึกข้ามคืน/ข่าวเป็นบวกหรือกำลังฟื้นตัว</td>
+<td>จิตวิทยา</td>
+<td>Fed: ~6bp/SD วันถัดไป</td>
+</tr>
+<tr>
+<td>B5</td>
+<td>ความกลัวที่พุ่งสูงกำลังลดลง (VIX ลดลงจากจุดสูงสุด &gt;30)</td>
+<td>จิตวิทยา</td>
+<td>วรรณกรรมเรื่อง overreaction/mean-reversion</td>
+</tr>
+<tr>
+<td>B6</td>
+<td>ไม่มี FOMC/CPI/เหตุการณ์สำคัญภายใน 24 ชั่วโมง</td>
+<td>จิตวิทยา</td>
+<td>จังหวะเวลาความเสี่ยงจากเหตุการณ์</td>
+</tr>
+</tbody>
+</table>
+<p><strong>กรณีพิเศษแบบสวนทาง (panic buy):</strong> VIX &gt; 30 + ความรู้สึกอยู่ในภาวะกลัวสุดขีด + ราคาทรงตัวเหนือ MA ระยะสั้น + จุดสูงสุดของปริมาณการซื้อขายผ่านไปแล้ว → ซื้อแบบ mean-reversion ด้วยขนาดครึ่งหนึ่ง (นี่คือกรณี "be greedy when others are fearful" ที่ถูกทำให้เป็นระบบ)</p>
+<h2>4. เช็คลิสต์การขาย (SELL) (confluence ≥ 4 จาก 6 → ขาย/หลีกเลี่ยง)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>สัญญาณ</th>
+<th>ฝั่งแหล่งที่มา</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>ราคาต่ำกว่า MA 200 วัน / สถานะ death-cross</td>
+<td>Chart</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>โมเมนตัมเปลี่ยนเป็นลบ</td>
+<td>Chart</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>รูปแบบขาลง (double top / H&amp;S) เสร็จสมบูรณ์พร้อมปริมาณการซื้อขาย</td>
+<td>Chart</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>ความรู้สึกเชิงบวกสุดขีด (ทุกคนมองขาขึ้น บรรยากาศคลั่งไคล้แบบ meme-stock)</td>
+<td>จิตวิทยา — สวนทาง</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>ผลกระทบเชิงลบจากนโยบาย/ภูมิรัฐศาสตร์ยังไม่คลี่คลาย</td>
+<td>จิตวิทยา</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>ถึงจุด stop-loss / เป้าหมายความผันผวน</td>
+<td>ความเสี่ยง (มีผลเหนือกว่าทุกอย่างเสมอ)</td>
+</tr>
+</tbody>
+</table>
+<h2>5. เมทริกซ์สถานการณ์ WHEN × WHAT</h2>
+<table>
+<thead>
+<tr>
+<th>สถานการณ์ (สภาวะจิตวิทยาตลาด)</th>
+<th>ฝั่งที่มีอิทธิพลเหนือกว่า</th>
+<th>การดำเนินการ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>แนวโน้มขาขึ้นที่นิ่ง ความรู้สึกเชิงบวก</td>
+<td>กราฟ</td>
+<td>ตามเทรนด์: ซื้อเมื่อราคาย่อลงมาที่ MA พร้อมวอลุ่ม; ถือไว้</td>
+</tr>
+<tr>
+<td>แนวโน้มขาลงที่นิ่ง</td>
+<td>กราฟ</td>
+<td>อยู่นอกตลาดหรือเอนเอียงชอร์ต; อย่ารับมีดที่กำลังร่วงหากไม่มีสัญญาณ panic จาก Layer-1</td>
+</tr>
+<tr>
+<td>ตื่นตระหนก (ข่าวสงคราม, VIX &gt;30, ความกลัวสุดขั้ว)</td>
+<td>จิตวิทยา</td>
+<td>วันที่ 1–3: ไม่ทำอะไร จากนั้นซื้อสวนทางเมื่อมีสัญญาณทรงตัว (B5)</td>
+</tr>
+<tr>
+<td>ความคลั่งไคล้ (ราคาพุ่งแบบพาราโบลา + ทุกคนมองบวก)</td>
+<td>จิตวิทยา</td>
+<td>ทำกำไรระหว่างที่ราคายังแข็งแกร่ง; ขายเมื่อเกิดสัญญาณ S4; ห้ามเพิ่มโพซิชัน</td>
+</tr>
+<tr>
+<td>ช่วง FOMC/CPI/การเลือกตั้ง</td>
+<td>จิตวิทยา</td>
+<td>หยุดนิ่ง/ไม่เปิดโพซิชันใหม่; กลับมาดำเนินการวันถัดไป</td>
+</tr>
+<tr>
+<td>การทะลุแพทเทิร์นโดยไม่มีวอลุ่ม</td>
+<td>ไม่ใช่ทั้งสองฝั่ง</td>
+<td>ความเสี่ยงกับดัก — ข้ามไป (การทะลุปลอมส่วนใหญ่เกิดขึ้นในลักษณะนี้)</td>
+</tr>
+<tr>
+<td>กราฟเป็นบวก แต่ความรู้สึกทรุดตัวจากข่าวจริง</td>
+<td>จิตวิทยายับยั้ง</td>
+<td>ข้ามการเทรดนี้ไป — ภาวะข่าวชนะกราฟที่ล้าสมัย</td>
+</tr>
+<tr>
+<td>ความรู้สึกมีสัญญาณรบกวน ไม่สุดขั้ว กราฟชัดเจน</td>
+<td>กราฟ</td>
+<td>เทรดตามกราฟ; ความรู้สึกเป็นเพียงตัวตัดสินเมื่อเสมอกัน</td>
+</tr>
+</tbody>
+</table>
+<h2>6. การบริหารความคาดหวัง (ตัวเลขที่ผ่านการตรวจสอบแล้ว)</h2>
+<ul>
+<li>ความแม่นยำเชิงทิศทางที่ควรคาดหวัง: <strong>50–55%</strong>, ไม่ใช่ 80%</li>
+<li>ประเภทความได้เปรียบแบบ golden-cross: ~4–5 จุดของอัตราชนะ เหนือกว่าการโยนเหรียญ ก่อนหักต้นทุน</li>
+<li>ความได้เปรียบจากความรู้สึก: basis points ต่อวัน เป็นจริงเฉพาะที่จุดสุดขั้วและช่วงข้ามคืนเท่านั้น</li>
+<li>ความได้เปรียบแบบทบต้นมาจาก: confluence (การซ้อนทับความได้เปรียบที่อ่อนแต่เป็นอิสระจากกัน), การตัดขาดทุนอย่างรวดเร็ว, การกำหนดขนาดโพซิชันตามความผันผวน, และการข้ามช่วงเหตุการณ์สำคัญ — ไม่ใช่มาจากความอัจฉริยะในการทำนาย</li>
+<li>ความได้เปรียบที่เผยแพร่ทุกอย่างจะเสื่อมลง ทำ Backtest, paper-trade และตรวจสอบซ้ำแบบ out-of-sample ก่อนนำเงินจริงไปเสี่ยง</li>
+</ul>
+<h2>7. แหล่งข้อมูลสำคัญ</h2>
+<p>Gu–Kelly–Xiu (2020) RFS · Lo–Mamaysky–Wang (2000) JF · Brock et al. (1992) JF · Savin et al. (2007) JFEc · Park &amp; Irwin (2007) JES · Sullivan et al. (1999) JF · Bollen et al. (2011) + การจำลองซ้ำของ Lachanski &amp; Pav (2017) · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018) · Prata et al. (2024).</p>
+</main></body></html>

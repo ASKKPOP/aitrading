@@ -87,11 +87,43 @@ class GuideRoutesTests(unittest.TestCase):
         self.assertNotIn("ops-keys", groups)
         self.assertNotIn("architecture", groups)
 
-    def test_the_member_guide_is_published_in_every_ui_language(self):
+    def test_every_member_group_is_published_in_every_ui_language(self):
+        """The language set is LANG_NAMES, never a literal.
+
+        This asserted `{"ko","en","ja","th","vi"}` for the `decisions` group
+        alone. Both halves were wrong by 2026-07-29: Indonesian had shipped, so
+        the literal was a five-language snapshot of a six-language product, and
+        checking one group let the other eight stay en/ko — `gateway` was
+        Korean ONLY, and DocsPage's `docs[0]` last resort quietly served that
+        Korean document to English readers. A member-visible group that cannot
+        be read in a language the top bar offers is the bug; check them all.
+        """
+        from analysis_agents import LANG_NAMES
+
         r = self.client.get("/api/guide/docs",
                             headers=self._h(_make_user_token("someone@else.com")))
-        langs = {d["lang"] for d in r.json()["docs"] if d["group"] == "decisions"}
-        self.assertEqual(langs, {"ko", "en", "ja", "th", "vi"})
+        payload = r.json()
+        member_groups = {g["group"] for g in payload["groups"]}
+        by_group: dict[str, set] = {}
+        for doc in payload["docs"]:
+            by_group.setdefault(doc["group"], set()).add(doc["lang"])
+        for group in sorted(member_groups):
+            with self.subTest(group=group):
+                self.assertEqual(by_group.get(group, set()), set(LANG_NAMES),
+                                 f"{group} is missing "
+                                 f"{sorted(set(LANG_NAMES) - by_group.get(group, set()))}")
+
+    def test_every_group_nav_label_covers_every_ui_language(self):
+        """The rail label is what a member navigates by: a group whose label
+        omits their language renders in English even when the document behind
+        it is fully translated."""
+        from analysis_agents import LANG_NAMES
+
+        r = self.client.get("/api/guide/docs", headers=self._h(self.owner_token))
+        for group in r.json()["groups"]:
+            with self.subTest(group=group["group"]):
+                missing = [x for x in LANG_NAMES if not group.get(x)]
+                self.assertFalse(missing, f"{group['group']} label missing {missing}")
 
     def test_docs_for_owner(self):
         r = self.client.get("/api/guide/docs", headers=self._h(self.owner_token))

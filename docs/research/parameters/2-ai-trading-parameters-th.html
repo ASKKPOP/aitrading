@@ -1,0 +1,391 @@
+<!-- machine-translated from research/parameters/2-ai-trading-parameters-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Trading — พารามิเตอร์การตัดสินใจ 10 อันดับแรก</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue  — price & market data */
+    --series-2: #008300; /* green — microstructure / order book */
+    --series-3: #e87ba4; /* magenta — text & sentiment */
+    --series-4: #eda100; /* yellow — macro & fundamentals */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --seq-650: #104281;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #008300;
+      --series-3: #d55181;
+      --series-4: #c98500;
+      --seq-100: #0d366b;
+      --seq-250: #1c5cab;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+      --buy: #0ca30c;
+      --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 70ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 80ch; }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ranked bars */
+  .rankrow { display: grid; grid-template-columns: 34px 240px 1fr; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; position: relative; cursor: default; }
+  .rankrow:hover { background: color-mix(in oklab, var(--text-primary) 5%, transparent); }
+  .rk { font-size: 15px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .rname { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .rname small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .bartrack { position: relative; height: 18px; }
+  .bar { position: absolute; left: 0; top: 2px; height: 14px; border-radius: 0 4px 4px 0; }
+  .tier { position: absolute; top: 1px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  .tip { display: none; position: absolute; z-index: 5; left: 290px; top: calc(100% - 4px); background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 12px; width: min(460px, 60vw); font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .rankrow:hover .tip { display: block; }
+  .tip b { color: var(--text-primary); }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inbox { border: 1.5px solid; border-radius: 10px; padding: 12px; background: color-mix(in oklab, var(--surface-1) 92%, transparent); }
+  .inbox h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .inbox ul { list-style: none; }
+  .inbox li { font-size: 11.5px; color: var(--text-secondary); padding: 2px 0; }
+  .inbox li b.rkb { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+  .stage { border: 1px solid var(--border); background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); border-radius: 10px; padding: 14px 18px; text-align: center; }
+  .stage h4 { font-size: 13.5px; font-weight: 700; }
+  .stage p { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; max-width: 72ch; margin-left: auto; margin-right: auto; }
+  .stageno { display: inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dbox { border-radius: 10px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .dbox h4 { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; }
+  .dbox p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .dbuy { border-color: var(--buy); }
+  .dbuy h4 { color: var(--buy); }
+  .dsell { border-color: var(--sell); }
+  .dsell h4 { color: var(--sell); }
+  .dhold { border-color: var(--baseline); }
+  .dhold h4 { color: var(--text-secondary); }
+  .loopnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* horizon matrix */
+  table.hz { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .hz th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: center; }
+  .hz th.rowh { text-align: left; font-weight: 600; color: var(--text-primary); font-size: 12px; width: 240px; }
+  .hz td { border-radius: 6px; text-align: center; font-size: 11px; padding: 9px 6px; font-weight: 600; }
+  .hz .c3 { background: var(--seq-450); color: #fff; }
+  .hz .c2 { background: var(--seq-250); color: #0b0b0b; }
+  .hz .c1 { background: var(--seq-100); color: var(--text-primary); }
+  .hz .c0 { background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); color: var(--muted); font-weight: 400; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .hz .c2 { color: #fff; }
+    :root:where(:not([data-theme="light"])) .hz .c1 { color: #c3c2b7; }
+  }
+  .famchip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  footer.src a { color: inherit; }
+  @media (max-width: 720px) {
+    .inputs { grid-template-columns: 1fr 1fr; }
+    .rankrow { grid-template-columns: 26px 150px 1fr; }
+    .tip { left: 10px; width: calc(100vw - 60px); }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>AI Trading: พารามิเตอร์การตัดสินใจซื้อ/ขาย 10 อันดับแรก</h1>
+      <p class="sub">สัญญาณที่ระบบ AI และการเทรดด้วยอัลกอริทึมป้อนเข้าโมเดลจริง ๆ เพื่อตัดสินใจว่าเมื่อใดควรซื้อและขาย — จัดอันดับจากการสำรวจงานวิจัยเชิงลึกในวรรณกรรมวิชาการระดับโลกและแนวปฏิบัติในอุตสาหกรรม โดยทุกข้อกล่าวอ้างได้รับการตรวจสอบข้อเท็จจริงอย่างเข้มงวดกับแหล่งข้อมูลปฐมภูมิ</p>
+      <span class="stamp">การวิจัยเชิงลึก · ตรวจสอบแหล่งข้อมูลกว่า 100 แหล่ง · กรกฎาคม 2026 · ไม่ใช่คำแนะนำการลงทุน</span>
+    </header>
+
+    <!-- ============ 1. RANKING ============ -->
+    <section class="card">
+      <h2 class="sec">① พารามิเตอร์ 10 อันดับแรก จัดอันดับ</h2>
+      <p class="secnote">สีแสดงกลุ่มข้อมูลที่พารามิเตอร์แต่ละตัวสังกัด วางเมาส์เหนือแถวใดก็ได้เพื่อดูว่าวัดอะไรและโมเดล AI ใช้งานอย่างไร</p>
+      <div class="legend" role="list">
+        <span><i class="chip" style="background:var(--series-1)"></i>ข้อมูลราคา &amp; ตลาด</span>
+        <span><i class="chip" style="background:var(--series-2)"></i>โครงสร้างจุลภาคของตลาด</span>
+        <span><i class="chip" style="background:var(--series-3)"></i>ข้อความ &amp; ความรู้สึกตลาด</span>
+        <span><i class="chip" style="background:var(--series-4)"></i>เศรษฐกิจมหภาค &amp; ปัจจัยพื้นฐาน</span>
+      </div>
+
+      <div class="rankrow"><div class="rk">1</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>โมเมนตัมราคา / แนวโน้ม<small>ผลตอบแทน 12 เดือน (ข้ามเดือนล่าสุด), โมเมนตัมของอุตสาหกรรม</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:100%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>วัด:</b> ว่าราคามีแนวโน้มเพิ่มขึ้นหรือลดลงอย่างต่อเนื่องหรือไม่ (การดำเนินต่อของแนวโน้ม)<br><b>ทำไมถึงเป็นอันดับ 1:</b> กลุ่มตัวทำนายที่ให้ข้อมูลมากที่สุดในทุกประเภทโมเดล ML ในการศึกษาเปรียบเทียบ (Gu–Kelly–Xiu, RFS 2020)<br><b>AI ใช้งานอย่างไร:</b>สัญญาณพยากรณ์ผลตอบแทนหลัก; กฎง่ายๆ ใช้มันโดยตรง ("ราคาสูงกว่า SMA → ซื้อ").</div>
+      </div>
+      <div class="rankrow"><div class="rk">2</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>ตัวชี้วัดทางเทคนิค<small>RSI, MACD, SMA/EMA, Stochastic, Williams %R</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:93%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>วัด:</b> ภาวะซื้อมากเกินไป/ขายมากเกินไป และความแข็งแกร่งของแนวโน้มผ่านการแปลงราคา/ปริมาณที่ออกแบบไว้<br><b>เหตุผลข้อที่ #2:</b> เป็นฟีเจอร์อินพุตที่พบบ่อยที่สุดใน ML จากการสำรวจ 138 การศึกษา (2,173 ตัวแปรที่รวบรวมไว้); ~66% ของการศึกษาการพยากรณ์หุ้นด้วย ML ใช้ฟีเจอร์เหล่านี้<br><b>AI ใช้งานอย่างไร:</b> ฟีเจอร์ที่ออกแบบไว้ป้อนเข้าสู่ classifiers/regressors</div>
+      </div>
+      <div class="rankrow"><div class="rk">3</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>ปริมาณการซื้อขาย &amp; สภาพคล่อง<small>ปริมาณการซื้อขายเป็นดอลลาร์, มูลค่าตลาด, ส่วนต่างราคาเสนอซื้อ–เสนอขาย</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:86%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>วัด:</b> การมีส่วนร่วม/ความเชื่อมั่นเบื้องหลังการเคลื่อนไหว และความง่ายในการซื้อขายโดยมีต้นทุนต่ำ<br><b>เหตุผลข้อที่ #3:</b> ลำดับความสำคัญของฟีเจอร์ ML ระดับที่สอง; การทดสอบแบบ ablation แสดงให้เห็นว่าประสิทธิภาพลดลงเมื่อนำฟีเจอร์ปริมาณการซื้อขายออก<br><b>AI ใช้งานอย่างไร:</b> ตัวพยากรณ์ + ตัวกรองความสามารถในการซื้อขายสำหรับการกำหนดขนาดสถานะ</div>
+      </div>
+      <div class="rankrow"><div class="rk">4</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>ความผันผวน &amp; ความเสี่ยง<small>ผลตอบแทนความผันผวน, ความผันผวนเฉพาะตัว, เบต้า</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:79%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>การวัด:</b> การกระจายตัวของผลตอบแทนและการเปิดรับความเสี่ยงเชิงระบบ<br><b>เหตุผลข้อที่ #4:</b> กลุ่มตัวทำนายชั้นนำระดับที่สามในโมเดล ML ทุกประเภท<br><b>AI ใช้สิ่งนี้อย่างไร:</b> ตัวทำนายผลตอบแทน + การกำหนดขนาดโพซิชัน / การถ่วงน้ำหนักสัญญาณตามความเสี่ยง</div>
+      </div>
+      <div class="rankrow"><div class="rk">5</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>ข้อมูลราคา OHLCV แบบดิบ<small>Open, High, Low, Close, Volume</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:72%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>การวัด:</b> บันทึกตลาดที่ยังไม่ผ่านการประมวลผล<br><b>เหตุผลข้อที่ #5:</b> ข้อมูลนำเข้าพื้นฐานสำหรับ deep learning; ที่ความถี่ระดับนาที คุณลักษณะราคาแบบดิบมีประสิทธิภาพเหนือกว่าตัวชี้วัดทางเทคนิค 13 ตัว<br><b>AI ใช้สิ่งนี้อย่างไร:</b> โมเดล LSTM/CNN รับข้อมูลชุดดิบและเรียนรู้การแทนค่าแบบ end-to-end</div>
+      </div>
+      <div class="rankrow"><div class="rk">6</div>
+        <div class="rname"><i class="chip" style="background:var(--series-2)"></i><span>ความลึกของสมุดคำสั่งซื้อขาย (Limit order book depth)<small>10 ระดับของราคาเสนอซื้อ/เสนอขาย = ข้อมูลนำเข้า 40 คุณลักษณะ</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:65%;background:var(--series-2)"></div></div>
+        <div class="tip"><b>การวัด:</b> อุปสงค์และอุปทานแบบเรียลไทม์ — ราคาและปริมาณที่รอคอยอยู่ในแต่ละระดับความลึก<br><b>เหตุผลข้อที่ #6:</b> คำสั่งซื้อขายที่อยู่หลังราคาเสนอซื้อ/เสนอขายที่ดีที่สุดมีส่วนราว 22% ของการค้นพบราคา; เป็นข้อมูลนำเข้าหลักในช่วงเวลาระดับ intraday/HFT<br><b>AI ใช้สิ่งนี้อย่างไร:</b> เป็นข้อมูลนำเข้ามาตรฐานสำหรับโมเดล deep learning ระยะสั้น (DeepLOB) และอัลกอริทึมการส่งคำสั่งซื้อขาย</div>
+      </div>
+      <div class="rankrow"><div class="rk">7</div>
+        <div class="rname"><i class="chip" style="background:var(--series-3)"></i><span>ความรู้สึกจากข่าวและโซเชียล (News & social sentiment)<small>สายข่าว, X/Twitter, StockTwits, Reddit ผ่าน NLP</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:58%;background:var(--series-3)"></div></div>
+        <div class="tip"><b>การวัด:</b> อารมณ์รวมของตลาดที่สกัดได้จากโมเดล NLP<br><b>เหตุผลข้อที่ #7:</b> ข้อมูลนำเข้ามาตรฐานของอุตสาหกรรม; ความรู้สึกช่วงข้ามคืนสามารถทำนายผลตอบแทนของ S&P 500 ในวันถัดไป (~6bp ต่อ SD, งานวิจัยของ Fed)<br><b>AI ใช้สิ่งนี้อย่างไร:</b> แปลงเป็นคะแนนความรู้สึกเชิงตัวเลขต่อสินทรัพย์/วัน แล้วรวมเข้ากับคุณลักษณะด้านราคา</div>
+      </div>
+      <div class="rankrow"><div class="rk">8</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>ข้อมูลเศรษฐกิจมหภาค<small>อัตราดอกเบี้ย, อัตราผลตอบแทนพันธบัตร 10 ปี, PMI, GDP, ดัชนีความไม่แน่นอน</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:51%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>การวัด:</b> สภาพแวดล้อมของอัตราคิดลดและการเติบโต<br><b>เหตุผลข้อที่ #8:</b> หนึ่งในสามตระกูลคุณลักษณะหลัก; มีประโยชน์มากที่สุดสำหรับการพยากรณ์ระดับดัชนีและระยะยาว<br><b>AI ใช้สิ่งนี้อย่างไร:</b> คุณลักษณะเชิงเงื่อนไขที่เปลี่ยนแปลงช้า ซึ่งปรับเปลี่ยนสถานะของโมเดล (risk-on/risk-off)</div>
+      </div>
+      <div class="rankrow"><div class="rk">9</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>ข้อมูลพื้นฐาน (Fundamental data)<small>ROE, EPS, อัตราส่วนมูลค่า</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:44%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>การวัด:</b> คุณภาพและมูลค่าของบริษัทจากงบการเงิน<br><b>เหตุผลข้อที่ #9:</b> ตระกูลปัจจัยหลัก แต่ใช้ใน ~23% ของงานวิจัย เทียบกับ ~66% สำหรับปัจจัยเชิงเทคนิค; มูลค่าเป็นตัวทำนายผลตอบแทนที่ใช้ได้ "ทุกที่"<br><b>AI ใช้สิ่งนี้อย่างไร:</b> การจัดอันดับแบบตัดขวางในช่วงเวลารายสัปดาห์ถึงรายเดือน — ซื้อของถูก/มีคุณภาพ ขายชอร์ตของแพง/อ่อนแอ</div>
+      </div>
+      <div class="rankrow"><div class="rk">10</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>สัญญาณการกลับสู่ค่าเฉลี่ย<small>การเบี่ยงเบนจากค่าเฉลี่ย, ส่วนต่างคู่, การกลับตัว 1 เดือน</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:37%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>การวัด:</b> ราคา (หรือส่วนต่างระหว่างสินทรัพย์ที่เกี่ยวข้อง) เบี่ยงเบนไปจากค่าเฉลี่ยในอดีตมากเพียงใด<br><b>เหตุผลอันดับ #10:</b> เป็นคู่ตรงข้ามหลักของโมเมนตัม; การกลับตัวระยะสั้นก็ติดอันดับต้น ๆ ในบรรดาฟีเจอร์ ML ด้วยเช่นกัน<br><b>AI ใช้สิ่งนี้อย่างไร:</b> การเทรดคู่ / สถิติอาร์บิทราจ — ซื้อฝั่งที่ราคาต่ำกว่ามูลค่าจริง ขายฝั่งที่ราคาสูงกว่ามูลค่าจริง</div>
+      </div>
+
+      <p class="axisnote">ความยาวของแท่งสะท้อนลำดับอันดับ (ซึ่งเป็นค่าผสมระหว่างความสำคัญของฟีเจอร์ ML ที่วัดได้สำหรับอันดับ 1–4 และความแพร่หลายในการใช้งานตามวรรณกรรมสำหรับอันดับ 5–10) — ไม่ใช่ปริมาณที่วัดได้โดยตรง แหล่งที่มา: Gu–Kelly–Xiu (RFS 2020); Kumbure et al. (2022); Sezer et al. (2020)</p>
+    </section>
+
+    <!-- ============ 2. FLOW ============ -->
+    <section class="card">
+      <h2 class="sec">② กระบวนการตัดสินใจ: จากข้อมูลสู่คำสั่งซื้อ/ขาย</h2>
+      <p class="secnote">ระบบเทรด AI ทั่วไปแปลงพารามิเตอร์ทั้ง 10 ตัวให้เป็นคำสั่งซื้อขายอย่างไร ตัวเลขในวงเล็บอ้างอิงถึงการจัดอันดับข้างต้น</p>
+
+      <div class="flow">
+        <div class="inputs">
+          <div class="inbox" style="border-color:var(--series-1)">
+            <h4><i class="chip" style="background:var(--series-1)"></i>ข้อมูลราคาและตลาด</h4>
+            <ul>
+              <li><b class="rkb">#1</b> โมเมนตัม / แนวโน้ม</li>
+              <li><b class="rkb">#2</b> ตัวชี้วัดเชิงเทคนิค</li>
+              <li><b class="rkb">#3</b> ปริมาณการซื้อขายและสภาพคล่อง</li>
+              <li><b class="rkb">#4</b> ความผันผวน</li>
+              <li><b class="rkb">#5</b> OHLCV ดิบ</li>
+              <li><b class="rkb">#10</b> การกลับสู่ค่าเฉลี่ย</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-2)">
+            <h4><i class="chip" style="background:var(--series-2)"></i>โครงสร้างจุลภาคของตลาด</h4>
+            <ul>
+              <li><b class="rkb">#6</b> ความลึกของสมุดคำสั่งซื้อขาย</li>
+              <li>ความไม่สมดุลระหว่างราคาเสนอซื้อและเสนอขาย</li>
+              <li>กระแสการซื้อขาย</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-3)">
+            <h4><i class="chip" style="background:var(--series-3)"></i>ข้อความและความรู้สึกตลาด</h4>
+            <ul>
+              <li><b class="rkb">#7</b> ความรู้สึกจากข่าว</li>
+              <li><b class="rkb">#7</b> โซเชียลมีเดีย (X, Reddit)</li>
+              <li>การให้คะแนนด้วย NLP (BERT, LSTM)</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-4)">
+            <h4><i class="chip" style="background:var(--series-4)"></i>เศรษฐกิจมหภาคและปัจจัยพื้นฐาน</h4>
+            <ul>
+              <li><b class="rkb">#8</b> อัตราดอกเบี้ย, PMI, GDP</li>
+              <li><b class="rkb">#9</b> ROE, EPS, การประเมินมูลค่า</li>
+              <li>ดัชนีความไม่แน่นอน</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="arrow">▼<small>รวบรวมและจัดเรียงตามช่วงเวลา</small></div>
+
+        <div class="stage">
+          <span class="stageno">ขั้นตอนที่ 1</span>
+          <h4>วิศวกรรมฟีเจอร์</h4>
+          <p>คำนวณค่าตัวชี้วัด, ช่วงเวลาโมเมนตัม (เช่น 12 เดือนแบบข้ามเดือน), ปรับค่าให้เป็นมาตรฐานข้ามหุ้น, ให้คะแนนข้อความเป็นตัวเลขความรู้สึก, หน่วงฟีเจอร์เพื่อหลีกเลี่ยงอคติจากการมองไปข้างหน้า</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">ขั้นตอนที่ 2</span>
+          <h4>โมเดล AI — การพยากรณ์ผลตอบแทน</h4>
+          <p>โมเดล Gradient-boosted trees / neural networks (LSTM, CNN) ทำนายผลตอบแทนที่คาดหวังหรือความน่าจะเป็นขึ้น/ลงของสินทรัพย์แต่ละตัว โมเดลไม่เชิงเส้นให้ค่า Sharpe ratio นอกกลุ่มตัวอย่างสูงขึ้นเกือบเท่าตัวเมื่อเทียบกับ linear regression (1.35 เทียบกับ 0.61) จากข้อมูลนำเข้าชุดเดียวกัน</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">ขั้นตอนที่ 3</span>
+          <h4>การสร้างสัญญาณ</h4>
+          <p>การพยากรณ์จะถูกจัดอันดับหรือกำหนดเกณฑ์: สัญญาณบวกที่แข็งแกร่ง → ตัวเลือกซื้อ; สัญญาณลบที่แข็งแกร่ง → ตัวเลือกขาย/ชอร์ต; สัญญาณอ่อน → ไม่มีการซื้อขาย</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">ขั้นตอนที่ 4</span>
+          <h4>ความเสี่ยง &amp; การกำหนดขนาดโพซิชัน</h4>
+          <p>ความผันผวน (#4) กำหนดขนาดโพซิชัน; สภาพคล่อง (#3) จำกัดขนาดคำสั่ง; ข้อจำกัดของพอร์ตโฟลิโอและขีดจำกัดการขาดทุนสะสมมีผลบังคับใช้ สัญญาณที่ดีมากในหุ้นที่เทรดไม่ได้จะถูกทิ้งไปที่ขั้นตอนนี้</p>
+        </div>
+
+        <div class="arrow">▼<small>ส่งคำสั่ง</small></div>
+
+        <div class="decide">
+          <div class="dbox dbuy"><h4>BUY</h4><p>อัลกอริทึมการดำเนินการทำงานกับคำสั่งโดยใช้ความลึกของ order book (#6) เพื่อลดผลกระทบให้น้อยที่สุด</p></div>
+          <div class="dbox dhold"><h4>ถือครอง / ไม่เทรด</h4><p>สัญญาณต่ำกว่าเกณฑ์ หรือต้นทุนการเทรดสูงกว่าความได้เปรียบที่คาดหวัง</p></div>
+          <div class="dbox dsell"><h4>ขาย / ชอร์ต</h4><p>ออกเมื่อมีสัญญาณกลับตัว, stop-loss, ถึงเป้าหมาย หรือการพยากรณ์เป็นลบ</p></div>
+        </div>
+
+        <div class="loopnote">↻ ผลลัพธ์ถูกป้อนกลับเข้าสู่โมเดล — การฝึกใหม่และการตรวจสอบแบบ walk-forward ปิดวงจรนี้</div>
+      </div>
+    </section>
+
+    <!-- ============ 3. HORIZON MAP ============ -->
+    <section class="card">
+      <h2 class="sec">③ พารามิเตอร์ใดสำคัญในแต่ละช่วงเวลา</h2>
+      <p class="secnote">ประโยชน์ของสัญญาณขึ้นอยู่กับช่วงเวลา: โครงสร้างจุลภาคของ order book มีอิทธิพลสูงสุดในช่วงวินาที–นาที, โมเมนตัมและตัวชี้วัดทางเทคนิคมีอิทธิพลสูงสุดในช่วงรายวัน, ปัจจัยพื้นฐานและมหภาคมีอิทธิพลสูงสุดในช่วงรายสัปดาห์–รายเดือน สีของเซลล์และป้ายกำกับแสดงถึงความสำคัญ</p>
+      <table class="hz">
+        <thead>
+          <tr>
+            <th class="rowh">กลุ่มพารามิเตอร์</th>
+            <th>HFT / อินทราเดย์<br>(วินาที–นาที)</th>
+            <th>ระยะสั้น<br>(รายวัน)</th>
+            <th>ระยะกลาง–ยาว<br>(รายสัปดาห์–รายเดือน)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-2)"></i>ความลึกของ order book (#6)</th><td class="c3">มีอิทธิพลสูงสุด</td><td class="c1">เล็กน้อย</td><td class="c0">—</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>OHLCV ดิบ (#5)</th><td class="c3">มีอิทธิพลสูงสุด</td><td class="c2">มีประโยชน์</td><td class="c1">เล็กน้อย</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>ตัวชี้วัดทางเทคนิค (#2)</th><td class="c1">เล็กน้อย · มีความเสี่ยง overfit</td><td class="c3">มีอิทธิพลสูงสุด</td><td class="c2">มีประโยชน์</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>โมเมนตัม &amp; การกลับตัว (#1, #10)</th><td class="c1">เล็กน้อย</td><td class="c3">มีอิทธิพลสูงสุด</td><td class="c3">มีอิทธิพลสูงสุด</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>ปริมาณการซื้อขาย &amp; สภาพคล่อง (#3)</th><td class="c2">มีประโยชน์</td><td class="c2">มีประโยชน์</td><td class="c2">มีประโยชน์</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>ความผันผวน (#4)</th><td class="c2">มีประโยชน์</td><td class="c2">มีประโยชน์</td><td class="c2">มีประโยชน์</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>ความรู้สึกตลาด (#7)</th><td class="c1">เล็กน้อย</td><td class="c3">มีอิทธิพลสูงสุด</td><td class="c1">เล็กน้อย</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>ปัจจัยพื้นฐาน (#9)</th><td class="c0">—</td><td class="c1">เล็กน้อย</td><td class="c3">มีอิทธิพลสูงสุด</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>ข้อมูลมหภาค (#8)</th><td class="c0">—</td><td class="c1">เล็กน้อย</td><td class="c3">มีอิทธิพลสูงสุด</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote">การสังเคราะห์เชิงคุณภาพของหลักฐานความสัมพันธ์กับช่วงเวลา (Sezer et al. 2020; Prata et al. 2024; Rachev et al. 2025) "—" = ไม่ค่อยได้ใช้ในช่วงเวลานั้น</p>
+    </section>
+
+    <!-- ============ 4. VERIFIED SUCCESS RATES ============ -->
+    <section class="card">
+      <h2 class="sec">④ อัตราความสำเร็จที่ได้รับการยืนยัน: รูปแบบกราฟ กับ จิตวิทยามนุษย์</h2>
+      <p class="secnote">การวิจัยเชิงลึกรอบที่ 2: ตัวเลข "% ความสำเร็จ" ที่มีชื่อเสียงสำหรับแต่ละพารามิเตอร์ ได้รับการตรวจสอบข้อเท็จจริงเชิงต่อต้านกับแหล่งข้อมูลปฐมภูมิที่ผ่านการตรวจสอบโดยผู้ทรงคุณวุฒิ ตัวเลขที่เป็นความเชื่อยอดนิยมแสดงเทียบเคียงกับสิ่งที่หลักฐานสนับสนุนจริง ตัวเลขหลักของทั้งสองฝ่ายไม่ผ่านการทดสอบ</p>
+      <table class="hz" style="border-spacing:2px">
+        <thead>
+          <tr>
+            <th class="rowh">พารามิเตอร์ / สัญญาณ</th>
+            <th>ข้อเรียกร้องตามความเชื่อ</th>
+            <th>ตัวเลขที่ได้รับการยืนยัน (ผ่านการตรวจสอบโดยผู้ทรงคุณวุฒิ)</th>
+            <th>ทำกำไรได้ด้วยตัวเองหรือไม่?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Head &amp; Shoulders</th><td class="c0">"ความสำเร็จ 80%+"</td><td class="c2">ผลตอบแทนส่วนเกินแบบป้องกันความเสี่ยง 5–7%/ปี (Savin 2007)</td><td class="c0">ไม่ — ไม่ใช่กับหุ้นใน S&amp;P 500</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Double Bottom</th><td class="c0">"ความสำเร็จ 80%+"</td><td class="c1">ไม่มีนัยสำคัญทางสถิติใน NYSE/AMEX (LMW 2000)</td><td class="c0">ยังไม่ได้รับการพิสูจน์</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>รูปแบบกราฟคลาสสิก 10 แบบ</th><td class="c0">"ความน่าเชื่อถือสูง"</td><td class="c2">7/10 ให้ข้อมูลที่เป็นประโยชน์ (NYSE) · 10/10 (Nasdaq) — ข้อมูล ≠ กำไร</td><td class="c0">ผู้เขียน: ไม่ได้บ่งชี้ว่าทำกำไรได้</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Golden cross / ค่าเฉลี่ยเคลื่อนที่</th><td class="c0">"อัตราชนะสูง"</td><td class="c3">อัตราชนะ 53–54% เทียบกับ 49% หลังสัญญาณขาย (Brock 1992)</td><td class="c0">หายไปหลังหักต้นทุนและแก้ปัญหา data-snooping</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD เพียงอย่างเดียว</th><td class="c0">ค่าเริ่มต้นยอดนิยม</td><td class="c1">อัตราชนะ 37–68%, Sharpe 0.28–0.50 (preprint)</td><td class="c0">"ไม่ใช่เครื่องมือพยากรณ์ที่แข็งแกร่ง"</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD + RSI ผสมกัน</th><td class="c0">—</td><td class="c2">อัตราชนะ 78–86% — แต่ไม่มีเกณฑ์เปรียบเทียบแบบ buy-and-hold ไม่มีการหักต้นทุน</td><td class="c0">ยังไม่ได้รับการพิสูจน์</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>การวิเคราะห์ทางเทคนิคโดยรวม</th><td class="c0">"มันได้ผล"</td><td class="c2">56/95 การศึกษาให้ผลบวก (59%) — แต่หลักฐานยังไม่ชัดเจน (Park &amp; Irwin 2007)</td><td class="c0">ยังไม่ชัดเจน</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>อารมณ์ใน Twitter (Bollen 2011)</th><td class="c0">"ความแม่นยำ 87.6%"</td><td class="c1">อ้างอิงจากข้อมูลทดสอบเพียง ~15 วัน · การทำซ้ำ FAILED: ไม่มีอำนาจทางสถิตินอกกลุ่มตัวอย่าง</td><td class="c0">กองทุนเฮดจ์ฟันด์ปิดตัวในปี 2012</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>ความรู้สึกทางสังคม (ตามความเป็นจริง)</th><td class="c0">—</td><td class="c3">ความแม่นยำเชิงทิศทาง 50–55%, 8 ตลาด, ~3 ล้านทวีต (2025)</td><td class="c0">เล็กน้อย</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>ข่าวช่วงกลางคืน/ความรู้สึกทางสังคม</th><td class="c0">—</td><td class="c2">~6bp ต่อวันถัดไปของ S&amp;P 500 ต่อ SD (การวิจัยของ Fed)</td><td class="c0">จริงแต่เล็กน้อยมาก</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>ผลกระทบจากนโยบาย / สงคราม / FOMC / VIX</th><td class="c0">หลายข้อเรียกร้อง</td><td class="c0">ไม่มีข้อเรียกร้องเชิงปริมาณใดผ่านการตรวจสอบในรอบนี้</td><td class="c0">คำถามที่ยังเปิดอยู่</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>สรุปสำคัญ:</b>chart patterns เป็นข้อมูลที่มีนัยสำคัญทางสถิติแต่ยังไม่มีการพิสูจน์ว่าทำกำไรได้ด้วยตัวเอง สัญญาณด้านจิตวิทยามนุษย์เพิ่มข้อมูลที่แท้จริงแต่เพียงเล็กน้อย (คาดหวังความแม่นยำเชิงทิศทาง 50–55% ไม่ใช่ 87.6%) ความได้เปรียบที่วัดได้มาจากการรวมสัญญาณอ่อนหลายตัวเข้าด้วยกันในโมเดลแบบไม่เชิงเส้น ไม่ได้มาจากพารามิเตอร์เดี่ยวใดๆ อย่าไว้ใจการอ้างความแม่นยำใดๆ ที่สูงกว่า ~60% ซึ่งขาดหลักฐาน out-of-sample, cost-adjusted, replicated</p>
+    </section>
+
+    <!-- ============ 5. FINAL HYBRID STRATEGY ============ -->
+    <section class="card">
+      <h2 class="sec">⑤ กลยุทธ์ไฮบริดขั้นสุดท้าย: การใช้งานพารามิเตอร์ 10 อันดับแรก</h2>
+      <p class="secnote">บทสรุปของการวิจัยทุกรอบ ผสานรวมเป็นกลยุทธ์เดียว <b>จิตวิทยากำหนดสภาวะตลาด (เมื่อไหร่)</b>, <b>charts กำหนดจุดกระตุ้น (อะไร/ที่ราคาเท่าไหร่)</b>, <b>ปริมาณการซื้อขาย + sentiment ยืนยัน</b> และ <b>ความผันผวนกำหนดขนาด</b> สิ่งนี้จับคู่พารามิเตอร์ Top-10 แต่ละตัวเข้ากับตำแหน่งของมันในโครงสร้าง 4 ชั้น เทรดเฉพาะเมื่อมีความสอดคล้องกัน — 4 เงื่อนไขขึ้นไปจากทั้งหมด 6 เงื่อนไขที่เห็นพ้องกัน</p>
+      <table class="mx" style="width:100%; border-collapse:separate; border-spacing:2px">
+        <thead>
+          <tr>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">พารามิเตอร์ Top-10</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">บทบาทในกลยุทธ์ไฮบริด</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">เงื่อนไขซื้อ/ขาย</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:11.5px">
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#1 Momentum / trend</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ชั้นที่ 2 — เครื่องยนต์กำหนดทิศทาง</b> 12-1 momentum + 200-day MA กำหนดอคติ long/short (ตัวทำนายที่ผ่านการตรวจสอบมากที่สุด)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">ซื้อ B1·B2 / ขาย S1·S2</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#2 ตัวชี้วัดทางเทคนิค / รูปแบบกราฟ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ชั้นที่ 3 — จุดกระตุ้น</b> การเสร็จสมบูรณ์ของ pattern กำหนดจังหวะการเข้า ไม่ควรใช้เดี่ยวๆ — อัตราชนะสูงสุดเพียง 53–54% ต้องมีการยืนยันด้วยปริมาณการซื้อขายเสมอ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">ซื้อ B3 / ขาย S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#3 ปริมาณการซื้อขาย &amp; สภาพคล่อง</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ชั้นที่ 3 — การยืนยัน (บังคับ)</b> Breakout ที่ไม่มีปริมาณการซื้อขาย = กับดัก ให้ข้ามไป สภาพคล่องจำกัดขนาดคำสั่งในชั้นที่ 4</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">ยืนยัน B3·S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#4 ความผันผวน &amp; ความเสี่ยง</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ชั้นที่ 4 — การกำหนดขนาด</b> ขนาดโพซิชัน = งบประมาณความเสี่ยง ÷ ความผันผวน Stops และเป้าหมายความผันผวนมีอำนาจเหนือสัญญาณอื่นทั้งหมด</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">ขาย S6 (กฎเด็ดขาด)</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#5 Raw OHLCV</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ข้อมูลพื้นฐานสำหรับทุกชั้น</b> วัตถุดิบสำหรับ momentum, ตัวชี้วัด, patterns และความผันผวน</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">รากฐาน</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-2)"></i>#6 ความลึกของ order book</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>ขั้นตอนการดำเนินการคำสั่ง</b> หลังจากตัดสินใจแล้ว ดำเนินการคำสั่งเพื่อลดผลกระทบต่อตลาดให้น้อยที่สุด ไม่ใช้สำหรับการทำนายเว้นแต่เทรดแบบ intraday</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">การดำเนินการคำสั่ง</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-3)"></i>#7 ข่าว &amp; sentiment ทางสังคม</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 regime + Layer 3 confirmation + veto power.</b> ความเชื่อมั่นข้ามคืนยืนยัน (B4) ความรู้สึกเชิงบวกสุดขั้ว = ขายสวนทาง (S4) ความเชื่อมั่นที่ทรุดตัวจากข่าวจริงจะยับยั้งสัญญาณซื้อ</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B4·B5 / Sell S4·S5 / Veto</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#8 ข้อมูลมหภาค</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 — ปฏิทินเหตุการณ์</b> ห้ามเปิดสถานะใหม่ภายใน ±1 วันของ FOMC/CPI/การเลือกตั้ง ใช้เป็นตัวกรองด้านจังหวะเวลา/ความเสี่ยงเท่านั้น ไม่ใช่ตัวทำนายผลตอบแทน</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B6 / Sell S5</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#9 ปัจจัยพื้นฐาน</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 2 support — การคัดเลือกหุ้น</b> ในกรอบเวลารายสัปดาห์ถึงรายเดือน ใช้ตัดสินว่าหุ้นตัวใดจะเข้าสู่กลุ่มผู้สมัคร (ราคาถูก/คุณภาพดีก่อน)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">ตัวกรองผู้สมัคร</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#10 การกลับตัวสู่ค่าเฉลี่ย</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>กรณีพิเศษเชิงสวนทาง</b> VIX &gt; 30 + ความกลัวสุดขั้ว + ราคาเริ่มนิ่ง → ซื้อแบบตื่นตระหนกครึ่งขนาด เปิดใช้งานเฉพาะเมื่อจิตวิทยาถึงจุดสุดขั้วเท่านั้น</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B5 (panic buy)</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>สรุปการดำเนินการ:</b> ① VIX &amp; เหตุการณ์กำหนดโหมด (เทรนด์ / สวนทาง / รอดูสถานการณ์) → ② โมเมนตัมและ MA กำหนดทิศทาง → ③ รูปแบบ ปริมาณ และความเชื่อมั่นยืนยันจุดกระตุ้น → ④ ความผันผวนกำหนดขนาด; จุดตัดขาดทุนเป็นเด็ดขาด ดำเนินการเฉพาะเมื่อเข้าเงื่อนไข 4 ใน 6 ข้อขึ้นไป ความแม่นยำเป้าหมายที่สมจริงอยู่ที่ 55–58% — ความได้เปรียบมาจากการรวมสัญญาณหลายชั้น การเลี่ยงช่วงเวลาที่มีเหตุการณ์สำคัญ และการตัดขาดทุนตั้งแต่เนิ่นๆ ไม่ใช่จากการทำนาย ดูรายละเอียด checklist ทั้งหมดได้ที่ artifact "hybrid-strategy" นี่ไม่ใช่คำแนะนำการลงทุน</p>
+    </section>
+
+    <footer class="src">
+      <b>แหล่งอ้างอิงหลัก:</b> Gu, Kelly &amp; Xiu (2020) <i>Review of Financial Studies</i> · Asness, Moskowitz &amp; Pedersen (2013) <i>Journal of Finance</i> · Kumbure et al. (2022) <i>Expert Systems with Applications</i> · Sezer et al. (2020) <i>Applied Soft Computing</i> · <i>Communications of the ACM</i> Algorithmic Trading Review · Prata et al. (2024) <i>Artificial Intelligence Review</i> · Dinh &amp; Kwon (2018) <i>Informatics</i> · Lo, Mamaysky &amp; Wang (2000) &amp; Brock et al. (1992) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Lachanski &amp; Pav (2017) <i>Econ Journal Watch</i>.
+      <br><b>ข้อควรระวัง:</b>อันดับ 1–4 เป็นไปตามความสำคัญของฟีเจอร์ที่วัดได้ด้วย ML (ข้อมูลสหรัฐฯ จนถึงปี 2016, ผลตอบแทนขั้นต้น); อันดับ 5–10 สะท้อนความแพร่หลายของการใช้งาน กำไรกระจุกตัวอยู่ในหุ้นขนาดเล็กและลดลงหลังหักต้นทุนการทำธุรกรรม ชุดฟีเจอร์เฉพาะของกองทุนเฮดจ์ฟันด์ไม่สามารถสังเกตได้จากสาธารณะ นี่เป็นคำอธิบายถึงสิ่งที่ระบบใช้เป็นข้อมูลนำเข้า — ไม่ใช่คำแนะนำการลงทุนและไม่ใช่การรับประกันผลกำไร
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

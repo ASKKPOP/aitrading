@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>チャート分析 vs 人間心理 — 検証済みの数値</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/2-chart-vs-human-psychology-report-en.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>チャート分析 vs 人間心理：検証済みの数値が語ること</h1>
+<p><strong>詳細調査レポート — パラメータ別成功率、買い/売り予測 · July 2026</strong>
+<strong>手法：</strong> 以下の各パーセンテージは、3名の独立検証者によって一次資料と敵対的にファクトチェックされました。検証に通らなかった主張は、事実として報告せず、フラグを付けています。</p>
+<hr />
+<h2>あなたの疑問に対する結論</h2>
+<p>あなたの直感は半分正しい ——そして調査によれば、<em>残り</em>半分も人々が思うほど強固ではありません。</p>
+<p>あなたは、大半の人はチャートを信じているが、<strong>「政府の政策、市場動向、戦争、社会問題、ニュース、ソーシャルメディア、経済指標、主要な見出しによって形成された人々の心理パターン」</strong>の方が重要だと書きました。検証済みの証拠が示すのは：</p>
+<ol>
+<li><strong>有名なチャートパターンの数値は俗説です。</strong> トレーディング系サイトで出回っているHead &amp; ShouldersとDouble Bottomの「成功率80%超」には<strong>査読済みの裏付けがありません</strong>。これはBulkowski の <em>Encyclopedia of Chart Patterns</em> という実務者による集計に由来しており——サンプル内の集計であって独立に再現されたことはなく、今回の調査でも検証できませんでした。</li>
+<li><strong>しかし、有名な心理学の数値も俗説に近いものです。</strong> あなたの見解を裏付ける最も引用される証拠——「Twitterのムードが市場を87.6%の精度で予測する」（Bollen et al. 2011）——は、わずか<strong>約15営業日のサンプル外取引日</strong>に基づいており、誰も検証できない独自の辞書を使用し、<strong>独立した再現に失敗し</strong>（サンプル外での予測力はゼロ）、これを基にしたヘッジファンドは1年以内に閉鎖されました。</li>
+<li><strong>両者が実際にもたらすもの、検証済み：方向性の的中率はおよそ50〜55%、あるいはリスク調整後で年数パーセントの優位性にすぎません。</strong> 市場は難しいものです。統計的に検出可能な優位性はどちらの側にも存在しますが、経済的に大きな優位性は精査に耐えません。</li>
+<li><strong>あなたが最も正しい点：</strong> 学術的なコンセンサスとして、チャートパターンは<em>有益ではあるが、単独では収益性がない</em> — 一方で、人間行動データ（センチメント、ニュースのタイミング）はモデルに測定可能な情報を<em>付加する</em>、というものがある。現代のAIシステムは心理学を実際の入力として扱うが、古典的なチャートパターンについては、決定ルールとしてではなく、主に弱い特徴量として扱う。</li>
+</ol>
+<hr />
+<h2>パートA — チャート分析：検証済みの成功率</h2>
+<h3>A1. チャートパターン全般（古典的な10パターン）</h3>
+<p><strong>Lo, Mamaysky &amp; Wang (2000), <em>Journal of Finance</em></strong> — 標準的な学術的検証、1962年〜1996年の米国株を対象とし、ヘッド＆ショルダー、ダブルトップ／ボトム、トライアングルを含む。</p>
+<table>
+<thead>
+<tr>
+<th>結果</th>
+<th>数値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>統計的に有益なパターン（NYSE/AMEX）</td>
+<td><strong>10のうち7つ</strong>（ダブルボトムは含まれない）</td>
+</tr>
+<tr>
+<td>統計的に有益なパターン（Nasdaq）</td>
+<td><strong>10のうち10つ</strong></td>
+</tr>
+<tr>
+<td>より厳格なコルモゴロフ–スミルノフ検定下では</td>
+<td>10のうち5つのみ</td>
+</tr>
+<tr>
+<td>これが利益を生む証拠</td>
+<td><strong>なし</strong> — 著者らは「これは必ずしもテクニカル分析が超過取引利益を生み出すために使用できることを意味しない」と述べている</td>
+</tr>
+</tbody>
+</table>
+<p><strong>「80%以上の成功率」という主張についての結論：</strong> 有益性 ≠ 勝率。いかなる古典的パターンについても、80%以上の成功率を裏付ける査読済みの情報源は存在しない。</p>
+<h3>A2. ヘッド＆ショルダーについて具体的に</h3>
+<p><strong>Savin, Weller &amp; Zvingelis (2007), <em>Journal of Financial Econometrics</em></strong> — S&amp;P 500およびRussell 2000銘柄、1990年〜1999年。</p>
+<table>
+<thead>
+<tr>
+<th>結果</th>
+<th>数値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>リスク調整後超過リターン、マーケットヘッジ戦略</td>
+<td><strong>年5〜7%</strong></td>
+</tr>
+<tr>
+<td>S&amp;P 500銘柄における単独のH&amp;S取引</td>
+<td><strong>収益性を示す証拠なし</strong></td>
+</tr>
+<tr>
+<td>Russell 2000（小型株）における単独</td>
+<td>弱い証拠；機関投資家コスト控除後で年間約4.2%</td>
+</tr>
+</tbody>
+</table>
+<p>パターンには実際の情報が含まれている — しかし、トレーダーが主張するような高い生の勝率ではない。</p>
+<h3>A3. 移動平均／ゴールデンクロス・ルール</h3>
+<p><strong>Brock, Lakonishok &amp; LeBaron (1992), <em>Journal of Finance</em></strong> — DJIA、1897年〜1986年。学術文献における典型的な「勝率」の測定値：</p>
+<table>
+<thead>
+<tr>
+<th>結果</th>
+<th>数値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUYシグナル後の上昇日数</td>
+<td><strong>53〜54%</strong></td>
+</tr>
+<tr>
+<td>SELLシグナル後の上昇日数</td>
+<td><strong>約49%</strong></td>
+</tr>
+<tr>
+<td>買いシグナル日の年率換算</td>
+<td>無条件の+4%に対し約+12%</td>
+</tr>
+<tr>
+<td>売りシグナル日の年率換算</td>
+<td>約−7%</td>
+</tr>
+<tr>
+<td>データスヌーピング補正＋取引コスト考慮後（Sullivan et al. 1999; Bajgrowicz &amp; Scaillet 2012）</td>
+<td><strong>利益はほぼ消失</strong>、特に近年顕著</td>
+</tr>
+</tbody>
+</table>
+<p>つまり、最も有名なテクニカルルールの真の測定された優位性は、コストを差し引く前で<strong>コイントスに対して勝率でわずか約4〜5パーセントポイント上回る程度</strong>であり、70〜80%ではない。</p>
+<h3>A4. MACDとRSI</h3>
+<p><strong>Chio (2022), arXivバックテスト</strong> — DJIA/Nasdaq/S&amp;P 500対象、2015年〜2021年（⚠️プレプリントであり、査読なし、取引コスト考慮なし、強気相場のみ、バイ・アンド・ホールドとの比較なし）：</p>
+<table>
+<thead>
+<tr>
+<th>ルール</th>
+<th>勝率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MACD単独</td>
+<td>バリアント/指数により<strong>37〜68%</strong>、シャープレシオはわずか0.28〜0.50 ——「強力な予測ツールではない」</td>
+</tr>
+<tr>
+<td>MACD＋RSI併用</td>
+<td><strong>78〜86%</strong> — ただし指数を単に保有した場合との比較が一切行われていないため、市場を上回る根拠にはならない</td>
+</tr>
+</tbody>
+</table>
+<p>これはあなたが引用したコミュニティの見解と一致する：指標を（出来高やサポート/レジスタンスと）組み合わせた方が単一パターンより優れているが——ここでの「勝率」も依然として利益ではない。</p>
+<h3>A5. テクニカル分析はそもそも利益を生むのか？</h3>
+<p><strong>Park &amp; Irwin (2007), <em>Journal of Economic Surveys</em></strong> — 現代の95件の研究（1988年〜2004年）のレビュー：</p>
+<table>
+<thead>
+<tr>
+<th>結果</th>
+<th>数値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>肯定的な結果を示した研究</td>
+<td><strong>95件中56件（約59%）</strong></td>
+</tr>
+<tr>
+<td>否定的</td>
+<td>20件・混在: 19件</td>
+</tr>
+<tr>
+<td>総合的な結論</td>
+<td><strong>結論は出ていない</strong> — 肯定的な結果はデータスヌーピング、事後的なルール選択、過小評価されたコストによって裏付けが弱い</td>
+</tr>
+<tr>
+<td>株式市場に特化した場合（初期の文献）</td>
+<td>テクニカルルールはFX/先物では機能したが、<strong>株式では機能しなかった</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>パートB — 人間心理：検証済みの成功率</h2>
+<h3>B1. 有名な数字 — そしてその崩壊</h3>
+<p><strong>Bollen, Mao &amp; Zeng（2011年）:</strong> Twitterの「平静」ムード → DJIAの方向性、<strong>87.6%の精度</strong>を主張。</p>
+<table>
+<thead>
+<tr>
+<th>事実</th>
+<th>検証済みの詳細</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>訓練期間</td>
+<td>2008年のわずか約8ヶ月間のみ</td>
+</tr>
+<tr>
+<td>87.6%のテスト期間</td>
+<td><strong>約15取引日</strong>（2008年12月1日～19日）</td>
+</tr>
+<tr>
+<td>ムード辞書</td>
+<td>独自のもので、公開されたことはない</td>
+</tr>
+<tr>
+<td>独立した再現実験（Lachanski &amp; Pav 2017）</td>
+<td>この効果は元のサブサンプルでのみ存在し、<strong>サンプルを拡張すると消滅する</strong>（「データスヌーピングと一致」）；<strong>サンプル外予測力は皆無</strong></td>
+</tr>
+<tr>
+<td>実世界でのテスト</td>
+<td>この戦略に基づいて構築されたDerwent Capital Marketsヘッジファンドは、<strong>2012年初頭に閉鎖された</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>B2. センチメントが実際にもたらすもの</h3>
+<p><strong>Greyling &amp; Rossouw（2025年、CEPR/VoxEU；約300万件のツイート、8市場）:</strong></p>
+<table>
+<thead>
+<tr>
+<th>結果</th>
+<th>数値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>方向性の的中率、全8市場（FR、DE、JP、ES、UK、US、IN、PL）</td>
+<td><strong>全市場で50%超</strong> — 偶然をわずかに上回る程度</td>
+</tr>
+<tr>
+<td>米国S&amp;P 500</td>
+<td><strong>55%超</strong>の精度（再現率は最大92%に達するが、クラス不均衡による水増しの可能性が高い）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>最初の調査ラウンドから（検証済み3-0）:</strong> 夜間／市場時間外のTwitterセンチメントは、翌日のS&amp;P 500リターンを<strong>標準偏差あたり約6ベーシスポイント</strong>で予測する（連邦準備制度の調査）— 実在し、取引可能に近いが、極めて小さい。</p>
+<h3>B3. 今回検証できなかったもの（誠実性のためのセクション）</h3>
+<p>以下の人間心理チャネルについては、今回の検証パスで<strong>査読済みの明確な数値を伴う主張は一つも検証をクリアしなかった</strong>——重要でないからではなく、確固たる査読済みの割合が確認できなかったためである：</p>
+<ul>
+<li>VIX／AAII投資家センチメント指数を方向性の予測指標として用いる手法</li>
+<li>経済政策不確実性（政府政策）指数 → リターンへの影響</li>
+<li>戦争／地政学的イベントスタディの割合</li>
+<li>FOMC／CPI発表日の影響</li>
+<li>群集心理、損失回避、過剰反応 — 定量化されたリターン効果</li>
+<li><strong>センチメント特徴量とテクニカル特徴量の直接的な機械学習による比較研究</strong> — あなたの仮説が必要とする正確な比較は、未解決の研究課題のままである</li>
+</ul>
+<p>したがって最も誠実な言い方は次の通りである。心理学に基づく入力はAIシステムにおいて標準的であり、測定可能だが控えめな精度向上をもたらす。しかし、それがテクニカル入力をX%上回るということは、文献において<strong>確立されていない</strong>。</p>
+<hr />
+<h2>比較表</h2>
+<table>
+<thead>
+<tr>
+<th>パラメータ</th>
+<th>通説の数値</th>
+<th>検証された数値</th>
+<th>コイン投げを上回るか？</th>
+<th>コスト差引後も収益性があるか？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ヘッド・アンド・ショルダーズ</td>
+<td>"80%以上の成功率"</td>
+<td>ヘッジ後の超過収益 年5〜7%；単独では収益性なし</td>
+<td>有益</td>
+<td>いいえ（S&amp;P 500）</td>
+</tr>
+<tr>
+<td>ダブルボトム</td>
+<td>"80%以上の成功率"</td>
+<td>NYSE/AMEXにおいて有意でない（LMW 2000）</td>
+<td>弱い</td>
+<td>未証明</td>
+</tr>
+<tr>
+<td>ペナント／フラッグ</td>
+<td>"約50%失敗"</td>
+<td>査読済みの検証なし</td>
+<td>不明</td>
+<td>未証明</td>
+</tr>
+<tr>
+<td>ゴールデンクロス／移動平均線</td>
+<td>高い勝率</td>
+<td>勝率<strong>53〜54% 対 49%</strong></td>
+<td>かろうじて</td>
+<td>補正後は消失</td>
+</tr>
+<tr>
+<td>MACD単体</td>
+<td>人気がある</td>
+<td>勝率<strong>37〜68%</strong>、シャープレシオは弱い</td>
+<td>場合による</td>
+<td>ベンチマークなし</td>
+</tr>
+<tr>
+<td>MACD + RSI</td>
+<td>—</td>
+<td>勝率78〜86%（プレプリント、コスト未考慮、ベンチマークなし）</td>
+<td>サンプル内では有効</td>
+<td>未証明</td>
+</tr>
+<tr>
+<td>Twitterムード（Bollen）</td>
+<td><strong>87.6%</strong></td>
+<td>再現に失敗；アウトオブサンプルでは0</td>
+<td>いいえ</td>
+<td>ファンド閉鎖</td>
+</tr>
+<tr>
+<td>ソーシャルセンチメント（現実的な水準）</td>
+<td>—</td>
+<td>方向性の的中率<strong>50〜55%</strong></td>
+<td>かろうじて</td>
+<td>限定的</td>
+</tr>
+<tr>
+<td>夜間ニュース／ソーシャルセンチメント</td>
+<td>—</td>
+<td>標準偏差あたり翌日約6bp</td>
+<td>はい、ごくわずか</td>
+<td>限定的</td>
+</tr>
+<tr>
+<td>政策／戦争／FOMC／VIXの影響</td>
+<td>多くの主張あり</td>
+<td>今回は検証されていない</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2>これがAIトレーディングシステムにとって意味すること</h2>
+<p>実務的な統合見解 — 両方の研究ラウンドと整合する：</p>
+<ol>
+<li>チャート／テクニカルシグナルは<strong>ルールではなく特徴量として</strong>使用する — 単独で機能する戦略は存在しないものの、統計的情報を含んでいる（LMW 2000）。</li>
+<li>人間心理データ(ニュースセンチメント、ソーシャルメディア、マクロ経済発表)を<strong>追加の特徴量</strong>として利用する — これらは特に翌日にかけてのセンチメントにおいて実際の情報をもたらすが、期待すべきはパーセンテージポイントであって、87.6%ではない。</li>
+<li>優れたモデルからは<strong>50~55%の方向性的中率</strong>を期待すること。Gu–Kelly–Xiuのベンチマークが示すのは、優位性は多くの弱いシグナルを非線形的に<em>組み合わせる</em>ことから生まれる(シャープレシオ1.35 対 0.61)のであって、単一のパラメータ、チャート、あるいは心理的要因からではないということだ。</li>
+<li>サンプル外検証、コスト調整、再現性のある証拠を伴わない、約60%を超える単一の数値は信用しないこと。両陣営の有名な数値はいずれもこのテストに失敗した。</li>
+</ol>
+<p><em>投資助言ではありません。私はファイナンシャルアドバイザーではありません — これらは公表された測定結果の説明であり、歴史的な優位性は公表後に減衰します。</em></p>
+<h2>主要な出典</h2>
+<ol>
+<li>Lo, Mamaysky &amp; Wang (2000), <em>Journal of Finance</em> — https://web.mit.edu/wangj/www/pap/LoMamayskyWang00.pdf</li>
+<li>Savin, Weller &amp; Zvingelis (2007), <em>Journal of Financial Econometrics</em> — https://academic.oup.com/jfec/article-abstract/5/2/243/785044</li>
+<li>Park &amp; Irwin (2007), <em>Journal of Economic Surveys</em> — https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-6419.2007.00519.x</li>
+<li>Brock, Lakonishok &amp; LeBaron (1992), <em>Journal of Finance</em> — https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1992.tb04681.x</li>
+<li>Sullivan, Timmermann &amp; White (1999), <em>Journal of Finance</em> — https://ideas.repec.org/a/bla/jfinan/v54y1999i5p1647-1691.html</li>
+<li>Chio (2022), MACD/RSIバックテスト, arXiv — https://arxiv.org/pdf/2206.12282</li>
+<li>Bollen, Mao &amp; Zeng (2011) — https://arxiv.org/abs/1010.3003</li>
+<li>Lachanski &amp; Pav (2017), <em>Econ Journal Watch</em> (再現失敗) — https://econjwatch.org/articles/shy-of-the-character-limit-twitter-mood-predicts-the-stock-market-revisited</li>
+<li>Greyling &amp; Rossouw (2025), CEPR/VoxEU — https://cepr.org/voxeu/columns/twitter-sentiment-and-stock-market-movements-predictive-power-social-media</li>
+</ol>
+</main></body></html>

@@ -1,0 +1,271 @@
+<!-- machine-translated from research/parameters/2-hybrid-strategy-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid Strategy — รูปแบบกราฟ × จิตวิทยามนุษย์</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue — charts */
+    --series-3: #e87ba4; /* magenta — psychology */
+    --series-4: #eda100; /* yellow — risk */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-3: #d55181; --series-4: #c98500;
+      --seq-100: #0d366b; --seq-250: #1c5cab; --seq-450: #3987e5;
+      --buy: #0ca30c; --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 75ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 82ch; }
+
+  /* concept merge diagram */
+  .merge { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch; }
+  .mcol { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .mcol h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .mcol ul { list-style: none; }
+  .mcol li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; border-bottom: 1px dashed var(--grid); }
+  .mcol li:last-child { border-bottom: none; }
+  .mcol .role { margin-top: 10px; font-size: 12px; font-weight: 700; }
+  .mplus { display:flex; align-items:center; justify-content:center; font-size: 26px; font-weight: 800; color: var(--muted); }
+  .mout { margin-top: 14px; border: 1.5px solid var(--baseline); border-radius: 12px; padding: 16px; text-align: center; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); }
+  .mout h3 { font-size: 14.5px; font-weight: 800; }
+  .mout p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; display:inline-block; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+
+  /* layer stack */
+  .layer { border-left: 4px solid; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 0; background: color-mix(in oklab, var(--text-primary) 2%, var(--surface-1)); }
+  .layer h4 { font-size: 13.5px; font-weight: 700; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .layer h4 .q { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  .layer p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90ch; }
+  .lno { display:inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0.05em; }
+
+  /* checklists */
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .clist { border: 1.5px solid; border-radius: 12px; padding: 16px; }
+  .clist h3 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .clist .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .citem { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .citem:last-child { border-bottom: none; }
+  .cid { font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 1px; }
+  .citem .t { font-size: 12.5px; }
+  .citem .t small { display:block; font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .tag.chart { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .tag.psy { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .tag.risk { background: color-mix(in oklab, var(--series-4) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-4) 70%, var(--text-primary)); }
+  .special { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+  .special b { color: var(--text-primary); }
+
+  /* matrix */
+  table.mx { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .mx th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: left; }
+  .mx td { border-radius: 6px; font-size: 11.5px; padding: 9px 10px; background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color: var(--text-secondary); vertical-align: top; }
+  .mx td.scn { font-weight: 700; color: var(--text-primary); width: 250px; }
+  .mx td .who { display:inline-block; font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 3px; }
+  .mx .wc { background: color-mix(in oklab, var(--series-1) 15%, var(--surface-1)); color: var(--series-1); }
+  .mx .wp { background: color-mix(in oklab, var(--series-3) 18%, var(--surface-1)); color: color-mix(in oklab, var(--series-3) 80%, var(--text-primary)); }
+  .mx .wn { background: color-mix(in oklab, var(--text-primary) 8%, var(--surface-1)); color: var(--muted); }
+
+  /* expectation bars */
+  .exp { margin-top: 4px; }
+  .erow { display: grid; grid-template-columns: 260px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; }
+  .erow .lab { font-size: 12px; }
+  .erow .lab small { display:block; font-size: 10.5px; color: var(--muted); }
+  .etrack { position: relative; height: 16px; background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); border-radius: 4px; }
+  .ebar { position: absolute; left: 0; top: 1px; height: 14px; border-radius: 0 4px 4px 0; }
+  .eval { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coin { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--baseline); left: 50%; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  @media (max-width: 720px) {
+    .merge { grid-template-columns: 1fr; }
+    .mplus { padding: 6px 0; }
+    .checks { grid-template-columns: 1fr; }
+    .erow { grid-template-columns: 150px 1fr 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>Hybrid Strategy: รูปแบบกราฟ × จิตวิทยามนุษย์</h1>
+      <p class="sub">กรอบการตัดสินใจซื้อ/ขายที่ผสมผสานทั้งสองด้านตามสิ่งที่งานวิจัยที่ผ่านการตรวจสอบยืนยันจริง ๆ: <b>จิตวิทยากำหนดสภาวะตลาด</b> (เมื่อใดควรเทรด ความเสี่ยงเท่าใด) <b>กราฟกำหนดจุดกระตุ้น</b> (จะเทรดอะไร และที่ราคาเท่าใด) <b>ปริมาณการซื้อขาย + ความรู้สึกตลาดช่วยยืนยัน</b> และ<b>ความผันผวนกำหนดขนาดการเทรด</b> ไม่มีสัญญาณใดสัญญาณเดียวที่ถูกเชื่อถือเพียงลำพัง — คุณจะลงมือทำก็ต่อเมื่อสัญญาณสอดคล้องกัน</p>
+      <span class="stamp">สร้างจากงานวิจัยเชิงลึกที่ผ่านการตรวจสอบ 2 รอบ · กรกฎาคม 2026 · เพื่อการศึกษา — ไม่ใช่คำแนะนำการลงทุน</span>
+      <div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12.5px;line-height:1.6">
+        <b>กรอบการทำงานนี้เชื่อมโยงกับการนำไปใช้งานในคริปโตอย่างไร</b> หน้านี้อธิบายกลยุทธ์ที่อ้างอิงจากงานวิจัย ส่วนระบบที่ทำงานจริงจะปรับให้เข้ากับคริปโต
+        <b>VIX → ดัชนี Fear &amp; Greed (F&amp;G) ของคริปโต</b> — เป็นมาตราส่วนแบบกลับด้าน: ความตื่นตระหนกคือ <b>F&amp;G &lt; 20</b> (ไม่ใช่ VIX &gt; 30) ความสงบคือ <b>F&amp;G &gt; 30</b> ไม่มี VIX สำหรับคริปโต (<code>regime.py</code>, <code>strategy_config.py</code>).
+        <b>รูปแบบกราฟที่มีชื่อเรียก (double bottom, H&amp;S) → คะแนนทางเทคนิคแบบผสม</b> (RSI · MA · funding · basis · long/short) ที่ยืนยันด้วยปริมาณการซื้อขาย — เอนจิ้นไม่มีตัวตรวจจับรูปแบบแท่งเทียน (<code>confluence.py</code> B3/S3)
+        <b>ความรู้สึกตลาดจากผลตอบแทนข้ามคืน → ทัศนคติฝูงชนจาก StockTwits</b> ชื่อ B1–B6 / S1–S6 ด้านล่างคือป้ายกำกับเงื่อนไขจริงของเอนจิ้น
+      </div>
+    </header>
+
+    <!-- ① CONCEPT -->
+    <section class="card">
+      <h2 class="sec">① ส่วนผสม: ใครทำหน้าที่อะไร</h2>
+      <p class="secnote">ข้อสรุปจากงานวิจัย: รูปแบบกราฟให้ข้อมูลที่มีนัยสำคัญทางสถิติ แต่ไม่สามารถทำกำไรได้ด้วยตัวเอง (มีความได้เปรียบสูงสุด 53–54%) สัญญาณทางจิตวิทยาอ่อนแอในแต่ละวัน แต่ทรงพลังในช่วงสุดขั้วและรอบ ๆ เหตุการณ์สำคัญ ดังนั้นแต่ละฝ่ายจึงทำหน้าที่ที่ได้รับการพิสูจน์แล้วว่าทำได้ดี</p>
+      <div class="merge">
+        <div class="mcol" style="border-color: var(--series-1)">
+          <h3><i class="chip" style="background:var(--series-1)"></i>กราฟ — จุดกระตุ้น</h3>
+          <ul>
+            <li>โมเมนตัม 12-1 &amp; แนวโน้ม (MA 200 วัน) — ตัวทำนายอันดับ #1 ที่ผ่านการยืนยัน</li>
+            <li>รูปแบบกราฟ (double bottom, H&amp;S) — เฉพาะเมื่อสมบูรณ์ + มีปริมาณการซื้อขายยืนยัน</li>
+            <li>ความจริงของอัตราการชนะ: 53–54% (Brock 1992)</li>
+            <li>การกลับตัวสู่ค่าเฉลี่ย / การกลับตัว 1 เดือนเพื่อจับจังหวะเวลา</li>
+          </ul>
+          <div class="role" style="color:var(--series-1)">ตอบคำถาม: จะเทรด อะไร ที่ ราคาเท่าใด</div>
+        </div>
+        <div class="mplus">×</div>
+        <div class="mcol" style="border-color: var(--series-3)">
+          <h3><i class="chip" style="background:var(--series-3)"></i>จิตวิทยา — สภาวะตลาด</h3>
+          <ul>
+            <li>ระดับความกลัว/ความโลภ (VIX) น้ำเสียงของข่าวสารและความรู้สึกในโซเชียล</li>
+            <li>ปฏิทินนโยบายและเหตุการณ์ (FOMC, CPI, การเลือกตั้ง, ข่าวสงคราม)</li>
+            <li>ความจริงของ edge: ความแม่นยำ 50–55%; ~6bp/SD ของ sentiment ข้ามคืน</li>
+            <li>แข็งแกร่งที่สุดในจุดสุดขั้ว: ความตื่นตระหนกและความคลั่งไคล้</li>
+          </ul>
+          <div class="role" style="color:color-mix(in oklab, var(--series-3) 80%, var(--text-primary))">ตอบคำถาม: ควรเทรด เมื่อไหร่ ควรทำตรงข้าม เมื่อไหร่</div>
+        </div>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="mout">
+        <h3>CONFLUENCE ENGINE — ลงมือเมื่อเงื่อนไขอย่างน้อย 4 ใน 6 ข้อสอดคล้องกันเท่านั้น</h3>
+        <p>การนำ edge ที่เป็นอิสระต่อกันซึ่งมีความแม่นยำ ~53% มาซ้อนกัน เป็นวิธีเดียวที่ได้รับการยืนยันว่าจะไปได้ไกลกว่า 55% สัญญาณเดียวเพียงลำพัง = ไม่เทรด กฎการบริหารความเสี่ยง (การกำหนดขนาดตามความผันผวน, จุดตัดขาดทุน) มีความสำคัญเหนือกว่าทุกสิ่ง</p>
+      </div>
+    </section>
+
+    <!-- ② LAYER FLOW -->
+    <section class="card">
+      <h2 class="sec">② กระบวนการตัดสินใจ: ระบบ 4 ชั้น</h2>
+      <p class="secnote">ทุกรายการเทรดที่เป็นไปได้จะต้องผ่านการตรวจสอบจากบนลงล่าง แต่ละชั้นสามารถยับยั้งได้</p>
+
+      <div class="layer" style="border-left-color: var(--series-3)">
+        <h4><span class="lno">ชั้นที่ 1</span> ตัวกรองสภาวะทางจิตวิทยา <span class="q">— "ควรเทรดหรือไม่? โหมดไหน?"</span></h4>
+        <p>VIX &lt; 20 → <b>โหมดตามเทรนด์</b> (ตามกราฟ) VIX 20–30 → ลดขนาดลงครึ่งหนึ่ง จุดตัดขาดทุนที่แคบลง VIX &gt; 30 + ความกลัวสุดขั้ว → <b>โหมดสวนทาง</b> (เพิกเฉยต่อรูปแบบขาลง เตรียมซื้อแบบ mean-reversion) FOMC/CPI/การเลือกตั้งภายใน ±1 วัน → ห้ามเปิดสถานะใหม่ ข่าวช็อกด้านสงคราม/นโยบาย → ห้ามซื้อการดีดตัวครั้งแรกเด็ดขาด รอ 1–3 วัน</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">ชั้นที่ 2</span> กลไกกำหนดทิศทาง (กราฟ) <span class="q">— "อคติไปทาง Long หรือ Short?"</span></h4>
+        <p>โมเมนตัม 12 เดือน (ข้ามเดือนล่าสุด) เป็นบวก และราคาอยู่เหนือเส้นค่าเฉลี่ยเคลื่อนที่ 200 วัน → อคติไปทาง Long ทั้งสองเป็นลบ → อคติไปทาง Short/หลีกเลี่ยง ผสมกัน → ไม่มีอคติ ข้าม นี่คือตัวชี้วัดที่ได้รับการยืนยันมากที่สุดสองตัวในวรรณกรรมทั้งหมด</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-1)">
+        <h4><span class="lno">ชั้นที่ 3</span> จุดกระตุ้น + การยืนยัน (กราฟ × จิตวิทยา) <span class="q">— "เมื่อไหร่กันแน่?"</span></h4>
+        <p>รูปแบบสมบูรณ์ (การทะลุกรอบของ double bottom, การทะลุเส้นคอของ H&amp;S) <b>AND</b> ปริมาณการซื้อขายเพิ่มขึ้นเมื่อทะลุกรอบ <b>AND</b> sentiment ข้ามคืน/ข่าว ไม่ขัดแย้งกัน รูปแบบที่ไม่มีปริมาณการซื้อขายรองรับ = กับดัก ข้าม กราฟเป็นขาขึ้นแต่ sentiment กำลังทรุดตัวจากข่าวจริง = จิตวิทยายับยั้ง</p>
+      </div>
+      <div class="arrow">▼</div>
+      <div class="layer" style="border-left-color: var(--series-4)">
+        <h4><span class="lno">ชั้นที่ 4</span> ขนาดและจุดออก (ความเสี่ยง) <span class="q">— "เท่าไหร่? ออกเมื่อไหร่?"</span></h4>
+        <p>ขนาดสถานะ = งบประมาณความเสี่ยง ÷ ความผันผวน จุดตัดขาดทุนแบบเข้มงวดต่ำกว่าจุดที่ทำให้รูปแบบเป็นโมฆะ ใช้เส้นค่าเฉลี่ยเคลื่อนที่ลากตาม (trail) จุดตัดขาดทุนตามเวลา: ไม่เป็นไปตามคาดภายใน N วัน → ออก ด้วยความแม่นยำ ~55% การตัดขาดทุนที่แพ้อย่างรวดเร็ว คือ edge ที่แท้จริง</p>
+      </div>
+      <div class="arrow">▼<small>order</small></div>
+      <div class="mout"><h3 style="letter-spacing:0.03em"><span style="color:var(--buy)">BUY</span> · HOLD · <span style="color:var(--sell)">SELL</span></h3><p>ผลลัพธ์จะถูกบันทึกและป้อนกลับ — ตรวจสอบความถูกต้องของกฎนอกกลุ่มตัวอย่าง (out-of-sample) เป็นประจำ เพราะความได้เปรียบที่เผยแพร่แล้วมักจะเสื่อมลง</p></div>
+    </section>
+
+    <!-- ③ CHECKLISTS -->
+    <section class="card">
+      <h2 class="sec">③ เช็คลิสต์การซื้อและขาย</h2>
+      <p class="secnote">แต่ละเงื่อนไขที่เป็นจริง = 1 คะแนน ดำเนินการเมื่อได้ 4 ใน 6 ขึ้นไป แท็กแสดงว่าสัญญาณมาจากฝั่งใด</p>
+      <div class="checks">
+        <div class="clist" style="border-color: var(--buy)">
+          <h3 style="color:var(--buy)">ซื้อ — ความสอดคล้อง ≥ 4/6</h3>
+          <div class="rule">แนวโน้ม + โมเมนตัม + รูปแบบที่ยืนยันแล้ว + จิตวิทยาที่สนับสนุน</div>
+          <div class="citem"><span class="cid">B1</span><span class="t">ราคาสูงกว่าเส้นค่าเฉลี่ยเคลื่อนที่ 200 วัน / สถานะ golden-cross<small>Brock 1992: วันที่มีสัญญาณซื้อ ≈ +12% ต่อปี</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B2</span><span class="t">โมเมนตัม 12-1 เป็นบวก<small>Gu–Kelly–Xiu: ตัวทำนายอันดับ #1 ของ ML</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B3</span><span class="t">รูปแบบขาขึ้นสมบูรณ์ พร้อมปริมาณการซื้อขายที่เพิ่มขึ้น<small>รูปแบบเพียงอย่างเดียว = ไม่เพียงพอ (LMW 2000)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">B4</span><span class="t">อารมณ์ข้ามคืน/ข่าวเป็นบวกหรือกำลังฟื้นตัว<small>Fed: ~6bp ต่อ SD ในวันถัดไป</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B5</span><span class="t">ความกลัวที่พุ่งขึ้นกำลังจางลง (VIX ลดลงจากจุดสูงสุด &gt;30)<small>ปฏิกิริยาเกินเหตุ → ช่วงเวลาการกลับสู่ค่าเฉลี่ย</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">B6</span><span class="t">ไม่มี FOMC / CPI / เหตุการณ์สำคัญภายใน 24 ชั่วโมง<small>การควบคุมความเสี่ยงช่วงเหตุการณ์</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>กรณีพิเศษแบบสวนกระแส (ซื้อในภาวะตื่นตระหนก):</b> VIX &gt; 30 + ความกลัวสุดขีด + ราคาเริ่มทรงตัวเหนือเส้นค่าเฉลี่ยระยะสั้น + จุดสูงสุดของปริมาณการซื้อขายผ่านไปแล้ว → ซื้อแบบกลับสู่ค่าเฉลี่ยที่ <b>ครึ่งขนาด</b> "โลภเมื่อคนอื่นกลัว" ที่ทำเป็นระบบ</div>
+        </div>
+        <div class="clist" style="border-color: var(--sell)">
+          <h3 style="color:var(--sell)">ขาย / หลีกเลี่ยง — ความสอดคล้อง ≥ 4/6</h3>
+          <div class="rule">แนวโน้มพัง + โมเมนตัมพัง + ความคลั่งไคล้หรือความช็อก</div>
+          <div class="citem"><span class="cid">S1</span><span class="t">ราคาต่ำกว่าเส้นค่าเฉลี่ยเคลื่อนที่ 200 วัน / สถานะ death-cross<small>วันที่มีสัญญาณขาย ≈ −7% ต่อปี (Brock 1992)</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S2</span><span class="t">โมเมนตัมกลับเป็นลบ<small>เครื่องยนต์ทิศทางพลิกกลับ</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S3</span><span class="t">รูปแบบขาลง (double top / H&amp;S) สมบูรณ์พร้อมปริมาณการซื้อขาย<small>ต้องมีการยืนยัน เช่นเดียวกับฝั่งซื้อ</small></span><span class="tag chart">CHART</span></div>
+          <div class="citem"><span class="cid">S4</span><span class="t">ความรู้สึกคลั่งไคล้ถึงขีดสุด<small>ทุกคนเป็นขาขึ้น = สัญญาณขายแบบสวนกระแส</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S5</span><span class="t">ภาวะช็อกเชิงนโยบาย/ภูมิรัฐศาสตร์เชิงลบที่ยังไม่คลี่คลาย<small>ความเสี่ยงของสถานการณ์ยังคงสูงในวันที่ 1–3</small></span><span class="tag psy">PSYCH</span></div>
+          <div class="citem"><span class="cid">S6</span><span class="t">แตะจุด stop-loss หรือเป้าหมายความผันผวน<small>มีผลเหนือกว่าทุกอย่างเสมอ — ไม่มีข้อยกเว้น</small></span><span class="tag risk">RISK</span></div>
+          <div class="special"><b>กฎยับยั้ง (Veto rule):</b> กราฟบอกให้ซื้อ แต่อารมณ์ตลาดกำลังพังทลายจากข่าวจริง → <b>ข้ามการเทรดนี้ไป</b> ระบอบข่าวใหม่ชนะกราฟที่ล้าสมัย</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ WHEN × WHAT -->
+    <section class="card">
+      <h2 class="sec">④ ตารางสถานการณ์ WHEN × WHAT</h2>
+      <p class="secnote">ฝั่งใดเป็นผู้นำในการตัดสินใจในแต่ละสถานะจิตวิทยาตลาด</p>
+      <table class="mx">
+        <thead><tr><th>สถานการณ์ (สถานะจิตวิทยา)</th><th>ใครเป็นผู้นำ</th><th>การดำเนินการ</th></tr></thead>
+        <tbody>
+          <tr><td class="scn">แนวโน้มขาขึ้นที่สงบ อารมณ์เป็นบวก</td><td><span class="who wc">CHARTS</span></td><td>Trend-follow: ซื้อเมื่อราคาย่อตัวกลับมาที่ MA พร้อมวอลุ่ม; ถือสถานะที่กำลังทำกำไร</td></tr>
+          <tr><td class="scn">ขาลงที่นิ่งสงบ</td><td><span class="who wc">CHARTS</span></td><td>อยู่นอกตลาด / เอนเอียงไปทาง short ห้าม “รับมีดที่กำลังร่วง” หากไม่มีสัญญาณตื่นตระหนกจาก Layer-1</td></tr>
+          <tr><td class="scn">ตื่นตระหนก — ข่าวสงคราม, VIX &gt; 30, ความกลัวสุดขีด</td><td><span class="who wp">PSYCHOLOGY</span></td><td>วันที่ 1–3: ไม่ทำอะไร จากนั้นซื้อสวนกระแสเมื่อเกิดสัญญาณทรงตัว (B5) ขนาดครึ่งหนึ่ง</td></tr>
+          <tr><td class="scn">ความคลั่งไคล้ — ราคาพุ่งแบบพาราโบลา ทุกคนมองบวก</td><td><span class="who wp">PSYCHOLOGY</span></td><td>ทำกำไรระหว่างที่ราคายังแข็งแกร่ง (S4) ห้ามเพิ่มสถานะเด็ดขาด รัด stop ให้แน่น</td></tr>
+          <tr><td class="scn">ช่วงก่อน FOMC / CPI / การเลือกตั้ง</td><td><span class="who wp">PSYCHOLOGY</span></td><td>แบน — งดเปิดสถานะใหม่; กลับมาเทรดวันถัดไป</td></tr>
+          <tr><td class="scn">การ breakout ของแพทเทิร์นโดยไม่มีวอลุ่มรองรับ</td><td><span class="who wn">NEITHER</span></td><td>ข้าม — จุดนี้คือแหล่งของ false breakout ส่วนใหญ่</td></tr>
+          <tr><td class="scn">กราฟเป็นบวก แต่ sentiment กำลังพังจากข่าวจริง</td><td><span class="who wp">จิตวิทยาตลาด (PSYCHOLOGY) ยับยั้งการเทรด</span></td><td>ข้ามการเทรดนี้ไป — สถานการณ์ข่าวสำคัญกว่ากราฟที่ล้าสมัยแล้ว</td></tr>
+          <tr><td class="scn">sentiment มีสัญญาณรบกวน ไม่สุดขั้ว กราฟชัดเจน</td><td><span class="who wc">CHARTS</span></td><td>เทรดตามกราฟ; sentiment เป็นเพียงตัวตัดสินเมื่อไม่ชัดเจน</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ EXPECTATIONS -->
+    <section class="card">
+      <h2 class="sec">⑤ ตรวจสอบความคาดหวัง: ความแม่นยำที่แท้จริงคือเท่าไร</h2>
+      <p class="secnote">ความแม่นยำเชิงทิศทาง — ตัวเลขที่ยืนยันแล้วเทียบกับความเชื่อทั่วไป เส้นแนวตั้งคือการโยนเหรียญ (50%) สเกล 40–90%</p>
+      <div class="exp">
+        <div class="erow"><span class="lab">การโยนเหรียญ<small>ค่าฐาน</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:20%;background:var(--baseline)"></div></div><span class="eval">50%</span></div>
+        <div class="erow"><span class="lab">โมเดล social sentiment<small>ยืนยันแล้ว 8 ตลาด (2025)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:26%;background:var(--series-3)"></div></div><span class="eval">50–55%</span></div>
+        <div class="erow"><span class="lab">กฎ moving-average<small>อัตราชนะที่ยืนยันแล้ว (Brock 1992)</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:27%;background:var(--series-1)"></div></div><span class="eval">53–54%</span></div>
+        <div class="erow"><span class="lab">โมเดล ML แบบหลายสัญญาณที่ดี<small>เป้าหมายที่สมจริงของกรอบนี้</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:32%;background:var(--seq-450)"></div></div><span class="eval">~55–58%</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">ความเชื่อเกี่ยวกับแพทเทิร์นกราฟ<small>ไม่มีงานวิจัยแบบ peer-review รองรับ</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:80%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"80%+" ✗</span></div>
+        <div class="erow"><span class="lab" style="text-decoration:line-through">อารมณ์บน Twitter (Bollen 2011)<small>ทำซ้ำผลไม่สำเร็จ, ทดสอบเพียง ~15 วัน</small></span><div class="etrack"><span class="coin" style="left:20%"></span><div class="ebar" style="width:95%;background:color-mix(in oklab, var(--muted) 40%, transparent)"></div></div><span class="eval" style="color:var(--muted)">"87.6%" ✗</span></div>
+      </div>
+      <p class="axisnote">ความได้เปรียบของกรอบนี้ไม่ได้มาจากการทำนายให้แม่นกว่า 55–58% — แต่มาจากการซ้อนสัญญาณอ่อนที่เป็นอิสระจากกัน การหลีกเลี่ยงช่วงเวลาที่มีเหตุการณ์สำคัญ การกำหนดขนาดสถานะตามความผันผวน และการตัดขาดทุนอย่างรวดเร็ว ทดสอบย้อนหลังและทดลองเทรดด้วยบัญชีทดลองก่อนนำเงินจริงไปเสี่ยง; ความได้เปรียบที่เผยแพร่แล้วมักจะเสื่อมลงตามเวลา</p>
+    </section>
+
+    <footer class="src">
+      <b>สร้างขึ้นจากแหล่งข้อมูลที่ยืนยันแล้ว:</b> Gu–Kelly–Xiu (2020) <i>RFS</i> · Lo–Mamaysky–Wang (2000), Brock et al. (1992), Sullivan et al. (1999) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Bollen et al. (2011) + Lachanski &amp; Pav (2017) การทำซ้ำที่ล้มเหลว · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018).
+      <br><b>ข้อจำกัดความรับผิดชอบ:</b> กรอบการศึกษาที่อธิบายงานวิจัยที่ได้รับการตีพิมพ์ ไม่ใช่คำแนะนำการลงทุน ไม่ใช่การรับประกันผลกำไร ผลกระทบที่วัดปริมาณได้จากนโยบาย/สงคราม/FOMC ไม่ผ่านการตรวจสอบยืนยัน และถูกใช้ที่นี่เพียงเป็นตัวกรองด้านเวลา/ความเสี่ยง ไม่ใช่ตัวพยากรณ์ผลตอบแทน
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

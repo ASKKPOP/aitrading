@@ -3,67 +3,119 @@
     {
       "group": "guide",
       "ko": "완전 가이드",
-      "en": "Full Guide"
+      "en": "Full Guide",
+      "ja": "完全ガイド",
+      "th": "คู่มือฉบับสมบูรณ์",
+      "vi": "Hướng dẫn đầy đủ",
+      "id": "Panduan Lengkap"
     },
     {
       "group": "gateway",
       "ko": "실거래 게이트웨이",
-      "en": "Live Trading Gateway"
+      "en": "Live Trading Gateway",
+      "ja": "実取引ゲートウェイ",
+      "th": "เกตเวย์เทรดจริง",
+      "vi": "Cổng giao dịch thật",
+      "id": "Gerbang Trading Live"
     },
     {
       "group": "smart",
       "ko": "스마트 AI & 알림",
-      "en": "Smart AI & Alerts"
+      "en": "Smart AI & Alerts",
+      "ja": "スマートAI & 通知",
+      "th": "AI อัจฉริยะ & การแจ้งเตือน",
+      "vi": "AI thông minh & Cảnh báo",
+      "id": "AI Cerdas & Notifikasi"
     },
     {
       "group": "top10",
       "ko": "TOP 10 파라미터",
-      "en": "Top-10 Parameters"
+      "en": "Top-10 Parameters",
+      "ja": "上位10パラメータ",
+      "th": "พารามิเตอร์ 10 อันดับแรก",
+      "vi": "Top 10 tham số",
+      "id": "10 Parameter Teratas"
     },
     {
       "group": "hybrid",
       "ko": "하이브리드 전략",
-      "en": "Hybrid Strategy"
+      "en": "Hybrid Strategy",
+      "ja": "ハイブリッド戦略",
+      "th": "กลยุทธ์ไฮบริด",
+      "vi": "Chiến lược lai",
+      "id": "Strategi Hibrida"
     },
     {
       "group": "framework",
       "ko": "프레임워크 체크리스트",
-      "en": "Framework Checklists"
+      "en": "Framework Checklists",
+      "ja": "フレームワーク・チェックリスト",
+      "th": "เช็กลิสต์เฟรมเวิร์ก",
+      "vi": "Danh mục kiểm tra khung",
+      "id": "Daftar Periksa Kerangka"
     },
     {
       "group": "psych-report",
       "ko": "차트 vs 심리 리포트",
-      "en": "Charts vs Psychology"
+      "en": "Charts vs Psychology",
+      "ja": "チャート vs 心理",
+      "th": "กราฟ vs จิตวิทยา",
+      "vi": "Biểu đồ vs Tâm lý",
+      "id": "Grafik vs Psikologi"
     },
     {
       "group": "backtest-report",
       "ko": "백테스트 결과",
-      "en": "Backtest Result"
+      "en": "Backtest Result",
+      "ja": "バックテスト結果",
+      "th": "ผลแบ็กเทสต์",
+      "vi": "Kết quả backtest",
+      "id": "Hasil Backtest"
     },
     {
       "group": "ops-keys",
       "ko": "API 키 (관리자)",
-      "en": "API Keys (owner)"
+      "en": "API Keys (owner)",
+      "ja": "APIキー（管理者）",
+      "th": "คีย์ API (ผู้ดูแล)",
+      "vi": "Khóa API (quản trị)",
+      "id": "Kunci API (admin)"
     },
     {
       "group": "architecture",
       "ko": "시스템 아키텍처 (관리자)",
-      "en": "System Architecture (owner)"
+      "en": "System Architecture (owner)",
+      "ja": "システムアーキテクチャ（管理者）",
+      "th": "สถาปัตยกรรมระบบ (ผู้ดูแล)",
+      "vi": "Kiến trúc hệ thống (quản trị)",
+      "id": "Arsitektur Sistem (admin)"
     },
     {
       "group": "decisions",
       "ko": "AI 판단과 주문",
-      "en": "How Decisions Become Orders"
+      "en": "How Decisions Become Orders",
+      "ja": "AIの判断と注文",
+      "th": "การตัดสินใจกลายเป็นคำสั่งอย่างไร",
+      "vi": "Từ quyết định đến lệnh",
+      "id": "Dari Keputusan ke Order"
     },
     {
       "group": "market-hours",
       "ko": "내 시장 개장 시간",
-      "en": "When Your Markets Are Open"
+      "en": "When Your Markets Are Open",
+      "ja": "市場の開場時間",
+      "th": "เวลาเปิดตลาดของคุณ",
+      "vi": "Giờ mở cửa thị trường",
+      "id": "Jam Buka Pasar Anda"
     },
     {
       "group": "extensions",
       "ko": "확장 설계 분석 (관리자)",
-      "en": "Extension Design Analysis (owner)"
+      "en": "Extension Design Analysis (owner)",
+      "ja": "拡張設計分析（管理者）",
+      "th": "การวิเคราะห์การออกแบบส่วนขยาย (ผู้ดูแล)",
+      "vi": "Phân tích thiết kế mở rộng (quản trị)",
+      "id": "Analisis Desain Ekstensi (admin)"
     }
   ],
   "docs": [
@@ -243,6 +295,210 @@
       "group": "extensions",
       "title": "E1 Decision Routing & E2 Hot-Issue Daemon — Design Analysis",
       "owner_only": true
+    },
+    {
+      "key": "guide-ja",
+      "lang": "ja",
+      "group": "guide",
+      "title": "AI自動売買パイプライン完全ガイド"
+    },
+    {
+      "key": "guide-th",
+      "lang": "th",
+      "group": "guide",
+      "title": "คู่มือฉบับสมบูรณ์: ไปป์ไลน์เทรด AI"
+    },
+    {
+      "key": "guide-vi",
+      "lang": "vi",
+      "group": "guide",
+      "title": "Hướng dẫn đầy đủ quy trình giao dịch AI"
+    },
+    {
+      "key": "guide-id",
+      "lang": "id",
+      "group": "guide",
+      "title": "Panduan Lengkap Pipeline Trading AI"
+    },
+    {
+      "key": "gateway-en",
+      "lang": "en",
+      "group": "gateway",
+      "title": "Live Trading Gateway — Complete Guide"
+    },
+    {
+      "key": "gateway-ja",
+      "lang": "ja",
+      "group": "gateway",
+      "title": "実取引ゲートウェイ完全ガイド"
+    },
+    {
+      "key": "gateway-th",
+      "lang": "th",
+      "group": "gateway",
+      "title": "คู่มือฉบับสมบูรณ์: เกตเวย์เทรดจริง"
+    },
+    {
+      "key": "gateway-vi",
+      "lang": "vi",
+      "group": "gateway",
+      "title": "Hướng dẫn đầy đủ cổng giao dịch thật"
+    },
+    {
+      "key": "gateway-id",
+      "lang": "id",
+      "group": "gateway",
+      "title": "Panduan Lengkap Gerbang Trading Live"
+    },
+    {
+      "key": "smart-ja",
+      "lang": "ja",
+      "group": "smart",
+      "title": "スマートAIの判断とパーソナル通知"
+    },
+    {
+      "key": "smart-th",
+      "lang": "th",
+      "group": "smart",
+      "title": "การตัดสินใจของ AI อัจฉริยะ & การแจ้งเตือนส่วนบุคคล"
+    },
+    {
+      "key": "smart-vi",
+      "lang": "vi",
+      "group": "smart",
+      "title": "Quyết định AI thông minh & Cảnh báo cá nhân"
+    },
+    {
+      "key": "smart-id",
+      "lang": "id",
+      "group": "smart",
+      "title": "Keputusan AI Cerdas & Notifikasi Pribadi"
+    },
+    {
+      "key": "top10-ja",
+      "lang": "ja",
+      "group": "top10",
+      "title": "意思決定パラメータ 上位10"
+    },
+    {
+      "key": "top10-th",
+      "lang": "th",
+      "group": "top10",
+      "title": "พารามิเตอร์การตัดสินใจ 10 อันดับแรก"
+    },
+    {
+      "key": "top10-vi",
+      "lang": "vi",
+      "group": "top10",
+      "title": "Top 10 tham số quyết định"
+    },
+    {
+      "key": "top10-id",
+      "lang": "id",
+      "group": "top10",
+      "title": "10 Parameter Keputusan Teratas"
+    },
+    {
+      "key": "hybrid-ja",
+      "lang": "ja",
+      "group": "hybrid",
+      "title": "ハイブリッド戦略：チャート × 心理"
+    },
+    {
+      "key": "hybrid-th",
+      "lang": "th",
+      "group": "hybrid",
+      "title": "กลยุทธ์ไฮบริด: กราฟ × จิตวิทยา"
+    },
+    {
+      "key": "hybrid-vi",
+      "lang": "vi",
+      "group": "hybrid",
+      "title": "Chiến lược lai: Biểu đồ × Tâm lý"
+    },
+    {
+      "key": "hybrid-id",
+      "lang": "id",
+      "group": "hybrid",
+      "title": "Strategi Hibrida: Grafik × Psikologi"
+    },
+    {
+      "key": "decisions-id",
+      "lang": "id",
+      "group": "decisions",
+      "title": "Bagaimana armada Anda memutuskan untuk trading"
+    },
+    {
+      "key": "psych-report-ja",
+      "lang": "ja",
+      "group": "psych-report",
+      "title": "チャート分析 vs 人間心理 — 検証済みの数値"
+    },
+    {
+      "key": "psych-report-th",
+      "lang": "th",
+      "group": "psych-report",
+      "title": "การวิเคราะห์กราฟ vs จิตวิทยามนุษย์ — ตัวเลขที่ตรวจสอบแล้ว"
+    },
+    {
+      "key": "psych-report-vi",
+      "lang": "vi",
+      "group": "psych-report",
+      "title": "Phân tích biểu đồ vs Tâm lý con người — Số liệu đã kiểm chứng"
+    },
+    {
+      "key": "psych-report-id",
+      "lang": "id",
+      "group": "psych-report",
+      "title": "Analisis Grafik vs Psikologi Manusia — Angka Terverifikasi"
+    },
+    {
+      "key": "framework-ja",
+      "lang": "ja",
+      "group": "framework",
+      "title": "ハイブリッド・フレームワーク — 意思決定スタックとチェックリスト"
+    },
+    {
+      "key": "framework-th",
+      "lang": "th",
+      "group": "framework",
+      "title": "เฟรมเวิร์กไฮบริด — สแต็กการตัดสินใจ & เช็กลิสต์"
+    },
+    {
+      "key": "framework-vi",
+      "lang": "vi",
+      "group": "framework",
+      "title": "Khung lai — Ngăn xếp quyết định & Danh mục kiểm tra"
+    },
+    {
+      "key": "framework-id",
+      "lang": "id",
+      "group": "framework",
+      "title": "Kerangka Hibrida — Tumpukan Keputusan & Daftar Periksa"
+    },
+    {
+      "key": "backtest-report-ja",
+      "lang": "ja",
+      "group": "backtest-report",
+      "title": "フェーズ4 戦略バックテスト — Go/No-Go 結果"
+    },
+    {
+      "key": "backtest-report-th",
+      "lang": "th",
+      "group": "backtest-report",
+      "title": "แบ็กเทสต์กลยุทธ์เฟส 4 — ผล Go/No-Go"
+    },
+    {
+      "key": "backtest-report-vi",
+      "lang": "vi",
+      "group": "backtest-report",
+      "title": "Backtest chiến lược Phase-4 — Kết quả Go/No-Go"
+    },
+    {
+      "key": "backtest-report-id",
+      "lang": "id",
+      "group": "backtest-report",
+      "title": "Backtest Strategi Fase-4 — Hasil Go/No-Go"
     }
   ]
 }

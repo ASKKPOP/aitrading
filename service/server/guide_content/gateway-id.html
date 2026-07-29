@@ -1,0 +1,391 @@
+<!-- machine-translated from design/live-trading-gateway-guide.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — Panduan Lengkap Gateway Perdagangan Live (Live Trading Gateway Guide)</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.diagram .cap{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+svg text{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif}
+svg .box{fill:var(--card);stroke:var(--border)}
+svg .lbl{fill:var(--ink);font-size:12px;font-weight:700}
+svg .sm{fill:var(--ink-2);font-size:10.5px}
+svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="kicker">Sooppiy · Live Trading Gateway</div>
+  <h1>Panduan Lengkap Gateway Perdagangan Live</h1>
+  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · Disusun setelah verifikasi QA 3-agent · Subtitle bahasa Inggris per bagian</div>
+  <p class="sub" style="margin-top:10px">
+    Jalur lengkap yang dilalui aturan trading otomatis dari <b>simulator</b> → <b>shadow</b> → <b>live</b> hingga sampai ke tujuan:
+    apa yang perlu dikonfigurasi, gerbang apa saja yang dilalui pesanan, dan apa yang tidak akan pernah dilakukan sistem, dijelaskan dalam satu dokumen.
+  </p>
+</header>
+
+<!-- ═══ 1. 세 가지 모드 ═══ -->
+<section>
+  <h2><span class="no">01</span>Tiga mode eksekusi <span class="sub" style="display:inline">/ The three execution modes</span></h2>
+  <p class="sub">Satu pengaturan <code>account</code> pada aturan (halaman otomasi) yang menentukan di mana eksekusi akan mendarat. Tidak ada pengaturan lain yang dapat mengubah hal ini.</p>
+
+  <table>
+    <tr><th>Mode</th><th>Lokasi Eksekusi</th><th>Dana Nyata</th><th>Syarat</th><th>Kegunaan</th></tr>
+    <tr>
+      <td><span class="tag hold">simulator</span></td>
+      <td>Hanya buku besar simulasi platform</td><td>Tidak ada</td><td>Tidak ada (default)</td>
+      <td>Verifikasi strategi, mempelajari platform</td>
+    </tr>
+    <tr>
+      <td><span class="tag new">shadow</span></td>
+      <td>Buku besar simulasi (acuan) + pesanan pembanding ke <b>sandbox</b> broker</td><td>Tidak ada</td>
+      <td>Koneksi gateway (opsional — jika tidak ada, murni simulasi)</td>
+      <td>Membandingkan slippage dan tingkat eksekusi nyata tanpa risiko</td>
+    </tr>
+    <tr>
+      <td><span class="tag crit">live</span></td>
+      <td>Melalui gateway yang terhubung ke <b>broker sesungguhnya</b></td><td><b>Ada</b></td>
+      <td>Koneksi gateway + kredensial + persetujuan syarat perdagangan live</td>
+      <td>Trading otomatis sesungguhnya</td>
+    </tr>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- rule -->
+    <rect class="box" x="20" y="120" width="150" height="70" rx="12"/>
+    <text class="lbl" x="95" y="148" text-anchor="middle">Aturan otomasi</text>
+    <text class="sm" x="95" y="166" text-anchor="middle">Automation rule</text>
+    <!-- gates -->
+    <rect class="box" x="215" y="120" width="150" height="70" rx="12" stroke="var(--accent)"/>
+    <text class="lbl" x="290" y="143" text-anchor="middle">Rangkaian gerbang eksekusi</text>
+    <text class="sm" x="290" y="160" text-anchor="middle">12-step gate chain</text>
+    <text class="sm" x="290" y="175" text-anchor="middle">(lihat §4)</text>
+    <!-- router -->
+    <rect class="box" x="410" y="120" width="140" height="70" rx="12" stroke="var(--violet)"/>
+    <text class="lbl" x="480" y="148" text-anchor="middle">account_type</text>
+    <text class="sm" x="480" y="166" text-anchor="middle">execution/gateway.py</text>
+    <!-- three lanes -->
+    <rect class="box" x="620" y="20" width="255" height="66" rx="12"/>
+    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → buku besar simulasi</text>
+    <text class="sm" x="747" y="63" text-anchor="middle">signals + positions + cash (DB internal)</text>
+
+    <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
+    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → buku besar + sandbox</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Buku besar sebagai acuan · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="178" text-anchor="middle">Drift dicatat di position_reconciliations</text>
+
+    <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="747" y="254" text-anchor="middle">live → broker sesungguhnya ⚠ Dana nyata</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">Broker sebagai acuan — buku besar dicatat hanya setelah diterima</text>
+    <text class="sm" x="747" y="286" text-anchor="middle">Jika ditolak, tidak ada posisi yang dibuat</text>
+
+    <path class="arrow" d="M170,155 L213,155"/>
+    <path class="arrow" d="M365,155 L408,155"/>
+    <path class="arrow" d="M550,140 C590,110 590,70 618,55"/>
+    <path class="arrow" d="M550,155 L618,158"/>
+    <path class="arrow" d="M550,172 C590,205 590,245 618,262"/>
+    <text class="sm" x="580" y="45">simulator</text>
+    <text class="sm" x="572" y="147">shadow</text>
+    <text class="sm" x="588" y="280">live</text>
+  </svg>
+  <div class="cap">Gambar 1 — Setelah satu aturan melewati rangkaian gerbang, aturan tersebut dirutekan ke salah satu dari tiga jalur berdasarkan account_type.</div>
+  </div>
+
+  <div class="note red"><b>Yang tidak akan pernah terjadi:</b> aturan live tanpa gateway diturunkan secara diam-diam menjadi simulasi. live akan <b>ditolak dengan alasan eksplisit</b> dan alasan tersebut tercatat dalam log eksekusi — karena eksekusi palsu yang terlihat asli adalah hal terburuk yang bisa terjadi.</div>
+</section>
+
+<!-- ═══ 2. 단계별 설정 ═══ -->
+<section>
+  <h2><span class="no">02</span>Tujuh langkah menuju live <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
+
+  <div class="steps-strip">
+    <div class="st"><b>LANGKAH 1</b><span>Menerbitkan kunci broker</span></div>
+    <div class="st"><b>LANGKAH 2</b><span>Menghubungkan gateway</span></div>
+    <div class="st"><b>LANGKAH 3</b><span>Menyetujui syarat</span></div>
+    <div class="st"><b>LANGKAH 4</b><span>Memeriksa status</span></div>
+    <div class="st"><b>LANGKAH 5</b><span>Verifikasi shadow</span></div>
+    <div class="st"><b>LANGKAH 6</b><span>Beralih ke live</span></div>
+    <div class="st"><b>LANGKAH 7</b><span>Pemantauan</span></div>
+  </div>
+
+  <h3>LANGKAH 1 — Menyiapkan kredensial dari broker <span class="sub" style="display:inline">/ Prepare broker credentials</span></h3>
+  <table>
+    <tr><th>Broker</th><th>Yang Diperlukan</th><th>Di Mana</th><th>Perhatian</th></tr>
+    <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (kunci paper dan live terpisah)</td><td>Hanya izin perdagangan. shadow otomatis menggunakan endpoint paper</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Akun → API Management</td><td><b>Jangan pernah mengaktifkan izin penarikan.</b> Centang hanya perdagangan (TRADE). shadow menggunakan testnet</td></tr>
+    <tr><td><b>IBKR</b></td><td>URL Client Portal Gateway + nomor akun</td><td>Jalankan dan login langsung ke Client Portal Gateway yang didistribusikan IBKR</td><td>Tidak ada API key — <b>sesi gateway itu sendiri adalah kredensial.</b> Harus berupa alamat yang dapat diakses server. Jika nomor akun dimulai dengan <code>D</code>, berarti akun simulasi (shadow hanya berfungsi pada akun simulasi)</td></tr>
+  </table>
+
+  <h3>LANGKAH 2 — Menghubungkan gateway di halaman Akun <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
+  <ul>
+    <li><b>Akun (Accounts)</b> halaman → kartu <b>Gateway Perdagangan</b> pilih broker. Daftar dimuat dari server (<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: masukkan kunci+secret. IBKR: masukkan URL gateway + nomor akun (opsi sertifikat self-signed untuk gateway lokal tersedia).</li>
+    <li>Kunci <b>dienkripsi dan disimpan dengan AES-GCM</b> di server, tidak tersimpan di localStorage browser, dan langsung terhapus dari kolom input setelah disimpan serta tidak akan ditampilkan lagi.</li>
+  </ul>
+
+  <h3>STEP 3 — Menyetujui ketentuan perdagangan live <span class="sub" style="display:inline">/ Accept the live-trading terms</span></h3>
+  <ul>
+    <li>Kotak centang di atas tombol koneksi adalah prosedur persetujuan. Tanpa persetujuan, koneksi tidak akan berjalan.</li>
+    <li>Persetujuan disimpan sebagai catatan permanen <b>per broker</b> (<code>broker_live_optins</code>) — meskipun sudah menyetujui Alpaca, Binance live tetap memerlukan persetujuan terpisah.</li>
+  </ul>
+
+  <h3>STEP 4 — Memeriksa banner status <span class="sub" style="display:inline">/ Check the health banner</span></h3>
+  <ul>
+    <li>Setelah terhubung, banner hijau (normal)/merah (tidak dapat) akan muncul di bagian atas halaman akun (<code>GET /api/execution/health</code>).</li>
+    <li>IBKR bahkan menampilkan status sesi (kedaluwarsa/konflik). Alpaca/Binance tidak memiliki konsep sesi sehingga hanya memeriksa keberadaan kredensial.</li>
+  </ul>
+
+  <h3>STEP 5 — Memvalidasi lebih dulu di shadow <span class="sub" style="display:inline">/ Validate in shadow first</span></h3>
+  <ul>
+    <li>Halaman otomasi (mode ahli) → <b>account = shadow</b> pada aturan + eksekusi otomatis ON.</li>
+    <li>Selagi buku besar simulasi tetap menjadi acuan, order yang sama juga dikirim ke <b>sandbox</b> broker sehingga selisih eksekusi terkumpul di <b>catatan drift</b>. Anda dapat melihat slippage dan tingkat eksekusi tanpa dana nyata.</li>
+  </ul>
+
+  <h3>STEP 6 — Beralih ke live <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <ul>
+    <li><b>account = live</b> pada aturan. Aturan live dengan eksekusi otomatis aktif akan mendapat lencana merah <b>REAL MONEY</b> pada daftar.</li>
+    <li>Mulai saat ini, hanya keputusan yang lolos seluruh rangkaian gerbang yang akan dikirim ke broker sungguhan. Buku besar platform hanya dicatat setelah broker menerima order tersebut.</li>
+  </ul>
+
+  <h3>STEP 7 — Memantau <span class="sub" style="display:inline">/ Monitor</span></h3>
+  <ul>
+    <li><b>Catatan eksekusi halaman otomasi</b>: keputusan, eksekusi, dan alasan dilewati untuk setiap tick.</li>
+    <li><b>Riwayat order broker di halaman akun</b>: jumlah yang diminta vs jumlah eksekusi yang dikonfirmasi broker, warna berdasarkan status.</li>
+    <li><b>Catatan drift (kartu merah)</b>: ketika buku besar dan broker tidak sinkron — lihat §5.</li>
+    <li><b>Notifikasi</b>: eksekusi (trade_executed), gateway down (gateway_down), drift order (order_drift) — mengikuti kanal email/SMS pada pengaturan notifikasi.</li>
+  </ul>
+</section>
+
+<!-- ═══ 3. 게이트 체인 ═══ -->
+<section>
+  <h2><span class="no">03</span>12 gerbang yang dilalui order <span class="sub" style="display:inline">/ The 12-step gate chain</span></h2>
+  <p class="sub">Pada setiap tick untuk aturan dengan eksekusi otomatis aktif, keputusan (buy/sell) harus melewati gerbang di bawah ini <b>secara berurutan dan seluruhnya</b> agar benar-benar dieksekusi. Jika terhenti di satu gerbang saja, alasannya akan tercatat di catatan eksekusi dan order tidak akan dikirim.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- column of gates, 2 columns of 6 -->
+    <g>
+      <!-- left column -->
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① Eksekusi otomatis ON?</text><text class="sm" x="45" y="59">auto_execute off → dilewati</text>
+      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② Gateway tersedia? (live saja)</text><text class="sm" x="45" y="145">Koneksi, kredensial, dan persetujuan ketentuan — ketiganya</text>
+      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ Langganan/hak akses valid?</text><text class="sm" x="45" y="231">Saat ENTITLEMENTS_ENFORCED</text>
+      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ Keputusan buy/sell?</text><text class="sm" x="45" y="317">hold tidak menjadi target eksekusi</text>
+      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ Keyakinan ≥ ambang batas?</text><text class="sm" x="45" y="403">min_confidence pada aturan</text>
+      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ Pasar buka?</text><text class="sm" x="45" y="489">Dilewati jika bursa us-stock tutup</text>
+      <!-- right column -->
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ Penjaga peristiwa</text><text class="sm" x="345" y="59">Diblokir 1 jam sebelum/sesudah pengumuman FOMC·CPI (opsional)</text>
+      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ Cooldown time-stop</text><text class="sm" x="345" y="145">Menunggu untuk masuk kembali ke saham yang sama</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ Filter rezim</text><text class="sm" x="345" y="231">Blokir pembelian baru saat panik/overheat (opsional)</text>
+      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ Harga valid?</text><text class="sm" x="345" y="317">Keputusan memerlukan harga masuk</text>
+      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ Anggaran agent (mode agent)</text><text class="sm" x="345" y="403">Batas budget_usd</text>
+      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ Mesin risiko</text><text class="sm" x="345" y="489">Breaker→limit→sizing volatilitas→SL/TP</text>
+    </g>
+    <!-- arrows down left col -->
+    <path class="arrow" d="M155,72 L155,104" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,158 L155,190" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,244 L155,276" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,330 L155,362" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,416 L155,448" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,502 C155,530 455,540 455,504" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,450 L455,418" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,364 L455,332" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,278 L455,246" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,192 L455,160" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,106 L455,74" marker-end="url(#arr2)"/>
+    <!-- execute -->
+    <rect x="660" y="230" width="210" height="90" rx="14" fill="color-mix(in srgb,var(--good) 12%,var(--card))" stroke="var(--good)"/>
+    <text class="lbl" x="765" y="266" text-anchor="middle">✓ Eksekusi order</text>
+    <text class="sm" x="765" y="286" text-anchor="middle">Perutean account_type (§1)</text>
+    <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
+    <text class="sm" x="640" y="120">Lolos 12/12</text>
+  </svg>
+  <div class="cap">Gambar 2 — Rangkaian gerbang eksekusi (evaluate_execution_gates). ⑫ berlanjut dari bawah kolom kiri ke atas kolom kanan, dan semuanya harus lolos agar order dieksekusi. Uji jalan (▶) hanya melakukan analisis dan tidak melewati rangkaian ini.</div>
+  </div>
+
+  <div class="note">Urutan itu penting: aturan yang mematikan eksekusi otomatis dicatat sebagai 「Eksekusi Otomatis Nonaktif」, bukan sebagai error gateway. Dengan membaca alasan skip, Anda langsung tahu di gerbang keberapa proses berhenti.</div>
+</section>
+
+<!-- ═══ 4. 주문 수명주기 ═══ -->
+<section>
+  <h2><span class="no">04</span>Siklus hidup pesanan live <span class="sub" style="display:inline">/ Life of a live order</span></h2>
+  <p class="sub">Jika broker tidak segera mengonfirmasi eksekusi (SUBMITTED) <b>Order Reconciler</b> akan menanyakan hasil ke broker setiap 2 menit untuk memastikan status akhir.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- lifelines -->
+    <text class="lbl" x="90" y="28" text-anchor="middle">Worker (tick aturan)</text>
+    <text class="lbl" x="330" y="28" text-anchor="middle">Gateway Router</text>
+    <text class="lbl" x="570" y="28" text-anchor="middle">Broker</text>
+    <text class="lbl" x="800" y="28" text-anchor="middle">Ledger Platform</text>
+    <line x1="90" y1="40" x2="90" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="330" y1="40" x2="330" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="570" y1="40" x2="570" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="800" y1="40" x2="800" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <!-- messages -->
+    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(jumlah, harga)</text>
+    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">POST pesanan riil</text>
+    <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED atau SUBMITTED (atau ditolak)</text>
+    <!-- branch: rejected -->
+    <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
+    <text class="sm" x="122" y="161">Jika ditolak → catatan ledger <tspan font-weight="700">nihil</tspan> + notifikasi gateway_down. Posisi hantu dilarang.</text>
+    <!-- filled path -->
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">Diterima → cerminkan ledger dengan jumlah yang tereksekusi</text>
+    <!-- reconciler -->
+    <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
+    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">Reconciler</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">Siklus 2 menit</text>
+    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">Cek status pesanan SUBMITTED</text>
+    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">Status akhir + jumlah eksekusi aktual</text>
+    <!-- outcomes -->
+    <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">Eksekusi penuh (cocok)</tspan> → hanya catat status, selesai secara diam-diam · <tspan font-weight="700" fill="#a16800">Eksekusi sebagian</tspan> → catat filled_qty + notifikasi order_drift</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">Dibatalkan/ditolak setelahnya</tspan> → notifikasi order_drift + catat drift. <tspan font-weight="700">Ledger tidak pernah dikoreksi secara otomatis</tspan> — harus ditinjau oleh manusia.</text>
+  </svg>
+  <div class="cap">Gambar 3 — Submit → (segera atau melalui reconciler) konfirmasi → jika tidak cocok, beri peringatan keras. Jumlah yang diminta (quantity) dan jumlah konfirmasi broker (filled_qty) berada di kolom terpisah sehingga selisihnya tetap terlihat.</div>
+  </div>
+
+  <div class="note red"><b>Prinsip desain — hanya deteksi, koreksi oleh manusia:</b> Reconciler tidak pernah menyentuh posisi maupun kas. Jika tugas latar belakang memperbaiki perhitungan uang, itu berisiko merusak ledger dua kali lipat, sehingga ketidakcocokan ditampilkan mencolok dengan kartu merah dan notifikasi, sementara koreksi dilakukan sendiri oleh pengguna setelah memeriksa akun broker.</div>
+</section>
+
+<!-- ═══ 5. IBKR 세션 유지 ═══ -->
+<section>
+  <h2><span class="no">05</span>Keepalive sesi IBKR <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
+  <p class="sub">Sesi IBKR Client Portal akan terputus hanya setelah idle beberapa menit. Worker melakukan tickle pada sesi setiap 60 detik, mencoba re-autentikasi jika terputus, dan mengirim notifikasi sekali sehari jika tidak bisa dipulihkan.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <rect class="box" x="30" y="80" width="170" height="70" rx="12" stroke="var(--good)"/>
+    <text class="lbl" x="115" y="108" text-anchor="middle">Normal (authenticated)</text>
+    <text class="sm" x="115" y="126" text-anchor="middle">Dipertahankan dengan tickle setiap 60 detik</text>
+
+    <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
+    <text class="lbl" x="450" y="103" text-anchor="middle">Sesi kedaluwarsa (lapsed)</text>
+    <text class="sm" x="450" y="121" text-anchor="middle">Gateway masih aktif namun</text>
+    <text class="sm" x="450" y="136" text-anchor="middle">autentikasi terlepas</text>
+
+    <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="785" y="103" text-anchor="middle">Tidak dapat dipulihkan (dead)</text>
+    <text class="sm" x="785" y="121" text-anchor="middle">Notifikasi gateway_down (1 kali sehari)</text>
+    <text class="sm" x="785" y="136" text-anchor="middle">Login ulang gateway secara manual oleh pengguna</text>
+
+    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">Idle/timeout</text>
+    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate berhasil (pemulihan otomatis)</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">Reautentikasi gagal</text>
+    <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">Pengguna login ulang ke Client Portal Gateway</text>
+  </svg>
+  <div class="cap">Gambar 4 — Mesin status sesi. Sesi yang bersaing (competing) juga dianggap dead (karena jika login lain menguasai akun, pesanan akan ditolak).</div>
+  </div>
+
+  <div class="note"><b>Pengaman shadow:</b> Berbeda dari Alpaca/Binance, IBKR tidak memiliki host sandbox terpisah, <b>Akun</b> yang menentukan apakah itu dana riil. Oleh karena itu, dalam mode shadow, jika nomor akun bukan akun simulasi (awalan <code>D</code>), adapter akan <b>menolak dan tidak mengirim permintaan sama sekali</b>.</div>
+</section>
+
+<!-- ═══ 6. 스킵 사유 사전 ═══ -->
+<section>
+  <h2><span class="no">06</span>Alasan dilewati → solusinya <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <table>
+    <tr><th>Alasan dalam catatan eksekusi</th><th>Arti</th><th>Solusi</th></tr>
+    <tr><td>Eksekusi otomatis nonaktif</td><td>Aturan hanya untuk analisis</td><td>Aktifkan kotak centang eksekusi otomatis pada aturan</td></tr>
+    <tr><td>Live dipilih tetapi gateway trading belum dikonfigurasi</td><td>Tidak ada akun broker yang terhubung</td><td>Hubungkan gateway di halaman Akun (STEP 2)</td></tr>
+    <tr><td>Tidak ada kredensial API yang tersedia untuk gateway yang terhubung</td><td>Kunci tersimpan tidak ada atau tidak dapat didekripsi (misalnya karena penggantian kunci server)</td><td>Hubungkan ulang broker</td></tr>
+    <tr><td>Belum menyetujui ketentuan trading live</td><td>Tidak ada catatan persetujuan untuk broker tersebut</td><td>Setujui lalu hubungkan ulang di halaman Akun (STEP 3)</td></tr>
+    <tr><td>Gateway menolak pesanan — …</td><td>Broker menolak pesanan (alasan disertakan, misalnya saldo tidak cukup, sesi kedaluwarsa, dll.)</td><td>Periksa alasannya — jika IBKR 401, login ulang gateway</td></tr>
+    <tr><td>Keputusan hold</td><td>AI memutuskan untuk menunggu (wait-and-see)</td><td>Normal — tidak perlu tindakan</td></tr>
+    <tr><td>Keyakinan X — di bawah ambang batas Y</td><td>Keyakinan kurang</td><td>Tunggu (disarankan) atau turunkan min_confidence</td></tr>
+    <tr><td>Pasar tutup</td><td>Bursa AS tutup</td><td>Normal — coba lagi saat pasar buka</td></tr>
+    <tr><td>menolak menempatkan shadow order pada akun IBKR …</td><td>Mencoba shadow ke akun riil IBKR</td><td>Hubungkan ke akun demo (DU…) atau gunakan simulator alih-alih shadow</td></tr>
+  </table>
+</section>
+
+<!-- ═══ 7. 안전 불변식 ═══ -->
+<section>
+  <h2><span class="no">07</span>Hal yang tidak pernah dilakukan sistem <span class="sub" style="display:inline">/ Invarian keamanan (test-pinned)</span></h2>
+  <table>
+    <tr><th>Invarian</th><th>Alasan</th><th>Cara Menjamin</th></tr>
+    <tr><td>Tidak menurunkan live secara diam-diam menjadi mode simulasi</td><td>Eksekusi palsu yang terlihat seperti asli adalah yang terburuk</td><td>Penolakan eksplisit di gerbang ② + catat alasannya</td></tr>
+    <tr><td>Shadow order tidak menyentuh bursa sungguhan</td><td>"Eksekusi simulasi" tidak boleh menggunakan dana riil</td><td>Mode aturan mengunci endpoint (mengabaikan mode akun yang tersimpan), IBKR memaksa akun demo</td></tr>
+    <tr><td>Tidak ada pembuatan posisi saat broker menolak</td><td>Mencegah posisi hantu dari order yang tidak menyentuh pasar</td><td>live hanya mencatat ke buku besar setelah broker menerima</td></tr>
+    <tr><td>Reconciler tidak mengubah buku besar</td><td>Modifikasi perhitungan uang di latar belakang = risiko kerusakan ganda</td><td>Hanya deteksi, pencatatan, dan notifikasi; koreksi dilakukan oleh manusia</td></tr>
+    <tr><td>Kunci broker tidak dikembalikan ke klien</td><td>Minimalkan area kebocoran</td><td>Disimpan dengan AES-GCM, API kueri hanya mengembalikan metadata</td></tr>
+    <tr><td>Kunci enkripsi (EXECUTION_ENCRYPTION_KEY) bersifat write-once</td><td>Saat diganti, semua kredensial yang tersimpan menjadi tidak valid secara permanen</td><td>Prosedur operasional + cadangan pengelola kata sandi</td></tr>
+    <tr><td>Kegagalan live tidak dibiarkan diam-diam</td><td>Dead gateway tidak dapat dibedakan dari pasar yang sepi</td><td>Notifikasi gateway_down/order_drift (deduplikasi per jam·hari)</td></tr>
+  </table>
+  <div class="note green">Invariant-invariant di atas dikunci oleh automated test (~100 dari total 1,386 dalam execution stack), dan divalidasi ulang oleh 3-agent QA (adversarial backend · flow frontend · status produksi).</div>
+</section>
+
+<!-- ═══ 8. 운영 참고 ═══ -->
+<section style="border-bottom:none">
+  <h2><span class="no">08</span>Catatan operasional <span class="sub" style="display:inline">/ Catatan operator</span></h2>
+  <table>
+    <tr><th>Item</th><th>Nilai/Lokasi</th><th>Catatan</th></tr>
+    <tr><td>Variabel lingkungan</td><td>Produksi <code>~/sooppiy/.env</code> file tunggal (mode 600)</td><td>Termasuk komentar per bagian. Container harus dibuat ulang agar diterapkan</td></tr>
+    <tr><td>Interval keepalive</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (default 60 detik)</td><td>Tanpa biaya no-op jika tidak ada akun IBKR</td></tr>
+    <tr><td>Interval rekonsiliasi</td><td><code>ORDER_RECONCILE_INTERVAL</code> (default 120 detik)</td><td>Tanpa biaya jika tidak ada order submitted</td></tr>
+    <tr><td>Endpoint broker</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>Tidak ada hardcoding — diinjeksi dari .env</td></tr>
+    <tr><td>Deployment</td><td>Build tag → pada .env <code>SOOPPIY_IMAGE</code> ubah → <code>docker compose --profile prod up -d</code></td><td>0 nilai literal di file compose</td></tr>
+    <tr><td>Container API</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>Loop khusus worker — jika true, semua akan dijalankan ganda</td></tr>
+  </table>
+</section>
+
+<footer style="padding:26px 0 60px;color:var(--muted);font-size:12px">
+  Sooppiy · docs/design/live-trading-gateway-guide.html · Sumber: service/server/execution/ · service/server/automation.py · Verifikasi: 3-agent QA 2026-07-19
+</footer>
+
+</div>
+</body>
+</html>

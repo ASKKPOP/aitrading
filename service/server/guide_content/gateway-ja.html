@@ -1,0 +1,391 @@
+<!-- machine-translated from design/live-trading-gateway-guide.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sooppiy — 実取引ゲートウェイ完全ガイド (Live Trading Gateway Guide)</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,0.10); --baseline:#c3c2b7;
+  --accent:#2a78d6; --accent-on:#fff;
+  --aqua:#1baf7a; --yellow:#eda100; --violet:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --critical:#d03b3b; --serious:#ec835a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --grid:#2c2c2a; --card:#202020;
+    --ink:#fff; --ink-2:#c3c2b7; --border:rgba(255,255,255,0.10); --baseline:#383835;
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --good-ink:#0ca30c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);line-height:1.6;font-size:14.5px;
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+header.doc{border-bottom:1px solid var(--grid);padding:40px 0 26px}
+.kicker{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em;line-height:1.12;margin:8px 0 6px}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+section{border-bottom:1px solid var(--grid);padding:30px 0}
+h2{font-size:21px;font-weight:700;margin-bottom:4px}
+h2 .no{color:var(--accent);font-size:13px;font-variant-numeric:tabular-nums;margin-right:8px}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;font-weight:700;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface)}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;display:inline-block}
+.ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)}
+.new{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:#a16800}
+.hold{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+.crit{background:color-mix(in srgb,var(--critical) 14%,transparent);color:var(--critical)}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;background:var(--surface);border-radius:4px;padding:1px 5px}
+ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--card);padding:11px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink-2);margin-top:12px}
+.note.red{border-left-color:var(--critical)}
+.note.green{border-left-color:var(--good)}
+.diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;overflow-x:auto}
+.diagram svg{display:block;min-width:680px;width:100%;height:auto}
+.diagram .cap{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center}
+.steps-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:14px 0}
+.steps-strip .st{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center}
+.steps-strip .st b{display:block;font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums}
+.steps-strip .st span{font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+svg text{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif}
+svg .box{fill:var(--card);stroke:var(--border)}
+svg .lbl{fill:var(--ink);font-size:12px;font-weight:700}
+svg .sm{fill:var(--ink-2);font-size:10.5px}
+svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="kicker">Sooppiy · Live Trading Gateway</div>
+  <h1>実取引ゲートウェイ完全ガイド</h1>
+  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · 3-agent QA 検証後作成 · English subtitles per section</div>
+  <p class="sub" style="margin-top:10px">
+    自動売買ルールが <b>模擬(simulator)</b> → <b>影(shadow)</b> → <b>実取引(live)</b>へとつながる全経路：
+    何を設定すべきで、注文がどの関門を通り、システムが絶対に何をしないのかを一つの文書で説明します。
+  </p>
+</header>
+
+<!-- ═══ 1. 세 가지 모드 ═══ -->
+<section>
+  <h2><span class="no">01</span>3つの実行モード <span class="sub" style="display:inline">/ The three execution modes</span></h2>
+  <p class="sub">ルール（自動化ページ）の <code>アカウント(account)</code> 設定一つが約定先を決定します。他のどの設定もこれを変えることはできません。</p>
+
+  <table>
+    <tr><th>モード</th><th>約定先</th><th>実資金</th><th>必要条件</th><th>用途</th></tr>
+    <tr>
+      <td><span class="tag hold">simulator</span></td>
+      <td>プラットフォームの模擬台帳のみ</td><td>なし</td><td>なし（デフォルト）</td>
+      <td>戦略検証、プラットフォーム学習</td>
+    </tr>
+    <tr>
+      <td><span class="tag new">shadow</span></td>
+      <td>模擬台帳（基準） + ブローカーの <b>サンドボックス</b>に対比注文</td><td>なし</td>
+      <td>ゲートウェイ接続（任意 — なければ純粋な模擬）</td>
+      <td>実際のスリッページ・約定率を無リスクで比較</td>
+    </tr>
+    <tr>
+      <td><span class="tag crit">live</span></td>
+      <td>接続されたゲートウェイを通じて <b>実際のブローカー</b></td><td><b>あり</b></td>
+      <td>ゲートウェイ接続 + 資格情報 + 実取引規約への同意</td>
+      <td>実戦自動売買</td>
+    </tr>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- rule -->
+    <rect class="box" x="20" y="120" width="150" height="70" rx="12"/>
+    <text class="lbl" x="95" y="148" text-anchor="middle">自動化ルール</text>
+    <text class="sm" x="95" y="166" text-anchor="middle">Automation rule</text>
+    <!-- gates -->
+    <rect class="box" x="215" y="120" width="150" height="70" rx="12" stroke="var(--accent)"/>
+    <text class="lbl" x="290" y="143" text-anchor="middle">実行ゲートチェーン</text>
+    <text class="sm" x="290" y="160" text-anchor="middle">12-step gate chain</text>
+    <text class="sm" x="290" y="175" text-anchor="middle">(§4参照)</text>
+    <!-- router -->
+    <rect class="box" x="410" y="120" width="140" height="70" rx="12" stroke="var(--violet)"/>
+    <text class="lbl" x="480" y="148" text-anchor="middle">account_type</text>
+    <text class="sm" x="480" y="166" text-anchor="middle">execution/gateway.py</text>
+    <!-- three lanes -->
+    <rect class="box" x="620" y="20" width="255" height="66" rx="12"/>
+    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → 模擬台帳</text>
+    <text class="sm" x="747" y="63" text-anchor="middle">signals + positions + cash（内部DB）</text>
+
+    <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
+    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → 台帳 + サンドボックス</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">台帳が基準 · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="178" text-anchor="middle">ドリフトはposition_reconciliationsに記録</text>
+
+    <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="747" y="254" text-anchor="middle">live → 実際のブローカー ⚠ 実資金</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">ブローカーが基準 — 受理された後にのみ台帳へ記録</text>
+    <text class="sm" x="747" y="286" text-anchor="middle">拒否時はポジション生成なし</text>
+
+    <path class="arrow" d="M170,155 L213,155"/>
+    <path class="arrow" d="M365,155 L408,155"/>
+    <path class="arrow" d="M550,140 C590,110 590,70 618,55"/>
+    <path class="arrow" d="M550,155 L618,158"/>
+    <path class="arrow" d="M550,172 C590,205 590,245 618,262"/>
+    <text class="sm" x="580" y="45">simulator</text>
+    <text class="sm" x="572" y="147">shadow</text>
+    <text class="sm" x="588" y="280">live</text>
+  </svg>
+  <div class="cap">図1 — ルール一つがゲートチェーンを通過した後、account_typeに応じて3つの経路のいずれかにルーティングされます。</div>
+  </div>
+
+  <div class="note red"><b>絶対に起こらないこと：</b> ゲートウェイのないliveルールが黙って模擬に降格されること。liveは <b>明示的な理由とともに拒否</b>され、その理由が実行記録に残ります — 本物に見える偽の約定が最悪だからです。</div>
+</section>
+
+<!-- ═══ 2. 단계별 설정 ═══ -->
+<section>
+  <h2><span class="no">02</span>実取引まで7ステップ <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
+
+  <div class="steps-strip">
+    <div class="st"><b>STEP 1</b><span>ブローカーキー発行</span></div>
+    <div class="st"><b>STEP 2</b><span>ゲートウェイ接続</span></div>
+    <div class="st"><b>STEP 3</b><span>規約同意</span></div>
+    <div class="st"><b>STEP 4</b><span>状態確認</span></div>
+    <div class="st"><b>STEP 5</b><span>shadow検証</span></div>
+    <div class="st"><b>STEP 6</b><span>live切り替え</span></div>
+    <div class="st"><b>STEP 7</b><span>モニタリング</span></div>
+  </div>
+
+  <h3>STEP 1 — ブローカーで資格情報を準備 <span class="sub" style="display:inline">/ Prepare broker credentials</span></h3>
+  <table>
+    <tr><th>ブローカー</th><th>必要なもの</th><th>どこで</th><th>注意</th></tr>
+    <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys（paperとliveのキーは別々）</td><td>取引権限のみ。shadowは自動的にpaperエンドポイントを使用</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>アカウント → API Management</td><td><b>出金権限は絶対禁止。</b> 取引（TRADE）のみチェック。shadowはtestnetを使用</td></tr>
+    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + 口座番号</td><td>IBKRが配布するClient Portal Gatewayを直接実行・ログイン</td><td>APIキーがない — <b>ゲートウェイセッションがそのまま資格情報。</b> サーバーがアクセス可能なアドレスである必要あり。口座番号が <code>D</code>で始まる場合は模擬口座（shadowは模擬口座でのみ動作）</td></tr>
+  </table>
+
+  <h3>STEP 2 — アカウントページでゲートウェイ接続 <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
+  <ul>
+    <li><b>アカウント(Accounts)</b> ページ → <b>取引ゲートウェイ</b> カードでブローカーを選択。リストはサーバーから読み込みます（<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: キー+シークレットを入力。IBKR: ゲートウェイURL + 口座番号を入力(ローカルゲートウェイの自己署名証明書オプションあり)。</li>
+    <li>キーはサーバーで<b>AES-GCMで暗号化保存</b>され、ブラウザのlocalStorageには残らず、保存後すぐに入力欄から消去され、再表示されません。</li>
+  </ul>
+
+  <h3>STEP 3 — 実取引規約への同意 <span class="sub" style="display:inline">/ Accept the live-trading terms</span></h3>
+  <ul>
+    <li>接続ボタン上のチェックボックスが同意手続きです。同意なしでは接続自体が進みません。</li>
+    <li>同意は<b>ブローカーごと</b>の不変記録(<code>broker_live_optins</code>)として残ります — Alpacaに同意していても、Binance liveには別途同意が必要です。</li>
+  </ul>
+
+  <h3>STEP 4 — ステータスバナーの確認 <span class="sub" style="display:inline">/ Check the health banner</span></h3>
+  <ul>
+    <li>接続後、口座ページ上部に緑(正常)/赤(不可)のバナーが表示されます(<code>GET /api/execution/health</code>).</li>
+    <li>IBKRはセッション状態(期限切れ/競合)まで表示されます。Alpaca/Binanceにはセッションの概念がないため、資格情報の有無のみ確認します。</li>
+  </ul>
+
+  <h3>STEP 5 — shadowでまず検証 <span class="sub" style="display:inline">/ Validate in shadow first</span></h3>
+  <ul>
+    <li>自動化ページ(エキスパートモード) → ルールの<b>アカウント = shadow</b> + 自動実行 ON。</li>
+    <li>模擬台帳が基準として維持される一方、同じ注文がブローカーの<b>サンドボックス</b>にも送られ、約定差異が<b>ドリフト記録</b>に蓄積されます。実資金なしでスリッページ・約定率を確認できます。</li>
+  </ul>
+
+  <h3>STEP 6 — liveへの切り替え <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <ul>
+    <li>ルールの<b>アカウント = live</b>。自動実行がオンになっているliveルールには、一覧に赤い<b>実資金(REAL MONEY)</b>バッジが付きます。</li>
+    <li>この時点から、ゲートチェーンをすべて通過した決定のみが実際のブローカーへ送られます。ブローカーが受理した後にのみ、プラットフォームの台帳に記録されます。</li>
+  </ul>
+
+  <h3>STEP 7 — モニタリング <span class="sub" style="display:inline">/ Monitor</span></h3>
+  <ul>
+    <li><b>自動化ページの実行履歴</b>: 各ティックの決定・約定・スキップ理由。</li>
+    <li><b>口座ページのブローカー注文履歴</b>: 要求数量 vs ブローカー確認済み約定数量、ステータス別の色分け。</li>
+    <li><b>ドリフト記録(赤いカード)</b>: 台帳とブローカーが食い違った場合 — §5を参照。</li>
+    <li><b>アラート</b>: 約定(trade_executed)、ゲートウェイダウン(gateway_down)、注文ドリフト(order_drift) — アラート設定のメール/SMSチャンネルに従います。</li>
+  </ul>
+</section>
+
+<!-- ═══ 3. 게이트 체인 ═══ -->
+<section>
+  <h2><span class="no">03</span>注文が通過する12の関門 <span class="sub" style="display:inline">/ The 12-step gate chain</span></h2>
+  <p class="sub">自動実行がオンのルールの各ティックごとに、決定(buy/sell)が実際に約定するには、以下の関門を<b>順番にすべて</b>通過する必要があります。ひとつでも阻まれると、その理由が実行履歴に残り、注文は送信されません。</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- column of gates, 2 columns of 6 -->
+    <g>
+      <!-- left column -->
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① 自動実行 ON?</text><text class="sm" x="45" y="59">auto_execute off → スキップ</text>
+      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② ゲートウェイ利用可能?(liveのみ)</text><text class="sm" x="45" y="145">接続・資格情報・規約同意の3つすべて</text>
+      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ サブスクリプション/利用権が有効?</text><text class="sm" x="45" y="231">ENTITLEMENTS_ENFORCED 時</text>
+      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ 決定がbuy/sell?</text><text class="sm" x="45" y="317">holdは約定対象外</text>
+      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ 信頼度 ≥ しきい値?</text><text class="sm" x="45" y="403">ルールのmin_confidence</text>
+      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ 市場が開いている?</text><text class="sm" x="45" y="489">us-stockの取引時間外はスキップ</text>
+      <!-- right column -->
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ イベントガード</text><text class="sm" x="345" y="59">FOMC・CPI発表前後1時間はブロック(オプション)</text>
+      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ タイムストップのクールダウン</text><text class="sm" x="345" y="145">同一銘柄の再エントリー待機</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ レジームフィルター</text><text class="sm" x="345" y="231">パニック/過熱局面での新規買いをブロック(オプション)</text>
+      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ 有効な価格?</text><text class="sm" x="345" y="317">決定にはエントリー価格が必要</text>
+      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ エージェント予算(agentモード)</text><text class="sm" x="345" y="403">budget_usd 上限</text>
+      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ リスクエンジン</text><text class="sm" x="345" y="489">ブレーカー→上限→ボラティリティサイジング→SL/TP</text>
+    </g>
+    <!-- arrows down left col -->
+    <path class="arrow" d="M155,72 L155,104" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,158 L155,190" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,244 L155,276" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,330 L155,362" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,416 L155,448" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M155,502 C155,530 455,540 455,504" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,450 L455,418" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,364 L455,332" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,278 L455,246" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,192 L455,160" marker-end="url(#arr2)"/>
+    <path class="arrow" d="M455,106 L455,74" marker-end="url(#arr2)"/>
+    <!-- execute -->
+    <rect x="660" y="230" width="210" height="90" rx="14" fill="color-mix(in srgb,var(--good) 12%,var(--card))" stroke="var(--good)"/>
+    <text class="lbl" x="765" y="266" text-anchor="middle">✓ 約定実行</text>
+    <text class="sm" x="765" y="286" text-anchor="middle">account_type ルーティング (§1)</text>
+    <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
+    <text class="sm" x="640" y="120">12/12 通過</text>
+  </svg>
+  <div class="cap">図2 — 実行ゲートチェーン(evaluate_execution_gates)。⑫左列下→右列上へと続き、すべて通過して初めて約定します。テスト実行(▶)は分析のみで、このチェーンを経由しません。</div>
+  </div>
+
+  <div class="note">順序が重要です:自動実行がオフになっているルールは「自動実行オフ」として記録され、ゲートウェイエラーとしては記録されません。スキップ理由を確認すれば、どの関門で止まったかすぐに分かります。</div>
+</section>
+
+<!-- ═══ 4. 주문 수명주기 ═══ -->
+<section>
+  <h2><span class="no">04</span>liveオーダーのライフサイクル <span class="sub" style="display:inline">/ Life of a live order</span></h2>
+  <p class="sub">ブローカーが即座に約定を確定しない場合(SUBMITTED) <b>オーダー・リコンサイラー</b>が2分ごとにブローカーに結果を問い合わせ、最終状態を確定します。</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <!-- lifelines -->
+    <text class="lbl" x="90" y="28" text-anchor="middle">ワーカー (ルールティック)</text>
+    <text class="lbl" x="330" y="28" text-anchor="middle">ゲートウェイルーター</text>
+    <text class="lbl" x="570" y="28" text-anchor="middle">ブローカー</text>
+    <text class="lbl" x="800" y="28" text-anchor="middle">プラットフォーム台帳</text>
+    <line x1="90" y1="40" x2="90" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="330" y1="40" x2="330" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="570" y1="40" x2="570" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <line x1="800" y1="40" x2="800" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
+    <!-- messages -->
+    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(数量, 価格)</text>
+    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">実注文POST</text>
+    <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED または SUBMITTED (または拒否)</text>
+    <!-- branch: rejected -->
+    <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
+    <text class="sm" x="122" y="161">拒否の場合 → 台帳記録 <tspan font-weight="700">なし</tspan> + gateway_downアラート。ゴーストポジション禁止。</text>
+    <!-- filled path -->
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">受理 → 約定数量で台帳ミラー</text>
+    <!-- reconciler -->
+    <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
+    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">リコンサイラー</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">2分周期</text>
+    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">SUBMITTED注文状態照会</text>
+    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">最終状態 + 実際の約定数量</text>
+    <!-- outcomes -->
+    <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">完全約定(一致)</tspan> → 状態のみ記録、静かに終了 · <tspan font-weight="700" fill="#a16800">部分約定</tspan> → filled_qty記録 + order_driftアラート</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">事後キャンセル/拒否</tspan> → order_driftアラート + ドリフト記録。 <tspan font-weight="700">台帳は絶対に自動修正しない</tspan> — 人がレビュー。</text>
+  </svg>
+  <div class="cap">図3 — 提出 → (即時またはリコンサイラー経由)確定 → 食い違えば大きくアラート。要求数量(quantity)とブローカー確認数量(filled_qty)は別カラムなので、差異がずっと見えます。</div>
+  </div>
+
+  <div class="note red"><b>設計原則 — 検知のみ、修正は人が行う:</b> リコンサイラーはポジション・現金には一切触れません。バックグラウンドタスクが金額計算を修正することは台帳を二重に壊す道であるため、食い違いは赤いカードとアラートで大きく表示し、修正はユーザーがブローカー口座を確認したうえで自分で行います。</div>
+</section>
+
+<!-- ═══ 5. IBKR 세션 유지 ═══ -->
+<section>
+  <h2><span class="no">05</span>IBKRセッションkeepalive <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
+  <p class="sub">IBKR Client Portalセッションは数分アイドル状態になるだけで切断されます。ワーカーが60秒ごとにセッションをtickleし、切断されたら再認証を試み、復旧不可能な場合は1日1回アラートします。</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
+    <rect class="box" x="30" y="80" width="170" height="70" rx="12" stroke="var(--good)"/>
+    <text class="lbl" x="115" y="108" text-anchor="middle">正常 (authenticated)</text>
+    <text class="sm" x="115" y="126" text-anchor="middle">60秒ごとにtickleで維持</text>
+
+    <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
+    <text class="lbl" x="450" y="103" text-anchor="middle">セッション期限切れ (lapsed)</text>
+    <text class="sm" x="450" y="121" text-anchor="middle">ゲートウェイは生きているが</text>
+    <text class="sm" x="450" y="136" text-anchor="middle">認証が外れている</text>
+
+    <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
+    <text class="lbl" x="785" y="103" text-anchor="middle">復旧不可能 (dead)</text>
+    <text class="sm" x="785" y="121" text-anchor="middle">gateway_downアラート (1日1回)</text>
+    <text class="sm" x="785" y="136" text-anchor="middle">人がゲートウェイに再ログイン</text>
+
+    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">アイドル/タイムアウト</text>
+    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate 成功（自動復旧）</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">再認証失敗</text>
+    <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">ユーザーがClient Portal Gatewayに再ログイン</text>
+  </svg>
+  <div class="cap">図4 — セッション状態遷移図。競合（competing）セッションもdeadとして扱います（他のログインが口座を占有すると注文が拒否されるため）。</div>
+  </div>
+
+  <div class="note"><b>shadow 安全装置:</b> IBKRはAlpaca/Binanceと異なり専用のサンドボックスホストがなく、<b>口座</b>が実資金かどうかを決定します。そのためshadowモードでは、口座番号が模擬口座（<code>D</code> 接頭辞）でない場合、アダプターが<b>リクエスト自体を送信せず拒否</b>します。</div>
+</section>
+
+<!-- ═══ 6. 스킵 사유 사전 ═══ -->
+<section>
+  <h2><span class="no">06</span>スキップ理由 → 解決策 <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <table>
+    <tr><th>実行記録の理由</th><th>意味</th><th>解決</th></tr>
+    <tr><td>自動実行オフ</td><td>ルールが分析専用</td><td>ルールの自動実行チェックボックスをON</td></tr>
+    <tr><td>ライブを選択しましたが取引ゲートウェイが設定されていません</td><td>接続されたブローカーアカウントなし</td><td>アカウントページでゲートウェイを接続 (STEP 2)</td></tr>
+    <tr><td>接続されたゲートウェイに使用可能なAPI資格情報がありません</td><td>保存されたキーがない、または復号不可（サーバーキーのローテーションなど）</td><td>ブローカー再接続</td></tr>
+    <tr><td>実取引の規約に同意していません</td><td>該当ブローカーの同意記録なし</td><td>アカウントページで同意後に再接続 (STEP 3)</td></tr>
+    <tr><td>ゲートウェイが注文を拒否しました — …</td><td>ブローカーが注文を拒否（残高不足、セッション期限切れなどの理由を併記）</td><td>理由を確認 — IBKR 401の場合はゲートウェイに再ログイン</td></tr>
+    <tr><td>決定がhold</td><td>AIが様子見と判断</td><td>正常 — 対応不要</td></tr>
+    <tr><td>信頼度X — 閾値Y未満</td><td>確信不足</td><td>待機（推奨）またはmin_confidenceを引き下げ</td></tr>
+    <tr><td>市場終了</td><td>米国市場の閉場</td><td>正常 — 開場時に再試行</td></tr>
+    <tr><td>IBKRアカウントへのshadow注文の発注を拒否…</td><td>IBKR本番口座へのshadow試行</td><td>模擬口座(DU…)に接続するか、shadowの代わりにsimulatorを使用</td></tr>
+  </table>
+</section>
+
+<!-- ═══ 7. 안전 불변식 ═══ -->
+<section>
+  <h2><span class="no">07</span>システムが絶対に行わないこと <span class="sub" style="display:inline">/ Safety invariants（テスト固定）</span></h2>
+  <table>
+    <tr><th>不変条件</th><th>理由</th><th>保証方法</th></tr>
+    <tr><td>liveを黙って模擬に降格しない</td><td>偽の約定が本物のように見えるのが最悪</td><td>ゲート②で明示的拒否+理由を記録</td></tr>
+    <tr><td>shadow注文が実際の取引所に届かない</td><td>「模擬実行」が実資金を使ってはいけない</td><td>ルールモードがエンドポイントを固定（保存された口座モードを無視）、IBKRは模擬口座を強制</td></tr>
+    <tr><td>ブローカー拒否時はポジション作成なし</td><td>市場に届いていない注文の幽霊ポジションを防止</td><td>liveはブローカー承認後にのみ元帳に記録</td></tr>
+    <tr><td>リコンサイラーが元帳を修正しない</td><td>バックグラウンドでの金額計算修正＝二重損傷リスク</td><td>検知・記録・通知のみ、修正は人が行う</td></tr>
+    <tr><td>ブローカーキーがクライアントに返されない</td><td>漏洩面積の最小化</td><td>AES-GCMで保存、照会APIはメタデータのみ返却</td></tr>
+    <tr><td>暗号化キー（EXECUTION_ENCRYPTION_KEY）はwrite-once</td><td>交換時に保存された全ての資格情報が永久に無効化</td><td>運用手順+パスワードマネージャーバックアップ</td></tr>
+    <tr><td>live失敗は沈黙しない</td><td>停止したゲートウェイは静かな市場と区別不可能</td><td>gateway_down/order_drift 通知（時間・日単位での重複排除）</td></tr>
+  </table>
+  <div class="note green">上記の不変条件は自動テスト（合計1,386件中、実行スタック約100件）で固定されており、3エージェントQA（バックエンド敵対的検証・フロントエンドフロー・プロダクション状態）で再検証されています。</div>
+</section>
+
+<!-- ═══ 8. 운영 참고 ═══ -->
+<section style="border-bottom:none">
+  <h2><span class="no">08</span>運用メモ <span class="sub" style="display:inline">/ オペレーターノート</span></h2>
+  <table>
+    <tr><th>項目</th><th>値/場所</th><th>備考</th></tr>
+    <tr><td>環境変数</td><td>本番 <code>~/sooppiy/.env</code> 単一ファイル（mode 600）</td><td>パート別のコメントを含む。コンテナは再生成しないと反映されない</td></tr>
+    <tr><td>keepalive 周期</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> （デフォルト60秒）</td><td>IBKRアカウントがなければ無コストのno-op</td></tr>
+    <tr><td>リコンサイル周期</td><td><code>ORDER_RECONCILE_INTERVAL</code> （デフォルト120秒）</td><td>submitted注文がなければ無コスト</td></tr>
+    <tr><td>ブローカーエンドポイント</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>ハードコーディングなし — .envから注入</td></tr>
+    <tr><td>デプロイ</td><td>タグビルド → .envの <code>SOOPPIY_IMAGE</code> 修正 → <code>docker compose --profile prod up -d</code></td><td>composeファイルにリテラル値0個</td></tr>
+    <tr><td>APIコンテナ</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>ループはワーカー専用 — trueなら全て二重実行される</td></tr>
+  </table>
+</section>
+
+<footer style="padding:26px 0 60px;color:var(--muted);font-size:12px">
+  Sooppiy · docs/design/live-trading-gateway-guide.html · ソース: service/server/execution/ · service/server/automation.py · 検証: 3-agent QA 2026-07-19
+</footer>
+
+</div>
+</body>
+</html>

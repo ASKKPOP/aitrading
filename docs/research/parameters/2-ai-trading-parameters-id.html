@@ -1,0 +1,391 @@
+<!-- machine-translated from research/parameters/2-ai-trading-parameters-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Trading — 10 Parameter Keputusan Teratas</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* blue  — price & market data */
+    --series-2: #008300; /* green — microstructure / order book */
+    --series-3: #e87ba4; /* magenta — text & sentiment */
+    --series-4: #eda100; /* yellow — macro & fundamentals */
+    --seq-100: #cde2fb;
+    --seq-250: #86b6ef;
+    --seq-450: #2a78d6;
+    --seq-650: #104281;
+    --buy: #0ca30c;
+    --sell: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #008300;
+      --series-3: #d55181;
+      --series-4: #c98500;
+      --seq-100: #0d366b;
+      --seq-250: #1c5cab;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+      --buy: #0ca30c;
+      --sell: #e66767;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--text-primary); padding: 32px 16px 48px; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header.hero { margin-bottom: 28px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p.sub { color: var(--text-secondary); font-size: 14px; margin-top: 6px; max-width: 70ch; }
+  .hero .stamp { display: inline-block; margin-top: 10px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  section.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  h2.sec { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  p.secnote { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; max-width: 80ch; }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ranked bars */
+  .rankrow { display: grid; grid-template-columns: 34px 240px 1fr; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; position: relative; cursor: default; }
+  .rankrow:hover { background: color-mix(in oklab, var(--text-primary) 5%, transparent); }
+  .rk { font-size: 15px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .rname { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .rname small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .bartrack { position: relative; height: 18px; }
+  .bar { position: absolute; left: 0; top: 2px; height: 14px; border-radius: 0 4px 4px 0; }
+  .tier { position: absolute; top: 1px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  .axisnote { font-size: 11px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+  .tip { display: none; position: absolute; z-index: 5; left: 290px; top: calc(100% - 4px); background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 12px; width: min(460px, 60vw); font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .rankrow:hover .tip { display: block; }
+  .tip b { color: var(--text-primary); }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inbox { border: 1.5px solid; border-radius: 10px; padding: 12px; background: color-mix(in oklab, var(--surface-1) 92%, transparent); }
+  .inbox h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .inbox ul { list-style: none; }
+  .inbox li { font-size: 11.5px; color: var(--text-secondary); padding: 2px 0; }
+  .inbox li b.rkb { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 8px 0; }
+  .arrow small { display: block; font-size: 10.5px; margin-top: 2px; }
+  .stage { border: 1px solid var(--border); background: color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); border-radius: 10px; padding: 14px 18px; text-align: center; }
+  .stage h4 { font-size: 13.5px; font-weight: 700; }
+  .stage p { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; max-width: 72ch; margin-left: auto; margin-right: auto; }
+  .stageno { display: inline-block; font-size: 10px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dbox { border-radius: 10px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .dbox h4 { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; }
+  .dbox p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .dbuy { border-color: var(--buy); }
+  .dbuy h4 { color: var(--buy); }
+  .dsell { border-color: var(--sell); }
+  .dsell h4 { color: var(--sell); }
+  .dhold { border-color: var(--baseline); }
+  .dhold h4 { color: var(--text-secondary); }
+  .loopnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* horizon matrix */
+  table.hz { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .hz th { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; padding: 6px 8px; text-align: center; }
+  .hz th.rowh { text-align: left; font-weight: 600; color: var(--text-primary); font-size: 12px; width: 240px; }
+  .hz td { border-radius: 6px; text-align: center; font-size: 11px; padding: 9px 6px; font-weight: 600; }
+  .hz .c3 { background: var(--seq-450); color: #fff; }
+  .hz .c2 { background: var(--seq-250); color: #0b0b0b; }
+  .hz .c1 { background: var(--seq-100); color: var(--text-primary); }
+  .hz .c0 { background: color-mix(in oklab, var(--text-primary) 4%, var(--surface-1)); color: var(--muted); font-weight: 400; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .hz .c2 { color: #fff; }
+    :root:where(:not([data-theme="light"])) .hz .c1 { color: #c3c2b7; }
+  }
+  .famchip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  footer.src { font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 90ch; }
+  footer.src a { color: inherit; }
+  @media (max-width: 720px) {
+    .inputs { grid-template-columns: 1fr 1fr; }
+    .rankrow { grid-template-columns: 26px 150px 1fr; }
+    .tip { left: 10px; width: calc(100vw - 60px); }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+
+    <header class="hero">
+      <h1>AI Trading: 10 Parameter Keputusan Beli/Jual Teratas</h1>
+      <p class="sub">Sinyal apa yang benar-benar dimasukkan oleh sistem AI dan algorithmic trading ke dalam model mereka untuk memutuskan kapan harus membeli dan menjual — diperingkat dari penelusuran riset mendalam terhadap literatur akademik global dan praktik industri, dengan setiap klaim diverifikasi secara adversarial terhadap sumber primer.</p>
+      <span class="stamp">Deep research · 100+ sumber terverifikasi · Juli 2026 · Bukan saran investasi</span>
+    </header>
+
+    <!-- ============ 1. RANKING ============ -->
+    <section class="card">
+      <h2 class="sec">① 10 Parameter Teratas, Diperingkat</h2>
+      <p class="secnote">Warna menunjukkan kelompok data tempat setiap parameter berasal. Arahkan kursor ke baris mana pun untuk melihat apa yang diukur dan bagaimana model AI menggunakannya.</p>
+      <div class="legend" role="list">
+        <span><i class="chip" style="background:var(--series-1)"></i>Data harga &amp; pasar</span>
+        <span><i class="chip" style="background:var(--series-2)"></i>Struktur mikro pasar</span>
+        <span><i class="chip" style="background:var(--series-3)"></i>Teks &amp; sentimen</span>
+        <span><i class="chip" style="background:var(--series-4)"></i>Makro &amp; fundamental</span>
+      </div>
+
+      <div class="rankrow"><div class="rk">1</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Momentum harga / tren<small>Return 12 bulan (mengabaikan bulan terakhir), momentum industri</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:100%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> apakah harga terus-menerus naik atau turun (kelanjutan tren).<br><b>Mengapa #1:</b> keluarga prediktor paling informatif di seluruh kelas model ML dalam studi benchmark (Gu–Kelly–Xiu, RFS 2020).<br><b>Bagaimana AI menggunakannya:</b> fitur inti dalam peramalan return; aturan sederhana menggunakannya secara langsung ("harga di atas SMA → beli").</div>
+      </div>
+      <div class="rankrow"><div class="rk">2</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Indikator teknikal<small>RSI, MACD, SMA/EMA, Stochastic, Williams %R</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:93%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> kondisi overbought/oversold dan kekuatan tren melalui transformasi harga/volume yang direkayasa.<br><b>Mengapa #2:</b> fitur input ML yang paling umum di antara 138 studi yang disurvei (2.173 variabel yang tercatat); ~66% studi prediksi saham berbasis ML menggunakannya.<br><b>Bagaimana AI menggunakannya:</b> fitur rekayasa yang dimasukkan ke dalam classifier/regressor.</div>
+      </div>
+      <div class="rankrow"><div class="rk">3</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Volume &amp; likuiditas<small>Volume dolar, kapitalisasi pasar, spread bid–ask</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:86%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> partisipasi/keyakinan di balik pergerakan harga dan seberapa murah suatu posisi dapat diperdagangkan.<br><b>Mengapa #3:</b> tingkat kedua dalam pentingnya fitur ML; uji ablasi menunjukkan performa menurun ketika fitur volume dihilangkan.<br><b>Bagaimana AI menggunakannya:</b> prediktor + filter tradabilitas untuk penentuan ukuran posisi.</div>
+      </div>
+      <div class="rankrow"><div class="rk">4</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Volatilitas &amp; risiko<small>Volatilitas return, volatilitas idiosinkratik, beta</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:79%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> dispersi return dan eksposur risiko sistematis.<br><b>Mengapa #4:</b> tingkat ketiga prediktor unggulan di semua kelas model ML.<br><b>Bagaimana AI menggunakannya:</b> prediktor return + penentuan ukuran posisi / pembobotan sinyal yang disesuaikan risiko.</div>
+      </div>
+      <div class="rankrow"><div class="rk">5</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Data deret harga OHLCV mentah<small>Open, High, Low, Close, Volume</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:72%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> catatan pasar yang belum diproses.<br><b>Mengapa #5:</b> input dasar untuk deep-learning; pada frekuensi tingkat menit, fitur harga mentah mengungguli 13 indikator teknikal.<br><b>Bagaimana AI menggunakannya:</b> model LSTM/CNN menyerap deret mentah dan mempelajari representasi secara end-to-end.</div>
+      </div>
+      <div class="rankrow"><div class="rk">6</div>
+        <div class="rname"><i class="chip" style="background:var(--series-2)"></i><span>Kedalaman limit order book<small>10 level bid/ask = input 40 fitur</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:65%;background:var(--series-2)"></div></div>
+        <div class="tip"><b>Mengukur:</b> penawaran dan permintaan secara real-time — harga &amp; volume yang menunggu di setiap level kedalaman.<br><b>Mengapa #6:</b> order di belakang bid/ask terbaik membawa ~22% dari price discovery; input dominan pada horizon intraday/HFT.<br><b>Bagaimana AI menggunakannya:</b> input standar untuk model deep learning horizon pendek (DeepLOB) dan algoritma eksekusi.</div>
+      </div>
+      <div class="rankrow"><div class="rk">7</div>
+        <div class="rname"><i class="chip" style="background:var(--series-3)"></i><span>Sentimen berita &amp; media sosial<small>Kawat berita, X/Twitter, StockTwits, Reddit melalui NLP</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:58%;background:var(--series-3)"></div></div>
+        <div class="tip"><b>Mengukur:</b> suasana pasar agregat yang diekstraksi oleh model NLP.<br><b>Mengapa #7:</b> input standar industri; sentimen semalam memprediksi return S&amp;P 500 hari berikutnya (~6bp per SD, riset Fed).<br><b>Bagaimana AI menggunakannya:</b> dikonversi menjadi skor sentimen numerik per aset/hari dan digabungkan dengan fitur harga.</div>
+      </div>
+      <div class="rankrow"><div class="rk">8</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>Data makroekonomi<small>Suku bunga, yield 10Y, PMI, GDP, indeks ketidakpastian</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:51%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>Mengukur:</b> lingkungan discount-rate dan pertumbuhan.<br><b>Mengapa #8:</b> salah satu dari tiga keluarga fitur kanonis; paling berguna untuk peramalan tingkat indeks dan horizon yang lebih panjang.<br><b>Bagaimana AI menggunakannya:</b> fitur kondisional yang bergerak lambat dan menggeser rezim model (risk-on/risk-off).</div>
+      </div>
+      <div class="rankrow"><div class="rk">9</div>
+        <div class="rname"><i class="chip" style="background:var(--series-4)"></i><span>Data fundamental<small>ROE, EPS, rasio valuasi</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:44%;background:var(--series-4)"></div></div>
+        <div class="tip"><b>Mengukur:</b> kualitas dan nilai perusahaan dari laporan keuangan.<br><b>Mengapa #9:</b>canonical family tetapi digunakan dalam ~23% studi vs ~66% untuk teknikal; value adalah prediktor return "di mana-mana".<br><b>Bagaimana AI menggunakannya:</b> cross-sectional ranking pada horizon mingguan–bulanan — beli cheap/quality, short expensive/weak.</div>
+      </div>
+      <div class="rankrow"><div class="rk">10</div>
+        <div class="rname"><i class="chip" style="background:var(--series-1)"></i><span>Sinyal mean-reversion<small>Deviasi dari rata-rata, pairs spread, reversal 1-bulan</small></span></div>
+        <div class="bartrack"><div class="bar" style="width:37%;background:var(--series-1)"></div></div>
+        <div class="tip"><b>Mengukur:</b> seberapa jauh harga (atau spread antara aset terkait) telah melebar dari rata-rata historisnya.<br><b>Mengapa #10:</b> counterpart kanonis dari momentum; short-term reversal juga termasuk fitur ML teratas.<br><b>Bagaimana AI menggunakannya:</b> pairs trading / stat-arb — beli leg yang underpriced, jual yang overpriced.</div>
+      </div>
+
+      <p class="axisnote">Panjang bar mencerminkan urutan peringkat (komposit dari measured ML feature importance untuk peringkat 1–4 dan prevalensi penggunaan dalam literatur untuk peringkat 5–10) — ini bukan besaran terukur. Sumber: Gu–Kelly–Xiu (RFS 2020); Kumbure et al. (2022); Sezer et al. (2020).</p>
+    </section>
+
+    <!-- ============ 2. FLOW ============ -->
+    <section class="card">
+      <h2 class="sec">② Alur Keputusan: Dari Data ke Buy/Sell</h2>
+      <p class="secnote">Bagaimana sistem trading AI tipikal mengubah 10 parameter menjadi sebuah order. Angka dalam kurung merujuk pada peringkat di atas.</p>
+
+      <div class="flow">
+        <div class="inputs">
+          <div class="inbox" style="border-color:var(--series-1)">
+            <h4><i class="chip" style="background:var(--series-1)"></i>Data harga &amp; pasar</h4>
+            <ul>
+              <li><b class="rkb">#1</b> Momentum / trend</li>
+              <li><b class="rkb">#2</b> Indikator teknikal</li>
+              <li><b class="rkb">#3</b> Volume &amp; likuiditas</li>
+              <li><b class="rkb">#4</b> Volatilitas</li>
+              <li><b class="rkb">#5</b> Raw OHLCV</li>
+              <li><b class="rkb">#10</b> Mean reversion</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-2)">
+            <h4><i class="chip" style="background:var(--series-2)"></i>Mikrostruktur</h4>
+            <ul>
+              <li><b class="rkb">#6</b> Kedalaman order book</li>
+              <li>Ketidakseimbangan bid/ask</li>
+              <li>Trade flow</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-3)">
+            <h4><i class="chip" style="background:var(--series-3)"></i>Teks &amp; sentimen</h4>
+            <ul>
+              <li><b class="rkb">#7</b> Sentimen berita</li>
+              <li><b class="rkb">#7</b> Media sosial (X, Reddit)</li>
+              <li>Penilaian NLP (BERT, LSTM)</li>
+            </ul>
+          </div>
+          <div class="inbox" style="border-color:var(--series-4)">
+            <h4><i class="chip" style="background:var(--series-4)"></i>Makro &amp; fundamental</h4>
+            <ul>
+              <li><b class="rkb">#8</b> Suku bunga, PMI, GDP</li>
+              <li><b class="rkb">#9</b> ROE, EPS, valuasi</li>
+              <li>Indeks ketidakpastian</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="arrow">▼<small>kumpulkan &amp; selaraskan berdasarkan timestamp</small></div>
+
+        <div class="stage">
+          <span class="stageno">TAHAP 1</span>
+          <h4>Feature Engineering</h4>
+          <p>Hitung nilai indikator, window momentum (misalnya, 12-bulan skip-month), normalisasi antar saham, beri skor teks menjadi angka sentimen, lag fitur untuk menghindari look-ahead bias.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">TAHAP 2</span>
+          <h4>Model AI — Prediksi Return</h4>
+          <p>Gradient-boosted trees / neural networks (LSTM, CNN) memprediksi return yang diharapkan atau probabilitas naik/turun per aset. Model nonlinear kira-kira melipatgandakan rasio Sharpe out-of-sample dibandingkan regresi linear (1.35 vs 0.61) pada input yang sama.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">TAHAP 3</span>
+          <h4>Pembuatan Sinyal</h4>
+          <p>Prakiraan diberi peringkat atau ambang batas: prakiraan positif kuat → kandidat beli; negatif kuat → kandidat jual/short; sinyal lemah → tidak ada transaksi.</p>
+        </div>
+
+        <div class="arrow">▼</div>
+
+        <div class="stage">
+          <span class="stageno">TAHAP 4</span>
+          <h4>Risiko &amp; Penentuan Ukuran Posisi</h4>
+          <p>Volatilitas (#4) menentukan ukuran posisi; likuiditas (#3) membatasi ukuran order; batasan portofolio dan batas drawdown berlaku. Sinyal yang bagus pada saham yang tidak dapat diperdagangkan akan dibuang di sini.</p>
+        </div>
+
+        <div class="arrow">▼<small>kirim order</small></div>
+
+        <div class="decide">
+          <div class="dbox dbuy"><h4>BUY</h4><p>Algoritma eksekusi memproses order menggunakan kedalaman order-book (#6) untuk meminimalkan dampak</p></div>
+          <div class="dbox dhold"><h4>TAHAN / TIDAK ADA TRANSAKSI</h4><p>Sinyal di bawah ambang batas, atau biaya transaksi melebihi keunggulan yang diharapkan</p></div>
+          <div class="dbox dsell"><h4>JUAL / SHORT</h4><p>Keluar saat ada sinyal pembalikan, stop-loss, target tercapai, atau prakiraan negatif</p></div>
+        </div>
+
+        <div class="loopnote">↻ Hasil memberi umpan balik ke model — pelatihan ulang dan validasi walk-forward menutup siklus ini.</div>
+      </div>
+    </section>
+
+    <!-- ============ 3. HORIZON MAP ============ -->
+    <section class="card">
+      <h2 class="sec">③ Parameter Mana yang Penting pada Horizon Mana</h2>
+      <p class="secnote">Kegunaan sinyal bergantung pada horizon: mikrostruktur order-book mendominasi pada detik–menit, momentum dan teknikal pada horizon harian, fundamental dan makro pada horizon mingguan–bulanan. Pewarnaan sel dan label menunjukkan tingkat kepentingan.</p>
+      <table class="hz">
+        <thead>
+          <tr>
+            <th class="rowh">Kelompok parameter</th>
+            <th>HFT / Intraday<br>(detik–menit)</th>
+            <th>Jangka pendek<br>(harian)</th>
+            <th>Menengah–panjang<br>(mingguan–bulanan)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-2)"></i>Kedalaman order book (#6)</th><td class="c3">Dominan</td><td class="c1">Minor</td><td class="c0">—</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>OHLCV mentah (#5)</th><td class="c3">Dominan</td><td class="c2">Berguna</td><td class="c1">Minor</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Indikator teknis (#2)</th><td class="c1">Minor · risiko overfit</td><td class="c3">Dominan</td><td class="c2">Berguna</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Momentum &amp; reversal (#1, #10)</th><td class="c1">Minor</td><td class="c3">Dominan</td><td class="c3">Dominan</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Volume &amp; likuiditas (#3)</th><td class="c2">Berguna</td><td class="c2">Berguna</td><td class="c2">Berguna</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Volatilitas (#4)</th><td class="c2">Berguna</td><td class="c2">Berguna</td><td class="c2">Berguna</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Sentimen (#7)</th><td class="c1">Minor</td><td class="c3">Dominan</td><td class="c1">Minor</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Fundamental (#9)</th><td class="c0">—</td><td class="c1">Minor</td><td class="c3">Dominan</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Data makro (#8)</th><td class="c0">—</td><td class="c1">Minor</td><td class="c3">Dominan</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote">Sintesis kualitatif bukti ketergantungan horizon (Sezer et al. 2020; Prata et al. 2024; Rachev et al. 2025). "—" = jarang digunakan pada horizon tersebut.</p>
+    </section>
+
+    <!-- ============ 4. VERIFIED SUCCESS RATES ============ -->
+    <section class="card">
+      <h2 class="sec">④ Tingkat Keberhasilan Terverifikasi: Pola Grafik vs Psikologi Manusia</h2>
+      <p class="secnote">Riset mendalam babak 2: angka-angka "% keberhasilan" yang terkenal untuk setiap parameter, diperiksa faktanya secara adversarial terhadap sumber-sumber peer-review primer. Angka-angka populer yang beredar ditampilkan berdampingan dengan apa yang sebenarnya didukung oleh bukti. Angka utama dari kedua kubu gagal dalam pengujian ini.</p>
+      <table class="hz" style="border-spacing:2px">
+        <thead>
+          <tr>
+            <th class="rowh">Parameter / sinyal</th>
+            <th>Klaim populer</th>
+            <th>Angka terverifikasi (peer-reviewed)</th>
+            <th>Menguntungkan secara mandiri?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Head &amp; Shoulders</th><td class="c0">"keberhasilan 80%+"</td><td class="c2">Return kelebihan hedged 5–7%/tahun (Savin 2007)</td><td class="c0">Tidak — tidak berlaku pada saham S&amp;P 500</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Double Bottom</th><td class="c0">"keberhasilan 80%+"</td><td class="c1">TIDAK signifikan secara statistik pada NYSE/AMEX (LMW 2000)</td><td class="c0">Belum terbukti</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>10 pola grafik klasik</th><td class="c0">"reliabilitas tinggi"</td><td class="c2">7/10 informatif (NYSE) · 10/10 (Nasdaq) — informasi ≠ keuntungan</td><td class="c0">Penulis: tidak menyiratkan keuntungan</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Golden cross / moving average</th><td class="c0">"tingkat kemenangan tinggi"</td><td class="c3">Tingkat kemenangan 53–54% vs 49% setelah sinyal jual (Brock 1992)</td><td class="c0">Menghilang setelah biaya &amp; koreksi data-snooping</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD saja</th><td class="c0">default populer</td><td class="c1">Tingkat kemenangan 37–68%, Sharpe 0,28–0,50 (preprint)</td><td class="c0">"Bukan alat prediktif yang kuat"</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>MACD + RSI gabungan</th><td class="c0">—</td><td class="c2">Tingkat kemenangan 78–86% — tetapi tanpa benchmark buy-and-hold, tanpa biaya</td><td class="c0">Belum terbukti</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-1)"></i>Analisis teknikal secara keseluruhan</th><td class="c0">"ini berhasil"</td><td class="c2">56/95 studi positif (59%) — tetapi bukti belum meyakinkan (Park &amp; Irwin 2007)</td><td class="c0">Belum meyakinkan</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Suasana hati Twitter (Bollen 2011)</th><td class="c0">"akurasi 87,6%"</td><td class="c1">Berdasarkan ~15 hari uji · GAGAL replikasi: 0 kekuatan out-of-sample</td><td class="c0">Hedge fund tutup 2012</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Sentimen sosial (realistis)</th><td class="c0">—</td><td class="c3">Akurasi arah 50–55%, 8 pasar, ~3 juta tweet (2025)</td><td class="c0">Marginal</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-3)"></i>Sentimen berita/sosial semalam</th><td class="c0">—</td><td class="c2">~6bp S&amp;P 500 hari berikutnya per SD (riset Fed)</td><td class="c0">Nyata tetapi kecil</td></tr>
+          <tr><th class="rowh"><i class="famchip" style="background:var(--series-4)"></i>Efek kebijakan / perang / FOMC / VIX</th><td class="c0">banyak klaim</td><td class="c0">Tidak ada klaim terukur yang lolos verifikasi di babak ini</td><td class="c0">Pertanyaan terbuka</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>Kesimpulan:</b> pola grafik secara statistik informatif tetapi belum terbukti menguntungkan secara mandiri; sinyal psikologi-manusia menambahkan informasi yang nyata namun sederhana (perkirakan akurasi arah 50–55%, bukan 87.6%). Keunggulan yang terukur berasal dari menggabungkan banyak sinyal lemah dalam model nonlinier — bukan dari satu parameter tunggal. Curigai setiap klaim akurasi di atas ~60% yang tidak memiliki bukti out-of-sample, disesuaikan biaya, dan direplikasi.</p>
+    </section>
+
+    <!-- ============ 5. FINAL HYBRID STRATEGY ============ -->
+    <section class="card">
+      <h2 class="sec">⑤ Strategi Hybrid Final: Menerapkan 10 Parameter Teratas</h2>
+      <p class="secnote">Kesimpulan dari semua putaran riset, disatukan menjadi satu strategi. <b>Psikologi menetapkan rezim (KAPAN)</b>, <b>grafik menetapkan pemicu (APA/pada harga berapa)</b>, <b>volume + sentimen mengonfirmasi</b>, dan <b>volatilitas menetapkan ukuran</b>. Ini memetakan setiap parameter Top-10 ke tempatnya dalam susunan 4-lapis. Bertransaksi hanya pada konfluensi — 4 atau lebih dari 6 kondisi yang sepakat.</p>
+      <table class="mx" style="width:100%; border-collapse:separate; border-spacing:2px">
+        <thead>
+          <tr>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Parameter top-10</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Peran dalam strategi hybrid</th>
+            <th style="font-size:11.5px; color:var(--text-secondary); font-weight:600; padding:6px 8px; text-align:left">Kondisi beli/jual</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:11.5px">
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#1 Momentum / tren</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 2 — mesin arah.</b> momentum 12-1 + MA 200-hari menetapkan bias long/short (prediktor yang paling terverifikasi)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Beli B1·B2 / Jual S1·S2</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#2 Indikator teknikal / pola</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 3 — pemicu.</b> Penyelesaian pola menentukan waktu masuk. Tidak pernah berdiri sendiri — tingkat kemenangan 53–54% paling baik; selalu memerlukan konfirmasi volume</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Beli B3 / Jual S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#3 Volume &amp; likuiditas</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 3 — konfirmasi (wajib).</b> Breakout tanpa volume = jebakan, lewati. Likuiditas membatasi ukuran order di Layer 4</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Mengonfirmasi B3·S3</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#4 Volatilitas &amp; risiko</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 4 — penentuan ukuran.</b> Ukuran posisi = anggaran risiko ÷ volatilitas. Stop dan target volatilitas mengesampingkan setiap sinyal lain</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Jual S6 (aturan mutlak)</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#5 OHLCV mentah</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Data dasar untuk setiap layer.</b> Bahan mentah untuk momentum, indikator, pola, dan volatilitas</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Fondasi</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-2)"></i>#6 Kedalaman order book</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Tahap eksekusi.</b> Setelah keputusan diambil, kerjakan order untuk meminimalkan dampak pasar. Tidak digunakan untuk prediksi kecuali bertransaksi intraday</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Eksekusi</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-3)"></i>#7 Berita &amp; sentimen sosial</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 regime + Layer 3 confirmation + veto power.</b> Sentimen semalam mengonfirmasi (B4), euforia ekstrem = jual kontrarian (S4), sentimen yang runtuh karena berita nyata membatalkan sinyal beli</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B4·B5 / Sell S4·S5 / Veto</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#8 Data makro</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 1 — kalender peristiwa.</b> Tidak ada entri baru dalam rentang ±1 hari dari FOMC/CPI/pemilu. Digunakan hanya sebagai filter waktu/risiko, bukan prediktor return</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B6 / Sell S5</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-4)"></i>#9 Fundamental</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Layer 2 support — seleksi saham.</b> Pada horizon mingguan–bulanan, menentukan nama-nama mana yang masuk ke kumpulan kandidat (murah/berkualitas diutamakan)</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Filter kandidat</td></tr>
+          <tr><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); font-weight:700"><i class="famchip" style="background:var(--series-1)"></i>#10 Mean reversion</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)"><b>Kontrarian khusus.</b> VIX &gt; 30 + ketakutan ekstrem + harga stabil → beli panik setengah ukuran. Aktif hanya pada titik ekstrem psikologi</td><td style="border-radius:6px; padding:9px 10px; background:color-mix(in oklab, var(--text-primary) 3%, var(--surface-1)); color:var(--text-secondary)">Buy B5 (panic buy)</td></tr>
+        </tbody>
+      </table>
+      <p class="axisnote"><b>Ringkasan eksekusi:</b> ① VIX &amp; peristiwa menetapkan mode (trend / kontrarian / diam) → ② momentum + MA menetapkan arah → ③ pola + volume + sentimen mengonfirmasi trigger → ④ volatilitas menetapkan ukuran; stop-loss bersifat absolut. Bertindak hanya jika 4+ dari 6 kondisi terpenuhi. Target akurasi yang realistis adalah 55–58% — keunggulannya berasal dari penumpukan sinyal, menghindari jendela peristiwa, dan memotong kerugian lebih awal, bukan dari prediksi. Lihat artefak "hybrid-strategy" untuk daftar periksa lengkap. Bukan nasihat investasi.</p>
+    </section>
+
+    <footer class="src">
+      <b>Sumber utama:</b> Gu, Kelly &amp; Xiu (2020) <i>Review of Financial Studies</i> · Asness, Moskowitz &amp; Pedersen (2013) <i>Journal of Finance</i> · Kumbure et al. (2022) <i>Expert Systems with Applications</i> · Sezer et al. (2020) <i>Applied Soft Computing</i> · <i>Communications of the ACM</i> Algorithmic Trading Review · Prata et al. (2024) <i>Artificial Intelligence Review</i> · Dinh &amp; Kwon (2018) <i>Informatics</i> · Lo, Mamaysky &amp; Wang (2000) &amp; Brock et al. (1992) <i>Journal of Finance</i> · Savin et al. (2007) <i>J. Financial Econometrics</i> · Park &amp; Irwin (2007) <i>J. Economic Surveys</i> · Lachanski &amp; Pav (2017) <i>Econ Journal Watch</i>.
+      <br><b>Catatan penting:</b>peringkat 1–4 mengikuti hasil pengukuran tingkat kepentingan fitur ML (data AS hingga 2016, imbal hasil kotor); peringkat 5–10 mencerminkan tingkat kelaziman penggunaannya. Keuntungan terkonsentrasi pada saham berkapitalisasi kecil dan menyusut setelah biaya transaksi. Kumpulan fitur milik hedge fund yang bersifat proprietary tidak dapat diamati secara publik. Ini adalah deskripsi mengenai apa yang digunakan sistem sebagai input — bukan saran investasi dan bukan klaim profitabilitas.
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

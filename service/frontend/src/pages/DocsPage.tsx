@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { tr, type TrMap } from '../i18n'
 
 // Login-gated guide & research documents (backend: routes_guide.py).
 // URL slugs are stable product names; manifest groups are the build keys.
@@ -22,7 +22,13 @@ const GROUP_TO_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SLUG_TO_GROUP).map(([s, g]) => [g, s]))
 
 interface ManifestDoc { key: string; lang: string; group: string; title: string }
-interface Manifest { groups: Array<{ group: string; ko: string; en: string }>; docs: ManifestDoc[] }
+// The nav label carries every registered language. It was `{ ko, en }` until
+// 2026-07-29, and the rail rendered `language === 'ko' ? ko : en` — so a
+// ja/th/vi/id member browsed the documentation in English even for the groups
+// published in their own language. TrMap + tr() is the same fallback the rest
+// of the product uses: a language the manifest omits degrades to English.
+type ManifestGroup = { group: string } & TrMap
+interface Manifest { groups: ManifestGroup[]; docs: ManifestDoc[] }
 
 interface Props {
   token?: string | null
@@ -207,7 +213,7 @@ export function DocsPage({ token, userToken }: Props) {
               color: group === g.group ? '#fff' : 'var(--text-secondary)',
               fontSize: 12.5, fontWeight: 600, borderRadius: 999, padding: '5px 13px', cursor: 'pointer',
             }}>
-            {language === 'ko' ? g.ko : g.en}
+            {tr(language, g)}
           </button>
         ))}
       </div>

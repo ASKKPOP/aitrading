@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khung lai — Ngăn xếp quyết định & Danh mục kiểm tra</title>
+<style>
+:root{ --page:#f9f9f7; --card:#fff; --surface:#f1f0ec; --grid:#e1e0d9; --ink:#0b0b0b;
+  --ink2:#52514e; --muted:#898781; --accent:#2a78d6; --border:rgba(11,11,11,.1); }
+@media (prefers-color-scheme: dark){
+  :root{ --page:#0d0d0d; --card:#202020; --surface:#1a1a19; --grid:#2c2c2a; --ink:#fff;
+    --ink2:#c3c2b7; --accent:#3987e5; --border:rgba(255,255,255,.1); } }
+*{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+  line-height:1.65;font-size:14.5px}
+main{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px} h2{font-size:19px;margin:32px 0 8px;
+  padding-top:18px;border-top:1px solid var(--grid)} h3{font-size:15px;margin:20px 0 6px}
+p,li{color:var(--ink2)} strong{color:var(--ink)} a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:12px 0;display:block;overflow-x:auto}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:9px 11px;border-bottom:1px solid var(--grid);background:var(--surface);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:var(--surface);
+  border-radius:4px;padding:1px 5px}
+blockquote{border-left:3px solid var(--accent);margin:12px 0;padding:8px 14px;
+  background:var(--card);border-radius:0 10px 10px 0}
+hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
+</style></head>
+<body><main>
+<!-- machine-translated from research/parameters/2-hybrid-strategy-framework.md by docs/design/_gen_doc_translations.py — pending native review -->
+<h1>Khung Framework Kết Hợp: Mẫu Hình Biểu Đồ × Tâm Lý Con Người</h1>
+<h2>Khung Giao Dịch Kết Hợp Mẫu Hình Biểu Đồ × Tâm Lý Con Người</h2>
+<p><strong>Xây dựng từ hai vòng nghiên cứu chuyên sâu đã được kiểm chứng (200+ agent, kiểm tra thực tế từ nguồn gốc chính) · Tháng 7 năm 2026</strong>
+<strong>⚠️ Đây là khung giáo dục, không phải lời khuyên đầu tư. Kỳ vọng thực tế: độ chính xác định hướng 50–55% — lợi thế đến từ sự hội tụ tín hiệu + quản lý rủi ro, không phải từ bất kỳ tín hiệu đơn lẻ nào.</strong></p>
+<div style="border-left:4px solid #2a78d6;background:rgba(42,120,214,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13px;line-height:1.6">
+<b>Khung framework này áp dụng vào việc triển khai crypto như thế nào.</b> Danh sách kiểm tra này nêu ra chiến lược nghiên cứu; hệ thống đang vận hành sẽ điều chỉnh nó cho phù hợp với crypto.
+<b>VIX → chỉ số Sợ hãi &amp; Tham lam của crypto (F&amp;G)</b>, một thang đo đảo ngược — hoảng loạn là khi <b>F&amp;G &lt; 20</b> (không phải VIX &gt; 30), bình ổn là khi <b>F&amp;G &gt; 30</b>; crypto không có chỉ số VIX (<code>regime.py</code>, <code>strategy_config.py</code>).
+<b>Các mẫu hình biểu đồ có tên gọi (đáy đôi, H&amp;S) → một điểm số kỹ thuật tổng hợp</b> (RSI · MA · funding · basis · long/short) được xác nhận bởi khối lượng giao dịch — không tồn tại bộ phát hiện mẫu hình nến (<code>confluence.py</code> B3/S3).
+<b>Tâm lý dựa trên lợi nhuận qua đêm → xu hướng đám đông trên StockTwits</b> (B4). Các nhãn B1–B6 / S1–S6 chính là các nhãn điều kiện thực tế của công cụ.
+</div>
+
+<hr />
+<h2>1. Nguyên tắc cốt lõi mà nghiên cứu đã chứng minh</h2>
+<p>Hai sự thật đã được kiểm chứng chi phối toàn bộ thiết kế:</p>
+<ol>
+<li><strong>Các mẫu hình biểu đồ mang tính thông tin nhưng không sinh lời nếu đứng một mình</strong> (Lo–Mamaysky–Wang 2000; Savin 2007). Chúng cho bạn biết <em>điều gì đó</em> đang diễn ra, với lợi thế tối đa 53–54% — không bao giờ sử dụng chúng như một tín hiệu kích hoạt độc lập.</li>
+<li><strong>Tâm lý chi phối thị trường nhưng chỉ có thể giao dịch được ở những thời điểm cực đoan và những thời điểm cụ thể</strong> (tâm lý qua đêm ~6bp/SD; độ chính xác của tâm lý 50–55%; hoảng loạn/hưng phấn là nơi các hiệu ứng hành vi tập trung nhiều nhất).</li>
+</ol>
+<p>Vậy công thức kết hợp là: <strong>tâm lý quyết định CHẾ ĐỘ (khi nào, và mức độ rủi ro bao nhiêu); biểu đồ quyết định ĐIỂM KÍCH HOẠT (cái gì và ở mức giá nào); khối lượng + tâm lý thị trường XÁC NHẬN; biến động quyết định QUY MÔ.</strong></p>
+<p>Các tín hiệu mang tính cộng dồn, không phải tuyệt đối: mỗi điều kiện được thỏa mãn sẽ cộng thêm một điểm; bạn chỉ hành động khi có sự đồng thuận (4+ trong 6), bởi vì một tín hiệu 53% khi được xếp chồng với các tín hiệu 53% độc lập khác chính là cách các hệ thống thực tế vượt qua ngưỡng 55%.</p>
+<hr />
+<h2>2. Bốn tầng quyết định</h2>
+<h3>TẦNG 1 — Bộ lọc chế độ tâm lý (인간 심리 = 국면 판단) — <em>"Tôi có nên giao dịch hay không, và ở chế độ nào?"</em></h3>
+<table>
+<thead>
+<tr>
+<th>Đầu vào</th>
+<th>Trạng thái</th>
+<th>Chế độ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VIX / mức độ sợ hãi</td>
+<td>&lt; 20 bình lặng</td>
+<td><strong>Chế độ xu hướng</strong> — theo biểu đồ</td>
+</tr>
+<tr>
+<td></td>
+<td>20–30 lo lắng</td>
+<td>Giảm quy mô 50%, siết chặt điểm dừng lỗ</td>
+</tr>
+<tr>
+<td></td>
+<td>&gt; 30 hoảng loạn</td>
+<td><strong>Chế độ ngược dòng</strong> — bỏ qua các mẫu hình biểu đồ giảm giá, chuẩn bị mua theo hồi quy về trung bình</td>
+</tr>
+<tr>
+<td>Lịch sự kiện (FOMC, CPI, bầu cử)</td>
+<td>trong vòng ±1 ngày</td>
+<td><strong>Không vào lệnh mới</strong>; giữ nguyên hoặc phòng hộ</td>
+</tr>
+<tr>
+<td>Tin tức sốc chiến tranh / chính sách</td>
+<td>1–3 ngày đầu</td>
+<td>Không bao giờ mua nhịp bật tăng đầu tiên; chờ tín hiệu ổn định</td>
+</tr>
+<tr>
+<td>Tông cảm xúc mạng xã hội/tin tức</td>
+<td>hưng phấn tột độ</td>
+<td>Bật cảnh báo bán ngược dòng</td>
+</tr>
+<tr>
+<td></td>
+<td>sợ hãi tột độ</td>
+<td>Bật cảnh báo mua ngược dòng</td>
+</tr>
+</tbody>
+</table>
+<h3>TẦNG 2 — Bộ máy xác định hướng (biểu đồ: CÁI GÌ) — các yếu tố dự báo mạnh nhất đã được kiểm chứng</h3>
+<ul>
+<li>Động lượng 12 tháng (bỏ qua tháng gần nhất) dương → thiên hướng mua / âm → thiên hướng bán</li>
+<li>Giá so với MA 200 ngày (trạng thái golden-cross) → hướng xu hướng</li>
+<li>Đảo chiều ngắn hạn 1 tháng → thời điểm giao dịch ngược xu hướng trong khuôn khổ thiên hướng chính</li>
+</ul>
+<h3>TẦNG 3 — Kích hoạt &amp; xác nhận (biểu đồ + tâm lý kết hợp: KHI NÀO)</h3>
+<p>Một mẫu hình chỉ được tính khi <strong>đã hoàn tất VÀ được khối lượng xác nhận VÀ tâm lý thị trường không mâu thuẫn</strong>:
+- Kích hoạt tăng giá: đáy đôi / phá vỡ H&amp;S-đảo ngược <strong>+ khối lượng tăng + tâm lý qua đêm không tiêu cực</strong>
+- Kích hoạt giảm giá: đỉnh đôi / hoàn tất mẫu hình H&amp;S <strong>+ khối lượng tăng + tông tin tức xấu đi</strong>
+- Không có khối lượng = không giao dịch (các đặc trưng khối lượng được xác minh là thiết yếu; Dinh &amp; Kwon 2018)</p>
+<h3>LỚP 4 — Kích thước &amp; thoát lệnh (rủi ro: BAO NHIÊU)</h3>
+<ul>
+<li>Kích thước vị thế = ngân sách rủi ro ÷ biến động (đã xác minh: biến động là một trong 4 yếu tố dự báo hàng đầu và là đầu vào cho việc tính kích thước)</li>
+<li>Đặt stop cứng dưới điểm phá vỡ mô hình; kéo theo MA</li>
+<li>Stop theo thời gian: nếu luận điểm không hiệu quả trong N ngày → thoát lệnh (độ chính xác của bạn ~55%, nên các lệnh thua phải được cắt nhanh)</li>
+</ul>
+<hr />
+<h2>3. Danh sách kiểm tra MUA (hội tụ ≥ 4 trên 6 → mua)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Tín hiệu</th>
+<th>Phía nguồn</th>
+<th>Cơ sở đã xác minh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1</td>
+<td>Giá trên MA 200 ngày / trạng thái golden-cross</td>
+<td>Biểu đồ</td>
+<td>Brock 1992: các ngày có tín hiệu mua tăng +12% hàng năm</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>Động lượng 12-1 dương</td>
+<td>Biểu đồ</td>
+<td>GKX 2020: yếu tố dự báo ML #1</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>Mô hình tăng giá hoàn thành CÙNG với khối lượng</td>
+<td>Biểu đồ</td>
+<td>LMW 2000 mang tính thông tin + khối lượng thiết yếu</td>
+</tr>
+<tr>
+<td>B4</td>
+<td>Tâm lý qua đêm/tin tức tích cực hoặc đang hồi phục</td>
+<td>Tâm lý</td>
+<td>Fed: ~6bp/SD ngày kế tiếp</td>
+</tr>
+<tr>
+<td>B5</td>
+<td>Đỉnh sợ hãi đang giảm dần (VIX giảm từ đỉnh &gt;30)</td>
+<td>Tâm lý</td>
+<td>Tài liệu về phản ứng thái quá/hồi quy về giá trị trung bình</td>
+</tr>
+<tr>
+<td>B6</td>
+<td>Không có FOMC/CPI/sự kiện lớn nào trong vòng 24 giờ</td>
+<td>Tâm lý</td>
+<td>Thời điểm rủi ro sự kiện</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Trường hợp đặc biệt ngược dòng (mua khi hoảng loạn):</strong> VIX &gt; 30 + tâm lý ở mức sợ hãi cực độ + giá đang ổn định trên MA ngắn hạn + đỉnh điểm khối lượng đã qua → mua theo hồi quy về giá trị trung bình với nửa kích thước vị thế. (Đây là trường hợp "tham lam khi người khác sợ hãi" được hệ thống hóa.)</p>
+<h2>4. Danh sách kiểm tra BÁN (hội tụ ≥ 4 trên 6 → bán/tránh)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Tín hiệu</th>
+<th>Phía nguồn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Giá dưới MA 200 ngày / trạng thái death-cross</td>
+<td>Biểu đồ</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Động lượng chuyển sang âm</td>
+<td>Biểu đồ</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Mô hình giảm giá (double top / H&amp;S) hoàn thành cùng khối lượng</td>
+<td>Biểu đồ</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Tâm lý hưng phấn cực độ (mọi người đều lạc quan, không khí cuồng nhiệt kiểu meme-stock)</td>
+<td>Tâm lý — ngược dòng</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Cú sốc chính sách/địa chính trị tiêu cực chưa được giải quyết</td>
+<td>Tâm lý</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Đạt mức stop-loss / mục tiêu biến động</td>
+<td>Rủi ro (luôn được ưu tiên hơn tất cả)</td>
+</tr>
+</tbody>
+</table>
+<h2>5. Ma trận kịch bản WHEN × WHAT</h2>
+<table>
+<thead>
+<tr>
+<th>Kịch bản (trạng thái tâm lý thị trường)</th>
+<th>Bên chiếm ưu thế</th>
+<th>Hành động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Xu hướng tăng ổn định, tâm lý tích cực</td>
+<td>Charts</td>
+<td>Theo xu hướng: mua khi giá điều chỉnh về MA kèm khối lượng; nắm giữ</td>
+</tr>
+<tr>
+<td>Xu hướng giảm ổn định</td>
+<td>Charts</td>
+<td>Đứng ngoài hoặc thiên về short; không bắt đáy khi chưa có tín hiệu hoảng loạn Layer-1</td>
+</tr>
+<tr>
+<td>Hoảng loạn (tin tức chiến tranh, VIX &gt;30, sợ hãi cực độ)</td>
+<td>Psychology</td>
+<td>Ngày 1–3: không làm gì. Sau đó mua ngược dòng khi có trigger ổn định (B5)</td>
+</tr>
+<tr>
+<td>Hưng phấn tột độ (giá tăng parabol + ai cũng lạc quan)</td>
+<td>Psychology</td>
+<td>Chốt lời khi giá còn mạnh; trigger bán S4; không bao giờ mua thêm</td>
+</tr>
+<tr>
+<td>Khung thời gian FOMC/CPI/bầu cử</td>
+<td>Psychology</td>
+<td>Đứng ngoài/không vào lệnh mới; tiếp tục vào ngày hôm sau</td>
+</tr>
+<tr>
+<td>Breakout theo pattern nhưng không có khối lượng</td>
+<td>Neither</td>
+<td>Rủi ro bẫy giá — bỏ qua (hầu hết breakout giả nằm ở đây)</td>
+</tr>
+<tr>
+<td>Chart tăng giá NHƯNG tâm lý sụp đổ do tin tức thực</td>
+<td>Psychology vetoes</td>
+<td>Bỏ qua giao dịch — chế độ tin tức thắng chart đã cũ</td>
+</tr>
+<tr>
+<td>Tâm lý nhiễu, không cực đoan, chart rõ ràng</td>
+<td>Charts</td>
+<td>Giao dịch theo chart; tâm lý chỉ là yếu tố phân định</td>
+</tr>
+</tbody>
+</table>
+<h2>6. Quản lý kỳ vọng (số liệu đã kiểm chứng)</h2>
+<ul>
+<li>Độ chính xác định hướng nên kỳ vọng: <strong>50–55%</strong>, không phải 80%.</li>
+<li>Lợi thế kiểu golden-cross: khoảng 4–5 điểm phần trăm tỷ lệ thắng so với tung đồng xu, trước khi trừ chi phí.</li>
+<li>Lợi thế từ tâm lý: vài điểm cơ bản mỗi ngày, chỉ thực sự có ý nghĩa ở mức cực đoan và qua đêm.</li>
+<li>Lợi thế cộng dồn đến từ: sự hội tụ (xếp chồng nhiều lợi thế yếu độc lập), cắt lỗ nhanh, định cỡ theo biến động, và bỏ qua các khung thời gian có sự kiện — không phải từ thiên tài dự đoán.</li>
+<li>Mọi lợi thế đã công bố đều suy giảm theo thời gian. Hãy backtest, paper-trade, và xác thực lại out-of-sample trước khi mạo hiểm tiền thật.</li>
+</ul>
+<h2>7. Nguồn tham khảo chính</h2>
+<p>Gu–Kelly–Xiu (2020) RFS · Lo–Mamaysky–Wang (2000) JF · Brock et al. (1992) JF · Savin et al. (2007) JFEc · Park &amp; Irwin (2007) JES · Sullivan et al. (1999) JF · Bollen et al. (2011) + Lachanski &amp; Pav (2017) replication · Greyling &amp; Rossouw (2025) CEPR · Fed FEDS 2023-034 · Dinh &amp; Kwon (2018) · Prata et al. (2024).</p>
+</main></body></html>

@@ -91,6 +91,57 @@ class EveryCatalogueCoversEveryLanguage(unittest.TestCase):
                     self.assertIn(lang, regions.REGISTRY[code].names)
 
 
+class NoBackendModuleKeepsItsOwnLanguageList(unittest.TestCase):
+    """The server-side counterpart to the frontend hand-list check below.
+
+    hot_issue_daemon kept a private `_LANG_NAMES` used to tell the LLM which
+    language to write the alert note in. It listed five languages. Indonesian
+    shipped, the private copy was never updated, and `.get(lang, "English")`
+    turned that omission into a silent English fallback — so an `id` member
+    got an English note interpolated into an Indonesian sentence:
+
+        NETRAL bagi posisi beli (long) Anda (tingkat urgensi tinggi): <English>
+
+    the very half-and-half alert the localized verdict tables exist to
+    prevent. A drifting copy of the registry is the bug; forbid the copy.
+    """
+
+    def test_no_module_redefines_the_language_name_table(self):
+        offenders = []
+        for path in sorted(SERVER_DIR.rglob("*.py")):
+            if path.name == "analysis_agents.py" or "tests" in path.parts:
+                continue          # the registry itself, and this file
+            text = path.read_text(encoding="utf-8")
+            # An assignment to a dict literal that maps language codes to
+            # English language NAMES — the shape a prompt-language table has.
+            for m in re.finditer(r"=\s*\{([^{}]*?)\}", text, re.S):
+                body = m.group(1)
+                keys = set(re.findall(r"[\"']([a-z]{2})[\"']\s*:", body))
+                if len(keys & set(LANG_NAMES)) < 3:
+                    continue
+                names = set(re.findall(r":\s*[\"'](\w+)[\"']", body))
+                if names & {"English", "Korean", "Japanese", "Thai",
+                            "Vietnamese", "Indonesian"}:
+                    line = text[:m.start()].count("\n") + 1
+                    offenders.append(f"{path.name}:{line} {sorted(keys)}")
+        self.assertFalse(offenders,
+                         "backend module(s) hand-listing language names "
+                         "instead of importing analysis_agents.LANG_NAMES: "
+                         + "; ".join(offenders))
+
+    def test_the_hot_issue_note_is_requested_in_every_language(self):
+        """Whatever table the daemon ends up using, every registered language
+        must resolve to its own name — never to the English fallback."""
+        import hot_issue_daemon as daemon
+
+        source = Path(daemon.__file__).read_text(encoding="utf-8")
+        self.assertIn('Write the "note" value in', source,
+                      "the note-language instruction moved; update this test")
+        for lang, name in LANG_NAMES.items():
+            with self.subTest(lang=lang):
+                self.assertEqual(daemon.LANG_NAMES.get(lang), name)
+
+
 class IndonesiaIsServed(unittest.TestCase):
 
     def test_the_region_exists_with_a_real_zone(self):

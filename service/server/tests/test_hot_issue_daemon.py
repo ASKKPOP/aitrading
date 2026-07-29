@@ -183,37 +183,82 @@ class PerUserVerificationTests(DaemonBase):
 
 
 class E1EscalationTests(DaemonBase):
-    def test_classifier_picks_up_recent_hot_issue(self):
+    """What this class pins is the DETERMINISTIC classifier: does a hot-issue
+    row become a `hot_issue` trigger, and does a trigger mean `full`.
+
+    `RUN_AI_ROUTING` is therefore forced off. It defaults to ON, and since
+    2026-07-27 the desk is allowed to overrule `any trigger => full` — an
+    ambient market-wide flag on a quiet book is exactly what it is told to
+    downgrade. Leaving it on made these tests assert the model's opinion:
+    they passed in CI (no API key => llm_configured() false => deterministic
+    fallback) and failed on any machine whose .env mirrors a key into the
+    environment, where a real model call decided the assertion. A unit test
+    must not spend a model call, and must not change answer with the weather.
+
+    The desk's own override is covered separately, where it can be stubbed.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._routing = patch.dict(os.environ, {"RUN_AI_ROUTING": "false"})
+        self._routing.start()
+        self.addCleanup(self._routing.stop)
+
+    def _classify(self):
         import run_engine
-        self._tick(overrides={"psych": (
-            "psych_feed.get_psych_payload",
-            {"available": True, "shock": [{"symbol": "BTC"}]})})
         run = {"id": 1, "agent_id": 1, "symbol": "BTC", "market": "crypto",
                "market_type": "spot", "stop_conditions_json": "{}"}
         quiet = [patch(t, return_value=v) for t, v in QUIET.values()]
         for c in quiet:
             c.start()
         try:
-            out = run_engine._classify_situation(run, {})
+            return run_engine._classify_situation(run, {})
         finally:
             for c in quiet:
                 c.stop()
+
+    def test_classifier_picks_up_recent_hot_issue(self):
+        self._tick(overrides={"psych": (
+            "psych_feed.get_psych_payload",
+            {"available": True, "shock": [{"symbol": "BTC"}]})})
+        out = self._classify()
         self.assertEqual(out["route"], "full")
         self.assertIn("hot_issue", out["triggers"])
 
     def test_no_hot_issue_row_no_trigger(self):
-        import run_engine
-        run = {"id": 1, "agent_id": 1, "symbol": "BTC", "market": "crypto",
-               "market_type": "spot", "stop_conditions_json": "{}"}
-        quiet = [patch(t, return_value=v) for t, v in QUIET.values()]
-        for c in quiet:
-            c.start()
-        try:
-            out = run_engine._classify_situation(run, {})
-        finally:
-            for c in quiet:
-                c.stop()
+        out = self._classify()
         self.assertEqual(out["route"], "light")
+        self.assertEqual(out["triggers"], [])
+
+    def test_the_desk_may_downgrade_an_ambient_hot_issue(self):
+        """With routing ON the deterministic answer is still computed and
+        reported as `rule_route`, so a downgrade stays auditable rather than
+        silently replacing the rule."""
+        import run_engine
+        self._tick(overrides={"psych": (
+            "psych_feed.get_psych_payload",
+            {"available": True, "shock": [{"symbol": "BTC"}]})})
+        with patch.dict(os.environ, {"RUN_AI_ROUTING": "true"}), \
+                patch.object(run_engine, "_ai_route_verdict",
+                             return_value=("light", "ambient, quiet book")):
+            out = self._classify()
+        self.assertEqual(out["route"], "light")
+        self.assertEqual(out["rule_route"], "full")
+        self.assertEqual(out["route_by"], "ai")
+        self.assertIn("hot_issue", out["triggers"])
+
+    def test_an_unreachable_desk_falls_back_to_the_rule(self):
+        """_ai_route_verdict returns None when the model is unreachable —
+        routing must never strand a cycle on a broken model."""
+        import run_engine
+        self._tick(overrides={"psych": (
+            "psych_feed.get_psych_payload",
+            {"available": True, "shock": [{"symbol": "BTC"}]})})
+        with patch.dict(os.environ, {"RUN_AI_ROUTING": "true"}), \
+                patch.object(run_engine, "_ai_route_verdict", return_value=None):
+            out = self._classify()
+        self.assertEqual(out["route"], "full")
+        self.assertEqual(out["route_by"], "rule")
 
 
 class I18nAlertTests(DaemonBase):
