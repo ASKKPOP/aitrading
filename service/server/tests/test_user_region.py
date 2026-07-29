@@ -24,12 +24,13 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+from analysis_agents import LANG_NAMES
 import database
 import regions
 import signup_lang
 
-TARGETS = {"US", "CA", "AU", "SG", "KR", "JP", "TH", "VN"}
-LANGS = ("en", "ko", "ja", "th", "vi")
+TARGETS = {"US", "CA", "AU", "SG", "KR", "JP", "TH", "VN", "ID"}
+LANGS = tuple(LANG_NAMES)
 
 
 class Registry(unittest.TestCase):

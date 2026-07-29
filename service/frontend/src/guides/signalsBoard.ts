@@ -7,6 +7,7 @@ export const signalsBoardGuide: PageGuide = {
     ja: 'シグナルボード',
     th: 'บอร์ดสัญญาณ',
     vi: 'Bảng tín hiệu',
+    id: 'Papan sinyal',
   },
   summary: {
     ko: '심리 지표, 스캐너, 융합 점수를 한 화면에 모아 지금 시장 상태를 판단하는 보드입니다. 모든 숫자는 실제로 수집된 값이며, 아직 데이터가 없는 영역은 "수집 중…"으로 남습니다. 모의 거래 전용이고 투자 자문이 아닙니다.',
@@ -23,6 +24,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: '上部の8つの指標タイル',
         th: 'ไทล์ตัวชี้วัดแปดใบด้านบน',
         vi: 'Tám ô chỉ số phía trên',
+        id: 'Delapan kotak statistik di bagian atas',
       },
       bullets: {
         ko: [
@@ -74,6 +76,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: '融合シグナル表の読み方',
         th: 'วิธีอ่านตารางสัญญาณรวม',
         vi: 'Cách đọc bảng Tín hiệu tổng hợp',
+        id: 'Membaca tabel Sinyal Gabungan',
       },
       bullets: {
         ko: [
@@ -125,6 +128,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'そのスコアを誰が出したかを確認する',
         th: 'ตรวจว่าใครเป็นผู้สร้างคะแนนนี้',
         vi: 'Kiểm tra ai tạo ra điểm số này',
+        id: 'Memeriksa siapa yang menghasilkan skornya',
       },
       bullets: {
         ko: [
@@ -176,6 +180,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'スキャナーとボラティリティショックチャート',
         th: 'สแกนเนอร์และกราฟช็อกความผันผวน',
         vi: 'Máy quét và biểu đồ sốc biến động',
+        id: 'Pemindai dan grafik guncangan volatilitas',
       },
       bullets: {
         ko: [
@@ -227,6 +232,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'マクロイベント日程',
         th: 'ปฏิทินเหตุการณ์มหภาค',
         vi: 'Lịch sự kiện vĩ mô',
+        id: 'Kalender peristiwa makro',
       },
       bullets: {
         ko: [
@@ -273,6 +279,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'このボードの使い方の順序',
         th: 'ลำดับการใช้บอร์ดนี้',
         vi: 'Trình tự sử dụng bảng này',
+        id: 'Urutan kerja untuk papan ini',
       },
       bullets: {
         ko: [
@@ -326,6 +333,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'あちこちに「収集中…」としか出ません。故障ですか？',
         th: 'หลายจุดขึ้นแค่ "กำลังเก็บ…" เสียหรือเปล่า?',
         vi: 'Nhiều chỗ chỉ ghi "Đang thu thập…". Có phải hỏng không?',
+        id: 'Banyak bagian hanya menampilkan "mengumpulkan…". Apakah rusak?',
       },
       a: {
         ko: '고장이 아닙니다. 이 보드는 예시 데이터를 쓰지 않기 때문에, 해당 소스에 값이 쌓이기 전까지는 그 영역을 "수집 중…"으로 남겨 둡니다. 예를 들어 뉴스 심리는 뉴스 스냅샷이, 쇼크 추이 차트는 심리 스냅샷이 쌓여야 나타납니다.',
@@ -358,6 +366,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: '別のタブから戻ると数値が変わっていませんでした。',
         th: 'พอกลับมาจากแท็บอื่น ตัวเลขไม่ขยับเลย',
         vi: 'Khi quay lại từ tab khác, các con số vẫn chưa thay đổi.',
+        id: 'Saat kembali dari tab lain, angkanya tidak berubah.',
       },
       a: {
         ko: '의도된 동작입니다. 브라우저 탭이 화면에 없을 때는 갱신을 멈춥니다. 융합 데이터를 가져올 때마다 서버가 외부 API를 호출하기 때문입니다. 탭으로 돌아오면 즉시 다시 불러오고, 이후에는 다시 주기적으로 갱신됩니다.',
@@ -374,6 +383,7 @@ export const signalsBoardGuide: PageGuide = {
         ja: 'このシグナルどおりに実際の注文が出ますか？',
         th: 'สัญญาณเหล่านี้ส่งคำสั่งซื้อขายจริงหรือไม่?',
         vi: 'Các tín hiệu này có đặt lệnh thật không?',
+        id: 'Apakah sinyal ini memasang order sungguhan?',
       },
       a: {
         ko: '아니요. 페이지 상단에 명시된 대로 모의 거래 전용이며 투자 자문이 아닙니다. Sooppiy는 시그널·카피 트레이딩 플랫폼이라 어떤 브로커로도 주문을 보내지 않습니다. 여기 숫자는 판단을 돕는 재료일 뿐입니다.',

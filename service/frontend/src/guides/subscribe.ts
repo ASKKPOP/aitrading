@@ -7,6 +7,7 @@ export const subscribeGuide: PageGuide = {
     ja: 'メンバーシップ購読',
     th: 'เลือกสมาชิกภาพ',
     vi: 'Chọn gói thành viên',
+    id: 'Pilih keanggotaan Anda',
   },
   summary: {
     ko: 'Sooppiy는 구독 회원 전용 서비스이며, 이 페이지에서 플랜을 고르고 결제 방법을 선택합니다. 로그인은 했지만 아직 활성 구독이 없는 사용자가 도착하는 화면입니다.',
@@ -23,6 +24,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'プランカードの見方',
         th: 'สิ่งที่การ์ดแพลนแสดง',
         vi: 'Thẻ gói hiển thị gì',
+        id: 'Apa yang ditampilkan kartu paket',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'どのプランを選ぶか決める方法',
         th: 'วิธีตัดสินใจเลือกแพลน',
         vi: 'Cách quyết định chọn gói nào',
+        id: 'Cara menentukan paket yang diambil',
       },
       bullets: {
         ko: [
@@ -110,6 +113,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'PayPal で支払う',
         th: 'ชำระเงินด้วย PayPal',
         vi: 'Thanh toán bằng PayPal',
+        id: 'Membayar dengan PayPal',
       },
       bullets: {
         ko: [
@@ -156,6 +160,7 @@ export const subscribeGuide: PageGuide = {
         ja: '銀行振込で申し込む',
         th: 'สมัครด้วยการโอนเงินผ่านธนาคาร',
         vi: 'Đăng ký bằng chuyển khoản ngân hàng',
+        id: 'Mendaftar lewat transfer bank',
       },
       bullets: {
         ko: [
@@ -202,6 +207,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'ステータス表示と結果画面',
         th: 'แถบสถานะและสิ่งที่เกิดขึ้นต่อไป',
         vi: 'Băng trạng thái và điều xảy ra tiếp theo',
+        id: 'Spanduk status dan apa yang terjadi berikutnya',
       },
       bullets: {
         ko: [
@@ -255,6 +261,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'なぜこのページに移動したのですか？',
         th: 'ทำไมถึงถูกพามาหน้านี้',
         vi: 'Vì sao tôi bị đưa tới trang này?',
+        id: 'Kenapa saya diarahkan ke halaman ini?',
       },
       a: {
         ko: 'Sooppiy는 구독 회원 전용이라, 로그인은 되어 있지만 활성 구독이 없는 계정은 이 화면으로 안내됩니다. 결제가 완료되거나 관리자가 승인하면 나머지 기능이 열립니다.',
@@ -271,6 +278,7 @@ export const subscribeGuide: PageGuide = {
         ja: 'PayPal ボタンがまったく表示されません。',
         th: 'ไม่เห็นปุ่ม PayPal เลย',
         vi: 'Không thấy nút PayPal đâu cả.',
+        id: 'Tombol PayPal tidak muncul sama sekali.',
       },
       a: {
         ko: '두 가지 경우입니다. 아직 플랜을 선택하지 않았다면 결제 영역 자체가 나타나지 않고, 서버에서 PayPal이 활성화되어 있지 않으면 버튼만 빠집니다. 후자라면 계좌이체로 신청하면 됩니다.',
@@ -287,6 +295,7 @@ export const subscribeGuide: PageGuide = {
         ja: '銀行振込の申請後、どれくらい待てばよいですか？',
         th: 'หลังส่งคำขอโอนเงินต้องรอนานแค่ไหน',
         vi: 'Sau khi gửi yêu cầu chuyển khoản, tôi phải chờ bao lâu?',
+        id: 'Berapa lama saya menunggu setelah permintaan transfer bank?',
       },
       a: {
         ko: '계좌이체는 즉시 활성화되지 않고 관리자가 입금을 확인한 뒤 수동으로 승인합니다. 페이지에는 "승인 대기 중"만 표시되고 예상 시간은 안내되지 않으므로, 시간이 지나도 상태가 그대로면 엔터프라이즈 문의 폼을 통해 문의하세요.',
@@ -303,6 +312,7 @@ export const subscribeGuide: PageGuide = {
         ja: '支払うと実際の売買資金が入金されるのですか？',
         th: 'จ่ายเงินแล้วเป็นการฝากเงินทุนสำหรับเทรดจริงหรือไม่',
         vi: 'Thanh toán có phải là nạp vốn giao dịch thật không?',
+        id: 'Apakah membayar berarti menyetor modal trading sungguhan?',
       },
       a: {
         ko: '아닙니다. 여기서 내는 금액은 플랫폼 이용을 위한 멤버십 요금입니다. Sooppiy는 시그널과 복제 트레이딩 서비스이며 증권 계좌 자금과는 무관합니다.',

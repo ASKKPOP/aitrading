@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const consultGuide: PageGuide = {
-  title: { ko: 'AI 상담', en: 'AI Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI' },
+  title: { ko: 'AI 상담', en: 'AI Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI', id: 'Konsultasi AI' },
   summary: {
     ko: '실시간 시장 데이터와 회원님이 정해 둔 지침을 함께 보는 AI와 대화하며 시장을 짚어 보고, 대화에서 합의된 계획을 자동화 규칙 초안으로 넘기는 페이지입니다. 이 대화 자체는 어떤 주문도 내지 않습니다.',
     en: 'A page for talking through the market with an AI that sees both live market data and the guidelines you have set, then handing the plan you agreed on over as an automation-rule draft. The conversation itself never places any order.',
@@ -11,7 +11,7 @@ export const consultGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '이 상담이 하는 일', en: 'What this consultation does', ja: 'この相談ができること', th: 'การปรึกษานี้ทำอะไร', vi: 'Buổi tư vấn này làm gì' },
+      heading: { ko: '이 상담이 하는 일', en: 'What this consultation does', ja: 'この相談ができること', th: 'การปรึกษานี้ทำอะไร', vi: 'Buổi tư vấn này làm gì', id: 'Apa yang dilakukan konsultasi ini' },
       bullets: {
         ko: [
           '로그인해야 사용할 수 있습니다. 로그아웃 상태에서는 로그인 안내만 표시됩니다.',
@@ -51,7 +51,7 @@ export const consultGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '대화 시작하고 이어가기', en: 'Starting and continuing a conversation', ja: '会話の開始と継続', th: 'การเริ่มและสานต่อบทสนทนา', vi: 'Bắt đầu và tiếp tục cuộc trò chuyện' },
+      heading: { ko: '대화 시작하고 이어가기', en: 'Starting and continuing a conversation', ja: '会話の開始と継続', th: 'การเริ่มและสานต่อบทสนทนา', vi: 'Bắt đầu và tiếp tục cuộc trò chuyện', id: 'Memulai dan melanjutkan percakapan' },
       bullets: {
         ko: [
           '상단 왼쪽에서 대상 종목 쌍을 고릅니다. 새 상담을 시작할 때 이 값이 그 대화의 주제로 붙습니다.',
@@ -96,7 +96,7 @@ export const consultGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '좋은 질문 던지기', en: 'Asking useful questions', ja: '有効な質問の仕方', th: 'การตั้งคำถามที่ได้ผล', vi: 'Đặt câu hỏi hữu ích' },
+      heading: { ko: '좋은 질문 던지기', en: 'Asking useful questions', ja: '有効な質問の仕方', th: 'การตั้งคำถามที่ได้ผล', vi: 'Đặt câu hỏi hữu ích', id: 'Mengajukan pertanyaan yang berguna' },
       bullets: {
         ko: [
           '입력창의 예시처럼 지금 국면에서 무엇을 봐야 하는지 묻는 방식이 잘 통합니다. AI가 실시간 데이터를 보고 있으므로 현재 상황에 대한 질문일수록 답이 구체적입니다.',
@@ -136,7 +136,7 @@ export const consultGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '대화를 규칙 초안으로 바꾸기', en: 'Turning the conversation into a rule draft', ja: '会話をルール草案に変える', th: 'แปลงบทสนทนาเป็นร่างกฎ', vi: 'Biến cuộc trò chuyện thành bản nháp quy tắc' },
+      heading: { ko: '대화를 규칙 초안으로 바꾸기', en: 'Turning the conversation into a rule draft', ja: '会話をルール草案に変える', th: 'แปลงบทสนทนาเป็นร่างกฎ', vi: 'Biến cuộc trò chuyện thành bản nháp quy tắc', id: 'Mengubah percakapan menjadi draf aturan' },
       bullets: {
         ko: [
           '"이 대화를 규칙으로" 버튼은 대화가 어느 정도 오간 뒤에야 나타납니다. 메시지가 한 건뿐일 때는 보이지 않습니다.',
@@ -181,7 +181,7 @@ export const consultGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '주의할 점', en: 'Things to watch out for', ja: '注意すべき点', th: 'ข้อควรระวัง', vi: 'Những điều cần lưu ý' },
+      heading: { ko: '주의할 점', en: 'Things to watch out for', ja: '注意すべき点', th: 'ข้อควรระวัง', vi: 'Những điều cần lưu ý', id: 'Hal-hal yang perlu diwaspadai' },
       bullets: {
         ko: [
           '규칙 초안은 지금까지의 대화만 근거로 만들어집니다. 여러 종목을 오가며 이야기했다면 초안이 엉뚱한 종목을 잡을 수 있으니 종목별로 대화를 나누는 편이 안전합니다.',
@@ -229,6 +229,7 @@ export const consultGuide: PageGuide = {
         ja: '「ルール草案にする」ボタンが表示されません。',
         th: 'ไม่เห็นปุ่ม "แปลงเป็นกฎ"',
         vi: 'Tôi không thấy nút "Biến thành quy tắc".',
+        id: 'Saya tidak melihat tombol "Jadikan aturan".',
       },
       a: {
         ko: '이 버튼은 대화가 한 번 이상 오간 뒤에 나타납니다. 질문 하나만 보낸 상태이거나 새 상담을 막 시작한 화면에서는 보이지 않습니다. 답변을 받고 후속 질문을 한 번 더 주고받으면 입력창 오른쪽에 나타납니다.',
@@ -245,6 +246,7 @@ export const consultGuide: PageGuide = {
         ja: 'ルール草案の銘柄や金額が、話した内容と違います。',
         th: 'สัญลักษณ์หรือขนาดเงินในร่างไม่ตรงกับที่ฉันคุยไว้',
         vi: 'Mã hoặc quy mô vốn trong bản nháp không khớp với điều tôi đã trao đổi.',
+        id: 'Simbol atau ukuran pada draf tidak sesuai dengan yang saya bahas.',
       },
       a: {
         ko: '초안은 대화 전체를 읽고 만들어지므로, 여러 종목이나 여러 금액을 언급했다면 AI가 어느 쪽을 골라야 할지 애매해집니다. 취소를 누르고 대화에서 원하는 종목과 금액을 한 문장으로 분명히 다시 말한 뒤 초안을 새로 요청하세요. 애초에 한 대화에서 한 종목만 다루면 이 문제는 거의 생기지 않습니다. 어떤 경우에도 확인 버튼을 누르기 전에 카드의 숫자를 직접 검토하세요.',
@@ -261,6 +263,7 @@ export const consultGuide: PageGuide = {
         ja: 'この相談で実際に売買が行われますか？',
         th: 'การปรึกษานี้ทำการซื้อขายให้จริงหรือไม่?',
         vi: 'Buổi tư vấn này có thực sự giao dịch giúp tôi không?',
+        id: 'Apakah konsultasi ini benar-benar bertransaksi untuk saya?',
       },
       a: {
         ko: '아닙니다. 이 대화는 어떤 주문도 내지 않습니다. 여기서 나올 수 있는 것은 규칙 초안뿐이고, 그 초안도 회원님이 확인 버튼을 눌러야 규칙이 됩니다. 규칙이 만들어진 뒤에도 모든 주문은 리스크 게이트를 통과해야 하며 시뮬레이터에서만 체결됩니다. Sooppiy는 시그널과 복사 매매 플랫폼이라 실제 증권사로 주문을 보내지 않습니다.',
@@ -277,6 +280,7 @@ export const consultGuide: PageGuide = {
         ja: '過去の相談が一覧に表示されません。',
         th: 'ไม่เห็นการปรึกษาเก่าในรายการ',
         vi: 'Một buổi tư vấn cũ không có trong danh sách.',
+        id: 'Konsultasi lama tidak ada dalam daftar.',
       },
       a: {
         ko: '상단에는 최근 상담이 최대 여섯 개까지만 나열됩니다. 그보다 오래된 대화는 사라진 것이 아니라 목록에 자리가 없을 뿐입니다. 화면이 비어 있다면 아직 상담을 한 번도 시작하지 않았거나 로그인 세션이 만료된 경우이니, 질문을 하나 보내 새 대화를 만들거나 다시 로그인해 보세요.',

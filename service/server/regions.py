@@ -33,28 +33,35 @@ class Region(NamedTuple):
 REGISTRY: dict[str, Region] = {
     'US': Region('US', 'America/New_York', 'en', {
         'en': 'United States', 'ko': '미국', 'ja': 'アメリカ合衆国',
-        'th': 'สหรัฐอเมริกา', 'vi': 'Hoa Kỳ'}),
+        'th': 'สหรัฐอเมริกา', 'vi': 'Hoa Kỳ', 'id': 'Amerika Serikat'}),
     'CA': Region('CA', 'America/Toronto', 'en', {
         'en': 'Canada', 'ko': '캐나다', 'ja': 'カナダ',
-        'th': 'แคนาดา', 'vi': 'Canada'}),
+        'th': 'แคนาดา', 'vi': 'Canada', 'id': 'Kanada'}),
     'AU': Region('AU', 'Australia/Sydney', 'en', {
         'en': 'Australia', 'ko': '호주', 'ja': 'オーストラリア',
-        'th': 'ออสเตรเลีย', 'vi': 'Úc'}),
+        'th': 'ออสเตรเลีย', 'vi': 'Úc', 'id': 'Australia'}),
     'SG': Region('SG', 'Asia/Singapore', 'en', {
         'en': 'Singapore', 'ko': '싱가포르', 'ja': 'シンガポール',
-        'th': 'สิงคโปร์', 'vi': 'Singapore'}),
+        'th': 'สิงคโปร์', 'vi': 'Singapore', 'id': 'Singapura'}),
     'KR': Region('KR', 'Asia/Seoul', 'ko', {
         'en': 'South Korea', 'ko': '대한민국', 'ja': '韓国',
-        'th': 'เกาหลีใต้', 'vi': 'Hàn Quốc'}),
+        'th': 'เกาหลีใต้', 'vi': 'Hàn Quốc', 'id': 'Korea Selatan'}),
     'JP': Region('JP', 'Asia/Tokyo', 'ja', {
         'en': 'Japan', 'ko': '일본', 'ja': '日本',
-        'th': 'ญี่ปุ่น', 'vi': 'Nhật Bản'}),
+        'th': 'ญี่ปุ่น', 'vi': 'Nhật Bản', 'id': 'Jepang'}),
     'TH': Region('TH', 'Asia/Bangkok', 'th', {
         'en': 'Thailand', 'ko': '태국', 'ja': 'タイ',
-        'th': 'ประเทศไทย', 'vi': 'Thái Lan'}),
+        'th': 'ประเทศไทย', 'vi': 'Thái Lan', 'id': 'Thailand'}),
     'VN': Region('VN', 'Asia/Ho_Chi_Minh', 'vi', {
         'en': 'Vietnam', 'ko': '베트남', 'ja': 'ベトナム',
-        'th': 'เวียดนาม', 'vi': 'Việt Nam'}),
+        'th': 'เวียดนาม', 'vi': 'Việt Nam', 'id': 'Vietnam'}),
+    # Jakarta is UTC+7 (Asia/Jakarta = WIB) and has no DST. Indonesia spans
+    # three zones; WIB covers Jakarta and Surabaya — where the IDX trades —
+    # so it is the right default, and members further east can still set
+    # Asia/Makassar or Asia/Jayapura themselves via normalize_timezone.
+    'ID': Region('ID', 'Asia/Jakarta', 'id', {
+        'en': 'Indonesia', 'ko': '인도네시아', 'ja': 'インドネシア',
+        'th': 'อินโดนีเซีย', 'vi': 'Indonesia', 'id': 'Indonesia'}),
 }
 
 

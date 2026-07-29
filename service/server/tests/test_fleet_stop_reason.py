@@ -31,6 +31,7 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+from analysis_agents import LANG_NAMES
 import fleet_planner as fp
 import notifications_i18n as n
 import trading_runs
@@ -137,7 +138,7 @@ class Localization(unittest.TestCase):
     inside a translated sentence — the exact bug fixed in #109."""
 
     def test_every_new_reason_is_translated_everywhere(self):
-        for lang in ("en", "ko", "ja", "th", "vi"):
+        for lang in tuple(LANG_NAMES):
             for reason in FLEET_REASONS:
                 with self.subTest(lang=lang, reason=reason):
                     title, body = n.render("run_stop_event", lang, run_id=345,

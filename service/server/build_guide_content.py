@@ -90,6 +90,8 @@ SOURCES: list[dict] = [
      "lang": "th", "group": "market-hours", "title": "ตลาดของคุณเปิดเมื่อไหร่"},
     {"key": "market-hours-vi", "src": "design/market-hours-vi.html", "kind": "html",
      "lang": "vi", "group": "market-hours", "title": "Thị trường của bạn mở khi nào"},
+    {"key": "market-hours-id", "src": "design/market-hours-id.html", "kind": "html",
+     "lang": "id", "group": "market-hours", "title": "Kapan pasar Anda buka"},
     {"key": "extension-e1-e2-en", "src": "reports/2026-07-25-extension-e1-e2-analysis.html",
      "kind": "html", "lang": "en", "group": "extensions",
      "title": "E1 Decision Routing & E2 Hot-Issue Daemon — Design Analysis", "owner_only": True},

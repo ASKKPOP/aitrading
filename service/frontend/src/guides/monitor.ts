@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const monitorGuide: PageGuide = {
-  title: { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' },
+  title: { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát', id: 'Pemantauan' },
   summary: {
     ko: '내 자동화 규칙, 최근 실행 결과, 보유 포지션, 감시 조건, 알림을 한 화면에 모아 보여주는 상황판입니다. 여러 규칙을 동시에 돌리는 사용자가 매일 가장 먼저 열어 보는 페이지로 만들어졌습니다.',
     en: 'A single board that gathers your automation rules, recent runs, open positions, watch conditions and alerts in one place. Built to be the first page you open each day when you have several rules running at once.',
@@ -11,7 +11,7 @@ export const monitorGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '시작하기 전에', en: 'Before you start', ja: '始める前に', th: 'ก่อนเริ่มต้น', vi: 'Trước khi bắt đầu' },
+      heading: { ko: '시작하기 전에', en: 'Before you start', ja: '始める前に', th: 'ก่อนเริ่มต้น', vi: 'Trước khi bắt đầu', id: 'Sebelum memulai' },
       bullets: {
         ko: [
           '로그인해야 볼 수 있는 페이지입니다. 로그아웃 상태에서는 로그인 안내만 표시됩니다.',
@@ -51,7 +51,7 @@ export const monitorGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '상단 요약 숫자', en: 'The stat row at the top', ja: '上部のサマリー数値', th: 'แถวตัวเลขสรุปด้านบน', vi: 'Hàng số liệu trên cùng' },
+      heading: { ko: '상단 요약 숫자', en: 'The stat row at the top', ja: '上部のサマリー数値', th: 'แถวตัวเลขสรุปด้านบน', vi: 'Hàng số liệu trên cùng', id: 'Baris statistik di bagian atas' },
       bullets: {
         ko: [
           '네 개의 카드가 자동화 규칙, 보유 포지션, 알림, 최근 실행의 개수를 보여줍니다.',
@@ -86,7 +86,7 @@ export const monitorGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '자동화 규칙과 보유 포지션', en: 'Automation rules and open positions', ja: '自動売買ルールと保有ポジション', th: 'กฎอัตโนมัติและสถานะที่เปิดอยู่', vi: 'Quy tắc tự động và vị thế đang mở' },
+      heading: { ko: '자동화 규칙과 보유 포지션', en: 'Automation rules and open positions', ja: '自動売買ルールと保有ポジション', th: 'กฎอัตโนมัติและสถานะที่เปิดอยู่', vi: 'Quy tắc tự động và vị thế đang mở', id: 'Aturan otomatisasi dan posisi terbuka' },
       bullets: {
         ko: [
           '규칙 줄의 맨 앞은 대상입니다. 일반 규칙은 종목 코드가, 완전 위임(Agent) 규칙은 🤖 표시와 배정된 예산 금액이 나옵니다.',
@@ -131,7 +131,7 @@ export const monitorGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '최근 실행과 AI 검증 판정', en: 'Recent runs and the AI verify verdict', ja: '実行履歴とAI検証の判定', th: 'การรันล่าสุดและคำตัดสินตรวจสอบของ AI', vi: 'Lần chạy gần đây và phán quyết xác minh của AI' },
+      heading: { ko: '최근 실행과 AI 검증 판정', en: 'Recent runs and the AI verify verdict', ja: '実行履歴とAI検証の判定', th: 'การรันล่าสุดและคำตัดสินตรวจสอบของ AI', vi: 'Lần chạy gần đây và phán quyết xác minh của AI', id: 'Run terkini dan putusan verifikasi AI' },
       bullets: {
         ko: [
           '최근 실행 20건이 시간 역순으로 쌓입니다. 각 줄은 실행 시각, 판단된 행동, 신뢰도 순으로 읽습니다.',
@@ -171,7 +171,7 @@ export const monitorGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (Agent mode)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI (โหมดเอเจนต์)', vi: 'Quyết định AI (chế độ Agent)' },
+      heading: { ko: 'AI 결정 (완전 위임)', en: 'AI decisions (Agent mode)', ja: 'AI決定（完全委任）', th: 'การตัดสินใจ AI (โหมดเอเจนต์)', vi: 'Quyết định AI (chế độ Agent)', id: 'Keputusan AI (mode Agen)' },
       bullets: {
         ko: [
           '완전 위임 규칙을 하나도 쓰지 않으면 이 영역 자체가 화면에 나타나지 않습니다.',
@@ -211,7 +211,7 @@ export const monitorGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '내 감시 조건 만들기', en: 'Setting up My Watches', ja: '監視条件の作り方', th: 'การตั้งเงื่อนไขเฝ้าดูของฉัน', vi: 'Thiết lập Điều kiện theo dõi' },
+      heading: { ko: '내 감시 조건 만들기', en: 'Setting up My Watches', ja: '監視条件の作り方', th: 'การตั้งเงื่อนไขเฝ้าดูของฉัน', vi: 'Thiết lập Điều kiện theo dõi', id: 'Menyiapkan Pantauan Saya' },
       bullets: {
         ko: [
           '지표가 정해진 값을 넘거나 밑돌 때 알림을 받도록 직접 조건을 거는 곳입니다. 규칙과 달리 아무 거래도 하지 않고 알려주기만 합니다.',
@@ -264,6 +264,7 @@ export const monitorGuide: PageGuide = {
         ja: 'すべてのセクションが「なし」になっています。何か問題がありますか？',
         th: 'ทุกส่วนขึ้นว่า "ไม่มี" มีอะไรผิดพลาดหรือเปล่า?',
         vi: 'Mọi mục đều ghi "Không có". Có gì sai không?',
+        id: 'Setiap bagian menampilkan "Tidak ada". Apakah ada yang salah?',
       },
       a: {
         ko: '보통은 아직 아무것도 만들지 않은 새 계정의 정상적인 모습입니다. 자동화 페이지에서 규칙을 하나 만들면 규칙과 실행 영역이 채워지기 시작하고, 감시 조건은 이 페이지에서 바로 추가할 수 있습니다. 규칙이 분명히 있는데도 비어 있다면 로그인 세션이 만료됐을 수 있으니 다시 로그인해 보세요.',
@@ -280,6 +281,7 @@ export const monitorGuide: PageGuide = {
         ja: '実行履歴は増え続けるのに、約定（✓）が1件もありません。',
         th: 'มีการรันสะสมเรื่อย ๆ แต่ไม่มีการดำเนินการเลย (ไม่มี ✓)',
         vi: 'Các lần chạy cứ chồng lên nhưng không có gì được thực thi (không có ✓).',
+        id: 'Run terus menumpuk tetapi tidak ada yang tereksekusi (tanpa ✓).',
       },
       a: {
         ko: '정상 동작인 경우가 많습니다. 규칙은 주기마다 시장을 확인하되, 조건을 충족할 때만 움직이도록 설계되어 있습니다. ✓ 없는 줄 오른쪽의 건너뛴 이유를 읽어 보세요. 대부분은 최소 신뢰도 미달이며, 이 경우 규칙의 신뢰도 기준을 낮추면 됩니다. 리스크 게이트나 예산 관련 문구가 반복된다면 자동화 페이지에서 해당 설정을 조정하세요.',
@@ -296,6 +298,7 @@ export const monitorGuide: PageGuide = {
         ja: '監視条件を保存しようとするとエラーになります。',
         th: 'บันทึกเงื่อนไขเฝ้าดูแล้วขึ้นข้อผิดพลาด',
         vi: 'Tôi gặp lỗi khi lưu điều kiện theo dõi.',
+        id: 'Saya mendapat galat saat menyimpan pantauan.',
       },
       a: {
         ko: '오류 문구는 저장 버튼 옆에 ⚠️와 함께 나타납니다. 가장 흔한 원인은 종목이 필요한 지표인데 종목 칸이 비어 있거나, 기준값이 비었거나 숫자가 아닌 경우입니다. 종목이 필요한 지표를 고르면 종목 선택 칸이 자동으로 나타나므로, 그 칸이 보인다면 반드시 값을 채워야 합니다. 지표 목록이 아예 비어 있다면 서버 응답을 아직 못 받은 상태이니 잠시 후 자동 새로고침을 기다려 보세요.',

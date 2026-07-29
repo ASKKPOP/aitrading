@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const assetsGuide: PageGuide = {
-  title: { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สินของฉัน', vi: 'Tài sản' },
+  title: { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สินของฉัน', vi: 'Tài sản', id: 'Aset saya' },
   summary: {
     ko: '모의 계정의 전체 잔고를 한눈에 보는 페이지입니다. 총 자산과 미실현 손익, 가용 자금 · 현물 보유 · 선물 포지션 세 개의 지갑 카드, 그리고 최근 거래 내역이 차례로 표시됩니다.',
     en: 'A single view of your whole simulated balance: the total and unrealized P&L at the top, three wallet cards for available funds, spot holdings and futures positions, and your recent trades below.',
@@ -11,7 +11,7 @@ export const assetsGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '자산 개요 — 총합과 숨기기', en: 'Assets overview — the total and masking', ja: '資産概要 — 合計と非表示', th: 'ภาพรวมทรัพย์สิน — ยอดรวมและการซ่อน', vi: 'Tổng quan tài sản — tổng và ẩn số' },
+      heading: { ko: '자산 개요 — 총합과 숨기기', en: 'Assets overview — the total and masking', ja: '資産概要 — 合計と非表示', th: 'ภาพรวมทรัพย์สิน — ยอดรวมและการซ่อน', vi: 'Tổng quan tài sản — tổng và ẩn số', id: 'Ringkasan aset — total dan penyamaran angka' },
       bullets: {
         ko: [
           '맨 위 큰 숫자가 총 자산이며 USDT 기준입니다. 합계 = 가용 현금 + 현물 보유 + 선물 증거금이고 전부 모의 값입니다.',
@@ -51,7 +51,7 @@ export const assetsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '가용 자금 카드', en: 'The available funds card', ja: '利用可能資金カード', th: 'การ์ดเงินทุนพร้อมใช้', vi: 'Thẻ vốn khả dụng' },
+      heading: { ko: '가용 자금 카드', en: 'The available funds card', ja: '利用可能資金カード', th: 'การ์ดเงินทุนพร้อมใช้', vi: 'Thẻ vốn khả dụng', id: 'Kartu dana tersedia' },
       bullets: {
         ko: [
           '파란 테두리의 첫 카드는 거래에 쓸 수 있는 모의 현금입니다.',
@@ -86,7 +86,7 @@ export const assetsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '현물 보유 카드와 코인별 보기', en: 'Spot holdings and the per-coin breakdown', ja: '現物保有カードとコイン別表示', th: 'การ์ดถือครองสปอตและการดูตามเหรียญ', vi: 'Thẻ nắm giữ spot và chi tiết theo coin' },
+      heading: { ko: '현물 보유 카드와 코인별 보기', en: 'Spot holdings and the per-coin breakdown', ja: '現物保有カードとコイン別表示', th: 'การ์ดถือครองสปอตและการดูตามเหรียญ', vi: 'Thẻ nắm giữ spot và chi tiết theo coin', id: 'Kepemilikan spot dan rincian per koin' },
       bullets: {
         ko: [
           '초록 테두리 카드는 롱 포지션의 현재 평가액 합계입니다. 실시간 가격으로 계산되므로 시세에 따라 변합니다.',
@@ -126,7 +126,7 @@ export const assetsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '선물 포지션 카드', en: 'The futures positions card', ja: '先物ポジションカード', th: 'การ์ดสถานะฟิวเจอร์ส', vi: 'Thẻ vị thế futures' },
+      heading: { ko: '선물 포지션 카드', en: 'The futures positions card', ja: '先物ポジションカード', th: 'การ์ดสถานะฟิวเจอร์ส', vi: 'Thẻ vị thế futures', id: 'Kartu posisi futures' },
       bullets: {
         ko: [
           '금색 테두리 카드는 숏 노출입니다. 이 엔진에서 롱이 아닌 포지션은 모두 여기에 집계됩니다.',
@@ -161,7 +161,7 @@ export const assetsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '최근 활동 표 읽기', en: 'Reading the recent activity table', ja: '最近の取引テーブルの読み方', th: 'อ่านตารางกิจกรรมล่าสุด', vi: 'Đọc bảng hoạt động gần đây' },
+      heading: { ko: '최근 활동 표 읽기', en: 'Reading the recent activity table', ja: '最近の取引テーブルの読み方', th: 'อ่านตารางกิจกรรมล่าสุด', vi: 'Đọc bảng hoạt động gần đây', id: 'Membaca tabel aktivitas terkini' },
       bullets: {
         ko: [
           '표에는 내 계정이 낸 최근 거래가 최대 10건까지 최신순으로 표시됩니다.',
@@ -206,7 +206,7 @@ export const assetsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '이 숫자들의 성격과 다음에 할 일', en: 'What these numbers are, and what to do next', ja: 'これらの数値の性質と次のステップ', th: 'ตัวเลขเหล่านี้คืออะไร และขั้นถัดไป', vi: 'Bản chất các con số này và bước tiếp theo' },
+      heading: { ko: '이 숫자들의 성격과 다음에 할 일', en: 'What these numbers are, and what to do next', ja: 'これらの数値の性質と次のステップ', th: 'ตัวเลขเหล่านี้คืออะไร และขั้นถัดไป', vi: 'Bản chất các con số này và bước tiếp theo', id: 'Arti angka-angka ini dan langkah selanjutnya' },
       bullets: {
         ko: [
           '이 페이지의 모든 금액은 모의 계정 값입니다. 포지션 손익은 시세를 주기적으로 가져와 계산한 결과이며, 실제 브로커의 잔고가 아닙니다.',
@@ -270,6 +270,7 @@ export const assetsGuide: PageGuide = {
         ja: '種類の横のAI表示は何を意味しますか?',
         th: 'เครื่องหมาย AI ข้างประเภทหมายถึงอะไร',
         vi: 'Dấu AI cạnh cột loại nghĩa là gì?',
+        id: 'Apa arti penanda AI di sebelah jenisnya?',
       },
       a: {
         ko: '그 거래가 자동화 규칙에서 나왔다는 표시입니다. 직접 낸 거래에는 붙지 않습니다. 어떤 규칙이 왜 그 결정을 냈는지는 자동화 페이지의 최근 실행 기록에서 같은 시각의 항목을 보면 결정과 신뢰도, 체결 여부까지 확인할 수 있습니다.',
@@ -286,6 +287,7 @@ export const assetsGuide: PageGuide = {
         ja: '何もしていないのに総資産が変わり続けます。',
         th: 'ยอดรวมเปลี่ยนตลอดทั้งที่ไม่ได้ทำอะไร',
         vi: 'Tổng tài sản cứ thay đổi dù tôi không làm gì.',
+        id: 'Total saya terus berubah padahal saya tidak melakukan apa pun.',
       },
       a: {
         ko: '정상입니다. 현물 보유와 선물 포지션의 평가액은 실시간 시세로 계산되고 페이지는 15초마다 값을 다시 가져오기 때문에, 시장이 움직이면 총합과 미실현 손익도 함께 움직입니다. 가용 자금은 새 진입이나 청산이 있을 때만 변합니다.',

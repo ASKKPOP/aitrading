@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const settingsGuide: PageGuide = {
-  title: { ko: '설정', en: 'Settings', ja: '設定', th: 'ตั้งค่า', vi: 'Cài đặt' },
+  title: { ko: '설정', en: 'Settings', ja: '設定', th: 'ตั้งค่า', vi: 'Cài đặt', id: 'Pengaturan' },
   summary: {
     ko: '계정 정보, 언어, AI 지침, 알림, 그리고 데이터·AI 소스별 API 구성을 한 화면에서 관리합니다. 분석 품질을 손보고 싶거나 알림을 켜고 싶을 때 오는 페이지입니다.',
     en: 'One screen for your account details, language, AI guidelines, alerts and the per-source data/AI API configuration. Come here when you want to tune analysis quality or turn alerts on.',
@@ -11,7 +11,7 @@ export const settingsGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '계정 섹션', en: 'The Account section', ja: 'アカウントセクション', th: 'ส่วนบัญชี', vi: 'Mục Tài khoản' },
+      heading: { ko: '계정 섹션', en: 'The Account section', ja: 'アカウントセクション', th: 'ส่วนบัญชี', vi: 'Mục Tài khoản', id: 'Bagian Akun' },
       bullets: {
         ko: [
           '맨 위 카드에 로그인한 이메일과 현재 포인트가 표시됩니다. 여기서 직접 수정하는 항목은 아닙니다.',
@@ -51,7 +51,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '환경설정 — 언어', en: 'Preferences — language', ja: '環境設定 — 言語', th: 'การตั้งค่า — ภาษา', vi: 'Tùy chọn — ngôn ngữ' },
+      heading: { ko: '환경설정 — 언어', en: 'Preferences — language', ja: '環境設定 — 言語', th: 'การตั้งค่า — ภาษา', vi: 'Tùy chọn — ngôn ngữ', id: 'Preferensi — bahasa' },
       bullets: {
         ko: [
           '언어 알약 버튼을 누르면 즉시 적용됩니다. 저장 버튼은 없습니다.',
@@ -86,7 +86,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: 'AI 지침 — 개인화 모드', en: 'AI Guidelines — Personalized mode', ja: 'AI指針 — パーソナライズ', th: 'แนวทาง AI — โหมดส่วนบุคคล', vi: 'Chỉ dẫn AI — chế độ cá nhân hóa' },
+      heading: { ko: 'AI 지침 — 개인화 모드', en: 'AI Guidelines — Personalized mode', ja: 'AI指針 — パーソナライズ', th: 'แนวทาง AI — โหมดส่วนบุคคล', vi: 'Chỉ dẫn AI — chế độ cá nhân hóa', id: 'Panduan AI — mode Personalisasi' },
       bullets: {
         ko: [
           '자유 형식으로 쓴 문장이 모든 AI 분석·결정·검증 프롬프트에 함께 주입됩니다. 최대 2,000자이며 입력창 아래에 현재 글자 수가 표시됩니다.',
@@ -131,7 +131,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '알림 — 이메일 · SMS', en: 'Alerts — email and SMS', ja: '通知 — メール · SMS', th: 'การแจ้งเตือน — อีเมลและ SMS', vi: 'Cảnh báo — email và SMS' },
+      heading: { ko: '알림 — 이메일 · SMS', en: 'Alerts — email and SMS', ja: '通知 — メール · SMS', th: 'การแจ้งเตือน — อีเมลและ SMS', vi: 'Cảnh báo — email và SMS', id: 'Peringatan — email dan SMS' },
       bullets: {
         ko: [
           '알림 대상은 체결, 손절·익절 청산, 브레이커로 인한 중단입니다.',
@@ -176,7 +176,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: 'API 구성 — 대상 카드 읽는 법', en: 'API configuration — reading a target card', ja: 'API構成 — 対象カードの読み方', th: 'การกำหนดค่า API — อ่านการ์ดแต่ละแหล่ง', vi: 'Cấu hình API — đọc thẻ từng nguồn' },
+      heading: { ko: 'API 구성 — 대상 카드 읽는 법', en: 'API configuration — reading a target card', ja: 'API構成 — 対象カードの読み方', th: 'การกำหนดค่า API — อ่านการ์ดแต่ละแหล่ง', vi: 'Cấu hình API — đọc thẻ từng nguồn', id: 'Konfigurasi API — membaca kartu target' },
       bullets: {
         ko: [
           '데이터·AI 소스마다 카드가 하나씩 있습니다. 카드 제목 옆 배지가 상태를 알려 줍니다 — 「키 등록됨」(초록), 「키 미등록 (선택)」(주황), 「공개 API — 키 불필요」(파랑).',
@@ -221,7 +221,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '제공자 · 모델 선택과 키 저장', en: 'Choosing a provider and model, and saving a key', ja: 'プロバイダー・モデル選択とキー保存', th: 'เลือกผู้ให้บริการ โมเดล และบันทึกคีย์', vi: 'Chọn nhà cung cấp, mô hình và lưu khóa' },
+      heading: { ko: '제공자 · 모델 선택과 키 저장', en: 'Choosing a provider and model, and saving a key', ja: 'プロバイダー・モデル選択とキー保存', th: 'เลือกผู้ให้บริการ โมเดล และบันทึกคีย์', vi: 'Chọn nhà cung cấp, mô hình và lưu khóa', id: 'Memilih penyedia dan model, lalu menyimpan kunci' },
       bullets: {
         ko: [
           'LLM 카드처럼 제공자 항목이 있는 대상에는 드롭다운 두 개가 나옵니다. 왼쪽에서 openai · gemini · grok · qwen · glm · openrouter · anthropic · local 중 제공자를 고릅니다.',
@@ -266,7 +266,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '키를 안전하게 다루기', en: 'Handling your keys safely', ja: 'キーを安全に扱う', th: 'จัดการคีย์อย่างปลอดภัย', vi: 'Xử lý khóa an toàn' },
+      heading: { ko: '키를 안전하게 다루기', en: 'Handling your keys safely', ja: 'キーを安全に扱う', th: 'จัดการคีย์อย่างปลอดภัย', vi: 'Xử lý khóa an toàn', id: 'Menangani kunci Anda dengan aman' },
       bullets: {
         ko: [
           '여기서 등록하는 키는 데이터·AI 제공자용 자격 증명입니다. 각 제공자 콘솔에서 본인이 발급하세요.',
@@ -311,7 +311,7 @@ export const settingsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '이 페이지에 없는 설정과 다음에 할 일', en: 'What is not on this page, and what to do next', ja: 'この画面にない設定と次のステップ', th: 'สิ่งที่ไม่ได้อยู่ในหน้านี้ และขั้นถัดไป', vi: 'Những gì không có ở trang này và bước tiếp theo' },
+      heading: { ko: '이 페이지에 없는 설정과 다음에 할 일', en: 'What is not on this page, and what to do next', ja: 'この画面にない設定と次のステップ', th: 'สิ่งที่ไม่ได้อยู่ในหน้านี้ และขั้นถัดไป', vi: 'Những gì không có ở trang này và bước tiếp theo', id: 'Apa yang tidak ada di halaman ini, dan langkah selanjutnya' },
       bullets: {
         ko: [
           '자동매매 규칙별 상세 설정(실행 주기, 최소 신뢰도, 자동 실행 여부)은 이 페이지가 아니라 자동화 페이지에서 관리합니다.',
@@ -364,6 +364,7 @@ export const settingsGuide: PageGuide = {
         ja: 'APIキーを1つも入れなくても使えますか?',
         th: 'ใช้แพลตฟอร์มโดยไม่ใส่คีย์ API เลยได้ไหม',
         vi: 'Tôi dùng được nền tảng mà không thêm khóa API nào chứ?',
+        id: 'Bisakah saya memakai platform ini tanpa menambahkan kunci API?',
       },
       a: {
         ko: '가능합니다. 공개 API 소스만으로 전체 파이프라인이 동작하고, LLM 키가 없으면 결정론적 규칙 기반 엔진이 대신 분석합니다. 키를 넣으면 해당 소스의 데이터가 더 깊어지고 LLM 기반 분석이 활성화되는 것이지, 키가 없다고 기능이 잠기지는 않습니다.',
@@ -380,6 +381,7 @@ export const settingsGuide: PageGuide = {
         ja: '保存済みのAPIキーを再表示できますか?',
         th: 'ดูคีย์ API ที่บันทึกไว้แล้วได้ไหม',
         vi: 'Tôi có xem lại được khóa API đã lưu không?',
+        id: 'Bisakah saya melihat kunci yang sudah saya simpan?',
       },
       a: {
         ko: '아니요. 저장된 키는 마스킹된 형태로만 표시되고 전체 값은 다시 화면에 나오지 않습니다. 원래 값이 필요하면 제공자 콘솔에서 확인하거나 새 키를 발급받아 여기서 교체하세요. 입력란에 새 키를 넣고 저장하면 기존 키를 대체합니다.',
@@ -396,6 +398,7 @@ export const settingsGuide: PageGuide = {
         ja: 'AI指針でリスク限度を緩められますか?',
         th: 'ใช้แนวทาง AI ผ่อนคลายลิมิตความเสี่ยงได้ไหม',
         vi: 'Chỉ dẫn AI có nới lỏng được giới hạn rủi ro không?',
+        id: 'Bisakah panduan AI melonggarkan batas risiko saya?',
       },
       a: {
         ko: '불가능합니다. 지침은 AI를 더 신중하게 만드는 방향으로만 작동합니다. 리스크 한도, 브레이커, 예산 상한은 서버 쪽에서 강제되며 어떤 지침 문구로도 우회할 수 없습니다. 한도 자체를 조정하려면 에이전트 API의 리스크 한도 설정을 사용해야 합니다.',
@@ -412,6 +415,7 @@ export const settingsGuide: PageGuide = {
         ja: '設定を変更するといつから反映されますか?',
         th: 'การเปลี่ยนแปลงจะมีผลเมื่อไร',
         vi: 'Thay đổi của tôi có hiệu lực từ khi nào?',
+        id: 'Kapan perubahan saya berlaku?',
       },
       a: {
         ko: '언어와 「사용」 토글은 즉시 적용됩니다. AI 지침, 알림 설정, API 키는 각각의 저장 버튼을 눌러야 반영되며 오른쪽 위에 확인 메시지가 나타납니다. 저장된 값은 다음 분석 사이클부터 쓰이므로, 이미 실행 중인 작업에는 소급되지 않습니다.',

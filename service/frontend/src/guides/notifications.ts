@@ -1,7 +1,7 @@
 import type { PageGuide } from './types'
 
 export const notificationsGuide: PageGuide = {
-  title: { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' },
+  title: { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo', id: 'Notifikasi' },
   summary: {
     ko: '거래·리스크·워치·고객지원·공지 알림이 한 줄기로 모이는 개인 알림함입니다. 여러 규칙과 감시 조건을 돌리면서 무슨 일이 있었는지 놓치지 않으려는 회원을 위한 페이지입니다.',
     en: 'Your personal notification inbox where trade, risk, watch, support and announcement alerts all land in one stream. For members running rules and watches who do not want to miss what happened.',
@@ -11,7 +11,7 @@ export const notificationsGuide: PageGuide = {
   },
   sections: [
     {
-      heading: { ko: '이 페이지가 보여주는 것', en: 'What this page shows', ja: 'このページに表示されるもの', th: 'หน้านี้แสดงอะไร', vi: 'Trang này hiển thị gì' },
+      heading: { ko: '이 페이지가 보여주는 것', en: 'What this page shows', ja: 'このページに表示されるもの', th: 'หน้านี้แสดงอะไร', vi: 'Trang này hiển thị gì', id: 'Apa yang ditampilkan halaman ini' },
       bullets: {
         ko: [
           '로그인한 회원 계정에 기록된 알림만 표시됩니다. 에이전트 토큰이 아니라 회원 로그인 세션이 필요합니다.',
@@ -51,7 +51,7 @@ export const notificationsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '알림 종류 다섯 가지', en: 'The five notification kinds', ja: '通知の5つの種類', th: 'ห้าประเภทของการแจ้งเตือน', vi: 'Năm loại thông báo' },
+      heading: { ko: '알림 종류 다섯 가지', en: 'The five notification kinds', ja: '通知の5つの種類', th: 'ห้าประเภทของการแจ้งเตือน', vi: 'Năm loại thông báo', id: 'Lima jenis notifikasi' },
       bullets: {
         ko: [
           '◈ 거래 — 자동화 규칙의 체결과 포지션 종료 기록입니다. 시그널 추적 기준의 기록이며 실제 증권사 주문이 아닙니다.',
@@ -96,7 +96,7 @@ export const notificationsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '전체와 읽지 않음 필터', en: 'The All and Unread filters', ja: '「すべて」と「未読」フィルター', th: 'ตัวกรองทั้งหมดและยังไม่อ่าน', vi: 'Bộ lọc Tất cả và Chưa đọc' },
+      heading: { ko: '전체와 읽지 않음 필터', en: 'The All and Unread filters', ja: '「すべて」と「未読」フィルター', th: 'ตัวกรองทั้งหมดและยังไม่อ่าน', vi: 'Bộ lọc Tất cả và Chưa đọc', id: 'Filter Semua dan Belum dibaca' },
       bullets: {
         ko: [
           '목록 위의 두 알약 버튼으로 전체와 읽지 않음을 오갑니다. 선택된 쪽이 진하게 표시됩니다.',
@@ -131,7 +131,7 @@ export const notificationsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '읽음 처리하기', en: 'Marking things read', ja: '既読にする', th: 'การทำเครื่องหมายว่าอ่านแล้ว', vi: 'Đánh dấu đã đọc' },
+      heading: { ko: '읽음 처리하기', en: 'Marking things read', ja: '既読にする', th: 'การทำเครื่องหมายว่าอ่านแล้ว', vi: 'Đánh dấu đã đọc', id: 'Menandai sudah dibaca' },
       bullets: {
         ko: [
           '읽지 않은 알림에만 아래쪽에 읽음 표시 링크가 나옵니다. 이미 읽은 알림에는 그 링크가 없습니다.',
@@ -171,7 +171,7 @@ export const notificationsGuide: PageGuide = {
       },
     },
     {
-      heading: { ko: '무엇을 받을지 정하기', en: 'Choosing what you receive', ja: '受け取る内容を決める', th: 'เลือกสิ่งที่คุณจะได้รับ', vi: 'Chọn thứ bạn nhận' },
+      heading: { ko: '무엇을 받을지 정하기', en: 'Choosing what you receive', ja: '受け取る内容を決める', th: 'เลือกสิ่งที่คุณจะได้รับ', vi: 'Chọn thứ bạn nhận', id: 'Memilih apa yang Anda terima' },
       bullets: {
         ko: [
           '다섯 종류 각각에 켜기, 이메일, SMS 세 개의 스위치가 있고 모두 설정 페이지에서 조정합니다.',
@@ -219,6 +219,7 @@ export const notificationsGuide: PageGuide = {
         ja: '確かに動きはあったのに、通知が1件もありません。',
         th: 'มีเหตุการณ์เกิดขึ้นแน่ ๆ แต่ไม่มีการแจ้งเตือนเลย',
         vi: 'Rõ ràng có chuyện xảy ra nhưng tôi không có thông báo nào.',
+        id: 'Jelas ada kejadian, tetapi saya tidak menerima notifikasi sama sekali.',
       },
       a: {
         ko: '가장 흔한 원인은 설정 페이지에서 해당 종류의 켜기 스위치가 꺼져 있는 경우입니다. 꺼진 종류는 발송만 막히는 것이 아니라 이 목록에도 기록되지 않으므로, 나중에 켜도 지난 알림은 나타나지 않습니다. 스위치가 모두 켜져 있는데도 비어 있다면 이 페이지는 회원 로그인 세션으로만 조회되므로 다시 로그인해 보세요. 그래도 비어 있다면 아직 조건에 해당하는 사건이 없었던 것입니다.',
@@ -251,6 +252,7 @@ export const notificationsGuide: PageGuide = {
         ja: '表示されている時刻が自分の時計と違います。',
         th: 'เวลาที่แสดงไม่ตรงกับนาฬิกาของฉัน',
         vi: 'Dấu thời gian không khớp với đồng hồ của tôi.',
+        id: 'Cap waktunya tidak cocok dengan jam saya.',
       },
       a: {
         ko: '알림 시각은 서버가 기록한 UTC 기준 시각을 그대로 분 단위까지 보여줍니다. 현지 시간대로 변환하지 않으므로 한국 시간과는 9시간 차이가 납니다. 알림 사이의 간격이나 순서를 볼 때는 문제가 없지만, 다른 페이지의 시각과 비교할 때는 이 점을 감안하세요.',

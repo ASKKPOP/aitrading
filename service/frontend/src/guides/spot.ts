@@ -7,6 +7,7 @@ export const spotGuide: PageGuide = {
     ja: '現物',
     th: 'สปอต',
     vi: 'Spot',
+    id: 'Spot',
   },
   summary: {
     ko: '암호화폐를 호가창과 함께 빠르게 매수·매도하는 현물 터미널입니다. 레버리지 없이 1배로만 거래하며, 시장가 주문이 실시간 가격에 즉시 모의 체결됩니다.',
@@ -23,6 +24,7 @@ export const spotGuide: PageGuide = {
         ja: '画面の構成',
         th: 'การจัดวางหน้าจอ',
         vi: 'Bố cục màn hình',
+        id: 'Bagaimana layar ini disusun',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const spotGuide: PageGuide = {
         ja: '板情報の読み方',
         th: 'การอ่านสมุดคำสั่ง',
         vi: 'Đọc sổ lệnh',
+        id: 'Membaca order book',
       },
       bullets: {
         ko: [
@@ -120,6 +123,7 @@ export const spotGuide: PageGuide = {
         ja: '注文フォームの使い方',
         th: 'การใช้ฟอร์มคำสั่ง',
         vi: 'Sử dụng biểu mẫu đặt lệnh',
+        id: 'Menggunakan formulir order',
       },
       bullets: {
         ko: [
@@ -171,6 +175,7 @@ export const spotGuide: PageGuide = {
         ja: '注文確認と約定',
         th: 'การยืนยันและการเติมคำสั่ง',
         vi: 'Xác nhận và khớp lệnh',
+        id: 'Mengonfirmasi dan mengeksekusi',
       },
       bullets: {
         ko: [
@@ -222,6 +227,7 @@ export const spotGuide: PageGuide = {
         ja: '保有資産テーブルと決済',
         th: 'ตารางถือครองและการปิดสถานะ',
         vi: 'Bảng Nắm giữ và đóng vị thế',
+        id: 'Tabel Kepemilikan dan menutup posisi',
       },
       bullets: {
         ko: [
@@ -275,6 +281,7 @@ export const spotGuide: PageGuide = {
         ja: '「ログインしてください」の画面しか表示されません。',
         th: 'ฉันเห็นแค่หน้าจอ "เข้าสู่ระบบ"',
         vi: 'Tôi chỉ thấy màn hình "đăng nhập".',
+        id: 'Saya hanya melihat layar "masuk".',
       },
       a: {
         ko: '이 터미널은 저장된 에이전트 토큰이 있어야 열립니다. 토큰이 없으면 호가창과 주문 폼 대신 로그인 안내만 표시됩니다. 로그인하면 잔고와 보유 자산이 함께 불러와집니다.',
@@ -291,6 +298,7 @@ export const spotGuide: PageGuide = {
         ja: '指値タブが押せません。',
         th: 'ฉันคลิกแท็บลิมิตไม่ได้',
         vi: 'Tôi không nhấn được tab Limit.',
+        id: 'Saya tidak bisa mengeklik tab Limit.',
       },
       a: {
         ko: '아직 구현되지 않았기 때문입니다. 탭에 "곧 지원"이라고 표시되어 있고 비활성 상태입니다. 현재 이 터미널에서는 시장가 주문만 가능하며, 실시간 가격에 즉시 체결됩니다.',
@@ -307,6 +315,7 @@ export const spotGuide: PageGuide = {
         ja: '買い・売りボタンが薄く表示され押せません。',
         th: 'ปุ่มซื้อ / ขายดูจางและกดไม่ได้',
         vi: 'Nút Mua / Bán bị mờ và không nhấn được.',
+        id: 'Tombol Beli / Jual tampak pudar dan tidak bisa ditekan.',
       },
       a: {
         ko: '수량이 비어 있거나 0이면, 또는 아직 시세를 받아오지 못했으면 버튼이 비활성화됩니다. 수량이나 주문 금액을 입력하거나 % 버튼을 눌러 값을 채우면 다시 활성화됩니다.',

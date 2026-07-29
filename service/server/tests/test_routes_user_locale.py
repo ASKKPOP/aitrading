@@ -25,6 +25,7 @@ if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
 import database
+import regions
 from routes import create_app
 
 
@@ -94,7 +95,10 @@ class FirstRunPrompt(_Base):
                             headers=self._auth(self._token())).json()
         names = {r["region"]: r["name"] for r in o["regions"]}
         self.assertEqual(names["KR"], "대한민국")
-        self.assertEqual(len(o["regions"]), 8)
+        # Derived, not a literal — adding a region should extend this test's
+        # coverage rather than break it.
+        self.assertEqual(set(names), set(regions.supported_regions()))
+        self.assertTrue(all(names.values()))
 
     def test_answering_clears_the_prompt(self):
         _create_user(geo="KR")

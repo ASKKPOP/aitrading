@@ -7,6 +7,7 @@ export const experimentsGuide: PageGuide = {
     ja: '実験コンソール',
     th: 'คอนโซลการทดลอง',
     vi: 'Bảng điều khiển Thí nghiệm',
+    id: 'Konsol eksperimen',
   },
   summary: {
     ko: 'A/B 실험을 만들고, 에이전트가 어떤 변형에 배정됐는지 확인하고, 변형별 지표와 실험 알림을 관리하는 운영자용 화면입니다. 목록은 누구나 볼 수 있지만 생성·상태 변경·알림 발송은 토큰이 있어야 합니다.',
@@ -23,6 +24,7 @@ export const experimentsGuide: PageGuide = {
         ja: '実験リストを見る',
         th: 'ดูรายการการทดลอง',
         vi: 'Duyệt danh sách thí nghiệm',
+        id: 'Menelusuri daftar eksperimen',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const experimentsGuide: PageGuide = {
         ja: '実験を作成する',
         th: 'สร้างการทดลอง',
         vi: 'Tạo thí nghiệm',
+        id: 'Membuat eksperimen',
       },
       bullets: {
         ko: [
@@ -120,6 +123,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'ステータス切り替えと割り当ての確認',
         th: 'สลับสถานะและดูการมอบหมาย',
         vi: 'Đổi trạng thái và xem phân bổ',
+        id: 'Mengubah status dan membaca penugasan',
       },
       bullets: {
         ko: [
@@ -161,6 +165,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'バリアント別指標の読み方',
         th: 'อ่านเมตริกรายรูปแบบ',
         vi: 'Đọc chỉ số theo biến thể',
+        id: 'Membaca metrik per varian',
       },
       bullets: {
         ko: [
@@ -202,6 +207,7 @@ export const experimentsGuide: PageGuide = {
         ja: '実験通知を送る',
         th: 'ส่งการแจ้งเตือนการทดลอง',
         vi: 'Gửi thông báo thí nghiệm',
+        id: 'Mengirim notifikasi eksperimen',
       },
       bullets: {
         ko: [
@@ -253,6 +259,7 @@ export const experimentsGuide: PageGuide = {
         ja: '送信結果を確認する',
         th: 'ตรวจผลการส่ง',
         vi: 'Kiểm tra kết quả gửi',
+        id: 'Memeriksa hasil pengiriman',
       },
       bullets: {
         ko: [
@@ -301,6 +308,7 @@ export const experimentsGuide: PageGuide = {
         ja: '実験リストは見えますが作成フォームが出ません。',
         th: 'เห็นรายการการทดลองแต่ไม่เห็นฟอร์มสร้าง',
         vi: 'Tôi thấy danh sách thí nghiệm nhưng không thấy biểu mẫu tạo.',
+        id: 'Saya bisa melihat daftar eksperimen tetapi bukan formulir pembuatannya.',
       },
       a: {
         ko: '목록 조회는 토큰 없이도 되지만, 실험 만들기·상태 변경·알림 발송은 토큰이 필요합니다. 토큰이 없으면 "로그인 후 실험 만들기" 안내만 표시되고 상태 버튼과 알림 섹션도 함께 숨겨집니다.',
@@ -317,6 +325,7 @@ export const experimentsGuide: PageGuide = {
         ja: '「バリアント JSON の形式が無効です」という警告が出ます。',
         th: 'ขึ้นคำเตือน "รูปแบบ JSON ของรูปแบบไม่ถูกต้อง"',
         vi: 'Tôi nhận cảnh báo "JSON biến thể không hợp lệ".',
+        id: 'Muncul peringatan "Invalid variants JSON".',
       },
       a: {
         ko: '변형 입력란의 내용이 유효한 JSON으로 파싱되지 않았다는 뜻이며, 이 경우 서버로 아무것도 보내지 않습니다. 기본으로 채워진 예시 형식(객체 배열, 각 객체에 key와 weight)을 기준으로 따옴표와 쉼표를 다시 확인하세요.',
@@ -333,6 +342,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'ドライランと実送信の違いは何ですか？',
         th: 'การทดลองรันกับการส่งจริงต่างกันอย่างไร',
         vi: 'Chạy thử và gửi thật khác nhau thế nào?',
+        id: 'Apa bedanya uji kirim (dry run) dengan pengiriman sungguhan?',
       },
       a: {
         ko: '드라이런은 어떤 대상이 몇 명 잡히는지만 계산해 보여 주고 아무 메시지도 남기지 않습니다. 실제 발송은 선택한 대상에게 에이전트 메시지를 실제로 기록하므로, 누르기 전에 확인 창이 한 번 더 뜹니다.',
@@ -349,6 +359,7 @@ export const experimentsGuide: PageGuide = {
         ja: '割り当てリストが 60 件で止まります。',
         th: 'รายการมอบหมายหยุดที่ 60 แถว',
         vi: 'Danh sách phân bổ dừng ở sáu mươi dòng.',
+        id: 'Daftar penugasan berhenti di enam puluh baris.',
       },
       a: {
         ko: '화면 표시용 제한입니다. 서버에서는 최대 500건까지 불러오지만 표에는 앞의 60행만 그립니다. 전체 배정 데이터를 다루려면 리서치 내보내기 페이지에서 실험 키로 필터링해 CSV로 받는 편이 낫습니다.',

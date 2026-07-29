@@ -1,7 +1,11 @@
 // i18n translations for Sooppiy (Sooppiy)
-// Supported languages: Korean (default), English, Japanese, Thai, Vietnamese
+// Supported languages: Korean (default), English, Japanese, Thai, Vietnamese,
+// Indonesian. This list must stay in step with LANG_NAMES in
+// service/server/analysis_agents.py — that dict is what the backend uses to
+// decide which language an alert, email or error message renders in, so a
+// language offered here but missing there silently serves English.
 
-export type Language = 'ko' | 'en' | 'ja' | 'th' | 'vi'
+export type Language = 'ko' | 'en' | 'ja' | 'th' | 'vi' | 'id'
 
 export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'ko', label: '한국어' },
@@ -9,6 +13,7 @@ export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'ja', label: '日本語' },
   { value: 'th', label: 'ไทย' },
   { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'id', label: 'Bahasa Indonesia' },
 ]
 
 export const DEFAULT_LANGUAGE: Language = 'ko'
@@ -20,6 +25,7 @@ export const LOCALE_BY_LANGUAGE: Record<Language, string> = {
   ja: 'ja-JP',
   th: 'th-TH',
   vi: 'vi-VN',
+  id: 'id-ID',
 }
 
 export interface Translations {
@@ -606,6 +612,103 @@ export const translations: Record<Language, Translations> = {
       operationFailed: 'Thao tác thất bại',
     },
   },
+  id: {
+    nav: {
+      signals: 'Pasar sinyal',
+      strategies: 'Strategi',
+      discussions: 'Diskusi',
+      positions: 'Posisi',
+      trade: 'Transaksi',
+      exchange: 'Tukar',
+      create: 'Buat',
+    },
+    common: {
+      login: 'Masuk',
+      logout: 'Keluar',
+      connected: 'Terhubung',
+      balance: 'Saldo',
+      claw: 'CLAW',
+      points: 'poin',
+      loading: 'Memuat...',
+      cancel: 'Batal',
+      confirm: 'Konfirmasi',
+      submit: 'Kirim',
+      close: 'Tutup',
+      back: 'Kembali',
+      next: 'Berikutnya',
+      refresh: 'Muat ulang',
+    },
+    signals: {
+      operations: 'Riwayat operasi',
+      noSignals: 'Belum ada sinyal',
+      publish: 'Terbitkan',
+    },
+    strategies: {
+      title: 'Strategi',
+      market: 'Pasar',
+      noStrategies: 'Belum ada strategi',
+      publish: 'Terbitkan strategi',
+      publishSuccess: 'Strategi telah diterbitkan!',
+      submit: 'Terbitkan',
+      content: 'Isi strategi',
+      symbols: 'Simbol terkait',
+      tags: 'Tagar',
+    },
+    discussions: {
+      title: 'Diskusi',
+      market: 'Pasar',
+      noDiscussions: 'Belum ada diskusi',
+      post: 'Kirim diskusi',
+      postSuccess: 'Diskusi telah diterbitkan!',
+      submit: 'Terbitkan',
+      content: 'Isi diskusi',
+      tags: 'Tagar',
+    },
+    positions: {
+      title: 'Posisi saya',
+      noPositions: 'Belum ada posisi',
+    },
+    trade: {
+      title: 'Pasang order',
+      market: 'Pasar',
+      action: 'Aksi',
+      symbol: 'Simbol',
+      price: 'Harga',
+      quantity: 'Kuantitas',
+      content: 'Catatan',
+      executedAt: 'Waktu eksekusi',
+      submit: 'Kirim order',
+      success: 'Order berhasil dipasang!',
+      buy: 'Beli',
+      sell: 'Jual',
+      short: 'Jual kosong (short)',
+      cover: 'Tutup short',
+    },
+    exchange: {
+      title: 'Tukar poin',
+      currentPoints: 'Poin saat ini',
+      currentCash: 'Kas saat ini',
+      exchangeRate: 'Kurs: 1 poin = 1.000 USD',
+      amount: 'Jumlah poin yang ditukar',
+      submit: 'Tukar sekarang',
+      success: 'Penukaran berhasil!',
+      insufficientPoints: 'Poin tidak mencukupi',
+      enterAmount: 'Masukkan jumlah poin yang ingin ditukar',
+    },
+    login: {
+      title: 'Daftar / Masuk',
+      name: 'Nama',
+      email: 'Email',
+      register: 'Daftar',
+      registering: 'Sedang mendaftar...',
+      success: 'Berhasil masuk!',
+      failed: 'Gagal masuk',
+    },
+    errors: {
+      pleaseLogin: 'Silakan masuk terlebih dahulu',
+      operationFailed: 'Operasi gagal',
+    },
+  },
 }
 
 // Get translation function
@@ -658,5 +761,13 @@ export const categoryTranslations: Record<Language, Record<string, string>> = {
     'analysis': 'Phân tích',
     'tool': 'Công cụ',
     'all': 'Tất cả danh mục',
+  },
+  id: {
+    'trading-signal': 'Sinyal trading',
+    'data-feed': 'Umpan data',
+    'model-access': 'Akses model',
+    'analysis': 'Analisis',
+    'tool': 'Alat',
+    'all': 'Semua kategori',
   },
 }

@@ -12,11 +12,12 @@ import re
 
 import pytest
 
+from analysis_agents import LANG_NAMES
 from i18n_errors import _parse_accept_language, translate
 from i18n_errors_data import MESSAGES
 
 SERVER = pathlib.Path(__file__).resolve().parent.parent
-LANGS = ("ko", "ja", "th", "vi")
+LANGS = tuple(l for l in LANG_NAMES if l != "en")
 
 # A bare "{}" or an indexed "{0}"; anything else in the string is literal.
 _SLOT = re.compile(r"\{(\d*)\}")

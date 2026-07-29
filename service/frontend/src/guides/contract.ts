@@ -7,6 +7,7 @@ export const contractGuide: PageGuide = {
     ja: 'エンタープライズ問い合わせ',
     th: 'เอนเทอร์ไพรส์ — ติดต่อเรา',
     vi: 'Enterprise — liên hệ',
+    id: 'Enterprise — hubungi kami',
   },
   summary: {
     ko: '팀 규모와 요구사항을 적어 맞춤 계약을 요청하는 한 장짜리 문의 폼입니다. 표준 플랜 대신 엔터프라이즈 계약이 필요한 조직이 사용합니다.',
@@ -23,6 +24,7 @@ export const contractGuide: PageGuide = {
         ja: '入力する項目',
         th: 'สิ่งที่ฟอร์มต้องการ',
         vi: 'Biểu mẫu yêu cầu những gì',
+        id: 'Apa yang diminta formulir ini',
       },
       bullets: {
         ko: [
@@ -64,6 +66,7 @@ export const contractGuide: PageGuide = {
         ja: '送信後の流れ',
         th: 'สิ่งที่เกิดขึ้นหลังกดส่ง',
         vi: 'Điều gì xảy ra sau khi gửi',
+        id: 'Apa yang terjadi setelah Anda mengirim',
       },
       bullets: {
         ko: [
@@ -105,6 +108,7 @@ export const contractGuide: PageGuide = {
         ja: 'プラン画面に戻る',
         th: 'กลับไปหน้าแพลน',
         vi: 'Quay lại trang gói',
+        id: 'Kembali ke daftar paket',
       },
       bullets: {
         ko: [
@@ -143,6 +147,7 @@ export const contractGuide: PageGuide = {
         ja: '問い合わせを送るにはログインが必要ですか？',
         th: 'ต้องเข้าสู่ระบบก่อนถึงจะส่งคำขอได้ไหม',
         vi: 'Tôi có cần đăng nhập để gửi yêu cầu không?',
+        id: 'Apakah saya harus masuk untuk mengirim permintaan?',
       },
       a: {
         ko: '필수는 아닙니다. 이름과 이메일만 채우면 로그인 없이도 보낼 수 있습니다. 다만 로그인한 상태로 보내면 문의가 계정 정보와 함께 전달되어 후속 처리가 수월합니다.',
@@ -159,6 +164,7 @@ export const contractGuide: PageGuide = {
         ja: 'ボタンがグレーで押せません。',
         th: 'ปุ่มเป็นสีเทาและกดไม่ได้',
         vi: 'Nút bị xám và không nhấn được.',
+        id: 'Tombolnya berwarna abu-abu dan tidak bisa diklik.',
       },
       a: {
         ko: '이름과 이메일 두 칸이 모두 채워져야 버튼이 활성화됩니다. 전송 중에도 잠시 비활성 상태가 되니, 공백만 입력하지 않았는지 확인해 보세요.',
@@ -175,6 +181,7 @@ export const contractGuide: PageGuide = {
         ja: 'ここで見積もりをすぐ確認できますか？',
         th: 'ดูใบเสนอราคาได้ทันทีที่นี่ไหม',
         vi: 'Tôi có thể xem báo giá ngay tại đây không?',
+        id: 'Bisakah saya melihat penawaran harga langsung di sini?',
       },
       a: {
         ko: '아니요. 이 페이지는 요청을 접수하기만 하고 금액을 계산하거나 표시하지 않습니다. 조건은 담당자가 회신하면서 안내합니다. 공개된 월 정액 플랜 금액은 구독 페이지에서 확인하세요.',

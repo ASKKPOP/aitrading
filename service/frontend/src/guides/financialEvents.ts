@@ -7,6 +7,7 @@ export const financialEventsGuide: PageGuide = {
     ja: '金融イベント',
     th: 'เหตุการณ์การเงิน',
     vi: 'Sự kiện tài chính',
+    id: 'Peristiwa keuangan',
   },
   summary: {
     ko: '매크로 국면, ETF 자금 흐름, 주요 종목 분석, 카테고리별 뉴스를 한 화면에 모아 놓은 시장 인텔리전스 보드입니다. 시장 배경을 빠르게 파악하고 싶을 때 먼저 여는 페이지입니다.',
@@ -23,6 +24,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '上部のステータスストリップ',
         th: 'แถบสถานะด้านบน',
         vi: 'Dải trạng thái phía trên',
+        id: 'Bilah status di bagian atas',
       },
       bullets: {
         ko: [
@@ -74,6 +76,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '注目株分析パネル',
         th: 'แผงวิเคราะห์หุ้นแนะนำ',
         vi: 'Bảng phân tích cổ phiếu nổi bật',
+        id: 'Panel analisis saham unggulan',
       },
       bullets: {
         ko: [
@@ -125,6 +128,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '強気・リスク要因と履歴表示',
         th: 'ปัจจัยบวก ปัจจัยเสี่ยง และประวัติ',
         vi: 'Yếu tố tăng giá, yếu tố rủi ro và lịch sử',
+        id: 'Faktor bullish, faktor risiko, dan riwayat',
       },
       bullets: {
         ko: [
@@ -176,6 +180,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'ニュースパネル',
         th: 'แผงข่าว',
         vi: 'Bảng tin tức',
+        id: 'Panel berita',
       },
       bullets: {
         ko: [
@@ -227,6 +232,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '右サイドパネル：マクロとETF',
         th: 'แผงด้านขวา: มหภาคและ ETF',
         vi: 'Bảng bên phải: vĩ mô và ETF',
+        id: 'Panel sisi kanan: makro dan ETF',
       },
       bullets: {
         ko: [
@@ -278,6 +284,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '次にすること',
         th: 'ทำอะไรต่อ',
         vi: 'Bước tiếp theo',
+        id: 'Langkah selanjutnya',
       },
       bullets: {
         ko: [
@@ -326,6 +333,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '「金融イベントボードは一時的に利用できません」と出ます。',
         th: 'ขึ้นว่า "บอร์ดเหตุการณ์การเงินใช้งานไม่ได้ชั่วคราว"',
         vi: 'Hiện dòng "Bảng sự kiện tài chính tạm thời không khả dụng".',
+        id: 'Muncul pesan "Papan peristiwa keuangan sementara tidak tersedia".',
       },
       a: {
         ko: '이 화면은 매크로 · ETF · 종목 · 뉴스 네 가지를 한꺼번에 불러오는데, 그중 하나라도 실패하고 아직 표시할 카테고리가 없으면 이 안내가 나옵니다. 1분마다 자동 재시도하므로 잠시 기다려 보세요.',
@@ -342,6 +350,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '「遅延クォート」と出るのはどういう意味ですか？',
         th: 'ป้าย "ราคาล่าช้า" หมายความว่าอย่างไร?',
         vi: 'Nhãn "Báo giá trễ" nghĩa là gì?',
+        id: 'Apa arti lencana "Kutipan tertunda"?',
       },
       a: {
         ko: '해당 시세가 인트라데이 실시간 피드가 아니라 오래된 값이라는 표시입니다. 시세 출처 칩에서 Intraday인지 Daily인지 확인할 수 있고, 시세 기준 시각 칩으로 얼마나 오래됐는지 알 수 있습니다. 장 마감 시간대에는 흔히 나타납니다.',
@@ -358,6 +367,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'カテゴリを押しても記事が1つもありません。',
         th: 'กดหมวดแล้วแต่ไม่มีข่าวเลย',
         vi: 'Tôi bấm một danh mục nhưng không có bài nào.',
+        id: 'Saya mengeklik sebuah kategori tetapi tidak ada artikelnya.',
       },
       a: {
         ko: '"이 카테고리에 대한 스냅샷 콘텐츠가 아직 없습니다"가 표시된 상태입니다. 카테고리 자체는 만들어졌지만 그 레인에 저장된 스냅샷이 아직 없다는 뜻이며, 다음 수집 주기에 채워집니다.',
@@ -374,6 +384,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'ここに出るシグナルどおりに売買すればよいですか？',
         th: 'ซื้อขายตามสัญญาณที่แสดงที่นี่ได้เลยไหม?',
         vi: 'Tôi có thể giao dịch theo đúng các tín hiệu hiển thị ở đây không?',
+        id: 'Bisakah saya langsung menransaksikan sinyal yang ditampilkan di sini?',
       },
       a: {
         ko: '이 페이지는 시장 배경을 정리해 보여 주는 정보 보드일 뿐, 투자 자문이 아닙니다. 값들은 수집된 데이터로 산출된 서버 측 스냅샷이며, Sooppiy는 어떤 주문도 브로커로 보내지 않습니다.',

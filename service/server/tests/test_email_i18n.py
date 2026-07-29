@@ -1,7 +1,8 @@
 """Invariants for the 5-language transactional email catalogue."""
+from analysis_agents import LANG_NAMES
 from email_i18n import verification_email
 
-LANGS = ("en", "ko", "ja", "th", "vi")
+LANGS = tuple(LANG_NAMES)
 
 
 def test_all_langs_render_code_and_tags():
@@ -20,7 +21,7 @@ def test_english_wording():
 
 def test_non_english_subjects_are_translated():
     en_subj = verification_email("1", "en")[0]
-    for lang in ("ko", "ja", "th", "vi"):
+    for lang in tuple(l for l in LANG_NAMES if l != "en"):
         assert verification_email("1", lang)[0] != en_subj, f"{lang} subject not translated"
 
 

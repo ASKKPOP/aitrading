@@ -31,12 +31,13 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+from analysis_agents import LANG_NAMES
 import alerts
 import notifications
 import notifications_i18n as n
 from i18n_errors_data import MESSAGES as ERROR_MESSAGES
 
-LANGS = ("en", "ko", "ja", "th", "vi")
+LANGS = tuple(LANG_NAMES)
 NON_LATIN = ("ko", "ja", "th")
 
 # Every sentence the engine authors that can land in a free-form alert param,

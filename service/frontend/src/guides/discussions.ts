@@ -7,6 +7,7 @@ export const discussionsGuide: PageGuide = {
     ja: 'ディスカッション',
     th: 'การสนทนา',
     vi: 'Thảo luận',
+    id: 'Diskusi',
   },
   summary: {
     ko: '금융 주제를 자유롭게 논의하는 공개 게시판입니다. 시장 흐름이나 종목에 대한 질문을 던지고, 답글로 의견을 주고받으며, 내 글에 달린 답글 중 가장 유용한 것을 수락할 수 있습니다.',
@@ -23,6 +24,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'フィードの並べ替えとページ移動',
         th: 'การเรียงลำดับและเปลี่ยนหน้าฟีด',
         vi: 'Sắp xếp và phân trang nguồn tin',
+        id: 'Mengurutkan dan membuka halaman umpan',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const discussionsGuide: PageGuide = {
         ja: '最近の通知カードの活用',
         th: 'ใช้การ์ดการแจ้งเตือนล่าสุด',
         vi: 'Dùng thẻ Thông báo gần đây',
+        id: 'Menggunakan kartu Notifikasi Terkini',
       },
       bullets: {
         ko: [
@@ -115,6 +118,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'ディスカッションを投稿する',
         th: 'โพสต์การสนทนา',
         vi: 'Đăng bài thảo luận',
+        id: 'Mengirim diskusi',
       },
       bullets: {
         ko: [
@@ -166,6 +170,7 @@ export const discussionsGuide: PageGuide = {
         ja: '返信と返信の採用',
         th: 'การตอบกลับและการยอมรับคำตอบ',
         vi: 'Trả lời và chấp nhận câu trả lời',
+        id: 'Membalas dan menerima balasan',
       },
       bullets: {
         ko: [
@@ -212,6 +217,7 @@ export const discussionsGuide: PageGuide = {
         ja: '作成者をフォローする',
         th: 'ติดตามผู้เขียน',
         vi: 'Theo dõi tác giả',
+        id: 'Mengikuti penulis',
       },
       bullets: {
         ko: [
@@ -258,6 +264,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'ディスカッションのマナー',
         th: 'มารยาทในการสนทนา',
         vi: 'Quy tắc thảo luận',
+        id: 'Etika berdiskusi',
       },
       bullets: {
         ko: [
@@ -311,6 +318,7 @@ export const discussionsGuide: PageGuide = {
         ja: '投稿も返信もできません。',
         th: 'ฉันโพสต์หรือตอบกลับไม่ได้',
         vi: 'Tôi không đăng hay trả lời được.',
+        id: 'Saya tidak bisa mengirim atau membalas.',
       },
       a: {
         ko: '로그인이 필요합니다. 비로그인 상태에서는 작성 버튼이 나타나지 않고, 답글 영역에도 "로그인 후 답글" 안내만 보입니다.',
@@ -327,6 +335,7 @@ export const discussionsGuide: PageGuide = {
         ja: '返信に「採用」ボタンが表示されないのはなぜですか？',
         th: 'ทำไมคำตอบไม่มีปุ่ม "ยอมรับ"?',
         vi: 'Vì sao trả lời không có nút "Chấp nhận"?',
+        id: 'Kenapa tidak ada tombol "Terima" pada balasan?',
       },
       a: {
         ko: '수락은 글쓴이만 할 수 있습니다. 다른 사람이 시작한 토론에서는 그 버튼이 나타나지 않으며, 이미 수락된 답글에는 버튼 대신 "수락됨" 표시가 붙습니다.',
@@ -343,6 +352,7 @@ export const discussionsGuide: PageGuide = {
         ja: '「最近の通知」カードが表示されません。',
         th: 'ไม่เห็นการ์ดการแจ้งเตือนล่าสุด',
         vi: 'Không thấy thẻ Thông báo gần đây.',
+        id: 'Kartu Notifikasi Terkini tidak ada.',
       },
       a: {
         ko: '이 카드는 로그인했고 받은 토론 알림이 하나 이상 있을 때만 표시됩니다. 아직 알림이 없다면 카드 자체가 나타나지 않는 것이 정상입니다.',
@@ -359,6 +369,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'ここで交わされた意見は実際の売買につながりますか？',
         th: 'ความเห็นที่แลกเปลี่ยนที่นี่นำไปสู่การซื้อขายจริงหรือไม่?',
         vi: 'Quan điểm trao đổi ở đây có dẫn tới giao dịch thật không?',
+        id: 'Apakah pandangan yang dipertukarkan di sini menjadi transaksi sungguhan?',
       },
       a: {
         ko: '아니요. 토론은 의견과 근거를 공유하는 공간일 뿐이며, Sooppiy는 증권사로 주문을 보내지 않습니다. 투자 판단과 책임은 본인에게 있습니다.',

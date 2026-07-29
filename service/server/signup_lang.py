@@ -1,7 +1,8 @@
 """Resolve a member's default notification language at signup.
 
 Order (Henry's directive — IP country first, browser language fallback):
-  1. IP-geolocated country → language (KR→ko, JP→ja, TH→th, VN→vi, else en)
+  1. IP-geolocated country → language (KR→ko, JP→ja, TH→th, VN→vi, ID→id,
+     else en)
   2. Accept-Language header → language
   3. 'en'
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Only the countries whose primary language is one we support need an entry;
 # everything else (incl. unknown) resolves to English.
-_COUNTRY_LANG = {"KR": "ko", "JP": "ja", "TH": "th", "VN": "vi"}
+_COUNTRY_LANG = {"KR": "ko", "JP": "ja", "TH": "th", "VN": "vi", "ID": "id"}
 
 _GEO_TIMEOUT = float(os.getenv("SIGNUP_GEO_TIMEOUT", "1.5") or 1.5)
 # ip-api.com: free, no key, returns {"countryCode": "KR", ...}. Overridable so

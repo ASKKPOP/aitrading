@@ -7,6 +7,7 @@ export const positionsGuide: PageGuide = {
     ja: 'ポジション',
     th: 'สถานะ',
     vi: 'Vị thế',
+    id: 'Posisi',
   },
   summary: {
     ko: '현재 열려 있는 모든 포지션과 가용 현금을 한 화면에서 보는 조회 전용 페이지입니다. 직접 넣은 주문과 다른 에이전트를 따라 복제된 포지션이 함께 표시됩니다.',
@@ -23,6 +24,7 @@ export const positionsGuide: PageGuide = {
         ja: 'このページに表示されるもの',
         th: 'สิ่งที่คุณเห็นบนหน้านี้',
         vi: 'Những gì bạn thấy trên trang này',
+        id: 'Apa yang Anda lihat di halaman ini',
       },
       bullets: {
         ko: [
@@ -69,6 +71,7 @@ export const positionsGuide: PageGuide = {
         ja: '数値の読み方',
         th: 'การอ่านตัวเลขในตาราง',
         vi: 'Đọc các con số',
+        id: 'Membaca angka-angkanya',
       },
       bullets: {
         ko: [
@@ -120,6 +123,7 @@ export const positionsGuide: PageGuide = {
         ja: 'ソースタグ: 自分とコピー済み',
         th: 'แท็กแหล่งที่มา: ตนเอง กับ คัดลอกแล้ว',
         vi: 'Thẻ Nguồn: Tự và Đã sao chép',
+        id: 'Tanda Sumber: Sendiri versus Salinan',
       },
       bullets: {
         ko: [
@@ -166,6 +170,7 @@ export const positionsGuide: PageGuide = {
         ja: '更新の挙動と制限',
         th: 'พฤติกรรมการรีเฟรชและข้อจำกัด',
         vi: 'Cách làm mới và giới hạn',
+        id: 'Perilaku pemuatan ulang dan batasannya',
       },
       bullets: {
         ko: [
@@ -214,6 +219,7 @@ export const positionsGuide: PageGuide = {
         ja: 'ポジションテーブルが空です。',
         th: 'ตารางสถานะของฉันว่างเปล่า',
         vi: 'Bảng vị thế của tôi trống.',
+        id: 'Tabel posisi saya kosong.',
       },
       a: {
         ko: '현재 열려 있는 포지션이 없다는 뜻입니다. 이미 정리한 거래는 이 표에 남지 않고 미결제 포지션만 표시됩니다. 방금 주문을 넣었는데도 비어 있다면, 자동 갱신 주기를 기다리거나 페이지를 새로고침해 보세요.',
@@ -230,6 +236,7 @@ export const positionsGuide: PageGuide = {
         ja: '自分で出していないポジションがあります。',
         th: 'มีสถานะที่ฉันไม่ได้วางเอง',
         vi: 'Có một vị thế tôi chưa từng đặt.',
+        id: 'Ada posisi yang tidak pernah saya buat.',
       },
       a: {
         ko: '출처 열의 태그를 확인하세요. "복제됨"이라면 팔로우 중인 에이전트의 시그널을 따라 자동으로 열린 포지션입니다. 이런 포지션이 생기지 않게 하려면 해당 에이전트에 대한 팔로우 및 복제 설정을 조정해야 합니다.',
@@ -246,6 +253,7 @@ export const positionsGuide: PageGuide = {
         ja: '現在価格が「-」と表示されます。',
         th: 'ราคาปัจจุบันแสดงเป็น "-"',
         vi: 'Giá hiện tại hiển thị "-".',
+        id: 'Harga saat ini menampilkan "-".',
       },
       a: {
         ko: '아직 이 종목의 최신 시세를 받아오지 못했다는 뜻입니다. 시세는 실시간 스트리밍이 아니라 주기적인 폴링으로 채워지므로, 방금 연 포지션이나 조회가 어려운 종목에서는 잠시 비어 있을 수 있습니다. 다음 갱신을 기다려 보세요.',

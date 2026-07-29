@@ -171,6 +171,29 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:trailing_lock': 'khóa lợi nhuận trượt',
             'stop_event:liq_cushion': 'vùng đệm thanh lý',
         },
+        'id': {
+            'idle_retired': 'penarikan karena tidak ada transaksi',
+            'fee_infeasible_retired': 'penarikan karena biaya melebihi potensi untung',
+            'adapt_retired': 'penarikan adaptif',
+            'thesis_invalidated': 'pembatalan tesis',
+            'thesis_decayed': 'pelemahan tesis',
+            'synthetic_liquidation': 'likuidasi paksa',
+            'user_stop': 'penghentian manual',
+            'fleet_stop_all': 'penghentian seluruh fleet',
+            'fleet_profit_target': 'target profit fleet',
+            'fleet_breaker': 'pemutus sirkuit fleet',
+            'agent_deleted': 'penghapusan agen',
+            'user_master_remove': 'sakelar utama',
+            'stop_eval_failed': 'kegagalan evaluasi stop berulang',
+            'positions_held': 'penghentian dengan posisi masih terbuka',
+            'stop_event:at_time': 'batas waktunya',
+            'stop_event:price_cross': 'garis harganya',
+            'stop_event:max_trades': 'batas jumlah transaksinya',
+            'stop_event:max_loss': 'batas kerugian maksimumnya',
+            'stop_event:profit_target': 'target profitnya',
+            'stop_event:trailing_lock': 'penguncian profit beruntunnya',
+            'stop_event:liq_cushion': 'bantalan likuidasi',
+        },
     },
     'comparator': {
         'en': {
@@ -193,6 +216,10 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'above': 'trên',
             'below': 'dưới',
         },
+        'id': {
+            'above': 'di atas',
+            'below': 'di bawah',
+        },
     },
     'outcome': {
         'en': {
@@ -214,6 +241,10 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         'vi': {
             'flatten': 'đang đóng vị thế.',
             'hold': 'đang giữ vị thế dưới sự theo dõi của SL/TP watcher.',
+        },
+        'id': {
+            'flatten': 'menutup posisi.',
+            'hold': 'menahan posisi di bawah pengawas SL/TP.',
         },
     },
     'trigger_label': {
@@ -241,6 +272,11 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_loss': 'Cắt lỗ',
             'take_profit': 'Chốt lời',
             'time_stop': 'Dừng theo thời gian',
+        },
+        'id': {
+            'stop_loss': 'stop loss',
+            'take_profit': 'take profit',
+            'time_stop': 'stop waktu',
         },
     },
     'action': {
@@ -274,6 +310,12 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'short': 'bán khống',
             'cover': 'mua bù',
         },
+        'id': {
+            'buy': 'beli',
+            'sell': 'jual',
+            'short': 'short',
+            'cover': 'cover',
+        },
     },
     'action_upper': {
         'en': {
@@ -305,6 +347,12 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'SELL': 'BÁN',
             'SHORT': 'BÁN KHỐNG',
             'COVER': 'MUA BÙ',
+        },
+        'id': {
+            'BUY': 'BELI',
+            'SELL': 'JUAL',
+            'SHORT': 'SHORT',
+            'COVER': 'COVER',
         },
     },
     'side': {
@@ -338,6 +386,12 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'short': 'bán khống',
             'cover': 'mua bù',
         },
+        'id': {
+            'buy': 'beli',
+            'sell': 'jual',
+            'short': 'short',
+            'cover': 'cover',
+        },
     },
     'final': {
         'en': {
@@ -359,6 +413,10 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         'vi': {
             'cancelled': 'đã hủy',
             'rejected': 'bị từ chối',
+        },
+        'id': {
+            'cancelled': 'dibatalkan',
+            'rejected': 'ditolak',
         },
     },
     'status': {
@@ -397,6 +455,13 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stopping': 'đang dừng',
             'stopped': 'đã dừng',
         },
+        'id': {
+            'armed': 'siap',
+            'running': 'berjalan',
+            'paused': 'dijeda',
+            'stopping': 'menghentikan',
+            'stopped': 'berhenti',
+        },
     },
 }
 
@@ -416,6 +481,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
                '{symbol} ({market}): {triggers}. {verdict} รอบถัดไปของรัน #{run_id} จะยกระดับไปยังทีมวิเคราะห์ AI เต็มรูปแบบ'),
         'vi': ('Sự kiện nóng: {symbol} — vị thế {side} của bạn',
                '{symbol} ({market}): {triggers}. {verdict} Chu kỳ tiếp theo của run #{run_id} sẽ được nâng lên bàn AI đầy đủ.'),
+        'id': ('Isu penting: {symbol} — posisi {side} Anda',
+               '{symbol} ({market}): {triggers}. {verdict} Run #{run_id} akan dinaikkan ke meja AI penuh pada siklus berikutnya.'),
     },
     'breaker': {
         'en': ('Circuit breaker HALT ({scope})', 'Trading halted: {reason}'),
@@ -423,6 +490,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('サーキットブレーカー発動（{scope}）', '取引停止：{reason}'),
         'th': ('เซอร์กิตเบรกเกอร์: หยุดการเทรด ({scope})', 'การเทรดถูกระงับ: {reason}'),
         'vi': ('Ngắt mạch giao dịch — DỪNG ({scope})', 'Đã dừng giao dịch: {reason}'),
+        'id': ('Pemutus sirkuit BERHENTI ({scope})',
+               'Perdagangan dihentikan: {reason}'),
     },
     'position_closed': {
         'en': ('{trigger_label} — {symbol}', 'Watcher closed {symbol} ({market}) at ${price}'),
@@ -430,6 +499,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('{trigger_label} — {symbol}', 'ウォッチャーが{symbol}（{market}）を${price}でクローズしました'),
         'th': ('{trigger_label} — {symbol}', 'ระบบเฝ้าระวังปิดสถานะ {symbol} ({market}) ที่ราคา ${price}'),
         'vi': ('{trigger_label} — {symbol}', 'Bộ theo dõi đã đóng {symbol} ({market}) tại ${price}'),
+        'id': ('{trigger_label} — {symbol}',
+               'Pengawas menutup {symbol} ({market}) di ${price}'),
     },
     'watch': {
         'en': ('Watch: {name}', '{metric}{where} is {value}{unit} ({comparator} your {threshold}{unit} threshold)'),
@@ -437,6 +508,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('ウォッチ: {name}', '{metric}{where}は{value}{unit}です（しきい値{threshold}{unit}を{comparator}）'),
         'th': ('เฝ้าระวัง: {name}', '{metric}{where} อยู่ที่ {value}{unit} ({comparator}เกณฑ์ {threshold}{unit} ของคุณ)'),
         'vi': ('Theo dõi: {name}', '{metric}{where} hiện là {value}{unit} ({comparator} ngưỡng {threshold}{unit} của bạn)'),
+        'id': ('Pantauan: {name}',
+               '{metric}{where} berada di {value}{unit} ({comparator} ambang batas {threshold}{unit} Anda)'),
     },
     'run_report': {
         'en': ('Run #{run_id} {symbol} P&L digest', 'Run #{run_id} {symbol} ({market}) — period {period_start} → {period_end}: P&L ${pnl}, {trades} trade(s). Status: {status}.'),
@@ -444,6 +517,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} {symbol} 損益レポート', 'Run #{run_id} {symbol}（{market}）— 期間 {period_start} → {period_end}：損益 ${pnl}、取引{trades}件。ステータス：{status}。'),
         'th': ('รัน #{run_id} {symbol} สรุปกำไรขาดทุน', 'รัน #{run_id} {symbol} ({market}) — ช่วงเวลา {period_start} → {period_end}: กำไรขาดทุน ${pnl}, {trades} รายการเทรด สถานะ: {status}'),
         'vi': ('Tóm tắt lãi/lỗ Run #{run_id} {symbol}', 'Run #{run_id} {symbol} ({market}) — kỳ {period_start} → {period_end}: Lãi/lỗ ${pnl}, {trades} lệnh. Trạng thái: {status}.'),
+        'id': ('Ringkasan laba rugi run #{run_id} {symbol}',
+               'Run #{run_id} {symbol} ({market}) — periode {period_start} → {period_end}: laba rugi ${pnl}, {trades} transaksi. Status: {status}.'),
     },
     'run_threshold_loss': {
         'en': ('Run #{run_id} down {loss_pct}%', '{symbol} run P&L ${total} crossed -{loss_pct}% of ${base}.'),
@@ -451,6 +526,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} が{loss_pct}%下落', '{symbol}のRun損益${total}が${base}の−{loss_pct}%を下回りました。'),
         'th': ('รัน #{run_id} ขาดทุน {loss_pct}%', 'กำไรขาดทุนของรัน {symbol} ${total} ทะลุ -{loss_pct}% ของ ${base}'),
         'vi': ('Run #{run_id} giảm {loss_pct}%', 'Lãi/lỗ run {symbol} ${total} đã vượt ngưỡng −{loss_pct}% của ${base}.'),
+        'id': ('Run #{run_id} turun {loss_pct}%',
+               'Laba rugi run {symbol} sebesar ${total} melewati -{loss_pct}% dari ${base}.'),
     },
     'run_threshold_profit': {
         'en': ('Run #{run_id} up {profit_pct}%', '{symbol} run P&L ${total} crossed +{profit_pct}% of ${base}.'),
@@ -458,6 +535,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} が{profit_pct}%上昇', '{symbol}のRun損益${total}が${base}の+{profit_pct}%を上回りました。'),
         'th': ('รัน #{run_id} กำไร {profit_pct}%', 'กำไรขาดทุนของรัน {symbol} ${total} ทะลุ +{profit_pct}% ของ ${base}'),
         'vi': ('Run #{run_id} tăng {profit_pct}%', 'Lãi/lỗ run {symbol} ${total} đã vượt ngưỡng +{profit_pct}% của ${base}.'),
+        'id': ('Run #{run_id} naik {profit_pct}%',
+               'Laba rugi run {symbol} sebesar ${total} melewati +{profit_pct}% dari ${base}.'),
     },
     'gateway_down_live_order_failed': {
         'en': ('Live order did not reach your broker', '{symbol}: {reason}'),
@@ -465,6 +544,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('実売買注文がブローカーに届きませんでした', '{symbol}：{reason}'),
         'th': ('คำสั่งซื้อขายจริงไม่ถึงโบรกเกอร์ของคุณ', '{symbol}: {reason}'),
         'vi': ('Lệnh live chưa đến được sàn môi giới của bạn', '{symbol}: {reason}'),
+        'id': ('Order live tidak sampai ke broker Anda',
+               '{symbol}: {reason}'),
     },
     'automation_trade_executed': {
         'en': ('{action_upper} {symbol}', 'Automation executed {action} {qty} {symbol} @ ${entry} (confidence {confidence})'),
@@ -472,6 +553,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('{action_upper} {symbol}', '自動売買が{action} {qty} {symbol}を${entry}で実行しました（信頼度 {confidence}）'),
         'th': ('{action_upper} {symbol}', 'ระบบอัตโนมัติดำเนินการ {action} {qty} {symbol} ที่ราคา ${entry} (ความเชื่อมั่น {confidence})'),
         'vi': ('{action_upper} {symbol}', 'Tự động hóa đã thực hiện {action} {qty} {symbol} @ ${entry} (độ tin cậy {confidence})'),
+        'id': ('{action_upper} {symbol}',
+               'Otomatisasi mengeksekusi {action} {qty} {symbol} @ ${entry} (keyakinan {confidence})'),
     },
     'order_drift_cancelled_rejected': {
         'en': ('Broker fill differs from platform record', '{symbol}: your {side} order was {final} by the broker AFTER submission — the platform recorded it at the requested size ({requested}). Review the position on your broker and correct manually if needed.'),
@@ -479,6 +562,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('ブローカーの約定内容がプラットフォームの記録と異なります', '{symbol}：提出後、ブローカー側で{side}注文が{final}されました — プラットフォームには注文時の数量（{requested}）で記録されています。ブローカー側のポジションを確認し、必要に応じて手動で修正してください。'),
         'th': ('ยอดที่โบรกเกอร์กรอกต่างจากบันทึกของแพลตฟอร์ม', '{symbol}: คำสั่ง {side} ของคุณถูก{final}โดยโบรกเกอร์หลังจากส่งคำสั่งไปแล้ว — แพลตฟอร์มบันทึกไว้ที่ขนาดที่ร้องขอ ({requested}) กรุณาตรวจสอบสถานะที่โบรกเกอร์ของคุณและแก้ไขด้วยตนเองหากจำเป็น'),
         'vi': ('Khớp lệnh của sàn khác với ghi nhận trên nền tảng', '{symbol}: lệnh {side} của bạn đã bị {final} bởi sàn môi giới SAU KHI gửi — nền tảng vẫn ghi nhận theo khối lượng yêu cầu ({requested}). Vui lòng kiểm tra vị thế trên sàn môi giới và tự điều chỉnh nếu cần.'),
+        'id': ('Eksekusi broker berbeda dari catatan platform',
+               '{symbol}: order {side} Anda {final} oleh broker SETELAH dikirim — platform mencatatnya pada ukuran yang diminta ({requested}). Periksa posisi di broker Anda dan perbaiki secara manual bila perlu.'),
     },
     'order_drift_partial_fill': {
         'en': ('Broker fill differs from platform record', '{symbol}: broker confirmed {filled_txt} of the requested {requested} {side} — the platform ledger recorded the requested size. Review and correct manually.'),
@@ -486,6 +571,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('ブローカーの約定内容がプラットフォームの記録と異なります', '{symbol}：ブローカーは注文数量{requested} {side}のうち{filled_txt}の約定を確認しました — プラットフォームの台帳には注文時の数量が記録されています。内容を確認し、手動で修正してください。'),
         'th': ('ยอดที่โบรกเกอร์กรอกต่างจากบันทึกของแพลตฟอร์ม', '{symbol}: โบรกเกอร์ยืนยันการเติมเต็ม {filled_txt} จากคำสั่ง {side} ที่ร้องขอ {requested} — บัญชีของแพลตฟอร์มบันทึกไว้ที่ขนาดที่ร้องขอ กรุณาตรวจสอบและแก้ไขด้วยตนเอง'),
         'vi': ('Khớp lệnh của sàn khác với ghi nhận trên nền tảng', '{symbol}: sàn môi giới xác nhận khớp {filled_txt} trên tổng {requested} {side} yêu cầu — sổ lệnh của nền tảng vẫn ghi nhận theo khối lượng yêu cầu. Vui lòng kiểm tra và tự điều chỉnh.'),
+        'id': ('Eksekusi broker berbeda dari catatan platform',
+               '{symbol}: broker mengonfirmasi {filled_txt} dari {requested} {side} yang diminta — buku platform mencatat ukuran yang diminta. Periksa dan perbaiki secara manual.'),
     },
     'gateway_down_ibkr_session': {
         'en': ('Your IBKR gateway session is down', '{detail} — live and shadow IBKR orders will not fill until you log in to the Client Portal Gateway again.'),
@@ -493,6 +580,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('IBKRゲートウェイセッションが切断されています', '{detail} — Client Portal Gatewayに再ログインするまで、実売買およびシャドーのIBKR注文は約定しません。'),
         'th': ('เซสชันเกตเวย์ IBKR ของคุณขาดการเชื่อมต่อ', '{detail} — คำสั่งซื้อขาย IBKR ทั้งแบบจริงและแบบเงา (shadow) จะไม่ถูกดำเนินการจนกว่าคุณจะเข้าสู่ระบบ Client Portal Gateway อีกครั้ง'),
         'vi': ('Phiên gateway IBKR của bạn đã ngắt kết nối', '{detail} — các lệnh IBKR live và shadow sẽ không được khớp cho đến khi bạn đăng nhập lại vào Client Portal Gateway.'),
+        'id': ('Sesi gateway IBKR Anda terputus',
+               '{detail} — order IBKR live dan shadow tidak akan tereksekusi sampai Anda masuk kembali ke Client Portal Gateway.'),
     },
     'run_dup_key': {
         'en': ('Run #{run_id} halted: duplicate active run', 'Another run with the same settings already owns {symbol} ({market}) for this agent, so this one was halted before it could race the same signal.'),
@@ -500,6 +589,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 停止：アクティブなRunが重複', '同じ設定の別のRunがこのエージェントで既に{symbol}（{market}）を保有しているため、同一シグナルの競合を避けてこのRunは開始前に停止されました。'),
         'th': ('รัน #{run_id} ถูกระงับ: มีรันที่ทำงานซ้ำกันอยู่', 'มีอีกรันหนึ่งที่ตั้งค่าเหมือนกันครอบครอง {symbol} ({market}) อยู่แล้วสำหรับเอเจนต์นี้ รันนี้จึงถูกระงับก่อนที่จะแย่งชิงสัญญาณเดียวกัน'),
         'vi': ('Run #{run_id} đã dừng: trùng run đang hoạt động', 'Một run khác với cùng cấu hình đã đang quản lý {symbol} ({market}) cho agent này, nên run này bị dừng trước khi có thể tranh chấp cùng tín hiệu.'),
+        'id': ('Run #{run_id} dihentikan: run aktif ganda',
+               'Run lain dengan pengaturan yang sama sudah memegang {symbol} ({market}) untuk agen ini, sehingga run ini dihentikan sebelum sempat berebut sinyal yang sama.'),
     },
     'run_armed_timeout': {
         'en': ('Run #{run_id} timed out while armed', 'Start condition for {symbol} never fired within {hours}h — the run was stopped.'),
@@ -507,6 +598,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 待機中にタイムアウト', '{symbol}の開始条件が{hours}時間以内に発生しなかったため、Runは停止されました。'),
         'th': ('รัน #{run_id} หมดเวลาขณะอยู่ในสถานะพร้อมทำงาน', 'เงื่อนไขเริ่มต้นสำหรับ {symbol} ไม่ทำงานภายใน {hours} ชั่วโมง — รันถูกหยุด'),
         'vi': ('Run #{run_id} hết hạn khi đang chờ kích hoạt', 'Điều kiện khởi động cho {symbol} không được kích hoạt trong vòng {hours}h — run đã bị dừng.'),
+        'id': ('Run #{run_id} kedaluwarsa saat berstatus siap',
+               'Kondisi mulai untuk {symbol} tidak pernah terpicu dalam {hours} jam — run dihentikan.'),
     },
     'run_stop_eval_failed': {
         'en': ('Run #{run_id} stopped: cannot evaluate stops', '{failures} consecutive stop-evaluation failures ({exc}) — stopping for safety.'),
@@ -514,6 +607,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 停止：ストップ条件を評価できません', 'ストップ条件の評価が{failures}回連続で失敗しました（{exc}）— 安全のため停止します。'),
         'th': ('รัน #{run_id} ถูกหยุด: ไม่สามารถประเมินจุดหยุดขาดทุนได้', 'การประเมินจุดหยุดล้มเหลวติดต่อกัน {failures} ครั้ง ({exc}) — หยุดรันเพื่อความปลอดภัย'),
         'vi': ('Run #{run_id} đã dừng: không thể đánh giá điểm dừng', '{failures} lần đánh giá điểm dừng thất bại liên tiếp ({exc}) — dừng lại để đảm bảo an toàn.'),
+        'id': ('Run #{run_id} dihentikan: stop tidak dapat dievaluasi',
+               '{failures} kegagalan evaluasi stop berturut-turut ({exc}) — dihentikan demi keamanan.'),
     },
     'run_stop_eval_paused': {
         'en': ('Run #{run_id} paused: stop check failed', 'Stop-condition evaluation failed ({exc}); entries are paused until evaluation recovers.'),
@@ -521,6 +616,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 一時停止：ストップ確認に失敗', 'ストップ条件の評価に失敗しました（{exc}）。評価が回復するまでエントリーを一時停止します。'),
         'th': ('รัน #{run_id} ถูกหยุดชั่วคราว: การตรวจสอบจุดหยุดล้มเหลว', 'การประเมินเงื่อนไขจุดหยุดล้มเหลว ({exc}) การเข้าเทรดใหม่จะถูกหยุดชั่วคราวจนกว่าการประเมินจะกลับมาทำงานปกติ'),
         'vi': ('Run #{run_id} tạm dừng: kiểm tra điểm dừng thất bại', 'Đánh giá điều kiện dừng thất bại ({exc}); các lệnh vào mới bị tạm dừng cho đến khi việc đánh giá hoạt động trở lại.'),
+        'id': ('Run #{run_id} dijeda: pemeriksaan stop gagal',
+               'Evaluasi kondisi stop gagal ({exc}); entri baru dijeda sampai evaluasi pulih.'),
     },
     'run_stop_event': {
         'en': ('Run #{run_id} stop event: {reason}', '{symbol} ({market}) hit {reason} — {outcome}'),
@@ -528,6 +625,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} ストップイベント：{reason}', '{symbol}（{market}）が{reason}に到達 — {outcome}'),
         'th': ('รัน #{run_id} เกิดเหตุการณ์หยุด: {reason}', '{symbol} ({market}) ถึง{reason} — {outcome}'),
         'vi': ('Run #{run_id} sự kiện dừng: {reason}', '{symbol} ({market}) đã chạm {reason} — {outcome}'),
+        'id': ('Peristiwa stop run #{run_id}: {reason}',
+               '{symbol} ({market}) menyentuh {reason} — {outcome}'),
     },
     'run_goal_restart': {
         'en': ('Run #{run_id} reached its goal — restarted as #{new_run_id}', '{symbol} ({market}) hit {reason}; a new run with the same settings is live.'),
@@ -535,6 +634,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} が目標達成 — #{new_run_id}として再開', '{symbol}（{market}）が{reason}に到達。同じ設定の新しいRunが稼働を開始しました。'),
         'th': ('รัน #{run_id} บรรลุเป้าหมาย — เริ่มใหม่เป็น #{new_run_id}', '{symbol} ({market}) ถึง{reason} มีรันใหม่ที่ตั้งค่าเหมือนกันเริ่มทำงานแล้ว'),
         'vi': ('Run #{run_id} đã đạt mục tiêu — khởi động lại thành #{new_run_id}', '{symbol} ({market}) đã chạm {reason}; một run mới với cùng cấu hình đã được kích hoạt.'),
+        'id': ('Run #{run_id} mencapai targetnya — dimulai ulang sebagai #{new_run_id}',
+               '{symbol} ({market}) menyentuh {reason}; run baru dengan pengaturan yang sama sudah aktif.'),
     },
     'run_positions_held': {
         'en': ('Run #{run_id} stopped with positions held', 'Flatten stayed blocked ({why}) past {minutes}min — the position remains open under the SL/TP watcher.'),
@@ -542,6 +643,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 停止（ポジション保有中）', '手仕舞いが{minutes}分を超えてブロックされたままです（{why}）— ポジションはSL/TPウォッチャー管理下で保有されたままです。'),
         'th': ('รัน #{run_id} หยุดโดยยังถือสถานะอยู่', 'การปิดสถานะทั้งหมดยังคงถูกบล็อก ({why}) เกิน {minutes} นาที — สถานะยังคงเปิดอยู่ภายใต้การเฝ้าระวังของ SL/TP'),
         'vi': ('Run #{run_id} đã dừng nhưng vẫn còn giữ vị thế', 'Việc đóng vị thế vẫn bị chặn ({why}) quá {minutes} phút — vị thế vẫn mở dưới sự theo dõi của SL/TP watcher.'),
+        'id': ('Run #{run_id} berhenti dengan posisi masih terbuka',
+               'Penutupan posisi tetap terhalang ({why}) lebih dari {minutes} menit — posisi tetap terbuka di bawah pengawas SL/TP.'),
     },
     'run_infeasible': {
         'en': ('Run #{run_id} paused: cannot fund trades', '{count} consecutive cycles with insufficient cash for the configured max bet — paused until funds or settings change.'),
@@ -549,6 +652,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 一時停止：取引資金を確保できません', '設定された最大ベット額に対して資金が不足しているサイクルが{count}回連続しました — 資金または設定が変更されるまで一時停止します。'),
         'th': ('รัน #{run_id} ถูกหยุดชั่วคราว: ไม่สามารถจัดสรรเงินทุนสำหรับการเทรดได้', 'เงินสดไม่เพียงพอสำหรับวงเงินเดิมพันสูงสุดที่ตั้งไว้ติดต่อกัน {count} รอบ — หยุดชั่วคราวจนกว่าเงินทุนหรือการตั้งค่าจะเปลี่ยนแปลง'),
         'vi': ('Run #{run_id} tạm dừng: không đủ vốn để giao dịch', '{count} chu kỳ liên tiếp không đủ tiền mặt cho mức đặt cược tối đa đã cấu hình — tạm dừng cho đến khi có thêm vốn hoặc thay đổi cài đặt.'),
+        'id': ('Run #{run_id} dijeda: dana transaksi tidak cukup',
+               '{count} siklus berturut-turut dengan kas yang tidak cukup untuk taruhan maksimum yang diatur — dijeda sampai dana atau pengaturan berubah.'),
     },
     'run_sub_lapsed': {
         'en': ('Run #{run_id} paused: subscription expired', 'Your plan lapsed, so the run was paused (positions and stops stay managed). Renew to resume.'),
@@ -556,6 +661,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('Run #{run_id} 一時停止：サブスクリプションが期限切れ', 'プランの期限が切れたため、Runは一時停止されました（ポジションとストップの管理は継続します）。再開するには更新してください。'),
         'th': ('รัน #{run_id} ถูกหยุดชั่วคราว: สมาชิกภาพหมดอายุ', 'แผนสมาชิกของคุณหมดอายุ รันจึงถูกหยุดชั่วคราว (สถานะและจุดหยุดยังคงถูกจัดการอยู่) ต่ออายุเพื่อเริ่มทำงานอีกครั้ง'),
         'vi': ('Run #{run_id} tạm dừng: gói đăng ký đã hết hạn', 'Gói của bạn đã hết hạn nên run bị tạm dừng (vị thế và điểm dừng vẫn được quản lý). Gia hạn để tiếp tục.'),
+        'id': ('Run #{run_id} dijeda: langganan berakhir',
+               'Paket Anda berakhir sehingga run dijeda (posisi dan stop tetap dikelola). Perpanjang untuk melanjutkan.'),
     },
     'run_trade_executed': {
         'en': ('{action_upper} {symbol}', 'Run #{run_id} executed {action} {qty} {symbol} @ ${entry} (confidence {confidence})'),
@@ -563,6 +670,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('{action_upper} {symbol}', 'Run #{run_id}が{action} {qty} {symbol}を${entry}で実行しました（信頼度 {confidence}）'),
         'th': ('{action_upper} {symbol}', 'รัน #{run_id} ดำเนินการ {action} {qty} {symbol} ที่ราคา ${entry} (ความเชื่อมั่น {confidence})'),
         'vi': ('{action_upper} {symbol}', 'Run #{run_id} đã thực hiện {action} {qty} {symbol} @ ${entry} (độ tin cậy {confidence})'),
+        'id': ('{action_upper} {symbol}',
+               'Run #{run_id} mengeksekusi {action} {qty} {symbol} @ ${entry} (keyakinan {confidence})'),
     },
     'fleet_watchdog_eval_failed': {
         'en': ('Fleet #{fleet_id}: equity evaluation failing', 'Marked-equity evaluation has failed on stale prices for {fails} consecutive passes — new entries are paused.'),
@@ -570,6 +679,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('フリート #{fleet_id}：資産評価が失敗しています', '時価評価が古い価格データにより{fails}回連続で失敗しました — 新規エントリーを一時停止します。'),
         'th': ('ฟลีท #{fleet_id}: การประเมินมูลค่าพอร์ตล้มเหลว', 'การประเมินมูลค่าพอร์ต (marked-equity) ล้มเหลวเนื่องจากราคาไม่อัปเดตติดต่อกัน {fails} ครั้ง — การเข้าเทรดใหม่ถูกหยุดชั่วคราว'),
         'vi': ('Fleet #{fleet_id}: đánh giá vốn chủ sở hữu thất bại', 'Đánh giá vốn theo giá thị trường thất bại do giá dữ liệu cũ trong {fails} lần liên tiếp — các lệnh vào mới bị tạm dừng.'),
+        'id': ('Fleet #{fleet_id}: evaluasi ekuitas gagal',
+               'Evaluasi ekuitas berbasis harga pasar gagal karena harga usang selama {fails} kali berturut-turut — entri baru dijeda.'),
     },
     'fleet_watchdog_stalled': {
         'en': ('Fleet #{fleet_id}: supervision stalled', 'The fleet supervisor has not run for 3+ ticks — drawdown rails may be dark. Check the worker.'),
@@ -577,6 +688,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('フリート #{fleet_id}：監視が停止しています', 'フリートスーパーバイザーが3ティック以上実行されていません — ドローダウンレールが機能していない可能性があります。ワーカーを確認してください。'),
         'th': ('ฟลีท #{fleet_id}: ระบบควบคุมดูแลหยุดทำงาน', 'ตัวควบคุมดูแลฟลีทไม่ได้ทำงานมาแล้วเกิน 3 รอบ — ระบบป้องกันการขาดทุน (drawdown rail) อาจไม่ทำงาน กรุณาตรวจสอบ worker'),
         'vi': ('Fleet #{fleet_id}: giám sát bị gián đoạn', 'Bộ giám sát fleet đã không chạy trong 3+ chu kỳ — các giới hạn drawdown có thể không hoạt động. Vui lòng kiểm tra worker.'),
+        'id': ('Fleet #{fleet_id}: pengawasan terhenti',
+               'Pengawas fleet tidak berjalan selama 3 tik atau lebih — pengaman penurunan mungkin tidak aktif. Periksa worker.'),
     },
     'fleet_breaker': {
         'en': ('Fleet #{fleet_id} STOPPED at −{loss_pct}%', 'Your Full Auto fleet crossed the −{stop_loss_pct}% stop rail. Every position is being closed. This stop fired at the first check observing the breach; the final loss may exceed the threshold.'),
@@ -584,6 +697,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('フリート #{fleet_id} が−{loss_pct}%で停止しました', 'Full Autoフリートが−{stop_loss_pct}%のストップレールを超えました。すべてのポジションをクローズしています。このストップは超過を検知した最初のチェックで発動したため、最終的な損失がしきい値を上回る場合があります。'),
         'th': ('ฟลีท #{fleet_id} หยุดทำงานที่ −{loss_pct}%', 'ฟลีท Full Auto ของคุณทะลุระดับหยุดที่ −{stop_loss_pct}% ทุกสถานะกำลังถูกปิด การหยุดนี้เกิดขึ้นทันทีที่ตรวจพบการทะลุระดับครั้งแรก ผลขาดทุนสุดท้ายอาจเกินเกณฑ์ที่กำหนด'),
         'vi': ('Fleet #{fleet_id} ĐÃ DỪNG tại −{loss_pct}%', 'Fleet Full Auto của bạn đã vượt ngưỡng dừng −{stop_loss_pct}%. Mọi vị thế đang được đóng. Lệnh dừng này được kích hoạt ngay tại lần kiểm tra đầu tiên phát hiện vi phạm; khoản lỗ cuối cùng có thể vượt ngưỡng này.'),
+        'id': ('Fleet #{fleet_id} DIHENTIKAN di −{loss_pct}%',
+               'Fleet Full Auto Anda melewati batas stop −{stop_loss_pct}%. Semua posisi sedang ditutup. Stop ini terpicu pada pemeriksaan pertama yang mendeteksi pelanggaran tersebut; kerugian akhir bisa melebihi ambang batas.'),
     },
     'fleet_drawdown_warning': {
         'en': ('Fleet #{fleet_id} down {loss_pct}% — paused', 'Your Full Auto fleet has lost {loss_pct}% of its budget. New entries are paused; open positions and their stop-losses remain active. If you resume trading from here, continuing is your responsibility. The fleet stops everything automatically at −{stop_loss_pct}%.'),
@@ -591,6 +706,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('フリート #{fleet_id} が{loss_pct}%下落 — 一時停止', 'Full Autoフリートは予算の{loss_pct}%を失いました。新規エントリーは一時停止中です。保有中のポジションとストップロスは有効のままです。ここから取引を再開する場合、その継続はご自身の責任となります。フリートは−{stop_loss_pct}%で全ポジションを自動停止します。'),
         'th': ('ฟลีท #{fleet_id} ขาดทุน {loss_pct}% — หยุดชั่วคราว', 'ฟลีท Full Auto ของคุณขาดทุนไปแล้ว {loss_pct}% ของงบประมาณ การเข้าเทรดใหม่ถูกหยุดชั่วคราว ส่วนสถานะที่เปิดอยู่และจุดตัดขาดทุนยังคงทำงานตามปกติ หากคุณเลือกกลับมาเทรดต่อจากจุดนี้ ความรับผิดชอบจะเป็นของคุณเอง ฟลีทจะหยุดทุกอย่างโดยอัตโนมัติที่ −{stop_loss_pct}%'),
         'vi': ('Fleet #{fleet_id} giảm {loss_pct}% — đã tạm dừng', 'Fleet Full Auto của bạn đã lỗ {loss_pct}% ngân sách. Các lệnh vào mới bị tạm dừng; vị thế đang mở và điểm dừng lỗ của chúng vẫn hoạt động. Nếu bạn tiếp tục giao dịch từ đây, trách nhiệm thuộc về bạn. Fleet sẽ tự động dừng toàn bộ tại −{stop_loss_pct}%.'),
+        'id': ('Fleet #{fleet_id} turun {loss_pct}% — dijeda',
+               'Fleet Full Auto Anda telah kehilangan {loss_pct}% dari anggarannya. Entri baru dijeda; posisi terbuka dan stop loss-nya tetap aktif. Jika Anda melanjutkan perdagangan dari titik ini, kelanjutannya menjadi tanggung jawab Anda. Fleet menghentikan semuanya secara otomatis di −{stop_loss_pct}%.'),
     },
     'fleet_churn': {
         'en': ('Fleet #{fleet_id}: high replacement churn', '{n} member replacements today — the market may be chopping your strategies out. Consider pausing the fleet.'),
@@ -598,6 +715,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('フリート #{fleet_id}：入れ替えが頻発しています', '本日{n}件のメンバー入れ替えが発生しました — 相場の乱高下で戦略が損切りされている可能性があります。フリートの一時停止をご検討ください。'),
         'th': ('ฟลีท #{fleet_id}: มีการเปลี่ยนสมาชิกบ่อยผิดปกติ', 'มีการเปลี่ยนสมาชิก {n} ครั้งในวันนี้ — ตลาดอาจกำลังทำให้กลยุทธ์ของคุณถูกเขี่ยออกบ่อยครั้ง ควรพิจารณาหยุดฟลีทชั่วคราว'),
         'vi': ('Fleet #{fleet_id}: tỷ lệ thay thế thành viên cao', '{n} lượt thay thế thành viên hôm nay — thị trường có thể đang loại bỏ các chiến lược của bạn. Cân nhắc tạm dừng fleet.'),
+        'id': ('Fleet #{fleet_id}: pergantian anggota tinggi',
+               '{n} pergantian anggota hari ini — pasar mungkin sedang menggugurkan strategi Anda. Pertimbangkan untuk menjeda fleet.'),
     },
     # Member-facing notification-centre messages (not alerts). These used to
     # be English literals passed straight to notify(); they render through
@@ -608,6 +727,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'ja': ('サポートから返信が届きました', 'サポートチームがお問い合わせに回答しました。'),
         'th': ('ฝ่ายสนับสนุนตอบกลับแล้ว', 'ทีมสนับสนุนได้ตอบกระทู้ของคุณแล้ว'),
         'vi': ('Bộ phận hỗ trợ đã trả lời', 'Đội ngũ hỗ trợ đã phản hồi chủ đề của bạn.'),
+        'id': ('Dukungan telah membalas',
+               'Tim dukungan kami telah menjawab utas Anda.'),
     },
     'notification_test': {
         'en': ('Notification test',
@@ -620,6 +741,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
                'นี่คือการทดสอบการแจ้งเตือนของ Sooppiy ช่องทางนี้ทำงานได้ตามปกติ'),
         'vi': ('Kiểm tra thông báo',
                'Đây là bài kiểm tra thông báo Sooppiy của bạn. Kênh này đang hoạt động.'),
+        'id': ('Uji notifikasi',
+               'Ini adalah uji coba notifikasi Sooppiy Anda. Kanal ini berfungsi dengan baik.'),
     },
     # 2026-07-28: fleet_supervisor._harvest has emitted this msg_id since the
     # profit rail shipped, but the catalogue never had an entry — so the
@@ -637,6 +760,8 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
                'ฟลีท Full Auto ของคุณถึงเป้าหมายกำไรที่ +{gain_pct}% ระบบกำลังปิดทุกสถานะและเก็บกำไร'),
         'vi': ('Fleet #{fleet_id} đã đạt mục tiêu lợi nhuận — tăng {gain_pct}%',
                'Fleet Full Auto của bạn đã đạt mục tiêu lợi nhuận ở mức +{gain_pct}%. Toàn bộ vị thế đang được đóng và lợi nhuận được chốt.'),
+        'id': ('Fleet #{fleet_id} mencapai target profitnya — naik {gain_pct}%',
+               'Fleet Full Auto Anda mencapai target profitnya di +{gain_pct}%. Semua posisi sedang ditutup dan keuntungannya dibukukan.'),
     },
 }
 
@@ -711,6 +836,8 @@ _VERDICT: dict[str, tuple[str, str]] = {
            'ส่งผลต่อสถานะ {side} ของคุณ'),
     'vi': ('{stance} vị thế {side} của bạn (mức khẩn cấp {urgency}): {note}',
            'Ảnh hưởng đến vị thế {side} của bạn.'),
+    'id': ('{stance} posisi {side} Anda (tingkat urgensi {urgency}): {note}',
+           'Memengaruhi posisi {side} Anda.'),
 }
 _STANCE: dict[str, dict[str, str]] = {
     'en': {'for': 'FOR', 'against': 'AGAINST', 'neutral': 'NEUTRAL'},
@@ -718,6 +845,7 @@ _STANCE: dict[str, dict[str, str]] = {
     'ja': {'for': '有利', 'against': '不利', 'neutral': '中立'},
     'th': {'for': 'เป็นผลดีต่อ', 'against': 'เป็นผลเสียต่อ', 'neutral': 'เป็นกลางต่อ'},
     'vi': {'for': 'CÓ LỢI cho', 'against': 'BẤT LỢI cho', 'neutral': 'TRUNG LẬP với'},
+    'id': {'for': 'MENGUNTUNGKAN', 'against': 'MERUGIKAN', 'neutral': 'NETRAL bagi'},
 }
 _URGENCY: dict[str, dict[str, str]] = {
     'en': {'low': 'low', 'medium': 'medium', 'high': 'high'},
@@ -725,6 +853,7 @@ _URGENCY: dict[str, dict[str, str]] = {
     'ja': {'low': '低', 'medium': '中', 'high': '高'},
     'th': {'low': 'ต่ำ', 'medium': 'ปานกลาง', 'high': 'สูง'},
     'vi': {'low': 'thấp', 'medium': 'trung bình', 'high': 'cao'},
+    'id': {'low': 'rendah', 'medium': 'sedang', 'high': 'tinggi'},
 }
 _SIDE: dict[str, dict[str, str]] = {
     'en': {'long': 'long', 'short': 'short'},
@@ -732,6 +861,7 @@ _SIDE: dict[str, dict[str, str]] = {
     'ja': {'long': 'ロング', 'short': 'ショート'},
     'th': {'long': 'ลอง', 'short': 'ชอร์ต'},
     'vi': {'long': 'mua (long)', 'short': 'bán (short)'},
+    'id': {'long': 'beli (long)', 'short': 'jual (short)'},
 }
 
 
@@ -780,6 +910,7 @@ _TRIGGER: dict[str, dict[str, str]] = {
     'vi': {'event_window': 'khung sự kiện vĩ mô', 'psych_shock': 'cú sốc tâm lý',
            'regime:event': 'trạng thái sự kiện', 'regime:panic': 'trạng thái hoảng loạn',
            'regime:euphoria': 'trạng thái hưng phấn', 'price_move': 'biến động giá {v}'},
+    'id': {'event_window': 'jendela peristiwa makro', 'psych_shock': 'guncangan sentimen', 'regime:event': 'rezim peristiwa', 'regime:panic': 'rezim panik', 'regime:euphoria': 'rezim euforia', 'price_move': 'pergerakan harga {v}'},
 }
 
 
