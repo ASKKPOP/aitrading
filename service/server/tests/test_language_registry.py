@@ -142,6 +142,48 @@ class NoBackendModuleKeepsItsOwnLanguageList(unittest.TestCase):
                 self.assertEqual(daemon.LANG_NAMES.get(lang), name)
 
 
+class TokenTablesCoverWhatActuallyReachesThem(unittest.TestCase):
+    """Cross-language parity is not coverage.
+
+    `test_alert_tokens` above asserts every language has the same key set as
+    English — and passed while `side` was missing `long` in ALL SIX, because
+    English was missing it too. hot_issue_daemon._position_side returns
+    'long' or 'short', so a member holding a SHORT read '숏' and a member
+    holding a LONG read the English word 'long' in an otherwise Korean title:
+
+        핫이슈: ETHUSDT — 보유 중인 long 포지션
+
+    An unknown token passes through verbatim by design (a new detector must
+    stay visible rather than vanish), which is exactly what turns a missing
+    key into silent English instead of a failure. So the domains are pinned
+    here, next to the tables.
+
+    Deliberately NOT listed: `hold`/`HOLD` for action, and `draft` for
+    status. Both trade alerts are guarded by `if signal_id:` — a hold never
+    places a trade — and a run only queues a digest once it is past draft.
+    Padding a table against a value that cannot arrive is the speculative
+    error handling this codebase avoids.
+    """
+
+    DOMAINS = {
+        "side": {"long", "short"},          # hot_issue_daemon._position_side
+        "action": {"buy", "sell", "short", "cover"},
+        "action_upper": {"BUY", "SELL", "SHORT", "COVER"},
+        "status": {"armed", "running", "paused", "stopping", "stopped"},
+        "outcome": {"flatten", "hold"},
+    }
+
+    def test_every_runtime_value_has_a_translation(self):
+        for family, domain in self.DOMAINS.items():
+            for lang in LANG_NAMES:
+                table = n.TOKENS[family][lang]
+                for value in sorted(domain):
+                    with self.subTest(family=family, lang=lang, value=value):
+                        self.assertIn(value, table,
+                                      f"{family}/{lang} has no '{value}' — it would "
+                                      f"render as the raw English token")
+
+
 class TheAssistantFallsBackInTheMembersLanguage(unittest.TestCase):
     """The assistant answers in the member's language on every turn the model
     handles. Its two failure replies — no model configured, model unreachable —

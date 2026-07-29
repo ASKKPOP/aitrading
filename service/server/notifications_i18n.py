@@ -357,36 +357,42 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
     },
     'side': {
         'en': {
+            'long': 'long',
             'buy': 'buy',
             'sell': 'sell',
             'short': 'short',
             'cover': 'cover',
         },
         'ko': {
+            'long': '롱',
             'buy': '매수',
             'sell': '매도',
             'short': '숏',
             'cover': '커버',
         },
         'ja': {
+            'long': 'ロング',
             'buy': '買い',
             'sell': '売り',
             'short': 'ショート',
             'cover': 'カバー',
         },
         'th': {
+            'long': 'ลอง',
             'buy': 'ซื้อ',
             'sell': 'ขาย',
             'short': 'ชอร์ต',
             'cover': 'ปิดชอร์ต',
         },
         'vi': {
+            'long': 'mua (long)',
             'buy': 'mua',
             'sell': 'bán',
             'short': 'bán khống',
             'cover': 'mua bù',
         },
         'id': {
+            'long': 'beli (long)',
             'buy': 'beli',
             'sell': 'jual',
             'short': 'short',
