@@ -758,6 +758,23 @@ export const regimeLabel = (lang: Language, regime: string | null | undefined): 
   return m ? tr(lang, m) : regime
 }
 
+// Position side / order action. Closed set, and it appears next to a symbol on
+// most surfaces — "USDZAR forex · long" under a Korean heading is the same
+// leak as a raw stop reason, just smaller and far more frequent.
+const SIDE: Record<string, TrMap> = {
+  long: { en: 'long', ko: '롱', ja: 'ロング', th: 'ลอง', vi: 'mua (long)', id: 'beli (long)' },
+  short: { en: 'short', ko: '숏', ja: 'ショート', th: 'ชอร์ต', vi: 'bán (short)', id: 'jual (short)' },
+  buy: { en: 'buy', ko: '매수', ja: '買い', th: 'ซื้อ', vi: 'mua', id: 'beli' },
+  sell: { en: 'sell', ko: '매도', ja: '売り', th: 'ขาย', vi: 'bán', id: 'jual' },
+  cover: { en: 'cover', ko: '커버', ja: '買い戻し', th: 'ปิดชอร์ต', vi: 'mua bù', id: 'tutup short' },
+}
+
+export const sideLabel = (lang: Language, side: string | null | undefined): string => {
+  if (!side) return ''
+  const m = SIDE[side.trim().toLowerCase()]
+  return m ? tr(lang, m) : side
+}
+
 // Category translations
 export const categoryTranslations: Record<Language, Record<string, string>> = {
   ko: {
