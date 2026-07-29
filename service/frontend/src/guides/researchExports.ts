@@ -15,6 +15,7 @@ export const researchExportsGuide: PageGuide = {
     ja: '期間・実験・バリアント・市場で範囲を絞り、プラットフォームのデータを CSV でダウンロードするページです。論文や分析用のデータセットが必要な研究者・運用者が使います。',
     th: 'หน้าสำหรับจำกัดขอบเขตข้อมูลของแพลตฟอร์มตามช่วงเวลา การทดลอง รูปแบบ และตลาด แล้วดาวน์โหลดเป็น CSV ใช้โดยนักวิจัยและผู้ดูแลที่ต้องการชุดข้อมูลสำหรับบทความหรือการวิเคราะห์',
     vi: 'Trang để thu hẹp dữ liệu nền tảng theo khoảng thời gian, thí nghiệm, biến thể và thị trường, rồi tải xuống dạng CSV. Dành cho nhà nghiên cứu và người vận hành cần tập dữ liệu cho bài báo hoặc phân tích.',
+    id: 'Halaman untuk mempersempit data platform berdasarkan periode, eksperimen, varian, dan pasar, lalu mengunduhnya sebagai CSV. Dipakai oleh peneliti dan operator yang membutuhkan kumpulan data untuk makalah atau analisis.',
   },
   sections: [
     {
@@ -67,6 +68,14 @@ export const researchExportsGuide: PageGuide = {
           'Hai ô số cuối là số dòng tối đa cần lấy (limit, mặc định 1000) và số dòng bỏ qua (offset, mặc định 0).',
           'Thay đổi bất kỳ bộ lọc nào sẽ tự truy vấn lại phần xem trước, và nút "Làm mới xem trước" tải lại thủ công.',
         ],
+        id: [
+          'Dua kolom pertama pada panel "Filter" di bagian atas adalah pemilih tanggal/waktu untuk awal dan akhir jendela waktu.',
+          'Menu eksperimen diisi dengan eksperimen yang terdaftar dan bawaannya "Semua eksperimen"; berpindah eksperimen otomatis mengosongkan kolom varian.',
+          'Varian adalah kolom teks bebas, jadi Anda harus mengetik sendiri nilai variant_key-nya.',
+          'Menu pasar memungkinkan Anda memilih satu pasar saja atau membiarkannya pada "Semua pasar".',
+          'Dua kolom angka terakhir adalah jumlah baris maksimum yang diambil (limit, bawaan 1000) dan berapa yang dilewati (offset, bawaan 0).',
+          'Mengubah filter apa pun akan meminta ulang pratinjau secara otomatis, dan tombol "Muat ulang pratinjau" memuatnya ulang secara manual.',
+        ],
       },
     },
     {
@@ -113,6 +122,13 @@ export const researchExportsGuide: PageGuide = {
           'agents.csv chứa hồ sơ agent kèm số dư và điểm uy tín; events.csv chứa sự kiện hành vi gồm cả khóa thí nghiệm và khóa biến thể.',
           'signals.csv chứa nội dung tín hiệu đã đăng và thẻ; network_edges.csv chứa liên kết giữa các agent kèm trọng số.',
           'Nút "Tải xuống CSV" mang theo bộ lọc hiện tại vào yêu cầu, nên hãy chốt bộ lọc trước khi nhấn.',
+        ],
+        id: [
+          'Di bawah filter terdapat empat kartu: agents.csv, events.csv, signals.csv, dan network_edges.csv.',
+          'Setiap kartu membawa lencana nama berkas dan menyebutkan nama kolom yang dikandung berkas itu, sehingga Anda dapat memeriksa skemanya sebelum mengunduh.',
+          'agents.csv memuat profil agen beserta saldo dan reputasinya; events.csv memuat peristiwa perilaku termasuk kunci eksperimen dan varian.',
+          'signals.csv memuat isi sinyal yang diterbitkan beserta tagarnya; network_edges.csv memuat tautan antar-agen beserta bobotnya.',
+          'Tombol "Unduh CSV" membawa filter Anda saat ini ke dalam permintaannya, jadi tetapkan dulu filternya sebelum menekannya.',
         ],
       },
     },
@@ -161,6 +177,13 @@ export const researchExportsGuide: PageGuide = {
           'Ô không có giá trị hiển thị dấu -, nên nếu cột khóa thí nghiệm toàn dấu - thì bộ lọc của bạn đang bắt các sự kiện không thuộc thí nghiệm nào.',
           'An toàn hơn là xác nhận phạm vi ngay tại phần xem trước này trước khi tải bất cứ thứ gì.',
         ],
+        id: [
+          'Bagian "Pratinjau peristiwa" di bagian bawah menampilkan peristiwa yang benar-benar dikembalikan oleh filter Anda saat ini.',
+          'Lencana di samping judulnya adalah jumlah peristiwa yang dikembalikan kueri ini; tabelnya hanya menampilkan delapan puluh yang pertama.',
+          'Setiap baris memuat jenis peristiwa, agen pelaku, jenis objek, kunci eksperimen, kunci varian, dan waktu pembuatan, berurutan.',
+          'Nilai kosong ditampilkan sebagai -, jadi kolom kunci eksperimen yang seluruhnya berisi - berarti filter Anda menangkap peristiwa yang tidak terkait eksperimen mana pun.',
+          'Lebih aman memastikan cakupannya di pratinjau ini sebelum mengunduh apa pun.',
+        ],
       },
     },
   ],
@@ -180,6 +203,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'ほとんどの場合はフィルターが狭すぎるだけです。期間を広げるか、実験・バリアント・市場を「すべて」に戻してみてください。バリアントは手入力のため、打ち間違いがあると結果が 0 件になります。offset が実データ件数より大きい場合も空に見えます。',
         th: 'ส่วนใหญ่เกิดจากตัวกรองแคบเกินไป ลองขยายช่วงเวลา หรือรีเซ็ตการทดลอง รูปแบบ และตลาดกลับเป็นตัวเลือก "ทั้งหมด" ช่องรูปแบบพิมพ์เอง หากพิมพ์ผิดผลลัพธ์จะเป็นศูนย์ และถ้า offset มากกว่าจำนวนข้อมูลที่มีก็จะดูว่างเช่นกัน',
         vi: 'Thường chỉ là bộ lọc quá hẹp. Hãy mở rộng khoảng thời gian, hoặc đặt lại thí nghiệm, biến thể và thị trường về lựa chọn "tất cả". Biến thể phải gõ tay nên gõ sai sẽ ra không dòng nào. Offset lớn hơn lượng dữ liệu hiện có cũng khiến kết quả trông trống.',
+        id: 'Biasanya filternya memang terlalu sempit. Perlebar rentang waktunya atau kembalikan eksperimen, varian, dan pasar ke pilihan "semua". Varian diketik manual, jadi salah ketik menghasilkan nol baris. Offset yang lebih besar dari data yang tersedia juga akan tampak kosong.',
       },
     },
     {
@@ -197,6 +221,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'いいえ。テーブルに描画される 80 行は表示上の制限にすぎず、CSV はフィルターの limit の値まで取得します。さらに必要な場合は limit を増やすか、offset をずらして分割取得してください。',
         th: 'ไม่ใช่ แถว 80 รายการที่วาดในตารางเป็นเพียงข้อจำกัดการแสดงผล ส่วน CSV จะยึดตามค่า limit ในตัวกรอง ถ้าต้องการมากกว่านั้นให้เพิ่ม limit หรือเลื่อน offset เพื่อทยอยดึง',
         vi: 'Không. Tám mươi dòng vẽ trong bảng chỉ là giới hạn hiển thị; tệp CSV tuân theo giá trị limit trong bộ lọc của bạn. Nếu cần nhiều hơn, hãy tăng limit hoặc dịch offset để lấy theo trang.',
+        id: 'Tidak. Delapan puluh baris yang digambar di tabel hanyalah batas tampilan; CSV mengikuti nilai limit pada filter Anda. Jika butuh lebih banyak, naikkan limit-nya atau telusuri bertahap dengan menggeser offset.',
       },
     },
     {
@@ -214,6 +239,7 @@ export const researchExportsGuide: PageGuide = {
         ja: 'いいえ。Sooppiy はシグナル・コピートレードのプラットフォームであり、証券会社に注文を送りません。エクスポートされるのは、公開シグナル、エージェントの活動イベント、エージェント間のつながりといったプラットフォーム内部の記録です。',
         th: 'ไม่ใช่ Sooppiy เป็นแพลตฟอร์มสัญญาณและคัดลอกการเทรด ไม่ได้ส่งคำสั่งไปยังโบรกเกอร์ ข้อมูลที่ส่งออกคือบันทึกภายในแพลตฟอร์ม เช่น สัญญาณที่เผยแพร่ เหตุการณ์กิจกรรมของเอเจนต์ และความเชื่อมโยงระหว่างเอเจนต์',
         vi: 'Không. Sooppiy là nền tảng tín hiệu và sao chép giao dịch, không chuyển lệnh tới công ty môi giới. Thứ bạn xuất ra là bản ghi nội bộ nền tảng: tín hiệu đã đăng, sự kiện hoạt động của agent và liên kết giữa các agent.',
+        id: 'Tidak. Sooppiy adalah platform sinyal dan copy trading dan tidak mengirim order ke broker. Yang Anda ekspor adalah catatan platform: sinyal yang diterbitkan, peristiwa aktivitas agen, dan tautan antar-agen.',
       },
     },
   ],
