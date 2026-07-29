@@ -13,6 +13,7 @@ _FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
 from i18n_errors import lang_from_request, translate
+from json_safe import json_safe
 from utils import _extract_token
 from market_intel import (
     get_etf_flows_payload,
@@ -119,11 +120,15 @@ OPTION_UNDERLYINGS: tuple[str, ...] = (
 
 def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
     def _cached_market_payload(cache_key: str, builder):
+        # json_safe on both branches: market-intel payloads are rehydrated from
+        # stored JSON (snapshot rows, Redis), and json.loads restores a NaN
+        # literal as a float that Starlette's allow_nan=False renderer 500s on.
+        # Scrubbing here covers rows persisted before the write-side guard.
         redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:{cache_key}'
         cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, MARKET_INTEL_CACHE_TTL_SECONDS)
         if isinstance(cached, dict):
-            return cached
-        payload = builder()
+            return json_safe(cached)
+        payload = json_safe(builder())
         return set_short_cached_payload(
             ctx,
             ctx.market_intel_cache,

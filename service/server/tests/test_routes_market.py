@@ -117,6 +117,41 @@ class MarketRouteTests(unittest.TestCase):
             resp = self.client.get("/api/market-intel/stocks/AAPL/history")
         self.assertEqual(resp.status_code, 200)
 
+    # A snapshot row persisted with a bare NaN literal (json.loads restores it
+    # as a float) 500'd every stocks endpoint in prod on 2026-07-29. The payload
+    # must be scrubbed to null before it reaches the allow_nan=False renderer.
+
+    def test_featured_stocks_with_nan_indicator_returns_200_and_null(self) -> None:
+        payload = {"available": True, "items": [
+            {"symbol": "AAPL", "analysis": {
+                "moving_averages": {"ma20": 317.04, "ma50": float("nan")},
+                "sigma_daily_pct": float("nan"),
+            }},
+        ]}
+        with patch("routes_market.get_featured_stock_analysis_payload", return_value=payload):
+            resp = self.client.get("/api/market-intel/stocks/featured?limit=10")
+        self.assertEqual(resp.status_code, 200)
+        analysis = resp.json()["items"][0]["analysis"]
+        self.assertIsNone(analysis["moving_averages"]["ma50"])
+        self.assertIsNone(analysis["sigma_daily_pct"])
+        self.assertEqual(analysis["moving_averages"]["ma20"], 317.04)
+
+    def test_stock_latest_with_nan_indicator_returns_200(self) -> None:
+        payload = {"symbol": "AAPL", "analysis": {"reversal_1m_pct": float("nan")}}
+        with patch("routes_market.get_stock_analysis_latest_payload", return_value=payload):
+            resp = self.client.get("/api/market-intel/stocks/AAPL/latest")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.json()["analysis"]["reversal_1m_pct"])
+
+    def test_stock_history_with_nan_indicator_returns_200(self) -> None:
+        payload = {"symbol": "AAPL", "history": [
+            {"analysis_id": "AAPL:1", "analysis": {"moving_averages": {"ma200": float("nan")}}},
+        ]}
+        with patch("routes_market.get_stock_analysis_history_payload", return_value=payload):
+            resp = self.client.get("/api/market-intel/stocks/AAPL/history?limit=6")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.json()["history"][0]["analysis"]["moving_averages"]["ma200"])
+
 
 # ─── Bybit futures market endpoints ──────────────────────────────────────────
 

@@ -16,6 +16,7 @@ Cache:
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -86,6 +87,13 @@ def _read_cache(path: Path) -> list[Bar]:
     return _table_to_bars(table)
 
 
+def _bar_is_finite(bar: Bar) -> bool:
+    """A bar with a NaN/Inf price is not a bar. Dropping it is the only honest
+    option: any window that includes it (MA, σ, return) evaluates to NaN, and
+    NaN passes every `is not None` guard downstream."""
+    return all(math.isfinite(v) for v in (bar.open, bar.high, bar.low, bar.close))
+
+
 def _cache_covers(cached: list[Bar], start_date: str, end_date: str) -> bool:
     if not cached:
         return False
@@ -121,16 +129,22 @@ def _fetch_yfinance(symbol: str, start_date: str, end_date: str) -> list[Bar]:
     for idx, row in df.iterrows():
         try:
             date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
-            bars.append(Bar(
+            bar = Bar(
                 date=date_str,
                 open=float(row["Open"]),
                 high=float(row["High"]),
                 low=float(row["Low"]),
                 close=float(row["Close"]),
                 volume=int(row["Volume"]),
-            ))
+            )
         except (TypeError, ValueError):
             continue
+        # float(NaN) succeeds, so an incomplete row (yfinance emits one for the
+        # in-progress session) would otherwise arrive as a bar with a NaN close
+        # and poison every window that touches it: MA50/MA200, σ, returns.
+        if not _bar_is_finite(bar):
+            continue
+        bars.append(bar)
 
     bars.sort(key=lambda b: b.date)
     return bars
@@ -224,7 +238,8 @@ def get_bars(
         try:
             cached = _read_cache(cache_file)
             if _cache_covers(cached, start_date, end_date):
-                return [b for b in cached if start_date <= b.date <= end_date]
+                return [b for b in cached
+                        if start_date <= b.date <= end_date and _bar_is_finite(b)]
         except Exception:
             cached = []  # corrupt cache — fall through to fetch
 
@@ -246,4 +261,6 @@ def get_bars(
     elif cached:
         bars = cached  # provider outage — stale cache beats nothing
 
-    return [b for b in bars if start_date <= b.date <= end_date]
+    # _bar_is_finite again here: caches written before this guard existed, and
+    # any non-yfinance provider, can still hold a NaN-priced row.
+    return [b for b in bars if start_date <= b.date <= end_date and _bar_is_finite(b)]
