@@ -8,6 +8,7 @@ export const monitorGuide: PageGuide = {
     ja: '自動売買ルール・直近の実行結果・保有ポジション・監視条件・通知を1画面にまとめたダッシュボードです。複数のルールを同時に運用している利用者が毎日最初に開くページとして設計されています。',
     th: 'กระดานเดียวที่รวมกฎอัตโนมัติ การรันล่าสุด สถานะที่เปิดอยู่ เงื่อนไขเฝ้าดู และการแจ้งเตือนของคุณไว้ในที่เดียว ออกแบบให้เป็นหน้าแรกที่คุณเปิดทุกวันเมื่อมีหลายกฎทำงานพร้อมกัน',
     vi: 'Một bảng duy nhất gom quy tắc tự động, các lần chạy gần đây, vị thế đang mở, điều kiện theo dõi và cảnh báo của bạn về một chỗ. Được xây dựng để là trang đầu tiên bạn mở mỗi ngày khi có nhiều quy tắc chạy cùng lúc.',
+    id: 'Satu papan yang mengumpulkan aturan otomatisasi, run terkini, posisi terbuka, kondisi pantauan, dan peringatan Anda dalam satu tempat. Dirancang untuk menjadi halaman pertama yang Anda buka setiap hari ketika beberapa aturan berjalan sekaligus.',
   },
   sections: [
     {
@@ -48,6 +49,13 @@ export const monitorGuide: PageGuide = {
           'Thứ duy nhất bạn tạo và xoá trực tiếp tại đây là Điều kiện theo dõi ở phía dưới trang.',
           'Các vị thế và kết quả chạy hiển thị là theo dõi tín hiệu và bản ghi mô phỏng. Không có lệnh nào được định tuyến tới môi giới thật.',
         ],
+        id: [
+          'Anda harus dalam keadaan masuk untuk melihat halaman ini. Bila keluar, halaman hanya menampilkan ajakan untuk masuk.',
+          'Seluruh papan memperbarui dirinya setiap 20 detik. Tidak ada tombol muat ulang yang perlu ditekan dan tidak perlu memuat ulang halaman.',
+          'Ini papan yang berorientasi baca. Untuk membuat atau menyunting aturannya sendiri, buka halaman Otomatisasi; untuk memulai percakapan baru, buka Konsultasi.',
+          'Satu-satunya yang dapat Anda buat dan hapus langsung di sini adalah Pantauan Saya, di bagian bawah halaman.',
+          'Posisi dan hasil run yang ditampilkan adalah pelacakan sinyal dan catatan simulasi. Tidak ada order yang dikirim ke broker sungguhan.',
+        ],
       },
     },
     {
@@ -82,6 +90,12 @@ export const monitorGuide: PageGuide = {
           'Thẻ quy tắc chỉ đếm các quy tắc đang bật, không phải mọi quy tắc. Nếu danh sách bên dưới có nhiều quy tắc hơn con số này, phần còn lại đang tắt.',
           'Thẻ cảnh báo và lần chạy gần đây mỗi thẻ chỉ tải tối đa 20 mục mới nhất, nên con số dừng ở 20 dù đã tích luỹ bao nhiêu.',
           'Nếu một buổi sáng số quy tắc thấp hơn dự kiến, hãy kiểm tra danh sách bên dưới trước để xem quy tắc nào đã tự tắt.',
+        ],
+        id: [
+          'Empat kartu menampilkan jumlah aturan otomatisasi, posisi terbuka, peringatan, dan run terkini.',
+          'Kartu aturan hanya menghitung aturan yang aktif, bukan seluruh aturan. Jika daftar di bawah menampilkan lebih banyak aturan daripada angkanya, sisanya sedang nonaktif.',
+          'Kartu peringatan dan run terkini masing-masing memuat paling banyak 20 item terbaru, jadi hitungannya berhenti di 20 berapa pun yang sudah terkumpul.',
+          'Jika suatu pagi jumlah aturannya lebih kecil dari yang Anda perkirakan, periksa dulu daftar di bawah untuk melihat aturan mana yang menonaktifkan dirinya.',
         ],
       },
     },
@@ -128,6 +142,14 @@ export const monitorGuide: PageGuide = {
           'Vị thế đang mở suy ra hướng từ dấu của số lượng: âm nhận huy hiệu SHORT, dương nhận huy hiệu LONG.',
           'Mỗi vị thế hiện số lượng và giá vào, kèm cắt lỗ (SL) màu đỏ và chốt lời (TP) màu xanh khi được đặt. Nếu không thứ nào xuất hiện, vị thế đó không có mức bảo vệ nào gắn kèm.',
         ],
+        id: [
+          'Item pertama pada baris aturan adalah subjeknya. Aturan biasa menampilkan simbol; aturan Agen yang sepenuhnya didelegasikan menampilkan penanda 🤖 dan anggaran yang ditetapkan untuknya.',
+          'Lencana di sampingnya adalah tingkat risiko, dan lencana 🕑 berarti aturan itu berjalan pada jadwal yang ditentukan.',
+          'Teks abu-abu di tengah adalah interval run dalam menit dan ambang keyakinan minimum. Misalnya 15m · ≥0,7 berarti ia memeriksa setiap 15 menit tetapi hanya bertindak pada keyakinan 0,7 atau lebih.',
+          'Lencana aktif/nonaktif di ujung kanan baris adalah status aktif aturan itu saat ini.',
+          'Posisi terbuka menyimpulkan arahnya dari tanda kuantitas: negatif mendapat lencana SHORT, positif mendapat LONG.',
+          'Setiap posisi menampilkan kuantitas dan harga masuk, ditambah stop loss (SL) berwarna merah dan take profit (TP) berwarna hijau bila keduanya disetel. Jika tidak satu pun muncul, posisi itu tidak memiliki level proteksi.',
+        ],
       },
     },
     {
@@ -168,6 +190,13 @@ export const monitorGuide: PageGuide = {
           'Những dòng không có ✓ mang lý do bỏ qua bằng chữ xám bên phải. Độ tin cậy dưới ngưỡng, ngân sách không đủ và bị cổng rủi ro chặn đều xuất hiện ở đây.',
           'Nhiều lần chạy nhưng gần như không có ✓ thường nghĩa là ngưỡng của bạn quá chặt chứ không phải quy tắc bị hỏng. Đọc vài lý do bỏ qua sẽ cho biết ngay nên nới điều kiện nào.',
         ],
+        id: [
+          '20 run terbaru ditumpuk dari yang terbaru. Baca setiap baris sebagai waktu run, aksi yang diputuskan, lalu tingkat keyakinannya.',
+          'Lencana verifikasi adalah AI kedua yang memeriksa ulang keputusan pertama. Dikuatkan berarti keputusannya bertahan, melemah berarti argumennya menipis, ditolak berarti dibatalkan — masing-masing ditampilkan hijau, kuning, dan merah.',
+          'Tanda ✓ hijau berarti run itu benar-benar berlanjut sampai tereksekusi.',
+          'Baris tanpa ✓ membawa alasan dilewati dengan warna abu-abu di sebelah kanan. Keyakinan di bawah ambang, anggaran tidak cukup, dan blokade gerbang risiko semuanya tampil di sini.',
+          'Banyak run tetapi hampir tidak ada ✓ biasanya berarti ambang Anda terlalu ketat, bukan aturannya rusak. Membaca beberapa alasan dilewati langsung memberi tahu kondisi mana yang perlu dilonggarkan.',
+        ],
       },
     },
     {
@@ -207,6 +236,13 @@ export const monitorGuide: PageGuide = {
           'Ở cuối bên phải dòng là người lập kế hoạch. Tên một mô hình nghĩa là AI đã lập kế hoạch; fallback nghĩa là không có mô hình khả dụng và một quy tắc mặc định đã thay thế.',
           'Câu bên dưới là lý do AI để lại. Đây là bản ghi duy nhất cho biết vì sao nó chọn mã đó và quy mô đó ở chế độ uỷ quyền, nên rất đáng đọc.',
           'Một chuỗi fallback liên tiếp là dấu hiệu bạn đang vận hành bằng giá trị mặc định thay vì kế hoạch của AI — hãy kiểm tra kết nối mô hình trong Cài đặt.',
+        ],
+        id: [
+          'Jika Anda sama sekali tidak menjalankan aturan yang didelegasikan penuh, bagian ini tidak muncul di halaman.',
+          'Bagian ini menampilkan 10 keputusan terbaru, memuat simbol yang dipilih AI untuk dirinya sendiri, ukuran yang dialokasikan, interval run, keyakinan minimum, dan tingkat risiko dalam satu baris.',
+          'Di ujung kanan baris tertera siapa yang menyusun rencananya. Nama model berarti AI yang merencanakannya; fallback berarti tidak ada model yang tersedia dan aturan bawaan yang menggantikan.',
+          'Kalimat di bawahnya adalah alasan yang ditinggalkan AI. Itulah satu-satunya catatan mengapa ia memilih simbol dan ukuran tersebut dalam mode delegasi, jadi layak dibaca.',
+          'Deretan fallback berturut-turut menandakan Anda beroperasi dengan nilai bawaan alih-alih perencanaan AI — periksa koneksi model Anda di Pengaturan.',
         ],
       },
     },
@@ -253,6 +289,14 @@ export const monitorGuide: PageGuide = {
           'Cảnh báo mặc định hiện trong ứng dụng. Muốn nhận thêm qua email hoặc SMS, bạn phải bật ở Cài đặt, và có thời gian chờ để một điều kiện dao động quanh ngưỡng không bắn đi cùng một cảnh báo liên tục.',
           'Nút × bên phải xoá điều kiện ngay lập tức, không có hộp thoại xác nhận — hãy cẩn thận.',
         ],
+        id: [
+          'Di sinilah Anda menetapkan kondisi sendiri untuk mendapat peringatan ketika sebuah metrik melewati nilai tertentu ke atas atau ke bawah. Berbeda dengan aturan, pantauan tidak pernah bertransaksi — ia hanya memberi tahu Anda.',
+          'Isilah dari kiri ke kanan: nama (opsional) → metrik → simbol (bila diperlukan) → di atas/di bawah → ambang. Daftar metrik diisi dengan apa pun yang didukung server, dan mengosongkan nama akan membuatkannya dari metrik, pembanding, dan ambangnya.',
+          'Pemilih simbol hanya muncul ketika metrik yang dipilih memerlukannya. Metrik yang melihat pasar secara keseluruhan tidak memakai simbol.',
+          'Baris pantauan yang tersimpan menampilkan nilai saat ini dalam kurung, sehingga Anda bisa langsung melihat seberapa jauh dari ambang Anda.',
+          'Peringatan muncul dalam aplikasi secara bawaan. Untuk juga menerimanya lewat email atau SMS, Anda harus mengaktifkannya di Pengaturan, dan ada masa jeda agar kondisi yang berayun di sekitar ambang tidak memicu peringatan yang sama berulang kali.',
+          'Tombol × di sebelah kanan menghapus pantauan seketika, tanpa dialog konfirmasi — berhati-hatilah.',
+        ],
       },
     },
   ],
@@ -272,6 +316,7 @@ export const monitorGuide: PageGuide = {
         ja: '多くの場合、まだ何も作成していない新しいアカウントの正常な状態です。自動売買ページでルールを1つ作ればルールと実行のセクションが埋まり始め、監視条件はこのページから直接追加できます。ルールがあるはずなのに空のままなら、ログインセッションが切れている可能性があるので再度ログインしてください。',
         th: 'โดยทั่วไปนี่คือลักษณะปกติของบัญชีใหม่ที่ยังไม่ได้สร้างอะไรเลย ลองสร้างกฎในหน้าอัตโนมัติ แล้วส่วนกฎและการรันจะเริ่มมีข้อมูล ส่วนเงื่อนไขเฝ้าดูเพิ่มได้จากหน้านี้เลย หากคุณแน่ใจว่ามีกฎอยู่แต่ยังว่าง เซสชันการล็อกอินอาจหมดอายุ ให้ลองเข้าสู่ระบบใหม่',
         vi: 'Thường thì đây chỉ là hình ảnh của một tài khoản mới trước khi bạn tạo bất cứ thứ gì. Hãy tạo một quy tắc ở trang Tự động hoá, mục quy tắc và lần chạy sẽ bắt đầu có dữ liệu; còn điều kiện theo dõi thì thêm ngay tại đây. Nếu bạn chắc chắn đã có quy tắc mà vẫn trống, phiên đăng nhập có thể đã hết hạn — hãy đăng nhập lại.',
+        id: 'Biasanya begitulah tampilan akun baru sebelum Anda membuat apa pun. Buat sebuah aturan di halaman Otomatisasi dan bagian aturan serta run mulai terisi; pantauan bisa Anda tambahkan langsung di sini. Jika Anda yakin sudah punya aturan tetapi tetap kosong, sesi masuk Anda mungkin sudah berakhir — masuklah kembali.',
       },
     },
     {
@@ -289,6 +334,7 @@ export const monitorGuide: PageGuide = {
         ja: '正常な動作であることが多いです。ルールは間隔ごとに市場を確認しますが、条件を満たしたときのみ動くよう設計されています。✓のない行の右側にあるスキップ理由を読んでください。最も多いのは信頼度が最低基準に届かないケースで、ルールのしきい値を下げれば解決します。リスクゲートや予算に関する文言が繰り返されるなら、自動売買ページで該当設定を調整してください。',
         th: 'บ่อยครั้งนี่คือพฤติกรรมที่ถูกต้อง กฎจะตรวจตลาดทุกรอบ แต่ถูกออกแบบให้ลงมือเมื่อเงื่อนไขครบเท่านั้น ให้อ่านเหตุผลที่ข้ามทางขวาของแถวที่ไม่มี ✓ ส่วนใหญ่คือความมั่นใจต่ำกว่าเกณฑ์ขั้นต่ำ ซึ่งแก้ได้ด้วยการลดเกณฑ์ของกฎ หากข้อความเกี่ยวกับประตูความเสี่ยงหรืองบประมาณเกิดซ้ำ ให้ปรับการตั้งค่าเหล่านั้นในหน้าอัตโนมัติ',
         vi: 'Đây thường là hành vi đúng. Quy tắc kiểm tra thị trường mỗi chu kỳ nhưng được thiết kế để chỉ hành động khi điều kiện được đáp ứng. Hãy đọc lý do bỏ qua bên phải các dòng không có ✓. Phổ biến nhất là độ tin cậy dưới mức tối thiểu, khắc phục bằng cách hạ ngưỡng của quy tắc. Nếu thông báo về cổng rủi ro hay ngân sách lặp lại, hãy chỉnh các thiết lập đó ở trang Tự động hoá.',
+        id: 'Ini sering kali justru perilaku yang benar. Sebuah aturan memeriksa pasar setiap interval tetapi dirancang untuk bertindak hanya ketika kondisinya terpenuhi. Baca alasan dilewati di sebelah kanan baris yang tanpa ✓. Paling umum adalah keyakinan di bawah minimum, yang Anda perbaiki dengan menurunkan ambang aturan itu. Jika pesan gerbang risiko atau anggaran terus berulang, sesuaikan pengaturannya di halaman Otomatisasi.',
       },
     },
     {
@@ -306,6 +352,7 @@ export const monitorGuide: PageGuide = {
         ja: 'エラー文言は保存ボタンの横に⚠️付きで表示されます。最も多い原因は、シンボルを必要とする指標なのにシンボル欄が空である場合、またはしきい値が空欄か数値でない場合です。シンボルを必要とする指標を選ぶとシンボル欄が自動的に表示されるので、その欄が見えているなら必ず入力してください。指標の一覧自体が空なら、サーバー応答がまだ届いていない状態なので次の自動更新を待ってください。',
         th: 'ข้อความข้อผิดพลาดจะปรากฏข้างปุ่มบันทึกพร้อมเครื่องหมาย ⚠️ สาเหตุที่พบบ่อยที่สุดคือเลือกตัวชี้วัดที่ต้องระบุสัญลักษณ์แต่เว้นช่องสัญลักษณ์ไว้ หรือเกณฑ์ว่างเปล่าหรือไม่ใช่ตัวเลข ช่องเลือกสัญลักษณ์จะปรากฏอัตโนมัติสำหรับตัวชี้วัดที่ต้องใช้ ดังนั้นหากคุณเห็นช่องนั้นก็ต้องกรอก หากรายการตัวชี้วัดว่างทั้งหมด แสดงว่าคำตอบจากเซิร์ฟเวอร์ยังมาไม่ถึง ให้รอการรีเฟรชอัตโนมัติรอบถัดไป',
         vi: 'Thông báo lỗi xuất hiện cạnh nút lưu kèm dấu ⚠️. Nguyên nhân phổ biến nhất là chọn chỉ số cần mã nhưng bỏ trống ô mã, hoặc ngưỡng để trống hay không phải số. Ô chọn mã tự động xuất hiện với những chỉ số yêu cầu nó, nên nếu bạn thấy ô đó thì bắt buộc phải điền. Nếu danh sách chỉ số hoàn toàn trống, phản hồi từ máy chủ chưa về — hãy đợi lần tự làm mới tiếp theo.',
+        id: 'Teks galatnya muncul di samping tombol simpan dengan tanda ⚠️. Penyebab paling umum adalah metrik yang memerlukan simbol tetapi kolom simbolnya dibiarkan kosong, atau ambang yang kosong atau bukan angka. Pemilih simbol muncul otomatis untuk metrik yang memerlukannya, jadi jika Anda melihat kolom itu, Anda harus mengisinya. Jika daftar metriknya kosong sama sekali, respons server belum tiba — tunggu pembaruan otomatis berikutnya.',
       },
     },
   ],

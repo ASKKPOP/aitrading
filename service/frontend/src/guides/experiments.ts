@@ -15,6 +15,7 @@ export const experimentsGuide: PageGuide = {
     ja: 'A/B 実験を作成し、エージェントがどのバリアントに割り当てられたかを確認し、バリアント別の指標と実験通知を管理する運用者向け画面です。一覧は誰でも閲覧できますが、作成・ステータス変更・通知送信にはトークンが必要です。',
     th: 'หน้าจอสำหรับผู้ดูแลเพื่อสร้างการทดลอง A/B ตรวจสอบว่าเอเจนต์ถูกจัดให้อยู่รูปแบบใด และจัดการเมตริกรายรูปแบบกับการแจ้งเตือนการทดลอง ทุกคนอ่านรายการได้ แต่การสร้าง เปลี่ยนสถานะ และส่งการแจ้งเตือนต้องมีโทเค็น',
     vi: 'Màn hình dành cho người vận hành để tạo thí nghiệm A/B, xem agent nào được phân vào biến thể nào, và quản lý chỉ số theo biến thể cùng thông báo thí nghiệm. Ai cũng đọc được danh sách, nhưng tạo mới, đổi trạng thái và gửi thông báo thì cần token.',
+    id: 'Layar operator untuk membuat eksperimen A/B, memeriksa varian mana yang ditugaskan ke tiap agen, dan mengelola metrik per varian serta notifikasi eksperimen. Siapa pun dapat membaca daftarnya, tetapi membuat, mengubah status, dan mengirim notifikasi memerlukan token.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const experimentsGuide: PageGuide = {
           'Bên dưới, mỗi biến thể được liệt kê dạng cặp "khóa / trọng số" để bạn thấy ngay tỷ lệ chia lưu lượng.',
           'Nhấn tiêu đề thí nghiệm sẽ mở phần phân bổ và chỉ số của nó ở cuối trang.',
           'Nút "Làm mới" ở góc trên bên phải tải lại danh sách; nếu chưa có thí nghiệm nào, một thông báo trạng thái rỗng sẽ hiện ra.',
+        ],
+        id: [
+          'Panel kiri yang besar adalah daftar eksperimen, memuat hingga seratus entri saat halaman dibuka.',
+          'Baris kecil di bagian atas setiap entri menampilkan status (berjalan, draf, atau dijeda), jenis unit, dan kunci eksperimen, berurutan.',
+          'Di bawahnya, setiap varian dituliskan sebagai pasangan "kunci / bobot" sehingga Anda bisa langsung membaca pembagian trafiknya.',
+          'Mengeklik judul eksperimen membentangkan penugasan dan metriknya di bagian bawah halaman.',
+          'Tombol "Muat ulang" di kanan atas memuat ulang daftarnya; bila belum ada eksperimen, pesan keadaan kosong yang muncul.',
         ],
       },
     },
@@ -114,6 +122,14 @@ export const experimentsGuide: PageGuide = {
           'Ô văn bản lớn bên dưới nhận định nghĩa biến thể dạng mảng JSON. Mặc định đã điền sẵn hai biến thể — control và quality-weighted — kèm khóa, trọng số và chế độ thưởng.',
           'Nhấn "Lưu thí nghiệm" sẽ tải lại danh sách và tự mở phần phân bổ của thí nghiệm mới. JSON sai định dạng sẽ bật cảnh báo trước khi lưu.',
         ],
+        id: [
+          'Panel "Buat eksperimen" di sebelah kanan hanya ditampilkan sebagai formulir bila ada token; selain itu ia menampilkan ajakan untuk masuk.',
+          'Judul eksperimen wajib diisi, dan mengosongkan kunci eksperimen membuat server yang menghasilkannya.',
+          'Pilih berjalan, draf, atau dijeda dari menu status, dan agen dari menu jenis unit.',
+          'Waktu mulai dan berakhir memakai pemilih tanggal/waktu; kosongkan untuk menyimpan eksperimen tanpa keduanya.',
+          'Area teks besar di bawahnya menerima definisi varian sebagai array JSON. Isinya sudah terisi bawaan dengan dua varian — control dan quality-weighted — yang menampilkan key, weight, dan reward mode.',
+          'Menekan "Simpan eksperimen" memuat ulang daftar dan otomatis membuka penugasan eksperimen baru itu. JSON yang salah bentuk memunculkan peringatan sebelum apa pun disimpan.',
+        ],
       },
     },
     {
@@ -156,6 +172,12 @@ export const experimentsGuide: PageGuide = {
           'Bảng phân bổ phía dưới trang hiển thị tối đa sáu mươi dòng gồm loại đơn vị, tên agent hoặc id đơn vị, khóa biến thể được gán, và lý do phân bổ.',
           'Đổi trạng thái sẽ làm mới cả danh sách lẫn khung phân bổ; nếu lỗi, một cảnh báo mang thông báo từ máy chủ sẽ hiện ra.',
         ],
+        id: [
+          'Bila ada token, setiap eksperimen memperoleh sakelar status: bertuliskan "Jeda" ketika berjalan dan "Mulai" pada kondisi lainnya.',
+          'Menekan tombol "Penugasan" atau judulnya memuat penugasan eksperimen tersebut, hingga lima ratus baris.',
+          'Tabel penugasan di bagian bawah halaman menampilkan hingga enam puluh baris berisi jenis unit, nama agen atau id unit, kunci varian yang ditugaskan, dan alasan penugasannya.',
+          'Mengubah status akan memperbarui daftar sekaligus tampilan penugasan; bila gagal, peringatannya memuat pesan dari server.',
+        ],
       },
     },
     {
@@ -197,6 +219,12 @@ export const experimentsGuide: PageGuide = {
           'Mỗi khối hiển thị khóa biến thể và, in đậm, số agent thuộc biến thể đó.',
           'Các biến thể đã tổng hợp điểm chất lượng còn hiển thị lợi nhuận trung bình (%), sụt giảm tối đa trung bình (%), số giao dịch và điểm chất lượng trung bình trên một dòng.',
           'Khi chưa có chỉ số chi tiết, chỉ hiện số lượng được phân bổ — một con số trơ trọi không phải là lỗi.',
+        ],
+        id: [
+          'Memilih sebuah eksperimen membuka panel berjudul nama dan kunci eksperimennya, berisi blok metrik per varian.',
+          'Setiap blok menampilkan kunci varian dan, dalam huruf tebal, jumlah agen pada varian itu.',
+          'Varian yang punya skor kualitas teragregasi juga menampilkan rata-rata imbal hasil (%), rata-rata penurunan maksimum (%), jumlah transaksi, dan rata-rata skor kualitas dalam satu baris.',
+          'Ketika metrik terperinci belum tersedia, hanya jumlah agen yang ditugaskan yang muncul — angka tunggal bukan berarti galat.',
         ],
       },
     },
@@ -250,6 +278,14 @@ export const experimentsGuide: PageGuide = {
           'Hãy nhấn "Xem trước chạy thử" trước để biết số đối tượng mà không gửi gì. Khi ô chạy thử còn được tích, nút "Xác nhận gửi" vẫn bị vô hiệu.',
           'Bỏ tích chạy thử rồi nhấn "Xác nhận gửi" sẽ hiện hộp thoại xác nhận; chấp nhận sẽ ghi tin nhắn thật.',
         ],
+        id: [
+          'Bagian "Notifikasi eksperimen" hanya muncul bila ada token. Pilih sebuah eksperimen, persempit ke satu varian atau biarkan "Semua varian", lalu pilih jenis pesannya.',
+          'Jenis pesannya mencakup pengumuman eksperimen, penugasan, pengingat, pembaruan aturan, dan pembaruan hasil, ditambah undangan tantangan dan misi tim.',
+          'Judul dan isi keduanya wajib. Untuk menyasar penerima tertentu, masukkan id agen yang dipisahkan koma; mengosongkannya akan menyasar semua yang cocok dengan filter.',
+          'Kolom angka adalah batas pengiriman dan bawaannya 500. Mengaktifkan "Buat tugas" juga membuat jenis tugas yang dipilih pada menu di sebelahnya untuk setiap penerima.',
+          'Tekan "Pratinjau uji kirim" lebih dulu untuk melihat jumlah sasaran tanpa mengirim apa pun. Selama kotak centang uji kirim aktif, tombol "Konfirmasi pengiriman" tetap nonaktif.',
+          'Nonaktifkan uji kirim lalu tekan "Konfirmasi pengiriman" untuk memunculkan dialog konfirmasi; menyetujuinya akan menulis pesan yang sebenarnya.',
+        ],
       },
     },
     {
@@ -297,6 +333,13 @@ export const experimentsGuide: PageGuide = {
           'Huy hiệu cạnh tiêu đề phần ghi "dry-run first" trước khi chạy và đổi thành id chiến dịch sau đó.',
           'Sau một lần gửi thật, ô chạy thử tự động được bật lại, tránh việc gửi lần hai do nhầm lẫn.',
         ],
+        id: [
+          'Baik uji kirim maupun pengiriman sungguhan, blok hasil muncul di bawah formulir setelah Anda menjalankannya.',
+          'Hasilnya melaporkan Sasaran, Terkirim, Daring, Tugas dibuat, Dilewati, dan Mode — entah uji kirim atau terkirim.',
+          'Blok kode di bawahnya mencetak sebagian daftar sasaran yang cocok sebagai JSON, sehingga Anda dapat memastikan filternya menangkap apa yang Anda maksud.',
+          'Lencana di samping judul bagian bertuliskan "uji kirim dulu" sebelum dijalankan dan berubah menjadi id kampanye setelahnya.',
+          'Setelah pengiriman sungguhan, kotak centang uji kirim otomatis diaktifkan kembali, sebagai pengaman terhadap pengiriman kedua yang tidak disengaja.',
+        ],
       },
     },
   ],
@@ -316,6 +359,7 @@ export const experimentsGuide: PageGuide = {
         ja: '一覧の閲覧はトークン無しでも可能ですが、実験の作成・ステータス変更・通知送信にはトークンが必要です。トークンが無い場合は「ログイン後に実験を作成できます」という案内だけが表示され、ステータスボタンと通知セクションも隠されます。',
         th: 'การอ่านรายการทำได้โดยไม่ต้องมีโทเค็น แต่การสร้างการทดลอง เปลี่ยนสถานะ และส่งการแจ้งเตือนต้องใช้โทเค็น ถ้าไม่มีโทเค็นจะเห็นเพียงข้อความ "เข้าสู่ระบบเพื่อสร้างการทดลอง" และปุ่มสถานะกับส่วนแจ้งเตือนก็จะถูกซ่อนด้วย',
         vi: 'Đọc danh sách không cần token, nhưng tạo thí nghiệm, đổi trạng thái và gửi thông báo đều cần. Không có token, bạn chỉ thấy lời nhắc "Đăng nhập để tạo thí nghiệm", đồng thời các nút trạng thái và phần thông báo cũng bị ẩn.',
+        id: 'Membaca daftarnya bisa tanpa token, tetapi membuat eksperimen, mengubah status, dan mengirim notifikasi semuanya memerlukan token. Tanpa token Anda hanya mendapat ajakan "Masuk untuk membuat eksperimen", dan tombol status serta bagian notifikasi juga disembunyikan.',
       },
     },
     {
@@ -333,6 +377,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'バリアント入力欄の内容が有効な JSON として解析できなかったという意味で、この場合サーバーには何も送信されません。既定で入っている例（オブジェクトの配列、各オブジェクトに key と weight）を基準に、引用符とカンマを確認してください。',
         th: 'หมายความว่าเนื้อหาในช่องรูปแบบไม่สามารถแปลงเป็น JSON ที่ถูกต้องได้ และในกรณีนี้จะไม่ส่งอะไรไปยังเซิร์ฟเวอร์ ลองตรวจเครื่องหมายคำพูดและจุลภาคเทียบกับตัวอย่างที่เติมไว้ คืออาร์เรย์ของอ็อบเจกต์ที่แต่ละตัวมี key และ weight',
         vi: 'Nghĩa là nội dung ô biến thể không phân tích được thành JSON hợp lệ, và khi đó không có gì được gửi tới máy chủ. Hãy kiểm tra dấu ngoặc kép và dấu phẩy so với ví dụ điền sẵn: một mảng các đối tượng, mỗi đối tượng có key và weight.',
+        id: 'Artinya kotak varian tidak dapat diurai sebagai JSON yang sah, dan dalam kasus itu tidak ada yang dikirim ke server. Periksa tanda kutip dan komanya terhadap contoh yang sudah terisi: sebuah array berisi objek, masing-masing dengan key dan weight.',
       },
     },
     {
@@ -350,6 +395,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'ドライランは対象が誰で何人になるかを計算して表示するだけで、メッセージは一切残しません。実送信は選択した対象に対して実際にエージェントメッセージを書き込むため、その前に確認ダイアログが表示されます。',
         th: 'การทดลองรันเพียงคำนวณและแสดงว่าจะจับใครและกี่คน โดยไม่เขียนข้อความใด ๆ ส่วนการส่งจริงจะเขียนข้อความเอเจนต์ให้เป้าหมายที่เลือกจริง ๆ จึงมีกล่องยืนยันขึ้นมาก่อน',
         vi: 'Chạy thử chỉ tính toán và cho thấy sẽ nhắm ai và bao nhiêu người, không ghi tin nhắn nào. Gửi thật thực sự ghi tin nhắn agent cho các đối tượng đã chọn, nên có hộp thoại xác nhận hiện lên trước.',
+        id: 'Uji kirim hanya menghitung dan menampilkan siapa dan berapa banyak yang akan disasar, tanpa menulis pesan apa pun. Pengiriman sungguhan benar-benar menulis pesan agen untuk sasaran yang dipilih, itulah sebabnya dialog konfirmasi muncul lebih dulu.',
       },
     },
     {
@@ -367,6 +413,7 @@ export const experimentsGuide: PageGuide = {
         ja: 'これは表示上の制限です。サーバーからは最大 500 件取得しますが、テーブルには先頭 60 行のみ描画されます。全件を扱いたい場合は、リサーチエクスポートページで実験キーによりフィルタして CSV で取得するのが確実です。',
         th: 'นั่นเป็นข้อจำกัดของการแสดงผล ระบบดึงมาได้สูงสุด 500 แถวแต่วาดเพียง 60 แถวแรก หากต้องการใช้ข้อมูลการมอบหมายทั้งหมด ให้ไปกรองด้วยคีย์การทดลองที่หน้าส่งออกงานวิจัยแล้วดาวน์โหลดเป็น CSV',
         vi: 'Đó là giới hạn hiển thị. Hệ thống tải tối đa năm trăm dòng nhưng chỉ vẽ sáu mươi dòng đầu. Để làm việc với toàn bộ dữ liệu phân bổ, hãy lọc theo khóa thí nghiệm ở trang xuất nghiên cứu và tải về dạng CSV.',
+        id: 'Itu batas tampilan. Hingga lima ratus baris diambil, tetapi hanya enam puluh pertama yang ditampilkan. Untuk mengolah data penugasan secara lengkap, saring berdasarkan kunci eksperimen di halaman ekspor riset dan unduh sebagai CSV.',
       },
     },
   ],
