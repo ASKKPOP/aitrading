@@ -8,6 +8,12 @@ import { tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
 import { fmtUsd, pnlColor } from './tradeShared'
 
+// The day the fleet's exit rails were replaced: stops rescaled from the run
+// budget to the position, plus the peak-tracked trailing lock. Trades before
+// this ran under a structure that could not close itself, so a single
+// lifetime P&L number reads as current performance when it is not.
+const EXIT_RAILS_EPOCH = '2026-07-25'
+
 // Automation (Target 3). The page itself is deliberately one block — the live
 // TRADING grid — with two ways to make a new one sitting above it:
 //
@@ -113,8 +119,16 @@ export function AutomationPage() {
 
   // My Assets at a glance (same numbers as /assets: cash + position value,
   // unrealized from open positions, realized from closed trades).
+  //
+  // The lifetime realized figure spans two generations of exit rails. Runs
+  // built before 2026-07-25 carried budget-scaled stops ($1,299–$2,596 on runs
+  // that lost $60–$219, i.e. 13–24x the loss they actually took) and no
+  // trailing lock at all, so nothing could ever close them but a manual
+  // stop-all — that cohort is most of the lifetime loss and cannot recur.
+  // Reporting it as one number reads as current performance. Show both.
   const [assets, setAssets] = useState<{ total: number; unrealized: number;
-    realized: number; cash: number; inUse: number; since: string | null } | null>(null)
+    realized: number; realizedCurrent: number; cash: number; inUse: number;
+    since: string | null } | null>(null)
   useEffect(() => {
     if (!token) return
     let dead = false
@@ -131,13 +145,16 @@ export function AutomationPage() {
         const mineTrades = mine.trades || []
         const realized = mineTrades.reduce(
           (s: number, t: any) => s + (t.pnl ?? 0), 0)
+        const realizedCurrent = mineTrades.reduce(
+          (s: number, t: any) =>
+            (t.created_at || '') >= EXIT_RAILS_EPOCH ? s + (t.pnl ?? 0) : s, 0)
         // earliest trade = "lifetime" anchor (first automated activity)
         const since = mineTrades.reduce((min: string | null, t: any) => {
           const c = t.created_at
           return c && (!min || c < min) ? c : min
         }, null as string | null)
         const cash = pos.cash ?? 0
-        if (!dead) setAssets({ total: cash + value, unrealized, realized, cash, inUse: value, since })
+        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since })
       } catch { /* transient */ }
     }
     loadAssets()
@@ -176,6 +193,8 @@ export function AutomationPage() {
     myAssets: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản', id: 'Aset saya' }),
     assetsUnrealized: tr(language, { ko: '미실현', en: 'unrealized', ja: '含み', th: 'ยังไม่รับรู้', vi: 'chưa chốt', id: 'belum direalisasi' }),
     assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt', id: 'direalisasi' }),
+    sumCurrentRails: tr(language, { ko: '현재 청산 구조', en: 'current exit rails', ja: '現行の決済ルール', th: 'กติกาปิดสถานะปัจจุบัน', vi: 'cơ chế thoát hiện tại', id: 'aturan keluar saat ini' }),
+    sumRailsSince: tr(language, { ko: '이후 실현', en: 'realized since', ja: '以降の実現', th: 'รับรู้แล้วตั้งแต่', vi: 'đã chốt từ', id: 'direalisasi sejak' }),
     sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
     sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
     sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
@@ -533,6 +552,11 @@ export function AutomationPage() {
           <div style={kSt}>📈 {T.sumProfit}</div>
           <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
           <div style={sSt}>{T.assetsRealized} {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+        </div>
+        <div style={tile}>
+          <div style={kSt}>🛡️ {T.sumCurrentRails}</div>
+          <div style={{ ...vSt, color: pnlColor(assets.realizedCurrent) }}>{assets.realizedCurrent >= 0 ? '+' : ''}{fmtUsd(assets.realizedCurrent)}</div>
+          <div style={sSt}>{T.sumRailsSince} {EXIT_RAILS_EPOCH}</div>
         </div>
       </div>
     )
