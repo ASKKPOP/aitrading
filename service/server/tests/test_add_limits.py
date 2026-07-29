@@ -168,6 +168,55 @@ class AddLimitUnitTests(AddLimitBase):
         self.assertIn("max", skip or "")
 
 
+class ShortActionVocabularyTests(AddLimitBase):
+    """Regression (2026-07-29): every test above calls the guard with "sell",
+    but run_cycle remaps a futures sell with no long to "short" BEFORE the gate
+    (run_engine, `action = "short"`). So the shipped caller passed a verb this
+    function did not recognise, fell through to `return None` — "reducing" —
+    and no short position was ever add-limited. Prod run 816 added to a ~$12.60
+    underwater NQ short and emitted no add_limit skip at all, while long run
+    776 emitted them routinely. The guard must recognise the verb the caller
+    actually sends.
+    """
+
+    def test_short_verb_blocks_underwater_add(self):
+        self._position(-5, mark=80.0)                # short from 74 → −$30
+        self._open("short", 300)
+        skip = run_engine._add_limit_skip(self.run_row, self.CFG, "short")
+        self.assertIsNotNone(skip, "underwater short add was not blocked")
+        self.assertIn("underwater", skip)
+
+    def test_short_verb_enforces_max_adds(self):
+        self._position(-5, mark=70.0)                # winning, so only max_adds bites
+        for m in (300, 200, 100):
+            self._open("short", m)
+        skip = run_engine._add_limit_skip(self.run_row, self.CFG, "short")
+        self.assertIsNotNone(skip, "max_adds not enforced for the short verb")
+        self.assertIn("max", skip)
+
+    def test_short_verb_enforces_cooldown(self):
+        self._position(-5, mark=70.0)
+        self._open("short", 10)                      # 10 min ago, cooldown 90
+        skip = run_engine._add_limit_skip(self.run_row, self.CFG, "short")
+        self.assertIsNotNone(skip, "cooldown not enforced for the short verb")
+        self.assertIn("cooldown", skip)
+
+    def test_short_verb_still_allows_a_working_add(self):
+        """The verb fix must not turn the guard into a blanket short ban."""
+        self._position(-5, mark=70.0)                # short from 74 → +$20
+        self._open("short", 300)                     # 1 open, adds=0, no cooldown
+        self.assertIsNone(
+            run_engine._add_limit_skip(self.run_row, self.CFG, "short"))
+
+    def test_cover_is_still_a_reduce(self):
+        """`cover` closes a short — it must never be limited."""
+        self._position(-5, mark=80.0)
+        for m in (300, 200, 100, 10):
+            self._open("short", m)
+        self.assertIsNone(
+            run_engine._add_limit_skip(self.run_row, self.CFG, "cover"))
+
+
 class ComposeEmitsLimitsTests(unittest.TestCase):
     def test_compose_run_settings_includes_add_limits(self):
         import fleet_planner as fp

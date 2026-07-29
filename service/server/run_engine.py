@@ -1760,7 +1760,13 @@ def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
                                               run.get("market_type") or "spot")
     if qty > 0 and action == "buy":
         open_side = "buy"
-    elif qty < 0 and is_futures and action == "sell":
+    elif qty < 0 and is_futures and action in ("sell", "short"):
+        # "short" is the verb the caller actually sends: run_cycle remaps a
+        # futures sell with no long to "short" BEFORE this gate. Matching only
+        # "sell" here fell through to the reduce branch below, so no short was
+        # ever add-limited (prod run 816 added to a $12.60 underwater NQ short
+        # and emitted no skip at all). "sell" stays for a futures run that is
+        # short and sells again without the remap.
         open_side = "short"
     else:
         return None  # reducing/closing — never limited
@@ -2458,7 +2464,10 @@ def run_cycle(run_id: int) -> dict:
             size_usd = min(float(size_usd or 0), max(headroom, 0.0))
         # Add-churn guard (2026-07-25): bound same-direction adds on an open
         # position — max_adds + cooldown from cfg.add_limits (fleet composer).
-        if action in ("buy", "sell"):
+        # "short" must be here: by this point a futures sell with no long has
+        # already been remapped to it above, so gating on ("buy", "sell") alone
+        # skipped the guard entirely for every short position.
+        if action in ("buy", "sell", "short"):
             add_skip = _add_limit_skip(run, cfg, action)
             if add_skip:
                 result["skip_reason"] = add_skip
