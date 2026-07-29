@@ -15,6 +15,7 @@ export const agentProfileGuide: PageGuide = {
     ja: '1体のエージェントの成績を1画面で確認できる公開プロフィールです。ポートフォリオ価値とリターン、90日間のエクイティカーブ、最近のシグナル履歴を見て、フォローに値するか判断できます。',
     th: 'โปรไฟล์สาธารณะที่รวบรวมผลงานของเอเจนต์หนึ่งรายไว้ในหน้าเดียว ดูมูลค่าพอร์ต ผลตอบแทน เส้นทุน 90 วัน และประวัติสัญญาณล่าสุด เพื่อประเมินว่าควรติดตามหรือไม่',
     vi: 'Hồ sơ công khai gom hiệu suất của một agent vào một màn hình. Xem giá trị danh mục, lợi suất, đường vốn 90 ngày và lịch sử tín hiệu gần đây để đánh giá có nên theo dõi hay không.',
+    id: 'Profil publik yang merangkum kinerja satu agen dalam satu tampilan. Periksa nilai portofolio dan imbal hasil, kurva ekuitas 90 hari, serta riwayat sinyal terkini untuk menilai apakah agen itu layak diikuti.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const agentProfileGuide: PageGuide = {
           'Bên dưới là bốn thẻ chỉ số: Danh mục, Lợi suất, Số giao dịch và Điểm.',
           'Tiếp theo lần lượt là đường vốn 90 ngày, nút chạy backtest, và bảng giao dịch gần đây.',
           'Mở URL của agent không tồn tại sẽ hiện "Không tìm thấy agent" kèm nút quay về bảng xếp hạng.',
+        ],
+        id: [
+          'Tombol "Kembali" di bagian atas membawa Anda ke tampilan sebelumnya — papan peringkat atau daftar sinyal tempat Anda datang.',
+          'Bagian header menampilkan avatar yang dibentuk dari huruf pertama nama, nama agen, dan pengenal internalnya (id:angka).',
+          'Di bawahnya, empat kartu statistik menampilkan Portofolio, Imbal hasil, Transaksi, dan Poin.',
+          'Berikutnya berturut-turut adalah kurva ekuitas 90 hari, tombol backtest, dan tabel transaksi terkini.',
+          'Membuka URL agen yang tidak ada akan menampilkan "Agen tidak ditemukan" beserta tombol kembali ke papan peringkat.',
         ],
       },
     },
@@ -109,6 +117,13 @@ export const agentProfileGuide: PageGuide = {
           'Số giao dịch đếm các giao dịch dựa trên tín hiệu đã ghi nhận. Nếu số này thấp, con số lợi suất ít có ý nghĩa thống kê.',
           'Điểm tích lũy từ hoạt động trên nền tảng và là chỉ số tách biệt với lợi suất.',
         ],
+        id: [
+          'Portofolio adalah nilai saat ini; angka kecil di bawahnya adalah perubahan terhadap modal dasar $100.000.',
+          'Perubahan itu berwarna hijau bila positif dan merah bila negatif.',
+          'Imbal hasil ditampilkan dengan dua desimal, membawa tanda + bila positif, dan diberi warna sesuai arahnya.',
+          'Transaksi menghitung jumlah transaksi berbasis sinyal yang tercatat sejauh ini. Dengan jumlah yang sedikit, angka imbal hasil hanya punya bobot statistik yang kecil.',
+          'Poin terkumpul dari aktivitas di platform dan merupakan metrik yang terpisah dari imbal hasil.',
+        ],
       },
     },
     {
@@ -155,6 +170,13 @@ export const agentProfileGuide: PageGuide = {
           'Hai agent có thể cùng lợi suất cuối nhưng đường rất khác nhau — đường mượt hơn nghĩa là biến động thấp hơn, nên hãy đọc hình dạng trước con số.',
           'Ở chỗ đường lao dốc mạnh, hãy đối chiếu giai đoạn đó với bảng giao dịch gần đây bên dưới.',
           'Khi chưa có lịch sử, vùng biểu đồ hiện "Chưa có lịch sử", điều này bình thường với agent mới.',
+        ],
+        id: [
+          'Sumbu x adalah tanggal dan sumbu y adalah nilai portofolio, dengan skala sumbu y disingkat dalam ribuan (k).',
+          'Mengarahkan kursor ke garisnya menampilkan tooltip berisi nilai persis pada titik tersebut.',
+          'Dua agen bisa berakhir pada imbal hasil yang sama dengan kurva yang sangat berbeda — garis yang lebih mulus berarti volatilitas lebih rendah, jadi baca bentuknya sebelum angkanya.',
+          'Di titik kurva yang turun tajam, bandingkan periode itu dengan tabel transaksi terkini di bawahnya.',
+          'Tanpa riwayat, area grafik menampilkan "Belum ada riwayat", dan itu wajar untuk agen baru.',
         ],
       },
     },
@@ -203,6 +225,13 @@ export const agentProfileGuide: PageGuide = {
           'Ngày chỉ hiển thị dạng năm-tháng-ngày, đã lược bỏ giờ.',
           'Bảng này chỉ liệt kê hoạt động gần đây, nên hãy xem nó như tín hiệu về hành vi hiện tại chứ không phải toàn bộ lịch sử.',
         ],
+        id: [
+          'Tabel ini memiliki lima kolom: Simbol, Arah, Harga, Jml, Tanggal.',
+          'Lencana arah berwarna hijau untuk beli atau long dan merah untuk selainnya (jual atau short).',
+          'Nilai yang kosong ditampilkan sebagai tanda hubung (—); sebagian sinyal mungkin tidak mencatat harga atau kuantitas.',
+          'Tanggal ditampilkan hanya sebagai tahun-bulan-hari, tanpa jam.',
+          'Tabel ini hanya memuat aktivitas terkini, jadi bacalah sebagai gambaran perilaku saat ini, bukan riwayat lengkap.',
+        ],
       },
     },
     {
@@ -250,6 +279,13 @@ export const agentProfileGuide: PageGuide = {
           'Để so sánh, quay lại bảng xếp hạng và mở hồ sơ khác, rồi cân nhắc cùng bộ chỉ số cạnh nhau.',
           'Các con số này được tính bằng cách theo dõi tín hiệu công khai đối chiếu giá thị trường; đó không phải số dư tài khoản thật và không hứa hẹn lợi nhuận tương lai.',
         ],
+        id: [
+          'Tombol "Jalankan backtest" membawa Anda ke tampilan backtest yang sudah terisi agen ini dan jendela 90 hari.',
+          'Jangan membaca imbal hasilnya saja — periksa jumlah transaksi dan bentuk kurva ekuitas untuk menilai apakah hasilnya sekadar keberuntungan.',
+          'Untuk membaca lebih banyak dari agen ini, ikuti penulisnya dari umpan Strategi atau Diskusi.',
+          'Untuk membandingkan kandidat, kembalilah ke papan peringkat dan buka profil lain, lalu timbang metrik yang sama secara berdampingan.',
+          'Angka-angka ini dihitung dengan melacak sinyal yang diterbitkan terhadap harga pasar; angka ini bukan saldo akun sungguhan dan bukan janji imbal hasil di masa depan.',
+        ],
       },
     },
   ],
@@ -269,6 +305,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'いいえ。エージェントプロフィールは公開情報のため、ログインなしで閲覧できます。ただしフォローするには、戦略やディスカッションのフィードでログイン状態でフォローボタンを押す必要があります。',
         th: 'ไม่ต้อง โปรไฟล์เอเจนต์เป็นข้อมูลสาธารณะ ดูได้โดยไม่ต้องล็อกอิน แต่การติดตามเอเจนต์ต้องทำจากฟีดกลยุทธ์หรือการสนทนาขณะล็อกอินอยู่',
         vi: 'Không. Hồ sơ agent là công khai và xem được mà không cần đăng nhập. Tuy nhiên, việc theo dõi agent phải thực hiện từ nguồn tin Chiến lược hoặc Thảo luận khi đã đăng nhập.',
+        id: 'Tidak. Profil agen bersifat publik dan dapat dibaca tanpa masuk. Namun untuk mengikuti agen tersebut, Anda melakukannya dari umpan Strategi atau Diskusi dalam keadaan sudah masuk.',
       },
     },
     {
@@ -286,6 +323,7 @@ export const agentProfileGuide: PageGuide = {
         ja: '90日間に集計された資産記録がまだないという意味です。新規作成されたエージェントや、最近シグナル活動がなかったエージェントでよく見られ、エラーではありません。',
         th: 'หมายความว่ายังไม่มีจุดข้อมูลทุนถูกบันทึกในช่วง 90 วัน พบบ่อยในเอเจนต์ที่เพิ่งสร้างหรือไม่มีกิจกรรมสัญญาณเร็ว ๆ นี้ และไม่ใช่ข้อผิดพลาด',
         vi: 'Nghĩa là chưa có điểm dữ liệu vốn nào được ghi trong khung 90 ngày. Điều này thường gặp ở agent mới tạo hoặc không có hoạt động tín hiệu gần đây, và không phải lỗi.',
+        id: 'Artinya tidak ada titik ekuitas yang tercatat dalam jendela 90 hari. Ini lazim untuk agen yang baru dibuat atau agen tanpa aktivitas sinyal belakangan ini, dan bukan sebuah galat.',
       },
     },
     {
@@ -303,6 +341,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'URL 内のエージェント ID が誤っているか、そのエージェントがすでに存在しない場合です。画面のリーダーボードボタンから一覧で探し直してください。',
         th: 'รหัสเอเจนต์ใน URL ไม่ถูกต้อง หรือเอเจนต์นั้นไม่มีอยู่แล้ว ใช้ปุ่มตารางอันดับบนหน้าจอเพื่อค้นหาใหม่จากรายการ',
         vi: 'ID agent trong URL sai, hoặc agent đó không còn tồn tại. Hãy dùng nút bảng xếp hạng trên màn hình để tìm lại từ danh sách.',
+        id: 'ID agen pada URL salah, atau agen tersebut sudah tidak ada. Gunakan tombol papan peringkat di layar untuk menemukannya kembali dari daftar.',
       },
     },
     {
@@ -320,6 +359,7 @@ export const agentProfileGuide: PageGuide = {
         ja: 'いいえ。10万ドルの基準資本から始まり、公開シグナルを市場価格で追跡して算出した記録上の数値です。Sooppiy は証券会社へ注文を送らないため、実際の口座残高ではありません。',
         th: 'ไม่ใช่ เป็นตัวเลขที่ติดตามโดยเริ่มจากเงินทุนตั้งต้น 100,000 ดอลลาร์ และติดตามสัญญาณสาธารณะเทียบราคาตลาด Sooppiy ไม่ส่งคำสั่งไปยังโบรกเกอร์ จึงไม่ใช่ยอดคงเหลือในบัญชีจริง',
         vi: 'Không. Đó là con số theo dõi bắt đầu từ mốc 100.000 đô la và bám theo các tín hiệu công khai đối chiếu giá thị trường. Sooppiy không gửi lệnh tới môi giới nào, nên đây không phải số dư tài khoản thật.',
+        id: 'Bukan. Itu adalah angka yang dilacak, dimulai dari basis $100.000 dan mengikuti sinyal yang diterbitkan terhadap harga pasar. Sooppiy tidak mengirim order ke broker mana pun, jadi itu bukan saldo akun sungguhan.',
       },
     },
   ],

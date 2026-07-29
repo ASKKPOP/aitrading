@@ -38,30 +38,30 @@ export function AssistantDock({ token }: Props) {
   const auth: any = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const T = {
-    title: tr(language, { ko: 'AI 어시스턴트', en: 'AI Assistant', ja: 'AIアシスタント', th: 'ผู้ช่วย AI', vi: 'Trợ lý AI' }),
-    subtitle: tr(language, { ko: '내 계정 전체를 아는 상담역 · 고객 지원', en: 'Knows your whole account · Support', ja: 'アカウント全体を把握 · サポート', th: 'รู้ทั้งบัญชีของคุณ · ฝ่ายสนับสนุน', vi: 'Biết toàn bộ tài khoản · Hỗ trợ' }),
-    placeholder: tr(language, { ko: '무엇이든 물어보세요 — 내 포지션, 멤버십, 규칙, 성과…', en: 'Ask anything — your positions, membership, rules, performance…', ja: '何でも聞いてください — ポジション・会員・ルール・成績…', th: 'ถามอะไรก็ได้ — สถานะ สมาชิก กฎ ผลงาน…', vi: 'Hỏi bất cứ điều gì — vị thế, thành viên, quy tắc, hiệu suất…' }),
-    empty: tr(language, { ko: '안녕하세요! 저는 회원님의 멤버십·포인트·포지션·거래 내역·자동화 규칙·리스크 한도·지침·감시 조건·알림·설정을 모두 보고 있는 고객 지원 어시스턴트입니다. 아래 질문을 누르거나 직접 입력해 보세요.', en: 'Hi! I am your support assistant — I can see your membership, points, positions, trade history, automation rules, risk limits, guidelines, watches, alerts and settings. Tap a question below or type your own.', ja: 'こんにちは！会員情報・ポイント・ポジション・取引履歴・ルール・リスク設定・通知をすべて把握するサポートアシスタントです。下の質問をタップするか、自由に入力してください。', th: 'สวัสดี! ฉันคือผู้ช่วยฝ่ายสนับสนุน — เห็นข้อมูลสมาชิก คะแนน สถานะ ประวัติการเทรด กฎ และการตั้งค่าทั้งหมดของคุณ แตะคำถามด้านล่างหรือพิมพ์เอง', vi: 'Xin chào! Tôi là trợ lý hỗ trợ — thấy toàn bộ thành viên, điểm, vị thế, lịch sử giao dịch, quy tắc và cài đặt của bạn. Chạm câu hỏi bên dưới hoặc tự nhập.' }),
-    send: tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi' }),
-    thinking: tr(language, { ko: '생각 중…', en: 'thinking…', ja: '考え中…', th: 'กำลังคิด…', vi: 'đang nghĩ…' }),
-    newChat: tr(language, { ko: '새 대화', en: 'New chat', ja: '新しい会話', th: 'แชทใหม่', vi: 'Trò chuyện mới' }),
-    history: tr(language, { ko: '대화 기록', en: 'History', ja: '履歴', th: 'ประวัติ', vi: 'Lịch sử' }),
-    back: tr(language, { ko: '← 돌아가기', en: '← Back', ja: '← 戻る', th: '← กลับ', vi: '← Quay lại' }),
-    historyEmpty: tr(language, { ko: '아직 대화 기록이 없습니다.', en: 'No conversations yet.', ja: 'まだ履歴がありません。', th: 'ยังไม่มีประวัติ', vi: 'Chưa có lịch sử.' }),
-    historyNote: tr(language, { ko: '모든 대화가 보관됩니다 — 삭제되지 않습니다.', en: 'Every conversation is kept — nothing is deleted.', ja: 'すべての会話が保存されます。', th: 'ทุกบทสนทนาถูกเก็บไว้ — ไม่มีการลบ', vi: 'Mọi hội thoại được lưu — không bị xóa.' }),
-    messages: tr(language, { ko: '메시지', en: 'messages', ja: '件', th: 'ข้อความ', vi: 'tin nhắn' }),
-    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng' }),
-    advisory: tr(language, { ko: '자문 전용 — 어시스턴트는 주문을 내거나 설정을 바꾸지 않습니다.', en: 'Advisory only — the assistant never places orders or changes settings.', ja: '助言専用 — 発注や設定変更はしません。', th: 'ให้คำแนะนำเท่านั้น — ไม่ส่งคำสั่งและไม่เปลี่ยนการตั้งค่า', vi: 'Chỉ tư vấn — không đặt lệnh, không đổi cài đặt.' }),
+    title: tr(language, { ko: 'AI 어시스턴트', en: 'AI Assistant', ja: 'AIアシスタント', th: 'ผู้ช่วย AI', vi: 'Trợ lý AI', id: 'Asisten AI' }),
+    subtitle: tr(language, { ko: '내 계정 전체를 아는 상담역 · 고객 지원', en: 'Knows your whole account · Support', ja: 'アカウント全体を把握 · サポート', th: 'รู้ทั้งบัญชีของคุณ · ฝ่ายสนับสนุน', vi: 'Biết toàn bộ tài khoản · Hỗ trợ', id: 'Mengetahui seluruh akun Anda · Dukungan' }),
+    placeholder: tr(language, { ko: '무엇이든 물어보세요 — 내 포지션, 멤버십, 규칙, 성과…', en: 'Ask anything — your positions, membership, rules, performance…', ja: '何でも聞いてください — ポジション・会員・ルール・成績…', th: 'ถามอะไรก็ได้ — สถานะ สมาชิก กฎ ผลงาน…', vi: 'Hỏi bất cứ điều gì — vị thế, thành viên, quy tắc, hiệu suất…', id: 'Tanyakan apa saja — posisi, keanggotaan, aturan, performa Anda…' }),
+    empty: tr(language, { ko: '안녕하세요! 저는 회원님의 멤버십·포인트·포지션·거래 내역·자동화 규칙·리스크 한도·지침·감시 조건·알림·설정을 모두 보고 있는 고객 지원 어시스턴트입니다. 아래 질문을 누르거나 직접 입력해 보세요.', en: 'Hi! I am your support assistant — I can see your membership, points, positions, trade history, automation rules, risk limits, guidelines, watches, alerts and settings. Tap a question below or type your own.', ja: 'こんにちは！会員情報・ポイント・ポジション・取引履歴・ルール・リスク設定・通知をすべて把握するサポートアシスタントです。下の質問をタップするか、自由に入力してください。', th: 'สวัสดี! ฉันคือผู้ช่วยฝ่ายสนับสนุน — เห็นข้อมูลสมาชิก คะแนน สถานะ ประวัติการเทรด กฎ และการตั้งค่าทั้งหมดของคุณ แตะคำถามด้านล่างหรือพิมพ์เอง', vi: 'Xin chào! Tôi là trợ lý hỗ trợ — thấy toàn bộ thành viên, điểm, vị thế, lịch sử giao dịch, quy tắc và cài đặt của bạn. Chạm câu hỏi bên dưới hoặc tự nhập.', id: 'Halo! Saya asisten dukungan Anda — saya dapat melihat keanggotaan, poin, posisi, riwayat transaksi, aturan otomatisasi, batas risiko, panduan, pantauan, peringatan, dan pengaturan Anda. Pilih pertanyaan di bawah atau tulis sendiri.' }),
+    send: tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi', id: 'Kirim' }),
+    thinking: tr(language, { ko: '생각 중…', en: 'thinking…', ja: '考え中…', th: 'กำลังคิด…', vi: 'đang nghĩ…', id: 'berpikir…' }),
+    newChat: tr(language, { ko: '새 대화', en: 'New chat', ja: '新しい会話', th: 'แชทใหม่', vi: 'Trò chuyện mới', id: 'Obrolan baru' }),
+    history: tr(language, { ko: '대화 기록', en: 'History', ja: '履歴', th: 'ประวัติ', vi: 'Lịch sử', id: 'Riwayat' }),
+    back: tr(language, { ko: '← 돌아가기', en: '← Back', ja: '← 戻る', th: '← กลับ', vi: '← Quay lại', id: '← Kembali' }),
+    historyEmpty: tr(language, { ko: '아직 대화 기록이 없습니다.', en: 'No conversations yet.', ja: 'まだ履歴がありません。', th: 'ยังไม่มีประวัติ', vi: 'Chưa có lịch sử.', id: 'Belum ada percakapan.' }),
+    historyNote: tr(language, { ko: '모든 대화가 보관됩니다 — 삭제되지 않습니다.', en: 'Every conversation is kept — nothing is deleted.', ja: 'すべての会話が保存されます。', th: 'ทุกบทสนทนาถูกเก็บไว้ — ไม่มีการลบ', vi: 'Mọi hội thoại được lưu — không bị xóa.', id: 'Setiap percakapan disimpan — tidak ada yang dihapus.' }),
+    messages: tr(language, { ko: '메시지', en: 'messages', ja: '件', th: 'ข้อความ', vi: 'tin nhắn', id: 'pesan' }),
+    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
+    advisory: tr(language, { ko: '자문 전용 — 어시스턴트는 주문을 내거나 설정을 바꾸지 않습니다.', en: 'Advisory only — the assistant never places orders or changes settings.', ja: '助言専用 — 発注や設定変更はしません。', th: 'ให้คำแนะนำเท่านั้น — ไม่ส่งคำสั่งและไม่เปลี่ยนการตั้งค่า', vi: 'Chỉ tư vấn — không đặt lệnh, không đổi cài đặt.', id: 'Hanya bersifat saran — asisten tidak pernah memasang order atau mengubah pengaturan.' }),
   }
 
   // customer-care starter questions, shown when the conversation is empty
   const STARTERS: string[] = [
-    tr(language, { ko: '내 포트폴리오 상태 어때요?', en: 'How is my portfolio doing?', ja: 'ポートフォリオの状態は？', th: 'พอร์ตของฉันเป็นอย่างไร?', vi: 'Danh mục của tôi thế nào?' }),
-    tr(language, { ko: '내 멤버십(구독) 상태를 알려주세요', en: "What's my membership status?", ja: '会員プランの状態を教えて', th: 'สถานะสมาชิกของฉันเป็นอย่างไร?', vi: 'Trạng thái thành viên của tôi?' }),
-    tr(language, { ko: '내 포인트 내역을 설명해 주세요', en: 'Explain my recent points history', ja: 'ポイント履歴を説明して', th: 'อธิบายประวัติคะแนนของฉัน', vi: 'Giải thích lịch sử điểm của tôi' }),
-    tr(language, { ko: '왜 자동화 규칙이 실행을 건너뛰었나요?', en: 'Why did my automation rule skip execution?', ja: 'なぜルールが実行をスキップした？', th: 'ทำไมกฎอัตโนมัติจึงข้ามการทำงาน?', vi: 'Vì sao quy tắc tự động bỏ qua thực thi?' }),
-    tr(language, { ko: '내 리스크 설정을 검토해 주세요', en: 'Review my risk settings', ja: 'リスク設定をレビューして', th: 'ตรวจสอบการตั้งค่าความเสี่ยงของฉัน', vi: 'Xem lại cài đặt rủi ro của tôi' }),
-    tr(language, { ko: '카피 트레이딩은 어떻게 시작하나요?', en: 'How do I start copy trading?', ja: 'コピー取引はどう始める？', th: 'เริ่มคัดลอกเทรดอย่างไร?', vi: 'Làm sao bắt đầu sao chép giao dịch?' }),
+    tr(language, { ko: '내 포트폴리오 상태 어때요?', en: 'How is my portfolio doing?', ja: 'ポートフォリオの状態は？', th: 'พอร์ตของฉันเป็นอย่างไร?', vi: 'Danh mục của tôi thế nào?', id: 'Bagaimana kondisi portofolio saya?' }),
+    tr(language, { ko: '내 멤버십(구독) 상태를 알려주세요', en: "What's my membership status?", ja: '会員プランの状態を教えて', th: 'สถานะสมาชิกของฉันเป็นอย่างไร?', vi: 'Trạng thái thành viên của tôi?', id: 'Bagaimana status keanggotaan saya?' }),
+    tr(language, { ko: '내 포인트 내역을 설명해 주세요', en: 'Explain my recent points history', ja: 'ポイント履歴を説明して', th: 'อธิบายประวัติคะแนนของฉัน', vi: 'Giải thích lịch sử điểm của tôi', id: 'Jelaskan riwayat poin saya belakangan ini' }),
+    tr(language, { ko: '왜 자동화 규칙이 실행을 건너뛰었나요?', en: 'Why did my automation rule skip execution?', ja: 'なぜルールが実行をスキップした？', th: 'ทำไมกฎอัตโนมัติจึงข้ามการทำงาน?', vi: 'Vì sao quy tắc tự động bỏ qua thực thi?', id: 'Mengapa aturan otomatisasi saya melewatkan eksekusi?' }),
+    tr(language, { ko: '내 리스크 설정을 검토해 주세요', en: 'Review my risk settings', ja: 'リスク設定をレビューして', th: 'ตรวจสอบการตั้งค่าความเสี่ยงของฉัน', vi: 'Xem lại cài đặt rủi ro của tôi', id: 'Tinjau pengaturan risiko saya' }),
+    tr(language, { ko: '카피 트레이딩은 어떻게 시작하나요?', en: 'How do I start copy trading?', ja: 'コピー取引はどう始める？', th: 'เริ่มคัดลอกเทรดอย่างไร?', vi: 'Làm sao bắt đầu sao chép giao dịch?', id: 'Bagaimana cara memulai copy trading?' }),
   ]
 
   useEffect(() => { localStorage.setItem(OPEN_KEY, open ? '1' : '0') }, [open])

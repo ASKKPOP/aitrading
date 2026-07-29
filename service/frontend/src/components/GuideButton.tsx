@@ -7,7 +7,7 @@ import { tr } from '../i18n'
 
 export function GuideButton({ onClick }: { onClick: () => void }) {
   const { language } = useLanguage()
-  const label = tr(language, { ko: '가이드', en: 'Guide', ja: 'ガイド', th: 'คู่มือ', vi: 'Hướng dẫn' })
+  const label = tr(language, { ko: '가이드', en: 'Guide', ja: 'ガイド', th: 'คู่มือ', vi: 'Hướng dẫn', id: 'Panduan' })
 
   return (
     <button

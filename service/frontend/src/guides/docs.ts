@@ -15,6 +15,7 @@ export const docsGuide: PageGuide = {
     ja: 'プラットフォームのガイドとリサーチレポートを集めた会員限定の文書閲覧ページです。上部のボタンで文書を選ぶと、本文がすぐ下に表示されます。',
     th: 'หน้าอ่านเอกสารสำหรับสมาชิกเท่านั้น รวมคู่มือแพลตฟอร์มและรายงานวิจัย เลือกเอกสารด้วยปุ่มด้านบนแล้วเนื้อหาจะแสดงอยู่ด้านล่างทันที',
     vi: 'Trang đọc tài liệu chỉ dành cho thành viên, gom hướng dẫn nền tảng và các báo cáo nghiên cứu. Chọn tài liệu bằng các nút phía trên và nội dung hiện ngay bên dưới.',
+    id: 'Halaman baca khusus anggota yang mengumpulkan panduan platform dan laporan riset. Pilih dokumen dengan tombol di bagian atas dan dokumen itu ditampilkan tepat di bawahnya.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const docsGuide: PageGuide = {
           'Khu vực rộng dưới các nút hiển thị chính nội dung tài liệu đã chọn.',
           'Trong lúc tải tài liệu, một vòng quay chờ sẽ hiện ra.',
           'Khu vực hiển thị tự giãn theo chiều cao tài liệu nên không có thanh cuộn riêng bên trong.',
+        ],
+        id: [
+          'Judul berada di bagian atas, dengan catatan "Dokumen khusus anggota." di bawahnya.',
+          'Di bawahnya, sederet tombol pil adalah daftar dokumen; yang sedang Anda baca ditampilkan tersorot.',
+          'Area lebar di bawah tombol-tombol itu menampilkan isi dokumen yang dipilih.',
+          'Selama dokumen dimuat, indikator berputar ditampilkan.',
+          'Area tampilan menyesuaikan tinggi dokumen, jadi tidak ada bilah gulir terpisah di dalamnya.',
         ],
       },
     },
@@ -109,6 +117,13 @@ export const docsGuide: PageGuide = {
           'Danh sách nút được dựng từ danh sách tài liệu do máy chủ trả về, nên thay đổi khi tài liệu được thêm hoặc gỡ.',
           'Tài liệu bạn đã mở được giữ trong bộ nhớ, nên khi quay lại nó hiển thị ngay lập tức.',
         ],
+        id: [
+          'Menekan sebuah tombol mengubah URL menjadi /docs/<dokumen> dan membuka dokumen tersebut.',
+          'Artinya Anda dapat membagikan atau menandai tautan ke dokumen tertentu.',
+          'Jika URL tidak memuat nama dokumen, atau memuat nama yang tidak dikenal, dokumen panduan bawaan yang dibuka.',
+          'Daftar tombol dibangun dari daftar dokumen yang dikembalikan server, sehingga berubah seiring dokumen ditambah atau dihapus.',
+          'Dokumen yang sudah pernah Anda buka disimpan di memori, jadi kembali ke dokumen itu tampil seketika.',
+        ],
       },
     },
     {
@@ -156,6 +171,13 @@ export const docsGuide: PageGuide = {
           'Cả danh sách tài liệu lẫn nội dung đều được yêu cầu kèm token đăng nhập, nên bạn phải đăng nhập.',
           'Bảng biểu và hình ảnh trong tài liệu hiển thị đúng như trong bản gốc.',
         ],
+        id: [
+          'Isi dokumen disiapkan dalam bahasa Korea dan Inggris.',
+          'Dengan bahasa antarmuka disetel ke Korea, Anda membaca dokumen berbahasa Korea; pada bahasa lain Anda membaca versi bahasa Inggris.',
+          'Ketika dokumen bahasa Inggris yang ditampilkan sebagai pengganti, catatan singkat yang menjelaskannya muncul di bawah tombol-tombol.',
+          'Baik daftar dokumen maupun isinya diminta dengan token login Anda, jadi Anda harus dalam keadaan masuk.',
+          'Tabel dan gambar di dalam dokumen ditampilkan persis seperti aslinya.',
+        ],
       },
     },
     {
@@ -198,6 +220,12 @@ export const docsGuide: PageGuide = {
           'Lưu dấu trang URL của những tài liệu bạn hay tra cứu để mở thẳng khi cần.',
           'Các khái niệm đọc ở đây sẽ dễ hiểu hơn khi bạn đối chiếu với số liệu thực trên bảng tín hiệu hoặc trang sự kiện tài chính.',
         ],
+        id: [
+          'Jika ini kunjungan pertama Anda, mulailah dari dokumen panduan bawaan untuk memahami bagaimana platform ini disusun.',
+          'Laporan riset tidak perlu dibaca berurutan — pilih yang menarik bagi Anda.',
+          'Tandai URL dokumen yang sering Anda rujuk agar bisa langsung melompat ke sana.',
+          'Konsep yang Anda baca di sini lebih cepat dipahami bila Anda mencocokkannya dengan angka langsung di papan sinyal atau halaman peristiwa keuangan.',
+        ],
       },
     },
   ],
@@ -217,6 +245,7 @@ export const docsGuide: PageGuide = {
         ja: '文書は会員限定で有効なログイントークンが必要です。ログアウト状態やセッション切れのときにこのエラーが出ます。案内どおり再ログインしてページを開き直してください。要求した文書自体が存在しない場合も同じメッセージが出ます。',
         th: 'เอกสารเป็นของสมาชิกเท่านั้นและต้องมีโทเค็นเข้าสู่ระบบที่ใช้ได้ ข้อความนี้จึงขึ้นเมื่อคุณออกจากระบบหรือเซสชันหมดอายุ ให้เข้าสู่ระบบใหม่ตามคำแนะนำแล้วเปิดหน้าอีกครั้ง ข้อความเดียวกันนี้ยังขึ้นเมื่อไม่มีเอกสารที่ร้องขออยู่จริง',
         vi: 'Tài liệu chỉ dành cho thành viên và cần token đăng nhập hợp lệ, nên thông báo này xuất hiện khi bạn đã đăng xuất hoặc phiên hết hạn. Hãy đăng nhập lại theo hướng dẫn rồi mở lại trang. Thông báo tương tự cũng hiện khi tài liệu được yêu cầu không tồn tại.',
+        id: 'Dokumen bersifat khusus anggota dan memerlukan token login yang sah, jadi pesan ini muncul ketika Anda keluar atau sesi Anda berakhir. Masuk kembali seperti disarankan pesannya lalu buka ulang halamannya. Pesan yang sama juga muncul ketika dokumen yang diminta tidak ada.',
       },
     },
     {
@@ -234,6 +263,7 @@ export const docsGuide: PageGuide = {
         ja: 'ボタンの列はサーバーから受け取った文書リストで作られます。リストの取得が失敗した、またはまだ届いていない場合は空になることがあります。ログイン状態を確認してページを再読み込みしてください。',
         th: 'แถวปุ่มสร้างจากรายการเอกสารที่ดึงจากเซิร์ฟเวอร์ ถ้าคำขอนั้นล้มเหลวหรือยังมาไม่ถึง แถวอาจว่างได้ ตรวจว่าคุณเข้าสู่ระบบอยู่แล้วรีเฟรชหน้า',
         vi: 'Hàng nút được dựng từ danh sách tài liệu lấy về từ máy chủ. Nếu yêu cầu đó thất bại hoặc chưa về kịp, hàng nút có thể trống. Hãy kiểm tra bạn đã đăng nhập và làm mới trang.',
+        id: 'Deretan tombol dibangun dari daftar dokumen yang diambil dari server. Jika permintaan itu gagal atau belum tiba, deretannya bisa kosong. Pastikan Anda sudah masuk lalu muat ulang halamannya.',
       },
     },
     {
@@ -251,6 +281,7 @@ export const docsGuide: PageGuide = {
         ja: '文書の本文は現在、韓国語と英語のみで提供されています。他のUI言語では英語の文書が代わりに開き、ボタンの下にその旨の案内が出ます。画面のメニューやボタンは選択した言語のままです。',
         th: 'เนื้อหาเอกสารขณะนี้มีเฉพาะภาษาเกาหลีและอังกฤษ หากใช้ภาษาอินเทอร์เฟซอื่นจะแสดงฉบับภาษาอังกฤษแทน พร้อมข้อความแจ้งใต้ปุ่ม ส่วนเมนูและปุ่มรอบ ๆ ยังคงเป็นภาษาที่คุณเลือก',
         vi: 'Nội dung tài liệu hiện chỉ có tiếng Hàn và tiếng Anh. Với các ngôn ngữ giao diện khác, bản tiếng Anh sẽ hiển thị thay thế, kèm ghi chú bên dưới các nút. Menu và nút xung quanh vẫn giữ ngôn ngữ bạn đã chọn.',
+        id: 'Isi dokumen saat ini hanya tersedia dalam bahasa Korea dan Inggris. Pada bahasa antarmuka lain, dokumen bahasa Inggris yang ditampilkan sebagai gantinya, dengan catatan di bawah tombol-tombol yang menyatakan hal itu. Menu dan tombol di sekitarnya tetap dalam bahasa pilihan Anda.',
       },
     },
   ],

@@ -8,6 +8,7 @@ export const supportGuide: PageGuide = {
     ja: '運営チームと1対1でやり取りするチャットです。アカウント・支払い・不具合・機能の使い方など、人の確認が必要な内容を残す場所で、会員1人につき会話は1つです。',
     th: 'การสนทนาแบบตัวต่อตัวกับทีม Sooppiy เป็นที่สำหรับแจ้งเรื่องที่ต้องให้คนตรวจสอบ เช่น บัญชี การชำระเงิน ข้อผิดพลาด หรือวิธีใช้ฟีเจอร์ และสมาชิกแต่ละคนมีการสนทนาเพียงหนึ่งเดียว',
     vi: 'Cuộc trò chuyện một-đối-một với đội ngũ Sooppiy. Đây là nơi bạn nêu bất cứ điều gì cần người thật xem xét — tài khoản, thanh toán, lỗi, cách dùng tính năng — và mỗi thành viên chỉ có đúng một cuộc trò chuyện.',
+    id: 'Percakapan satu lawan satu dengan tim Sooppiy. Di sinilah Anda menyampaikan hal apa pun yang perlu ditangani manusia — akun, penagihan, galat, cara kerja sebuah fitur — dan setiap anggota memiliki tepat satu percakapan.',
   },
   sections: [
     {
@@ -47,6 +48,13 @@ export const supportGuide: PageGuide = {
           'Lần đầu mở trang sẽ tự tạo cuộc trò chuyện trống cho bạn. Không có nút "mở phiếu" nào để bấm.',
           'Tin nhắn của bạn hiện bên phải với màu nhấn; tin của đội ngũ hiện bên trái màu xám, ghi Đội ngũ Sooppiy kèm email người trả lời.',
           'Thời gian nhỏ dưới mỗi bong bóng là dấu thời gian UTC máy chủ ghi lại. Nó không được đổi sang múi giờ của bạn.',
+        ],
+        id: [
+          'Halaman ini hanya terbuka di bawah akun anggota yang sudah masuk. Token agen tidak dapat menjangkaunya.',
+          'Setiap anggota punya tepat satu percakapan. Pertanyaan tidak memunculkan tiket terpisah — semuanya menumpuk dalam satu utas itu secara berurutan waktu.',
+          'Membuka halaman ini untuk pertama kalinya akan membuat percakapan kosong untuk Anda. Tidak ada tombol "buka tiket" yang perlu ditekan.',
+          'Pesan Anda sendiri muncul di sebelah kanan dengan warna aksen; pesan tim muncul di sebelah kiri dengan warna abu-abu, berlabel Tim Sooppiy beserta email penjawabnya.',
+          'Waktu kecil di bawah setiap gelembung adalah cap waktu UTC yang dicatat server. Waktu itu tidak dikonversi ke zona lokal Anda.',
         ],
       },
     },
@@ -93,6 +101,14 @@ export const supportGuide: PageGuide = {
           'Khi thất bại, dòng chữ đỏ Gửi thất bại hiện phía trên và nội dung bạn viết vẫn nguyên trong ô — chỉ cần bấm Gửi lại.',
           'Tin nhắn đã gửi không thể sửa hay xoá. Nếu gửi nhầm, hãy gửi tiếp một tin đính chính.',
         ],
+        id: [
+          'Ketik di kotak bawah lalu tekan Kirim, atau tekan ⌘/Ctrl + Enter. Enter saja akan menyisipkan baris baru.',
+          'Setiap pesan menampung hingga 4000 karakter, dengan penghitung langsung di bawah kotaknya. Melebihi itu, teksnya tidak akan terketik.',
+          'Tombol Kirim nonaktif selama kotaknya kosong atau pengiriman sedang berjalan, dan labelnya menjadi Mengirim.... Menekan dua kali tidak dapat mengirim ganda.',
+          'Bila berhasil, kotaknya dikosongkan, percakapan langsung dimuat ulang dan bergulir ke bawah.',
+          'Bila gagal, pesan merah Gagal mengirim muncul di atas dan teks Anda tetap utuh di kotaknya — tinggal tekan Kirim lagi.',
+          'Pesan yang sudah terkirim tidak dapat diubah atau dihapus. Jika Anda salah kirim, susulkan koreksinya.',
+        ],
       },
     },
     {
@@ -133,6 +149,13 @@ export const supportGuide: PageGuide = {
           'Mở trang này sẽ xoá ngay dấu chưa đọc trên các phản hồi. Không có nút đánh dấu đã đọc riêng.',
           'Thời gian phản hồi tuỳ nội dung câu hỏi và lượng yêu cầu đang chờ. Nếu không gấp, chờ đợi sẽ được xem xét nhanh hơn là gửi lại cùng một tin.',
         ],
+        id: [
+          'Selama halaman terbuka, percakapan diambil ulang setiap 20 detik, sehingga balasan muncul tanpa perlu Anda muat ulang.',
+          'Ketika tim membalas, notifikasi Dukungan juga dibuat dan masuk ke halaman Notifikasi Anda. Tautan Buka → di sana membawa Anda kembali ke percakapan ini.',
+          'Kategori dukungan mengaktifkan email secara bawaan, jadi meski halaman ini tertutup, Anda tetap mendapat kabar balasan di email akun Anda.',
+          'Membuka halaman ini langsung menghapus penanda belum dibaca pada balasan. Tidak ada tombol baca terpisah yang perlu ditekan.',
+          'Waktu tanggapan bergantung pada pertanyaan Anda dan antrean saat itu. Kecuali mendesak, menunggu justru membuat Anda lebih cepat ditangani dibanding mengirim ulang pesan yang sama.',
+        ],
       },
     },
     {
@@ -167,6 +190,12 @@ export const supportGuide: PageGuide = {
           'Ô soạn tin vẫn dùng được khi Đã đóng. Gửi một tin mới sẽ tự động chuyển cuộc trò chuyện về trạng thái mở và đưa nó trở lại trước mặt đội ngũ.',
           'Việc đóng không xoá bất cứ thứ gì — mọi tin nhắn trước đó vẫn nằm nguyên phía trên.',
           'Huy hiệu biến mất ở lần tự làm mới kế tiếp (tối đa 20 giây), nên nó có thể còn nán lại một lát ngay cả sau khi bạn đã gửi tin.',
+        ],
+        id: [
+          'Ketika tim menuntaskan sebuah pertanyaan, lencana abu-abu Ditutup muncul di samping judul. Anggota tidak dapat menutup atau membuka kembali percakapan sendiri.',
+          'Kotak tulis tetap bisa dipakai selama status Ditutup. Mengirim pesan baru otomatis mengembalikan percakapan ke status terbuka dan menempatkannya kembali di hadapan tim.',
+          'Penutupan tidak menghapus apa pun — setiap pesan sebelumnya tetap berada di tempatnya, di atas.',
+          'Lencananya hilang pada pembaruan otomatis berikutnya (hingga 20 detik), jadi bisa saja masih terlihat sebentar meski Anda sudah mengirim pesan.',
         ],
       },
     },
@@ -208,6 +237,13 @@ export const supportGuide: PageGuide = {
           'Tuyệt đối không viết ra mật khẩu, mã xác minh hay token agent đầy đủ. Vài ký tự đầu là quá đủ nếu cần nhận diện.',
           'Nếu câu hỏi thực chất là về cách một tính năng hoạt động, hướng dẫn trong ứng dụng ở trang đó thường đã có câu trả lời — nên mở xem trước.',
         ],
+        id: [
+          'Sebutkan sekaligus: Anda sedang di halaman mana, apa yang Anda tekan, apa yang Anda harapkan, dan apa yang sebenarnya terjadi. Ini memangkas bolak-balik secara drastis.',
+          'Tempel teks galat persis seperti yang muncul, jangan diringkas. Baris baru tetap dipertahankan dalam pesan.',
+          'Untuk masalah aturan atau sinyal, sertakan waktu kejadiannya. Menyalin cap waktu yang tertera di halaman Notifikasi adalah cara paling presisi.',
+          'Jangan pernah menuliskan kata sandi, kode verifikasi, atau token agen secara lengkap. Beberapa karakter pertama sudah cukup bila kami perlu mengenalinya.',
+          'Jika pertanyaan Anda sebenarnya tentang cara kerja sebuah fitur, panduan dalam aplikasi di halaman itu sering kali sudah menjawabnya — ada baiknya dibuka lebih dulu.',
+        ],
       },
     },
   ],
@@ -227,6 +263,7 @@ export const supportGuide: PageGuide = {
         ja: 'いいえ。会員1人につき会話は1つに固定されているため、新しい話題を出しても同じ会話に続きます。そのため、別の話題に移るときは冒頭に何についての話かを1行添えると分かりやすくなります。過去のやり取りが押し出されて消えることはないので、上へスクロールすればいつでも確認できます。',
         th: 'ไม่ได้ สมาชิกแต่ละคนถูกกำหนดให้มีการสนทนาเดียว เรื่องใหม่จึงต่อเนื่องอยู่ในสายเดิม ด้วยเหตุนี้ การขึ้นต้นด้วยหนึ่งบรรทัดว่าข้อความนี้เกี่ยวกับอะไรจะช่วยได้มาก ไม่มีอะไรถูกดันหายไป เลื่อนขึ้นไปก็ยังเห็นบทสนทนาก่อนหน้าทั้งหมด',
         vi: 'Không. Mỗi thành viên cố định một cuộc trò chuyện, nên chủ đề mới chỉ tiếp nối trong cùng luồng. Vì vậy, nên mở đầu bằng một dòng nêu tin nhắn này nói về việc gì. Không có gì bị đẩy đi mất — cuộn lên là thấy lại toàn bộ trao đổi trước đó.',
+        id: 'Tidak. Setiap anggota terikat pada satu percakapan, jadi topik baru sekadar berlanjut di utas yang sama. Karena itu, ada baiknya membuka pesan dengan satu baris yang menyebutkan pokok pesan tersebut. Tidak ada yang terdorong keluar — gulir ke atas dan seluruh percakapan sebelumnya masih ada di sana.',
       },
     },
     {
@@ -244,6 +281,7 @@ export const supportGuide: PageGuide = {
         ja: 'できます。「終了」は運営チーム側で対応を終えたという表示にすぎず、入力欄は開いたままです。メッセージを送れば会話は自動的に「オープン」に戻り、運営チームの一覧の上位へ上がります。ただし画面上の「終了」バッジは次の自動更新（最大20秒）まで残ることがあるので、二重に送る必要はありません。',
         th: 'ได้ ปิดแล้วเป็นเพียงการบอกว่าทีมจัดการเรื่องนั้นเสร็จ ช่องพิมพ์ยังเปิดอยู่ การส่งข้อความจะเปิดการสนทนาใหม่โดยอัตโนมัติและดันกลับขึ้นไปบนสุดของคิวทีม อนึ่ง ป้ายปิดแล้วบนหน้าจออาจค้างจนถึงรอบรีเฟรชอัตโนมัติถัดไป (ไม่เกิน 20 วินาที) จึงไม่จำเป็นต้องส่งซ้ำ',
         vi: 'Được. Đã đóng chỉ có nghĩa đội ngũ đã xử lý xong; ô soạn tin vẫn mở. Gửi một tin nhắn sẽ tự động mở lại cuộc trò chuyện và đẩy nó lên đầu hàng chờ của đội ngũ. Huy hiệu Đã đóng trên màn hình có thể còn nán tới lần tự làm mới kế tiếp (tối đa 20 giây), nên không cần gửi hai lần.',
+        id: 'Bisa. Ditutup hanya berarti tim selesai menanganinya; kotak tulis tetap terbuka. Mengirim pesan otomatis membuka kembali percakapan dan mendorongnya ke puncak antrean tim. Lencana Ditutup di layar mungkin masih terlihat sampai pembaruan otomatis berikutnya (hingga 20 detik), jadi tidak perlu mengirim dua kali.',
       },
     },
     {
@@ -261,6 +299,7 @@ export const supportGuide: PageGuide = {
         ja: 'いいえ。運営チームが返信すると「サポート」通知が自動的に作成されて通知ページに残り、この種類は既定でメール送信も有効なのでアカウントのメールアドレスにも案内が届きます。ただし設定ページでサポートの種類をオフにしていると通知一覧にも記録されないため、返信を見逃したくなければそのスイッチはオンのままにしてください。',
         th: 'ไม่ต้อง เมื่อทีมตอบกลับ ระบบจะสร้างการแจ้งเตือนประเภทสนับสนุนโดยอัตโนมัติและคงอยู่ในหน้าการแจ้งเตือนของคุณ อีกทั้งประเภทนี้เปิดอีเมลไว้เป็นค่าเริ่มต้น อีเมลของบัญชีจึงได้รับแจ้งด้วย แต่ควรเปิดสวิตช์นี้ไว้ เพราะหากปิดประเภทสนับสนุนในหน้าตั้งค่า คำตอบจะไม่ถูกบันทึกในรายการแจ้งเตือนเช่นกัน',
         vi: 'Không. Khi đội ngũ trả lời, một thông báo loại Hỗ trợ được tạo tự động và nằm lại trên trang Thông báo, đồng thời loại này bật email theo mặc định nên email tài khoản của bạn cũng nhận được tin. Tuy vậy hãy giữ công tắc đó bật: nếu bạn tắt loại hỗ trợ trong Cài đặt, phản hồi cũng sẽ không được ghi vào danh sách thông báo.',
+        id: 'Tidak. Ketika tim membalas, notifikasi Dukungan otomatis dibuat dan tetap ada di halaman Notifikasi Anda, dan kategori ini mengaktifkan email secara bawaan sehingga alamat akun Anda juga menerima pemberitahuan. Namun biarkan sakelarnya tetap aktif: jika Anda menonaktifkan kategori dukungan di Pengaturan, balasannya juga tidak dicatat dalam daftar notifikasi.',
       },
     },
   ],

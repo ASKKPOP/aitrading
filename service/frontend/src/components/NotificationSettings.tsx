@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { API_BASE, useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { tr, type TrMap } from '../i18n'
 
 // Per-category notification switches, laid out like iOS Settings →
 // Notifications: one grouped list, one switch per category. Email and SMS are
@@ -47,24 +47,24 @@ export function Switch({ checked, onChange, disabled, label }: {
   )
 }
 
-const LABELS: Record<string, { ko: string; en: string; ja: string; th: string; vi: string }> = {
-  trade: { ko: '거래 활동', en: 'Trade activity', ja: '取引アクティビティ', th: 'กิจกรรมการเทรด', vi: 'Hoạt động giao dịch' },
-  risk: { ko: '리스크 · 안전', en: 'Risk & safety', ja: 'リスク・安全', th: 'ความเสี่ยงและความปลอดภัย', vi: 'Rủi ro & an toàn' },
-  watch: { ko: '워치 알림', en: 'Watches', ja: 'ウォッチ', th: 'การเฝ้าดู', vi: 'Theo dõi' },
-  auto_trading_reports: { ko: '자동매매 리포트', en: 'Auto-trading reports', ja: '自動売買レポート', th: 'รายงานการเทรดอัตโนมัติ', vi: 'Báo cáo giao dịch tự động' },
-  auto_trading_safety: { ko: '자동매매 안전', en: 'Auto-trading safety', ja: '自動売買の安全', th: 'ความปลอดภัยการเทรดอัตโนมัติ', vi: 'An toàn giao dịch tự động' },
-  support: { ko: '고객지원 답변', en: 'Support replies', ja: 'サポート返信', th: 'การตอบกลับจากฝ่ายสนับสนุน', vi: 'Phản hồi hỗ trợ' },
-  announcement: { ko: '공지사항', en: 'Announcements', ja: 'お知らせ', th: 'ประกาศ', vi: 'Thông báo' },
+const LABELS: Record<string, TrMap> = {
+  trade: { ko: '거래 활동', en: 'Trade activity', ja: '取引アクティビティ', th: 'กิจกรรมการเทรด', vi: 'Hoạt động giao dịch', id: 'Aktivitas transaksi' },
+  risk: { ko: '리스크 · 안전', en: 'Risk & safety', ja: 'リスク・安全', th: 'ความเสี่ยงและความปลอดภัย', vi: 'Rủi ro & an toàn', id: 'Risiko & keamanan' },
+  watch: { ko: '워치 알림', en: 'Watches', ja: 'ウォッチ', th: 'การเฝ้าดู', vi: 'Theo dõi', id: 'Pantauan' },
+  auto_trading_reports: { ko: '자동매매 리포트', en: 'Auto-trading reports', ja: '自動売買レポート', th: 'รายงานการเทรดอัตโนมัติ', vi: 'Báo cáo giao dịch tự động', id: 'Laporan trading otomatis' },
+  auto_trading_safety: { ko: '자동매매 안전', en: 'Auto-trading safety', ja: '自動売買の安全', th: 'ความปลอดภัยการเทรดอัตโนมัติ', vi: 'An toàn giao dịch tự động', id: 'Keamanan trading otomatis' },
+  support: { ko: '고객지원 답변', en: 'Support replies', ja: 'サポート返信', th: 'การตอบกลับจากฝ่ายสนับสนุน', vi: 'Phản hồi hỗ trợ', id: 'Balasan dukungan' },
+  announcement: { ko: '공지사항', en: 'Announcements', ja: 'お知らせ', th: 'ประกาศ', vi: 'Thông báo', id: 'Pengumuman' },
 }
 
-const DESCRIPTIONS: Record<string, { ko: string; en: string; ja: string; th: string; vi: string }> = {
-  trade: { ko: '자동매매 규칙의 체결과 포지션 종료.', en: 'Order fills and position closes from your automation rules.', ja: '自動売買ルールの約定とポジション決済。', th: 'การจับคู่คำสั่งและการปิดสถานะจากกฎอัตโนมัติ', vi: 'Khớp lệnh và đóng vị thế từ quy tắc tự động.' },
-  risk: { ko: '서킷 브레이커 정지와 사전 검증 거부.', en: 'Circuit-breaker halts and rejected pre-trade verifications.', ja: 'サーキットブレーカー停止と事前検証の却下。', th: 'การหยุดเซอร์กิตเบรกเกอร์และการปฏิเสธการตรวจสอบ', vi: 'Dừng ngắt mạch và từ chối kiểm chứng trước lệnh.' },
-  watch: { ko: '설정한 가격·지표 워치가 발동할 때.', en: 'Price and indicator watches you configured firing.', ja: '設定した価格・指標ウォッチの発動。', th: 'การเฝ้าดูราคาและตัวชี้วัดที่คุณตั้งไว้ทำงาน', vi: 'Theo dõi giá và chỉ báo bạn đã cấu hình kích hoạt.' },
-  auto_trading_reports: { ko: '트레이딩 런의 정기 손익 리포트.', en: 'Scheduled P&L digests from your trading runs.', ja: 'トレーディングランの定期損益レポート。', th: 'สรุปกำไรขาดทุนตามกำหนดเวลาจากรันการเทรด', vi: 'Báo cáo lãi/lỗ định kỳ từ các phiên giao dịch.' },
-  auto_trading_safety: { ko: '런 중단, 손익 임계값 발동, 안전 일시정지.', en: 'Run stop events, profit/loss threshold triggers, and safety pauses.', ja: 'ラン停止、損益しきい値の発動、安全一時停止。', th: 'การหยุดรัน การแตะเกณฑ์กำไรขาดทุน และการหยุดเพื่อความปลอดภัย', vi: 'Sự kiện dừng phiên, ngưỡng lãi/lỗ và tạm dừng an toàn.' },
-  support: { ko: '고객지원 대화에 운영팀이 답장할 때.', en: 'Replies from the Sooppiy team in your support conversation.', ja: 'サポート会話での運営チームの返信。', th: 'การตอบกลับจากทีม Sooppiy ในการสนทนาสนับสนุน', vi: 'Phản hồi từ đội ngũ Sooppiy trong cuộc trò chuyện hỗ trợ.' },
-  announcement: { ko: '플랫폼 공지와 서비스 안내.', en: 'Platform announcements and service notices from Sooppiy.', ja: 'プラットフォームのお知らせとサービス通知。', th: 'ประกาศแพลตฟอร์มและการแจ้งบริการ', vi: 'Thông báo nền tảng và thông báo dịch vụ.' },
+const DESCRIPTIONS: Record<string, TrMap> = {
+  trade: { ko: '자동매매 규칙의 체결과 포지션 종료.', en: 'Order fills and position closes from your automation rules.', ja: '自動売買ルールの約定とポジション決済。', th: 'การจับคู่คำสั่งและการปิดสถานะจากกฎอัตโนมัติ', vi: 'Khớp lệnh và đóng vị thế từ quy tắc tự động.', id: 'Eksekusi order dan penutupan posisi dari aturan otomatisasi Anda.' },
+  risk: { ko: '서킷 브레이커 정지와 사전 검증 거부.', en: 'Circuit-breaker halts and rejected pre-trade verifications.', ja: 'サーキットブレーカー停止と事前検証の却下。', th: 'การหยุดเซอร์กิตเบรกเกอร์และการปฏิเสธการตรวจสอบ', vi: 'Dừng ngắt mạch và từ chối kiểm chứng trước lệnh.', id: 'Penghentian oleh pemutus sirkuit dan verifikasi pra-transaksi yang ditolak.' },
+  watch: { ko: '설정한 가격·지표 워치가 발동할 때.', en: 'Price and indicator watches you configured firing.', ja: '設定した価格・指標ウォッチの発動。', th: 'การเฝ้าดูราคาและตัวชี้วัดที่คุณตั้งไว้ทำงาน', vi: 'Theo dõi giá và chỉ báo bạn đã cấu hình kích hoạt.', id: 'Pantauan harga dan indikator yang Anda atur ketika terpicu.' },
+  auto_trading_reports: { ko: '트레이딩 런의 정기 손익 리포트.', en: 'Scheduled P&L digests from your trading runs.', ja: 'トレーディングランの定期損益レポート。', th: 'สรุปกำไรขาดทุนตามกำหนดเวลาจากรันการเทรด', vi: 'Báo cáo lãi/lỗ định kỳ từ các phiên giao dịch.', id: 'Ringkasan laba rugi terjadwal dari run trading Anda.' },
+  auto_trading_safety: { ko: '런 중단, 손익 임계값 발동, 안전 일시정지.', en: 'Run stop events, profit/loss threshold triggers, and safety pauses.', ja: 'ラン停止、損益しきい値の発動、安全一時停止。', th: 'การหยุดรัน การแตะเกณฑ์กำไรขาดทุน และการหยุดเพื่อความปลอดภัย', vi: 'Sự kiện dừng phiên, ngưỡng lãi/lỗ và tạm dừng an toàn.', id: 'Peristiwa stop pada run, pemicu ambang laba/rugi, dan jeda keamanan.' },
+  support: { ko: '고객지원 대화에 운영팀이 답장할 때.', en: 'Replies from the Sooppiy team in your support conversation.', ja: 'サポート会話での運営チームの返信。', th: 'การตอบกลับจากทีม Sooppiy ในการสนทนาสนับสนุน', vi: 'Phản hồi từ đội ngũ Sooppiy trong cuộc trò chuyện hỗ trợ.', id: 'Balasan dari tim Sooppiy dalam percakapan dukungan Anda.' },
+  announcement: { ko: '플랫폼 공지와 서비스 안내.', en: 'Platform announcements and service notices from Sooppiy.', ja: 'プラットフォームのお知らせとサービス通知。', th: 'ประกาศแพลตฟอร์มและการแจ้งบริการ', vi: 'Thông báo nền tảng và thông báo dịch vụ.', id: 'Pengumuman platform dan pemberitahuan layanan dari Sooppiy.' },
 }
 
 export default function NotificationSettings({ userToken }: { userToken: string }) {
@@ -90,7 +90,7 @@ export default function NotificationSettings({ userToken }: { userToken: string 
         setError('')
       })
       .catch(() => {
-        if (!cancelled) setError(tr(language, { ko: '알림 설정을 불러오지 못했습니다', en: 'Failed to load notification settings', ja: '通知設定を読み込めませんでした', th: 'โหลดการตั้งค่าแจ้งเตือนไม่สำเร็จ', vi: 'Không tải được cài đặt thông báo' }))
+        if (!cancelled) setError(tr(language, { ko: '알림 설정을 불러오지 못했습니다', en: 'Failed to load notification settings', ja: '通知設定を読み込めませんでした', th: 'โหลดการตั้งค่าแจ้งเตือนไม่สำเร็จ', vi: 'Không tải được cài đặt thông báo', id: 'Gagal memuat pengaturan notifikasi' }))
       })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
@@ -111,7 +111,7 @@ export default function NotificationSettings({ userToken }: { userToken: string 
       setError('')
     } catch {
       setCategories(previous)
-      setError(tr(language, { ko: '저장 실패 — 다시 시도해 주세요', en: 'Save failed — please try again', ja: '保存に失敗しました', th: 'บันทึกไม่สำเร็จ', vi: 'Lưu thất bại' }))
+      setError(tr(language, { ko: '저장 실패 — 다시 시도해 주세요', en: 'Save failed — please try again', ja: '保存に失敗しました', th: 'บันทึกไม่สำเร็จ', vi: 'Lưu thất bại', id: 'Gagal menyimpan — silakan coba lagi' }))
     } finally {
       setBusy(false)
     }
@@ -121,7 +121,7 @@ export default function NotificationSettings({ userToken }: { userToken: string 
   const descOf = (c: Category) => DESCRIPTIONS[c.key] ? tr(language, DESCRIPTIONS[c.key]) : c.description
 
   if (loading) {
-    return <div className="card" style={{ padding: '16px' }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...' })}</div>
+    return <div className="card" style={{ padding: '16px' }}>{tr(language, { ko: '불러오는 중...', en: 'Loading...', ja: '読み込み中...', th: 'กำลังโหลด...', vi: 'Đang tải...', id: 'Memuat...' })}</div>
   }
 
   const row: any = {
@@ -132,7 +132,7 @@ export default function NotificationSettings({ userToken }: { userToken: string 
   // per channel, so the destinations stay visible without being separable.
   const destinations = [
     email,
-    phone || tr(language, { ko: 'SMS — 아래에서 전화번호를 등록하세요', en: 'SMS — add a phone number below', ja: 'SMS — 下で電話番号を登録', th: 'SMS — เพิ่มเบอร์โทรด้านล่าง', vi: 'SMS — thêm số điện thoại bên dưới' }),
+    phone || tr(language, { ko: 'SMS — 아래에서 전화번호를 등록하세요', en: 'SMS — add a phone number below', ja: 'SMS — 下で電話番号を登録', th: 'SMS — เพิ่มเบอร์โทรด้านล่าง', vi: 'SMS — thêm số điện thoại bên dưới', id: 'SMS — tambahkan nomor telepon di bawah' }),
   ].filter(Boolean).join(' · ')
 
   return (
@@ -166,6 +166,7 @@ export default function NotificationSettings({ userToken }: { userToken: string 
           ja: 'オフにしたカテゴリーは通知センターにも記録されません。外部送信は時間あたり制限があります。',
           th: 'หมวดที่ปิดจะไม่ถูกบันทึกในศูนย์แจ้งเตือน การส่งภายนอกมีการจำกัดต่อชั่วโมง',
           vi: 'Danh mục đã tắt sẽ không được ghi vào trung tâm thông báo. Gửi bên ngoài bị giới hạn theo giờ.',
+          id: 'Kategori yang dinonaktifkan bahkan tidak dicatat ke pusat notifikasi Anda. Pengiriman eksternal (email/SMS) dibatasi per jam.',
         })}
       </div>
     </div>

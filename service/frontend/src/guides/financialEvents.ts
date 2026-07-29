@@ -15,6 +15,7 @@ export const financialEventsGuide: PageGuide = {
     ja: 'マクロレジーム、ETFフロー、注目株分析、カテゴリ別ニュースを1画面にまとめたマーケットインテリジェンスボードです。市場の背景を素早く把握したいときに最初に開くページです。',
     th: 'บอร์ดข่าวกรองตลาดที่รวมระบอบมหภาค กระแสเงิน ETF การวิเคราะห์หุ้นแนะนำ และข่าวแยกหมวดไว้ในหน้าจอเดียว เปิดหน้านี้ก่อนเมื่อต้องการภาพรวมตลาดอย่างรวดเร็ว',
     vi: 'Bảng thông tin thị trường gom chế độ vĩ mô, dòng tiền ETF, phân tích cổ phiếu nổi bật và tin tức theo danh mục vào một màn hình. Hãy mở nó trước khi bạn cần nắm bối cảnh thị trường thật nhanh.',
+    id: 'Papan intelijen pasar yang mengumpulkan kondisi makro, aliran dana ETF, analisis saham unggulan, dan berita berkategori dalam satu layar. Bukalah lebih dulu ketika Anda ingin cepat memahami latar pasar.',
   },
   sections: [
     {
@@ -66,6 +67,14 @@ export const financialEventsGuide: PageGuide = {
           'Luồng tin tức: số danh mục tin tức hiện có.',
           'Mã nổi bật: số mã hiện đã sẵn dữ liệu phân tích.',
           'Khi thiếu dữ liệu bạn sẽ thấy "N/A" — đó không phải lỗi, chỉ là chưa thu thập được gì.',
+        ],
+        id: [
+          'Empat kartu ringkasan berjajar di bagian atas, memadatkan seluruh papan menjadi satu baris.',
+          'Kondisi makro: putusan server — bullish, bearish, campuran, atau tidak tersedia.',
+          'Aliran dana ETF: arah ringkas ke mana uang bergerak.',
+          'Jalur berita: berapa banyak kategori berita yang tersedia saat ini.',
+          'Simbol unggulan: berapa banyak simbol yang datanya siap dianalisis saat ini.',
+          'Ketika datanya tidak ada, Anda melihat "T/A" — itu bukan galat, hanya belum ada yang terkumpul.',
         ],
       },
     },
@@ -119,6 +128,14 @@ export const financialEventsGuide: PageGuide = {
           'Bốn thẻ chỉ số: lợi suất 5 ngày, lợi suất 20 ngày, khoảng cách đến hỗ trợ và đến kháng cự — đều tính bằng phần trăm.',
           'Bên dưới là các đường trung bình động (MA5, MA10, MA20, MA60) cùng các mức hỗ trợ và kháng cự chính dạng chip.',
         ],
+        id: [
+          'Gunakan tab simbol di bagian atas panel untuk berpindah saham yang dianalisis.',
+          'Lencana di samping simbol adalah sinyalnya, dan angka besar di bawahnya adalah harga saat ini.',
+          'Lencana "Kutipan langsung" atau "Kutipan tertunda" di samping harga memberi tahu seberapa baru kutipan itu.',
+          'Baris chip menampilkan Skor, Tren, cap waktu kutipan, sumber kutipan (Alpha Vantage Intraday atau Daily), dan cap waktu analisisnya.',
+          'Empat kartu metrik: imbal hasil 5 hari, imbal hasil 20 hari, jarak ke support, dan jarak ke resistance — semuanya dalam persen.',
+          'Di bawahnya, rata-rata bergerak (MA5, MA10, MA20, MA60) serta level support dan resistance kunci ditampilkan sebagai chip.',
+        ],
       },
     },
     {
@@ -170,6 +187,14 @@ export const financialEventsGuide: PageGuide = {
           'Mỗi ảnh chụp có thời điểm tạo, nhãn tín hiệu, các chip điểm, xu hướng, lợi suất 5 và 20 ngày, kèm phần tóm tắt.',
           'Lướt qua các ảnh chụp theo thứ tự sẽ thấy nhận định về mã này đã thay đổi ra sao.',
           'Bấm lại lần nữa để thu gọn bằng "Ẩn lịch sử".',
+        ],
+        id: [
+          'Di bawah metrik, faktor bullish dan faktor risiko ditata berdampingan dalam dua panel.',
+          'Ketika salah satu sisi tidak berisi apa pun, baris seperti "Tidak ada faktor bullish yang jelas." ditampilkan sebagai gantinya.',
+          'Menekan "Tampilkan riwayat" membentangkan hingga enam snapshot analisis sebelumnya.',
+          'Setiap snapshot membawa cap waktunya, lencana sinyal, chip untuk skor, tren, imbal hasil 5 dan 20 hari, ditambah ringkasan.',
+          'Menelusuri snapshot secara berurutan memperlihatkan bagaimana pandangan atas saham ini bergeser dari waktu ke waktu.',
+          'Menekan tombolnya lagi akan melipatnya kembali dengan "Sembunyikan riwayat".',
         ],
       },
     },
@@ -223,6 +248,14 @@ export const financialEventsGuide: PageGuide = {
           'Bấm vào một bài sẽ mở bản gốc trong tab mới.',
           'Khi số bài vượt một trang, nút Trước / Tiếp và dòng "Trang n / m" hiện bên dưới.',
         ],
+        id: [
+          'Tab kategori mengalihkan antar jalur berita. Jalur saham berlabel "Berita terbaru".',
+          'Lencana di kanan header panel menunjukkan tingkat aktivitas kategori tersebut.',
+          'Setiap entri artikel memiliki judul, sumber, waktu terbit, dan ringkasan.',
+          'Baris chip membawa label sentimen keseluruhan ditambah hingga empat ticker terkait.',
+          'Mengeklik sebuah artikel membuka aslinya di tab baru.',
+          'Ketika artikelnya lebih banyak dari yang muat dalam satu halaman, tombol Sebelumnya / Berikutnya dan keterangan "Halaman n / m" muncul di bawahnya.',
+        ],
       },
     },
     {
@@ -275,6 +308,14 @@ export const financialEventsGuide: PageGuide = {
           'Bên dưới, các mục theo từng ETF liệt kê phần trăm thay đổi, tỷ lệ khối lượng và điểm dòng tiền, tối đa tám mục.',
           'Nếu dữ liệu vĩ mô hoặc ETF chưa sẵn sàng, thẻ đó đơn giản là không được hiển thị.',
         ],
+        id: [
+          'Kartu Sinyal makro adalah snapshot kondisi dari sisi server; setiap baris memiliki label, lencana status, nilai, dan penjelasan.',
+          'Kartu Aliran dana ETF dibuka dengan lencana arah dan waktu pembaruan terakhir.',
+          'Ketika data aliran nyata SoSoValue tersedia, aliran bersih harian BTC dan ETH, aliran 5 hari, dan angka kumulatifnya juga ditampilkan.',
+          'Aliran masuk berwarna hijau dengan tanda +, aliran keluar merah dengan tanda −.',
+          'Di bawahnya, entri per ETF memuat persentase perubahan, rasio volume, dan skor aliran, hingga delapan di antaranya.',
+          'Jika data makro atau ETF belum siap, kartu itu sama sekali tidak ditampilkan.',
+        ],
       },
     },
     {
@@ -322,6 +363,13 @@ export const financialEventsGuide: PageGuide = {
           'Khoảng cách rất ngắn tới hỗ trợ hoặc kháng cự nghĩa là nhận định dễ thay đổi quanh mức đó.',
           'Tín hiệu trực tiếp và điểm tổng hợp được trình bày riêng ở trang bảng tín hiệu.',
         ],
+        id: [
+          'Baca dulu bilah status untuk gambaran besarnya, lalu turun ke panel saham untuk bukti per emiten.',
+          'Jika Anda menyukai sinyal sebuah saham, gunakan "Tampilkan riwayat" lebih dulu untuk melihat apakah pandangan itu sering berbalik belakangan ini.',
+          'Bandingkan ticker pada chip berita dengan saham yang sedang Anda amati untuk menemukan liputan yang beririsan.',
+          'Jarak yang sangat pendek ke support atau resistance berarti pandangannya kemungkinan berubah di sekitar level itu.',
+          'Sinyal langsung dan skor gabungan dibahas terpisah di halaman papan sinyal.',
+        ],
       },
     },
   ],
@@ -341,6 +389,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'この画面はマクロ・ETF・銘柄・ニュースを同時に取得しており、どれか1つでも失敗し表示できるカテゴリがまだ無いとこの案内が出ます。1分ごとに自動再試行するので少し待ってください。',
         th: 'หน้านี้โหลดข้อมูลมหภาค ETF หุ้น และข่าวพร้อมกัน หากมีอย่างใดล้มเหลวและยังไม่มีหมวดใดให้แสดง จะขึ้นข้อความนี้ ระบบลองใหม่อัตโนมัติทุกหนึ่งนาที ลองรอสักครู่',
         vi: 'Trang này tải vĩ mô, ETF, cổ phiếu và tin tức cùng lúc; nếu một lệnh gọi thất bại và vẫn chưa có danh mục nào để hiển thị, thông báo này xuất hiện. Hệ thống tự thử lại mỗi phút, hãy chờ một chút.',
+        id: 'Halaman ini memuat makro, ETF, saham, dan berita sekaligus; jika salah satu panggilan gagal dan tetap tidak ada kategori yang bisa ditampilkan, Anda mendapat pemberitahuan ini. Sistem mencoba ulang otomatis setiap menit, jadi tunggu sebentar.',
       },
     },
     {
@@ -358,6 +407,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'その価格がイントラデイのライブフィードではなく古い値であることを示します。クォートソースのチップでIntradayかDailyかを確認でき、クォート時点のチップでどれだけ古いかが分かります。市場が閉じている時間帯にはよく出ます。',
         th: 'หมายถึงราคานั้นไม่ได้มาจากฟีดสดระหว่างวัน แต่เป็นค่าที่เก่ากว่า ชิปแหล่งราคาจะบอกว่าเป็น Intraday หรือ Daily และชิปเวลาของราคาบอกว่าเก่าแค่ไหน มักพบนอกเวลาทำการตลาด',
         vi: 'Nó đánh dấu báo giá không đến từ luồng trực tiếp trong phiên mà là giá trị cũ hơn. Chip nguồn báo giá cho biết là Intraday hay Daily, còn chip thời điểm báo giá cho biết nó cũ bao lâu. Điều này thường gặp ngoài giờ giao dịch.',
+        id: 'Lencana itu menandai kutipan yang bukan dari umpan intraday langsung melainkan nilai yang lebih lama. Chip sumber kutipan memberi tahu apakah Intraday atau Daily, dan chip cap waktu kutipan memberi tahu seberapa lama. Ini lumrah di luar jam perdagangan.',
       },
     },
     {
@@ -375,6 +425,7 @@ export const financialEventsGuide: PageGuide = {
         ja: '「このカテゴリのスナップショットコンテンツはまだありません。」が表示されている状態です。レーン自体はあるものの、まだスナップショットが保存されていないという意味で、次の収集サイクルで埋まります。',
         th: 'คุณกำลังเห็นข้อความ "ยังไม่มีเนื้อหาสแนปช็อตสำหรับหมวดนี้" หมายความว่ามีช่องข่าวอยู่แต่ยังไม่มีสแนปช็อตถูกบันทึก ระบบจะเติมให้ในรอบเก็บข้อมูลถัดไป',
         vi: 'Bạn đang thấy dòng "Chưa có nội dung snapshot cho danh mục này." Luồng tin đã tồn tại nhưng chưa có ảnh chụp nào được lưu; nó sẽ được lấp đầy ở chu kỳ thu thập kế tiếp.',
+        id: 'Anda melihat "Belum ada konten snapshot untuk kategori ini." Jalurnya ada tetapi belum ada snapshot yang tersimpan untuknya; jalur itu akan terisi pada siklus pengumpulan berikutnya.',
       },
     },
     {
@@ -392,6 +443,7 @@ export const financialEventsGuide: PageGuide = {
         ja: 'このページは市場の背景を整理して見せる情報ボードであり、投資助言ではありません。値は収集データから算出したサーバー側のスナップショットで、Sooppiyは注文をブローカーに送信しません。',
         th: 'หน้านี้เป็นบอร์ดข้อมูลที่จัดระเบียบบริบทตลาด ไม่ใช่คำแนะนำการลงทุน ค่าต่าง ๆ เป็นสแนปช็อตฝั่งเซิร์ฟเวอร์ที่คำนวณจากข้อมูลที่เก็บมา และ Sooppiy ไม่ส่งคำสั่งไปยังโบรกเกอร์ใด',
         vi: 'Trang này là bảng thông tin sắp xếp bối cảnh thị trường, không phải lời khuyên đầu tư. Các giá trị là ảnh chụp phía máy chủ tính từ dữ liệu đã thu thập, và Sooppiy không gửi lệnh tới bất kỳ sàn môi giới nào.',
+        id: 'Halaman ini adalah papan informasi yang menata konteks pasar; ini bukan nasihat investasi. Nilainya berupa snapshot dari sisi server yang dihitung dari data terkumpul, dan Sooppiy tidak mengirim order ke broker mana pun.',
       },
     },
   ],

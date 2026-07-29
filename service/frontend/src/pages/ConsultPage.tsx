@@ -27,19 +27,19 @@ export function ConsultPage({ token }: Props) {
   const auth: any = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const T = {
-    title: tr(language, { ko: 'AI 상담', en: 'AI Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI' }),
-    subtitle: tr(language, { ko: '시장을 함께 논의하고, 합의된 계획을 자동화 규칙 초안으로 만듭니다 — 이 대화는 절대 주문을 내지 않습니다', en: 'Talk through the market and turn the plan into an automation-rule draft — this chat never places orders', ja: 'market を相談し、計画を自動化ルール草案に — このチャットは発注しません', th: 'ปรึกษาตลาดและแปลงแผนเป็นร่างกฎอัตโนมัติ — แชทนี้ไม่ส่งคำสั่งซื้อขาย', vi: 'Thảo luận thị trường và biến kế hoạch thành bản nháp quy tắc — chat này không bao giờ đặt lệnh' }),
-    newChat: tr(language, { ko: '새 상담', en: 'New chat', ja: '新しい相談', th: 'แชทใหม่', vi: 'Chat mới' }),
-    send: tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi' }),
-    placeholder: tr(language, { ko: '예: 지금 BTC 진입해도 될까요? 지금 국면에서 뭘 봐야 하죠?', en: 'e.g. Should I enter BTC now? What should I watch in this regime?', ja: '例: 今BTCに入るべき？この局面で何を見る？', th: 'เช่น ตอนนี้ควรเข้า BTC ไหม?', vi: 'VD: Có nên vào BTC bây giờ?' }),
-    proposeRule: tr(language, { ko: '이 대화를 규칙으로', en: 'Turn into a rule', ja: 'ルール草案にする', th: 'แปลงเป็นกฎ', vi: 'Biến thành quy tắc' }),
-    draftTitle: tr(language, { ko: '규칙 초안 (확인 필요)', en: 'Rule draft (needs your confirmation)', ja: 'ルール草案（要確認）', th: 'ร่างกฎ (ต้องยืนยัน)', vi: 'Bản nháp quy tắc (cần xác nhận)' }),
-    createRule: tr(language, { ko: '이 규칙 만들기', en: 'Create this rule', ja: 'このルールを作成', th: 'สร้างกฎนี้', vi: 'Tạo quy tắc này' }),
-    discard: tr(language, { ko: '취소', en: 'Discard', ja: '破棄', th: 'ยกเลิก', vi: 'Hủy' }),
-    empty: tr(language, { ko: '질문을 입력해 상담을 시작하세요. AI는 실시간 정량·심리·국면·이벤트·고래 데이터와 회원님의 지침을 함께 봅니다.', en: 'Ask a question to start. The AI sees live quant, psychology, regime, event and whale data — plus your guidelines.', ja: '質問を入力して開始。AIはライブの定量・心理・局面・イベント・クジラデータとあなたの指針を参照します。', th: 'พิมพ์คำถามเพื่อเริ่ม AI เห็นข้อมูลสดและแนวทางของคุณ', vi: 'Đặt câu hỏi để bắt đầu. AI thấy dữ liệu trực tiếp và chỉ dẫn của bạn.' }),
-    thinking: tr(language, { ko: '생각 중…', en: 'thinking…', ja: '考え中…', th: 'กำลังคิด…', vi: 'đang nghĩ…' }),
-    noOrders: tr(language, { ko: '⚠ 이 상담은 주문을 실행하지 않습니다. 규칙을 만들어도 모든 주문은 리스크 게이트를 통과해야 하며 시뮬레이터에서만 체결됩니다.', en: '⚠ This consultation never executes orders. Even after creating a rule, every order passes the risk gate and fills only on the simulator.', ja: '⚠ この相談は発注しません。ルール作成後も全注文はリスクゲートを通り、シミュレーターのみで約定します。', th: '⚠ การปรึกษานี้ไม่ส่งคำสั่ง ทุกคำสั่งต้องผ่านประตูความเสี่ยงและเทรดในโหมดจำลองเท่านั้น', vi: '⚠ Tư vấn này không đặt lệnh. Mọi lệnh đều qua cổng rủi ro và chỉ khớp trên mô phỏng.' }),
-    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.' }),
+    title: tr(language, { ko: 'AI 상담', en: 'AI Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI', id: 'Konsultasi AI' }),
+    subtitle: tr(language, { ko: '시장을 함께 논의하고, 합의된 계획을 자동화 규칙 초안으로 만듭니다 — 이 대화는 절대 주문을 내지 않습니다', en: 'Talk through the market and turn the plan into an automation-rule draft — this chat never places orders', ja: 'market を相談し、計画を自動化ルール草案に — このチャットは発注しません', th: 'ปรึกษาตลาดและแปลงแผนเป็นร่างกฎอัตโนมัติ — แชทนี้ไม่ส่งคำสั่งซื้อขาย', vi: 'Thảo luận thị trường và biến kế hoạch thành bản nháp quy tắc — chat này không bao giờ đặt lệnh', id: 'Bahas kondisi pasar dan ubah rencananya menjadi draf aturan otomatisasi — obrolan ini tidak pernah memasang order' }),
+    newChat: tr(language, { ko: '새 상담', en: 'New chat', ja: '新しい相談', th: 'แชทใหม่', vi: 'Chat mới', id: 'Obrolan baru' }),
+    send: tr(language, { ko: '보내기', en: 'Send', ja: '送信', th: 'ส่ง', vi: 'Gửi', id: 'Kirim' }),
+    placeholder: tr(language, { ko: '예: 지금 BTC 진입해도 될까요? 지금 국면에서 뭘 봐야 하죠?', en: 'e.g. Should I enter BTC now? What should I watch in this regime?', ja: '例: 今BTCに入るべき？この局面で何を見る？', th: 'เช่น ตอนนี้ควรเข้า BTC ไหม?', vi: 'VD: Có nên vào BTC bây giờ?', id: 'mis. Apakah saya harus masuk BTC sekarang? Apa yang perlu diperhatikan pada kondisi ini?' }),
+    proposeRule: tr(language, { ko: '이 대화를 규칙으로', en: 'Turn into a rule', ja: 'ルール草案にする', th: 'แปลงเป็นกฎ', vi: 'Biến thành quy tắc', id: 'Jadikan aturan' }),
+    draftTitle: tr(language, { ko: '규칙 초안 (확인 필요)', en: 'Rule draft (needs your confirmation)', ja: 'ルール草案（要確認）', th: 'ร่างกฎ (ต้องยืนยัน)', vi: 'Bản nháp quy tắc (cần xác nhận)', id: 'Draf aturan (perlu konfirmasi Anda)' }),
+    createRule: tr(language, { ko: '이 규칙 만들기', en: 'Create this rule', ja: 'このルールを作成', th: 'สร้างกฎนี้', vi: 'Tạo quy tắc này', id: 'Buat aturan ini' }),
+    discard: tr(language, { ko: '취소', en: 'Discard', ja: '破棄', th: 'ยกเลิก', vi: 'Hủy', id: 'Buang' }),
+    empty: tr(language, { ko: '질문을 입력해 상담을 시작하세요. AI는 실시간 정량·심리·국면·이벤트·고래 데이터와 회원님의 지침을 함께 봅니다.', en: 'Ask a question to start. The AI sees live quant, psychology, regime, event and whale data — plus your guidelines.', ja: '質問を入力して開始。AIはライブの定量・心理・局面・イベント・クジラデータとあなたの指針を参照します。', th: 'พิมพ์คำถามเพื่อเริ่ม AI เห็นข้อมูลสดและแนวทางของคุณ', vi: 'Đặt câu hỏi để bắt đầu. AI thấy dữ liệu trực tiếp và chỉ dẫn của bạn.', id: 'Ajukan pertanyaan untuk memulai. AI melihat data kuantitatif, psikologi, kondisi pasar, peristiwa, dan pergerakan whale secara langsung — beserta panduan Anda.' }),
+    thinking: tr(language, { ko: '생각 중…', en: 'thinking…', ja: '考え中…', th: 'กำลังคิด…', vi: 'đang nghĩ…', id: 'berpikir…' }),
+    noOrders: tr(language, { ko: '⚠ 이 상담은 주문을 실행하지 않습니다. 규칙을 만들어도 모든 주문은 리스크 게이트를 통과해야 하며 시뮬레이터에서만 체결됩니다.', en: '⚠ This consultation never executes orders. Even after creating a rule, every order passes the risk gate and fills only on the simulator.', ja: '⚠ この相談は発注しません。ルール作成後も全注文はリスクゲートを通り、シミュレーターのみで約定します。', th: '⚠ การปรึกษานี้ไม่ส่งคำสั่ง ทุกคำสั่งต้องผ่านประตูความเสี่ยงและเทรดในโหมดจำลองเท่านั้น', vi: '⚠ Tư vấn này không đặt lệnh. Mọi lệnh đều qua cổng rủi ro và chỉ khớp trên mô phỏng.', id: '⚠ Konsultasi ini tidak pernah mengeksekusi order. Bahkan setelah membuat aturan, setiap order melewati gerbang risiko dan hanya tereksekusi di simulator.' }),
+    login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.', id: 'Silakan masuk.' }),
   }
 
   const loadSessions = useCallback(async () => {

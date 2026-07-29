@@ -45,23 +45,26 @@ type Entitlements = {
 // stop width + cycle speed, not borrowed margin.
 const RISK_TIERS: { key: string; label: any; desc: any }[] = [
   { key: 'balanced',
-    label: { ko: '안정 · Balance', en: 'Balance', ja: '安定', th: 'สมดุล', vi: 'Cân bằng' },
+    label: { ko: '안정 · Balance', en: 'Balance', ja: '安定', th: 'สมดุล', vi: 'Cân bằng', id: 'Seimbang' },
     desc: { ko: '작은 포지션(예산의 30%)·표준 게이트·좁은 손절. 변동성 낮고 꾸준함.',
             en: 'Small positions (30% of budget), standard gate, tight stop. Steady, low swing.',
             ja: '小さめのポジション(予算の30%)・標準ゲート・浅い損切り。', th: 'สถานะเล็ก (30%) เกตมาตรฐาน ตัดขาดทุนแคบ',
-            vi: 'Vị thế nhỏ (30% ngân sách), cổng chuẩn, cắt lỗ hẹp.' } },
+            vi: 'Vị thế nhỏ (30% ngân sách), cổng chuẩn, cắt lỗ hẹp.',
+            id: 'Posisi kecil (30% dari anggaran), gerbang standar, stop ketat. Stabil, ayunan rendah.' } },
   { key: 'aggressive',
-    label: { ko: '수익 · High Profit', en: 'High Profit', ja: '収益', th: 'กำไรสูง', vi: 'Lợi nhuận cao' },
+    label: { ko: '수익 · High Profit', en: 'High Profit', ja: '収益', th: 'กำไรสูง', vi: 'Lợi nhuận cao', id: 'Profit tinggi' },
     desc: { ko: '큰 포지션(예산의 45%)·낮은 게이트(더 자주 거래)·넓은 손절·1.5× 익절 목표·자동 2배 레버리지. 수익·변동성 모두 상승.',
             en: 'Bigger positions (45%), looser gate, wider stop, 1.5× profit target, auto 2× leverage. More profit and more swing.',
             ja: '大きめのポジション(45%)・低いゲート・広い損切り・1.5倍利確・自動2倍レバレッジ。', th: 'สถานะใหญ่ (45%) เกตต่ำ ตัดขาดทุนกว้าง เป้ากำไร 1.5× เลเวอเรจอัตโนมัติ 2×',
-            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×, đòn bẩy tự động 2×.' } },
+            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×, đòn bẩy tự động 2×.',
+            id: 'Posisi lebih besar (45%), gerbang lebih longgar, stop lebih lebar, target profit 1,5×, leverage otomatis 2×. Lebih banyak untung dan lebih besar ayunannya.' } },
   { key: 'extreme',
-    label: { ko: '고위험 고수익 · Risk & High Profit', en: 'Risk & High Profit', ja: '高リスク高収益', th: 'เสี่ยงสูง กำไรสูง', vi: 'Rủi ro & Lợi nhuận cao' },
+    label: { ko: '고위험 고수익 · Risk & High Profit', en: 'Risk & High Profit', ja: '高リスク高収益', th: 'เสี่ยงสูง กำไรสูง', vi: 'Rủi ro & Lợi nhuận cao', id: 'Risiko & profit tinggi' },
     desc: { ko: '최대 포지션(예산의 70%)·최저 게이트·아주 넓은 손절(30%)·2× 익절 목표·자동 3배 레버리지. 최고 수익 잠재력이자 최대 낙폭 — 3배는 진입가에서 33% 역행 시 청산됩니다.',
             en: 'Largest positions (70% of budget), lowest gate, very wide 30% stop, 2× profit target, auto 3× leverage. Highest upside AND deepest drawdown — 3× liquidates on a 33% adverse move.',
             ja: '最大ポジション(70%)・最低ゲート・非常に広い損切り(30%)・2倍利確・自動3倍レバレッジ。33%逆行で清算。', th: 'สถานะใหญ่สุด (70%) เกตต่ำสุด ตัดขาดทุนกว้างมาก (30%) เป้ากำไร 2× เลเวอเรจอัตโนมัติ 3× (ล้างพอร์ตเมื่อราคาสวน 33%)',
-            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×, đòn bẩy tự động 3×. Thanh lý khi giá đi ngược 33%.' } },
+            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×, đòn bẩy tự động 3×. Thanh lý khi giá đi ngược 33%.',
+            id: 'Posisi terbesar (70% dari anggaran), gerbang terendah, stop sangat lebar 30%, target profit 2×, leverage otomatis 3×. Potensi tertinggi SEKALIGUS penurunan terdalam — 3× terlikuidasi pada pergerakan berlawanan 33%.' } },
 ]
 
 // Leverage choices for the fleet. 'auto' = the tier's default (1/2/3×);
@@ -84,57 +87,57 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
 }) {
   const { language } = useLanguage()
   const T = {
-    title: tr(language, { ko: 'N종목 자동 편성 — AI가 전부 알아서', en: 'Full Auto — the AI does everything', ja: '完全自動 — AIがすべて実行', th: 'อัตโนมัติเต็มรูปแบบ — AI จัดการทั้งหมด', vi: 'Tự động hoàn toàn — AI làm tất cả' }),
-    desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.' }),
-    nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING' }),
-    budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn' }),
-    goal: tr(language, { ko: '목표 수익 (%) — 도달 시 전량 실현 후 같은 매매 재시작', en: 'Profit goal (%) — bank everything at this gain, then restart the same fleet', ja: '目標利益 (%) — 到達で全決済し同じ運用を再開', th: 'เป้ากำไร (%) — ถึงเป้าแล้วปิดทั้งหมดและเริ่มใหม่', vi: 'Mục tiêu lợi nhuận (%) — đạt thì chốt hết rồi chạy lại' }),
-    goalOff: tr(language, { ko: '0 = 목표 없음 (중지할 때까지 계속)', en: '0 = no goal (runs until you stop it)', ja: '0 = 目標なし（停止するまで継続）', th: '0 = ไม่มีเป้า (ทำงานจนกว่าจะหยุด)', vi: '0 = không mục tiêu (chạy đến khi bạn dừng)' }),
-    goalSave: tr(language, { ko: '목표 저장', en: 'Save goal', ja: '目標を保存', th: 'บันทึกเป้า', vi: 'Lưu mục tiêu' }),
-    profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)' }),
-    launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy' }),
-    stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)' }),
-    pause: tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng' }),
-    resume: tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ดำเนินต่อ', vi: 'Tiếp tục' }),
-    resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)' }),
-    needPlan: tr(language, { ko: '완전자동 플릿은 Pro 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Pro plan or above', ja: '完全自動フリートは Pro 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Pro ขึ้นไป', vi: 'Đội hình tự động cần gói Pro trở lên' }),
-    equity: tr(language, { ko: '평가 자산', en: 'Marked equity', ja: '評価資産', th: 'มูลค่าตามราคาตลาด', vi: 'Giá trị theo thị trường' }),
+    title: tr(language, { ko: 'N종목 자동 편성 — AI가 전부 알아서', en: 'Full Auto — the AI does everything', ja: '完全自動 — AIがすべて実行', th: 'อัตโนมัติเต็มรูปแบบ — AI จัดการทั้งหมด', vi: 'Tự động hoàn toàn — AI làm tất cả', id: 'Full Auto — AI mengerjakan semuanya' }),
+    desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.', id: 'Cukup tentukan berapa banyak TRADING — AI meriset pasar, memilih simbol, mendaftarkan TRADING, mengalirkan setiap hasil ke langkah berikutnya, dan menjaga jumlahnya sampai Anda menghentikannya. Tombol stop selalu ada di tangan Anda.' }),
+    nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING', id: 'Jumlah TRADING' }),
+    budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn', id: 'Total anggaran ($) — sudah terisi' }),
+    goal: tr(language, { ko: '목표 수익 (%) — 도달 시 전량 실현 후 같은 매매 재시작', en: 'Profit goal (%) — bank everything at this gain, then restart the same fleet', ja: '目標利益 (%) — 到達で全決済し同じ運用を再開', th: 'เป้ากำไร (%) — ถึงเป้าแล้วปิดทั้งหมดและเริ่มใหม่', vi: 'Mục tiêu lợi nhuận (%) — đạt thì chốt hết rồi chạy lại', id: 'Target profit (%) — bukukan semuanya pada keuntungan ini, lalu jalankan ulang fleet yang sama' }),
+    goalOff: tr(language, { ko: '0 = 목표 없음 (중지할 때까지 계속)', en: '0 = no goal (runs until you stop it)', ja: '0 = 目標なし（停止するまで継続）', th: '0 = ไม่มีเป้า (ทำงานจนกว่าจะหยุด)', vi: '0 = không mục tiêu (chạy đến khi bạn dừng)', id: '0 = tanpa target (berjalan sampai Anda menghentikannya)' }),
+    goalSave: tr(language, { ko: '목표 저장', en: 'Save goal', ja: '目標を保存', th: 'บันทึกเป้า', vi: 'Lưu mục tiêu', id: 'Simpan target' }),
+    profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)', id: 'Tingkat profit (selera risiko)' }),
+    launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy', id: '🚀 Luncurkan fleet' }),
+    stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)', id: '⏹ Hentikan semua (tutup posisi)' }),
+    pause: tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng', id: 'Jeda' }),
+    resume: tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ดำเนินต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' }),
+    resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)', id: 'Lanjutkan trading (tanggung jawab Anda)' }),
+    needPlan: tr(language, { ko: '완전자동 플릿은 Pro 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Pro plan or above', ja: '完全自動フリートは Pro 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Pro ขึ้นไป', vi: 'Đội hình tự động cần gói Pro trở lên', id: 'Fleet Full Auto memerlukan paket Pro atau di atasnya' }),
+    equity: tr(language, { ko: '평가 자산', en: 'Marked equity', ja: '評価資産', th: 'มูลค่าตามราคาตลาด', vi: 'Giá trị theo thị trường', id: 'Ekuitas berbasis harga pasar' }),
     indexLabel: tr(language, { ko: 'N종목 지수', en: 'Fleet index', ja: 'フリート指数',
-      th: 'ดัชนีกองทุน', vi: 'Chỉ số nhóm' }),
-    indexBase: tr(language, { ko: '기준', en: 'base', ja: '基準', th: 'ฐาน', vi: 'gốc' }),
-    indexBudget: tr(language, { ko: '예산', en: 'budget', ja: '予算', th: 'งบ', vi: 'ngân sách' }),
-    monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp' }),
-    buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành' }),
-    clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)' }),
-    memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách' }),
-    tabMonitor: tr(language, { ko: '실시간 모니터', en: 'Live monitor', ja: 'ライブモニター', th: 'มอนิเตอร์สด', vi: 'Theo dõi trực tiếp' }),
-    tabActivity: tr(language, { ko: '거래 활동', en: 'Trading activity', ja: '取引アクティビティ', th: 'กิจกรรมเทรด', vi: 'Hoạt động giao dịch' }),
-    actAll: tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả' }),
-    actType: tr(language, { ko: '유형', en: 'Type', ja: 'タイプ', th: 'ประเภท', vi: 'Loại' }),
-    actQty: tr(language, { ko: '수량', en: 'Amount', ja: '数量', th: 'จำนวน', vi: 'Số lượng' }),
-    actPrice: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá' }),
-    actPnl: tr(language, { ko: '손익', en: 'P&L', ja: '損益', th: 'กำไร/ขาดทุน', vi: 'Lãi/lỗ' }),
-    actDate: tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày' }),
-    actEmpty: tr(language, { ko: '아직 거래 활동이 없습니다', en: 'No trading activity yet', ja: '取引はまだありません', th: 'ยังไม่มีกิจกรรมเทรด', vi: 'Chưa có hoạt động giao dịch' }),
-    holdBanner: tr(language, { ko: '⚠️ 마스터 스위치로 전체 보류 중 — 손절/익절 청산은 계속 작동하며, 이미 실행 중인 사이클은 신규 진입 없이 마무리됩니다', en: '⚠️ Held by the master switch — protective exits (SL/TP) stay active; any cycle already executing completes without opening new positions', ja: '⚠️ マスタースイッチで保留中 — SL/TPの保護決済は動作し続けます', th: '⚠️ ถูกพักโดยสวิตช์หลัก — SL/TP ยังทำงาน', vi: '⚠️ Đang giữ bởi công tắc chính — SL/TP vẫn hoạt động' }),
+      th: 'ดัชนีกองทุน', vi: 'Chỉ số nhóm', id: 'Indeks fleet' }),
+    indexBase: tr(language, { ko: '기준', en: 'base', ja: '基準', th: 'ฐาน', vi: 'gốc', id: 'basis' }),
+    indexBudget: tr(language, { ko: '예산', en: 'budget', ja: '予算', th: 'งบ', vi: 'ngân sách', id: 'anggaran' }),
+    monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp', id: 'Full Auto — monitor langsung' }),
+    buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
+    clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)', id: 'Klik sebuah kartu untuk membuka monitor langsung TRADING itu (grafik · catatan peristiwa · jeda/hentikan)' }),
+    memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách', id: 'Anggaran' }),
+    tabMonitor: tr(language, { ko: '실시간 모니터', en: 'Live monitor', ja: 'ライブモニター', th: 'มอนิเตอร์สด', vi: 'Theo dõi trực tiếp', id: 'Monitor langsung' }),
+    tabActivity: tr(language, { ko: '거래 활동', en: 'Trading activity', ja: '取引アクティビティ', th: 'กิจกรรมเทรด', vi: 'Hoạt động giao dịch', id: 'Aktivitas trading' }),
+    actAll: tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' }),
+    actType: tr(language, { ko: '유형', en: 'Type', ja: 'タイプ', th: 'ประเภท', vi: 'Loại', id: 'Jenis' }),
+    actQty: tr(language, { ko: '수량', en: 'Amount', ja: '数量', th: 'จำนวน', vi: 'Số lượng', id: 'Jumlah' }),
+    actPrice: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá', id: 'Harga' }),
+    actPnl: tr(language, { ko: '손익', en: 'P&L', ja: '損益', th: 'กำไร/ขาดทุน', vi: 'Lãi/lỗ', id: 'Laba rugi' }),
+    actDate: tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày', id: 'Tanggal' }),
+    actEmpty: tr(language, { ko: '아직 거래 활동이 없습니다', en: 'No trading activity yet', ja: '取引はまだありません', th: 'ยังไม่มีกิจกรรมเทรด', vi: 'Chưa có hoạt động giao dịch', id: 'Belum ada aktivitas trading' }),
+    holdBanner: tr(language, { ko: '⚠️ 마스터 스위치로 전체 보류 중 — 손절/익절 청산은 계속 작동하며, 이미 실행 중인 사이클은 신규 진입 없이 마무리됩니다', en: '⚠️ Held by the master switch — protective exits (SL/TP) stay active; any cycle already executing completes without opening new positions', ja: '⚠️ マスタースイッチで保留中 — SL/TPの保護決済は動作し続けます', th: '⚠️ ถูกพักโดยสวิตช์หลัก — SL/TP ยังทำงาน', vi: '⚠️ Đang giữ bởi công tắc chính — SL/TP vẫn hoạt động', id: '⚠️ Ditahan oleh sakelar utama — keluar proteksi (SL/TP) tetap aktif; siklus yang sudah berjalan diselesaikan tanpa membuka posisi baru' }),
   }
   // fleet status_reason → localized label (the RunsLivePage reasonLabel
   // pattern; unmapped keys render the raw string rather than nothing)
   const reasonLabel = (reason: string | null): string | null => {
     if (!reason) return null
-    if (reason.startsWith('partial:')) return tr(language, { ko: `일부만 구성됨 (${reason.slice(8)})`, en: `Built ${reason.slice(8)}`, ja: `一部のみ構成 (${reason.slice(8)})`, th: `สร้างได้ ${reason.slice(8)}`, vi: `Đã tạo ${reason.slice(8)}` })
-    if (reason.startsWith('replenishing:')) return tr(language, { ko: `보충 대기 중 (${reason.slice(13)})`, en: `Replenishing (${reason.slice(13)})`, ja: `補充待ち (${reason.slice(13)})`, th: `กำลังเติม (${reason.slice(13)})`, vi: `Đang bổ sung (${reason.slice(13)})` })
+    if (reason.startsWith('partial:')) return tr(language, { ko: `일부만 구성됨 (${reason.slice(8)})`, en: `Built ${reason.slice(8)}`, ja: `一部のみ構成 (${reason.slice(8)})`, th: `สร้างได้ ${reason.slice(8)}`, vi: `Đã tạo ${reason.slice(8)}`, id: `Terbentuk ${reason.slice(8)}` })
+    if (reason.startsWith('replenishing:')) return tr(language, { ko: `보충 대기 중 (${reason.slice(13)})`, en: `Replenishing (${reason.slice(13)})`, ja: `補充待ち (${reason.slice(13)})`, th: `กำลังเติม (${reason.slice(13)})`, vi: `Đang bổ sung (${reason.slice(13)})`, id: `Menunggu pemenuhan (${reason.slice(13)})` })
     const map: Record<string, any> = {
-      build_failed: { ko: '구성 실패 — 후보 종목이 없습니다. 잠시 후 다시 시도하세요', en: 'Build failed — no eligible candidates; try again later', ja: '構成失敗 — 候補がありません', th: 'สร้างไม่สำเร็จ — ไม่มีตัวเลือก', vi: 'Tạo thất bại — không có ứng viên' },
-      breaker: { ko: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% 방어선 작동 — 전체 청산됨`, en: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% stop rail fired — everything closed`, ja: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% レール作動 — 全決済`, th: 'ราวหยุดทำงาน — ปิดทั้งหมด', vi: 'Ngưỡng dừng kích hoạt — đã đóng tất cả' },
-      drawdown_warning: { ko: '손실 경고 — 신규 진입 정지됨', en: 'Drawdown warning — new entries paused', ja: 'ドローダウン警告 — 新規停止', th: 'เตือนขาดทุน — พักการเข้าใหม่', vi: 'Cảnh báo sụt giảm — tạm dừng lệnh mới' },
-      eval_failed: { ko: '가격 데이터 문제로 평가 불가 — 진입 정지', en: 'Equity evaluation failing on stale prices — entries paused', ja: '価格データ問題で評価不可 — 停止', th: 'ประเมินไม่ได้ — พัก', vi: 'Không đánh giá được — tạm dừng' },
-      user_stop: { ko: '사용자 정지', en: 'Stopped by you', ja: 'ユーザー停止', th: 'หยุดโดยผู้ใช้', vi: 'Bạn đã dừng' },
-      fleet_stop_all: { ko: '전체 정지 — 이 N종목 전체를 정지했습니다', en: 'Stop all — this sleeve was stopped as a whole', ja: '全体停止 — このスリーブ全体を停止しました', th: 'หยุดทั้งหมด — หยุดสลีฟนี้ทั้งชุด', vi: 'Dừng tất cả — đã dừng toàn bộ sleeve này' },
-      fleet_profit_target: { ko: '플릿 목표 수익 달성 — 전체 청산됨', en: 'Fleet profit target reached — everything closed', ja: 'フリート利益目標達成 — 全決済', th: 'ฟลีทถึงเป้าหมายกำไร — ปิดทั้งหมด', vi: 'Fleet đạt mục tiêu lợi nhuận — đã đóng tất cả' },
-      user_master_remove: { ko: '마스터 스위치로 제거됨', en: 'Removed via master switch', ja: 'マスタースイッチで削除', th: 'ลบผ่านสวิตช์หลัก', vi: 'Đã gỡ qua công tắc chính' },
-      agent_deleted: { ko: '에이전트가 삭제되어 정지됨', en: 'Stopped — agent deleted', ja: 'エージェント削除により停止', th: 'หยุด — เอเจนต์ถูกลบ', vi: 'Dừng — agent đã xóa' },
-      adapt_retired: { ko: '연속 손실로 은퇴됨', en: 'Retired after consecutive losses', ja: '連続損失により引退', th: 'ปลดหลังขาดทุนต่อเนื่อง', vi: 'Nghỉ sau chuỗi thua lỗ' },
+      build_failed: { ko: '구성 실패 — 후보 종목이 없습니다. 잠시 후 다시 시도하세요', en: 'Build failed — no eligible candidates; try again later', ja: '構成失敗 — 候補がありません', th: 'สร้างไม่สำเร็จ — ไม่มีตัวเลือก', vi: 'Tạo thất bại — không có ứng viên', id: 'Pembentukan gagal — tidak ada kandidat yang memenuhi syarat; coba lagi nanti' },
+      breaker: { ko: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% 방어선 작동 — 전체 청산됨`, en: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% stop rail fired — everything closed`, ja: `−${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% レール作動 — 全決済`, th: 'ราวหยุดทำงาน — ปิดทั้งหมด', vi: 'Ngưỡng dừng kích hoạt — đã đóng tất cả', id: `Batas stop −${Math.round((fleet?.stop_loss_frac || 0.4) * 100)}% terpicu — semuanya ditutup` },
+      drawdown_warning: { ko: '손실 경고 — 신규 진입 정지됨', en: 'Drawdown warning — new entries paused', ja: 'ドローダウン警告 — 新規停止', th: 'เตือนขาดทุน — พักการเข้าใหม่', vi: 'Cảnh báo sụt giảm — tạm dừng lệnh mới', id: 'Peringatan penurunan — entri baru dijeda' },
+      eval_failed: { ko: '가격 데이터 문제로 평가 불가 — 진입 정지', en: 'Equity evaluation failing on stale prices — entries paused', ja: '価格データ問題で評価不可 — 停止', th: 'ประเมินไม่ได้ — พัก', vi: 'Không đánh giá được — tạm dừng', id: 'Evaluasi ekuitas gagal karena harga usang — entri dijeda' },
+      user_stop: { ko: '사용자 정지', en: 'Stopped by you', ja: 'ユーザー停止', th: 'หยุดโดยผู้ใช้', vi: 'Bạn đã dừng', id: 'Dihentikan oleh Anda' },
+      fleet_stop_all: { ko: '전체 정지 — 이 N종목 전체를 정지했습니다', en: 'Stop all — this sleeve was stopped as a whole', ja: '全体停止 — このスリーブ全体を停止しました', th: 'หยุดทั้งหมด — หยุดสลีฟนี้ทั้งชุด', vi: 'Dừng tất cả — đã dừng toàn bộ sleeve này', id: 'Hentikan semua — sleeve ini dihentikan secara keseluruhan' },
+      fleet_profit_target: { ko: '플릿 목표 수익 달성 — 전체 청산됨', en: 'Fleet profit target reached — everything closed', ja: 'フリート利益目標達成 — 全決済', th: 'ฟลีทถึงเป้าหมายกำไร — ปิดทั้งหมด', vi: 'Fleet đạt mục tiêu lợi nhuận — đã đóng tất cả', id: 'Target profit fleet tercapai — semuanya ditutup' },
+      user_master_remove: { ko: '마스터 스위치로 제거됨', en: 'Removed via master switch', ja: 'マスタースイッチで削除', th: 'ลบผ่านสวิตช์หลัก', vi: 'Đã gỡ qua công tắc chính', id: 'Dihapus lewat sakelar utama' },
+      agent_deleted: { ko: '에이전트가 삭제되어 정지됨', en: 'Stopped — agent deleted', ja: 'エージェント削除により停止', th: 'หยุด — เอเจนต์ถูกลบ', vi: 'Dừng — agent đã xóa', id: 'Dihentikan — agen dihapus' },
+      adapt_retired: { ko: '연속 손실로 은퇴됨', en: 'Retired after consecutive losses', ja: '連続損失により引退', th: 'ปลดหลังขาดทุนต่อเนื่อง', vi: 'Nghỉ sau chuỗi thua lỗ', id: 'Ditarik setelah kerugian beruntun' },
     }
     return map[reason] ? tr(language, map[reason]) : reason
   }
@@ -337,7 +340,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
             </div>
             <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
-              {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy' })}
+              {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {LEV_CHOICES.map(l => (
@@ -346,8 +349,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
               {levKey === 'auto'
-                ? tr(language, { ko: '자동: 티어 기준(안정 1× · 수익 2× · 고위험 3×). 격리 마진 — 3배는 33% 역행 시 청산.', en: 'Auto: by tier (Balance 1× · High Profit 2× · Risk&High 3×). Isolated margin — 3× liquidates on a 33% adverse move.', ja: '自動: ティア基準(安定1×・収益2×・高リスク3×)。分離マージン。', th: 'อัตโนมัติ: ตามระดับ (1×/2×/3×) มาร์จินแยก', vi: 'Tự động: theo mức (1×/2×/3×). Ký quỹ tách biệt.' })
-                : tr(language, { ko: `${levKey}배 고정 — 격리 마진, 진입가에서 ${(100 / Number(levKey)).toFixed(0)}% 역행 시 청산. 같은 증거금으로 ${levKey}배 포지션.`, en: `Fixed ${levKey}× — isolated margin, liquidates at a ${(100 / Number(levKey)).toFixed(0)}% adverse move. ${levKey}× the position for the same margin.`, ja: `${levKey}倍固定 — 分離マージン、${(100 / Number(levKey)).toFixed(0)}%逆行で清算。`, th: `${levKey}× คงที่ — ล้างพอร์ตเมื่อสวน ${(100 / Number(levKey)).toFixed(0)}%`, vi: `Cố định ${levKey}× — thanh lý khi giá đi ngược ${(100 / Number(levKey)).toFixed(0)}%.` })}
+                ? tr(language, { ko: '자동: 티어 기준(안정 1× · 수익 2× · 고위험 3×). 격리 마진 — 3배는 33% 역행 시 청산.', en: 'Auto: by tier (Balance 1× · High Profit 2× · Risk&High 3×). Isolated margin — 3× liquidates on a 33% adverse move.', ja: '自動: ティア基準(安定1×・収益2×・高リスク3×)。分離マージン。', th: 'อัตโนมัติ: ตามระดับ (1×/2×/3×) มาร์จินแยก', vi: 'Tự động: theo mức (1×/2×/3×). Ký quỹ tách biệt.', id: 'Otomatis: menurut tingkatan (Seimbang 1× · Profit tinggi 2× · Risiko&Tinggi 3×). Margin terisolasi — 3× terlikuidasi pada pergerakan berlawanan 33%.' })
+                : tr(language, { ko: `${levKey}배 고정 — 격리 마진, 진입가에서 ${(100 / Number(levKey)).toFixed(0)}% 역행 시 청산. 같은 증거금으로 ${levKey}배 포지션.`, en: `Fixed ${levKey}× — isolated margin, liquidates at a ${(100 / Number(levKey)).toFixed(0)}% adverse move. ${levKey}× the position for the same margin.`, ja: `${levKey}倍固定 — 分離マージン、${(100 / Number(levKey)).toFixed(0)}%逆行で清算。`, th: `${levKey}× คงที่ — ล้างพอร์ตเมื่อสวน ${(100 / Number(levKey)).toFixed(0)}%`, vi: `Cố định ${levKey}× — thanh lý khi giá đi ngược ${(100 / Number(levKey)).toFixed(0)}%.`, id: `Tetap ${levKey}× — margin terisolasi, terlikuidasi pada pergerakan berlawanan ${(100 / Number(levKey)).toFixed(0)}%. Posisi ${levKey}× lipat dengan margin yang sama.` })}
             </div>
           </div>
           {fleet && fleet.status === 'stopped' && fleet.status_reason && (
@@ -480,8 +483,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                     // realized alone is just the fee ledger until the first
                     // close and painted every young winner red.
                     const total = Number(m.total_pnl_usd ?? m.realized_pnl_usd)
-                    const tip = `${tr(language, { ko: '평가 손익', en: 'marked P&L', ja: '評価損益', th: 'P&L ตามราคาตลาด', vi: 'P&L theo giá' })} ${total >= 0 ? '+' : ''}${total.toFixed(2)}` +
-                      (m.realized_pnl_usd != null ? ` · ${tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt' })} ${Number(m.realized_pnl_usd) >= 0 ? '+' : ''}${Number(m.realized_pnl_usd).toFixed(2)}` : '')
+                    const tip = `${tr(language, { ko: '평가 손익', en: 'marked P&L', ja: '評価損益', th: 'P&L ตามราคาตลาด', vi: 'P&L theo giá', id: 'laba rugi berbasis harga pasar' })} ${total >= 0 ? '+' : ''}${total.toFixed(2)}` +
+                      (m.realized_pnl_usd != null ? ` · ${tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt', id: 'direalisasi' })} ${Number(m.realized_pnl_usd) >= 0 ? '+' : ''}${Number(m.realized_pnl_usd).toFixed(2)}` : '')
                     return (
                       <span title={tip} style={{ color: total >= 0 ? '#2e9e6b' : '#f0663f' }}>
                         {total >= 0 ? '+' : ''}{total.toFixed(2)}

@@ -102,38 +102,38 @@ export function buildNavSections(
 ): Array<{ label: string; items: NavItem[] }> {
   return [
     {
-      label: tr(language, { ko: 'AI 데스크', en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI' }),
+      label: tr(language, { ko: 'AI 데스크', en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI', id: 'Meja AI' }),
       items: [
-        { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa' }), requiresAuth: true },
-        { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát' }), requiresAuth: false },
-        { path: '/consult', icon: '💬', label: tr(language, { ko: 'AI 상담', en: 'Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI' }), requiresAuth: false },
+        { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa', id: 'Otomatisasi' }), requiresAuth: true },
+        { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát', id: 'Pemantauan' }), requiresAuth: false },
+        { path: '/consult', icon: '💬', label: tr(language, { ko: 'AI 상담', en: 'Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI', id: 'Konsultasi' }), requiresAuth: false },
       ]
     },
     {
-      label: tr(language, { ko: '트레이딩', en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch' }),
+      label: tr(language, { ko: '트레이딩', en: 'Trading', ja: 'トレード', th: 'การเทรด', vi: 'Giao dịch', id: 'Trading' }),
       items: [
-        { path: '/assets', icon: '◈', label: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản' }), requiresAuth: true },
-        { path: '/spot', icon: '◉', label: tr(language, { ko: '현물', en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot' }), requiresAuth: true },
-        { path: '/futures', icon: '⚡', label: tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures' }), requiresAuth: true },
-        { path: '/accounts', icon: '◱', label: tr(language, { ko: '계좌', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản' }), requiresAuth: true },
+        { path: '/assets', icon: '◈', label: tr(language, { ko: '내 자산', en: 'My Assets', ja: '資産', th: 'ทรัพย์สิน', vi: 'Tài sản', id: 'Aset saya' }), requiresAuth: true },
+        { path: '/spot', icon: '◉', label: tr(language, { ko: '현물', en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Spot', id: 'Spot' }), requiresAuth: true },
+        { path: '/futures', icon: '⚡', label: tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures', id: 'Futures' }), requiresAuth: true },
+        { path: '/accounts', icon: '◱', label: tr(language, { ko: '계좌', en: 'Accounts', ja: 'アカウント', th: 'บัญชี', vi: 'Tài khoản', id: 'Akun' }), requiresAuth: true },
         { path: '/positions', icon: '≡', label: t.nav.positions, requiresAuth: false },
       ]
     },
     {
-      label: tr(language, { ko: '마켓', en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường' }),
+      label: tr(language, { ko: '마켓', en: 'Markets', ja: 'マーケット', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' }),
       items: [
         { path: '/market', icon: '◈', label: t.nav.signals, requiresAuth: false },
-        { path: '/leaderboard', icon: '◆', label: tr(language, { ko: '리더보드', en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng' }), requiresAuth: false },
-        { path: '/financial-events', icon: '🗞', label: tr(language, { ko: '금융 이벤트', en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính' }), requiresAuth: false },
-        { path: '/signals-board', icon: '◬', label: tr(language, { ko: '시그널 보드', en: 'Signals Board', ja: 'シグナルボード', th: 'บอร์ดสัญญาณ', vi: 'Bảng tín hiệu' }), requiresAuth: false },
+        { path: '/leaderboard', icon: '◆', label: tr(language, { ko: '리더보드', en: 'Leaderboard', ja: 'リーダーボード', th: 'อันดับ', vi: 'Bảng xếp hạng', id: 'Papan peringkat' }), requiresAuth: false },
+        { path: '/financial-events', icon: '🗞', label: tr(language, { ko: '금융 이벤트', en: 'Financial Events', ja: '金融イベント', th: 'เหตุการณ์การเงิน', vi: 'Sự kiện tài chính', id: 'Peristiwa keuangan' }), requiresAuth: false },
+        { path: '/signals-board', icon: '◬', label: tr(language, { ko: '시그널 보드', en: 'Signals Board', ja: 'シグナルボード', th: 'บอร์ดสัญญาณ', vi: 'Bảng tín hiệu', id: 'Papan sinyal' }), requiresAuth: false },
       ]
     },
     {
-      label: tr(language, { ko: '리서치', en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu' }),
+      label: tr(language, { ko: '리서치', en: 'Research', ja: 'リサーチ', th: 'วิจัย', vi: 'Nghiên cứu', id: 'Riset' }),
       items: [
-        { path: '/getting-started', icon: '🧭', label: tr(language, { ko: '시작하기', en: 'Getting Started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu' }), requiresAuth: false },
-        { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest' }), requiresAuth: false },
-        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn' }), requiresAuth: true, ownerOnly: true },
+        { path: '/getting-started', icon: '🧭', label: tr(language, { ko: '시작하기', en: 'Getting Started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu', id: 'Panduan awal' }), requiresAuth: false },
+        { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest', id: 'Backtest' }), requiresAuth: false },
+        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn', id: 'Panduan & dokumen' }), requiresAuth: true, ownerOnly: true },
         { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
       ]
     },
@@ -208,13 +208,13 @@ export function TopNav({
     location.pathname === path || location.pathname.startsWith(`${path}/`)
 
   const label = {
-    assistant: tr(language, { ko: 'AI 어시스턴트', en: 'AI Assistant', ja: 'AIアシスタント', th: 'ผู้ช่วย AI', vi: 'Trợ lý AI' }),
-    support: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' }),
-    notifications: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' }),
-    profile: tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi' }),
-    settings: tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' }),
-    login: tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' }),
-    lockHint: tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }),
+    assistant: tr(language, { ko: 'AI 어시스턴트', en: 'AI Assistant', ja: 'AIアシスタント', th: 'ผู้ช่วย AI', vi: 'Trợ lý AI', id: 'Asisten AI' }),
+    support: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' }),
+    notifications: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo', id: 'Notifikasi' }),
+    profile: tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi', id: 'Akun saya · Profil' }),
+    settings: tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API', id: 'Pengaturan · Konfigurasi API' }),
+    login: tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk / Daftar' }),
+    lockHint: tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập', id: 'Perlu masuk' }),
   }
 
   const avatarChar = agentInfo?.name?.charAt(0)?.toUpperCase()
@@ -316,19 +316,19 @@ export function TopNav({
                 <div className="topnav-acct-switch">
                   <button
                     className={`topnav-acct-opt${accountType === 'simulator' ? ' active' : ''}`}
-                    title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
+                    title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng', id: 'Dompet simulasi — paper trading' })}
                     onClick={() => { localStorage.setItem('account_type', 'simulator'); setAccountType('simulator') }}
-                  >◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}</button>
+                  >◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng', id: 'Simulator' })}</button>
                   <Link
                     to="/accounts"
                     className={`topnav-acct-opt${accountType === 'real' ? ' active' : ''}`}
-                    title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect an exchange', ja: '実口座', th: 'บัญชีจริง', vi: 'Tài khoản thật' })}
+                    title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect an exchange', ja: '実口座', th: 'บัญชีจริง', vi: 'Tài khoản thật', id: 'Akun asli — hubungkan sebuah bursa' })}
                     onClick={() => setProfileOpen(false)}
-                  >● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}</Link>
+                  >● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật', id: 'Asli' })}</Link>
                 </div>
                 {agentInfo?.id && (
                   <Link to={`/agent/${agentInfo.id}`} className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
-                    <span className="nav-icon">◱</span>{tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ' })}
+                    <span className="nav-icon">◱</span>{tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ', id: 'Profil saya' })}
                   </Link>
                 )}
                 {userToken && (
@@ -393,10 +393,10 @@ export function Sidebar({
   // features — they need a user session, not an agent token.
   if (userToken) {
     navSections.push({
-      label: tr(language, { ko: '내 계정', en: 'My Account', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản' }),
+      label: tr(language, { ko: '내 계정', en: 'My Account', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản', id: 'Akun saya' }),
       items: [
-        { path: '/notifications', icon: '🔔', label: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo' }), requiresAuth: false, badge: memberCounts.unread },
-        { path: '/support', icon: '💬', label: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ' }), requiresAuth: false, badge: memberCounts.support },
+        { path: '/notifications', icon: '🔔', label: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo', id: 'Notifikasi' }), requiresAuth: false, badge: memberCounts.unread },
+        { path: '/support', icon: '💬', label: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' }), requiresAuth: false, badge: memberCounts.support },
       ]
     })
   }
@@ -433,9 +433,9 @@ export function Sidebar({
             background: accountType === 'simulator' ? 'var(--accent-primary, #c26a45)' : 'transparent',
             color: accountType === 'simulator' ? '#fff' : 'rgba(255,255,255,0.7)',
           }}
-          title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng' })}
+          title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng', id: 'Dompet simulasi — paper trading' })}
         >
-          ◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng' })}
+          ◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng', id: 'Simulator' })}
         </button>
         <Link
           to="/accounts"
@@ -446,9 +446,9 @@ export function Sidebar({
             background: accountType === 'real' ? 'var(--accent-primary, #c26a45)' : 'transparent',
             color: accountType === 'real' ? '#fff' : 'rgba(255,255,255,0.7)',
           }}
-          title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect Coinbase / Bybit / Binance', ja: '実口座', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật' })}
+          title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect Coinbase / Bybit / Binance', ja: '実口座', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật', id: 'Akun asli — hubungkan Coinbase / Bybit / Binance' })}
         >
-          ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật' })}
+          ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật', id: 'Asli' })}
         </Link>
       </div>
 
@@ -462,7 +462,7 @@ export function Sidebar({
                 key={item.path}
                 to={item.path}
                 className={`nav-link ${location.pathname === item.path || location.pathname.startsWith(`${item.path}/`) ? 'active' : ''}`}
-                title={!token && item.requiresAuth ? tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập' }) : undefined}
+                title={!token && item.requiresAuth ? tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập', id: 'Perlu masuk' }) : undefined}
                 onClick={() => {
                   if (item.category && (item.badge || 0) > 0) {
                     onMarkCategoryRead(item.category)
@@ -528,7 +528,7 @@ export function Sidebar({
                 onClick={() => {
                   if (showToken) {
                     navigator.clipboard.writeText(agentInfo.token)
-                    alert(tr(language, { ko: '토큰이 복사되었습니다', en: 'Token copied', ja: 'トークンをコピーしました', th: 'คัดลอก Token แล้ว', vi: 'Đã sao chép' }))
+                    alert(tr(language, { ko: '토큰이 복사되었습니다', en: 'Token copied', ja: 'トークンをコピーしました', th: 'คัดลอก Token แล้ว', vi: 'Đã sao chép', id: 'Token disalin' }))
                   }
                   setShowToken(!showToken)
                 }}
@@ -545,7 +545,7 @@ export function Sidebar({
                   style={{ padding: '5px 10px', fontSize: '12px' }}
                 >
                   <span className="nav-icon">◱</span>
-                  {tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ' })}
+                  {tr(language, { ko: '내 프로필', en: 'My Profile', ja: 'プロフィール', th: 'โปรไฟล์', vi: 'Hồ sơ', id: 'Profil saya' })}
                 </Link>
               )}
               {userToken && (
@@ -556,7 +556,7 @@ export function Sidebar({
                   style={{ padding: '5px 10px', fontSize: '12px' }}
                 >
                   <span className="nav-icon">⚙</span>
-                  {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' })}
+                  {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API', id: 'Pengaturan · Konfigurasi API' })}
                 </Link>
               )}
             </div>
@@ -602,7 +602,7 @@ export function Sidebar({
                 style={{ padding: '6px 10px', fontSize: '12px' }}
               >
                 <span className="nav-icon">◱</span>
-                {tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi' })}
+                {tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi', id: 'Akun saya · Profil' })}
               </Link>
               <Link
                 to="/settings"
@@ -611,7 +611,7 @@ export function Sidebar({
                 style={{ padding: '6px 10px', fontSize: '12px' }}
               >
                 <span className="nav-icon">⚙</span>
-                {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API' })}
+                {tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API', id: 'Pengaturan · Konfigurasi API' })}
               </Link>
               <button
                 onClick={onUserLogout}
@@ -643,11 +643,12 @@ export function Sidebar({
                 en: 'Browse freely — login to configure AI auto-trading.',
                 ja: 'ログインでAI自動売買を設定できます。',
                 th: 'เข้าสู่ระบบเพื่อตั้งค่าเทรดอัตโนมัติ AI',
-                vi: 'Đăng nhập để cấu hình giao dịch AI.'
+                vi: 'Đăng nhập để cấu hình giao dịch AI.',
+                id: 'Jelajahi bebas — masuk untuk mengatur trading otomatis AI.'
               })}
             </div>
             <Link to="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '6px 12px' }}>
-              {tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập' })}
+              {tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk / Daftar' })}
             </Link>
           </div>
         )}

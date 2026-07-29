@@ -15,6 +15,7 @@ export const discussionsGuide: PageGuide = {
     ja: '金融トピックを自由に議論する公開掲示板です。相場の動きや銘柄について質問を投げ、返信で意見を交わし、自分の投稿に付いた返信のうち最も有用なものを採用できます。',
     th: 'กระดานเปิดสำหรับสนทนาหัวข้อทางการเงินอย่างอิสระ ตั้งคำถามเกี่ยวกับความเคลื่อนไหวของตลาดหรือหลักทรัพย์ แลกเปลี่ยนมุมมองผ่านการตอบกลับ และยอมรับคำตอบที่มีประโยชน์ที่สุดในโพสต์ของคุณ',
     vi: 'Diễn đàn mở để thảo luận tự do các chủ đề tài chính. Đặt câu hỏi về diễn biến thị trường hay từng mã, trao đổi quan điểm qua trả lời, và chấp nhận câu trả lời hữu ích nhất trên bài của bạn.',
+    id: 'Papan terbuka untuk diskusi bebas seputar topik keuangan. Ajukan pertanyaan tentang pergerakan pasar atau saham tertentu, bertukar pandangan lewat balasan, dan terima balasan paling berguna pada postingan Anda sendiri.',
   },
   sections: [
     {
@@ -62,6 +63,13 @@ export const discussionsGuide: PageGuide = {
           'Mỗi trang chứa 20 thảo luận; nhiều hơn sẽ có nút Trước và Tiếp cùng bộ đếm "Trang n / m" bên dưới.',
           'Đổi cách sắp xếp luôn đưa bạn về trang 1.',
         ],
+        id: [
+          'Tiga tombol pengurutan di bagian atas — Paling aktif, Terbaru, Following — dengan Paling aktif sebagai bawaan.',
+          'Paling aktif mengangkat utas yang baru-baru ini dibalas; Terbaru mengangkat yang baru saja dikirim.',
+          'Following hanya menampilkan diskusi dari penulis yang Anda ikuti.',
+          'Dua puluh diskusi muat dalam satu halaman; lebih dari itu, tombol Sebelumnya dan Berikutnya beserta penghitung "Halaman n / m" muncul di bawahnya.',
+          'Mengubah pengurutan selalu mengembalikan Anda ke halaman 1.',
+        ],
       },
     },
     {
@@ -108,6 +116,13 @@ export const discussionsGuide: PageGuide = {
           'Nhấp một mục sẽ mở thảo luận đó với ô trả lời đã bung sẵn.',
           'Mỗi mục hiển thị nội dung thông báo, tiêu đề hoặc mã liên quan, và thời điểm nhận.',
           'Nút "Làm mới" ở góc trên bên phải chỉ tải lại danh sách thông báo.',
+        ],
+        id: [
+          'Ketika Anda sudah masuk dan memiliki notifikasi, kartu "Notifikasi terkini" muncul di bawah tombol pengurutan.',
+          'Item yang belum dibaca disorot dengan latar hijau lembut; item yang sudah dibaca berlatar abu-abu.',
+          'Mengeklik sebuah item membuka diskusi tersebut dengan kotak balasan sudah terbentang.',
+          'Setiap item menampilkan teks notifikasi, judul atau simbol terkait, dan waktu kedatangannya.',
+          'Tombol "Muat ulang" di kanan atas hanya memuat ulang daftar notifikasinya.',
         ],
       },
     },
@@ -161,6 +176,14 @@ export const discussionsGuide: PageGuide = {
           'Khi thành công, biểu mẫu đóng lại, nguồn tin tải lại ở trang 1, và danh sách thông báo cũng được làm mới.',
           'Nếu đăng thất bại, lý do máy chủ báo về sẽ hiện trong hộp thoại.',
         ],
+        id: [
+          'Tombol tulis di kanan atas memerlukan proses masuk; menekannya membentangkan formulirnya.',
+          'Pilih sebuah pasar, lalu isi judul dan isinya — keduanya wajib.',
+          'Tagar dipisahkan koma (misalnya: bitcoin, analisis-teknikal). Berbeda dengan halaman Strategi, di sini tidak ada pemilih simbol.',
+          'Bila mau, lampirkan tantangan, misi tim, dan tim untuk mengikat utas ini pada aktivitas tersebut.',
+          'Bila berhasil, formulirnya ditutup, umpan dimuat ulang ke halaman 1, dan daftar notifikasi ikut diperbarui.',
+          'Jika pengiriman gagal, alasan yang dilaporkan server ditampilkan dalam sebuah popup.',
+        ],
       },
     },
     {
@@ -208,6 +231,13 @@ export const discussionsGuide: PageGuide = {
           'Ở chủ đề bạn tạo, mỗi trả lời có nút "Chấp nhận", chuyển thành dấu xanh sau khi dùng.',
           'Chấp nhận đánh dấu trả lời đó hữu ích nhất, và được tính vào huy hiệu số lượt chấp nhận ở đầu thẻ.',
         ],
+        id: [
+          'Sakelar di bagian bawah kartu membuka area balasan dan memuat balasan yang sudah ada.',
+          'Tanpa masuk, Anda hanya melihat catatan "Masuk untuk membalas" — tidak ada kotak isian yang muncul.',
+          'Setiap balasan menampilkan nama penulis dan cap waktunya; bila tidak ada nama, ditampilkan sebagai Anonim.',
+          'Pada utas yang Anda mulai, setiap balasan membawa tombol "Terima" yang berubah menjadi penanda hijau "Diterima" setelah dipakai.',
+          'Menerima sebuah balasan menandainya sebagai yang paling membantu, dan itu mengisi lencana jumlah balasan diterima yang tampil di bagian atas kartu.',
+        ],
       },
     },
     {
@@ -254,6 +284,13 @@ export const discussionsGuide: PageGuide = {
           'Nút theo dõi không hiện trên bài của chính bạn.',
           'Bài từ tác giả bạn theo dõi có thể xem gộp ở cách sắp xếp Đang theo dõi.',
           'Theo dõi yêu cầu đăng nhập.',
+        ],
+        id: [
+          'Pada kartu diskusi yang ditulis orang lain, tombol "Ikuti" berada di samping nama penulisnya.',
+          'Mengikuti mengubah tombolnya menjadi "Mengikuti"; menekannya lagi berhenti mengikuti.',
+          'Tombol ikuti tidak ditampilkan pada postingan Anda sendiri.',
+          'Postingan dari penulis yang Anda ikuti dapat dikumpulkan di bawah pengurutan Following.',
+          'Mengikuti memerlukan proses masuk.',
         ],
       },
     },
@@ -307,6 +344,14 @@ export const discussionsGuide: PageGuide = {
           'Tránh khẳng định bảo đảm lợi nhuận, thông tin chưa kiểm chứng và việc mời chào một mã cụ thể. Sooppiy không cung cấp tư vấn đầu tư.',
           'Khi câu hỏi của bạn có câu trả lời tốt, hãy đánh dấu "Chấp nhận" để người đọc sau tìm thấy nhanh.',
         ],
+        id: [
+          'Tulis judul yang cukup spesifik sehingga pertanyaannya jelas hanya dari judulnya saja.',
+          'Sebutkan bukti dan rentang waktu di balik sebuah klaim agar orang lain dapat memeriksanya.',
+          'Tagar yang akurat mengumpulkan orang yang mencari topik sama dan menjaga utasnya tetap hidup.',
+          'Ketidaksepakatan itu baik, tetapi seranglah logikanya, bukan orangnya — setiap postingan dan balasan bersifat publik.',
+          'Hindari klaim imbal hasil yang dijamin, pernyataan yang tidak dapat diverifikasi, dan promosi keras atas saham tertentu. Sooppiy tidak memberikan nasihat investasi.',
+          'Ketika pertanyaan Anda mendapat jawaban yang baik, tandai "Diterima" agar pembaca berikutnya cepat menemukannya.',
+        ],
       },
     },
   ],
@@ -326,6 +371,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'ログインが必要です。未ログインでは作成ボタンが表示されず、返信エリアにも「返信するにはログインしてください」と表示されるだけです。',
         th: 'คุณต้องล็อกอินก่อน หากไม่มีเซสชัน ปุ่มเขียนจะถูกซ่อน และพื้นที่ตอบกลับจะแสดงเพียงข้อความ "เข้าสู่ระบบเพื่อตอบกลับ"',
         vi: 'Bạn cần đăng nhập. Khi chưa có phiên, nút soạn bài bị ẩn và khu vực trả lời chỉ hiện dòng "Đăng nhập để trả lời".',
+        id: 'Anda harus dalam keadaan masuk. Tanpa sesi, tombol tulis disembunyikan dan area balasan hanya menampilkan catatan "Masuk untuk membalas".',
       },
     },
     {
@@ -343,6 +389,7 @@ export const discussionsGuide: PageGuide = {
         ja: '採用はスレッド作成者のみが行えます。他の人が立てたスレッドではボタンは表示されず、すでに採用された返信にはボタンの代わりに「ベスト返信」表示が付きます。',
         th: 'เฉพาะผู้ตั้งกระทู้เท่านั้นที่ยอมรับได้ ในกระทู้ของคนอื่นปุ่มจะไม่แสดง และคำตอบที่ยอมรับแล้วจะขึ้นป้ายแทนปุ่ม',
         vi: 'Chỉ tác giả chủ đề mới chấp nhận được. Ở chủ đề của người khác nút không hiện, và trả lời đã được chấp nhận sẽ hiện dấu thay cho nút.',
+        id: 'Hanya penulis utas yang dapat menerima. Pada utas orang lain, tombolnya tidak ditampilkan, dan balasan yang sudah diterima menampilkan penanda "Diterima" alih-alih sebuah tombol.',
       },
     },
     {
@@ -360,6 +407,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'このカードはログイン済みで、ディスカッション通知が1件以上ある場合のみ表示されます。通知がまだない場合、表示されないのが正常です。',
         th: 'การ์ดนี้แสดงเมื่อคุณล็อกอินและมีการแจ้งเตือนการสนทนาอย่างน้อยหนึ่งรายการเท่านั้น หากยังไม่มีการแจ้งเตือน การที่ไม่เห็นถือเป็นเรื่องปกติ',
         vi: 'Thẻ này chỉ hiện khi bạn đã đăng nhập và có ít nhất một thông báo thảo luận. Nếu chưa có thông báo, việc không thấy nó là bình thường.',
+        id: 'Kartu itu hanya ditampilkan ketika Anda sudah masuk dan memiliki setidaknya satu notifikasi diskusi. Bila belum ada notifikasi, ketidakhadirannya memang wajar.',
       },
     },
     {
@@ -377,6 +425,7 @@ export const discussionsGuide: PageGuide = {
         ja: 'いいえ。ディスカッションは意見と根拠を共有する場であり、Sooppiy は証券会社へ注文を送りません。投資判断とその責任はご自身にあります。',
         th: 'ไม่ การสนทนามีไว้เพื่อแบ่งปันมุมมองและเหตุผล Sooppiy ไม่ส่งคำสั่งไปยังโบรกเกอร์ใด ๆ การตัดสินใจลงทุนและผลที่ตามมาเป็นของคุณเอง',
         vi: 'Không. Thảo luận là để chia sẻ quan điểm và lập luận; Sooppiy không gửi lệnh tới bất kỳ môi giới nào. Quyết định đầu tư và hệ quả thuộc về bạn.',
+        id: 'Tidak. Diskusi ditujukan untuk berbagi pandangan dan penalaran; Sooppiy tidak mengirim order ke broker mana pun. Keputusan investasi beserta konsekuensinya tetap menjadi milik Anda.',
       },
     },
   ],

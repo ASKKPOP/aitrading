@@ -17,17 +17,17 @@ export function ContractPage({ userToken }: { userToken?: string | null }) {
   const [error, setError] = useState('')
 
   const T = {
-    title: tr(language, { ko: '엔터프라이즈 문의', en: 'Enterprise — contact us', ja: 'Enterprise — お問い合わせ', th: 'Enterprise — ติดต่อเรา', vi: 'Enterprise — Liên hệ với chúng tôi' }),
-    subtitle: tr(language, { ko: '팀 규모와 요구사항을 알려주시면 맞춤 계약을 제안드립니다.', en: 'Tell us about your team and requirements — we\'ll propose a custom contract.', ja: 'チーム規模とご要件をお知らせいただければ、最適な契約をご提案します。', th: 'แจ้งขนาดทีมและความต้องการของคุณ แล้วเราจะเสนอสัญญาที่เหมาะกับคุณ', vi: 'Cho chúng tôi biết quy mô nhóm và yêu cầu của bạn — chúng tôi sẽ đề xuất hợp đồng phù hợp.' }),
-    name: tr(language, { ko: '이름', en: 'Name', ja: '氏名', th: 'ชื่อ', vi: 'Họ tên' }),
-    email: tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email' }),
-    company: tr(language, { ko: '회사명', en: 'Company', ja: '会社名', th: 'ชื่อบริษัท', vi: 'Tên công ty' }),
-    phone: tr(language, { ko: '전화번호 (선택)', en: 'Phone (optional)', ja: '電話番号（任意）', th: 'เบอร์โทรศัพท์ (ไม่บังคับ)', vi: 'Số điện thoại (tùy chọn)' }),
-    message: tr(language, { ko: '요구사항', en: 'Requirements', ja: 'ご要件', th: 'ความต้องการ', vi: 'Yêu cầu' }),
-    submit: tr(language, { ko: '문의 보내기', en: 'Send request', ja: '問い合わせを送信', th: 'ส่งคำขอ', vi: 'Gửi yêu cầu' }),
-    thanksTitle: tr(language, { ko: '접수되었습니다', en: 'Request received', ja: '受け付けました', th: 'รับคำขอแล้ว', vi: 'Đã nhận yêu cầu' }),
-    thanksBody: tr(language, { ko: '영업일 기준 1–2일 내에 연락드리겠습니다.', en: 'We\'ll get back to you within 1–2 business days.', ja: '1〜2営業日以内にご連絡いたします。', th: 'เราจะติดต่อกลับภายใน 1–2 วันทำการ', vi: 'Chúng tôi sẽ liên hệ lại trong vòng 1–2 ngày làm việc.' }),
-    back: tr(language, { ko: '플랜 보기로 돌아가기', en: 'Back to plans', ja: 'プラン一覧に戻る', th: 'กลับไปที่แผนบริการ', vi: 'Quay lại danh sách gói' }),
+    title: tr(language, { ko: '엔터프라이즈 문의', en: 'Enterprise — contact us', ja: 'Enterprise — お問い合わせ', th: 'Enterprise — ติดต่อเรา', vi: 'Enterprise — Liên hệ với chúng tôi', id: 'Enterprise — hubungi kami' }),
+    subtitle: tr(language, { ko: '팀 규모와 요구사항을 알려주시면 맞춤 계약을 제안드립니다.', en: 'Tell us about your team and requirements — we\'ll propose a custom contract.', ja: 'チーム規模とご要件をお知らせいただければ、最適な契約をご提案します。', th: 'แจ้งขนาดทีมและความต้องการของคุณ แล้วเราจะเสนอสัญญาที่เหมาะกับคุณ', vi: 'Cho chúng tôi biết quy mô nhóm và yêu cầu của bạn — chúng tôi sẽ đề xuất hợp đồng phù hợp.', id: 'Ceritakan tentang tim dan kebutuhan Anda — kami akan mengajukan kontrak khusus.' }),
+    name: tr(language, { ko: '이름', en: 'Name', ja: '氏名', th: 'ชื่อ', vi: 'Họ tên', id: 'Nama' }),
+    email: tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' }),
+    company: tr(language, { ko: '회사명', en: 'Company', ja: '会社名', th: 'ชื่อบริษัท', vi: 'Tên công ty', id: 'Perusahaan' }),
+    phone: tr(language, { ko: '전화번호 (선택)', en: 'Phone (optional)', ja: '電話番号（任意）', th: 'เบอร์โทรศัพท์ (ไม่บังคับ)', vi: 'Số điện thoại (tùy chọn)', id: 'Telepon (opsional)' }),
+    message: tr(language, { ko: '요구사항', en: 'Requirements', ja: 'ご要件', th: 'ความต้องการ', vi: 'Yêu cầu', id: 'Kebutuhan' }),
+    submit: tr(language, { ko: '문의 보내기', en: 'Send request', ja: '問い合わせを送信', th: 'ส่งคำขอ', vi: 'Gửi yêu cầu', id: 'Kirim permintaan' }),
+    thanksTitle: tr(language, { ko: '접수되었습니다', en: 'Request received', ja: '受け付けました', th: 'รับคำขอแล้ว', vi: 'Đã nhận yêu cầu', id: 'Permintaan diterima' }),
+    thanksBody: tr(language, { ko: '영업일 기준 1–2일 내에 연락드리겠습니다.', en: 'We\'ll get back to you within 1–2 business days.', ja: '1〜2営業日以内にご連絡いたします。', th: 'เราจะติดต่อกลับภายใน 1–2 วันทำการ', vi: 'Chúng tôi sẽ liên hệ lại trong vòng 1–2 ngày làm việc.', id: 'Kami akan menghubungi Anda dalam 1–2 hari kerja.' }),
+    back: tr(language, { ko: '플랜 보기로 돌아가기', en: 'Back to plans', ja: 'プラン一覧に戻る', th: 'กลับไปที่แผนบริการ', vi: 'Quay lại danh sách gói', id: 'Kembali ke daftar paket' }),
   }
 
   async function submit() {

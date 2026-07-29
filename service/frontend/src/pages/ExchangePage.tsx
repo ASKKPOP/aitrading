@@ -33,12 +33,12 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
 
     const pointsToExchange = parseInt(amount)
     if (!pointsToExchange || pointsToExchange <= 0) {
-      alert(tr(language, { ko: '포인트 수량을 입력하세요', en: 'Please enter points amount', ja: '交換するポイント数を入力してください', th: 'กรุณากรอกจำนวนคะแนน', vi: 'Vui lòng nhập số điểm' }))
+      alert(tr(language, { ko: '포인트 수량을 입력하세요', en: 'Please enter points amount', ja: '交換するポイント数を入力してください', th: 'กรุณากรอกจำนวนคะแนน', vi: 'Vui lòng nhập số điểm', id: 'Masukkan jumlah poin' }))
       return
     }
 
     if (pointsToExchange > points) {
-      alert(tr(language, { ko: '포인트가 부족합니다', en: 'Insufficient points', ja: 'ポイントが不足しています', th: 'คะแนนไม่เพียงพอ', vi: 'Không đủ điểm' }))
+      alert(tr(language, { ko: '포인트가 부족합니다', en: 'Insufficient points', ja: 'ポイントが不足しています', th: 'คะแนนไม่เพียงพอ', vi: 'Không đủ điểm', id: 'Poin tidak mencukupi' }))
       return
     }
 
@@ -57,16 +57,16 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
       const data = await res.json()
 
       if (res.ok) {
-        alert(tr(language, { ko: '교환이 완료되었습니다!', en: 'Exchange successful!', ja: '交換に成功しました！', th: 'แลกเปลี่ยนสำเร็จ!', vi: 'Đổi thành công!' }))
+        alert(tr(language, { ko: '교환이 완료되었습니다!', en: 'Exchange successful!', ja: '交換に成功しました！', th: 'แลกเปลี่ยนสำเร็จ!', vi: 'Đổi thành công!', id: 'Penukaran berhasil!' }))
         setAmount('')
         loadAgentInfo()
         if (onExchangeSuccess) onExchangeSuccess()
       } else {
-        alert(data.detail || (tr(language, { ko: '교환 실패', en: 'Exchange failed', ja: '交換に失敗しました', th: 'แลกเปลี่ยนล้มเหลว', vi: 'Đổi thất bại' })))
+        alert(data.detail || (tr(language, { ko: '교환 실패', en: 'Exchange failed', ja: '交換に失敗しました', th: 'แลกเปลี่ยนล้มเหลว', vi: 'Đổi thất bại', id: 'Penukaran gagal' })))
       }
     } catch (e) {
       console.error(e)
-      alert(tr(language, { ko: '교환 실패', en: 'Exchange failed', ja: '交換に失敗しました', th: 'แลกเปลี่ยนล้มเหลว', vi: 'Đổi thất bại' }))
+      alert(tr(language, { ko: '교환 실패', en: 'Exchange failed', ja: '交換に失敗しました', th: 'แลกเปลี่ยนล้มเหลว', vi: 'Đổi thất bại', id: 'Penukaran gagal' }))
     }
 
     setLoading(false)
@@ -104,7 +104,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
           {t.exchange.exchangeRate}
         </div>
         <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          {tr(language, { ko: `${points} 포인트를 $${(points * exchangeRate).toLocaleString()} USD로 교환할 수 있습니다`, en: `You can exchange ${points} points for $${(points * exchangeRate).toLocaleString()} USD`, ja: `${points} ポイントを $${(points * exchangeRate).toLocaleString()} USD と交換できます`, th: `คุณสามารถแลก ${points} คะแนนเป็น $${(points * exchangeRate).toLocaleString()} USD`, vi: `Bạn có thể đổi ${points} điểm thành $${(points * exchangeRate).toLocaleString()} USD` })}
+          {tr(language, { ko: `${points} 포인트를 $${(points * exchangeRate).toLocaleString()} USD로 교환할 수 있습니다`, en: `You can exchange ${points} points for $${(points * exchangeRate).toLocaleString()} USD`, ja: `${points} ポイントを $${(points * exchangeRate).toLocaleString()} USD と交換できます`, th: `คุณสามารถแลก ${points} คะแนนเป็น $${(points * exchangeRate).toLocaleString()} USD`, vi: `Bạn có thể đổi ${points} điểm thành $${(points * exchangeRate).toLocaleString()} USD`, id: `Anda dapat menukar ${points} poin menjadi $${(points * exchangeRate).toLocaleString()} USD` })}
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
             className="form-input"
             value={amount}
             onChange={e => setAmount(e.target.value)}
-            placeholder={tr(language, { ko: '포인트 수량 입력', en: 'Enter points amount', ja: 'ポイント数を入力', th: 'กรอกจำนวนคะแนน', vi: 'Nhập số điểm' })}
+            placeholder={tr(language, { ko: '포인트 수량 입력', en: 'Enter points amount', ja: 'ポイント数を入力', th: 'กรอกจำนวนคะแนน', vi: 'Nhập số điểm', id: 'Masukkan jumlah poin' })}
             required
           />
         </div>
@@ -128,7 +128,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
         {amount && parseInt(amount) > 0 && (
           <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-              {tr(language, { ko: '받게 될 항목', en: 'You will receive', ja: '受け取り', th: 'คุณจะได้รับ', vi: 'Bạn sẽ nhận' })}
+              {tr(language, { ko: '받게 될 항목', en: 'You will receive', ja: '受け取り', th: 'คุณจะได้รับ', vi: 'Bạn sẽ nhận', id: 'Anda akan menerima' })}
             </div>
             <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--success)' }}>
               ${(parseInt(amount) * exchangeRate).toLocaleString()} USD
@@ -137,7 +137,7 @@ export function ExchangePage({ token, onExchangeSuccess }: { token: string, onEx
         )}
 
         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading || !amount || parseInt(amount) > points}>
-          {loading ? (tr(language, { ko: '교환 중...', en: 'Exchanging...', ja: '交換中...', th: 'กำลังแลก...', vi: 'Đang đổi...' })) : t.exchange.submit}
+          {loading ? (tr(language, { ko: '교환 중...', en: 'Exchanging...', ja: '交換中...', th: 'กำลังแลก...', vi: 'Đang đổi...', id: 'Menukar...' })) : t.exchange.submit}
         </button>
       </form>
     </div>

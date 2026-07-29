@@ -17,15 +17,16 @@ import { matchGuideRoute, resolveGuide, type PageGuide } from '../guides'
 // every language up front.
 
 const T = {
-  guide: { ko: '가이드', en: 'Guide', ja: 'ガイド', th: 'คู่มือ', vi: 'Hướng dẫn' },
-  close: { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng' },
-  faq: { ko: '자주 묻는 질문', en: 'FAQ', ja: 'よくある質問', th: 'คำถามที่พบบ่อย', vi: 'Câu hỏi thường gặp' },
+  guide: { ko: '가이드', en: 'Guide', ja: 'ガイド', th: 'คู่มือ', vi: 'Hướng dẫn', id: 'Panduan' },
+  close: { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' },
+  faq: { ko: '자주 묻는 질문', en: 'FAQ', ja: 'よくある質問', th: 'คำถามที่พบบ่อย', vi: 'Câu hỏi thường gặp', id: 'Tanya jawab' },
   none: {
     ko: '이 페이지에는 아직 가이드가 준비되지 않았습니다.',
     en: 'No guide is available for this page yet.',
     ja: 'このページのガイドはまだありません。',
     th: 'ยังไม่มีคู่มือสำหรับหน้านี้',
     vi: 'Chưa có hướng dẫn cho trang này.',
+    id: 'Belum ada panduan untuk halaman ini.',
   },
   loading: {
     ko: '가이드를 불러오는 중…',
@@ -33,6 +34,7 @@ const T = {
     ja: 'ガイドを読み込み中…',
     th: 'กำลังโหลดคู่มือ…',
     vi: 'Đang tải hướng dẫn…',
+    id: 'Memuat panduan…',
   },
   failed: {
     ko: '가이드를 불러오지 못했습니다. 창을 닫았다 다시 열어 주세요.',
@@ -40,6 +42,7 @@ const T = {
     ja: 'ガイドを読み込めませんでした。パネルを閉じて開き直してください。',
     th: 'โหลดคู่มือไม่สำเร็จ ปิดแล้วเปิดแผงใหม่เพื่อลองอีกครั้ง',
     vi: 'Không tải được hướng dẫn. Đóng và mở lại bảng để thử lại.',
+    id: 'Tidak dapat memuat panduan. Tutup lalu buka kembali panelnya untuk mencoba lagi.',
   },
 }
 

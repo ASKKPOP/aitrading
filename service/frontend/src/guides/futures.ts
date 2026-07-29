@@ -15,6 +15,7 @@ export const futuresGuide: PageGuide = {
     ja: 'レバレッジをかけてロング・ショート両方向にエントリーできる無期限先物シミュレーターです。現物ターミナルと同じ構造に、レバレッジスライダー・証拠金・概算清算価格が加わります。',
     th: 'ตัวจำลองฟิวเจอร์สแบบไม่มีวันหมดอายุ ที่คุณสามารถเปิด long หรือ short พร้อมเลเวอเรจ โครงสร้างเหมือนเทอร์มินัลสปอต แต่เพิ่มแถบเลื่อนเลเวอเรจ มาร์จิน และราคาล้างพอร์ตโดยประมาณ',
     vi: 'Trình mô phỏng hợp đồng tương lai vĩnh cửu, nơi bạn có thể mở long hoặc short với đòn bẩy. Cấu trúc giống terminal spot nhưng thêm thanh trượt đòn bẩy, ký quỹ và giá thanh lý xấp xỉ.',
+    id: 'Simulator futures perpetual tempat Anda dapat membuka posisi long atau short dengan leverage. Tampilannya mengikuti terminal spot, tetapi menambahkan penggeser leverage, margin, dan perkiraan harga likuidasi.',
   },
   sections: [
     {
@@ -62,6 +63,13 @@ export const futuresGuide: PageGuide = {
           'Khác spot, biểu mẫu không có nút chuyển mua/bán — thay vào đó là thanh trượt đòn bẩy và hai nút long và short riêng biệt.',
           'Có tám cặp: BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX.',
         ],
+        id: [
+          'Header menampilkan pemilih pasangan, harga terakhir dalam huruf besar, perubahan 24 jam, harga Mark, dan volume 24 jam, dengan label "Perpetual (sim)" di ujung kanan.',
+          'Statistik harga Mark hanya muncul di layar futures — tidak ada di spot.',
+          'Tata letak tiga bagiannya sama dengan spot: order book di kiri, formulir order di kanan, tabel posisi di bawah.',
+          'Berbeda dengan spot, formulir order di sini tidak punya sakelar beli/jual — sebagai gantinya ada penggeser leverage dan dua tombol terpisah untuk long dan short.',
+          'Tersedia delapan pasangan: BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX.',
+        ],
       },
     },
     {
@@ -108,6 +116,13 @@ export const futuresGuide: PageGuide = {
           'Nhấn một dòng sổ lệnh sẽ chép số lượng của mức đó vào biểu mẫu. Giá không được chép.',
           'Thanh tỷ lệ B / S ở dưới cho biết nhanh sự cân bằng giữa khối lượng mua và bán đang chờ.',
           'Khi giá đổi, con số nháy trong chốc lát kèm ↑ hoặc ↓. Giá và sổ lệnh làm mới khoảng 4 giây; vị thế khoảng 12 giây.',
+        ],
+        id: [
+          'Baris oranye di atas adalah ask, baris hijau di bawah adalah bid, dan angka tebal di antaranya adalah harga terakhir.',
+          'Kolom Total adalah harga × jumlah untuk level itu, dan batang di belakang setiap baris berskala terhadap ukuran terbesar yang terlihat.',
+          'Mengeklik sebuah baris order book menyalin kuantitas level itu ke formulir order. Harganya tidak ikut disalin.',
+          'Batang rasio B / S di bagian bawah memberi gambaran cepat tentang keseimbangan antara ukuran bid dan ask yang menunggu.',
+          'Ketika harga berubah, angkanya berkedip sesaat dengan panah ↑ atau ↓. Ticker dan order book diperbarui kira-kira setiap 4 detik; posisi sekitar setiap 12 detik.',
         ],
       },
     },
@@ -161,6 +176,14 @@ export const futuresGuide: PageGuide = {
           'Dòng Ký quỹ là giá trị lệnh chia cho đòn bẩy — số tiền thực sự bị ràng buộc vào vị thế này.',
           'Phí là 0,1% của giá trị lệnh đã nhân đòn bẩy, không phải của ký quỹ.',
         ],
+        id: [
+          'Penggeser leverage berkisar dari 1× sampai 100× dan dimulai di 10×. Kelipatan yang aktif ditampilkan di kanan atas penggeser.',
+          'Kuantitas dan nilai order saling terkait — ketik salah satunya dan yang lain diturunkan dari harga langsung.',
+          'Tombol persentase mengambil kas Anda dikurangi cadangan biaya sebagai anggaran, lalu mengalikannya dengan leverage. Pada leverage 10×, 50% menghasilkan ukuran kira-kira sepuluh kali setengah kas Anda.',
+          'Mengubah leverage langsung menghitung ulang persentase yang sudah Anda pilih sebelumnya.',
+          'Baris Margin adalah nilai order dibagi leverage — jumlah yang benar-benar dialokasikan untuk posisi ini.',
+          'Biayanya 0,1% dari nilai order setelah leverage, bukan dari marginnya.',
+        ],
       },
     },
     {
@@ -212,6 +235,14 @@ export const futuresGuide: PageGuide = {
           'Ghi chú dưới biểu mẫu nêu rõ rằng lãi/lỗ trong trình mô phỏng này là tuyến tính và giá thanh lý chỉ là xấp xỉ.',
           'Đòn bẩy chỉ định cỡ vị thế — không có khoản vay hay dòng tiền thật nào được thực hiện.',
           'Trước khi dùng bội số lớn, hãy quan sát cách các nút % và con số ký quỹ vận hành ở bội số thấp.',
+        ],
+        id: [
+          'Begitu Anda memasukkan kuantitas, kotak kuning menampilkan perkiraan harga likuidasi untuk long (L) maupun short (S).',
+          'Ini pendekatan sederhana: harga langsung digeser sebesar 1/leverage dikurangi tingkat margin pemeliharaan 0,5%.',
+          'Makin tinggi leverage-nya, makin dekat harga likuidasi ke harga saat ini. Pada 100×, pergerakan kurang dari 1% sudah menyentuhnya.',
+          'Catatan di bawah formulir menyatakan dengan jelas bahwa laba rugi bersifat linear pada simulator ini dan harga likuidasinya hanya perkiraan.',
+          'Leverage hanya menentukan ukuran posisi — tidak ada dana yang benar-benar dipinjam atau dipindahkan ke mana pun.',
+          'Sebelum meraih kelipatan besar, amati dulu bagaimana tombol persentase dan angka margin berperilaku pada kelipatan kecil.',
         ],
       },
     },
@@ -265,6 +296,14 @@ export const futuresGuide: PageGuide = {
           'Khi thất bại, cùng vị trí đó hiển thị lý do từ máy chủ bằng màu cam.',
           'Chỉ hỗ trợ lệnh thị trường — tab Limit bị khóa và ghi "sắp có".',
         ],
+        id: [
+          'Di bagian bawah formulir terdapat tombol hijau "Beli / Long" dan tombol oranye "Jual / Short" berdampingan.',
+          'Keduanya membuka dialog konfirmasi lebih dulu, bukan langsung mengeksekusi.',
+          'Dialog itu memuat jenis order dan pasangannya, harga masuk langsung, kuantitas beserta nilainya, margin dengan kelipatannya, biaya, dan total biaya.',
+          'Mengonfirmasi akan mengeksekusi seketika pada harga langsung; bila berhasil, pesan hijau menampilkan eksekusi dan nomor sinyalnya.',
+          'Bila gagal, di tempat yang sama muncul alasan dari server dengan warna oranye.',
+          'Hanya order pasar yang didukung — tab Limit terkunci dan berlabel "segera".',
+        ],
       },
     },
     {
@@ -317,6 +356,14 @@ export const futuresGuide: PageGuide = {
           'Nút "Đóng thị trường" sẽ bán một long hoặc cover một short theo giá hiện tại ngay lập tức. Không có xác nhận, hãy cẩn thận.',
           'ROI đo theo giá vốn tại giá vào; lãi màu xanh và lỗ màu cam.',
         ],
+        id: [
+          'Tabel posisi di bawahnya memiliki kolom aset, arah, kuantitas, harga masuk, harga mark, nilai, dan laba rugi / ROI.',
+          'Kolom Arah hanya ada di futures — long berwarna hijau dan short berwarna oranye.',
+          'Posisi long maupun short muncul di sini. Bukunya bermode hedge, jadi long dan short pada aset yang sama tetap menjadi baris terpisah.',
+          'Angka "Dimiliki" pada formulir order adalah posisi bersih: kuantitas long dikurangi kuantitas short untuk aset tersebut.',
+          'Tombol "Tutup di harga pasar" langsung menjual posisi long atau menutup posisi short pada harga saat ini. Tidak ada konfirmasi, jadi berhati-hatilah.',
+          'ROI diukur terhadap basis biaya masuk; keuntungan berwarna hijau dan kerugian berwarna oranye.',
+        ],
       },
     },
   ],
@@ -336,6 +383,7 @@ export const futuresGuide: PageGuide = {
         ja: 'いいえ。ここはシミュレーターなので、レバレッジはポジション規模と証拠金の計算に使われるだけです。実際に資金を借りたり送金したりすることはなく、損益は線形計算で清算価格も概算です。',
         th: 'ไม่ นี่คือตัวจำลอง เลเวอเรจใช้เพียงคำนวณขนาดสถานะและมาร์จิน ไม่มีการกู้ยืมหรือโอนเงินจริง กำไรขาดทุนคำนวณเชิงเส้น และราคาล้างพอร์ตเป็นค่าประมาณ',
         vi: 'Không. Đây là trình mô phỏng, nên đòn bẩy chỉ dùng để tính cỡ vị thế và ký quỹ. Không có khoản vay hay chuyển tiền thật, lãi/lỗ tính tuyến tính, và giá thanh lý là xấp xỉ.',
+        id: 'Tidak. Ini simulator, jadi leverage hanya masuk ke perhitungan ukuran posisi dan margin. Tidak ada yang benar-benar dipinjam atau dipindahkan, laba rugi dihitung secara linear, dan harga likuidasinya bersifat perkiraan.',
       },
     },
     {
@@ -345,6 +393,7 @@ export const futuresGuide: PageGuide = {
         ja: '同じ銘柄にロングとショートが同時にあります。正常ですか？',
         th: 'ฉันมีทั้ง long และ short ในสินทรัพย์เดียวกันพร้อมกัน ถูกต้องไหม?',
         vi: 'Tôi có cả long và short trên cùng một tài sản. Vậy có đúng không?',
+        id: 'Saya punya posisi long dan short sekaligus pada aset yang sama. Apakah itu benar?',
       },
       a: {
         ko: '정상입니다. 원장이 헤지 방식이라 롱과 숏이 서로 상계되지 않고 각각의 줄로 유지됩니다. 주문 폼 상단의 "보유" 값만 두 방향을 합친 순포지션으로 보여줍니다.',
@@ -352,6 +401,7 @@ export const futuresGuide: PageGuide = {
         ja: '正常です。台帳はヘッジ方式のため、ロングとショートは相殺されず別々の行として保持されます。注文フォーム上部の「保有量」だけが両方向を合算した純ポジションを表示します。',
         th: 'ถูกต้อง บัญชีเป็นแบบเฮดจ์ ดังนั้น long และ short จะไม่หักกลบกันและคงอยู่คนละแถว มีเพียงตัวเลข "ถือครอง" ในฟอร์มคำสั่งที่แสดงทั้งสองฝั่งรวมเป็นสถานะสุทธิ',
         vi: 'Đúng vậy. Sổ cái ở chế độ hedge, nên long và short không bù trừ nhau và giữ nguyên ở hai dòng riêng. Chỉ con số "Nắm giữ" trong biểu mẫu mới hiển thị hai bên gộp thành vị thế ròng.',
+        id: 'Ya. Bukunya bermode hedge, jadi long dan short tidak saling meniadakan dan tetap menjadi baris terpisah. Hanya angka "Dimiliki" pada formulir order yang menampilkan kedua sisi itu digabungkan sebagai posisi bersih.',
       },
     },
     {
@@ -361,6 +411,7 @@ export const futuresGuide: PageGuide = {
         ja: '% ボタンを押したら現金よりはるかに大きな金額が入りました。',
         th: 'ฉันกดปุ่ม % แล้วจำนวนเงินมากกว่าเงินสดของฉันมาก',
         vi: 'Tôi nhấn nút % và số tiền lớn hơn nhiều so với tiền mặt của tôi.',
+        id: 'Saya menekan tombol persentase dan jumlahnya jauh lebih besar dari kas saya.',
       },
       a: {
         ko: '의도된 동작입니다. 선물에서는 % 버튼이 현금 기준 예산에 레버리지를 곱해 주문 금액을 잡습니다. 실제로 묶이는 돈은 그 아래 증거금 줄에 표시된 금액이며, 이 값이 현금 범위 안에 들어옵니다.',
@@ -368,6 +419,7 @@ export const futuresGuide: PageGuide = {
         ja: '意図された挙動です。先物では % ボタンが現金ベースの予算にレバレッジを掛けて注文金額を決めます。実際に拘束される金額はその下の証拠金の行に表示され、それが現金の範囲に収まります。',
         th: 'เป็นการทำงานตามที่ตั้งใจ ในฟิวเจอร์ส ปุ่ม % จะคูณงบที่คิดจากเงินสดด้วยเลเวอเรจเพื่อกำหนดมูลค่าคำสั่ง จำนวนที่ผูกไว้จริงคือแถวมาร์จินด้านล่าง ซึ่งอยู่ในวงเงินสดของคุณ',
         vi: 'Đó là chủ ý. Ở futures, các nút % nhân ngân sách dựa trên tiền mặt với đòn bẩy để đặt giá trị lệnh. Số tiền thực sự bị ràng buộc là dòng Ký quỹ bên dưới, và đó mới là phần nằm trong tiền mặt của bạn.',
+        id: 'Itu memang disengaja. Pada futures, tombol persentase mengalikan anggaran berbasis kas dengan leverage Anda untuk menetapkan nilai order. Jumlah yang benar-benar dialokasikan adalah baris Margin di bawahnya, dan itulah yang tetap berada dalam batas kas Anda.',
       },
     },
     {
@@ -385,6 +437,7 @@ export const futuresGuide: PageGuide = {
         ja: '数量が 0 または空の場合は表示されません。数量か注文金額を入力するか % ボタンを押して値を埋めると、ロングとショートの概算清算価格が表示されます。このボックスは現物にはなく先物のみにあります。',
         th: 'จะแสดงเมื่อจำนวนมากกว่าศูนย์เท่านั้น ใส่จำนวนหรือมูลค่าคำสั่ง หรือกดปุ่ม % แล้วราคาล้างพอร์ตโดยประมาณของ long และ short จะปรากฏ กล่องนี้มีเฉพาะบนฟิวเจอร์ส ไม่มีบนสปอต',
         vi: 'Nó chỉ xuất hiện khi số lượng lớn hơn không. Nhập số lượng hoặc giá trị lệnh, hoặc nhấn một nút %, thì giá thanh lý xấp xỉ cho long và short sẽ hiện ra. Ô này chỉ có ở futures, không có ở spot.',
+        id: 'Kotak itu baru muncul setelah kuantitasnya di atas nol. Masukkan kuantitas atau nilai order, atau tekan tombol persentase, dan perkiraan harga likuidasi long serta short akan muncul. Kotak ini hanya ada di futures, tidak di spot.',
       },
     },
   ],

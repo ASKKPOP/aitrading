@@ -15,6 +15,7 @@ export const contractGuide: PageGuide = {
     ja: 'チーム規模と要件を記入してカスタム契約を依頼する 1 ページの問い合わせフォームです。標準プランではなくエンタープライズ契約が必要な組織が使います。',
     th: 'ฟอร์มคำขอหน้าเดียวสำหรับอธิบายทีมและความต้องการของคุณเพื่อขอสัญญาแบบกำหนดเอง ใช้โดยองค์กรที่ต้องการข้อตกลงเอนเทอร์ไพรส์แทนแพลนมาตรฐาน',
     vi: 'Biểu mẫu yêu cầu một trang, nơi bạn mô tả đội ngũ và nhu cầu để xin hợp đồng riêng. Dành cho tổ chức cần thỏa thuận enterprise thay vì gói tiêu chuẩn.',
+    id: 'Formulir permintaan satu halaman tempat Anda menjelaskan tim dan kebutuhan Anda untuk mengajukan kontrak khusus. Dipakai oleh organisasi yang memerlukan perjanjian enterprise, bukan paket standar.',
   },
   sections: [
     {
@@ -56,6 +57,12 @@ export const contractGuide: PageGuide = {
           'Trường công ty dùng để biết yêu cầu đến từ tổ chức nào.',
           'Số điện thoại được ghi "(tuỳ chọn)" trên nhãn nên có thể bỏ trống.',
           'Ô "Yêu cầu" nhận nhiều dòng; bạn mô tả càng cụ thể quy mô đội ngũ, mục đích sử dụng và phạm vi hỗ trợ cần thiết thì phản hồi càng chính xác.',
+        ],
+        id: [
+          'Nama dan email wajib diisi — tombol "Kirim permintaan" tetap nonaktif bila salah satunya kosong.',
+          'Perusahaan dipakai untuk mengetahui organisasi mana yang mengajukan permintaan.',
+          'Telepon ditandai "(opsional)" pada labelnya dan boleh dikosongkan.',
+          'Kotak "Kebutuhan" menerima beberapa baris; makin konkret Anda menjelaskan ukuran tim, rencana penggunaan, dan dukungan yang dibutuhkan, makin tepat jawabannya.',
         ],
       },
     },
@@ -99,6 +106,12 @@ export const contractGuide: PageGuide = {
           'Khi lỗi, một cảnh báo đỏ hiện phía trên nút với nguyên văn thông báo từ máy chủ, và dữ liệu bạn nhập vẫn còn để thử lại.',
           'Yêu cầu đã gửi sẽ chuyển vào bảng quản trị của đội vận hành để theo dõi tiếp.',
         ],
+        id: [
+          'Bila berhasil, formulir diganti dengan kartu konfirmasi hijau "Permintaan diterima".',
+          'Kartu itu menyatakan bahwa Anda akan dihubungi dalam 1–2 hari kerja.',
+          'Bila gagal, peringatan merah muncul di atas tombol memuat pesan dari server apa adanya, dan isian Anda tetap tersimpan sehingga bisa dicoba lagi.',
+          'Permintaan yang terkirim diteruskan ke konsol manajemen operator untuk ditindaklanjuti.',
+        ],
       },
     },
     {
@@ -136,6 +149,11 @@ export const contractGuide: PageGuide = {
           'Nếu muốn bắt đầu bằng gói tiêu chuẩn trong lúc chờ phản hồi, bạn có thể thanh toán ngay ở trang đăng ký.',
           'Trang này mở được mà không cần đăng nhập, nhưng gửi khi đã đăng nhập sẽ ghi nhận yêu cầu kèm tài khoản của bạn.',
         ],
+        id: [
+          'Tautan "Kembali ke daftar paket" tersedia di bawah formulir maupun di dalam kartu konfirmasi, membawa Anda kembali ke halaman berlangganan.',
+          'Jika Anda lebih suka memulai dengan paket standar sambil menunggu jawaban, Anda bisa membayar langsung dari halaman berlangganan.',
+          'Halaman ini bisa dibuka tanpa masuk, tetapi mengirimnya sambil sudah masuk akan mencatat permintaan itu bersama akun Anda.',
+        ],
       },
     },
   ],
@@ -155,6 +173,7 @@ export const contractGuide: PageGuide = {
         ja: '必須ではありません。氏名とメールを入力すればログインなしで送信できます。ただしログイン状態で送るとアカウント情報が添付され、その後の対応がスムーズになります。',
         th: 'ไม่จำเป็น เพียงกรอกชื่อและอีเมลก็ส่งได้โดยไม่ต้องเข้าสู่ระบบ แต่ถ้าส่งขณะเข้าสู่ระบบอยู่ ข้อมูลบัญชีจะแนบไปด้วยทำให้ติดตามงานง่ายขึ้น',
         vi: 'Không bắt buộc. Chỉ cần điền tên và email là gửi được mà không cần đăng nhập. Tuy nhiên gửi khi đã đăng nhập sẽ đính kèm thông tin tài khoản, giúp việc theo dõi dễ hơn.',
+        id: 'Tidak wajib. Dengan nama dan email terisi, Anda bisa mengirimnya tanpa masuk. Mengirim sambil sudah masuk memang melampirkan informasi akun Anda, yang mempermudah tindak lanjut.',
       },
     },
     {
@@ -172,6 +191,7 @@ export const contractGuide: PageGuide = {
         ja: '氏名とメールの両方が入力されて初めてボタンが有効になります。送信中も一時的に無効になるため、空白だけを入力していないか確認してください。',
         th: 'ปุ่มจะกดได้เมื่อกรอกทั้งช่องชื่อและอีเมลแล้วเท่านั้น และจะถูกปิดชั่วคราวระหว่างกำลังส่งด้วย ลองตรวจว่าไม่ได้พิมพ์เพียงช่องว่าง',
         vi: 'Nút chỉ bật khi cả ô tên lẫn email đều có nội dung. Nó cũng bị tắt trong lúc đang gửi, nên hãy kiểm tra bạn không chỉ nhập khoảng trắng.',
+        id: 'Tombolnya baru aktif setelah kolom nama dan email terisi teks. Tombol itu juga nonaktif sesaat selama pengiriman, jadi pastikan Anda tidak hanya memasukkan spasi.',
       },
     },
     {
@@ -189,6 +209,7 @@ export const contractGuide: PageGuide = {
         ja: 'いいえ。このページはリクエストを受け付けるだけで、金額を計算・表示することはありません。条件は担当者からの返信でご案内します。公開されている月額プランの金額は購読ページで確認してください。',
         th: 'ไม่ได้ หน้านี้เพียงรับคำขอเท่านั้น ไม่ได้คำนวณหรือแสดงตัวเลขใด ๆ เงื่อนไขจะแจ้งกลับมาพร้อมคำตอบ ส่วนราคาแพลนรายเดือนที่ประกาศไว้ดูได้ที่หน้าสมัครสมาชิก',
         vi: 'Không. Trang này chỉ ghi nhận yêu cầu; nó không tính hay hiển thị con số nào. Điều khoản sẽ được gửi kèm phản hồi. Giá các gói hàng tháng đã công bố nằm ở trang đăng ký.',
+        id: 'Tidak. Halaman ini hanya mencatat permintaan; ia tidak menghitung atau menampilkan angka apa pun. Ketentuannya datang bersama jawaban kami. Harga paket bulanan yang dipublikasikan ada di halaman berlangganan.',
       },
     },
   ],

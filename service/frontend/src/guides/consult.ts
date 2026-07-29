@@ -8,6 +8,7 @@ export const consultGuide: PageGuide = {
     ja: 'ライブの市場データと利用者が定めた指針の両方を参照するAIと対話しながら相場を検討し、会話でまとまった計画を自動売買ルールの草案として引き渡すページです。この会話自体はいかなる注文も出しません。',
     th: 'หน้าสำหรับปรึกษาตลาดกับ AI ที่เห็นทั้งข้อมูลตลาดแบบสดและแนวทางที่คุณตั้งไว้ จากนั้นส่งต่อแผนที่ตกลงกันเป็นร่างกฎอัตโนมัติ ตัวบทสนทนาเองไม่เคยส่งคำสั่งซื้อขายใด ๆ',
     vi: 'Trang để bàn về thị trường với một AI nhìn thấy cả dữ liệu thị trường trực tiếp lẫn các chỉ dẫn bạn đã đặt, rồi chuyển kế hoạch đã thống nhất thành bản nháp quy tắc tự động. Bản thân cuộc trò chuyện không bao giờ đặt lệnh nào.',
+    id: 'Halaman untuk membahas kondisi pasar bersama AI yang melihat data pasar langsung sekaligus panduan yang Anda tetapkan, lalu menyerahkan rencana yang Anda sepakati sebagai draf aturan otomatisasi. Percakapannya sendiri tidak pernah memasang order apa pun.',
   },
   sections: [
     {
@@ -47,6 +48,13 @@ export const consultGuide: PageGuide = {
           'Cuộc trò chuyện có ghi nhớ trạng thái. Nó nhớ các câu hỏi và trả lời trước đó, nên những câu hỏi tiếp nối ngắn như "thế còn nếu ngược lại?" vẫn hiểu được.',
           'Kết quả duy nhất có thể rời khỏi màn hình này là một bản nháp quy tắc — và ngay cả bản nháp đó chỉ trở thành quy tắc thật khi bạn nhấn nút xác nhận.',
           'Ngay cả sau khi tạo quy tắc, mọi lệnh đều phải qua cổng rủi ro và chỉ khớp trên mô phỏng. Không có gì được định tuyến tới môi giới thật.',
+        ],
+        id: [
+          'Anda harus dalam keadaan masuk. Bila keluar, halaman ini hanya menampilkan ajakan untuk masuk.',
+          'AI memakai data kuantitatif, psikologi, kondisi pasar, peristiwa, dan pergerakan whale yang sama seperti yang dilihat alur otomatis, ditambah panduan yang Anda tinggalkan di pengaturan.',
+          'Percakapannya berstatus. Ia mengingat pertanyaan dan jawaban sebelumnya, sehingga susulan singkat seperti "lalu bagaimana kalau justru itu yang terjadi?" tetap dipahami.',
+          'Satu-satunya keluaran yang dapat meninggalkan layar ini adalah draf aturan — dan itu pun baru menjadi aturan sungguhan ketika Anda menekan tombol konfirmasi.',
+          'Bahkan setelah aturan dibuat, setiap order tetap melewati gerbang risiko dan hanya tereksekusi di simulator. Tidak ada yang dikirim ke broker sungguhan.',
         ],
       },
     },
@@ -93,6 +101,14 @@ export const consultGuide: PageGuide = {
           'Nhấn Enter trong ô nhập để gửi tin nhắn; nhấn Shift kèm Enter khi cần xuống dòng.',
           'Câu hỏi của bạn hiện bên phải với màu nhấn, còn câu trả lời của AI ở bên trái, kèm tên mô hình cỡ chữ nhỏ dưới mỗi câu trả lời. Trong lúc AI soạn, dòng "đang nghĩ…" sẽ hiện ra.',
         ],
+        id: [
+          'Pilih pasangan simbol di kiri atas. Saat Anda memulai konsultasi baru, nilai itu dilekatkan sebagai subjek percakapannya.',
+          'Tombol Obrolan baru memulai percakapan kosong, dan di sampingnya hingga enam konsultasi terbaru muncul sebagai tombol pil. Masing-masing menampilkan simbol dan jumlah pesan, dan yang sedang terbuka ditampilkan tersorot.',
+          'Mengeklik konsultasi lama akan memuat transkripnya persis seperti semula, dan simbolnya kembali ke nilai pada sesi tersebut.',
+          'Anda tidak harus menekan Obrolan baru lebih dulu — kirim saja pertanyaan dan percakapan baru dibuat otomatis bila belum ada yang terbuka.',
+          'Enter mengirim pesan Anda dari kotak isian; tekan Shift bersama Enter bila Anda perlu baris baru.',
+          'Pertanyaan Anda muncul di sebelah kanan dengan warna aksen dan jawaban AI di sebelah kiri, dengan nama model dalam huruf kecil di bawah setiap jawaban. Selama AI menyusun jawaban, tertulis "berpikir…".',
+        ],
       },
     },
     {
@@ -132,6 +148,13 @@ export const consultGuide: PageGuide = {
           'Hãy nêu ràng buộc của bạn ngay từ đầu — mức chấp nhận rủi ro, số vốn có thể bỏ ra, tần suất muốn kiểm tra — và chúng sẽ được phản ánh trong bản nháp sau này.',
           'Hỏi về kịch bản ngược lại cũng rất đáng. Quyết định trước tín hiệu nào nghĩa là bạn đã sai sẽ làm điều kiện thoát lệnh của quy tắc rõ ràng hơn nhiều.',
           'Đừng mong AI khẳng định bạn nên mua một mã cụ thể. Buổi tư vấn này không phải lời khuyên đầu tư; nó là công cụ sắp xếp các dữ kiện và điều kiện đằng sau một phán đoán.',
+        ],
+        id: [
+          'Contoh pada kotak isian menunjukkan bentuk pertanyaan yang efektif: tanyakan apa yang perlu diperhatikan pada kondisi saat ini. Karena AI melihat data langsung, makin pertanyaan Anda tentang keadaan sekarang, makin konkret jawabannya.',
+          'Alih-alih hanya bertanya apakah harus masuk, tanyakan kondisinya. Menanyakan nilai mana yang melewati level mana yang akan mengubah keputusannya menghasilkan jawaban yang mudah diterjemahkan menjadi draf aturan.',
+          'Sebutkan batasan Anda sejak awal — toleransi risiko, berapa banyak yang bisa Anda alokasikan, seberapa sering ingin diperiksa — dan semuanya akan tercermin dalam draf nanti.',
+          'Menanyakan skenario sebaliknya juga layak dilakukan. Menetapkan lebih dulu sinyal apa yang berarti Anda keliru membuat kondisi keluar pada aturan menjadi jauh lebih jelas.',
+          'Jangan berharap AI menyatakan bahwa Anda harus membeli saham tertentu. Konsultasi ini bukan nasihat keuangan; ini alat untuk menata masukan dan kondisi di balik sebuah keputusan.',
         ],
       },
     },
@@ -178,6 +201,14 @@ export const consultGuide: PageGuide = {
           'Nếu cần thay đổi điều gì, cách nhanh hơn là huỷ bản nháp, nói lại điều kiện bạn muốn trong cuộc trò chuyện, rồi yêu cầu một bản nháp mới.',
           'Nhấn "Tạo quy tắc này" sẽ thực sự tạo quy tắc và đưa bạn tới trang Tự động hoá, nơi bạn chỉnh chi tiết và bật hoặc tắt nó.',
         ],
+        id: [
+          'Tombol "Jadikan aturan" baru muncul setelah percakapan berlangsung bolak-balik sedikit. Dengan satu pesan saja, tombolnya tetap tersembunyi.',
+          'Tekan tombol itu dan AI membaca percakapan sejauh ini lalu menghasilkan draf aturan, ditampilkan dalam kartu bertepi tersorot.',
+          'Kartu draf menampilkan simbol, pasar, interval run dalam menit, keyakinan minimum, ukuran, dan tingkat risiko dalam satu baris, dengan alasan di balik pilihan-pilihan itu di bawahnya.',
+          'Periksa angkanya satu per satu. Ukuran dan keyakinan minimum khususnya berdampak langsung pada operasi nyata.',
+          'Jika ada yang perlu diubah, lebih cepat membuangnya, menyatakan ulang kondisi yang Anda inginkan dalam percakapan, lalu meminta draf baru.',
+          'Menekan "Buat aturan ini" benar-benar membuat aturannya dan membawa Anda ke halaman Otomatisasi, tempat Anda melakukan penyuntingan terperinci dan mengaktifkan atau menonaktifkannya.',
+        ],
       },
     },
     {
@@ -218,6 +249,13 @@ export const consultGuide: PageGuide = {
           'Lỗi hiện dưới ô nhập kèm dấu ⚠️. Cuộc trò chuyện của bạn vẫn được giữ nguyên, nên chỉ cần gửi lại sau giây lát.',
           'Dù câu chữ của AI nghe chắc chắn đến đâu, đó vẫn là dự báo chứ không phải bảo đảm. Quy mô vốn và giới hạn thua lỗ luôn là điều bạn tự quyết.',
         ],
+        id: [
+          'Draf aturan dibangun hanya dari percakapan sejauh ini. Jika Anda berpindah-pindah di antara beberapa simbol, drafnya bisa memilih yang keliru, jadi lebih aman satu percakapan untuk satu simbol.',
+          'Membiarkan kartu draf terbuka sambil terus mengobrol tidak akan memperbaruinya. Mintalah draf lagi untuk memasukkan pembahasan yang lebih baru.',
+          'Membuat aturan langsung memindahkan Anda ke halaman Otomatisasi, sehingga teks alasan yang ada di kartu draf menghilang. Salin dulu apa pun yang perlu Anda simpan sebelum mengonfirmasi.',
+          'Galat muncul di bawah kotak isian dengan penanda ⚠️. Percakapan Anda tetap tersimpan, jadi Anda bisa mengirim lagi beberapa saat kemudian.',
+          'Seyakin apa pun kalimat AI terdengar, itu adalah perkiraan dan bukan jaminan. Ukuran posisi dan batas kerugian selalu menjadi keputusan Anda.',
+        ],
       },
     },
   ],
@@ -237,6 +275,7 @@ export const consultGuide: PageGuide = {
         ja: 'このボタンは会話が1往復以上してから表示されます。質問を1件送っただけの状態や、新しい相談を始めた直後の画面では表示されません。回答を受け取り、もう一度やり取りすれば入力欄の右側に現れます。',
         th: 'ปุ่มนี้จะปรากฏหลังจากบทสนทนามีการโต้ตอบไปกลับอย่างน้อยหนึ่งรอบ หากคุณเพิ่งส่งคำถามเดียว หรืออยู่ในหน้าการปรึกษาที่เพิ่งเริ่ม ปุ่มจะยังซ่อนอยู่ เมื่อได้รับคำตอบและโต้ตอบอีกรอบ ปุ่มจะปรากฏทางขวาของช่องพิมพ์',
         vi: 'Nút này chỉ xuất hiện sau khi cuộc trò chuyện đã qua lại ít nhất một lượt. Nó vẫn ẩn khi bạn mới gửi một câu hỏi, hoặc trên một buổi tư vấn vừa bắt đầu. Nhận một câu trả lời và trao đổi thêm một lượt nữa, nút sẽ hiện bên phải ô nhập.',
+        id: 'Tombol itu baru muncul setelah percakapan berlangsung bolak-balik setidaknya sekali. Tombolnya tetap tersembunyi ketika Anda baru mengirim satu pertanyaan, atau pada konsultasi yang baru dimulai. Terimalah sebuah jawaban lalu lakukan satu putaran lagi, dan tombolnya muncul di sebelah kanan kotak isian.',
       },
     },
     {
@@ -254,6 +293,7 @@ export const consultGuide: PageGuide = {
         ja: '草案は会話全体を読んで生成されるため、複数の銘柄や複数の金額に言及していると、AIはどれを選ぶべきか判断しづらくなります。破棄したうえで、希望する銘柄と金額を1文で明確に言い直し、草案を作り直してもらってください。そもそも1つの会話で1銘柄に絞れば、この問題はほとんど起きません。いずれにせよ、確認ボタンを押す前にカードの数値をご自身で必ず点検してください。',
         th: 'ร่างถูกสร้างขึ้นจากการอ่านบทสนทนาทั้งหมด การเอ่ยถึงหลายสัญลักษณ์หรือหลายจำนวนเงินจึงทำให้ AI ไม่แน่ใจว่าควรเลือกอันใด ให้กดยกเลิก แล้วระบุสัญลักษณ์และจำนวนเงินที่ต้องการให้ชัดเจนในประโยคเดียว จากนั้นขอร่างใหม่ การจำกัดหนึ่งบทสนทนาต่อหนึ่งสัญลักษณ์จะช่วยป้องกันปัญหานี้ได้เป็นส่วนใหญ่ ไม่ว่ากรณีใด ควรตรวจตัวเลขบนการ์ดด้วยตัวเองก่อนกดยืนยันเสมอ',
         vi: 'Bản nháp được tạo bằng cách đọc toàn bộ cuộc trò chuyện, nên khi bạn nhắc tới nhiều mã hoặc nhiều mức tiền, AI sẽ không chắc phải chọn cái nào. Hãy huỷ nó, nêu lại rõ ràng mã và quy mô bạn muốn trong một câu, rồi yêu cầu bản nháp mới. Giữ mỗi cuộc trò chuyện cho một mã sẽ ngăn phần lớn vấn đề này. Dù thế nào, hãy tự rà lại các con số trên thẻ trước khi nhấn xác nhận.',
+        id: 'Draf dihasilkan dengan membaca seluruh percakapan, jadi menyebut beberapa simbol atau beberapa nominal membuat AI tidak yakin mana yang harus dipilih. Buang drafnya, nyatakan ulang simbol dan ukuran yang Anda inginkan dengan jelas dalam satu kalimat, lalu minta draf baru. Menjaga satu percakapan untuk satu simbol sebagian besar mencegah masalah ini. Bagaimanapun, periksa sendiri angka pada kartunya sebelum menekan konfirmasi.',
       },
     },
     {
@@ -271,6 +311,7 @@ export const consultGuide: PageGuide = {
         ja: 'いいえ。この会話は一切注文を出しません。ここから生まれ得るのはルール草案だけで、その草案も確認ボタンを押して初めてルールになります。ルールが作られた後も、すべての注文はリスクゲートを通過し、シミュレーターでのみ約定します。Sooppiy はシグナルとコピー取引のプラットフォームであり、実在のブローカーへ注文を送りません。',
         th: 'ไม่ แชทนี้ไม่ส่งคำสั่งซื้อขายใด ๆ ทั้งสิ้น สิ่งเดียวที่เกิดขึ้นได้คือร่างกฎ และแม้แต่ร่างนั้นก็จะกลายเป็นกฎต่อเมื่อคุณกดยืนยัน หลังจากมีกฎแล้ว ทุกคำสั่งยังต้องผ่านประตูความเสี่ยงและจับคู่เฉพาะในโหมดจำลอง Sooppiy เป็นแพลตฟอร์มสัญญาณและการคัดลอกเทรด จึงไม่ส่งคำสั่งไปยังโบรกเกอร์จริง',
         vi: 'Không. Cuộc trò chuyện này hoàn toàn không đặt lệnh. Thứ duy nhất nó có thể tạo ra là bản nháp quy tắc, và ngay cả bản nháp đó chỉ thành quy tắc khi bạn nhấn xác nhận. Sau khi quy tắc tồn tại, mọi lệnh vẫn phải qua cổng rủi ro và chỉ khớp trên mô phỏng. Sooppiy là nền tảng tín hiệu và sao chép giao dịch; nó không định tuyến lệnh tới môi giới thật.',
+        id: 'Tidak. Obrolan ini sama sekali tidak memasang order. Satu-satunya yang dapat dihasilkannya adalah draf aturan, dan itu pun baru menjadi aturan ketika Anda menekan konfirmasi. Setelah aturan ada, setiap order tetap melewati gerbang risiko dan hanya tereksekusi di simulator. Sooppiy adalah platform sinyal dan copy trading; ia tidak mengirim order ke broker sungguhan.',
       },
     },
     {
@@ -288,6 +329,7 @@ export const consultGuide: PageGuide = {
         ja: '上部には直近の相談が最大6件までしか並びません。それより古い会話は削除されたわけではなく、単に一覧に収まりきらないだけです。並びが空の場合は、まだ一度も相談を始めていないか、ログインセッションが切れているかなので、質問を1件送って新しい会話を作るか、再度ログインしてください。',
         th: 'ด้านบนจะแสดงเฉพาะการปรึกษาล่าสุดหกรายการเท่านั้น รายการที่เก่ากว่านั้นไม่ได้ถูกลบ เพียงแต่ไม่มีที่ว่างในแถวนั้น หากแถวว่างเปล่า แสดงว่าคุณยังไม่เคยเริ่มการปรึกษา หรือเซสชันการล็อกอินหมดอายุ ให้ส่งคำถามเพื่อสร้างบทสนทนาใหม่ หรือเข้าสู่ระบบอีกครั้ง',
         vi: 'Chỉ sáu buổi tư vấn gần nhất được liệt kê ở trên cùng. Những buổi cũ hơn không bị xoá — chỉ là không còn chỗ trong hàng đó. Nếu hàng này trống, hoặc bạn chưa từng bắt đầu buổi tư vấn nào, hoặc phiên đăng nhập đã hết hạn, hãy gửi một câu hỏi để tạo cuộc trò chuyện mới hoặc đăng nhập lại.',
+        id: 'Hanya enam konsultasi terbaru yang ditampilkan di bagian atas. Yang lebih lama tidak dihapus — hanya saja tidak ada ruang untuknya di baris itu. Jika barisnya kosong, entah Anda belum pernah memulai konsultasi atau sesi masuk Anda sudah berakhir, jadi kirimlah pertanyaan untuk membuat percakapan baru atau masuk kembali.',
       },
     },
   ],

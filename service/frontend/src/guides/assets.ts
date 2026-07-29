@@ -8,6 +8,7 @@ export const assetsGuide: PageGuide = {
     ja: '模擬口座の残高全体を一目で確認する画面です。合計資産と含み損益、利用可能資金・現物保有・先物ポジションの3枚のウォレットカード、そして最近の取引が順に表示されます。',
     th: 'มุมมองเดียวสำหรับยอดรวมบัญชีจำลองของคุณ: ยอดรวมและกำไรขาดทุนที่ยังไม่รับรู้ด้านบน การ์ดกระเป๋าสามใบสำหรับเงินทุนพร้อมใช้ ถือครองสปอต และสถานะฟิวเจอร์ส และรายการเทรดล่าสุดด้านล่าง',
     vi: 'Một khung nhìn duy nhất cho toàn bộ số dư mô phỏng: tổng tài sản và lãi lỗ chưa thực hiện ở trên, ba thẻ ví cho vốn khả dụng, nắm giữ spot và vị thế futures, cùng các giao dịch gần đây bên dưới.',
+    id: 'Satu tampilan untuk seluruh saldo simulasi Anda: total dan laba rugi belum direalisasi di bagian atas, tiga kartu dompet untuk dana tersedia, kepemilikan spot, dan posisi futures, serta transaksi terkini Anda di bawahnya.',
   },
   sections: [
     {
@@ -48,6 +49,13 @@ export const assetsGuide: PageGuide = {
           'Việc che chỉ thay đổi cách hiển thị trên trang này. Nó không ảnh hưởng tới giao dịch hay số dư.',
           'Giá trị tự làm mới mỗi 15 giây, nên các con số thay đổi theo thị trường mà bạn không cần tải lại.',
         ],
+        id: [
+          'Angka besar di bagian atas adalah total aset Anda dalam USDT. Total = kas tersedia + kepemilikan spot + margin futures, dan semuanya bersifat simulasi.',
+          'Angka yang lebih kecil di sebelahnya adalah laba rugi belum direalisasi — jumlah hasil penilaian pasar atas posisi terbuka Anda, ditampilkan dengan warna keuntungan bila positif dan warna kerugian bila negatif.',
+          'Ikon 👁 di samping RINGKASAN ASET menyamarkan setiap nominal pada halaman ini menjadi ****. Tekan lagi untuk memunculkannya — berguna saat Anda membagikan layar atau mengambil tangkapan layar.',
+          'Penyamaran hanya mengubah apa yang ditampilkan di halaman ini. Tidak ada pengaruhnya terhadap transaksi atau saldo Anda.',
+          'Nilai diperbarui otomatis setiap 15 detik, sehingga angkanya bergerak mengikuti pasar tanpa perlu Anda muat ulang.',
+        ],
       },
     },
     {
@@ -82,6 +90,12 @@ export const assetsGuide: PageGuide = {
           'Số tiền này giảm khi bạn mở lệnh mới và quay lại cùng kết quả đã thực hiện khi bạn đóng vị thế.',
           'Kích thước lệnh ($) trong quy tắc tự động được lấy từ khoản tiền mặt này — đặt lớn hơn số dư thì lệnh có thể đơn giản là không vào.',
           'Khi vốn khả dụng gần bằng 0, tín hiệu mới sẽ không khớp, nên hãy đóng bớt vị thế hoặc giảm khối lượng trong quy tắc.',
+        ],
+        id: [
+          'Kartu pertama, yang bertepi biru, adalah kas simulasi yang bisa Anda pakai bertransaksi.',
+          'Jumlah ini berkurang saat Anda membuka entri baru dan kembali bersama hasil yang direalisasi ketika Anda menutup posisi.',
+          'Ukuran posisi ($) pada aturan otomatisasi Anda diambil dari kas ini — jika disetel lebih besar dari saldo, entri bisa saja tidak pernah terjadi.',
+          'Ketika dana tersedia mendekati nol, sinyal baru tidak akan tereksekusi, jadi tutuplah posisi atau kecilkan ukuran pada aturan Anda.',
         ],
       },
     },
@@ -123,6 +137,13 @@ export const assetsGuide: PageGuide = {
           'Nút Giao dịch đưa bạn tới màn hình giao dịch spot để mua bán thủ công.',
           'Vị thế do tự động hóa mở cũng hiện ở đây — giao dịch thủ công và tự động tích lũy trong cùng một tài khoản mô phỏng.',
         ],
+        id: [
+          'Kartu bertepi hijau adalah gabungan nilai saat ini dari posisi long Anda. Nilainya dihitung pada harga langsung, jadi bergerak mengikuti pasar.',
+          'Jika Anda memegang setidaknya satu posisi long, tombol Lihat per koin akan muncul; membukanya menampilkan satu baris per simbol.',
+          'Setiap baris menampilkan simbol, kuantitas yang dipegang, perkiraan nilai dalam USDT, dan di ujung kanan laba rugi posisi itu dengan warna.',
+          'Tombol Transaksi membawa Anda ke layar trading spot untuk membeli dan menjual secara manual.',
+          'Posisi yang dibuka oleh otomatisasi juga muncul di sini — transaksi manual dan otomatis terkumpul di akun simulasi yang sama.',
+        ],
       },
     },
     {
@@ -157,6 +178,12 @@ export const assetsGuide: PageGuide = {
           'Số tiền hiển thị là tổng giá trị hiện tại của các vị thế Short, cũng là con số mô phỏng.',
           'Nút Giao dịch đưa bạn tới màn hình giao dịch futures.',
           'Thẻ này không có phần mở rộng theo coin, nên hãy xem lãi lỗ từng vị thế Short ở tổng chưa thực hiện phía trên và trên màn hình giao dịch.',
+        ],
+        id: [
+          'Kartu bertepi emas adalah eksposur short Anda. Dalam mesin ini, setiap posisi yang bukan long dihitung di sini.',
+          'Nominal yang ditampilkan adalah gabungan nilai saat ini dari posisi short Anda, dan sekali lagi angkanya bersifat simulasi.',
+          'Tombol Transaksi membawa Anda ke layar trading futures.',
+          'Kartu ini tidak punya rincian per koin, jadi periksa laba rugi tiap posisi short pada total belum direalisasi di bagian atas dan pada layar trading.',
         ],
       },
     },
@@ -203,6 +230,14 @@ export const assetsGuide: PageGuide = {
           'Nếu chưa có giao dịch nào, bạn thấy Chưa có giao dịch. Đó cũng là trạng thái khi bạn đã tạo quy tắc tự động nhưng chưa lệnh nào khớp.',
           'Khi bật chế độ ẩn bằng biểu tượng con mắt, số lượng và giá trong bảng này cũng bị che.',
         ],
+        id: [
+          'Tabel ini memuat hingga 10 transaksi terbaru yang dilakukan akun Anda, dari yang terbaru.',
+          'Kolomnya adalah Jenis · Simbol · Jumlah · Harga · Tanggal. Pada Jenis, beli dan cover berwarna hijau sedangkan jual dan short berwarna merah.',
+          'Penanda AI kecil di samping jenis berarti transaksi itu berasal dari aturan otomatisasi. Tanpa penanda itu, Andalah yang melakukan transaksinya.',
+          'Kolom Harga adalah harga masuk, bukan harga saat ini — untuk nilai terkini lihat kartu dompet di atas.',
+          'Bila belum ada transaksi sama sekali, Anda akan melihat Belum ada transaksi. Itu juga yang muncul ketika Anda sudah membuat aturan otomatisasi tetapi belum ada yang tereksekusi.',
+          'Ketika penyamaran lewat ikon mata aktif, jumlah dan harga pada tabel ini ikut disembunyikan.',
+        ],
       },
     },
     {
@@ -243,6 +278,13 @@ export const assetsGuide: PageGuide = {
           'Muốn giảm phơi nhiễm, hãy hạ kích thước lệnh trong quy tắc tự động hoặc xóa quy tắc; muốn tăng, trước hết kiểm tra vốn khả dụng có đủ không.',
           'Muốn giao dịch thủ công, dùng nút Giao dịch trên thẻ ví tương ứng để tới màn hình spot hoặc futures.',
         ],
+        id: [
+          'Setiap nominal di halaman ini milik akun simulasi. Laba rugi posisi dihitung dari harga pasar yang diambil secara berkala, bukan dari saldo di broker sungguhan.',
+          'Jika totalnya sesaat terlihat tidak konsisten, itu biasanya perbedaan waktu pembaruan — akan selaras pada siklus 15 detik berikutnya.',
+          'Untuk memahami mengapa laba rugi Anda bergerak, periksa run terkini di halaman Otomatisasi untuk melihat keputusan mana yang tereksekusi dan atas dasar apa.',
+          'Untuk mengurangi eksposur, kecilkan ukuran posisi pada aturan otomatisasi Anda atau hapus aturannya; untuk menambahnya, pastikan dulu dana tersedia mencukupi.',
+          'Untuk bertransaksi manual, gunakan tombol Transaksi pada kartu dompet terkait untuk melompat ke layar spot atau futures.',
+        ],
       },
     },
   ],
@@ -254,6 +296,7 @@ export const assetsGuide: PageGuide = {
         ja: 'ポジションはあるのに最近の取引テーブルが空です。なぜ?',
         th: 'มีสถานะอยู่แต่ตารางกิจกรรมล่าสุดว่างเปล่า เพราะอะไร',
         vi: 'Tôi có vị thế nhưng bảng hoạt động gần đây trống. Tại sao?',
+        id: 'Saya punya posisi tetapi tabel aktivitas terkini kosong. Kenapa?',
       },
       a: {
         ko: '표는 최근 시그널 피드에서 내 에이전트 이름과 매매 방향이 함께 붙은 항목만 골라 최대 10건 보여 줍니다. 그래서 오래된 거래나 피드 범위를 벗어난 거래는 보이지 않을 수 있습니다. 포지션 자체는 위의 지갑 카드에 그대로 반영되니, 표가 비어 있어도 보유 내역이 사라진 것은 아닙니다.',
@@ -261,6 +304,7 @@ export const assetsGuide: PageGuide = {
         ja: 'テーブルは最近のシグナルフィードから、自分のエージェント名と売買方向が付いた項目だけを抽出し、最大10件を表示します。そのため古い取引やフィード範囲外の取引は表示されないことがあります。ポジション自体は上のウォレットカードに反映されているため、テーブルが空でも保有が消えたわけではありません。',
         th: 'ตารางดึงจากฟีดสัญญาณล่าสุด เก็บเฉพาะรายการที่มีชื่อเอเจนต์ของคุณและมีฝั่งการเทรด แล้วแสดงไม่เกิน 10 รายการ การเทรดเก่าหรืออยู่นอกช่วงฟีดจึงอาจไม่ปรากฏ สถานะของคุณยังสะท้อนอยู่ในการ์ดกระเป๋าด้านบน ตารางว่างจึงไม่ได้แปลว่าการถือครองหายไป',
         vi: 'Bảng lấy từ nguồn tín hiệu gần đây, chỉ giữ các mục mang tên tác nhân của bạn kèm chiều lệnh, và hiển thị tối đa 10 mục. Vì vậy giao dịch cũ hoặc nằm ngoài phạm vi nguồn có thể không xuất hiện. Vị thế của bạn vẫn được phản ánh ở các thẻ ví phía trên, nên bảng trống không có nghĩa là số nắm giữ biến mất.',
+        id: 'Tabel ini mengambil umpan sinyal terkini, menyaring hanya entri yang membawa nama agen Anda beserta arahnya, lalu menampilkan paling banyak 10 di antaranya. Karena itu transaksi yang lebih lama, atau yang berada di luar jendela umpan, bisa saja tidak muncul. Posisi Anda tetap tercermin pada kartu dompet di atas, jadi tabel yang kosong tidak berarti kepemilikan Anda hilang.',
       },
     },
     {
@@ -278,6 +322,7 @@ export const assetsGuide: PageGuide = {
         ja: 'その取引が自動売買ルールから出たことを示します。自分で出した取引には付きません。どのルールがなぜその判断をしたかは、自動売買ページの実行履歴で同じ時刻の項目を見れば、判断・信頼度・約定有無まで確認できます。',
         th: 'เป็นเครื่องหมายว่าการเทรดนั้นมาจากกฎอัตโนมัติ ส่วนการเทรดที่คุณทำเองจะไม่มีเครื่องหมายนี้ ถ้าอยากรู้ว่ากฎใดตัดสินและเพราะอะไร ให้เปิดประวัติการทำงานที่หน้า Automation แล้วดูรายการเวลาเดียวกัน จะเห็นผลตัดสิน ความมั่นใจ และว่าถูกดำเนินการหรือไม่',
         vi: 'Nó đánh dấu giao dịch đến từ một quy tắc tự động; giao dịch bạn tự đặt sẽ không có dấu này. Để biết quy tắc nào đã quyết định và vì sao, hãy mở lần chạy gần đây ở trang Automation và xem mục cùng thời điểm — nó hiển thị quyết định, độ tin cậy và việc có thực hiện hay không.',
+        id: 'Penanda itu menandai transaksi yang berasal dari aturan otomatisasi; transaksi yang Anda lakukan sendiri tidak membawanya. Untuk melihat aturan mana yang memutuskan dan alasannya, buka run terkini di halaman Otomatisasi dan cari entri dengan cap waktu yang sama — di sana tertera keputusannya, tingkat keyakinannya, dan apakah tereksekusi.',
       },
     },
     {
@@ -295,6 +340,7 @@ export const assetsGuide: PageGuide = {
         ja: '正常です。現物保有と先物ポジションの評価額はリアルタイム価格で計算され、ページは15秒ごとに値を取得し直すため、市場が動けば合計と含み損益も動きます。利用可能資金は新規エントリーや決済があったときだけ変わります。',
         th: 'เป็นเรื่องปกติ มูลค่าของถือครองสปอตและสถานะฟิวเจอร์สคำนวณจากราคาตลาดจริง และหน้าจะดึงค่าใหม่ทุก 15 วินาที เมื่อตลาดขยับ ยอดรวมและกำไรที่ยังไม่รับรู้จึงขยับตาม ส่วนเงินทุนพร้อมใช้จะเปลี่ยนเมื่อมีการเข้าหรือปิดสถานะเท่านั้น',
         vi: 'Đó là bình thường. Nắm giữ spot và vị thế futures được định giá theo giá thời gian thực và trang tải lại mỗi 15 giây, nên khi thị trường biến động, tổng và lãi lỗ chưa thực hiện cũng biến động theo. Vốn khả dụng chỉ đổi khi có lệnh vào hoặc đóng vị thế.',
+        id: 'Itu wajar. Kepemilikan spot dan posisi futures dinilai pada harga langsung dan halaman ini memuat ulang setiap 15 detik, jadi ketika pasar bergerak, total dan laba rugi belum direalisasi ikut bergerak. Dana tersedia hanya berubah ketika terjadi entri atau penutupan posisi.',
       },
     },
   ],

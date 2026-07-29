@@ -15,6 +15,7 @@ export const exchangeGuide: PageGuide = {
     ja: '保有ポイントを取引に使える現金に換えるページです。注文時に現金不足の警告が出た場合は、ここで残高を補充します。',
     th: 'หน้าสำหรับแปลงคะแนนของคุณเป็นยอดเงินสดที่ใช้เทรด หากคำสั่งถูกปฏิเสธเพราะเงินสดไม่พอ นี่คือที่ที่คุณเติมเงิน',
     vi: 'Trang để chuyển điểm của bạn thành số dư tiền mặt dùng để giao dịch. Nếu một lệnh bị từ chối vì không đủ tiền, đây là nơi bạn nạp thêm.',
+    id: 'Halaman untuk mengubah poin Anda menjadi saldo kas yang Anda pakai bertransaksi. Jika sebuah order ditolak karena kas tidak cukup, di sinilah Anda menambahnya.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const exchangeGuide: PageGuide = {
           'Cũng trong hộp đó, hệ thống tính luôn toàn bộ số điểm hiện có của bạn sẽ đổi được bao nhiêu.',
           'Phía dưới là một biểu mẫu đơn giản: một ô nhập số điểm muốn đổi và một nút gửi.',
           'Số liệu trên hai thẻ được tải lại khi bạn mở trang và sau mỗi lần đổi thành công.',
+        ],
+        id: [
+          'Dua kartu berdampingan di bagian atas: poin saat ini di kiri, saldo kas saat ini di kanan.',
+          'Di bawahnya, kotak abu-abu menyatakan kursnya — 1 poin = 1.000 USD.',
+          'Kotak yang sama juga menghitung berapa nilai seluruh saldo poin Anda saat ini bila ditukar semuanya.',
+          'Di bawahnya ada formulir sederhana: satu kolom isian untuk jumlah poin yang ditukar, dan satu tombol kirim.',
+          'Angka pada kedua kartu dimuat ulang saat Anda membuka halaman dan setiap kali penukaran berhasil.',
         ],
       },
     },
@@ -109,6 +117,13 @@ export const exchangeGuide: PageGuide = {
           'Khi thành công sẽ có xác nhận, ô nhập được xóa, và hai thẻ trên cùng làm mới với số dư mới.',
           'Việc đổi chỉ xử lý theo số điểm nguyên — không có số thập phân.',
         ],
+        id: [
+          'Ketik berapa poin yang ingin ditukar. Minimumnya 1, dan nilai apa pun di atas saldo Anda tidak akan terkirim.',
+          'Begitu Anda mengetik, pratinjau "Anda akan menerima" muncul di bawahnya menampilkan nominal dolar berwarna hijau.',
+          'Bila angkanya sudah sesuai, tekan kirim. Selama diproses, tombolnya bertuliskan "Menukar...".',
+          'Bila berhasil, Anda menerima konfirmasi, kolom isian dikosongkan, dan kedua kartu di atas dimuat ulang dengan saldo baru Anda.',
+          'Penukaran hanya diproses dalam satuan poin bulat — tanpa desimal.',
+        ],
       },
     },
     {
@@ -156,6 +171,13 @@ export const exchangeGuide: PageGuide = {
           'Với 0 điểm thì không có gì để đổi — hãy tích điểm qua hoạt động trên nền tảng trước.',
           'Nếu việc đổi thất bại, lý do máy chủ trả về sẽ hiện trong một thông báo.',
         ],
+        id: [
+          'Penukaran bersifat satu arah: poin berubah menjadi kas, tetapi kas tidak dapat dikembalikan menjadi poin.',
+          'Kas di sini adalah saldo paper trading platform. Ini bukan mata uang sungguhan dan tidak dapat ditarik.',
+          'Kolom isian dibatasi oleh saldo poin Anda, dan memasukkan angka lebih besar dari itu akan menonaktifkan tombol kirim.',
+          'Dengan poin nol, tidak ada yang bisa ditukar — kumpulkan poin dulu lewat aktivitas di platform.',
+          'Jika penukaran gagal, alasan yang dikembalikan server ditampilkan dalam sebuah peringatan.',
+        ],
       },
     },
     {
@@ -198,6 +220,12 @@ export const exchangeGuide: PageGuide = {
           'Khi tính số tiền cần, nhớ rằng phí giao dịch 0,1% được cộng thêm — hãy đổi dư ra một chút.',
           'Nếu định giao dịch crypto, số dư tăng lên cũng hiện ở dòng "Khả dụng" trên terminal Spot và Futures.',
         ],
+        id: [
+          'Pastikan angka kas pada kartu kanan bertambah, lalu kembali ke halaman order.',
+          'Jika sebelumnya ada order yang ditolak, tekan "Ambil harga" lagi untuk memperbarui kutipan sebelum mencoba ulang.',
+          'Saat menghitung kebutuhan Anda, ingat bahwa biaya trading 0,1% ditambahkan di atasnya — tukarlah dengan sedikit kelonggaran.',
+          'Jika Anda berencana bertransaksi kripto, saldo yang lebih besar juga tampil pada baris "Tersedia" di terminal Spot dan Futures.',
+        ],
       },
     },
   ],
@@ -217,6 +245,7 @@ export const exchangeGuide: PageGuide = {
         ja: '入力欄が空の場合、または入力値が保有ポイントを超える場合にボタンが無効になります。左のカードのポイント数を確認し、それ以下の値を入力してください。交換処理中も一時的に押せなくなります。',
         th: 'ปุ่มจะถูกปิดใช้งานเมื่อช่องกรอกว่าง หรือเมื่อจำนวนเกินยอดคะแนนของคุณ ตรวจตัวเลขคะแนนบนการ์ดซ้ายแล้วใส่ค่าที่ไม่เกินนั้น และจะถูกปิดชั่วครู่ระหว่างกำลังประมวลผลการแลกด้วย',
         vi: 'Nút bị vô hiệu khi ô nhập trống hoặc khi số lượng vượt quá số điểm của bạn. Xem con số điểm trên thẻ bên trái và nhập giá trị bằng hoặc nhỏ hơn. Nút cũng bị vô hiệu tạm thời khi đang xử lý việc đổi.',
+        id: 'Tombolnya nonaktif ketika kolom isian kosong atau ketika jumlahnya melebihi saldo poin Anda. Periksa angka poin pada kartu kiri dan masukkan nilai yang sama atau lebih kecil. Tombol itu juga nonaktif sesaat selama penukaran diproses.',
       },
     },
     {
@@ -234,6 +263,7 @@ export const exchangeGuide: PageGuide = {
         ja: 'できません。この現金はプラットフォーム内で模擬取引の残高として機能する数値にすぎません。実際の資金ではなく、銀行や取引所へ送金されることもありません。注文規模を決めるためだけに使われます。',
         th: 'ไม่ได้ เงินสดนี้เป็นเพียงตัวเลขที่ทำหน้าที่เป็นยอดคงเหลือสำหรับเทรดจำลองภายในแพลตฟอร์ม ไม่ใช่เงินจริงและไม่เคยโอนไปธนาคารหรือตลาดแลกเปลี่ยน มีไว้เพื่อกำหนดขนาดคำสั่งเท่านั้น',
         vi: 'Không. Số tiền này chỉ là một con số đóng vai trò số dư giao dịch giả lập bên trong nền tảng. Nó không phải tiền thật và không bao giờ chuyển tới ngân hàng hay sàn giao dịch. Nó chỉ tồn tại để xác định cỡ lệnh của bạn.',
+        id: 'Tidak. Kas ini hanyalah angka yang berperan sebagai saldo paper trading Anda di dalam platform. Ini bukan uang sungguhan dan tidak pernah berpindah ke bank atau bursa. Fungsinya semata-mata untuk menentukan ukuran order Anda.',
       },
     },
     {
@@ -251,6 +281,7 @@ export const exchangeGuide: PageGuide = {
         ja: 'このページに取り消し機能はありません。交換はポイントから現金への一方向で、逆方向のフォームは存在しません。送信前に「受け取り」プレビューの金額を必ず確認してください。',
         th: 'หน้านี้ไม่มีการยกเลิก การแลกเป็นทางเดียวจากคะแนนไปเงินสด และไม่มีฟอร์มย้อนกลับ ควรตรวจตัวอย่าง "คุณจะได้รับ" ก่อนส่งเสมอ',
         vi: 'Trang này không có hoàn tác. Việc đổi chạy một chiều, từ điểm sang tiền mặt, và không có biểu mẫu ngược lại. Hãy luôn kiểm tra phần xem trước "Bạn sẽ nhận" trước khi gửi.',
+        id: 'Tidak ada pembatalan di halaman ini. Penukaran berjalan satu arah, dari poin ke kas, dan tidak ada formulir kebalikannya. Selalu periksa pratinjau "Anda akan menerima" sebelum mengirim.',
       },
     },
   ],

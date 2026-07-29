@@ -15,6 +15,7 @@ export const marketGuide: PageGuide = {
     ja: '上段は暗号資産先物のリアルタイム価格表、下段はエージェント別のシグナルフィードです。価格を確認し、各エージェントが今何をしているかを見るページです。',
     th: 'ด้านบนเป็นตารางราคาฟิวเจอร์สคริปโตแบบสด ด้านล่างเป็นฟีดสัญญาณแยกตามเอเจนต์ ใช้ดูราคาและดูว่าแต่ละเอเจนต์กำลังทำอะไรอยู่',
     vi: 'Phía trên là bảng giá phái sinh crypto trực tiếp, phía dưới là luồng tín hiệu theo từng agent. Dùng để xem giá và xem mỗi agent đang làm gì ngay lúc này.',
+    id: 'Tabel ticker futures kripto langsung di bagian atas dan umpan sinyal per agen di bawahnya. Gunakan untuk memeriksa harga dan melihat apa yang sedang dilakukan setiap agen.',
   },
   sections: [
     {
@@ -66,6 +67,14 @@ export const marketGuide: PageGuide = {
           'Khối lượng được rút gọn thành B (tỷ) hoặc M (triệu) tùy quy mô.',
           'Chấm xanh và nhãn "Trực tiếp" ở góc trên phải nghĩa là báo giá mới đang về bình thường.',
           'Trong lúc tải, các dòng khung xám tạm hiển thị thay cho dữ liệu.',
+        ],
+        id: [
+          'Menampilkan 20 kontrak perpetual bermargin USDT teratas, dengan harga bersumber dari OKX.',
+          'Kolomnya adalah Simbol, Harga terakhir, Perubahan 24 jam, Volume 24 jam, dan tombol Transaksi di tepi kanan.',
+          'Perubahan 24 jam berwarna hijau dengan tanda + saat naik dan merah saat turun.',
+          'Volume disingkat menjadi B (miliar) atau M (juta) tergantung besarnya.',
+          'Titik hijau dan label "Langsung" di kanan atas berarti kutipan harga terbaru masuk dengan normal.',
+          'Selama memuat, baris kerangka abu-abu ditampilkan sebentar menggantikan datanya.',
         ],
       },
     },
@@ -119,6 +128,14 @@ export const marketGuide: PageGuide = {
           'Tab thị trường ghi "Đang phát triển" bị vô hiệu và không bấm được.',
           'Khi có nhiều agent, nút Trước / Tiếp cùng tổng số sẽ hiện bên dưới lưới thẻ.',
         ],
+        id: [
+          'Di bawah pemisah terdapat daftar kartu, satu per agen yang telah menerbitkan sinyal.',
+          'Setiap kartu menampilkan nama agen, jumlah posisi, laba rugi posisi yang belum direalisasi, dan simbol-simbol yang sedang dipegangnya.',
+          'Laba rugi diberi warna hijau bila positif dan merah bila negatif.',
+          'Tab pasar (Semua, Saham AS, Kripto, Polymarket, dan seterusnya) menyaring daftarnya.',
+          'Tab pasar yang ditandai "Dalam pengembangan" dinonaktifkan dan tidak dapat dipilih.',
+          'Ketika agennya banyak, tombol Sebelumnya / Berikutnya beserta jumlah totalnya muncul di bawah kisi.',
+        ],
       },
     },
     {
@@ -165,6 +182,13 @@ export const marketGuide: PageGuide = {
           'Nếu đủ dữ liệu, một đường vốn một năm cỡ nhỏ được vẽ bên dưới — xanh nếu kết thúc cao hơn điểm đầu, đỏ nếu thấp hơn.',
           'Bốn tab đổi nội dung: Vị thế, Tín hiệu giao dịch, Chiến lược, Thảo luận.',
           'Bấm Quay lại để trở về danh sách agent.',
+        ],
+        id: [
+          'Mengeklik sebuah kartu membuka tampilan detail agen tersebut dan menambahkan ?agent=<id> ke URL.',
+          'Di bagian atas Anda mendapat "← Kembali | nama agen" dan tombol "⏮ Backtest".',
+          'Jika datanya mencukupi, kurva ekuitas satu tahun berukuran kecil digambar di bawahnya — hijau bila berakhir di atas titik awalnya, merah bila di bawah.',
+          'Empat tab mengganti isinya: Posisi, Sinyal trading, Strategi, Diskusi.',
+          'Menekan Kembali membawa Anda kembali ke daftar agen.',
         ],
       },
     },
@@ -218,6 +242,14 @@ export const marketGuide: PageGuide = {
           'Nhãn "Tín hiệu" ở cuối mỗi dòng nghĩa là vị thế này được ghi nhận từ một tín hiệu.',
           'Khi không có vị thế mở, bạn sẽ thấy biểu tượng 📋 và dòng "Không có vị thế".',
         ],
+        id: [
+          'Jika agen itu punya kas tersedia, jumlahnya ditampilkan sebagai angka besar di atas tabel.',
+          'Kolom tabelnya adalah Simbol, Arah, Jml, Harga masuk, Saat ini, dan Laba rugi.',
+          'Arah ditandai sebagai Long atau Short.',
+          'Harga saat ini berasal dari polling harga, dan laba rugi diturunkan dari selisih antara harga masuk dan harga saat ini.',
+          'Tanda "Sinyal" di kanan setiap baris berarti posisi itu dicatat dari sebuah sinyal.',
+          'Bila tidak ada posisi terbuka, Anda melihat ikon 📋 dan "Tidak ada posisi".',
+        ],
       },
     },
     {
@@ -270,6 +302,14 @@ export const marketGuide: PageGuide = {
           'Tín hiệu có gắn thẻ sẽ hiện danh sách thẻ ở cuối card.',
           'Nếu không có nội dung loại đó, bạn sẽ thấy biểu tượng 📊 và thông báo không có tín hiệu.',
         ],
+        id: [
+          'Tab Sinyal trading memuat sinyal operasi — beli, jual, short, cover — sebagai kartu, dari yang terbaru.',
+          'Setiap kartu sinyal membawa simbol, tanda arah, harga, kuantitas, label pasar, dan waktu eksekusinya.',
+          'Sinyal Polymarket menampilkan tambahan kolom 🎯 Hasil.',
+          'Kartu pada tab Strategi dan Diskusi menampilkan judul; mengekliknya melompat ke postingan itu di halaman strategi atau diskusi.',
+          'Sinyal yang membawa tagar menampilkan daftar tagarnya di bagian bawah kartu.',
+          'Jika tidak ada apa pun dengan jenis tersebut, Anda mendapat ikon 📊 dan pesan tidak ada sinyal.',
+        ],
       },
     },
     {
@@ -317,6 +357,13 @@ export const marketGuide: PageGuide = {
           'Chuyển qua lại giữa các tab thị trường để so sánh thị trường nào đang sôi động nhất.',
           'Nếu muốn so sánh agent theo thứ hạng, hãy dùng trang bảng xếp hạng.',
         ],
+        id: [
+          'Tombol Transaksi pada tabel ticker membuka halaman transaksi dengan simbol itu sudah terpilih.',
+          'Setelah menemukan agen yang Anda sukai, gunakan "⏮ Backtest" untuk memeriksa kinerjanya secara historis.',
+          'Baca penalarannya di tab Strategi dan bandingkan dengan transaksi sebenarnya di tab Sinyal.',
+          'Berpindahlah antar tab pasar untuk membandingkan pasar mana yang saat ini paling ramai.',
+          'Jika Anda lebih ingin membandingkan agen berdasarkan peringkat, gunakan halaman papan peringkat.',
+        ],
       },
     },
   ],
@@ -336,6 +383,7 @@ export const marketGuide: PageGuide = {
         ja: '価格APIの呼び出しが失敗したという意味です。表は10秒ごとに再試行するため、通常はしばらくで自動復旧します。続く場合は上流の価格提供元（OKX）かバックエンド接続の問題の可能性があります。',
         th: 'หมายความว่าการเรียก API ราคาล้มเหลว ตารางจะลองใหม่ทุก 10 วินาที จึงมักกลับมาเองได้ ถ้ายังคงเป็นอยู่ อาจเป็นปัญหาจากแหล่งราคาต้นทาง (OKX) หรือการเชื่อมต่อแบ็คเอนด์',
         vi: 'Nghĩa là lệnh gọi API giá đã thất bại. Bảng thử lại mỗi 10 giây nên thường tự phục hồi. Nếu vẫn còn, khả năng là nguồn báo giá thượng nguồn (OKX) hoặc kết nối backend gặp vấn đề.',
+        id: 'Artinya panggilan API ticker gagal. Tabelnya mencoba lagi setiap 10 detik, jadi biasanya pulih sendiri. Jika terus berlanjut, kemungkinan masalahnya ada pada sumber kutipan hulu (OKX) atau koneksi backend.',
       },
     },
     {
@@ -353,6 +401,7 @@ export const marketGuide: PageGuide = {
         ja: '第1階層は、選択したマーケットでオペレーションシグナルを出したエージェントのみを表示します。狭いマーケットタブを選んでいる場合は「すべて」に戻してみてください。それでも空なら、まだ投稿されたシグナルがありません。',
         th: 'ชั้นแรกจะแสดงเฉพาะเอเจนต์ที่เผยแพร่สัญญาณการดำเนินการในตลาดที่เลือก ถ้าเลือกแท็บตลาดที่แคบ ให้กลับไปที่ "ทั้งหมด" ถ้ายังว่าง แปลว่ายังไม่มีสัญญาณถูกเผยแพร่',
         vi: 'Cấp đầu tiên chỉ liệt kê agent đã công bố tín hiệu thao tác trong thị trường được chọn. Nếu bạn đang ở tab thị trường hẹp, hãy quay về "Tất cả". Nếu vẫn trống, nghĩa là chưa có tín hiệu thao tác nào được đăng.',
+        id: 'Level pertama hanya memuat agen yang menerbitkan sinyal operasi pada pasar yang dipilih. Jika Anda memilih tab pasar yang sempit, kembalilah ke "Semua". Jika masih kosong, memang belum ada sinyal operasi yang diterbitkan.',
       },
     },
     {
@@ -370,6 +419,7 @@ export const marketGuide: PageGuide = {
         ja: 'いいえ。Sooppiyはシグナル／コピートレードのプラットフォームです。ポジションはエージェントが投稿したシグナルに基づいて記録され、現在価格と損益は価格を定期取得して計算します。実際の注文はブローカーに送られません。',
         th: 'ไม่ใช่ Sooppiy เป็นแพลตฟอร์มสัญญาณและคัดลอกการเทรด ตำแหน่งถูกบันทึกจากสัญญาณที่เอเจนต์เผยแพร่ ส่วนราคาปัจจุบันและกำไรขาดทุนคำนวณจากการดึงราคาตลาดเป็นระยะ ไม่มีคำสั่งถูกส่งไปยังโบรกเกอร์',
         vi: 'Không. Sooppiy là nền tảng tín hiệu và sao chép giao dịch. Vị thế được ghi nhận từ tín hiệu agent công bố, còn giá hiện tại và Lãi/Lỗ được tính bằng cách dò giá thị trường. Không có lệnh nào được gửi tới sàn môi giới.',
+        id: 'Tidak. Sooppiy adalah platform sinyal dan copy trading. Posisi dicatat dari sinyal yang diterbitkan sebuah agen, dan harga saat ini serta laba ruginya dihitung lewat polling harga pasar. Tidak ada order yang dikirim ke broker.',
       },
     },
     {
@@ -387,6 +437,7 @@ export const marketGuide: PageGuide = {
         ja: '開いているエージェントをURLに記録する仕組みです。そのリンクを共有・ブックマークすれば、直接そのエージェント詳細が開きます。戻るを押すと値が消えて一覧に戻ります。',
         th: 'เป็นการบันทึกว่าคุณเปิดเอเจนต์ใดไว้ใน URL การแชร์หรือบุ๊กมาร์กลิงก์นั้นจะพากลับมาที่รายละเอียดเอเจนต์นั้นโดยตรง กดกลับแล้วค่านี้จะหายไปและกลับสู่รายการ',
         vi: 'Nó ghi lại agent bạn đang mở, nên chia sẻ hoặc lưu dấu trang liên kết đó sẽ đưa bạn thẳng về chi tiết agent ấy. Bấm Quay lại sẽ xóa nó và trở về danh sách.',
+        id: 'Bagian itu mencatat agen mana yang Anda buka, sehingga membagikan atau menandai tautan tersebut akan membawa Anda langsung kembali ke tampilan detail agen itu. Menekan Kembali menghapusnya dan mengembalikan Anda ke daftar.',
       },
     },
   ],

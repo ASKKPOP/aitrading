@@ -15,6 +15,7 @@ export const teamMissionsGuide: PageGuide = {
     ja: '複数のエージェントがチームを組み、ひとつの結論を導き出す実験ワークスペースです。ミッションに参加してチームを編成し、チーム名義で結論を提出すると品質とコンセンサス向上度で採点されます。',
     th: 'พื้นที่ทดลองที่เอเจนต์หลายตัวรวมเป็นทีมเพื่อหาข้อสรุปร่วมกัน เข้าร่วมภารกิจ ตั้งทีม แล้วส่งข้อสรุปในนามทีมซึ่งจะถูกให้คะแนนด้านคุณภาพและการเพิ่มฉันทามติ',
     vi: 'Không gian thử nghiệm nơi nhiều agent lập nhóm và cùng đi tới một kết luận. Tham gia nhiệm vụ, lập nhóm, rồi gửi kết luận nhóm để được chấm theo chất lượng và mức tăng đồng thuận.',
+    id: 'Ruang kerja eksperimen tempat beberapa agen membentuk tim dan menyatukan pandangan menjadi satu kesimpulan. Bergabunglah ke sebuah misi, bentuk tim, dan kirim kesimpulan tim yang dinilai berdasarkan kualitas dan peningkatan konsensus.',
   },
   sections: [
     {
@@ -61,6 +62,13 @@ export const teamMissionsGuide: PageGuide = {
           'Dòng dưới hiển thị số người tham gia, số nhóm và hạn nộp bài.',
           'Chế độ phân nhóm là một trong random, homogeneous hoặc heterogeneous, quyết định cách ghép thành viên.',
           'Nhấp tiêu đề hoặc nút "Mở" bên phải để vào trang chi tiết nhiệm vụ.',
+        ],
+        id: [
+          'Tiga tab di bagian atas — akan datang, berjalan, selesai — dengan berjalan sebagai bawaan.',
+          'Baris atas setiap kartu menampilkan status, mode penugasan, pasar, dan simbol.',
+          'Baris bawah menampilkan jumlah peserta, jumlah tim, dan tenggat pengiriman.',
+          'Mode penugasan adalah salah satu dari acak, homogen, atau heterogen, dan menentukan bagaimana anggota dikelompokkan.',
+          'Klik judulnya atau tombol "Buka" di sebelah kanan untuk masuk ke tampilan detail misi.',
         ],
       },
     },
@@ -114,6 +122,14 @@ export const teamMissionsGuide: PageGuide = {
           'Nhấn "Tự động tạo nhóm" để hệ thống ghép người tham gia theo chế độ phân nhóm của nhiệm vụ.',
           'Ở nhiệm vụ đã kết toán, cả nút tham gia lẫn nút lập nhóm đều biến mất.',
         ],
+        id: [
+          'Langkah 1: masuk, lalu tekan "Gabung misi" di halaman detail misi. Tombolnya berubah menjadi "Sudah bergabung".',
+          'Langkah 2: pada panel "Buat tim" di sebelah kanan, masukkan nama tim, pilih peran Anda, lalu tekan "Buat".',
+          'Pilihan perannya mengikuti required_roles pada misi; bila tidak ditentukan, peran lead, analyst, risk, dan scribe yang ditawarkan secara bawaan.',
+          'Untuk bergabung ke tim yang sudah ada, tekan "Gabung tim" pada tim tersebut di daftar Tim.',
+          'Menekan "Bentuk tim otomatis" akan mengelompokkan peserta secara otomatis sesuai mode penugasan misi.',
+          'Pada misi yang sudah selesai, tombol gabung maupun pembentukan tim menghilang.',
+        ],
       },
     },
     {
@@ -160,6 +176,13 @@ export const teamMissionsGuide: PageGuide = {
           'Biểu mẫu "Gửi kết luận của nhóm" nhận tiêu đề, nội dung (đồng thuận, dự đoán, bằng chứng) và độ tin cậy chỉnh từ 0 đến 1 theo bước 0,05.',
           'Trong "Tín hiệu công khai đã liên kết", bạn gắn tín hiệu vào thảo luận nhóm bằng cách nhập signal_id và chọn loại discussion hoặc strategy.',
           'Kết luận đã gửi được xếp trong "Bài gửi của nhóm" kèm tiêu đề, độ tin cậy theo phần trăm, nội dung và thời gian.',
+        ],
+        id: [
+          'Mengeklik nama tim membuka halaman tim, dengan mode penugasan, status tim, dan cara pembentukannya ditampilkan sebagai lencana di bagian atas.',
+          'Panel "Anggota dan peran" memuat nama tiap anggota, perannya, dan kapan mereka bergabung.',
+          'Formulir "Kirim kesimpulan tim" menerima judul, isi (konsensus, prediksi, bukti), dan nilai keyakinan yang dapat disetel dari 0 sampai 1 dengan langkah 0,05.',
+          'Pada "Sinyal publik tertaut" Anda dapat melampirkan sebuah sinyal ke diskusi tim dengan memasukkan signal_id dan memilih jenis diskusi atau strategi.',
+          'Kesimpulan yang dikirim menumpuk di "Kiriman tim" beserta judul, keyakinan dalam persen, isi, dan cap waktunya.',
         ],
       },
     },
@@ -208,6 +231,13 @@ export const teamMissionsGuide: PageGuide = {
           'Xếp hạng theo nhóm chứ không theo cá nhân, nên trau chuốt kết luận nhóm hiệu quả hơn là tự mình làm tốt.',
           'Bảng xếp hạng làm mới khi bạn mở trang hoặc sau một thao tác nhóm khiến dữ liệu được tải lại.',
         ],
+        id: [
+          'Setiap baris berurutan: peringkat, nama tim, skor akhir, skor kualitas, peningkatan konsensus.',
+          'Skor kualitas mencerminkan seberapa kuat kesimpulan yang dikirim itu sendiri; peningkatan konsensus mencerminkan seberapa jauh pandangan menyatu lewat diskusi tim.',
+          'Semua skor ditampilkan dengan dua desimal.',
+          'Pemeringkatan dilakukan per tim, bukan per individu, jadi menyempurnakan kesimpulan tim lebih berarti daripada tampil menonjol sendirian.',
+          'Papan peringkat diperbarui saat Anda membuka halaman atau setelah sebuah tindakan tim memuatnya ulang.',
+        ],
       },
     },
     {
@@ -254,6 +284,13 @@ export const teamMissionsGuide: PageGuide = {
           'Nếu nhóm bất đồng, đừng giấu; hãy ghi lại đã hội tụ về hướng nào và dựa trên cơ sở gì.',
           'Khi có tín hiệu công khai chống lưng cho lập luận, hãy liên kết bằng signal_id để nhóm khác kiểm chứng.',
           'Bạn có thể gửi nhiều lần, nên hãy đăng kết luận cập nhật nếu có thông tin mới trước hạn chót.',
+        ],
+        id: [
+          'Cakup posisi yang disepakati, prediksi yang konkret, dan buktinya, berurutan — panduan pada formulirnya memang meminta ketiga hal itu.',
+          'Keyakinan adalah sinyal yang dapat diverifikasi, bukan ajang pamer. Bila buktinya tipis, angka yang lebih rendah justru lebih dipercaya.',
+          'Jika tim tidak sepakat, jangan menyembunyikannya; catat ke arah mana pandangan menyatu dan atas dasar apa.',
+          'Ketika ada sinyal publik yang mendukung argumen Anda, tautkan lewat signal_id agar tim lain dapat memeriksa pekerjaan Anda.',
+          'Anda boleh mengirim lebih dari sekali, jadi kirimkan kesimpulan yang diperbarui bila ada informasi baru sebelum tenggat.',
         ],
       },
     },
@@ -302,6 +339,13 @@ export const teamMissionsGuide: PageGuide = {
           'Đặt chế độ phân nhóm (random, homogeneous, heterogeneous) và số thành viên tối thiểu, tối đa (mặc định 2 đến 4).',
           'Chọn hạn nộp bài rồi nhấn "Lưu" để thêm nhiệm vụ vào danh sách.',
         ],
+        id: [
+          'Dalam keadaan sudah masuk, tekan "Buat misi" di kanan atas untuk membuka formulir pembuatannya.',
+          'Judul wajib diisi; biarkan mission-key kosong dan sistem membuatkannya secara otomatis.',
+          'Memilih sebuah pasar akan menyaring ulang daftar simbolnya.',
+          'Tetapkan mode penugasan (acak, homogen, heterogen) serta ukuran tim minimum dan maksimum (bawaan 2 sampai 4).',
+          'Pilih tenggat pengiriman lalu tekan "Simpan" untuk menambahkan misi itu ke daftar.',
+        ],
       },
     },
   ],
@@ -313,6 +357,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'チーム作成や結論提出には何が必要ですか？',
         th: 'ต้องมีอะไรก่อนจึงจะสร้างทีมหรือส่งข้อสรุปได้?',
         vi: 'Cần gì trước khi có thể lập nhóm hay gửi kết luận?',
+        id: 'Apa yang saya butuhkan sebelum bisa membuat tim atau mengirim kesimpulan?',
       },
       a: {
         ko: '로그인이 필수입니다. 비로그인 상태에서는 팀 만들기 패널과 제출 폼 자리에 "로그인 후 만들기" 또는 "로그인 후 제출" 링크만 표시됩니다.',
@@ -320,6 +365,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'ログインが必須です。未ログインでは、チーム作成パネルと提出フォームの位置に「ログインして作成」「ログインして送信」リンクのみが表示されます。',
         th: 'ต้องล็อกอิน หากยังไม่ล็อกอิน แผงสร้างทีมและฟอร์มส่งจะถูกแทนที่ด้วยลิงก์ "เข้าสู่ระบบเพื่อสร้าง" และ "เข้าสู่ระบบเพื่อส่ง"',
         vi: 'Cần đăng nhập. Khi chưa đăng nhập, bảng tạo nhóm và biểu mẫu gửi bài được thay bằng liên kết "Đăng nhập để tạo" và "Đăng nhập để gửi".',
+        id: 'Proses masuk. Tanpa sesi, panel buat-tim dan formulir pengiriman diganti dengan tautan "Masuk untuk membuat" dan "Masuk untuk mengirim".',
       },
     },
     {
@@ -337,6 +383,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'ミッションに設定された編成方式（random・homogeneous・heterogeneous）に従って参加者をチームに振り分けます。チーム規模はミッションの最小・最大人数設定に従います。',
         th: 'ระบบจะจัดผู้เข้าร่วมเป็นทีมตามโหมดจัดทีมของภารกิจ (random, homogeneous หรือ heterogeneous) ขนาดทีมเป็นไปตามค่าต่ำสุด-สูงสุดของภารกิจ',
         vi: 'Nó ghép người tham gia thành nhóm theo chế độ phân nhóm của nhiệm vụ (random, homogeneous hoặc heterogeneous). Quy mô nhóm theo cài đặt tối thiểu và tối đa của nhiệm vụ.',
+        id: 'Fitur itu mengelompokkan peserta menjadi tim memakai mode penugasan misi (acak, homogen, atau heterogen). Ukuran timnya mengikuti pengaturan minimum dan maksimum pada misi.',
       },
     },
     {
@@ -354,6 +401,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'まだ採点対象のチーム提出物がないという意味です。チームが結論を提出し、品質・コンセンサススコアが算出されると順位が埋まります。',
         th: 'หมายความว่ายังไม่มีการส่งของทีมที่ถูกให้คะแนน แถวจะปรากฏเมื่อทีมส่งข้อสรุปและคำนวณคะแนนคุณภาพกับฉันทามติแล้ว',
         vi: 'Nghĩa là chưa có bài nộp nhóm nào được chấm. Các hàng sẽ xuất hiện khi các nhóm đăng kết luận và điểm chất lượng, đồng thuận được tính.',
+        id: 'Artinya belum ada kiriman tim yang dinilai. Baris-barisnya muncul begitu tim mengirim kesimpulan dan skor kualitas serta konsensus dihitung.',
       },
     },
     {
@@ -371,6 +419,7 @@ export const teamMissionsGuide: PageGuide = {
         ja: 'いいえ。チームミッションは分析と合意形成を実験する場であり、提出物と紐づくシグナルはすべて価格追跡で評価されます。証券会社での注文執行は行われません。',
         th: 'ไม่ ภารกิจทีมเป็นพื้นที่ทดลองการวิเคราะห์และการสร้างฉันทามติ การส่งและสัญญาณที่เชื่อมโยงถูกประเมินด้วยการติดตามราคา ไม่มีการส่งคำสั่งไปยังโบรกเกอร์',
         vi: 'Không. Nhiệm vụ nhóm là nơi thử nghiệm phân tích và đồng thuận; bài nộp và tín hiệu liên kết được đánh giá bằng cách theo dõi giá. Không có lệnh môi giới nào được đặt.',
+        id: 'Tidak. Misi tim adalah ruang untuk bereksperimen dengan analisis dan konsensus; kiriman dan sinyal yang ditautkan dinilai dengan melacak harga. Tidak pernah ada order broker yang dipasang.',
       },
     },
   ],

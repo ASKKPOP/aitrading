@@ -122,8 +122,8 @@ export function TrendingSidebar() {
   }
 
   const getMarketLabel = (market: string) => {
-    if (market === 'us-stock') return tr(language, { ko: '미국', en: 'US', ja: 'US', th: 'US', vi: 'US' })
-    if (market === 'crypto') return tr(language, { ko: '암호화폐', en: 'Crypto', ja: '暗号通貨', th: 'คริปโต', vi: 'Tiền mã hóa' })
+    if (market === 'us-stock') return tr(language, { ko: '미국', en: 'US', ja: 'US', th: 'US', vi: 'US', id: 'AS' })
+    if (market === 'crypto') return tr(language, { ko: '암호화폐', en: 'Crypto', ja: '暗号通貨', th: 'คริปโต', vi: 'Tiền mã hóa', id: 'Kripto' })
     return market
   }
 
@@ -142,7 +142,7 @@ export function TrendingSidebar() {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            {tr(language, { ko: '등록 트레이더', en: 'Registered Traders', ja: '登録トレーダー', th: 'เทรดเดอร์ที่ลงทะเบียน', vi: 'Trader đã đăng ký' })}
+            {tr(language, { ko: '등록 트레이더', en: 'Registered Traders', ja: '登録トレーダー', th: 'เทรดเดอร์ที่ลงทะเบียน', vi: 'Trader đã đăng ký', id: 'Trader terdaftar' })}
           </span>
           <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--accent-primary)' }}>
             {agentCount}
@@ -152,12 +152,12 @@ export function TrendingSidebar() {
 
       <div className="card" style={{ padding: '16px' }}>
         <h3 style={{ fontSize: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🔥 {tr(language, { ko: '인기', en: 'Trending', ja: 'トレンド', th: 'มาแรง', vi: 'Xu hướng' })}
+          🔥 {tr(language, { ko: '인기', en: 'Trending', ja: 'トレンド', th: 'มาแรง', vi: 'Xu hướng', id: 'Sedang ramai' })}
         </h3>
 
         {trending.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
-            {tr(language, { ko: '데이터 없음', en: 'No data', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'Không có dữ liệu' })}
+            {tr(language, { ko: '데이터 없음', en: 'No data', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'Không có dữ liệu', id: 'Tidak ada data' })}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -8,6 +8,7 @@ export const backtestGuide: PageGuide = {
     ja: '選択した期間内にエージェントが実際に記録したトレードを、保存済みの執行価格で再生して成績を算出します。フォロー先を検討する利用者と、自分の戦略の実績を示したいエージェント運営者向けのページです。',
     th: 'เล่นซ้ำการเทรดที่เอเจนต์บันทึกไว้จริงในช่วงเวลาที่เลือก โดยใช้ราคาที่จัดเก็บไว้ แล้วคำนวณผลลัพธ์ เหมาะกับผู้ที่กำลังตรวจสอบเอเจนต์ก่อนคัดลอก และผู้ดูแลเอเจนต์ที่ต้องการพิสูจน์ผลงานของกลยุทธ์',
     vi: 'Phát lại các giao dịch mà agent đã thực sự ghi nhận trong khoảng thời gian bạn chọn, dựa trên giá thực thi đã lưu, rồi tính điểm kết quả. Dành cho người theo dõi muốn thẩm định agent trước khi sao chép, và cho người vận hành agent muốn chứng minh chiến lược có thành tích.',
+    id: 'Memutar ulang transaksi yang benar-benar dicatat sebuah agen selama jendela waktu pilihan Anda terhadap harga eksekusi yang tersimpan, lalu menilai hasilnya. Dibuat untuk pengikut yang menyeleksi agen sebelum menyalinnya, dan untuk operator agen yang ingin membuktikan strateginya punya rekam jejak.',
   },
   sections: [
     {
@@ -42,6 +43,12 @@ export const backtestGuide: PageGuide = {
           'Giá lấy trực tiếp từ giá thực thi đã lưu trong Sooppiy. Không có lệnh nào được định tuyến tới môi giới thật — mọi con số lãi/lỗ đều là tính toán trên sổ.',
           'Nếu agent không có giao dịch nào trong khoảng bạn chọn, kết quả sẽ trống. Không phải lỗi hệ thống, chỉ là không có gì để phát lại.',
           'Kết quả bỏ qua ma sát thực tế như trượt giá, phí và sổ lệnh mỏng. Hãy đọc chúng như giới hạn trên của lợi nhuận sao chép giao dịch.',
+        ],
+        id: [
+          'Fitur ini memutar ulang transaksi yang sudah dicatat agen. Ini bukan tempat untuk menyimulasikan aturan sembarang atau strategi yang benar-benar baru.',
+          'Harga diambil langsung dari harga eksekusi yang tersimpan di Sooppiy. Tidak ada order yang dikirim ke broker sungguhan — setiap angka laba rugi adalah perhitungan pembukuan.',
+          'Jika agen tidak meninggalkan transaksi dalam jendela waktu Anda, hasilnya kosong. Tidak ada yang rusak; memang tidak ada yang bisa diputar ulang.',
+          'Hasilnya mengabaikan gesekan dunia nyata seperti selip harga, biaya, dan order book yang tipis. Bacalah sebagai batas atas dari apa yang mungkin dihasilkan copy trading.',
         ],
       },
     },
@@ -88,6 +95,14 @@ export const backtestGuide: PageGuide = {
           'Mã — tuỳ chọn. Hữu ích khi muốn tách riêng một mã để xem một vị thế đã gánh bao nhiêu phần kết quả chung. Giá trị nhập sẽ tự động viết hoa.',
           'Nút chạy vẫn bị vô hiệu cho tới khi ID đại lý, Bắt đầu và Kết thúc đều được điền.',
         ],
+        id: [
+          'ID agen — wajib. ID numerik agen yang akan diputar ulang; Anda bisa membacanya dari papan peringkat atau URL profil agen (/agent/123).',
+          'Mulai / Akhir — wajib. Pemilih tanggal-dan-waktu gabungan. Hanya transaksi yang dibuka dan ditutup di dalam jendela ini yang masuk perhitungan.',
+          'Kas awal — bawaannya 100.000. Modal awal nosional yang menjadi acuan imbal hasil dan penurunan maksimum, sekaligus penyebut untuk persentase laba rugi belum direalisasi.',
+          'Pasar — kosongkan untuk semua pasar. Memilih satu pasar hanya memutar ulang transaksi pasar itu dan mempersempit pemilih simbol di bawahnya.',
+          'Simbol — opsional. Berguna untuk mengisolasi satu emiten guna melihat seberapa besar satu posisi menopang seluruh hasilnya. Masukan Anda otomatis diubah menjadi huruf besar.',
+          'Tombol jalankan tetap nonaktif sampai ID agen, Mulai, dan Akhir semuanya terisi.',
+        ],
       },
     },
     {
@@ -127,6 +142,13 @@ export const backtestGuide: PageGuide = {
           'Khoảng thời gian dài trên phạm vi thị trường rộng có thể mất vài chục giây. Các thẻ khung xương giữ bố cục trong lúc chờ.',
           'Nếu tác vụ thất bại, thông báo lỗi từ máy chủ hiện bằng chữ đỏ ngay dưới bảng tham số.',
           'Mở trang với ?agent=123 trên URL sẽ tự điền agent đó và chạy ngay. Tham số days đặt khoảng thời gian, giới hạn 7–365 ngày, mặc định 90.',
+        ],
+        id: [
+          'Dalam keadaan masuk, backtest diantrekan sebagai pekerjaan di sisi server dan halaman menanyakan statusnya setiap 1,5 detik. Teks tombolnya berjalan dari Diantrekan → Berjalan → Selesai.',
+          'Dalam keadaan keluar, permintaannya berjalan sinkron dan langsung mengembalikan hasil — tetapi tidak disimpan ke riwayat run dan tidak dapat dinaikkan menjadi strategi.',
+          'Jendela waktu yang panjang dengan cakupan pasar luas bisa memakan puluhan detik. Kartu kerangka menjaga tata letaknya selama proses berlangsung.',
+          'Jika pekerjaannya gagal, pesan galat yang dikembalikan server muncul berwarna merah di bawah panel parameter.',
+          'Membuka halaman dengan ?agent=123 pada URL akan mengisi agen itu terlebih dahulu dan langsung menjalankannya. Parameter days menetapkan jendela waktunya, dibatasi 7–365 hari, dengan bawaan 90.',
         ],
       },
     },
@@ -173,6 +195,14 @@ export const backtestGuide: PageGuide = {
           'Sharpe — lợi nhuận trên mỗi đơn vị biến động. Khi không thể tính được (ví dụ quá ít dữ liệu), thẻ này đơn giản không xuất hiện.',
           'Alpha vs B&H — lợi nhuận của agent trừ đi lợi nhuận nếu chỉ mua và giữ mã được giao dịch đầu tiên. Giá trị phải dương thì agent mới thực sự tạo thêm giá trị.',
         ],
+        id: [
+          'Total imbal hasil — laba rugi periode sebagai persentase dari kas awal. Hijau bila positif, merah bila negatif, dan kurva portofolionya memakai warna yang sama.',
+          'Penurunan maksimum — kejatuhan terdalam dari puncak ke lembah selama jendela waktu. Selalu ditampilkan merah dengan tanda minus, dan merupakan satu angka paling berguna untuk memisahkan dua agen berimbal hasil serupa.',
+          'Transaksi — total transaksi tertutup ditambah pembagian menang/kalahnya. Dengan sampel hanya sekitar sepuluh transaksi, tidak ada rasio di sini yang layak dipercaya.',
+          'Tingkat kemenangan — porsi transaksi yang ditutup dengan untung. Tingkat kemenangan tinggi tetap bisa berdampingan dengan total imbal hasil negatif bila kerugiannya besar, jadi selalu baca bersama Penurunan maksimum.',
+          'Sharpe — imbal hasil per satuan volatilitas. Ketika nilainya tidak dapat dihitung (misalnya karena datanya terlalu sedikit), kartunya tidak ditampilkan sama sekali.',
+          'Alfa vs B&H — imbal hasil agen dikurangi imbal hasil yang akan diperoleh bila sekadar membeli dan menahan simbol pertama yang ditransaksikan. Nilainya harus positif agar agen itu benar-benar memberi nilai tambah.',
+        ],
       },
     },
     {
@@ -212,6 +242,13 @@ export const backtestGuide: PageGuide = {
           'Đường nét đứt màu xám là mốc mua-và-giữ. Nó dồn toàn bộ tiền ban đầu vào giá vào của giao dịch đóng đầu tiên và bán ở giá ra của giao dịch đóng cuối cùng — vẽ thành đường thẳng nối đúng hai điểm đó, nên hãy so sánh điểm cuối chứ không phải đường đi.',
           'Mốc so sánh cần ít nhất một giao dịch đã đóng. Nếu chỉ có vị thế đang mở, cả đường nét đứt lẫn thẻ Alpha đều không xuất hiện.',
           'Trục Y viết tắt theo nghìn ($k); di chuột lên biểu đồ để đọc giá trị chính xác tại một điểm qua chú giải.',
+        ],
+        id: [
+          'Garis padatnya adalah total nilai portofolio dari waktu ke waktu, sewarna dengan Total imbal hasil (hijau/merah). Grafiknya hanya ditampilkan bila ada lebih dari satu titik data.',
+          'Garis titik-titik horizontal menandai level kas awal. Di mana pun garis padatnya berada di atas garis itu, laba rugi kumulatif sampai titik tersebut bernilai positif.',
+          'Garis putus-putus abu-abu adalah tolok ukur beli-dan-tahan. Ia menempatkan seluruh kas awal Anda pada harga masuk transaksi tertutup pertama dan menjualnya pada harga keluar transaksi tertutup terakhir — digambar sebagai garis lurus antara kedua titik itu saja, jadi bandingkan titik ujungnya, bukan jalurnya.',
+          'Tolok ukur ini memerlukan setidaknya satu transaksi tertutup agar ada. Bila hanya ada posisi terbuka, garis putus-putus maupun kartu Alfa tidak muncul.',
+          'Sumbu Y disingkat dalam ribuan ($k); arahkan kursor ke grafik untuk membaca nilai persis pada suatu titik lewat tooltip.',
         ],
       },
     },
@@ -258,6 +295,14 @@ export const backtestGuide: PageGuide = {
           'Hãy kiểm tra xem một hai giao dịch quá lớn có tạo ra toàn bộ kết quả không. Nếu có, các chỉ số tóm tắt trông đẹp nhưng khó lặp lại.',
           'Khi không có giao dịch đã đóng nào, một thông báo giải thích sẽ thay cho bảng, đồng thời cho biết còn bao nhiêu vị thế đang mở.',
         ],
+        id: [
+          'Posisi terbuka — apa pun yang masih terbuka ketika jendela waktunya berakhir. Menampilkan simbol, arah, kuantitas, rata-rata harga masuk, harga terakhir, dan laba rugi belum direalisasi, yang terakhir diberikan sebagai persentase dari kas awal sekaligus nominal dolar.',
+          'Laba rugi belum direalisasi pada posisi terbuka dinilai pada harga terakhir yang teramati, jadi belum merupakan hasil yang final. Jika porsinya besar dalam Total imbal hasil, sebesar itu pula bagian hasil yang masih belum terbukti.',
+          'Transaksi tertutup — klik judul bagiannya untuk melipat atau membentangkannya. Lencana di samping judulnya adalah jumlah totalnya.',
+          'Tabelnya membawa simbol, arah, kuantitas, harga masuk, harga keluar, laba rugi, dan waktu penutupan. Warna pada kolom laba rugi memudahkan Anda memindai yang untung dan yang rugi.',
+          'Periksa apakah satu atau dua transaksi berukuran besar yang menghasilkan seluruh hasilnya. Bila ya, metrik ringkasannya tampak bagus tetapi kecil kemungkinannya terulang.',
+          'Ketika sama sekali tidak ada transaksi tertutup, pesan penjelasan menggantikan tabelnya, dan pesan itu juga memberi tahu berapa posisi yang masih terbuka.',
+        ],
       },
     },
     {
@@ -303,6 +348,14 @@ export const backtestGuide: PageGuide = {
           'Những chiến lược đã thẩm định sẽ có dấu tích cạnh tên trong danh sách chọn.',
           'Tải kết quả từ lịch sử sẽ khôi phục cả ID agent đã chạy, nên liên kết hồ sơ ở cuối trang trỏ đúng tới agent đó.',
         ],
+        id: [
+          'Riwayat run hanya muncul ketika Anda sudah masuk dan memiliki setidaknya satu run tersimpan. Setiap baris membawa nomor run, status, jendela waktu, simbol, dan total imbal hasilnya.',
+          'Lihat memuat ulang hasil run itu ke area hasil di bawah. Run yang sedang Anda lihat disorot dengan warna latar pada daftarnya.',
+          'Naikkan membuka daftar strategi Anda. Pilih sebuah strategi lalu konfirmasi, dan hasil backtest ini menjadi bukti validasi strategi tersebut.',
+          'Sebuah strategi baru ditandai tervalidasi bila Sharpe-nya di atas nol. Selain itu, strateginya tetap diperbarui, tetapi tanpa lencana tervalidasi dan sebuah peringatan ditampilkan.',
+          'Strategi yang sudah tervalidasi muncul di pemilihnya dengan tanda centang di samping namanya.',
+          'Memuat hasil dari riwayat akan memulihkan agen yang menjadi subjeknya, sehingga tautan profil di bagian bawah menunjuk ke agen tersebut.',
+        ],
       },
     },
   ],
@@ -314,6 +367,7 @@ export const backtestGuide: PageGuide = {
         ja: '実行しても「この期間にクローズトレードはありません」としか出ません。なぜですか？',
         th: 'รันแล้วขึ้นแค่ "ไม่มีการเทรดที่ปิดแล้วในช่วงนี้" เพราะอะไร?',
         vi: 'Tôi chạy và chỉ nhận được "Không có giao dịch đã đóng trong kỳ này". Vì sao?',
+        id: 'Saya menjalankannya dan hanya mendapat "Tidak ada transaksi tertutup pada periode ini." Kenapa?',
       },
       a: {
         ko: '해당 에이전트가 그 기간 안에 연 뒤 닫은 거래가 없다는 뜻입니다. 기간을 넓히거나, 시장·종목 필터를 비워 범위를 넓혀 보세요. 에이전트가 장기 보유형이라면 포지션이 아직 열려 있어 미결제 포지션 표에만 나타날 수도 있습니다. 에이전트 ID를 잘못 입력한 경우에도 같은 결과가 나옵니다.',
@@ -321,6 +375,7 @@ export const backtestGuide: PageGuide = {
         ja: 'そのエージェントが期間内に建てて決済したトレードが存在しないという意味です。期間を広げるか、マーケットとシンボルのフィルターを外して範囲を広げてください。長期保有型のエージェントなら、ポジションがまだ建ったままでオープンポジション表にのみ表示される場合もあります。エージェントIDの入力ミスでも同じ結果になります。',
         th: 'หมายความว่าเอเจนต์นั้นไม่มีการเทรดที่ทั้งเปิดและปิดภายในช่วงที่คุณเลือก ลองขยายช่วงวันที่ หรือล้างตัวกรองตลาดและสัญลักษณ์เพื่อขยายขอบเขต หากเอเจนต์ถือยาว โพซิชันอาจยังเปิดอยู่และจะแสดงเฉพาะในตารางโพซิชันที่เปิดอยู่ การพิมพ์รหัสเอเจนต์ผิดก็ให้ผลว่างเปล่าแบบเดียวกัน',
         vi: 'Nghĩa là agent không có giao dịch nào vừa mở vừa đóng trong khoảng bạn chọn. Hãy mở rộng phạm vi ngày, hoặc xoá bộ lọc thị trường và mã để nới rộng phạm vi. Nếu agent giữ vị thế dài hạn, các vị thế có thể vẫn đang mở và chỉ hiện ở bảng Vị thế đang mở. Nhập sai ID agent cũng cho kết quả trống tương tự.',
+        id: 'Artinya agen itu tidak punya transaksi yang dibuka sekaligus ditutup di dalam jendela waktu Anda. Perlebar rentang tanggalnya, atau kosongkan filter pasar dan simbol untuk memperluas cakupannya. Jika agen itu menahan posisi dalam waktu lama, posisinya mungkin masih terbuka dan hanya akan tampil di tabel Posisi terbuka. ID agen yang salah ketik juga menghasilkan hasil kosong yang sama.',
       },
     },
     {
@@ -330,6 +385,7 @@ export const backtestGuide: PageGuide = {
         ja: '同じエージェントを同じ期間で再実行したら結果が変わりました。',
         th: 'รันเอเจนต์เดิมในช่วงเวลาเดิมอีกครั้ง แต่ผลลัพธ์เปลี่ยนไป',
         vi: 'Tôi chạy lại cùng agent trong cùng khoảng thời gian nhưng kết quả thay đổi.',
+        id: 'Saya menjalankan ulang agen yang sama pada jendela waktu yang sama tetapi hasilnya berubah.',
       },
       a: {
         ko: '백테스트는 기록을 재생하는 것이므로, 그 사이 에이전트가 새 거래를 남겼거나 열려 있던 포지션이 청산되면 같은 기간이라도 결과가 달라집니다. 특히 종료 시각을 현재로 잡으면 매번 조금씩 달라집니다. 비교를 하려면 과거의 고정된 종료 시각을 쓰고, 실행 기록에 저장된 결과를 기준으로 삼으세요.',
@@ -337,6 +393,7 @@ export const backtestGuide: PageGuide = {
         ja: 'バックテストは記録の再生なので、その間にエージェントが新たなトレードを残したり、保有中だったポジションが決済されたりすると、同じ期間でも結果が変わります。特に終了時刻を現在にしていると毎回わずかに変動します。比較するなら過去の固定した終了時刻を使い、実行履歴に保存された結果を基準にしてください。',
         th: 'แบ็คเทสต์คือการเล่นซ้ำบันทึก ดังนั้นหากเอเจนต์บันทึกการเทรดใหม่ในระหว่างนั้น หรือโพซิชันที่เปิดอยู่ถูกปิดไปแล้ว ช่วงเวลาเดิมก็ให้คะแนนต่างออกไปได้ โดยเฉพาะเมื่อคุณตั้งเวลาสิ้นสุดเป็น "ตอนนี้" หากต้องการเปรียบเทียบ ให้ตรึงเวลาสิ้นสุดไว้ที่จุดคงที่ในอดีต และใช้รายการที่บันทึกไว้ในประวัติการรันเป็นตัวอ้างอิง',
         vi: 'Backtest phát lại bản ghi, nên nếu agent đã ghi thêm giao dịch mới — hoặc một vị thế đang mở nay đã đóng — thì cùng khoảng thời gian vẫn có thể cho điểm khác. Điều này càng đúng khi thời điểm kết thúc là "bây giờ". Để so sánh, hãy cố định thời điểm kết thúc ở một mốc quá khứ và dùng các mục đã lưu trong Lịch sử chạy làm chuẩn.',
+        id: 'Backtest memutar ulang catatan, jadi bila agen itu mencatat transaksi baru sejak saat itu — atau posisi yang tadinya terbuka kini sudah ditutup — jendela waktu yang sama bisa menghasilkan nilai berbeda. Ini terutama berlaku ketika waktu akhir Anda adalah "sekarang". Untuk perbandingan, patok waktu akhirnya pada titik tetap di masa lalu dan gunakan entri tersimpan di Riwayat run sebagai acuan Anda.',
       },
     },
     {
@@ -346,6 +403,7 @@ export const backtestGuide: PageGuide = {
         ja: 'シャープ比のカードが表示されず、昇格しても検証バッジが付きません。',
         th: 'ไม่เห็นการ์ดชาร์ป และเมื่อโปรโมตแล้วก็ไม่ได้ป้ายผ่านการตรวจสอบ',
         vi: 'Thẻ Sharpe không hiện, và khi thăng cấp thì không có huy hiệu đã thẩm định.',
+        id: 'Kartu Sharpe tidak muncul, dan menaikkannya tidak melekatkan lencana tervalidasi.',
       },
       a: {
         ko: '샤프는 계산에 충분한 수익률 표본이 있어야 산출되며, 값이 없으면 카드가 아예 렌더링되지 않습니다. 그리고 전략 검증은 샤프가 0보다 클 것을 요구합니다. 샤프가 없거나 0 이하면 전략에 이 실행이 연결은 되지만 검증됨 표시는 붙지 않고 경고 문구가 대신 나타납니다. 기간을 늘려 거래 표본을 키우는 것이 보통 해법입니다.',
@@ -353,6 +411,7 @@ export const backtestGuide: PageGuide = {
         ja: 'シャープ比は算出に十分なリターンのサンプルが必要で、値がない場合はカード自体が描画されません。また、ストラテジーの検証にはシャープ比が0を超えていることが条件です。シャープ比がないか0以下なら、実行はストラテジーに紐づくものの検証済み表示は付かず、代わりに警告が表示されます。期間を延ばしてトレードのサンプル数を増やすのが通常の解決策です。',
         th: 'ค่าชาร์ปต้องมีตัวอย่างผลตอบแทนเพียงพอจึงจะคำนวณได้ หากไม่มีค่า การ์ดนี้จะไม่ถูกแสดงเลย นอกจากนี้การตรวจสอบกลยุทธ์ยังกำหนดให้ค่าชาร์ปต้องมากกว่าศูนย์ หากไม่มีค่าชาร์ปหรือค่าไม่เป็นบวก การรันจะยังผูกกับกลยุทธ์แต่ไม่ได้ป้ายผ่านการตรวจสอบ และจะแสดงคำเตือนแทน วิธีแก้ทั่วไปคือขยายช่วงเวลาเพื่อเพิ่มจำนวนตัวอย่างการเทรด',
         vi: 'Sharpe cần đủ mẫu lợi nhuận để tính; khi không có giá trị, thẻ này hoàn toàn không được vẽ. Ngoài ra, việc thẩm định chiến lược yêu cầu Sharpe lớn hơn 0. Nếu Sharpe thiếu hoặc không dương, lần chạy vẫn liên kết với chiến lược nhưng không gắn dấu đã thẩm định mà hiện cảnh báo. Cách khắc phục thường là kéo dài khoảng thời gian để có mẫu giao dịch lớn hơn.',
+        id: 'Sharpe memerlukan cukup sampel imbal hasil untuk dihitung; ketika nilainya tidak ada, kartunya sama sekali tidak ditampilkan. Terpisah dari itu, validasi strategi mensyaratkan Sharpe di atas nol. Jika Sharpe tidak ada atau tidak positif, run-nya tetap tertaut ke strategi tetapi tanpa tanda tervalidasi dan sebuah peringatan muncul. Memperpanjang jendela waktu untuk membangun sampel transaksi yang lebih besar biasanya menjadi solusinya.',
       },
     },
     {
@@ -370,6 +429,7 @@ export const backtestGuide: PageGuide = {
         ja: '実行履歴はログイン中のユーザーにのみ、かつ保存済みの実行が1件以上ある場合にのみ表示されます。ログアウト状態での実行はサーバーに保存されないため、履歴も残らず昇格もできません。ログインして一度実行すればリストが現れます。',
         th: 'ประวัติการรันจะแสดงเฉพาะกับผู้ใช้ที่ล็อกอินแล้ว และต่อเมื่อมีการรันที่บันทึกไว้อย่างน้อยหนึ่งรายการ การรันขณะไม่ได้ล็อกอินจะไม่ถูกจัดเก็บบนเซิร์ฟเวอร์ จึงไม่มีประวัติและโปรโมตไม่ได้ ลองล็อกอินแล้วรันสักครั้ง รายการก็จะปรากฏ',
         vi: 'Lịch sử chạy chỉ hiển thị với người dùng đã đăng nhập, và chỉ khi bạn có ít nhất một lần chạy được lưu. Các lần chạy khi chưa đăng nhập không bao giờ được lưu phía máy chủ nên không để lại lịch sử và không thể thăng cấp. Hãy đăng nhập và chạy một lần, danh sách sẽ xuất hiện.',
+        id: 'Riwayat run hanya ditampilkan kepada pengguna yang sudah masuk, dan hanya setelah Anda punya setidaknya satu run tersimpan. Run yang dijalankan dalam keadaan keluar tidak pernah disimpan di sisi server, sehingga tidak meninggalkan riwayat dan tidak dapat dinaikkan menjadi strategi. Masuklah lalu jalankan sekali dan daftarnya akan muncul.',
       },
     },
   ],
