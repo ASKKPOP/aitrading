@@ -2031,8 +2031,21 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         pos_qty = 0.0
     market_type = (run.get("market_type") or "spot").strip().lower()
     if trading_runs.is_futures_book(run.get("market"), market_type):
-        inventory_rule = ("Futures book: 'sell' opens or extends a short; "
-                          "'buy' covers a short or goes long.")
+        # A futures book can be LONG, and this branch used to be one
+        # state-blind sentence describing short mechanics only — so a
+        # profitable futures long was never told that 'sell' would bank it,
+        # while "'buy' covers a short" actively primed the wrong picture.
+        # Prod run 776 (ZC, long 14.02, peak +$78.58) emitted `buy` for 43
+        # straight cycles and reported "I cover the existing short and go
+        # long" while holding that long; it gave back 94% of the peak with
+        # the desk unable to reach "reduce this long" at all. Short and flat
+        # keep the original wording — only the long case was unreachable.
+        if pos_qty > 0:
+            inventory_rule = ("Futures book, currently LONG: 'sell' "
+                              "reduces/closes this long; 'buy' adds to it.")
+        else:
+            inventory_rule = ("Futures book: 'sell' opens or extends a short; "
+                              "'buy' covers a short or goes long.")
     elif pos_qty > 0:
         inventory_rule = "'sell' reduces/closes this long; 'buy' adds to it."
     else:

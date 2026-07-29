@@ -87,6 +87,39 @@ class LightAnalysisPromptTests(unittest.TestCase):
         self.assertIn("Position in this run's book: 2.5 units", captured["prompt"])
         self.assertIn("reduces/closes this long", captured["prompt"])
 
+    # ── a futures book can be LONG, and the rule never said so ─────────────
+    # Prod run 776 (ZC, futures, long 14.02, peak +$78.58) emitted `buy` for
+    # 43 straight cycles and reported "I cover the existing short and go long"
+    # while holding that long — it gave back 94% of the peak. The futures
+    # branch was one state-blind sentence describing short mechanics only, so
+    # "sell to bank this long" was not reachable from the instruction set.
+
+    def _futures_prompt(self, qty):
+        with patch.object(run_engine, "_position_quantity", return_value=qty):
+            return self._capture_prompt(self._run_row(market="futures"), {})[0]
+
+    def test_futures_long_is_told_sell_reduces_it(self):
+        prompt = self._futures_prompt(14.02)
+        self.assertIn("currently LONG", prompt)
+        self.assertIn("'sell' reduces/closes this long", prompt)
+
+    def test_futures_long_is_not_told_it_holds_a_short(self):
+        """The exact hallucination run 776 produced: a long book primed with
+        'buy covers a short'."""
+        prompt = self._futures_prompt(14.02)
+        self.assertNotIn("covers a short", prompt)
+        self.assertNotIn("opens or extends a short", prompt)
+
+    def test_futures_short_rule_is_unchanged(self):
+        prompt = self._futures_prompt(-3.0)
+        self.assertIn("'sell' opens or extends a short", prompt)
+        self.assertIn("'buy' covers a short", prompt)
+
+    def test_futures_flat_rule_is_unchanged(self):
+        prompt = self._futures_prompt(0.0)
+        self.assertIn("'sell' opens or extends a short", prompt)
+        self.assertNotIn("'sell' is NOT available", prompt)
+
 
 class YahooTechnicalsFallbackTests(unittest.TestCase):
     """F2 — the premium wall must no longer starve us-stock technicals."""
