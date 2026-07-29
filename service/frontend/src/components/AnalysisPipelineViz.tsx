@@ -203,23 +203,23 @@ export function AnalysisPipelineViz({ steps, labels }: {
 // ── Shared step labels (localized) ──
 
 export function analysisStepLabels(language: Language): Record<string, string> {
-  const gather = tr(language, { ko: '수집', en: 'Gather', ja: '収集', th: 'รวบรวม', vi: 'Thu thập' })
-  const brief = tr(language, { ko: '브리프', en: 'Brief', ja: 'ブリーフ', th: 'สรุป', vi: 'Tóm tắt' })
+  const gather = tr(language, { ko: '수집', en: 'Gather', ja: '収集', th: 'รวบรวม', vi: 'Thu thập', id: 'Kumpulkan' })
+  const brief = tr(language, { ko: '브리프', en: 'Brief', ja: 'ブリーフ', th: 'สรุป', vi: 'Tóm tắt', id: 'Ringkasan' })
   const roles: Record<string, string> = {
-    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức' }),
-    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý' }),
-    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô' }),
-    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật' }),
+    news: tr(language, { ko: '뉴스', en: 'News', ja: 'ニュース', th: 'ข่าว', vi: 'Tin tức', id: 'Berita' }),
+    sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý', id: 'Sentimen' }),
+    fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô', id: 'Fundamental & Makro' }),
+    technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật', id: 'Teknikal' }),
   }
   const labels: Record<string, string> = {
-    decision: tr(language, { ko: '트레이더+리스크 결정', en: 'Trader + Risk decision', ja: 'トレーダー+リスク判断', th: 'ตัดสินใจเทรด+ความเสี่ยง', vi: 'Quyết định Trader + Rủi ro' }),
-    verify: tr(language, { ko: '검증', en: 'Verify', ja: '検証', th: 'ตรวจสอบ', vi: 'Xác minh' }),
-    __running: tr(language, { ko: '실행 중', en: 'running', ja: '実行中', th: 'กำลังทำงาน', vi: 'đang chạy' }),
-    __error: tr(language, { ko: '오류', en: 'error', ja: 'エラー', th: 'ผิดพลาด', vi: 'lỗi' }),
-    __start: tr(language, { ko: '시작', en: 'start', ja: '開始', th: 'เริ่ม', vi: 'bắt đầu' }),
-    __done: tr(language, { ko: '완료', en: 'done', ja: '完了', th: 'เสร็จ', vi: 'xong' }),
-    __pipeline: tr(language, { ko: '실시간 파이프라인 모니터', en: 'Live pipeline monitor', ja: 'リアルタイム・パイプライン', th: 'มอนิเตอร์ไปป์ไลน์สด', vi: 'Giám sát pipeline trực tiếp' }),
-    __stepLog: tr(language, { ko: '단계 로그', en: 'Step log', ja: 'ステップログ', th: 'บันทึกขั้นตอน', vi: 'Nhật ký bước' }),
+    decision: tr(language, { ko: '트레이더+리스크 결정', en: 'Trader + Risk decision', ja: 'トレーダー+リスク判断', th: 'ตัดสินใจเทรด+ความเสี่ยง', vi: 'Quyết định Trader + Rủi ro', id: 'Keputusan trader + risiko' }),
+    verify: tr(language, { ko: '검증', en: 'Verify', ja: '検証', th: 'ตรวจสอบ', vi: 'Xác minh', id: 'Verifikasi' }),
+    __running: tr(language, { ko: '실행 중', en: 'running', ja: '実行中', th: 'กำลังทำงาน', vi: 'đang chạy', id: 'berjalan' }),
+    __error: tr(language, { ko: '오류', en: 'error', ja: 'エラー', th: 'ผิดพลาด', vi: 'lỗi', id: 'galat' }),
+    __start: tr(language, { ko: '시작', en: 'start', ja: '開始', th: 'เริ่ม', vi: 'bắt đầu', id: 'mulai' }),
+    __done: tr(language, { ko: '완료', en: 'done', ja: '完了', th: 'เสร็จ', vi: 'xong', id: 'selesai' }),
+    __pipeline: tr(language, { ko: '실시간 파이프라인 모니터', en: 'Live pipeline monitor', ja: 'リアルタイム・パイプライン', th: 'มอนิเตอร์ไปป์ไลน์สด', vi: 'Giám sát pipeline trực tiếp', id: 'Monitor alur langsung' }),
+    __stepLog: tr(language, { ko: '단계 로그', en: 'Step log', ja: 'ステップログ', th: 'บันทึกขั้นตอน', vi: 'Nhật ký bước', id: 'Catatan langkah' }),
   }
   for (const role of Object.keys(roles)) {
     labels[`gather:${role}`] = `${gather} · ${roles[role]}`
