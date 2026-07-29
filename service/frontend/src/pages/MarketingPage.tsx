@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../appShared'
-import { LANGUAGES, tr } from '../i18n'
+import { LANGUAGES, fearGreedLabel, tr } from '../i18n'
 import type { Language } from '../i18n'
 
 // Derived from LANGUAGES, never hand-listed. This was a literal
@@ -946,7 +946,7 @@ export function MarketingPage() {
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiFear}</div>
               <div style={{ fontFamily: V.mono, fontSize: 30, fontWeight: 600, margin: '6px 0 2px' }}>{fng ? fng.value : '—'}</div>
-              <div style={{ fontSize: 12.5, color: V.mut }}>{fng ? `${fng.classification}${fng.delta_3d != null ? ` · Δ3d ${fng.delta_3d >= 0 ? '+' : ''}${fng.delta_3d}` : ''}` : T.collecting}</div>
+              <div style={{ fontSize: 12.5, color: V.mut }}>{fng ? `${fearGreedLabel(language, fng.classification)}${fng.delta_3d != null ? ` · Δ3d ${fng.delta_3d >= 0 ? '+' : ''}${fng.delta_3d}` : ''}` : T.collecting}</div>
             </div>
             <div style={cardS}>
               <div style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{T.kpiNews}</div>

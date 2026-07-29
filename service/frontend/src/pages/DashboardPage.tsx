@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
-import { Language, tr } from '../i18n'
+import { Language, fearGreedLabel, tr } from '../i18n'
 
 type Position = {
   symbol: string; market: string; side: string
@@ -254,7 +254,7 @@ export default function DashboardPage({ token }: { token: string | null }) {
               }}>{t(T.live2)}</em></h2>
               <div style={card}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                  {fng && <span style={chip}>F&amp;G <b style={acc}>{fng.value}</b> {fng.classification}</span>}
+                  {fng && <span style={chip}>F&amp;G <b style={acc}>{fng.value}</b> {fearGreedLabel(language, fng.classification)}</span>}
                   <span style={chip}>{regime.regime}</span>
                   <span style={chip}>{t(T.size)} <b style={acc}>{regime.size_multiplier}×</b></span>
                 </div>

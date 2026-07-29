@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr, type Language } from '../i18n'
+import { fearGreedLabel, tr, type Language } from '../i18n'
 
 // Signals Board (signal-collection plan Phase 5): every number on this page is
 // a real collected value from the psych feed, scanner, and fusion APIs — no
@@ -347,7 +347,7 @@ export function SignalsBoardPage() {
             {fng ? fng.value : '—'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-            {fng ? `${fng.classification}${fng.delta_3d != null ? ` · Δ3d ${fng.delta_3d >= 0 ? '+' : ''}${fng.delta_3d}` : ''}` : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
+            {fng ? `${fearGreedLabel(language, fng.classification)}${fng.delta_3d != null ? ` · Δ3d ${fng.delta_3d >= 0 ? '+' : ''}${fng.delta_3d}` : ''}` : tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'Đang thu thập…' })}
           </div>
           {fng && <FngSparkline history={fng.history} />}
         </div>

@@ -152,6 +152,36 @@ class TheFrontendPickerAgrees(unittest.TestCase):
                          "language codes hand-listed instead of derived from "
                          "LANGUAGES: " + "; ".join(offenders))
 
+    def test_no_page_renders_the_raw_fear_greed_vendor_string(self):
+        """alternative.me returns value_classification as English prose
+        ("Fear", "Extreme Greed"). Three pages — home, Signals Board and
+        Dashboard — interpolated it straight into the UI, so a Korean member
+        read "29 Fear" on an otherwise Korean page. It is third-party text but
+        a CLOSED set of five bands, so it is ours to translate; it must go
+        through fearGreedLabel(), never `fng.classification` on its own.
+        """
+        src_root = FRONTEND.parent
+        offenders = []
+        for path in sorted(src_root.rglob("*.tsx")):
+            for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if re.search(r"[{$]\{?\s*fng\.classification\s*\}", line) \
+                        and "fearGreedLabel" not in line:
+                    offenders.append(f"{path.name}:{i}")
+        self.assertFalse(offenders,
+                         "raw vendor Fear & Greed label rendered: " + ", ".join(offenders))
+
+    def test_every_language_has_a_fear_greed_band_set(self):
+        src = self._source()
+        block = re.search(r"const FEAR_GREED[^=]*=\s*\{(.*?)\n\}", src, re.S)
+        self.assertIsNotNone(block, "FEAR_GREED table missing from i18n.ts")
+        bands = re.findall(r"'([a-z ]+)':\s*\{([^}]*)\}", block.group(1))
+        self.assertEqual({b for b, _ in bands},
+                         {"extreme fear", "fear", "neutral", "greed", "extreme greed"})
+        for band, body in bands:
+            for lang in LANG_NAMES:
+                with self.subTest(band=band, lang=lang):
+                    self.assertRegex(body, rf"\b{lang}:\s*'")
+
     def test_every_language_has_a_picker_label_and_a_locale(self):
         src = self._source()
         listed = set(re.findall(r"\{ value: '([a-z-]+)', label:", src))

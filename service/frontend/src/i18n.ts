@@ -720,6 +720,25 @@ export const getT = (lang: Language): Translations => translations[lang]
 export type TrMap = { en: string } & Partial<Record<Language, string>>
 export const tr = (lang: Language, m: TrMap): string => m[lang] ?? m.en
 
+// alternative.me's `value_classification`, rendered straight into the UI in
+// three places (home, Signals Board, Dashboard) — so a Korean member read
+// "29 Fear". It is third-party text, but it is a CLOSED set of five bands, so
+// it is ours to translate; only an unrecognised band falls through verbatim,
+// which keeps a new vendor label visible instead of blank.
+const FEAR_GREED: Record<string, TrMap> = {
+  'extreme fear': { en: 'Extreme Fear', ko: '극단적 공포', ja: '極度の恐怖', th: 'ความกลัวขั้นสุด', vi: 'Cực kỳ sợ hãi', id: 'Ketakutan Ekstrem' },
+  'fear': { en: 'Fear', ko: '공포', ja: '恐怖', th: 'ความกลัว', vi: 'Sợ hãi', id: 'Ketakutan' },
+  'neutral': { en: 'Neutral', ko: '중립', ja: '中立', th: 'เป็นกลาง', vi: 'Trung lập', id: 'Netral' },
+  'greed': { en: 'Greed', ko: '탐욕', ja: '強欲', th: 'ความโลภ', vi: 'Tham lam', id: 'Keserakahan' },
+  'extreme greed': { en: 'Extreme Greed', ko: '극단적 탐욕', ja: '極度の強欲', th: 'ความโลภขั้นสุด', vi: 'Cực kỳ tham lam', id: 'Keserakahan Ekstrem' },
+}
+
+export const fearGreedLabel = (lang: Language, classification: string | null | undefined): string => {
+  if (!classification) return ''
+  const m = FEAR_GREED[classification.trim().toLowerCase()]
+  return m ? tr(lang, m) : classification
+}
+
 // Category translations
 export const categoryTranslations: Record<Language, Record<string, string>> = {
   ko: {
