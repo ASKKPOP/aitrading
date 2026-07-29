@@ -171,7 +171,18 @@ class TokenTablesCoverWhatActuallyReachesThem(unittest.TestCase):
         "action_upper": {"BUY", "SELL", "SHORT", "COVER"},
         "status": {"armed", "running", "paused", "stopping", "stopped"},
         "outcome": {"flatten", "hold"},
+        "metric": {"price", "fear_greed", "kimchi_premium", "whale_net_flow",
+                   "funding_rate", "rsi", "basis"},   # watch_engine.METRICS
     }
+
+    def test_the_metric_domain_still_matches_watch_engine(self):
+        """DOMAINS is a hand-written mirror of a runtime set, so it can rot.
+        watch_engine.METRICS is importable — pin the two together."""
+        import watch_engine
+
+        self.assertEqual(set(watch_engine.METRICS), self.DOMAINS["metric"],
+                         "watch_engine.METRICS changed; update DOMAINS and the "
+                         "TOKENS['metric'] table together")
 
     def test_every_runtime_value_has_a_translation(self):
         for family, domain in self.DOMAINS.items():

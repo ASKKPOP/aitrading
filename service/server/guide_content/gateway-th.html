@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sooppiy — คู่มือฉบับสมบูรณ์สำหรับเกตเวย์การซื้อขายจริง (Live Trading Gateway Guide)</title>
+<title>Sooppiy — คู่มือฉบับสมบูรณ์เกตเวย์เทรดจริง (Live Trading Gateway Guide)</title>
 <style>
 :root{
   --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
@@ -66,38 +66,38 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 <div class="wrap">
 
 <header class="doc">
-  <div class="kicker">Sooppiy · Live Trading Gateway</div>
-  <h1>คู่มือฉบับสมบูรณ์สำหรับเกตเวย์การซื้อขายจริง</h1>
-  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · เขียนขึ้นหลังการตรวจสอบ QA โดย 3-agent · คำบรรยายภาษาอังกฤษในแต่ละส่วน</div>
+  <div class="kicker">Sooppiy · เกตเวย์การเทรดสด</div>
+  <h1>คู่มือฉบับสมบูรณ์เกตเวย์เทรดจริง</h1>
+  <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · จัดทำหลังผ่านการตรวจสอบ QA โดย 3-agent · English subtitles per section</div>
   <p class="sub" style="margin-top:10px">
-    เส้นทางทั้งหมดที่กฎการซื้อขายอัตโนมัติดำเนินไปสู่ <b>จำลอง (simulator)</b> → <b>เงา (shadow)</b> → <b>จริง (live)</b>โดยเชื่อมโยงกัน:
-    ต้องตั้งค่าอะไร คำสั่งซื้อขายผ่านด่านใดบ้าง และระบบไม่ทำสิ่งใดโดยเด็ดขาด อธิบายไว้ในเอกสารฉบับเดียว
+    เส้นทางทั้งหมดที่กฎการเทรดอัตโนมัติ <b>จำลอง(simulator)</b> → <b>เงา(shadow)</b> → <b>เทรดจริง(live)</b> เชื่อมต่อกัน:
+    ต้องตั้งค่าอะไรบ้าง คำสั่งซื้อขายผ่านด่านตรวจใดบ้าง และระบบไม่ทำอะไรเด็ดขาด อธิบายไว้ในเอกสารฉบับเดียว
   </p>
 </header>
 
 <!-- ═══ 1. 세 가지 모드 ═══ -->
 <section>
-  <h2><span class="no">01</span>โหมดการทำงานทั้งสาม <span class="sub" style="display:inline">/ The three execution modes</span></h2>
-  <p class="sub">การตั้งค่า <code>บัญชี (account)</code> เพียงจุดเดียวในกฎ (หน้าอัตโนมัติ) จะเป็นตัวกำหนดว่าการจับคู่คำสั่งซื้อขายจะไปลงที่ใด ไม่มีการตั้งค่าอื่นใดที่จะเปลี่ยนแปลงสิ่งนี้ได้</p>
+  <h2><span class="no">01</span>โหมดการทำงานทั้งสาม <span class="sub" style="display:inline">/ สามโหมดการทำงาน</span></h2>
+  <p class="sub">การตั้งค่า <code>บัญชี(account)</code> เพียงจุดเดียวในกฎ (หน้า Automation) เป็นตัวกำหนดว่าการจับคู่คำสั่งจะไปลงเอยที่ใด ไม่มีการตั้งค่าอื่นใดเปลี่ยนแปลงสิ่งนี้ได้</p>
 
   <table>
-    <tr><th>โหมด</th><th>ตำแหน่งการจับคู่คำสั่ง</th><th>เงินทุนจริง</th><th>เงื่อนไขที่จำเป็น</th><th>การใช้งาน</th></tr>
+    <tr><th>โหมด</th><th>ตำแหน่งที่จับคู่คำสั่ง</th><th>เงินทุนจริง</th><th>เงื่อนไขที่ต้องมี</th><th>วัตถุประสงค์</th></tr>
     <tr>
-      <td><span class="tag hold">simulator</span></td>
-      <td>บันทึกจำลองของแพลตฟอร์มเท่านั้น</td><td>ไม่มี</td><td>ไม่มี (ค่าเริ่มต้น)</td>
-      <td>ตรวจสอบกลยุทธ์ เรียนรู้แพลตฟอร์ม</td>
+      <td><span class="tag hold">จำลอง</span></td>
+      <td>บัญชีจำลองของแพลตฟอร์มเท่านั้น</td><td>ไม่มี</td><td>ไม่มี (ค่าเริ่มต้น)</td>
+      <td>ตรวจสอบกลยุทธ์, เรียนรู้แพลตฟอร์ม</td>
     </tr>
     <tr>
-      <td><span class="tag new">shadow</span></td>
-      <td>บันทึกจำลอง (เป็นเกณฑ์อ้างอิง) + คำสั่งเปรียบเทียบกับ <b>แซนด์บ็อกซ์</b> ของโบรกเกอร์</td><td>ไม่มี</td>
-      <td>การเชื่อมต่อเกตเวย์ (ทางเลือก — หากไม่มีจะเป็นการจำลองล้วน)</td>
-      <td>เปรียบเทียบสลิปเพจและอัตราการจับคู่คำสั่งจริงโดยไม่มีความเสี่ยง</td>
+      <td><span class="tag new">เงา</span></td>
+      <td>บัญชีจำลอง(อ้างอิง) + คำสั่งเทียบกับโบรกเกอร์ <b>แซนด์บ็อกซ์</b></td><td>ไม่มี</td>
+      <td>การเชื่อมต่อเกตเวย์ (ทางเลือก — หากไม่มีจะเป็นจำลองล้วน)</td>
+      <td>เปรียบเทียบ slippage และอัตราการจับคู่คำสั่งจริงโดยไม่มีความเสี่ยง</td>
     </tr>
     <tr>
-      <td><span class="tag crit">live</span></td>
+      <td><span class="tag crit">สด</span></td>
       <td>ผ่านเกตเวย์ที่เชื่อมต่อไปยัง <b>โบรกเกอร์จริง</b></td><td><b>มี</b></td>
-      <td>การเชื่อมต่อเกตเวย์ + ข้อมูลรับรอง + ยอมรับข้อตกลงการซื้อขายจริง</td>
-      <td>การซื้อขายอัตโนมัติจริง</td>
+      <td>การเชื่อมต่อเกตเวย์ + ข้อมูลรับรอง + การยอมรับข้อตกลงเทรดจริง</td>
+      <td>เทรดอัตโนมัติในสถานการณ์จริง</td>
     </tr>
   </table>
 
@@ -107,112 +107,112 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <!-- rule -->
     <rect class="box" x="20" y="120" width="150" height="70" rx="12"/>
     <text class="lbl" x="95" y="148" text-anchor="middle">กฎการทำงานอัตโนมัติ</text>
-    <text class="sm" x="95" y="166" text-anchor="middle">Automation rule</text>
+    <text class="sm" x="95" y="166" text-anchor="middle">กฎการทำงานอัตโนมัติ</text>
     <!-- gates -->
     <rect class="box" x="215" y="120" width="150" height="70" rx="12" stroke="var(--accent)"/>
-    <text class="lbl" x="290" y="143" text-anchor="middle">ห่วงโซ่ด่านการทำงาน</text>
-    <text class="sm" x="290" y="160" text-anchor="middle">12-step gate chain</text>
-    <text class="sm" x="290" y="175" text-anchor="middle">(ดู §4)</text>
+    <text class="lbl" x="290" y="143" text-anchor="middle">ห่วงโซ่ด่านตรวจการทำงาน</text>
+    <text class="sm" x="290" y="160" text-anchor="middle">ห่วงโซ่เกต 12 ขั้นตอน</text>
+    <text class="sm" x="290" y="175" text-anchor="middle">(อ้างอิง §4)</text>
     <!-- router -->
     <rect class="box" x="410" y="120" width="140" height="70" rx="12" stroke="var(--violet)"/>
-    <text class="lbl" x="480" y="148" text-anchor="middle">account_type</text>
+    <text class="lbl" x="480" y="148" text-anchor="middle">ประเภทบัญชี</text>
     <text class="sm" x="480" y="166" text-anchor="middle">execution/gateway.py</text>
     <!-- three lanes -->
     <rect class="box" x="620" y="20" width="255" height="66" rx="12"/>
-    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → บันทึกจำลอง</text>
+    <text class="lbl" x="747" y="45" text-anchor="middle">simulator → บัญชีจำลอง</text>
     <text class="sm" x="747" y="63" text-anchor="middle">signals + positions + cash (ฐานข้อมูลภายใน)</text>
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
-    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → บันทึก + แซนด์บ็อกซ์</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">บันทึกเป็นเกณฑ์อ้างอิง · Alpaca paper / Binance testnet</text>
-    <text class="sm" x="747" y="178" text-anchor="middle">ความคลาดเคลื่อนจะถูกบันทึกไว้ใน position_reconciliations</text>
+    <text class="lbl" x="747" y="146" text-anchor="middle">shadow → บัญชี + แซนด์บ็อกซ์</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">บัญชีเป็นค่าอ้างอิง · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="178" text-anchor="middle">ความคลาดเคลื่อนถูกบันทึกใน position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
     <text class="lbl" x="747" y="254" text-anchor="middle">live → โบรกเกอร์จริง ⚠ เงินทุนจริง</text>
-    <text class="sm" x="747" y="271" text-anchor="middle">โบรกเกอร์เป็นเกณฑ์อ้างอิง — บันทึกลงบัญชีเฉพาะเมื่อได้รับการยืนยันแล้วเท่านั้น</text>
-    <text class="sm" x="747" y="286" text-anchor="middle">ไม่มีการสร้างโพซิชันเมื่อถูกปฏิเสธ</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">โบรกเกอร์เป็นค่าอ้างอิง — บันทึกลงบัญชีก็ต่อเมื่อได้รับการยอมรับแล้วเท่านั้น</text>
+    <text class="sm" x="747" y="286" text-anchor="middle">หากถูกปฏิเสธจะไม่มีการสร้างสถานะการถือครอง</text>
 
     <path class="arrow" d="M170,155 L213,155"/>
     <path class="arrow" d="M365,155 L408,155"/>
     <path class="arrow" d="M550,140 C590,110 590,70 618,55"/>
     <path class="arrow" d="M550,155 L618,158"/>
     <path class="arrow" d="M550,172 C590,205 590,245 618,262"/>
-    <text class="sm" x="580" y="45">simulator</text>
-    <text class="sm" x="572" y="147">shadow</text>
-    <text class="sm" x="588" y="280">live</text>
+    <text class="sm" x="580" y="45">ตัวจำลอง</text>
+    <text class="sm" x="572" y="147">เงา</text>
+    <text class="sm" x="588" y="280">สด</text>
   </svg>
-  <div class="cap">ภาพที่ 1 — กฎหนึ่งข้อเมื่อผ่านห่วงโซ่ด่านแล้ว จะถูกส่งไปตามหนึ่งในสามเส้นทางตามค่า account_type</div>
+  <div class="cap">ภาพที่ 1 — กฎหนึ่งข้อเมื่อผ่านห่วงโซ่ด่านตรวจแล้ว จะถูกส่งไปยังหนึ่งในสามเส้นทางตาม account_type</div>
   </div>
 
-  <div class="note red"><b>สิ่งที่ไม่มีวันเกิดขึ้น:</b> กฎ live ที่ไม่มีเกตเวย์ จะไม่ถูกลดระดับเป็นโหมดจำลองโดยเงียบๆ live จะ <b>ถูกปฏิเสธพร้อมเหตุผลชัดเจน</b> และเหตุผลนั้นจะถูกบันทึกไว้ในบันทึกการทำงาน — เพราะการจับคู่คำสั่งปลอมที่ดูเหมือนของจริงคือสิ่งที่เลวร้ายที่สุด</div>
+  <div class="note red"><b>สิ่งที่ไม่มีวันเกิดขึ้น:</b> กฎ live ที่ไม่มีเกตเวย์จะถูกลดระดับเป็นจำลองอย่างเงียบๆ live จะ<b>ถูกปฏิเสธพร้อมเหตุผลที่ชัดเจน</b> และเหตุผลนั้นจะถูกบันทึกไว้ในบันทึกการทำงาน — เพราะการจับคู่คำสั่งปลอมที่ดูเหมือนจริงคือสิ่งที่แย่ที่สุด</div>
 </section>
 
 <!-- ═══ 2. 단계별 설정 ═══ -->
 <section>
-  <h2><span class="no">02</span>7 ขั้นตอนสู่การซื้อขายจริง <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
+  <h2><span class="no">02</span>7 ขั้นตอนสู่การเทรดจริง <span class="sub" style="display:inline">7 ขั้นตอนสู่การใช้งานจริง</span></h2>
 
   <div class="steps-strip">
-    <div class="st"><b>STEP 1</b><span>ขอรับคีย์จากโบรกเกอร์</span></div>
-    <div class="st"><b>STEP 2</b><span>เชื่อมต่อเกตเวย์</span></div>
-    <div class="st"><b>STEP 3</b><span>ยอมรับข้อตกลง</span></div>
-    <div class="st"><b>STEP 4</b><span>ตรวจสอบสถานะ</span></div>
-    <div class="st"><b>STEP 5</b><span>ตรวจสอบ shadow</span></div>
-    <div class="st"><b>STEP 6</b><span>เปลี่ยนเป็น live</span></div>
-    <div class="st"><b>STEP 7</b><span>ติดตามผล</span></div>
+    <div class="st"><b>ขั้นตอนที่ 1</b><span>ขอรับคีย์จากโบรกเกอร์</span></div>
+    <div class="st"><b>ขั้นตอนที่ 2</b><span>เชื่อมต่อเกตเวย์</span></div>
+    <div class="st"><b>ขั้นตอนที่ 3</b><span>ยอมรับข้อตกลง</span></div>
+    <div class="st"><b>ขั้นตอนที่ 4</b><span>ตรวจสอบสถานะ</span></div>
+    <div class="st"><b>ขั้นตอนที่ 5</b><span>ตรวจสอบ shadow</span></div>
+    <div class="st"><b>ขั้นตอนที่ 6</b><span>เปลี่ยนเป็น live</span></div>
+    <div class="st"><b>ขั้นตอนที่ 7</b><span>ติดตามผล</span></div>
   </div>
 
-  <h3>STEP 1 — เตรียมข้อมูลรับรองจากโบรกเกอร์ <span class="sub" style="display:inline">/ Prepare broker credentials</span></h3>
+  <h3>STEP 1 — เตรียมข้อมูลรับรองจากโบรกเกอร์ <span class="sub" style="display:inline">/ เตรียมข้อมูลรับรองของโบรกเกอร์</span></h3>
   <table>
     <tr><th>โบรกเกอร์</th><th>สิ่งที่ต้องมี</th><th>ที่ไหน</th><th>ข้อควรระวัง</th></tr>
-    <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (คีย์ paper และ live แยกจากกัน)</td><td>สิทธิ์การซื้อขายเท่านั้น shadow จะใช้ปลายทาง paper โดยอัตโนมัติ</td></tr>
-    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>บัญชี → API Management</td><td><b>ห้ามให้สิทธิ์ถอนเงินโดยเด็ดขาด</b> เลือกเฉพาะการซื้อขาย (TRADE) shadow จะใช้ testnet</td></tr>
-    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + หมายเลขบัญชี</td><td>ให้รันและล็อกอิน Client Portal Gateway ที่ IBKR เผยแพร่ด้วยตนเอง</td><td>ไม่มี API key — <b>เซสชันของเกตเวย์คือข้อมูลรับรองนั่นเอง</b> ต้องเป็นที่อยู่ที่เซิร์ฟเวอร์เข้าถึงได้ หากหมายเลขบัญชีขึ้นต้นด้วย <code>D</code> แสดงว่าเป็นบัญชีจำลอง (shadow จะทำงานได้เฉพาะบนบัญชีจำลองเท่านั้น)</td></tr>
+    <tr><td><b>Alpaca</b></td><td>รหัส API Key ID + Secret</td><td>alpaca.markets → API Keys (คีย์ paper และ live แยกกัน)</td><td>สิทธิ์เทรดเท่านั้น shadow จะใช้ปลายทาง paper โดยอัตโนมัติ</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>บัญชี → API Management</td><td><b>ห้ามให้สิทธิ์ถอนเงินโดยเด็ดขาด</b> ติ๊กเฉพาะ เทรด(TRADE) เท่านั้น shadow จะใช้ testnet</td></tr>
+    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + หมายเลขบัญชี</td><td>รัน Client Portal Gateway ที่ IBKR แจกจ่ายและล็อกอินด้วยตนเอง</td><td>ไม่มี API key — <b>เซสชันของเกตเวย์คือข้อมูลรับรองในตัวเอง</b> ต้องเป็นที่อยู่ที่เซิร์ฟเวอร์เข้าถึงได้ หากหมายเลขบัญชีขึ้นต้นด้วย <code>D</code> แสดงว่าเป็นบัญชีจำลอง (shadow ทำงานได้เฉพาะกับบัญชีจำลองเท่านั้น)</td></tr>
   </table>
 
-  <h3>STEP 2 — เชื่อมต่อเกตเวย์ที่หน้าบัญชี <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
+  <h3>STEP 2 — เชื่อมต่อเกตเวย์ที่หน้าบัญชี <span class="sub" style="display:inline">/ เชื่อมต่อได้ที่หน้า Accounts</span></h3>
   <ul>
-    <li><b>บัญชี (Accounts)</b> หน้า → การ์ด <b>เกตเวย์การซื้อขาย</b> เลือกโบรกเกอร์ รายการจะถูกโหลดจากเซิร์ฟเวอร์(<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: ป้อนคีย์+รหัสลับ IBKR: ป้อน URL เกตเวย์ + หมายเลขบัญชี (มีตัวเลือกใบรับรองที่ลงนามด้วยตนเองสำหรับเกตเวย์ในเครื่อง)</li>
-    <li>คีย์จะถูก<b>เข้ารหัสด้วย AES-GCM และจัดเก็บไว้ที่เซิร์ฟเวอร์</b>โดยจะไม่ถูกเก็บไว้ใน localStorage ของเบราว์เซอร์ และจะถูกลบออกจากช่องป้อนข้อมูลทันทีหลังจากบันทึก โดยจะไม่แสดงผลอีกต่อไป</li>
+    <li><b>บัญชี(Accounts)</b> หน้า → <b>เกตเวย์เทรด</b> เลือกโบรกเกอร์จากการ์ด รายการจะถูกโหลดจากเซิร์ฟเวอร์(<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: ป้อนคีย์+รหัสลับ IBKR: ป้อน URL เกตเวย์ + หมายเลขบัญชี (มีตัวเลือกใบรับรองที่ลงนามด้วยตนเองสำหรับเกตเวย์ภายในเครื่อง)</li>
+    <li>คีย์จะถูก<b>เข้ารหัสด้วย AES-GCM และจัดเก็บไว้ที่เซิร์ฟเวอร์</b>โดยจะไม่คงอยู่ใน localStorage ของเบราว์เซอร์ และจะถูกลบออกจากช่องป้อนข้อมูลทันทีหลังบันทึก จะไม่แสดงซ้ำอีก</li>
   </ul>
 
-  <h3>STEP 3 — ยอมรับข้อกำหนดการเทรดจริง <span class="sub" style="display:inline">/ ยอมรับข้อกำหนดการเทรดจริง</span></h3>
+  <h3>STEP 3 — ยอมรับข้อตกลงการซื้อขายจริง <span class="sub" style="display:inline">/ ยอมรับข้อกำหนดการเทรดจริง</span></h3>
   <ul>
-    <li>ช่องทำเครื่องหมายเหนือปุ่มเชื่อมต่อคือขั้นตอนการยอมรับ หากไม่ยอมรับ จะไม่สามารถดำเนินการเชื่อมต่อได้</li>
-    <li>การยอมรับ <b>ตามโบรกเกอร์</b>  บันทึกที่ไม่เปลี่ยนแปลง(<code>broker_live_optins</code>)แม้ว่าคุณจะยินยอมกับ Alpaca แล้ว แต่ Binance live ก็ยังต้องได้รับความยินยอมแยกต่างหาก</li>
+    <li>ช่องทำเครื่องหมายเหนือปุ่มเชื่อมต่อคือขั้นตอนการยอมรับ หากไม่ยอมรับ การเชื่อมต่อจะไม่ดำเนินการเลย</li>
+    <li>การยอมรับจะถูกบันทึกเป็นรายการที่<b>แยกตามโบรกเกอร์</b> และไม่เปลี่ยนแปลง (<code>broker_live_optins</code>) — แม้จะยอมรับ Alpaca แล้ว ก็ยังต้องยอมรับแยกต่างหากสำหรับ Binance live</li>
   </ul>
 
   <h3>STEP 4 — ตรวจสอบแบนเนอร์สถานะ <span class="sub" style="display:inline">/ ตรวจสอบแบนเนอร์สถานะ</span></h3>
   <ul>
-    <li>หลังจากเชื่อมต่อแล้ว แบนเนอร์สีเขียว(ปกติ)/สีแดง(ใช้ไม่ได้) จะแสดงที่ด้านบนของหน้าบัญชี(<code>GET /api/execution/health</code>).</li>
-    <li>IBKR จะแสดงสถานะเซสชัน(หมดอายุ/แข่งขันกัน)ด้วย ส่วน Alpaca/Binance ไม่มีแนวคิดเซสชัน จึงตรวจสอบเพียงว่ามีข้อมูลรับรองอยู่หรือไม่</li>
+    <li>หลังเชื่อมต่อแล้ว จะมีแบนเนอร์สีเขียว (ปกติ)/สีแดง (ใช้งานไม่ได้) แสดงที่ด้านบนของหน้าบัญชี (<code>GET /api/execution/health</code>).</li>
+    <li>IBKR จะแสดงสถานะเซสชันด้วย (หมดอายุ/แย่งใช้งาน) ส่วน Alpaca/Binance ไม่มีแนวคิดเรื่องเซสชัน จึงตรวจสอบเพียงว่ามีข้อมูลรับรองอยู่หรือไม่</li>
   </ul>
 
-  <h3>STEP 5 — ตรวจสอบด้วย shadow ก่อน <span class="sub" style="display:inline">/ ตรวจสอบใน shadow ก่อน</span></h3>
+  <h3>STEP 5 — ตรวจสอบด้วย shadow ก่อน <span class="sub" style="display:inline">/ ตรวจสอบความถูกต้องใน shadow ก่อน</span></h3>
   <ul>
-    <li>หน้าอัตโนมัติ(โหมดผู้เชี่ยวชาญ) → ของกฎ <b>บัญชี = shadow</b>  + เปิดใช้งานอัตโนมัติ ON.</li>
-    <li>ในขณะที่บัญชีจำลองยังคงเป็นค่าอ้างอิง คำสั่งเดียวกันจะถูกส่งไปยังโบรกเกอร์ <b>แซนด์บ็อกซ์</b>ด้วยเช่นกัน และความแตกต่างในการจับคู่คำสั่งจะ <b>บันทึกดริฟต์</b>ถูกสะสมไว้ที่นี่ คุณจะเห็นค่าสลิปเพจและอัตราการจับคู่คำสั่งโดยไม่ใช้เงินจริง</li>
+    <li>หน้าอัตโนมัติ (โหมดผู้เชี่ยวชาญ) → ของกฎ <b>account = shadow</b> + เปิดการทำงานอัตโนมัติ ON</li>
+    <li>สมุดบัญชีจำลองยังคงเป็นตัวอ้างอิงหลัก ในขณะที่คำสั่งเดียวกันจะถูกส่งไปยัง<b>แซนด์บ็อกซ์</b>ของโบรกเกอร์ด้วย ความแตกต่างของการจับคู่คำสั่งจะถูกสะสมไว้ใน<b>บันทึกความคลาดเคลื่อน (drift)</b> คุณจะเห็น slippage และอัตราการจับคู่คำสั่งได้โดยไม่ต้องใช้เงินจริง</li>
   </ul>
 
-  <h3>STEP 6 — การเปลี่ยนเป็น live <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <h3>STEP 6 — เปลี่ยนเป็น live <span class="sub" style="display:inline">/ สลับไปใช้งานจริง</span></h3>
   <ul>
-    <li>ของกฎ <b>บัญชี = live</b>. กฎ live ที่เปิดใช้งานการทำงานอัตโนมัติจะมีป้ายสีแดง <b>เงินจริง (REAL MONEY)</b> ติดอยู่ในรายการ</li>
-    <li>ตั้งแต่จุดนี้เป็นต้นไป มีเพียงการตัดสินใจที่ผ่านห่วงโซ่เกตทั้งหมดเท่านั้นที่จะถูกส่งไปยังโบรกเกอร์จริง บัญชีของแพลตฟอร์มจะถูกบันทึกก็ต่อเมื่อโบรกเกอร์ยอมรับคำสั่งแล้วเท่านั้น</li>
+    <li>ของกฎ <b>account = live</b> กฎ live ที่เปิดการทำงานอัตโนมัติจะมีป้ายสีแดง <b>เงินจริง (REAL MONEY)</b> ติดอยู่ในรายการ</li>
+    <li>ตั้งแต่จุดนี้เป็นต้นไป มีเพียงการตัดสินใจที่ผ่านห่วงโซ่ประตูตรวจสอบทั้งหมดเท่านั้นที่จะถูกส่งไปยังโบรกเกอร์จริง สมุดบัญชีของแพลตฟอร์มจะบันทึกก็ต่อเมื่อโบรกเกอร์ยอมรับคำสั่งแล้วเท่านั้น</li>
   </ul>
 
-  <h3>STEP 7 — การติดตาม <span class="sub" style="display:inline">/ Monitor</span></h3>
+  <h3>STEP 7 — เฝ้าติดตาม <span class="sub" style="display:inline">/ ตรวจสอบ</span></h3>
   <ul>
-    <li><b>บันทึกการทำงานในหน้าอัตโนมัติ</b>: การตัดสินใจ การจับคู่คำสั่ง และเหตุผลในการข้ามของทุกติ๊ก</li>
-    <li><b>ประวัติคำสั่งโบรกเกอร์ในหน้าบัญชี</b>จำนวนที่ขอ vs จำนวนที่โบรกเกอร์ยืนยันการดำเนินการ, สีตามสถานะ</li>
-    <li><b>บันทึกการเบี่ยงเบน (การ์ดสีแดง)</b>: กรณีที่บัญชีและโบรกเกอร์ไม่ตรงกัน — ดู §5</li>
-    <li><b>การแจ้งเตือน</b>: การดำเนินการ (trade_executed), เกตเวย์ล่ม (gateway_down), การเบี่ยงเบนของคำสั่ง (order_drift) — เป็นไปตามช่องทางอีเมล/SMS ในการตั้งค่าการแจ้งเตือน</li>
+    <li><b>บันทึกการทำงานในหน้าอัตโนมัติ</b>: การตัดสินใจ การจับคู่คำสั่ง และเหตุผลที่ข้ามในทุกติ๊ก</li>
+    <li><b>ประวัติคำสั่งโบรกเกอร์ในหน้าบัญชี</b>: จำนวนที่ร้องขอเทียบกับจำนวนที่โบรกเกอร์ยืนยันว่าจับคู่แล้ว พร้อมสีตามสถานะ</li>
+    <li><b>บันทึกความคลาดเคลื่อน (การ์ดสีแดง)</b>: กรณีที่สมุดบัญชีกับโบรกเกอร์ไม่ตรงกัน — ดู §5</li>
+    <li><b>การแจ้งเตือน</b>: การจับคู่คำสั่งสำเร็จ (trade_executed) เกตเวย์ล่ม (gateway_down) คำสั่งคลาดเคลื่อน (order_drift) — เป็นไปตามช่องทางอีเมล/SMS ที่ตั้งค่าการแจ้งเตือนไว้</li>
   </ul>
 </section>
 
 <!-- ═══ 3. 게이트 체인 ═══ -->
 <section>
-  <h2><span class="no">03</span>12 ประตูที่คำสั่งต้องผ่าน <span class="sub" style="display:inline">/ ห่วงโซ่ประตู 12 ขั้นตอน</span></h2>
-  <p class="sub">ในทุกติ๊กของกฎที่เปิดใช้การดำเนินการอัตโนมัติ เพื่อให้การตัดสินใจ (buy/sell) ดำเนินการจริง จะต้องผ่านประตูด้านล่าง <b>ทั้งหมดตามลำดับ</b> ต้องผ่านทั้งหมด หากถูกบล็อกแม้เพียงข้อเดียว เหตุผลจะถูกบันทึกในบันทึกการดำเนินการและคำสั่งจะไม่ถูกส่งออกไป</p>
+  <h2><span class="no">03</span>ประตูตรวจสอบ 12 ขั้นที่คำสั่งต้องผ่าน <span class="sub" style="display:inline">/ ห่วงโซ่ประตู 12 ขั้นตอน</span></h2>
+  <p class="sub">ในทุกติ๊กของกฎที่เปิดการทำงานอัตโนมัติ การตัดสินใจ (buy/sell) จะต้องผ่านประตูตรวจสอบด้านล่างนี้<b>ทั้งหมดตามลำดับ</b> จึงจะถูกส่งจริง หากถูกกั้นแม้เพียงจุดเดียว เหตุผลนั้นจะถูกบันทึกไว้ในบันทึกการทำงาน และคำสั่งจะไม่ถูกส่งออกไป</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
@@ -220,19 +220,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <!-- column of gates, 2 columns of 6 -->
     <g>
       <!-- left column -->
-      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① การดำเนินการอัตโนมัติ ON?</text><text class="sm" x="45" y="59">auto_execute off → ข้าม</text>
-      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② เกตเวย์ใช้งานได้หรือไม่? (เฉพาะ live)</text><text class="sm" x="45" y="145">การเชื่อมต่อ · ข้อมูลรับรอง · การยอมรับข้อตกลง ทั้ง 3 อย่าง</text>
-      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ การสมัครสมาชิก/สิทธิ์การใช้งานถูกต้องหรือไม่?</text><text class="sm" x="45" y="231">เมื่อ ENTITLEMENTS_ENFORCED</text>
-      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ การตัดสินใจเป็น buy/sell หรือไม่?</text><text class="sm" x="45" y="317">hold ไม่ใช่เป้าหมายการดำเนินการ</text>
-      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ ความเชื่อมั่น ≥ ค่าขีดจำกัดหรือไม่?</text><text class="sm" x="45" y="403">min_confidence ของกฎ</text>
-      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ ตลาดเปิดหรือไม่?</text><text class="sm" x="45" y="489">ข้ามหากตลาด us-stock ปิดทำการ</text>
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① เปิดการทำงานอัตโนมัติหรือไม่?</text><text class="sm" x="45" y="59">auto_execute off → ข้าม</text>
+      <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② เกตเวย์พร้อมใช้งานหรือไม่? (เฉพาะ live)</text><text class="sm" x="45" y="145">ต้องมีครบทั้งการเชื่อมต่อ ข้อมูลรับรอง และการยอมรับข้อตกลง</text>
+      <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ การสมัครสมาชิก/สิทธิ์การใช้งานยังใช้ได้หรือไม่?</text><text class="sm" x="45" y="231">เมื่อเปิดใช้ ENTITLEMENTS_ENFORCED</text>
+      <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ การตัดสินใจเป็น buy/sell หรือไม่?</text><text class="sm" x="45" y="317">hold ไม่ใช่เป้าหมายของการจับคู่คำสั่ง</text>
+      <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ ความเชื่อมั่น ≥ ค่าขีดแบ่งหรือไม่?</text><text class="sm" x="45" y="403">min_confidence ของกฎ</text>
+      <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ ตลาดเปิดทำการอยู่หรือไม่?</text><text class="sm" x="45" y="489">ข้ามหากตลาด us-stock ปิดทำการ</text>
       <!-- right column -->
-      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ ระบบป้องกันเหตุการณ์</text><text class="sm" x="345" y="59">บล็อก 1 ชั่วโมงก่อน-หลังประกาศ FOMC·CPI (ตัวเลือก)</text>
-      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ คูลดาวน์ไทม์สต็อป</text><text class="sm" x="345" y="145">รอการเข้าซื้อซ้ำในหุ้นตัวเดิม</text>
-      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ ตัวกรองภาวะตลาด (Regime Filter)</text><text class="sm" x="345" y="231">บล็อกการซื้อใหม่ในช่วงตื่นตระหนก/ร้อนแรงเกินไป (ตัวเลือก)</text>
-      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ ราคาถูกต้องหรือไม่?</text><text class="sm" x="345" y="317">การตัดสินใจต้องมีราคาเข้าซื้อ</text>
-      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ งบประมาณเอเจนต์ (โหมด agent)</text><text class="sm" x="345" y="403">วงเงิน budget_usd</text>
-      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ เอนจินความเสี่ยง</text><text class="sm" x="345" y="489">เบรกเกอร์→วงเงิน→การปรับขนาดตามความผันผวน→SL/TP</text>
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ ตัวป้องกันเหตุการณ์</text><text class="sm" x="345" y="59">ปิดกั้น 1 ชั่วโมงก่อนและหลังประกาศ FOMC·CPI (ตัวเลือก)</text>
+      <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ ช่วงพักหลังหยุดเวลา</text><text class="sm" x="345" y="145">รอการเข้าซื้อซ้ำในหลักทรัพย์เดียวกัน</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ ตัวกรองสภาวะตลาด</text><text class="sm" x="345" y="231">ปิดกั้นการซื้อใหม่ในช่วงตื่นตระหนก/ร้อนแรงเกินไป (ตัวเลือก)</text>
+      <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ ราคาถูกต้องหรือไม่?</text><text class="sm" x="345" y="317">การตัดสินใจต้องมีราคาเข้า</text>
+      <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ งบประมาณของเอเจนต์ (โหมด agent)</text><text class="sm" x="345" y="403">ขีดจำกัด budget_usd</text>
+      <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ เอนจินความเสี่ยง</text><text class="sm" x="345" y="489">เบรกเกอร์→ขีดจำกัด→การปรับขนาดตามความผันผวน→SL/TP</text>
     </g>
     <!-- arrows down left col -->
     <path class="arrow" d="M155,72 L155,104" marker-end="url(#arr2)"/>
@@ -248,27 +248,27 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <path class="arrow" d="M455,106 L455,74" marker-end="url(#arr2)"/>
     <!-- execute -->
     <rect x="660" y="230" width="210" height="90" rx="14" fill="color-mix(in srgb,var(--good) 12%,var(--card))" stroke="var(--good)"/>
-    <text class="lbl" x="765" y="266" text-anchor="middle">✓ ดำเนินการส่งคำสั่ง</text>
+    <text class="lbl" x="765" y="266" text-anchor="middle">✓ ดำเนินการจับคู่คำสั่ง</text>
     <text class="sm" x="765" y="286" text-anchor="middle">การจัดเส้นทางตาม account_type (§1)</text>
     <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
     <text class="sm" x="640" y="120">ผ่าน 12/12</text>
   </svg>
-  <div class="cap">รูปที่ 2 — ห่วงโซ่เกตการดำเนินการ (evaluate_execution_gates) ⑫ ไล่จากด้านล่างของคอลัมน์ซ้าย→ขึ้นไปด้านบนของคอลัมน์ขวา ต้องผ่านทั้งหมดจึงจะส่งคำสั่งได้ การรันทดสอบ (▶) เป็นเพียงการวิเคราะห์เท่านั้น ไม่ผ่านห่วงโซ่นี้</div>
+  <div class="cap">ภาพที่ 2 — ห่วงโซ่ประตูตรวจสอบการทำงาน (evaluate_execution_gates) ⑫ ต่อเนื่องจากคอลัมน์ซ้ายด้านล่างไปยังคอลัมน์ขวาด้านบน ต้องผ่านทั้งหมดจึงจะจับคู่คำสั่งได้ การรันทดสอบ (▶) เป็นเพียงการวิเคราะห์เท่านั้น และไม่ผ่านห่วงโซ่นี้</div>
   </div>
 
-  <div class="note">ลำดับมีความสำคัญ: กฎที่ปิดการทำงานอัตโนมัติจะถูกบันทึกเป็น 「ปิดการทำงานอัตโนมัติ」 ไม่ใช่บันทึกเป็นข้อผิดพลาดของเกตเวย์ หากอ่านเหตุผลที่ถูกข้าม จะทราบได้ทันทีว่าติดขัดที่ด่านใด</div>
+  <div class="note">ลำดับมีความสำคัญ: กฎที่ปิดการทำงานอัตโนมัติจะถูกบันทึกเป็น「ปิดการทำงานอัตโนมัติ」ไม่ใช่บันทึกเป็นข้อผิดพลาดของเกตเวย์ เพียงอ่านเหตุผลที่ข้ามก็จะทราบได้ทันทีว่าติดขัดที่ด่านไหน</div>
 </section>
 
 <!-- ═══ 4. 주문 수명주기 ═══ -->
 <section>
-  <h2><span class="no">04</span>วงจรชีวิตของคำสั่งซื้อ live <span class="sub" style="display:inline">/ Life of a live order</span></h2>
-  <p class="sub">หากโบรกเกอร์ไม่ยืนยันการดำเนินการทันที (SUBMITTED) <b>ตัวปรับกระทบยอดคำสั่งซื้อ</b>จะสอบถามผลลัพธ์จากโบรกเกอร์ทุก 2 นาทีเพื่อยืนยันสถานะสุดท้าย</p>
+  <h2><span class="no">04</span>วงจรชีวิตของคำสั่ง live <span class="sub" style="display:inline">/ วงจรชีวิตของคำสั่งซื้อขายที่ใช้งานจริง</span></h2>
+  <p class="sub">หากโบรกเกอร์ไม่ยืนยันการทำรายการทันที(SUBMITTED) <b>ตัวกระทบยอดคำสั่ง (Order Reconciler)</b>จะสอบถามผลลัพธ์จากโบรกเกอร์ทุก 2 นาทีเพื่อยืนยันสถานะสุดท้าย</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
     <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
     <!-- lifelines -->
-    <text class="lbl" x="90" y="28" text-anchor="middle">เวิร์กเกอร์ (รอบกฎ)</text>
+    <text class="lbl" x="90" y="28" text-anchor="middle">Worker (จังหวะกฎ)</text>
     <text class="lbl" x="330" y="28" text-anchor="middle">เกตเวย์เราเตอร์</text>
     <text class="lbl" x="570" y="28" text-anchor="middle">โบรกเกอร์</text>
     <text class="lbl" x="800" y="28" text-anchor="middle">บัญชีแยกประเภทของแพลตฟอร์ม</text>
@@ -277,108 +277,108 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <line x1="570" y1="40" x2="570" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
     <line x1="800" y1="40" x2="800" y2="380" stroke="var(--grid)" stroke-dasharray="4 4"/>
     <!-- messages -->
-    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(จำนวน, ราคา)</text>
-    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">POST คำสั่งซื้อจริง</text>
+    <path class="arrow" d="M90,60 L326,60" marker-end="url(#arr3)"/><text class="sm" x="110" y="54">submit_live(quantity, price)</text>
+    <path class="arrow" d="M330,90 L566,90" marker-end="url(#arr3)"/><text class="sm" x="360" y="84">POST คำสั่งจริง</text>
     <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED หรือ SUBMITTED (หรือถูกปฏิเสธ)</text>
     <!-- branch: rejected -->
     <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
-    <text class="sm" x="122" y="161">หากถูกปฏิเสธ → บันทึกในบัญชีแยกประเภท <tspan font-weight="700">ไม่มี</tspan> + แจ้งเตือน gateway_down ห้ามมีโพซิชันผี</text>
+    <text class="sm" x="122" y="161">หากถูกปฏิเสธ → บันทึกในบัญชีแยกประเภท <tspan font-weight="700">ไม่มี</tspan> + แจ้งเตือน gateway_down ห้ามมีตำแหน่งผีเด็ดขาด</text>
     <!-- filled path -->
-    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">หากได้รับการยอมรับ → มิเรอร์บัญชีแยกประเภทด้วยจำนวนที่ดำเนินการจริง</text>
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">หากได้รับการยอมรับ → มิเรอร์บัญชีแยกประเภทตามจำนวนที่ทำรายการสำเร็จ</text>
     <!-- reconciler -->
     <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
-    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">ตัวปรับกระทบยอด</text>
-    <text class="sm" x="90" y="264" text-anchor="middle">รอบทุก 2 นาที</text>
-    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">ตรวจสอบสถานะคำสั่งซื้อ SUBMITTED</text>
-    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">สถานะสุดท้าย + จำนวนที่ดำเนินการจริง</text>
+    <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">ตัวกระทบยอด</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">รอบ 2 นาที</text>
+    <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">ตรวจสอบสถานะคำสั่ง SUBMITTED</text>
+    <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">สถานะสุดท้าย + จำนวนที่ทำรายการจริง</text>
     <!-- outcomes -->
     <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
-    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">ดำเนินการครบถ้วน (ตรงกัน)</tspan> → บันทึกเฉพาะสถานะ จบแบบเงียบ ๆ · <tspan font-weight="700" fill="#a16800">ดำเนินการบางส่วน</tspan> → บันทึก filled_qty + แจ้งเตือน order_drift</text>
-    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">ยกเลิก/ปฏิเสธภายหลัง</tspan> → แจ้งเตือน order_drift + บันทึกความคลาดเคลื่อน <tspan font-weight="700">บัญชีแยกประเภทจะไม่ถูกแก้ไขอัตโนมัติเด็ดขาด</tspan> — ต้องให้คนตรวจสอบ</text>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">ทำรายการสำเร็จครบถ้วน (ตรงกัน)</tspan> → บันทึกเฉพาะสถานะ จบแบบเงียบๆ · <tspan font-weight="700" fill="#a16800">ทำรายการสำเร็จบางส่วน</tspan> → บันทึก filled_qty + แจ้งเตือน order_drift</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">ยกเลิก/ถูกปฏิเสธภายหลัง</tspan> → แจ้งเตือน order_drift + บันทึกความคลาดเคลื่อน <tspan font-weight="700">บัญชีแยกประเภทจะไม่ถูกแก้ไขโดยอัตโนมัติเด็ดขาด</tspan> — ต้องให้คนตรวจสอบ</text>
   </svg>
-  <div class="cap">ภาพที่ 3 — ส่ง → (ยืนยันทันทีหรือผ่านตัวปรับกระทบยอด) → หากไม่ตรงกันจะแจ้งเตือนดังชัดเจน จำนวนที่ร้องขอ (quantity) และจำนวนที่โบรกเกอร์ยืนยัน (filled_qty) อยู่คนละคอลัมน์ จึงมองเห็นความแตกต่างได้ตลอด</div>
+  <div class="cap">ภาพที่ 3 — ส่ง → (ยืนยันทันทีหรือผ่านตัวกระทบยอด) → หากมีความคลาดเคลื่อนจะแจ้งเตือนอย่างชัดเจน จำนวนที่ร้องขอ(quantity)กับจำนวนที่โบรกเกอร์ยืนยัน(filled_qty)แยกคอลัมน์กัน จึงเห็นความแตกต่างได้ตลอด</div>
   </div>
 
-  <div class="note red"><b>หลักการออกแบบ — ตรวจจับเท่านั้น การแก้ไขต้องเป็นคน:</b> ตัวปรับกระทบยอดจะไม่แตะต้องโพซิชันหรือเงินสดเด็ดขาด การให้งานพื้นหลังไปแก้ไขการคำนวณเงินมีแต่จะทำให้บัญชีแยกประเภทเสียหายซ้ำสอง ดังนั้นเมื่อพบความคลาดเคลื่อนจะแสดงเป็นการ์ดสีแดงและแจ้งเตือนอย่างชัดเจน ส่วนการแก้ไขให้ผู้ใช้ตรวจสอบบัญชีโบรกเกอร์แล้วดำเนินการเอง</div>
+  <div class="note red"><b>หลักการออกแบบ — ตรวจจับเท่านั้น การแก้ไขให้เป็นหน้าที่ของคน:</b> ตัวกระทบยอดจะไม่แตะต้องตำแหน่งหรือเงินสดเด็ดขาด การให้งานพื้นหลังไปแก้ไขการคำนวณเงินจะยิ่งทำให้บัญชีแยกประเภทเสียหายซ้ำสอง ดังนั้นเมื่อมีความคลาดเคลื่อนจะแสดงเป็นการ์ดสีแดงและแจ้งเตือนอย่างเด่นชัด ส่วนการแก้ไขให้ผู้ใช้ตรวจสอบบัญชีโบรกเกอร์แล้วดำเนินการเอง</div>
 </section>
 
 <!-- ═══ 5. IBKR 세션 유지 ═══ -->
 <section>
-  <h2><span class="no">05</span>IBKR session keepalive <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
-  <p class="sub">เซสชัน IBKR Client Portal จะขาดการเชื่อมต่อแม้ว่างเพียงไม่กี่นาที เวิร์กเกอร์จะ tickle เซสชันทุก 60 วินาที หากขาดการเชื่อมต่อจะพยายามยืนยันตัวตนใหม่ และหากกู้คืนไม่ได้จะแจ้งเตือนวันละ 1 ครั้ง</p>
+  <h2><span class="no">05</span>IBKR session keepalive <span class="sub" style="display:inline">/ รักษาสถานะการเชื่อมต่อเซสชัน IBKR</span></h2>
+  <p class="sub">เซสชัน IBKR Client Portal จะขาดการเชื่อมต่อได้แม้ไม่ได้ใช้งานเพียงไม่กี่นาที Worker จะ tickle เซสชันทุก 60 วินาที หากขาดการเชื่อมต่อจะพยายามยืนยันตัวตนใหม่ และหากกู้คืนไม่ได้จะแจ้งเตือนวันละ 1 ครั้ง</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
     <defs><marker id="arr4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--baseline)"/></marker></defs>
     <rect class="box" x="30" y="80" width="170" height="70" rx="12" stroke="var(--good)"/>
     <text class="lbl" x="115" y="108" text-anchor="middle">ปกติ (authenticated)</text>
-    <text class="sm" x="115" y="126" text-anchor="middle">คงสถานะด้วย tickle ทุก 60 วินาที</text>
+    <text class="sm" x="115" y="126" text-anchor="middle">คงสถานะด้วยการ tickle ทุก 60 วินาที</text>
 
     <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
     <text class="lbl" x="450" y="103" text-anchor="middle">เซสชันหมดอายุ (lapsed)</text>
-    <text class="sm" x="450" y="121" text-anchor="middle">เกตเวย์ยังทำงานอยู่แต่</text>
+    <text class="sm" x="450" y="121" text-anchor="middle">เกตเวย์ยังทำงานอยู่ แต่</text>
     <text class="sm" x="450" y="136" text-anchor="middle">การยืนยันตัวตนหลุด</text>
 
     <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
     <text class="lbl" x="785" y="103" text-anchor="middle">กู้คืนไม่ได้ (dead)</text>
     <text class="sm" x="785" y="121" text-anchor="middle">แจ้งเตือน gateway_down (วันละ 1 ครั้ง)</text>
-    <text class="sm" x="785" y="136" text-anchor="middle">ให้คนเข้าสู่ระบบเกตเวย์ใหม่</text>
+    <text class="sm" x="785" y="136" text-anchor="middle">บุคคลเข้าสู่ระบบเกตเวย์ใหม่</text>
 
-    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">ว่าง/หมดเวลา</text>
+    <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">ไม่มีการใช้งาน/หมดเวลา</text>
     <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate สำเร็จ (กู้คืนอัตโนมัติ)</text>
-    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">ยืนยันตัวตนใหม่ล้มเหลว</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">การยืนยันตัวตนซ้ำล้มเหลว</text>
     <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">ผู้ใช้เข้าสู่ระบบ Client Portal Gateway ใหม่</text>
   </svg>
-  <div class="cap">ภาพที่ 4 — สถานะเครื่องจักรของเซสชัน แม้แต่เซสชันที่แข่งขันกัน (competing) ก็ถือว่าเป็น dead เช่นกัน (เพราะหากมีการล็อกอินอื่นครองบัญชีอยู่ คำสั่งซื้อจะถูกปฏิเสธ)</div>
+  <div class="cap">รูปที่ 4 — แผนภาพสถานะเซสชัน เซสชันที่แข่งขัน (competing) ก็ถือว่าเป็น dead เช่นกัน (เนื่องจากหากมีการเข้าสู่ระบบอื่นครอบครองบัญชี คำสั่งซื้อขายจะถูกปฏิเสธ)</div>
   </div>
 
-  <div class="note"><b>ระบบป้องกัน shadow:</b> IBKR ต่างจาก Alpaca/Binance ตรงที่ไม่มีโฮสต์แซนด์บ็อกซ์แยกต่างหาก <b>บัญชี</b> เป็นตัวกำหนดว่าใช้เงินจริงหรือไม่ ดังนั้นในโหมด shadow หากหมายเลขบัญชีไม่ใช่บัญชีทดลอง (ขึ้นต้นด้วย <code>D</code> ) อะแดปเตอร์จะ<b>ปฏิเสธโดยไม่ส่งคำขอออกไปเลย</b></div>
+  <div class="note"><b>กลไกความปลอดภัยของ shadow:</b> IBKR แตกต่างจาก Alpaca/Binance ตรงที่ไม่มีโฮสต์แซนด์บ็อกซ์แยกต่างหาก <b>บัญชี</b>เป็นตัวกำหนดว่าเป็นเงินจริงหรือไม่ ดังนั้นในโหมด shadow หากหมายเลขบัญชีไม่ใช่บัญชีทดลอง (คำนำหน้า <code>D</code> ) อะแดปเตอร์จะ<b>ปฏิเสธโดยไม่ส่งคำขอออกไปเลย</b></div>
 </section>
 
 <!-- ═══ 6. 스킵 사유 사전 ═══ -->
 <section>
-  <h2><span class="no">06</span>เหตุผลที่ถูกข้าม → วิธีแก้ไข <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <h2><span class="no">06</span>เหตุผลที่ข้าม → วิธีแก้ไข <span class="sub" style="display:inline">/ เหตุผลที่ข้าม และวิธีแก้ไข</span></h2>
   <table>
-    <tr><th>เหตุผลในบันทึกการดำเนินการ</th><th>ความหมาย</th><th>วิธีแก้ไข</th></tr>
-    <tr><td>ปิดการทำงานอัตโนมัติ</td><td>กฎใช้สำหรับวิเคราะห์เท่านั้น</td><td>เปิดใช้งานช่องทำเครื่องหมายการทำงานอัตโนมัติของกฎ</td></tr>
-    <tr><td>เลือก live แล้วแต่ยังไม่ได้ตั้งค่าเกตเวย์การซื้อขาย</td><td>ไม่มีบัญชีโบรกเกอร์ที่เชื่อมต่อ</td><td>เชื่อมต่อเกตเวย์ในหน้าบัญชี (STEP 2)</td></tr>
+    <tr><th>เหตุผลในบันทึกการทำงาน</th><th>ความหมาย</th><th>วิธีแก้ไข</th></tr>
+    <tr><td>ปิดการทำงานอัตโนมัติ</td><td>กฎใช้สำหรับการวิเคราะห์เท่านั้น</td><td>เปิดใช้งานช่องทำเครื่องหมายการทำงานอัตโนมัติของกฎ</td></tr>
+    <tr><td>เลือกใช้งานจริง (Live) แล้ว แต่ยังไม่ได้ตั้งค่าเกตเวย์การซื้อขาย</td><td>ไม่มีบัญชีโบรกเกอร์ที่เชื่อมต่อ</td><td>เชื่อมต่อเกตเวย์ในหน้าบัญชี (STEP 2)</td></tr>
     <tr><td>ไม่มีข้อมูลรับรอง API ที่ใช้งานได้สำหรับเกตเวย์ที่เชื่อมต่อ</td><td>ไม่มีคีย์ที่บันทึกไว้ หรือถอดรหัสไม่ได้ (เช่น มีการเปลี่ยนคีย์เซิร์ฟเวอร์)</td><td>เชื่อมต่อโบรกเกอร์ใหม่</td></tr>
-    <tr><td>ยังไม่ได้ยอมรับข้อตกลงการซื้อขายจริง</td><td>ไม่มีบันทึกการยอมรับสำหรับโบรกเกอร์นั้น</td><td>ยอมรับข้อตกลงแล้วเชื่อมต่อใหม่ในหน้าบัญชี (STEP 3)</td></tr>
-    <tr><td>เกตเวย์ปฏิเสธคำสั่งซื้อ — …</td><td>โบรกเกอร์ปฏิเสธคำสั่งซื้อ (พร้อมระบุเหตุผล เช่น ยอดเงินไม่พอ เซสชันหมดอายุ)</td><td>ตรวจสอบเหตุผล — หากเป็น IBKR 401 ให้เข้าสู่ระบบเกตเวย์ใหม่</td></tr>
+    <tr><td>ยังไม่ยอมรับข้อกำหนดการซื้อขายจริง</td><td>ไม่มีประวัติการยอมรับข้อกำหนดสำหรับโบรกเกอร์นั้น</td><td>ยอมรับข้อกำหนดแล้วเชื่อมต่อใหม่ในหน้าบัญชี (STEP 3)</td></tr>
+    <tr><td>เกตเวย์ปฏิเสธคำสั่งซื้อขาย — …</td><td>โบรกเกอร์ปฏิเสธคำสั่งซื้อขาย (ระบุเหตุผล เช่น ยอดคงเหลือไม่พอ เซสชันหมดอายุ)</td><td>ตรวจสอบสาเหตุ — หากเป็น IBKR 401 ให้เข้าสู่ระบบเกตเวย์ใหม่</td></tr>
     <tr><td>การตัดสินใจคือ hold</td><td>AI ตัดสินใจรอดูสถานการณ์</td><td>ปกติ — ไม่ต้องดำเนินการใด ๆ</td></tr>
-    <tr><td>ความเชื่อมั่น X — ต่ำกว่าเกณฑ์ Y</td><td>ความเชื่อมั่นไม่เพียงพอ</td><td>รอ (แนะนำ) หรือปรับ min_confidence ให้ต่ำลง</td></tr>
-    <tr><td>ตลาดปิด</td><td>ตลาดสหรัฐฯ ปิดทำการ</td><td>ปกติ — ลองใหม่เมื่อตลาดเปิด</td></tr>
-    <tr><td>ปฏิเสธการวางคำสั่ง shadow ในบัญชี IBKR …</td><td>พยายามทำ shadow กับบัญชีจริงของ IBKR</td><td>เชื่อมต่อกับบัญชีทดลอง (DU…) หรือใช้ simulator แทน shadow</td></tr>
+    <tr><td>ความเชื่อมั่น X — ต่ำกว่าเกณฑ์ Y</td><td>ความมั่นใจไม่เพียงพอ</td><td>รอ (แนะนำ) หรือปรับ min_confidence ลง</td></tr>
+    <tr><td>ตลาดปิดทำการ</td><td>ตลาดสหรัฐฯ ปิดทำการ</td><td>ปกติ — ลองใหม่เมื่อตลาดเปิดทำการ</td></tr>
+    <tr><td>ปฏิเสธการวางคำสั่ง shadow order ในบัญชี IBKR …</td><td>พยายามทำ shadow ด้วยบัญชีจริงของ IBKR</td><td>เชื่อมต่อกับบัญชีทดลอง (DU…) หรือใช้ simulator แทน shadow</td></tr>
   </table>
 </section>
 
 <!-- ═══ 7. 안전 불변식 ═══ -->
 <section>
-  <h2><span class="no">07</span>สิ่งที่ระบบจะไม่ทำเด็ดขาด <span class="sub" style="display:inline">/ ค่าคงที่ด้านความปลอดภัย (ยึดตามการทดสอบ)</span></h2>
+  <h2><span class="no">07</span>สิ่งที่ระบบจะไม่ทำเด็ดขาด <span class="sub" style="display:inline">/ ค่าคงที่ด้านความปลอดภัย (test-pinned)</span></h2>
   <table>
     <tr><th>ค่าคงที่</th><th>เหตุผล</th><th>วิธีการรับประกัน</th></tr>
-    <tr><td>ไม่ลดระดับ live ให้กลายเป็นโหมดจำลองอย่างเงียบๆ</td><td>การจับคู่คำสั่งปลอมที่ดูเหมือนจริงคือสิ่งที่แย่ที่สุด</td><td>ปฏิเสธอย่างชัดเจนที่เกท ② พร้อมบันทึกเหตุผล</td></tr>
-    <tr><td>คำสั่ง shadow จะไม่ไปถึงตลาดจริง</td><td>"การทำงานแบบจำลอง" ต้องไม่ใช้เงินจริง</td><td>โหมดกฎเกณฑ์จะล็อกเอนด์พอยต์ (ไม่สนใจโหมดบัญชีที่บันทึกไว้) IBKR จะบังคับใช้บัญชีทดลอง</td></tr>
-    <tr><td>ไม่มีการสร้างโพซิชันเมื่อโบรกเกอร์ปฏิเสธ</td><td>ป้องกันโพซิชันผีจากคำสั่งที่ไม่ถึงตลาด</td><td>live จะบันทึกลงบัญชีแยกประเภทหลังจากโบรกเกอร์ยอมรับเท่านั้น</td></tr>
-    <tr><td>ตัวกระทบยอด (reconciler) จะไม่แก้ไขบัญชีแยกประเภท</td><td>การแก้ไขการคำนวณเงินในพื้นหลัง = ความเสี่ยงที่จะเสียหายซ้ำสอง</td><td>ตรวจจับ บันทึก แจ้งเตือนเท่านั้น การแก้ไขให้เป็นหน้าที่ของมนุษย์</td></tr>
-    <tr><td>คีย์ของโบรกเกอร์จะไม่ถูกส่งกลับไปยังไคลเอนต์</td><td>ลดพื้นที่การรั่วไหลให้น้อยที่สุด</td><td>จัดเก็บด้วย AES-GCM, API สำหรับดึงข้อมูลจะคืนค่าเฉพาะเมทาดาทาเท่านั้น</td></tr>
-    <tr><td>คีย์เข้ารหัส (EXECUTION_ENCRYPTION_KEY) เป็นแบบ write-once</td><td>เมื่อเปลี่ยนคีย์ ข้อมูลรับรองที่จัดเก็บไว้ทั้งหมดจะใช้ไม่ได้อย่างถาวร</td><td>ขั้นตอนการปฏิบัติงาน + สำรองข้อมูลด้วยตัวจัดการรหัสผ่าน</td></tr>
-    <tr><td>ความล้มเหลวของ live จะไม่เงียบหาย</td><td>Dead gateway ไม่สามารถแยกแยะได้จากตลาดที่เงียบสงบ</td><td>การแจ้งเตือน gateway_down/order_drift (ลดการซ้ำซ้อนตามหน่วยชั่วโมง/วัน)</td></tr>
+    <tr><td>จะไม่ลดระดับ live เป็นโหมดจำลองอย่างเงียบๆ</td><td>การจับคู่คำสั่งปลอมที่ดูเหมือนของจริงคือสิ่งที่แย่ที่สุด</td><td>ปฏิเสธอย่างชัดเจนที่ gate ② พร้อมบันทึกเหตุผล</td></tr>
+    <tr><td>คำสั่ง shadow จะไม่ถูกส่งไปถึงตลาดจริง</td><td>"การรันจำลอง" ต้องไม่ใช้เงินจริง</td><td>โหมดกฎเกณฑ์จะตรึง endpoint ไว้ (ไม่สนใจโหมดบัญชีที่บันทึกไว้) โดย IBKR จะบังคับใช้บัญชีทดลอง</td></tr>
+    <tr><td>จะไม่มีการสร้างโพซิชันเมื่อโบรกเกอร์ปฏิเสธ</td><td>ป้องกันโพซิชันผีจากคำสั่งที่ไม่ถึงตลาด</td><td>live จะบันทึกลงบัญชีแยกประเภทหลังจากโบรกเกอร์ยอมรับเท่านั้น</td></tr>
+    <tr><td>reconciler จะไม่แก้ไขบัญชีแยกประเภท</td><td>การแก้ไขการคำนวณเงินในเบื้องหลัง = ความเสี่ยงต่อความเสียหายซ้ำซ้อน</td><td>ตรวจจับ บันทึก และแจ้งเตือนเท่านั้น การแก้ไขเป็นหน้าที่ของมนุษย์</td></tr>
+    <tr><td>คีย์ของโบรกเกอร์จะไม่ถูกส่งกลับไปยังไคลเอนต์</td><td>ลดพื้นที่การรั่วไหลให้น้อยที่สุด</td><td>จัดเก็บด้วย AES-GCM โดย API สำหรับเรียกดูจะคืนค่าเฉพาะเมทาดาทาเท่านั้น</td></tr>
+    <tr><td>คีย์เข้ารหัส (EXECUTION_ENCRYPTION_KEY) เป็นแบบ write-once</td><td>เมื่อเปลี่ยนคีย์ ข้อมูลรับรองที่จัดเก็บไว้ทั้งหมดจะเป็นโมฆะอย่างถาวร</td><td>ขั้นตอนการดำเนินงาน + การสำรองข้อมูลด้วยตัวจัดการรหัสผ่าน</td></tr>
+    <tr><td>ความล้มเหลวของ live จะไม่เงียบหาย</td><td>Gateway ที่ตายแล้วแยกไม่ออกจากตลาดที่เงียบ</td><td>การแจ้งเตือน gateway_down/order_drift (ลดข้อมูลซ้ำแบบรายชั่วโมง·รายวัน)</td></tr>
   </table>
-  <div class="note green">ค่าคงที่ (invariants) ข้างต้นถูกยึดไว้ด้วยการทดสอบอัตโนมัติ (จากทั้งหมด 1,386 รายการ มีสแต็กการทำงานจริงประมาณ 100 รายการ) และได้รับการตรวจสอบซ้ำโดย 3-agent QA (การตรวจสอบเชิงปฏิปักษ์ฝั่ง backend · โฟลว์ฝั่ง frontend · สถานะโปรดักชัน)</div>
+  <div class="note green">Invariant ข้างต้นถูกตรึงไว้ด้วยการทดสอบอัตโนมัติ (ประมาณ 100 รายการจาก stack การรันทั้งหมด 1,386 รายการ) และได้รับการตรวจสอบซ้ำด้วย 3-agent QA (การตรวจสอบเชิงปฏิปักษ์ฝั่ง backend · โฟลว์ฝั่ง frontend · สถานะโปรดักชัน)</div>
 </section>
 
 <!-- ═══ 8. 운영 참고 ═══ -->
 <section style="border-bottom:none">
-  <h2><span class="no">08</span>หมายเหตุการปฏิบัติงาน <span class="sub" style="display:inline">/ Operator notes</span></h2>
+  <h2><span class="no">08</span>หมายเหตุการปฏิบัติงาน <span class="sub" style="display:inline">/ บันทึกผู้ปฏิบัติงาน</span></h2>
   <table>
     <tr><th>รายการ</th><th>ค่า/ตำแหน่ง</th><th>หมายเหตุ</th></tr>
-    <tr><td>ตัวแปรสภาพแวดล้อม</td><td>โปรดักชัน <code>~/sooppiy/.env</code> ไฟล์เดียว (mode 600)</td><td>มีคอมเมนต์แยกตามส่วน คอนเทนเนอร์ต้องสร้างใหม่จึงจะมีผล</td></tr>
-    <tr><td>รอบ keepalive</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (ค่าเริ่มต้น 60 วินาที)</td><td>หากไม่มีบัญชี IBKR จะไม่มีค่าใช้จ่าย no-op</td></tr>
-    <tr><td>รอบการ reconcile</td><td><code>ORDER_RECONCILE_INTERVAL</code> (ค่าเริ่มต้น 120 วินาที)</td><td>หากไม่มีคำสั่ง submitted จะไม่มีค่าใช้จ่าย</td></tr>
-    <tr><td>เอนด์พอยต์โบรกเกอร์</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>ไม่มีการฝังค่าตายตัว — ฉีดค่าจาก .env</td></tr>
-    <tr><td>การปรับใช้</td><td>สร้างบิลด์แท็ก → ของ .env <code>SOOPPIY_IMAGE</code> แก้ไข → <code>docker compose --profile prod up -d</code></td><td>ไม่มีค่า literal ในไฟล์ compose เลย</td></tr>
-    <tr><td>คอนเทนเนอร์ API</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>ลูปนี้สำหรับ worker เท่านั้น — หากเป็น true จะรันซ้ำซ้อนทั้งหมด</td></tr>
+    <tr><td>ตัวแปรสภาพแวดล้อม</td><td>โปรดักชัน <code>~/sooppiy/.env</code> ไฟล์เดียว (mode 600)</td><td>รวมความคิดเห็นแยกตามส่วน คอนเทนเนอร์ต้องสร้างใหม่จึงจะมีผล</td></tr>
+    <tr><td>รอบ keepalive</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (ค่าเริ่มต้น 60 วินาที)</td><td>ไม่มีค่าใช้จ่าย no-op หากไม่มีบัญชี IBKR</td></tr>
+    <tr><td>รอบการกระทบยอด (reconcile)</td><td><code>ORDER_RECONCILE_INTERVAL</code> (ค่าเริ่มต้น 120 วินาที)</td><td>ไม่มีค่าใช้จ่ายหากไม่มีคำสั่ง submitted</td></tr>
+    <tr><td>Endpoint ของโบรกเกอร์</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>ไม่มีการฮาร์ดโค้ด — ฉีดค่าจาก .env</td></tr>
+    <tr><td>การปรับใช้ (deploy)</td><td>สร้าง tag → ของ .env <code>SOOPPIY_IMAGE</code> แก้ไข → <code>docker compose --profile prod up -d</code></td><td>ไม่มีค่า literal ในไฟล์ compose เลย</td></tr>
+    <tr><td>คอนเทนเนอร์ API</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>ลูปสำหรับ worker เท่านั้น — หากเป็น true จะรันซ้ำซ้อนทั้งหมด</td></tr>
   </table>
 </section>
 

@@ -71,33 +71,33 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
   <div class="meta">2026-07-19 · prod = main@8c2248f (image 20260719-orderui) · Written after 3-agent QA verification · English subtitles per section</div>
   <p class="sub" style="margin-top:10px">
     The full path from automated trading rules to <b>simulator</b> → <b>shadow</b> → <b>live</b>:
-    This single document explains what must be configured, what gates orders pass through, and what the system absolutely never does.
+    This single document explains what needs to be configured, what gates an order passes through, and what the system will never do.
   </p>
 </header>
 
 <!-- ═══ 1. 세 가지 모드 ═══ -->
 <section>
   <h2><span class="no">01</span>The three execution modes <span class="sub" style="display:inline">/ The three execution modes</span></h2>
-  <p class="sub">In the rule (Automation page), the single <code>account</code> setting determines where execution lands. No other setting can change this.</p>
+  <p class="sub">A single <code>account</code> setting on the rule (automation page) determines where the execution lands. No other setting can change this.</p>
 
   <table>
     <tr><th>Mode</th><th>Execution location</th><th>Real funds</th><th>Requirements</th><th>Purpose</th></tr>
     <tr>
       <td><span class="tag hold">simulator</span></td>
       <td>Platform simulated ledger only</td><td>None</td><td>None (default)</td>
-      <td>Strategy validation, platform learning</td>
+      <td>Strategy validation, learning the platform</td>
     </tr>
     <tr>
       <td><span class="tag new">shadow</span></td>
       <td>Simulated ledger (baseline) + broker <b>sandbox</b> comparison orders</td><td>None</td>
-      <td>Gateway connection (optional — pure simulation if absent)</td>
-      <td>Compare real slippage/fill rates risk-free</td>
+      <td>Gateway connection (optional — pure simulation without it)</td>
+      <td>Comparing real slippage/fill rates risk-free</td>
     </tr>
     <tr>
       <td><span class="tag crit">live</span></td>
-      <td>Via connected gateway to a <b>real broker</b></td><td><b>Yes</b></td>
-      <td>Gateway connection + credentials + live trading agreement consent</td>
-      <td>Actual automated trading</td>
+      <td>Via connected gateway to <b>real broker</b></td><td><b>Yes</b></td>
+      <td>Gateway connection + credentials + agreement to live trading terms</td>
+      <td>Real automated trading</td>
     </tr>
   </table>
 
@@ -124,12 +124,12 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → ledger + sandbox</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">Ledger is baseline · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Ledger is the baseline · Alpaca paper / Binance testnet</text>
     <text class="sm" x="747" y="178" text-anchor="middle">Drift is recorded in position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
     <text class="lbl" x="747" y="254" text-anchor="middle">live → real broker ⚠ real funds</text>
-    <text class="sm" x="747" y="271" text-anchor="middle">Broker is baseline — ledger recorded only after acceptance</text>
+    <text class="sm" x="747" y="271" text-anchor="middle">Broker is the baseline — ledger recorded only after acceptance</text>
     <text class="sm" x="747" y="286" text-anchor="middle">No position created on rejection</text>
 
     <path class="arrow" d="M170,155 L213,155"/>
@@ -141,45 +141,45 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <text class="sm" x="572" y="147">shadow</text>
     <text class="sm" x="588" y="280">live</text>
   </svg>
-  <div class="cap">Figure 1 — After a rule passes through the gate chain, it is routed to one of three paths depending on account_type.</div>
+  <div class="cap">Figure 1 — After a rule passes through the gate chain, it is routed to one of three paths according to account_type.</div>
   </div>
 
-  <div class="note red"><b>What never happens:</b> A live rule without a gateway being silently downgraded to simulation. live is <b>rejected with an explicit reason</b>, and the reason is recorded in the execution log — because a fake fill that looks real is the worst case.</div>
+  <div class="note red"><b>What never happens:</b> A live rule without a gateway being silently downgraded to simulator. live is <b>rejected with an explicit reason</b>, and that reason is recorded in the execution log — because a fake fill that looks real is the worst outcome.</div>
 </section>
 
 <!-- ═══ 2. 단계별 설정 ═══ -->
 <section>
-  <h2><span class="no">02</span>7 steps to live trading <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
+  <h2><span class="no">02</span>Seven steps to live <span class="sub" style="display:inline">/ Seven steps to live</span></h2>
 
   <div class="steps-strip">
     <div class="st"><b>STEP 1</b><span>Issue broker keys</span></div>
     <div class="st"><b>STEP 2</b><span>Connect gateway</span></div>
     <div class="st"><b>STEP 3</b><span>Agree to terms</span></div>
     <div class="st"><b>STEP 4</b><span>Check status</span></div>
-    <div class="st"><b>STEP 5</b><span>shadow verification</span></div>
+    <div class="st"><b>STEP 5</b><span>shadow validation</span></div>
     <div class="st"><b>STEP 6</b><span>Switch to live</span></div>
     <div class="st"><b>STEP 7</b><span>Monitoring</span></div>
   </div>
 
   <h3>STEP 1 — Prepare credentials from the broker <span class="sub" style="display:inline">/ Prepare broker credentials</span></h3>
   <table>
-    <tr><th>Broker</th><th>What you need</th><th>Where</th><th>Caution</th></tr>
+    <tr><th>Broker</th><th>What's needed</th><th>Where</th><th>Caution</th></tr>
     <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (paper and live keys are separate)</td><td>Trading permission only. shadow automatically uses the paper endpoint</td></tr>
-    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Account → API Management</td><td><b>Withdrawal permission is strictly prohibited.</b> Check only Trade (TRADE). shadow uses testnet</td></tr>
-    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + account number</td><td>Run and log in to the Client Portal Gateway distributed by IBKR directly</td><td>No API key — <b>The gateway session is itself the credential.</b> Must be an address the server can access. If the account number <code>D</code>starts with , it is a paper account (shadow only works with paper accounts)</td></tr>
+    <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Account → API Management</td><td><b>Withdrawal permission is absolutely forbidden.</b> Check only Trade (TRADE). shadow uses testnet</td></tr>
+    <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + account number</td><td>Run and log in directly to the Client Portal Gateway distributed by IBKR</td><td>No API key — <b>the gateway session itself is the credential.</b> Must be an address the server can access. If the account number starts with <code>D</code>, it is a simulated account (shadow only works with simulated accounts)</td></tr>
   </table>
 
-  <h3>STEP 2 — Connect the gateway on the Accounts page <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
+  <h3>STEP 2 — Connect the gateway on the Accounts page <span class="sub" style="display:inline">Connect on the Accounts page</span></h3>
   <ul>
-    <li><b>Accounts</b> page → <b>Trading Gateway</b> Select a broker from the card. The list is loaded from the server (<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: Enter key + secret. IBKR: Enter gateway URL + account number (option for a self-signed certificate on a local gateway).</li>
-    <li>Keys are <b>encrypted and stored with AES-GCM</b> on the server, are never left in browser localStorage, and are cleared from the input field immediately after saving and never displayed again.</li>
+    <li><b>Accounts</b> page → <b>Trading Gateway</b> card, select the broker. The list is loaded from the server (<code>GET /api/execution/brokers</code>).</li>
+    <li>Alpaca/Binance: Enter key + secret. IBKR: Enter gateway URL + account number (option for self-signed certificate on local gateway).</li>
+    <li>Keys are <b>encrypted and stored on the server using AES-GCM</b>, never remain in the browser's localStorage, and are cleared from the input field immediately after saving, never to be displayed again.</li>
   </ul>
 
   <h3>STEP 3 — Agree to the live-trading terms <span class="sub" style="display:inline">/ Accept the live-trading terms</span></h3>
   <ul>
-    <li>The checkbox above the connect button is the consent step. Without consent, the connection itself will not proceed.</li>
-    <li>Consent is kept as an <b>immutable, per-broker</b> record (<code>broker_live_optins</code>) — even if you agreed for Alpaca, Binance live requires separate consent.</li>
+    <li>The checkbox above the Connect button is the consent step. Without consent, the connection itself will not proceed.</li>
+    <li>Consent is recorded as an immutable log <b>per broker</b> (<code>broker_live_optins</code>) — even if you consented for Alpaca, Binance live requires separate consent.</li>
   </ul>
 
   <h3>STEP 4 — Check the health banner <span class="sub" style="display:inline">/ Check the health banner</span></h3>
@@ -190,29 +190,29 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
   <h3>STEP 5 — Validate in shadow first <span class="sub" style="display:inline">/ Validate in shadow first</span></h3>
   <ul>
-    <li>Automation page (Expert mode) → the rule's <b>account = shadow</b> + auto-execution ON.</li>
-    <li>While the simulated ledger remains the baseline, the same order is also sent to the broker's <b>sandbox</b>, and the execution differences accumulate in the <b>drift log</b>. You can observe slippage and fill rates without using real funds.</li>
+    <li>Automation page (Expert Mode) → set the rule's <b>account = shadow</b> + Auto-Execute ON.</li>
+    <li>While the simulated ledger remains the baseline, the same order is also sent to the broker's <b>sandbox</b>, and the fill differences accumulate in the <b>drift log</b>. This lets you see slippage and fill rates without real funds.</li>
   </ul>
 
-  <h3>STEP 6 — Switch to live <span class="sub" style="display:inline">/ Flip to live</span></h3>
+  <h3>STEP 6 — Flip to live <span class="sub" style="display:inline">/ Flip to live</span></h3>
   <ul>
-    <li>The rule's <b>account = live</b>. Live rules with auto-execution turned on are marked with a red <b>REAL MONEY</b> badge in the list.</li>
-    <li>From this point on, only decisions that pass the entire gate chain are sent to the actual broker. The platform ledger is recorded only after the broker accepts the order.</li>
+    <li>Set the rule's <b>account = live</b>. Live rules with Auto-Execute turned on display a red <b>REAL MONEY</b> badge in the list.</li>
+    <li>From this point on, only decisions that have passed the entire gate chain are sent to the actual broker. The platform ledger is recorded only after the broker accepts.</li>
   </ul>
 
   <h3>STEP 7 — Monitor <span class="sub" style="display:inline">/ Monitor</span></h3>
   <ul>
-    <li><b>Automation page execution log</b>: decisions, fills, and skip reasons for every tick.</li>
-    <li><b>Account page broker order history</b>: requested quantity vs. broker-confirmed filled quantity, color-coded by status.</li>
-    <li><b>Drift log (red card)</b>: when the ledger and the broker diverge — see §5.</li>
-    <li><b>Notifications</b>: trade executed (trade_executed), gateway down (gateway_down), order drift (order_drift) — follows the email/SMS channels set in notification settings.</li>
+    <li><b>Automation page execution log</b>: Every tick's decision, fill, or skip reason.</li>
+    <li><b>Account page broker order history</b>: Requested quantity vs. broker-confirmed filled quantity, color-coded by status.</li>
+    <li><b>Drift log (red cards)</b>: When the ledger and broker diverge — see §5.</li>
+    <li><b>Notifications</b>: trade_executed, gateway_down, order_drift — follow the email/SMS channels set in your notification settings.</li>
   </ul>
 </section>
 
 <!-- ═══ 3. 게이트 체인 ═══ -->
 <section>
   <h2><span class="no">03</span>The 12 gates an order passes through <span class="sub" style="display:inline">/ The 12-step gate chain</span></h2>
-  <p class="sub">For every tick of a rule with auto-execution turned on, a decision (buy/sell) must pass <b>all of the gates below, in order,</b> to actually be executed. If it is blocked at any point, the reason is recorded in the execution log and no order is sent.</p>
+  <p class="sub">For every tick of a rule with Auto-Execute turned on, a decision (buy/sell) must pass <b>all of the following gates in order</b> for it to actually be filled. If any gate blocks it, the reason is recorded in the execution log and the order is not sent.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
@@ -220,16 +220,16 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <!-- column of gates, 2 columns of 6 -->
     <g>
       <!-- left column -->
-      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① Auto-execution ON?</text><text class="sm" x="45" y="59">auto_execute off → skip</text>
+      <rect class="box" x="30" y="20" width="250" height="52" rx="10"/><text class="lbl" x="45" y="42">① Auto-Execute ON?</text><text class="sm" x="45" y="59">auto_execute off → Skip</text>
       <rect class="box" x="30" y="106" width="250" height="52" rx="10" stroke="var(--critical)"/><text class="lbl" x="45" y="128">② Gateway available? (live only)</text><text class="sm" x="45" y="145">All three of connection, credentials, and terms consent</text>
       <rect class="box" x="30" y="192" width="250" height="52" rx="10"/><text class="lbl" x="45" y="214">③ Subscription/entitlement valid?</text><text class="sm" x="45" y="231">When ENTITLEMENTS_ENFORCED</text>
       <rect class="box" x="30" y="278" width="250" height="52" rx="10"/><text class="lbl" x="45" y="300">④ Is the decision buy/sell?</text><text class="sm" x="45" y="317">hold is not eligible for execution</text>
       <rect class="box" x="30" y="364" width="250" height="52" rx="10"/><text class="lbl" x="45" y="386">⑤ Confidence ≥ threshold?</text><text class="sm" x="45" y="403">The rule's min_confidence</text>
       <rect class="box" x="30" y="450" width="250" height="52" rx="10"/><text class="lbl" x="45" y="472">⑥ Market open?</text><text class="sm" x="45" y="489">Skipped if the us-stock market is closed</text>
       <!-- right column -->
-      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ Event guard</text><text class="sm" x="345" y="59">Blocks 1 hour before/after FOMC/CPI announcements (optional)</text>
+      <rect class="box" x="330" y="20" width="250" height="52" rx="10"/><text class="lbl" x="345" y="42">⑦ Event guard</text><text class="sm" x="345" y="59">Blocks 1 hour before/after FOMC·CPI announcements (optional)</text>
       <rect class="box" x="330" y="106" width="250" height="52" rx="10"/><text class="lbl" x="345" y="128">⑧ Time-stop cooldown</text><text class="sm" x="345" y="145">Waiting period before re-entering the same symbol</text>
-      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ Regime filter</text><text class="sm" x="345" y="231">Blocks new buys during panic/overheated conditions (optional)</text>
+      <rect class="box" x="330" y="192" width="250" height="52" rx="10"/><text class="lbl" x="345" y="214">⑨ Regime filter</text><text class="sm" x="345" y="231">Blocks new buys during panic/overheated periods (optional)</text>
       <rect class="box" x="330" y="278" width="250" height="52" rx="10"/><text class="lbl" x="345" y="300">⑩ Valid price?</text><text class="sm" x="345" y="317">The decision requires an entry price</text>
       <rect class="box" x="330" y="364" width="250" height="52" rx="10"/><text class="lbl" x="345" y="386">⑪ Agent budget (agent mode)</text><text class="sm" x="345" y="403">budget_usd limit</text>
       <rect class="box" x="330" y="450" width="250" height="52" rx="10" stroke="var(--yellow)"/><text class="lbl" x="345" y="472">⑫ Risk engine</text><text class="sm" x="345" y="489">Breaker → limits → volatility sizing → SL/TP</text>
@@ -253,16 +253,16 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <path class="arrow" d="M580,46 C640,60 660,180 690,228" marker-end="url(#arr2)"/>
     <text class="sm" x="640" y="120">12/12 passed</text>
   </svg>
-  <div class="cap">Figure 2 — Execution gate chain (evaluate_execution_gates). ⑫ Flows from the bottom of the left column to the top of the right column; the order is executed only if all gates are passed. Test runs (▶) perform analysis only and do not go through this chain.</div>
+  <div class="cap">Figure 2 — Execution gate chain (evaluate_execution_gates). ⑫ Flows from the bottom of the left column to the top of the right column, and all gates must pass for execution to occur. Test runs (▶) perform analysis only and do not go through this chain.</div>
   </div>
 
-  <div class="note">Order matters: rules with automatic execution turned off are logged as "automatic execution off" rather than as gateway errors. Reading the skip reason immediately tells you at which gate it stopped.</div>
+  <div class="note">Order matters: rules with auto-execution disabled are logged as "auto-execution off," not as gateway errors. Reading the skip reason immediately tells you at which gate it stopped.</div>
 </section>
 
 <!-- ═══ 4. 주문 수명주기 ═══ -->
 <section>
-  <h2><span class="no">04</span>Life of a live order <span class="sub" style="display:inline">/ Life of a live order</span></h2>
-  <p class="sub">If the broker does not immediately confirm execution (SUBMITTED) <b>Order reconciler</b> queries the broker for results every 2 minutes to confirm the final status.</p>
+  <h2><span class="no">04</span>The life of a live order <span class="sub" style="display:inline">/ Life of a live order</span></h2>
+  <p class="sub">If the broker does not immediately confirm execution (SUBMITTED) <b>Order reconciler</b> queries the broker every 2 minutes for the result to finalize the status.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
@@ -282,30 +282,30 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <path class="arrow" d="M570,120 L334,120" marker-end="url(#arr3)"/><text class="sm" x="360" y="114">FILLED or SUBMITTED (or rejected)</text>
     <!-- branch: rejected -->
     <rect class="box" x="110" y="140" width="410" height="34" rx="8" stroke="var(--critical)"/>
-    <text class="sm" x="122" y="161">If rejected → ledger record <tspan font-weight="700">none</tspan> + gateway_down alert. No phantom positions allowed.</text>
+    <text class="sm" x="122" y="161">If rejected → ledger entry <tspan font-weight="700">none</tspan> + gateway_down alert. No phantom positions allowed.</text>
     <!-- filled path -->
-    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">Accepted → mirror ledger with filled quantity</text>
+    <path class="arrow" d="M330,200 L796,200" marker-end="url(#arr3)"/><text class="sm" x="400" y="194">If accepted → mirror ledger with filled quantity</text>
     <!-- reconciler -->
     <rect class="box" x="30" y="230" width="120" height="44" rx="10" stroke="var(--violet)"/>
     <text class="sm" x="90" y="249" text-anchor="middle" font-weight="700">Reconciler</text>
-    <text class="sm" x="90" y="264" text-anchor="middle">2-minute cycle</text>
+    <text class="sm" x="90" y="264" text-anchor="middle">Every 2 minutes</text>
     <path class="arrow" d="M150,252 C300,252 480,252 566,252" marker-end="url(#arr3)"/><text class="sm" x="250" y="246">Query SUBMITTED order status</text>
     <path class="arrow" d="M570,285 L154,285" marker-end="url(#arr3)"/><text class="sm" x="250" y="279">Final status + actual filled quantity</text>
     <!-- outcomes -->
     <rect class="box" x="110" y="308" width="760" height="60" rx="10"/>
-    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">Fully filled (matches)</tspan> → record status only, exit quietly · <tspan font-weight="700" fill="#a16800">Partially filled</tspan> → record filled_qty + order_drift alert</text>
-    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">Cancelled/rejected afterward</tspan> → order_drift alert + record drift. <tspan font-weight="700">The ledger is never automatically corrected</tspan> — a human reviews it.</text>
+    <text class="sm" x="126" y="328"><tspan font-weight="700" fill="var(--good-ink)">Fully filled (matches)</tspan> → log status only, exit silently · <tspan font-weight="700" fill="#a16800">Partially filled</tspan> → log filled_qty + order_drift alert</text>
+    <text class="sm" x="126" y="349"><tspan font-weight="700" fill="var(--critical)">Canceled/rejected after the fact</tspan> → order_drift alert + log drift. <tspan font-weight="700">The ledger is never auto-corrected</tspan> — a human reviews it.</text>
   </svg>
-  <div class="cap">Figure 3 — Submit → confirm (immediately or via reconciler) → alert loudly if mismatched. The requested quantity (quantity) and broker-confirmed quantity (filled_qty) are kept in separate columns, so any discrepancy remains visible.</div>
+  <div class="cap">Figure 3 — Submit → (immediate or via reconciler) confirm → alert loudly if mismatched. Since requested quantity (quantity) and broker-confirmed quantity (filled_qty) are separate columns, differences remain visible.</div>
   </div>
 
-  <div class="note red"><b>Design principle — detection only, humans fix:</b> The reconciler never touches positions or cash. Having a background job fix money calculations would risk corrupting the ledger twice, so mismatches are prominently flagged with a red card and alert, and corrections are made manually by the user after checking the broker account.</div>
+  <div class="note red"><b>Design principle — detect only, humans correct:</b> The reconciler never touches positions or cash. Having a background job fix money calculations would double the ways the ledger can break, so mismatches are prominently flagged with a red card and alert, and corrections are made by the user directly after checking the broker account.</div>
 </section>
 
 <!-- ═══ 5. IBKR 세션 유지 ═══ -->
 <section>
   <h2><span class="no">05</span>IBKR session keepalive <span class="sub" style="display:inline">/ IBKR session keepalive</span></h2>
-  <p class="sub">IBKR Client Portal sessions disconnect after just a few minutes of idleness. The worker tickles the session every 60 seconds, attempts reauthentication if disconnected, and alerts once a day if recovery is not possible.</p>
+  <p class="sub">An IBKR Client Portal session disconnects after just a few minutes of idleness. The worker tickles the session every 60 seconds, attempts reauthentication if disconnected, and alerts once a day if recovery fails.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
@@ -317,7 +317,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <rect class="box" x="360" y="80" width="180" height="70" rx="12" stroke="var(--yellow)"/>
     <text class="lbl" x="450" y="103" text-anchor="middle">Session expired (lapsed)</text>
     <text class="sm" x="450" y="121" text-anchor="middle">Gateway is alive but</text>
-    <text class="sm" x="450" y="136" text-anchor="middle">authentication has lapsed</text>
+    <text class="sm" x="450" y="136" text-anchor="middle">authentication has been lost</text>
 
     <rect class="box" x="700" y="80" width="170" height="70" rx="12" stroke="var(--critical)"/>
     <text class="lbl" x="785" y="103" text-anchor="middle">Unrecoverable (dead)</text>
@@ -325,47 +325,47 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <text class="sm" x="785" y="136" text-anchor="middle">Human re-logs into the gateway</text>
 
     <path class="arrow" d="M200,105 L358,105" marker-end="url(#arr4)"/><text class="sm" x="228" y="98">Idle/timeout</text>
-    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate succeeds (automatic recovery)</text>
-    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">Reauthentication failed</text>
+    <path class="arrow" d="M360,132 C300,175 260,175 202,140" marker-end="url(#arr4)"/><text class="sm" x="238" y="185">reauthenticate succeeds (auto-recovery)</text>
+    <path class="arrow" d="M540,105 L698,105" marker-end="url(#arr4)"/><text class="sm" x="562" y="98">Reauthentication fails</text>
     <path class="arrow" d="M785,80 C750,30 200,20 130,78" marker-end="url(#arr4)"/><text class="sm" x="380" y="38">User logs back into the Client Portal Gateway</text>
   </svg>
-  <div class="cap">Figure 4 — Session state machine. A competing session is also treated as dead (since if another login occupies the account, orders will be rejected).</div>
+  <div class="cap">Figure 4 — Session state machine. A competing session is also treated as dead (since another login occupying the account causes orders to be rejected).</div>
   </div>
 
-  <div class="note"><b>shadow safeguard:</b> Unlike Alpaca/Binance, IBKR has no separate sandbox host, and <b>account</b> determines whether real funds are involved. So in shadow mode, if the account number does not have the paper account (<code>D</code> prefix), the adapter <b>rejects the request without sending it at all</b>.</div>
+  <div class="note"><b>shadow safeguard:</b> Unlike Alpaca/Binance, IBKR has no separate sandbox host, and <b>the account</b> determines whether it's real funds. So in shadow mode, if the account number does not have the paper account (<code>D</code> prefix), the adapter <b>rejects without sending the request at all</b>.</div>
 </section>
 
 <!-- ═══ 6. 스킵 사유 사전 ═══ -->
 <section>
-  <h2><span class="no">06</span>Skip reason → fix <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
+  <h2><span class="no">06</span>Skip reasons → fixes <span class="sub" style="display:inline">/ Skip reasons and fixes</span></h2>
   <table>
     <tr><th>Reason in execution log</th><th>Meaning</th><th>Fix</th></tr>
-    <tr><td>Automatic execution off</td><td>Rule is analysis-only</td><td>Turn ON the rule's automatic execution checkbox</td></tr>
-    <tr><td>Live was selected but no trading gateway is configured</td><td>No connected broker account</td><td>Connect the gateway on the Account page (STEP 2)</td></tr>
-    <tr><td>No usable API credentials for the connected gateway</td><td>No saved key, or unable to decrypt (e.g., server key rotated)</td><td>Reconnect the broker</td></tr>
-    <tr><td>Live trading terms not agreed to</td><td>No record of consent for that broker</td><td>Agree and reconnect on the Account page (STEP 3)</td></tr>
-    <tr><td>Gateway rejected the order — …</td><td>Broker rejected the order (reason noted, e.g., insufficient balance, session expired)</td><td>Check the reason — if IBKR 401, re-log into the gateway</td></tr>
-    <tr><td>Decision is hold</td><td>AI decided to wait and watch</td><td>Normal — no action needed</td></tr>
+    <tr><td>Auto-execution off</td><td>Rule is analysis-only</td><td>Turn ON the rule's auto-execution checkbox</td></tr>
+    <tr><td>Live was selected but the trading gateway is not configured</td><td>No linked broker account</td><td>Connect the gateway on the account page (STEP 2)</td></tr>
+    <tr><td>No usable API credentials for the linked gateway</td><td>No saved key, or decryption failed (e.g., server key rotation)</td><td>Reconnect the broker</td></tr>
+    <tr><td>Live trading terms not agreed to</td><td>No consent record for that broker</td><td>Consent and reconnect on the account page (STEP 3)</td></tr>
+    <tr><td>Gateway rejected the order — …</td><td>Broker rejected the order (reason noted, e.g. insufficient balance, expired session)</td><td>Check the reason — if IBKR 401, re-login to the gateway</td></tr>
+    <tr><td>Decision is hold</td><td>AI decided to wait and see</td><td>Normal — no action needed</td></tr>
     <tr><td>Confidence X — below threshold Y</td><td>Insufficient confidence</td><td>Wait (recommended) or lower min_confidence</td></tr>
     <tr><td>Market closed</td><td>US market closed</td><td>Normal — retry when market opens</td></tr>
-    <tr><td>refusing to place a shadow order on IBKR account …</td><td>Attempting shadow on real IBKR account</td><td>Connect to a demo account (DU…) or use simulator instead of shadow</td></tr>
+    <tr><td>refusing to place a shadow order on IBKR account …</td><td>Attempted shadow on IBKR live account</td><td>Connect to a paper account (DU…) or use a simulator instead of shadow</td></tr>
   </table>
 </section>
 
 <!-- ═══ 7. 안전 불변식 ═══ -->
 <section>
-  <h2><span class="no">07</span>What the system absolutely never does <span class="sub" style="display:inline">/ Safety invariants (test-pinned)</span></h2>
+  <h2><span class="no">07</span>Things the system absolutely never does <span class="sub" style="display:inline">/ Safety invariants (test-pinned)</span></h2>
   <table>
-    <tr><th>Invariant</th><th>Reason</th><th>How it's guaranteed</th></tr>
-    <tr><td>Never silently demotes live to simulated</td><td>Nothing is worse than a fake fill looking real</td><td>Explicit rejection + reason logging at Gate ②</td></tr>
-    <tr><td>Shadow orders never touch the real exchange</td><td>"Simulated execution" must never use real funds</td><td>Rule mode locks the endpoint (ignores stored account mode); IBKR forces demo account</td></tr>
-    <tr><td>No position is created if broker rejects</td><td>Prevents phantom positions for orders that never reached the market</td><td>Live only records to the ledger after broker acceptance</td></tr>
-    <tr><td>The reconciler never modifies the ledger</td><td>Fixing money calculations in the background = risk of double corruption</td><td>Detection, logging, and alerting only — corrections are made by a human</td></tr>
-    <tr><td>Broker keys never return to the client</td><td>Minimizes the exposure surface</td><td>Stored with AES-GCM, lookup API returns metadata only</td></tr>
+    <tr><th>Invariant</th><th>Reason</th><th>How it is guaranteed</th></tr>
+    <tr><td>Never silently downgrades live to simulated</td><td>A fake fill that looks real is the worst case</td><td>Explicit refusal + reason logged at Gate ②</td></tr>
+    <tr><td>Shadow orders never reach the real exchange</td><td>A "simulated execution" must never spend real money</td><td>Rule mode pins the endpoint (ignores stored account mode); IBKR is forced to paper account</td></tr>
+    <tr><td>No position is created when the broker rejects</td><td>Prevents phantom positions for orders that never reached the market</td><td>Live is only recorded to the ledger after broker acceptance</td></tr>
+    <tr><td>The reconciler never modifies the ledger</td><td>Fixing money calculations in the background = risk of double corruption</td><td>Only detect, log, and alert — humans make corrections</td></tr>
+    <tr><td>Broker keys never go back to the client</td><td>Minimize leak surface</td><td>Stored with AES-GCM; the lookup API returns only metadata</td></tr>
     <tr><td>The encryption key (EXECUTION_ENCRYPTION_KEY) is write-once</td><td>Rotating it permanently invalidates all stored credentials</td><td>Operational procedure + password manager backup</td></tr>
-    <tr><td>Live failures are never silent</td><td>A dead gateway is indistinguishable from a quiet market</td><td>gateway_down/order_drift alerts (deduplicated by hour/day)</td></tr>
+    <tr><td>Live failures are never silent</td><td>A dead gateway is indistinguishable from a quiet market</td><td>gateway_down/order_drift alerts (deduplicated hourly/daily)</td></tr>
   </table>
-  <div class="note green">The above invariants are pinned by automated tests (~100 of the execution stack out of 1,386 total) and re-verified by 3-agent QA (backend adversarial verification · frontend flow · production status).</div>
+  <div class="note green">The invariants above are pinned by automated tests (about 100 of the 1,386 total tests run this stack), and re-verified by 3-agent QA (backend adversarial verification · frontend flow · production status).</div>
 </section>
 
 <!-- ═══ 8. 운영 참고 ═══ -->
@@ -373,11 +373,11 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
   <h2><span class="no">08</span>Operator notes <span class="sub" style="display:inline">/ Operator notes</span></h2>
   <table>
     <tr><th>Item</th><th>Value/Location</th><th>Notes</th></tr>
-    <tr><td>Environment variable</td><td>Production <code>~/sooppiy/.env</code> single file (mode 600)</td><td>Includes per-part comments. Container must be recreated for changes to take effect</td></tr>
-    <tr><td>Keepalive interval</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (default 60 seconds)</td><td>No-cost no-op if there is no IBKR account</td></tr>
-    <tr><td>Reconciliation interval</td><td><code>ORDER_RECONCILE_INTERVAL</code> (default 120 seconds)</td><td>No cost if there are no submitted orders</td></tr>
-    <tr><td>Broker endpoint</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>Not hardcoded — injected from .env</td></tr>
-    <tr><td>Deployment</td><td>Tag build → modify <code>SOOPPIY_IMAGE</code> in .env → <code>docker compose --profile prod up -d</code></td><td>0 literal values in the compose file</td></tr>
+    <tr><td>Environment variable</td><td>Production <code>~/sooppiy/.env</code> single file (mode 600)</td><td>Includes per-section comments. Container must be recreated to apply</td></tr>
+    <tr><td>Keepalive interval</td><td><code>GATEWAY_KEEPALIVE_INTERVAL</code> (default 60s)</td><td>No-cost no-op if there is no IBKR account</td></tr>
+    <tr><td>Reconciliation interval</td><td><code>ORDER_RECONCILE_INTERVAL</code> (default 120s)</td><td>No cost if there are no submitted orders</td></tr>
+    <tr><td>Broker endpoint</td><td><code>ALPACA_*_BASE_URL</code>, <code>BINANCE_*_BASE_URL</code></td><td>No hardcoding — injected from .env</td></tr>
+    <tr><td>Deployment</td><td>Build tag → edit <code>SOOPPIY_IMAGE</code> in .env → <code>docker compose --profile prod up -d</code></td><td>0 literal values in the compose file</td></tr>
     <tr><td>API container</td><td><code>SOOPPIY_API_BACKGROUND_TASKS=false</code></td><td>The loop is worker-only — if true, everything runs twice</td></tr>
   </table>
 </section>

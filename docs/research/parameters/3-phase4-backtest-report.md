@@ -4,13 +4,18 @@
 **Runner:** `service/server/run_phase4_backtest.py` · raw numbers: [phase4-backtest-result.json](phase4-backtest-result.json) · engine: `backtest_strategy.py` (unit-tested; two independent runs byte-identical).
 **Plan:** [docs/plan/04-ai-model-parameter-upgrade.md](../../plan/04-ai-model-parameter-upgrade.md) §Phase 4 — criteria were pre-registered before the OOS windows were opened.
 
-## 0. 한국어 요약
+## 0. Summary
 
-사전 등록 기준으로 평가한 결과 **증거 불충분(INSUFFICIENT_EVIDENCE)** — 플립 패키지(실행 게이트 기본 활성화)는 배포하지 않습니다. 배포-충실 설정(≥4/6)은 6년 워크포워드에서 OOS 거래가 **38건**뿐(기준 400건)이고, 승률 36.8%의 Wilson 90% 하한(0.28)과 PF 부트스트랩 하한(0.64) 모두 기준 미달. 민감도 행(≥3)은 237건으로 늘지만 PF 하한 0.88로 여전히 1.0 미만 — 수익성이 통계적으로 입증되지 않음.
+<!-- This section was written in Korean and left untranslated in the ENGLISH
+     document until 2026-07-29, so English readers were served ~309 Korean
+     characters here. The Korean text lives where it belongs, in
+     3-phase4-backtest-report-ko.md; this is its English counterpart. -->
 
-**긍정적 발견:** 리스크 스택은 리서치가 약속한 대로 작동 — 최악 자산 최대 낙폭 **2.6%**(B&H는 같은 구간 −38%~−47%), 청산의 53%가 트레일링 스톱(승자 태우기), 시스템이 예측이 아니라 손실 차단으로 자본을 보전함. 검증 패널 통계 렌즈의 예측(트레이드 수 부족)이 정확히 적중.
+Judged against the pre-registered criteria the result is **INSUFFICIENT_EVIDENCE** — the flip package (execution gates on by default) does **not** ship. The deployment-faithful configuration (≥4/6) produced only **38** OOS trades across the six-year walk-forward against a 400-trade bar, and both the Wilson 90% lower bound on the 36.8% win rate (0.28) and the bootstrapped profit-factor lower bound (0.64) fall short. Relaxing to the sensitivity row (≥3) raises the count to 237, but the PF lower bound is still 0.88 — under 1.0, so profitability is not statistically established.
 
-**다음 단계:** 모든 기능은 표시/자문/옵트인으로 이미 배포 가능 상태. 라이브 텔레메트리(컨플루언스 벡터, 팩터 스냅샷)가 축적되면 B4 포함 6조건 시스템을 라이브-포워드로 재평가. 임계값은 리서치로 돌아감 — 프로덕션이 아니라.
+**What did hold up:** the risk stack behaved exactly as the research promised — worst-asset maximum drawdown **2.6%** against −38% to −47% for buy-and-hold over the same window, 53% of exits taken by the trailing stop (letting winners run), and capital preserved by cutting losses rather than by predicting. The verification panel's statistical lens called this outcome in advance: too few trades.
+
+**Next:** every feature is already shippable as display / advisory / opt-in. Re-evaluate the six-condition system including B4 live-forward once live telemetry (confluence vectors, factor snapshots) has accumulated. The thresholds go back to research — not to production.
 
 ## 1. Pre-registered setup (unchanged after seeing results)
 

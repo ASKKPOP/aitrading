@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sooppiy — AI自動売買：全パイプライン完全ガイド</title>
+<title>Sooppiy — AI自動売買：フルパイプライン完全ガイド</title>
 <style>
 :root{
   --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
@@ -87,27 +87,27 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 <body>
 
 <header class="doc"><div class="wrap">
-  <div class="kicker">Sooppiy · 全パイプラインガイド</div>
-  <h1>AI自動売買、始めから終わりまで — 完全ガイド</h1>
-  <div class="meta">2026-07-17 · コード正確版（main、シグナル拡張含む） · 全数値は実装値そのまま · sooppiy.comで公開中</div>
+  <div class="kicker">Sooppiy・フルパイプラインガイド</div>
+  <h1>AI自動売買、エンドツーエンド — 完全ガイド</h1>
+  <div class="meta">2026-07-17・コード準拠（main、シグナル拡張含む）・全数値は実装上の実際の値・sooppiy.comで公開中</div>
 </div></header>
 
 <!-- ═══════════════ 0. At a Glance ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">§0</span>概要 — 10ステップのパイプライン</h2>
-  <p class="sub">データ収集からレビューまで。すべての取引はペーパー（シミュレーター）口座でのみ約定し、各ステップはenvフラグの背後で独立しており、外部ソースの障害はソフトフェイルします — 影響を受けたコンポーネントのみが静かに脱落します。</p>
+  <h2><span class="no">§0</span>概要 — 10ステップ・パイプライン</h2>
+  <p class="sub">データ収集からレビューまで。すべての取引はペーパー（シミュレーター）口座でのみ約定し、各ステップはenvフラグの背後で分離されており、外部ソースの障害はソフトフェイル — 影響を受けたコンポーネントのみが静かに脱落します。</p>
 
   <div class="steps-strip">
-    <div class="st"><b>STEP 1</b><span>データ収集</span></div>
-    <div class="st"><b>STEP 2</b><span>発見</span></div>
-    <div class="st"><b>STEP 3</b><span>クオンツ分析</span></div>
-    <div class="st"><b>STEP 4</b><span>心理分析</span></div>
-    <div class="st"><b>STEP 5</b><span>シグナル統合</span></div>
-    <div class="st"><b>STEP 6</b><span>AI 4アナリスト</span></div>
-    <div class="st"><b>STEP 7</b><span>自動化ルール</span></div>
-    <div class="st"><b>STEP 8</b><span>リスクゲート</span></div>
-    <div class="st"><b>STEP 9</b><span>約定 · SL/TP</span></div>
-    <div class="st"><b>STEP 10</b><span>ジャーナル · レビュー</span></div>
+    <div class="st"><b>ステップ1</b><span>データ収集</span></div>
+    <div class="st"><b>ステップ 2</b><span>発見</span></div>
+    <div class="st"><b>ステップ 3</b><span>クオンツ分析</span></div>
+    <div class="st"><b>ステップ 4</b><span>心理</span></div>
+    <div class="st"><b>ステップ 5</b><span>シグナル融合</span></div>
+    <div class="st"><b>ステップ6</b><span>AI 4アナリスト</span></div>
+    <div class="st"><b>ステップ7</b><span>自動化ルール</span></div>
+    <div class="st"><b>ステップ 8</b><span>リスクゲート</span></div>
+    <div class="st"><b>ステップ 9</b><span>約定・SL/TP</span></div>
+    <div class="st"><b>ステップ10</b><span>ジャーナル・レビュー</span></div>
   </div>
 
   <div class="diagram">
@@ -128,19 +128,19 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <g>
       <rect x="16" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="102" y="53" text-anchor="middle" class="sv-t">OKX</text>
-      <text x="102" y="68" text-anchor="middle" class="sv-s">ローソク足·ファンディング·OI·L/S·清算</text>
+      <text x="102" y="68" text-anchor="middle" class="sv-s">ローソク足・資金調達率・OI・L/S・清算</text>
       <rect x="204" y="34" width="172" height="46" rx="9" class="sv-box"/>
       <text x="290" y="53" text-anchor="middle" class="sv-t">alternative.me</text>
-      <text x="290" y="68" text-anchor="middle" class="sv-s">Fear &amp; Greedインデックス + 履歴</text>
+      <text x="290" y="68" text-anchor="middle" class="sv-s">Fear &amp; Greed指数＋履歴</text>
       <rect x="392" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits · Polymarket</text>
-      <text x="478" y="68" text-anchor="middle" class="sv-s">群衆センチメント·Δオッズ</text>
+      <text x="478" y="53" text-anchor="middle" class="sv-t">StockTwits・Polymarket</text>
+      <text x="478" y="68" text-anchor="middle" class="sv-s">群衆センチメント・Δodds</text>
       <rect x="580" y="34" width="172" height="46" rx="9" class="sv-box"/>
-      <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue · Upbit</text>
-      <text x="666" y="68" text-anchor="middle" class="sv-s">実際のETFフロー·キムチプレミアム</text>
+      <text x="666" y="53" text-anchor="middle" class="sv-t">SoSoValue・Upbit</text>
+      <text x="666" y="68" text-anchor="middle" class="sv-s">実際のETFフロー・キムチプレミアム</text>
       <rect x="768" y="34" width="176" height="46" rx="9" class="sv-box"/>
-      <text x="856" y="53" text-anchor="middle" class="sv-t">AV · FRED · FinnHub</text>
-      <text x="856" y="68" text-anchor="middle" class="sv-s">ニュース·マクロ·DXY</text>
+      <text x="856" y="53" text-anchor="middle" class="sv-t">AV・FRED・FinnHub</text>
+      <text x="856" y="68" text-anchor="middle" class="sv-s">ニュース・マクロ・DXY</text>
     </g>
 
     <path d="M102 80 V108" class="sv-line" marker-end="url(#ar)"/>
@@ -153,21 +153,21 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <text x="16" y="104" class="sv-lb" fill="var(--accent)"></text>
     <g>
       <rect x="16" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="126" y="130" text-anchor="middle" class="sv-t">STEP 2 · スキャナー</text>
-      <text x="126" y="145" text-anchor="middle" class="sv-s">出来高急増×2 · 言及数+100%</text>
-      <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py · 1時間</text>
+      <text x="126" y="130" text-anchor="middle" class="sv-t">STEP 2・スキャナー</text>
+      <text x="126" y="145" text-anchor="middle" class="sv-s">出来高急増×2・言及数+100%</text>
+      <text x="126" y="159" text-anchor="middle" class="sv-m">scanner.py・1時間</text>
       <rect x="252" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="362" y="130" text-anchor="middle" class="sv-t">STEP 3 · クオンツ</text>
-      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI·σ·ファンディング·ベーシス·OI·L/S</text>
-      <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py · オンデマンド</text>
+      <text x="362" y="130" text-anchor="middle" class="sv-t">STEP 3・クオンツ</text>
+      <text x="362" y="145" text-anchor="middle" class="sv-s">RSI・σ・funding・basis・OI・L/S</text>
+      <text x="362" y="159" text-anchor="middle" class="sv-m">quant_crypto.py・オンデマンド</text>
       <rect x="488" y="110" width="220" height="58" rx="9" class="sv-acc"/>
-      <text x="598" y="130" text-anchor="middle" class="sv-t">STEP 4 · 心理フィード</text>
-      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G·センチメント急増·実清算</text>
-      <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py · 1時間</text>
+      <text x="598" y="130" text-anchor="middle" class="sv-t">STEP 4・心理フィード</text>
+      <text x="598" y="145" text-anchor="middle" class="sv-s">F&amp;G・センチメント急上昇・実際の清算</text>
+      <text x="598" y="159" text-anchor="middle" class="sv-m">psych_feed.py・1時間</text>
       <rect x="724" y="110" width="220" height="58" rx="9" class="sv-box"/>
-      <text x="834" y="130" text-anchor="middle" class="sv-t">ニュース · マクロインテリジェンス</text>
-      <text x="834" y="145" text-anchor="middle" class="sv-s">ニュースセンチメント·実ETF·イベントカレンダー</text>
-      <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py · 定期更新</text>
+      <text x="834" y="130" text-anchor="middle" class="sv-t">ニュース・マクロインテリジェンス</text>
+      <text x="834" y="145" text-anchor="middle" class="sv-s">ニュースセンチメント・実際のETF・イベントカレンダー</text>
+      <text x="834" y="159" text-anchor="middle" class="sv-m">market_intel.py・定期更新</text>
     </g>
 
     <!-- snapshot store -->
@@ -176,20 +176,20 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M598 168 V196" class="sv-line" marker-end="url(#ar)"/>
     <path d="M834 168 V196" class="sv-line" marker-end="url(#ar)"/>
     <rect x="16" y="198" width="928" height="40" rx="9" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="480" y="222" text-anchor="middle" class="sv-t">スナップショットストア — scanner_snapshots · psych_snapshots · market_news/macro/etf/stock_analysis_snapshots（すべての判断の根拠がDBに保存されます）</text>
+    <text x="480" y="222" text-anchor="middle" class="sv-t">スナップショットストア — scanner_snapshots・psych_snapshots・market_news/macro/etf/stock_analysis_snapshots（あらゆる判断の根拠がDBに保存されます）</text>
 
     <!-- band 3: fusion + AI -->
     <path d="M240 238 V266" class="sv-line" marker-end="url(#ar)"/>
     <path d="M720 238 V266" class="sv-line" marker-end="url(#ar)"/>
     <g>
       <rect x="60" y="268" width="360" height="66" rx="9" class="sv-acc"/>
-      <text x="240" y="288" text-anchor="middle" class="sv-t">STEP 5 · シグナル統合</text>
-      <text x="240" y="304" text-anchor="middle" class="sv-s">AI加重（フォールバック0.5/0.3/0.2 · 心理キャップ0.3）</text>
-      <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py · GET /api/market-intel/fusion</text>
+      <text x="240" y="288" text-anchor="middle" class="sv-t">STEP 5・シグナル融合</text>
+      <text x="240" y="304" text-anchor="middle" class="sv-s">AI加重（フォールバック0.5/0.3/0.2・心理上限0.3）</text>
+      <text x="240" y="320" text-anchor="middle" class="sv-m">signal_fusion.py・GET /api/market-intel/fusion</text>
       <rect x="540" y="268" width="360" height="66" rx="9" class="sv-acc"/>
-      <text x="720" y="288" text-anchor="middle" class="sv-t">STEP 6 · AI 4アナリスト + トレーダー討論</text>
-      <text x="720" y="304" text-anchor="middle" class="sv-s">ニュース·センチメント·ファンダメンタル/マクロ·テクニカル → BUY/SELL/HOLD + 確信度</text>
-      <text x="720" y="320" text-anchor="middle" class="sv-m">analysis_agents.py · LLMまたはルールベースフォールバック</text>
+      <text x="720" y="288" text-anchor="middle" class="sv-t">STEP 6・AI 4アナリスト＋トレーダー討論</text>
+      <text x="720" y="304" text-anchor="middle" class="sv-s">ニュース・センチメント・ファンダメンタル/マクロ・テクニカル → BUY/SELL/HOLD＋信頼度</text>
+      <text x="720" y="320" text-anchor="middle" class="sv-m">analysis_agents.py・LLMまたはルールベースのフォールバック</text>
     </g>
 
     <!-- band 4: automation → gate → execution -->
@@ -197,17 +197,17 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M720 334 V360 H180 M180 360 V386" class="sv-line"/>
     <g>
       <rect x="40" y="388" width="280" height="66" rx="9" class="sv-card"/>
-      <text x="180" y="408" text-anchor="middle" class="sv-t">STEP 7 · 自動化ルール（ユーザー設定）</text>
-      <text x="180" y="424" text-anchor="middle" class="sv-s">間隔5–1440分 · 最小確信度0.65 · 自動実行オン/オフ</text>
-      <text x="180" y="440" text-anchor="middle" class="sv-m">automation.py・60秒ティック</text>
+      <text x="180" y="408" text-anchor="middle" class="sv-t">STEP 7・自動化ルール（ユーザー設定）</text>
+      <text x="180" y="424" text-anchor="middle" class="sv-s">間隔5～1440分・最小信頼度0.65・自動実行オン/オフ</text>
+      <text x="180" y="440" text-anchor="middle" class="sv-m">automation.py · 60秒ティック</text>
       <rect x="368" y="388" width="256" height="66" rx="9" class="sv-warn"/>
-      <text x="496" y="408" text-anchor="middle" class="sv-t">STEP 8・リスクゲート</text>
-      <text x="496" y="424" text-anchor="middle" class="sv-s">①ケリー・サイジング → ②リミット → ③ブレーカー</text>
-      <text x="496" y="440" text-anchor="middle" class="sv-m">risk_engine.py・すべての注文が通過必須</text>
+      <text x="496" y="408" text-anchor="middle" class="sv-t">STEP 8 · リスクゲート</text>
+      <text x="496" y="424" text-anchor="middle" class="sv-s">①ケリー基準サイジング → ②リミット → ③ブレーカー</text>
+      <text x="496" y="440" text-anchor="middle" class="sv-m">risk_engine.py · すべての注文はこれを通過する必要がある</text>
       <rect x="672" y="388" width="272" height="66" rx="9" class="sv-good"/>
-      <text x="808" y="408" text-anchor="middle" class="sv-t">STEP 9・ペーパーフィル</text>
-      <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% 自動設定・30秒ウォッチャー</text>
-      <text x="808" y="440" text-anchor="middle" class="sv-m">シミュレーター口座のみ・実約定なし</text>
+      <text x="808" y="408" text-anchor="middle" class="sv-t">STEP 9 · ペーパー約定</text>
+      <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% 自動設定 · 30秒監視</text>
+      <text x="808" y="440" text-anchor="middle" class="sv-m">シミュレーター口座のみ · 実際の約定はなし</text>
     </g>
     <path d="M320 421 H366" class="sv-accline" marker-end="url(#arA)"/>
     <path d="M624 421 H670" class="sv-goodline" marker-end="url(#arG)"/>
@@ -219,106 +219,106 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <path d="M808 454 V488" class="sv-line" marker-end="url(#ar)"/>
     <g>
       <rect x="368" y="490" width="256" height="54" rx="9" class="sv-card"/>
-      <text x="496" y="510" text-anchor="middle" class="sv-t">STEP 10・ジャーナル・レビュー</text>
-      <text x="496" y="526" text-anchor="middle" class="sv-s">automation_runs・シグナル台帳・実験イベント</text>
+      <text x="496" y="510" text-anchor="middle" class="sv-t">STEP 10 · ジャーナル · レビュー</text>
+      <text x="496" y="526" text-anchor="middle" class="sv-s">automation_runs · シグナル台帳 · 実験イベント</text>
       <rect x="672" y="490" width="272" height="54" rx="9" class="sv-card"/>
-      <text x="808" y="510" text-anchor="middle" class="sv-t">ポジション・P&amp;Lトラッキング</text>
-      <text x="808" y="526" text-anchor="middle" class="sv-s">価格ポーリング → 含み損益・SL/TPウォッチャー</text>
+      <text x="808" y="510" text-anchor="middle" class="sv-t">ポジション · 損益トラッキング</text>
+      <text x="808" y="526" text-anchor="middle" class="sv-s">価格ポーリング → 含み損益 · SL/TP監視</text>
     </g>
     <path d="M672 517 H626" class="sv-line" marker-end="url(#ar)"/>
 
     <!-- dashboard -->
     <path d="M496 544 V572" class="sv-line" marker-end="url(#ar)"/>
     <rect x="280" y="574" width="432" height="38" rx="9" class="sv-acc"/>
-    <text x="496" y="597" text-anchor="middle" class="sv-t">シグナルボードダッシュボード＋アラート — 常に人による検証が可能</text>
+    <text x="496" y="597" text-anchor="middle" class="sv-t">シグナルボードダッシュボード + アラート — 常に人間が検証可能</text>
   </svg>
   </div>
 
   <div class="kpi-row">
-    <div class="kpi"><div class="lb">実行</div><div class="vl">ペーパーのみ</div><div class="hint">実口座での注文コードは完全に無効化されています</div></div>
-    <div class="kpi"><div class="lb">リスクゲート</div><div class="vl">トリプルチェック</div><div class="hint">ケリー → リミット → ブレーカー</div></div>
-    <div class="kpi"><div class="lb">テスト</div><div class="vl">1,100件以上通過</div><div class="hint">シグナル拡張＆ガイドテストを含む</div></div>
+    <div class="kpi"><div class="lb">実行</div><div class="vl">ペーパーのみ</div><div class="hint">実口座の注文コードは完全に無効化されています</div></div>
+    <div class="kpi"><div class="lb">リスクゲート</div><div class="vl">トリプルチェック</div><div class="hint">ケリー基準 → リミット → ブレーカー</div></div>
+    <div class="kpi"><div class="lb">テスト</div><div class="vl">1,100件以上が合格</div><div class="hint">シグナル拡張・ガイドのテストを含む</div></div>
     <div class="kpi"><div class="lb">バックグラウンドタスク</div><div class="vl">23</div><div class="hint">risk_watcher・psych・scannerを含む</div></div>
   </div>
 </div></section>
 
 <!-- ═══════════════ STEP 1 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 1</span>データ収集 — あらゆる判断の原材料</h2>
-  <p class="sub">すべてはAPIキー不要で機能する無料ソースから始まります（2026-07-14にライブ検証済み）。キーを追加すれば、有料・プレミアムソースも同じ場所に組み込めます。あるソースが停止しても、残りのスナップショットは通常通り保存されます（フェイルソフト）。</p>
+  <h2><span class="no">ステップ 1</span>データ収集 — あらゆる意思決定の原材料</h2>
+  <p class="sub">すべてはAPIキーなしで機能する無料ソースから始まります（2026-07-14にライブ検証済み）。キーや有料・プレミアムソースを追加すれば、同じ場所に組み込まれます。あるソースが停止しても、残りのスナップショットは通常通り保存され続けます（フェイルソフト）。</p>
   <table>
     <thead><tr><th>ソース</th><th>収集する内容</th><th>使用箇所</th><th>備考</th></tr></thead>
     <tbody>
-      <tr><td><b>OKX</b></td><td>日足/時間足ローソク足、資金調達率、現物＆先物価格（ベーシス）、24時間出来高、新規上場リスト</td><td>STEP 2・3・4</td><td>BybitはUS IPをブロック → OKXで代替</td></tr>
-      <tr><td><b>alternative.me</b></td><td>Fear &amp; Greedインデックス（F&amp;G）＋日次履歴</td><td>STEP 4・5</td><td>観測値：22→25「Extreme Fear」</td></tr>
-      <tr><td><b>StockTwits</b></td><td>銘柄別のクラウドセンチメント（強気/弱気）、1時間あたりの言及数</td><td>STEP 2・4・5・6</td><td>BTC.Xのウォッチャーは670K人</td></tr>
-      <tr><td><b>Polymarket</b></td><td>予測市場のオッズと24時間変化（Δodds）</td><td>STEP 4・6</td><td>期待感シグナルの情報源</td></tr>
-      <tr><td><b>Alpha Vantage</b></td><td>ニュース＋センチメントスコア、株価、ETFフロー</td><td>STEP 6、ニュースインテリジェンス</td><td>デモキーでも基本機能は動作</td></tr>
-      <tr><td><b>FRED・FinnHub</b></td><td>マクロ指標、企業ニュース（オプション）</td><td>STEP 6</td><td>キーが存在する場合のみ自動連携</td></tr>
-      <tr><td><b>OKX（拡張）</b></td><td>建玉、ロング/ショート比率、実際の清算注文</td><td>STEP 3・4</td><td>キー不要の公開エンドポイント、ライブ検証済み</td></tr>
-      <tr><td><b>SoSoValue</b></td><td>BTC現物ETFの日次および累積ドル資金フロー(実データ)</td><td>STEP 6、ニュースインテリジェンス</td><td>必要: <code>SOSOVALUE_API_KEY</code> (無料ティア)</td></tr>
-      <tr><td><b>Upbit · FRED</b></td><td>キムチプレミアム(Upbit対OKX・USD/KRW)、ドル指数(DXY)</td><td>STEP 5·6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
-      <tr><td><b>イベントカレンダー</b></td><td>FOMC・CPI・NFPスケジュール(静的、夏時間対応)</td><td>STEP 7·8</td><td>経由でのエントリーブロック(任意) <code>EVENT_GUARD_ENABLED</code></td></tr>
-      <tr><td><b>blockchain.info · Etherscan</b></td><td>ホエールトラッキング:大口BTC送金(メンプール)、ETH取引所ホットウォレットフロー(実方向)</td><td>STEP 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> ・BTCキーレス</td></tr>
+      <tr><td><b>OKX</b></td><td>日足/時間足のローソク足、資金調達率、現物＆先物価格（ベーシス）、24時間出来高、新規上場リスト</td><td>ステップ 2・3・4</td><td>BybitはUS IPをブロック → OKXで対応</td></tr>
+      <tr><td><b>alternative.me</b></td><td>Fear &amp; Greed指数（F&amp;G）+ 日次履歴</td><td>STEP 4・5</td><td>観測値：22→25「Extreme Fear」</td></tr>
+      <tr><td><b>StockTwits</b></td><td>銘柄ごとの群衆心理（強気/弱気）、1時間あたりの言及数</td><td>STEP 2・4・5・6</td><td>BTC.Xには67万人のウォッチャーがいる</td></tr>
+      <tr><td><b>Polymarket</b></td><td>予測市場のオッズと24時間変化（Δオッズ）</td><td>ステップ 4·6</td><td>期待感シグナルの情報源</td></tr>
+      <tr><td><b>Alpha Vantage</b></td><td>ニュース + センチメントスコア、株価、ETFフロー</td><td>STEP 6、ニュースインテリジェンス</td><td>基本機能はデモキーでも動作</td></tr>
+      <tr><td><b>FRED・FinnHub</b></td><td>マクロ指標、企業ニュース（任意）</td><td>ステップ6</td><td>キーが存在する場合のみ自動的に組み込まれる</td></tr>
+      <tr><td><b>OKX（拡張版）</b></td><td>建玉、ロング/ショート比率、実際の清算注文</td><td>ステップ 3・4</td><td>キー不要のパブリックエンドポイント、ライブ検証済み</td></tr>
+      <tr><td><b>SoSoValue</b></td><td>BTC 現物ETF 日次・累積ドル資金フロー(実データ)</td><td>STEP 6, ニュースインテリジェンス</td><td>必要: <code>SOSOVALUE_API_KEY</code> (無料枠)</td></tr>
+      <tr><td><b>Upbit · FRED</b></td><td>キムチプレミアム(Upbit vs OKX · USD/KRW)、ドル指数(DXY)</td><td>ステップ 5・6</td><td><code>CROSS_MARKET_ENABLED</code></td></tr>
+      <tr><td><b>イベントカレンダー</b></td><td>FOMC·CPI·NFP スケジュール(静的、DST対応)</td><td>STEP 7・8</td><td> による任意のエントリーブロック<code>EVENT_GUARD_ENABLED</code></td></tr>
+      <tr><td><b>blockchain.info · Etherscan</b></td><td>クジラ追跡: BTCの大口送金(mempool)、ETH取引所ホットウォレットフロー(実方向)</td><td>ステップ 2·4·6</td><td><code>WHALE_FEED_ENABLED</code> · BTC キーレス</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>正直性の原則:</b> 清算データは現在収集されています <b>実データとして(estimated: false, liq_source: okx)</b> OKXの公開清算フィードから。そのフィードがダウンしている場合のみ、ボラティリティσ+出来高プロキシにフォールバックし、UIには「estimated」というラベルが表示されます。オンチェーンのホエールトラッキングも、無料ソースから実データとして収集されるようになりました — 大口BTC送金(blockchain.infoメンプール、キーレス)+ ETH取引所ホットウォレットフロー(Etherscan;流入=売り圧力/流出=蓄積、方向を測定)。 <code>WHALE_FEED_ENABLED</code> ・しきい値 <code>WHALE_MIN_USD</code> (デフォルト$5M)。古い保留メモは廃止されました — インターフェーススタブ(<code>fetch_whale_signals</code>)はすでに配線済みなので、ソースを接続するだけです。</div>
+  <div class="note red"><b>正直さの原則:</b> 清算データは現在<b>実際に収集されています(estimated: false, liq_source: okx)</b> OKXの公開清算フィードから。このフィードがダウンしている場合のみ、ボラティリティσ + 出来高プロキシにフォールバックし、その場合UIは「推定」とラベル表示します。オンチェーンのクジラ追跡も、無料ソースから実際に収集されるようになりました — BTCの大口送金(blockchain.info mempool、キーレス)+ ETH取引所ホットウォレットフロー(Etherscan; 流入 = 売り圧力 / 流出 = 蓄積、方向を計測)。 <code>WHALE_FEED_ENABLED</code> · 閾値 <code>WHALE_MIN_USD</code> (デフォルト $5M)。古い保留メモは廃止されました — インターフェースのスタブ(<code>fetch_whale_signals</code>）はすでに配線済みなので、ソースを接続するだけです。</div>
 </div></section>
 
 <!-- ═══════════════ STEP 2 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 2</span>ディスカバリー — 「どのコインを監視するか」(スキャナー)</h2>
-  <p class="sub">どんな取引の前にもある質問 — マシンがまずデスクのために候補を絞り込みます。毎時、3つの軸に沿ってスキャンし<code>scanner_snapshots</code>、すべての候補には人間が読める根拠が付与されます。</p>
+  <h2><span class="no">ステップ 2</span>発見 — 「どのコインを監視するか」（スキャナー）</h2>
+  <p class="sub">取引の前に生じる問い ― マシンがまずデスクのために候補を絞り込みます。毎時、3つの軸に沿ってスキャンし、<code>scanner_snapshots</code>に取り込み、各候補には人が読める根拠が付与されます。</p>
   <table>
-    <thead><tr><th>検出軸</th><th>しきい値(デフォルト)</th><th>手法</th></tr></thead>
+    <thead><tr><th>検知軸</th><th>しきい値（デフォルト）</th><th>方式</th></tr></thead>
     <tbody>
-      <tr><td><b>出来高急増</b></td><td>24時間出来高 ≥ <b>×2.0</b> 自身の7日間平均</td><td>OKXの上位30銘柄のUSDT無期限先物それぞれを、自身の7日間の1日足平均と比較</td></tr>
-      <tr><td><b>言及急増</b></td><td>1時間あたりの言及数 ≥ <b>+100%</b> 対ベースライン</td><td>StockTwitsの言及速度を、独自の過去のスナップショットベースラインと比較(3回以上のスキャンが蓄積された後にのみ発火)</td></tr>
-      <tr><td><b>新規上場</b></td><td>リストに初めて出現した時点で即座に候補入り</td><td>OKXのSWAP銘柄リストを前回のスナップショットと差分比較</td></tr>
+      <tr><td><b>出来高急増</b></td><td>24時間出来高 ≥ <b>×2.0</b>自身の7日間平均</td><td>OKXの上位30 USDT無期限先物それぞれを、自身の7日間の1D足平均と比較</td></tr>
+      <tr><td><b>言及急増</b></td><td>1時間あたりの言及数 ≥ <b>+100%</b>ベースライン比</td><td>StockTwitsの言及速度を、当社独自の過去のスナップショットのベースラインと比較（スキャンが3回以上蓄積されて初めて発火）</td></tr>
+      <tr><td><b>新規上場</b></td><td>リストへの初出現時に即座に候補となる</td><td>OKXのSWAP銘柄リストを直前のスナップショットと比較（差分抽出）</td></tr>
     </tbody>
   </table>
-  <div class="note"><b>自動化フック:</b> ルールのシンボルを次のように設定 <code>SCANNER</code> すると、すべてのティックで <b>自動的に第1候補を分析する</b> その瞬間の。ここでは「何を買うか」さえも自動化される。観測された例: <code>BSBUSDT — volume x3.52 vs 7d avg</code>.</div>
+  <div class="note"><b>自動化フック：</b> ルールのシンボルを <code>SCANNER</code> に設定すると、ティックごとに <b>**#1候補**を自動分析</b> した瞬間。ここでは「何を買うか」さえも自動化されます。観測例: <code>BSBUSDT — 出来高 7日平均比 x3.52</code>.</div>
 </div></section>
 
 <!-- ═══════════════ STEP 3 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 3</span>定量分析 — 数字が先(Crypto Quant)</h2>
-  <p class="sub">社内で計算され、外部のTAライブラリは使用しない。出力は既存の4アナリスト・パイプラインへのテクニカルアナリスト入力と同じ形をとるため、暗号資産も米国株と同じ定量的な扱いを受ける。</p>
+  <h2><span class="no">ステップ3</span>定量分析 — 数値優先（クリプト・クオンツ）</h2>
+  <p class="sub">外部のTAライブラリを使わず自社内で計算。出力は既存の4アナリスト・パイプラインにおけるテクニカルアナリスト入力と同じ形式を取るため、暗号資産にも米国株と同等の定量的処理が適用されます。</p>
   <table>
-    <thead><tr><th>指標</th><th>計算方法</th><th>採点ルール(決定論的)</th></tr></thead>
+    <thead><tr><th>指標</th><th>計算方法</th><th>スコアリングルール（決定論的）</th></tr></thead>
     <tbody>
-      <tr><td><b>RSI(14)</b></td><td>OKXの日足ローソク足、ワイルダー平滑化(チャートサイトのデフォルトと一致)</td><td>≥ 70 買われすぎ <b>−2</b> (フレームワークの売りトリガー) · ≤ 30 <b>+2</b> (逆張り)</td></tr>
-      <tr><td><b>MA 5 / 20 / 60</b></td><td>日足ローソク足による単純移動平均</td><td>price&gt;MA20 <b>±1</b> · MA5&gt;MA20 <b>±1</b> · MA20&gt;MA60 <b>±1</b></td></tr>
-      <tr><td><b>σ・出来高</b></td><td>24時間の1時間足リターンの標準偏差 + 直近1時間の出来高比率</td><td>3σショック → ブレーカー信号として転送(STEP 8)</td></tr>
-      <tr><td><b>資金調達率</b></td><td>OKXパーペチュアルの資金調達率(8時間)</td><td>&gt; +0.05% 買い持ち過密 <b>−1</b> · &lt; −0.05% <b>+1</b></td></tr>
-      <tr><td><b>ベーシス</b></td><td>(スワップ − スポット) / スポット</td><td>≥ +1.2% <b>+1</b> (買いギャップ・トリガー) · ≤ −0.5% <b>−1</b></td></tr>
+      <tr><td><b>RSI(14)</b></td><td>OKXの日足ローソク足、Wilderスムージング（チャートサイトのデフォルトと一致）</td><td>≥ 70 買われすぎ <b>−2</b>（フレームワークの売りトリガー）· ≤ 30 <b>+2</b>（逆張り）</td></tr>
+      <tr><td><b>MA 5 / 20 / 60</b></td><td>日足ローソク足の単純移動平均</td><td>price&gt;MA20 <b>±1</b> · MA5＞MA20 <b>±1</b> ・MA20＞MA60 <b>±1</b></td></tr>
+      <tr><td><b>σ・出来高</b></td><td>24時間の1時間足リターンの標準偏差 + 直近1時間の出来高比率</td><td>3σショック → ブレーカーシグナルとして転送（STEP 8）</td></tr>
+      <tr><td><b>ファンディングレート</b></td><td>OKXパーペチュアルのファンディングレート（8時間）</td><td>&gt; +0.05% ロング過熱 <b>−1</b> · &lt; −0.05% <b>+1</b></td></tr>
+      <tr><td><b>ベーシス</b></td><td>(スワップ − スポット) / スポット</td><td>≥ +1.2% <b>+1</b> (買いギャップトリガー) · ≤ −0.5% <b>−1</b></td></tr>
     </tbody>
   </table>
-  <div class="formula">合計スコア ≥ +2 → BUY &nbsp;·&nbsp; ≤ −2 → SELL &nbsp;·&nbsp; それ以外 → HOLD &nbsp;&nbsp;(各要因は bullish_factors / risk_factors リストの根拠文として残る)</div>
-  <div class="note">観測結果(デプロイ直後のsooppiy.com): BTC RSI 55.05 · funding 0.0001 · basis −0.03% · price 64,757 — quantコンポーネント +0.25。</div>
+  <div class="formula">合計スコア ≥ +2 → BUY &nbsp;·&nbsp; ≤ −2 → SELL &nbsp;·&nbsp; それ以外 → HOLD &nbsp;&nbsp;(各要因は bullish_factors / risk_factors リストに根拠文として保持されます)</div>
+  <div class="note">観測値(デプロイ直後の sooppiy.com):BTC RSI 55.05 · ファンディング 0.0001 · ベーシス −0.03% · 価格 64,757 — クオンツ要素 +0.25。</div>
 </div></section>
 
 <!-- ═══════════════ STEP 4 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 4</span>心理分析 — 群衆を読む、追随しない</h2>
-  <p class="sub">市場心理は<b>測定</b>するものであり、追随するものではない。1時間ごとに、4つの心理指標が読み込まれ、<code>psych_snapshots</code>.</p>
+  <h2><span class="no">ステップ 4</span>心理分析 — 群衆を読み、それに従わない</h2>
+  <p class="sub">市場心理は<b>測定</b>するものであり、従うものではありません。1時間ごとに、4つの心理指標が<code>psych_snapshots</code>.</p>
   <table>
-    <thead><tr><th>指標</th><th>それが何か</th><th>トリガー連携</th></tr></thead>
+    <thead><tr><th>インジケーター</th><th>それは何か</th><th>トリガーリンク</th></tr></thead>
     <tbody>
-      <tr><td><b>Fear &amp; Greed</b></td><td>指数値 + 分類 + 3日間の変化(Δ3d)</td><td>Δ3d ≥ <b>+10</b> = 恐怖からの回復 → 買いシグナル要素</td></tr>
-      <tr><td><b>センチメント急変</b></td><td>ニュースカテゴリごとの平均センチメントのzスコア(自社のニューススナップショット履歴と比較)</td><td>z ≤ <b>−2</b> ネガティブな急変 → 売り要素 + 実験イベントの記録</td></tr>
-      <tr><td><b>ショック(実清算)</b></td><td>OKXの実清算想定元本、1時間合計(<code>estimated: false · liq_source: okx</code>) · フィードがダウンしている場合のみσ+出来高プロキシ</td><td>デフォルト閾値（$5M）超過 → ブレーカー/リデュース信号</td></tr>
-      <tr><td><b>先読み（予測市場）</b></td><td>Polymarketのオッズ（暗号資産／マクロ関連市場のみ、トピックでフィルタ済み）、前回スナップショットに対する市場ごとの符号付きΔodds</td><td>Δodds ≥ <b>+0.05</b>/24h = 価格再形成 → 買いコンポーネント</td></tr>
+      <tr><td><b>恐怖と強欲</b></td><td>指数値 + 分類 + 3日間変化（Δ3d）</td><td>Δ3d ≥ <b>+10</b> = 恐怖回復 → 買いシグナル要素</td></tr>
+      <tr><td><b>センチメントスパイク</b></td><td>ニュースカテゴリごとの平均センチメントのzスコア（自社ニューススナップショット履歴との比較）</td><td>z ≤ <b>−2</b> ネガティブスパイク → 売り要素 + 実験イベントのジャーナリング</td></tr>
+      <tr><td><b>ショック（実清算）</b></td><td>OKX実清算想定元本、1時間合計（<code>estimated: false · liq_source: okx</code>・ボラティリティ+出来高プロキシのみ（フィードがダウンしている場合）</td><td>閾値超過（デフォルト $5M）→ ブレーカー/削減シグナル</td></tr>
+      <tr><td><b>予測（予測市場）</b></td><td>Polymarketのオッズ（暗号資産/マクロ関連市場のみ、トピックでフィルタ済み）、前回スナップショットに対する符号付きΔoddsを市場ごとに1つ</td><td>Δodds ≥ <b>+0.05</b>/24h = 価格再設定 → 買いコンポーネント</td></tr>
     </tbody>
   </table>
-  <div class="note">実測値: F&amp;G <b>25・Extreme Fear</b>、Δ3d −1 — 現時点のデータそのものが「回復トリガー未発火」状態であることを裏付けている。</div>
+  <div class="note">観測値：F&amp;G <b>25・Extreme Fear</b>、Δ3d −1 — 現時点でデータそのものが「回復トリガー未発火」の状態を裏付けている。</div>
 </div></section>
 
 <!-- ═══════════════ STEP 5 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 5</span>シグナル融合 — 3つのファミリー、1つのスコア</h2>
-  <p class="sub">quant、sentiment、psychologyという3つのシグナルファミリーは、銘柄ごとに1つのスコアへ融合されます。AI融合が有効な場合（本番環境ではデフォルト）、モデルはファクターのスナップショット全体を自ら評価し、独自のコンポーネント重みを返します。以下の固定加重和は決定論的な<b>フォールバック</b>であり、モデルが利用できない場合に使用されます。各結果にはソース（AI／rule／rule-fallback）のラベルが付きます。読み取り専用（GET）であり、このステップが注文を発注することはありません。</p>
-  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;（各コンポーネントは−1〜+1にクランプ；欠損している成分は除外し再正規化）。両パスとも共通：psychologyが単独で取引に使われることはなく、その重みは0.3を超えることはできません — AIの判定がこれに反する場合は破棄されます。</div>
+  <h2><span class="no">ステップ 5</span>シグナル融合 — 3つのファミリー、1つのスコア</h2>
+  <p class="sub">クオンツ、センチメント、心理という3つのシグナルファミリーは、シンボルごとに1つのスコアへと融合されます。AI融合がオン（本番環境ではデフォルト）の場合、モデルはファクタースナップショット全体を独自に評価し、自身のコンポーネント重みを返します。以下の固定加重和は、モデルが利用できない場合に使用される決定論的な<b>フォールバック</b>です。各結果にはそのソース（AI／ルール／ルールフォールバック）がラベル付けされます。読み取り専用（GET）；このステップは注文を発注することはありません。</p>
+  <div class="formula">fallback = 0.5 × quant + 0.3 × sentiment + 0.2 × psych &nbsp;&nbsp;（各コンポーネントは −1 ～ +1 にクランプ；欠損しているものは除外され再正規化されます）。両方の経路において：心理単独で取引されることは決してなく、その重みは0.3を超えることはできません — それ以外を主張するAI判定は破棄されます。</div>
 
   <div class="diagram">
   <svg viewBox="0 0 940 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal fusion">
@@ -328,21 +328,21 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
     <g>
       <rect x="20" y="24" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="48" text-anchor="middle" class="sv-t">Quant（STEP 3）</text>
+      <text x="145" y="48" text-anchor="middle" class="sv-t">クオンツ（STEP 3）</text>
       <text x="145" y="66" text-anchor="middle" class="sv-s">signal_score ÷ 4 → −1 ～ +1</text>
       <rect x="20" y="112" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="136" text-anchor="middle" class="sv-t">Sentiment（StockTwits）</text>
-      <text x="145" y="154" text-anchor="middle" class="sv-s">（bullish − bearish）÷ 集計対象合計</text>
+      <text x="145" y="136" text-anchor="middle" class="sv-t">センチメント（StockTwits）</text>
+      <text x="145" y="154" text-anchor="middle" class="sv-s">（強気 − 弱気）÷ 採点対象合計</text>
       <rect x="20" y="200" width="250" height="60" rx="10" class="sv-acc"/>
-      <text x="145" y="224" text-anchor="middle" class="sv-t">Psychology（STEP 4）</text>
-      <text x="145" y="242" text-anchor="middle" class="sv-s">F&amp;G Δ + スパイク + Δodds の合成</text>
+      <text x="145" y="224" text-anchor="middle" class="sv-t">心理（STEP 4）</text>
+      <text x="145" y="242" text-anchor="middle" class="sv-s">F&amp;G Δ + スパイク + Δoddsの組み合わせ</text>
     </g>
     <path d="M270 54 H400 Q430 54 442 118" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
     <path d="M270 142 H436" class="sv-accline" marker-end="url(#ar2)"/>
     <path d="M270 230 H400 Q430 230 442 166" class="sv-accline" fill="none" marker-end="url(#ar2)"/>
     <text x="330" y="44" class="sv-m" fill="var(--accent)">w = 0.5</text>
     <text x="330" y="132" class="sv-m" fill="var(--accent)">w = 0.3</text>
-    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2（上限0.3 — 構造上の制約）</text>
+    <text x="330" y="220" class="sv-m" fill="var(--accent)">w = 0.2（上限 0.3 — 構造的）</text>
     <circle cx="480" cy="142" r="34" class="sv-card" stroke-width="2"/>
     <text x="480" y="138" text-anchor="middle" class="sv-t" style="font-size:17px">Σ</text>
     <text x="480" y="156" text-anchor="middle" class="sv-s">加重和</text>
@@ -356,30 +356,30 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <text x="752" y="148" text-anchor="middle" class="sv-s">HOLD</text>
     <rect x="802" y="132" width="98" height="24" rx="6" class="sv-good"/>
     <text x="851" y="148" text-anchor="middle" class="sv-s" fill="var(--good-ink)">BUY ≥ +0.25</text>
-    <text x="752" y="176" text-anchor="middle" class="sv-m">missing配列には常に欠落項目が開示される</text>
+    <text x="752" y="176" text-anchor="middle" class="sv-m">missing配列は常に欠落しているものを開示する</text>
   </svg>
   </div>
 
-  <h3>フレームワークのトリガー対応表（plan §4の内容をそのまま実装）</h3>
+  <h3>フレームワークのトリガーマッピング（プラン§4の通りに実装）</h3>
   <table>
     <thead><tr><th>方向</th><th>トリガー</th><th>閾値（デフォルト）</th></tr></thead>
     <tbody>
-      <tr><td><span class="tag ok">Buy</span></td><td>Fear回復: F&amp;Gの3日間変化</td><td>Δ3d ≥ +10</td></tr>
-      <tr><td><span class="tag ok">Buy</span></td><td>群衆心理の優勢</td><td>sentiment &gt; +0.2</td></tr>
-      <tr><td><span class="tag ok">Buy</span></td><td>現物・先物間のギャップ</td><td>basis ≥ +1.2%</td></tr>
-      <tr><td><span class="tag ok">Buy</span></td><td>予測市場の価格再形成</td><td>Δodds ≥ +0.05 / 24h</td></tr>
-      <tr><td><span class="tag crit">Sell</span></td><td>買われすぎ</td><td>RSI ≥ 70</td></tr>
-      <tr><td><span class="tag crit">Sell</span></td><td>ネガティブセンチメントのスパイク</td><td>z ≤ −2</td></tr>
-      <tr><td><span class="tag warn">Reduce</span></td><td>ボラティリティショック（清算プロキシ）</td><td>|return| &gt; 3σ → ブレーカー候補</td></tr>
+      <tr><td><span class="tag ok">買い</span></td><td>恐怖からの回復：F&amp;Gの3日間変化</td><td>Δ3d ≥ +10</td></tr>
+      <tr><td><span class="tag ok">買い</span></td><td>群衆センチメントの優勢</td><td>センチメント &gt; +0.2</td></tr>
+      <tr><td><span class="tag ok">買い</span></td><td>現物-先物ギャップ</td><td>ベーシス ≥ +1.2%</td></tr>
+      <tr><td><span class="tag ok">買い</span></td><td>予測市場の価格再設定</td><td>Δodds ≥ +0.05 / 24時間</td></tr>
+      <tr><td><span class="tag crit">売り</span></td><td>買われすぎ</td><td>RSIが70以上</td></tr>
+      <tr><td><span class="tag crit">売り</span></td><td>ネガティブセンチメントのスパイク</td><td>z ≤ −2</td></tr>
+      <tr><td><span class="tag warn">削減</span></td><td>ボラティリティショック（清算プロキシ）</td><td>|リターン| &gt; 3σ → ブレーカー候補</td></tr>
     </tbody>
   </table>
-  <div class="note red"><b>心理キャップは構造的なものである。</b> AIパスと固定ウェイトパスの両方で、2つの保証が成立する。第一に、<b>心理は単独では取引しない</b>: クオンツもセンチメントもない場合、判定は構造上強制的にholdとなる — モデルは参照すらされないため、ルールを超えて主張することはできない。第二に、心理ウェイトは0.3を超えることは決してない(<code>PSYCH_WEIGHT_MAX</code>): 固定ウェイトパスは超過分を再正規化して取り除き、AIパスはpsychウェイトがキャップを超えると宣言した判定を破棄し、決定論的スコアにフォールバックする。「心理主導の取引をしない」は制約であり、ガイドラインではない。</div>
+  <div class="note red"><b>サイコロジー上限は構造的なものです。</b> AIパスと固定ウェイトパスの両方で、2つの保証が成り立ちます。第一に、<b>サイコロジー単独では取引しない</b>：クオンツもセンチメントもない場合、判定は構造上ホールドに強制されます — モデルにすら問い合わせが行われないため、ルールを覆すことはできません。第二に、サイコロジーウェイトは0.3を超えることができません（<code>PSYCH_WEIGHT_MAX</code>）：固定ウェイトパスでは超過分を再正規化して除去し、AIパスではサイコロジーウェイトが上限を超えると宣言した判定を破棄し、決定論的スコアにフォールバックします。「サイコロジー主導の取引をしない」は、ガイドラインではなく制約です。</div>
 </div></section>
 
 <!-- ═══════════════ STEP 6 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 6</span>AI 4アナリスト+トレーダー討論 — 最終判断</h2>
-  <p class="sub">これは実際のトレード判断を下すエンジンである。4人のアナリストがそれぞれ短評を書き、その後トレーダー+リスクチームが討論して1つの判断と文書レポートを作成する。</p>
+  <h2><span class="no">ステップ 6</span>AI 4アナリスト＋トレーダー討議 — 最終判断</h2>
+  <p class="sub">これは実際の取引判断を行うエンジンです。4名のアナリストがそれぞれ簡潔なブリーフを作成し、その後トレーダー＋リスクチームが討議して1つの判断と文書レポートを作成します。</p>
 
   <div class="diagram">
   <svg viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-analyst structure">
@@ -391,55 +391,55 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
     <g>
       <rect x="20" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="125" y="42" text-anchor="middle" class="sv-t">① ニュースアナリスト</text>
-      <text x="125" y="58" text-anchor="middle" class="sv-s">市場・マクロニュース + センチメントスコア</text>
-      <text x="125" y="73" text-anchor="middle" class="sv-m">AV NEWS_SENTIMENT · FinnHub</text>
+      <text x="125" y="42" text-anchor="middle" class="sv-t">①ニュースアナリスト</text>
+      <text x="125" y="58" text-anchor="middle" class="sv-s">市場・マクロニュース＋センチメントスコア</text>
+      <text x="125" y="73" text-anchor="middle" class="sv-m">AV NEWS_SENTIMENT・FinnHub</text>
       <rect x="250" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="355" y="42" text-anchor="middle" class="sv-t">② センチメントアナリスト</text>
-      <text x="355" y="58" text-anchor="middle" class="sv-s">ティッカー・市場センチメント集計</text>
+      <text x="355" y="42" text-anchor="middle" class="sv-t">②センチメントアナリスト</text>
+      <text x="355" y="58" text-anchor="middle" class="sv-s">銘柄・市場センチメント集計</text>
       <text x="355" y="73" text-anchor="middle" class="sv-m">StockTwitsクラウドデータ</text>
       <rect x="480" y="20" width="210" height="62" rx="10" class="sv-card"/>
-      <text x="585" y="42" text-anchor="middle" class="sv-t">③ ファンダメンタル・マクロ</text>
-      <text x="585" y="58" text-anchor="middle" class="sv-s">マクロレジーム + 予測市場</text>
-      <text x="585" y="73" text-anchor="middle" class="sv-m">FRED · Polymarket</text>
+      <text x="585" y="42" text-anchor="middle" class="sv-t">③ファンダメンタル・マクロ</text>
+      <text x="585" y="58" text-anchor="middle" class="sv-s">マクロレジーム＋予測市場</text>
+      <text x="585" y="73" text-anchor="middle" class="sv-m">FRED・Polymarket</text>
       <rect x="710" y="20" width="210" height="62" rx="10" class="sv-acc"/>
-      <text x="815" y="42" text-anchor="middle" class="sv-t">④ テクニカルアナリスト</text>
-      <text x="815" y="58" text-anchor="middle" class="sv-s">STEP 3のクオンツにおける仮想通貨フィード</text>
-      <text x="815" y="73" text-anchor="middle" class="sv-m">RSI·MA·σ·funding·basis</text>
+      <text x="815" y="42" text-anchor="middle" class="sv-t">④テクニカルアナリスト</text>
+      <text x="815" y="58" text-anchor="middle" class="sv-s">STEP 3クオンツの暗号資産フィード</text>
+      <text x="815" y="73" text-anchor="middle" class="sv-m">RSI・MA・σ・ファンディング・ベーシス</text>
     </g>
     <path d="M125 82 V120 H470" class="sv-line"/>
     <path d="M355 82 V120" class="sv-line"/>
     <path d="M585 82 V120" class="sv-line"/>
     <path d="M815 82 V120 H470 M470 120 V138" class="sv-line" marker-end="url(#ar3)"/>
     <rect x="290" y="140" width="360" height="56" rx="10" class="sv-warn"/>
-    <text x="470" y="162" text-anchor="middle" class="sv-t">トレーダー+リスクチーム討論</text>
-    <text x="470" y="180" text-anchor="middle" class="sv-s">4つの短評を1つの判断に統合する(単一LLM呼び出し)</text>
+    <text x="470" y="162" text-anchor="middle" class="sv-t">トレーダー＋リスクチーム討議</text>
+    <text x="470" y="180" text-anchor="middle" class="sv-s">4つのブリーフを1つの判断に統合（単一のLLM呼び出し）</text>
     <path d="M470 196 V222" class="sv-goodline" marker-end="url(#ar3g)"/>
     <rect x="270" y="224" width="400" height="30" rx="8" class="sv-good"/>
-    <text x="470" y="244" text-anchor="middle" class="sv-t">判断: BUY / SELL / HOLD + 確信度(0~1) + 文書レポート</text>
+    <text x="470" y="244" text-anchor="middle" class="sv-t">判断：BUY / SELL / HOLD ＋ 確信度（0~1）＋ 文書レポート</text>
   </svg>
   </div>
 
   <ul>
-    <li><b>LLMを使用する場合</b> — 設定されたプロバイダー(OpenAI, Gemini, Grok, Qwen, GLM, local, OpenRouter, Anthropic)が短評と討論を生成する。</li>
-    <li><b>LLMを使用しない場合</b> — 役割ごとの<b>決定論的ルールベースのフォールバック</b>が、同じデータから同じ形式で短評と判断を生成する。エンジンが停止することはない。</li>
-    <li>レッドチームレビューで発見・修正された実際のバグ: ルールベースの確信度がscoreの代わりに|score|を使用していなかったため、<b>sell判断が到達不能</b>になっていた → 修正済み(<code>105d7e6</code>).</li>
+    <li><b>LLMを使用する場合</b> — 設定されたプロバイダー（OpenAI、Gemini、Grok、Qwen、GLM、ローカル、OpenRouter、Anthropic）がブリーフと討議を生成します。</li>
+    <li><b>LLMを使用しない場合</b> — 役割ごとの<b>決定論的ルールベースのフォールバック</b>が、同じデータから同じ形式でブリーフと判断を生成します。エンジンは決して停止しません。</li>
+    <li>レッドチームレビューで発見・修正された実際のバグ：ルールベースの確信度がscoreの代わりに|score|を使用していたため、<b>sell判断が到達不能</b>になっていました → 修正済み（<code>105d7e6</code>).</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 7 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 7</span>自動化ルール — ユーザーが決めること</h2>
-  <p class="sub">自動化の範囲と強度は、すべてユーザーが設定します。自動化ティックは60秒ごとに実行され、「有効かつ実行タイミングが来ている」ルールのみを実行します。UIには3つのモードが用意されています — ①シンプル（コインとリスク許容度のみ選択）、②標準（推奨プリセットを調整）、③エキスパート（全パラメータ制御）。</p>
+  <h2><span class="no">ステップ 7</span>自動化ルール — ユーザーが決めること</h2>
+  <p class="sub">自動化の範囲と強度はすべてユーザーが設定します。自動化ティックは60秒ごとに実行され、「有効かつ実行時刻」のルールのみを実行します。UIには3つのモードがあります — ①シンプル（コインとリスク許容度のみ選択）、②スタンダード（推奨プリセットを調整）、③エキスパート（全パラメータ制御）。</p>
   <table>
     <thead><tr><th>設定</th><th>範囲 / デフォルト</th><th>意味</th></tr></thead>
     <tbody>
-      <tr><td><code>symbol</code></td><td>BTC, NVDA … または <b>SCANNER</b></td><td>分析対象。SCANNERの場合、その時点でのスキャナーの第1候補を自動選択</td></tr>
-      <tr><td><code>market</code></td><td>crypto · us-stock</td><td>米国株は市場が休場中は約定をスキップ（分析は実行され、理由がログに記録されます）</td></tr>
-      <tr><td><code>interval_minutes</code></td><td>5 ~ 1440（デフォルト60）</td><td>分析間隔</td></tr>
-      <tr><td><code>min_confidence</code></td><td>0 ~ 1（デフォルト<b>0.65</b>)</td><td>この信頼度を下回る判断はログ記録のみで、約定されません</td></tr>
-      <tr><td><code>auto_execute</code></td><td>on / off（デフォルト<b>off</b>)</td><td>Off = 純粋なシグナル生成モード — 人間がレビューして判断します</td></tr>
-      <tr><td><code>account_type</code></td><td>simulator · real</td><td><b>simulatorのみ約定します。</b>realは分析とログ記録のみを行い、注文は一切発注しません（コード上の不変条件）</td></tr>
+      <tr><td><code>symbol</code></td><td>BTC, NVDA … または <b>SCANNER</b></td><td>分析対象。SCANNERの場合、その時点でのスキャナーの1位候補を自動選択</td></tr>
+      <tr><td><code>market</code></td><td>仮想通貨・米国株</td><td>米国株は市場が閉まっている間は約定をスキップします（分析は実行され、理由がログに記録されます）</td></tr>
+      <tr><td><code>interval_minutes</code></td><td>5 ~ 1440（デフォルト 60）</td><td>分析間隔</td></tr>
+      <tr><td><code>min_confidence</code></td><td>0 ~ 1（デフォルト <b>0.65</b>)</td><td>この信頼度を下回る判断はログに記録されるのみで、約定されません</td></tr>
+      <tr><td><code>auto_execute</code></td><td>on / off（デフォルト <b>オフ</b>)</td><td>Offの場合 = 純粋なシグナル生成モード — 人間が確認して判断します</td></tr>
+      <tr><td><code>account_type</code></td><td>シミュレーター・実弾</td><td><b>シミュレーターのみ約定します。</b> realは分析とログ記録のみを行い、注文は一切発注しません（コード上の不変条件）</td></tr>
     </tbody>
   </table>
 
@@ -456,27 +456,27 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <text x="240" y="52" text-anchor="middle" class="sv-t">分析を実行</text>
       <text x="240" y="102" text-anchor="middle" class="sv-s">STEP 6（4-analysts）</text>
       <circle cx="410" cy="75" r="5" fill="var(--accent)"/>
-      <text x="410" y="52" text-anchor="middle" class="sv-t">トリプル条件チェック</text>
+      <text x="410" y="52" text-anchor="middle" class="sv-t">三重条件チェック</text>
       <text x="410" y="102" text-anchor="middle" class="sv-s">auto_execute ∧ BUY/SELL ∧ confidence≥min</text>
       <circle cx="600" cy="75" r="5" fill="var(--yellow)"/>
       <text x="600" y="52" text-anchor="middle" class="sv-t">リスクゲート</text>
       <text x="600" y="102" text-anchor="middle" class="sv-s">STEP 8を通過する必要があります</text>
       <circle cx="760" cy="75" r="5" fill="var(--good)"/>
       <text x="760" y="52" text-anchor="middle" class="sv-t">ペーパー約定</text>
-      <text x="760" y="102" text-anchor="middle" class="sv-s">SL/TPは同時設定</text>
+      <text x="760" y="102" text-anchor="middle" class="sv-s">SL/TPを同時に設定</text>
       <circle cx="880" cy="75" r="5" fill="var(--muted)"/>
       <text x="880" y="52" text-anchor="middle" class="sv-t">ジャーナル</text>
       <text x="880" y="102" text-anchor="middle" class="sv-s">automation_runs</text>
     </g>
   </svg>
   </div>
-  <div class="note">3つの条件のいずれかを満たさない場合、<b>約定なしで判断のみが記録される</b>——なぜ買わなかったかもデータになる。</div>
+  <div class="note">3つの条件のいずれかが満たされない場合、<b>約定なしで判断がログに記録されます</b> — なぜ買わなかったかもデータになります。</div>
 </div></section>
 
 <!-- ═══════════════ STEP 8 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 8</span>リスクゲート——フレームワークの「必須」項目</h2>
-  <p class="sub">すべての自動発注はトリプルゲートを通過しなければならず、例外はない。ゲートは注文を<b>縮小</b>または<b>却下</b>することしかできず、拡大することはない。</p>
+  <h2><span class="no">ステップ8</span>リスクゲート — フレームワークの「必須」項目</h2>
+  <p class="sub">すべての自動注文は例外なく三重ゲートを通過しなければなりません。ゲートは注文を<b>縮小</b>または<b>拒否</b>することしかできません — 決して拡大はしません。</p>
 
   <div class="diagram">
   <svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk gate flow">
@@ -490,128 +490,128 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     </defs>
     <rect x="20" y="30" width="150" height="52" rx="10" class="sv-card"/>
     <text x="95" y="52" text-anchor="middle" class="sv-t">注文意図</text>
-    <text x="95" y="69" text-anchor="middle" class="sv-s">symbol·side·qty·price</text>
+    <text x="95" y="69" text-anchor="middle" class="sv-s">symbol・side・qty・price</text>
     <path d="M170 56 H206" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="208" y="18" width="222" height="86" rx="10" class="sv-warn"/>
-    <text x="319" y="40" text-anchor="middle" class="sv-t">① ケリーサイジング</text>
-    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½ケリー × 資本上限</text>
-    <text x="319" y="74" text-anchor="middle" class="sv-s">自己ジャーナル（最低10取引）· f*≤0で買いを却下</text>
-    <text x="319" y="92" text-anchor="middle" class="sv-m">エージェント単位でuse_kelly=0によりオプトアウト可能</text>
+    <text x="319" y="40" text-anchor="middle" class="sv-t">①ケリーサイジング</text>
+    <text x="319" y="58" text-anchor="middle" class="sv-s">f* = W − (1−W)/R · ½-Kelly × 資金上限</text>
+    <text x="319" y="74" text-anchor="middle" class="sv-s">自身のジャーナル（最低10取引）· f*≤0で買い注文を拒否</text>
+    <text x="319" y="92" text-anchor="middle" class="sv-m">エージェントごとにuse_kelly=0でオプトアウト可能</text>
     <path d="M430 56 H466" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="468" y="18" width="212" height="86" rx="10" class="sv-warn"/>
-    <text x="574" y="40" text-anchor="middle" class="sv-t">② リミットチェック</text>
+    <text x="574" y="40" text-anchor="middle" class="sv-t">②リミットチェック</text>
     <text x="574" y="58" text-anchor="middle" class="sv-s">日次実現損失 ≤ $1,000（UTC）</text>
-    <text x="574" y="72" text-anchor="middle" class="sv-s">銘柄ごと ≤ $10,000 · ポートフォリオ ≤ 資本の60% · ≤ 8ポジション</text>
-    <text x="574" y="90" text-anchor="middle" class="sv-m">ポートフォリオ上限はデフォルトで有効 · PUT /api/risk/limits で調整</text>
+    <text x="574" y="72" text-anchor="middle" class="sv-s">銘柄ごと ≤ $10,000 · ポートフォリオ ≤ 60%資産 · ≤ 8ポジション</text>
+    <text x="574" y="90" text-anchor="middle" class="sv-m">ポートフォリオ上限はデフォルトでオン · PUT /api/risk/limitsで調整</text>
     <path d="M680 56 H716" class="sv-line" marker-end="url(#ar5)"/>
 
     <rect x="718" y="18" width="202" height="86" rx="10" class="sv-warn"/>
-    <text x="819" y="40" text-anchor="middle" class="sv-t">③ サーキットブレーカー</text>
+    <text x="819" y="40" text-anchor="middle" class="sv-t">③サーキットブレーカー</text>
     <text x="819" y="58" text-anchor="middle" class="sv-s">グローバルスコープ（システム·3σショック）</text>
     <text x="819" y="74" text-anchor="middle" class="sv-s">エージェントスコープ（手動HALT）</text>
-    <text x="819" y="92" text-anchor="middle" class="sv-m">いずれかが停止中 → 却下</text>
+    <text x="819" y="92" text-anchor="middle" class="sv-m">いずれかが停止 → 拒否</text>
 
     <path d="M819 104 V150" class="sv-goodline" marker-end="url(#ar5g)"/>
     <text x="848" y="132" class="sv-m" fill="var(--good)">PASS</text>
     <rect x="640" y="152" width="286" height="64" rx="10" class="sv-good"/>
-    <text x="783" y="176" text-anchor="middle" class="sv-t">約定（数量はケリーにより減少する場合あり）</text>
-    <text x="783" y="194" text-anchor="middle" class="sv-s">買いポジションには SL −5%・TP +10% が自動設定される</text>
+    <text x="783" y="176" text-anchor="middle" class="sv-t">約定（数量はケリーにより減額される場合があります）</text>
+    <text x="783" y="194" text-anchor="middle" class="sv-s">buyポジションはSL −5%・TP +10%が自動設定される</text>
 
     <path d="M319 104 V178 H240" class="sv-badline" marker-end="url(#ar5r)"/>
     <text x="345" y="140" class="sv-m" fill="var(--critical)">FAIL（いずれかの段階）</text>
     <rect x="30" y="152" width="208" height="52" rx="10" class="sv-bad"/>
-    <text x="134" y="174" text-anchor="middle" class="sv-t">拒否＋理由を記録</text>
-    <text x="134" y="191" text-anchor="middle" class="sv-s">「なぜ却下したか」も記録される</text>
+    <text x="134" y="174" text-anchor="middle" class="sv-t">却下＋理由を記録</text>
+    <text x="134" y="191" text-anchor="middle" class="sv-s">「却下しなかった理由」も記録される</text>
 
     <!-- watcher loop -->
     <rect x="20" y="240" width="900" height="70" rx="10" class="sv-card" stroke-dasharray="5 4"/>
-    <text x="470" y="264" text-anchor="middle" class="sv-t">SL/TPウォッチャー — 30秒ごとに全建玉をスイープ</text>
-    <text x="470" y="284" text-anchor="middle" class="sv-s">ポーリング価格が stop_loss / take_profit を超えると自動決済される。決済はリスクを減らす操作のため、意図的にゲートを迂回する —</text>
-    <text x="470" y="300" text-anchor="middle" class="sv-s">日次損失上限の抵触やHALT状態が、建玉を構造上決して閉じ込めないようにするため</text>
+    <text x="470" y="264" text-anchor="middle" class="sv-t">SL/TPウォッチャー — 30秒ごとに全ての建玉をスイープ</text>
+    <text x="470" y="284" text-anchor="middle" class="sv-s">ポーリング価格がstop_loss / take_profitを超えると自動決済される。決済はリスクを減らす操作のため、意図的にゲートを迂回する —</text>
+    <text x="470" y="300" text-anchor="middle" class="sv-s">日次損失上限の超過やHALT状態が、建玉を閉じられなくすることは構造上あり得ない</text>
   </svg>
   </div>
 
-  <h3>Kelly公式が行うこと</h3>
-  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = 勝率、R = 平均利益／平均損失 &nbsp;&nbsp;·&nbsp;&nbsp; 発注上限 = ½ f* × 資産（現金＋保有評価額）</div>
+  <h3>Kellyの公式が行うこと</h3>
+  <div class="formula">f* = W − (1 − W) / R &nbsp;&nbsp;·&nbsp;&nbsp; W = 勝率、R = 平均利益/平均損失 &nbsp;&nbsp;·&nbsp;&nbsp; 注文上限 = ½ f* × 資産（現金＋保有評価額）</div>
   <ul>
-    <li>WとRはエージェントの<b>自身のクローズアウト履歴</b>（平均取得原価での再計算、直近5,000件を上限）から算出される — 他者ではなく自分自身の実績である。</li>
-    <li>決済済み取引が10件未満の場合、統計的根拠がないため調整は行われない（過信を防ぐため）。</li>
-    <li>f* ≤ 0 は「エッジなし」を意味し、その買いは拒否される。$1未満に縮小された注文は意味を持たないため、これも拒否される。</li>
+    <li>WとRはエージェントの<b>自身の決済履歴</b>（平均取得原価での再現、直近5,000件を上限）— 他者ではなく自分自身の実績から算出される。</li>
+    <li>決済済みトレードが10件未満の場合は統計的根拠がないため調整は行われない（過信を防ぐため）。</li>
+    <li>f* ≤ 0 は「エッジなし」を意味し、その買いは却下される。$1未満に縮小された注文も意味を持たないため、同様に却下される。</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 9 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">ステップ9</span>約定とポジション管理 — すべてペーパー、すべて台帳上</h2>
-  <p class="sub">約定は手動取引とまったく同じ台帳を使う：signalsの行（signal_type='automation'）＋ポジション更新＋現金更新＋手数料 — すべて1つのトランザクション内で処理される。</p>
+  <h2><span class="no">ステップ 9</span>約定とポジション管理 — すべてペーパー取引、すべて台帳に記録</h2>
+  <p class="sub">約定は手動取引とまったく同じ台帳を使用する：signalsの行（signal_type='automation'）＋ポジション更新＋現金更新＋手数料 — すべて一つのトランザクション内で処理される。</p>
   <ul>
-    <li><b>買い：</b> 現金を確認 → 約定 → 同一トランザクション内でポジション行にSL/TPを登録（ゲートが算出した値、デフォルトは −5% / +10%）。</li>
-    <li><b>売り：</b> 既存のロングポジションに対してのみ実行される — それ以外は「売却対象のロングポジションなし」としてスキップされる。空売りは不可。</li>
-    <li><b>米国株：</b> 市場閉場中は約定なし — 分析とログ記録のみ行う（skip_reasonを保存）。</li>
-    <li><b>価格追跡：</b> 含み損益は<code>price_fetcher</code>ポーリングにより算出され、ブローカーは介さない — ウォッチャーはこれらの価格に対してSL/TPを判定する。</li>
-    <li><b>実口座：</b> account_type='real' のルールでも分析は実行されるが、<b>発注コードそのものが一切組み込まれていない。</b>実際のブローカー連携は、別サブシステムとして将来のフェーズで対応します。</li>
+    <li><b>Buy：</b> 現金を確認 → 約定 → 同じトランザクション内でポジション行にSL/TPを登録（ゲートで計算された値、デフォルトは−5%／+10%）。</li>
+    <li><b>Sell：</b> 既存のロングポジションに対してのみ実行される — それ以外は「no long position to sell」としてスキップされる。空売りは不可。</li>
+    <li><b>米国株：</b> 市場が閉まっている間は約定されない — 分析とログ記録のみ行われる（skip_reasonが保存される）。</li>
+    <li><b>価格追跡：</b> 含み損益は<code>price_fetcher</code>のポーリングから計算され、ブローカーは介さない — ウォッチャーはこれらの価格に基づいてSL/TPを判定する。</li>
+    <li><b>実口座：</b> account_type='real'のルールは分析までは実行されるが、<b>注文コード自体がまったく組み込まれていない。</b>実際のブローカー統合は将来のフェーズで、別サブシステムとして扱います。</li>
   </ul>
 </div></section>
 
 <!-- ═══════════════ STEP 10 ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">STEP 10</span>ジャーナル・レビュー — シグナルは予測ではなく、測定である</h2>
-  <p class="sub">システムは、すべての意思決定を再構築できるときにのみ改善されます。各レイヤーが記録する内容：</p>
+  <h2><span class="no">ステップ10</span>ジャーナル · レビュー — シグナルは予測ではなく測定である</h2>
+  <p class="sub">システムはすべての判断を再構成できるときにのみ改善される。各レイヤーが記録する内容：</p>
   <table>
-    <thead><tr><th>記録</th><th>内容</th><th>確認できる場所</th></tr></thead>
+    <thead><tr><th>記録</th><th>内容</th><th>確認場所</th></tr></thead>
     <tbody>
-      <tr><td><code>signals</code> 台帳</td><td>約定、数量、価格、手数料、SL/TP — 手動トレードと同じフォーマット</td><td>エージェントプロファイル・フィード</td></tr>
+      <tr><td><code>signals</code> 台帳</td><td>約定、数量、価格、手数料、SL/TP — 手動取引と同じフォーマット</td><td>エージェントプロファイル · フィード</td></tr>
       <tr><td><code>automation_runs</code></td><td>各実行の判断、確信度、約定/スキップ理由</td><td>自動化ルール詳細</td></tr>
-      <tr><td>6種類のスナップショット</td><td>ニュース、マクロ、ETF、株式分析、心理、スキャナー — 意思決定時点のエビデンスを保存</td><td>API・シグナルボード</td></tr>
-      <tr><td>実験イベント</td><td>トリガー発火時点のジャーナル（例：センチメント急上昇）</td><td>experiments</td></tr>
-      <tr><td>リスクイベント</td><td>ゲート却下理由・ブレーカー作動・ウォッチャーによるクローズ</td><td>/api/risk/* · logs</td></tr>
+      <tr><td>6種類のスナップショット</td><td>ニュース、マクロ、ETF、株式分析、心理、スキャナー — 判断時点の証拠を保存</td><td>API · シグナルボード</td></tr>
+      <tr><td>実験イベント</td><td>トリガー発火の瞬間のジャーナル（例：センチメント急変）</td><td>実験</td></tr>
+      <tr><td>リスクイベント</td><td>ゲート拒否理由 · ブレーカー作動 · ウォッチャーによるクローズ</td><td>/api/risk/* · ログ</td></tr>
     </tbody>
   </table>
-  <div class="note green"><b>シグナルボード</b>は、これらすべてを1画面に集約します：フュージョンスコア、発火/未発火のトリガー、F&amp;G、スキャナー候補、直近の自動実行 — 人間がいつでも機械の判断を監査できる構造です。</div>
+  <div class="note green"><b>シグナルボード</b> はこれらすべてを1画面に集約する：フュージョンスコア、発火済み/未発火トリガー、F&amp;G、スキャナー候補、直近の自動実行 — 人間がいつでも機械の判断を監査できる構造。</div>
 </div></section>
 
 <!-- ═══════════════ Three Perspectives ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">§11</span>3つの視点 — トレーダー・CEO・QA</h2>
+  <h2><span class="no">§11</span>3つの視点 — トレーダー · CEO · QA</h2>
 
   <div class="persona">
     <div class="persona-head"><span class="persona-icon" style="background:var(--accent)">T</span><b>トレーダーの視点 — 「このシステムをどう信頼し、使えばよいか？」</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>規律はコードによって強制されます。</b> 心理ウェイトの上限（0.3）、ケリー基準の最低サンプル数（10トレード）、確信度ゲート（0.65） — 人間が興奮していても、システムは興奮しません。</li>
-        <li><b>すべてのシグナルには根拠となる文が付きます。</b> 単なる「BUY 0.36」ではなく、「価格がMA20を上回り＋ファンディングは中立＋F&amp;Gは極度の恐怖、リカバリー未発火」— これを読み、あなたが同意するかどうかを判断してください。</li>
-        <li><b>損失は2つの層で制限されます。</b> ポジション単位（SL −5%）とアカウント単位（1日あたり$1,000）。ウォッチャーによるクローズはゲートを迂回するため、ロックアウト状態でも常に決済が可能です。</li>
-        <li><b>推奨される進め方：</b>① auto_executeをオフにして数週間シグナルだけを観察する → ② 自分のジャーナルが10トレードに到達しKellyがオンになったら、小さいサイズで自動化する → ③ min_confidenceを自分の気質に合わせて調整する。0.5まで急いで下げないこと — 保守的な0.65のデフォルトには理由がある。</li>
+        <li><b>規律はコードで強制される。</b> 心理ウェイトの上限（0.3）、ケリー基準の最小サンプル数（10取引）、確信度ゲート（0.65） — 人間が興奮しても、システムは興奮しない。</li>
+        <li><b>すべてのシグナルは根拠となる文を伴う。</b> 単に「BUY 0.36」ではなく「価格がMA20を上回る + ファンディングは中立 + F&amp;Gは極度の恐怖、回復は未発火」— それを読んで同意するかどうかを判断する。</li>
+        <li><b>損失は2つの層で制限される。</b> ポジション単位（SL −5%）とアカウント単位（1日 $1,000）。ウォッチャーによるクローズはゲートを迂回するため、ロックアウト状態でも常に決済は可能である。</li>
+        <li><b>推奨される進め方：</b>  ①auto_executeをオフにして数週間だけシグナルを観察する → ②自分のジャーナルが10トレードに達しKellyがオンになったら、小さいサイズで自動化する → ③min_confidenceは自分の気質に合わせて調整する。0.5まで急いで下げないこと — 保守的な0.65のデフォルトには理由がある。</li>
       </ul>
     </div>
   </div>
 
   <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>CEOの見解 —「なぜこの設計がプロダクトの強みなのか」</b></div>
+    <div class="persona-head"><span class="persona-icon" style="background:var(--violet)">C</span><b>CEOの視点 ——「この設計がプロダクトの優位性である理由」</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>ポジショニング:</b> 「利益保証ボット」ではなく <b>インテリジェント自動化エージェント — 測定可能なシグナル収集 + 規律ある自動化のプラットフォーム</b>。根拠となる文、スナップショット、そして再検証可能性が差別化要因であり、同時に規制リスクと信頼リスクを低減する。</li>
-        <li><b>Paper-firstは戦略である。</b> リアルアカウント連携がないのは未完成なのではなく、段階的な設計である — ユーザーはリスクなしでシステムの実力を検証し、我々は観測データでエンジンを改善し、その後ブローカー統合(別サブシステム)を重ねる。</li>
-        <li><b>コスト構造:</b> 現行のパイプライン全体は無料ソースで動作しており — 限界コストゼロでスケールする。LLMと有料データ(whale/liquidation)は収益後に追加されるオプションレイヤーである。</li>
-        <li><b>ロードマップの順序:</b> P6 ホエール/清算(有料ソース) → より深いバックテスト → 実際のブローカー統合 → エージェントマーケットプレイス。各段階は前段階のデータの上に構築されます。</li>
-        <li><b>リスク管理がブランドです:</b> 「心理主導の取引が構造的に不可能なプラットフォーム」はマーケティングの謳い文句であると同時に事実でもあります — コードで証明可能です。</li>
+        <li><b>ポジショニング:</b> 「利益保証ボット」ではなく <b>Intelligent Automate Agent — 測定可能なシグナル収集と規律ある自動化のプラットフォーム</b>。エビデンス文、スナップショット、そしてレビュー可能性が差別化要因であり、同時に規制リスクと信頼リスクを低減する。</li>
+        <li><b>Paper-firstは戦略である。</b> 実口座連携がないのは未完成ではなく段階的設計である — ユーザーはリスクなしでシステムの実力を検証し、我々は観測データでエンジンを改善し、その後ブローカー統合(別サブシステム)を重ねていく。</li>
+        <li><b>コスト構造:</b> 現在のパイプライン全体は無料ソースで動作しており — 限界費用ゼロでスケールする。LLMと有料データ(whale/liquidation)は収益化後に追加されるオプションレイヤーである。</li>
+        <li><b>ロードマップの順序:</b> P6 whale/liquidation(有料ソース) → より深いバックテスト → 実ブローカー統合 → エージェントマーケットプレイス。各段階は前段階のデータの上に構築される。</li>
+        <li><b>リスク管理がブランドである:</b> 「心理主導のトレーディングが構造的に不可能なプラットフォーム」はマーケティング文句であると同時に事実でもある — コードで証明可能である。</li>
       </ul>
     </div>
   </div>
 
   <div class="persona">
-    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QAの視点 — 「何が検証されているか、そしてどのように」</b></div>
+    <div class="persona-head"><span class="persona-icon" style="background:var(--aqua)">Q</span><b>QAの視点 ——「何が検証されているか、どのように」</b></div>
     <div class="persona-body">
       <ul>
-        <li><b>1,100件以上のテストが合格</b> (126件の新しいフェーズテストを含む: risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshot)。</li>
+        <li><b>1,100+件のテストが合格</b> (risk_engine·routes_risk·psych_feed·quant_crypto·scanner·signal_fusion·routes_signals·signal_feed_snapshotを含む126件の新しいフェーズテストを含む)。</li>
         <li><b>テストで固定された安全不変条件:</b> シミュレーターの約定のみ · 売却には保有ポジションが必要 · 市場閉鎖時はスキップ · 実口座への注文なし · ゲートは縮小/拒否のみ可能。</li>
-        <li><b>全体にわたってフェールソフトを適用:</b>外部ソースが失敗した場合、そのコンポーネントのみが低下し（missing 配列に記載）、残りのスナップショットは保存されます。不正な env の重みは 500 エラーではなくデフォルトにフォールバックします。</li>
-        <li><b>ステージ分離：</b> 全 5 フェーズはデフォルトで env フラグがオフになっており、本番インシデント時には 1 つのフラグでそのステージのみを停止できます。</li>
-        <li><b>レッドチームの実績：</b> 6 つの専門的視点とレッドチームレビューにより、デプロイ前に「sell unreachable」バグを発見・修正しました — レビュープロセスが実際に機能している証拠です。</li>
-        <li><b>本番検証（2026-07-15）：</b> fusion、psychology、scanner、risk の各エンドポイントは sooppiy.com で実データを配信していることを確認済み（F&amp;G 25、BTC RSI 55.05、スキャナー候補 BSBUSDT ×3.52）、リグレッションなし。</li>
-        <li><b>残りの検証：</b> watcher のクローズに関する長期観察（ステージング環境で実際の SL 発火を収集）、スキャナーのメンション基準値の蓄積（≥3 スキャン）、実際の自動ブレーカー作動（3σ）のモニタリング。</li>
+        <li><b>全体を通じて適用されるFail-soft:</b>外部ソースが失敗した場合、そのコンポーネントのみが除外され（missing 配列に記載）、残りのスナップショットは保存されます。不正な env ウェイトは 500 を返す代わりにデフォルトにフォールバックします。</li>
+        <li><b>ステージの分離：</b> 5 つのフェーズすべてがデフォルトで env フラグ オフになっています — 本番インシデントの際は、1 つのフラグでそのステージだけを停止できます。</li>
+        <li><b>レッドチームの実績：</b> 6 つの専門家視点とレッドチームレビューがデプロイ前に「sell unreachable」バグを発見・修正しました — レビュープロセスが実際に機能している証拠です。</li>
+        <li><b>ライブ検証（2026-07-15）：</b> fusion、psychology、scanner、risk の各エンドポイントはすべて sooppiy.com 上で実データを提供していることを確認済み（F&amp;G 25、BTC RSI 55.05、スキャナー候補 BSBUSDT ×3.52）、リグレッションなし。</li>
+        <li><b>残りの検証項目：</b> watcher クローズの長期観測（ステージング環境で実際の SL 発火を収集）、スキャナーの mention ベースライン蓄積（3 スキャン以上）、実際の自動ブレーカー発動（3σ）の監視。</li>
       </ul>
     </div>
   </div>
@@ -619,38 +619,38 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
 
 <!-- ═══════════════ Reference ═══════════════ -->
 <section><div class="wrap">
-  <h2><span class="no">§12</span>リファレンス — API · Config フラグ</h2>
+  <h2><span class="no">§12</span>リファレンス — API · Config Flags</h2>
   <h3>主要 API</h3>
   <table>
     <thead><tr><th>エンドポイント</th><th>役割</th><th>認証</th></tr></thead>
     <tbody>
-      <tr><td><code>GET /api/market-intel/fusion</code></td><td>フュージョンスコア + トリガー発火状態（STEP 5）</td><td>パブリック</td></tr>
+      <tr><td><code>GET /api/market-intel/fusion</code></td><td>Fusion スコア + トリガー発火ステータス（STEP 5）</td><td>パブリック</td></tr>
       <tr><td><code>GET /api/market-intel/psych</code></td><td>F&amp;G、スパイク、ショック、Δodds（STEP 4）</td><td>パブリック</td></tr>
       <tr><td><code>GET /api/scanner/candidates</code></td><td>ランク付けされた候補 + 根拠（STEP 2）</td><td>パブリック</td></tr>
-      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>エージェントごとの上限、SL/TP、Kelly オプトアウト（STEP 8）</td><td>claw_ トークン</td></tr>
-      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>手動ブレーカー HALT / 再開</td><td>claw_ トークン</td></tr>
-      <tr><td><code>/api/automation/*</code></td><td>ルールの作成・更新 + 実行履歴（STEP 7）</td><td>claw_ トークン</td></tr>
+      <tr><td><code>GET/PUT /api/risk/limits</code></td><td>エージェントごとの上限、SL/TP、Kelly オプトアウト（STEP 8）</td><td>claw_token</td></tr>
+      <tr><td><code>POST /api/risk/halt · /resume</code></td><td>手動ブレーカー HALT / resume</td><td>claw_token</td></tr>
+      <tr><td><code>/api/automation/*</code></td><td>ルール作成/更新 + 実行履歴（STEP 7）</td><td>claw_token</td></tr>
     </tbody>
   </table>
-  <h3>ステージ分離フラグ（すべてデフォルトはオフ · 現行テストサーバーではすべてオン）</h3>
+  <h3>ステージ分離フラグ（すべてデフォルトでオフ · 現行テストサーバーではすべてオン）</h3>
   <table>
     <thead><tr><th>フラグ</th><th>ステージ</th><th>コンパニオン設定</th></tr></thead>
     <tbody>
       <tr><td><code>RISK_ENGINE_ENABLED</code></td><td>STEP 8·9 ゲート + watcher</td><td><code>RISK_WATCHER_INTERVAL=30</code></td></tr>
       <tr><td><code>PSYCH_FEED_ENABLED</code></td><td>STEP 4 心理データ収集ループ</td><td><code>PSYCH_REFRESH_INTERVAL=3600</code></td></tr>
-      <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>STEP 3 暗号資産クオンツパス</td><td>—</td></tr>
-      <tr><td><code>SCANNER_ENABLED</code></td><td>STEP 2 スキャナーループ</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
-      <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>キムチプレミアム · DXY クロスマーケットシグナル</td><td>—</td></tr>
-      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>マクロイベントウィンドウ内での新規エントリーをブロック（デフォルトはオフ）</td><td>—</td></tr>
-      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>実際の ETF フローソースキー（無料プラン）</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
-      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>ホエールトラッキング（BTC メンプール · ETH 取引所ウォレット）</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
-      <tr><td><code>FUSION_W_*</code></td><td>STEP 5 重み調整</td><td>psych はハードキャップ 0.3 — config はこれを超えられません</td></tr>
+      <tr><td><code>QUANT_CRYPTO_ENABLED</code></td><td>STEP 3 crypto quant パス</td><td>—</td></tr>
+      <tr><td><code>SCANNER_ENABLED</code></td><td>STEP 2 スキャナー ループ</td><td><code>SCANNER_INTERVAL=3600 · SCANNER_UNIVERSE=30</code></td></tr>
+      <tr><td><code>CROSS_MARKET_ENABLED</code></td><td>キムチプレミアム · DXY クロスマーケット シグナル</td><td>—</td></tr>
+      <tr><td><code>EVENT_GUARD_ENABLED</code></td><td>マクロイベント期間中の新規エントリーをブロック（デフォルト オフ）</td><td>—</td></tr>
+      <tr><td><code>SOSOVALUE_API_KEY</code></td><td>実際の ETF フロー ソースキー（無料プラン）</td><td><code>LIQ_SHOCK_NOTIONAL_USD=5000000</code></td></tr>
+      <tr><td><code>WHALE_FEED_ENABLED</code></td><td>クジラ追跡（BTC mempool · ETH 取引所ウォレット）</td><td><code>WHALE_MIN_USD=5000000 · ETHERSCAN_API_KEY</code></td></tr>
+      <tr><td><code>FUSION_W_*</code></td><td>STEP 5 ウェイト調整</td><td>psych は 0.3 に上限固定 — config はこれを超えられません</td></tr>
     </tbody>
   </table>
 </div></section>
 
 <footer><div class="wrap">
-  Sooppiy · AI自動売買 全パイプラインガイド · 2026-07-16 · 本ドキュメントの数値はすべてmainブランチのコードに実装されている実際の値です。ライブの値はデプロイ当日にsooppiy.comで観測されたものです。関連ドキュメント: <a href="/plan.html" style="color:var(--accent)">実装計画</a> · <a href="/framework.html" style="color:var(--accent)">フレームワーク仕様</a>
+  Sooppiy · AI自動売買フルパイプラインガイド · 2026-07-16 · 本書に記載する数値はすべてmainブランチのコードに実装されている実際の値であり、稼働時の値はデプロイ当日にsooppiy.comで確認されたものです。関連ドキュメント: <a href="/plan.html" style="color:var(--accent)">実装計画</a> · <a href="/framework.html" style="color:var(--accent)">フレームワーク仕様</a>
 </div></footer>
 
 </body>

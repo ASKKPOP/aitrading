@@ -30,24 +30,29 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </style></head>
 <body><main>
 <!-- machine-translated from research/parameters/3-phase4-backtest-report.md by docs/design/_gen_doc_translations.py — pending native review -->
-<h1>Backtest strategi Phase-4 — hasil go/no-go</h1>
+<h1>Backtest strategi Fase-4 — hasil go/no-go</h1>
 <p><strong>Tanggal:</strong> 2026-07-16 · <strong>Putusan: INSUFFICIENT_EVIDENCE → paket flip TIDAK dirilis. Semua execution gate tetap default-off.</strong>
-<strong>Runner:</strong> <code>service/server/run_phase4_backtest.py</code> · angka mentah: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · engine: <code>backtest_strategy.py</code> (sudah diuji unit; dua kali menjalankan independen menghasilkan byte yang identik).
-<strong>Rencana:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Phase 4 — kriteria telah didaftarkan terlebih dahulu (pre-registered) sebelum jendela OOS dibuka.</p>
-<h2>0. Ringkasan Bahasa Korea</h2>
-<p>Berdasarkan hasil evaluasi dengan kriteria yang telah didaftarkan terlebih dahulu, <strong>bukti tidak cukup (INSUFFICIENT_EVIDENCE)</strong> — paket flip (execution gate diaktifkan secara default) tidak akan dirilis. Pada pengaturan deploy-faithful (≥4/6), jumlah transaksi OOS pada walk-forward 6 tahun hanya <strong>38 transaksi</strong> (kriteria 400 transaksi), dan baik batas bawah Wilson 90% (0.28) untuk win rate 36.8% maupun batas bawah bootstrap PF (0.64) sama-sama tidak memenuhi kriteria. Pada baris sensitivitas (≥3), jumlah transaksi meningkat menjadi 237, namun batas bawah PF sebesar 0.88 masih di bawah 1.0 — profitabilitas belum terbukti secara statistik.</p>
-<p><strong>Temuan positif:</strong> Risk stack bekerja seperti yang dijanjikan riset — maximum drawdown aset terburuk <strong>2,6%</strong> (B&amp;H −38%~−47% pada periode yang sama), 53% dari likuidasi adalah trailing stop (membiarkan pemenang berjalan), sistem menjaga modal melalui pemblokiran kerugian, bukan prediksi. Prediksi dari lensa statistik panel validasi (jumlah trade tidak cukup) tepat sasaran.</p>
-<p><strong>Langkah berikutnya:</strong> Semua fitur sudah siap dideploy dalam mode tampilan/advisory/opt-in. Setelah telemetri live (confluence vector, factor snapshot) terkumpul, sistem 6-kondisi termasuk B4 akan dievaluasi ulang secara live-forward. Threshold kembali ke riset — bukan produksi.</p>
-<h2>1. Pre-registered setup (unchanged after seeing results)</h2>
+<strong>Runner:</strong> <code>service/server/run_phase4_backtest.py</code> · angka mentah: <a href="phase4-backtest-result.json">phase4-backtest-result.json</a> · engine: <code>backtest_strategy.py</code> (sudah diuji unit; dua kali menjalankan secara independen menghasilkan output identik byte demi byte).
+<strong>Rencana:</strong> <a href="../../plan/04-ai-model-parameter-upgrade.md">docs/plan/04-ai-model-parameter-upgrade.md</a> §Fase 4 — kriteria telah didaftarkan terlebih dahulu sebelum jendela OOS dibuka.</p>
+<h2>0. Ringkasan</h2>
+<!-- Bagian ini ditulis dalam bahasa Korea dan dibiarkan tidak diterjemahkan dalam dokumen BAHASA
+     INGGRIS hingga 2026-07-29, sehingga pembaca berbahasa Inggris disuguhi ~309 karakter Korea
+     di sini. Teks bahasa Korea berada di tempat yang seharusnya, di
+     3-phase4-backtest-report-ko.md; ini adalah versi bahasa Inggrisnya. -->
+
+<p>Dinilai berdasarkan kriteria yang telah didaftarkan sebelumnya, hasilnya adalah <strong>INSUFFICIENT_EVIDENCE</strong> — paket flip (execution gates aktif secara default) <strong>tidak</strong> dirilis. Konfigurasi yang setia pada deployment (≥4/6) hanya menghasilkan <strong>38</strong> transaksi OOS sepanjang walk-forward enam tahun terhadap ambang 400 transaksi, dan baik batas bawah Wilson 90% pada win rate 36.8% (0.28) maupun batas bawah profit-factor hasil bootstrap (0.64) tidak memenuhi syarat. Melonggarkan ke baris sensitivitas (≥3) menaikkan jumlah menjadi 237, tetapi batas bawah PF masih 0.88 — di bawah 1.0, sehingga profitabilitas belum terbukti secara statistik.</p>
+<p><strong>Yang berhasil bertahan:</strong> rangkaian manajemen risiko berperilaku sesuai dengan yang dijanjikan oleh riset — maximum drawdown aset terburuk <strong>2.6%</strong> dibandingkan dengan −38% hingga −47% untuk buy-and-hold pada periode yang sama, 53% dari exit diambil oleh trailing stop (membiarkan posisi untung berjalan), dan modal terjaga dengan cara memotong kerugian bukan dengan memprediksi. Lensa statistik pada panel verifikasi telah memperkirakan hasil ini sebelumnya: jumlah trade terlalu sedikit.</p>
+<p><strong>Selanjutnya:</strong> setiap fitur sudah dapat dikirimkan sebagai display / advisory / opt-in. Evaluasi ulang sistem enam kondisi termasuk B4 live-forward setelah telemetri live (confluence vectors, factor snapshots) terkumpul cukup banyak. Ambang batasnya kembali ke riset — bukan ke produksi.</p>
+<h2>1. Pengaturan pra-registrasi (tidak berubah setelah melihat hasil)</h2>
 <ul>
-<li><strong>Primary row:</strong> deployment-faithful defaults (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), never tuned — zero snooping by construction.</li>
-<li><strong>Walk-forward row:</strong> anchored, 4 folds, 14-day purge, 6-config grid (reported), tuned on train by pooled profit factor (≥30 trades), frozen on test.</li>
-<li><strong>Sensitivity row:</strong> <code>confluence_min=3</code> fixed (B4 is null historically → only 5 of 6 conditions achievable; the live gate is therefore <em>stricter</em> in backtest than in deployment).</li>
-<li><strong>Kriteria:</strong> ≥400 trade OOS gabungan, jika tidak INSUFFICIENT_EVIDENCE · batas bawah Wilson 90% dari win rate &gt; 0.50 · batas bawah bootstrap 90% dari profit factor &gt; 1.0 · max DD aset terburuk ≤ 30%.</li>
-<li><strong>Kejujuran cakupan:</strong> B4 null sepanjang; B3 diturunkan menjadi MA/RSI/volume; B5 = leg F&amp;G saja (arsip penuh 2018+, tambahan lag satu hari); S5 null; events = kalender 2019–2025 yang telah diverifikasi ganda sumbernya. Aset: bar BTC/ETH sejak 2019-01 (sinyal ≈2020-02 setelah pemanasan 400-bar), SOL sejak 2020-04 (sinyal ≈2021-05). Fee 0.1%/leg + 0.05% slippage; sinyal close-t terisi pada open t+1.</li>
+<li><strong>Baris utama:</strong> default yang setia pada deployment (<code>confluence_min=4</code>, <code>volume_confirm_min=1.5</code>), tidak pernah disetel — nol snooping secara konstruksi.</li>
+<li><strong>Baris walk-forward:</strong> anchored, 4 folds, 14-day purge, grid 6-konfigurasi (dilaporkan), disetel pada data train berdasarkan pooled profit factor (≥30 trades), dibekukan pada data test.</li>
+<li><strong>Baris sensitivitas:</strong> <code>confluence_min=3</code> ditetapkan (B4 null secara historis → hanya 5 dari 6 kondisi yang dapat dicapai; gate live oleh karena itu <em>lebih ketat</em> dalam backtest dibandingkan dalam deployment).</li>
+<li><strong>Kriteria:</strong> ≥400 pooled OOS trades, jika tidak maka INSUFFICIENT_EVIDENCE · batas bawah Wilson 90% dari win rate &gt; 0.50 · batas bawah bootstrap 90% dari profit factor &gt; 1.0 · max DD aset terburuk ≤ 30%.</li>
+<li><strong>Kejujuran cakupan:</strong> B4 null sepanjang waktu; B3 diturunkan menjadi MA/RSI/volume; B5 = leg F&amp;G saja (arsip lengkap 2018+, lag tambahan satu hari); S5 null; events = kalender 2019–2025 yang terverifikasi dari dua sumber. Aset: bar BTC/ETH dari 2019-01 (sinyal ≈2020-02 setelah 400-bar warmup), SOL dari 2020-04 (sinyal ≈2021-05). Fees 0.1%/leg + 0.05% slippage; sinyal close-t fill pada open t+1.</li>
 </ul>
 <h2>2. Hasil</h2>
-<h3>Primer (sesuai deployment ≥4/6) — digabungkan atas 4 fold OOS × 3 aset</h3>
+<h3>Primer (sesuai-deployment ≥4/6) — digabungkan dari 4 fold OOS × 3 aset</h3>
 <table>
 <thead>
 <tr>
@@ -59,7 +64,7 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </thead>
 <tbody>
 <tr>
-<td>Trade OOS</td>
+<td>Transaksi OOS</td>
 <td><strong>38</strong></td>
 <td>≥ 400</td>
 <td>❌ (batas bukti minimum)</td>
@@ -72,34 +77,34 @@ hr{border:none;border-top:1px solid var(--grid);margin:24px 0}
 </tr>
 <tr>
 <td>Profit factor</td>
-<td>1.13</td>
-<td>bootstrap90 LB &gt; 1.0 → LB = <strong>0.644</strong></td>
+<td>1,13</td>
+<td>bootstrap90 LB &gt; 1,0 → LB = <strong>0,644</strong></td>
 <td>❌</td>
 </tr>
 <tr>
-<td>Max DD aset terburuk</td>
+<td>Maks. DD aset terburuk</td>
 <td><strong>2.63%</strong></td>
 <td>≤ 30%</td>
 <td>✅</td>
 </tr>
 </tbody>
 </table>
-<p>Per fold: F1 (2021-07→2022-12, bear): 19 trade, PF 1.82 · F2: 6 trade, PF 0.69 · F3: 7 trade, PF 6.53 · F4 (2025-07→2026-07, bear): 6 trade, PF 0.0.
-Kombinasi exit: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — profil trend-following yang disarankan riset (memenangkan sebagian kecil trade, biarkan winner berjalan: rata-rata winner ≫ rata-rata loser itulah yang mendorong PF di atas 1 pada win rate 37%).</p>
+<p>Per fold: F1 (2021-07→2022-12, bear): 19 transaksi, PF 1.82 · F2: 6 transaksi, PF 0.69 · F3: 7 transaksi, PF 6.53 · F4 (2025-07→2026-07, bear): 6 transaksi, PF 0.0.
+Bauran exit: trail_stop 20 (53%) · stop_loss 15 · time_stop 3 — profil trend-following yang disyaratkan riset (menang pada sebagian kecil transaksi, biarkan yang untung terus berjalan: mean winner ≫ mean loser inilah yang mendorong PF di atas 1 pada win rate 37%).</p>
 <h3>Sensitivitas (≥3 dari 5 yang tersedia)</h3>
-<p>237 trade · win 37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · DD terburuk 8.97%. Lebih banyak bukti, kesimpulan sama: profitabilitas point-estimate, tidak dapat dibedakan secara statistik dari titik impas.</p>
+<p>237 transaksi · win 37.1% (Wilson LB 0.332) · PF 1.15 (bootstrap LB <strong>0.884</strong>) · worst DD 8.97%. Lebih banyak bukti, kesimpulan sama: profitabilitas point-estimate, tidak dapat dibedakan secara statistik dari titik impas.</p>
 <h3>Walk-forward (disetel per fold, 6 konfigurasi — snooping diperhitungkan)</h3>
-<p>Setiap fold disetel ke <code>confluence_min=3</code>; PF pengujian: F1 1.46, F2 1.82, F3 0.69, F4 0.79. Edge bergantung pada regime dan tidak bertahan lintas fold — konsisten dengan peringatan riset bahwa "published edges decay".</p>
-<h3>Korelasi kondisi (lensa statistik memprediksi ini)</h3>
-<p>Kesepakatan harian B1↔B2 <strong>0.709</strong> (kedua ukuran tren), B1↔B3 0.52, B2↔B3 0.40. Keenam kondisi tidak independen; aritmetika "stack independent 53% edges" tidak berlaku secara harfiah.</p>
+<p>Setiap fold disetel ke <code>confluence_min=3</code>; test PF: F1 1.46, F2 1.82, F3 0.69, F4 0.79. Edge bersifat tergantung-regime dan tidak bertahan lintas fold — konsisten dengan peringatan riset bahwa "edge yang telah dipublikasikan akan meluruh".</p>
+<h3>Korelasi kondisi (lensa statistik telah memprediksi ini)</h3>
+<p>Kesepakatan harian B1↔B2 <strong>0.709</strong> (kedua ukuran tren), B1↔B3 0.52, B2↔B3 0.40. Keenam kondisi tidak independen; perhitungan "menumpuk edge independen 53%" tidak berlaku secara harfiah.</p>
 <h3>Apa yang BERHASIL</h3>
-<p>Pada jendela bear F4, strategi merugi ≈1.1–1.7% per aset sementara buy-and-hold merugi <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong>. Max drawdown 2–9% dibandingkan drawdown historis B&amp;H yang 60%+. Eksposur 3–6% dari hari. <strong>Nilai sistem yang terverifikasi adalah pelestarian modal melalui penyaringan regime dan exit stack — persis seperti klaim riset bahwa "the edge comes from risk management, not prediction." Yang TIDAK terverifikasi adalah profitabilitas mandiri.</strong></p>
-<h2>3. Keputusan (sesuai aturan yang telah didaftarkan sebelumnya)</h2>
+<p>Pada jendela bear F4, strategi kehilangan ≈1,1–1,7% per aset sementara buy-and-hold kehilangan <strong>−21% (ETH), −38% (BTC), −47% (SOL)</strong>. Max drawdown 2–9% dibandingkan drawdown historis B&amp;H yang 60%+. Eksposur 3–6% dari hari. <strong>Nilai yang terverifikasi dari sistem ini adalah pelestarian modal melalui penyaringan regime dan exit stack — persis seperti klaim riset bahwa "edge berasal dari manajemen risiko, bukan prediksi." Yang TIDAK terverifikasi adalah profitabilitas yang berdiri sendiri.</strong></p>
+<h2>3. Keputusan (sesuai aturan yang telah diregistrasi sebelumnya)</h2>
 <ol>
-<li><strong>Tidak ada flip.</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> tetap <strong>default-off</strong>. Tidak ada migrasi preset/<code>min_confidence</code> yang dirilis. Kalimat rencana itu sendiri yang berlaku: <em>"If below [criteria], the confluence thresholds go back to research, not production."</em></li>
-<li><strong>Apa yang tetap dirilis (sudah digabungkan, tanpa perubahan perilaku eksekusi):</strong> tampilan confluence + agent API, advisory regime + tile, telemetri (vektor confluence per keputusan, snapshot faktor), perbaikan keamanan (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, risk-direction gating, perbaikan put_risk_limits), metrik backtester yang telah diperbaiki, dan toolkit exit opt-in per-agent (trailing/time stops — masing-masing agent dapat mengaktifkannya; ini adalah alat manajemen risiko posisi, bukan klaim profitabilitas).</li>
-<li><strong>Jalur evaluasi ulang:</strong> live-forward. Telemetri Phase-1 mengakumulasi vektor 6-kondisi penuh (termasuk B4) pada setiap keputusan; snapshot faktor mencatat funding/OI/L-S/StockTwits. Ketika ≥400 keputusan live gated-quality sudah ada (atau backtest di masa depan dapat menyertakan kondisi yang hilang), jalankan ulang kriteria tersebut. Tabel kalibrasi (hit rate per jumlah confluence, Wilson CIs) terbentuk sendiri dari telemetri.</li>
-<li><strong>Pekerjaan threshold kembali ke riset:</strong> pertanyaan terbuka yang menarik dari data ini adalah apakah <em>exit stack saja</em> (trail + time stop + regime veto) pada sinyal entry yang lebih sederhana membawa nilai tersebut — confluence entry gate di ≥4/5 begitu ketat sehingga hanya trading 6×/tahun di 3 aset.</li>
+<li><strong>Tidak ada flip.</strong> <code>CONFLUENCE_GATE_ENABLED</code>, <code>REGIME_FILTER_ENABLED</code>, <code>VOL_SIZING_ENABLED</code> tetap <strong>default-off</strong>. Tidak ada migrasi preset/<code>min_confidence</code> yang dirilis. Kalimat dari rencana itu sendiri yang berlaku: <em>"Jika di bawah [kriteria], ambang confluence kembali ke riset, bukan produksi."</em></li>
+<li><strong>Yang tetap dirilis (sudah di-merge, tanpa perubahan perilaku eksekusi):</strong> tampilan confluence + agent API, advisory regime + tile, telemetry (vektor confluence per keputusan, snapshot faktor), perbaikan keamanan (breaker tripped_by/expires_at, never-loosen SL/TP, first_opened_at, risk-direction gating, perbaikan put_risk_limits), metrik backtester yang telah diperbaiki, dan toolkit exit opt-in per-agent (trailing/time stops — masing-masing agent dapat mengaktifkannya; ini adalah alat manajemen risiko posisi, bukan klaim profitabilitas).</li>
+<li><strong>Jalur evaluasi ulang:</strong> live-forward. Telemetry Fase-1 mengakumulasi vektor 6-kondisi secara lengkap (termasuk B4) pada setiap keputusan; snapshot faktor mencatat funding/OI/L-S/StockTwits. Ketika terdapat ≥400 keputusan live berkualitas gated (atau backtest di masa depan dapat mencakup kondisi yang belum ada), jalankan ulang kriteria tersebut. Tabel kalibrasi (hit rate per jumlah confluence, Wilson CIs) terbentuk dengan sendirinya dari telemetry.</li>
+<li><strong>Kerja threshold kembali ke riset:</strong> pertanyaan terbuka yang menarik dari data ini adalah apakah <em>exit stack saja</em> (trail + time stop + regime veto) pada sinyal entry yang lebih sederhana yang membawa nilai — confluence entry gate di ≥4/5 begitu ketat sehingga hanya trading 6×/tahun di 3 aset.</li>
 </ol>
-<p><em>Bukan saran investasi. Platform simulator. Edge historis meluruh; angka-angka ini menggambarkan satu backtest dalam batasan cakupan yang telah didokumentasikan.</em></p>
+<p><em>Bukan saran investasi. Platform simulator. Edge historis mengalami penurunan; angka-angka ini menggambarkan satu backtest di bawah batasan cakupan yang didokumentasikan.</em></p>
 </main></body></html>
