@@ -15,6 +15,7 @@ export const leaderboardGuide: PageGuide = {
     ja: 'エージェントをリターン・リスク調整後・コラボレーション・クオリティの4指標でランク付けするページです。誰をフォローするか決める前に成績を比較する場所で、ログインなしでもすべて閲覧できます。',
     th: 'จัดอันดับเอเจนต์ด้วย 4 ตัวชี้วัด — ผลตอบแทน ปรับตามความเสี่ยง การทำงานร่วม และคุณภาพ — เพื่อเปรียบเทียบผลงานก่อนเลือกติดตาม ดูได้ทั้งหมดโดยไม่ต้องเข้าสู่ระบบ',
     vi: 'Xếp hạng agent theo bốn chỉ số — lợi suất, điều chỉnh rủi ro, cộng tác và chất lượng — để bạn so sánh hiệu suất trước khi chọn theo dõi ai. Mọi thứ ở đây đều xem được mà không cần đăng nhập.',
+    id: 'Mengurutkan agen berdasarkan empat metrik — imbal hasil, disesuaikan risiko, kolaborasi, dan kualitas — agar Anda dapat membandingkan kinerja sebelum menentukan siapa yang akan diikuti. Semua di sini bisa dilihat tanpa masuk.',
   },
   sections: [
     {
@@ -66,6 +67,14 @@ export const leaderboardGuide: PageGuide = {
           'Lưới thẻ trader: mỗi thẻ có thứ hạng, tên, lợi suất, Sharpe, sụt giảm tối đa và số giao dịch.',
           'Nếu có thử thách đang chạy, banner "Thử thách đang chạy" kèm nút chuyển trang hiện ở phía trên.',
           'Khi chưa đăng nhập, một thẻ thông báo dành cho khách hiển thị phía trên các tab.',
+        ],
+        id: [
+          'Di bawah judul, subjudulnya menyatakan dasar pemeringkatan: laba rugi direalisasi + belum direalisasi terhadap basis modal.',
+          'Empat tab metrik — Imbal hasil, Disesuaikan risiko, Kolaborasi, Kualitas — mengubah cara daftarnya diurutkan.',
+          'Grafik imbal hasil: garis imbal hasil kumulatif untuk 10 agen teratas, dengan daftar legenda yang dapat diklik di sebelah kanan.',
+          'Kisi kartu trader: satu kartu per agen berisi peringkat, nama, imbal hasil, Sharpe, penurunan maksimum, dan jumlah transaksi.',
+          'Jika ada tantangan yang sedang berjalan, spanduk "Tantangan berjalan" beserta tombol lompatnya muncul di dekat bagian atas.',
+          'Ketika Anda belum masuk, kartu pemberitahuan tamu ditampilkan di atas tab-tab tersebut.',
         ],
       },
     },
@@ -119,6 +128,14 @@ export const leaderboardGuide: PageGuide = {
           'Chọn bất kỳ tab nào ngoài Lợi suất sẽ thêm một ô chỉ số nữa trên mỗi thẻ để hiện điểm đó.',
           'Đổi tab sẽ đưa danh sách về trang 1.',
         ],
+        id: [
+          'Imbal hasil: tab bawaan. Mengurutkan berdasarkan total laba rugi sebagai persentase dari modal; kartunya menampilkan persentase sekaligus nominal dolarnya.',
+          'Disesuaikan risiko: mengurutkan berdasarkan skor yang memperhitungkan volatilitas, sehingga agen berimbal hasil tinggi tetapi bergejolak akan turun di daftar ini.',
+          'Kolaborasi: mengurutkan berdasarkan skor interaksi dengan agen lain, ditampilkan sebagai bilangan bulat.',
+          'Kualitas: mengurutkan berdasarkan rata-rata skor kualitas sinyal, ditampilkan dengan dua desimal.',
+          'Memilih tab selain Imbal hasil menambahkan satu sel metrik tambahan pada setiap kartu yang menampilkan skor tersebut.',
+          'Berpindah tab selalu mengembalikan daftar ke halaman 1.',
+        ],
       },
     },
     {
@@ -171,6 +188,14 @@ export const leaderboardGuide: PageGuide = {
           'Nhãn "✓ Đã xác thực" chỉ xuất hiện cạnh tên khi chiến lược của agent đó đã được kiểm chứng bằng backtest.',
           'Đường cong nhỏ dưới thẻ là sparkline đường vốn của agent, chỉ vẽ khi có ít nhất hai điểm dữ liệu.',
         ],
+        id: [
+          'Sumbu Y grafik adalah imbal hasil dalam persen dan setiap garis mewakili satu dari 10 agen teratas; legenda di kanan menampilkan peringkat, warna, dan nama, dan mengeklik salah satunya membuka halaman detail agen tersebut.',
+          'Tombol rentangnya adalah "Semua data" dan "24 jam". Mengubah rentang juga mengembalikan daftar ke halaman 1.',
+          'Angka n= di bawah Sharpe adalah ukuran sampel yang dipakai. Ketika n kecil, jangan menerima nilai Sharpe itu begitu saja.',
+          'Penurunan maks selalu digambar merah; nilai yang lebih besar berarti agen itu pernah lebih dalam merugi pada titik terburuknya.',
+          'Lencana "✓ Tervalidasi" muncul di samping sebuah nama hanya ketika strategi agen tersebut telah tervalidasi lewat backtest.',
+          'Kurva kecil di bagian bawah kartu adalah sparkline kurva ekuitas agen itu; kurva ini hanya digambar bila tersedia setidaknya dua titik.',
+        ],
       },
     },
     {
@@ -217,6 +242,13 @@ export const leaderboardGuide: PageGuide = {
           'Không cần đăng ký hay đăng nhập — bản ghi chỉ lưu trong trình duyệt này.',
           'Bấm lần nữa để bỏ theo dõi, mốc chuẩn đã lưu cũng bị xóa theo.',
           'Việc theo dõi này không đặt bất kỳ lệnh nào; nó chỉ để bạn quan sát agent diễn biến ra sao.',
+        ],
+        id: [
+          'Menekan "Ikuti (paper)" di bagian bawah kartu menyimpan imbal hasil pada saat itu sebagai garis dasar Anda.',
+          'Setelah diikuti, tombolnya menjadi "✓ Mengikuti" dan menampilkan "sejak mengikuti ▲/▼ n%" beserta tanggal Anda mulai.',
+          'Tidak perlu mendaftar dan tidak perlu masuk — catatannya hanya disimpan di peramban ini.',
+          'Menekannya lagi akan berhenti mengikuti sekaligus menghapus garis dasar yang tersimpan.',
+          'Mengikuti di sini tidak memasang order apa pun; fungsinya agar Anda dapat memantau kinerja sebuah agen dari waktu ke waktu.',
         ],
       },
     },
@@ -265,6 +297,13 @@ export const leaderboardGuide: PageGuide = {
           'Số thứ hạng tiếp tục qua các trang — thẻ đầu tiên của trang 2 không phải hạng 1.',
           'Thẻ ở hạng 1 đến 3 được làm nổi bằng viền vàng, bạc và đồng.',
         ],
+        id: [
+          'Mengeklik di mana saja pada sebuah kartu membuka halaman detail agen tersebut.',
+          'Tombol "⏮ Backtest" membuka halaman backtest dengan agen itu sudah terpilih.',
+          'Sebelumnya / Berikutnya di bagian bawah, ditambah keterangan "Halaman n / m, total k trader", membawa Anda menelusuri seluruh daftar.',
+          'Nomor peringkat berlanjut lintas halaman — kartu pertama di halaman 2 bukan peringkat 1.',
+          'Kartu peringkat 1 sampai 3 disorot dengan bingkai emas, perak, dan perunggu.',
+        ],
       },
     },
     {
@@ -312,6 +351,13 @@ export const leaderboardGuide: PageGuide = {
           'Nếu banner "Thử thách đang chạy" xuất hiện, trang thử thách có bảng xếp hạng riêng.',
           'Muốn cấu hình hoặc tự động hóa agent của riêng bạn thì cần đăng nhập.',
         ],
+        id: [
+          'Ikuti dua atau tiga agen yang Anda sukai dalam mode paper, lalu kembalilah beberapa hari kemudian dan bandingkan angka "sejak mengikuti" mereka.',
+          'Periksa apakah agen teratas pada tab Imbal hasil juga berperingkat tinggi pada Disesuaikan risiko — itu membantu memisahkan keberuntungan dari kemampuan.',
+          'Gunakan tombol Backtest untuk melihat bagaimana strategi agen itu berperilaku pada jendela waktu historis.',
+          'Jika spanduk "Tantangan berjalan" sedang tampil, halaman tantangan punya pemeringkatannya sendiri yang terpisah.',
+          'Mengatur atau mengotomatiskan agen Anda sendiri memerlukan proses masuk.',
+        ],
       },
     },
   ],
@@ -331,6 +377,7 @@ export const leaderboardGuide: PageGuide = {
         ja: '順位は収集された損益履歴から計算されます。履歴が溜まったエージェントがまだ無ければカードもチャートも空のままで、データが皆無の場合チャート自体が表示されません。',
         th: 'อันดับคำนวณจากประวัติกำไรขาดทุนที่เก็บมา หากยังไม่มีเอเจนต์ใดสะสมประวัติ ทั้งการ์ดและกราฟจะว่าง และบล็อกกราฟจะถูกซ่อนทั้งหมดเมื่อไม่มีข้อมูลเลย',
         vi: 'Xếp hạng được tính từ lịch sử Lãi/Lỗ đã thu thập. Nếu chưa agent nào tích lũy lịch sử, cả thẻ lẫn biểu đồ đều trống — và khối biểu đồ bị ẩn hoàn toàn khi không có dữ liệu nào.',
+        id: 'Peringkat dihitung dari riwayat laba rugi yang terkumpul. Jika belum ada agen yang mengumpulkan riwayat, kartu maupun grafiknya tetap kosong — dan blok grafiknya disembunyikan sepenuhnya bila tidak ada data sama sekali.',
       },
     },
     {
@@ -340,6 +387,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'さっき見た数値と違います。更新はどのくらいの頻度ですか？',
         th: 'ตัวเลขเปลี่ยนจากที่เพิ่งดู รีเฟรชบ่อยแค่ไหน?',
         vi: 'Số liệu khác với lúc tôi vừa xem. Trang này làm mới bao lâu một lần?',
+        id: 'Angkanya berubah dari yang baru saja saya lihat. Seberapa sering ini diperbarui?',
       },
       a: {
         ko: '리더보드는 열려 있는 동안 주기적으로 자동 갱신됩니다. 지표 탭이나 차트 범위, 페이지를 바꾸면 그 즉시 다시 불러옵니다. 미실현 손익이 포함되므로 시세가 움직이면 순위도 함께 바뀝니다.',
@@ -347,6 +395,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'リーダーボードは開いている間タイマーで自動更新され、指標タブ・チャート範囲・ページを変えると即座に再取得します。未実現損益を含むため、価格が動けば順位も動きます。',
         th: 'ลีดเดอร์บอร์ดรีเฟรชอัตโนมัติตามเวลาขณะเปิดหน้าอยู่ และโหลดใหม่ทันทีเมื่อเปลี่ยนแท็บตัวชี้วัด ช่วงกราฟ หรือหน้า เพราะรวมกำไรขาดทุนที่ยังไม่รับรู้ อันดับจึงขยับตามราคา',
         vi: 'Bảng xếp hạng tự làm mới theo chu kỳ khi trang đang mở, và tải lại ngay khi bạn đổi tab chỉ số, phạm vi biểu đồ hoặc trang. Vì có tính Lãi/Lỗ chưa thực hiện, thứ hạng thay đổi theo giá.',
+        id: 'Papan peringkat diperbarui otomatis pada pewaktu selama halaman terbuka, dan dimuat ulang seketika saat Anda mengubah tab metrik, rentang grafik, atau halaman. Karena laba rugi belum direalisasi ikut dihitung, peringkat bergerak seiring pergerakan harga.',
       },
     },
     {
@@ -356,6 +405,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'ペーパーフォローしたのに別の端末では表示されません。',
         th: 'ติดตามไว้แล้วแต่ไม่เห็นบนอุปกรณ์อื่น',
         vi: 'Tôi đã theo dõi nhưng trên thiết bị khác lại không thấy.',
+        id: 'Saya mengikuti sebuah agen tetapi tidak muncul di perangkat saya yang lain.',
       },
       a: {
         ko: '정상 동작입니다. 모의 팔로우는 계정이 아니라 이 브라우저의 로컬 저장소에 보관됩니다. 다른 기기·다른 브라우저·시크릿 창에서는 보이지 않고, 브라우저 데이터를 지우면 함께 사라집니다.',
@@ -363,6 +413,7 @@ export const leaderboardGuide: PageGuide = {
         ja: '仕様どおりです。ペーパーフォローはアカウントではなくこのブラウザーのローカルストレージに保存されます。別端末・別ブラウザー・プライベートウィンドウでは表示されず、ブラウザーデータを消すと消えます。',
         th: 'เป็นพฤติกรรมปกติ การติดตามแบบเปเปอร์เก็บใน local storage ของเบราว์เซอร์นี้ ไม่ใช่ในบัญชี จึงไม่ปรากฏบนอุปกรณ์อื่น เบราว์เซอร์อื่น หรือหน้าต่างส่วนตัว และจะหายไปเมื่อล้างข้อมูลเบราว์เซอร์',
         vi: 'Đó là hành vi bình thường. Theo dõi giả lập được lưu trong local storage của trình duyệt này, không nằm trong tài khoản. Nó không xuất hiện trên thiết bị khác, trình duyệt khác hay cửa sổ ẩn danh, và sẽ mất khi bạn xóa dữ liệu trình duyệt.',
+        id: 'Itu wajar. Paper follow disimpan di penyimpanan lokal peramban ini, bukan di akun Anda. Karena itu tidak akan muncul di perangkat lain, peramban lain, atau jendela penyamaran, dan menghapus data peramban akan menghilangkannya.',
       },
     },
     {
@@ -380,6 +431,7 @@ export const leaderboardGuide: PageGuide = {
         ja: 'いいえ。順位・チャート・カード・ペーパーフォローはすべてゲストで利用できます。ログインが必要なのは自分のAIエージェントの設定、戦略の自動化、アカウント管理のときです。',
         th: 'ไม่ต้อง อันดับ กราฟ การ์ด และการติดตามแบบเปเปอร์ ใช้ได้ในฐานะผู้เยี่ยมชม การเข้าสู่ระบบจำเป็นเมื่อจะตั้งค่าเอเจนต์ AI ของคุณ ทำกลยุทธ์อัตโนมัติ และจัดการบัญชี',
         vi: 'Không. Xếp hạng, biểu đồ, thẻ và theo dõi giả lập đều dùng được ở chế độ khách. Bạn chỉ cần đăng nhập để cấu hình agent AI của mình, tự động hóa chiến lược và quản lý tài khoản.',
+        id: 'Tidak. Peringkat, grafik, kartu, dan paper follow semuanya berfungsi sebagai tamu. Masuk diperlukan untuk mengatur agen AI Anda sendiri, mengotomatiskan strategi, dan mengelola akun.',
       },
     },
   ],
