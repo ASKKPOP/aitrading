@@ -64,7 +64,8 @@ _TRANSITIONS = {
 }
 
 START_TYPES = ("manual", "at_time", "window", "price_cross")
-STOP_KEYS = ("at_time", "max_loss_usd", "profit_target_usd", "max_trades",
+STOP_KEYS = ("at_time", "horizon_until", "max_loss_usd",
+             "profit_target_usd", "max_trades",
              "price_cross", "trail")
 
 
@@ -153,6 +154,21 @@ def validate_stop_conditions(obj: Any) -> dict:
         except ValueError:
             raise ValueError(f"stop at_time must match {TS_FMT}")
         out["at_time"] = at
+    # horizon_until (2026-07-30): the desk authors `horizon_hours` on every
+    # full-path order and NOTHING read it — prod run 825 declared a 72-hour
+    # plan, was re-decided 30 minutes later, and sold the exact low of its own
+    # price series. Stored here rather than in a new column because a key the
+    # validator does not whitelist is a SILENT no-op, and this file is where
+    # that list lives.
+    hz = obj.get("horizon_until")
+    if hz is not None:
+        if not isinstance(hz, str):
+            raise ValueError("horizon_until must be a string")
+        try:
+            _parse_ts(hz)
+        except ValueError:
+            raise ValueError(f"horizon_until must match {TS_FMT}")
+        out["horizon_until"] = hz
     for key in ("max_loss_usd", "profit_target_usd"):
         v = obj.get(key)
         if v is not None:

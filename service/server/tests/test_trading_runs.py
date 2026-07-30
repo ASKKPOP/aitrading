@@ -84,11 +84,17 @@ class TradingRunsTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_leverage_accepted_and_clamped(self):
-        # Isolated-margin leverage is now accepted (1–10×) and clamped.
-        r3 = self._create(leverage=3)
+        # Isolated-margin leverage is accepted (1–10×) and clamped.
+        # A max_loss_usd rides along from 2026-07-30: leveraged SPOT with no
+        # P&L bound at all is refused separately (routes_runs), so without one
+        # this would fail for a reason that has nothing to do with clamping.
+        # The assertions below are unchanged — this still tests exactly what it
+        # was written to test.
+        stop = {"max_loss_usd": 50.0}
+        r3 = self._create(leverage=3, stop_conditions=stop)
         self.assertEqual(r3.status_code, 200, r3.text)
         self.assertEqual(r3.json()["run"]["config"]["leverage"], 3.0)
-        r99 = self._create(leverage=99)   # over-max clamps, not rejected
+        r99 = self._create(leverage=99, stop_conditions=stop)  # clamps, not rejected
         self.assertEqual(r99.status_code, 200, r99.text)
         self.assertEqual(r99.json()["run"]["config"]["leverage"], 10.0)
 
