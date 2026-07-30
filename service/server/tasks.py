@@ -889,6 +889,64 @@ async def risk_watcher_loop():
         await asyncio.sleep(interval_s)
 
 
+async def liquidation_watch_loop():
+    """Plan 16: margin-state oracle and liquidation-tier escalation.
+
+    Cadence is tighter than risk_watcher's 30s and the ~60s run-control scan
+    because this is the one loop whose tail cost is the entire margin rather
+    than one stop, and it drops to LIQ_WATCH_INTERVAL_HOT once any position
+    reaches T2. Observation-only unless LIQ_REFLEX is on (default off).
+    """
+    import liquidation
+
+    await asyncio.sleep(12)
+
+    while True:
+        interval = liquidation.watch_interval_seconds()
+        try:
+            if liquidation.oracle_enabled():
+                result = await asyncio.to_thread(liquidation.watch_tick)
+                for state in result.get("states", []):
+                    _journal_margin_state(state)
+                if result.get("worst") in (liquidation.TIER_DEFEND,
+                                           liquidation.TIER_REFLEX):
+                    interval = liquidation.watch_interval_hot_seconds()
+                if result.get("escalations"):
+                    print(f"[Liquidation] escalations={result['escalations']} "
+                          f"worst={result['worst']} "
+                          f"measured={result['measured']}/{result['checked']}")
+        except Exception as e:  # noqa: BLE001 — one bad tick must not kill the worker
+            print(f"[Liquidation Error] {e}")
+
+        await asyncio.sleep(interval)
+
+
+def _journal_margin_state(state: dict) -> None:
+    """Record a reading. Attached positions get a run event; orphans have no
+    run to journal against, so they are logged — losing the reading entirely
+    would recreate exactly the blind spot this loop exists to close."""
+    import liquidation
+    payload = {k: state.get(k) for k in
+               ("position_id", "symbol", "market", "side", "leverage",
+                "liq_price", "health", "velocity_per_hour", "ttl_hours",
+                "tier", "tier_raw", "escalated_from", "source")}
+    run_id = state.get("run_id")
+    escalated = state.get("escalated_from") is not None
+    interesting = escalated or state.get("tier") != liquidation.TIER_NOMINAL
+    if run_id:
+        # Only journal transitions and non-nominal readings: a T0 heartbeat
+        # every 20s per position is pure prune load, and run_events is already
+        # dominated by equity rows.
+        if interesting:
+            try:
+                from trading_runs import emit_telemetry_event
+                emit_telemetry_event(int(run_id), "margin", payload)
+            except Exception:  # noqa: BLE001
+                pass
+    elif interesting:
+        print(f"[Liquidation] orphan position {payload}")
+
+
 async def psych_feed_loop():
     """Background task for the psychology feed (Phase 2).
 
@@ -1707,6 +1765,7 @@ BACKGROUND_TASK_REGISTRY = {
     "run_reports": report_scheduler_loop,
     "subscription_enforcer": subscription_enforcer_loop,
     "risk_watcher": risk_watcher_loop,
+    "liquidation_watch": liquidation_watch_loop,
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
     "social_feed": social_feed_loop,
@@ -1768,6 +1827,9 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "subscription_enforcer":   "settlement",
     # risk engine — closes positions at stop-loss/take-profit (Phase 1)
     "risk_watcher":            "settlement",
+    # settlement, not prices: it reads marks but its job is closing risk, and
+    # it must run in the same process as the SL/TP watcher it escalates past.
+    "liquidation_watch":       "settlement",
     # psych feed — crowd-psychology snapshots: F&G, spikes, shock, odds (Phase 2)
     "psych_feed":              "research",
     # scanner — which-coin candidates: volume surge, mentions, listings (Phase 4)

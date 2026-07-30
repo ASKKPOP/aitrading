@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 17 — AI Order Authority</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7a5cd6; --mach: #898781;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a7fe8; --mach: #6e6c66;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a7fe8; --mach: #6e6c66;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .card.ai { border-left: 3px solid var(--ai); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  .chip.ai   { background: rgba(122,92,214,.14); color: var(--ai); }
+  .chip.mach { background: var(--page); color: var(--ink-3); border: 1px solid var(--grid); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  .eq { font-variant-numeric: tabular-nums; }
+  .pipes { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 16px 0; }
+  @media (max-width: 780px) { .pipes { grid-template-columns: 1fr; } }
+  .pipe h3 { margin: 0 0 10px; text-align: center; }
+  .pnode { border: 1px solid var(--border); background: var(--page); border-radius: 8px;
+           padding: 8px 12px; margin: 0 0 4px; font-size: 13px; }
+  .pnode b { display: block; font-size: 13.5px; }
+  .pnode span { color: var(--ink-2); font-size: 12.3px; }
+  .pnode .file { display: block; color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .pnode.bad { border-left: 3px solid var(--crit); }
+  .pnode.chg { border-left: 3px solid var(--s2); background: var(--chg-bg); }
+  .pnode.keep { border-left: 3px solid var(--s3); }
+  .pnode.aiN { border-left: 3px solid var(--ai); }
+  .parrow { text-align: center; color: var(--ink-3); font-size: 15px; margin: 0 0 4px; }
+  .legendline { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; }
+  .legendline .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legendline .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 17 — AI Order Authority</h1>
+<p class="sub">Replacing programmed buy / sell / clear logic with orders the sooppiy.com AI authors itself. Algorithm, flow, and diagrams.</p>
+<p class="meta">Written 2026-07-29. The central claim in §2 is arithmetic, reproduced to the cent against four real production exits. Ships to prod sooppiy.com per standing rule.</p>
+
+<div class="kr">
+  <strong>요약 (Korean summary)</strong>
+  <p>“모든 경우를 프로그래밍 로직으로 판단하는 건 정말 어렵다”는 진단이 정확합니다. 다만 문제는 로직이 복잡해서가 아니고, <strong>AI가 주문의 여섯 요소 중 하나 반만 결정하고 있다</strong>는 데 있습니다. 특히 <strong>수량은 AI가 전혀 정하지 않습니다.</strong> 2026-07-29 프로덕션 청산 4건을 검증한 결과, 청산 수량은 예외 없이 <code>max_bet × adapt_배수 × conviction_배수 × 레버리지 ÷ 가격</code>이었고 네 건 모두 <strong>센트 단위까지 정확히 일치</strong>했습니다. 그 공식의 어느 항도 “지금 들고 있는 포지션”을 참조하지 않습니다. 818이 17%가 아니라 39%를 청산한 이유는 판단이 바뀐 게 아니라 <em>직전 청산이 이익이었기 때문</em>입니다. 게다가 3배 레버리지에서 conviction 항은 conviction &gt; 0.614가 아니면 항상 하한 0.30에 고정되어, 실측 conviction(0.365~0.5)에서는 아무 역할도 하지 않습니다. 또 데스크에는 <strong>“전량 청산”이라는 동사가 아예 없습니다.</strong> 해결책은 3개 동사 스칼라를 <strong>Order Intent</strong> 객체로 바꾸고, 기존 게이트를 전부 <em>레일</em>로 남기되 <strong>비대칭</strong>으로 두는 것입니다: 진입은 축소만, 청산은 확대만.</p>
+</div>
+
+<div class="tocbox">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#today">What the desk actually decides today</a></li>
+    <li><a href="#proof">The proof: nobody chose 17% or 39%</a></li>
+    <li><a href="#cannot">Four things the desk cannot say</a></li>
+    <li><a href="#algo">The algorithm — Order Intent</a></li>
+    <li><a href="#rails">Rails, and why they must be asymmetric</a></li>
+    <li><a href="#compile">The compiler</a></li>
+    <li><a href="#prompt">The prompt</a></li>
+    <li><a href="#rollout">Rollout with real measurement</a></li>
+    <li><a href="#breaks">What breaks</a></li>
+  </ol>
+</div>
+
+<h2 id="today">1. What the desk actually decides today</h2>
+
+<p>Six things determine an order. The AI authors one of them outright and half of another.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Order component</th><th>Decided by</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td><strong>Direction</strong> — one of <code>buy | sell | hold</code></td><td><span class="chip ai">AI</span></td><td><code>run_engine.py:2083</code> (the JSON contract)</td></tr>
+<tr><td>Which ledger verb that becomes on a futures book</td><td><span class="chip mach">machine</span></td><td><code>run_engine.py:2387–2394</code></td></tr>
+<tr><td><strong>How much to open</strong></td><td><span class="chip mach">machine</span></td><td><code>run_engine.py:2437</code> → <code>2458</code> → <code>2477</code>, then Kelly/vol/exposure in <code>risk_engine.evaluate_order</code></td></tr>
+<tr><td><strong>How much to exit</strong></td><td><span class="chip mach">machine</span> — the <em>same entry-sizing number</em>, then <code>min(q, position)</code></td><td><code>automation.py:155</code> (sell), <code>:168</code> (cover)</td></tr>
+<tr><td>Stop / target prices</td><td><span class="chip ai">AI</span> in <code>shadow</code>, <span class="chip mach">machine</span> in the default</td><td><code>order_params.py</code>, applied at <code>run_engine.py:2543–2547</code></td></tr>
+<tr><td>Leverage</td><td><span class="chip mach">machine</span> — the tier table, set once at run creation and never revisited</td><td><code>fleet_planner.py:117</code></td></tr>
+<tr><td><strong>Whether to close out entirely</strong></td><td><span class="chip crit">no verb exists</span> — reachable only through a stop rail</td><td><code>_evaluate_stop</code> → <code>stop_flatten</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>One clarification, because I assumed the opposite before checking: <code>risk_engine.evaluate_order</code> <em>is</em> side-aware. <code>sell</code> and <code>cover</code> short-circuit at line 423 and return the requested quantity untouched — Kelly, vol-sizing, and the exposure caps never see an exit. That is correct behaviour and it makes the finding below cleaner, because it means the exit quantity is a <strong>pure product of four constants</strong> with nothing else intervening.</p>
+
+<h2 id="proof">2. The proof: nobody chose 17% or 39%</h2>
+
+<p>On 2026-07-29 the desk took four profit-banking actions — the first desk-initiated exits in the platform’s history. They reduced by 24.9%, 66.3%, 16.5%, and 39.3% of the position. Those look like judgements. They are not. Every one is:</p>
+
+<pre><code>quantity = min( position ,  max_bet_usd × adapt_size_mult × conviction_scale × leverage / price )</code></pre>
+
+<p>Not one term refers to the position being exited. Here is the reproduction, against the real <code>signals</code> rows and the real <code>config_snapshot_json</code>:</p>
+
+<div class="scroll">
+<table class="eq">
+<thead><tr><th>Sig</th><th>Run</th><th>Side</th><th class="num">max_bet</th><th class="num">× adapt</th><th class="num">× conv</th><th class="num">× L</th><th class="num">= predicted $</th><th class="num">actual $</th><th class="num">% of position</th></tr></thead>
+<tbody>
+<tr><td>174</td><td>811 ETH</td><td>sell</td><td class="num">2,427.74</td><td class="num">0.25</td><td class="num">0.30</td><td class="num">3</td><td class="num">546.24</td><td class="num"><strong>546.24</strong> <span class="chip ok">exact</span></td><td class="num">24.9%</td></tr>
+<tr><td>177</td><td>811 ETH</td><td>sell</td><td class="num">2,427.74</td><td class="num">0.50</td><td class="num">0.30</td><td class="num">3</td><td class="num">1,092.48</td><td class="num"><strong>1,092.48</strong> <span class="chip ok">exact</span></td><td class="num">66.3%</td></tr>
+<tr><td>175</td><td>818 MNQ</td><td>cover</td><td class="num">2,225.43</td><td class="num">0.25</td><td class="num">0.30</td><td class="num">3</td><td class="num">500.72</td><td class="num"><strong>500.72</strong> <span class="chip ok">exact</span></td><td class="num">16.5%</td></tr>
+<tr><td>178</td><td>818 MNQ</td><td>cover</td><td class="num">2,225.43</td><td class="num">0.50</td><td class="num">0.30</td><td class="num">3</td><td class="num">1,001.44</td><td class="num"><strong>1,001.44</strong> <span class="chip ok">exact</span></td><td class="num">39.3%</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Four for four, to the cent. Two consequences follow, and both are worse than “the sizing is arbitrary”.</p>
+
+<div class="card crit">
+  <p style="margin:0 0 10px"><strong>(a) 818 covered 39.3% rather than 16.5% because its previous cover made money.</strong></p>
+  <p style="margin:0 0 10px">The only term that changed between signal 175 and signal 178 is <code>adapt_size_mult</code>, which the adapt ladder doubled from 0.25 to 0.50 after recording <code>"consecutive_wins": 1</code>. The desk’s reading of the position did not enter into it. A win-streak multiplier designed to size <em>entries</em> is silently deciding how much of a winner to bank.</p>
+  <p style="margin:0 0 10px"><strong>(b) The conviction term contributed nothing — it was pinned at its floor all four times.</strong></p>
+  <p style="margin:0"><code>_conviction_size_scale</code> (<code>run_engine.py:1965–1986</code>) computes <code>base = max(0.40, (v−0.45)/0.30)</code> and then, at leverage L with damping 0.5, raises it to the power <code>1 + 0.5(L−1)</code> with a floor of 0.30. At L = 3 that is <code>max(0.30, base²)</code>, so the scale only leaves 0.30 once <code>base &gt; 0.548</code>, i.e. <strong>conviction &gt; 0.614</strong>. Observed convictions on these runs sit around 0.365–0.50. So on the <code>extreme</code> tier — which all three live runs use — Plan 15 rec-2’s stated goal that “bet size follows stated conviction” is <em>inert</em>. It is a constant 0.30.</p>
+</div>
+
+<p>This is the concrete form of “it’s really hard to make decisions that cover all the cases”. The logic is not too complex; it is answering a different question than the one being asked. Entry sizing asks <em>how much risk should I take?</em> An exit asks <em>how much of what I hold should I give up?</em> Those have different units, and the code uses the first to answer the second.</p>
+
+<h2 id="cannot">3. Four things the desk cannot say</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>The sentence</th><th>Why it is unreachable</th><th>Observed cost</th></tr></thead>
+<tbody>
+<tr><td><strong>“Close it.”</strong></td><td>No verb. The action enum the desk may emit is <code>buy | sell | hold</code>; flattening happens only when <code>_evaluate_stop</code> returns a reason and sets <code>stop_flatten</code>.</td><td>Run 776 (ZC) peaked at +$78.58 and was retired by a rail at +$4.64 — 94% given back. The desk emitted <code>buy</code> for 43 straight cycles because “get out” was not in its vocabulary.</td></tr>
+<tr><td><strong>“Take half off.”</strong></td><td>No quantity authority on exits — §2.</td><td>The four exits above. 39% instead of 17% for reasons unconnected to the position.</td></tr>
+<tr><td><strong>“I was wrong — reverse.”</strong></td><td>A flip needs two cycles 30–60 min apart, and the second is likely blocked: <code>run_feedback.blocked_reentry</code> exists precisely to stop same-direction re-entry after a losing close (<code>run_engine.py:2411</code>).</td><td>Not yet quantified — but structurally the desk cannot act on being wrong within one cycle.</td></tr>
+<tr><td><strong>“Hold — and here is the level that changes my mind.”</strong></td><td><code>hold</code> carries no state. Next cycle re-derives from scratch. There is no way to arm a conditional between cycles.</td><td>Every between-cycle move is unattended for 30–60 min. The trailing lock is the only thing watching, and it arms at <code>trail_activate_rr = 1.0 × max_loss</code>, which for run 818 meant $89.02 against a $35.16 peak — unreachable.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="algo">4. The algorithm — Order Intent</h2>
+
+<p>Replace the 3-verb scalar with one object. Keep every existing gate, as a <em>rail</em> on that object rather than as the author of it.</p>
+
+<pre><code>{
+  "intent":     "open" | "add" | "reduce" | "close" | "flip" | "hold" | "arm",
+  "size_frac":  0.0-1.0,
+  "size_basis": "budget" | "position",     // set by intent, not by the model
+  "stop_pct":   number | null,
+  "target_pct": number | null,
+  "leverage":   number | null,             // may only reduce; Plan 16's add_margin
+  "arm":        { "if": "price_below" | "price_above" | "health_below",
+                  "level": number,
+                  "then": "reduce" | "close",
+                  "size_frac": 0.0-1.0 },
+  "confidence": 0.0-1.0,
+  "scores":     { thesis_alignment, momentum_quality, entry_quality, risk_context },
+  "why":        "one sentence"
+}</code></pre>
+
+<h3>Design rule 1 — the basis switches with the intent</h3>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Intent</th><th><code>size_frac</code> is a fraction of…</th><th>Gate stack</th></tr></thead>
+<tbody>
+<tr><td><code>open</code>, <code>add</code></td><td><code>max_bet_usd</code> — risk being taken</td><td><strong>full entry stack</strong>: fee_edge, confidence rank, add-churn, budget headroom, Kelly / vol / exposure, dust floor, R:R floor</td></tr>
+<tr><td><code>reduce</code>, <code>close</code></td><td><strong>the position the desk actually holds</strong>. <code>close</code> ≡ <code>reduce</code> at 1.0.</td><td><strong>exit stack only</strong>: market open, mark fresh, proceeds clear the round-trip fee on the slice. Nothing else.</td></tr>
+<tr><td><code>flip</code></td><td>decomposes to <code>close</code>(1.0) + <code>open</code>(size_frac) in one transaction</td><td>close half unrailed; open half faces the full entry stack</td></tr>
+<tr><td><code>arm</code></td><td>fraction of position, evaluated later by the ~60s control scan</td><td>may only ever <em>reduce</em>; never opens anything</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Design rule 2 — the two strongest ideas here</h3>
+
+<div class="card ai">
+  <p style="margin:0 0 8px"><strong><code>arm</code> is the answer to the between-cycles gap, and it needs no rail to pick a level.</strong></p>
+  <p style="margin:0"><code>arm</code> lets the desk make a decision <em>now</em> that executes <em>later</em>, at machine latency, with the AI choosing the trigger and the machine merely obeying it. This is the shape the standing rule asks for and the shape four measured threshold experiments failed to produce: <code>trail_activate_rr</code>, a breakeven ratchet, a peak-relative brake cap, and <code>RUN_CONF_V2</code> were each tested against real tick history and each rejected. The reason they failed is the same every time — one constant cannot be right for MNQ at 3× and USDZAR at 2× simultaneously. <code>arm</code> deletes the constant and puts a per-position judgement in its place. Note it must be stored through <code>validate_stop_conditions</code>, which strips unknown keys: adding a field without whitelisting it there is a silent no-op.</p>
+</div>
+
+<div class="card ai">
+  <p style="margin:0 0 8px"><strong><code>leverage</code> as a reducible field is Plan 16’s <code>add_margin</code>.</strong></p>
+  <p style="margin:0">Deleveraging moves the liquidation price away without surrendering any of the position. A desk that believes its thesis and is merely being squeezed should usually prefer it to reducing. Today leverage is chosen once by the tier table and never revisited, so this option does not exist at any point in a position’s life.</p>
+</div>
+
+<h2 id="rails">5. Rails, and why they must be asymmetric</h2>
+
+<p><code>order_params.py</code> already establishes the right pattern — <code>_SHRINK_ONLY</code>, absolute bounds, journalled either way, <code>shadow</code> by default. Generalise it, with one change that carries the entire safety argument:</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Field</th><th>On an <code>open</code> / <code>add</code></th><th>On a <code>reduce</code> / <code>close</code></th><th>Rationale</th></tr></thead>
+<tbody>
+<tr><td><code>size_frac</code></td><td><span class="chip warn">clamps DOWN only</span></td><td><span class="chip ok">clamps UP only</span></td><td><strong>The asymmetry is the point.</strong> A desk asking to take more risk may be refused. A desk asking to shed risk may always shed more, never less.</td></tr>
+<tr><td><code>close</code></td><td>n/a</td><td><span class="chip ok">never railed</span></td><td>There is no safe reason to refuse a flatten. Refusing one is how a rail becomes the risk.</td></tr>
+<tr><td><code>leverage</code></td><td colspan="2"><span class="chip warn">clamps DOWN to the tier cap</span></td><td>Unchanged from <code>order_params</code>.</td></tr>
+<tr><td><code>stop_pct</code> / <code>target_pct</code></td><td colspan="2"><span class="chip warn">stop tightens only; R:R floor applies</span></td><td>Unchanged from <code>order_params</code>. The R:R floor already refuses a bracket that risks more than it can win, whoever authored it.</td></tr>
+<tr><td><code>arm.level</code></td><td colspan="2"><span class="chip ok">not railed</span> — but <code>arm.then</code> may only reduce</td><td>The level is the judgement. Railing it reintroduces the constant we are trying to delete.</td></tr>
+<tr><td><code>flip</code></td><td colspan="2">the <code>open</code> half faces every entry gate</td><td>A flip the gates would refuse degrades to a plain <code>close</code> — the correct failure mode, since the desk’s stated view is that the old position is wrong.</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure style="margin-top:24px">
+<svg viewBox="0 0 1000 430" role="img" aria-label="Authority split today versus proposed, and the asymmetric rail">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <text class="lab-strong" x="0" y="16">Who authors the order — today</text>
+  <rect x="0" y="26" width="128" height="30" fill="var(--ai)" opacity="0.75"/>
+  <rect x="128" y="26" width="64" height="30" fill="var(--ai)" opacity="0.35"/>
+  <rect x="192" y="26" width="768" height="30" fill="var(--mach)" opacity="0.40"/>
+  <rect x="0" y="26" width="960" height="30" fill="none" stroke="var(--axis)"/>
+  <text class="lab-strong" x="64" y="46" text-anchor="middle" style="fill:#fff">verb</text>
+  <text x="160" y="46" text-anchor="middle">½ bracket</text>
+  <text class="lab" x="576" y="46" text-anchor="middle">size · exit size · leverage · whether to close (no verb at all)</text>
+
+  <text class="lab-strong" x="0" y="90">Who authors it — proposed</text>
+  <rect x="0" y="100" width="820" height="30" fill="var(--ai)" opacity="0.75"/>
+  <rect x="820" y="100" width="140" height="30" fill="var(--mach)" opacity="0.40"/>
+  <rect x="0" y="100" width="960" height="30" fill="none" stroke="var(--axis)"/>
+  <text class="lab-strong" x="410" y="120" text-anchor="middle" style="fill:#fff">intent · size_frac · bracket · leverage · arm level</text>
+  <text x="890" y="120" text-anchor="middle">rails</text>
+
+  <g class="legendline">
+    <rect x="0" y="146" width="12" height="12" fill="var(--ai)" opacity="0.75"/>
+    <text x="18" y="157">AI authors</text>
+    <rect x="110" y="146" width="12" height="12" fill="var(--mach)" opacity="0.40"/>
+    <text x="128" y="157">machine authors</text>
+  </g>
+
+  <!-- asymmetric rail -->
+  <text class="lab-strong" x="0" y="204">The asymmetric rail — the whole safety argument</text>
+
+  <rect x="0" y="222" width="470" height="180" rx="9" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="20" y="246">intent = open / add</text>
+  <text x="20" y="264">the desk asks to TAKE risk</text>
+  <line x1="20" y1="288" x2="440" y2="288" stroke="var(--axis)" stroke-width="1.2"/>
+  <g color="var(--crit)" stroke="var(--crit)" stroke-width="2.4" fill="none" marker-end="url(#a2)">
+    <path d="M330,310 L150,310"/>
+  </g>
+  <circle cx="340" cy="310" r="5" fill="var(--crit)"/>
+  <text x="20" y="336" style="fill:var(--crit)" class="lab-strong">rails may only SHRINK it</text>
+  <text x="20" y="356">fee_edge · confidence rank · add-churn · budget</text>
+  <text x="20" y="372">headroom · Kelly · vol · exposure · dust · R:R floor</text>
+  <text x="20" y="392">A refusal here is safe: the trade simply does not happen.</text>
+
+  <rect x="490" y="222" width="470" height="180" rx="9" fill="var(--surface-1)" stroke="var(--s3)" stroke-width="1.6"/>
+  <text class="lab-strong" x="510" y="246">intent = reduce / close</text>
+  <text x="510" y="264">the desk asks to SHED risk</text>
+  <line x1="510" y1="288" x2="930" y2="288" stroke="var(--axis)" stroke-width="1.2"/>
+  <g color="var(--s3)" stroke="var(--s3)" stroke-width="2.4" fill="none" marker-end="url(#a2)">
+    <path d="M620,310 L800,310"/>
+  </g>
+  <circle cx="610" cy="310" r="5" fill="var(--s3)"/>
+  <text x="510" y="336" style="fill:var(--s3)" class="lab-strong">rails may only GROW it — and never refuse</text>
+  <text x="510" y="356">market open · mark fresh · proceeds clear the</text>
+  <text x="510" y="372">round-trip fee on the slice. Nothing else.</text>
+  <text x="510" y="392" style="fill:var(--crit)">A rail that refuses a reduction IS the risk.</text>
+</svg>
+<figcaption>The top two bars are the change in one picture. The bottom half is why it is safe: authority grows, but only in the direction where a mistake is bounded — the desk can be refused when it wants more risk, never when it wants less.</figcaption>
+</figure>
+
+<h2 id="compile">6. The compiler</h2>
+
+<p>The ledger’s vocabulary does not change: <code>EXECUTABLE_ACTIONS = ("buy", "sell", "short", "cover")</code> stays exactly as it is (<code>automation.py:40</code>). Intents <em>compile</em> to it. One function, one place, tested per book type — because this is precisely where the run-776 class of bug lives.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Intent</th><th>Spot book</th><th>Futures book, long</th><th>Futures book, short</th><th>Flat</th></tr></thead>
+<tbody>
+<tr><td><code>open</code> (bull)</td><td><code>buy</code></td><td><code>buy</code></td><td><code>cover</code> then <code>buy</code></td><td><code>buy</code></td></tr>
+<tr><td><code>open</code> (bear)</td><td><span class="chip mach">n/a → hold</span></td><td><code>sell</code></td><td><code>short</code></td><td><code>short</code></td></tr>
+<tr><td><code>reduce</code></td><td><code>sell</code> × frac</td><td><code>sell</code> × frac</td><td><code>cover</code> × frac</td><td><span class="chip mach">no-op</span></td></tr>
+<tr><td><code>close</code></td><td><code>sell</code> full</td><td><code>sell</code> full</td><td><code>cover</code> full</td><td><span class="chip mach">no-op</span></td></tr>
+<tr><td><code>flip</code></td><td><code>sell</code> full <span class="chip mach">no short on spot</span></td><td><code>sell</code> full + <code>short</code></td><td><code>cover</code> full + <code>buy</code></td><td>→ <code>open</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The futures remap currently sitting inline in <code>run_cycle</code> (lines 2387–2394) moves into this table. That remap is a special case bolted into the cycle body; as a compiler it becomes a total function over (intent × book × side) that can be exhaustively tested. Run 776’s failure — a futures long told only short mechanics — was possible because no such total function existed.</p>
+
+<figure style="margin-top:22px">
+<div class="pipes">
+  <div class="pipe">
+    <h3>Today</h3>
+    <div class="pnode"><b>LLM</b><span>emits <code>buy | sell | hold</code> + confidence + 4 scores</span><span class="file">run_engine.py:2083</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode bad"><b>machine picks the size</b><span>max_bet × adapt × conviction × L — never looks at the position</span><span class="file">run_engine.py:2437–2508</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode bad"><b>futures remap, inline</b><span>sell→short, buy→cover, as a special case</span><span class="file">run_engine.py:2387–2394</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode bad"><b>exit clamped by min(q, position)</b><span>the % reduced is a residue, not a decision</span><span class="file">automation.py:155,168</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode bad"><b>“close it” is unreachable</b><span>only <code>_evaluate_stop</code> can flatten</span></div>
+  </div>
+  <div class="pipe">
+    <h3>Proposed</h3>
+    <div class="pnode aiN"><b>LLM emits an Order Intent</b><span>intent + size_frac + basis + bracket + leverage + arm + why</span><span class="file">_light_analysis + analysis_agents</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode chg"><b>rails (asymmetric)</b><span>opens clamp down · exits clamp up · <code>close</code> never railed</span><span class="file">order_intent.py</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode chg"><b>compiler: intent × book × side</b><span>total function, exhaustively tested</span><span class="file">order_intent.compile()</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode keep"><b>gates, unchanged — but split</b><span>entry stack on opens; fee+freshness only on exits</span><span class="file">risk_engine / automation</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode keep"><b>same ledger verbs</b><span><code>buy | sell | short | cover</code> — nothing downstream changes</span><span class="file">automation.py:40</span></div>
+  </div>
+</div>
+<div class="legendline">
+  <span class="k"><span class="sw" style="background:var(--ai)"></span> AI authors</span>
+  <span class="k"><span class="sw" style="background:var(--s2)"></span> new / changed</span>
+  <span class="k"><span class="sw" style="background:var(--s3)"></span> unchanged</span>
+  <span class="k"><span class="sw" style="background:var(--crit)"></span> the defect</span>
+</div>
+<figcaption>The ledger, the gates, and every existing safety property survive. What moves is authorship of the numbers.</figcaption>
+</figure>
+
+<h2 id="prompt">7. The prompt</h2>
+
+<p>Both decision paths need this, not just the cheap one. About 40 of 43 cycles on run 776 routed to <code>light</code>, so <code>_light_analysis</code> is the production decision path — but the E1 router escalates to <code>full</code> <em>for position reasons</em>, and PR #125 had to fix exactly that blind spot once already. Shipping this to one path only would repeat that mistake.</p>
+
+<pre><code>Your book: 0.0928 units (negative = short, 0 = flat).
+Open P&amp;L on this position: +$12.22. Best this run has reached: $35.16 —
+you are holding 35% of that high-water mark.
+
+Choose ONE intent:
+  open   - take a new position          size_frac = fraction of your max bet
+  add    - increase the existing one    size_frac = fraction of your max bet
+  reduce - bank part of it              size_frac = fraction of WHAT YOU HOLD
+  close  - out entirely
+  flip   - you were wrong; reverse      size_frac sizes the new side
+  hold   - do nothing this cycle
+  arm    - do nothing NOW, but set a level that acts without waiting for
+           the next cycle:  {"if":"price_above","level":27800,
+                             "then":"reduce","size_frac":0.5}
+
+size_frac on reduce/close is a fraction of YOUR CURRENT POSITION, not of
+your budget. 0.5 means half of what you hold. Say what you mean; the
+platform will not second-guess a reduction.
+
+Banking is a first-class action, not merely the absence of an add.
+If you choose hold, name the level that would change your mind — and
+prefer 'arm' over 'hold' whenever you can name one, because your next
+cycle is 45 minutes away and the market is not.</code></pre>
+
+<p>That last paragraph is the whole design in prose. The current prompt’s <code>hold</code> is a dead end; <code>arm</code> turns it into a decision with a deadline the desk sets itself.</p>
+
+<h2 id="rollout">8. Rollout with real measurement</h2>
+
+<p>Mirror <code>order_params</code> exactly: <code>RUN_ORDER_INTENT = off | shadow | apply</code>, default <code>shadow</code>, intent journalled beside the legacy decision either way. Unlike a threshold change, most of this <strong>is measurable in shadow</strong>, which is the strongest argument for doing it this way:</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Intent</th><th>Shadow-measurable?</th><th>How</th></tr></thead>
+<tbody>
+<tr><td><code>reduce</code></td><td><span class="chip ok">yes, cleanly</span></td><td>For every shadow <code>reduce 0.50</code>, compute what banking 50% would have realised at that mark and compare with what the machine’s entry-sized reduce actually banked. A true paired A/B with nothing at risk.</td></tr>
+<tr><td><code>add</code>, <code>open</code></td><td><span class="chip ok">yes</span></td><td>Same pairing on size. The existing <code>order_params</code> shadow dataset already collects the bracket half of this.</td></tr>
+<tr><td><code>close</code></td><td><span class="chip warn">partly</span></td><td>We know what the remainder did afterwards, so a <em>retrospective</em> comparison is possible — but it is a path-not-taken, and the same lookahead trap that invalidated my first <code>trail_activate_rr</code> replay applies. Tick-by-tick only, no full-life peaks.</td></tr>
+<tr><td><code>flip</code>, <code>arm</code></td><td><span class="chip crit">no</span></td><td>Their counterfactual is a position that never existed. The only honest evidence is a live, small-budget cohort. Say so rather than manufacturing a number.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Promotion criteria to <code>apply</code>:</strong> ≥ 30 paired <code>reduce</code> observations, and the shadow intent ≥ the machine on median banked-per-exit. Phase order:</p>
+
+<ol>
+  <li><code>reduce</code> + <code>close</code> + the exit-gate split. Exits first — they can only shed risk, so this is the lowest-risk half and it is where §2’s defect lives.</li>
+  <li><code>open</code>/<code>add</code> with <code>size_basis: budget</code>. Subsumes <code>order_params.size_frac</code>.</li>
+  <li><code>arm</code>. Needs <code>validate_stop_conditions</code> whitelisting and a control-scan evaluator; test through the API, not the planner.</li>
+  <li><code>flip</code>, and the <code>blocked_reentry</code> interaction — a flip must not be mistaken for a whipsaw re-entry by the guard that exists to stop whipsaws.</li>
+  <li><code>leverage</code> reduction, jointly with Plan 16 phase 4.</li>
+</ol>
+
+<h3>Verification</h3>
+<ol>
+  <li><strong>Compiler exhaustiveness:</strong> a test per cell of the §6 table — 7 intents × 3 book states × 2 market types. Run 776 proves an untested cell is a live bug.</li>
+  <li><strong>The asymmetry:</strong> assert a <code>reduce</code> can be railed up but never down, and that <code>close</code> passes every gate configuration including a tripped auto-breaker (<code>risk_engine.py:423–427</code> already guarantees this for the ledger; the intent layer must not undo it).</li>
+  <li><strong>Regression on §2:</strong> a test that fails if an exit quantity is ever derived from <code>max_bet_usd</code>. This is the defect; it deserves a permanent tripwire.</li>
+  <li><strong>Mutation:</strong> re-inject each fix — restore the entry-sizing exit, drop the basis switch, remove <code>close</code> from the enum — and confirm a test fails for each. Clear <code>__pycache__</code> in the runner.</li>
+  <li><strong>Backward compatibility:</strong> a decision with no <code>intent</code> key must compile from the legacy verb, so the fallback path (<code>"light cycle: no LLM verdict"</code>) and any older model keep working unchanged.</li>
+</ol>
+
+<h2 id="breaks">9. What breaks</h2>
+<ul>
+  <li><strong>The adapt ladder’s role narrows.</strong> Once exits are position-based, <code>adapt_size_mult</code> stops influencing them. That is the intended fix, but <code>run_feedback</code>’s own accounting assumes it sizes everything, so its tests need revisiting alongside.</li>
+  <li><strong><code>_add_limit_skip</code> must not see reductions.</strong> The add-churn guard gates <code>("buy", "sell", "short")</code> today (<code>run_engine.py:2483</code>) — and <code>sell</code> is in that list because on a futures book it may be an <em>open</em>. Once intent distinguishes <code>add</code> from <code>reduce</code>, the guard keys on the intent and the ambiguity disappears. This is the same class of bug PR #118 fixed, in reverse.</li>
+  <li><strong>Telemetry shape changes.</strong> The <code>decision</code> event gains <code>intent</code>/<code>size_frac</code>/<code>size_basis</code>. The Automation UI reads these events; adding fields is safe, but the four summary tiles on <code>AutomationPage.tsx</code> assume the current shape.</li>
+  <li><strong>What this does not fix.</strong> Intent authority does not make the desk’s <em>judgement</em> better — it makes its judgement expressible. Run 811 banked at roughly +$6.45 after holding through +$33.44, which is capability without calibration. Giving it <code>reduce 0.5</code> lets it act on a view; it does not supply the view. Calibration is a separate problem and should not be claimed as a benefit of this change.</li>
+</ul>
+
+<div class="kr">
+  <strong>한국어 상세</strong>
+  <p><strong>진단:</strong> 문제는 “프로그래밍 로직이 모든 경우를 다루기 어렵다”가 아니라, 그 로직이 <em>다른 질문에 답하고 있다</em>는 것입니다. 진입 사이징은 “얼마나 리스크를 질까”를 묻고, 청산은 “들고 있는 것 중 얼마를 놓을까”를 묻습니다. 단위가 다른데 코드는 전자로 후자에 답합니다. 프로덕션 청산 4건이 <code>max_bet × adapt × conviction × L</code>로 센트까지 정확히 재현됩니다 — 어느 항도 보유 포지션을 보지 않습니다.</p>
+  <p><strong>두 가지 나쁜 결과:</strong> (a) 818이 39%를 청산한 건 판단이 아니라 직전 청산이 이익이어서 adapt 배수가 0.25→0.50으로 두 배가 된 결과입니다. (b) 3배 레버리지에서 conviction 항은 conviction &gt; 0.614가 아니면 하한 0.30에 고정 — 실측 0.365~0.5이므로 “확신에 따라 베팅 크기가 따라간다”는 Plan 15의 목표가 extreme 등급에서는 작동하지 않습니다.</p>
+  <p><strong>설계:</strong> 3동사 스칼라 → <strong>Order Intent</strong> 객체. <code>open/add/reduce/close/flip/hold/arm</code>. 핵심 규칙 두 개: ① <code>size_frac</code>의 기준이 intent에 따라 바뀝니다 — 진입은 예산 대비, 청산은 <strong>보유 포지션 대비</strong>. ② 레일이 <strong>비대칭</strong>입니다 — 진입은 줄이는 방향으로만, 청산은 늘리는 방향으로만, <code>close</code>는 절대 막지 않습니다. 리스크를 줄이겠다는 요청을 거부하는 레일은 그 자체가 리스크입니다.</p>
+  <p><strong>가장 중요한 새 동사는 <code>arm</code>입니다.</strong> “지금은 아무것도 안 하지만 이 가격이 오면 절반 청산” — AI가 <em>수준</em>을 정하고 기계는 60초 스캔으로 <em>복종</em>만 합니다. 상수 4개를 실제 틱 데이터로 측정해 전부 기각했던 이유가 “하나의 상수가 MNQ 3배와 USDZAR 2배에 동시에 맞을 수 없다”였습니다. <code>arm</code>은 상수를 없애고 그 자리에 포지션별 판단을 넣습니다.</p>
+  <p><strong>측정 계획:</strong> <code>reduce</code>는 섀도우에서 <em>완전한</em> 페어드 A/B가 가능합니다(같은 시점에 50% 청산했으면 얼마였는지 대 기계가 실제로 청산한 금액). <code>close</code>는 부분적으로만, <code>flip</code>·<code>arm</code>은 섀도우로 측정 불가 — 소액 실거래 코호트만이 정직한 증거입니다. 없는 숫자를 만들지 않겠습니다.</p>
+  <p><strong>과장하지 않을 것:</strong> 이 변경은 데스크의 판단을 <em>좋게</em> 만들지 않습니다. <em>표현 가능하게</em> 만듭니다. 811은 +$33.44를 지나 +$6.45에 청산했습니다 — 능력은 있고 캘리브레이션은 없는 상태입니다. 캘리브레이션은 별개 문제이며 이 변경의 효과로 주장하지 않겠습니다.</p>
+</div>
+
+<p class="meta" style="margin-top:40px">Companion document: <a href="16-liquidation-defense-daemon.html">Plan 16 — Liquidation Defense Daemon</a>. Plan 16’s defensive verbs (<code>reduce</code>, <code>close</code>, <code>add_margin</code>, <code>hold</code>) are a subset of the intent set above and share this compiler and these rails.</p>
+
+</div>
+</body>
+</html>
