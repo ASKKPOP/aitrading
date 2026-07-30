@@ -378,14 +378,25 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         </label>
       </div>
 
-      {/* ── AI model usage (Plan 11 F2) ────────────────── */}
-      {sectionTitle({ ko: 'AI 모델 사용량 — 월 누적 예상 비용', en: 'AI Model Usage — monthly estimated cost', ja: 'AIモデル使用量 — 月間推定コスト', th: 'การใช้โมเดล AI — ค่าใช้จ่ายโดยประมาณต่อเดือน', vi: 'Mức dùng mô hình AI — chi phí ước tính hàng tháng', id: 'Penggunaan model AI — perkiraan biaya bulanan' })}
+      {/* ── AI model usage (Plan 11 F2) ──────────────────
+          On a local (self-hosted, free) model the card drops the cost framing:
+          no title cost phrase, no headline $ for the user block. Paid models
+          used earlier in the month keep their per-row amounts; local rows
+          never show one. */}
+      {sectionTitle(usage?.active?.provider === 'local'
+        ? { ko: 'AI 모델 사용량', en: 'AI Model Usage', ja: 'AIモデル使用量', th: 'การใช้โมเดล AI', vi: 'Mức dùng mô hình AI', id: 'Penggunaan model AI' }
+        : { ko: 'AI 모델 사용량 — 월 누적 예상 비용', en: 'AI Model Usage — monthly estimated cost', ja: 'AIモデル使用量 — 月間推定コスト', th: 'การใช้โมเดล AI — ค่าใช้จ่ายโดยประมาณต่อเดือน', vi: 'Mức dùng mô hình AI — chi phí ước tính hàng tháng', id: 'Penggunaan model AI — perkiraan biaya bulanan' })}
       {usage && (
         <div className="card" style={{ padding: '14px 16px', marginBottom: '10px' }}>
           {usage.active?.provider && (
             <div style={{ fontSize: '12.5px', marginBottom: '8px' }}>
               {tr(language, { ko: '현재 활성 모델', en: 'Active model', ja: '現在のモデル', th: 'โมเดลที่ใช้งาน', vi: 'Mô hình đang dùng', id: 'Model aktif' })}:{' '}
               <b>{usage.active.provider} · {usage.active.model}</b>
+              {usage.active.provider === 'local' && (
+                <span style={{ marginLeft: '8px', fontSize: '11.5px', color: 'var(--positive, #4caf7d)' }}>
+                  {tr(language, { ko: '로컬 AI · 무료', en: 'Local AI · free', ja: 'ローカルAI・無料', th: 'AI ในเครื่อง · ฟรี', vi: 'AI cục bộ · miễn phí', id: 'AI lokal · gratis' })}
+                </span>
+              )}
             </div>
           )}
           {[{ key: 'user', data: usage.user }, ...(usage.system ? [{ key: 'system', data: usage.system }] : [])].map(({ key, data }) => (
@@ -396,7 +407,9 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                     ? tr(language, { ko: '내 사용량 (이번 달)', en: 'My usage (this month)', ja: '自分の使用量（今月）', th: 'การใช้ของฉัน (เดือนนี้)', vi: 'Mức dùng của tôi (tháng này)', id: 'Penggunaan saya (bulan ini)' })
                     : tr(language, { ko: '시스템 전체 (관리자 전용)', en: 'System-wide (owner only)', ja: 'システム全体（管理者のみ）', th: 'ทั้งระบบ (เจ้าของเท่านั้น)', vi: 'Toàn hệ thống (chủ sở hữu)', id: 'Seluruh sistem (khusus pemilik)' })}
                 </span>
-                <b style={{ fontSize: '16px' }}>≈ ${Number(data?.total_cost_usd || 0).toFixed(2)}</b>
+                {!(key === 'user' && usage.active?.provider === 'local') && (
+                  <b style={{ fontSize: '16px' }}>≈ ${Number(data?.total_cost_usd || 0).toFixed(2)}</b>
+                )}
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                   {Number(data?.total_calls || 0).toLocaleString()} {tr(language, { ko: '회 호출', en: 'calls', ja: '回', th: 'ครั้ง', vi: 'lần gọi', id: 'panggilan' })}
                 </span>
@@ -409,7 +422,9 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                       <span>{Number(m.calls).toLocaleString()}×</span>
                       <span>{tr(language, { ko: '입력', en: 'in', ja: '入力', th: 'เข้า', vi: 'vào', id: 'masuk' })} {Number(m.prompt_tokens).toLocaleString()}</span>
                       <span>{tr(language, { ko: '출력', en: 'out', ja: '出力', th: 'ออก', vi: 'ra', id: 'keluar' })} {Number(m.completion_tokens).toLocaleString()}</span>
-                      <span style={{ marginLeft: 'auto' }}>≈ ${Number(m.cost_usd).toFixed(3)}</span>
+                      {m.provider !== 'local' && (
+                        <span style={{ marginLeft: 'auto' }}>≈ ${Number(m.cost_usd).toFixed(3)}</span>
+                      )}
                     </div>
                   ))}
                 </div>

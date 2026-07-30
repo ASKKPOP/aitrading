@@ -109,12 +109,17 @@ export function AiUsagePill({ userToken }: { userToken?: string | null }) {
     estimate: tr(language, { ko: '공개 가격표 기준 추정치입니다.',
       en: 'Estimated from public list prices.', ja: '公開価格表に基づく推定値です。',
       th: 'ประมาณจากราคาสาธารณะ', vi: 'Ước tính theo bảng giá công khai.', id: 'Diperkirakan dari harga daftar publik.' }),
+    freeLocal: tr(language, { ko: '로컬 AI · 무료', en: 'Local AI · free',
+      ja: 'ローカルAI・無料', th: 'AI ในเครื่อง · ฟรี', vi: 'AI cục bộ · miễn phí', id: 'AI lokal · gratis' }),
   }
 
   if (!userToken || !data) return null
 
   const spent = data.user?.total_cost_usd ?? 0
   const projected = data.user?.projected_cost_usd ?? spent
+  // On a local (self-hosted, free) model the bar shows WHICH model is running,
+  // not a dollar figure — there is nothing being spent by the current setup.
+  const localActive = data.active?.provider === 'local'
 
   const section = (title: string, s: Summary | undefined) => {
     if (!s) return null
@@ -138,7 +143,9 @@ export function AiUsagePill({ userToken }: { userToken?: string | null }) {
             <div style={subhead}>{T.byModel}</div>
             {s.models.map(m => (
               <Row key={`${m.provider}/${m.model}`} label={m.model}
-                value={`${money(m.cost_usd)} · ${m.calls} ${T.calls}`} />
+                value={m.provider === 'local'
+                  ? `${m.calls} ${T.calls}`
+                  : `${money(m.cost_usd)} · ${m.calls} ${T.calls}`} />
             ))}
           </>
         )}
@@ -151,13 +158,15 @@ export function AiUsagePill({ userToken }: { userToken?: string | null }) {
       <button
         className="topnav-icon-btn"
         onClick={() => setOpen(v => !v)}
-        title={`${T.label} · ${T.thisMonth} ${money(spent)} · ${T.projected} ${money(projected)}`}
+        title={localActive
+          ? `${T.label} · ${T.activeModel}: ${data.active?.model} · ${T.freeLocal}`
+          : `${T.label} · ${T.thisMonth} ${money(spent)} · ${T.projected} ${money(projected)}`}
         aria-label={T.label}
         aria-expanded={open}
         style={{ width: 'auto', padding: '0 8px', gap: 4, fontSize: 12.5,
           fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
       >
-        <span aria-hidden>🧠</span>{money(spent)}
+        <span aria-hidden>🧠</span>{localActive ? (data.active?.model || 'local') : money(spent)}
       </button>
 
       {open && (
