@@ -271,10 +271,18 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
     # a user or rule that picked its own provider. Unusable overrides
     # (unknown provider, missing key) fall through to normal resolution so a
     # misconfigured experiment degrades to current behavior, not to silence.
+    # User-owned calls (the context names a user or agent) only run on AI the
+    # user configured themselves: their Settings-page provider or the run's
+    # explicit llm_tiers. Without one they resolve to None — never the admin
+    # console default or the platform env keys (owner policy 2026-07-31). The
+    # user-facing assistant tier stays on the platform default.
+    user_unconfigured = bool(
+        ctx and (ctx.user_id is not None or ctx.agent_id is not None)
+        and not ctx.provider and tier != "assistant")
     override = None
     if ctx and ctx.tier_providers:
         override = ctx.tier_providers.get(tier)
-    if override is None and not (ctx and ctx.provider):
+    if override is None and not (ctx and ctx.provider) and not user_unconfigured:
         override = _admin_llm_settings()["tiers"].get(tier)
     if override is not None:
         if isinstance(override, dict) and override.get("provider"):
@@ -288,6 +296,9 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
                                       base_url=base_url, model=model, source="rule")
             logger.warning("llm_tiers override for tier %r unusable (provider=%r); "
                            "falling back to normal resolution", tier, override.get("provider"))
+
+    if user_unconfigured:
+        return None
 
     ctx_provider = (ctx.provider or "") if ctx else ""
     env_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
