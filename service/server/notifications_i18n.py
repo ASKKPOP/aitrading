@@ -252,31 +252,37 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_loss': 'stop loss',
             'take_profit': 'take profit',
             'time_stop': 'time stop',
+            'liquidation_defense': 'liquidation defense',
         },
         'ko': {
             'stop_loss': '손절',
             'take_profit': '익절',
             'time_stop': '타임스탑',
+            'liquidation_defense': '청산 방어',
         },
         'ja': {
             'stop_loss': 'ストップロス',
             'take_profit': 'テイクプロフィット',
             'time_stop': 'タイムストップ',
+            'liquidation_defense': 'ロスカット防衛',
         },
         'th': {
             'stop_loss': 'จุดตัดขาดทุน',
             'take_profit': 'จุดทำกำไร',
             'time_stop': 'หยุดตามเวลา',
+            'liquidation_defense': 'การป้องกันการบังคับปิดสถานะ',
         },
         'vi': {
             'stop_loss': 'Cắt lỗ',
             'take_profit': 'Chốt lời',
             'time_stop': 'Dừng theo thời gian',
+            'liquidation_defense': 'Phòng vệ thanh lý',
         },
         'id': {
             'stop_loss': 'stop loss',
             'take_profit': 'take profit',
             'time_stop': 'stop waktu',
+            'liquidation_defense': 'pertahanan likuidasi',
         },
     },
     'action': {

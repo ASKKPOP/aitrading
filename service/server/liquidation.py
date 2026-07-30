@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import os
 import time
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 # ── tiers ──────────────────────────────────────────────────────────────────
@@ -364,6 +365,46 @@ def apply_hysteresis(previous: Optional[str], raw: str,
     return previous, streak
 
 
+# ── mark freshness ─────────────────────────────────────────────────────────
+def _parse_ts(value: Any) -> Optional[float]:
+    """Epoch seconds from a position timestamp, or None.
+
+    Tolerates the three shapes the column actually arrives in: a ``datetime``
+    (what MySQL returns for a DATETIME), ``'YYYY-MM-DDTHH:MM:SSZ'``, and
+    SQLite's ``'YYYY-MM-DD HH:MM:SS'``. risk_engine._parse_position_ts handles
+    only the two string forms and would raise AttributeError on the datetime,
+    so this does not reuse it.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    if not isinstance(value, str):
+        return None
+    raw = value.strip().replace("Z", "+00:00")
+    if " " in raw and "T" not in raw:
+        raw = raw.replace(" ", "T")
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()
+
+
+def mark_age_seconds(position: dict, now: Optional[float] = None) -> Optional[float]:
+    """How stale the mark this reading rests on is.
+
+    Not cosmetic. The price poller runs on a ~900s cadence while this loop runs
+    on 20s, so a tier can be computed from a mark a quarter of an hour old. A
+    stale mark is survivable for a brief and fatal for an irreversible flatten.
+    """
+    ts = _parse_ts(position.get("price_updated_at"))
+    if ts is None:
+        return None
+    return max(0.0, float(now if now is not None else time.time()) - ts)
+
+
 # ── the oracle ─────────────────────────────────────────────────────────────
 def margin_state(position: dict, *, cushion_frac: float,
                  broker_reading: Optional[dict] = None,
@@ -417,6 +458,9 @@ def margin_state(position: dict, *, cushion_frac: float,
     notional = abs(qty) * mark
     return {
         "position_id": position.get("id"),
+        # Carried because the reflex needs an owner to place the exit under;
+        # the oracle half never needed it.
+        "agent_id": position.get("agent_id"),
         "run_id": position.get("run_id"),
         "symbol": position.get("symbol"),
         "market": market,
@@ -424,6 +468,7 @@ def margin_state(position: dict, *, cushion_frac: float,
         "quantity": qty,
         "entry_price": entry,
         "mark_price": mark,
+        "mark_age_seconds": mark_age_seconds(position, now=now),
         "leverage": lev,
         "mmr": mmr,
         "liq_price": liq,
@@ -508,6 +553,108 @@ def reflex_action(state: Optional[dict]) -> Optional[str]:
     return "flatten"
 
 
+# When a flatten was last ATTEMPTED per position, so a close that fails is not
+# retried on every 5s hot tick. In-process like _tiers and _samples: a worker
+# restart re-attempts, which is the safe direction for a position at T3.
+_flatten_attempts: dict[Any, float] = {}
+
+
+def reflex_max_stale_seconds() -> int:
+    """How old the mark may be and still justify an irreversible flatten."""
+    return _env_int("LIQ_REFLEX_MAX_STALE", 300, 30, 3600)
+
+
+def reflex_retry_seconds() -> int:
+    """Minimum gap between flatten attempts on one position."""
+    return _env_int("LIQ_REFLEX_RETRY", 60, 5, 3600)
+
+
+def reflex_block_reason(state: Optional[dict], now: Optional[float] = None
+                        ) -> Optional[str]:
+    """Why an armed reflex must NOT fire on this reading, or None to proceed.
+
+    Refusing is not the same as standing down: every reason here is journalled
+    and leaves the position at T3, where the desk brief and the hot cadence
+    keep working. The daemon declines to act blindly; it does not go quiet.
+    """
+    if not state:
+        return "no_state"
+    if not state.get("agent_id"):
+        return "no_owner"
+    try:
+        qty = abs(float(state.get("quantity") or 0))
+        mark = float(state.get("mark_price") or 0)
+    except (TypeError, ValueError):
+        return "unreadable"
+    if qty <= 0:
+        return "flat"
+    if mark <= 0:
+        return "no_mark"
+    age = state.get("mark_age_seconds")
+    if age is None:
+        return "mark_age_unknown"
+    if float(age) > reflex_max_stale_seconds():
+        return "stale_mark"
+    key = state.get("position_id")
+    last = _flatten_attempts.get(key)
+    if last is not None:
+        t = float(now if now is not None else time.time())
+        if (t - last) < reflex_retry_seconds():
+            return "cooldown"
+    return None
+
+
+def execute_reflex(state: Optional[dict], now: Optional[float] = None) -> dict:
+    """Close a T3 position at market. The only place Plan 16 places an order.
+
+    Reuses the SL/TP watcher's close primitive rather than opening a second
+    one, so a reflex exit is journalled, attributed to its run, and alerted
+    exactly like every other forced exit — and so an orphan (run_id NULL) is
+    closable at all, which is the case no run-scoped path can reach.
+    """
+    out: dict[str, Any] = {"fired": False, "reason": None, "signal_id": None,
+                           "position_id": (state or {}).get("position_id")}
+    if reflex_action(state) != "flatten":
+        out["reason"] = "not_reflex"
+        return out
+    assert state is not None  # reflex_action returns None for a falsy state
+    blocked = reflex_block_reason(state, now=now)
+    if blocked:
+        out["reason"] = blocked
+        return out
+
+    # Stamped BEFORE the order, not after: if execute_paper_trade raises, the
+    # cooldown must still hold or the next hot tick retries in 5 seconds.
+    _flatten_attempts[state.get("position_id")] = float(
+        now if now is not None else time.time())
+
+    qty = abs(float(state["quantity"]))
+    price = float(state["mark_price"])
+    side = "cover" if state.get("side") == "short" else "sell"
+    h = state.get("health")
+    from automation import execute_paper_trade
+    signal_id, skip = execute_paper_trade(
+        state["agent_id"], state["symbol"], state["market"], side, qty, price,
+        content=(f"liquidation defense: T3 flatten at {price} "
+                 f"(health {h if h is None else round(float(h), 4)}, "
+                 f"liq {state.get('liq_price')}, {state.get('source')})"),
+        run_id=state.get("run_id"))
+    out["signal_id"] = signal_id
+    out["fired"] = bool(signal_id)
+    out["reason"] = None if signal_id else (skip or "close_failed")
+    if signal_id:
+        try:
+            from alerts import send_alert
+            send_alert(state["agent_id"], "position_closed", "position_closed",
+                       {"trigger_label": "liquidation_defense",
+                        "symbol": state["symbol"], "market": state["market"],
+                        "price": f"{price:.2f}"},
+                       dedupe_key=f"close:{signal_id}")
+        except Exception:  # noqa: BLE001 — the exit landed; the alert is not it
+            pass
+    return out
+
+
 # ── the watch tick ─────────────────────────────────────────────────────────
 # Effective tier per position, with its de-escalation streak. Same rationale as
 # the sample store: in-process and not persisted.
@@ -587,5 +734,6 @@ def watch_tick(cushion_frac: Optional[float] = None,
     # reopened one inherits a trend measured on a book that no longer exists.
     for stale in [k for k in _tiers if k not in live]:
         _tiers.pop(stale, None)
+        _flatten_attempts.pop(stale, None)
         forget(stale)
     return out
