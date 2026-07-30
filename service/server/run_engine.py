@@ -1739,7 +1739,145 @@ def _unrealized_pnl(run: dict) -> Optional[float]:
     return float(pnl.get("unrealized") or 0)
 
 
-def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
+# ── the desk's own order plan, honoured (2026-07-30) ───────────────────────
+# The full trader prompt asks for eight fields and the desk fills them in.
+# Three were wired through (size_frac, leverage, stop_pct/target_pct) and four
+# were parsed, railed, journalled and then DISCARDED. Prod run 825 authored
+# {"size_frac":0.6, "leverage":1.5, "stop_pct":8, "target_pct":27,
+#  "trail_arm_pct":12, "trail_give":0.3, "horizon_hours":72, "max_adds":1}
+# — a complete, internally consistent risk plan — and the engine kept less
+# than half of it. This section honours the rest.
+_AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue"})
+
+
+def _order_plan_enabled() -> bool:
+    """Kill switch for the four newly-honoured fields, independent of
+    RUN_AI_ORDER_PARAMS so the shipped three can stay on if this regresses."""
+    return (os.getenv("RUN_ORDER_PLAN", "true") or "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _order_size_usd(action: str, size_frac: float, *, max_bet_usd: float,
+                    held_qty: float, entry: float, leverage: float) -> float:
+    """Committed MARGIN for an order the desk sized itself.
+
+    THE BASIS SWITCHES WITH THE INTENT. An open asks "how much risk should I
+    take?" and is a fraction of max_bet_usd. A reduce asks "how much of what I
+    HOLD should I give up?" — a different question in different units, and
+    answering it with entry-sizing maths is why prod run 825's authored
+    size_frac 0.6 sold 308.4643 of 308.4643 units: 1000 x 0.6 = $600 of budget
+    bought 499 units against a 308-unit book, and min() turned a 60% trim into
+    a 100% flatten.
+
+    Returns margin, because the caller hands the gate margin x leverage as the
+    notional; dividing by leverage here is what makes the round trip exact.
+
+    A real function rather than an inline branch so the test and the shipped
+    path share ONE implementation — the first version of this was tested
+    against a hand-written mirror of the arithmetic, and a mutation that
+    reverted production to the old basis passed the whole suite.
+    """
+    lev = max(1.0, float(leverage or 1.0))
+    if action in ("sell", "cover") and _order_plan_enabled():
+        return abs(float(held_qty or 0)) * float(entry or 0) * size_frac / lev
+    return float(max_bet_usd or 0) * size_frac
+
+
+def _horizon_bypass(triggers: Any) -> bool:
+    """Does this cycle's situation override the desk's stated horizon?
+
+    Only POSITION- or SYMBOL-specific triggers do. `psych_shock` and
+    `hot_issue` are market-wide and stay on for long stretches — run_engine's
+    own routing comment says so, and on 2026-07-30 all four live runs carried
+    both simultaneously. Letting an ambient flag bypass the horizon would make
+    the horizon inert on arrival, which is the failure mode this whole change
+    exists to fix. Stops are unaffected either way: _evaluate_stop runs on the
+    ~60s control scan, not in run_cycle, so a horizon skip never delays an exit.
+    """
+    try:
+        return bool(set(triggers or []) - _AMBIENT_TRIGGERS)
+    except TypeError:
+        return True          # unreadable triggers -> do not suppress the cycle
+
+
+def _horizon_skip(run: dict, route: Any, has_position: bool) -> Optional[str]:
+    """Skip reason when the desk's own horizon has not elapsed, else None."""
+    if not _order_plan_enabled() or not has_position:
+        return None
+    try:
+        until = json.loads(run.get("stop_conditions_json") or "{}").get(
+            "horizon_until")
+    except (ValueError, TypeError):
+        return None
+    if not until or until <= _now_iso():
+        return None
+    triggers = (route or {}).get("triggers") if isinstance(route, dict) else None
+    if _horizon_bypass(triggers):
+        return None
+    return f"desk horizon holds until {until}"
+
+
+def _plan_stop_conditions(run: dict, params: Any, entry: float,
+                          quantity: float, leverage: float) -> Optional[dict]:
+    """Merge the desk's horizon and trail into this run's stop conditions.
+
+    trail_arm_pct/trail_give are converted into the {activate_usd,
+    giveback_frac} shape the trailing lock and validate_stop_conditions
+    already speak, so nothing downstream changes: _trailing_lock_hit keeps
+    reading exactly the keys it reads today. arm_pct is a percent of the
+    POSITION NOTIONAL, which is what the desk is quoting a move against.
+    """
+    if params is None or not _order_plan_enabled():
+        return None
+    try:
+        conditions = json.loads(run.get("stop_conditions_json") or "{}")
+    except (ValueError, TypeError):
+        conditions = {}
+    changed = False
+    hz = getattr(params, "horizon_hours", None)
+    if hz:
+        conditions["horizon_until"] = _iso_in(int(float(hz) * 3600))
+        changed = True
+    arm = getattr(params, "trail_arm_pct", None)
+    give = getattr(params, "trail_give", None)
+    if arm and give:
+        notional = abs(float(quantity or 0)) * float(entry or 0)
+        activate = notional * float(arm) / 100.0
+        if activate > 0 and 0 < float(give) < 1:
+            # Replace rather than merge: a half-desk/half-house trail would
+            # arm on one author's number and give back on the other's.
+            conditions["trail"] = {"activate_usd": round(activate, 2),
+                                   "giveback_frac": float(give)}
+            changed = True
+    return conditions if changed else None
+
+
+def _persist_order_plan(run_id: int, conditions: dict) -> None:
+    """Write merged stop conditions back, through the validator.
+
+    Through validate_stop_conditions on purpose: a key it does not whitelist
+    is a silent no-op, and writing raw JSON here would let a future field look
+    stored while being invisible to _evaluate_stop."""
+    try:
+        cleaned = trading_runs.validate_stop_conditions(conditions)
+    except ValueError:
+        logger.debug("order plan rejected by validator (run %s)", run_id)
+        return
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("UPDATE trading_runs SET stop_conditions_json = ? "
+                       "WHERE id = ?", (json.dumps(cleaned), run_id))
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        logger.debug("order plan persist failed (run %s)", run_id, exc_info=True)
+    finally:
+        conn.close()
+
+
+def _add_limit_skip(run: dict, cfg: dict, action: str,
+                    max_adds_override: Optional[int] = None) -> Optional[str]:
     """Add-churn guard (2026-07-25, Fleet 17 finding): a run averaging into an
     open position every cycle stacks fees for no new information (SOL: 5
     same-direction adds at conf 0.58 into a flat tape). Config-driven via
@@ -1792,6 +1930,16 @@ def _add_limit_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
         if upnl is not None and upnl < 0:
             return f"add_limit: position underwater (unrealized ${upnl:.2f})"
     max_adds = int(limits.get("max_adds") or 0)
+    # The desk's own max_adds, when it authored one. Shrink-only against the
+    # house limit for the same reason every other order-block field is: the
+    # desk may always be MORE cautious than the config, never less. 0 from the
+    # desk means "no further adds", which is stricter than the house default
+    # and must not be read as the config's "no limit" sentinel.
+    if max_adds_override is not None and _order_plan_enabled():
+        desk_cap = max(0, int(max_adds_override))
+        max_adds = min(max_adds, desk_cap) if max_adds else desk_cap
+        if desk_cap == 0:
+            return "add_limit: the desk set max_adds=0 on this position"
     adds_so_far = len(opens) - 1  # first open is the entry, not an add
     if max_adds and adds_so_far >= max_adds:
         return f"add_limit: max {max_adds} adds reached on the open position"
@@ -2472,6 +2620,27 @@ def run_cycle(run_id: int) -> dict:
             # analysts on the tails, light path in the middle).
             route = _classify_situation(run, cfg)
             cycle_mode = route["route"]
+
+        # The desk's own horizon (2026-07-30). Placed AFTER routing so the
+        # trigger list is available and BEFORE the analysis so a held horizon
+        # also saves the LLM spend. Prod run 825 authored horizon_hours 72,
+        # was re-decided 30 minutes later, and sold the exact low of its own
+        # price series — worth $5.54 and widening against simply keeping the
+        # plan it wrote. Stops are untouched: _evaluate_stop runs on the ~60s
+        # control scan, so a horizon skip can never delay an exit.
+        try:
+            hz_held = _position_quantity(run["agent_id"], run["market"],
+                                         run["symbol"], run["id"])
+        except Exception:  # noqa: BLE001
+            hz_held = 0.0
+        hz_skip = _horizon_skip(run, route, bool(hz_held))
+        if hz_skip:
+            result["skip_reason"] = hz_skip
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "horizon",
+                                  "reason": hz_skip})
+            return result
+
         if is_fleet_run and cycle_mode == "light":
             # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
             # everything below (gates, budget cap, fence) is byte-identical.
@@ -2655,7 +2824,11 @@ def run_cycle(run_id: int) -> dict:
         # already been remapped to it above, so gating on ("buy", "sell") alone
         # skipped the guard entirely for every short position.
         if action in ("buy", "sell", "short"):
-            add_skip = _add_limit_skip(run, cfg, action)
+            add_skip = _add_limit_skip(
+                run, cfg, action,
+                max_adds_override=(order_params.max_adds
+                                   if (op_mode == "apply" and order_params
+                                       is not None) else None))
             if add_skip:
                 result["skip_reason"] = add_skip
                 emit_telemetry_event(run_id, "gate_skip",
@@ -2673,10 +2846,20 @@ def run_cycle(run_id: int) -> dict:
         # Every downstream gate (Kelly, exposure, dust, budget headroom) still
         # runs on the result — this replaces the size, never the checks.
         if op_mode == "apply" and order_params is not None:
-            if order_params.size_frac is not None:
-                size_usd = float(cfg.get("max_bet_usd") or 0) * order_params.size_frac
+            # Leverage first: the reduce basis below divides by it.
             if order_params.leverage is not None:
                 lev = max(1.0, min(lev, float(order_params.leverage)))
+            if order_params.size_frac is not None:
+                # Basis switches with the intent — see _order_size_usd. The
+                # rail clamp (RAILS 0.05..1.00) is the same on either basis.
+                held_now = 0.0
+                if action in ("sell", "cover"):
+                    held_now = _position_quantity(
+                        run["agent_id"], run["market"], run["symbol"], run["id"])
+                size_usd = _order_size_usd(
+                    action, order_params.size_frac,
+                    max_bet_usd=float(cfg.get("max_bet_usd") or 0),
+                    held_qty=held_now, entry=float(entry or 0), leverage=lev)
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
                     "min_confidence": min_confidence,
                     "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
@@ -2761,6 +2944,20 @@ def run_cycle(run_id: int) -> dict:
         if signal_id:
             result.update({"executed": True, "signal_id": signal_id})
             _reset_infeasible(run_id)
+            # Persist the rest of the desk's plan against the position it just
+            # opened. Only on an OPEN: a reduce is not a new thesis, so it must
+            # not restart the horizon clock on what remains — otherwise a desk
+            # that trims once could hold the remainder past every re-decision.
+            if action in ("buy", "short"):
+                plan = _plan_stop_conditions(run, order_params, float(entry),
+                                             float(gate.quantity or 0), lev)
+                if plan:
+                    _persist_order_plan(run_id, plan)
+                    emit_telemetry_event(
+                        run_id, "order_plan",
+                        {"cycle": seq,
+                         "horizon_until": plan.get("horizon_until"),
+                         "trail": plan.get("trail")})
             # Per-trade alert only when the run opted in (notify_on_trade) —
             # the run_events journal carries the trade either way.
             if run.get("notify_on_trade"):
