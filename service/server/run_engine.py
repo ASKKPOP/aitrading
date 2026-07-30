@@ -1751,10 +1751,59 @@ _AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue"})
 
 
 def _order_plan_enabled() -> bool:
-    """Kill switch for the four newly-honoured fields, independent of
-    RUN_AI_ORDER_PARAMS so the shipped three can stay on if this regresses."""
+    """Kill switch for the PRICE-INDEPENDENT honoured fields: the reduce
+    basis, the trail conversion, and max_adds. Default ON.
+
+    Those three are defects whichever way the tape goes — a 60% trim executing
+    as a 100% flatten is wrong in either direction, and a discarded trail is
+    discarded regardless of price. Independent of RUN_AI_ORDER_PARAMS so the
+    already-shipped three (size_frac, leverage, bracket) can stay on if this
+    regresses."""
     return (os.getenv("RUN_ORDER_PLAN", "true") or "true").strip().lower() in (
         "1", "true", "yes", "on")
+
+
+def _horizon_gate_enabled() -> bool:
+    """Whether the desk's horizon may actually SUPPRESS a cycle. Default OFF.
+
+    Split out from _order_plan_enabled on 2026-07-30 after the only evidence
+    for it reversed. Run 825 authored horizon_hours 72 and was re-decided at
+    30 minutes; measured against holding the plan it wrote, that exit was
+    worth −$4.79 at 05:30, −$5.54 at 06:01, and then **+$1.78** at 07:31 as
+    KAITO fell through the sell price. A $7.32 swing in 90 minutes on n=1 is
+    not a basis for a rail — that is the same standard that rejected
+    trail_activate_rr, the breakeven ratchet, the peak-relative brake cap and
+    RUN_CONF_V2, and it has to apply to this recommendation too.
+
+    Off, the horizon is still COMPUTED and journalled (`horizon_shadow`), so
+    the suppression dataset accumulates without anything being suppressed.
+    Revisit with n >> 1, comparing each shadow-suppressed cycle's decision
+    against what the position actually did over the authored horizon."""
+    return (os.getenv("RUN_HORIZON_GATE", "false") or "false").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _conviction_divergence(confidence: Any, conviction: Any) -> dict:
+    """Telemetry only: how far apart the two numbers are, and whether the
+    computed one exists at all.
+
+    Pure measurement, no behaviour. RUN_CONF_V2 exists to flip the gate onto
+    conviction and stays OFF because it was measured earlier and conviction was
+    better-RESOLVED but not better-CORRELATED (r~0 for both) — so the right
+    next step is a count, not a flag flip. `conviction_missing` is its own
+    field because compute_conviction returns None whenever any one of the four
+    component scores is absent, which silently falls sizing back to the
+    quantized scalar with nothing recording that it happened (prod run 825
+    cycle 11 was the first observed).
+    """
+    out: dict[str, Any] = {"conviction_missing": conviction is None}
+    try:
+        if conviction is not None and confidence is not None:
+            out["conf_conviction_gap"] = round(
+                float(confidence) - float(conviction), 4)
+    except (TypeError, ValueError):
+        pass
+    return out
 
 
 def _order_size_usd(action: str, size_frac: float, *, max_bet_usd: float,
@@ -1800,9 +1849,14 @@ def _horizon_bypass(triggers: Any) -> bool:
         return True          # unreadable triggers -> do not suppress the cycle
 
 
-def _horizon_skip(run: dict, route: Any, has_position: bool) -> Optional[str]:
-    """Skip reason when the desk's own horizon has not elapsed, else None."""
-    if not _order_plan_enabled() or not has_position:
+def _horizon_state(run: dict, route: Any, has_position: bool) -> Optional[str]:
+    """The reason this cycle WOULD be held by the desk's own horizon, or None.
+
+    Computed regardless of whether the gate is armed — that is what makes the
+    shadow dataset possible: with RUN_HORIZON_GATE off we still learn, on every
+    cycle, which ones the horizon would have suppressed and can score them
+    afterwards against what the position actually did."""
+    if not has_position:
         return None
     try:
         until = json.loads(run.get("stop_conditions_json") or "{}").get(
@@ -1815,6 +1869,14 @@ def _horizon_skip(run: dict, route: Any, has_position: bool) -> Optional[str]:
     if _horizon_bypass(triggers):
         return None
     return f"desk horizon holds until {until}"
+
+
+def _horizon_skip(run: dict, route: Any, has_position: bool) -> Optional[str]:
+    """Skip reason ONLY when the gate is armed. Off by default — see
+    _horizon_gate_enabled for why the evidence does not yet support arming it."""
+    if not _horizon_gate_enabled():
+        return None
+    return _horizon_state(run, route, has_position)
 
 
 def _plan_stop_conditions(run: dict, params: Any, entry: float,
@@ -2389,7 +2451,19 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "entry to your invalidation level, target_pct = %% to a level the move "
         "can realistically reach. target_pct MUST be at least 2x stop_pct. If "
         "you have no concrete basis, omit them and the house defaults apply.\n"
-        'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold", '
+        # 'retire' (2026-07-30): a desk whose book cannot express its read has
+        # no legal action and no way to say so. Prod run 824 read the tape
+        # bearish on a SPOT book, emitted three refused sells across three
+        # cycles (~18 full-path LLM calls and an hour of a held slot) and was
+        # collected by thesis_invalidated for a conclusion it plainly had at
+        # cycle 2. Offered only when FLAT, so it can never move P&L: with a
+        # position open the desk already has sell/cover.
+        + ('Say "retire" instead if this book cannot express your read at all '
+           '(e.g. you are bearish and can only go long) — it hands the slot '
+           'back now rather than after several refused orders.\n'
+           if not pos_qty else '')
+        + 'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold"'
+        + ('|"retire"' if not pos_qty else '') + ', '
         '"confidence": 0.0-1.0, "scores": {"thesis_alignment": 0.0-1.0, '
         '"momentum_quality": 0.0-1.0, "entry_quality": 0.0-1.0, '
         '"risk_context": 0.0-1.0}, '
@@ -2411,7 +2485,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
             try:
                 obj = json.loads(m.group(0))
                 a = str(obj.get("action") or "").strip().lower()
-                if a in ("buy", "sell", "hold"):
+                if a in ("buy", "sell", "hold", "retire"):
                     action = a
                 confidence = max(0.0, min(1.0, float(obj.get("confidence") or 0)))
                 report = str(obj.get("report") or "")[:500]
@@ -2633,13 +2707,23 @@ def run_cycle(run_id: int) -> dict:
                                          run["symbol"], run["id"])
         except Exception:  # noqa: BLE001
             hz_held = 0.0
-        hz_skip = _horizon_skip(run, route, bool(hz_held))
-        if hz_skip:
-            result["skip_reason"] = hz_skip
+        hz_state = _horizon_state(run, route, bool(hz_held))
+        if hz_state and _horizon_gate_enabled():
+            result["skip_reason"] = hz_state
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "horizon",
-                                  "reason": hz_skip})
+                                  "reason": hz_state})
             return result
+        if hz_state:
+            # Gate disarmed: record what it WOULD have suppressed so the
+            # dataset accumulates without anything being suppressed. Scoring
+            # comes later — pair each shadow row with what the position did
+            # over the authored horizon. n=1 swung $7.32 in 90 minutes, so
+            # this needs many more rows before it can justify arming.
+            emit_telemetry_event(run_id, "horizon_shadow",
+                                 {"cycle": seq, "would_hold": hz_state,
+                                  "triggers": (route or {}).get("triggers")
+                                  if isinstance(route, dict) else None})
 
         if is_fleet_run and cycle_mode == "light":
             # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
@@ -2690,6 +2774,16 @@ def run_cycle(run_id: int) -> dict:
                               "size_scale": size_scale,
                               "entry": entry,
                               "route": route,
+                              # The gate reads ONE of these two numbers and
+                              # they disagree materially: prod run 822 showed
+                              # 0.68/0.345, 0.62/0.35 and 0.70/0.3325 on three
+                              # consecutive cycles — same run, same direction,
+                              # up to 0.3675 apart, with the gate taking the
+                              # less-informative scalar. Journal the gap (and
+                              # a null conviction, which silently downgrades
+                              # sizing to that scalar with no signal today) so
+                              # there is a count before anyone argues from it.
+                              **_conviction_divergence(confidence, conviction),
                               "report": (decision.get("report") or "")[:1000]})
 
         # AI-authored order parameters (2026-07-27). Parsed and railed here,
@@ -2720,6 +2814,29 @@ def run_cycle(run_id: int) -> dict:
                              else order_params_outcome(decision.get("order"))),
                  "route": (route or {}).get("route"),
                  **({"params": order_params.as_event()} if order_params else {})})
+
+        # 'retire' (2026-07-30): the desk hands its own slot back when the book
+        # cannot express its read. FLAT ONLY — enforced here and not merely in
+        # the prompt, because a model that emits it while holding must not be
+        # able to flatten a position through a verb that was never meant to
+        # trade. With a position open this degrades to `hold`, which is exactly
+        # what a desk unable to act should do. Reuses the ordinary stop path
+        # (STOPPING -> _control_stopping) so alerting, flatten handling and the
+        # auto-restart exclusion all behave as they do for every other reason.
+        if action == "retire":
+            held_for_retire = _position_quantity(
+                run["agent_id"], run["market"], run["symbol"], run["id"])
+            if held_for_retire:
+                action = "hold"
+            else:
+                _simple_transition(run, STATUS_STOPPING, "desk_retired",
+                                   extra_sets="stopped_at = ?",
+                                   extra_args=(_now_iso(),))
+                result["skip_reason"] = "desk retired this run"
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "desk_retire",
+                                      "reason": result["skip_reason"]})
+                return result
 
         # Futures v1 (Plan 10 D5): the desk decides direction (buy/sell); the
         # futures book translates it. A bearish call with no long to reduce

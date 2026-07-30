@@ -139,20 +139,23 @@ class ReduceBasisTests(_EnvMixin):
 
 
 class HorizonTests(_EnvMixin):
+    """The horizon LOGIC, via _horizon_state — computed on every cycle
+    regardless of whether the gate is armed. Arming is HorizonGateSplitTests."""
+
     def _run(self, until=None):
         cond = {} if until is None else {"horizon_until": until}
         return {"id": 825, "agent_id": 6, "symbol": "KAITO", "market": "crypto",
                 "stop_conditions_json": json.dumps(cond)}
 
-    def test_no_horizon_never_skips(self):
-        self.assertIsNone(run_engine._horizon_skip(self._run(), None, True))
+    def test_no_horizon_never_holds(self):
+        self.assertIsNone(run_engine._horizon_state(self._run(), None, True))
 
-    def test_elapsed_horizon_never_skips(self):
-        self.assertIsNone(run_engine._horizon_skip(
+    def test_elapsed_horizon_never_holds(self):
+        self.assertIsNone(run_engine._horizon_state(
             self._run("2020-01-01T00:00:00Z"), {"triggers": []}, True))
 
-    def test_live_horizon_skips_the_cycle(self):
-        reason = run_engine._horizon_skip(
+    def test_live_horizon_would_hold(self):
+        reason = run_engine._horizon_state(
             self._run("2099-01-01T00:00:00Z"), {"triggers": []}, True)
         self.assertIsNotNone(reason)
         self.assertIn("desk horizon holds", reason)
@@ -160,7 +163,7 @@ class HorizonTests(_EnvMixin):
     def test_a_flat_book_is_never_horizon_held(self):
         """The horizon governs a position, not a run: with nothing open the
         desk must be free to enter."""
-        self.assertIsNone(run_engine._horizon_skip(
+        self.assertIsNone(run_engine._horizon_state(
             self._run("2099-01-01T00:00:00Z"), {"triggers": []}, False))
 
     def test_ambient_flags_do_not_bypass(self):
@@ -170,24 +173,86 @@ class HorizonTests(_EnvMixin):
         for trig in ([], ["psych_shock"], ["hot_issue"],
                      ["psych_shock", "hot_issue"]):
             self.assertIsNotNone(
-                run_engine._horizon_skip(self._run("2099-01-01T00:00:00Z"),
-                                         {"triggers": trig}, True), msg=trig)
+                run_engine._horizon_state(self._run("2099-01-01T00:00:00Z"),
+                                          {"triggers": trig}, True), msg=trig)
 
     def test_symbol_specific_triggers_bypass(self):
         for trig in (["near_stop"], ["event_window"], ["regime:panic"],
                      ["psych_shock", "near_stop"]):
             self.assertIsNone(
-                run_engine._horizon_skip(self._run("2099-01-01T00:00:00Z"),
-                                         {"triggers": trig}, True), msg=trig)
+                run_engine._horizon_state(self._run("2099-01-01T00:00:00Z"),
+                                          {"triggers": trig}, True), msg=trig)
 
     def test_unreadable_triggers_do_not_suppress_the_cycle(self):
-        self.assertIsNone(run_engine._horizon_skip(
+        self.assertIsNone(run_engine._horizon_state(
             self._run("2099-01-01T00:00:00Z"), {"triggers": 7}, True))
 
-    def test_kill_switch_disables_the_hold(self):
-        self.env("RUN_ORDER_PLAN", "false")
+
+class HorizonGateSplitTests(_EnvMixin):
+    """The horizon gate is SPLIT from the other three fields and defaults OFF.
+
+    Its only evidence reversed: run 825's early exit measured −$4.79 at 05:30,
+    −$5.54 at 06:01 and then **+$1.78** at 07:31 as KAITO fell through the sell
+    price. A $7.32 swing in 90 minutes on n=1 is not a basis for a rail. The
+    other three fixes are price-independent and stay on.
+    """
+
+    def _run(self, until="2099-01-01T00:00:00Z"):
+        return {"id": 825, "agent_id": 6, "symbol": "KAITO", "market": "crypto",
+                "stop_conditions_json": json.dumps({"horizon_until": until})}
+
+    def test_gate_is_off_by_default(self):
+        self.env("RUN_HORIZON_GATE", None)
+        self.assertFalse(run_engine._horizon_gate_enabled())
         self.assertIsNone(run_engine._horizon_skip(
-            self._run("2099-01-01T00:00:00Z"), {"triggers": []}, True))
+            self._run(), {"triggers": []}, True))
+
+    def test_state_is_still_computed_while_the_gate_is_off(self):
+        """This is what makes the shadow dataset possible."""
+        self.env("RUN_HORIZON_GATE", None)
+        self.assertIsNotNone(run_engine._horizon_state(
+            self._run(), {"triggers": []}, True))
+
+    def test_arming_the_gate_restores_suppression(self):
+        self.env("RUN_HORIZON_GATE", "true")
+        self.assertIsNotNone(run_engine._horizon_skip(
+            self._run(), {"triggers": []}, True))
+
+    def test_the_other_three_are_not_gated_by_the_horizon_flag(self):
+        """RUN_HORIZON_GATE off must NOT disable the reduce basis — the two
+        were on one switch and that was the scoping mistake."""
+        self.env("RUN_HORIZON_GATE", "false")
+        size_usd, lev = _sized("sell", 0.6, held=308.464259, entry=1.2011,
+                               max_bet=1000.0, cfg_lev=3.0, order_lev=1.0)
+        self.assertAlmostEqual(_quantity(size_usd, lev, 1.2011),
+                               0.6 * 308.464259, places=6)
+
+    def test_order_plan_switch_still_governs_the_other_three(self):
+        self.env("RUN_ORDER_PLAN", "false")
+        size_usd, _ = _sized("sell", 0.6, held=308.464259, entry=1.2011,
+                             max_bet=1000.0, cfg_lev=3.0, order_lev=1.0)
+        self.assertAlmostEqual(size_usd, 600.0, places=6)
+
+
+class ConvictionDivergenceTests(_EnvMixin):
+    """Telemetry only — a count before anyone argues from it."""
+
+    def test_gap_is_recorded(self):
+        d = run_engine._conviction_divergence(0.70, 0.3325)
+        self.assertAlmostEqual(d["conf_conviction_gap"], 0.3675, places=4)
+        self.assertFalse(d["conviction_missing"])
+
+    def test_missing_conviction_is_flagged_not_silent(self):
+        """compute_conviction returns None when any one component score is
+        absent, silently falling sizing back to the quantized scalar."""
+        d = run_engine._conviction_divergence(0.55, None)
+        self.assertTrue(d["conviction_missing"])
+        self.assertNotIn("conf_conviction_gap", d)
+
+    def test_unparseable_values_do_not_raise(self):
+        d = run_engine._conviction_divergence("x", 0.5)
+        self.assertFalse(d["conviction_missing"])
+        self.assertNotIn("conf_conviction_gap", d)
 
 
 class PlanPersistenceTests(_EnvMixin):
@@ -384,6 +449,188 @@ class EndToEndReduceTests(unittest.TestCase):
         # overshot and flattened it) — this is prod run 825's exact failure.
         self.assertAlmostEqual(left, opened * 0.4, places=6)
         self.assertGreater(left, 0, "a 60% reduce must not flatten the book")
+
+
+class LeveragedSpotGuardTests(unittest.TestCase):
+    """Leveraged spot is the worst of both books: it cannot short the read its
+    own desk keeps producing, and it amplifies the only direction left. Of five
+    such runs created 2026-07-30 00:56, two died without ever opening."""
+
+    def setUp(self):
+        import tempfile
+        from fastapi.testclient import TestClient
+        import database
+        from routes import create_app
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        self._env = {k: os.environ.get(k)
+                     for k in ("RUN_ALLOW_LEVERAGED_SPOT",)}
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "guard-agent", "password": "pw123",
+                                   "initial_balance": 100000.0}).json()
+        self.token = r["token"]
+
+    def tearDown(self):
+        self.probe.stop()
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        self.tmp.cleanup()
+
+    def _create(self, **over):
+        payload = {"symbol": "ETH", "market": "crypto", "max_bet_usd": 1000.0}
+        payload.update(over)
+        return self.client.post("/api/runs", json=payload,
+                                headers={"Authorization": f"Bearer {self.token}"})
+
+    def test_leveraged_spot_is_refused(self):
+        r = self._create(leverage=3.0)
+        self.assertNotEqual(r.status_code, 200, r.text)
+        self.assertIn("leveraged spot", r.text)
+
+    def test_the_error_names_both_remedies(self):
+        """Which remedy is right is a trading decision, not a code one."""
+        body = self._create(leverage=2.0).text
+        self.assertIn("market_type='futures'", body)
+        self.assertIn("leverage=1", body)
+
+    def test_unleveraged_spot_is_fine(self):
+        self.assertEqual(self._create(leverage=1.0).status_code, 200)
+
+    def test_leveraged_futures_is_fine(self):
+        r = self._create(leverage=3.0, market_type="futures")
+        self.assertEqual(r.status_code, 200, r.text)
+
+    def test_leveraged_spot_with_a_max_loss_stop_is_allowed(self):
+        """The carve-out that keeps the fleet working. FLEET_BOUNDS.auto_leverage
+        assigns 2x/3x to spot books by tier and every fleet run carries a
+        max_loss_usd — refusing that outright broke four fleet tests, which was
+        the suite correctly reporting the guard had over-reached."""
+        r = self._create(leverage=3.0,
+                         stop_conditions={"max_loss_usd": 50.0})
+        self.assertEqual(r.status_code, 200, r.text)
+
+    def test_override_flag_permits_it(self):
+        os.environ["RUN_ALLOW_LEVERAGED_SPOT"] = "true"
+        self.assertEqual(self._create(leverage=3.0).status_code, 200)
+
+
+class DeskRetireTests(unittest.TestCase):
+    """A desk whose book cannot express its read has no legal action and no way
+    to say so. Run 824 burned ~18 full-path calls over three cycles emitting
+    refused sells before thesis_invalidated collected it."""
+
+    def setUp(self):
+        import tempfile
+        from fastapi.testclient import TestClient
+        import database
+        from routes import create_app
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        self.db = database
+        self._prev = os.environ.get("AUTO_TRADING_ENABLED")
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "retire-agent", "password": "pw123",
+                                   "initial_balance": 100000.0}).json()
+        self.token, self.agent_id = r["token"], r["agent_id"]
+
+    def tearDown(self):
+        self.probe.stop()
+        if self._prev is None:
+            os.environ.pop("AUTO_TRADING_ENABLED", None)
+        else:
+            os.environ["AUTO_TRADING_ENABLED"] = self._prev
+        self.tmp.cleanup()
+
+    def _h(self):
+        return {"Authorization": f"Bearer {self.token}"}
+
+    def _run(self, **over):
+        payload = {"symbol": "BTC", "market": "crypto", "max_bet_usd": 500.0}
+        payload.update(over)
+        rid = self.client.post("/api/runs", json=payload,
+                               headers=self._h()).json()["id"]
+        self.client.post(f"/api/runs/{rid}/start", headers=self._h())
+        return rid
+
+    def _analysis(self, action):
+        return {"symbol": "BTC", "market": "crypto",
+                "analysts": {"technical": {"brief": "t", "data": {
+                    "sigma_daily_pct": 2.5, "current_price": 100.0}}},
+                "decision": {"action": action, "confidence": 0.9,
+                             "entry": 100.0, "report": "r"}}
+
+    def _status(self, rid):
+        conn = self.db.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT status, status_reason FROM trading_runs "
+                        "WHERE id = ?", (rid,))
+            return dict(cur.fetchone())
+        finally:
+            conn.close()
+
+    def _signals(self, rid):
+        conn = self.db.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM signals WHERE run_id = ?", (rid,))
+            return cur.fetchall()
+        finally:
+            conn.close()
+
+    def test_a_flat_desk_can_hand_its_slot_back(self):
+        rid = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self._analysis("retire")):
+            res = run_engine.run_cycle(rid)
+        self.assertFalse(res["executed"])
+        row = self._status(rid)
+        self.assertEqual(row["status_reason"], "desk_retired")
+        self.assertIn(row["status"], ("stopping", "stopped"))
+        self.assertEqual(self._signals(rid), [])
+
+    def test_retire_never_trades(self):
+        rid = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self._analysis("retire")):
+            run_engine.run_cycle(rid)
+        self.assertEqual(self._signals(rid), [],
+                         "retire must never write a signal")
+
+    def test_holding_a_position_degrades_retire_to_hold(self):
+        """Enforced in code, not merely in the prompt: a model that emits
+        `retire` while holding must not be able to flatten through a verb that
+        was never meant to trade."""
+        rid = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=self._analysis("buy")):
+            self.assertTrue(run_engine.run_cycle(rid)["executed"])
+        held = run_engine._position_quantity(self.agent_id, "crypto", "BTC", rid)
+        self.assertGreater(held, 0)
+
+        with patch("analysis_agents.run_analysis",
+                   return_value=self._analysis("retire")):
+            res = run_engine.run_cycle(rid)
+        self.assertFalse(res["executed"])
+        self.assertEqual(self._status(rid)["status"], "running",
+                         "a held book must not be retired out from under itself")
+        self.assertAlmostEqual(
+            run_engine._position_quantity(self.agent_id, "crypto", "BTC", rid),
+            held, places=9)
 
 
 if __name__ == "__main__":

@@ -398,6 +398,18 @@ def _public(run: dict) -> dict:
     return out
 
 
+def _leveraged_spot_guard() -> bool:
+    """Whether leveraged spot books are refused at creation. Default ON.
+
+    An escape hatch rather than a hard rule: the simulated ledger models
+    isolated margin on any book, so leveraged spot is representable — it is
+    just a configuration that cannot express half the readings its own desk
+    produces."""
+    import os
+    return (os.getenv("RUN_ALLOW_LEVERAGED_SPOT", "false") or "false"
+            ).strip().lower() not in ("1", "true", "yes", "on")
+
+
 def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     """Cross-field checks a single field validator cannot do, plus the
     settings snapshot. Raises ValueError — shared by the create/edit routes
@@ -410,6 +422,36 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     # carry the flag redundantly; everything else may not.
     if data.market_type == "futures" and data.market not in ("crypto", "futures"):
         raise ValueError("futures market_type is crypto-only")
+    # Leveraged SPOT with NO max-loss stop (2026-07-30). A spot book cannot
+    # short, so a desk reading bearish has no legal action at all — and
+    # leverage then amplifies the one direction it is refusing to take. Live
+    # evidence: of five such runs created 2026-07-30 00:56 at 2x-3x with
+    # stop_conditions_json == {}, TWO died without ever opening a position (824
+    # `thesis_invalidated` after three refused sells, 821 `idle_retired` after
+    # twelve holds) and the cohort traded once in ~45 cycles.
+    #
+    # Scoped to the no-stop case DELIBERATELY. The fleet composer assigns 2x/3x
+    # to spot books by tier (FLEET_BOUNDS.auto_leverage) and that is designed,
+    # shipped, tested behaviour — refusing it outright broke four fleet tests,
+    # which is the suite correctly reporting that the guard had over-reached on
+    # evidence drawn from five hand-made runs. Every fleet run carries a
+    # max_loss_usd, so this catches the indefensible combination (leveraged,
+    # cannot short, no P&L bound) and leaves the deliberate one alone.
+    #
+    # The message names every remedy rather than picking one, because which is
+    # right is a trading decision, not a code one.
+    if data.market_type != "futures" and float(data.leverage or 1.0) > 1.0 \
+            and not (data.stop_conditions or {}).get("max_loss_usd") \
+            and _leveraged_spot_guard():
+        raise ValueError(
+            f"leveraged spot book with no max-loss stop ({data.symbol} "
+            f"{data.market}, {float(data.leverage):.1f}x): a spot book cannot "
+            "short, so a bearish read has no available action while leverage "
+            "amplifies the only direction left — and with no max_loss_usd the "
+            "run has no P&L bound at all. Set market_type='futures' so the desk "
+            "can trade its read, or leverage=1 for a cash book, or supply "
+            "stop_conditions.max_loss_usd. "
+            "Override with RUN_ALLOW_LEVERAGED_SPOT=true.")
     if data.run_budget_usd is not None and data.run_budget_usd < data.max_bet_usd:
         raise ValueError("run_budget_usd must be >= max_bet_usd")
     start_condition = trading_runs.validate_start_condition(data.start_condition)
