@@ -908,6 +908,13 @@ async def liquidation_watch_loop():
                 result = await asyncio.to_thread(liquidation.watch_tick)
                 for state in result.get("states", []):
                     _journal_margin_state(state)
+                    # The reflex. Gated inside execute_reflex by LIQ_REFLEX and
+                    # by reflex_block_reason; called unconditionally so that a
+                    # refusal is journalled rather than silently skipped.
+                    if liquidation.reflex_action(state):
+                        outcome = await asyncio.to_thread(
+                            liquidation.execute_reflex, state)
+                        _journal_reflex(state, outcome)
                 if result.get("worst") in (liquidation.TIER_DEFEND,
                                            liquidation.TIER_REFLEX):
                     interval = liquidation.watch_interval_hot_seconds()
@@ -919,6 +926,31 @@ async def liquidation_watch_loop():
             print(f"[Liquidation Error] {e}")
 
         await asyncio.sleep(interval)
+
+
+def _journal_reflex(state: dict, outcome: dict) -> None:
+    """Record what the reflex did — including, especially, what it refused.
+
+    A refusal is the interesting record: it means a position sat at T3 while
+    the daemon declined to act, and the reason (stale mark, no owner) is the
+    only way to tell a working guard from a broken executor after the fact.
+    """
+    payload = {"position_id": state.get("position_id"),
+               "symbol": state.get("symbol"), "tier": state.get("tier"),
+               "health": state.get("health"),
+               "mark_age_seconds": state.get("mark_age_seconds"),
+               "quantity": state.get("quantity"),
+               "fired": outcome.get("fired"), "reason": outcome.get("reason"),
+               "signal_id": outcome.get("signal_id")}
+    print(f"[Liquidation Reflex] {payload}")
+    run_id = state.get("run_id")
+    if not run_id:
+        return
+    try:
+        from trading_runs import emit_telemetry_event
+        emit_telemetry_event(int(run_id), "liquidation_reflex", payload)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _journal_margin_state(state: dict) -> None:
