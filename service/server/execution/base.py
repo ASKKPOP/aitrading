@@ -117,6 +117,30 @@ class Broker(ABC):
         """
         return None
 
+    async def get_margin_state(self) -> Optional[list[dict]]:
+        """Per-position margin facts, or None when this broker cannot report them.
+
+        Optional capability, same contract as get_order_status: default None
+        means "cannot look up", and implementations must never raise for
+        expected errors. Plan 16 (liquidation defence) prefers a venue reading
+        over its synthetic model and labels which one the desk is being shown.
+
+        Each entry carries at minimum:
+            {"symbol": str, "side": "long"|"short", "qty": float,
+             "entry_price": float, "mark_price": float,
+             "liquidation_price": float|None, "maintenance_margin": float|None,
+             "leverage": float|None, "margin_mode": "isolated"|"cross"|None}
+
+        NOTE none of the shipped adapters implement this yet. Alpaca has no
+        futures margin concept on the endpoints we use and should keep
+        returning None. Binance would need a NEW futures adapter — the current
+        one is spot-only (/api/v3) and cannot see a futures position at all,
+        let alone its liquidation price. IBKR reports margin at the ACCOUNT
+        level, so a per-position liq price has to be derived and must be
+        labelled source="derived" rather than "broker".
+        """
+        return None
+
     @abstractmethod
     async def cancel_order(self, broker_order_id: str) -> bool:
         """Cancel a pending/submitted order.  Returns True on success."""

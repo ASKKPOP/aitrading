@@ -2028,7 +2028,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
     confident $0.00 (that reads as "breakeven, nothing to bank", the opposite
     of the truth), yet a desk holding a position can still validly close it.
     """
-    if not pos_qty or not _desk_exit_awareness():
+    if not pos_qty:
         return ""
     bits: list[str] = []
     pnl: dict = {}
@@ -2036,6 +2036,11 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
         pnl = compute_run_pnl(run) or {}
     except Exception:  # noqa: BLE001
         pnl = {}
+    # The exit brief and the margin brief are separate concerns behind separate
+    # flags: switching off exit awareness must not also blind the desk to its
+    # own liquidation distance.
+    if not _desk_exit_awareness():
+        return _margin_state_line(run, pnl, pos_qty)
     if pnl.get("mark_age_ok"):
         pos = pnl.get("position") or {}
         try:
@@ -2099,7 +2104,52 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
         "closing is the correct answer THIS cycle even while the thesis still "
         "technically holds — a thesis that is still valid is not a reason to "
         "keep giving back a gain.")
-    return " ".join(bits) + "\n"
+    return " ".join(bits) + "\n" + _margin_state_line(run, pnl, pos_qty)
+
+
+def _margin_state_line(run: dict, pnl: dict, pos_qty: float) -> str:
+    """Plan 16 survival brief, appended to whatever the exit brief already says.
+
+    Deliberately hung off _position_state_line rather than written into each
+    prompt: BOTH decision paths already route through this one function
+    (_light_analysis at the cheap tier, run_analysis(position_state=...) at the
+    full tier), and PR #125 had to retrofit exactly that after #124 shipped the
+    light path alone. One insertion point, both paths, no second retrofit.
+
+    Every prompt the desk sees today contains no leverage, no liquidation price
+    and no margin — so it cannot reason about survival because it does not know
+    it is leveraged. Every open position in prod carries 2x-3x.
+    """
+    try:
+        import liquidation
+    except Exception:  # noqa: BLE001 — a brief must never break a decision
+        return ""
+    if not liquidation.oracle_enabled() or not liquidation.desk_brief_enabled():
+        return ""
+    pos = (pnl or {}).get("position") or {}
+    try:
+        lev = float(pos.get("leverage") or 1.0)
+    except (TypeError, ValueError):
+        lev = 1.0
+    if lev <= 1.0:
+        return ""          # a fully-funded long cannot be wiped; say nothing
+    try:
+        state = liquidation.margin_state(
+            {**pos,
+             "id": f"run:{run.get('id')}",
+             "run_id": run.get("id"),
+             "symbol": run.get("symbol"),
+             "market": run.get("market"),
+             "quantity": pos.get("quantity", pos_qty)},
+            cushion_frac=_liq_cushion_frac())
+        # A run with no max_loss_usd has no P&L stop at all: prod runs 821-825
+        # shipped with stop_conditions_json == {} on 2x-3x leverage, so the
+        # desk's own exit is the only bound that exists. It should be told.
+        conditions = json.loads(run.get("stop_conditions_json") or "{}")
+        return liquidation.survival_brief(
+            state, has_run_stop=conditions.get("max_loss_usd") is not None)
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _light_analysis(run: dict, cfg: dict) -> dict:
