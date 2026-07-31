@@ -16,7 +16,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
  line-height:1.72;font-size:14.5px}
-main{max-width:820px;margin:0 auto;padding:38px 22px 80px}
+main{max-width:860px;margin:0 auto;padding:38px 22px 80px}
 h1{font-size:25px;line-height:1.3;margin:0 0 8px}
 h2{font-size:18px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
 p,li{color:var(--ink2)}strong,b{color:var(--ink)}
@@ -32,9 +32,29 @@ th{font-size:10.5px;letter-spacing:.05em;color:var(--muted);text-transform:upper
 td.m{color:var(--ink);font-weight:650;white-space:nowrap}
 td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .nd{color:var(--muted);font-size:11.5px}
-.rg{font-size:15px;font-weight:700;color:var(--ink);margin:20px 0 2px}
-.tz{font-size:11.5px;color:var(--muted);margin-bottom:6px}
-.bar{display:inline-block;height:8px;border-radius:4px;vertical-align:1px;margin-right:7px}
+.cap{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+/* availability-gap bars */
+.bars{display:grid;gap:7px;margin-top:4px}
+.br{display:grid;grid-template-columns:120px 1fr 46px;gap:10px;align-items:center;font-size:12.7px}
+.brl{color:var(--ink2);white-space:nowrap}
+.brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
+.brf{height:100%;border-radius:5px}
+.brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* matrix pills */
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
+.p-w{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.soon{color:var(--muted);font-size:11px;white-space:nowrap}
+/* roadmap */
+.rm{display:grid;gap:9px;margin-top:6px}
+.rmi{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 10px 10px 0;padding:11px 15px}
+.rmi.live{border-left-color:var(--go)}
+.rmi b{color:var(--ink);font-size:13.6px;display:block;margin-bottom:2px}
+.rmi span{font-size:12.7px}
+.tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+ padding:2px 7px;border-radius:999px;margin-left:8px;vertical-align:1px;
+ background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
 .note{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
  border-radius:0 11px 11px 0;padding:14px 17px;margin:14px 0}
 .note p{margin:0;font-size:13.6px}
@@ -43,17 +63,36 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <body>
 <main>
 <h1>ตลาดของคุณเปิดเมื่อไหร่</h1>
-<p class="lede">ตลาดหลักทรัพย์เปิดตามเวลาของตัวเอง ไม่ใช่ของคุณ หน้านี้แสดงเวลาทำการของแต่ละตลาดตาม<b>เวลาท้องถิ่นของคุณ</b> เพื่อให้รู้ว่าระบบอัตโนมัติเทรดได้จริงตอนไหน</p>
+<p class="lede">Sooppiy ให้บริการสมาชิกใน 9 ประเทศ และตลาดแต่ละแห่งเปิดตามเวลาของตัวเอง ไม่ใช่ของคุณ หน้านี้แสดงเวลาทำการของแต่ละตลาดตาม<b>เวลาท้องถิ่นของคุณ</b> สิ่งที่คุณเทรดได้ในแต่ละพื้นที่ และเส้นทางการส่งคำสั่ง เพื่อให้รู้ชัดว่าระบบอัตโนมัติทำงานได้เมื่อไหร่และอย่างไร</p>
+
+<h2>เก้าประเทศ หนึ่งแพลตฟอร์ม</h2>
+<p>Sooppiy ให้บริการในสหรัฐอเมริกา แคนาดา ออสเตรเลีย สิงคโปร์ เกาหลีใต้ ญี่ปุ่น ไทย เวียดนาม และอินโดนีเซีย พื้นที่ของคุณกำหนดสามสิ่ง คือ ตลาดเปิด<b>เมื่อไหร่</b>ตามเวลาของคุณ คุณเทรด<b>อะไร</b>ได้ และคำสั่งไปที่<b>ตลาดใด</b></p>
 
 <h2>เปิดตลอดเวลา</h2>
-<p>ตลาดเหล่านี้ไม่ปิดในวันธรรมดา จึงเทรดได้ทุกเมื่อไม่ว่าคุณอยู่ภูมิภาคใด</p>
+<p>ตลาดเหล่านี้ไม่ปิดในวันธรรมดา จึงเทรดได้ทุกเมื่อไม่ว่าคุณอยู่ที่ใด นอกอเมริกาเหนือ ตลาดเหล่านี้คือหัวใจของบริการ เพราะเปิดในช่วงที่คุณตื่นอยู่</p>
 <div class="fig"><div class="always"><span>คริปโต</span><span>ฟอเร็กซ์</span><span>ฟิวเจอร์ส</span></div></div>
 
+<h2>ช่องว่างของการเข้าถึง</h2>
+<p>การสมัครแบบเดียวกันให้การเข้าถึงต่างกันมากตามที่คุณอยู่ หุ้นสหรัฐฯ เทรดเวลา 09:30–16:00 ตามเวลานิวยอร์ก ซึ่งตรงกับกลางดึกในเอเชีย ต่อไปนี้คือจำนวนชั่วโมงที่เทรดหุ้นสหรัฐฯ ได้ในช่วงที่คุณตื่น (08:00–24:00 เวลาท้องถิ่น) แยกตามพื้นที่</p>
+<div class="fig"><div class="bars"><div class="br"><div class="brl">สหรัฐอเมริกา</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5 ชม.</div></div><div class="br"><div class="brl">แคนาดา</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5 ชม.</div></div><div class="br"><div class="brl">ประเทศไทย</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5 ชม.</div></div><div class="br"><div class="brl">เวียดนาม</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5 ชม.</div></div><div class="br"><div class="brl">อินโดนีเซีย</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5 ชม.</div></div><div class="br"><div class="brl">สิงคโปร์</div><div class="brt"><div class="brf" style="width:38%;background:var(--warn)"></div></div><div class="brv">2.5 ชม.</div></div><div class="br"><div class="brl">เกาหลีใต้</div><div class="brt"><div class="brf" style="width:23%;background:var(--ai)"></div></div><div class="brv">1.5 ชม.</div></div><div class="br"><div class="brl">ญี่ปุ่น</div><div class="brt"><div class="brf" style="width:23%;background:var(--ai)"></div></div><div class="brv">1.5 ชม.</div></div><div class="br"><div class="brl">ออสเตรเลีย</div><div class="brt"><div class="brf" style="width:8%;background:var(--ai)"></div></div><div class="brv">0.5 ชม.</div></div></div><p class="cap">สมาชิกในออสเตรเลียได้เทรดหุ้นสหรัฐฯ ราว 30 นาทีตอนตื่น ส่วนสมาชิกอเมริกันได้หกชั่วโมงครึ่ง ราคาเท่ากันแต่เข้าถึงต่างกันถึง 13 เท่า นี่คือเหตุผลที่คริปโต ฟอเร็กซ์ และฟิวเจอร์สข้างบนเป็นตลาดหลักนอกอเมริกาเหนือ</p></div>
+
 <h2>ตลาดที่มีเวลาทำการแน่นอน — ตามเวลาของคุณ</h2>
-<div class="rg">ประเทศไทย</div><div class="tz">Asia/Bangkok</div><div class="sw"><table><tr><th>ตลาด</th><th>เวลาท้องถิ่นของคุณ</th><th>ช่วงที่คุณตื่น</th></tr><tr><td class="m">หุ้นสหรัฐฯ</td><td class="h">20:30–03:00 <span class=nd>(วันถัดไป)</span></td><td class="h"><span class="bar" style="width:54px;background:var(--warn)"></span>3.5 ชม.</td></tr><tr><td class="m">หุ้น A จีน</td><td class="h">08:30–10:30, 12:00–14:00</td><td class="h"><span class="bar" style="width:62px;background:var(--go)"></span>4.0 ชม.</td></tr></table></div>
+<p>หุ้นสหรัฐฯ และหุ้น A จีนเปิดตามเวลาตลาดที่กำหนด ด้านล่างคือแต่ละช่วงเวลาที่แปลงเป็นเวลาท้องถิ่นของแต่ละพื้นที่ในวันธรรมดา</p>
+<div class="sw"><table><tr><th>ภูมิภาค</th><th>หุ้นสหรัฐฯ</th><th>หุ้น A จีน</th></tr><tr><td class="m">สหรัฐอเมริกา</td><td class="h">09:30–16:00</td><td class="h">01:00–03:00, 21:30–23:30</td></tr><tr><td class="m">แคนาดา</td><td class="h">09:30–16:00</td><td class="h">01:00–03:00, 21:30–23:30</td></tr><tr><td class="m">ออสเตรเลีย</td><td class="h">23:30–06:00 <span class=nd>(วันถัดไป)</span></td><td class="h">11:30–13:30, 15:00–17:00</td></tr><tr><td class="m">สิงคโปร์</td><td class="h">21:30–04:00 <span class=nd>(วันถัดไป)</span></td><td class="h">09:30–11:30, 13:00–15:00</td></tr><tr><td class="m">เกาหลีใต้</td><td class="h">22:30–05:00 <span class=nd>(วันถัดไป)</span></td><td class="h">10:30–12:30, 14:00–16:00</td></tr><tr><td class="m">ญี่ปุ่น</td><td class="h">22:30–05:00 <span class=nd>(วันถัดไป)</span></td><td class="h">10:30–12:30, 14:00–16:00</td></tr><tr><td class="m">ประเทศไทย</td><td class="h">20:30–03:00 <span class=nd>(วันถัดไป)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr><tr><td class="m">เวียดนาม</td><td class="h">20:30–03:00 <span class=nd>(วันถัดไป)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr><tr><td class="m">อินโดนีเซีย</td><td class="h">20:30–03:00 <span class=nd>(วันถัดไป)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr></table></div>
+
+<h2>สิ่งที่เทรดได้ในแต่ละพื้นที่</h2>
+<p>ความพร้อมตามแผนขณะที่เราทยอยเปิดการควบคุมรายพื้นที่ ตลาดที่ <b>อยู่ระหว่างพิจารณา</b> กำลังตรวจสอบสำหรับประเทศนั้นและจะเปิดเมื่อผ่านแล้ว นี่คือแผนงาน ไม่ใช่การรับประกันทางกฎหมาย</p>
+<div class="sw"><table><tr><th>ภูมิภาค</th><th>คริปโต</th><th>ฟอเร็กซ์</th><th>ฟิวเจอร์ส</th><th>หุ้นสหรัฐฯ</th><th>ออปชั่น</th><th>หุ้น A จีน</th><th>ตลาดทำนาย</th></tr><tr><td class="m">สหรัฐอเมริกา</td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">แคนาดา</td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">ออสเตรเลีย</td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">สิงคโปร์</td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">เกาหลีใต้</td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">ญี่ปุ่น</td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">ประเทศไทย</td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">เวียดนาม</td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr><tr><td class="m">อินโดนีเซีย</td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td><td><span class="pill p-go">พร้อม</span></td><td><span class="pill p-w">รอพิจารณา</span></td></tr></table></div>
+
+<h2>เส้นทางการส่งคำสั่ง</h2>
+<p>ราคามาจากฟีดข้อมูลระดับโลกทุกที่ คำสั่งจริงส่งผ่านโบรกเกอร์ที่คุณเชื่อมต่อ และโบรกเกอร์ที่ใช้ได้ขึ้นกับพื้นที่ของคุณ</p>
+<div class="sw"><table><tr><th>ภูมิภาค</th><th>หุ้นและฟิวเจอร์ส</th><th>คริปโต</th><th>หมายเหตุ</th></tr><tr><td class="m">สหรัฐอเมริกา</td><td>Alpaca · IBKR</td><td>Binance.US · Coinbase</td><td>เชื่อมต่อได้ทั้งคู่แล้ว</td></tr><tr><td class="m">แคนาดา</td><td>IBKR</td><td>—</td><td>กำลังยืนยันโบรกเกอร์คริปโต</td></tr><tr><td class="m">ออสเตรเลีย</td><td>IBKR</td><td>—</td><td>กำลังยืนยันโบรกเกอร์คริปโต</td></tr><tr><td class="m">สิงคโปร์</td><td>IBKR</td><td>Binance</td><td>—</td></tr><tr><td class="m">เกาหลีใต้</td><td>IBKR</td><td>Upbit · Bithumb <span class="soon">(เร็ว ๆ นี้)</span></td><td>กำลังเตรียมรองรับตลาดคริปโตในประเทศ</td></tr><tr><td class="m">ญี่ปุ่น</td><td>IBKR</td><td>bitFlyer · Coincheck <span class="soon">(เร็ว ๆ นี้)</span></td><td>กำลังเตรียมรองรับตลาดคริปโตในประเทศ</td></tr><tr><td class="m">ประเทศไทย</td><td>IBKR</td><td>Bitkub <span class="soon">(เร็ว ๆ นี้)</span></td><td>กำลังเตรียมรองรับตลาดคริปโตในประเทศ</td></tr><tr><td class="m">เวียดนาม</td><td>IBKR</td><td>—</td><td>กำลังยืนยันโบรกเกอร์คริปโต</td></tr><tr><td class="m">อินโดนีเซีย</td><td>IBKR</td><td>Indodax · Tokocrypto <span class="soon">(เร็ว ๆ นี้)</span></td><td>กำลังเตรียมรองรับตลาดคริปโตในประเทศ</td></tr></table></div>
+
+<h2>สิ่งที่กำลังทยอยเปิด</h2>
+<div class="rm"><div class="rmi live"><b>ภูมิภาคและเวลาของคุณ<span class="tag">พร้อมแล้ว</span></b><span>เลือกประเทศและภาษาตอนเข้าสู่ระบบ แล้วเวลาทั้งหมดบนเว็บจะแสดงตามเวลาท้องถิ่นของคุณ</span></div><div class="rmi"><b>ตารางตามเวลาของคุณ</b><span>การนับถอยหลังของตลาด ตารางระบบอัตโนมัติ และการแจ้งเตือนเป็นไปตามเวลาของคุณ ไม่มีแจ้งเตือนตอนตีสาม</span></div><div class="rmi"><b>ความพร้อมรายพื้นที่</b><span>กำหนดตลาดที่เทรดได้เป็นรายประเทศเมื่อผ่านการพิจารณา</span></div><div class="rmi"><b>ตลาดในประเทศ</b><span>รองรับตลาดคริปโตในประเทศโดยตรง — Upbit, bitFlyer, Bitkub, Indodax และอื่น ๆ</span></div></div>
 
 <h2>สิ่งนี้หมายความว่าอย่างไรกับคุณ</h2>
-<div class="note"><p>ประเทศไทยไม่มีเวลาออมแสง แต่เวลาเปิดตลาดหุ้นสหรัฐฯ เมื่อแปลงเป็นเวลาไทยจะเลื่อนหนึ่งชั่วโมงตามการเริ่มหรือสิ้นสุดเวลาออมแสงของสหรัฐฯ เว็บไซต์แสดงเวลาที่ถูกต้องตามปัจจุบันเสมอ</p></div>
+<div class="note"><p>เวลาของสหรัฐฯ แคนาดา และออสเตรเลียเลื่อนหนึ่งชั่วโมงเมื่อเริ่มหรือสิ้นสุดเวลาออมแสง และของออสเตรเลียกลับทิศกับซีกโลกเหนือ เกาหลีใต้ ญี่ปุ่น สิงคโปร์ ไทย เวียดนาม และอินโดนีเซียไม่มีเวลาออมแสง เว็บไซต์แสดงเวลาที่ถูกต้องตามปัจจุบันเสมอ</p></div>
 
 <h2>การตั้งค่าภูมิภาค</h2>
 <p>คุณเลือกภูมิภาคและภาษาเมื่อเข้าสู่ระบบครั้งแรก และเปลี่ยนได้ทุกเมื่อที่ <b>การตั้งค่า → ภูมิภาคและภาษา</b> ภูมิภาคของคุณกำหนดเวลาที่แสดงทั้งหมดบนเว็บไซต์</p>

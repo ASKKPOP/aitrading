@@ -16,7 +16,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
  line-height:1.72;font-size:14.5px}
-main{max-width:820px;margin:0 auto;padding:38px 22px 80px}
+main{max-width:860px;margin:0 auto;padding:38px 22px 80px}
 h1{font-size:25px;line-height:1.3;margin:0 0 8px}
 h2{font-size:18px;margin:34px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
 p,li{color:var(--ink2)}strong,b{color:var(--ink)}
@@ -32,9 +32,29 @@ th{font-size:10.5px;letter-spacing:.05em;color:var(--muted);text-transform:upper
 td.m{color:var(--ink);font-weight:650;white-space:nowrap}
 td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .nd{color:var(--muted);font-size:11.5px}
-.rg{font-size:15px;font-weight:700;color:var(--ink);margin:20px 0 2px}
-.tz{font-size:11.5px;color:var(--muted);margin-bottom:6px}
-.bar{display:inline-block;height:8px;border-radius:4px;vertical-align:1px;margin-right:7px}
+.cap{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+/* availability-gap bars */
+.bars{display:grid;gap:7px;margin-top:4px}
+.br{display:grid;grid-template-columns:120px 1fr 46px;gap:10px;align-items:center;font-size:12.7px}
+.brl{color:var(--ink2);white-space:nowrap}
+.brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
+.brf{height:100%;border-radius:5px}
+.brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* matrix pills */
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
+.p-w{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.soon{color:var(--muted);font-size:11px;white-space:nowrap}
+/* roadmap */
+.rm{display:grid;gap:9px;margin-top:6px}
+.rmi{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 10px 10px 0;padding:11px 15px}
+.rmi.live{border-left-color:var(--go)}
+.rmi b{color:var(--ink);font-size:13.6px;display:block;margin-bottom:2px}
+.rmi span{font-size:12.7px}
+.tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+ padding:2px 7px;border-radius:999px;margin-left:8px;vertical-align:1px;
+ background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
 .note{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
  border-radius:0 11px 11px 0;padding:14px 17px;margin:14px 0}
 .note p{margin:0;font-size:13.6px}
@@ -43,17 +63,36 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <body>
 <main>
 <h1>あなたの市場が開く時間</h1>
-<p class="lede">取引所は自分の時間で開きます。このページでは各市場の時間を<b>あなたの現地時刻</b>で示します。自動売買が実際に取引できる時間がわかります。</p>
+<p class="lede">Sooppiyは9か国の会員にサービスを提供しており、各取引所はそれぞれの時間で開きます。このページでは各市場の時間を<b>あなたの現地時刻</b>で示し、どの地域で何を取引できるか、注文がどこで約定するかを案内します。自動売買がいつ・どのように動くかが正確にわかります。</p>
+
+<h2>9か国、ひとつのプラットフォーム</h2>
+<p>Sooppiyは米国、カナダ、オーストラリア、シンガポール、韓国、日本、タイ、ベトナム、インドネシアで運営しています。あなたの地域は3つを決めます。あなたの時刻で市場が<b>いつ</b>開くか、<b>何</b>を取引できるか、注文が<b>どの取引所</b>で約定するかです。</p>
 
 <h2>常に開いている市場</h2>
-<p>これらは平日は閉じません。地域を問わず、いつでも取引できます。</p>
+<p>これらは平日は閉じないため、地域を問わずいつでも取引できます。北米以外では、起きている時間に開いている市場はこれらだけなので、サービスの中心になります。</p>
 <div class="fig"><div class="always"><span>暗号資産</span><span>外国為替</span><span>先物</span></div></div>
 
+<h2>利用できる時間の差</h2>
+<p>同じ会員でも、住む場所によって使える時間は大きく異なります。米国株はニューヨーク時間09:30〜16:00に取引され、アジアでは真夜中にあたります。地域別に、起きている時間帯（現地08:00〜24:00）に米国株を取引できる時間は次のとおりです。</p>
+<div class="fig"><div class="bars"><div class="br"><div class="brl">米国</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5時間</div></div><div class="br"><div class="brl">カナダ</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5時間</div></div><div class="br"><div class="brl">タイ</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5時間</div></div><div class="br"><div class="brl">ベトナム</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5時間</div></div><div class="br"><div class="brl">インドネシア</div><div class="brt"><div class="brf" style="width:54%;background:var(--warn)"></div></div><div class="brv">3.5時間</div></div><div class="br"><div class="brl">シンガポール</div><div class="brt"><div class="brf" style="width:38%;background:var(--warn)"></div></div><div class="brv">2.5時間</div></div><div class="br"><div class="brl">韓国</div><div class="brt"><div class="brf" style="width:23%;background:var(--ai)"></div></div><div class="brv">1.5時間</div></div><div class="br"><div class="brl">日本</div><div class="brt"><div class="brf" style="width:23%;background:var(--ai)"></div></div><div class="brv">1.5時間</div></div><div class="br"><div class="brl">オーストラリア</div><div class="brt"><div class="brf" style="width:8%;background:var(--ai)"></div></div><div class="brv">0.5時間</div></div></div><p class="cap">オーストラリアの会員が起きている間に米国株を取引できるのは約30分、米国の会員は6時間半です。同じ価格で最大13倍の差です。上の暗号資産・外国為替・先物が北米以外で中心市場になるのは、まさにこのためです。</p></div>
+
 <h2>決まった時間に開く市場 — あなたの時刻で</h2>
-<div class="rg">日本</div><div class="tz">Asia/Tokyo</div><div class="sw"><table><tr><th>市場</th><th>現地時刻</th><th>起きている時間帯</th></tr><tr><td class="m">米国株</td><td class="h">22:30–05:00 <span class=nd>(翌日)</span></td><td class="h"><span class="bar" style="width:23px;background:var(--ai)"></span>1.5時間</td></tr><tr><td class="m">中国A株</td><td class="h">10:30–12:30, 14:00–16:00</td><td class="h"><span class="bar" style="width:62px;background:var(--go)"></span>4.0時間</td></tr></table></div>
+<p>米国株と中国A株は決まった取引所時間に開きます。以下は平日基準で、各セッションを地域ごとの現地時刻に変換したものです。</p>
+<div class="sw"><table><tr><th>地域</th><th>米国株</th><th>中国A株</th></tr><tr><td class="m">米国</td><td class="h">09:30–16:00</td><td class="h">01:00–03:00, 21:30–23:30</td></tr><tr><td class="m">カナダ</td><td class="h">09:30–16:00</td><td class="h">01:00–03:00, 21:30–23:30</td></tr><tr><td class="m">オーストラリア</td><td class="h">23:30–06:00 <span class=nd>(翌日)</span></td><td class="h">11:30–13:30, 15:00–17:00</td></tr><tr><td class="m">シンガポール</td><td class="h">21:30–04:00 <span class=nd>(翌日)</span></td><td class="h">09:30–11:30, 13:00–15:00</td></tr><tr><td class="m">韓国</td><td class="h">22:30–05:00 <span class=nd>(翌日)</span></td><td class="h">10:30–12:30, 14:00–16:00</td></tr><tr><td class="m">日本</td><td class="h">22:30–05:00 <span class=nd>(翌日)</span></td><td class="h">10:30–12:30, 14:00–16:00</td></tr><tr><td class="m">タイ</td><td class="h">20:30–03:00 <span class=nd>(翌日)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr><tr><td class="m">ベトナム</td><td class="h">20:30–03:00 <span class=nd>(翌日)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr><tr><td class="m">インドネシア</td><td class="h">20:30–03:00 <span class=nd>(翌日)</span></td><td class="h">08:30–10:30, 12:00–14:00</td></tr></table></div>
+
+<h2>地域ごとに取引できる市場</h2>
+<p>地域ごとの管理を順次適用していく中での提供予定です。<b>検討中</b>の市場はその国で確認中で、承認され次第開きます。これはロードマップであり、法的な保証ではありません。</p>
+<div class="sw"><table><tr><th>地域</th><th>暗号資産</th><th>外国為替</th><th>先物</th><th>米国株</th><th>オプション</th><th>中国A株</th><th>予測市場</th></tr><tr><td class="m">米国</td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">カナダ</td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">オーストラリア</td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">シンガポール</td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">韓国</td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">日本</td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">タイ</td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">ベトナム</td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr><tr><td class="m">インドネシア</td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td><td><span class="pill p-go">利用可</span></td><td><span class="pill p-w">検討中</span></td></tr></table></div>
+
+<h2>注文が約定する場所</h2>
+<p>価格はどこでもグローバルなデータフィードから取得します。実注文は接続したブローカーを通じて約定し、利用できるブローカーは地域によって異なります。</p>
+<div class="sw"><table><tr><th>地域</th><th>株式・先物</th><th>暗号資産</th><th>備考</th></tr><tr><td class="m">米国</td><td>Alpaca · IBKR</td><td>Binance.US · Coinbase</td><td>両方とも接続可能</td></tr><tr><td class="m">カナダ</td><td>IBKR</td><td>—</td><td>暗号資産ブローカーを確認中</td></tr><tr><td class="m">オーストラリア</td><td>IBKR</td><td>—</td><td>暗号資産ブローカーを確認中</td></tr><tr><td class="m">シンガポール</td><td>IBKR</td><td>Binance</td><td>—</td></tr><tr><td class="m">韓国</td><td>IBKR</td><td>Upbit · Bithumb <span class="soon">(準備中)</span></td><td>国内取引所への対応を準備中</td></tr><tr><td class="m">日本</td><td>IBKR</td><td>bitFlyer · Coincheck <span class="soon">(準備中)</span></td><td>国内取引所への対応を準備中</td></tr><tr><td class="m">タイ</td><td>IBKR</td><td>Bitkub <span class="soon">(準備中)</span></td><td>国内取引所への対応を準備中</td></tr><tr><td class="m">ベトナム</td><td>IBKR</td><td>—</td><td>暗号資産ブローカーを確認中</td></tr><tr><td class="m">インドネシア</td><td>IBKR</td><td>Indodax · Tokocrypto <span class="soon">(準備中)</span></td><td>国内取引所への対応を準備中</td></tr></table></div>
+
+<h2>順次提供する機能</h2>
+<div class="rm"><div class="rmi live"><b>地域と時刻<span class="tag">提供中</span></b><span>ログイン時に国と言語を選ぶと、サイトのすべての時刻が現地時刻で表示されます。</span></div><div class="rmi"><b>あなたの時刻での予定</b><span>市場のカウントダウン、自動売買の予定、通知があなたの時刻に従います。深夜3時の通知はありません。</span></div><div class="rmi"><b>地域ごとの提供範囲</b><span>取引できる市場を、承認され次第、国ごとに設定します。</span></div><div class="rmi"><b>国内取引所</b><span>Upbit、bitFlyer、Bitkub、Indodax など国内の暗号資産取引所に直接対応します。</span></div></div>
 
 <h2>これが意味すること</h2>
-<div class="note"><p>日本に夏時間はありませんが、米国市場の取引時間は米国の夏時間の開始・終了により日本時間で1時間ずれます。サイトでは常に現在の正しい時刻を表示します。</p></div>
+<div class="note"><p>米国・カナダ・オーストラリアの時間は夏時間の開始・終了で1時間ずれ、オーストラリアは北半球と逆に動きます。韓国・日本・シンガポール・タイ・ベトナム・インドネシアに夏時間はありません。サイトは常に現在の正しい時刻を表示します。</p></div>
 
 <h2>地域の設定</h2>
 <p>初回ログイン時に地域と言語を選択します。<b>設定 → 地域と言語</b>からいつでも変更できます。サイト上のすべての時刻は選択した地域のタイムゾーンで表示されます。</p>
