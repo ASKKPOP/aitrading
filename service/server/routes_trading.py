@@ -839,6 +839,79 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             'take_profit': tp if tp_set else _row_value(row, 'take_profit'),
         }
 
+    # ── Resting (limit) orders — the terminals' Limit tab ────────────────
+    # Simulator-only: rows fill via the paper executor in the worker's
+    # resting_orders tick, never through the live execution gateway.
+
+    @app.post('/api/orders')
+    async def create_resting_order(data: dict, authorization: str = Header(None)):
+        """Place a GTC limit order. Body: {market, side, symbol, quantity,
+        limit_price, stop_loss?, take_profit?}. Refused if it would fill
+        immediately — the market button is one click away."""
+        from starlette.concurrency import run_in_threadpool
+
+        from crypto_feed import fetch_ticker
+        from resting_orders import place_resting_order
+
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        if not isinstance(data, dict):
+            raise HTTPException(status_code=422, detail='Body must be an object')
+
+        symbol = str(data.get('symbol') or '').strip().upper()
+        market = str(data.get('market') or 'crypto').strip().lower()
+        live_price = None
+        if symbol and market == 'crypto':
+            try:
+                ticker = await run_in_threadpool(fetch_ticker, f'{symbol}USDT')
+                live_price = float(ticker['last_price'])
+            except Exception:
+                live_price = None  # place_resting_order refuses without a quote
+
+        order, err = await run_in_threadpool(
+            place_resting_order,
+            agent['id'], market, str(data.get('side') or ''), symbol,
+            data.get('quantity'), data.get('limit_price'), live_price,
+            data.get('stop_loss'), data.get('take_profit'),
+            'limit order (terminal)')
+        if err:
+            status = 409 if err == 'would_fill_immediately' else 422
+            raise HTTPException(status_code=status, detail=err)
+        return order
+
+    @app.get('/api/orders')
+    async def list_orders(status: Optional[str] = 'open', limit: int = 100,
+                          authorization: str = Header(None)):
+        """The agent's resting orders (default: open ones, newest first)."""
+        from resting_orders import list_resting_orders
+
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        safe_status = status if status in ('open', 'filled', 'cancelled', 'rejected') else None
+        orders = list_resting_orders(agent['id'], status=safe_status, limit=limit)
+        return {'orders': orders, 'count': len(orders)}
+
+    @app.delete('/api/orders/{order_id}')
+    async def cancel_order(order_id: int, authorization: str = Header(None)):
+        """Cancel one of the agent's own OPEN resting orders."""
+        from resting_orders import cancel_resting_order
+
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        ok, reason = cancel_resting_order(agent['id'], order_id)
+        if ok:
+            return {'id': order_id, 'status': 'cancelled'}
+        if reason == 'not_found':
+            raise HTTPException(status_code=404, detail='Order not found')
+        # Filled/cancelled under the user's cursor — tell them which.
+        raise HTTPException(status_code=409, detail=reason)
+
     @app.get('/api/positions/trades')
     async def get_my_trades(limit: int = 50, authorization: str = Header(None)):
         """The authed agent's executed trades — the 거래 내역 tab of the

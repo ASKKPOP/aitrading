@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 import { TradingViewChart } from '../components/TradingViewChart'
-import { POPULAR_PAIRS, TRADE_FEE_RATE, fetchFeeRate, fmtQty, fmtUsd, pair, placeOrder, pnlColor } from './tradeShared'
+import { PairSelector } from '../components/PairSelector'
+import { TradingCalculator } from '../components/TradingCalculator'
+import { TRADE_FEE_RATE, fetchFeeRate, fmtQty, fmtUsd, pair, placeOrder, pnlColor } from './tradeShared'
 
 // Spot / Futures trade terminal — modeled on ga's TerminalLayout
 // (PairStatsHeader + chart + OrderBookPanel + RecentTradesPanel +
@@ -47,6 +49,9 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
 
   // order form state
   const [side, setSide] = useState<'buy' | 'sell'>('buy')       // spot
+  const [orderType, setOrderType] = useState<'market' | 'limit'>('market')
+  const [limitPrice, setLimitPrice] = useState('')
+  const [openOrders, setOpenOrders] = useState<any[]>([])
   const [qty, setQty] = useState('')
   const [orderValue, setOrderValue] = useState('')
   const [pct, setPct] = useState(0)
@@ -59,7 +64,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   const [busy, setBusy] = useState(false)
 
   // bottom tabs / modals
-  const [tab, setTab] = useState<'positions' | 'history'>('positions')
+  const [tab, setTab] = useState<'positions' | 'orders' | 'history'>('positions')
   const [history, setHistory] = useState<any[]>([])
   const [closeTarget, setCloseTarget] = useState<null | { pos: any; qtyStr: string; pct: number }>(null)
   // Closing places a REAL order — lock while in flight (double-click
@@ -67,6 +72,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   // fix, preserved through the ga-parity rewrite).
   const [closing, setClosing] = useState(false)
   const [closeMsg, setCloseMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [showCalc, setShowCalc] = useState(false)
   const [tpslEdit, setTpslEdit] = useState<null | { pos: any; sl: string; tp: string; err: string | null }>(null)
 
   const T = {
@@ -80,7 +86,13 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     totalCol: tr(language, { ko: '합계', en: 'Total', ja: '累計', th: 'รวม', vi: 'Tổng', id: 'Total' }),
     timeCol: tr(language, { ko: '시간', en: 'Time', ja: '時刻', th: 'เวลา', vi: 'Thời gian', id: 'Waktu' }),
     market: tr(language, { ko: '시장', en: 'Market', ja: '成行', th: 'ราคาตลาด', vi: 'Thị trường', id: 'Pasar' }),
-    limitSoon: tr(language, { ko: '지정가 (곧 지원)', en: 'Limit (soon)', ja: '指値(準備中)', th: 'ลิมิต (เร็วๆนี้)', vi: 'Limit (sắp có)', id: 'Limit (segera)' }),
+    limit: tr(language, { ko: '지정가', en: 'Limit', ja: '指値', th: 'ลิมิต', vi: 'Limit', id: 'Limit' }),
+    limitPrice: tr(language, { ko: '지정 가격 (USDT)', en: 'Limit price (USDT)', ja: '指値価格 (USDT)', th: 'ราคาลิมิต (USDT)', vi: 'Giá limit (USDT)', id: 'Harga limit (USDT)' }),
+    openOrdersTab: tr(language, { ko: '현재 주문', en: 'Open orders', ja: '注文中', th: 'คำสั่งที่เปิดอยู่', vi: 'Lệnh đang mở', id: 'Order terbuka' }),
+    cancelOrder: tr(language, { ko: '주문 취소', en: 'Cancel', ja: '取消', th: 'ยกเลิก', vi: 'Hủy', id: 'Batalkan' }),
+    placed: tr(language, { ko: '주문 접수됨', en: 'Order placed', ja: '注文受付', th: 'ส่งคำสั่งแล้ว', vi: 'Đã đặt lệnh', id: 'Order dibuat' }),
+    wouldFill: tr(language, { ko: '지정가가 현재가를 이미 지났습니다 — 즉시 체결됩니다. 시장가 주문을 사용하세요.', en: 'That limit is already past the market — it would fill immediately. Use a market order.', ja: 'その指値は現在価格を超えています。成行注文をご利用ください。', th: 'ราคาลิมิตเลยราคาตลาดแล้ว — จะเติมทันที ใช้คำสั่งตลาดแทน', vi: 'Giá limit đã vượt giá thị trường — sẽ khớp ngay. Hãy dùng lệnh thị trường.', id: 'Harga limit sudah melewati harga pasar — akan langsung tereksekusi. Gunakan order pasar.' }),
+    limitNote: tr(language, { ko: '지정가 주문은 서버가 약 15초 간격으로 가격을 확인해 교차 시 체결합니다 (모의 거래).', en: 'Limit orders are checked ~every 15s server-side and fill when the price crosses (paper trading).', ja: '指値注文は約15秒ごとにサーバーが確認し、価格が到達すると約定します（模擬取引）。', th: 'เซิร์ฟเวอร์ตรวจสอบทุก ~15 วินาที และเติมเมื่อราคาตัดผ่าน (เทรดจำลอง)', vi: 'Lệnh limit được kiểm tra ~15s/lần phía máy chủ và khớp khi giá cắt qua (mô phỏng).', id: 'Order limit diperiksa ~15 detik sekali di server dan tereksekusi saat harga menembus (paper trading).' }),
     buy: tr(language, { ko: '매수', en: 'Buy', ja: '買い', th: 'ซื้อ', vi: 'Mua', id: 'Beli' }),
     sell: tr(language, { ko: '매도', en: 'Sell', ja: '売り', th: 'ขาย', vi: 'Bán', id: 'Jual' }),
     long: tr(language, { ko: '매수 / 롱', en: 'Buy / Long', ja: '買い/ロング', th: 'ซื้อ / Long', vi: 'Mua / Long', id: 'Beli / Long' }),
@@ -98,6 +110,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     tpslNote: tr(language, { ko: 'TP/SL은 포지션에 등록되며 서버 리스크 워처가 주기적으로 확인해 전량 청산합니다.', en: 'TP/SL is registered on the position; the server risk watcher checks it periodically and closes the full position.', ja: 'TP/SLはポジションに登録され、サーバーが定期的に確認して全量決済します。', th: 'TP/SL จะลงทะเบียนกับสถานะ เซิร์ฟเวอร์ตรวจสอบเป็นระยะและปิดทั้งหมด', vi: 'TP/SL được đăng ký vào vị thế; máy chủ kiểm tra định kỳ và đóng toàn bộ.', id: 'TP/SL didaftarkan pada posisi; server memeriksanya berkala dan menutup seluruh posisi.' }),
     tpslInvalid: tr(language, { ko: 'TP/SL 값이 현재가 기준으로 잘못되었습니다 (롱: SL<현재가<TP, 숏: 반대).', en: 'TP/SL is on the wrong side of the current price (long: SL<price<TP; short inverted).', ja: 'TP/SLが現在価格に対して不正です（ロング: SL<価格<TP、ショートは逆）。', th: 'TP/SL อยู่ผิดฝั่งของราคาปัจจุบัน', vi: 'TP/SL nằm sai phía so với giá hiện tại.', id: 'TP/SL berada di sisi yang salah dari harga saat ini.' }),
     funding: tr(language, { ko: '펀딩 / 카운트다운', en: 'Funding / Countdown', ja: '資金調達率', th: 'ฟันดิง / นับถอยหลัง', vi: 'Funding / Đếm ngược', id: 'Funding / Hitung mundur' }),
+    calc: tr(language, { ko: '계산기', en: 'Calculator', ja: '計算機', th: 'เครื่องคิดเลข', vi: 'Máy tính', id: 'Kalkulator' }),
     confirmTitle: tr(language, { ko: '주문 확인', en: 'Confirm order', ja: '注文確認', th: 'ยืนยันคำสั่ง', vi: 'Xác nhận lệnh', id: 'Konfirmasi order' }),
     dontShowAgain: tr(language, { ko: '다시 표시 안 함', en: "Don't show again", ja: '今後表示しない', th: 'ไม่ต้องแสดงอีก', vi: 'Không hiển thị lại', id: 'Jangan tampilkan lagi' }),
     entry: tr(language, { ko: '진입 가격 (실시간)', en: 'Entry price (live)', ja: '約定価格(現在)', th: 'ราคาเข้า (สด)', vi: 'Giá vào (trực tiếp)', id: 'Harga masuk (langsung)' }),
@@ -173,16 +186,25 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
       if (res.ok) setHistory(data.trades || [])
     } catch { /* transient */ }
   }
+  async function loadOpenOrders() {
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/orders?status=open`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      if (res.ok) setOpenOrders(data.orders || [])
+    } catch { /* transient */ }
+  }
   useEffect(() => {
     lastPriceRef.current = null
     setTrades([]); setFunding(null)
-    loadTicker(); loadBook(); loadTrades(); loadFunding(); loadPositions()
+    loadTicker(); loadBook(); loadTrades(); loadFunding(); loadPositions(); loadOpenOrders()
     const t1 = setInterval(loadTicker, 4000)
     const t2 = setInterval(loadBook, 4000)
     const t3 = setInterval(loadPositions, 12000)
     const t4 = setInterval(loadTrades, 4000)
     const t5 = setInterval(loadFunding, 60000)
-    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4); clearInterval(t5) }
+    const t6 = setInterval(loadOpenOrders, 10000)
+    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4); clearInterval(t5); clearInterval(t6) }
   }, [symbol, token])
   useEffect(() => { fetchFeeRate('crypto').then(setFeeRate) }, [])
   useEffect(() => { if (tab === 'history') loadHistory() }, [tab])
@@ -209,20 +231,28 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   const longQty = symPositions.filter(p => p.side === 'long').reduce((s, p) => s + p.quantity, 0)
   const shortQty = Math.abs(symPositions.filter(p => p.side !== 'long').reduce((s, p) => s + p.quantity, 0))
 
-  function syncFromQty(q: string) {
+  // ga allocBasePrice: in limit mode every derived number prices at the LIMIT,
+  // and a blank/invalid limit price makes the slider & value sync inert — no
+  // silent fallback to the mark (the fill will happen at the limit, not here).
+  const limitN = parseFloat(limitPrice)
+  const basisPrice = orderType === 'limit'
+    ? (Number.isFinite(limitN) && limitN > 0 ? limitN : null)
+    : price
+
+  function syncFromQty(q: string, px: number | null = basisPrice) {
     setQty(q)
     const n = parseFloat(q)
-    setOrderValue(price && n > 0 ? (n * price).toFixed(2) : '')
+    setOrderValue(px && n > 0 ? (n * px).toFixed(2) : '')
   }
-  function syncFromValue(v: string) {
+  function syncFromValue(v: string, px: number | null = basisPrice) {
     setOrderValue(v)
     const n = parseFloat(v)
-    setQty(price && n > 0 ? (n / price).toFixed(6) : '')
+    setQty(px && n > 0 ? (n / px).toFixed(6) : '')
   }
   function applyPct(p: number, lev = leverage) {
     setPct(p)
-    if (!price) return
     if (isSpot && side === 'sell') { syncFromQty(((longQty * p) / 100).toFixed(6)); return }
+    if (!basisPrice) return
     // ga quantityForPct: reserve covers the fee on the LEVERAGED notional
     // plus a slippage buffer, so a 100% order is still affordable after fees.
     const lv = isSpot ? 1 : lev
@@ -231,25 +261,26 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   }
 
   const qtyN = parseFloat(qty) || 0
-  const notional = price ? qtyN * price : 0
+  const notional = basisPrice ? qtyN * basisPrice : 0
   const fee = notional * feeRate
   const marginReq = isSpot ? notional : notional / leverage
   const liqLong = price ? price * (1 - (1 / leverage - MAINTENANCE_MARGIN_RATE)) : null
   const liqShort = price ? price * (1 + (1 / leverage - MAINTENANCE_MARGIN_RATE)) : null
 
-  // ga: TP/SL sanity is side-aware and mark-anchored; a level on the wrong
-  // side would trigger instantly, so it blocks the submit client-side too.
+  // ga: TP/SL sanity is side-aware and anchored to the price the order will
+  // trade at — the live mark for market orders, the limit price for limits.
   function tpslValid(action: 'buy' | 'short'): boolean {
-    if (isSpot || !price) return true
+    if (isSpot || !basisPrice) return true
+    const anchor = basisPrice
     const tp = parseFloat(tpInput), sl = parseFloat(slInput)
     if (tpInput && (!Number.isFinite(tp) || tp <= 0)) return false
     if (slInput && (!Number.isFinite(sl) || sl <= 0)) return false
     if (action === 'buy') {
-      if (tpInput && tp <= price) return false
-      if (slInput && sl >= price) return false
+      if (tpInput && tp <= anchor) return false
+      if (slInput && sl >= anchor) return false
     } else {
-      if (tpInput && tp >= price) return false
-      if (slInput && sl <= price) return false
+      if (tpInput && tp >= anchor) return false
+      if (slInput && sl <= anchor) return false
     }
     return true
   }
@@ -292,11 +323,58 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     }
   }
 
+  async function placeLimit(action: 'buy' | 'sell' | 'short' | 'cover') {
+    if (!token || !basisPrice || qtyN <= 0) return
+    setBusy(true); setMsg(null)
+    try {
+      const body: any = { market: 'crypto', side: action, symbol, quantity: qtyN, limit_price: basisPrice }
+      if (!isSpot && (action === 'buy' || action === 'short')) {
+        if (tpInput) body.take_profit = parseFloat(tpInput)
+        if (slInput) body.stop_loss = parseFloat(slInput)
+      }
+      const res = await fetch(`${API_BASE}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const detail = typeof data.detail === 'string' ? data.detail : 'Order failed'
+        setMsg({ ok: false, text: detail === 'would_fill_immediately' ? T.wouldFill : detail })
+      } else {
+        setMsg({ ok: true, text: `✓ ${T.placed} #${data.id}` })
+        setQty(''); setOrderValue(''); setPct(0); setTpInput(''); setSlInput('')
+        loadOpenOrders(); setTab('orders')
+      }
+    } catch {
+      setMsg({ ok: false, text: 'Network error' })
+    }
+    setBusy(false); setConfirm(null)
+  }
+
+  function executeOrder(action: 'buy' | 'sell' | 'short' | 'cover') {
+    if (orderType === 'limit') { placeLimit(action) } else { submit(action) }
+  }
+
+  async function cancelOpenOrder(id: number) {
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/orders/${id}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setMsg({ ok: false, text: typeof data?.detail === 'string' ? data.detail : 'Cancel failed' })
+      }
+      loadOpenOrders()
+    } catch { /* transient */ }
+  }
+
   function requestSubmit(action: 'buy' | 'sell' | 'short', label: string) {
     if (!tpslValid(action === 'sell' ? 'buy' : action as 'buy' | 'short')) {
       setMsg({ ok: false, text: T.tpslInvalid }); return
     }
-    if (skipConfirm) { submit(action); return }
+    if (skipConfirm) { executeOrder(action); return }
     setConfirm({ action, label })
   }
 
@@ -346,11 +424,22 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
       <div className="empty-state"><div className="empty-icon">{isSpot ? '◈' : '⚡'}</div><div className="empty-title">{T.login}</div></div></div>
   }
 
+  // ga orderEntryStore: clicking a book/tape row in limit mode prefills BOTH
+  // the limit price and the quantity; market mode keeps the qty-only prefill.
+  function prefillFromRow(rowPrice: number, rowQty: number) {
+    if (orderType === 'limit') {
+      setLimitPrice(String(rowPrice))
+      syncFromQty(rowQty.toFixed(6), rowPrice)
+    } else {
+      syncFromQty(rowQty.toFixed(6))
+    }
+  }
+
   const bookRows = (rows: number[][], color: string, reverse = false) => {
     const max = Math.max(...rows.map(r => r[1]), 1)
     const list = reverse ? [...rows].reverse() : rows
     return list.map((r, i) => (
-      <div key={i} onClick={() => syncFromQty(r[1].toFixed(6))}
+      <div key={i} onClick={() => prefillFromRow(r[0], r[1])}
         style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 4, padding: '2px 10px', fontSize: 12, cursor: 'pointer', position: 'relative' }}>
         <span style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: `${(r[1] / max) * 100}%`, background: color, opacity: 0.10 }} />
         <span style={{ ...mono, color }}>{fmtUsd(r[0], r[0] > 100 ? 1 : 4)}</span>
@@ -370,10 +459,8 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     <div>
       {/* ── PairStatsHeader (ga) ── */}
       <div style={{ ...panel, display: 'flex', alignItems: 'center', gap: 22, padding: '12px 18px', marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={symbol} onChange={e => { setSymbol(e.target.value); setQty(''); setOrderValue(''); setPct(0) }}
-          style={{ ...inp, width: 'auto', fontWeight: 700, fontSize: 15 }}>
-          {POPULAR_PAIRS.map(s => <option key={s} value={s}>{pair(s)}</option>)}
-        </select>
+        <PairSelector value={symbol} language={language}
+          onChange={s => { setSymbol(s); setQty(''); setOrderValue(''); setLimitPrice(''); setPct(0) }} />
         <span style={{ ...mono, fontSize: 24, fontWeight: 800, color: flash === 'up' ? UP : flash === 'down' ? DOWN : (ticker && ticker.price_24h_pct >= 0 ? UP : DOWN), transition: 'color .2s' }}>
           {price ? fmtUsd(price, price > 100 ? 2 : 4) : '—'}
         </span>
@@ -385,7 +472,15 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
             color={funding ? (funding.funding_rate >= 0 ? UP : DOWN) : undefined} />
         )}
         <Stat label={T.volume} value={ticker ? fmtUsd(ticker.volume_24h, 0) : '—'} />
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>{isSpot ? T.spotTitle : `${T.futTitle} · Perpetual (sim)`}</span>
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {!isSpot && (
+            <button onClick={() => setShowCalc(true)}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 12, cursor: 'pointer' }}>
+              🖩 {T.calc}
+            </button>
+          )}
+          <span style={{ fontSize: 11, color: 'var(--text-secondary,#8a8073)' }}>{isSpot ? T.spotTitle : `${T.futTitle} · Perpetual (sim)`}</span>
+        </span>
       </div>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}>
@@ -433,7 +528,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
               {trades.length === 0
                 ? <div style={{ padding: 16, color: 'var(--text-secondary,#8a8073)', fontSize: 13 }}>…</div>
                 : trades.map((t, i) => (
-                  <div key={`${t.ts}-${i}`} onClick={() => syncFromQty(t.size.toFixed(6))}
+                  <div key={`${t.ts}-${i}`} onClick={() => prefillFromRow(t.price, t.size)}
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 4, padding: '2px 10px', fontSize: 12, cursor: 'pointer' }}>
                     <span style={{ ...mono, color: 'var(--text-secondary,#8a8073)' }}>{hhmmss(t.ts)}</span>
                     <span style={{ ...mono, textAlign: 'right', color: t.side === 'buy' ? UP : DOWN }}>{fmtUsd(t.price, t.price > 100 ? 1 : 4)}</span>
@@ -448,9 +543,25 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
         <div style={{ ...panel, flex: '1 1 280px', maxWidth: 380, padding: 14, alignSelf: 'flex-start' }}>
           {/* order type tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-            <button style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: 'var(--accent-contrast,#fff)', fontWeight: 700, fontSize: 12.5 }}>{T.market}</button>
-            <button disabled style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'var(--text-secondary,#8a8073)', fontSize: 12.5, cursor: 'not-allowed' }}>{T.limitSoon}</button>
+            {(['market', 'limit'] as const).map(t => (
+              <button key={t} onClick={() => { setOrderType(t); setPct(0); setMsg(null) }}
+                style={{ flex: 1, padding: '7px 0', borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                  border: orderType === t ? 'none' : '1px solid var(--border-color,#d3c8b6)',
+                  background: orderType === t ? 'var(--accent-primary,#c26a45)' : 'transparent',
+                  color: orderType === t ? 'var(--accent-contrast,#fff)' : 'var(--text-secondary,#8a8073)' }}>
+                {t === 'market' ? T.market : T.limit}
+              </button>
+            ))}
           </div>
+
+          {orderType === 'limit' && (
+            <>
+              <label style={{ fontSize: 12, display: 'block', margin: '0 0 4px' }}>{T.limitPrice}</label>
+              <input style={{ ...inp, marginBottom: 10 }} value={limitPrice}
+                onChange={e => { setLimitPrice(e.target.value); setPct(0) }}
+                placeholder={price ? fmtUsd(price, 2) : '0.00'} />
+            </>
+          )}
 
           {isSpot && (
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -511,23 +622,23 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
 
           {/* action buttons */}
           {isSpot ? (
-            <button disabled={busy || qtyN <= 0 || !price}
+            <button disabled={busy || qtyN <= 0 || !basisPrice}
               onClick={() => requestSubmit(side, side === 'buy' ? T.buy : T.sell)}
-              style={{ width: '100%', marginTop: 10, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: side === 'buy' ? UP : DOWN, color: '#fff', opacity: (busy || qtyN <= 0) ? 0.55 : 1 }}>
+              style={{ width: '100%', marginTop: 10, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: side === 'buy' ? UP : DOWN, color: '#fff', opacity: (busy || qtyN <= 0 || !basisPrice) ? 0.55 : 1 }}>
               {side === 'buy' ? T.buy : T.sell} {pair(symbol)}
             </button>
           ) : (
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button disabled={busy || qtyN <= 0 || !price} onClick={() => requestSubmit('buy', T.long)}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, cursor: 'pointer', background: UP, color: '#fff', opacity: (busy || qtyN <= 0) ? 0.55 : 1 }}>{T.long}</button>
-              <button disabled={busy || qtyN <= 0 || !price} onClick={() => requestSubmit('short', T.short)}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, cursor: 'pointer', background: DOWN, color: '#fff', opacity: (busy || qtyN <= 0) ? 0.55 : 1 }}>{T.short}</button>
+              <button disabled={busy || qtyN <= 0 || !basisPrice} onClick={() => requestSubmit('buy', T.long)}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, cursor: 'pointer', background: UP, color: '#fff', opacity: (busy || qtyN <= 0 || !basisPrice) ? 0.55 : 1 }}>{T.long}</button>
+              <button disabled={busy || qtyN <= 0 || !basisPrice} onClick={() => requestSubmit('short', T.short)}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', fontWeight: 700, cursor: 'pointer', background: DOWN, color: '#fff', opacity: (busy || qtyN <= 0 || !basisPrice) ? 0.55 : 1 }}>{T.short}</button>
             </div>
           )}
 
           {msg && <div style={{ marginTop: 10, fontSize: 12.5, color: msg.ok ? UP : DOWN }}>{msg.text}</div>}
           <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-secondary,#8a8073)', lineHeight: 1.5 }}>
-            {T.fillNote}{!isSpot && ` ${T.levNote}`}{!isSpot && (tpInput || slInput) && ` ${T.tpslNote}`}
+            {orderType === 'limit' ? T.limitNote : T.fillNote}{!isSpot && ` ${T.levNote}`}{!isSpot && (tpInput || slInput) && ` ${T.tpslNote}`}
           </div>
         </div>
       </div>
@@ -535,14 +646,19 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
       {/* ── BottomTabs (ga): Positions/Holdings + Trade history ── */}
       <div style={{ ...panel, marginTop: 14, overflow: 'hidden' }}>
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-color,#e6ddd0)' }}>
-          {(['positions', 'history'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13, cursor: 'pointer', border: 'none', background: 'transparent', color: tab === t ? 'var(--text-primary,inherit)' : 'var(--text-secondary,#8a8073)', borderBottom: tab === t ? '2px solid var(--accent-primary,#c26a45)' : '2px solid transparent' }}>
-              {t === 'positions' ? (isSpot ? T.holdings : T.positionsTab) : T.historyTab}
-              {t === 'positions' && positions.filter(p => isSpot ? p.side === 'long' : true).length > 0 &&
-                ` (${positions.filter(p => isSpot ? p.side === 'long' : true).length})`}
-            </button>
-          ))}
+          {(['positions', 'orders', 'history'] as const).map(t => {
+            const label = t === 'positions' ? (isSpot ? T.holdings : T.positionsTab)
+              : t === 'orders' ? T.openOrdersTab : T.historyTab
+            const count = t === 'positions'
+              ? positions.filter(p => isSpot ? p.side === 'long' : true).length
+              : t === 'orders' ? openOrders.length : 0
+            return (
+              <button key={t} onClick={() => setTab(t)}
+                style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13, cursor: 'pointer', border: 'none', background: 'transparent', color: tab === t ? 'var(--text-primary,inherit)' : 'var(--text-secondary,#8a8073)', borderBottom: tab === t ? '2px solid var(--accent-primary,#c26a45)' : '2px solid transparent' }}>
+                {label}{count > 0 && ` (${count})`}
+              </button>
+            )
+          })}
         </div>
 
         {closeMsg && (
@@ -606,7 +722,49 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
               </table>
             </div>
           )
-        })() : (
+        })() : tab === 'orders' ? (
+          openOrders.length === 0
+            ? <div style={{ padding: 16, color: 'var(--text-secondary,#8a8073)', fontSize: 13 }}>{T.empty}</div>
+            : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ color: 'var(--text-secondary,#8a8073)', fontSize: 11, textTransform: 'uppercase' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 14px' }}>{T.timeCol}</th>
+                      <th style={{ textAlign: 'left', padding: '8px 8px' }}>Asset</th>
+                      <th style={{ textAlign: 'left', padding: '8px 8px' }}>Side</th>
+                      <th style={{ textAlign: 'right', padding: '8px 8px' }}>{T.limit}</th>
+                      <th style={{ textAlign: 'right', padding: '8px 8px' }}>{T.qtyCol}</th>
+                      <th style={{ textAlign: 'right', padding: '8px 8px' }}>TP / SL</th>
+                      <th style={{ textAlign: 'right', padding: '8px 14px' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openOrders.map((o: any) => (
+                      <tr key={o.id} style={{ borderTop: '1px solid var(--border-color,#e6ddd0)' }}>
+                        <td style={{ ...mono, padding: '8px 14px', fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
+                          {(o.created_at || '').replace('T', ' ').slice(0, 19)}
+                        </td>
+                        <td style={{ padding: '8px 8px', fontWeight: 700 }}>{o.market === 'crypto' ? pair(o.symbol) : o.symbol}</td>
+                        <td style={{ padding: '8px 8px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', color: (o.side === 'buy' || o.side === 'cover') ? UP : DOWN }}>{o.side}</td>
+                        <td style={{ ...mono, textAlign: 'right', padding: '8px 8px' }}>{fmtUsd(o.limit_price)}</td>
+                        <td style={{ ...mono, textAlign: 'right', padding: '8px 8px' }}>{fmtQty(o.quantity)}</td>
+                        <td style={{ ...mono, textAlign: 'right', padding: '8px 8px', fontSize: 12 }}>
+                          <span style={{ color: UP }}>{o.take_profit ? fmtUsd(o.take_profit, 1) : '—'}</span>
+                          {' / '}
+                          <span style={{ color: DOWN }}>{o.stop_loss ? fmtUsd(o.stop_loss, 1) : '—'}</span>
+                        </td>
+                        <td style={{ textAlign: 'right', padding: '8px 14px' }}>
+                          <button onClick={() => cancelOpenOrder(o.id)}
+                            style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 11.5, cursor: 'pointer' }}>{T.cancelOrder}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+        ) : (
           history.length === 0
             ? <div style={{ padding: 16, color: 'var(--text-secondary,#8a8073)', fontSize: 13 }}>{T.empty}</div>
             : (
@@ -647,12 +805,12 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
       </div>
 
       {/* ── OrderConfirmModal (ga) ── */}
-      {confirm && price && (
+      {confirm && basisPrice && (
         <div onClick={() => setConfirm(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ ...panel, width: 360, padding: 20 }}>
             <div style={{ fontWeight: 800, marginBottom: 12 }}>{T.confirmTitle}</div>
-            <InfoRow label="Order" value={`${T.market} · ${confirm.label} · ${pair(symbol)}`} strong />
-            <InfoRow label={T.entry} value={fmtUsd(price)} />
+            <InfoRow label="Order" value={`${orderType === 'limit' ? T.limit : T.market} · ${confirm.label} · ${pair(symbol)}`} strong />
+            <InfoRow label={orderType === 'limit' ? T.limitPrice : T.entry} value={fmtUsd(basisPrice)} />
             <InfoRow label={T.qtyCol} value={`${fmtQty(qtyN)} ${symbol} ≈ ${fmtUsd(notional)} USDT`} />
             {!isSpot && <InfoRow label={`${T.margin} (${leverage}×)`} value={`${fmtUsd(marginReq)} USDT`} />}
             {!isSpot && tpInput && <InfoRow label="TP" value={fmtUsd(parseFloat(tpInput))} />}
@@ -669,7 +827,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
             </label>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={() => setConfirm(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer' }}>{T.cancel}</button>
-              <button disabled={busy} onClick={() => submit(confirm.action)}
+              <button disabled={busy} onClick={() => executeOrder(confirm.action)}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', background: (confirm.action === 'buy') ? UP : DOWN, color: '#fff' }}>{T.confirmBtn}</button>
             </div>
           </div>
@@ -702,6 +860,9 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
           </div>
         </div>
       )}
+
+      {/* ── TradingCalculator (ga) ── */}
+      {showCalc && <TradingCalculator language={language} livePrice={price} onClose={() => setShowCalc(false)} />}
 
       {/* ── TpSlEditModal (ga) ── */}
       {tpslEdit && (

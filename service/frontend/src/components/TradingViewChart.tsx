@@ -67,7 +67,9 @@ export function TradingViewChart({ symbol, perp, language }: {
       theme: dark ? 'dark' : 'light',
       style: STYLE_CODE[chartStyle],
       withdateranges: false,
-      hide_side_toolbar: false,
+      // Owner 2026-07-31: no drawing toolbar on the terminals — the left
+      // TradingView side bar is noise next to the order panels.
+      hide_side_toolbar: true,
       hide_top_toolbar: true,   // our toolbar above replaces it
       hide_legend: window.innerWidth < 1024,
       allow_symbol_change: false,
