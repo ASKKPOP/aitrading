@@ -35,6 +35,7 @@ import hashlib
 import os
 import re
 import threading
+from collections import OrderedDict
 from typing import Any, Optional
 
 from analysis_agents import LANG_NAMES, normalize_lang
@@ -111,6 +112,42 @@ def _catalogue(text: str, lang: str) -> Optional[str]:
 def _cache_key(text: str, lang: str) -> str:
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
     return f"mktxlate:{lang}:{digest}"
+
+
+# In-process translation cache. Prod runs Redis-less (get_json/set_json no-op),
+# so the shared KV cannot hold a warmed translation between the background
+# thread that produces it and the request that should read it — without this the
+# whole warm produces nothing. The backend is a single uvicorn worker, so one
+# process-local dict is shared by every request and the warm threads. KV is
+# still written/read through as a second layer for the day Redis returns (and to
+# share across workers then); on prod today that layer is simply inert.
+_MEM_CACHE: "OrderedDict[str, str]" = OrderedDict()
+_MEM_CACHE_MAX = 5000
+_MEM_CACHE_LOCK = threading.Lock()
+
+
+def _cache_get(key: str) -> Optional[str]:
+    with _MEM_CACHE_LOCK:
+        val = _MEM_CACHE.get(key)
+        if val is not None:
+            _MEM_CACHE.move_to_end(key)
+            return val
+    kv = get_json(key)  # None on a Redis-less prod; a hit warms the mem layer
+    if isinstance(kv, str):
+        with _MEM_CACHE_LOCK:
+            _MEM_CACHE[key] = kv
+            _MEM_CACHE.move_to_end(key)
+        return kv
+    return None
+
+
+def _cache_put(key: str, val: str) -> None:
+    with _MEM_CACHE_LOCK:
+        _MEM_CACHE[key] = val
+        _MEM_CACHE.move_to_end(key)
+        while len(_MEM_CACHE) > _MEM_CACHE_MAX:
+            _MEM_CACHE.popitem(last=False)
+    set_json(key, val, ttl_seconds=_XLATE_TTL_SECONDS)  # inert without Redis
 
 
 def _parse_numbered(reply: str, count: int) -> dict[int, str]:
@@ -192,7 +229,7 @@ def _warm(texts: list[str], lang: str) -> None:
             translated = _llm_translate_batch(chunk, lang)
             for source, value in translated.items():
                 if value:
-                    set_json(_cache_key(source, lang), value, ttl_seconds=_XLATE_TTL_SECONDS)
+                    _cache_put(_cache_key(source, lang), value)
     finally:
         with _inflight_lock:
             for text in texts:
@@ -242,8 +279,8 @@ def localize_texts(texts: list[Any], lang: str) -> list[Any]:
         if hit is not None:
             result[i] = hit
             continue
-        cached = get_json(_cache_key(text, lang))
-        if isinstance(cached, str):
+        cached = _cache_get(_cache_key(text, lang))
+        if cached is not None:
             result[i] = cached
             continue
         # Cache miss: keep the English original now, warm it for next time.
