@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import os
 import re
 import threading
 from typing import Any, Optional
@@ -40,6 +41,24 @@ from analysis_agents import LANG_NAMES, normalize_lang
 from cache import get_json, set_json
 from llm_client import generate_text, llm_configured
 from market_i18n_data import MARKET_PHRASES
+
+
+def _warm_enabled() -> bool:
+    """Whether cache-miss external strings (Tier C) get LLM-translated at all.
+
+    OFF by default, and deliberately so: the only model this platform has is a
+    single, slow, self-hosted gpt-oss that is ALSO the SPOF for every live
+    trading decision. Translating the news lane's ~50 headlines/summaries means
+    a steady stream of ~18s model calls that both (a) rarely finish before the
+    snapshot rotates and (b) compete with the trading daemon for the one
+    resource that must never wait. So Tier C stays dark until a dedicated
+    translation model exists; set MARKET_I18N_LLM_WARM=1 to turn it on there.
+
+    Tiers A (enum labels, frontend) and B (our own catalogue) need no model and
+    are always on — they cover the platform's entire own vocabulary. Only
+    external, model-authored free text (Alpha Vantage headlines, the AI stock
+    summary) is gated here, and it degrades to its English original."""
+    return os.getenv("MARKET_I18N_LLM_WARM", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 # ── catalogue index (exact + interpolated), built once at import ────────────
 _EXACT: dict[str, dict[str, str]] = {}
@@ -212,7 +231,9 @@ def localize_texts(texts: list[Any], lang: str) -> list[Any]:
             seen.add(text)
             misses.append(text)
 
-    if misses:
+    # Warming is gated: without a dedicated translation model, external free
+    # text simply stays English rather than loading the trading SPOF.
+    if misses and _warm_enabled():
         _schedule_warm(misses, lang)
     return result
 
