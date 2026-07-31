@@ -44,6 +44,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+import order_intent
 import trading_runs
 from database import begin_write_transaction, get_db_connection
 from order_params import (
@@ -2462,23 +2463,48 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
            '(e.g. you are bearish and can only go long) — it hands the slot '
            'back now rather than after several refused orders.\n'
            if not pos_qty else '')
+        # Plan 17 (2026-07-30): the intent. The verb space cannot say "bank
+        # half" — exit size was max_bet-derived and never referenced the
+        # position, so the fraction reduced was a residue, not a decision.
+        # size_frac's BASIS SWITCHES WITH THE INTENT, and the prompt says so
+        # in the desk's own terms because that asymmetry is the entire point.
+        + ('Also state your order as an intent: open|add grow exposure '
+           '(size_frac = fraction of your max bet); reduce|close bank it '
+           '(size_frac = fraction of WHAT YOU HOLD — 0.5 means half your '
+           'position; banking is a first-class action, not the absence of an '
+           'add); flip = you were wrong, reverse; hold = nothing. Or arm: act '
+           'later without waiting for your next cycle, e.g. {"if":'
+           '"price_above","level":27800,"then":"reduce","size_frac":0.5} — '
+           'prefer arm over hold whenever you can name the level that would '
+           'change your mind, because your next cycle is far away and the '
+           'market is not.\n'
+           if pos_qty else '')
         + 'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold"'
         + ('|"retire"' if not pos_qty else '') + ', '
         '"confidence": 0.0-1.0, "scores": {"thesis_alignment": 0.0-1.0, '
         '"momentum_quality": 0.0-1.0, "entry_quality": 0.0-1.0, '
         '"risk_context": 0.0-1.0}, '
         '"stop_pct": number|null, "target_pct": number|null, '
-        '"report": "<one sentence>"}'
+        + ('"order_intent": {"intent": "open"|"add"|"reduce"|"close"|"flip"|'
+           '"hold"|"arm", "size_frac": 0.0-1.0, "arm": {"if": "price_below"|'
+           '"price_above", "level": number, "then": "reduce"|"close", '
+           '"size_frac": 0.0-1.0}|null}, '
+           if pos_qty else '')
+        + '"report": "<one sentence>"}'
     )
     text = None
     try:
         from llm_client import generate_text
-        text = generate_text(prompt, max_tokens=200, temperature=0.2, tier="decision")
+        # 200 was the budget before the intent object joined the payload; a
+        # cut-off JSON is not a smaller answer, it is a lost one.
+        text = generate_text(prompt, max_tokens=280 if pos_qty else 200,
+                             temperature=0.2, tier="decision")
     except Exception:  # noqa: BLE001
         text = None
     action, confidence, report = "hold", 0.0, "light cycle: no LLM verdict"
     scores: Optional[dict] = None
     order_block: Optional[dict] = None
+    intent_block: Optional[dict] = None
     if text:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if m:
@@ -2507,6 +2533,14 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                         if obj.get(k) is not None}
                 if flat:
                     order_block = flat
+                # Plan 17: the intent rides beside the verb. Extracted here
+                # because this parser builds the decision from named keys —
+                # an unextracted key is silently dropped, which is exactly
+                # how the full path's extra keys survive and this one's
+                # would not.
+                oi = obj.get("order_intent")
+                if isinstance(oi, dict):
+                    intent_block = oi
             except (ValueError, TypeError):
                 pass
     # `order_eligible` is now True: the light prompt DOES ask for a bracket
@@ -2517,6 +2551,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                 "entry": entry, "report": report, "scores": scores}
     if order_block:
         decision["order"] = order_block
+    if intent_block:
+        decision["order_intent"] = intent_block
     return {"decision": decision,
             "analysts": {}}
 
@@ -2866,9 +2902,75 @@ def run_cycle(run_id: int) -> dict:
                                       "reason": result["skip_reason"]})
                 return result
 
+        # Plan 17: Order Intent (2026-07-30). The desk states WHAT it wants
+        # (open/add/reduce/close/flip/hold/arm) and a total function compiles
+        # it to the ledger's four verbs. Journalled beside the decision on
+        # every cycle in shadow AND apply — the paired reduce measurement in
+        # the plan doc's §8 is built from these events. Placed AFTER the
+        # futures remap on purpose: an intent exit only compiles sell against
+        # a long / cover against a short, which the remap never touches, so
+        # the two cannot fight over the verb.
+        intent_exit = None
+        oi_mode = order_intent.intent_mode()
+        if oi_mode != "off":
+            oi_parsed = order_intent.parse(decision.get("order_intent"))
+            if oi_parsed is not None:
+                oi_pos = _position_quantity(run["agent_id"], run["market"],
+                                            run["symbol"], run["id"])
+                oi_lev = max(1.0, float(cfg.get("leverage") or 1.0))
+                oi_railed = order_intent.rail(
+                    oi_parsed,
+                    position_notional_usd=abs(oi_pos) * float(entry or 0))
+                compiled = order_intent.compile_intent(
+                    oi_railed["intent"], oi_railed.get("size_frac"),
+                    is_futures=trading_runs.is_futures_book(
+                        run.get("market"), run.get("market_type")),
+                    position_qty=oi_pos,
+                    bull=order_intent.bull_from_action(action))
+                # intent_size_usd on a position-basis intent is what the desk
+                # ASKED to shed; machine_size_usd is what the legacy path is
+                # about to size from the budget. The gap between them, priced
+                # at this mark, is the shadow dataset.
+                intent_size = None
+                if oi_railed.get("size_basis") == "position" and oi_pos:
+                    intent_size = order_intent.exit_size_usd(
+                        oi_railed.get("size_frac") or 0,
+                        position_qty=oi_pos, entry=float(entry or 0),
+                        leverage=oi_lev)
+                emit_telemetry_event(
+                    run_id, "order_intent",
+                    {"cycle": seq, "mode": oi_mode,
+                     "intent": oi_railed["intent"],
+                     "size_frac": oi_railed.get("size_frac"),
+                     "size_basis": oi_railed.get("size_basis"),
+                     "railed": oi_railed.get("railed") or {},
+                     "arm": oi_railed.get("arm"),
+                     "why": oi_railed.get("why"),
+                     "compiled": compiled,
+                     "position_qty": oi_pos,
+                     "legacy_action": action,
+                     "intent_size_usd": (round(intent_size, 4)
+                                         if intent_size is not None else None),
+                     "machine_size_usd": cfg.get("max_bet_usd")})
+                # Phase 1 apply: exits only. reduce/close compile to a single
+                # position-basis step; everything else (open/add/flip/arm)
+                # stays journal-only until its own phase — gated on shadow
+                # evidence, not on this code existing.
+                if oi_mode == "apply" \
+                        and oi_railed["intent"] in ("reduce", "close") \
+                        and compiled["steps"]:
+                    step = compiled["steps"][0]
+                    action = step["verb"]
+                    intent_exit = {"size_frac": step["size_frac"],
+                                   "position_qty": oi_pos,
+                                   "intent": oi_railed["intent"]}
+
         # Plan 14 §7: same-direction re-entry block after a losing close
         # (whipsaw/fee-churn guard) — deterministic, before the gates.
-        if adapt_state is not None and \
+        # An intent exit is exempt: it sheds risk, and the whipsaw guard
+        # exists to stop re-ENTRIES (Plan 17 §5: a rail that refuses a
+        # reduction IS the risk).
+        if intent_exit is None and adapt_state is not None and \
                 run_feedback.blocked_reentry(adapt_state, action):
             result["skip_reason"] = "adapt re-entry blocked after losing close"
             emit_telemetry_event(run_id, "gate_skip",
@@ -2903,8 +3005,12 @@ def run_cycle(run_id: int) -> dict:
         # recent distribution rather than a fixed threshold the quantized
         # scalar barely reaches. On success the risk gate enforces only the low
         # absolute floor, because rank has already done the discriminating.
-        conf_skip, min_confidence = _conf_percentile_skip(
-            run["agent_id"], gate_confidence, min_confidence)
+        # Plan 17 exit-gate split: a confidence gate on an exit refuses the
+        # shedding of risk, which the asymmetry forbids — `close` must pass
+        # every gate configuration. Entry stack applies to opens only.
+        conf_skip, min_confidence = (None, min_confidence) if intent_exit \
+            else _conf_percentile_skip(
+                run["agent_id"], gate_confidence, min_confidence)
         if conf_skip:
             result["skip_reason"] = conf_skip
             emit_telemetry_event(run_id, "gate_skip",
@@ -2940,6 +3046,12 @@ def run_cycle(run_id: int) -> dict:
         # "short" must be here: by this point a futures sell with no long has
         # already been remapped to it above, so gating on ("buy", "sell") alone
         # skipped the guard entirely for every short position.
+        # Plan 17 §9 worried this guard would see intent reductions; it cannot.
+        # An intent exit compiles to `sell` only against a LONG (the guard's
+        # own qty/action matrix reads that as a reduce and never limits it)
+        # and to `cover` against a short (not in this action list at all). The
+        # ambiguity §9 names — a futures short's `sell` mis-read as an open —
+        # is resolved by compilation, not by an exemption here.
         if action in ("buy", "sell", "short"):
             add_skip = _add_limit_skip(
                 run, cfg, action,
@@ -2966,7 +3078,7 @@ def run_cycle(run_id: int) -> dict:
             # Leverage first: the reduce basis below divides by it.
             if order_params.leverage is not None:
                 lev = max(1.0, min(lev, float(order_params.leverage)))
-            if order_params.size_frac is not None:
+            if order_params.size_frac is not None and intent_exit is None:
                 # Basis switches with the intent — see _order_size_usd. The
                 # rail clamp (RAILS 0.05..1.00) is the same on either basis.
                 held_now = 0.0
@@ -2977,8 +3089,23 @@ def run_cycle(run_id: int) -> dict:
                     action, order_params.size_frac,
                     max_bet_usd=float(cfg.get("max_bet_usd") or 0),
                     held_qty=held_now, entry=float(entry or 0), leverage=lev)
+        # Plan 17 apply: an intent exit is sized from the POSITION, full stop.
+        # exit_size_usd never sees max_bet_usd — that derivation is the §2
+        # defect and carries a permanent test tripwire. Takes precedence over
+        # order_params sizing (guarded above) and over conviction scaling:
+        # the desk said how much of its book to shed, and a scaler that
+        # shrinks a reduction is a rail pointing the forbidden direction.
+        if intent_exit is not None:
+            size_usd = order_intent.exit_size_usd(
+                intent_exit["size_frac"],
+                position_qty=intent_exit["position_qty"],
+                entry=float(entry or 0), leverage=lev)
+        # Intent exits carry no confidence floor into the gate: a desk sure
+        # enough to bank is not required to be sure enough to enter, and a
+        # refused flatten is the failure mode the asymmetry exists to forbid.
+        # Market-open and the risk engine's own exit handling still apply.
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
-                    "min_confidence": min_confidence,
+                    "min_confidence": 0.0 if intent_exit else min_confidence,
                     "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, gate_confidence, entry,

@@ -534,7 +534,21 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         '"trail_arm_pct":number (%% profit before the trailing lock arms),'
         '"trail_give":0.05-0.40 (fraction of peak profit you will surrender),'
         '"horizon_hours":number,"max_adds":0-3,'
-        '"why":"one sentence tying these numbers to the evidence above"}}\n\n'
+        '"why":"one sentence tying these numbers to the evidence above"},'
+        # Plan 17 (2026-07-30): the Order Intent. Both decision paths get it —
+        # the E1 router escalates HERE for position reasons, and PR #125
+        # already had to fix a one-path-only blind spot once.
+        '"order_intent":{"intent":"open|add|reduce|close|flip|hold|arm",'
+        '"size_frac":0.0-1.0 (open/add: fraction of the max bet; reduce/close: '
+        'fraction of WHAT YOU HOLD — 0.5 means half your position),'
+        '"arm":{"if":"price_below|price_above","level":number,'
+        '"then":"reduce|close","size_frac":0.0-1.0}|null,'
+        '"why":"one sentence"}}\n\n'
+        "For the intent: banking is a first-class action, not merely the "
+        "absence of an add. flip means you were wrong — reverse. Prefer arm "
+        "over hold whenever you can name the level that would change your "
+        "mind: it acts at machine latency instead of waiting for your next "
+        "cycle, and the platform will never second-guess a reduction.\n\n"
         "For the order block: set defer=true unless the analysts give you a "
         "concrete reason to depart from a house default. When you do set the "
         "numbers, anchor the stop to measured volatility (ATR/sigma) and a "
