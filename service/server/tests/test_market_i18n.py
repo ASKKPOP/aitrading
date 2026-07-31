@@ -117,9 +117,10 @@ class CacheAndWarmTests(unittest.TestCase):
         self._set.start()
         self.addCleanup(self._get.stop)
         self.addCleanup(self._set.stop)
-        # Clear the process-global in-flight set between tests.
+        # Clear the process-global in-flight set + in-process cache between tests.
         with market_i18n._inflight_lock:
             market_i18n._inflight.clear()
+        market_i18n._MEM_CACHE.clear()
 
     def _seed(self, src, lang, value):
         self._store[market_i18n._cache_key(src, lang)] = value
@@ -183,6 +184,21 @@ class CacheAndWarmTests(unittest.TestCase):
             self.assertEqual(market_i18n.localize_text(src, "ko"), "애플 실적 호조, 주가 급등")
         sched.assert_not_called()
 
+    def test_warm_persists_in_process_without_kv(self):
+        # The prod condition: Redis-less, so get_json/set_json are no-ops. The
+        # in-process cache must still carry a warmed translation from the warm
+        # thread to a later request — otherwise Tier C produces nothing.
+        src = "Headline that needs translating"
+        with patch.object(market_i18n, "get_json", lambda k: None), \
+             patch.object(market_i18n, "set_json", lambda k, v, ttl_seconds=None: False), \
+             patch.object(market_i18n, "llm_configured", return_value=True), \
+             patch.object(market_i18n, "generate_text", return_value="1. 번역됨"):
+            market_i18n._warm([src], "ko")
+            with patch.object(market_i18n, "_schedule_warm") as sched:
+                out = market_i18n.localize_text(src, "ko")
+        self.assertEqual(out, "번역됨")   # served from the in-process cache
+        sched.assert_not_called()         # it was a hit, no re-warm
+
     def test_warm_salvages_dropped_line(self):
         a, b = "Headline alpha", "Headline bravo"
         # Model returns only line 2 — line 1 stays uncached (English), line 2 caches.
@@ -245,6 +261,7 @@ class PayloadLocalizerTests(unittest.TestCase):
         # Warming is async in production; keep it out of these wiring tests.
         patch.object(market_i18n, "_schedule_warm", lambda texts, lang: None).start()
         self.addCleanup(patch.stopall)
+        market_i18n._MEM_CACHE.clear()
 
     def _seed(self, src, lang, value):
         self._store[market_i18n._cache_key(src, lang)] = value
