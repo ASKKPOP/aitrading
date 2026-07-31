@@ -46,7 +46,13 @@ def notify_admins(subject: str, body: str) -> dict[str, list[str]]:
     if email:
         try:
             from alerts import _send_email
-            if _send_email(email, f"[Sooppiy] {subject}", body):
+            html = None
+            try:
+                from alert_email import wrap_basic_email
+                html = wrap_basic_email(subject, body, "en")
+            except Exception:  # noqa: BLE001
+                html = None
+            if _send_email(email, f"[Sooppiy] {subject}", body, html=html):
                 sent.append("email")
         except Exception as exc:  # noqa: BLE001
             logger.warning("admin alert email failed: %s", exc)

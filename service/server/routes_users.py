@@ -295,7 +295,8 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         if account_exists:
             lang = row['lang'] or 'en'
-            if not send_verification_code_email(data.email, code, lang):
+            if not send_verification_code_email(data.email, code, lang,
+                                                purpose='reset'):
                 # Fallback: log code when Resend is not configured (local dev).
                 _logger.info('[Email] Password-reset code for %s: %s', data.email, code)
         return {'success': True, 'message': 'If an account exists, a code was sent'}

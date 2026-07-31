@@ -280,8 +280,17 @@ def _send_external(user_id: int, category: str, title: str, body: str,
         conn.close()
 
     if switches.get("email") and email:
+        # Branded shell around the already-localized title/body; a wrapper
+        # failure falls back to the plain text — never blocks the send.
+        html = None
         try:
-            if _send_email(email, f"[Sooppiy] {title}", body):
+            from alert_email import wrap_basic_email
+            html = wrap_basic_email(title, body, user_lang(user_id))
+        except Exception:  # noqa: BLE001
+            logger.warning("notification email wrap failed (user %s)", user_id,
+                           exc_info=True)
+        try:
+            if _send_email(email, f"[Sooppiy] {title}", body, html=html):
                 sent.append("email")
         except Exception as exc:  # noqa: BLE001
             logger.warning("notification email failed (user %s): %s", user_id, exc)
