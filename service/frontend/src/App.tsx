@@ -562,7 +562,10 @@ function AppRouter({
             wide children (e.g. the positions tables) push past the viewport and
             get clipped by .main-content instead of scrolling inside their own
             overflow container. */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Content column: centered, capped at 1400px on wide screens so pages
+            don't hug the left edge with dead space on the right. Auto margins
+            absorb the flex free space once the cap is hit. */}
+        <div style={{ flex: 1, minWidth: 0, maxWidth: 1400, width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <HamburgerButton isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(o => !o)} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
