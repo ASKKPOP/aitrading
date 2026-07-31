@@ -10,14 +10,22 @@ Two tiers of free text:
   labels, the stock factor phrases) resolve through the deterministic
   MARKET_PHRASES catalogue — no model call, no drift, native-review quality.
 * External or model-authored strings (Alpha Vantage headlines, the LLM stock
-  summary) have no catalogue entry, so they fall through to a cached LLM
-  translation. Each unique string is translated once per language and reused
-  across users and snapshot refreshes via the shared KV cache. A failed,
-  dropped, or unconfigured translation falls back to the English original
-  rather than blocking the payload — English is always the safe answer.
+  summary) have no catalogue entry, so they use a cached LLM translation. The
+  request path is CACHE-ONLY — it never makes a blocking model call. A cache
+  miss returns the English original immediately and schedules a background
+  thread to translate + populate the cache, so the same string localizes on a
+  later request (the page polls every 60s). Each unique string is translated
+  once per language and reused across users and snapshot refreshes.
 
-Everything here is fail-soft: no path raises. Localizing a dashboard must never
-be able to 500 a market-data endpoint.
+  This matters because the model is remote and slow: translating a dozen news
+  headlines inline once hung the /financial-events news endpoint past the
+  gateway timeout, and Promise.all on the frontend turned that into a blank
+  board for every non-English viewer. English-now / localized-soon keeps the
+  endpoint fast and the board always populated.
+
+Everything here is fail-soft: no path raises, and no path blocks on the model.
+Localizing a dashboard must never be able to 500 — or hang — a market-data
+endpoint.
 """
 
 from __future__ import annotations
@@ -25,6 +33,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import re
+import threading
 from typing import Any, Optional
 
 from analysis_agents import LANG_NAMES, normalize_lang
@@ -128,18 +137,65 @@ def _llm_translate_batch(texts: list[str], lang: str) -> dict[str, str]:
     return out
 
 
+# Keys whose translation is being warmed right now, so concurrent requests
+# (and the 60s poll) don't spawn a second thread for the same string.
+_inflight: set[str] = set()
+_inflight_lock = threading.Lock()
+
+
+def _warm(texts: list[str], lang: str) -> None:
+    """Translate a set of cache-miss strings and populate the KV cache. Runs off
+    the request path (a background thread), so its latency is invisible to the
+    caller. Always clears the in-flight marks it set, even on failure."""
+    try:
+        for start in range(0, len(texts), _BATCH):
+            chunk = texts[start:start + _BATCH]
+            translated = _llm_translate_batch(chunk, lang)
+            for source, value in translated.items():
+                if value:
+                    set_json(_cache_key(source, lang), value, ttl_seconds=_XLATE_TTL_SECONDS)
+    finally:
+        with _inflight_lock:
+            for text in texts:
+                _inflight.discard(_cache_key(text, lang))
+
+
+def _schedule_warm(texts: list[str], lang: str) -> None:
+    """Claim the not-yet-in-flight misses and warm them in a daemon thread.
+    Split out so tests can drive warming synchronously."""
+    claimed: list[str] = []
+    with _inflight_lock:
+        for text in texts:
+            key = _cache_key(text, lang)
+            if key not in _inflight:
+                _inflight.add(key)
+                claimed.append(text)
+    if not claimed or not llm_configured():
+        # Nothing to do, or no model — release any marks we optimistically set.
+        if claimed:
+            with _inflight_lock:
+                for text in claimed:
+                    _inflight.discard(_cache_key(text, lang))
+        return
+    threading.Thread(target=_warm, args=(claimed, lang), daemon=True).start()
+
+
 def localize_texts(texts: list[Any], lang: str) -> list[Any]:
     """Localize a list of strings, aligned 1:1 with the input.
 
-    Non-string / empty entries pass through untouched. English is a no-op.
+    Cache-only and non-blocking: catalogue hits and cached translations resolve
+    inline; anything else returns the English original and is queued for a
+    background translation that a later request will pick up from cache. Never
+    calls the model on the request path. Non-string / empty entries pass
+    through untouched; English is a no-op.
     """
     lang = normalize_lang(lang)
     if lang == "en":
         return list(texts)
 
     result: list[Any] = list(texts)
-    # Collect the strings that need the LLM (catalogue miss, cache miss).
-    pending: dict[str, list[int]] = {}
+    misses: list[str] = []  # unique cache-miss strings to warm
+    seen: set[str] = set()
     for i, text in enumerate(texts):
         if not isinstance(text, str) or not text.strip():
             continue
@@ -151,20 +207,13 @@ def localize_texts(texts: list[Any], lang: str) -> list[Any]:
         if isinstance(cached, str):
             result[i] = cached
             continue
-        pending.setdefault(text, []).append(i)
+        # Cache miss: keep the English original now, warm it for next time.
+        if text not in seen:
+            seen.add(text)
+            misses.append(text)
 
-    if pending:
-        unique = list(pending.keys())
-        for start in range(0, len(unique), _BATCH):
-            chunk = unique[start:start + _BATCH]
-            translated = _llm_translate_batch(chunk, lang)
-            for source in chunk:
-                value = translated.get(source)
-                if not value:
-                    continue  # keep English original; retry on a later request
-                set_json(_cache_key(source, lang), value, ttl_seconds=_XLATE_TTL_SECONDS)
-                for idx in pending[source]:
-                    result[idx] = value
+    if misses:
+        _schedule_warm(misses, lang)
     return result
 
 
