@@ -142,7 +142,13 @@ class BuildAnalysisTests(unittest.TestCase):
              patch("crypto_feed.fetch_ticker",
                    return_value={"symbol": "BTCUSDT", "last_price": str(swap)}), \
              patch("crypto_feed.fetch_spot_ticker",
-                   return_value={"symbol": "BTCUSDT", "last_price": float(spot)}):
+                   return_value={"symbol": "BTCUSDT", "last_price": float(spot)}), \
+             patch("crypto_feed.fetch_open_interest",
+                   return_value={"symbol": "BTCUSDT", "open_interest": 1000.0,
+                                 "open_interest_ccy": 1000.0, "ts": None}), \
+             patch("crypto_feed.fetch_long_short_ratio",
+                   return_value={"symbol": "BTC", "long_short_ratio": 1.0,
+                                 "ts": None}):
             return build_crypto_analysis("BTC")
 
     def test_long_window_fields_populated_with_400_closes(self):
@@ -220,7 +226,9 @@ class BuildAnalysisTests(unittest.TestCase):
         with patch("crypto_feed.fetch_candles", side_effect=fake_candles), \
              patch("crypto_feed.fetch_funding_rate", side_effect=RuntimeError("down")), \
              patch("crypto_feed.fetch_ticker", side_effect=RuntimeError("down")), \
-             patch("crypto_feed.fetch_spot_ticker", side_effect=RuntimeError("down")):
+             patch("crypto_feed.fetch_spot_ticker", side_effect=RuntimeError("down")), \
+             patch("crypto_feed.fetch_open_interest", side_effect=RuntimeError("down")), \
+             patch("crypto_feed.fetch_long_short_ratio", side_effect=RuntimeError("down")):
             analysis = build_crypto_analysis("BTC")
         self.assertIsNotNone(analysis["rsi_14"])       # core path still works
         self.assertIsNone(analysis["funding_rate"])    # missing inputs stay None
