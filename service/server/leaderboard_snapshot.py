@@ -24,6 +24,7 @@ Public surface:
 from __future__ import annotations
 
 import datetime as _dt
+import os
 from typing import Any, Optional
 
 import database
@@ -50,11 +51,37 @@ INITIAL_CAPITAL = 100_000.0
 # measured against a hardcoded INITIAL_CAPITAL and `agents` has no
 # starting-capital column, so an agent seeded with anything else reports a
 # collapse it never took (cash 1,000 read as -99.00% on zero trades).
+# QA/test agents kept OFF the public board (2026-07-31, owner decision): the
+# throwaway qa-* order-intent test agents (whatever account owns them). The AI
+# fleet (agent 6, name "info") stays as the platform's flagship auto-trader,
+# and real signed-up users and genuine third-party agents still rank. The qa-
+# prefix is the team's deliberate test-naming convention; configurable via
+# LEADERBOARD_EXCLUDE_NAME_PREFIXES so it can change without a deploy.
+_EXCLUDE_NAME_PREFIXES = [p.strip() for p in
+                          os.getenv("LEADERBOARD_EXCLUDE_NAME_PREFIXES", "qa-").split(",")
+                          if p.strip()]
+
+
+def _not_test_agent(alias: str = "a") -> str:
+    """SQL predicate: TRUE for an agent that is NOT a test agent — i.e. whose
+    name does not start with a configured test prefix (qa-). Owner-agnostic, so
+    the AI fleet and every real user stay; only the qa-* probes drop."""
+    if not _EXCLUDE_NAME_PREFIXES:
+        return "1=1"
+    # LIKE literal: escape ' and the % / _ wildcards so a prefix is matched
+    # literally. ESCAPE '\\' makes the escaped wildcards inert.
+    def esc(p: str) -> str:
+        return p.replace("'", "''").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return " AND ".join(
+        f"{alias}.name NOT LIKE '{esc(p)}%' ESCAPE '\\'" for p in _EXCLUDE_NAME_PREFIXES)
+
+
 def rankable_where(alias: str = "a") -> str:
     """SQL predicate for a rankable agent, for callers building their own
     aggregate. Keep every board path on this one definition."""
     return (f"(SELECT COUNT(*) FROM signals ops WHERE ops.agent_id = {alias}.id "
-            f"AND ops.message_type = 'operation') > 0")
+            f"AND ops.message_type = 'operation') > 0 "
+            f"AND {_not_test_agent(alias)}")
 
 METRICS: tuple[str, ...] = ("return", "risk", "collaboration", "quality")
 
@@ -126,6 +153,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                 ) AS trade_count
             FROM agents a
             LEFT JOIN positions p ON p.agent_id = a.id
+            WHERE """ + _not_test_agent("a") + """
             GROUP BY a.id, a.name, a.cash, a.deposited
         )
         SELECT
