@@ -12,8 +12,12 @@ import { TRADE_FEE_RATE, fetchFeeRate, fmtQty, fmtUsd, pair, placeOrder, pnlColo
 // market orders fill instantly at the live price; TP/SL is registered on the
 // position and enforced by the server-side risk watcher.
 // mode='spot'    → buy/sell longs only (1x, like ga spot)
-// mode='futures' → long/short with leverage sizing + approximate liq preview
+// mode='futures' → long/short with real isolated margin: the server debits
+//                  notional/L at open, returns the escrow at close, and the
+//                  liquidation-defense daemon enforces the liq line.
 
+// Mirrors the server's synthetic model: liquidation_price(entry, L, is_long,
+// mmr) with MMR_BY_MARKET['crypto'] = 0.005 (liquidation.py).
 const MAINTENANCE_MARGIN_RATE = 0.005
 const SLIPPAGE_BUFFER = 0.001 // ga ALLOC_RESERVE tail
 const mono: any = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontVariantNumeric: 'tabular-nums' }
@@ -103,7 +107,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     quantity: tr(language, { ko: '수량', en: 'Quantity', ja: '数量', th: 'จำนวน', vi: 'Số lượng', id: 'Kuantitas' }),
     fee: tr(language, { ko: '수수료', en: 'Fee', ja: '手数料', th: 'ค่าธรรมเนียม', vi: 'Phí', id: 'Biaya' }),
     margin: tr(language, { ko: '증거금', en: 'Margin', ja: '証拠金', th: 'มาร์จิน', vi: 'Ký quỹ', id: 'Margin' }),
-    liqApprox: tr(language, { ko: '청산가 (근사치)', en: 'Liq. price (approx)', ja: '清算価格(概算)', th: 'ราคาล้างพอร์ต (ประมาณ)', vi: 'Giá thanh lý (xấp xỉ)', id: 'Harga likuidasi (perkiraan)' }),
+    liqPrice: tr(language, { ko: '청산가', en: 'Liq. price', ja: '清算価格', th: 'ราคาล้างพอร์ต', vi: 'Giá thanh lý', id: 'Harga likuidasi' }),
     lev: tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' }),
     tp: tr(language, { ko: '이익 실현 (TP)', en: 'Take profit (TP)', ja: '利確 (TP)', th: 'ทำกำไร (TP)', vi: 'Chốt lời (TP)', id: 'Take profit (TP)' }),
     sl: tr(language, { ko: '손절 (SL)', en: 'Stop loss (SL)', ja: '損切り (SL)', th: 'ตัดขาดทุน (SL)', vi: 'Cắt lỗ (SL)', id: 'Stop loss (SL)' }),
@@ -126,7 +130,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     editTpsl: tr(language, { ko: 'TP/SL 수정', en: 'Edit TP/SL', ja: 'TP/SL編集', th: 'แก้ไข TP/SL', vi: 'Sửa TP/SL', id: 'Edit TP/SL' }),
     clearHint: tr(language, { ko: '비워두면 해제됩니다.', en: 'Leave blank to clear.', ja: '空欄で解除。', th: 'เว้นว่างเพื่อล้าง', vi: 'Để trống để xóa.', id: 'Kosongkan untuk menghapus.' }),
     fillNote: tr(language, { ko: '시장가 주문은 실시간 가격으로 즉시 체결됩니다 (모의 거래).', en: 'Market orders fill instantly at the live price (paper trading).', ja: '成行注文は現在価格で即時約定します（模擬取引）。', th: 'คำสั่งตลาดจะเติมทันทีที่ราคาสด (เทรดจำลอง)', vi: 'Lệnh thị trường khớp ngay theo giá thật (mô phỏng).', id: 'Order pasar tereksekusi seketika pada harga langsung (paper trading).' }),
-    levNote: tr(language, { ko: '레버리지는 포지션 규모를 결정하며, 이 시뮬레이터에서 손익은 선형이고 청산가는 근사치입니다.', en: 'Leverage sizes the position; PnL is linear and liq is approximate in this simulator.', ja: 'レバレッジはサイズにのみ影響（清算価格は概算）。', th: 'เลเวอเรจกำหนดขนาดสถานะ ราคาล้างพอร์ตเป็นค่าประมาณ', vi: 'Đòn bẩy chỉ định cỡ vị thế; giá thanh lý là xấp xỉ.', id: 'Leverage menentukan ukuran posisi; laba rugi bersifat linear dan harga likuidasi hanya perkiraan dalam simulator ini.' }),
+    levNote: tr(language, { ko: '격리 마진: 증거금 = 명목가치 ÷ 레버리지만 차감되며, 청산가는 서버가 실제로 감시·집행합니다.', en: 'Isolated margin: only notional ÷ leverage is debited; the liquidation price is monitored and enforced server-side.', ja: '分離マージン: 証拠金＝想定元本÷レバレッジのみ差し引かれ、清算価格はサーバーが監視・執行します。', th: 'มาร์จินแยก: หักเฉพาะมูลค่า ÷ เลเวอเรจ ราคาล้างพอร์ตถูกเฝ้าระวังและบังคับใช้ฝั่งเซิร์ฟเวอร์', vi: 'Ký quỹ cô lập: chỉ trừ giá trị danh nghĩa ÷ đòn bẩy; giá thanh lý được máy chủ giám sát và thực thi.', id: 'Margin terisolasi: hanya nilai nosional ÷ leverage yang didebit; harga likuidasi dipantau dan ditegakkan di sisi server.' }),
     login: tr(language, { ko: '거래하려면 로그인하세요.', en: 'Log in to trade.', ja: 'ログインしてください。', th: 'เข้าสู่ระบบเพื่อเทรด', vi: 'Đăng nhập để giao dịch.', id: 'Masuk untuk bertransaksi.' }),
     change: tr(language, { ko: '24시간 변동', en: '24h change', ja: '24h変動', th: 'เปลี่ยน 24ชม.', vi: '24h', id: 'Perubahan 24 jam' }),
     markPrice: tr(language, { ko: '표시가', en: 'Mark', ja: 'マーク', th: 'Mark', vi: 'Mark', id: 'Harga pasar' }),
@@ -264,7 +268,9 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   const notional = basisPrice ? qtyN * basisPrice : 0
   const fee = notional * feeRate
   const marginReq = isSpot ? notional : notional / leverage
-  const liqLong = price ? price * (1 - (1 / leverage - MAINTENANCE_MARGIN_RATE)) : null
+  // Same geometry as liquidation.py: entry × (1 ∓ (1/L − mmr)). A 1× long
+  // cannot liquidate (nothing to wipe); a 1× short still can.
+  const liqLong = price && leverage > 1 ? price * (1 - (1 / leverage - MAINTENANCE_MARGIN_RATE)) : null
   const liqShort = price ? price * (1 + (1 / leverage - MAINTENANCE_MARGIN_RATE)) : null
 
   // ga: TP/SL sanity is side-aware and anchored to the price the order will
@@ -313,7 +319,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   async function submit(action: 'buy' | 'sell' | 'short' | 'cover') {
     if (!token || !price || qtyN <= 0) return
     setBusy(true); setMsg(null)
-    const r = await placeOrder(token, { market: 'crypto', action, symbol, price, quantity: qtyN, content: `${mode} terminal` })
+    const r = await placeOrder(token, { market: 'crypto', action, symbol, price, quantity: qtyN, content: `${mode} terminal`, ...(isSpot ? {} : { leverage }) })
     if (r.ok && (action === 'buy' || action === 'short')) await applyTpslToNewPosition(action)
     setMsg(m => (m && !m.ok) ? m : { ok: r.ok, text: r.ok ? `✓ ${r.message} #${r.signalId}` : r.message })
     setBusy(false); setConfirm(null)
@@ -579,9 +585,9 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                 <span>{T.lev}</span><b style={mono}>{leverage}×</b>
               </div>
-              <input type="range" min={1} max={100} value={leverage} onChange={e => { const lv = +e.target.value; setLeverage(lv); if (pct) applyPct(pct, lv) }} style={{ width: '100%' }} />
+              <input type="range" min={1} max={10} value={leverage} onChange={e => { const lv = +e.target.value; setLeverage(lv); if (pct) applyPct(pct, lv) }} style={{ width: '100%' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary,#8a8073)' }}>
-                <span>1×</span><span>25×</span><span>50×</span><span>75×</span><span>100×</span>
+                <span>1×</span><span>3×</span><span>5×</span><span>8×</span><span>10×</span>
               </div>
             </div>
           )}
@@ -616,7 +622,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
           </div>
           {!isSpot && qtyN > 0 && (
             <div style={{ background: 'rgba(201,162,39,0.10)', border: '1px solid rgba(201,162,39,0.45)', borderRadius: 8, padding: '8px 10px', fontSize: 12, margin: '8px 0', ...mono }}>
-              {T.liqApprox}: <b style={{ color: UP }}>L {liqLong ? fmtUsd(liqLong, 1) : '—'}</b> · <b style={{ color: DOWN }}>S {liqShort ? fmtUsd(liqShort, 1) : '—'}</b>
+              {T.liqPrice}: <b style={{ color: UP }}>L {liqLong ? fmtUsd(liqLong, 1) : '—'}</b> · <b style={{ color: DOWN }}>S {liqShort ? fmtUsd(liqShort, 1) : '—'}</b>
             </div>
           )}
 
@@ -816,7 +822,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
             {!isSpot && tpInput && <InfoRow label="TP" value={fmtUsd(parseFloat(tpInput))} />}
             {!isSpot && slInput && <InfoRow label="SL" value={fmtUsd(parseFloat(slInput))} />}
             <InfoRow label={T.fee} value={`${fmtUsd(fee)} USDT`} />
-            <InfoRow label={T.totalCost} value={`${fmtUsd((confirm.action === 'buy' || confirm.action === 'short' ? notional : 0) + fee)} USDT`} strong />
+            <InfoRow label={T.totalCost} value={`${fmtUsd((confirm.action === 'buy' || confirm.action === 'short' ? marginReq : 0) + fee)} USDT`} strong />
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: 10, color: 'var(--text-secondary,#8a8073)', cursor: 'pointer' }}>
               <input type="checkbox" checked={skipConfirm} onChange={e => {
                 setSkipConfirm(e.target.checked)

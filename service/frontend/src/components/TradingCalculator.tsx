@@ -37,7 +37,7 @@ export function TradingCalculator({ language, livePrice, onClose }: {
     margin: tr(language, { ko: '증거금', en: 'Margin', ja: '証拠金', th: 'มาร์จิน', vi: 'Ký quỹ', id: 'Margin' }),
     pnl: tr(language, { ko: '손익', en: 'PnL', ja: '損益', th: 'กำไรขาดทุน', vi: 'PnL', id: 'PnL' }),
     roiOut: tr(language, { ko: '수익률 (ROI)', en: 'ROI', ja: 'ROI', th: 'ROI', vi: 'ROI', id: 'ROI' }),
-    liq: tr(language, { ko: '청산가 (근사치)', en: 'Liq. price (approx)', ja: '清算価格(概算)', th: 'ราคาล้างพอร์ต (ประมาณ)', vi: 'Giá thanh lý (xấp xỉ)', id: 'Harga likuidasi (perkiraan)' }),
+    liq: tr(language, { ko: '청산가', en: 'Liq. price', ja: '清算価格', th: 'ราคาล้างพอร์ต', vi: 'Giá thanh lý', id: 'Harga likuidasi' }),
     targetOut: tr(language, { ko: '목표 달성 가격', en: 'Price at target ROI', ja: '目標達成価格', th: 'ราคาที่ถึงเป้า', vi: 'Giá đạt mục tiêu', id: 'Harga saat ROI tercapai' }),
     note: tr(language, { ko: '수수료 제외 · 시뮬레이터의 선형 손익 모델 기준입니다.', en: 'Fees excluded · uses the simulator’s linear PnL model.', ja: '手数料抜き・シミュレーターの線形損益モデル。', th: 'ไม่รวมค่าธรรมเนียม · ใช้โมเดล PnL เชิงเส้นของซิมูเลเตอร์', vi: 'Chưa gồm phí · theo mô hình PnL tuyến tính của trình mô phỏng.', id: 'Belum termasuk biaya · memakai model PnL linear simulator.' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
@@ -85,7 +85,7 @@ export function TradingCalculator({ language, livePrice, onClose }: {
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
           <span>{T.lev}</span><b style={mono}>{leverage}×</b>
         </div>
-        <input type="range" min={1} max={100} value={leverage} onChange={e => setLeverage(+e.target.value)} style={{ width: '100%', marginBottom: 10 }} />
+        <input type="range" min={1} max={10} value={leverage} onChange={e => setLeverage(+e.target.value)} style={{ width: '100%', marginBottom: 10 }} />
 
         <label style={{ fontSize: 12, display: 'block', margin: '6px 0 4px' }}>{T.entry}</label>
         <input style={inp} value={entry} onChange={e => setEntry(e.target.value)} placeholder="0.00" />

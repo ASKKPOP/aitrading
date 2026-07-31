@@ -406,6 +406,13 @@ MESSAGES: dict[str, dict[str, str]] = {
         'vi': 'Google userinfo thất bại: {}',
         'id': 'Pengambilan userinfo Google gagal: {}',
     },
+    'Insufficient cash. Required: ${} (margin: ${} + fee: ${}), Available: ${}': {
+        'ko': '현금이 부족합니다. 필요 금액: ${0} (증거금: ${1} + 수수료: ${2}), 보유 금액: ${3}',
+        'ja': '現金が不足しています。必要額: ${0} (証拠金: ${1} + 手数料: ${2})、利用可能額: ${3}',
+        'th': 'เงินสดไม่เพียงพอ ต้องใช้: ${0} (มาร์จิน: ${1} + ค่าธรรมเนียม: ${2}), คงเหลือ: ${3}',
+        'vi': 'Không đủ tiền mặt. Cần: ${0} (ký quỹ: ${1} + phí: ${2}), Hiện có: ${3}',
+        'id': 'Kas tidak mencukupi. Dibutuhkan: ${0} (margin: ${1} + biaya: ${2}), Tersedia: ${3}',
+    },
     'Insufficient cash. Required: ${} (trade: ${} + fee: ${}), Available: ${}': {
         'ko': '현금이 부족합니다. 필요 금액: ${0} (거래: ${1} + 수수료: ${2}), 보유 금액: ${3}',
         'ja': '現金が不足しています。必要額: ${0} (取引: ${1} + 手数料: ${2})、利用可能額: ${3}',
@@ -769,6 +776,13 @@ MESSAGES: dict[str, dict[str, str]] = {
         'th': 'การเทรดจำลองของ Polymarket ไม่รองรับ short/cover ให้ใช้ buy/sell ของ outcome token แทน',
         'vi': 'Giao dịch giấy trên Polymarket không hỗ trợ short/cover. Hãy dùng buy/sell token kết quả thay thế.',
         'id': 'Paper trading Polymarket tidak mendukung short/cover. Gunakan buy/sell token hasil sebagai gantinya.',
+    },
+    'Polymarket paper trading does not support leverage.': {
+        'ko': 'Polymarket 모의 거래는 레버리지를 지원하지 않습니다.',
+        'ja': 'Polymarket のペーパートレードはレバレッジに対応していません。',
+        'th': 'การเทรดจำลองของ Polymarket ไม่รองรับเลเวอเรจ',
+        'vi': 'Giao dịch giấy trên Polymarket không hỗ trợ đòn bẩy.',
+        'id': 'Paper trading Polymarket tidak mendukung leverage.',
     },
     'Polymarket trades require an explicit token_id or outcome that resolves to a single outcome token.': {
         'ko': 'Polymarket 거래에는 단일 결과 토큰으로 확정되는 명시적인 token_id 또는 outcome이 필요합니다.',

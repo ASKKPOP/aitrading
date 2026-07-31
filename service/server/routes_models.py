@@ -60,6 +60,18 @@ class RealtimeSignalRequest(BaseModel):
     executed_at: str
     token_id: Optional[str] = None
     outcome: Optional[str] = None
+    leverage: float = 1.0
+
+    @field_validator('leverage')
+    @classmethod
+    def validate_leverage(cls, v: float) -> float:
+        # Isolated-margin leverage (same clamp as routes_runs): 1× … 10×.
+        # margin = notional/L; liquidation at entry×(1∓1/L). 0/None ⇒ 1×.
+        try:
+            v = float(v or 1.0)
+        except (TypeError, ValueError):
+            return 1.0
+        return max(1.0, min(10.0, v))
 
 
 class StrategyRequest(BaseModel):
