@@ -456,6 +456,14 @@ cycle is 45 minutes away and the market is not.</code></pre>
   <p><strong>과장하지 않을 것:</strong> 이 변경은 데스크의 판단을 <em>좋게</em> 만들지 않습니다. <em>표현 가능하게</em> 만듭니다. 811은 +$33.44를 지나 +$6.45에 청산했습니다 — 능력은 있고 캘리브레이션은 없는 상태입니다. 캘리브레이션은 별개 문제이며 이 변경의 효과로 주장하지 않겠습니다.</p>
 </div>
 
+<h2 id="status">Implementation status — 2026-07-30</h2>
+<ul>
+  <li><strong>Built (PR #136):</strong> <code>order_intent.py</code> — parse, the asymmetric rails, and the §6 compiler as a total function tested cell for cell; the prompt on <em>both</em> decision paths; <code>RUN_ORDER_INTENT = off|shadow|apply</code> defaulting to <strong>shadow</strong>, journalling <code>intent_size_usd</code> beside <code>machine_size_usd</code> on every cycle (the §8 paired reduce dataset); apply executes <strong>exits only</strong> (phase 1). The §2 defect carries a permanent end-to-end tripwire — a test fails if an exit is ever sized from <code>max_bet_usd</code> again.</li>
+  <li><strong>Two deviations from this doc, both narrowing:</strong> ① the light path asks for the intent only when a position exists — phase 1 is exits, a flat book’s only intents are <code>open/hold</code> which the verb already expresses, and the cheap path stays cheap (its token budget still rose 200→280 so the intent object cannot truncate the JSON). ② <code>add</code> compiles identically to <code>open</code> — the §6 table has no <code>add</code> row, and both face the same basis and the same entry stack, so a separate row would be a distinction without a difference.</li>
+  <li><strong>§9’s add-churn worry resolved itself by construction:</strong> an intent exit compiles to <code>sell</code> only against a long — which <code>_add_limit_skip</code>’s own qty/action matrix already reads as a reduce and never limits — and to <code>cover</code> against a short, which is not in the gated action list at all. The futures-short <code>sell</code> ambiguity is resolved by compilation; no exemption was needed, and an exemption written first was deleted as dead code.</li>
+  <li><strong>Not built, per the phase order:</strong> <code>arm</code> storage/evaluation (parsed, validated and journalled only — needs the <code>validate_stop_conditions</code> whitelist and a control-scan evaluator), <code>flip</code> execution and its <code>blocked_reentry</code> interaction, <code>leverage</code> reduction (joint with Plan 16 phase 4), and the <code>open/add</code> apply phase. Each is gated on shadow evidence: ≥30 paired <code>reduce</code> observations with the shadow intent ≥ the machine on median banked-per-exit.</li>
+</ul>
+
 <p class="meta" style="margin-top:40px">Companion document: <a href="16-liquidation-defense-daemon.html">Plan 16 — Liquidation Defense Daemon</a>. Plan 16’s defensive verbs (<code>reduce</code>, <code>close</code>, <code>add_margin</code>, <code>hold</code>) are a subset of the intent set above and share this compiler and these rails.</p>
 
 </div>
