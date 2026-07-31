@@ -269,7 +269,11 @@ def rr_floor_violation(stop_loss: Optional[float], take_profit: Optional[float],
     reward = (entry - take_profit) if is_short else (take_profit - entry)
     if risk <= 0 or reward <= 0:
         return None      # not a two-sided bracket; nothing to grade
-    if reward < risk * RR_FLOOR:
+    # Relative epsilon: the house 5%/10% default sits EXACTLY on the floor,
+    # so a strict compare lets one ulp of rounding in exit_prices decide the
+    # verdict per entry price (prod 2026-07-31: entry 1.0816 refused, others
+    # passed, identical config).
+    if reward < risk * RR_FLOOR * (1 - 1e-9):
         return (f"r:r floor: reward {reward:.4f} < {RR_FLOOR:g}x risk "
                 f"{risk:.4f} (entry {entry:.4f})")
     return None

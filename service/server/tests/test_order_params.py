@@ -180,6 +180,19 @@ class DeterministicPathFloorTests(unittest.TestCase):
         # risk_limits 5% stop / 10% target = exactly 2.0 R:R
         self.assertIsNone(op.rr_floor_violation(95.0, 110.0, 100.0, False))
 
+    def test_house_default_bracket_passes_at_any_entry_price(self):
+        """Prod 2026-07-31: two QA opens at entry 1.0816 were refused with
+        'reward 0.1082 < 2x risk 0.0541' — the 5%/10% default computes reward
+        = exactly 2.0x risk, so one ulp of rounding in exit_prices decided the
+        strict `<` comparison. The floor must tolerate float noise at the
+        exact-equality boundary."""
+        entry = 1.0816
+        p = op.parse_order_block({"stop_pct": 5.0, "target_pct": 10.0})
+        sl, tp = op.exit_prices(p, entry, is_short=False)
+        self.assertIsNone(op.rr_floor_violation(sl, tp, entry, False))
+        sl, tp = op.exit_prices(p, entry, is_short=True)
+        self.assertIsNone(op.rr_floor_violation(sl, tp, entry, True))
+
     def test_inverted_geometry_is_refused(self):
         # 5% stop against a 2% target — risks more than it can win
         v = op.rr_floor_violation(95.0, 102.0, 100.0, False)
