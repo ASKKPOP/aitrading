@@ -89,9 +89,9 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <body>
 <main>
 
-<div class="eyebrow">Design plan · 2026-07-28</div>
+<div class="eyebrow">Design plan · 2026-07-28 · updated 2026-07-31 (Indonesia added)</div>
 <h1>Region-aware trading</h1>
-<p class="lede">Sooppiy serves eight countries in five languages. Region decides <strong>when</strong> a member can trade, <strong>what</strong> they may hold, and <strong>which venue</strong> fills it. Today the platform models none of that — it models language, and quietly assumes New York.</p>
+<p class="lede">Sooppiy serves nine countries in six languages. Region decides <strong>when</strong> a member can trade, <strong>what</strong> they may hold, and <strong>which venue</strong> fills it. Today the platform models none of that — it models language, and quietly assumes New York.</p>
 
 <div class="rule hot">
 <b>The one mistake this plan exists to prevent</b>
@@ -132,6 +132,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
   <div class="br"><div class="brl">Canada</div><div class="brt"><div class="brf" style="width:100%;background:var(--go)"></div></div><div class="brv">6.5h</div></div>
   <div class="br"><div class="brl">Thailand</div><div class="brt"><div class="brf" style="width:53.8%;background:var(--warn)"></div></div><div class="brv">3.5h</div></div>
   <div class="br"><div class="brl">Vietnam</div><div class="brt"><div class="brf" style="width:53.8%;background:var(--warn)"></div></div><div class="brv">3.5h</div></div>
+  <div class="br"><div class="brl">Indonesia</div><div class="brt"><div class="brf" style="width:53.8%;background:var(--warn)"></div></div><div class="brv">3.5h</div></div>
   <div class="br"><div class="brl">Singapore</div><div class="brt"><div class="brf" style="width:38.5%;background:var(--warn)"></div></div><div class="brv">2.5h</div></div>
   <div class="br"><div class="brl">Korea</div><div class="brt"><div class="brf" style="width:23.1%;background:var(--safe)"></div></div><div class="brv">1.5h</div></div>
   <div class="br"><div class="brl">Japan</div><div class="brt"><div class="brf" style="width:23.1%;background:var(--safe)"></div></div><div class="brv">1.5h</div></div>
@@ -167,7 +168,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
   <div class="tlb" style="left:43.75%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
   <div class="tlb" style="left:58.33%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
 </div></div>
-<div class="tl"><div class="brl">Thailand / Vietnam</div><div class="tlt">
+<div class="tl"><div class="brl">Thailand / Vietnam / Indonesia</div><div class="tlt">
   <div class="tlb" style="left:0;width:12.5%;background:var(--ai)"></div>
   <div class="tlb" style="left:85.42%;width:14.58%;background:var(--ai)"></div>
   <div class="tlb" style="left:35.42%;width:8.33%;background:var(--vio);top:60%;height:40%"></div>
@@ -185,7 +186,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <h2>3 · What is always available, and what that implies</h2>
 
 <div class="sw"><table>
-<tr><th>Market</th><th>Session</th><th>USA/CA</th><th>AU</th><th>SG</th><th>KR/JP</th><th>TH/VN</th></tr>
+<tr><th>Market</th><th>Session</th><th>USA/CA</th><th>AU</th><th>SG</th><th>KR/JP</th><th>TH/VN/ID</th></tr>
 <tr><td><strong>crypto</strong></td><td>24×7</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
 <tr><td><strong>forex</strong></td><td>24×5</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
 <tr><td><strong>futures</strong></td><td>CME Globex</td><td>15.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td><td>16.0h</td></tr>
@@ -195,7 +196,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 
 <div class="rule">
 <b>The product conclusion, before any code</b>
-<p>For seven of the eight countries, <strong>crypto, forex and futures are the product</strong> — they are the only markets open when those members are awake. US equities are a nights-and-weekends feature outside North America. Region-awareness is therefore not only a compliance chore; it changes what the platform should <em>lead with</em> per region.</p>
+<p>For eight of the nine countries, <strong>crypto, forex and futures are the product</strong> — they are the only markets open when those members are awake. US equities are a nights-and-weekends feature outside North America. Region-awareness is therefore not only a compliance chore; it changes what the platform should <em>lead with</em> per region.</p>
 </div>
 
 <h2>4 · The model</h2>
@@ -203,7 +204,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <p>Three fields, deliberately separate, because they answer three different questions and change at different rates.</p>
 
 <div class="two">
-<div class="box yes"><b>users.region</b>ISO-3166 country: <code>US CA AU SG KR JP TH VN</code>. Answers <em>what may I trade and under whose rules</em>. Changes rarely; needs an audit trail.</div>
+<div class="box yes"><b>users.region</b>ISO-3166 country: <code>US CA AU SG KR JP TH VN ID</code>. Answers <em>what may I trade and under whose rules</em>. Changes rarely; needs an audit trail.</div>
 <div class="box yes"><b>users.timezone</b>IANA zone: <code>Asia/Seoul</code>. Answers <em>what time is it for you</em>. Derived from region by default, separately overridable — members travel.</div>
 <div class="box yes"><b>users.lang</b>Already shipped. Answers <em>what words do you read</em>. Deliberately independent: a Korean speaker in Singapore is <code>lang=ko, region=SG</code>.</div>
 <div class="box no"><b>Not a single "locale"</b>The tempting shortcut. It collapses three independent axes into one and makes the Korean-speaker-in-Singapore case unrepresentable. Do not do this.</div>
@@ -214,7 +215,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <div class="flow">
   <div class="fr"><div class="fn">1</div><div class="fb ai"><b>IP geolocation</b><span>Already implemented — <code>signup_lang._geo_country()</code>. Today the country is used and dropped; now it persists.</span></div></div>
   <div class="ar">▼ country known?</div>
-  <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Country → region, timezone, language</b><span>One table. <code>KR → (KR, Asia/Seoul, ko)</code>. A country outside the eight resolves to <code>region=null, lang=en</code>.</span></div></div>
+  <div class="fr"><div class="fn">2</div><div class="fb ai"><b>Country → region, timezone, language</b><span>One table. <code>KR → (KR, Asia/Seoul, ko)</code>. A country outside the nine resolves to <code>region=null, lang=en</code>.</span></div></div>
   <div class="ar">▼ geo failed or unsupported country</div>
   <div class="fr"><div class="fn">3</div><div class="fb w"><b>Accept-Language + browser timezone</b><span>The header already feeds language. <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code> gives the zone for free from the client.</span></div></div>
   <div class="ar">▼ still nothing</div>
@@ -232,7 +233,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
   <div class="ar">▼</div>
   <div class="fr"><div class="fn">2</div><div class="fb ai"><b>region_policy.allowed_markets(region)</b><span>Derived from <code>markets.REGISTRY</code> minus a per-region deny set — <em>never</em> a hand-written per-region allowlist.</span></div></div>
   <div class="ar">▼ market not allowed</div>
-  <div class="fr"><div class="fn">3</div><div class="fb sf"><b>Refused with a localized reason</b><span>New reason code <code>region_blocked</code> — which means a catalogue entry in all five languages, or it renders as a raw identifier inside a translated sentence.</span></div></div>
+  <div class="fr"><div class="fn">3</div><div class="fb sf"><b>Refused with a localized reason</b><span>New reason code <code>region_blocked</code> — which means a catalogue entry in all six languages, or it renders as a raw identifier inside a translated sentence.</span></div></div>
   <div class="ar">▼ allowed</div>
   <div class="fr"><div class="fn">4</div><div class="fb ex"><b>Existing gate cascade, unchanged</b><span><code>pre → fee_edge → backtest_gate → confidence_rank → risk → budget</code>. Region sits <em>in front</em> of the cascade and touches none of it.</span></div></div>
 </div>
@@ -257,6 +258,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <tr><td><strong>Japan</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
 <tr><td><strong>Thailand</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
 <tr><td><strong>Vietnam</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
+<tr><td><strong>Indonesia</strong></td><td><span class="pill p-w">review</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-w">review</span></td><td><span class="pill p-go">yes</span></td><td><span class="pill p-no">review</span></td></tr>
 <tr><td><strong>unknown</strong></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td><td><span class="pill p-n">none</span></td></tr>
 </table></div>
 
@@ -281,6 +283,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <tr><td><strong>Japan</strong></td><td>IBKR</td><td>bitFlyer, Coincheck <span class="pill p-no">no adapter</span></td><td>Domestic crypto is a separate build</td></tr>
 <tr><td><strong>Thailand</strong></td><td>IBKR</td><td>Bitkub <span class="pill p-no">no adapter</span></td><td>—</td></tr>
 <tr><td><strong>Vietnam</strong></td><td>IBKR</td><td><span class="pill p-w">review</span></td><td>—</td></tr>
+<tr><td><strong>Indonesia</strong></td><td>IBKR</td><td>Indodax, Tokocrypto <span class="pill p-no">no adapter</span></td><td>Domestic crypto is a separate build</td></tr>
 </table></div>
 
 <p class="src">The pattern: <strong>IBKR covers equities and futures nearly everywhere; crypto fragments per country.</strong> Since crypto is the market that is actually open when Asian members are awake, the domestic-crypto adapter gap is the most commercially significant hole in this table — and the largest piece of work in the whole plan.</p>
@@ -298,7 +301,7 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 </div></div>
 
 <div class="phase"><div class="pn c">P3</div><div>
-<b>Entitlement gating.</b> <code>region_policy.py</code> with the deny sets, the <code>region_blocked</code> reason in all five languages, run-build and order-path enforcement, and the derived-not-enumerated test. Dark-shipped behind <code>REGION_POLICY_ENABLED</code> like every other money path here.
+<b>Entitlement gating.</b> <code>region_policy.py</code> with the deny sets, the <code>region_blocked</code> reason in all six languages, run-build and order-path enforcement, and the derived-not-enumerated test. Dark-shipped behind <code>REGION_POLICY_ENABLED</code> like every other money path here.
 <div class="src">Needs the matrix in §5 answered first. Gating on a guess is worse than not gating.</div>
 </div></div>
 
@@ -310,11 +313,11 @@ ul{margin:8px 0;padding-left:20px}li{margin:3px 0}
 <h2>8 · What I would get wrong</h2>
 
 <ul>
-<li><strong>Daylight saving is not decoration.</strong> The US, Canada and Australia observe it; Korea, Japan, Singapore, Thailand and Vietnam do not — and Australia's runs <em>opposite</em> to the northern hemisphere. Every band in §2 shifts twice a year, and the Sydney↔New York gap changes by two hours. Store IANA zones and compute; never store a UTC offset.</li>
+<li><strong>Daylight saving is not decoration.</strong> The US, Canada and Australia observe it; Korea, Japan, Singapore, Thailand, Vietnam and Indonesia do not — and Australia's runs <em>opposite</em> to the northern hemisphere. Every band in §2 shifts twice a year, and the Sydney↔New York gap changes by two hours. Store IANA zones and compute; never store a UTC offset.</li>
 <li><strong>The matrix in §5 is my starting position, not a legal one.</strong> Retail crypto and FX are constrained in several of these countries in ways I cannot rule on. P3 must not ship until someone qualified has answered each <span class="pill p-no">review</span> cell.</li>
 <li><strong>IP geolocation is a guess, and VPNs exist.</strong> It is fine for a default and unfit as a compliance control. If regional entitlement ever becomes a regulatory boundary rather than a product one, it needs declared residence with evidence, not an IP lookup.</li>
 <li><strong>Existing members have no region.</strong> Backfilling from <code>lang</code> would place every English speaker in the US — precisely the mistake this plan opens by warning about. They should be <code>null</code> until they tell us, and P3's gating has to behave sensibly for a null region on day one.</li>
-<li><strong>A new reason code without a translation is a shipped bug.</strong> <code>region_blocked</code> needs all five languages in the same commit. This has already happened once: <code>stop_event:price_cross</code> was classified but untranslated and would have rendered as a raw identifier inside a Korean sentence.</li>
+<li><strong>A new reason code without a translation is a shipped bug.</strong> <code>region_blocked</code> needs all six languages in the same commit. This has already happened once: <code>stop_event:price_cross</code> was classified but untranslated and would have rendered as a raw identifier inside a Korean sentence.</li>
 </ul>
 
 <div class="rule">
