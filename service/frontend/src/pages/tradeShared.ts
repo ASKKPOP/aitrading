@@ -2,9 +2,28 @@
 // Sooppiy's API trades plain symbols (BTC) at USD prices; ga displays USDT pairs.
 // We show SYMBOL/USDT visually and trade the plain symbol underneath.
 
-export const POPULAR_PAIRS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX']
+// Mirrors crypto_feed.TOP_20_PAIRS (bare base form) — every pair here has OKX
+// market data behind /api/markets/crypto/* and trades as the bare symbol.
+export const POPULAR_PAIRS = [
+  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 'DOT',
+  'LTC', 'BCH', 'UNI', 'ATOM', 'TRX', 'NEAR', 'POL', 'FIL', 'APT', 'ARB',
+]
 
-export const TRADE_FEE_RATE = 0.001 // mirror of server fees.TRADE_FEE_RATE for previews
+export const TRADE_FEE_RATE = 0.001 // conservative fallback until /api/markets/fees loads
+
+// Live per-market fee rates (fees.fee_rate server-side, incl. operator
+// overrides). Cached per session — rates change maybe once a quarter.
+let feeRates: Record<string, number> | null = null
+export async function fetchFeeRate(market = 'crypto'): Promise<number> {
+  if (feeRates === null) {
+    try {
+      const res = await fetch('/api/markets/fees')
+      const data = await res.json()
+      if (res.ok && data.rates) feeRates = data.rates
+    } catch { /* transient — fall back below */ }
+  }
+  return feeRates?.[market] ?? TRADE_FEE_RATE
+}
 
 export function pair(symbol: string) {
   return `${symbol.toUpperCase()}/USDT`
