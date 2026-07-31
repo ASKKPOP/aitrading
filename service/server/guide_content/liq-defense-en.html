@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 16 — Liquidation Defense Daemon</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --t0: #1baf7a; --t1: #d8a013; --t2: #eb6834; --t3: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --t0: #199e70; --t1: #c08f10; --t2: #d95926; --t3: #d03b3b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --t0: #199e70; --t1: #c08f10; --t2: #d95926; --t3: #d03b3b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  .legendline { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; }
+  .legendline .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legendline .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 16 — Liquidation Defense Daemon</h1>
+<p class="sub">An AI daemon that monitors forced-liquidation risk on leveraged positions and acts on it, using the user's own broker API key. Algorithm, flow, and diagrams.</p>
+<p class="meta">Written 2026-07-29. Every claim below is anchored to a file/line in the current codebase or to a query run against production MySQL. Ships to prod sooppiy.com per standing rule.</p>
+
+<div class="kr">
+  <strong>요약 (Korean summary)</strong>
+  <p>강제청산(force liquidation)은 지금 <strong>이론이 아니라 실제 리스크</strong>입니다. 프로덕션의 열린 포지션 5개 전부가 2배 또는 3배 레버리지를 쓰고 있습니다. 그런데 현재 방어 수단은 <code>_evaluate_stop</code> 안의 고정 임계값 하나뿐이며, 그 임계값은 유지증거금(MMR)·펀딩비·마크가격·크로스마진을 전혀 계산하지 않고, AI에게는 아무것도 알려주지 않으며, 실거래 브로커 경로에는 마진 상태를 읽는 기능 자체가 없습니다. 이 문서는 (A) 마진 상태 오라클, (B) health = (마크−청산)/(진입−청산) 라는 단일 척도와 그 속도, (C) 4단 에스컬레이션 — T1·T2는 <strong>AI가 판단</strong>하고 T3만 기계 반사, (D) 20초 주기 데몬을 설계합니다. 정직한 예외를 하나 명시합니다: T3는 의도적으로 룰입니다. health 0.15에서 LLM 왕복은 마진 전체를 걸고 하는 도박이기 때문입니다.</p>
+</div>
+
+<div class="tocbox">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#state">Verified state: liquidation is a live risk today</a></li>
+    <li><a href="#notmodel">Why the current check is not a liquidation model</a></li>
+    <li><a href="#algo">The algorithm — five stages</a></li>
+    <li><a href="#flow">Flow diagram</a></li>
+    <li><a href="#seq">Sequence: a T2 defence</a></li>
+    <li><a href="#brief">What the AI is told — the survival brief</a></li>
+    <li><a href="#rollout">Rollout, flags, verification</a></li>
+    <li><a href="#limits">What this does not fix</a></li>
+  </ol>
+</div>
+
+<h2 id="state">1. Verified state: liquidation is a live risk today</h2>
+
+<p>The comment at <code>fleet_planner.py:57–59</code> says leverage “is pinned to 1 by routes_runs (a fully-funded ledger; real isolated-margin leverage + liquidation is a separate deferred engine).” <strong>That comment is stale.</strong> <code>FLEET_BOUNDS["auto_leverage"]</code> gives <code>aggressive: 2.0</code> and <code>extreme: 3.0</code> (<code>fleet_planner.py:117</code>), and production confirms every open position is leveraged:</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">Open positions in prod</div><div class="val">5</div><div class="d">every one leveraged</div></div>
+  <div class="tile"><div class="lbl">Leverage in use</div><div class="val">2× / 3×</div><div class="d">2 at 2×, 3 at 3×</div></div>
+  <div class="tile"><div class="lbl">Broker margin-read capability</div><div class="val">none</div><div class="d"><code>Broker</code> ABC has no method</div></div>
+  <div class="tile"><div class="lbl">Leveraged positions with no owning run</div><div class="val">2</div><div class="d">outside <code>_evaluate_stop</code> entirely</div></div>
+</div>
+
+<p>The live book, with the liquidation and cushion prices today’s formula implies. <code>health</code> is defined in §3; 1.0 means “at your entry price”, 0.0 means the margin is gone.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Pos</th><th>Symbol</th><th>Side</th><th class="num">Entry</th><th class="num">Mark</th><th class="num">L</th><th class="num">Liq price</th><th class="num">Cushion fires</th><th class="num">health</th><th>Run</th></tr></thead>
+<tbody>
+<tr><td>71</td><td>ETHUSDT</td><td>long</td><td class="num">1,897.80</td><td class="num">1,904.70</td><td class="num">3</td><td class="num">1,265.20</td><td class="num">1,360.09</td><td class="num">1.011</td><td>811</td></tr>
+<tr><td>73</td><td>MNQ</td><td>short</td><td class="num">27,539.87</td><td class="num">27,443.50</td><td class="num">3</td><td class="num">36,719.83</td><td class="num">35,342.84</td><td class="num">1.010</td><td>818</td></tr>
+<tr><td>75</td><td>BTCUSDT</td><td>short</td><td class="num">63,988.00</td><td class="num">63,917.00</td><td class="num">3</td><td class="num">85,317.33</td><td class="num">82,117.93</td><td class="num">1.003</td><td>820</td></tr>
+<tr><td>67</td><td>SOLUSDT</td><td>short</td><td class="num">74.031</td><td class="num">73.520</td><td class="num">2</td><td class="num">111.047</td><td class="num">105.494</td><td class="num">1.014</td><td><span class="chip crit">none</span></td></tr>
+<tr><td>69</td><td>USDZAR</td><td>long</td><td class="num">16.7588</td><td class="num">16.6591</td><td class="num">2</td><td class="num">8.3794</td><td class="num">9.6363</td><td class="num">0.988</td><td><span class="chip crit">none</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="meta">Snapshot taken 2026-07-29 ~22:20 UTC. Liq price from the shipped formula <code>entry × (1 ∓ 1/L)</code> (<code>run_engine.py:880–883</code>); cushion from <code>entry × (1 ∓ c/L)</code> with <code>c = RUN_LIQ_CUSHION_FRAC = 0.85</code> (<code>run_engine.py:874–879</code>).</p>
+
+<div class="card ok">
+  <p style="margin:0"><strong>To be clear about the risk level:</strong> nothing in this book is close to liquidation right now — every position sits at health ≈ 1.0, roughly 33% (at 3×) or 50% (at 2×) of entry away from the liquidation line. This plan is not an emergency response. It is the observation that <em>the instrument we would need in an emergency does not exist</em>, and that two of these five positions are not even covered by the one check we do have.</p>
+</div>
+
+<h2 id="notmodel">2. Why the current check is not a liquidation model</h2>
+
+<p>There is exactly one liquidation defence in the codebase: the cushion branch inside <code>_evaluate_stop</code>. Its structure is a single fixed fraction of the distance to liquidation. Work out what that fraction means in health terms — for a short, the cushion fires when <code>mark = entry(1 + c/L)</code> and liquidation is at <code>entry(1 + 1/L)</code>, so</p>
+
+<pre><code>health = (liq − mark) / (liq − entry)
+       = (entry(1+1/L) − entry(1+c/L)) / (entry(1+1/L) − entry)
+       = (entry(1−c)/L) / (entry/L)
+       = 1 − c  =  0.15        (and the long case is symmetric)</code></pre>
+
+<p><strong>So today’s entire liquidation defence is one fixed line at health = 0.15.</strong> Leverage-independent, instrument-independent, and — the part that matters — it has no idea how fast the position is travelling. It also has five specific omissions, four in the maths and one in the plumbing.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>#</th><th>Omitted term</th><th>Direction of the error</th><th>Size at 3×</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Maintenance margin rate (MMR)</strong>. Exchanges liquidate when equity falls below maintenance margin, not when it hits zero. Binance USDⓈ-M tiers MMR by notional (0.4%–12.5%).</td><td><span class="chip crit">optimistic</span> real liquidation arrives <em>earlier</em> than we model</td><td class="num">≈ 0.5% of entry</td></tr>
+<tr><td>2</td><td><strong>Funding</strong>. A perp pays or receives funding every 8h. Our model has no funding term at all, so margin can erode toward liquidation on a completely flat tape and the model will never see it.</td><td><span class="chip crit">optimistic</span> and it grows with holding time</td><td class="num">0.001–0.01 health/day</td></tr>
+<tr><td>3</td><td><strong>Mark price vs last price</strong>. Exchanges liquidate on an index-anchored <em>mark</em>; we compute on <code>positions.current_price</code>, a poll of last trade.</td><td><span class="chip warn">both ways</span> diverges most during the wicks that liquidate people</td><td class="num">instrument-dependent</td></tr>
+<tr><td>4</td><td><strong>Cross-margin coupling</strong>. In a real cross-margined account another position’s loss moves <em>this</em> position’s liquidation price. Our model is isolated-per-position by construction.</td><td><span class="chip crit">optimistic</span> unbounded in the worst case</td><td class="num">n/a — not modelled</td></tr>
+<tr><td>5</td><td><strong>Staleness handling is inverted.</strong> The whole liquidation block sits inside <code>if has_position and pnl["mark_age_ok"]:</code> (<code>run_engine.py:860</code>). On stale marks the check is <em>skipped</em>. The stale-mark <code>RuntimeError</code> below it (line 893) pauses entries and alerts, but never closes anything.</td><td><span class="chip crit">structural</span> a leveraged position with a dead price feed is carried unmonitored, with no exit path</td><td class="num">—</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>And the sixth, which is the one that matters most for this project’s premise: <strong>the AI is never told any of it.</strong> The desk’s prompt (<code>_light_analysis</code>, <code>run_engine.py:2054–2089</code>) contains the symbol, the price, the position quantity, the thesis, ten closes, and — since PR #124/#125 — the position’s P&amp;L trajectory. It contains no leverage, no liquidation price, no margin, no funding. The desk cannot reason about survival because it does not know it is leveraged.</p>
+
+<h2 id="algo">3. The algorithm — five stages</h2>
+
+<h3>Stage A — Margin State Oracle <span class="meta">(new: <code>service/server/liquidation.py</code>)</span></h3>
+
+<p>One function, one shape, two possible sources. Add an optional capability to the <code>Broker</code> ABC, following the exact pattern <code>get_order_status</code> already uses (default returns <code>None</code> = “cannot look up”, never raises for expected errors — <code>execution/base.py:104–118</code>):</p>
+
+<pre><code>async def get_margin_state(self) -> Optional[list[dict]]:
+    """Per-position margin facts. None = this broker cannot report them."""
+    # symbol, side, qty, entry_price, mark_price, liquidation_price,
+    # maintenance_margin, margin_balance, unrealized_pnl, leverage,
+    # funding_rate, next_funding_ts, margin_mode, source="broker"
+    return None</code></pre>
+
+<p>Adapter reality check, so nobody plans against a capability that isn’t there:</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Adapter</th><th>Today</th><th>Work needed</th></tr></thead>
+<tbody>
+<tr><td><code>binance.py</code></td><td><span class="chip crit">spot only</span> <code>_LIVE_BASE = api.binance.com/api/v3</code> (line 34). It cannot see a futures position at all, let alone its margin.</td><td>New <code>BinanceFuturesBroker</code> on <code>/fapi</code>: <code>GET /fapi/v2/positionRisk</code> gives <code>liquidationPrice</code>, <code>markPrice</code>, <code>leverage</code>, <code>marginType</code> directly; <code>GET /fapi/v1/premiumIndex</code> gives <code>lastFundingRate</code>, <code>nextFundingTime</code>.</td></tr>
+<tr><td><code>alpaca.py</code></td><td>equities/crypto, no futures margin concept in the endpoints we use</td><td>Return <code>None</code>. Honest and correct.</td></tr>
+<tr><td><code>ibkr.py</code></td><td>CPAPI session exists and is kept alive (<code>gateway.keepalive_tick</code>)</td><td><code>/portfolio/{acct}/positions</code> + <code>/iserver/account/{acct}/summary</code> for <code>maintmarginreq</code>, <code>excessliquidity</code>. IBKR reports account-level margin, not per-position liq price — so derive it, and mark <code>source="derived"</code>.</td></tr>
+<tr><td><code>paper.py</code></td><td>simulated ledger</td><td>Synthetic path below.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>When no broker can answer — which is <em>every</em> case on day one, since <code>broker_accounts</code> is empty in prod — fall back to a synthetic state that fixes omissions 1 and 2 and labels itself honestly:</p>
+
+<pre><code>long :  liq = entry × (1 − 1/L + mmr) + funding_accrued_per_unit
+short:  liq = entry × (1 + 1/L − mmr) − funding_accrued_per_unit
+        source = "synthetic",  confidence = "modelled"</code></pre>
+
+<p><code>mmr</code> comes from a per-market table (crypto-perp notional tiers; a SPAN approximation for exchange futures; the broker default for forex), and <code>funding_accrued_per_unit</code> is summed from observed funding events for the holding period. The <code>source</code> field is not decoration — it is passed to the AI verbatim, so the desk knows whether it is being told a fact or an estimate.</p>
+
+<h3>Stage B — one scalar, and its derivative</h3>
+
+<pre><code>long :  health = (mark − liq) / (entry − liq)
+short:  health = (liq − mark) / (liq − entry)
+
+velocity = Δhealth / Δt          (least-squares slope over the last N samples)
+ttl      = health / max(ε, −velocity)      # time to liquidation at this rate</code></pre>
+
+<p>Why normalise rather than threshold on price or P&amp;L: <code>health</code> is 1.0 at entry and 0.0 at liquidation for every instrument, every leverage, and both directions, so one set of bands governs MNQ at 3× and USDZAR at 2× without per-market tuning. Why <code>velocity</code> is not optional: <strong>health 0.40 falling 0.15/min is an emergency; health 0.22 flat for six hours is not.</strong> A fixed threshold cannot distinguish those two, and that is precisely the failure mode of the single 0.15 line we ship today — it will fire at the same place whether the position drifted there over a week or arrived in ninety seconds.</p>
+
+<h3>Stage C — four tiers, and an honest exception</h3>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Tier</th><th>Trigger</th><th>Who decides</th><th>Latency budget</th></tr></thead>
+<tbody>
+<tr><td><span class="chip ok">T0 Nominal</span></td><td><code>health ≥ 0.60</code> and <code>ttl &gt; 6h</code></td><td>nobody — journal a <code>margin</code> telemetry event and move on</td><td>—</td></tr>
+<tr><td><span class="chip warn">T1 Watch</span></td><td><code>health &lt; 0.60</code> or <code>ttl &lt; 6h</code></td><td><strong>the AI desk</strong>, on its next normal cycle. The survival brief (§6) is injected into the prompt and the defensive verbs are unlocked.</td><td>cycle interval, 30–60 min</td></tr>
+<tr><td><span class="chip crit">T2 Defend</span></td><td><code>health &lt; 0.35</code> or <code>ttl &lt; 45 min</code></td><td><strong>the AI desk, out of band.</strong> The daemon wakes it immediately rather than waiting for the cycle, and hands it a deadline.</td><td><code>LIQ_DESK_DEADLINE_S</code> = 45 s</td></tr>
+<tr><td><span class="chip crit">T3 Reflex</span></td><td><code>health &lt; 0.15</code> or <code>ttl &lt; 5 min</code> or the T2 deadline was missed or the oracle is unavailable</td><td><strong>the daemon, with no LLM call.</strong> Reduce enough to restore <code>LIQ_REFLEX_TARGET_HEALTH</code> (0.45); if that needs more than <code>LIQ_REFLEX_FLATTEN_FRAC</code> (0.70) of the position, flatten instead.</td><td>immediate</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card crit">
+  <p style="margin:0 0 8px"><strong>T3 is a rail, deliberately — and this is the one place I am arguing against the standing rule.</strong></p>
+  <p style="margin:0 0 8px">The rule is that every recommendation ships as a decision the sooppiy.com AI makes. T3 breaks it, for a reason that is measurable rather than philosophical. A decision-tier LLM call is a few seconds at p50 with a fat tail — <code>_light_analysis</code> wraps its call in a bare <code>except</code> and falls back to <code>"light cycle: no LLM verdict"</code> precisely because that tail exists (<code>run_engine.py:2094–2096</code>). At 3× leverage, health 0.15 means the mark is about 5% of entry away from a <strong>100% margin wipe</strong>. Spending an uncertain number of seconds there is betting the entire margin on a network round-trip.</p>
+  <p style="margin:0">So the split is: <strong>the AI owns every decision down to T2. Below T2 the daemon acts, and the AI’s job becomes explaining what the daemon did.</strong> Every reflex emits a <code>liq_reflex</code> event that is fed into that run’s next survival brief, so the desk learns from its own near-misses instead of being shielded from them. If T3 fires often, that is evidence the desk is failing at T1/T2 and the fix belongs in the prompt — not in T3’s constants.</p>
+</div>
+
+<div class="card">
+  <p style="margin:0 0 8px"><strong>2026-07-30 — corrections after building it, and the reflex is now ARMED on production.</strong></p>
+  <p style="margin:0 0 8px"><strong>1. The T3 action in the table above is wrong and cannot be built.</strong> “Reduce enough to restore health 0.45” is not achievable: under isolated margin a position of size <code>q</code> at entry <code>E</code> on leverage <code>L</code> posts <code>q·E/L</code> and liquidates when <code>q·|P−E| = q·E/L</code> — the <code>q</code> cancels, so the liquidation <em>price</em> does not depend on size at all. Trimming cuts what you can lose and buys <strong>zero</strong> distance. <code>LIQ_REFLEX_TARGET_HEALTH</code> and <code>LIQ_REFLEX_FLATTEN_FRAC</code> were never implemented and should not be. The reflex is <strong>flatten or nothing</strong>, and <code>survival_brief</code> now tells the desk this outright, because a desk that believes trimming buys room will trim instead of exiting.</p>
+  <p style="margin:0 0 8px"><strong>2. The first implementation shipped a reflex with no hands.</strong> PR #127 shipped the oracle, the health scalar, the classifier and the hysteresis, and <code>reflex_action()</code> correctly returned <code>"flatten"</code> at T3 — into <code>out["reflex"] += 1</code>, a counter with no consumer. The watch loop journalled state, tightened cadence, printed escalations, and never placed an order. <code>LIQ_REFLEX=true</code> would have closed nothing. Fixed in PR #130, which wires T3 to <code>automation.execute_paper_trade</code> — the SL/TP watcher’s own close primitive, so a reflex exit is journalled, attributed to its run, and alerted like every other forced exit, and so an <strong>orphan</strong> (<code>run_id</code> NULL) is closable at all. Production’s only leveraged position is exactly such an orphan.</p>
+  <p style="margin:0 0 8px"><strong>3. Guards the plan did not anticipate.</strong> The price poller runs on ~900s while this loop runs on 20s, so a T3 read can rest on a mark a quarter of an hour old — fine for a brief, fatal for an irreversible flatten. The executor refuses on <code>stale_mark</code> (beyond <code>LIQ_REFLEX_MAX_STALE</code>, 300s), <code>cooldown</code> (<code>LIQ_REFLEX_RETRY</code>, 60s, stamped <em>before</em> the order so a close that raises still holds the latch), <code>no_owner</code>, <code>flat</code>, <code>no_mark</code> and <code>mark_age_unknown</code>. Every refusal is journalled: a refusal is the interesting record, because it means a position sat at T3 while the daemon declined, and the reason is the only way to tell a working guard from a broken executor after the fact.</p>
+  <p style="margin:0"><strong>Status.</strong> <code>LIQ_REFLEX=true</code> on production since 2026-07-30 22:21 UTC (image <code>20260730-reflex</code>). Measured on the live book at arming: position 67 SOLUSDT short 2×, health 0.98 (T0), mark age 20.7s — the reflex is correctly idle, and would fire if that position reached T3. Still not built: phase-5 real-broker margin reads (<code>Broker.get_margin_state</code> returns <code>None</code> everywhere, so every reading is <code>source: synthetic</code>), funding accrual, and cross-margin. The T1/T2 → T3 escalation path has never fired in production and is proven by tests only.</p>
+</div>
+
+<h3>Stage D — the daemon loop <span class="meta">(<code>tasks.py: liquidation_watch_loop</code>)</span></h3>
+
+<p>Same shape as <code>risk_watcher_loop</code> (<code>tasks.py:863–889</code>): an async loop, an <code>_env_int</code> interval, a thread hop for the blocking work, and a bare <code>except</code> so one bad tick cannot kill the worker.</p>
+
+<pre><code>LIQ_WATCH_INTERVAL      = 20s     # tighter than risk_watcher's 30s and the
+                                  # ~60s run-control scan: this is the one loop
+                                  # whose tail cost is the entire margin
+LIQ_WATCH_INTERVAL_HOT  = 5s      # once ANY position is at T2 or worse
+LIQ_DEESCALATE_SAMPLES  = 3       # hysteresis: only de-escalate after 3
+                                  # consecutive samples one band better</code></pre>
+
+<p>Hysteresis is not a nicety. Without it a single wick flaps the tier, and a flapping tier means the desk is woken out of band repeatedly for the same position — which trains everyone, human and model, to ignore the alert.</p>
+
+<h3>Stage E — scope on positions, not runs</h3>
+
+<p>Positions 67 (SOLUSDT, 2×) and 69 (USDZAR, 2×) have <code>run_id NULL</code>. <code>_evaluate_stop</code> only ever runs for a position attached to a <em>running</em> run, so neither of those is liquidation-checked by anything today. The daemon must iterate the <strong>positions table filtered on <code>leverage &gt; 1</code></strong>, which is the only scope that covers the whole book — attached, orphaned, and manual alike.</p>
+
+<h2 id="flow">4. Flow diagram</h2>
+
+<figure>
+<svg viewBox="-2 20 1030 502" role="img" aria-label="Liquidation defense daemon flow: oracle to health to tier classifier to four branches">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g color="var(--axis)" stroke="var(--axis)" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+    <path d="M150,72 L210,80"/>
+    <path d="M150,120 L210,112"/>
+    <path d="M360,96 L420,96"/>
+    <path d="M570,96 L630,96"/>
+  </g>
+
+  <!-- sources -->
+  <rect x="16" y="52" width="134" height="40" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="30" y="70">broker API</text>
+  <text x="30" y="85">user's own key</text>
+
+  <rect x="16" y="100" width="134" height="40" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="30" y="118">synthetic model</text>
+  <text x="30" y="133">mmr + funding</text>
+
+  <!-- oracle -->
+  <rect x="214" y="60" width="146" height="72" rx="7" fill="var(--surface-1)" stroke="var(--s1)" stroke-width="1.6"/>
+  <text class="lab-strong" x="228" y="80">Margin State</text>
+  <text class="lab-strong" x="228" y="96">Oracle</text>
+  <text x="228" y="114">liq, mark, margin,</text>
+  <text x="228" y="127">funding, source</text>
+
+  <!-- health -->
+  <rect x="424" y="60" width="146" height="72" rx="7" fill="var(--surface-1)" stroke="var(--s1)" stroke-width="1.6"/>
+  <text class="lab-strong" x="438" y="80">health + velocity</text>
+  <text x="438" y="98">1.0 = entry</text>
+  <text x="438" y="112">0.0 = wiped</text>
+  <text x="438" y="126">ttl = h / −v</text>
+
+  <!-- classifier -->
+  <rect x="634" y="60" width="132" height="64" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="648" y="82">tier classifier</text>
+  <text x="648" y="100">+ hysteresis</text>
+  <text x="648" y="114">3 samples</text>
+
+  <!-- daemon feed -->
+  <g stroke="var(--axis)" stroke-width="1.4" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M345,264 L345,200 L214,200 L214,136"/>
+  </g>
+  <text x="352" y="232">every tick</text>
+
+  <!-- T0 -->
+  <rect x="806" y="168" width="200" height="56" rx="7" fill="var(--surface-1)" stroke="var(--t0)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="188">T0 · health ≥ 0.60</text>
+  <text x="820" y="206">journal only</text>
+  <text x="820" y="219">nobody decides</text>
+
+  <!-- T1 -->
+  <rect x="806" y="240" width="200" height="70" rx="7" fill="var(--surface-1)" stroke="var(--t1)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="260">T1 · health &lt; 0.60</text>
+  <text x="820" y="278">AI desk, next cycle</text>
+  <text x="820" y="291">brief injected</text>
+  <text x="820" y="304">verbs unlocked</text>
+
+  <!-- T2 -->
+  <rect x="806" y="326" width="200" height="84" rx="7" fill="var(--surface-1)" stroke="var(--t2)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="346">T2 · health &lt; 0.35</text>
+  <text x="820" y="364">AI desk, OUT OF BAND</text>
+  <text x="820" y="377">45s deadline</text>
+  <text x="820" y="390">reduce | close |</text>
+  <text x="820" y="403">add_margin | hold</text>
+
+  <!-- T3 -->
+  <rect x="806" y="426" width="200" height="84" rx="7" fill="var(--crit-bg)" stroke="var(--t3)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="446">T3 · health &lt; 0.15</text>
+  <text x="820" y="464">DAEMON, no LLM</text>
+  <text x="820" y="477">restore h → 0.45</text>
+  <text x="820" y="490">or flatten</text>
+  <text x="820" y="503">→ feeds next brief</text>
+
+  <g stroke="var(--axis)" stroke-width="1.3" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M766,92 L790,92 L790,196 L800,196"/>
+    <path d="M790,196 L790,275 L800,275"/>
+    <path d="M790,275 L790,368 L800,368"/>
+    <path d="M790,368 L790,468 L800,468"/>
+  </g>
+
+  <!-- deadline miss loop -->
+  <g stroke="var(--t3)" stroke-width="1.5" fill="none" color="var(--t3)" stroke-dasharray="4 3" marker-end="url(#ar)">
+    <path d="M1006,368 L1014,368 L1014,468 L1006,468"/>
+  </g>
+  <text x="1010" y="420" style="fill:var(--t3)" transform="rotate(90 1010 420)" text-anchor="middle">deadline missed</text>
+
+  <!-- learn loop -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="4 3" marker-end="url(#ar)">
+    <path d="M806,500 L546,500 L546,290 L800,290"/>
+  </g>
+  <text x="554" y="492" style="fill:var(--s3)">reflex journalled → the desk reads it next cycle</text>
+
+  <!-- daemon box -->
+  <rect x="200" y="264" width="290" height="96" rx="7" fill="var(--surface-1)" stroke="var(--border)" stroke-dasharray="5 4"/>
+  <text class="lab-strong" x="214" y="284">liquidation_watch_loop</text>
+  <text x="214" y="302">scope: positions WHERE leverage &gt; 1</text>
+  <text x="214" y="316">— covers orphans (run_id NULL)</text>
+  <text x="214" y="333">20s nominal · 5s once any pos ≤ T2</text>
+  <text x="214" y="350">stale marks ⇒ escalate, never skip</text>
+</svg>
+<figcaption>The oracle is the only new dependency; everything downstream is arithmetic on one scalar. Green dashed = the learning loop that keeps T3 from becoming a place the AI never looks.</figcaption>
+</figure>
+
+<h3>The health band, with today’s single line on it</h3>
+
+<figure>
+<svg viewBox="0 0 1000 210" role="img" aria-label="Health bands from 1.0 to 0.0 with the four tiers and the current single threshold">
+  <!-- bands -->
+  <rect x="60" y="46" width="376" height="34" fill="var(--t0)" opacity="0.22"/>
+  <rect x="436" y="46" width="235" height="34" fill="var(--t1)" opacity="0.26"/>
+  <rect x="671" y="46" width="188" height="34" fill="var(--t2)" opacity="0.28"/>
+  <rect x="859" y="46" width="81" height="34" fill="var(--t3)" opacity="0.32"/>
+  <rect x="60" y="46" width="880" height="34" fill="none" stroke="var(--axis)"/>
+
+  <text class="lab-strong" x="200" y="68" text-anchor="middle">T0 nominal</text>
+  <text class="lab-strong" x="553" y="68" text-anchor="middle">T1 watch — AI decides</text>
+  <text class="lab-strong" x="765" y="68" text-anchor="middle">T2 defend — AI, 45s</text>
+  <text class="lab-strong" x="899" y="68" text-anchor="middle">T3</text>
+
+  <!-- axis -->
+  <g stroke="var(--axis)" stroke-width="1">
+    <path d="M60,80 L60,90"/><path d="M436,80 L436,90"/><path d="M671,80 L671,90"/>
+    <path d="M859,80 L859,90"/><path d="M940,80 L940,96"/>
+  </g>
+  <text x="60" y="106" text-anchor="middle">1.00 · your entry</text>
+  <text x="436" y="106" text-anchor="middle">0.60</text>
+  <text x="671" y="106" text-anchor="middle">0.35</text>
+  <text x="859" y="106" text-anchor="middle">0.15</text>
+  <text x="940" y="112" text-anchor="middle">0.00</text>
+  <text x="940" y="126" text-anchor="middle" style="fill:var(--crit)">margin wiped</text>
+
+  <!-- today's line -->
+  <g stroke="var(--crit)" stroke-width="2.2">
+    <path d="M859,32 L859,46"/>
+  </g>
+  <text x="853" y="26" text-anchor="end" style="fill:var(--crit)" class="lab-strong">today: the ONLY defence, a fixed line at 0.15</text>
+
+  <!-- current book -->
+  <g fill="var(--s1)">
+    <circle cx="56" cy="150" r="5"/><circle cx="56" cy="150" r="5"/>
+  </g>
+  <text class="lab" x="70" y="155">all five live positions sit here, health ≈ 1.0 (0.988 – 1.014)</text>
+  <text x="70" y="174">The gap between that cluster and the red line is entirely unmonitored: no velocity,</text>
+  <text x="70" y="190">no funding drift, no maintenance margin, and the AI is told none of it.</text>
+</svg>
+<figcaption>Derived, not asserted: <code>c = 0.85</code> in <code>RUN_LIQ_CUSHION_FRAC</code> puts the cushion at exactly <code>health = 1 − c = 0.15</code> for both directions — see the algebra in §2.</figcaption>
+</figure>
+
+<h2 id="seq">5. Sequence: a T2 defence</h2>
+
+<figure>
+<svg viewBox="0 0 980 400" role="img" aria-label="Sequence diagram of a tier 2 liquidation defence">
+  <!-- lanes -->
+  <g stroke="var(--grid)" stroke-width="1" stroke-dasharray="3 4">
+    <path d="M110,60 L110,372"/><path d="M330,60 L330,372"/>
+    <path d="M550,60 L550,372"/><path d="M770,60 L770,372"/>
+  </g>
+  <g fill="var(--surface-1)" stroke="var(--border)">
+    <rect x="34" y="32" width="152" height="28" rx="6"/>
+    <rect x="254" y="32" width="152" height="28" rx="6"/>
+    <rect x="474" y="32" width="152" height="28" rx="6"/>
+    <rect x="694" y="32" width="152" height="28" rx="6"/>
+  </g>
+  <text class="lab-strong" x="110" y="51" text-anchor="middle">daemon (20s→5s)</text>
+  <text class="lab-strong" x="330" y="51" text-anchor="middle">Margin Oracle</text>
+  <text class="lab-strong" x="550" y="51" text-anchor="middle">AI desk (LLM)</text>
+  <text class="lab-strong" x="770" y="51" text-anchor="middle">ledger / broker</text>
+
+  <g stroke="var(--s1)" stroke-width="1.5" fill="none" color="var(--s1)" marker-end="url(#ar)">
+    <path d="M110,86 L326,86"/>
+    <path d="M330,116 L114,116"/>
+    <path d="M110,176 L546,176"/>
+    <path d="M550,236 L114,236"/>
+    <path d="M110,266 L766,266"/>
+    <path d="M770,306 L114,306"/>
+  </g>
+  <text x="120" y="80">get_margin_state()</text>
+  <text x="120" y="110">liq 36,719 · mark 35,900 · funding −0.011%/8h</text>
+  <text class="lab" x="120" y="140">health 0.31 · velocity −0.22/h · ttl 84 min  ⇒  T2</text>
+  <text x="120" y="170">wake desk out of band + survival brief + 45s deadline</text>
+  <text x="120" y="230">{"intent":"reduce","size_frac":0.5,"why":"thesis intact, buy distance"}</text>
+  <text x="120" y="260">compile → cover 0.028 MNQ · rails: reduce may only grow</text>
+  <text x="120" y="300">filled → re-measure: health 0.31 → 0.58 (T1)</text>
+
+  <g stroke="var(--t3)" stroke-width="1.5" fill="none" color="var(--t3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M110,340 L766,340"/>
+  </g>
+  <text x="120" y="334" style="fill:var(--t3)">…had the desk not answered by +45s: T3 reflex reduces to health 0.45, no LLM, and journals it</text>
+  <text x="120" y="366" class="lab">Either way the outcome lands in the run's journal, and the desk reads it on the next cycle.</text>
+</svg>
+<figcaption>The deadline is what makes AI authority safe at T2: the desk gets to decide, but not to decide slowly.</figcaption>
+</figure>
+
+<h2 id="brief">6. What the AI is told — the survival brief</h2>
+
+<p>This is the part that follows the standing rule, and it is the difference between a daemon that manages liquidation risk <em>for</em> the desk and one that lets the desk manage it. Prepend to the prompt whenever <code>leverage &gt; 1</code>:</p>
+
+<pre><code>MARGIN STATE (source: broker)
+  Leverage 3.0x, isolated. Liquidation at 36,719.83; mark 35,900.00.
+  Health 0.31  (1.0 = your entry price, 0.0 = margin fully wiped).
+  Velocity -0.22 health/hour over the last 3 samples.
+  Time to liquidation at this rate: 84 minutes.
+  Funding: you PAY 0.011% every 8h on 82,331 notional = $9.05/day,
+    which costs 0.033 health per day even if price never moves.
+  Recent: 0 reflex actions on this position.
+
+  DEADLINE: reply within 45s or the risk daemon will reduce this
+  position for you to health 0.45. Your options:
+    reduce  (size_frac)  - shed exposure, keep the thesis alive
+    close                - out entirely
+    add_margin (to L=n)  - deleverage without reducing exposure;
+                           buys distance, keeps full upside
+    hold                 - only if you can say what would change your mind</code></pre>
+
+<p><code>add_margin</code> deserves its own note. It is a genuinely different answer from <code>reduce</code>: it lowers leverage by posting more margin, which moves the liquidation price away <em>without giving up any of the position</em>. A desk that believes its thesis and is merely being squeezed should almost always prefer it. Today the desk cannot express it at all — there is no verb, and leverage is set once by the tier table at run creation (<code>fleet_planner.py:117</code>) and never revisited. That is a decision the AI should own and currently cannot even name.</p>
+
+<p>The <code>source:</code> line matters too. When it reads <code>synthetic</code> the brief should say so plainly — <em>“this liquidation price is modelled from leverage and an assumed maintenance margin, not reported by a venue”</em> — because a desk told a modelled number as though it were a fact will act with unearned precision.</p>
+
+<h2 id="rollout">7. Rollout, flags, verification</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Phase</th><th>Ships</th><th>Flag</th><th>Exit criterion</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Oracle + <code>health</code>/<code>velocity</code>/<code>ttl</code> + <code>margin</code> telemetry. Synthetic source only. <strong>No behaviour change.</strong></td><td><code>LIQ_ORACLE=on</code></td><td>7 days of health series for every leveraged position, no gaps, no worker exceptions.</td></tr>
+<tr><td>2</td><td>Survival brief into <code>_light_analysis</code> and <code>analysis_agents</code> (the second is required — the E1 router escalates to <code>full</code> <em>for position reasons</em>, and #125 fixed exactly this blind spot once already).</td><td><code>LIQ_DESK_BRIEF=on</code></td><td>The desk references margin state in its reports; no regression in decision latency or parse-failure rate.</td></tr>
+<tr><td>3</td><td>T3 reflex only. The floor goes in before the AI tiers, because a floor with no ceiling above it is still a floor, while AI tiers with no floor below them are not safe.</td><td><code>LIQ_REFLEX=on</code></td><td>Replay shows T3 would have fired 0 times on the recorded history (it should be rare by construction); a synthetic decay injection fires it correctly.</td></tr>
+<tr><td>4</td><td>T1/T2 escalation with the out-of-band wake and deadline.</td><td><code>LIQ_TIERS=on</code></td><td>≥ 10 real T1 events handled by the desk without a T3 follow-on.</td></tr>
+<tr><td>5</td><td>Real broker source: <code>BinanceFuturesBroker.get_margin_state</code>, then IBKR.</td><td>per-adapter</td><td>Broker-reported <code>liquidationPrice</code> agrees with the synthetic model to within the MMR term; every disagreement explained before promoting.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Verification plan</h3>
+<ol>
+  <li><strong>Algebraic:</strong> assert <code>health(cushion price) == 1 − RUN_LIQ_CUSHION_FRAC</code> for both directions and a range of L. This pins the new scalar to the shipped behaviour and would catch a sign error immediately.</li>
+  <li><strong>Replay:</strong> reconstruct the health series from the recorded <code>equity</code> telemetry + position rows and confirm the tier classifier never crosses T2 on history. If it does, the bands are wrong and must be re-derived before shipping — not after.</li>
+  <li><strong>Injection:</strong> synthesise a decaying mark on a copy of a real position and assert each band fires once, in order, with hysteresis holding across a wick.</li>
+  <li><strong>Mutation:</strong> break each of the five omissions back in (drop the MMR term, drop funding, restore the <code>mark_age_ok</code> skip) and confirm a test fails for each. Per house rule, a green suite proves nothing until the bugs have been re-injected — and clear <code>__pycache__</code> inside the runner, or a same-length restore will import the mutated <code>.pyc</code>.</li>
+  <li><strong>Deadline:</strong> stub the LLM to sleep past <code>LIQ_DESK_DEADLINE_S</code> and assert T3 takes over exactly once, with the reflex journalled.</li>
+</ol>
+
+<h2 id="limits">8. What this does not fix</h2>
+<ul>
+  <li><strong>Gaps.</strong> A limit-down open or a weekend crypto cascade jumps through every band between two samples. No monitoring cadence defends against a discontinuity — the only defence is position size and leverage <em>at entry</em>, which belongs to <code>fleet_planner</code>, not to this daemon. Worth stating plainly so the daemon is not mistaken for a guarantee.</li>
+  <li><strong>Cross-margin.</strong> Modelled as isolated. Correct for our simulated ledger, wrong for a real cross-margined account, and the error is unbounded. Until the oracle reads account-level state from a real broker, a cross-margined live account should be refused rather than half-modelled.</li>
+  <li><strong>Day one has no broker.</strong> <code>broker_accounts</code> is empty in prod, so phases 1–4 run entirely on the synthetic source. Everything the daemon says will be labelled <code>synthetic</code>, and that label is doing real work.</li>
+  <li><strong>The stale comment.</strong> <code>fleet_planner.py:57–59</code> should be corrected in phase 1 regardless of anything else here. Someone reading it today would conclude leverage is 1× and liquidation is deferred, and would be wrong on both counts.</li>
+</ul>
+
+<div class="kr">
+  <strong>한국어 상세</strong>
+  <p><strong>왜 필요한가:</strong> 프로덕션 포지션 5개 전부가 2~3배 레버리지입니다. 그런데 청산 방어는 <code>health = 0.15</code> 고정선 하나뿐이고(계산으로 증명 — §2), 유지증거금·펀딩비·마크가격·크로스마진을 모두 무시하며, 가격 피드가 멈추면 검사를 <em>건너뜁니다</em>. 실거래 브로커 어댑터는 마진을 읽는 함수 자체가 없고 Binance 어댑터는 선물이 아니라 현물 전용입니다. 그리고 AI 데스크는 자기가 레버리지를 쓰고 있다는 사실조차 모릅니다.</p>
+  <p><strong>설계:</strong> ① 마진 상태 오라클(브로커 API 우선, 없으면 MMR·펀딩 보정한 합성값 — 어느 쪽인지 AI에게 그대로 알려줌) ② <code>health</code>와 그 <em>속도</em> — 임계값만으로는 “여섯 시간째 0.22”와 “분당 0.15씩 떨어지는 0.40”을 구분할 수 없음 ③ 4단 에스컬레이션: T1·T2는 AI가 판단하고 <code>reduce / close / add_margin / hold</code>를 직접 고름, T3만 기계 반사 ④ 20초 주기 데몬, 포지션 테이블 기준이므로 run_id가 없는 고아 포지션 2건도 커버.</p>
+  <p><strong>정직한 예외:</strong> T3는 의도적으로 룰입니다. 3배에서 health 0.15는 마진 전액 소멸까지 진입가의 5%뿐인데, LLM 왕복은 초 단위이고 꼬리가 두껍습니다. 대신 T3가 작동하면 그 사실을 다음 브리핑에 넣어 데스크가 자기 실패로부터 배우게 합니다. T3가 자주 울리면 그건 T3 상수를 고칠 문제가 아니라 프롬프트를 고칠 문제입니다.</p>
+  <p><strong>못 막는 것:</strong> 갭(비연속 점프)은 어떤 주기로도 못 막습니다 — 진입 시점의 사이즈·레버리지 문제이고 <code>fleet_planner</code>의 일입니다. 크로스마진은 계좌 단위 상태를 읽기 전까지 반쯤 모델링하지 말고 거부하는 편이 맞습니다.</p>
+</div>
+
+<p class="meta" style="margin-top:40px">Companion document: <a href="17-ai-order-authority.html">Plan 17 — AI Order Authority</a>, which replaces the programmed buy/sell/clear sizing with desk-authored intents. The two share the compiler and the rails; Plan 16’s defensive verbs are a subset of Plan 17’s intent set.</p>
+
+</div>
+</body>
+</html>

@@ -23,6 +23,7 @@ const SLUG_TO_GROUP: Record<string, string> = {
   // it shipped; `how-it-works` nearly repeated it.
   'market-hours': 'market-hours',
   'how-it-works': 'how-it-works',
+  'liquidation-defense': 'liq-defense',
 }
 const GROUP_TO_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SLUG_TO_GROUP).map(([s, g]) => [g, s]))
