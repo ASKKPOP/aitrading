@@ -2,18 +2,73 @@ import { useState, useEffect } from 'react'
 import { API_BASE, FINANCIAL_NEWS_PAGE_SIZE, formatIntelNumber, formatIntelTimestamp, type MarketIntelNewsCategory, useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
+// Enum vocabularies the backend emits as raw identifiers. The raw value stays
+// the CSS class (intel-activity-badge ${status}); only the displayed text is
+// localized. Keyed lower-cased so a value's casing can't miss the lookup.
+type EnumLabel = { ko: string; en: string; ja: string; th: string; vi: string; id: string }
+
+// Shared macro tone — used by the macro verdict, each macro signal's status,
+// and a stock's trend_status (bullish | bearish | defensive | neutral |
+// constructive | mixed).
+const TONE_LABELS: Record<string, EnumLabel> = {
+  bullish: { ko: '강세', en: 'bullish', ja: '強気', th: 'ขาขึ้น', vi: 'tăng', id: 'bullish' },
+  bearish: { ko: '약세', en: 'bearish', ja: '弱気', th: 'ขาลง', vi: 'giảm', id: 'bearish' },
+  defensive: { ko: '방어적', en: 'defensive', ja: '守勢', th: 'ตั้งรับ', vi: 'phòng thủ', id: 'defensif' },
+  neutral: { ko: '중립', en: 'neutral', ja: '中立', th: 'เป็นกลาง', vi: 'trung tính', id: 'netral' },
+  constructive: { ko: '우호적', en: 'constructive', ja: '建設的', th: 'เชิงบวก', vi: 'tích cực', id: 'konstruktif' },
+  mixed: { ko: '혼조', en: 'mixed', ja: 'まちまち', th: 'ผสม', vi: 'trái chiều', id: 'campuran' },
+  unavailable: { ko: '데이터 없음', en: 'unavailable', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'không có dữ liệu', id: 'tidak tersedia' },
+  quiet: { ko: '잠잠', en: 'quiet', ja: '静か', th: 'เงียบสงบ', vi: 'trầm lắng', id: 'sepi' },
+}
+
+// ETF flow direction (inflow | outflow | mixed).
+const DIRECTION_LABELS: Record<string, EnumLabel> = {
+  inflow: { ko: '유입', en: 'inflow', ja: '流入', th: 'ไหลเข้า', vi: 'dòng vào', id: 'masuk' },
+  outflow: { ko: '유출', en: 'outflow', ja: '流出', th: 'ไหลออก', vi: 'dòng ra', id: 'keluar' },
+  mixed: TONE_LABELS.mixed,
+}
+
+// News-lane activity (elevated | active | calm | quiet | unavailable).
+const ACTIVITY_LABELS: Record<string, EnumLabel> = {
+  elevated: { ko: '고조', en: 'elevated', ja: '高水準', th: 'สูงมาก', vi: 'rất cao', id: 'sangat aktif' },
+  active: { ko: '활발', en: 'active', ja: '活発', th: 'คึกคัก', vi: 'sôi động', id: 'aktif' },
+  calm: { ko: '차분', en: 'calm', ja: '平穏', th: 'เงียบ', vi: 'êm ả', id: 'tenang' },
+  quiet: TONE_LABELS.quiet,
+  unavailable: TONE_LABELS.unavailable,
+}
+
+// Stock signal (buy | hold | sell | watch).
+const SIGNAL_LABELS: Record<string, EnumLabel> = {
+  buy: { ko: '매수', en: 'buy', ja: '買い', th: 'ซื้อ', vi: 'mua', id: 'beli' },
+  hold: { ko: '보유', en: 'hold', ja: '保有', th: 'ถือ', vi: 'giữ', id: 'tahan' },
+  sell: { ko: '매도', en: 'sell', ja: '売り', th: 'ขาย', vi: 'bán', id: 'jual' },
+  watch: { ko: '관망', en: 'watch', ja: '様子見', th: 'เฝ้าดู', vi: 'theo dõi', id: 'pantau' },
+}
+
+// Alpha Vantage news sentiment (Bullish | Somewhat-Bullish | Neutral |
+// Somewhat-Bearish | Bearish).
+const SENTIMENT_LABELS: Record<string, EnumLabel> = {
+  bullish: TONE_LABELS.bullish,
+  'somewhat-bullish': { ko: '다소 강세', en: 'Somewhat-Bullish', ja: 'やや強気', th: 'ค่อนข้างขาขึ้น', vi: 'hơi tăng', id: 'agak bullish' },
+  neutral: TONE_LABELS.neutral,
+  'somewhat-bearish': { ko: '다소 약세', en: 'Somewhat-Bearish', ja: 'やや弱気', th: 'ค่อนข้างขาลง', vi: 'hơi giảm', id: 'agak bearish' },
+  bearish: TONE_LABELS.bearish,
+}
+
 export function FinancialEventsPage() {
   const { language } = useLanguage()
 
+  // Localize an enum value, keeping the raw text if it isn't in the map so a
+  // newly-added backend value degrades to English rather than vanishing.
+  const enumLabel = (raw: unknown, map: Record<string, EnumLabel>): string => {
+    if (raw === null || raw === undefined || raw === '') return ''
+    const entry = map[String(raw).toLowerCase()]
+    return entry ? tr(language, entry) : String(raw)
+  }
+
   const macroVerdictLabel = (v?: string) => {
     if (!v) return tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' })
-    const map: Record<string, string> = {
-      bullish: tr(language, { ko: '강세', en: 'bullish', ja: '強気', th: 'ขาขึ้น', vi: 'tăng', id: 'bullish' }),
-      bearish: tr(language, { ko: '약세', en: 'bearish', ja: '弱気', th: 'ขาลง', vi: 'giảm', id: 'bearish' }),
-      mixed: tr(language, { ko: '혼조', en: 'mixed', ja: 'まちまち', th: 'ผสม', vi: 'trái chiều', id: 'campuran' }),
-      unavailable: tr(language, { ko: '데이터 없음', en: 'unavailable', ja: 'データなし', th: 'ไม่มีข้อมูล', vi: 'không có dữ liệu', id: 'tidak tersedia' }),
-    }
-    return map[v] || v
+    return enumLabel(v, TONE_LABELS)
   }
   const [macro, setMacro] = useState<any | null>(null)
   const [etfFlows, setEtfFlows] = useState<any | null>(null)
@@ -205,7 +260,7 @@ export function FinancialEventsPage() {
               </div>
               <div className="intel-status-card">
                 <span>{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF', id: 'Aliran dana ETF' })}</span>
-                <strong>{etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}</strong>
+                <strong>{enumLabel(etfFlows?.summary?.direction, DIRECTION_LABELS) || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}</strong>
               </div>
               <div className="intel-status-card">
                 <span>{tr(language, { ko: '뉴스 레인', en: 'News lanes', ja: 'ニュースレーン', th: 'ช่องข่าว', vi: 'Luồng tin tức', id: 'Jalur berita' })}</span>
@@ -265,7 +320,7 @@ export function FinancialEventsPage() {
                                 <span>{tr(language, { ko: '마지막 업데이트', en: 'Last update', ja: '最終更新', th: 'อัปเดตล่าสุด', vi: 'Cập nhật cuối', id: 'Pembaruan terakhir' })}: {formatIntelTimestamp(item.created_at, language)}</span>
                               </div>
                             </div>
-                            <div className={`intel-activity-badge ${item.trend_status || 'quiet'}`}>{item.signal}</div>
+                            <div className={`intel-activity-badge ${item.trend_status || 'quiet'}`}>{enumLabel(item.signal, SIGNAL_LABELS)}</div>
                           </div>
                           <div className="intel-stock-price-row">
                             <div className="intel-stock-price">${item.current_price}</div>
@@ -276,7 +331,7 @@ export function FinancialEventsPage() {
                           <div className="intel-news-item-summary">{item.summary}</div>
                           <div className="intel-chip-row">
                             <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm', id: 'Skor' })} {item.signal_score}</span>
-                            <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {item.trend_status}</span>
+                            <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {enumLabel(item.trend_status, TONE_LABELS)}</span>
                             {item.price_as_of && (
                               <span className={`intel-chip ${item.price_stale ? 'intel-chip-warn' : 'intel-chip-live'}`}>
                                 {priceAsOfLabel} {formatIntelTimestamp(item.price_as_of, language)}
@@ -386,11 +441,11 @@ export function FinancialEventsPage() {
                                     <div key={entry.analysis_id} className="intel-history-item">
                                       <div className="intel-history-item-header">
                                         <span>{formatIntelTimestamp(entry.created_at, language)}</span>
-                                        <span className={`intel-activity-badge ${entry.trend_status || 'quiet'}`}>{entry.signal}</span>
+                                        <span className={`intel-activity-badge ${entry.trend_status || 'quiet'}`}>{enumLabel(entry.signal, SIGNAL_LABELS)}</span>
                                       </div>
                                       <div className="intel-chip-row">
                                         <span className="intel-chip">{tr(language, { ko: '점수', en: 'Score', ja: 'スコア', th: 'คะแนน', vi: 'Điểm', id: 'Skor' })} {entry.signal_score}</span>
-                                        <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {entry.trend_status}</span>
+                                        <span className="intel-chip">{tr(language, { ko: '추세', en: 'Trend', ja: 'トレンド', th: 'แนวโน้ม', vi: 'Xu hướng', id: 'Tren' })} {enumLabel(entry.trend_status, TONE_LABELS)}</span>
                                         {entry.analysis?.return_5d_pct !== undefined && (
                                           <span className="intel-chip">{tr(language, { ko: '5일 수익률', en: '5d return', ja: '5日リターン', th: 'ผลตอบแทน 5 วัน', vi: 'Lợi suất 5 ngày', id: 'Imbal hasil 5 hari' })} {formatIntelNumber(entry.analysis?.return_5d_pct)}%</span>
                                         )}
@@ -423,7 +478,7 @@ export function FinancialEventsPage() {
                         <div className="intel-news-description">{currentCategory.description}</div>
                       </div>
                       <div className={`intel-activity-badge ${currentCategory.summary?.activity_level || 'quiet'}`}>
-                        {currentCategory.summary?.activity_level || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
+                        {enumLabel(currentCategory.summary?.activity_level, ACTIVITY_LABELS) || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
                       </div>
                     </div>
 
@@ -474,7 +529,7 @@ export function FinancialEventsPage() {
                                 {item.summary && <div className="intel-news-item-summary">{item.summary}</div>}
                                 <div className="intel-chip-row">
                                   {item.overall_sentiment_label && (
-                                    <span className="intel-chip">{item.overall_sentiment_label}</span>
+                                    <span className="intel-chip">{enumLabel(item.overall_sentiment_label, SENTIMENT_LABELS)}</span>
                                   )}
                                   {(item.ticker_sentiment || []).slice(0, 4).map((ticker: any) => (
                                     <span key={`${item.title}-${ticker.ticker}`} className="intel-chip intel-chip-symbol">
@@ -547,7 +602,7 @@ export function FinancialEventsPage() {
                         <div key={signal.id} className="intel-macro-row">
                           <div className="intel-macro-row-top">
                             <span className="intel-macro-label">{signal.label}</span>
-                            <span className={`intel-activity-badge ${signal.status || 'quiet'}`}>{signal.status}</span>
+                            <span className={`intel-activity-badge ${signal.status || 'quiet'}`}>{enumLabel(signal.status, TONE_LABELS)}</span>
                           </div>
                           <div className="intel-macro-row-value">
                             {signal.value !== null && signal.value !== undefined
@@ -570,7 +625,7 @@ export function FinancialEventsPage() {
                         <div className="intel-news-title">{tr(language, { ko: 'ETF 자금 흐름', en: 'ETF Flow', ja: 'ETFフロー', th: 'กระแสเงิน ETF', vi: 'Dòng tiền ETF', id: 'Aliran dana ETF' })}</div>
                       </div>
                       <div className={`intel-activity-badge ${etfFlows?.summary?.direction || 'quiet'}`}>
-                        {etfFlows?.summary?.direction || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
+                        {enumLabel(etfFlows?.summary?.direction, DIRECTION_LABELS) || (tr(language, { ko: '해당 없음', en: 'N/A', ja: 'N/A', th: 'N/A', vi: 'N/A', id: 'T/A' }))}
                       </div>
                     </div>
                     <div className="intel-news-card-meta">
@@ -609,7 +664,7 @@ export function FinancialEventsPage() {
                         <div key={etf.symbol} className="intel-etf-stack-item">
                           <div className="intel-etf-stack-top">
                             <div className="intel-etf-symbol">{etf.symbol}</div>
-                            <div className={`intel-activity-badge ${etf.direction || 'quiet'}`}>{etf.direction}</div>
+                            <div className={`intel-activity-badge ${etf.direction || 'quiet'}`}>{enumLabel(etf.direction, DIRECTION_LABELS)}</div>
                           </div>
                           <div className="intel-etf-stack-metrics">
                             <div className="intel-etf-metric">
