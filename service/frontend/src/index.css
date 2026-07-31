@@ -1478,6 +1478,18 @@ a {
   background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
 }
 
+/* Universal press feedback — every enabled button visibly reacts to the
+   click itself, before any network round-trip. Inline-styled buttons all
+   over the app never got a pressed state, so an in-flight action looked
+   identical to a dead click. */
+button:not(:disabled):active {
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(0.92);
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Form Elements */
 .form-group {
   margin-bottom: 20px;

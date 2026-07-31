@@ -99,6 +99,12 @@ export function AdminPage() {
   const [password, setPassword] = useState('')
   const [tab, setTab] = useState<Tab>('dashboard')
   const [error, setError] = useState('')
+  // One shared in-flight flag for the ~35 act() buttons: while a write is
+  // running a floating chip shows, and when it fails the same chip carries
+  // the error — the top banner alone sat off-screen for buttons below the
+  // fold, so failures looked like dead clicks.
+  const [actBusy, setActBusy] = useState(false)
+  const [loggingIn, setLoggingIn] = useState(false)
 
   const [analytics, setAnalytics] = useState<any | null>(null)
   const [overview, setOverview] = useState<any | null>(null)
@@ -312,17 +318,18 @@ export function AdminPage() {
   }
 
   async function login() {
-    setError('')
+    setError(''); setLoggingIn(true)
     const r = await fetch(`${API_BASE}/admin/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
-    if (!r.ok) { setError(T.invalid); return }
+    if (!r.ok) { setError(T.invalid); setLoggingIn(false); return }
     const body = await r.json()
     localStorage.setItem(ADMIN_TOKEN_KEY, body.token)
     setToken(body.token)
     setMe({ id: body.admin_id, email: body.email, role: body.role })
     setPassword('')
+    setLoggingIn(false)
   }
 
   async function logout() {
@@ -404,9 +411,10 @@ export function AdminPage() {
   // Returns true only when the write succeeded — callers must not clear a typed
   // reply/broadcast composer on failure, or the admin loses what they wrote.
   async function act(path: string, opts: RequestInit, then: Tab): Promise<boolean> {
-    setError('')
+    setError(''); setActBusy(true)
     try { await call(path, opts); await refresh(then); return true }
     catch (e: any) { if (e?.message !== '401') setError(String(e?.message || e)); return false }
+    finally { setActBusy(false) }
   }
 
   // ── Login screen ──
@@ -421,7 +429,7 @@ export function AdminPage() {
           onKeyDown={e => e.key === 'Enter' && login()}
           style={{ ...inputStyle, width: '100%', marginBottom: 14 }} autoComplete="current-password" />
         {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
-        <button onClick={login} style={{ ...primaryBtn, width: '100%', padding: '10px 20px' }}>{T.signIn}</button>
+        <button onClick={login} disabled={loggingIn} style={{ ...primaryBtn, width: '100%', padding: '10px 20px', opacity: loggingIn ? 0.6 : 1 }}>{loggingIn ? '⏳ ' : ''}{T.signIn}</button>
       </div>
     )
   }
@@ -498,6 +506,16 @@ export function AdminPage() {
         ))}
       </div>
       {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
+      {/* Floating write-status chip: visible no matter how deep the pressed
+          button sits. Shows in-flight, then sticks around on failure. */}
+      {(actBusy || error) && (
+        <div style={{ position: 'fixed', right: 18, bottom: 18, zIndex: 900,
+          padding: '9px 14px', borderRadius: 9, fontSize: 12.5, maxWidth: 360,
+          background: actBusy ? 'rgba(40,38,30,0.92)' : 'rgba(90,26,26,0.94)',
+          color: '#fff', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+          {actBusy ? '⏳ …' : `⚠️ ${error}`}
+        </div>
+      )}
 
       {/* ── Dashboard ── */}
       {tab === 'dashboard' && analytics && ov && (

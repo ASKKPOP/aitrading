@@ -87,6 +87,7 @@ export function AutomationPage() {
   const [agentBudget, setAgentBudget] = useState<number>(5000)
   const [error, setError] = useState('')
   const [removeError, setRemoveError] = useState('')
+  const [removingId, setRemovingId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
 
   // ① Make by New Trading — the modal lives in RunsLiveSection; bumping this
@@ -354,7 +355,7 @@ export function AutomationPage() {
 
   async function remove(id?: number) {
     if (!id) return
-    setRemoveError('')
+    setRemoveError(''); setRemovingId(id)
     try {
       const res = await fetch(`${API_BASE}/automation/configs/${id}`, { method: 'DELETE', headers: authHeaders })
       if (!res.ok) {
@@ -363,6 +364,7 @@ export function AutomationPage() {
       }
       await refresh()
     } catch { setRemoveError(T.removeFailed) }
+    finally { setRemovingId(null) }
   }
 
   // --bg-input is not defined in index.css; use the theme vars that are, so
@@ -438,7 +440,7 @@ export function AutomationPage() {
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
             <button onClick={addAgent} disabled={busy || agentBudget < 100}
               style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
-              🤖 {T.startAgent}
+              {busy ? '⏳' : '🤖'} {T.startAgent}
             </button>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
           </div>
@@ -483,7 +485,7 @@ export function AutomationPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.simpleNote}</span>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
-            <button onClick={addSimple} disabled={busy} style={{ marginLeft: 'auto', padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>▶ {T.startAuto}</button>
+            <button onClick={addSimple} disabled={busy} style={{ marginLeft: 'auto', padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? '⏳' : '▶'} {T.startAuto}</button>
           </div>
         </>
       )}
@@ -510,7 +512,7 @@ export function AutomationPage() {
                   ⚠ {T.liveMoney}
                 </span>
               )}
-              <button onClick={() => remove(r.id)} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>{T.remove}</button>
+              <button onClick={() => remove(r.id)} disabled={removingId !== null} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12, opacity: removingId === r.id ? 0.5 : 1 }}>{removingId === r.id ? '⏳ ' : ''}{T.remove}</button>
             </div>
           ))}
         </div>

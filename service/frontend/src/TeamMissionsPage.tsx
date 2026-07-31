@@ -410,8 +410,14 @@ export function TeamMissionsPage({ token }: TeamMissionsPageProps) {
                     </div>
                   </div>
                   {token && mission.status !== 'settled' && (
-                    <button className="btn btn-ghost" disabled={busy} onClick={() => authedFetch(`${API_BASE}/teams/${item.team_key}/join`, {}).then(() => loadMission()).catch((err) => alert(err.message))}>
-                      {tr(language, { ko: '팀 참여', en: 'Join team', ja: 'チームに参加', th: 'เข้าร่วมทีม', vi: 'Tham gia nhóm', id: 'Gabung tim' })}
+                    <button className="btn btn-ghost" disabled={busy} onClick={() => {
+                      setBusy(true)
+                      authedFetch(`${API_BASE}/teams/${item.team_key}/join`, {})
+                        .then(() => loadMission())
+                        .catch((err) => alert(err.message))
+                        .finally(() => setBusy(false))
+                    }}>
+                      {busy ? '⏳ ' : ''}{tr(language, { ko: '팀 참여', en: 'Join team', ja: 'チームに参加', th: 'เข้าร่วมทีม', vi: 'Tham gia nhóm', id: 'Gabung tim' })}
                     </button>
                   )}
                 </article>

@@ -293,8 +293,8 @@ function SignalCard({
 }: {
   signal: any
   onRefresh?: () => void
-  onFollow?: (leaderId: number) => void
-  onUnfollow?: (leaderId: number) => void
+  onFollow?: (leaderId: number) => void | Promise<void>
+  onUnfollow?: (leaderId: number) => void | Promise<void>
   isFollowingAuthor?: boolean
   canFollowAuthor?: boolean
   canAcceptReplies?: boolean
@@ -306,6 +306,17 @@ function SignalCard({
   const [replyContent, setReplyContent] = useState('')
   const [loadingReplies, setLoadingReplies] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // Follow/accept previously swallowed failures (`if (res.ok) …` + console.error)
+  // — a refused press was indistinguishable from a dead button.
+  const [followBusy, setFollowBusy] = useState(false)
+  const [acceptingId, setAcceptingId] = useState<number | null>(null)
+  const [actErr, setActErr] = useState('')
+  const runFollowAction = async (fn?: (id: number) => void | Promise<void>, id?: number) => {
+    if (!fn || !id) return
+    setFollowBusy(true); setActErr('')
+    try { await fn(id) } catch (e: any) { setActErr(e?.message || 'error') }
+    finally { setFollowBusy(false) }
+  }
   const { language } = useLanguage()
   const teamBadges = Array.isArray(signal.team_badges) ? signal.team_badges : []
 
@@ -369,6 +380,7 @@ function SignalCard({
 
   const handleAcceptReply = async (replyId: number) => {
     if (!token) return
+    setAcceptingId(replyId); setActErr('')
     try {
       const res = await fetch(`${API_BASE}/signals/${signal.signal_id}/replies/${replyId}/accept`, {
         method: 'POST',
@@ -377,9 +389,15 @@ function SignalCard({
       if (res.ok) {
         loadReplies()
         onRefresh?.()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        setActErr(typeof d.detail === 'string' ? d.detail : `error (HTTP ${res.status})`)
       }
     } catch (e) {
       console.error(e)
+      setActErr('network error')
+    } finally {
+      setAcceptingId(null)
     }
   }
 
@@ -402,21 +420,27 @@ function SignalCard({
               <button
                 className="btn btn-ghost"
                 style={{ padding: '4px 10px', fontSize: '12px' }}
-                onClick={() => onUnfollow?.(signal.agent_id)}
+                disabled={followBusy}
+                onClick={() => runFollowAction(onUnfollow, signal.agent_id)}
               >
-                {tr(language, { ko: '팔로잉', en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi', id: 'Mengikuti' })}
+                {followBusy ? '⏳ ' : ''}{tr(language, { ko: '팔로잉', en: 'Following', ja: 'フォロー中', th: 'กำลังติดตาม', vi: 'Đang theo dõi', id: 'Mengikuti' })}
               </button>
             ) : (
               <button
                 className="btn btn-primary"
                 style={{ padding: '4px 10px', fontSize: '12px' }}
-                onClick={() => onFollow?.(signal.agent_id)}
+                disabled={followBusy}
+                onClick={() => runFollowAction(onFollow, signal.agent_id)}
               >
-                {tr(language, { ko: '팔로우', en: 'Follow', ja: 'フォロー', th: 'ติดตาม', vi: 'Theo dõi', id: 'Ikuti' })}
+                {followBusy ? '⏳ ' : ''}{tr(language, { ko: '팔로우', en: 'Follow', ja: 'フォロー', th: 'ติดตาม', vi: 'Theo dõi', id: 'Ikuti' })}
               </button>
             )
           )}
         </div>
+      )}
+
+      {actErr && (
+        <div style={{ color: '#f0663f', fontSize: '12px', marginBottom: '8px' }}>⚠️ {actErr}</div>
       )}
 
       {teamBadges.length > 0 && (
@@ -532,8 +556,10 @@ function SignalCard({
                             {tr(language, { ko: '수락됨', en: 'Accepted', ja: 'ベスト返信', th: 'คำตอบที่ดีที่สุด', vi: 'Trả lời tốt nhất', id: 'Diterima' })}
                           </span>
                         ) : canAcceptReplies ? (
-                          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleAcceptReply(reply.id)}>
-                            {tr(language, { ko: '수락', en: 'Accept', ja: '採用', th: 'ยอมรับ', vi: 'Chấp nhận', id: 'Terima' })}
+                          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '12px' }}
+                            disabled={acceptingId !== null}
+                            onClick={() => handleAcceptReply(reply.id)}>
+                            {acceptingId === reply.id ? '⏳ ' : ''}{tr(language, { ko: '수락', en: 'Accept', ja: '採用', th: 'ยอมรับ', vi: 'Chấp nhận', id: 'Terima' })}
                           </button>
                         ) : null}
                       </div>
@@ -630,7 +656,6 @@ export function StrategiesPage() {
 
   const handleFollow = async (leaderId: number) => {
     if (!token) return
-    try {
       const res = await fetch(`${API_BASE}/signals/follow`, {
         method: 'POST',
         headers: {
@@ -639,15 +664,15 @@ export function StrategiesPage() {
         },
         body: JSON.stringify({ leader_id: leaderId })
       })
-      if (res.ok) loadViewerContext()
-    } catch (e) {
-      console.error(e)
-    }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(typeof d.detail === 'string' ? d.detail : `error (HTTP ${res.status})`)
+      }
+      await loadViewerContext()
   }
 
   const handleUnfollow = async (leaderId: number) => {
     if (!token) return
-    try {
       const res = await fetch(`${API_BASE}/signals/unfollow`, {
         method: 'POST',
         headers: {
@@ -656,10 +681,11 @@ export function StrategiesPage() {
         },
         body: JSON.stringify({ leader_id: leaderId })
       })
-      if (res.ok) loadViewerContext()
-    } catch (e) {
-      console.error(e)
-    }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(typeof d.detail === 'string' ? d.detail : `error (HTTP ${res.status})`)
+      }
+      await loadViewerContext()
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -1077,7 +1103,6 @@ export function DiscussionsPage() {
 
   const handleFollow = async (leaderId: number) => {
     if (!token) return
-    try {
       const res = await fetch(`${API_BASE}/signals/follow`, {
         method: 'POST',
         headers: {
@@ -1086,15 +1111,15 @@ export function DiscussionsPage() {
         },
         body: JSON.stringify({ leader_id: leaderId })
       })
-      if (res.ok) loadViewerContext()
-    } catch (e) {
-      console.error(e)
-    }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(typeof d.detail === 'string' ? d.detail : `error (HTTP ${res.status})`)
+      }
+      await loadViewerContext()
   }
 
   const handleUnfollow = async (leaderId: number) => {
     if (!token) return
-    try {
       const res = await fetch(`${API_BASE}/signals/unfollow`, {
         method: 'POST',
         headers: {
@@ -1103,10 +1128,11 @@ export function DiscussionsPage() {
         },
         body: JSON.stringify({ leader_id: leaderId })
       })
-      if (res.ok) loadViewerContext()
-    } catch (e) {
-      console.error(e)
-    }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(typeof d.detail === 'string' ? d.detail : `error (HTTP ${res.status})`)
+      }
+      await loadViewerContext()
   }
 
   return (

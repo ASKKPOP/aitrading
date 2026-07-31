@@ -277,12 +277,21 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     } finally { setBusy(false) }
   }
 
+  // Tracks WHICH lifecycle button is in flight so the spinner lands on the
+  // pressed one. act() previously never surfaced failures either — a refused
+  // stop looked exactly like a dead button.
+  const [actingKey, setActingKey] = useState<string | null>(null)
   const act = async (path: string) => {
     if (!fleet) return
-    setBusy(true)
-    try { await fetch(`${API_BASE}/fleets/${fleet.id}/${path}`, { method: 'POST', headers: authHeaders, body: '{}' }); await load() }
-    finally { setBusy(false) }
+    setBusy(true); setError(null); setActingKey(path)
+    try {
+      const r = await fetch(`${API_BASE}/fleets/${fleet.id}/${path}`, { method: 'POST', headers: authHeaders, body: '{}' })
+      if (!r.ok) { setError((await r.json().catch(() => ({}))).detail || `error (HTTP ${r.status})`); return }
+      await load()
+    } catch { setError('network error') }
+    finally { setBusy(false); setActingKey(null) }
   }
+  const spin = (key: string) => (busy && actingKey === key ? '⏳ ' : '')
 
   const chip = (active: boolean): any => ({
     padding: '7px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 13,
@@ -430,8 +439,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             <div style={{ marginBottom: 10, padding: '10px 12px', borderRadius: 8, background: 'rgba(240,102,63,0.12)', fontSize: 12.5 }}>
               ⚠️ {reasonLabel('drawdown_warning')}
               <button onClick={() => act('resume-warning')} disabled={busy}
-                style={{ marginLeft: 12, padding: '5px 12px', borderRadius: 7, border: '1px solid #f0663f', background: 'transparent', color: '#f0663f', fontSize: 12, cursor: 'pointer' }}>
-                {T.resumeWarning}
+                style={{ marginLeft: 12, padding: '5px 12px', borderRadius: 7, border: '1px solid #f0663f', background: 'transparent', color: '#f0663f', fontSize: 12, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
+                {spin('resume-warning')}{T.resumeWarning}
               </button>
             </div>
           )}
@@ -528,13 +537,16 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             ))}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {fleet.status === 'active' && <button style={chip(false)} onClick={() => act('pause')} disabled={busy}>{T.pause}</button>}
-            {fleet.status === 'paused' && <button style={chip(false)} onClick={() => act('resume')} disabled={busy}>{T.resume}</button>}
+            {fleet.status === 'active' && <button style={{ ...chip(false), opacity: busy ? 0.55 : 1 }} onClick={() => act('pause')} disabled={busy}>{spin('pause')}{T.pause}</button>}
+            {fleet.status === 'paused' && <button style={{ ...chip(false), opacity: busy ? 0.55 : 1 }} onClick={() => act('resume')} disabled={busy}>{spin('resume')}{T.resume}</button>}
             <button onClick={() => act('stop')} disabled={busy}
-              style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-              {T.stopAll}
+              style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
+              {spin('stop')}{T.stopAll}
             </button>
           </div>
+          {error && (
+            <div style={{ color: '#f0663f', fontSize: 12.5, marginTop: 8 }}>⚠️ {error}</div>
+          )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
             <span style={{ fontWeight: 600 }}>{T.goal}</span>
             <input type="number" min={0} max={500} step={0.5}

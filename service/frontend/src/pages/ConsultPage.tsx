@@ -66,7 +66,7 @@ export function ConsultPage({ token }: Props) {
   }
 
   async function newSession() {
-    setErr('')
+    setErr(''); setBusy(true)
     try {
       const r = await fetch(`${API_BASE}/analysis/chat/sessions`, {
         method: 'POST', headers: auth,
@@ -77,6 +77,7 @@ export function ConsultPage({ token }: Props) {
       setSessionId(d.id); setMessages([]); setDraft(null)
       await loadSessions()
     } catch (e: any) { setErr(e.message) }
+    finally { setBusy(false) }
   }
 
   async function send() {
@@ -153,7 +154,7 @@ export function ConsultPage({ token }: Props) {
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
         <SymbolSelect variant="pair" value={symbol} onChange={setSymbol} style={{ ...inp, width: 140 }} />
-        <button onClick={newSession} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>+ {T.newChat}</button>
+        <button onClick={newSession} disabled={busy} style={{ ...inp, cursor: 'pointer', fontWeight: 600, opacity: busy ? 0.6 : 1 }}>{busy ? '⏳' : '+'} {T.newChat}</button>
         {sessions.slice(0, 6).map(s => (
           <button key={s.id} onClick={() => openSession(s.id)}
             style={{ padding: '6px 12px', borderRadius: 999, fontSize: 12, cursor: 'pointer',

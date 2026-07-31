@@ -188,6 +188,13 @@ const REASON_TEXT: Record<string, Record<Language, string>> = {
     ko: '생성되었습니다', en: 'Created', ja: '作成しました', th: 'สร้างแล้ว', vi: 'Đã tạo', id: 'Dibuat' },
 }
 
+// The two stop buttons share one API action — the key tells them apart so
+// the in-flight spinner lands on the button that was actually pressed.
+function actionKey(action: string, body?: any): string {
+  if (action === 'stop') return body?.flatten ? 'stop:flatten' : 'stop:hold'
+  return action
+}
+
 export function statusLabel(status: string | undefined, lang: Language): string {
   if (!status) return ''
   return STATUS_TEXT[status] ? tr(lang, STATUS_TEXT[status]) : status
@@ -402,6 +409,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   // seeded from the run — null means the modal is in create mode.
   const [editRunId, setEditRunId] = useState<number | null>(null)
   const [err, setErr] = useState('')
+  // Which lifecycle action is in flight, as `${runId}:${key}` — drives the
+  // pressed-button spinner and disables the drawer's action row. Without it
+  // a click had NO visible reaction until the next poll (and errors rendered
+  // BEHIND the drawer, so failures looked like dead buttons).
+  const [acting, setActing] = useState<string | null>(null)
   // Structured start conflict (409 with resolvable position/rules) — rendered
   // as a modal offering one-click "close position + disable rules, then start".
   const [conflict, setConflict] = useState<{
@@ -576,6 +588,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
 
   async function act(id: number, action: string, body?: any) {
     setErr('')
+    setActing(`${id}:${actionKey(action, body)}`)
     try {
       const r = await fetch(`${API_BASE}/runs/${id}/${action}`, {
         method: 'POST', headers: auth,
@@ -607,12 +620,23 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       }
       await load()
     } catch { setErr(T.networkError) }
+    finally { setActing(null) }
   }
 
   async function del(id: number) {
-    await fetch(`${API_BASE}/runs/${id}`, { method: 'DELETE', headers: auth })
-    if (selected === id) setSelected(null)
-    await load()
+    setErr('')
+    setActing(`${id}:delete`)
+    try {
+      const r = await fetch(`${API_BASE}/runs/${id}`, { method: 'DELETE', headers: auth })
+      if (!r.ok) {
+        const detail = (await r.json().catch(() => ({}))).detail
+        setErr((typeof detail === 'object' ? detail?.message : detail) || T.actionFailed)
+        return
+      }
+      if (selected === id) setSelected(null)
+      await load()
+    } catch { setErr(T.networkError) }
+    finally { setActing(null) }
   }
 
   // "AI Automation Master" (the section) and "TRADING" (one box) are product
@@ -886,6 +910,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           tick={tickByRun[selected]}
           onClose={() => setSelected(null)}
           onAct={act} onDelete={del} language={language}
+          acting={acting} err={err}
           onEdit={(id) => { setSelected(null); setEditRunId(id) }} />
       )}
 
@@ -959,13 +984,16 @@ export function RunsLivePage({ token }: Props) {
   )
 }
 
-function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdit, language }: {
+function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdit, language,
+  acting, err }: {
   runId: number; token: string; events: any[]; tick: any
   onClose: () => void
   onAct: (id: number, action: string, body?: any) => void
   onDelete: (id: number) => void
   onEdit?: (id: number) => void
   language: Language
+  acting?: string | null
+  err?: string
 }) {
   const [snap, setSnap] = useState<any>(null)
   const auth = { Authorization: `Bearer ${token}` }
@@ -987,6 +1015,10 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdi
   const status = run?.status
   const canStop = ['armed', 'running', 'paused'].includes(status)
   const log = events.slice().reverse().slice(0, 60)
+  // While any lifecycle action is in flight the whole row locks and the
+  // pressed button carries the spinner — the click must visibly register.
+  const busy = acting != null
+  const spin = (key: string) => (acting === `${runId}:${key}` ? '⏳ ' : '')
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0,
@@ -1037,38 +1069,44 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdi
             height={120} />
         </div>
 
+        {err && (
+          <div style={{ color: '#d03b3b', marginTop: 14, fontSize: 13, lineHeight: 1.5 }}>
+            ⚠️ {err}
+          </div>
+        )}
         {canStop && (
           <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             {status === 'running' &&
-              <button className="btn" onClick={() => onAct(runId, 'pause')}>
-                {tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng', id: 'Jeda' })}</button>}
+              <button className="btn" disabled={busy} onClick={() => onAct(runId, 'pause')}>
+                {spin('pause')}{tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng', id: 'Jeda' })}</button>}
             {status === 'paused' &&
-              <button className="btn" onClick={() => onAct(runId, 'resume')}>
-                {tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' })}</button>}
-            <button className="btn" style={{ color: '#eb6834' }}
+              <button className="btn" disabled={busy} onClick={() => onAct(runId, 'resume')}>
+                {spin('resume')}{tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' })}</button>}
+            <button className="btn" style={{ color: '#eb6834' }} disabled={busy}
               onClick={() => onAct(runId, 'stop', { flatten: true })}>
-              {tr(language, { ko: '정지+청산', en: 'Stop & flatten', ja: '停止+清算',
+              {spin('stop:flatten')}{tr(language, { ko: '정지+청산', en: 'Stop & flatten', ja: '停止+清算',
                 th: 'หยุด+ปิด', vi: 'Dừng + đóng', id: 'Hentikan & tutup posisi' })}</button>
-            <button className="btn"
+            <button className="btn" disabled={busy}
               onClick={() => onAct(runId, 'stop', { flatten: false })}>
-              {tr(language, { ko: '정지+보유', en: 'Stop & hold', ja: '停止+保有',
+              {spin('stop:hold')}{tr(language, { ko: '정지+보유', en: 'Stop & hold', ja: '停止+保有',
                 th: 'หยุด+ถือ', vi: 'Dừng + giữ', id: 'Hentikan & tahan posisi' })}</button>
           </div>
         )}
         {['draft', 'stopped'].includes(status) &&
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             {status === 'draft' &&
-              <button className="btn btn-primary" onClick={() => onAct(runId, 'start')}>
-                {tr(language, { ko: '시작', en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu', id: 'Mulai' })}</button>}
+              <button className="btn btn-primary" disabled={busy} onClick={() => onAct(runId, 'start')}>
+                {spin('start')}{tr(language, { ko: '시작', en: 'Start', ja: '開始', th: 'เริ่ม', vi: 'Bắt đầu', id: 'Mulai' })}</button>}
             {/* Only a draft can be re-configured. It is also the way out of the
                 exclusivity refusal: change the interval, type, confidence or
                 provider here and this TRADING can run beside the existing one. */}
             {status === 'draft' && onEdit &&
-              <button className="btn" onClick={() => onEdit(runId)}>
+              <button className="btn" disabled={busy} onClick={() => onEdit(runId)}>
                 {tr(language, { ko: '설정 수정', en: 'Edit settings', ja: '設定を編集',
                   th: 'แก้ไขการตั้งค่า', vi: 'Sửa cài đặt', id: 'Ubah pengaturan' })}</button>}
-            <button className="btn" style={{ color: '#d03b3b' }} onClick={() => onDelete(runId)}>
-              {tr(language, { ko: '삭제', en: 'Delete', ja: '削除', th: 'ลบ', vi: 'Xóa', id: 'Hapus' })}</button>
+            <button className="btn" style={{ color: '#d03b3b' }} disabled={busy}
+              onClick={() => onDelete(runId)}>
+              {spin('delete')}{tr(language, { ko: '삭제', en: 'Delete', ja: '削除', th: 'ลบ', vi: 'Xóa', id: 'Hapus' })}</button>
           </div>}
 
         <h3 style={{ fontSize: 13, marginTop: 20, marginBottom: 6 }}>

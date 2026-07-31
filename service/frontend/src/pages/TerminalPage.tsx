@@ -37,6 +37,8 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
   const [leverage, setLeverage] = useState(10)                   // futures
   const [confirm, setConfirm] = useState<null | { action: 'buy' | 'sell' | 'short' | 'cover'; label: string }>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [closingId, setClosingId] = useState<any>(null)
+  const [closeMsg, setCloseMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
   const T = {
@@ -158,13 +160,19 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     if (r.ok) { setQty(''); setOrderValue(''); setPct(0); loadPositions() }
   }
 
+  // Places a REAL closing order — must lock its button while in flight
+  // (double-click double-closed) and report the result AT the positions
+  // table, not only in the order panel's msg slot.
   async function marketClose(p: any) {
-    if (!token) return
+    if (!token || closingId !== null) return
     const action = p.side === 'long' ? 'sell' : 'cover'
     const live = price && p.symbol === symbol ? price : (p.current_price ?? p.entry_price)
-    const r = await placeOrder(token, { market: p.market, action, symbol: p.symbol, price: live, quantity: Math.abs(p.quantity), content: 'market close' })
-    setMsg({ ok: r.ok, text: r.ok ? `✓ closed ${p.symbol}` : r.message })
-    loadPositions()
+    setClosingId(p.id ?? `${p.symbol}:${p.side}`); setCloseMsg(null)
+    try {
+      const r = await placeOrder(token, { market: p.market, action, symbol: p.symbol, price: live, quantity: Math.abs(p.quantity), content: 'market close' })
+      setCloseMsg({ ok: r.ok, text: r.ok ? `✓ closed ${p.symbol}` : `⚠️ ${r.message}` })
+      loadPositions()
+    } finally { setClosingId(null) }
   }
 
   /* ── styles ── */
@@ -312,6 +320,13 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
         <div style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--border-color,#e6ddd0)' }}>
           {isSpot ? T.holdings : T.positionsTab}
         </div>
+        {closeMsg && (
+          <div style={{ padding: '8px 14px', fontSize: 12.5,
+            color: closeMsg.ok ? '#0ca30c' : '#d03b3b',
+            borderBottom: '1px solid var(--border-color,#e6ddd0)' }}>
+            {closeMsg.text}
+          </div>
+        )}
         {(() => {
           const rows = positions.filter(p => isSpot ? p.side === 'long' : true)
           if (rows.length === 0) return <div style={{ padding: 16, color: 'var(--text-secondary,#8a8073)', fontSize: 13 }}>{T.empty}</div>
@@ -347,7 +362,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
                           {(p.pnl ?? 0) >= 0 ? '+' : ''}{fmtUsd(p.pnl ?? 0)} / {roi.toFixed(2)}%
                         </td>
                         <td style={{ textAlign: 'right', padding: '8px 14px' }}>
-                          <button onClick={() => marketClose(p)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 11.5, cursor: 'pointer' }}>{T.close}</button>
+                          <button onClick={() => marketClose(p)} disabled={closingId !== null} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', fontSize: 11.5, cursor: 'pointer', opacity: closingId === (p.id ?? `${p.symbol}:${p.side}`) ? 0.5 : 1 }}>{closingId === (p.id ?? `${p.symbol}:${p.side}`) ? '⏳' : T.close}</button>
                         </td>
                       </tr>
                     )
