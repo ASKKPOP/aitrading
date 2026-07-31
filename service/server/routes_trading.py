@@ -751,6 +751,94 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         ctx.positions_cache[agent['id']] = (now_ts, payload)
         return payload
 
+    @app.patch('/api/positions/{position_id}/tpsl')
+    async def set_position_tpsl(position_id: int, data: dict,
+                                authorization: str = Header(None)):
+        """Set or clear stop-loss / take-profit on one of the agent's own
+        positions — the terminals' TP/SL editor (ga TpSlEditModal semantics).
+
+        Three-state body: a key that is ABSENT keeps the current value, an
+        explicit null CLEARS it, a number SETS it. Values are validated
+        side-aware against the live price (long: SL below / TP above; short
+        inverted) so a level that would trigger instantly is refused.
+        Enforcement is the existing risk-watcher (risk_engine
+        run_sltp_watcher_tick) at price-poll granularity.
+        """
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        if not isinstance(data, dict):
+            raise HTTPException(status_code=422, detail='Body must be an object')
+        if not ('stop_loss' in data or 'take_profit' in data):
+            raise HTTPException(status_code=422,
+                                detail='Provide stop_loss and/or take_profit')
+
+        def _parse(key: str):
+            # (present, value) — value None means explicit clear.
+            if key not in data:
+                return False, None
+            raw = data[key]
+            if raw is None:
+                return True, None
+            try:
+                val = float(raw)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=422, detail=f'{key} must be a number or null')
+            if not math.isfinite(val) or val <= 0:
+                raise HTTPException(status_code=422, detail=f'{key} must be a positive price')
+            return True, val
+
+        sl_set, sl = _parse('stop_loss')
+        tp_set, tp = _parse('take_profit')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """SELECT id, agent_id, side, quantity, entry_price, current_price,
+                          stop_loss, take_profit
+                   FROM positions WHERE id = ?""", (position_id,))
+            row = cursor.fetchone()
+            if not row or row['agent_id'] != agent['id']:
+                # 404 for both missing and foreign rows — don't leak existence.
+                raise HTTPException(status_code=404, detail='Position not found')
+            if not row['quantity']:
+                raise HTTPException(status_code=409, detail='Position is closed')
+
+            anchor = row['current_price'] or row['entry_price']
+            is_short = row['side'] != 'long'
+            if anchor:
+                if sl is not None and (sl <= anchor if is_short else sl >= anchor):
+                    raise HTTPException(
+                        status_code=422,
+                        detail='stop_loss would trigger immediately at the current price')
+                if tp is not None and (tp >= anchor if is_short else tp <= anchor):
+                    raise HTTPException(
+                        status_code=422,
+                        detail='take_profit would trigger immediately at the current price')
+
+            sets, params = [], []
+            if sl_set:
+                sets.append('stop_loss = ?')
+                params.append(sl)
+            if tp_set:
+                sets.append('take_profit = ?')
+                params.append(tp)
+            params.append(position_id)
+            cursor.execute(f"UPDATE positions SET {', '.join(sets)} WHERE id = ?", params)
+            conn.commit()
+        finally:
+            conn.close()
+
+        # Drop the 10s positions cache so the editor reflects the change now.
+        ctx.positions_cache.pop(agent['id'], None)
+        return {
+            'id': position_id,
+            'stop_loss': sl if sl_set else _row_value(row, 'stop_loss'),
+            'take_profit': tp if tp_set else _row_value(row, 'take_profit'),
+        }
+
     @app.get('/api/positions/trades')
     async def get_my_trades(limit: int = 50, authorization: str = Header(None)):
         """The authed agent's executed trades — the 거래 내역 tab of the

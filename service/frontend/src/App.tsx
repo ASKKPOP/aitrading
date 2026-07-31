@@ -447,6 +447,8 @@ function AppRouter({
       '/backtest':         'Sooppiy · Backtest',
       '/positions':        'Sooppiy · Positions',
       '/trade':            'Sooppiy · Trade',
+      '/spot':             'Sooppiy · Spot',
+      '/futures':          'Sooppiy · Futures',
       '/exchange':         'Sooppiy · Exchange',
       '/strategies':       'Sooppiy · Strategies',
       '/discussions':      'Sooppiy · Discussions',

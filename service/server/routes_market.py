@@ -10,7 +10,14 @@ from starlette.concurrency import run_in_threadpool
 
 _FUSION_SYMBOL_RE = re.compile(r'^[A-Z0-9]{1,12}$')
 
-from crypto_feed import TOP_20_PAIRS, fetch_order_book, fetch_ticker, fetch_tickers
+from crypto_feed import (
+    TOP_20_PAIRS,
+    fetch_funding_rate,
+    fetch_order_book,
+    fetch_ticker,
+    fetch_tickers,
+    fetch_trades,
+)
 from price_fetcher import get_polymarket_market_detail, list_polymarket_markets
 from i18n_errors import lang_from_request, translate
 from json_safe import json_safe
@@ -538,3 +545,52 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=404, detail=str(exc))
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc))
+
+    @app.get('/api/markets/crypto/trades')
+    async def crypto_trades(
+        symbol: str = Query(..., description="USDT-margined symbol e.g. BTCUSDT"),
+        limit: int = Query(30, ge=1, le=100),
+    ):
+        """Recent public trades (OKX) for the terminals' Recent Trades panel.
+
+        Terminals poll this every few seconds per visitor — short shared cache
+        so N visitors cost one OKX call per window (same reason as the ticker).
+        """
+        sym = symbol.upper()
+        redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:trades:{sym}:{limit}'
+        cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, 3)
+        if isinstance(cached, dict):
+            return cached
+        try:
+            trades = await run_in_threadpool(fetch_trades, sym, limit)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return set_short_cached_payload(
+            ctx, ctx.market_intel_cache, redis_key, {'symbol': sym, 'trades': trades}, 3)
+
+    @app.get('/api/markets/crypto/funding')
+    async def crypto_funding(
+        symbol: str = Query(..., description="USDT-margined symbol e.g. BTCUSDT"),
+    ):
+        """Current funding rate + next funding time for the futures terminal."""
+        sym = symbol.upper()
+        redis_key = f'{MARKET_INTEL_CACHE_KEY_PREFIX}:funding:{sym}'
+        cached = get_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, 60)
+        if isinstance(cached, dict):
+            return cached
+        try:
+            funding = await run_in_threadpool(fetch_funding_rate, sym)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return set_short_cached_payload(ctx, ctx.market_intel_cache, redis_key, funding, 60)
+
+    @app.get('/api/markets/fees')
+    async def market_fees():
+        """Effective per-leg fee rate per market, honouring operator overrides
+        and the FEE_PER_MARKET switch — so trade-ticket previews match what a
+        fill will actually charge (the frontend's hardcoded mirror was stale).
+        """
+        import fees as fees_mod
+        return {'rates': {m: fees_mod.fee_rate(m) for m in markets.tradeable_markets()}}

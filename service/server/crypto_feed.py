@@ -177,6 +177,29 @@ def fetch_candles(symbol: str, bar: str = "1H", limit: int = 100) -> list[dict[s
     return candles
 
 
+def fetch_trades(symbol: str, limit: int = 30) -> list[dict[str, Any]]:
+    """
+    Fetch recent public trades for a USDT-margined perpetual from OKX.
+
+    Returns newest-first: [{"ts": ms, "price": float, "size": float,
+    "side": "buy"|"sell"}, ...] — the terminal's Recent Trades panel shape.
+    """
+    inst_id = _to_inst_id(symbol)
+    data = _okx_get("trades", {"instId": inst_id, "limit": str(max(1, min(limit, 100)))})
+    trades = []
+    for row in data:
+        try:
+            trades.append({
+                "ts": int(row["ts"]),
+                "price": float(row["px"]),
+                "size": float(row["sz"]),
+                "side": row.get("side", "buy"),
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+    return trades
+
+
 def fetch_funding_rate(symbol: str) -> dict[str, Any]:
     """
     Fetch the current funding rate for a USDT-margined perpetual (OKX /public).
