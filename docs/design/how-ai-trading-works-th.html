@@ -1,0 +1,465 @@
+<!-- machine-translated from design/how-ai-trading-works-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Automated Trading ทำงานอย่างไร — ไปป์ไลน์ Plan-17</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AI Automated Trading ทำงานอย่างไร</h1>
+<p class="sub">ไปป์ไลน์ทั้งหมดตามที่ทำงานอยู่บน sooppiy.com ในวันนี้ หลังจาก Plan 17 (Order Intent): ใครเป็นผู้ตัดสินใจอะไร ตามลำดับใด ผ่านเกทใดบ้าง — พร้อมหลักฐานจริงจากการตรวจสอบการผลิตด้วย 10 เอเจนต์เมื่อวันที่ 2026-07-31</p>
+<p class="meta">อัปเดตเมื่อ 2026-07-31 ทุกตัวเลขใน §6 วัดจากแพลตฟอร์มการผลิตจริง ไม่ใช่การจำลอง — เอเจนต์ทดสอบสิบตัวรันเอนจินจริงตั้งแต่ต้นจนจบก่อนที่หน้านี้จะถูกเผยแพร่</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">ลูปรอบ 30 นาที ตั้งแต่ต้นจนจบ</a></li>
+  <li><a href="#who">ใครเป็นผู้เขียนอะไร — AI เทียบกับเครื่องจักร</a></li>
+  <li><a href="#intent">Order Intent และการสลับ basis</a></li>
+  <li><a href="#rails">รางที่ไม่สมมาตรและตัวคอมไพเลอร์</a></li>
+  <li><a href="#chat">รอบหนึ่งในฐานะบทสนทนา — พรอมต์จริง คำตอบจริง</a></li>
+  <li><a href="#verify">การตรวจสอบการผลิตด้วย 10 เอเจนต์</a></li>
+  <li><a href="#today">อะไรที่ใช้งานจริงวันนี้ และอะไรที่รอหลักฐานอยู่</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. ลูปรอบ 30 นาที ตั้งแต่ต้นจนจบ</h2>
+
+<p>การรันระบบอัตโนมัติทุกครั้งคือหนึ่งเดสก์เทรด AI ที่ถูกกำหนดให้กับหนึ่งสัญลักษณ์บนหนึ่งบุ๊ก worker จะปลุกมันตามช่วงเวลาของตัวเอง (โดยทั่วไปคือ 30 นาที) และหนึ่ง <strong>รอบ</strong> จะไหลผ่านเก้าสถานี มีเพียงหนึ่งเดียวเท่านั้นที่เป็น LLM ส่วนที่เหลือทั้งหมดเป็นกลไกที่กำหนดแน่นอน ซึ่งป้อนข้อมูลให้มัน วางรางให้มัน และบันทึกมันไว้</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · ตัวจัดตารางเวลา</text>
+  <text x="22" y="58">due_run_ids() ทุก ~30s;</text>
+  <text x="22" y="72">การอ้างสิทธิ์แบบ lease, at-most-once</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · เกตก่อนหน้า (0 LLM)</text>
+  <text x="242" y="58">ตลาดเปิดหรือไม่? งบประมาณยังอยู่หรือไม่?</text>
+  <text x="242" y="72">master hold หรือไม่? fence ยังคงอยู่หรือไม่?</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · เราเตอร์ E1 (LLM 0 ตัว)</text>
+  <text x="462" y="58">tape เงียบ → light (1 call)</text>
+  <text x="462" y="72">เหตุการณ์/ช็อก/ใกล้จุดหยุด → เต็ม (6)</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · เดสก์ (LLM)</text>
+  <text x="682" y="58">เห็นบุ๊ก, P&amp;L, HWM,</text>
+  <text x="682" y="72">บทสรุปมาร์จิ้น (margin brief), thesis, tape</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · JSON การตัดสินใจ</text>
+  <text x="682" y="178">action + confidence + scores</text>
+  <text x="682" y="192">+ ออร์เดอร์บล็อก (แบร็กเก็ต, ขนาด)</text>
+  <text x="682" y="206">+ เจตนาการสั่งซื้อ (แผน 17)</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · แยกวิเคราะห์ + ราง</text>
+  <text x="462" y="178">basis ถูกกำหนดโดย intent ไม่เคย</text>
+  <text x="462" y="192">กำหนดโดยโมเดล; opens clamp ↓</text>
+  <text x="462" y="206">ปิดจุดชนขอบ (clamp) ↑, การปิดออกไม่ยึดราง (unrailed)</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · คอมไพเลอร์</text>
+  <text x="242" y="178">fn ทั้งหมด (intent × book × side)</text>
+  <text x="242" y="192">→ ซื้อ | ขาย | ชอร์ต | ปิดสถานะชอร์ต</text>
+  <text x="242" y="206">ตาราง §6 ทดสอบทีละเซลล์</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · ชุด Gate (split)</text>
+  <text x="22" y="178">opens: ขอบค่าธรรมเนียม, อันดับความเชื่อมั่น,</text>
+  <text x="22" y="192">Kelly/vol/exposure, dust, R:R</text>
+  <text x="22" y="206">ออกจากตลาดตอนเปิด + ค่าธรรมเนียมเท่านั้น</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · บัญชีแยกประเภท</text>
+  <text x="22" y="308">execute_paper_trade, ค่าธรรมเนียม,</text>
+  <text x="22" y="322">แนบ stops, fence commits</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">บันทึกการซื้อขาย (Journal)</text>
+  <text x="242" y="308">decision · order_intent ·</text>
+  <text x="242" y="322">gate_skip · trade · equity</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">ระหว่างรอบ</text>
+  <text x="462" y="308">ตัวเฝ้าระวัง SL/TP 30 วินาที · liq daemon</text>
+  <text x="462" y="322">20 วินาที (แผน 16, พร้อมทำงาน) · trail lock</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">ความคิดเห็น</text>
+  <text x="682" y="308">ปรับ ladder · สรุปการอยู่รอด ·</text>
+  <text x="682" y="322">ชุดข้อมูล shadow pairing</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">prompt ของรอบถัดไป</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">การอ่านภาพรวม</text>
+  <text x="26" y="436">• กล่องสีม่วงเป็นที่เดียวที่โมเดลทำงาน Station 3 ตัดสินใจว่าจะใช้โมเดลมากน้อยเพียงใด: ประมาณ 9 ใน 10 รอบ ถูกส่งไปยังเส้นทางแบบเบาที่เรียกครั้งเดียว,</text>
+  <text x="34" y="452">ดังนั้น prompt แบบเบาจึงเป็นเส้นทางการตัดสินใจในการทำงานจริง — นี่คือเหตุผลที่ Plan 17 นำคำถามเรื่อง intent ไปใส่ไว้ในทั้งสองเส้นทาง ไม่ใช่แค่เส้นทางที่มีต้นทุนสูง</text>
+  <text x="26" y="474">• Stations 6–8 สามารถทำได้เพียงลดขนาดคำสั่งเปิด (opening order) หรือปฏิเสธมัน และสามารถทำได้เพียงเพิ่มขนาดคำสั่งปิด (closing order) หรือปล่อยให้ผ่านไป</text>
+  <text x="26" y="496">• ลูปเส้นประสีเขียวคือเหตุผลที่ desk พัฒนาขึ้น: ทุกการเทรด การปฏิเสธ การอ่านค่ามาร์จิ้น และเหตุการณ์ใกล้พลาดที่เกิดขึ้น จะถูกป้อนกลับเข้าไปใน</text>
+  <text x="34" y="512">prompt ที่มันอ่านในรอบถัดไป desk เทรดโดยมีประวัติของตัวเองอยู่ตรงหน้า</text>
+</svg>
+<figcaption>หนึ่งรอบ desk (สีม่วง) เป็นผู้ตัดสินใจ; ทุกสถานีอื่นเป็นแบบกำหนดแน่นอน (deterministic), มีการบันทึก (journalled), และไม่สามารถเพิ่มความเสี่ยงได้ด้วยตัวเอง</figcaption>
+</figure>
+
+<h2 id="who">2. ใครเป็นผู้ตัดสินใจอะไร — AI เทียบกับเครื่องจักร</h2>
+
+<p>กฎการออกแบบของทั้งแพลตฟอร์ม: <strong>ทุกการตัดสินใจในการเทรดเป็นของ AI ของ sooppiy.com; หน้าที่ของเครื่องจักรคือการจำกัดขอบเขต, ประมวลผล, และบันทึกมัน</strong>. Plan 17 ได้ย้ายตัวเลขสำคัญสุดท้ายที่เป็นภาระในการรับน้ำหนักจากคอลัมน์ของเครื่องจักรไปยังคอลัมน์ของ AI</p>
+
+<div class="scroll">
+<table>
+<tr><th>คำถาม</th><th>ก่อน Plan 17</th><th>หลัง Plan 17</th></tr>
+<tr><td>ทิศทาง (ขาขึ้น/ขาลง)</td><td>AI (<code>buy</code>/<code>sell</code>)</td><td>AI (คำกริยา + เจตนา)</td></tr>
+<tr><td>คำสั่งนี้เปิด, เพิ่ม, ทำกำไรบางส่วน, หรือปิดทั้งหมด</td><td><span class="chip crit">ไม่มีใครสามารถบอกได้</span> — อนุมานจากสถานะของ book</td><td><span class="chip ok">AI เป็นผู้ระบุ</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>ขนาดการเข้า (Entry size)</td><td>เครื่องจักร: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code> ของ max bet, ถูกจำกัดให้ลดขนาดได้เท่านั้น (railed shrink-only)</td></tr>
+<tr><td>ขนาดการออก (Exit size)</td><td><span class="chip crit">เครื่องจักร, จาก BUDGET</span> — ไม่เคยอ้างอิงถึงโพซิชัน; "bank half" เป็นสิ่งที่พูดไม่ได้</td><td><span class="chip ok">AI, สัดส่วนของสิ่งที่ถืออยู่ (WHAT IS HELD)</span> — จุดเปลี่ยนฐานอ้างอิง</td></tr>
+<tr><td>Bracket (stop/target)</td><td>คงที่ 5%/10% สำหรับทุกตราสาร</td><td>AI ต่อหนึ่งอินสตรูเมนต์ ถูกจำกัดขอบเขต (ปรับ stop ให้แคบลงได้เท่านั้น, มีเพดานขั้นต่ำของ R:R)</td></tr>
+<tr><td>"ปิดมันซะ"</td><td><span class="chip crit">ไม่สามารถเข้าถึงได้</span> จากชั้นการตัดสินใจ — มีเพียงราวกั้นสต็อปเท่านั้นที่สามารถทำให้แบนราบได้</td><td><span class="chip ok">เจตนาระดับหนึ่ง</span>ไม่เคยถูกกั้นราว ไม่เคยถูกปฏิเสธ</td></tr>
+<tr><td>ระดับการดำเนินการระหว่างรอบ</td><td>ค่าคงที่ตายตัว (สี่ค่าถูกวัดและถูกปฏิเสธทั้งสี่)</td><td>เลือกโดย AI <code>arm</code> ระดับ เครื่องจักรเพียงแค่ปฏิบัติตาม (เฟส 3)</td></tr>
+<tr><td>การป้องกันมาร์จิ้นที่ T3</td><td>—</td><td>รีเฟล็กซ์ของเครื่องจักร โดยการออกแบบ (แผน 16: การไปกลับของ LLM ที่สุขภาพ 0.15 เดิมพันมาร์จิ้นทั้งหมดกับความหน่วงของเครือข่าย)</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. เจตนาคำสั่งและการสลับฐาน</h2>
+
+<p>โต๊ะเทรดตอบด้วยวัตถุ JSON หนึ่งชิ้น แนวคิดที่รองรับทั้งหมดคือ <code>size_frac</code> หมายถึงเศษส่วน <em>ของสิ่งต่าง ๆ ที่แตกต่างกัน</em> ขึ้นอยู่กับสิ่งที่โต๊ะเทรดกำลังทำ — และแพลตฟอร์ม ไม่ใช่โมเดล เป็นผู้ตัดสินว่าเป็นแบบไหน:</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"reduce, size_frac: 0.5"</text>
+  <text x="398" y="62">ประโยคของโต๊ะเทรด</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">การรับความเสี่ยง: open · add · ด้านใหม่ของ flip</text>
+  <text x="78" y="180">basis = เดิมพันสูงสุด (งบประมาณ)</text>
+  <text x="78" y="198">0.5 = ครึ่งหนึ่งของเงินที่คุณได้รับอนุญาตให้ใช้</text>
+  <text x="78" y="220">ราวกั้นสามารถทำให้มันหดตัวลงเท่านั้น; ทุกด่านทางเข้าใช้บังคับ;</text>
+  <text x="78" y="238">การปฏิเสธคือความปลอดภัย — การเทรดเพียงแค่ไม่เกิดขึ้น</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">การลดความเสี่ยง: reduce · close · การดำเนินการภายหลังของ arm</text>
+  <text x="598" y="180">basis = ตำแหน่งที่คุณถืออยู่</text>
+  <text x="598" y="198">0.5 = ครึ่งหนึ่งของสิ่งที่คุณเป็นเจ้าของจริง ๆ จนถึงหน่วยสุดท้าย</text>
+  <text x="598" y="220">ราวกั้นสามารถทำให้มันเติบโตขึ้นเท่านั้น (dust → ขั้นต่ำ $1); close คือ</text>
+  <text x="598" y="238">ไม่เคยถูกกั้นราว — การปฏิเสธการทำให้แบนราบคือความเสี่ยงเสียเอง</text>
+</svg>
+<figcaption>ฐานจะสลับไปตามเจตนา และ <code>size_basis</code> ถูกประทับตราโดยแพลตฟอร์ม โมเดลที่บอกว่า "ลดครึ่งหนึ่งของงบประมาณของฉัน" นั้นสับสน และความสับสนนั้นจะถูกแก้ไขแทนที่จะถูกยอมรับตาม</figcaption>
+</figure>
+
+<h3>คำสั่งของโต๊ะเทรด ทีละฟิลด์</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">การตัดสินใจหนึ่งครั้ง ตามที่โต๊ะเทรด AI ของคุณส่งจริง</span>
+    <span class="chip ok">ทุกฟิลด์ถูกบันทึกไว้</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">ความตั้งใจ</div>
+    <div class="ic-v"><span class="pill sel">ลด</span></div>
+    <div class="ic-x"><strong>สิ่งที่ฉันต้องการทำ</strong> หนึ่งคำจากเมนูตายตัวเจ็ดคำ — ในที่นี้คือ "เก็บกำไรบางส่วนของตำแหน่งของฉัน" เมนูคือคลังคำศัพท์ทั้งหมด โต๊ะเทรดไม่สามารถสร้างคำกริยาที่แปดขึ้นมาได้</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>เท่าไหร่</strong> ครึ่งหนึ่ง — <em>ของตำแหน่งที่มันถืออยู่</em>, เนื่องจากนี่คือการออก แพลตฟอร์มเป็นผู้ตัดสินใจ ไม่ใช่โมเดล ว่าสัดส่วนนี้วัดเทียบกับอะไร: การออกวัดเทียบกับบุ๊ค การเข้าวัดเทียบกับเดิมพันสูงสุด</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">แขน</div>
+    <div class="ic-v"><span class="pill dim">ไม่มีในรอบนี้</span></div>
+    <div class="ic-x"><strong>ทริกเกอร์แบบค้างไว้ ซึ่งเป็นทางเลือก</strong> "หากราคาสูงขึ้นเกิน 27,800 ให้บันทึกกำไรครึ่งหนึ่งโดยไม่ต้องรอรอบถัดไปของฉัน" เดสก์เป็นผู้กำหนดระดับ; เครื่องจะเฝ้าดูทุกนาทีและเพียงแค่ปฏิบัติตาม arm สามารถทำได้เพียง <em>ลด</em> ความเสี่ยง</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">ทำไม</div>
+    <div class="ic-v"><span class="pill quote">"ขายครึ่งหนึ่งเมื่อราคาแข็งแกร่ง; แนวคิดยังคงเดิมแต่ยืดเยื้อ"</span></div>
+    <div class="ic-x"><strong>หนึ่งประโยค จำเป็นต้องระบุ</strong> เหตุผลจะถูกบันทึกไว้ข้างคำสั่งซื้อขาย เพื่อให้คุณสามารถย้อนกลับมาอ่านได้เสมอว่า <em>ทำไม</em> โต๊ะเทรดของคุณจึงทำเช่นนั้น</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">เมนูทั้งหมด:</span>
+    <span class="pill grow">เปิด</span><span class="pill grow">เพิ่ม</span>
+    <span class="pill bank">ลด</span><span class="pill bank">ปิด</span>
+    <span class="pill turn">สลับ</span>
+    <span class="pill dim">ถือ</span><span class="pill later">เปิดใช้งาน</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> รับความเสี่ยง — อาจถูกลดขนาดหรือถูกปฏิเสธ</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> ลดความเสี่ยง — ไม่เคยถูกปฏิเสธ</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> กลับทิศ / ทำงานภายหลัง</span>
+  </div>
+</div>
+
+<h2 id="rails">4. รางที่ไม่สมมาตรและตัวคอมไพล์</h2>
+
+<p>บัญชีจะดำเนินการเพียงสี่คำกริยาเท่านั้น — <code>buy | sell | short | cover</code> — และสิ่งนี้ไม่เปลี่ยนแปลง Intents <em>คอมไพล์</em> ไปยังคำกริยาเหล่านั้นผ่านฟังก์ชันรวมหนึ่งเดียวเหนือ (intent × book × side) ดังนั้นจึงไม่มีสถานะของบัญชีใดที่ทำให้ประโยคของโต๊ะเทรดมีความหมายที่ไม่ได้กำหนดไว้ นี่คือตาราง ตรงตามที่จัดส่งจริงและผ่านการทดสอบจริงทีละเซลล์:</p>
+
+<div class="scroll">
+<table>
+<tr><th>เจตนา</th><th>สมุดสถานะสปอต (Long)</th><th>ฟิวเจอร์ส, สถานะซื้อ (Long)</th><th>ฟิวเจอร์ส, ชอร์ต</th><th>ไม่มีสถานะ</th></tr>
+<tr><td><code>open/add</code> (ตลาดกระทิง)</td><td>ซื้อ</td><td>ซื้อ</td><td><strong>ปิดสถานะขายทั้งหมด แล้วซื้อ</strong></td><td>ซื้อ</td></tr>
+<tr><td><code>open/add</code> (ตลาดหมี)</td><td>→ ถือ (ไม่มีการขายชอร์ตสปอต)</td><td>ขาย (ลดตามมุมมอง)</td><td>ขายชอร์ต</td><td>ขายชอร์ต (ฟิวเจอร์ส) / ถือ (สปอต)</td></tr>
+<tr><td><code>reduce</code></td><td>ขาย × เศษส่วน <em>ของพอร์ต</em></td><td>ขาย × เศษส่วน <em>ของพอร์ต</em></td><td>ปิดสถานะขาย × เศษส่วน <em>ของพอร์ต</em></td><td>ไม่มีการดำเนินการ, บันทึกไว้</td></tr>
+<tr><td><code>close</code></td><td>ขายทั้งหมด</td><td>ขายทั้งหมด</td><td>ปิดสถานะขายทั้งหมด</td><td>ไม่มีการดำเนินการ, บันทึกไว้</td></tr>
+<tr><td><code>flip</code></td><td>ขายทั้งหมด (ลดระดับเป็นปิดสถานะ)</td><td>ขายทั้งหมด + ขายชอร์ต</td><td>ปิดสถานะขายทั้งหมด + ซื้อ</td><td>→ เปิด</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">ไม่มีคำสั่ง; <code>arm</code> เก็บทริกเกอร์ที่ AI เลือกซึ่งการสแกนควบคุม 60 วินาทีจะปฏิบัติตาม (เฟส 3)</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>เหตุใดความไม่สมมาตรจึงเป็นข้อโต้แย้งด้านความปลอดภัยทั้งหมด</strong></p>
+<p style="margin:0">อำนาจถูกย้ายไปยัง AI แต่เฉพาะในทิศทางที่ข้อผิดพลาดมีขอบเขตจำกัด เมื่อเดสก์ขอที่จะ <em>รับ</em> ความเสี่ยง สามารถถูกจำกัดและปฏิเสธได้โดยเก้าประตู เมื่อขอที่จะ <em>ลด</em> risk, nothing on the platform is allowed to say no — a reduce can be grown (a dust slice becomes the $1 minimum) แต่ไม่มีวันหดลงได้ และ close จะผ่านทุกการตั้งค่า gate รวมถึง confidence floor ด้วย หลักฐานจากการใช้งานจริงด้านล่าง: <code>close</code> ที่ confidence 0.10 เทียบกับ 0.99 floor ทำให้ book ถูกปิดหมด และ intent ที่อิงอยู่บน <code>hold</code> verb ก็ยังคง close อยู่ดี</p>
+</div>
+
+<h2 id="chat">5. หนึ่ง cycle ในรูปแบบบทสนทนา — prompt จริง คำตอบจริง</h2>
+
+<p>หนึ่ง cycle มีลักษณะอย่างไร โดยใช้ข้อความจริงจากการตรวจสอบในระบบใช้งานจริง (agent 38 / run 839, ETHUSDT และ agent 45 / run 846, LINKUSDT) คำตอบของ desk ด้านล่างเป็น model output แบบคำต่อคำจาก prod รวมถึง <code>why</code> ประโยคของมันเองด้วย</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (prompt แบบย่อ)</div>
+    คุณคือ trading desk สำหรับหนึ่ง symbol จงตัดสินใจ action ของ cycle นี้<br>
+    Symbol: ETHUSDT (crypto, spot), ราคาปัจจุบัน 1907.4<br>
+    Position ใน book ของ run นี้: 0 units Spot book ที่ไม่มี inventory: 'sell' ไม่สามารถใช้ได้ — การอ่านสัญญาณเชิงลบหมายถึง 'hold'<br>
+    ประเมิน confidence อย่างตรงไปตรงมา… ให้คะแนนสี่องค์ประกอบ… วาง bracket ของ instrument นี้…<br>
+    <em>ระบุคำสั่งของคุณในรูปแบบ intent ด้วย: open|add เพิ่ม exposure (เป็นสัดส่วนของ max bet ของคุณ); reduce|close ทำกำไรเก็บเข้ากระเป๋า (เป็นสัดส่วนของสิ่งที่คุณถืออยู่)… เลือกใช้ arm แทน hold เมื่อใดก็ตามที่คุณสามารถระบุ level ที่จะเปลี่ยนใจคุณได้</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (model output จริง, prod cycle 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">บันทึกแล้ว: intent=open · basis=budget · คอมไพล์แล้ว → [ซื้อ ×0.05 ของเดิมพันสูงสุด] · mode=shadow → ดำเนินการกำหนดขนาดแบบเดิม, บันทึกการจับคู่แล้ว</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (cycle ถัดไป ตอนนี้ถืออยู่)</div>
+    Position ใน book ของ run นี้: 0.97598457 units… 'sell' จะ reduce/close long นี้; 'buy' จะเพิ่มเข้าไป<br>
+    แสดง Open P&amp;L และ high-water mark <em>reduce|close size_frac คือสัดส่วนของสิ่งที่คุณถืออยู่ — 0.5 หมายถึงครึ่งหนึ่งของ position ของคุณ; การทำกำไรเก็บเข้ากระเป๋าเป็น action ระดับเดียวกัน ไม่ใช่การไม่มี add</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (การตัดสินใจในสถานการณ์ QA)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: คอมไพล์แล้ว → ขาย ×0.6 ของบุ๊ก · ขายไปแล้ว 0.58559074 จาก 0.97598457 · เหลืออยู่ 40.0000% · การออกจากสถานะแบบขนาดงบประมาณจะทำให้สถานะกลายเป็นศูนย์</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 846, LINKUSDT, holding)</div>
+    ตำแหน่งในบัญชีของ run นี้: 119.6… units… เมนู intent ตามด้านบน
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (เอาต์พุตโมเดลจริง, prod)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">บันทึกไว้: การ hold ที่รับรู้ตำแหน่งพร้อมเหตุผลของตัวเอง — แถวฐาน (baseline row) ของชุดข้อมูลเงา (shadow dataset)</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (การรัน 841, XRPUSDT futures, SHORT 1848.258)</div>
+    บัญชี Futures ปัจจุบัน SHORT… เมนู intent ตามด้านบน
+  </div>
+  <div class="bubble desk"><div class="who">เดสก์ → แพลตฟอร์ม (สถานการณ์ QA: กรณีที่ยาก)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: intent overrides the hold · compiled → cover full · 1848.258 covered, book flat · confidence 0.10 vs floor 0.99 — และมันไม่ได้ถูกปฏิเสธ เพราะ rail ที่ปฏิเสธการ flatten คือความเสี่ยง</div>
+</div>
+
+<h2 id="verify">6. การตรวจสอบการทำงานจริงด้วย 10 agents บน production — 2026-07-31</h2>
+
+<p>มีการลงทะเบียน 10 agents บน production (<code>qa-oi-*</code>, agents 37–46, runs 838–847, simulated ledger, เชื่อมโยงกับผู้ใช้ debug ที่กำหนดไว้). ห้า run รันชุดสถานการณ์แบบกำหนดแน่นอน (deterministic scenario matrix) ผ่าน <strong>จริง <code>run_cycle</code> กับ production MySQL</strong>; อีกห้า run ใช้ <strong>เส้นทางการตัดสินใจของ LLM จริง</strong> ทุกบัญชีถูก flatten โดยใช้ฟีเจอร์นี้เอง (apply-mode <code>close</code>) และครบทั้ง 10 runs ก็หยุดทำงาน</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — เก็บบัญชีไว้</div><div class="val">40.0000%</div><div class="d">0.39039383 จาก 0.97598457 ETH</div></div>
+  <div class="tile"><div class="lbl">ลดฟิวเจอร์ส long ลง 0.5 สัญญา</div><div class="val">50.0000%</div><div class="d">13.47109776 จาก 26.94219552 SOL</div></div>
+  <div class="tile"><div class="lbl">ลด tripwire 0.3</div><div class="val">70.0000%</div><div class="d">เก็บไว้ — หากใช้ budget sizing จะ flatten</div></div>
+  <div class="tile"><div class="lbl">ปิดที่ conf 0.10</div><div class="val">คงที่</div><div class="d">vs floor 0.99 — ไม่ถูกปฏิเสธ ตามการออกแบบ</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>สถานการณ์ (การรัน)</th><th>สิ่งที่ถูกยืนยัน</th><th>วัดผลบน prod</th><th></th></tr>
+<tr><td>1</td><td>สปอต, <strong>เงา</strong> (838 BTC)</td><td>บันทึก intent ไว้ข้าง ๆ การตัดสินใจ; คำสั่งไม่ถูกแตะต้อง</td><td>event: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>; legacy entry-sized sell รันไปตามปกติ</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>สปอต, <strong>ใช้ reduce 0.6</strong> (839 ETH)</td><td>Exit = สัดส่วนของ BOOK</td><td>ขาย 0.58559074 จาก 0.97598457 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>ซื้อล่วงหน้า (Long Futures), <strong>ใช้ reduce 0.5</strong> (840 SOL 2×)</td><td>กำลังคอมไพล์ <code>ขาย × frac ของ book</code></td><td>ขาย 13.47109776 จาก 26.94219552 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>Short สัญญาฟิวเจอร์ส, <strong>ใช้ close กับกริยา HOLD ที่ conf 0.10</strong> (841 XRP 2×)</td><td>คอมไพล์ <code>cover full</code>; เจตนามีผลเหนือการถือครอง; ข้ามการตรวจสอบเกณฑ์ความเชื่อมั่น; close-on-flat เป็น no-op ที่มีการบันทึกไว้</td><td>1848.25801682 คุ้มครองแล้ว, บุ๊คปิดสถานะ (flat); การปิดสถานะก่อนหน้าที่ flat ถูกบันทึกไว้แล้ว <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>Tripwire + dust + arm (842 DOGE)</td><td>§2 ข้อบกพร่องเกิดซ้ำ; dust rail เพิ่มขึ้น; arm journals โดยไม่มีคำสั่งซื้อขาย</td><td>คงไว้เหมือนเดิม <strong>0.700000</strong> ที่ budget sizing ทำให้แบนราบ; <code>reduce 0.0001</code> railed UP ไปที่ 0.001 (journalled from→to, <code>dust_slice_grown</code>); arm journalled, ไม่มีการเทรด</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>เส้นทาง LLM แบบ Live (843–847)</td><td>โมเดลจริงรับคำถาม, intents จริงถูก parse แบบ end-to-end</td><td>ทั้ง 5 ครั้งให้ผลการตัดสินใจจริง; intents ที่บันทึกไว้แบบคำต่อคำ: <code>open 0.05</code> พร้อมประโยคเหตุผล, สอง position-aware <code>hold</code>s; 2 จาก 5 รอบไม่ได้ผลลัพธ์ที่ parse ได้ (ข้อจำกัดที่ทราบอยู่แล้วของโมเดลขนาดเล็ก)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>รอบที่สอง, การตรวจสอบอิสระ.</strong> สัดส่วนข้างต้นถูกคำนวณใหม่จาก <code>signals</code> ledger ดิบด้วย SQL — ไม่ได้มาจาก code path เดียวกับที่สร้างมันขึ้นมา:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> เหตุการณ์ถูก journalled ตลอด 8 รอบการทำงาน; 0 tracebacks และ 0 engine errors ทั่วทั้งแพลตฟอร์มตลอดช่วงเวลานั้น; รอบการทำงานจริงของแพลตฟอร์มเอง (825, 836, 837) ทำงานต่อเนื่องโดยไม่ถูกรบกวน. บัญชี QA ทั้งหมดแบนราบ, ทั้ง 10 รอบการทำงานหยุดแล้ว, driver ถูกถอดออก.</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>สองข้อค้นพบที่ตรงไปตรงมาจากเซสชันเดียวกัน.</strong></p>
+<p style="margin:0 0 6px">① <strong>bracket ค่าเริ่มต้นของระบบอยู่ตรงเส้น R:R floor พอดี.</strong> QA opens สองครั้งถูกปฏิเสธด้วย <code>reward 0.1082 &lt; ความเสี่ยง 2× 0.0541</code> — bracket ค่าเริ่มต้น 5%/10% คำนวณ reward = 2.0000× risk และการปัดเศษแบบ float เป็นตัวตัดสินว่าจะอยู่ฝั่งไหนของ <code>&lt;</code> ที่เข้มงวด. มีอยู่ก่อนแล้ว (ไม่ใช่ Plan 17), เกิดเป็นบางครั้งขึ้นอยู่กับราคาเข้า, คุ้มค่าที่จะแก้ไขแบบบรรทัดเดียว (<code>&lt;</code> → epsilon เล็กๆ).</p>
+<p style="margin:0">② <strong>การปฏิบัติตาม intent ของโมเดลแบบ Live เป็นเพียงบางส่วน.</strong> gpt-oss:20b ในเครื่องส่งออก intent ที่ถูกต้องในประมาณครึ่งหนึ่งของรอบจริงที่สังเกตได้ และไม่มี JSON ที่ parse ได้เลยในบางรอบ. pipeline ได้รับการพิสูจน์แล้ว; อัตราการเติบโตของชุดข้อมูล shadow ขึ้นอยู่กับโมเดล, ไม่ใช่กลไก.</p>
+</div>
+
+<h2 id="today">7. อะไรที่ใช้งานจริงในวันนี้, และอะไรที่รอหลักฐานอยู่</h2>
+
+<div class="scroll">
+<table>
+<tr><th>ความสามารถ</th><th>สถานะ</th><th>เงื่อนไขสู่ขั้นตอนถัดไป</th></tr>
+<tr><td>Intent ถูกขอ, แยกวิเคราะห์, ตรวจสอบ, คอมไพล์, บันทึกลงบันทึก — ทั้งสองแนวทางการตัดสินใจ</td><td><span class="chip ok">สด (เงา)</span></td><td>—</td></tr>
+<tr><td>ชุดข้อมูล Paired reduce (<code>intent_size_usd</code>เทียบกับ<code>machine_size_usd</code>)</td><td><span class="chip ok">กำลังสะสม</span></td><td>ต้องการการรันที่ถือโพซิชันไว้</td></tr>
+<tr><td>นำไปใช้: <code>reduce</code>/<code>close</code> ดำเนินการแบบอิงตามโพซิชัน</td><td><span class="chip warn">สร้างแล้ว + ตรวจสอบใน prod แล้ว, รอการเลื่อนขั้น</span></td><td>≥30 การสังเกต paired reduce, shadow ≥ machine ในค่ามัธยฐาน banked-per-exit</td></tr>
+<tr><td><code>arm</code> จัดเก็บและประเมินโดยการสแกนควบคุม</td><td><span class="chip warn">เฟส 3</span></td><td>ไวท์ลิสต์ของ validate_stop_conditions + ตัวประเมิน; ทดสอบผ่าน API</td></tr>
+<tr><td><code>flip</code> การดำเนินการ (+ การโต้ตอบกับ whipsaw-guard)</td><td><span class="chip warn">เฟส 4</span></td><td>กลุ่มทดลองงบประมาณน้อยแบบ live — counterfactual ของมันไม่สามารถทำ shadow ได้</td></tr>
+<tr><td><code>leverage</code> การลด (add_margin)</td><td><span class="chip warn">เฟส 5</span></td><td>ร่วมกับ Plan 16 เฟส 4</td></tr>
+<tr><td>การป้องกันการ Liquidation (Plan 16)</td><td><span class="chip ok">LIVE + ARMED</span></td><td>T3 reflex เปิดใช้งานเมื่อ 2026-07-30; เส้นทาง escalation ได้รับการพิสูจน์ด้วยการทดสอบ แต่ยังไม่เคยทำงานจริงบน live</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>

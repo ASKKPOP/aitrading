@@ -1,0 +1,465 @@
+<!-- machine-translated from design/how-ai-trading-works-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 자동매매 작동 원리 — Plan-17 파이프라인</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AI 자동매매 작동 원리</h1>
+<p class="sub">Plan 17(Order Intent) 이후 오늘날 sooppiy.com에서 실제로 실행되는 전체 파이프라인: 누가 무엇을 어떤 순서로, 어떤 게이트를 통해 결정하는지 — 2026-07-31 10-에이전트 프로덕션 검증에서 얻은 실제 근거와 함께 설명합니다.</p>
+<p class="meta">2026-07-31 업데이트. §6의 모든 수치는 시뮬레이션이 아니라 프로덕션 플랫폼에서 측정된 것입니다 — 이 페이지가 게시되기 전에 10개의 테스트 에이전트가 실제 엔진을 처음부터 끝까지 실행했습니다.</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">30분 루프, 처음부터 끝까지</a></li>
+  <li><a href="#who">누가 무엇을 작성하는가 — AI 대 머신</a></li>
+  <li><a href="#intent">Order Intent와 basis 전환</a></li>
+  <li><a href="#rails">비대칭 레일과 컴파일러</a></li>
+  <li><a href="#chat">대화로서의 사이클 — 실제 프롬프트, 실제 응답</a></li>
+  <li><a href="#verify">10-에이전트 프로덕션 검증</a></li>
+  <li><a href="#today">오늘 실제로 작동하는 것과 근거를 기다리는 것</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. 30분 루프, 처음부터 끝까지</h2>
+
+<p>모든 자동화 실행은 하나의 book에 배정된 하나의 symbol을 담당하는 하나의 AI 트레이딩 데스크입니다. 워커는 자체 간격(일반적으로 30분)으로 이를 깨우며, 하나의 <strong>cycle</strong>이 아홉 개의 스테이션을 거칩니다. 그중 단 하나만 LLM이며, 나머지는 이를 공급하고, 레일을 걸고, 기록하는 결정론적 기계 장치입니다.</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · 스케줄러</text>
+  <text x="22" y="58">약 30초마다 due_run_ids() 실행;</text>
+  <text x="22" y="72">lease claim, at-most-once</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · 사전 게이트 (0 LLM)</text>
+  <text x="242" y="58">시장 개장? 예산 유효?</text>
+  <text x="242" y="72">마스터 홀드? fence 무결성?</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · E1 라우터 (0 LLM)</text>
+  <text x="462" y="58">조용한 테이프 → light (호출 1회)</text>
+  <text x="462" y="72">이벤트/쇼크/근접 스톱 → full (6회)</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · 데스크 (LLM)</text>
+  <text x="682" y="58">book, P&amp;L, HWM,</text>
+  <text x="682" y="72">마진 브리프, 논지, 테이프를 확인</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · 결정 JSON</text>
+  <text x="682" y="178">action + confidence + scores</text>
+  <text x="682" y="192">+ order block (bracket, size)</text>
+  <text x="682" y="206">+ ORDER INTENT (Plan 17)</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · 파싱 + 레일</text>
+  <text x="462" y="178">basis는 intent가 설정하며, 결코</text>
+  <text x="462" y="192">모델이 설정하지 않음; opens는 clamp ↓</text>
+  <text x="462" y="206">exits는 clamp ↑, close는 레일 없음</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · 컴파일러</text>
+  <text x="242" y="178">total fn (intent × book × side)</text>
+  <text x="242" y="192">→ buy | sell | short | cover</text>
+  <text x="242" y="206">§6 표, 셀 단위로 테스트됨</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · 게이트 스택 (분리)</text>
+  <text x="22" y="178">opens: fee edge, conf rank,</text>
+  <text x="22" y="192">Kelly/vol/exposure, dust, R:R</text>
+  <text x="22" y="206">exits: market open + fee만</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · 원장</text>
+  <text x="22" y="308">execute_paper_trade, fees,</text>
+  <text x="22" y="322">스탑 부착, 펜스 커밋</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">저널</text>
+  <text x="242" y="308">decision · order_intent ·</text>
+  <text x="242" y="322">gate_skip · trade · equity</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">사이클 사이</text>
+  <text x="462" y="308">SL/TP 워처 30초 · liq 데몬</text>
+  <text x="462" y="322">20초 (Plan 16, 무장됨) · 트레일 락</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">피드백</text>
+  <text x="682" y="308">adapt ladder · survival brief ·</text>
+  <text x="682" y="322">shadow pairing dataset</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">다음 사이클의 프롬프트</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">그림 읽기</text>
+  <text x="26" y="436">• 보라색 박스는 모델이 실행되는 유일한 곳입니다. Station 3는 얼마나 많은 모델을 사용할지 결정합니다: 약 10번 중 9번의 사이클이 한 번의 호출로 이루어진 경량 경로로 라우팅되며,</text>
+  <text x="34" y="452">따라서 경량 프롬프트가 곧 프로덕션 결정 경로입니다 — 이것이 바로 Plan 17이 비싼 경로뿐만 아니라 두 경로 모두에 intent 질문을 넣은 이유입니다.</text>
+  <text x="26" y="474">• Station 6–8은 오픈 주문을 더 작게 만들거나 거부할 수만 있고, 클로징 주문은 더 크게 만들거나 그대로 통과시킬 수만 있습니다.</text>
+  <text x="26" y="496">• 초록색 점선 루프는 데스크가 개선되는 이유입니다: 매 거래, 거부, 마진 판독, 그리고 니어미스가 생성될 때마다 이는</text>
+  <text x="34" y="512">다음 사이클에서 읽는 프롬프트로 피드백됩니다. 데스크는 자신의 이력을 앞에 두고 거래합니다.</text>
+</svg>
+<figcaption>한 사이클. 데스크(보라색)가 판단을 작성하며, 다른 모든 스테이션은 결정론적이고, 저널링되며, 스스로 리스크를 추가할 수 없습니다.</figcaption>
+</figure>
+
+<h2 id="who">2. 누가 무엇을 작성하는가 — AI 대 머신</h2>
+
+<p>전체 플랫폼의 설계 규칙: <strong>모든 거래 결정은 sooppiy.com AI에 속하며, 머신의 역할은 이를 제한하고, 컴파일하고, 기록하는 것입니다</strong>. Plan 17은 마지막 하중을 지탱하는 숫자들을 머신 열에서 AI 열로 옮겼습니다.</p>
+
+<div class="scroll">
+<table>
+<tr><th>질문</th><th>Plan 17 이전</th><th>Plan 17 이후</th></tr>
+<tr><td>방향 (강세/약세)</td><td>AI (<code>buy</code>/<code>sell</code>)</td><td>AI (동사 + intent)</td></tr>
+<tr><td>이 주문이 열리는지, 추가하는지, 예치하는지, 아니면 평탄화하는지</td><td><span class="chip crit">누구도 이를 말할 수 없었다</span> — 북 상태로부터 추론됨</td><td><span class="chip ok">AI가 이를 명시한다</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>진입 규모</td><td>머신: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code>의 최대 베팅, 축소 전용으로 레일링됨</td></tr>
+<tr><td>청산 규모</td><td><span class="chip crit">머신, BUDGET으로부터</span> — 포지션을 참조한 적이 없었음; "절반 예치"는 말할 수 없었다</td><td><span class="chip ok">AI, 보유된 것의 비율</span> — 기준 전환</td></tr>
+<tr><td>브래킷 (스탑/타겟)</td><td>모든 상품에 대해 균일한 5%/10%</td><td>AI per instrument, railed (stop tightens only, R:R floor)</td></tr>
+<tr><td>"청산해"</td><td><span class="chip crit">도달 불가</span> 의사결정 레이어에서 — 스탑 레일만이 청산할 수 있었다</td><td><span class="chip ok">일급 의도(intent)</span>, 레일 적용 없이, 거부 없이</td></tr>
+<tr><td>사이클 간 행동 수준</td><td>고정 상수 (네 가지가 측정되었고 네 가지 모두 기각됨)</td><td>AI가 선택한 <code>arm</code> 수준, 기계는 그저 따를 뿐 (3단계)</td></tr>
+<tr><td>T3에서의 마진 방어</td><td>—</td><td>설계상 기계 반사 (플랜 16: 헬스 0.15에서의 LLM 왕복은 네트워크 지연에 전체 마진을 거는 것)</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. 주문 의도(Order Intent)와 기준 전환</h2>
+
+<p>데스크는 하나의 JSON 객체로 응답한다. 핵심이 되는 개념은 <code>size_frac</code>이 분수를 의미한다는 것 <em>서로 다른 것들의</em> 데스크가 무엇을 하고 있는지에 따라 — 그리고 어느 쪽인지는 모델이 아니라 플랫폼이 결정한다:</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"reduce, size_frac: 0.5"</text>
+  <text x="398" y="62">데스크의 문장</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">리스크 진입: open · add · flip의 새로운 방향</text>
+  <text x="78" y="180">기준 = 최대 베팅액 (예산)</text>
+  <text x="78" y="198">0.5 = 투입 가능한 자금의 절반</text>
+  <text x="78" y="220">레일은 이를 줄일 수만 있다; 모든 진입 게이트가 적용된다;</text>
+  <text x="78" y="238">거부는 안전하다 — 거래가 그저 일어나지 않을 뿐이다</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">리스크 축소: reduce · close · arm의 이후 행동</text>
+  <text x="598" y="180">기준 = 보유하고 있는 포지션</text>
+  <text x="598" y="198">0.5 = 실제로 보유한 것의 절반, 단위까지 정확히</text>
+  <text x="598" y="220">레일은 이를 늘릴 수만 있다 (더스트 → 최소 $1); close는</text>
+  <text x="598" y="238">결코 레일 적용되지 않는다 — 청산 거부 자체가 리스크다</text>
+</svg>
+<figcaption>기준은 의도에 따라 전환되며, <code>size_basis</code>은 플랫폼이 확정한다. "예산의 절반을 줄여"라고 말하는 모델은 혼동하고 있는 것이며, 그 혼동은 존중되지 않고 정정된다.</figcaption>
+</figure>
+
+<h3>데스크의 주문, 필드별로</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">AI 데스크가 실제로 전송하는 하나의 결정</span>
+    <span class="chip ok">모든 필드가 기록됨</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">intent</div>
+    <div class="ic-v"><span class="pill sel">reduce</span></div>
+    <div class="ic-x"><strong>내가 하고자 하는 것.</strong> 고정된 7개 메뉴 중 한 단어 — 여기서는 "포지션의 일부를 확보한다". 이 메뉴가 전체 어휘이며, 데스크는 여덟 번째 동사를 만들어낼 수 없다.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>얼마나.</strong> 절반 — <em>보유하고 있는 포지션의</em>, 왜냐하면 이것은 청산이기 때문입니다. 플랫폼은, 모델이 아니라, 비율이 무엇을 기준으로 측정되는지를 결정합니다: 청산은 장부를 기준으로 측정되고, 진입은 최대 베팅을 기준으로 측정됩니다.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">arm</div>
+    <div class="ic-v"><span class="pill dim">이번 사이클에는 없음</span></div>
+    <div class="ic-x"><strong>상시 트리거, 선택 사항.</strong> "가격이 27,800을 넘으면, 다음 사이클을 기다리지 않고 절반을 확보하라." 데스크가 레벨을 지정하면; 기계는 매분 이를 감시하며 그저 따를 뿐입니다. arm은 오직 <em>shed</em> 리스크만 할 수 있습니다.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">why</div>
+    <div class="ic-v"><span class="pill quote">"강세 속에서 절반을 확보; 논지는 유효하나 과도하게 확장됨"</span></div>
+    <div class="ic-x"><strong>한 문장, 필수.</strong> 이유는 주문 옆에 기록되므로, 언제든지 당신의 데스크가 <em>why</em> 그렇게 행동했는지 다시 읽어볼 수 있습니다.</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">전체 메뉴:</span>
+    <span class="pill grow">open</span><span class="pill grow">add</span>
+    <span class="pill bank">reduce</span><span class="pill bank">close</span>
+    <span class="pill turn">flip</span>
+    <span class="pill dim">hold</span><span class="pill later">arm</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> 리스크를 취합니다 — 축소되거나 거부될 수 있음</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> 리스크를 덜어냅니다 — 결코 거부되지 않음</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> 반전 / 나중에 작동</span>
+  </div>
+</div>
+
+<h2 id="rails">4. 비대칭 레일과 컴파일러</h2>
+
+<p>장부는 오직 네 가지 동사만 실행합니다 — <code>buy | sell | short | cover</code> — 그리고 이는 변하지 않습니다. 의도는 <em>compile</em> (intent × book × side)에 대한 전체 함수를 통해 이들로 컴파일되므로, 데스크의 문장이 정의되지 않은 의미를 갖는 장부 상태는 존재하지 않습니다. 이것이 그 표이며, 출시된 그대로, 셀 단위로 테스트된 그대로입니다:</p>
+
+<div class="scroll">
+<table>
+<tr><th>Intent</th><th>현물 장부 (롱)</th><th>선물, 롱</th><th>선물, 숏</th><th>Flat</th></tr>
+<tr><td><code>open/add</code> (강세)</td><td>buy</td><td>buy</td><td><strong>전량 커버 후 매수</strong></td><td>buy</td></tr>
+<tr><td><code>open/add</code> (약세)</td><td>→ hold (현물 숏 없음)</td><td>sell (관점 쪽으로 축소)</td><td>short</td><td>short (선물) / hold (현물)</td></tr>
+<tr><td><code>reduce</code></td><td>sell × frac <em>of book</em></td><td>sell × frac <em>of book</em></td><td>cover × frac <em>of book</em></td><td>no-op, journalled</td></tr>
+<tr><td><code>close</code></td><td>sell full</td><td>sell full</td><td>cover full</td><td>no-op, journalled</td></tr>
+<tr><td><code>flip</code></td><td>sell full (close로 격하됨)</td><td>sell full + short</td><td>cover full + buy</td><td>→ open</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">주문 없음; <code>arm</code> 는 60초 제어 스캔이 따를 AI가 선택한 트리거를 저장합니다 (phase 3)</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>왜 이 비대칭이 안전성 논거의 전부인가.</strong></p>
+<p style="margin:0">권한은 AI로 이전되었지만, 오직 실수가 제한되는 방향으로만 그러합니다. 데스크가 <em>take</em> 리스크를 요청하면 아홉 개의 게이트에 의해 제한되거나 거부될 수 있습니다. 데스크가 <em>shed</em>  리스크, 플랫폼에서는 그 어떤 것도 거부할 수 없습니다 — reduce는 커질 수 있지만(더스트 조각이 $1 최소값이 되는 식으로) 절대 줄어들지 않으며, close는 confidence floor를 포함한 모든 게이트 구성을 통과합니다. 아래는 프로덕션 증거입니다: <code>close</code>가 0.99 floor 대비 confidence 0.10 상태에서 포지션을 전부 청산시켰고, 그 위에 있는 intent가 <code>hold</code> 동사를 타고도 여전히 청산되었습니다.</p>
+</div>
+
+<h2 id="chat">5. 대화로서의 사이클 — 실제 프롬프트, 실제 답변</h2>
+
+<p>사이클이 실제로 어떤 모습인지, 프로덕션 검증(agent 38 / run 839, ETHUSDT, 그리고 agent 45 / run 846, LINKUSDT)의 실제 텍스트를 사용하여 보여줍니다. 아래 데스크의 답변은 프로덕션에서 나온 모델 출력 그대로이며, 여기에는 <code>why</code> 문장도 포함됩니다.</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (프롬프트, 축약본)</div>
+    당신은 하나의 심볼을 담당하는 트레이딩 데스크입니다. 이번 사이클의 액션을 결정하세요.<br>
+    심볼: ETHUSDT (크립토, 현물), 현재 가격 1907.4.<br>
+    이번 런의 장부 포지션: 0 유닛. 재고가 없는 spot 장부: 'sell'은 사용할 수 없습니다 — 약세 판단은 'hold'를 의미합니다.<br>
+    신뢰도를 정직하게 보정하세요… 네 가지 구성 요소를 점수화하고… 이 종목의 bracket을 배치하세요…<br>
+    <em>또한 주문을 의도로 명시하세요: open|add 노출을 늘리는 것(최대 베팅의 비율); reduce|close 이익을 확정하는 것(보유 중인 것의 비율)… 가능하다면 hold보다 arm을 선호하고 마음이 바뀔 수준을 명시하세요.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (실제 모델 출력, prod cycle 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">journalled: intent=open · basis=budget · compiled → [buy ×0.05 of max bet] · mode=shadow → legacy sizing executed, pairing recorded</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (다음 cycle, 현재 보유 중)</div>
+    이번 런의 장부 포지션: 0.97598457 유닛… 'sell'은 이 롱 포지션을 줄이거나 청산하며; 'buy'는 이를 추가합니다.<br>
+    Open P&amp;L과 high-water mark가 표시됩니다. <em>reduce|close size_frac은 보유 중인 것의 비율입니다 — 0.5는 포지션의 절반을 의미하며; 이익 확정은 add의 부재가 아니라 독립적인 일급 행동입니다.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (QA 시나리오 결정)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: compiled → sell ×0.6 OF THE BOOK · sold 0.58559074 of 0.97598457 · 40.0000% remains · 예산 기준 청산이었다면 완전히 정리되었을 것입니다</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 846, LINKUSDT, holding)</div>
+    Position in this run's book: 119.6… units… intent menu as above.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (real model output, prod)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">기록됨: 포지션 인지 홀드와 그 자체의 근거 — 섀도우 데이터셋의 기준 행</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 841, XRPUSDT futures, SHORT 1848.258)</div>
+    Futures book, currently SHORT… intent menu as above.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (QA scenario: the hard case)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: intent overrides the hold · compiled → cover full · 1848.258 covered, book flat · confidence 0.10 vs floor 0.99 — and it was NOT refused, because a rail that refuses a flatten is the risk</div>
+</div>
+
+<h2 id="verify">6. 10개 에이전트 프로덕션 검증 — 2026-07-31</h2>
+
+<p>10개의 에이전트가 프로덕션에 등록되었습니다 (<code>qa-oi-*</code>, agents 37–46, runs 838–847, simulated ledger, linked to the designated debug user). 다섯 개는 결정론적 시나리오 매트릭스를 <strong>real <code>run_cycle</code> against production MySQL을 통해 실행했습니다</strong>; 다섯 개는 <strong>real LLM decision paths</strong>를 실행했습니다. 이후 모든 book은 해당 기능 자체(apply-mode <code>close</code>)를 사용하여 청산되었고 10개의 run 모두 중단되었습니다.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — book kept</div><div class="val">40.0000%</div><div class="d">0.39039383 of 0.97598457 ETH</div></div>
+  <div class="tile"><div class="lbl">reduce 0.5 futures long</div><div class="val">50.0000%</div><div class="d">13.47109776 of 26.94219552 SOL</div></div>
+  <div class="tile"><div class="lbl">reduce 0.3 tripwire</div><div class="val">70.0000%</div><div class="d">kept — 예산 사이징이었다면 청산되었을 것입니다</div></div>
+  <div class="tile"><div class="lbl">conf 0.10에서 close</div><div class="val">flat</div><div class="d">floor 0.99 대비 — 거부된 것이 아니라 설계상 의도된 동작</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>시나리오 (run)</th><th>주장된 내용</th><th>prod에서 측정됨</th><th></th></tr>
+<tr><td>1</td><td>Spot, <strong>shadow</strong> (838 BTC)</td><td>의도는 결정과 함께 기록됨; 주문은 그대로 유지됨</td><td>event: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>; 레거시 entry 크기 매도는 변경 없이 실행됨</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>Spot, <strong>apply reduce 0.6</strong> (839 ETH)</td><td>Exit = BOOK 대비 비율</td><td>0.97598457 중 0.58559074 매도 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>Futures long, <strong>apply reduce 0.5</strong> (840 SOL 2×)</td><td>Compiles <code>sell × frac of book</code></td><td>26.94219552 중 13.47109776 매도 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>Futures short, <strong>conf 0.10에서 HOLD verb에 대해 close 적용</strong>  (841 XRP 2×)</td><td>컴파일 <code>cover full</code>; 의도가 보류를 재정의함; 신뢰도 게이트 우회됨; close-on-flat은 저널링된 no-op임</td><td>1848.25801682 커버됨, 북 플랫; 이전 close-on-flat 저널링됨 <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>Tripwire + dust + arm (842 DOGE)</td><td>§2 결함 회귀; dust rail 증가; arm은 주문 없이 저널링됨</td><td>정확히 유지됨 <strong>0.700000</strong> 예산 사이징이 평탄화되는 지점; <code>reduce 0.0001</code> 0.001로 상향 레일링됨 (from→to 저널링됨, <code>dust_slice_grown</code>); arm 저널링됨, 거래 없음</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>실시간 LLM 경로 (843–847)</td><td>실제 모델이 ask를 수신하고, 실제 의도가 end-to-end로 파싱됨</td><td>5개 모두 실제 결정을 생성함; 그대로의 의도가 캡처됨: <code>open 0.05</code> why-문장과 함께, 두 개의 포지션 인식 <code>hold</code>s; 5개 중 2개 사이클은 파싱 가능한 판정을 제공하지 않음 (알려진 소형 모델 한계)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>두 번째, 독립적인 패스.</strong>  위의 비율은 원본  <code>signals</code> 원장에서 SQL로 다시 계산된 것이며, 이를 생성한 것과 동일한 코드 경로에서 나온 것이 아닙니다:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> 실행 8회에 걸쳐 기록된 이벤트; 전체 기간 동안 플랫폼 전역에서 0건의 트레이스백과 0건의 엔진 오류; 플랫폼 자체 라이브 실행(825, 836, 837)은 중단 없이 순환됨. 모든 QA 장부는 균형 상태이며, 10회 실행 모두 중지되었고 드라이버는 제거됨.</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>동일한 세션에서 나온 두 가지 정직한 결과입니다.</strong></p>
+<p style="margin:0 0 6px">① <strong>하우스 기본 브래킷은 정확히 R:R 하한선 위에 위치합니다.</strong> QA 오픈 2건이 다음 이유로 거부되었습니다: <code>reward 0.1082 &lt; 2× risk 0.0541</code> — 기본 5%/10% 브래킷은 reward = 2.0000× risk로 계산되며, 부동소수점 반올림이 엄격한 기준의 어느 쪽에 속하는지를 결정합니다 <code>&lt;</code>it lands on. Pre-existing (not Plan 17), intermittent by entry price, worth a one-line fix (<code>&lt;</code> → a small epsilon).</p>
+<p style="margin:0">② <strong>실시간 모델의 인텐트 준수는 부분적입니다.</strong> 로컬 gpt-oss:20b는 관측된 실제 사이클의 약 절반에서 유효한 인텐트를 생성했으며, 일부 사이클에서는 파싱 가능한 JSON을 전혀 생성하지 못했습니다. 파이프라인 자체는 검증되었으며, 섀도 데이터셋의 증가율은 machinery가 아니라 모델에 달려 있습니다.</p>
+</div>
+
+<h2 id="today">7. 오늘 실행 중인 것과 근거를 기다리는 것</h2>
+
+<div class="scroll">
+<table>
+<tr><th>Capability</th><th>State</th><th>다음 단계로 가는 게이트</th></tr>
+<tr><td>의도 요청, 파싱, 레일링, 컴파일, 저널링 — 두 결정 경로 모두</td><td><span class="chip ok">LIVE (섀도)</span></td><td>—</td></tr>
+<tr><td>페어드 리듀스 데이터셋 (<code>intent_size_usd</code> 대 <code>machine_size_usd</code>)</td><td><span class="chip ok">누적 중</span></td><td>포지션을 보유하는 실행이 필요함</td></tr>
+<tr><td>적용: <code>reduce</code>/<code>close</code> 포지션 기반 실행</td><td><span class="chip warn">빌드 완료 + 프로덕션 검증 완료, 승격 대기 중</span></td><td>페어드 리듀스 관측치 ≥30건, 중앙값 banked-per-exit 기준 섀도 ≥ 머신</td></tr>
+<tr><td><code>arm</code> 컨트롤 스캔에 의해 저장 및 평가됨</td><td><span class="chip warn">3단계</span></td><td>validate_stop_conditions 화이트리스트 + 평가기; API를 통해 테스트</td></tr>
+<tr><td><code>flip</code> 실행 (+ whipsaw-guard 상호작용)</td><td><span class="chip warn">4단계</span></td><td>실거래 소규모 예산 코호트 — 그 반사실은 섀도잉될 수 없음</td></tr>
+<tr><td><code>leverage</code> 축소 (add_margin)</td><td><span class="chip warn">5단계</span></td><td>Plan 16 4단계와 공동</td></tr>
+<tr><td>청산 방어 (Plan 16)</td><td><span class="chip ok">LIVE + ARMED</span></td><td>T3 리플렉스는 2026-07-30에 활성화됨; 에스컬레이션 경로는 테스트로 검증되었으나 실거래에서는 아직 발동된 적 없음</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>

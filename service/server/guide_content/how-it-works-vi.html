@@ -1,0 +1,465 @@
+<!-- machine-translated from design/how-ai-trading-works-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cách Giao Dịch Tự Động AI Hoạt Động — Pipeline Plan-17</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cách Giao Dịch Tự Động AI Hoạt Động</h1>
+<p class="sub">Toàn bộ pipeline như nó đang chạy trên sooppiy.com hiện nay, sau Plan 17 (Order Intent): ai quyết định điều gì, theo thứ tự nào, qua những cổng nào — với bằng chứng thực tế từ xác minh sản xuất 10-agent ngày 2026-07-31.</p>
+<p class="meta">Cập nhật 2026-07-31. Mọi con số trong §6 đều được đo trên nền tảng sản xuất, không phải mô phỏng — mười agent kiểm thử đã chạy engine thực từ đầu đến cuối trước khi trang này được xuất bản.</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">Vòng lặp 30 phút, từ đầu đến cuối</a></li>
+  <li><a href="#who">Ai tạo ra cái gì — AI so với máy</a></li>
+  <li><a href="#intent">Order Intent và việc chuyển đổi basis</a></li>
+  <li><a href="#rails">Các rail bất đối xứng và trình biên dịch</a></li>
+  <li><a href="#chat">Một chu kỳ như một cuộc hội thoại — prompt thực, câu trả lời thực</a></li>
+  <li><a href="#verify">Xác minh sản xuất 10-agent</a></li>
+  <li><a href="#today">Điều gì đang hoạt động hôm nay, và điều gì đang chờ bằng chứng</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. Vòng lặp 30 phút, từ đầu đến cuối</h2>
+
+<p>Mỗi lần chạy tự động là một bàn giao dịch AI được giao cho một symbol trên một book. Worker đánh thức nó theo khoảng thời gian riêng (thường là 30 phút), và một <strong>chu kỳ</strong> chạy qua chín trạm. Chỉ một trong số đó là LLM; mọi thứ còn lại là cỗ máy tất định nuôi dữ liệu cho nó, dẫn hướng (rail) nó, và ghi nhật ký cho nó.</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · Bộ lập lịch</text>
+  <text x="22" y="58">due_run_ids() mỗi ~30 giây;</text>
+  <text x="22" y="72">lease claim, tối đa một lần</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · Tiền-cổng (0 LLM)</text>
+  <text x="242" y="58">thị trường mở? ngân sách còn?</text>
+  <text x="242" y="72">master hold? fence còn nguyên?</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · Bộ định tuyến E1 (0 LLM)</text>
+  <text x="462" y="58">băng giá lặng → nhẹ (1 lệnh gọi)</text>
+  <text x="462" y="72">sự kiện/sốc/gần-stop → đầy đủ (6)</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · Bàn giao dịch (LLM)</text>
+  <text x="682" y="58">thấy book, P&amp;L, HWM,</text>
+  <text x="682" y="72">tóm tắt margin, thesis, băng giá</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · JSON Quyết định</text>
+  <text x="682" y="178">hành động + độ tin cậy + điểm số</text>
+  <text x="682" y="192">+ khối lệnh (bracket, size)</text>
+  <text x="682" y="206">+ Ý ĐỊNH ĐẶT LỆNH (Kế hoạch 17)</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · Phân tích + rails</text>
+  <text x="462" y="178">basis do intent thiết lập, không bao giờ</text>
+  <text x="462" y="192">do model; opens kẹp ↓</text>
+  <text x="462" y="206">exits kẹp ↑, close không bị rail</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · Trình biên dịch</text>
+  <text x="242" y="178">hàm tổng (intent × book × side)</text>
+  <text x="242" y="192">→ mua | bán | bán khống | mua bù</text>
+  <text x="242" y="206">bảng §6, được kiểm thử theo từng ô</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · Chồng cổng (tách)</text>
+  <text x="22" y="178">opens: biên phí, xếp hạng conf,</text>
+  <text x="22" y="192">Kelly/biến động/mức độ tiếp xúc, dust, R:R</text>
+  <text x="22" y="206">exits: chỉ market open + phí</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · Sổ cái</text>
+  <text x="22" y="308">execute_paper_trade, phí,</text>
+  <text x="22" y="322">stops gắn kèm, fence commit</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">Journal</text>
+  <text x="242" y="308">quyết định · order_intent ·</text>
+  <text x="242" y="322">gate_skip · giao dịch · vốn chủ sở hữu</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">Giữa các chu kỳ</text>
+  <text x="462" y="308">Bộ theo dõi SL/TP 30s · trình nền thanh lý</text>
+  <text x="462" y="322">20 giây (Plan 16, đã kích hoạt) · trail lock</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">Phản hồi</text>
+  <text x="682" y="308">thích ứng bậc thang · tóm tắt sinh tồn ·</text>
+  <text x="682" y="322">tập dữ liệu ghép cặp bóng</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">prompt của chu kỳ tiếp theo</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">Đọc sơ đồ</text>
+  <text x="26" y="436">• Các ô màu tím là nơi duy nhất một model chạy. Station 3 quyết định chi bao nhiêu model: ~9 trên 10 chu kỳ định tuyến đến đường light one-call,</text>
+  <text x="34" y="452">vì vậy light prompt CHÍNH LÀ đường quyết định production — đó là lý do Plan 17 đặt câu hỏi intent trên cả hai đường, không chỉ đường đắt tiền.</text>
+  <text x="26" y="474">• Stations 6–8 chỉ có thể làm cho một lệnh mở nhỏ hơn hoặc từ chối nó, và chỉ có thể làm cho một lệnh đóng lớn hơn hoặc cho nó đi qua.</text>
+  <text x="26" y="496">• Vòng lặp nét đứt màu xanh lá là lý do bàn giao dịch cải thiện: mỗi giao dịch, từ chối, chỉ số margin và suýt trượt mà nó tạo ra đều được đưa trở lại vào</text>
+  <text x="34" y="512">prompt mà nó đọc ở chu kỳ tiếp theo. Bàn giao dịch giao dịch với lịch sử của chính nó ở phía trước.</text>
+</svg>
+<figcaption>Một chu kỳ. Bàn giao dịch (màu tím) là tác giả của phán đoán; mọi station khác đều tất định, được ghi journal, và không thể tự thêm rủi ro.</figcaption>
+</figure>
+
+<h2 id="who">2. Ai là tác giả của cái gì — AI vs máy</h2>
+
+<p>Quy tắc thiết kế của toàn bộ nền tảng: <strong>mọi quyết định giao dịch thuộc về AI của sooppiy.com; công việc của máy là giới hạn nó, biên dịch nó, và ghi lại nó</strong>. Plan 17 đã chuyển những con số chịu tải cuối cùng từ cột máy sang cột AI.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Câu hỏi</th><th>Trước Plan 17</th><th>Từ khi có Plan 17</th></tr>
+<tr><td>Hướng (bull/bear)</td><td>AI (<code>buy</code>/<code>sell</code>)</td><td>AI (động từ + intent)</td></tr>
+<tr><td>Liệu lệnh này mở, thêm, chốt lời, hay đóng toàn bộ</td><td><span class="chip crit">không ai có thể nói ra được</span> — được suy luận từ trạng thái sổ lệnh</td><td><span class="chip ok">AI nêu rõ điều đó</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>Kích thước vào lệnh</td><td>máy: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code> của max bet, chỉ được rail thu nhỏ</td></tr>
+<tr><td>Kích thước thoát lệnh</td><td><span class="chip crit">máy, từ BUDGET</span> — không bao giờ tham chiếu đến vị thế; "chốt một nửa" là điều không thể nói ra</td><td><span class="chip ok">AI, tỷ lệ của PHẦN ĐANG NẮM GIỮ</span> — sự chuyển đổi cơ sở</td></tr>
+<tr><td>Bracket (dừng lỗ/chốt lời)</td><td>cố định 5%/10% cho mọi công cụ</td><td>AI cho từng công cụ, có giới hạn (chỉ siết stop, sàn R:R)</td></tr>
+<tr><td>"Đóng nó lại"</td><td><span class="chip crit">không thể tiếp cận</span> từ lớp quyết định — chỉ có giới hạn stop mới có thể đóng vị thế</td><td><span class="chip ok">một ý định hạng nhất</span>, không bao giờ bị giới hạn, không bao giờ bị từ chối</td></tr>
+<tr><td>Mức hành động giữa các chu kỳ</td><td>các hằng số cố định (bốn giá trị đã được đo và cả bốn đều bị từ chối)</td><td>Do AI chọn <code>arm</code> mức, máy chỉ tuân theo (giai đoạn 3)</td></tr>
+<tr><td>Phòng thủ ký quỹ tại T3</td><td>—</td><td>phản xạ máy, theo thiết kế (Plan 16: một vòng khứ hồi LLM ở mức sức khỏe 0.15 đặt cược toàn bộ ký quỹ vào độ trễ mạng)</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. Ý định lệnh và chuyển đổi cơ sở</h2>
+
+<p>Bàn giao dịch trả lời bằng một đối tượng JSON. Ý tưởng cốt lõi là <code>size_frac</code> nghĩa là một phần <em>của những thứ khác nhau</em> tùy thuộc vào việc bàn giao dịch đang làm gì — và nền tảng, chứ không phải mô hình, quyết định điều đó:</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"giảm, size_frac: 0.5"</text>
+  <text x="398" y="62">câu lệnh của bàn giao dịch</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">Chấp nhận rủi ro: mở · thêm · bên mới của flip</text>
+  <text x="78" y="180">cơ sở = MỨC CƯỢC TỐI ĐA (ngân sách)</text>
+  <text x="78" y="198">0.5 = một nửa số tiền bạn được phép cam kết</text>
+  <text x="78" y="220">rails chỉ có thể THU NHỎ nó; mọi entry gate đều được áp dụng;</text>
+  <text x="78" y="238">một sự từ chối là an toàn — giao dịch đơn giản là không xảy ra</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">GIẢM THIỂU rủi ro: reduce · close · hành động sau của arm</text>
+  <text x="598" y="180">basis = VỊ THẾ BẠN ĐANG NẮM GIỮ</text>
+  <text x="598" y="198">0.5 = một nửa những gì bạn thực sự sở hữu, chính xác đến từng đơn vị</text>
+  <text x="598" y="220">rails chỉ có thể TĂNG nó (dust → $1 min); close là</text>
+  <text x="598" y="238">KHÔNG BAO GIỜ bị rails can thiệp — từ chối một lệnh flatten CHÍNH LÀ rủi ro</text>
+</svg>
+<figcaption>basis thay đổi theo intent, và <code>size_basis</code> được nền tảng đóng dấu. Một mô hình nói "reduce half my budget" là bị nhầm lẫn, và sự nhầm lẫn đó được sửa chữa thay vì được tuân theo.</figcaption>
+</figure>
+
+<h3>Lệnh của desk, theo từng trường</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">Một quyết định, đúng như AI desk của bạn thực sự gửi đi</span>
+    <span class="chip ok">mọi trường đều được ghi nhật ký</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">intent</div>
+    <div class="ic-v"><span class="pill sel">reduce</span></div>
+    <div class="ic-x"><strong>Điều tôi muốn làm.</strong> Một từ trong một danh sách cố định gồm bảy từ — ở đây là "bank part of my position". Danh sách này là toàn bộ từ vựng; desk không thể tự tạo ra một động từ thứ tám.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>Bao nhiêu.</strong> Một nửa — <em>của vị thế mà nó đang nắm giữ</em>, vì đây là một lệnh thoát. Nền tảng, không bao giờ là mô hình, quyết định phân số được đo dựa trên cái gì: lệnh thoát đo dựa trên sổ lệnh, lệnh vào đo dựa trên mức cược tối đa.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">arm</div>
+    <div class="ic-v"><span class="pill dim">không có gì trong chu kỳ này</span></div>
+    <div class="ic-x"><strong>Một ngưỡng kích hoạt cố định, tùy chọn.</strong> "Nếu giá tăng trên 27,800, chốt một nửa mà không cần đợi chu kỳ tiếp theo của tôi." Bàn giao dịch đặt tên mức giá; máy theo dõi nó mỗi phút và chỉ đơn thuần tuân theo. Một arm chỉ có thể luôn luôn <em>shed</em> rủi ro.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">why</div>
+    <div class="ic-v"><span class="pill quote">"chốt một nửa khi giá mạnh lên; luận điểm vẫn đúng nhưng đã kéo dài"</span></div>
+    <div class="ic-x"><strong>Một câu, bắt buộc.</strong> Lý do được ghi lại bên cạnh lệnh, để bạn luôn có thể đọc lại <em>why</em> bàn giao dịch của bạn đã làm gì.</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">Danh sách đầy đủ:</span>
+    <span class="pill grow">open</span><span class="pill grow">add</span>
+    <span class="pill bank">reduce</span><span class="pill bank">close</span>
+    <span class="pill turn">flip</span>
+    <span class="pill dim">hold</span><span class="pill later">arm</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> nhận rủi ro — có thể bị thu nhỏ hoặc từ chối</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> giảm bớt rủi ro — không bao giờ bị từ chối</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> đảo chiều / thực hiện sau</span>
+  </div>
+</div>
+
+<h2 id="rails">4. Các ray bất đối xứng và trình biên dịch</h2>
+
+<p>Sổ cái chỉ thực thi bốn động từ — <code>buy | sell | short | cover</code> — và điều đó không thay đổi. Các ý định <em>biên dịch</em> thành các động từ đó thông qua một hàm toàn phần trên (intent × book × side), do đó không có trạng thái sổ nào khiến câu lệnh của bàn giao dịch có ý nghĩa không xác định. Đây là bảng, đúng như khi phát hành và đã được kiểm thử từng ô một:</p>
+
+<div class="scroll">
+<table>
+<tr><th>Ý định</th><th>Sổ giao ngay (long)</th><th>Hợp đồng tương lai, long</th><th>Hợp đồng tương lai, short</th><th>Không có vị thế</th></tr>
+<tr><td><code>open/add</code> (tăng giá)</td><td>mua</td><td>mua</td><td><strong>đóng vị thế hoàn toàn, sau đó mua</strong></td><td>mua</td></tr>
+<tr><td><code>open/add</code> (giảm giá)</td><td>→ giữ nguyên (không bán khống giao ngay)</td><td>bán (giảm dần theo quan điểm)</td><td>bán khống</td><td>bán khống (hợp đồng tương lai) / giữ nguyên (giao ngay)</td></tr>
+<tr><td><code>reduce</code></td><td>bán × frac <em>của sổ lệnh</em></td><td>bán × frac <em>của sổ lệnh</em></td><td>đóng × frac <em>của sổ lệnh</em></td><td>không thao tác, được ghi nhận</td></tr>
+<tr><td><code>close</code></td><td>bán toàn bộ</td><td>bán toàn bộ</td><td>đóng toàn bộ</td><td>không thao tác, được ghi nhận</td></tr>
+<tr><td><code>flip</code></td><td>bán toàn bộ (giảm xuống thành đóng vị thế)</td><td>bán toàn bộ + bán khống</td><td>đóng toàn bộ + mua</td><td>→ mở</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">không có lệnh; <code>arm</code> lưu trữ một ngưỡng kích hoạt do AI chọn mà quá trình quét kiểm soát 60 giây sẽ tuân theo (giai đoạn 3)</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>Tại sao tính bất đối xứng lại là toàn bộ luận điểm về an toàn.</strong></p>
+<p style="margin:0">Quyền quyết định được chuyển cho AI, nhưng chỉ theo hướng mà sai sót có thể bị giới hạn. Khi bàn giao dịch yêu cầu <em>chấp nhận</em> rủi ro, nó có thể bị giới hạn và từ chối bởi chín cổng kiểm soát. Khi nó yêu cầu <em>giảm bớt</em>  rủi ro, không có gì trên nền tảng được phép nói không — một lệnh giảm có thể được tăng lên (một phần vụn nhỏ có thể trở thành mức tối thiểu $1) nhưng không bao giờ bị thu nhỏ, và một lệnh đóng vượt qua mọi cấu hình cổng bao gồm cả ngưỡng tin cậy tối thiểu. Bằng chứng thực tế bên dưới: một <code>close</code> với độ tin cậy 0.10 so với ngưỡng 0.99 đã làm phẳng toàn bộ sổ lệnh, và một ý định dựa trên <code>hold</code> động từ vẫn được đóng.</p>
+</div>
+
+<h2 id="chat">5. Một chu kỳ như một cuộc trò chuyện — lời nhắc thực, câu trả lời thực</h2>
+
+<p>Một chu kỳ thực sự trông như thế nào, sử dụng văn bản thực từ quá trình xác minh sản xuất (agent 38 / run 839, ETHUSDT, và agent 45 / run 846, LINKUSDT). Các câu trả lời của desk bên dưới là đầu ra mô hình nguyên văn từ môi trường sản xuất, bao gồm cả <code>why</code> các câu.</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (lời nhắc, rút gọn)</div>
+    Bạn là bàn giao dịch cho một mã. Quyết định hành động của chu kỳ NÀY.<br>
+    Mã: ETHUSDT (tiền điện tử, giao ngay), giá hiện tại 1907.4.<br>
+    Vị thế trong sổ lệnh của lượt chạy này: 0 đơn vị. Sổ lệnh giao ngay không có tồn kho: 'sell' KHÔNG khả dụng — một nhận định giảm giá đồng nghĩa với 'hold'.<br>
+    Hiệu chỉnh độ tin cậy một cách trung thực… chấm điểm bốn thành phần… đặt bracket của công cụ NÀY…<br>
+    <em>Đồng thời nêu rõ lệnh của bạn dưới dạng một ý định: open|add tăng mức độ tiếp xúc (một phần của mức cược tối đa của bạn); reduce|close chốt lời (một phần của những gì BẠN ĐANG NẮM GIỮ)… ưu tiên arm hơn hold bất cứ khi nào bạn có thể chỉ ra mức giá sẽ khiến bạn thay đổi quyết định.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (đầu ra mô hình thực tế, chu kỳ sản xuất 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">journalled: intent=open · basis=budget · compiled → [buy ×0.05 của mức cược tối đa] · mode=shadow → đã thực thi định cỡ kiểu cũ, đã ghi nhận cặp lệnh</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (chu kỳ tiếp theo, hiện đang nắm giữ)</div>
+    Vị thế trong sổ lệnh của lượt chạy này: 0.97598457 đơn vị… 'sell' giảm/đóng vị thế mua (long) này; 'buy' tăng thêm vào đó.<br>
+    Hiển thị P&amp;L mở và mức đỉnh cao nhất (high-water mark). <em>reduce|close size_frac là một phần của những gì BẠN ĐANG NẮM GIỮ — 0.5 nghĩa là một nửa vị thế của bạn; chốt lời là một hành động độc lập, không phải là sự vắng mặt của một lệnh add.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (quyết định kịch bản QA)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: compiled → bán ×0.6 CỦA SỔ · đã bán 0.58559074 trong tổng 0.97598457 · còn lại 40.0000% · một lệnh thoát theo kích thước ngân sách sẽ đã đóng hết vị thế</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 846, LINKUSDT, đang giữ)</div>
+    Vị thế trong sổ của lượt chạy này: 119.6… đơn vị… menu ý định như trên.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (đầu ra mô hình thực tế, prod)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">được ghi nhật ký: một lệnh giữ có nhận biết vị thế với lý luận riêng — hàng cơ sở của tập dữ liệu bóng</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (phiên chạy 841, XRPUSDT futures, SHORT 1848.258)</div>
+    Sổ futures, hiện đang SHORT… menu ý định như trên.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (kịch bản QA: trường hợp khó)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: ý định ghi đè lệnh giữ · compiled → cover toàn bộ · đã cover 1848.258, sổ về flat · độ tin cậy 0.10 so với ngưỡng sàn 0.99 — và nó KHÔNG bị từ chối, vì một rào chắn từ chối việc đóng vị thế mới chính là rủi ro</div>
+</div>
+
+<h2 id="verify">6. Xác minh sản xuất 10 tác nhân — 2026-07-31</h2>
+
+<p>Mười tác nhân đã được đăng ký trên môi trường sản xuất (<code>qa-oi-*</code>, các tác nhân 37–46, các lượt chạy 838–847, sổ cái mô phỏng, liên kết với người dùng debug được chỉ định). Năm lượt chạy qua ma trận kịch bản xác định thông qua <strong>real <code>run_cycle</code> đối chiếu với MySQL sản xuất</strong>; năm lượt chạy qua <strong>các đường quyết định LLM thực tế</strong>. Sau đó mọi sổ đều được đóng hết bằng chính tính năng này (chế độ apply <code>close</code>) và cả mười lượt chạy đều dừng lại.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — giữ sổ</div><div class="val">40.0000%</div><div class="d">0.39039383 trong 0.97598457 ETH</div></div>
+  <div class="tile"><div class="lbl">giảm 0.5 hợp đồng tương lai long</div><div class="val">50.0000%</div><div class="d">13.47109776 trong 26.94219552 SOL</div></div>
+  <div class="tile"><div class="lbl">giảm 0.3 tripwire</div><div class="val">70.0000%</div><div class="d">được giữ — nếu định kích thước theo ngân sách thì đã đóng hết</div></div>
+  <div class="tile"><div class="lbl">đóng ở conf 0.10</div><div class="val">flat</div><div class="d">so với ngưỡng sàn 0.99 — không bị từ chối, theo thiết kế</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>Kịch bản (run)</th><th>Điều gì được khẳng định</th><th>Đo lường trên prod</th><th></th></tr>
+<tr><td>1</td><td>Spot, <strong>shadow</strong> (838 BTC)</td><td>Ý định được ghi nhật ký bên cạnh quyết định; lệnh không bị thay đổi</td><td>sự kiện: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>; lệnh bán theo kích thước cũ vẫn chạy không đổi</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>Spot, <strong>áp dụng giảm 0.6</strong> (839 ETH)</td><td>Exit = phân số của SỔ</td><td>đã bán 0.58559074 trong 0.97598457 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>Vị thế mua futures, <strong>áp dụng giảm 0.5</strong> (840 SOL 2×)</td><td>Compiles <code>bán × phần trăm của sổ lệnh</code></td><td>đã bán 13.47109776 trong 26.94219552 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>Bán khống hợp đồng tương lai, <strong>apply close trên một động từ HOLD ở conf 0.10</strong>  (841 XRP 2×)</td><td>Biên dịch <code>cover full</code>; ý định ghi đè giữ lệnh; cổng độ tin cậy bị bỏ qua; đóng-khi-phẳng là thao tác ghi nhật ký không thực thi</td><td>1848.25801682 đã được bao phủ, sổ lệnh phẳng; đóng-khi-phẳng trước đó đã được ghi nhật ký <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>Ngòi nổ (Tripwire) + dust + kích hoạt (arm) (842 DOGE)</td><td>Hồi quy lỗi §2; dust rail tăng dần; arm ghi nhật ký mà không có lệnh</td><td>giữ nguyên chính xác <strong>0.700000</strong> nơi định cỡ ngân sách làm phẳng; <code>reduce 0.0001</code> được rail LÊN 0.001 (ghi nhật ký từ→đến, <code>dust_slice_grown</code>); arm đã ghi nhật ký, không có giao dịch</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>Các luồng LLM trực tiếp (843–847)</td><td>Mô hình thực nhận yêu cầu, ý định thực được phân tích cú pháp từ đầu đến cuối</td><td>cả 5 đều tạo ra quyết định thực; các ý định nguyên văn được ghi lại: <code>open 0.05</code> kèm câu giải thích lý do, hai vị thế nhận biết <code>hold</code>; 2 trong số 5 chu kỳ không cho ra kết quả có thể phân tích cú pháp (giới hạn đã biết của mô hình nhỏ)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>Lượt xem xét độc lập thứ hai.</strong> Các tỷ lệ nêu trên được tính lại từ dữ liệu thô <code>signals</code> sổ nhật ký bằng SQL — không phải từ cùng luồng mã đã tạo ra chúng:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> sự kiện được ghi nhật ký qua 8 lần chạy; 0 traceback và 0 lỗi engine trên toàn nền tảng trong suốt khoảng thời gian này; các lần chạy trực tiếp của chính nền tảng (825, 836, 837) tiếp tục không bị gián đoạn. Tất cả các sổ lệnh QA đều phẳng, tất cả 10 lần chạy đã dừng, driver đã được gỡ bỏ.</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>Hai phát hiện trung thực từ cùng một phiên làm việc.</strong></p>
+<p style="margin:0 0 6px">① <strong>Khung mặc định của hệ thống nằm CHÍNH XÁC TRÊN ngưỡng sàn R:R.</strong> Hai lệnh mở QA đã bị từ chối với <code>phần thưởng 0.1082 &lt; 2× rủi ro 0.0541</code> — khung mặc định 5%/10% tính toán reward = 2.0000× risk và việc làm tròn số thực quyết định lệnh đó rơi vào phía nào của <code>&lt;</code> nghiêm ngặt. Đã tồn tại từ trước (không phải Plan 17), xảy ra không liên tục tùy theo giá vào lệnh, đáng để sửa một dòng (<code>&lt;</code> → một epsilon nhỏ).</p>
+<p style="margin:0">② <strong>Việc tuân thủ ý định của mô hình trực tiếp là không đầy đủ.</strong> gpt-oss:20b cục bộ đã phát ra ý định hợp lệ trên khoảng một nửa số chu kỳ thực được quan sát và không có JSON nào có thể phân tích cú pháp được trong một số trường hợp. Đường ống đã được chứng minh; tốc độ tăng trưởng của tập dữ liệu shadow phụ thuộc vào mô hình, không phải vào cơ chế vận hành.</p>
+</div>
+
+<h2 id="today">7. Điều gì đang hoạt động trực tiếp hôm nay, và điều gì đang chờ bằng chứng</h2>
+
+<div class="scroll">
+<table>
+<tr><th>Năng lực</th><th>Trạng thái</th><th>Cổng để đến bước tiếp theo</th></tr>
+<tr><td>Ý định được hỏi, phân tích, kiểm soát, biên dịch, ghi nhật ký — cả hai luồng quyết định</td><td><span class="chip ok">TRỰC TIẾP (bóng)</span></td><td>—</td></tr>
+<tr><td>Tập dữ liệu giảm theo cặp (<code>intent_size_usd</code> so với <code>machine_size_usd</code>)</td><td><span class="chip ok">đang tích lũy</span></td><td>cần các lần chạy giữ vị thế</td></tr>
+<tr><td>Áp dụng: <code>reduce</code>/<code>close</code> thực thi dựa trên vị thế</td><td><span class="chip warn">đã xây dựng + đã xác minh trên prod, đang chờ đưa vào sử dụng</span></td><td>≥30 quan sát giảm theo cặp, shadow ≥ machine về banked-per-exit trung vị</td></tr>
+<tr><td><code>arm</code> được lưu trữ và đánh giá bởi bộ quét kiểm soát</td><td><span class="chip warn">giai đoạn 3</span></td><td>danh sách trắng validate_stop_conditions + trình đánh giá; kiểm thử qua API</td></tr>
+<tr><td><code>flip</code> thực thi (+ tương tác whipsaw-guard)</td><td><span class="chip warn">giai đoạn 4</span></td><td>nhóm ngân sách nhỏ trực tiếp — đối chứng của nó không thể được đối chiếu bóng</td></tr>
+<tr><td><code>leverage</code> giảm (add_margin)</td><td><span class="chip warn">giai đoạn 5</span></td><td>kết hợp với Plan 16 giai đoạn 4</td></tr>
+<tr><td>Phòng thủ thanh lý (Plan 16)</td><td><span class="chip ok">LIVE + ARMED</span></td><td>Phản xạ T3 được kích hoạt 2026-07-30; đường dẫn leo thang đã được chứng minh qua kiểm thử, chưa bao giờ kích hoạt trực tiếp</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>

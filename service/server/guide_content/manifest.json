@@ -100,6 +100,15 @@
       "id": "Dari Keputusan ke Order"
     },
     {
+      "group": "how-it-works",
+      "ko": "AI 자동매매 작동 원리",
+      "en": "How AI Trading Works",
+      "ja": "AI自動売買のしくみ",
+      "th": "หลักการทำงานของ AI เทรด",
+      "vi": "Cách AI giao dịch vận hành",
+      "id": "Cara Kerja Trading AI"
+    },
+    {
       "group": "market-hours",
       "ko": "내 시장 개장 시간",
       "en": "When Your Markets Are Open",
@@ -252,6 +261,12 @@
       "lang": "vi",
       "group": "decisions",
       "title": "Hệ thống giao dịch tự động quyết định thế nào"
+    },
+    {
+      "key": "how-it-works-en",
+      "lang": "en",
+      "group": "how-it-works",
+      "title": "How AI Automated Trading Works"
     },
     {
       "key": "market-hours-en",
@@ -532,6 +547,36 @@
       "lang": "id",
       "group": "decisions",
       "title": "Bagaimana armada Anda memutuskan untuk trading"
+    },
+    {
+      "key": "how-it-works-ko",
+      "lang": "ko",
+      "group": "how-it-works",
+      "title": "AI 자동매매는 어떻게 작동하는가"
+    },
+    {
+      "key": "how-it-works-ja",
+      "lang": "ja",
+      "group": "how-it-works",
+      "title": "AI自動売買はどのように動くのか"
+    },
+    {
+      "key": "how-it-works-th",
+      "lang": "th",
+      "group": "how-it-works",
+      "title": "การเทรดอัตโนมัติด้วย AI ทำงานอย่างไร"
+    },
+    {
+      "key": "how-it-works-vi",
+      "lang": "vi",
+      "group": "how-it-works",
+      "title": "Giao dịch tự động bằng AI hoạt động thế nào"
+    },
+    {
+      "key": "how-it-works-id",
+      "lang": "id",
+      "group": "how-it-works",
+      "title": "Bagaimana Trading Otomatis AI Bekerja"
     },
     {
       "key": "psych-report-ja",

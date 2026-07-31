@@ -1,0 +1,466 @@
+<!-- machine-translated from design/how-ai-trading-works-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan-17パイプラインによるAIオートトレードの仕組み</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AIオートトレードの仕組み</h1>
+<p class="sub">Plan 17（Order Intent）以降、現在sooppiy.comで実際に稼働しているフルパイプライン：誰が何をどの順序で決め、どのゲートを通過するのか——2026-07-31に実施された10エージェント本番検証からの実際のエビデンスとともに。</p>
+<p class="meta">2026-07-31更新。§6のすべての数値は本番プラットフォーム上で計測されたものであり、シミュレーションではありません——このページを公開する前に、10のテストエージェントが実際のエンジンをエンドツーエンドで実行しました。</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">30分ループ、エンドツーエンド</a></li>
+  <li><a href="#who">誰が何を決めるか — AI対マシン</a></li>
+  <li><a href="#intent">Order Intentとbasisスイッチ</a></li>
+  <li><a href="#rails">非対称レールとコンパイラ</a></li>
+  <li><a href="#chat">会話としてのサイクル — 実際のプロンプト、実際の回答</a></li>
+  <li><a href="#verify">10エージェント本番検証</a></li>
+  <li><a href="#today">現在稼働中のもの、そしてエビデンス待ちのもの</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. 30分ループ、エンドツーエンド</h2>
+
+<p>すべてのオートメーション実行は、1つのブックにおける1つのシンボルに割り当てられた1つのAIトレーディングデスクです。ワーカーは自身の間隔（通常30分）でそれを起動し、1つの<strong>サイクル</strong>が9つのステーションを流れます。そのうち1つだけがLLMであり、それ以外はすべて決定論的な機構であり、それにデータを供給し、レールを敷き、記録します。</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · スケジューラー</text>
+  <text x="22" y="58">due_run_ids() を約30秒ごとに実行;</text>
+  <text x="22" y="72">リースクレーム、最大1回</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · 事前ゲート（LLM 0）</text>
+  <text x="242" y="58">市場開場中か？予算は生きているか？</text>
+  <text x="242" y="72">マスターホールドは？フェンスは無傷か？</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · E1ルーター（LLM 0）</text>
+  <text x="462" y="58">静かなテープ → ライト（1コール）</text>
+  <text x="462" y="72">イベント/ショック/ニアストップ → フル（6）</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · デスク（LLM）</text>
+  <text x="682" y="58">ブック、損益、HWM、</text>
+  <text x="682" y="72">証拠金ブリーフ、テーゼ、テープを見る</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · 決定JSON</text>
+  <text x="682" y="178">アクション + 信頼度 + スコア</text>
+  <text x="682" y="192">+ オーダーブロック（ブラケット、サイズ）</text>
+  <text x="682" y="206">+ ORDER INTENT（Plan 17）</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · パース + レール</text>
+  <text x="462" y="178">basisはインテントによって設定され、</text>
+  <text x="462" y="192">モデルによってではない；オープンはクランプ↓</text>
+  <text x="462" y="206">エグジットはクランプ↑、クローズはレールなし</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · コンパイラ</text>
+  <text x="242" y="178">総合fn（intent × book × side）</text>
+  <text x="242" y="192">→ 買い | 売り | 空売り | 買い戻し</text>
+  <text x="242" y="206">§6の表、セルごとにテスト済み</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · ゲートスタック（分割）</text>
+  <text x="22" y="178">オープン：フィーエッジ、confランク、</text>
+  <text x="22" y="192">Kelly/vol/エクスポージャー、ダスト、R:R</text>
+  <text x="22" y="206">エグジット：市場開場 + フィーのみ</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · 台帳</text>
+  <text x="22" y="308">execute_paper_trade、手数料、</text>
+  <text x="22" y="322">ストップ付与、フェンス確定</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">ジャーナル</text>
+  <text x="242" y="308">decision・order_intent・</text>
+  <text x="242" y="322">gate_skip · 取引 · 株式</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">サイクル間</text>
+  <text x="462" y="308">SL/TPウォッチャー 30秒 · liqデーモン</text>
+  <text x="462" y="322">20秒(Plan 16、armed) · トレイルロック</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">フィードバック</text>
+  <text x="682" y="308">adaptラダー · サバイバルブリーフ ·</text>
+  <text x="682" y="322">shadowペアリングデータセット</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">次サイクルのプロンプト</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">図の読み方</text>
+  <text x="26" y="436">• 紫色のボックスはモデルが実行される唯一の場所です。ステーション3がモデルにどれだけコストをかけるかを決定します。約10サイクル中9回は1回呼び出しのライトパスに送られ、</text>
+  <text x="34" y="452">つまりライトプロンプトが本番の意思決定パスそのものです — だからこそPlan 17ではintentの問いを高コストのパスだけでなく両方のパスに組み込んだのです。</text>
+  <text x="26" y="474">• ステーション6〜8は、オープニングオーダーを小さくするか拒否することしかできず、クロージングオーダーを大きくするか通過させることしかできません。</text>
+  <text x="26" y="496">• 緑色の破線ループがデスクを改善し続ける理由です。すべての取引、拒否、証拠金の読み取り、ニアミスがフィードバックされ、</text>
+  <text x="34" y="512">次サイクルに読み込むプロンプトに反映されます。デスクは自らの履歴を目の前にして取引を行います。</text>
+</svg>
+<figcaption>1サイクル。デスク(紫)が判断を下し、他のすべてのステーションは決定論的でジャーナル化され、独自にリスクを追加することはできません。</figcaption>
+</figure>
+
+<h2 id="who">2. 誰が何を担うのか — AI対マシン</h2>
+
+<p>プラットフォーム全体の設計ルール: <strong>すべての取引判断はsooppiy.comのAIに属し、マシンの役割はそれを制限し、コンパイルし、記録することです</strong>. Plan 17は、マシン列にあった最後の要となる数値をAI列へ移した。</p>
+
+<div class="scroll">
+<table>
+<tr><th>質問</th><th>Plan 17以前</th><th>Plan 17以降</th></tr>
+<tr><td>方向（強気/弱気）</td><td>AI(<code>buy</code>/<code>sell</code>)</td><td>AI (動詞 + 意図)</td></tr>
+<tr><td>この注文が新規、追加、利確、または手仕舞いのいずれであるか</td><td><span class="chip crit">誰もそれを言えなかった</span> — ブックの状態から推測される</td><td><span class="chip ok">AIがそれを明示する</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>エントリーサイズ</td><td>machine: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code> はmax_betのうち、縮小方向にのみ制限される</td></tr>
+<tr><td>エグジットサイズ</td><td><span class="chip crit">マシン、BUDGETから</span> — ポジションを一切参照せず、「半分利確」は表現不可能だった</td><td><span class="chip ok">AIとは、保有している WHAT IS HELD の割合のこと</span> — 基準の切り替え</td></tr>
+<tr><td>ブラケット (ストップ/ターゲット)</td><td>すべての銘柄で一律5%/10%</td><td>AI per instrument, railed（ストップの引き締めのみ、R:Rフロア）</td></tr>
+<tr><td>「決済」</td><td><span class="chip crit">到達不能</span> 決定層からは — ストップレールのみが手仕舞いできた</td><td><span class="chip ok">第一級の意図</span>、決してレール制御されず、決して拒否されない</td></tr>
+<tr><td>サイクル間のアクションレベル</td><td>固定定数（4つが計測され、4つとも却下された）</td><td>AIが選択した <code>arm</code> レベル、マシンは単に従うだけ（フェーズ3）</td></tr>
+<tr><td>T3でのマージン防衛</td><td>—</td><td>設計によるマシンの反射（Plan 16：health 0.15でのLLMラウンドトリップは、ネットワーク遅延に全マージンを賭けることになる）</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. Order Intentとbasisの切り替え</h2>
+
+<p>デスクは1つのJSONオブジェクトで応答する。中心となる考え方は、<code>size_frac</code> が割合を意味する<em>異なるもの</em> デスクが何をしているかによって — そしてどちらであるかを決めるのはモデルではなくプラットフォームである：</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"reduce, size_frac: 0.5"</text>
+  <text x="398" y="62">デスクの文</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">リスクを取る：open・add・flipの新しい側</text>
+  <text x="78" y="180">basis = 最大賭け金（予算）</text>
+  <text x="78" y="198">0.5 = コミットが許される資金の半分</text>
+  <text x="78" y="220">レールはそれを縮小することしかできない；すべてのエントリーゲートが適用される；</text>
+  <text x="78" y="238">拒否は安全である — 取引は単に発生しない</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">リスクを減らす：reduce・close・armの後続アクション</text>
+  <text x="598" y="180">basis = 保有しているポジション</text>
+  <text x="598" y="198">0.5 = 実際に保有している数量の半分、単位まで正確に</text>
+  <text x="598" y="220">レールはそれを拡大することしかできない（ダスト → $1の最小値）；closeは</text>
+  <text x="598" y="238">決してレール制御されない — 手仕舞いを拒否すること自体がリスクである</text>
+</svg>
+<figcaption>basisはintentに応じて切り替わり、<code>size_basis</code> はプラットフォームによって刻印される。「予算の半分をreduceする」と言うモデルは混乱しており、その混乱は尊重されるのではなく修正される。</figcaption>
+</figure>
+
+<h3>デスクの注文、フィールドごとに</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">1つの決定、あなたのAIデスクが実際に送信する形で</span>
+    <span class="chip ok">すべてのフィールドが記録される</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">インテント</div>
+    <div class="ic-v"><span class="pill sel">削減する</span></div>
+    <div class="ic-x"><strong>何をしたいか。</strong> 固定された7つのメニューから1語 — ここでは「ポジションの一部を確定する」。このメニューが語彙のすべてであり、デスクは8番目の動詞を発明できない。</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>どれだけか。</strong> 半分 — <em>保有しているポジションの</em>、これは決済(エグジット)だからだ。プラットフォームは、モデルではなく、割合が何に対して測定されるかを決定する:エグジットはブックに対して測定され、エントリーは最大ベットに対して測定される。</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">アーム</div>
+    <div class="ic-v"><span class="pill dim">今サイクルはなし</span></div>
+    <div class="ic-x"><strong>常設トリガー、任意。</strong> 「価格が27,800を上回ったら、次のサイクルを待たずに半分を確定する。」デスクが水準を指定し、マシンは毎分それを監視し、ただ従うだけだ。armは常に<em>シェッド</em>リスクだけを行う。</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">理由</div>
+    <div class="ic-v"><span class="pill quote">「勢いの中で半分を確定する:テーゼは健在だが伸びきっている」</span></div>
+    <div class="ic-x"><strong>1文、必須。</strong> 理由は注文の横に記録されるので、デスクがなぜそう動いたのか、常に読み返すことができる<em>理由</em>。</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">全メニュー:</span>
+    <span class="pill grow">建玉</span><span class="pill grow">追加</span>
+    <span class="pill bank">削減</span><span class="pill bank">決済</span>
+    <span class="pill turn">反転</span>
+    <span class="pill dim">ホールド</span><span class="pill later">アーム</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> リスクを取る — 縮小または拒否される場合がある</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> リスクを減らす — 決して拒否されない</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> 反転する / 後で作動する</span>
+  </div>
+</div>
+
+<h2 id="rails">4. 非対称のレールとコンパイラ</h2>
+
+<p>台帳が実行するのは常に4つの動詞のみ — <code>buy | sell | short | cover</code> — これは変わらない。インテントはこれらへ<em>コンパイル</em>され、(intent × book × side)に対する1つの全域関数を通じて行われるため、デスクの文が未定義の意味を持つようなブック状態は存在しない。これは出荷され、セルごとにテストされた通りの表である:</p>
+
+<div class="scroll">
+<table>
+<tr><th>インテント</th><th>スポットブック(ロング)</th><th>先物、ロング</th><th>先物、ショート</th><th>フラット</th></tr>
+<tr><td><code>open/add</code> (強気)</td><td>買い</td><td>買い</td><td><strong>全量カバー後、買い</strong></td><td>買い</td></tr>
+<tr><td><code>open/add</code> (弱気)</td><td>→ 保有継続（現物ショートなし）</td><td>売り（見通しに向けて縮小）</td><td>空売り</td><td>空売り（先物）／保有継続（現物）</td></tr>
+<tr><td><code>reduce</code></td><td>売り × frac <em>建玉のうち</em></td><td>売り × frac <em>建玉のうち</em></td><td>カバー × frac <em>建玉のうち</em></td><td>操作なし、記録のみ</td></tr>
+<tr><td><code>close</code></td><td>全量売り</td><td>全量売り</td><td>全量カバー</td><td>操作なし、記録のみ</td></tr>
+<tr><td><code>flip</code></td><td>全量売り（クローズに縮退）</td><td>全量売り + 空売り</td><td>全量カバー + 買い</td><td>→ 新規建て</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">注文なし； <code>arm</code> はAIが選択したトリガーを保存し、60秒ごとの制御スキャンがそれに従う（フェーズ3）</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>この非対称性がなぜ安全性の議論のすべてなのかという理由。</strong></p>
+<p style="margin:0">権限はAIに移されたが、それはミスが限定される方向に限られる。デスクが<em>取る</em>リスクを要求すると、それは9つのゲートによって制限・拒否され得る。デスクが<em>減らす</em>リスクにおいて、プラットフォーム上では「拒否」は一切許可されない —— reduce は拡大されることはあっても（ダストの断片は最低額の $1 になる）決して縮小されることはなく、close はすべてのゲート設定、confidence floor を含めて通過する。以下は本番環境での実証：<code>close</code> では confidence 0.10 が floor 0.99 に対して book をフラット化し、<code>hold</code> 動詞に乗った intent もなお close された。</p>
+</div>
+
+<h2 id="chat">5. 会話としてのサイクル —— 実際のプロンプト、実際の応答</h2>
+
+<p>サイクルが実際にどのようなものかを、本番検証（agent 38 / run 839、ETHUSDT、および agent 45 / run 846、LINKUSDT）からの実データを用いて示す。以下の desk の応答は本番からの逐語的なモデル出力であり、その <code>why</code> 文も含まれる。</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK（プロンプト、簡略化）</div>
+    あなたは単一シンボルのトレーディングデスクである。今回のサイクルのアクションを決定せよ。<br>
+    Symbol: ETHUSDT (crypto, spot), price now 1907.4。<br>
+    今回の実行における建玉: 0 units。在庫のないスポット建玉: 'sell' は利用できません — 弱気な判断は 'hold' を意味します。<br>
+    確信度を正直に較正する… 4つの要素を採点する… THIS instrument のブラケットを設定する…<br>
+    <em>また、発注を意図として明示してください: open|add はエクスポージャーを増やす（max bet に対する割合）; reduce|close は利益を確定する（WHAT YOU HOLD に対する割合）… 可能な限り、hold よりも arm を優先し、判断を変える水準を明示してください。</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM(実際のモデル出力、本番サイクル 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">記録済み: intent=open · basis=budget · コンパイル済み → [最大ベットの×0.05を購入] · mode=shadow → レガシーサイジングが実行され、ペアリングが記録されました</div>
+
+  <div class="bubble platform"><div class="who">プラットフォーム → デスク(次のサイクル、現在保有中)</div>
+    今回の実行における建玉: 0.97598457 units… 'sell' はこのロングポジションを縮小/決済し、'buy' はこれを増やします。<br>
+    含み損益とハイウォーターマークが表示されます。 <em>reduce|close の size_frac は WHAT YOU HOLD に対する割合です — 0.5 はポジションの半分を意味します。利益確定は add の不在ではなく、独立した第一級のアクションです。</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM(QAシナリオ判定)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">適用: コンパイル済み → 売却 ×0.6 OF THE BOOK · 0.97598457 のうち 0.58559074 を売却 · 40.0000% 残存 · 予算規模の決済であれば手仕舞いできていた</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK(run 846、LINKUSDT、保有中)</div>
+    このランのブックにおけるポジション: 119.6…単位…上記の意図メニュー。
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM(実際のモデル出力、本番環境)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">journalled: 独自の理由付けを持つポジション認識型のホールド — シャドウデータセットのベースライン行</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 841、XRPUSDT futures、SHORT 1848.258)</div>
+    先物ブック、現在SHORT…上記と同様の意図メニュー。
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM(QAシナリオ:困難なケース)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">適用: 意図がホールドを上書き · コンパイル済み → フルカバー · 1848.258 カバー済み、ブックはフラット · 信頼度 0.10 対 フロア 0.99 — かつ拒否されなかった。フラット化を拒否するレールこそがリスクであるため</div>
+</div>
+
+<h2 id="verify">6. 10エージェントによる本番検証 — 2026-07-31</h2>
+
+<p>10個のエージェントが本番環境に登録された(<code>qa-oi-*</code>, agents 37–46, runs 838–847, simulated ledger, linked to the designated debug user)。5つは決定論的シナリオマトリクスを<strong>real <code>run_cycle</code>経由で本番MySQLに対して実行した</strong>;残りの5つは<strong>実際のLLMの意思決定パス</strong>を実行した。その後、すべてのbookは機能自体を使ってフラット化され(apply-mode <code>close</code>)、10runすべてが停止した。</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — ポジションを維持</div><div class="val">40.0000%</div><div class="d">0.97598457 ETHのうち0.39039383</div></div>
+  <div class="tile"><div class="lbl">フューチャーズのロングを0.5減らす</div><div class="val">50.0000%</div><div class="d">26.94219552 SOLのうち13.47109776</div></div>
+  <div class="tile"><div class="lbl">トリップワイヤーを0.3減らす</div><div class="val">70.0000%</div><div class="d">維持 — 予算サイジングではフラットにされていたはずのポジション</div></div>
+  <div class="tile"><div class="lbl">conf 0.10 でクローズ</div><div class="val">フラット</div><div class="d">vs floor 0.99 — 拒否されているのではなく、設計通り</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>Scenario（実行）</th><th>アサートされた内容</th><th>本番環境での計測</th><th></th></tr>
+<tr><td>1</td><td>現物、 <strong>シャドウ</strong> (838 BTC)</td><td>意図は決定の脇にジャーナル記録され、注文はそのまま</td><td>イベント: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>；レガシーのエントリーサイズの売りはそのまま実行された</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>現物、<strong>適用 縮小 0.6</strong> (839 ETH)</td><td>Exit = BOOK の割合</td><td>0.97598457 のうち 0.58559074 を売却 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>先物ロング、<strong>reduce 0.5 を適用</strong> (840 SOL 2×)</td><td>コンパイル <code>sell × book の割合</code></td><td>26.94219552 のうち 13.47109776 を売却 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>先物ショート、<strong>conf 0.10 の HOLD verb に close を適用</strong> (841 XRP 2×)</td><td>コンパイルする <code>cover full</code>; intentがholdを上書きし、confidence gatesはバイパスされ、close-on-flatは記帳のみのno-opとなる</td><td>1848.25801682がカバーされ、bookはflatになる;直前のclose-on-flatは記帳済み <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>トリップワイヤー + ダスト + アーム(842 DOGE)</td><td>§2の不具合回帰;dust railが増加;armは注文なしで記帳する</td><td>正確に維持され <strong>0.700000</strong> budget sizingがフラットになる箇所で; <code>reduce 0.0001</code> 0.001までUPにrailされ(記帳from→to, <code>dust_slice_grown</code>);armは記帳、取引なし</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>ライブLLMパス(843–847)</td><td>実モデルがaskを受け取り、実intentsがend-to-endでパースされる</td><td>5件すべてが実際の決定を生成した;verbatim intentsが記録された: <code>open 0.05</code> why-sentenceを伴い、2つのposition-aware <code>hold</code>s;5サイクル中2件はパース可能な判定を出さなかった(既知のsmall-model制限)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>2回目の、独立したパス。</strong>
+ フラクションは上記の値を、生の<code>signals</code> 台帳から SQL で再導出したものであり、それらを生成したのと同じコードパスから得たものではありません:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> 8回の実行にわたって記録されたイベント。ウィンドウ全体を通じてプラットフォーム全体でトレースバック0件、エンジンエラー0件。プラットフォーム自身のライブラン（825、836、837）は妨げられることなく周回した。QAブックはすべてフラット、10回の実行すべてが停止し、ドライバーは削除済み。</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>同一セッションからの2つの正直な所見。</strong></p>
+<p style="margin:0 0 6px">① <strong>ハウスデフォルトのブラケットは、R:R フロアのちょうど ON に位置している。</strong> 2件のQAオープンが拒否された理由: <code>reward 0.1082 &lt; 2× risk 0.0541</code> — デフォルトの5%/10%ブラケットは reward = 2.0000× risk を算出し、浮動小数点の丸めが厳密な <code>&lt;</code> のどちら側に落ちるかを決めている。既存の問題（Plan 17ではない）で、エントリー価格によって間欠的に発生し、一行修正の価値がある（<code>&lt;</code> → 小さなイプシロンへ）。</p>
+<p style="margin:0">② <strong>ライブモデルのインテント準拠は部分的である。</strong> ローカルの gpt-oss:20b は、観測された実際のサイクルのおよそ半分で有効なインテントを出力し、一部ではパース可能なJSONを一切出力しなかった。パイプラインは実証済みであり、シャドウデータセットの成長率はマシナリーではなくモデルに依存する。</p>
+</div>
+
+<h2 id="today">7. 本日稼働しているもの、そしてエビデンス待ちのもの</h2>
+
+<div class="scroll">
+<table>
+<tr><th>能力</th><th>状態</th><th>次のステップへのゲート</th></tr>
+<tr><td>意図が要求され、解析され、レールに通され、コンパイルされ、記録される — 両方の意思決定パス</td><td><span class="chip ok">LIVE（シャドー）</span></td><td>—</td></tr>
+<tr><td>ペア化されたリデュースデータセット（<code>intent_size_usd</code> と <code>machine_size_usd</code>)</td><td><span class="chip ok">累積中</span></td><td>ポジションを保持する実行が必要</td></tr>
+<tr><td>適用: <code>reduce</code>/<code>close</code> ポジションベースで実行</td><td><span class="chip warn">構築済み + 本番検証済み、昇格待ち</span></td><td>≥30件のペア化されたリデュース観測、シャドーが出口あたり確保額の中央値でマシン以上</td></tr>
+<tr><td><code>arm</code> はコントロールスキャンによって保存・評価される</td><td><span class="chip warn">フェーズ3</span></td><td>validate_stop_conditions ホワイトリスト + エバリュエーター; APIを通じてテスト</td></tr>
+<tr><td><code>flip</code> 実行（+ ホイップソーガードとの相互作用）</td><td><span class="chip warn">フェーズ4</span></td><td>ライブの小規模予算コホート — そのカウンターファクチュアルはシャドーできない</td></tr>
+<tr><td><code>leverage</code> 削減（add_margin）</td><td><span class="chip warn">フェーズ5</span></td><td>Plan 16 フェーズ4と共同</td></tr>
+<tr><td>清算防衛（Plan 16）</td><td><span class="chip ok">LIVE + ARMED</span></td><td>T3リフレックスは2026-07-30に有効化; エスカレーションパスはテストで実証済みだが、ライブでは未発火</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>

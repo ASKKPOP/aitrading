@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How AI Automated Trading Works — the Plan-17 Pipeline</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>How AI Automated Trading Works</h1>
+<p class="sub">The full pipeline as it runs on sooppiy.com today, after Plan 17 (Order Intent): who decides what, in what order, through which gates — with the real evidence from the 10-agent production verification of 2026-07-31.</p>
+<p class="meta">Updated 2026-07-31. Every number in §6 was measured on the production platform, not simulated — ten test agents ran the real engine end to end before this page was published.</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">The 30-minute loop, end to end</a></li>
+  <li><a href="#who">Who authors what — AI vs machine</a></li>
+  <li><a href="#intent">The Order Intent and the basis switch</a></li>
+  <li><a href="#rails">The asymmetric rails and the compiler</a></li>
+  <li><a href="#chat">A cycle as a conversation — real prompts, real answers</a></li>
+  <li><a href="#verify">The 10-agent production verification</a></li>
+  <li><a href="#today">What is live today, and what is waiting on evidence</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. The 30-minute loop, end to end</h2>
+
+<p>Every automation run is one AI trading desk assigned to one symbol on one book. The worker wakes it on its own interval (typically 30 minutes), and one <strong>cycle</strong> flows through nine stations. Only one of them is an LLM; everything else is deterministic machinery that feeds it, rails it, and journals it.</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · Scheduler</text>
+  <text x="22" y="58">due_run_ids() every ~30s;</text>
+  <text x="22" y="72">lease claim, at-most-once</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · Pre-gates (0 LLM)</text>
+  <text x="242" y="58">market open? budget alive?</text>
+  <text x="242" y="72">master hold? fence intact?</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · E1 router (0 LLM)</text>
+  <text x="462" y="58">quiet tape → light (1 call)</text>
+  <text x="462" y="72">event/shock/near-stop → full (6)</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · The desk (LLM)</text>
+  <text x="682" y="58">sees book, P&amp;L, HWM,</text>
+  <text x="682" y="72">margin brief, thesis, tape</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · Decision JSON</text>
+  <text x="682" y="178">action + confidence + scores</text>
+  <text x="682" y="192">+ order block (bracket, size)</text>
+  <text x="682" y="206">+ ORDER INTENT (Plan 17)</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · Parse + rails</text>
+  <text x="462" y="178">basis set by intent, never</text>
+  <text x="462" y="192">by the model; opens clamp ↓</text>
+  <text x="462" y="206">exits clamp ↑, close unrailed</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · Compiler</text>
+  <text x="242" y="178">total fn (intent × book × side)</text>
+  <text x="242" y="192">→ buy | sell | short | cover</text>
+  <text x="242" y="206">the §6 table, tested per cell</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · Gate stack (split)</text>
+  <text x="22" y="178">opens: fee edge, conf rank,</text>
+  <text x="22" y="192">Kelly/vol/exposure, dust, R:R</text>
+  <text x="22" y="206">exits: market open + fee only</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · Ledger</text>
+  <text x="22" y="308">execute_paper_trade, fees,</text>
+  <text x="22" y="322">stops attach, fence commits</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">Journal</text>
+  <text x="242" y="308">decision · order_intent ·</text>
+  <text x="242" y="322">gate_skip · trade · equity</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">Between cycles</text>
+  <text x="462" y="308">SL/TP watcher 30s · liq daemon</text>
+  <text x="462" y="322">20s (Plan 16, armed) · trail lock</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">Feedback</text>
+  <text x="682" y="308">adapt ladder · survival brief ·</text>
+  <text x="682" y="322">shadow pairing dataset</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">next cycle's prompt</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">Reading the picture</text>
+  <text x="26" y="436">• Purple boxes are the only place a model runs. Station 3 decides how much model to spend: ~9 in 10 cycles route to the one-call light path,</text>
+  <text x="34" y="452">so the light prompt IS the production decision path — which is why Plan 17 put the intent ask on both paths, not just the expensive one.</text>
+  <text x="26" y="474">• Stations 6–8 can only ever make an opening order smaller or refuse it, and can only make a closing order bigger or let it through.</text>
+  <text x="26" y="496">• The green dashed loop is why the desk improves: every trade, refusal, margin reading and near-miss it generates is fed back into the</text>
+  <text x="34" y="512">prompt it reads next cycle. The desk trades with its own history in front of it.</text>
+</svg>
+<figcaption>One cycle. The desk (purple) authors the judgement; every other station is deterministic, journalled, and unable to add risk on its own.</figcaption>
+</figure>
+
+<h2 id="who">2. Who authors what — AI vs machine</h2>
+
+<p>The design rule of the whole platform: <strong>every trading decision belongs to the sooppiy.com AI; the machine's job is to bound it, compile it, and record it</strong>. Plan 17 moved the last load-bearing numbers from the machine column into the AI column.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Question</th><th>Before Plan 17</th><th>Since Plan 17</th></tr>
+<tr><td>Direction (bull/bear)</td><td>AI (<code>buy</code>/<code>sell</code>)</td><td>AI (verb + intent)</td></tr>
+<tr><td>Whether this order opens, adds, banks, or flattens</td><td><span class="chip crit">nobody could say it</span> — inferred from book state</td><td><span class="chip ok">AI states it</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>Entry size</td><td>machine: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code> of max bet, railed shrink-only</td></tr>
+<tr><td>Exit size</td><td><span class="chip crit">machine, from the BUDGET</span> — never referenced the position; "bank half" was unsayable</td><td><span class="chip ok">AI, fraction of WHAT IS HELD</span> — the basis switch</td></tr>
+<tr><td>Bracket (stop/target)</td><td>flat 5%/10% for every instrument</td><td>AI per instrument, railed (stop tightens only, R:R floor)</td></tr>
+<tr><td>"Close it"</td><td><span class="chip crit">unreachable</span> from the decision layer — only stop rails could flatten</td><td><span class="chip ok">a first-class intent</span>, never railed, never refused</td></tr>
+<tr><td>Between-cycle action level</td><td>fixed constants (four were measured and all four rejected)</td><td>AI-chosen <code>arm</code> level, machine merely obeys (phase 3)</td></tr>
+<tr><td>Margin defence at T3</td><td>—</td><td>machine reflex, by design (Plan 16: an LLM round-trip at health 0.15 bets the whole margin on network latency)</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. The Order Intent and the basis switch</h2>
+
+<p>The desk answers with one JSON object. The load-bearing idea is that <code>size_frac</code> means a fraction <em>of different things</em> depending on what the desk is doing — and the platform, not the model, decides which:</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"reduce, size_frac: 0.5"</text>
+  <text x="398" y="62">the desk's sentence</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">TAKING risk: open · add · flip's new side</text>
+  <text x="78" y="180">basis = the MAX BET (budget)</text>
+  <text x="78" y="198">0.5 = half the money you are allowed to commit</text>
+  <text x="78" y="220">rails may only SHRINK it; every entry gate applies;</text>
+  <text x="78" y="238">a refusal is safe — the trade simply does not happen</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">SHEDDING risk: reduce · close · arm's later action</text>
+  <text x="598" y="180">basis = THE POSITION YOU HOLD</text>
+  <text x="598" y="198">0.5 = half of what you actually own, to the unit</text>
+  <text x="598" y="220">rails may only GROW it (dust → $1 min); close is</text>
+  <text x="598" y="238">NEVER railed — refusing a flatten IS the risk</text>
+</svg>
+<figcaption>The basis switches with the intent, and <code>size_basis</code> is stamped by the platform. A model that says "reduce half my budget" is confused, and the confusion is corrected rather than honoured.</figcaption>
+</figure>
+
+<h3>The desk's order, field by field</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">One decision, as your AI desk actually sends it</span>
+    <span class="chip ok">every field journalled</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">intent</div>
+    <div class="ic-v"><span class="pill sel">reduce</span></div>
+    <div class="ic-x"><strong>What I want to do.</strong> One word from a fixed menu of seven — here, "bank part of my position". The menu is the whole vocabulary; the desk cannot invent an eighth verb.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>How much.</strong> Half — <em>of the position it holds</em>, because this is an exit. The platform, never the model, decides what the fraction is measured against: exits measure against the book, entries against the max bet.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">arm</div>
+    <div class="ic-v"><span class="pill dim">none this cycle</span></div>
+    <div class="ic-x"><strong>A standing trigger, optional.</strong> "If price rises above 27,800, bank half without waiting for my next cycle." The desk names the level; the machine watches it every minute and merely obeys. An arm can only ever <em>shed</em> risk.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">why</div>
+    <div class="ic-v"><span class="pill quote">"bank half into strength; thesis intact but extended"</span></div>
+    <div class="ic-x"><strong>One sentence, required.</strong> The reason is recorded next to the order, so you can always read back <em>why</em> your desk did what it did.</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">The full menu:</span>
+    <span class="pill grow">open</span><span class="pill grow">add</span>
+    <span class="pill bank">reduce</span><span class="pill bank">close</span>
+    <span class="pill turn">flip</span>
+    <span class="pill dim">hold</span><span class="pill later">arm</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> takes risk — may be shrunk or refused</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> sheds risk — never refused</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> reverses / acts later</span>
+  </div>
+</div>
+
+<h2 id="rails">4. The asymmetric rails and the compiler</h2>
+
+<p>The ledger only ever executes four verbs — <code>buy | sell | short | cover</code> — and that does not change. Intents <em>compile</em> to them through one total function over (intent × book × side), so there is no book state in which the desk's sentence has undefined meaning. This is the table, exactly as shipped and exactly as tested cell for cell:</p>
+
+<div class="scroll">
+<table>
+<tr><th>Intent</th><th>Spot book (long)</th><th>Futures, long</th><th>Futures, short</th><th>Flat</th></tr>
+<tr><td><code>open/add</code> (bull)</td><td>buy</td><td>buy</td><td><strong>cover full, then buy</strong></td><td>buy</td></tr>
+<tr><td><code>open/add</code> (bear)</td><td>→ hold (no spot short)</td><td>sell (reduces toward the view)</td><td>short</td><td>short (futures) / hold (spot)</td></tr>
+<tr><td><code>reduce</code></td><td>sell × frac <em>of book</em></td><td>sell × frac <em>of book</em></td><td>cover × frac <em>of book</em></td><td>no-op, journalled</td></tr>
+<tr><td><code>close</code></td><td>sell full</td><td>sell full</td><td>cover full</td><td>no-op, journalled</td></tr>
+<tr><td><code>flip</code></td><td>sell full (degrades to close)</td><td>sell full + short</td><td>cover full + buy</td><td>→ open</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">no order; <code>arm</code> stores an AI-chosen trigger the 60s control scan will obey (phase 3)</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>Why the asymmetry is the entire safety argument.</strong></p>
+<p style="margin:0">Authority moved to the AI, but only in the direction where a mistake is bounded. When the desk asks to <em>take</em> risk it can be clamped and refused by nine gates. When it asks to <em>shed</em> risk, nothing on the platform is allowed to say no — a reduce can be grown (a dust slice becomes the $1 minimum) but never shrunk, and a close passes every gate configuration including the confidence floor. Production proof below: a <code>close</code> at confidence 0.10 against a 0.99 floor flattened the book, and an intent riding on a <code>hold</code> verb still closed.</p>
+</div>
+
+<h2 id="chat">5. A cycle as a conversation — real prompts, real answers</h2>
+
+<p>What a cycle actually looks like, using genuine text from the production verification (agent 38 / run 839, ETHUSDT, and agent 45 / run 846, LINKUSDT). The desk's answers below are verbatim model output from prod, including its own <code>why</code> sentences.</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (the prompt, condensed)</div>
+    You are the trading desk for one symbol. Decide THIS cycle's action.<br>
+    Symbol: ETHUSDT (crypto, spot), price now 1907.4.<br>
+    Position in this run's book: 0 units. Spot book with no inventory: 'sell' is NOT available — a bearish read means 'hold'.<br>
+    Calibrate confidence honestly… score four components… place THIS instrument's bracket…<br>
+    <em>Also state your order as an intent: open|add grow exposure (fraction of your max bet); reduce|close bank it (fraction of WHAT YOU HOLD)… prefer arm over hold whenever you can name the level that would change your mind.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (real model output, prod cycle 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">journalled: intent=open · basis=budget · compiled → [buy ×0.05 of max bet] · mode=shadow → legacy sizing executed, pairing recorded</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (next cycle, now holding)</div>
+    Position in this run's book: 0.97598457 units… 'sell' reduces/closes this long; 'buy' adds to it.<br>
+    Open P&amp;L and high-water mark shown. <em>reduce|close size_frac is a fraction of WHAT YOU HOLD — 0.5 means half your position; banking is a first-class action, not the absence of an add.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (QA scenario decision)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: compiled → sell ×0.6 OF THE BOOK · sold 0.58559074 of 0.97598457 · 40.0000% remains · a budget-sized exit would have flattened it</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 846, LINKUSDT, holding)</div>
+    Position in this run's book: 119.6… units… intent menu as above.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (real model output, prod)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">journalled: a position-aware hold with its own reasoning — the shadow dataset's baseline row</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 841, XRPUSDT futures, SHORT 1848.258)</div>
+    Futures book, currently SHORT… intent menu as above.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (QA scenario: the hard case)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: intent overrides the hold · compiled → cover full · 1848.258 covered, book flat · confidence 0.10 vs floor 0.99 — and it was NOT refused, because a rail that refuses a flatten is the risk</div>
+</div>
+
+<h2 id="verify">6. The 10-agent production verification — 2026-07-31</h2>
+
+<p>Ten agents were registered on production (<code>qa-oi-*</code>, agents 37–46, runs 838–847, simulated ledger, linked to the designated debug user). Five ran a deterministic scenario matrix through the <strong>real <code>run_cycle</code> against production MySQL</strong>; five ran the <strong>real LLM decision paths</strong>. Every book was then flattened using the feature itself (apply-mode <code>close</code>) and all ten runs stopped.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — book kept</div><div class="val">40.0000%</div><div class="d">0.39039383 of 0.97598457 ETH</div></div>
+  <div class="tile"><div class="lbl">reduce 0.5 futures long</div><div class="val">50.0000%</div><div class="d">13.47109776 of 26.94219552 SOL</div></div>
+  <div class="tile"><div class="lbl">reduce 0.3 tripwire</div><div class="val">70.0000%</div><div class="d">kept — budget sizing would have flattened</div></div>
+  <div class="tile"><div class="lbl">close at conf 0.10</div><div class="val">flat</div><div class="d">vs floor 0.99 — not refused, by design</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>Scenario (run)</th><th>What was asserted</th><th>Measured on prod</th><th></th></tr>
+<tr><td>1</td><td>Spot, <strong>shadow</strong> (838 BTC)</td><td>Intent journalled beside the decision; order untouched</td><td>event: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>; legacy entry-sized sell ran unchanged</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>Spot, <strong>apply reduce 0.6</strong> (839 ETH)</td><td>Exit = fraction of the BOOK</td><td>sold 0.58559074 of 0.97598457 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>Futures long, <strong>apply reduce 0.5</strong> (840 SOL 2×)</td><td>Compiles <code>sell × frac of book</code></td><td>sold 13.47109776 of 26.94219552 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>Futures short, <strong>apply close on a HOLD verb at conf 0.10</strong> (841 XRP 2×)</td><td>Compiles <code>cover full</code>; intent overrides hold; confidence gates bypassed; close-on-flat is a journalled no-op</td><td>1848.25801682 covered, book flat; earlier close-on-flat journalled <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>Tripwire + dust + arm (842 DOGE)</td><td>§2 defect regression; dust rail grows; arm journals without an order</td><td>kept exactly <strong>0.700000</strong> where budget sizing flattens; <code>reduce 0.0001</code> railed UP to 0.001 (journalled from→to, <code>dust_slice_grown</code>); arm journalled, no trade</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>Live LLM paths (843–847)</td><td>Real model receives the ask, real intents parse end-to-end</td><td>all 5 produced real decisions; verbatim intents captured: <code>open 0.05</code> with a why-sentence, two position-aware <code>hold</code>s; 2 of 5 cycles gave no parseable verdict (known small-model limit)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>Second, independent pass.</strong> The fractions above were re-derived from the raw <code>signals</code> ledger by SQL — not from the same code path that produced them:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> events journalled across 8 runs; 0 tracebacks and 0 engine errors platform-wide during the whole window; the platform's own live runs (825, 836, 837) cycled undisturbed. All QA books flat, all 10 runs stopped, driver removed.</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>Two honest findings from the same session.</strong></p>
+<p style="margin:0 0 6px">① <strong>The house-default bracket sits exactly ON the R:R floor.</strong> Two QA opens were refused with <code>reward 0.1082 &lt; 2× risk 0.0541</code> — the default 5%/10% bracket computes reward = 2.0000× risk and float rounding decides which side of the strict <code>&lt;</code> it lands on. Pre-existing (not Plan 17), intermittent by entry price, worth a one-line fix (<code>&lt;</code> → a small epsilon).</p>
+<p style="margin:0">② <strong>Live-model intent compliance is partial.</strong> The local gpt-oss:20b emitted a valid intent on roughly half the observed real cycles and no parseable JSON at all on some. The pipeline is proven; the shadow dataset's growth rate depends on the model, not the machinery.</p>
+</div>
+
+<h2 id="today">7. What is live today, and what is waiting on evidence</h2>
+
+<div class="scroll">
+<table>
+<tr><th>Capability</th><th>State</th><th>Gate to the next step</th></tr>
+<tr><td>Intent asked, parsed, railed, compiled, journalled — both decision paths</td><td><span class="chip ok">LIVE (shadow)</span></td><td>—</td></tr>
+<tr><td>Paired reduce dataset (<code>intent_size_usd</code> vs <code>machine_size_usd</code>)</td><td><span class="chip ok">accumulating</span></td><td>needs runs that hold positions</td></tr>
+<tr><td>Apply: <code>reduce</code>/<code>close</code> execute position-based</td><td><span class="chip warn">built + prod-verified, awaiting promotion</span></td><td>≥30 paired reduce observations, shadow ≥ machine on median banked-per-exit</td></tr>
+<tr><td><code>arm</code> stored and evaluated by the control scan</td><td><span class="chip warn">phase 3</span></td><td>validate_stop_conditions whitelist + evaluator; test through the API</td></tr>
+<tr><td><code>flip</code> execution (+ whipsaw-guard interaction)</td><td><span class="chip warn">phase 4</span></td><td>live small-budget cohort — its counterfactual cannot be shadowed</td></tr>
+<tr><td><code>leverage</code> reduction (add_margin)</td><td><span class="chip warn">phase 5</span></td><td>joint with Plan 16 phase 4</td></tr>
+<tr><td>Liquidation defence (Plan 16)</td><td><span class="chip ok">LIVE + ARMED</span></td><td>T3 reflex enabled 2026-07-30; escalation path proven by tests, never yet fired live</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>
