@@ -31,6 +31,13 @@ from market_intel import (
     get_stock_analysis_history_payload,
     get_stock_analysis_latest_payload,
 )
+from market_i18n import (
+    localize_featured_stocks_payload,
+    localize_macro_payload,
+    localize_news_payload,
+    localize_stock_history_payload,
+    localize_stock_latest_payload,
+)
 from routes_shared import (
     MARKET_INTEL_CACHE_KEY_PREFIX,
     MARKET_INTEL_CACHE_TTL_SECONDS,
@@ -183,17 +190,28 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         return _cached_market_payload('overview', get_market_intel_overview)
 
     @app.get('/api/market-intel/news')
-    async def market_intel_news(category: Optional[str] = None, limit: int = 5):
+    async def market_intel_news(request: Request, category: Optional[str] = None, limit: int = 5):
         safe_limit = max(1, min(limit, 12))
         category_key = (category or 'all').strip() or 'all'
-        return _cached_market_payload(
+        payload = _cached_market_payload(
             f'news:category={category_key}:limit={safe_limit}',
             lambda: get_market_news_payload(category=category, limit=safe_limit),
         )
+        # Localize the free text (category labels, headlines, summaries) on the
+        # way out — the cache above stays English and shared, exactly like the
+        # regime endpoint. Offloaded because a cold-cache miss may call the LLM.
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            payload = await run_in_threadpool(localize_news_payload, payload, lang)
+        return payload
 
     @app.get('/api/market-intel/macro-signals')
-    async def market_intel_macro_signals():
-        return _cached_market_payload('macro_signals', get_macro_signals_payload)
+    async def market_intel_macro_signals(request: Request):
+        payload = _cached_market_payload('macro_signals', get_macro_signals_payload)
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            payload = await run_in_threadpool(localize_macro_payload, payload, lang)
+        return payload
 
     @app.get('/api/market-intel/psych')
     async def market_intel_psych():
@@ -306,29 +324,41 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         return _cached_market_payload('etf_flows', get_etf_flows_payload)
 
     @app.get('/api/market-intel/stocks/featured')
-    async def market_intel_featured_stocks(limit: int = 6):
+    async def market_intel_featured_stocks(request: Request, limit: int = 6):
         safe_limit = max(1, min(limit, 12))
-        return _cached_market_payload(
+        payload = _cached_market_payload(
             f'stocks_featured:limit={safe_limit}',
             lambda: get_featured_stock_analysis_payload(limit=safe_limit),
         )
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            payload = await run_in_threadpool(localize_featured_stocks_payload, payload, lang)
+        return payload
 
     @app.get('/api/market-intel/stocks/{symbol}/latest')
-    async def market_intel_stock_latest(symbol: str):
+    async def market_intel_stock_latest(request: Request, symbol: str):
         normalized_symbol = (symbol or '').strip().upper()
-        return _cached_market_payload(
+        payload = _cached_market_payload(
             f'stock_latest:symbol={normalized_symbol}',
             lambda: get_stock_analysis_latest_payload(normalized_symbol),
         )
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            payload = await run_in_threadpool(localize_stock_latest_payload, payload, lang)
+        return payload
 
     @app.get('/api/market-intel/stocks/{symbol}/history')
-    async def market_intel_stock_history(symbol: str, limit: int = 10):
+    async def market_intel_stock_history(request: Request, symbol: str, limit: int = 10):
         normalized_symbol = (symbol or '').strip().upper()
         safe_limit = max(1, min(limit, 100))
-        return _cached_market_payload(
+        payload = _cached_market_payload(
             f'stock_history:symbol={normalized_symbol}:limit={safe_limit}',
             lambda: get_stock_analysis_history_payload(normalized_symbol, limit=safe_limit),
         )
+        lang = lang_from_request(request.headers)
+        if lang != 'en':
+            payload = await run_in_threadpool(localize_stock_history_payload, payload, lang)
+        return payload
 
     # ─── Bybit perpetual futures ────────────────────────────────────────────
 
