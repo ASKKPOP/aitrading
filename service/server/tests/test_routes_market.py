@@ -117,6 +117,50 @@ class MarketRouteTests(unittest.TestCase):
             resp = self.client.get("/api/market-intel/stocks/AAPL/history")
         self.assertEqual(resp.status_code, 200)
 
+    # --- Accept-Language localizes the response on the way out (Tier B) ---
+    # The English payload built above is shared and cached; the handler must
+    # translate the free text per request from the Accept-Language header while
+    # leaving enums/numbers untouched. Catalogue strings keep this LLM-free.
+
+    _MACRO_LOCALIZABLE = {
+        "available": True,
+        "verdict": "defensive",
+        "meta": {"summary": "Defensive pressure dominates the current macro snapshot."},
+        "signals": [{
+            "id": "btc_trend", "label": "BTC trend", "status": "bullish",
+            "explanation": "BTC momentum is mixed.", "value": 1.2,
+        }],
+    }
+
+    def test_macro_localized_for_korean_request(self) -> None:
+        from market_i18n_data import MARKET_PHRASES
+        with patch("routes_market.get_macro_signals_payload",
+                   return_value=dict(self._MACRO_LOCALIZABLE)):
+            resp = self.client.get("/api/market-intel/macro-signals",
+                                   headers={"Accept-Language": "ko"})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["meta"]["summary"],
+                         MARKET_PHRASES["Defensive pressure dominates the current macro snapshot."]["ko"])
+        sig = body["signals"][0]
+        self.assertEqual(sig["label"], MARKET_PHRASES["BTC trend"]["ko"])
+        self.assertEqual(sig["explanation"], MARKET_PHRASES["BTC momentum is mixed."]["ko"])
+        # Enum + number are the frontend's to map / render — left raw.
+        self.assertEqual(body["verdict"], "defensive")
+        self.assertEqual(sig["status"], "bullish")
+        self.assertEqual(sig["value"], 1.2)
+
+    def test_macro_english_request_unchanged(self) -> None:
+        with patch("routes_market.get_macro_signals_payload",
+                   return_value=dict(self._MACRO_LOCALIZABLE)):
+            resp = self.client.get("/api/market-intel/macro-signals",
+                                   headers={"Accept-Language": "en"})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["meta"]["summary"],
+                         "Defensive pressure dominates the current macro snapshot.")
+        self.assertEqual(body["signals"][0]["explanation"], "BTC momentum is mixed.")
+
     # A snapshot row persisted with a bare NaN literal (json.loads restores it
     # as a float) 500'd every stocks endpoint in prod on 2026-07-29. The payload
     # must be scrubbed to null before it reaches the allow_nan=False renderer.
