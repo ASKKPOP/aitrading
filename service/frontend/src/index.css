@@ -781,7 +781,7 @@ a {
 /* Page column — cap line length on wide monitors; pages were stretching
    edge-to-edge which read as broken gaps on 2xl screens. */
 .page-container {
-  max-width: 1160px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
