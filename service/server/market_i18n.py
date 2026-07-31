@@ -39,26 +39,35 @@ from typing import Any, Optional
 
 from analysis_agents import LANG_NAMES, normalize_lang
 from cache import get_json, set_json
-from llm_client import generate_text, llm_configured
+from llm_client import (
+    LlmContext,
+    generate_text,
+    llm_configured,
+    reset_llm_context,
+    set_llm_context,
+)
 from market_i18n_data import MARKET_PHRASES
+
+# Tier C translation is pinned to a dedicated provider/model — deliberately NOT
+# the platform's live gpt-oss, which is both slow (~16s/call) and the SPOF for
+# every trading decision. Claude Sonnet answers in ~5s over the Anthropic API,
+# a separate resource that never competes with the trading daemon. Overridable
+# by env for ops (an empty MARKET_I18N_PROVIDER falls back to default resolution).
+_XLATE_PROVIDER = os.getenv("MARKET_I18N_PROVIDER", "anthropic").strip().lower()
+_XLATE_MODEL = os.getenv("MARKET_I18N_MODEL", "claude-sonnet-5").strip()
 
 
 def _warm_enabled() -> bool:
     """Whether cache-miss external strings (Tier C) get LLM-translated at all.
 
-    OFF by default, and deliberately so: the only model this platform has is a
-    single, slow, self-hosted gpt-oss that is ALSO the SPOF for every live
-    trading decision. Translating the news lane's ~50 headlines/summaries means
-    a steady stream of ~18s model calls that both (a) rarely finish before the
-    snapshot rotates and (b) compete with the trading daemon for the one
-    resource that must never wait. So Tier C stays dark until a dedicated
-    translation model exists; set MARKET_I18N_LLM_WARM=1 to turn it on there.
-
-    Tiers A (enum labels, frontend) and B (our own catalogue) need no model and
-    are always on — they cover the platform's entire own vocabulary. Only
-    external, model-authored free text (Alpha Vantage headlines, the AI stock
-    summary) is gated here, and it degrades to its English original."""
-    return os.getenv("MARKET_I18N_LLM_WARM", "false").strip().lower() in {"1", "true", "yes", "on"}
+    ON by default now that translation runs on a dedicated model (Claude Sonnet,
+    see _XLATE_PROVIDER) rather than the trading gpt-oss — so it no longer risks
+    the SPOF, only Anthropic API tokens. MARKET_I18N_LLM_WARM=0 is the cost
+    kill-switch. Tiers A (enum labels, frontend) and B (our own catalogue) need
+    no model and are always on; only external, model-authored free text
+    (Alpha Vantage headlines, the AI stock summary) is gated here and degrades
+    to its English original when off or on a translation failure."""
+    return os.getenv("MARKET_I18N_LLM_WARM", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # ── catalogue index (exact + interpolated), built once at import ────────────
 _EXACT: dict[str, dict[str, str]] = {}
@@ -144,7 +153,18 @@ def _llm_translate_batch(texts: list[str], lang: str) -> dict[str, str]:
     )
     # ~48 tokens/line covers a headline plus CJK expansion, with headroom.
     max_tokens = min(2400, 80 + 48 * len(texts))
-    reply = generate_text(prompt, max_tokens=max_tokens, temperature=0.2, tier="brief")
+    # Pin to the dedicated translation provider (Sonnet) so this never routes to
+    # the trading gpt-oss. source='rule' with no user/agent meters it to the
+    # platform. An empty provider leaves default resolution in place.
+    token = None
+    if _XLATE_PROVIDER:
+        token = set_llm_context(LlmContext(
+            source="rule", provider=_XLATE_PROVIDER, model=_XLATE_MODEL or None))
+    try:
+        reply = generate_text(prompt, max_tokens=max_tokens, temperature=0.2, tier="brief")
+    finally:
+        if token is not None:
+            reset_llm_context(token)
     if not reply:
         return {}
     parsed = _parse_numbered(reply, len(texts))
