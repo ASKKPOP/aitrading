@@ -22,6 +22,8 @@ export function MonitorPage({ token }: Props) {
   const [needsSymbol, setNeedsSymbol] = useState<string[]>([])
   const [wDraft, setWDraft] = useState({ name: '', metric: 'price', symbol: 'BTCUSDT', comparator: 'below', threshold: 60000, cooldown_min: 60 })
   const [wErr, setWErr] = useState('')
+  const [wBusy, setWBusy] = useState(false)
+  const [removingId, setRemovingId] = useState<number | null>(null)
 
   const auth = { Authorization: `Bearer ${token}` }
 
@@ -51,7 +53,7 @@ export function MonitorPage({ token }: Props) {
   }, [token])
 
   async function saveWatch() {
-    setWErr('')
+    setWErr(''); setWBusy(true)
     try {
       const body: any = { ...wDraft, name: wDraft.name.trim() || `${wDraft.metric} ${wDraft.comparator} ${wDraft.threshold}` }
       if (!needsSymbol.includes(wDraft.metric)) body.symbol = null
@@ -64,13 +66,21 @@ export function MonitorPage({ token }: Props) {
       setWDraft({ ...wDraft, name: '' })
       await load()
     } catch (e: any) { setWErr(e.message) }
+    finally { setWBusy(false) }
   }
 
   async function removeWatch(id: number) {
+    setWErr(''); setRemovingId(id)
     try {
-      await fetch(`${API_BASE}/watches/${id}`, { method: 'DELETE', headers: auth })
+      const r = await fetch(`${API_BASE}/watches/${id}`, { method: 'DELETE', headers: auth })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        setWErr(typeof d.detail === 'string' ? d.detail : `error (HTTP ${r.status})`)
+        return
+      }
       await load()
-    } catch { /* ignore */ }
+    } catch { setWErr('network error') }
+    finally { setRemovingId(null) }
   }
 
   useEffect(() => {
@@ -220,7 +230,7 @@ export function MonitorPage({ token }: Props) {
               </span>
             )}
             {!w.enabled && pill('var(--bg-secondary)', 'var(--text-muted)', 'off')}
-            <button onClick={() => removeWatch(w.id)} style={{ marginLeft: 'auto', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '3px 9px', cursor: 'pointer' }}>×</button>
+            <button onClick={() => removeWatch(w.id)} disabled={removingId !== null} style={{ marginLeft: 'auto', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '3px 9px', cursor: 'pointer', opacity: removingId === w.id ? 0.5 : 1 }}>{removingId === w.id ? '⏳' : '×'}</button>
           </div>
         ))}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
@@ -239,7 +249,7 @@ export function MonitorPage({ token }: Props) {
           </select>
           <input type="number" value={wDraft.threshold} onChange={e => setWDraft({ ...wDraft, threshold: +e.target.value })}
             style={{ ...inp, width: 110 }} />
-          <button onClick={saveWatch} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}>+ {T.watchAdd}</button>
+          <button onClick={saveWatch} disabled={wBusy} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', opacity: wBusy ? 0.6 : 1 }}>{wBusy ? '⏳' : '+'} {T.watchAdd}</button>
           {wErr && <span style={{ color: 'var(--error,#d03b3b)', fontSize: 12 }}>⚠️ {wErr}</span>}
         </div>
       </div>

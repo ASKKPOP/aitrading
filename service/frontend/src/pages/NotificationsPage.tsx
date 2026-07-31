@@ -43,6 +43,7 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [marking, setMarking] = useState<number | 'all' | null>(null)
 
   const auth = () => ({ 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' })
 
@@ -65,6 +66,7 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
   useEffect(() => { load(filter) }, [userToken, filter])
 
   const markRead = async (body: { all: true } | { ids: number[] }) => {
+    setMarking('all' in body ? 'all' : body.ids[0])
     try {
       const res = await fetch(`${API_BASE}/notifications/read`, {
         method: 'POST', headers: auth(), body: JSON.stringify(body),
@@ -74,6 +76,8 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
       await load(filter)
     } catch {
       setError(tr(language, { ko: '읽음 표시에 실패했습니다', en: 'Failed to mark read', ja: '既読にできませんでした', th: 'ทำเครื่องหมายอ่านไม่สำเร็จ', vi: 'Không đánh dấu đã đọc được', id: 'Gagal menandai sudah dibaca' }))
+    } finally {
+      setMarking(null)
     }
   }
 
@@ -112,7 +116,7 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
         ))}
         <div style={{ flex: 1 }} />
         {unread > 0 && (
-          <button onClick={markAll} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 14px', cursor: 'pointer' }}>
+          <button onClick={markAll} disabled={marking !== null} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 14px', cursor: 'pointer', opacity: marking === 'all' ? 0.6 : 1 }}>
             {tr(language, { ko: '모두 읽음 표시', en: 'Mark all read', ja: 'すべて既読', th: 'ทำเครื่องหมายอ่านทั้งหมด', vi: 'Đánh dấu đã đọc', id: 'Tandai semua sudah dibaca' })}
           </button>
         )}
@@ -161,10 +165,11 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
                   </Link>
                 )}
                 {unreadItem && (
-                  <button onClick={() => markOne(n.id)} style={{
+                  <button onClick={() => markOne(n.id)} disabled={marking !== null} style={{
                     background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                    fontSize: 11.5, color: 'var(--text-muted)',
+                    fontSize: 11.5, color: 'var(--text-muted)', opacity: marking === n.id ? 0.5 : 1,
                   }}>
+                    {marking === n.id ? '⏳ ' : ''}
                     {tr(language, { ko: '읽음 표시', en: 'Mark read', ja: '既読にする', th: 'ทำเครื่องหมายอ่าน', vi: 'Đánh dấu đã đọc', id: 'Tandai sudah dibaca' })}
                   </button>
                 )}

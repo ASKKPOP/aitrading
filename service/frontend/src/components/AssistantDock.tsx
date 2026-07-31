@@ -102,10 +102,13 @@ export function AssistantDock({ token }: Props) {
 
   // start a fresh conversation — every previous one is preserved server-side
   async function newChat() {
+    setBusy(true)
     try {
-      await fetch(`${API_BASE}/assistant/sessions`, { method: 'POST', headers: auth })
+      const r = await fetch(`${API_BASE}/assistant/sessions`, { method: 'POST', headers: auth })
+      if (!r.ok) return
       setMessages([]); setView('chat'); setPastMessages(null)
     } catch { /* ignore */ }
+    finally { setBusy(false) }
   }
 
   async function openHistory() {
@@ -169,8 +172,8 @@ export function AssistantDock({ token }: Props) {
         </div>
         <button onClick={() => view === 'history' ? setView('chat') : openHistory()} title={T.history}
           style={{ border: '1px solid var(--border-color)', background: view === 'history' ? 'var(--bg-secondary)' : 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>🕘</button>
-        <button onClick={newChat} title={T.newChat}
-          style={{ border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>✚</button>
+        <button onClick={newChat} title={T.newChat} disabled={busy}
+          style={{ border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 11, padding: '4px 8px', cursor: 'pointer', opacity: busy ? 0.5 : 1 }}>✚</button>
         <button onClick={() => setOpen(false)} title={T.close} aria-label={T.close} style={{ border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 13, padding: '4px 9px', cursor: 'pointer' }}>✕</button>
       </div>
 

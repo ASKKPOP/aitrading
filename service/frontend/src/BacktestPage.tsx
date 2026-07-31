@@ -170,6 +170,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
 
   // ── Promote flow ──────────────────────────────────────────────────────────
   const [promotingRunId, setPromotingRunId] = useState<number | null>(null)
+  const [promoteBusy, setPromoteBusy] = useState(false)
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [selectedStrategyId, setSelectedStrategyId] = useState('')
   const [promoteMsg, setPromoteMsg] = useState<string | null>(null)
@@ -297,6 +298,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
 
   const doPromote = async () => {
     if (!promotingRunId || !selectedStrategyId || !token) return
+    setPromoteBusy(true)
     try {
       const res = await fetch(`${API_BASE}/backtest/runs/${promotingRunId}/promote`, {
         method: 'POST',
@@ -309,6 +311,7 @@ export function BacktestPage({ token }: { token?: string | null }) {
       setPromotingRunId(null)
       void loadRuns()
     } catch (e: any) { setPromoteMsg(`Error: ${e.message}`) }
+    finally { setPromoteBusy(false) }
   }
 
   // ── Chart data ────────────────────────────────────────────────────────────
@@ -493,8 +496,8 @@ export function BacktestPage({ token }: { token?: string | null }) {
                   <option key={s.strategy_id} value={s.strategy_id}>{s.name}{s.backtest_validated ? ' ✅' : ''}</option>
                 ))}
               </select>
-              <button className="btn btn-primary" onClick={doPromote} disabled={!selectedStrategyId}>
-                {tr(language, { ko: '확인', en: 'Confirm', ja: '確認', th: 'ยืนยัน', vi: 'Xác nhận', id: 'Konfirmasi' })}
+              <button className="btn btn-primary" onClick={doPromote} disabled={!selectedStrategyId || promoteBusy}>
+                {promoteBusy ? '⏳ ' : ''}{tr(language, { ko: '확인', en: 'Confirm', ja: '確認', th: 'ยืนยัน', vi: 'Xác nhận', id: 'Konfirmasi' })}
               </button>
               <button className="btn btn-secondary" onClick={() => setPromotingRunId(null)}>
                 {tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy', id: 'Batal' })}
