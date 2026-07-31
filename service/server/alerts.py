@@ -71,16 +71,20 @@ def _now_iso() -> str:
 
 # ─────────────────────────── channel senders ───────────────────────────
 
-def _send_email(to_email: str, subject: str, body: str) -> bool:
+def _send_email(to_email: str, subject: str, body: str,
+                html: Optional[str] = None) -> bool:
     key = os.getenv("SENDGRID_API_KEY", "").strip()
     from_email = os.getenv("ALERT_FROM_EMAIL", "").strip()
     if not key or not from_email:
         return False
+    content = [{"type": "text/plain", "value": body}]
+    if html:
+        content.append({"type": "text/html", "value": html})
     payload = {
         "personalizations": [{"to": [{"email": to_email}]}],
         "from": {"email": from_email, "name": "Sooppiy"},
         "subject": subject,
-        "content": [{"type": "text/plain", "value": body}],
+        "content": content,
     }
     req = urllib.request.Request(
         "https://api.sendgrid.com/v3/mail/send",
@@ -227,8 +231,24 @@ def send_alert(agent_id: int, kind: str, msg_id: str, params: dict | str | None 
             prefs["user_id"], cursor, kind)
         if not limited and prefs["enabled"]:
             if prefs["email_enabled"] and prefs["email"]:
+                # Rich email (explanation + live run snapshot + glossary) for
+                # catalogue alerts; the journaled title/body stay the short
+                # form. Build failures fall back to the plain body — an email
+                # must never be lost to a presentation bug.
+                email_body, email_html = body, None
+                if not isinstance(params, str):
+                    try:
+                        from alert_email import build_alert_email
+                        email_body, email_html = build_alert_email(
+                            msg_id, title, body, prefs.get("lang", "en"),
+                            prefs["user_id"])
+                    except Exception:  # noqa: BLE001
+                        logger.warning("rich alert email build failed; "
+                                       "sending plain body", exc_info=True)
+                        email_body, email_html = body, None
                 try:
-                    if _send_email(prefs["email"], f"[Sooppiy] {title}", body):
+                    if _send_email(prefs["email"], f"[Sooppiy] {title}",
+                                   email_body, html=email_html):
                         channels.append("email")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("alert email failed: %s", exc)
