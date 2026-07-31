@@ -489,8 +489,193 @@ const kicker: any = { fontFamily: V.mono, fontSize: 11.5, letterSpacing: '0.14em
 const cardS: any = { background: V.card, border: `1px solid ${V.line}`, borderRadius: 14, padding: '16px 18px' }
 const h2S: any = { fontFamily: V.display, fontWeight: 700, fontSize: 'clamp(28px,3.6vw,40px)', letterSpacing: '-0.02em', lineHeight: 1.08, color: V.ink, margin: '10px 0 10px' }
 
+// ── live market blocks (order book + popular-crypto grid) ────────────────
+// Real OKX data refetched every 15s; between fetches a tiny (±0.04%) random
+// walk ticks every value once per second so the blocks feel alive without
+// polling OKX per-second per visitor (the orderbook endpoint is uncached).
+// Reduced-motion users tick every 5s instead (slow drift, like the hero);
+// hidden tabs skip ticks.
+type Tick = { price: number; pct: number; dir: -1 | 0 | 1 }
+
+const fmtPrice = (p: number) =>
+  p >= 10 ? p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : p >= 1 ? p.toFixed(4)
+      : Number(p.toPrecision(4)).toString()
+
+function useLiveTickers(): Record<string, Tick> {
+  const [ticks, setTicks] = useState<Record<string, Tick>>({})
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/markets/crypto/tickers')
+        if (!r.ok) return
+        const d = await r.json()
+        if (!alive) return
+        setTicks(prev => {
+          const next: Record<string, Tick> = {}
+          for (const t of d.tickers ?? []) {
+            const price = Number(t.last_price)
+            if (!price) continue
+            const old = prev[t.symbol]
+            next[t.symbol] = { price, pct: Number(t.price_24h_pct) || 0, dir: old ? (Math.sign(price - old.price) as Tick['dir']) : 0 }
+          }
+          return next
+        })
+      } catch { /* transient */ }
+    }
+    load()
+    const refetch = window.setInterval(load, 15000)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const jitter = window.setInterval(() => {
+      if (document.hidden) return
+      setTicks(prev => {
+        const next: Record<string, Tick> = {}
+        for (const [sym, t] of Object.entries(prev)) {
+          const step = t.price * (Math.random() - 0.5) * 0.0008
+          next[sym] = { price: t.price + step, pct: t.pct + (step / t.price) * 100, dir: step > 0 ? 1 : step < 0 ? -1 : 0 }
+        }
+        return next
+      })
+    }, reduced ? 5000 : 1000)
+    return () => { alive = false; clearInterval(refetch); clearInterval(jitter) }
+  }, [])
+  return ticks
+}
+
+// BTC/USDT depth-4 order book. Server levels are stored as offsets from the
+// fetched mid and re-anchored to the ticking live price each render, so the
+// whole ladder moves with the price while spread/ordering stay exact.
+function OrderBookBlock({ language, tick }: { language: Language; tick?: Tick }) {
+  type Row = { off: number; qty: number; dir: -1 | 0 | 1 }
+  const [book, setBook] = useState<{ mid: number; asks: Row[]; bids: Row[] } | null>(null)
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/markets/crypto/orderbook?symbol=BTCUSDT&depth=4')
+        if (!r.ok) return
+        const d = await r.json()
+        if (!alive || !d.asks?.length || !d.bids?.length) return
+        const mid = (d.asks[0][0] + d.bids[0][0]) / 2
+        // OKX SWAP book sizes are contracts; BTC-USDT-SWAP ctVal is 0.01 BTC.
+        const CT_VAL = 0.01
+        const rows = (lv: [number, number][]): Row[] => lv.map(([p, q]) => ({ off: p - mid, qty: q * CT_VAL, dir: 0 as const }))
+        setBook({ mid, asks: rows(d.asks), bids: rows(d.bids) })
+      } catch { /* transient */ }
+    }
+    load()
+    const refetch = window.setInterval(load, 15000)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const jitter = window.setInterval(() => {
+      if (document.hidden) return
+      setBook(prev => {
+        if (!prev) return prev
+        const wobble = (r: Row): Row => {
+          if (Math.random() < 0.35) return { ...r, dir: 0 }         // some rows rest each tick
+          const qty = Math.max(0.001, r.qty * (1 + (Math.random() - 0.5) * 0.3))
+          return { off: r.off, qty, dir: qty > r.qty ? 1 : -1 }
+        }
+        return { mid: prev.mid, asks: prev.asks.map(wobble), bids: prev.bids.map(wobble) }
+      })
+    }, reduced ? 5000 : 1000)
+    return () => { alive = false; clearInterval(refetch); clearInterval(jitter) }
+  }, [])
+
+  const T = {
+    price: tr(language, { ko: '가격', en: 'Price', ja: '価格', th: 'ราคา', vi: 'Giá', id: 'Harga' }),
+    qty: tr(language, { ko: '수량', en: 'Amount', ja: '数量', th: 'จำนวน', vi: 'Số lượng', id: 'Jumlah' }),
+    total: tr(language, { ko: '합계', en: 'Total', ja: '合計', th: 'รวม', vi: 'Tổng', id: 'Total' }),
+    spread: tr(language, { ko: '스프레드', en: 'Spread', ja: 'スプレッド', th: 'สเปรด', vi: 'Chênh lệch', id: 'Selisih' }),
+    buy: tr(language, { ko: '매수', en: 'Buy', ja: '買い', th: 'ซื้อ', vi: 'Mua', id: 'Beli' }),
+    sell: tr(language, { ko: '매도', en: 'Sell', ja: '売り', th: 'ขาย', vi: 'Bán', id: 'Jual' }),
+    collecting: tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'đang thu thập…', id: 'mengumpulkan…' }),
+  }
+  const anchor = tick?.price ?? book?.mid
+  const dirColor = (d: -1 | 0 | 1) => (d > 0 ? V.up : d < 0 ? V.down : V.ink)
+  const rowS: any = { display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 8, padding: '5px 18px', fontFamily: V.mono, fontSize: 13, fontVariantNumeric: 'tabular-nums' }
+  const level = (r: Row, side: 'ask' | 'bid', key: number) => {
+    const price = (anchor as number) + r.off
+    return (
+      <div key={`${side}${key}`} style={rowS}>
+        <span style={{ color: side === 'ask' ? V.down : V.up }}>{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span style={{ textAlign: 'center', color: dirColor(r.dir) }}>{r.qty.toFixed(4)}</span>
+        <span style={{ textAlign: 'right', color: V.mut }}>{(price * r.qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      </div>
+    )
+  }
+  const spread = book ? book.asks[0].off - book.bids[0].off : null
+
+  return (
+    <div style={{ ...cardS, padding: 0, maxWidth: 560, margin: '18px auto 0', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${V.line}` }}>
+        <span style={{ fontWeight: 800, fontSize: 16.5 }}>BTC / USDT</span>
+        {tick && (
+          <span style={{ fontFamily: V.mono, fontSize: 11.5, fontWeight: 600, borderRadius: 6, padding: '3px 8px', background: tick.pct >= 0 ? 'var(--up-soft, rgba(45,158,107,0.10))' : 'var(--down-soft, rgba(139,58,42,0.10))', color: tick.pct >= 0 ? V.up : V.down }}>
+            {tick.pct >= 0 ? '+' : ''}{tick.pct.toFixed(2)}%
+          </span>
+        )}
+        <span style={{ marginLeft: 'auto', fontFamily: V.mono, fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dirColor(tick?.dir ?? 0) }}>
+          {anchor != null ? `$${anchor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+        </span>
+      </div>
+      {book && anchor != null ? (
+        <div style={{ padding: '10px 0' }}>
+          <div style={{ ...rowS, fontFamily: V.sans, fontSize: 11.5, color: V.faint, paddingBottom: 8 }}>
+            <span>{T.price} (USDT)</span>
+            <span style={{ textAlign: 'center' }}>{T.qty} (BTC)</span>
+            <span style={{ textAlign: 'right' }}>{T.total}</span>
+          </div>
+          {[...book.asks].reverse().map((r, i) => level(r, 'ask', i))}
+          <div style={{ margin: '6px 0', padding: '6px 18px', borderTop: `1px solid ${V.line}`, borderBottom: `1px solid ${V.line}`, textAlign: 'center', fontFamily: V.mono, fontSize: 12.5, color: V.mut }}>
+            {T.spread} {spread!.toFixed(2)} · {((spread! / anchor) * 100).toFixed(2)}%
+          </div>
+          {book.bids.map((r, i) => level(r, 'bid', i))}
+        </div>
+      ) : (
+        <div style={{ padding: '18px', fontSize: 13, color: V.mut }}>{T.collecting}</div>
+      )}
+      <div style={{ display: 'flex', gap: 10, padding: '12px 18px 16px' }}>
+        <Link to="/register" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 14.5, borderRadius: 8, padding: '11px 0', background: V.up, color: '#fff' }}>{T.buy}</Link>
+        <Link to="/register" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 14.5, borderRadius: 8, padding: '11px 0', background: V.down, color: '#fff' }}>{T.sell}</Link>
+      </div>
+    </div>
+  )
+}
+
+function PopularCryptoGrid({ language, ticks }: { language: Language; ticks: Record<string, Tick> }) {
+  const trade = tr(language, { ko: '거래', en: 'Trade', ja: '取引', th: 'เทรด', vi: 'Giao dịch', id: 'Transaksi' })
+  const collecting = tr(language, { ko: '수집 중…', en: 'collecting…', ja: '収集中…', th: 'กำลังเก็บ…', vi: 'đang thu thập…', id: 'mengumpulkan…' })
+  const entries = Object.entries(ticks)
+  if (entries.length === 0) return <p style={{ fontSize: 13, color: V.mut, marginTop: 18 }}>{collecting}</p>
+  return (
+    <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', marginTop: 18 }}>
+      {entries.map(([sym, t]) => {
+        const base = sym.replace(/USDT$/, '')
+        return (
+          <div key={sym} style={{ ...cardS, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span aria-hidden style={{ width: 34, height: 34, flexShrink: 0, borderRadius: '50%', background: V.bg2, border: `1px solid ${V.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: V.mono, fontWeight: 700, fontSize: 14, color: V.mut }}>{base[0]}</span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', fontWeight: 700, fontSize: 14 }}>{base}/USDT</span>
+                <span style={{ display: 'block', fontSize: 12, color: V.faint }}>{base}</span>
+              </span>
+              <span style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                <span style={{ display: 'block', fontFamily: V.mono, fontSize: 14.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: t.dir > 0 ? V.up : t.dir < 0 ? V.down : V.ink }}>{fmtPrice(t.price)}</span>
+                <span style={{ display: 'inline-block', marginTop: 2, fontFamily: V.mono, fontSize: 11.5, fontWeight: 600, borderRadius: 6, padding: '2px 7px', background: t.pct >= 0 ? 'var(--up-soft, rgba(45,158,107,0.10))' : 'var(--down-soft, rgba(139,58,42,0.10))', color: t.pct >= 0 ? V.up : V.down }}>{t.pct >= 0 ? '+' : ''}{t.pct.toFixed(2)}%</span>
+              </span>
+            </div>
+            <Link to="/register" style={{ display: 'block', marginTop: 12, textAlign: 'center', textDecoration: 'none', fontWeight: 600, fontSize: 13.5, borderRadius: 8, padding: '9px 0', border: `1px solid ${V.lineStrong}`, color: V.ink }}>{trade}</Link>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
+  const liveTicks = useLiveTickers()
   const [btc, setBtc] = useState<{ price: number; pct: number } | null>(null)
   // Live signal data for the dashboard preview — no hardcoded sample numbers.
   const [psych, setPsych] = useState<any | null>(null)
@@ -743,6 +928,26 @@ export function MarketingPage() {
             <Link to="/leaderboard" style={{ ...pillBtn, color: V.ink, border: `1.5px solid ${V.lineStrong}`, background: V.card }}>{T.ctaBoard}</Link>
           </div>
           <p style={{ fontFamily: V.mono, fontSize: 11.5, color: V.faint, marginTop: 20 }}>{T.heroNote}</p>
+        </div>
+      </section>
+
+      {/* ── live order book (zenix-style, ticks each second) ── */}
+      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
+        <div style={wrap}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={kicker}>{tr(language, { ko: '라이브 마켓', en: 'LIVE MARKETS', ja: 'ライブマーケット', th: 'ตลาดสด', vi: 'THỊ TRƯỜNG TRỰC TIẾP', id: 'PASAR LANGSUNG' })}</div>
+            <h2 style={h2S}>{tr(language, { ko: '실시간 오더북', en: 'Real-time order book', ja: 'リアルタイム板情報', th: 'ออร์เดอร์บุ๊กเรียลไทม์', vi: 'Sổ lệnh thời gian thực', id: 'Order book waktu nyata' })}</h2>
+          </div>
+          <OrderBookBlock language={language} tick={liveTicks['BTCUSDT']} />
+          <p style={{ fontFamily: V.mono, fontSize: 11, color: V.faint, textAlign: 'center', marginTop: 12 }}>OKX · BTC-USDT-SWAP</p>
+        </div>
+      </section>
+
+      {/* ── popular cryptocurrencies grid ── */}
+      <section style={{ borderBottom: `1px solid ${V.line}`, padding: '56px 0' }}>
+        <div style={wrap}>
+          <h2 style={{ ...h2S, textAlign: 'center' }}>{tr(language, { ko: '인기 암호화폐', en: 'Popular cryptocurrencies', ja: '人気の暗号資産', th: 'คริปโตยอดนิยม', vi: 'Tiền mã hóa phổ biến', id: 'Kripto populer' })}</h2>
+          <PopularCryptoGrid language={language} ticks={liveTicks} />
         </div>
       </section>
 
