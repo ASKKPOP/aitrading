@@ -979,6 +979,37 @@ def _journal_margin_state(state: dict) -> None:
         print(f"[Liquidation] orphan position {payload}")
 
 
+async def resting_orders_loop():
+    """Background task for the terminals' resting (limit) order watcher.
+
+    Every RESTING_ORDERS_INTERVAL seconds (default 15) fill open limit orders
+    whose limit the live OKX price has crossed — one batched tickers call per
+    tick, through the paper executor (simulator only, never the live gateway).
+    No-op when the table has no open rows; kill switch RESTING_ORDERS_ENABLED.
+    """
+    from resting_orders import resting_orders_enabled, run_resting_orders_tick
+
+    interval_s = _env_int("RESTING_ORDERS_INTERVAL", 15, minimum=5)
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            if resting_orders_enabled():
+                result = await asyncio.to_thread(run_resting_orders_tick)
+                if result.get("filled") or result.get("rejected"):
+                    print(
+                        "[Resting Orders] tick: "
+                        f"checked={result.get('checked', 0)} "
+                        f"filled={result.get('filled', 0)} "
+                        f"rejected={result.get('rejected', 0)}"
+                    )
+        except Exception as e:
+            print(f"[Resting Orders Error] {e}")
+
+        await asyncio.sleep(interval_s)
+
+
 async def psych_feed_loop():
     """Background task for the psychology feed (Phase 2).
 
@@ -1797,6 +1828,7 @@ BACKGROUND_TASK_REGISTRY = {
     "run_reports": report_scheduler_loop,
     "subscription_enforcer": subscription_enforcer_loop,
     "risk_watcher": risk_watcher_loop,
+    "resting_orders": resting_orders_loop,
     "liquidation_watch": liquidation_watch_loop,
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
@@ -1859,6 +1891,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "subscription_enforcer":   "settlement",
     # risk engine — closes positions at stop-loss/take-profit (Phase 1)
     "risk_watcher":            "settlement",
+    # terminals' limit-order fill watcher — executes trades, so settlement
+    "resting_orders":          "settlement",
     # settlement, not prices: it reads marks but its job is closing risk, and
     # it must run in the same process as the SL/TP watcher it escalates past.
     "liquidation_watch":       "settlement",

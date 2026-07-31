@@ -3015,6 +3015,37 @@ def init_database():
         ON hot_issues(market, symbol, created_at)
     """)
 
+    # Resting (limit) orders for the spot/futures terminals — filled by the
+    # worker's resting_orders tick via the paper executor (simulator only,
+    # never the live gateway). MySQL mirror: alembic 0036.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS resting_orders (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     INTEGER NOT NULL,
+            market       TEXT NOT NULL,
+            symbol       TEXT NOT NULL,
+            side         TEXT NOT NULL,
+            quantity     REAL NOT NULL,
+            limit_price  REAL NOT NULL,
+            stop_loss    REAL,
+            take_profit  REAL,
+            status       TEXT NOT NULL DEFAULT 'open',
+            reason       TEXT,
+            signal_id    INTEGER,
+            content      TEXT,
+            created_at   TEXT NOT NULL,
+            updated_at   TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_resting_orders_status
+        ON resting_orders(status)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_resting_orders_agent
+        ON resting_orders(agent_id, status)
+    """)
+
     conn.commit()
     conn.close()
     print("[INFO] Database initialized")
