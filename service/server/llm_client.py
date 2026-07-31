@@ -379,6 +379,14 @@ def generate_text(
     ap = resolve_provider(tier=tier)
     if ap is None:
         return None
+    # Local reasoning models (gpt-oss) spend completion budget on hidden
+    # chain-of-thought BEFORE any visible content — per-call budgets sized
+    # for paid instruct models (60–700 tokens across the desk) starve them
+    # into EMPTY output, which the light path read as "no LLM verdict" and
+    # turned into a permanent hold. Local tokens are free; give the model
+    # room to think and still answer. Paid budgets are untouched.
+    if ap.spec.name == "local":
+        max_tokens = max(max_tokens, 2000)
     try:
         if ap.spec.kind == "anthropic":
             text, usage = _generate_anthropic(ap, prompt, system, max_tokens, temperature)
