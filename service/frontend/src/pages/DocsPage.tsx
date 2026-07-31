@@ -17,6 +17,12 @@ const SLUG_TO_GROUP: Record<string, string> = {
   'architecture': 'architecture',
   'decisions': 'decisions',
   'extensions': 'extensions',
+  // The rail FILTERS on this map (an unmapped group is invisible, not merely
+  // unlinkable), so a group registered in build_guide_content.py half-exists
+  // until it is listed here too. `market-hours` had been in that state since
+  // it shipped; `how-it-works` nearly repeated it.
+  'market-hours': 'market-hours',
+  'how-it-works': 'how-it-works',
 }
 const GROUP_TO_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SLUG_TO_GROUP).map(([s, g]) => [g, s]))
