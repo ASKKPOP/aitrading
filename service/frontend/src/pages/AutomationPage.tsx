@@ -129,7 +129,11 @@ export function AutomationPage() {
   // Reporting it as one number reads as current performance. Show both.
   const [assets, setAssets] = useState<{ total: number; unrealized: number;
     realized: number; realizedCurrent: number; cash: number; inUse: number;
-    since: string | null } | null>(null)
+    since: string | null; trades: any[] } | null>(null)
+  // Summary-strip period filter — scopes the realized side of the Profit tile.
+  // Deposit, lifetime and the rails tile are point-in-time / fixed-epoch
+  // figures a period cannot apply to.
+  const [sumPeriod, setSumPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week')
   useEffect(() => {
     if (!token) return
     let dead = false
@@ -155,7 +159,7 @@ export function AutomationPage() {
           return c && (!min || c < min) ? c : min
         }, null as string | null)
         const cash = pos.cash ?? 0
-        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since })
+        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades })
       } catch { /* transient */ }
     }
     loadAssets()
@@ -199,6 +203,10 @@ export function AutomationPage() {
     sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
     sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
     sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
+    sumToday: tr(language, { ko: '오늘', en: 'Today', ja: '今日', th: 'วันนี้', vi: 'Hôm nay', id: 'Hari ini' }),
+    sumWeek: tr(language, { ko: '이번 주', en: 'This week', ja: '今週', th: 'สัปดาห์นี้', vi: 'Tuần này', id: 'Minggu ini' }),
+    sumMonth: tr(language, { ko: '이번 달', en: 'This month', ja: '今月', th: 'เดือนนี้', vi: 'Tháng này', id: 'Bulan ini' }),
+    sumYear: tr(language, { ko: '올해', en: 'This year', ja: '今年', th: 'ปีนี้', vi: 'Năm nay', id: 'Tahun ini' }),
     sumCash: tr(language, { ko: '현금', en: 'cash', ja: '現金', th: 'เงินสด', vi: 'tiền mặt', id: 'kas' }),
     sumInUse: tr(language, { ko: '사용 중', en: 'in use', ja: '使用中', th: 'ใช้อยู่', vi: 'đang dùng', id: 'terpakai' }),
     sumSince: tr(language, { ko: '시작', en: 'since', ja: '開始', th: 'เริ่ม', vi: 'từ', id: 'sejak' }),
@@ -528,7 +536,20 @@ export function AutomationPage() {
   // Full-width tiles under the buttons pushed the actual TRADING list below
   // the fold on a laptop.
   const summaryStrip = assets && (() => {
-    const profit = assets.realized + assets.unrealized
+    // Calendar-period start (local time): today 00:00 / Monday / 1st / Jan 1.
+    const periodStart = (() => {
+      const d = new Date(); d.setHours(0, 0, 0, 0)
+      if (sumPeriod === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+      else if (sumPeriod === 'month') d.setDate(1)
+      else if (sumPeriod === 'year') { d.setMonth(0); d.setDate(1) }
+      return d.getTime()
+    })()
+    const realizedPeriod = assets.trades.reduce((s: number, t: any) => {
+      const c = t.created_at
+      return c && new Date(String(c).replace(' ', 'T')).getTime() >= periodStart
+        ? s + (t.pnl ?? 0) : s
+    }, 0)
+    const profit = realizedPeriod + assets.unrealized
     let life: { d: number; h: number } | null = null
     if (assets.since) {
       const ms = Date.now() - new Date(assets.since.replace(' ', 'T')).getTime()
@@ -538,7 +559,22 @@ export function AutomationPage() {
     const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap' }
     const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
     const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+    const periods: Array<'today' | 'week' | 'month' | 'year'> = ['today', 'week', 'month', 'year']
+    const periodLabel: Record<string, string> = { today: T.sumToday, week: T.sumWeek, month: T.sumMonth, year: T.sumYear }
     return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {periods.map(pp => (
+            <button key={pp} onClick={() => setSumPeriod(pp)}
+              style={{ padding: '3px 10px', borderRadius: 7, fontSize: 11, cursor: 'pointer',
+                border: '1px solid var(--border-color,rgba(0,0,0,0.12))',
+                background: sumPeriod === pp ? 'var(--accent-primary,#c26a45)' : 'transparent',
+                color: sumPeriod === pp ? '#fff' : 'var(--text-secondary,#8a8073)',
+                fontWeight: sumPeriod === pp ? 700 : 500 }}>
+              {periodLabel[pp]}
+            </button>
+          ))}
+        </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <Link to="/assets" style={{ ...tile, textDecoration: 'none', color: 'inherit' }}>
           <div style={kSt}>💰 {T.sumDeposit}</div>
@@ -553,13 +589,14 @@ export function AutomationPage() {
         <div style={tile}>
           <div style={kSt}>📈 {T.sumProfit}</div>
           <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
-          <div style={sSt}>{T.assetsRealized} {assets.realized >= 0 ? '+' : ''}{fmtUsd(assets.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+          <div style={sSt}>{T.assetsRealized} {realizedPeriod >= 0 ? '+' : ''}{fmtUsd(realizedPeriod)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
         </div>
         <div style={tile}>
           <div style={kSt}>🛡️ {T.sumCurrentRails}</div>
           <div style={{ ...vSt, color: pnlColor(assets.realizedCurrent) }}>{assets.realizedCurrent >= 0 ? '+' : ''}{fmtUsd(assets.realizedCurrent)}</div>
           <div style={sSt}>{T.sumRailsSince} {EXIT_RAILS_EPOCH}</div>
         </div>
+      </div>
       </div>
     )
   })()
