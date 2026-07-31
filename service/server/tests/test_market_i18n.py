@@ -125,15 +125,26 @@ class CacheAndWarmTests(unittest.TestCase):
         self._store[market_i18n._cache_key(src, lang)] = value
 
     # ── the request path never calls the model ─────────────────────────────
-    def test_cold_miss_returns_english_and_schedules_warm(self):
+    def test_cold_miss_returns_english_and_schedules_warm_when_enabled(self):
         src = "Apple beats on earnings, shares pop"
-        with patch.object(market_i18n, "generate_text") as gen, \
+        with patch.object(market_i18n, "_warm_enabled", return_value=True), \
+             patch.object(market_i18n, "generate_text") as gen, \
              patch.object(market_i18n, "_schedule_warm") as sched:
             out = market_i18n.localize_text(src, "ko")
         gen.assert_not_called()          # no model call on the request path
         self.assertEqual(out, src)        # English now
         sched.assert_called_once()
         self.assertEqual(sched.call_args.args[0], [src])  # queued for warming
+
+    def test_warm_disabled_by_default_returns_english_without_scheduling(self):
+        # Default (MARKET_I18N_LLM_WARM unset) must not touch the model at all.
+        src = "Apple beats on earnings, shares pop"
+        with patch.dict(market_i18n.os.environ, {}, clear=False), \
+             patch.object(market_i18n, "_schedule_warm") as sched:
+            market_i18n.os.environ.pop("MARKET_I18N_LLM_WARM", None)
+            out = market_i18n.localize_text(src, "ko")
+        self.assertEqual(out, src)  # English original, no warming scheduled
+        sched.assert_not_called()
 
     def test_cache_hit_resolves_inline_without_warming(self):
         src = "Apple beats on earnings, shares pop"
@@ -144,7 +155,8 @@ class CacheAndWarmTests(unittest.TestCase):
         sched.assert_not_called()
 
     def test_catalogue_resolves_inline_only_miss_is_warmed(self):
-        with patch.object(market_i18n, "_schedule_warm") as sched:
+        with patch.object(market_i18n, "_warm_enabled", return_value=True), \
+             patch.object(market_i18n, "_schedule_warm") as sched:
             out = market_i18n.localize_texts([_KNOWN, "External only text"], "ko")
         self.assertEqual(out[0], MARKET_PHRASES[_KNOWN]["ko"])  # catalogue inline
         self.assertEqual(out[1], "External only text")           # English now
