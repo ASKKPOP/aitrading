@@ -1,0 +1,528 @@
+<!-- machine-translated from plan/16-liquidation-defense-daemon.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แผน 16 — Liquidation Defense Daemon</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --t0: #1baf7a; --t1: #d8a013; --t2: #eb6834; --t3: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --t0: #199e70; --t1: #c08f10; --t2: #d95926; --t3: #d03b3b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --t0: #199e70; --t1: #c08f10; --t2: #d95926; --t3: #d03b3b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  .legendline { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; }
+  .legendline .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legendline .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>แผน 16 — Liquidation Defense Daemon</h1>
+<p class="sub">ดีมอน AI ที่คอยตรวจสอบความเสี่ยงการบังคับปิดสถานะ (forced-liquidation) บนโพซิชันที่ใช้เลเวอเรจ และดำเนินการตอบสนอง โดยใช้ broker API key ของผู้ใช้เอง อัลกอริทึม โฟลว์ และไดอะแกรม</p>
+<p class="meta">เขียนเมื่อ 2026-07-29 ทุกข้อความด้านล่างนี้อ้างอิงไปยังไฟล์/บรรทัดในโค้ดเบสปัจจุบัน หรือจากคิวรีที่รันบน production MySQL ขึ้น production ที่ sooppiy.com ตามกฎมาตรฐาน</p>
+
+<div class="kr">
+  <strong>สรุป (Korean summary)</strong>
+  <p>การชำระบัญชีแบบบังคับ (force liquidation) คือ ตอนนี้ <strong>ความเสี่ยงที่เกิดขึ้นจริง ไม่ใช่ทฤษฎี</strong>ทั้งหมด ตำแหน่งที่เปิดอยู่ 5 ตำแหน่งในโปรดักชันใช้เลเวอเรจ 2 เท่า หรือ 3 เท่า อย่างไรก็ตาม มาตรการป้องกันในปัจจุบันคือ <code>_evaluate_stop</code>  เป็นเพียงเกณฑ์ขีดจำกัดคงที่ค่าเดียวภายใน โดยเกณฑ์ขีดจำกัดนี้ไม่คำนวณ margin ที่ต้องใช้เพื่อรักษาสถานะ (MMR)·อัตรา funding·มาร์กราคา (mark price)·cross margin เลยแม้แต่น้อย ไม่แจ้งข้อมูลใด ๆ ให้ AI ทราบ และเส้นทางโบรกเกอร์สำหรับการเทรดจริงเองก็ไม่มีฟังก์ชันสำหรับอ่านสถานะ margin เลย เอกสารนี้กล่าวถึง (A) oracle สถานะ margin, (B) ตัวชี้วัดเดียวที่เรียกว่า health = (มาร์ก−เลิกสถานะ)/(เข้า−เลิกสถานะ) และอัตราการเปลี่ยนแปลงของมัน, (C) การยกระดับ 4 ขั้น — T1·T2 คือ <strong>AI เป็นผู้ตัดสิน</strong>ออกแบบเดมอนที่ตรวจสอบทุก 20 วินาที (D) โดยให้ T3 เป็นเพียงกลไกสะท้อนกลับเท่านั้น ขอระบุข้อยกเว้นที่ตรงไปตรงมาไว้หนึ่งข้อ: T3 นั้นจงใจใช้เป็นกฎ (rule) เพราะที่ health 0.15 การไปกลับของ LLM คือการพนันที่เดิมพันด้วยมาร์จิ้นทั้งหมด</p>
+</div>
+
+<div class="tocbox">
+  <strong>สารบัญ</strong>
+  <ol>
+    <li><a href="#state">สถานะที่ยืนยันแล้ว: การบังคับปิดสถานะเป็นความเสี่ยงที่เกิดขึ้นจริงในวันนี้</a></li>
+    <li><a href="#notmodel">เหตุใดการตรวจสอบในปัจจุบันจึงไม่ใช่โมเดลการบังคับปิดสถานะ</a></li>
+    <li><a href="#algo">อัลกอริทึม — ห้าขั้นตอน</a></li>
+    <li><a href="#flow">ไดอะแกรมโฟลว์</a></li>
+    <li><a href="#seq">ลำดับเหตุการณ์: การป้องกันแบบ T2</a></li>
+    <li><a href="#brief">สิ่งที่แจ้งให้ AI ทราบ — บรีฟการอยู่รอด</a></li>
+    <li><a href="#rollout">การเริ่มใช้งาน, flags, การตรวจสอบยืนยัน</a></li>
+    <li><a href="#limits">สิ่งที่วิธีนี้ไม่ได้แก้ไข</a></li>
+  </ol>
+</div>
+
+<h2 id="state">1. สถานะที่ยืนยันแล้ว: การบังคับปิดสถานะเป็นความเสี่ยงที่เกิดขึ้นจริงในวันนี้</h2>
+
+<p>คอมเมนต์ที่ <code>fleet_planner.py:57–59</code> ระบุว่าเลเวอเรจ “ถูกตรึงไว้ที่ 1 โดย routes_runs (บัญชีที่ได้รับเงินทุนครบถ้วน; เลเวอเรจ isolated-margin ที่แท้จริงพร้อมการบังคับปิดสถานะเป็นเอนจินแยกต่างหากที่ยังไม่ได้พัฒนา)” <strong>คอมเมนต์นั้นล้าสมัยแล้ว</strong> <code>FLEET_BOUNDS["auto_leverage"]</code> ให้ <code>aggressive: 2.0</code> และ <code>extreme: 3.0</code> (<code>fleet_planner.py:117</code>) และ production ยืนยันว่าทุกโพซิชันที่เปิดอยู่ใช้เลเวอเรจ:</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">โพซิชันที่เปิดอยู่ใน prod</div><div class="val">5</div><div class="d">ใช้เลเวอเรจทุกรายการ</div></div>
+  <div class="tile"><div class="lbl">เลเวอเรจที่ใช้งานอยู่</div><div class="val">2× / 3×</div><div class="d">2 รายการที่ 2×, 3 รายการที่ 3×</div></div>
+  <div class="tile"><div class="lbl">ความสามารถในการอ่านมาร์จินของโบรกเกอร์</div><div class="val">ไม่มี</div><div class="d"><code>Broker</code> ABC ไม่มีเมธอด</div></div>
+  <div class="tile"><div class="lbl">โพซิชันที่ใช้เลเวอเรจซึ่งไม่มี run เจ้าของ</div><div class="val">2</div><div class="d">อยู่นอก <code>_evaluate_stop</code> โดยสิ้นเชิง</div></div>
+</div>
+
+<p>บัญชีการซื้อขายจริง พร้อมราคาบังคับปิดสถานะและราคากันชนตามสูตรของวันนี้ <code>health</code> ถูกนิยามไว้ใน §3; 1.0 หมายถึง “ที่ราคาเข้าซื้อของคุณ”, 0.0 หมายถึงมาร์จินหมดแล้ว</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Pos</th><th>สัญลักษณ์</th><th>ด้าน</th><th class="num">เอนทรี</th><th class="num">มาร์ก</th><th class="num">L</th><th class="num">ราคาลิควิเดชัน</th><th class="num">จุดที่คูชั่นทำงาน</th><th class="num">สุขภาพ</th><th>รัน</th></tr></thead>
+<tbody>
+<tr><td>71</td><td>ETHUSDT</td><td>ลอง</td><td class="num">1,897.80</td><td class="num">1,904.70</td><td class="num">3</td><td class="num">1,265.20</td><td class="num">1,360.09</td><td class="num">1.011</td><td>811</td></tr>
+<tr><td>73</td><td>MNQ</td><td>ชอร์ต</td><td class="num">27,539.87</td><td class="num">27,443.50</td><td class="num">3</td><td class="num">36,719.83</td><td class="num">35,342.84</td><td class="num">1.010</td><td>818</td></tr>
+<tr><td>75</td><td>BTCUSDT</td><td>ชอร์ต</td><td class="num">63,988.00</td><td class="num">63,917.00</td><td class="num">3</td><td class="num">85,317.33</td><td class="num">82,117.93</td><td class="num">1.003</td><td>820</td></tr>
+<tr><td>67</td><td>SOLUSDT</td><td>ชอร์ต</td><td class="num">74.031</td><td class="num">73.520</td><td class="num">2</td><td class="num">111.047</td><td class="num">105.494</td><td class="num">1.014</td><td><span class="chip crit">ไม่มี</span></td></tr>
+<tr><td>69</td><td>USDZAR</td><td>ลอง</td><td class="num">16.7588</td><td class="num">16.6591</td><td class="num">2</td><td class="num">8.3794</td><td class="num">9.6363</td><td class="num">0.988</td><td><span class="chip crit">ไม่มี</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="meta">สแนปช็อตที่ถ่ายเมื่อ 2026-07-29 ~22:20 UTC ราคาลิควิเดชันมาจากสูตรที่ให้มาพร้อมผลิตภัณฑ์ <code>entry × (1 ∓ 1/L)</code> (<code>run_engine.py:880–883</code>); คูชั่นมาจาก <code>entry × (1 ∓ c/L)</code> โดยมี <code>c = RUN_LIQ_CUSHION_FRAC = 0.85</code> (<code>run_engine.py:874–879</code>).</p>
+
+<div class="card ok">
+  <p style="margin:0"><strong>เพื่อความชัดเจนเกี่ยวกับระดับความเสี่ยง:</strong> ไม่มีสิ่งใดในบัญชีนี้ที่ใกล้เคียงกับการถูกลิควิเดชันในตอนนี้ — ทุกโพซิชันอยู่ที่สุขภาพ ≈ 1.0 ห่างจากเส้นลิควิเดชันประมาณ 33% (ที่ 3×) หรือ 50% (ที่ 2×) ของเอนทรี แผนนี้ไม่ใช่การตอบสนองต่อเหตุฉุกเฉิน แต่เป็นข้อสังเกตที่ว่า <em>เครื่องมือที่เราต้องการในกรณีฉุกเฉินนั้นไม่มีอยู่จริง</em>และสองในห้าตำแหน่งนี้ยังไม่ได้ถูกครอบคลุมโดยการตรวจสอบเดียวที่เรามีอยู่ด้วยซ้ำ</p>
+</div>
+
+<h2 id="notmodel">2. เหตุใดการตรวจสอบในปัจจุบันจึงไม่ใช่โมเดลการเลิกสถานะ (liquidation)</h2>
+
+<p>มีการป้องกันการเลิกสถานะอยู่เพียงจุดเดียวในโค้ดเบส นั่นคือ cushion branch ภายใน <code>_evaluate_stop</code> โครงสร้างของมันคือสัดส่วนคงที่เพียงค่าเดียวของระยะห่างไปยังจุดเลิกสถานะ ลองคำนวณดูว่าสัดส่วนนี้หมายถึงอะไรในแง่ของ health — สำหรับสถานะ short, cushion จะทำงานเมื่อ <code>mark = entry(1 + c/L)</code> และจุดเลิกสถานะอยู่ที่ <code>entry(1 + 1/L)</code> ดังนั้น</p>
+
+<pre><code>health = (liq − mark) / (liq − entry)
+       = (entry(1+1/L) − entry(1+c/L)) / (entry(1+1/L) − entry)
+       = (entry(1−c)/L) / (entry/L)
+       = 1 − c  =  0.15        (and the long case is symmetric)</code></pre>
+
+<p><strong>ดังนั้นการป้องกันการเลิกสถานะทั้งหมดในปัจจุบันจึงเป็นเพียงเส้นคงที่เส้นเดียวที่ health = 0.15</strong> ไม่ขึ้นกับ leverage ไม่ขึ้นกับประเภทตราสาร และ — ส่วนที่สำคัญที่สุด — มันไม่มีทางรู้เลยว่าสถานะกำลังเคลื่อนที่เร็วแค่ไหน นอกจากนี้ยังมีจุดที่ขาดหายไปอีกห้าจุด สี่จุดอยู่ในส่วนคณิตศาสตร์ และหนึ่งจุดอยู่ในส่วนโครงสร้างพื้นฐาน</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>#</th><th>เทอมที่ถูกละเว้น</th><th>ทิศทางของความคลาดเคลื่อน</th><th>ขนาดที่ 3×</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>อัตรา Maintenance Margin (MMR)</strong> เอ็กซ์เชนจ์จะทำการเลิกสถานะเมื่อ equity ลดลงต่ำกว่า maintenance margin ไม่ใช่เมื่อมันเท่ากับศูนย์ Binance USDⓈ-M กำหนดระดับ MMR ตาม notional (0.4%–12.5%)</td><td><span class="chip crit">มองโลกในแง่ดีเกินไป (optimistic)</span> การเลิกสถานะจริงจะมาถึง <em>เร็วกว่า</em> ที่โมเดลของเราคาดการณ์</td><td class="num">≈ 0.5% ของราคาเข้า</td></tr>
+<tr><td>2</td><td><strong>เงินทุน</strong> สัญญา perp จะจ่ายหรือรับ funding ทุก 8 ชั่วโมง โมเดลของเราไม่มีเทอม funding เลย ดังนั้น margin จึงสามารถลดลงเรื่อย ๆ จนใกล้จุดเลิกสถานะได้แม้ในตลาดที่ราคานิ่งสนิท และโมเดลจะไม่มีทางเห็นสิ่งนี้เลย</td><td><span class="chip crit">มองโลกในแง่ดีเกินไป (optimistic)</span> และมันจะเพิ่มขึ้นตามระยะเวลาที่ถือสถานะ</td><td class="num">0.001–0.01 หน่วยสุขภาพ/วัน</td></tr>
+<tr><td>3</td><td><strong>ราคามาร์กเทียบกับราคาล่าสุด</strong>. ตลาดแลกเปลี่ยนบังคับปิดสถานะโดยอ้างอิงดัชนี <em>มาร์ก</em>; เราคำนวณจาก <code>positions.current_price</code> ซึ่งเป็นการสำรวจราคาซื้อขายล่าสุด</td><td><span class="chip warn">ทั้งสองทาง</span>ต่างกันมากที่สุดในช่วงไส้เทียนที่ทำให้คนถูกล้างพอร์ต</td><td class="num">ขึ้นอยู่กับตราสาร</td></tr>
+<tr><td>4</td><td><strong>การเชื่อมโยงมาร์จิ้นแบบไขว้</strong>ในบัญชีที่มีการวางหลักประกันร่วมกันแบบจริง การขาดทุนของอีกโพซิชันหนึ่งจะส่งผลต่อราคาการบังคับขายของ <em>โพซิชัน</em>นี้ โมเดลของเราแยกอิสระต่อโพซิชันโดยการออกแบบ</td><td><span class="chip crit">มองในแง่ดี</span> ไม่มีขอบเขตในกรณีที่แย่ที่สุด</td><td class="num">n/a — ไม่ได้จำลอง</td></tr>
+<tr><td>5</td><td><strong>การจัดการข้อมูลล้าสมัยกลับตรงกันข้าม</strong> บล็อกการเลิกสถานะทั้งหมดอยู่ภายใน <code>if has_position and pnl["mark_age_ok"]:</code> (<code>run_engine.py:860</code>). เมื่อราคาอ้างอิงล้าสมัย การตรวจสอบจะถูก <em>ข้าม</em>. เครื่องหมายราคาล้าสมัย <code>RuntimeError</code> ด้านล่าง (บรรทัด 893) หยุดการเข้าสถานะและแจ้งเตือน แต่ไม่เคยปิดสิ่งใดเลย</td><td><span class="chip crit">โครงสร้าง</span> สถานะที่ใช้เลเวอเรจกับฟีดราคาที่หยุดทำงานจะถูกดำเนินต่อไปโดยไม่มีการตรวจสอบ และไม่มีทางออก</td><td class="num">—</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>และข้อที่หก ซึ่งเป็นข้อที่สำคัญที่สุดสำหรับหลักการของโครงการนี้: <strong>AI ไม่ได้รับข้อมูลนี้เลย</strong>พรอมต์ของโต๊ะเทรด (<code>_light_analysis</code>, <code>run_engine.py:2054–2089</code>) มีสัญลักษณ์ ราคา จำนวนโพซิชัน ทฤษฎีการเทรด ราคาปิดสิบค่า และ — ตั้งแต่ PR #124/#125 — เส้นทาง P&amp;L ของโพซิชัน แต่ไม่มีเลเวอเรจ ไม่มีราคาลิควิเดต ไม่มีมาร์จิ้น ไม่มีฟันดิ้ง โต๊ะเทรดไม่สามารถให้เหตุผลเรื่องการอยู่รอดได้ เพราะไม่รู้ว่าตัวเองมีเลเวอเรจอยู่</p>
+
+<h2 id="algo">3. อัลกอริทึม — ห้าขั้นตอน</h2>
+
+<h3>ขั้นตอน A — Margin State Oracle <span class="meta">(ใหม่: <code>service/server/liquidation.py</code>)</span></h3>
+
+<p>หนึ่งฟังก์ชัน หนึ่งรูปแบบ สองแหล่งข้อมูลที่เป็นไปได้ เพิ่มความสามารถเสริมให้กับ <code>Broker</code> ABC โดยทำตามรูปแบบเดิมที่ <code>get_order_status</code> ใช้อยู่แล้ว (ค่าเริ่มต้นคืนค่า <code>None</code> = “ไม่สามารถค้นหาได้” ไม่โยนข้อผิดพลาดสำหรับกรณีที่คาดไว้แล้ว — <code>execution/base.py:104–118</code>):</p>
+
+<pre><code>async def get_margin_state(self) -> Optional[list[dict]]:
+    """Per-position margin facts. None = this broker cannot report them."""
+    # symbol, side, qty, entry_price, mark_price, liquidation_price,
+    # maintenance_margin, margin_balance, unrealized_pnl, leverage,
+    # funding_rate, next_funding_ts, margin_mode, source="broker"
+    return None</code></pre>
+
+<p>การตรวจสอบสภาพจริงของ Adapter เพื่อไม่ให้ใครวางแผนโดยอิงกับความสามารถที่ไม่มีอยู่จริง:</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>ตัวปรับ (Adapter)</th><th>วันนี้</th><th>งานที่ต้องทำ</th></tr></thead>
+<tbody>
+<tr><td><code>binance.py</code></td><td><span class="chip crit">สปอตเท่านั้น</span> <code>_LIVE_BASE = api.binance.com/api/v3</code> (บรรทัด 34) ไม่สามารถมองเห็นโพซิชันฟิวเจอร์สได้เลย ไม่ต้องพูดถึงมาร์จิ้นของมัน</td><td>ใหม่ <code>BinanceFuturesBroker</code> บน <code>/fapi</code>: <code>GET /fapi/v2/positionRisk</code> ให้ <code>liquidationPrice</code>, <code>markPrice</code>, <code>leverage</code>, <code>marginType</code> โดยตรง; <code>GET /fapi/v1/premiumIndex</code> ให้ <code>lastFundingRate</code>, <code>nextFundingTime</code>.</td></tr>
+<tr><td><code>alpaca.py</code></td><td>หุ้น/คริปโต ไม่มีแนวคิดมาร์จิ้นฟิวเจอร์สในเอ็นด์พอยต์ที่เราใช้</td><td>คืนค่า <code>None</code> ซื่อสัตย์และถูกต้อง</td></tr>
+<tr><td><code>ibkr.py</code></td><td>CPAPI session ยังคงอยู่และถูกรักษาให้ทำงานต่อเนื่อง (<code>gateway.keepalive_tick</code>)</td><td><code>/portfolio/{acct}/positions</code> + <code>/iserver/account/{acct}/summary</code> สำหรับ <code>maintmarginreq</code>, <code>excessliquidity</code> IBKR รายงานมาร์จิ้นระดับบัญชี ไม่ใช่ราคาลิควิเดตต่อโพซิชัน — ดังนั้นจึงต้องคำนวณเอง และทำเครื่องหมาย <code>source="derived"</code>.</td></tr>
+<tr><td><code>paper.py</code></td><td>บัญชีจำลอง</td><td>เส้นทางสังเคราะห์ด้านล่าง</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>เมื่อไม่มีโบรกเกอร์ใดตอบได้ — ซึ่งเป็น <em>ทุก</em> กรณีในวันแรก เนื่องจาก <code>broker_accounts</code> ว่างเปล่าในระบบ prod — ให้ย้อนกลับไปใช้สถานะสังเคราะห์ที่แก้ไขข้อบกพร่องข้อ 1 และ 2 และระบุตัวเองอย่างตรงไปตรงมาว่า:</p>
+
+<pre><code>long :  liq = entry × (1 − 1/L + mmr) + funding_accrued_per_unit
+short:  liq = entry × (1 + 1/L − mmr) − funding_accrued_per_unit
+        source = "synthetic",  confidence = "modelled"</code></pre>
+
+<p><code>mmr</code> มาจากตารางเฉพาะตลาด (ระดับ notional ของ crypto-perp; ค่าประมาณ SPAN สำหรับฟิวเจอร์สแลกเปลี่ยน; ค่าเริ่มต้นของโบรกเกอร์สำหรับ forex) และ <code>funding_accrued_per_unit</code> ถูกรวมจากเหตุการณ์ funding ที่สังเกตได้ตลอดช่วงเวลาถือครอง ฟิลด์ <code>source</code> ไม่ใช่การตกแต่ง — มันถูกส่งให้ AI ตามที่เป็นจริง เพื่อให้ทีมงานทราบว่ากำลังได้รับข้อเท็จจริงหรือค่าประมาณ</p>
+
+<h3>ขั้นตอน B — สเกลาร์หนึ่งตัว และอนุพันธ์ของมัน</h3>
+
+<pre><code>long :  health = (mark − liq) / (entry − liq)
+short:  health = (liq − mark) / (liq − entry)
+
+velocity = Δhealth / Δt          (least-squares slope over the last N samples)
+ttl      = health / max(ε, −velocity)      # time to liquidation at this rate</code></pre>
+
+<p>เหตุใดจึงต้องทำ normalise แทนที่จะตั้งเกณฑ์ (threshold) บนราคาหรือ P&amp;L: <code>health</code> มีค่าเท่ากับ 1.0 ณ จุดเข้า และ 0.0 ณ จุดลิควิเดต สำหรับทุกตราสาร ทุกระดับเลเวอเรจ และทั้งสองทิศทาง ดังนั้นชุดแถบเดียวจึงสามารถควบคุม MNQ ที่ 3× และ USDZAR ที่ 2× ได้โดยไม่ต้องปรับแต่งเฉพาะตลาด เหตุใด <code>velocity</code> จึงไม่ใช่ตัวเลือกเสริม: <strong>health 0.40 ที่ลดลง 0.15/นาที ถือเป็นเหตุฉุกเฉิน; health 0.22 ที่คงที่เป็นเวลาหกชั่วโมงไม่ใช่</strong> เกณฑ์คงที่ไม่สามารถแยกแยะสองกรณีนี้ได้ และนั่นคือรูปแบบความล้มเหลวที่แม่นยำของเส้น 0.15 เดียวที่เราส่งมอบในวันนี้ — มันจะทำงานที่จุดเดียวกันไม่ว่าตำแหน่งจะเคลื่อนไปถึงจุดนั้นภายในหนึ่งสัปดาห์หรือภายในเก้าสิบวินาที</p>
+
+<h3>ขั้นตอน C — สี่ระดับ และข้อยกเว้นที่ตรงไปตรงมา</h3>
+
+<div class="scroll">
+<table>
+<thead><tr><th>ระดับ</th><th>ตัวกระตุ้น</th><th>ใครเป็นผู้ตัดสินใจ</th><th>งบประมาณเวลาแฝง (Latency budget)</th></tr></thead>
+<tbody>
+<tr><td><span class="chip ok">T0 ปกติ</span></td><td><code>สุขภาพ ≥ 0.60</code> และ <code>ttl &gt; 6h</code></td><td>ไม่มีใคร — บันทึกเหตุการณ์ telemetry <code>margin</code> แล้วดำเนินการต่อ</td><td>—</td></tr>
+<tr><td><span class="chip warn">T1 เฝ้าระวัง</span></td><td><code>health &lt; 0.60</code> หรือ <code>ttl &lt; 6h</code></td><td><strong>ทีม AI</strong> ในรอบการทำงานปกติถัดไป สรุปการเอาตัวรอด (§6) จะถูกแทรกเข้าไปใน prompt และคำสั่งเชิงป้องกันจะถูกปลดล็อก</td><td>รอบเวลา 30–60 นาที</td></tr>
+<tr><td><span class="chip crit">T2 ป้องกัน</span></td><td><code>health &lt; 0.35</code> หรือ <code>ttl &lt; 45 min</code></td><td><strong>ทีม AI นอกรอบการทำงานปกติ</strong> เดมอนจะปลุกทันทีแทนที่จะรอรอบถัดไป และมอบกำหนดเวลาให้</td><td><code>LIQ_DESK_DEADLINE_S</code> = 45 วินาที</td></tr>
+<tr><td><span class="chip crit">T3 ปฏิกิริยาตอบสนอง</span></td><td><code>health &lt; 0.15</code> หรือ <code>ttl &lt; 5 min</code>หรือพลาดกำหนดเวลา T2 หรือ oracle ไม่พร้อมใช้งาน</td><td><strong>เดมอน โดยไม่มีการเรียก LLM</strong> ลดให้เพียงพอเพื่อคืนค่า <code>LIQ_REFLEX_TARGET_HEALTH</code> (0.45); หากต้องการมากกว่า <code>LIQ_REFLEX_FLATTEN_FRAC</code> (0.70) ของโพซิชัน ให้ปิดทั้งหมดแทน</td><td>ทันที</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card crit">
+  <p style="margin:0 0 8px"><strong>T3 เป็นรางกั้นความปลอดภัย โดยเจตนา — และนี่คือจุดเดียวที่ผมกำลังโต้แย้งกฎมาตรฐาน</strong></p>
+  <p style="margin:0 0 8px">กฎคือทุกคำแนะนำจะถูกส่งออกเป็นการตัดสินใจที่ AI ของ sooppiy.com เป็นผู้ทำ T3 ฝ่าฝืนกฎนี้ ด้วยเหตุผลที่สามารถวัดได้มากกว่าจะเป็นเชิงปรัชญา การเรียก LLM ระดับการตัดสินใจใช้เวลาไม่กี่วินาทีที่ p50 แต่มีหางแจกแจงที่หนา — <code>_light_analysis</code> ห่อการเรียกของมันด้วย <code>except</code> แบบเปล่าเปลือย และถอยกลับไปใช้ <code>"light cycle: no LLM verdict"</code> เพราะหางแจกแจงนั้นมีอยู่จริง (<code>run_engine.py:2094–2096</code>) ที่เลเวอเรจ 3 เท่า สุขภาพ 0.15 หมายความว่าราคามาร์กอยู่ห่างจากราคาเข้าประมาณ 5% ไปสู่ <strong>การล้างมาร์จิ้น 100%</strong> การใช้เวลาไม่แน่นอนหลายวินาทีตรงจุดนั้นคือการเดิมพันมาร์จิ้นทั้งหมดกับการตอบสนองผ่านเครือข่าย</p>
+  <p style="margin:0">ดังนั้นการแบ่งจึงเป็นดังนี้: <strong>AI เป็นเจ้าของทุกการตัดสินใจลงไปจนถึง T2 ต่ำกว่า T2 เดมอนจะเป็นผู้ลงมือ และหน้าที่ของ AI จะกลายเป็นการอธิบายว่าเดมอนทำอะไรไป</strong> ทุกปฏิกิริยาสะท้อนกลับจะส่งเหตุการณ์ <code>liq_reflex</code> ที่ถูกป้อนเข้าสู่บรีฟการอยู่รอดครั้งถัดไปของการรันนั้น เพื่อให้เดสก์เรียนรู้จากเหตุการณ์เฉียดอันตรายของตัวเอง แทนที่จะถูกปกป้องจากมัน หาก T3 ทำงานบ่อยครั้ง นั่นคือหลักฐานว่าเดสก์กำลังล้มเหลวที่ T1/T2 และการแก้ไขควรอยู่ที่พรอมต์ — ไม่ใช่ที่ค่าคงที่ของ T3</p>
+</div>
+
+<div class="card">
+  <p style="margin:0 0 8px"><strong>2026-07-30 — การแก้ไขหลังจากสร้างมันขึ้นมา และปฏิกิริยาสะท้อนกลับนี้ตอนนี้ถูกเปิดใช้งาน (ARMED) บนระบบการผลิตแล้ว</strong></p>
+  <p style="margin:0 0 8px"><strong>1. การกระทำของ T3 ในตารางด้านบนนั้นผิด และไม่สามารถสร้างได้</strong> “ลดให้เพียงพอเพื่อคืนค่าสุขภาพ 0.45” นั้นไม่สามารถทำได้จริง: ภายใต้มาร์จิ้นแบบแยก โพซิชันขนาด <code>q</code> ที่ราคาเข้า <code>E</code> ด้วยเลเวอเรจ <code>L</code> วางมาร์จิ้น <code>q·E/L</code> และถูกบังคับปิดเมื่อ <code>q·|P−E| = q·E/L</code> — <code>q</code> จะหักล้างกัน ดังนั้นราคาที่ถูกบังคับปิด (<em>ราคา</em>) จึงไม่ขึ้นอยู่กับขนาดเลย การลดขนาดเพียงแค่ลดสิ่งที่คุณอาจสูญเสีย แต่ซื้อระยะห่างเพิ่มขึ้น <strong>เป็นศูนย์</strong> <code>LIQ_REFLEX_TARGET_HEALTH</code> และ <code>LIQ_REFLEX_FLATTEN_FRAC</code> ไม่เคยถูกนำไปใช้งานจริง และไม่ควรถูกนำไปใช้ ปฏิกิริยาสะท้อนกลับคือ <strong>ปิดทั้งหมดหรือไม่ทำอะไรเลย</strong> และ <code>survival_brief</code>  ตอนนี้บอกเดสก์เรื่องนี้อย่างตรงไปตรงมา เพราะเดสก์ที่เชื่อว่าการลดสถานะจะสร้างพื้นที่ไว้ จะเลือกลดสถานะแทนการออกจากสถานะ</p>
+  <p style="margin:0 0 8px"><strong>2. การนำไปใช้งานครั้งแรกส่งมอบปฏิกิริยาสะท้อนที่ไม่มีมือ</strong> PR #127 ส่งมอบ oracle, ค่าสเกลาร์สุขภาพ, ตัวจำแนกประเภท และฮิสเทรีซิส และ <code>reflex_action()</code> ส่งคืนค่าอย่างถูกต้อง <code>"flatten"</code> ที่ T3 — เข้าไปใน <code>out["reflex"] += 1</code>, ตัวนับที่ไม่มีผู้ใช้งาน วนรอบเฝ้าตรวจได้บันทึกสถานะ กระชับจังหวะเวลา พิมพ์การยกระดับ แต่ไม่เคยส่งคำสั่งซื้อขายเลย <code>LIQ_REFLEX=true</code> จะไม่ได้ปิดสถานะใดเลย ได้รับการแก้ไขใน PR #130 ซึ่งเชื่อมต่อ T3 ไปยัง <code>automation.execute_paper_trade</code> — primitive การปิดสถานะของตัวเฝ้าตรวจ SL/TP เอง ทำให้การออกจากสถานะแบบปฏิกิริยาสะท้อนถูกบันทึก ระบุที่มาของรอบการทำงาน และแจ้งเตือนเช่นเดียวกับการออกจากสถานะแบบบังคับอื่นๆ ทั้งหมด และทำให้ <strong>ออร์แฟน</strong> (<code>run_id</code> NULL) สามารถปิดได้เลย สถานะที่มีเลเวอเรจเพียงหนึ่งเดียวในโปรดักชันคือออร์แฟนแบบนี้เป๊ะ</p>
+  <p style="margin:0 0 8px"><strong>3. การป้องกันที่แผนไม่ได้คาดการณ์ไว้</strong> ตัวสำรวจราคาทำงานทุก ~900s ในขณะที่วนรอบนี้ทำงานทุก 20s ทำให้การอ่านค่า T3 อาจอิงกับมาร์กที่เก่าถึงหนึ่งในสี่ชั่วโมง — เพียงพอสำหรับช่วงสั้นๆ แต่ร้ายแรงสำหรับการเคลียร์สถานะที่ไม่สามารถย้อนกลับได้ ตัวรันคำสั่งปฏิเสธเมื่อ <code>stale_mark</code> (เกินกว่า <code>LIQ_REFLEX_MAX_STALE</code>, 300s), <code>cooldown</code> (<code>LIQ_REFLEX_RETRY</code>, 60s, ประทับเวลา <em>ก่อน</em> คำสั่ง เพื่อให้การปิดที่เพิ่มขึ้นยังคงยึด latch ไว้), <code>no_owner</code>, <code>flat</code>, <code>no_mark</code> และ <code>mark_age_unknown</code>. การปฏิเสธทุกครั้งจะถูกบันทึกลง journal: การปฏิเสธคือบันทึกที่น่าสนใจ เพราะหมายความว่ามีโพซิชันอยู่ที่ T3 ในขณะที่ daemon ปฏิเสธ และเหตุผลนั้นเป็นวิธีเดียวที่จะบอกได้ว่า guard ที่ทำงานถูกต้องต่างจาก executor ที่เสียหายอย่างไรในภายหลัง</p>
+  <p style="margin:0"><strong>สถานะ</strong> <code>LIQ_REFLEX=true</code> บนระบบ production ตั้งแต่ 2026-07-30 22:21 UTC (image <code>20260730-reflex</code>). วัดจากสมุดคำสั่งจริง (live book) ขณะ arming: โพซิชัน 67 SOLUSDT short 2×, health 0.98 (T0), mark age 20.7s — reflex อยู่ในสถานะ idle อย่างถูกต้อง และจะทำงานหากโพซิชันนั้นถึง T3 สิ่งที่ยังไม่ได้สร้าง: การอ่านค่ามาร์จิ้นจาก real-broker ของ phase-5 (<code>Broker.get_margin_state</code> คืนค่า <code>None</code> ทุกที่ ดังนั้นค่าที่อ่านได้ทุกครั้งจึงเป็น <code>source: synthetic</code>), funding accrual และ cross-margin เส้นทางการยกระดับ T1/T2 → T3 ไม่เคยทำงานใน production มาก่อน และได้รับการพิสูจน์ด้วยการทดสอบเท่านั้น</p>
+</div>
+
+<h3>ขั้นตอน D — ลูปของ daemon <span class="meta">(<code>tasks.py: liquidation_watch_loop</code>)</span></h3>
+
+<p>รูปแบบเดียวกับ <code>risk_watcher_loop</code> (<code>tasks.py:863–889</code>): ลูปแบบ async หนึ่งลูป, อินเทอร์วัล <code>_env_int</code> หนึ่งค่า, การสลับไปยังเธรดสำหรับงานที่บล็อก, และ <code>except</code> เปล่าเพื่อไม่ให้ tick ที่ผิดพลาดหนึ่งครั้งทำให้ worker ตาย</p>
+
+<pre><code>LIQ_WATCH_INTERVAL      = 20s     # tighter than risk_watcher's 30s and the
+                                  # ~60s run-control scan: this is the one loop
+                                  # whose tail cost is the entire margin
+LIQ_WATCH_INTERVAL_HOT  = 5s      # once ANY position is at T2 or worse
+LIQ_DEESCALATE_SAMPLES  = 3       # hysteresis: only de-escalate after 3
+                                  # consecutive samples one band better</code></pre>
+
+<p>Hysteresis ไม่ใช่สิ่งฟุ่มเฟือย หากไม่มีมัน wick เดียวก็สามารถทำให้ tier กระพือได้ และ tier ที่กระพือหมายความว่าเดสก์ถูกปลุกออกนอกรอบซ้ำแล้วซ้ำเล่าสำหรับโพซิชันเดียวกัน — ซึ่งฝึกให้ทุกคน ทั้งคนและโมเดล เมินการแจ้งเตือน</p>
+
+<h3>ขั้นตอน E — จำกัดสโคปที่โพซิชัน ไม่ใช่ที่รัน</h3>
+
+<p>โพซิชัน 67 (SOLUSDT, 2×) และ 69 (USDZAR, 2×) มี <code>run_id NULL</code>. <code>_evaluate_stop</code> ทำงานเฉพาะสำหรับโพซิชันที่ผูกกับรัน <em>กำลังทำงาน</em> เท่านั้น ดังนั้นทั้งสองโพซิชันนี้จึงไม่ถูกตรวจสอบการ liquidate โดยสิ่งใดในปัจจุบัน เดมอนต้องวนซ้ำ <strong>ตาราง positions ที่กรองด้วย <code>leverage &gt; 1</code></strong> ซึ่งเป็นสโคปเดียวที่ครอบคลุมทั้งบุ๊ก — ทั้งที่ผูกอยู่, ที่ถูกทิ้งไว้, และที่จัดการเอง</p>
+
+<h2 id="flow">4. ไดอะแกรมโฟลว์</h2>
+
+<figure>
+<svg viewBox="-2 20 1030 502" role="img" aria-label="Liquidation defense daemon flow: oracle to health to tier classifier to four branches">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g color="var(--axis)" stroke="var(--axis)" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+    <path d="M150,72 L210,80"/>
+    <path d="M150,120 L210,112"/>
+    <path d="M360,96 L420,96"/>
+    <path d="M570,96 L630,96"/>
+  </g>
+
+  <!-- sources -->
+  <rect x="16" y="52" width="134" height="40" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="30" y="70">API ของโบรกเกอร์</text>
+  <text x="30" y="85">คีย์ของผู้ใช้เอง</text>
+
+  <rect x="16" y="100" width="134" height="40" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="30" y="118">โมเดลสังเคราะห์</text>
+  <text x="30" y="133">mmr + funding</text>
+
+  <!-- oracle -->
+  <rect x="214" y="60" width="146" height="72" rx="7" fill="var(--surface-1)" stroke="var(--s1)" stroke-width="1.6"/>
+  <text class="lab-strong" x="228" y="80">สถานะมาร์จิ้น</text>
+  <text class="lab-strong" x="228" y="96">Oracle</text>
+  <text x="228" y="114">สภาพคล่อง, ราคามาร์ก, มาร์จิ้น,</text>
+  <text x="228" y="127">ค่าธรรมเนียม, แหล่งที่มา</text>
+
+  <!-- health -->
+  <rect x="424" y="60" width="146" height="72" rx="7" fill="var(--surface-1)" stroke="var(--s1)" stroke-width="1.6"/>
+  <text class="lab-strong" x="438" y="80">สุขภาพ + ความเร็ว</text>
+  <text x="438" y="98">1.0 = จุดเข้า</text>
+  <text x="438" y="112">0.0 = ล้างพอร์ต</text>
+  <text x="438" y="126">ttl = h / −v</text>
+
+  <!-- classifier -->
+  <rect x="634" y="60" width="132" height="64" rx="7" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="648" y="82">ตัวจำแนกระดับ (tier classifier)</text>
+  <text x="648" y="100">+ ฮิสเทอรีซิส</text>
+  <text x="648" y="114">3 ตัวอย่าง</text>
+
+  <!-- daemon feed -->
+  <g stroke="var(--axis)" stroke-width="1.4" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M345,264 L345,200 L214,200 L214,136"/>
+  </g>
+  <text x="352" y="232">ทุก tick</text>
+
+  <!-- T0 -->
+  <rect x="806" y="168" width="200" height="56" rx="7" fill="var(--surface-1)" stroke="var(--t0)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="188">T0 · สุขภาพ ≥ 0.60</text>
+  <text x="820" y="206">บันทึกเท่านั้น</text>
+  <text x="820" y="219">ไม่มีใครตัดสิน</text>
+
+  <!-- T1 -->
+  <rect x="806" y="240" width="200" height="70" rx="7" fill="var(--surface-1)" stroke="var(--t1)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="260">T1 · สุขภาพ &lt; 0.60</text>
+  <text x="820" y="278">AI desk, รอบถัดไป</text>
+  <text x="820" y="291">brief ถูกฉีดเข้าไป</text>
+  <text x="820" y="304">verbs ถูกปลดล็อก</text>
+
+  <!-- T2 -->
+  <rect x="806" y="326" width="200" height="84" rx="7" fill="var(--surface-1)" stroke="var(--t2)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="346">T2 · สถานะความสมบูรณ์ &lt; 0.35</text>
+  <text x="820" y="364">AI desk, นอกรอบ</text>
+  <text x="820" y="377">เดดไลน์ 45s</text>
+  <text x="820" y="390">reduce | close |</text>
+  <text x="820" y="403">add_margin | ถือ</text>
+
+  <!-- T3 -->
+  <rect x="806" y="426" width="200" height="84" rx="7" fill="var(--crit-bg)" stroke="var(--t3)" stroke-width="2"/>
+  <text class="lab-strong" x="820" y="446">T3 · สุขภาพ &lt; 0.15</text>
+  <text x="820" y="464">DAEMON, ไม่มี LLM</text>
+  <text x="820" y="477">กู้คืน h → 0.45</text>
+  <text x="820" y="490">หรือ flatten</text>
+  <text x="820" y="503">→ ป้อนสู่ brief ถัดไป</text>
+
+  <g stroke="var(--axis)" stroke-width="1.3" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M766,92 L790,92 L790,196 L800,196"/>
+    <path d="M790,196 L790,275 L800,275"/>
+    <path d="M790,275 L790,368 L800,368"/>
+    <path d="M790,368 L790,468 L800,468"/>
+  </g>
+
+  <!-- deadline miss loop -->
+  <g stroke="var(--t3)" stroke-width="1.5" fill="none" color="var(--t3)" stroke-dasharray="4 3" marker-end="url(#ar)">
+    <path d="M1006,368 L1014,368 L1014,468 L1006,468"/>
+  </g>
+  <text x="1010" y="420" style="fill:var(--t3)" transform="rotate(90 1010 420)" text-anchor="middle">พลาดเดดไลน์</text>
+
+  <!-- learn loop -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="4 3" marker-end="url(#ar)">
+    <path d="M806,500 L546,500 L546,290 L800,290"/>
+  </g>
+  <text x="554" y="492" style="fill:var(--s3)">reflex ถูกบันทึก → เดสก์อ่านมันในรอบถัดไป</text>
+
+  <!-- daemon box -->
+  <rect x="200" y="264" width="290" height="96" rx="7" fill="var(--surface-1)" stroke="var(--border)" stroke-dasharray="5 4"/>
+  <text class="lab-strong" x="214" y="284">ลูปเฝ้าระวังการชำระบัญชี (liquidation_watch_loop)</text>
+  <text x="214" y="302">สโคป: positions WHERE leverage &gt; 1</text>
+  <text x="214" y="316">— ครอบคลุม orphans (run_id NULL)</text>
+  <text x="214" y="333">20s ปกติ · 5s เมื่อมี pos ใดๆ ≤ T2</text>
+  <text x="214" y="350">mark ที่ค้าง ⇒ ยกระดับ ไม่ข้ามเด็ดขาด</text>
+</svg>
+<figcaption>oracle เป็นดีเพนเดนซีใหม่เพียงตัวเดียว ส่วนที่เหลือทั้งหมดคือคณิตศาสตร์บนสเกลาร์ตัวเดียว เส้นประสีเขียว = ลูปการเรียนรู้ที่ป้องกันไม่ให้ T3 กลายเป็นที่ที่ AI ไม่มองเลย</figcaption>
+</figure>
+
+<h3>แถบ health พร้อมเส้นเดียวของวันนี้</h3>
+
+<figure>
+<svg viewBox="0 0 1000 210" role="img" aria-label="Health bands from 1.0 to 0.0 with the four tiers and the current single threshold">
+  <!-- bands -->
+  <rect x="60" y="46" width="376" height="34" fill="var(--t0)" opacity="0.22"/>
+  <rect x="436" y="46" width="235" height="34" fill="var(--t1)" opacity="0.26"/>
+  <rect x="671" y="46" width="188" height="34" fill="var(--t2)" opacity="0.28"/>
+  <rect x="859" y="46" width="81" height="34" fill="var(--t3)" opacity="0.32"/>
+  <rect x="60" y="46" width="880" height="34" fill="none" stroke="var(--axis)"/>
+
+  <text class="lab-strong" x="200" y="68" text-anchor="middle">T0 ปกติ</text>
+  <text class="lab-strong" x="553" y="68" text-anchor="middle">T1 เฝ้าดู — AI ตัดสิน</text>
+  <text class="lab-strong" x="765" y="68" text-anchor="middle">T2 ป้องกัน — AI, 45s</text>
+  <text class="lab-strong" x="899" y="68" text-anchor="middle">T3</text>
+
+  <!-- axis -->
+  <g stroke="var(--axis)" stroke-width="1">
+    <path d="M60,80 L60,90"/><path d="M436,80 L436,90"/><path d="M671,80 L671,90"/>
+    <path d="M859,80 L859,90"/><path d="M940,80 L940,96"/>
+  </g>
+  <text x="60" y="106" text-anchor="middle">1.00 · entry ของคุณ</text>
+  <text x="436" y="106" text-anchor="middle">0.60</text>
+  <text x="671" y="106" text-anchor="middle">0.35</text>
+  <text x="859" y="106" text-anchor="middle">0.15</text>
+  <text x="940" y="112" text-anchor="middle">0.00</text>
+  <text x="940" y="126" text-anchor="middle" style="fill:var(--crit)">margin ถูกล้าง</text>
+
+  <!-- today's line -->
+  <g stroke="var(--crit)" stroke-width="2.2">
+    <path d="M859,32 L859,46"/>
+  </g>
+  <text x="853" y="26" text-anchor="end" style="fill:var(--crit)" class="lab-strong">วันนี้: การป้องกันเดียวเท่านั้น เส้นตายตัวที่ 0.15</text>
+
+  <!-- current book -->
+  <g fill="var(--s1)">
+    <circle cx="56" cy="150" r="5"/><circle cx="56" cy="150" r="5"/>
+  </g>
+  <text class="lab" x="70" y="155">ตำแหน่งที่เปิดอยู่ทั้งห้ารายการอยู่ที่นี่ health ≈ 1.0 (0.988 – 1.014)</text>
+  <text x="70" y="174">ช่องว่างระหว่างกลุ่มนั้นกับเส้นสีแดงไม่ได้รับการตรวจสอบเลย ไม่มีความเร็ว,</text>
+  <text x="70" y="190">ไม่มีการดริฟต์ของ funding ไม่มี maintenance margin และ AI ก็ไม่ได้รับแจ้งสิ่งใดเลย</text>
+</svg>
+<figcaption>ได้มาจากการคำนวณ ไม่ใช่การกล่าวอ้าง: <code>c = 0.85</code> ใน <code>RUN_LIQ_CUSHION_FRAC</code> ทำให้ cushion อยู่ที่พอดี <code>สุขภาพ = 1 − c = 0.15</code> สำหรับทั้งสองทิศทาง — ดูพีชคณิตใน §2</figcaption>
+</figure>
+
+<h2 id="seq">5. ลำดับ: การป้องกันแบบ T2</h2>
+
+<figure>
+<svg viewBox="0 0 980 400" role="img" aria-label="Sequence diagram of a tier 2 liquidation defence">
+  <!-- lanes -->
+  <g stroke="var(--grid)" stroke-width="1" stroke-dasharray="3 4">
+    <path d="M110,60 L110,372"/><path d="M330,60 L330,372"/>
+    <path d="M550,60 L550,372"/><path d="M770,60 L770,372"/>
+  </g>
+  <g fill="var(--surface-1)" stroke="var(--border)">
+    <rect x="34" y="32" width="152" height="28" rx="6"/>
+    <rect x="254" y="32" width="152" height="28" rx="6"/>
+    <rect x="474" y="32" width="152" height="28" rx="6"/>
+    <rect x="694" y="32" width="152" height="28" rx="6"/>
+  </g>
+  <text class="lab-strong" x="110" y="51" text-anchor="middle">ดีมอน (20 วินาที→5 วินาที)</text>
+  <text class="lab-strong" x="330" y="51" text-anchor="middle">ออราเคิลมาร์จิ้น</text>
+  <text class="lab-strong" x="550" y="51" text-anchor="middle">เดสก์ AI (LLM)</text>
+  <text class="lab-strong" x="770" y="51" text-anchor="middle">ledger / โบรกเกอร์</text>
+
+  <g stroke="var(--s1)" stroke-width="1.5" fill="none" color="var(--s1)" marker-end="url(#ar)">
+    <path d="M110,86 L326,86"/>
+    <path d="M330,116 L114,116"/>
+    <path d="M110,176 L546,176"/>
+    <path d="M550,236 L114,236"/>
+    <path d="M110,266 L766,266"/>
+    <path d="M770,306 L114,306"/>
+  </g>
+  <text x="120" y="80">get_margin_state()</text>
+  <text x="120" y="110">liq 36,719 · mark 35,900 · funding −0.011%/8h</text>
+  <text class="lab" x="120" y="140">health 0.31 · velocity −0.22/h · ttl 84 นาที  ⇒  T2</text>
+  <text x="120" y="170">ปลุก desk แบบนอกรอบ + survival brief + กำหนดเวลา 45 วินาที</text>
+  <text x="120" y="230">{"intent":"reduce","size_frac":0.5,"why":"แนวคิดการลงทุนยังคงเดิม, ระยะห่างจากจุดซื้อ"}</text>
+  <text x="120" y="260">คอมไพล์ → ครอบคลุม 0.028 MNQ · เกณฑ์ควบคุม: reduce เพิ่มขึ้นได้เท่านั้น</text>
+  <text x="120" y="300">filled → วัดใหม่: health 0.31 → 0.58 (T1)</text>
+
+  <g stroke="var(--t3)" stroke-width="1.5" fill="none" color="var(--t3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M110,340 L766,340"/>
+  </g>
+  <text x="120" y="334" style="fill:var(--t3)">…หาก desk ไม่ตอบภายใน +45s: T3 reflex จะลดลงเหลือ health 0.45 ไม่มี LLM และบันทึกลง journal</text>
+  <text x="120" y="366" class="lab">ไม่ว่าจะทางใด ผลลัพธ์จะถูกบันทึกลงใน journal ของ run และ desk จะอ่านมันในรอบถัดไป</text>
+</svg>
+<figcaption>กำหนดเวลาคือสิ่งที่ทำให้อำนาจของ AI ปลอดภัยที่ T2: desk มีสิทธิ์ตัดสินใจ แต่ไม่มีสิทธิ์ตัดสินใจช้า</figcaption>
+</figure>
+
+<h2 id="brief">6. สิ่งที่ AI ได้รับแจ้ง — survival brief</h2>
+
+<p>นี่คือส่วนที่เป็นไปตามกฎมาตรฐาน และเป็นความแตกต่างระหว่าง daemon ที่จัดการความเสี่ยงการ liquidation <em>ให้กับ</em> desk กับอันที่ปล่อยให้ desk จัดการมันเอง ให้เพิ่มเข้าไปในส่วนต้นของ prompt เมื่อใดก็ตามที่ <code>leverage &gt; 1</code>:</p>
+
+<pre><code>MARGIN STATE (source: broker)
+  Leverage 3.0x, isolated. Liquidation at 36,719.83; mark 35,900.00.
+  Health 0.31  (1.0 = your entry price, 0.0 = margin fully wiped).
+  Velocity -0.22 health/hour over the last 3 samples.
+  Time to liquidation at this rate: 84 minutes.
+  Funding: you PAY 0.011% every 8h on 82,331 notional = $9.05/day,
+    which costs 0.033 health per day even if price never moves.
+  Recent: 0 reflex actions on this position.
+
+  DEADLINE: reply within 45s or the risk daemon will reduce this
+  position for you to health 0.45. Your options:
+    reduce  (size_frac)  - shed exposure, keep the thesis alive
+    close                - out entirely
+    add_margin (to L=n)  - deleverage without reducing exposure;
+                           buys distance, keeps full upside
+    hold                 - only if you can say what would change your mind</code></pre>
+
+<p><code>add_margin</code> สมควรมีบันทึกของตัวเอง มันเป็นคำตอบที่แตกต่างอย่างแท้จริงจาก <code>reduce</code>: มันลดเลเวอเรจโดยการวางมาร์จิ้นเพิ่ม ซึ่งทำให้ราคาลิควิเดชั่นเคลื่อนออกไป <em>โดยไม่ต้องสละส่วนใดของตำแหน่ง</em> desk ที่เชื่อมั่นใน thesis ของตนและเพียงแค่ถูกบีบควรเลือกวิธีนี้แทบทุกครั้ง ทุกวันนี้ desk ไม่สามารถแสดงออกถึงสิ่งนี้ได้เลย — ไม่มีคำกริยาสำหรับมัน และเลเวอเรจถูกกำหนดเพียงครั้งเดียวโดยตาราง tier ตอนสร้าง run (<code>fleet_planner.py:117</code>) และไม่เคยถูกทบทวนอีกเลย นั่นคือการตัดสินใจที่ AI ควรเป็นเจ้าของแต่ในปัจจุบันไม่สามารถแม้แต่จะเรียกชื่อมันได้</p>
+
+<p>The <code>source:</code> บรรทัดนี้ก็มีความสำคัญเช่นกัน เมื่อระบุว่า <code>synthetic</code> เอกสารสรุปควรระบุเรื่องนี้อย่างตรงไปตรงมา — <em>“ราคาลิควิเดชันนี้คำนวณจากเลเวอเรจและมาร์จิ้นขั้นต่ำที่สมมติขึ้น ไม่ใช่ราคาที่รายงานจากตลาดซื้อขาย”</em> — เพราะเดสก์ที่บอกเลขจากแบบจำลองเสมือนเป็นข้อเท็จจริง จะทำงานด้วยความแม่นยำที่ไม่ได้มาจริง</p>
+
+<h2 id="rollout">7. การเปิดใช้งาน, แฟล็ก, การตรวจสอบ</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>เฟส</th><th>ส่งมอบ</th><th>แฟล็ก</th><th>เกณฑ์การออก</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>ออราเคิล + <code>health</code>/<code>velocity</code>/<code>ttl</code> + <code>margin</code> ข้อมูลเทเลเมทรี ใช้แหล่งข้อมูลสังเคราะห์เท่านั้น <strong>ไม่มีการเปลี่ยนแปลงพฤติกรรม</strong></td><td><code>LIQ_ORACLE=on</code></td><td>ข้อมูลชุดสุขภาพ (health series) 7 วันสำหรับโพซิชันที่ใช้เลเวอเรจทุกตำแหน่ง ไม่มีช่องว่าง ไม่มีข้อยกเว้นจาก worker</td></tr>
+<tr><td>2</td><td>สรุปการอยู่รอด (survival brief) ส่งเข้า <code>_light_analysis</code> และ <code>analysis_agents</code> (อันที่สองจำเป็นต้องมี — E1 router จะทวีความรุนแรงไปยัง <code>full</code> <em>ด้วยเหตุผลด้านโพซิชัน</em>, และ #125 ได้แก้ไขจุดบอดนี้มาแล้วครั้งหนึ่ง).</td><td><code>LIQ_DESK_BRIEF=on</code></td><td>โต๊ะเทรดอ้างอิงสถานะมาร์จิ้นในรายงาน โดยไม่มีการถดถอยของเวลาแฝงในการตัดสินใจหรืออัตราการ parse-failure</td></tr>
+<tr><td>3</td><td>T3 reflex เท่านั้น พื้นถูกวางไว้ก่อนชั้น AI เพราะพื้นที่ไม่มีเพดานอยู่เหนือมันก็ยังคงเป็นพื้นอยู่ ในขณะที่ชั้น AI ที่ไม่มีพื้นรองรับด้านล่างนั้นไม่ปลอดภัย</td><td><code>LIQ_REFLEX=on</code></td><td>การเล่นซ้ำแสดงว่า T3 จะทำงาน 0 ครั้งบนประวัติที่บันทึกไว้ (ซึ่งควรจะเกิดขึ้นน้อยครั้งโดยธรรมชาติของการออกแบบ) การฉีดค่าเสื่อมสังเคราะห์ทำให้มันทำงานได้อย่างถูกต้อง</td></tr>
+<tr><td>4</td><td>การยกระดับ T1/T2 พร้อมการปลุกนอกช่องสัญญาณ (out-of-band wake) และกำหนดเวลา</td><td><code>LIQ_TIERS=on</code></td><td>≥ 10 เหตุการณ์ T1 จริงที่โต๊ะเทรดจัดการได้โดยไม่มีการตามมาของ T3</td></tr>
+<tr><td>5</td><td>แหล่งโบรกเกอร์จริง: <code>BinanceFuturesBroker.get_margin_state</code> จากนั้นคือ IBKR</td><td>ต่อ adapter</td><td>ค่า <code>liquidationPrice</code> ที่รายงานโดยโบรกเกอร์สอดคล้องกับโมเดลสังเคราะห์ในขอบเขตของเทอม MMR ทุกความไม่สอดคล้องต้องได้รับการอธิบายก่อนที่จะโปรโมต</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>แผนการตรวจสอบ</h3>
+<ol>
+  <li><strong>เชิงพีชคณิต:</strong> ยืนยัน <code>health(cushion price) == 1 − RUN_LIQ_CUSHION_FRAC</code> สำหรับทั้งสองทิศทางและช่วงของ L วิธีนี้จะตรึงตัวแปรสเกลาร์ใหม่ไว้กับพฤติกรรมที่ส่งมอบจริง และจะจับข้อผิดพลาดเรื่องเครื่องหมายได้ทันที</li>
+  <li><strong>การเล่นซ้ำ:</strong> สร้างชุดข้อมูล health ขึ้นใหม่จาก telemetry <code>equity</code> ที่บันทึกไว้ + แถวข้อมูลตำแหน่ง และยืนยันว่าตัวจำแนกระดับชั้นไม่เคยข้าม T2 บนประวัติ หากเกิดขึ้น แสดงว่าแถบ (bands) นั้นผิดพลาดและต้องถูกคำนวณใหม่ก่อนส่งมอบ — ไม่ใช่หลังจากนั้น</li>
+  <li><strong>การฉีด:</strong> สังเคราะห์มาร์กที่ค่อยๆ ลดลงบนสำเนาของโพซิชันจริง และยืนยันว่าแต่ละแบนด์ทำงานครั้งเดียวตามลำดับ โดยฮิสเทรีซิสยังคงยึดอยู่ตลอดช่วงวิก</li>
+  <li><strong>การกลายพันธุ์:</strong> ทำลายข้อยกเว้นทั้งห้าข้อกลับเข้าไป (ตัดเทอม MMR ออก ตัดฟันดิงออก คืนค่า <code>mark_age_ok</code> skip) และยืนยันว่าการทดสอบล้มเหลวสำหรับแต่ละกรณี ตามกฎของบ้าน ชุดทดสอบที่ผ่าน (green) ไม่ได้พิสูจน์อะไรเลยจนกว่าจะฉีดบั๊กกลับเข้าไปใหม่ — และล้าง <code>__pycache__</code> ภายในตัวรันเนอร์ ไม่เช่นนั้นการคืนค่าที่มีความยาวเท่ากันจะนำเข้าสิ่งที่กลายพันธุ์ <code>.pyc</code>.</li>
+  <li><strong>กำหนดเวลา:</strong> จำลอง (stub) ให้ LLM หลับเกินกว่า <code>LIQ_DESK_DEADLINE_S</code> และยืนยันว่า T3 เข้าควบคุมเพียงครั้งเดียวเท่านั้น โดยมีการบันทึกปฏิกิริยาสะท้อนไว้</li>
+</ol>
+
+<h2 id="limits">8. สิ่งที่วิธีนี้ไม่ได้แก้ไข</h2>
+<ul>
+  <li><strong>ช่องว่าง</strong> การเปิดตลาดแบบ limit-down หรือการทรุดตัวของคริปโตในวันหยุดสุดสัปดาห์จะกระโดดข้ามทุกแบนด์ระหว่างสองตัวอย่าง ไม่มีรอบการมอนิเตอร์ใดที่ป้องกันความไม่ต่อเนื่องนี้ได้ — การป้องกันเดียวคือขนาดโพซิชันและเลเวอเรจ <em>ตอนเข้าโพซิชัน</em>, ซึ่งเป็นของ <code>fleet_planner</code>, ไม่ใช่ของดีมอนนี้ ควรระบุให้ชัดเจนว่าดีมอนนี้ไม่ใช่การรับประกัน</li>
+  <li><strong>มาร์จิ้นแบบไขว้ (Cross-margin)</strong> สร้างแบบจำลองเป็นแบบแยกอิสระ (isolated) ถูกต้องสำหรับบัญชีจำลองของเรา แต่ผิดสำหรับบัญชีจริงที่ใช้มาร์จิ้นแบบไขว้ และความคลาดเคลื่อนนี้ไม่มีขอบเขตจำกัด จนกว่า oracle จะสามารถอ่านสถานะระดับบัญชีจากโบรกเกอร์จริงได้ บัญชีจริงที่ใช้มาร์จิ้นแบบไขว้ควรถูกปฏิเสธ ไม่ใช่สร้างแบบจำลองแบบครึ่งๆ กลางๆ</li>
+  <li><strong>วันแรกยังไม่มีโบรกเกอร์</strong> <code>broker_accounts</code> ว่างเปล่าใน prod ดังนั้นเฟส 1–4 จึงทำงานทั้งหมดบนแหล่งข้อมูลสังเคราะห์ ทุกสิ่งที่ daemon รายงานจะถูกติดป้ายกำกับว่า <code>synthetic</code> และป้ายกำกับนั้นมีความสำคัญอย่างแท้จริง</li>
+  <li><strong>ความคิดเห็นที่ล้าสมัย</strong> <code>fleet_planner.py:57–59</code> ควรได้รับการแก้ไขในเฟส 1 ไม่ว่าจะมีปัจจัยอื่นใดก็ตามในที่นี้ ผู้ที่อ่านข้อความนี้ในวันนี้จะสรุปว่าเลเวอเรจอยู่ที่ 1× และการชำระบัญชี (liquidation) ถูกเลื่อนออกไป ซึ่งทั้งสองข้อสรุปนี้ผิด</li>
+</ul>
+
+<div class="kr">
+  <strong>รายละเอียดภาษาเกาหลี</strong>
+  <p><strong>เหตุใดจึงจำเป็น:</strong> โพซิชันในโปรดักชันทั้ง 5 ตำแหน่งมีเลเวอเรจ 2~3 เท่าทั้งหมด แต่การป้องกันการชำระบัญชี <code>health = 0.15</code>  มีเส้นตายตัวเดียวเท่านั้น (พิสูจน์ด้วยการคำนวณ — §2) และละเลยมาร์จิ้นขั้นต่ำ ค่าธรรมเนียมฟันดิง ราคามาร์ก และครอสมาร์จิ้นทั้งหมด และเมื่อฟีดราคาหยุด จะ<em>ข้ามการตรวจสอบ</em>. อะแดปเตอร์โบรกเกอร์สำหรับการซื้อขายจริงไม่มีฟังก์ชันสำหรับอ่านมาร์จิ้นเลย และอะแดปเตอร์ Binance ก็ไม่ใช่สำหรับฟิวเจอร์ส แต่เป็นสำหรับสปอตเท่านั้น และทีม AI เองก็ไม่รู้ด้วยซ้ำว่ากำลังใช้เลเวอเรจอยู่</p>
+  <p><strong>การออกแบบ:</strong>  ① Oracle สถานะมาร์จิ้น (ให้ความสำคัญกับ Broker API ก่อน หากไม่มีจะใช้ค่าสังเคราะห์ที่ปรับด้วย MMR·funding — บอก AI ตรงๆ ว่าเป็นค่าจากฝั่งไหน) ② <code>health</code>และ <em>ความเร็ว</em> — เพียงแค่ค่า threshold ไม่สามารถแยกความแตกต่างระหว่าง “0.22 ที่ค้างมา 6 ชั่วโมง” กับ “0.40 ที่ลดลง 0.15 ต่อนาที” ได้ ③ การยกระดับ 4 ขั้น: T1·T2 ให้ AI เป็นผู้ตัดสินใจ <code>reduce / close / add_margin / hold</code>และเลือกเองโดยตรง ส่วน T3 เป็นเพียงปฏิกิริยาอัตโนมัติของเครื่อง ④ Daemon ทำงานทุก 20 วินาที โดยอ้างอิงจากตาราง Position จึงครอบคลุมโพซิชันกำพร้า (orphan position) ที่ไม่มี run_id ด้วยอีก 2 รายการ.</p>
+  <p><strong>ข้อยกเว้นที่ตรงไปตรงมา:</strong>  T3 เป็นกฎที่ตั้งใจไว้ ที่เลเวอเรจ 3 เท่า health 0.15 เหลือเพียง 5% ของราคาเข้าจนกว่ามาร์จินจะหมดทั้งหมด ในขณะที่การตอบสนองไปกลับของ LLM ใช้เวลาเป็นวินาทีและมีหางที่หนา แต่เมื่อ T3 ทำงาน จะบันทึกข้อเท็จจริงนั้นไว้ในบรีฟฟิ่งครั้งถัดไปเพื่อให้เดสก์เรียนรู้จากความล้มเหลวของตัวเอง หาก T3 ทำงานบ่อยเกินไป นั่นไม่ใช่ปัญหาที่ต้องแก้ค่าคงที่ของ T3 แต่เป็นปัญหาที่ต้องแก้พรอมต์</p>
+  <p><strong>สิ่งที่ป้องกันไม่ได้:</strong> แกป (การกระโดดแบบไม่ต่อเนื่อง) ไม่สามารถป้องกันได้ด้วยรอบเวลาใดๆ — เป็นปัญหาเรื่องขนาด/เลเวอเรจ ณ จุดเข้า และ <code>fleet_planner</code>เป็นเรื่องของ ระบบครอสมาร์จิ้นไม่ควรถูกจำลองแบบครึ่งๆกลางๆ แต่ควรถูกปฏิเสธจนกว่าจะอ่านสถานะระดับบัญชีได้</p>
+</div>
+
+<p class="meta" style="margin-top:40px">เอกสารประกอบ: <a href="17-ai-order-authority.html">Plan 17 — สิทธิ์การควบคุมคำสั่งซื้อขายของ AI</a>ซึ่งแทนที่การกำหนดขนาดคำสั่งซื้อ/ขาย/เคลียร์ที่เขียนโปรแกรมไว้ด้วยเจตนาที่กำหนดโดยเดสก์ ทั้งสองแผนใช้คอมไพเลอร์และ rails ร่วมกัน; กริยาเชิงป้องกันของ Plan 16 เป็นส่วนย่อยของชุดเจตนาของ Plan 17</p>
+
+</div>
+</body>
+</html>

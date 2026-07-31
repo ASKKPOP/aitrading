@@ -103,6 +103,12 @@ SOURCES: list[dict] = [
     {"key": "extension-e1-e2-en", "src": "reports/2026-07-25-extension-e1-e2-analysis.html",
      "kind": "html", "lang": "en", "group": "extensions",
      "title": "E1 Decision Routing & E2 Hot-Issue Daemon — Design Analysis", "owner_only": True},
+    # Plan 16 as built and armed on prod (PRs #127/#130/#132). Owner-gated for
+    # the same reason as `extensions`: file-level implementation detail, env
+    # flags and the live book's positions are operator material.
+    {"key": "liq-defense-en", "src": "plan/16-liquidation-defense-daemon.html",
+     "kind": "html", "lang": "en", "group": "liq-defense",
+     "title": "Plan 16 — Liquidation Defense Daemon", "owner_only": True},
 ]
 
 # ── machine-translated bodies (2026-07-29) ─────────────────────────────────
@@ -119,12 +125,13 @@ SOURCES: list[dict] = [
 # Listed as a table rather than 34 more literal dicts: the source path and kind
 # are a property of the GROUP, and repeating them per language is how the group
 # title and the file it points at drift apart.
-_OWNER_GROUPS = {"ops-keys", "architecture", "extensions"}
+_OWNER_GROUPS = {"ops-keys", "architecture", "extensions", "liq-defense"}
 _TRANSLATED_SOURCES = {
     # group: (path template, kind)
     "ops-keys": ("design/api-keys-reference-{lang}.html", "html"),
     "architecture": ("12-system-architecture-report-{lang}.html", "html"),
     "extensions": ("reports/2026-07-25-extension-e1-e2-analysis-{lang}.html", "html"),
+    "liq-defense": ("plan/16-liquidation-defense-daemon-{lang}.html", "html"),
     "guide": ("design/ai-trading-guide-{lang}.html", "html"),
     "gateway": ("design/live-trading-gateway-guide-{lang}.html", "html"),
     "smart": ("design/smart-trading-features-{lang}.html", "html"),
@@ -157,6 +164,12 @@ _TRANSLATED_TITLES = {
         "th": "E1 การกำหนดเส้นทางการตัดสินใจ & เดมอนประเด็นร้อน E2 — การวิเคราะห์การออกแบบ",
         "vi": "Định tuyến quyết định E1 & daemon sự kiện nóng E2 — phân tích thiết kế",
         "id": "Perutean Keputusan E1 & Daemon Isu Penting E2 — Analisis Desain"},
+    "liq-defense": {
+        "ko": "플랜 16 — 청산 방어 데몬",
+        "ja": "プラン16 — 清算防衛デーモン",
+        "th": "แผน 16 — เดมอนป้องกันการถูกบังคับปิดสถานะ",
+        "vi": "Kế hoạch 16 — Daemon phòng vệ thanh lý",
+        "id": "Rencana 16 — Daemon Pertahanan Likuidasi"},
     "guide": {
         "ja": "AI自動売買パイプライン完全ガイド",
         "th": "คู่มือฉบับสมบูรณ์: ไปป์ไลน์เทรด AI",
@@ -270,6 +283,11 @@ GROUPS = [
      "th": "การวิเคราะห์การออกแบบส่วนขยาย (ผู้ดูแล)",
      "vi": "Phân tích thiết kế mở rộng (quản trị)",
      "id": "Analisis Desain Ekstensi (admin)"},
+    {"group": "liq-defense", "ko": "청산 방어 데몬 (관리자)",
+     "en": "Liquidation Defense (owner)", "ja": "清算防衛デーモン（管理者）",
+     "th": "เดมอนป้องกันการบังคับปิดสถานะ (ผู้ดูแล)",
+     "vi": "Daemon phòng vệ thanh lý (quản trị)",
+     "id": "Daemon Pertahanan Likuidasi (admin)"},
 ]
 
 _MD_SHELL = """<!doctype html>

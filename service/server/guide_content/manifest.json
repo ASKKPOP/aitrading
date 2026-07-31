@@ -125,6 +125,15 @@
       "th": "การวิเคราะห์การออกแบบส่วนขยาย (ผู้ดูแล)",
       "vi": "Phân tích thiết kế mở rộng (quản trị)",
       "id": "Analisis Desain Ekstensi (admin)"
+    },
+    {
+      "group": "liq-defense",
+      "ko": "청산 방어 데몬 (관리자)",
+      "en": "Liquidation Defense (owner)",
+      "ja": "清算防衛デーモン（管理者）",
+      "th": "เดมอนป้องกันการบังคับปิดสถานะ (ผู้ดูแล)",
+      "vi": "Daemon phòng vệ thanh lý (quản trị)",
+      "id": "Daemon Pertahanan Likuidasi (admin)"
     }
   ],
   "docs": [
@@ -312,6 +321,13 @@
       "owner_only": true
     },
     {
+      "key": "liq-defense-en",
+      "lang": "en",
+      "group": "liq-defense",
+      "title": "Plan 16 — Liquidation Defense Daemon",
+      "owner_only": true
+    },
+    {
       "key": "ops-keys-ko",
       "lang": "ko",
       "group": "ops-keys",
@@ -414,6 +430,41 @@
       "lang": "id",
       "group": "extensions",
       "title": "Perutean Keputusan E1 & Daemon Isu Penting E2 — Analisis Desain",
+      "owner_only": true
+    },
+    {
+      "key": "liq-defense-ko",
+      "lang": "ko",
+      "group": "liq-defense",
+      "title": "플랜 16 — 청산 방어 데몬",
+      "owner_only": true
+    },
+    {
+      "key": "liq-defense-ja",
+      "lang": "ja",
+      "group": "liq-defense",
+      "title": "プラン16 — 清算防衛デーモン",
+      "owner_only": true
+    },
+    {
+      "key": "liq-defense-th",
+      "lang": "th",
+      "group": "liq-defense",
+      "title": "แผน 16 — เดมอนป้องกันการถูกบังคับปิดสถานะ",
+      "owner_only": true
+    },
+    {
+      "key": "liq-defense-vi",
+      "lang": "vi",
+      "group": "liq-defense",
+      "title": "Kế hoạch 16 — Daemon phòng vệ thanh lý",
+      "owner_only": true
+    },
+    {
+      "key": "liq-defense-id",
+      "lang": "id",
+      "group": "liq-defense",
+      "title": "Rencana 16 — Daemon Pertahanan Likuidasi",
       "owner_only": true
     },
     {

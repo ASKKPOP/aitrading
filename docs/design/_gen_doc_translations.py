@@ -78,6 +78,7 @@ SOURCES: dict[str, tuple[str, str]] = {
     "hybrid": ("research/parameters/2-hybrid-strategy-en.html", "en"),
     "decisions": ("design/decisions-guide-en.html", "en"),
     "how-it-works": ("design/how-ai-trading-works-en.html", "en"),
+    "liq-defense": ("plan/16-liquidation-defense-daemon.html", "en"),
 }
 
 # Markdown-sourced groups: the build converts these to HTML, so translate the
@@ -100,6 +101,7 @@ OUT_PATTERN: dict[str, str] = {
     "hybrid": "research/parameters/2-hybrid-strategy-{lang}.html",
     "decisions": "design/decisions-guide-{lang}.html",
     "how-it-works": "design/how-ai-trading-works-{lang}.html",
+    "liq-defense": "plan/16-liquidation-defense-daemon-{lang}.html",
     "psych-report": "research/parameters/2-chart-vs-human-psychology-report-{lang}.md",
     "framework": "research/parameters/2-hybrid-strategy-framework-{lang}.md",
     "backtest-report": "research/parameters/3-phase4-backtest-report-{lang}.md",
@@ -117,6 +119,7 @@ EXISTING: dict[str, set[str]] = {
     "hybrid": {"en", "ko"},
     "decisions": {"en", "ko", "ja", "th", "vi"},
     "how-it-works": {"en"},
+    "liq-defense": {"en"},
     "psych-report": {"en", "ko"},
     "framework": {"en", "ko"},
     "backtest-report": {"en", "ko"},
@@ -349,8 +352,11 @@ def translate_html(source: str, lang: str) -> str:
         return source
     print(f"      {len(payload)} text nodes")
     for i, value in zip(idx, _translate_all(payload, lang)):
-        # Re-escape any `&` the model decoded on its way through.
-        parts[i] = _BARE_AMP.sub("&amp;", value)
+        # Re-escape any `&` the model decoded on its way through. Same for
+        # `<`: a text span cannot legally contain one, and a decoded `&lt;`
+        # glues itself to the next tag — `health &lt; 0.60` came back as
+        # `< 0.60</text>`, one invalid markup token, in ja/vi/id.
+        parts[i] = _BARE_AMP.sub("&amp;", value).replace("<", "&lt;")
     out = "".join(parts)
     # `lang` is the one attribute we do rewrite, by targeted substitution on
     # the opening <html> tag alone.
