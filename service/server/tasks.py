@@ -1103,6 +1103,37 @@ async def factor_snapshot_loop():
         await asyncio.sleep(refresh_interval)
 
 
+async def confidence_calibration_loop():
+    """Step 0 of the calibration plan (2026-08-01): score the desk's entry
+    confidence against realized outcomes — Brier raw vs base vs Platt, plus
+    the claimed-vs-delivered curve — once per CALIBRATION_SCORE_INTERVAL
+    (default 24h). Pure measurement: reads the ledger, writes one log line.
+    Every calibration idea after this is judged by whether brier falls."""
+    import confidence_calibration as cc
+
+    refresh_interval = _env_int("CALIBRATION_SCORE_INTERVAL", 86400, minimum=3600)
+
+    await asyncio.sleep(40)
+
+    while True:
+        try:
+            sb = await asyncio.to_thread(cc.get_scoreboard, True)
+            curve = " ".join(
+                f"{b['lo']:.2f}-{b['hi']:.2f}:{b['win_rate'] if b['win_rate'] is not None else '—'}(n={b['n']})"
+                for b in sb.get("curve") or [])
+            print(
+                "[Calibration] "
+                f"n={sb.get('n')} base={sb.get('base_rate')} "
+                f"brier_raw={sb.get('brier_raw')} brier_base={sb.get('brier_base')} "
+                f"brier_platt={sb.get('brier_platt')} platt={sb.get('platt')} "
+                f"curve: {curve}"
+            )
+        except Exception as e:
+            print(f"[Calibration Error] {e}")
+
+        await asyncio.sleep(refresh_interval)
+
+
 async def scanner_loop():
     """Background task for the which-coin scanner (Phase 4).
 
@@ -1834,6 +1865,7 @@ BACKGROUND_TASK_REGISTRY = {
     "scanner": scanner_loop,
     "social_feed": social_feed_loop,
     "factor_snapshots": factor_snapshot_loop,
+    "confidence_calibration": confidence_calibration_loop,
     "watches": watch_loop,
     "symbol_research": _symbol_research_loop,
     "policy_feed": _policy_feed_loop,
@@ -1904,6 +1936,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "social_feed":             "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
+    # confidence calibration scoreboard — Brier vs outcomes, daily (Step 0)
+    "confidence_calibration":  "research",
     # personal watch functions — user metric conditions -> alerts (Plan 06 C3)
     "watches":                 "research",
     # Plan 14 — symbol_research is pinned to settlement so it shares a process
