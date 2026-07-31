@@ -25,7 +25,7 @@ if str(SERVER_DIR) not in sys.path:
 import notifications_i18n as n
 import regions
 from analysis_agents import LANG_NAMES, normalize_lang
-from email_i18n import _VERIFICATION
+from email_i18n import _CHROME, _COPY, verification_email
 from i18n_errors_data import MESSAGES as ERROR_MESSAGES
 
 FRONTEND = SERVER_DIR.parents[0] / "frontend" / "src" / "i18n.ts"
@@ -70,12 +70,30 @@ class EveryCatalogueCoversEveryLanguage(unittest.TestCase):
                     self.assertIn(lang, table)
 
     def test_transactional_email(self):
+        for purpose, variants in _COPY.items():
+            for lang in LANG_NAMES:
+                with self.subTest(purpose=purpose, lang=lang):
+                    self.assertIn(lang, variants)
+                    self.assertTrue(variants[lang]["subject"])
+                    _subject, html = verification_email("654321", lang, purpose)
+                    self.assertIn("654321", html)
         for lang in LANG_NAMES:
-            with self.subTest(lang=lang):
-                self.assertIn(lang, _VERIFICATION)
-                subject, html = _VERIFICATION[lang]
-                self.assertTrue(subject)
-                self.assertIn("{code}", html)
+            with self.subTest(chrome=lang):
+                self.assertIn(lang, _CHROME)
+
+    def test_alert_email_catalogues(self):
+        import alert_email
+        for msg_id, variants in alert_email.EXPLAIN.items():
+            for lang in LANG_NAMES:
+                with self.subTest(msg_id=msg_id, lang=lang):
+                    self.assertIn(lang, variants)
+        for term, variants in alert_email.GLOSSARY.items():
+            for lang in LANG_NAMES:
+                with self.subTest(term=term, lang=lang):
+                    self.assertIn(lang, variants)
+        for lang in LANG_NAMES:
+            with self.subTest(ui=lang):
+                self.assertIn(lang, alert_email._UI)
 
     def test_error_catalogue(self):
         missing = {lang: [k for k, v in ERROR_MESSAGES.items() if lang not in v]

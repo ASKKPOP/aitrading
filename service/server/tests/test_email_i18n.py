@@ -5,18 +5,21 @@ from email_i18n import verification_email
 LANGS = tuple(LANG_NAMES)
 
 
-def test_all_langs_render_code_and_tags():
+def test_all_langs_render_code_and_branding():
     for lang in LANGS:
-        subj, html = verification_email("654321", lang)
-        assert subj.strip(), f"{lang}: empty subject"
-        assert "654321" in html, f"{lang}: code missing"
-        assert "<strong>" in html and "<p>" in html, f"{lang}: tags missing"
-        assert "{code}" not in html, f"{lang}: unformatted placeholder"
+        for purpose in ("signup", "reset"):
+            subj, html = verification_email("654321", lang, purpose)
+            assert subj.strip(), f"{lang}/{purpose}: empty subject"
+            assert "654321" in html, f"{lang}/{purpose}: code missing"
+            assert "Sooppiy" in html, f"{lang}/{purpose}: branding missing"
+            assert "{code}" not in html, f"{lang}/{purpose}: unformatted placeholder"
 
 
 def test_english_wording():
-    subj, html = verification_email("123456", "en")
-    assert "verification code" in subj.lower()
+    signup_subj, _ = verification_email("123456", "en")
+    assert "confirm your email" in signup_subj.lower()
+    reset_subj, _ = verification_email("123456", "en", "reset")
+    assert "password" in reset_subj.lower()
 
 
 def test_non_english_subjects_are_translated():
