@@ -228,6 +228,22 @@ class CacheAndWarmTests(unittest.TestCase):
         self.assertEqual(seen["model"], "claude-sonnet-5")
         self.assertEqual(out, {"A headline": "번역"})
 
+    def test_batch_token_budget_scales_with_content(self):
+        # Paragraph-length summaries must get a budget big enough not to truncate
+        # the tail of the batch (the old flat ~48/line ceiling did — regression).
+        summaries = [f"Summary number {i} " + "detail " * 40 for i in range(4)]
+        seen = {}
+
+        def capture(prompt, **k):
+            seen["max_tokens"] = k.get("max_tokens")
+            return "\n".join(f"{i + 1}. 번역{i}" for i in range(len(summaries)))
+
+        with patch.object(market_i18n, "llm_configured", return_value=True), \
+             patch.object(market_i18n, "generate_text", side_effect=capture):
+            out = market_i18n._llm_translate_batch(summaries, "ko")
+        self.assertGreater(seen["max_tokens"], 1000)   # not the old ~272 ceiling
+        self.assertEqual(len(out), len(summaries))      # every line survives
+
     def test_warm_model_none_caches_nothing(self):
         src = "Another external headline"
         with patch.object(market_i18n, "llm_configured", return_value=True), \

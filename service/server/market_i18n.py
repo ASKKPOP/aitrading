@@ -84,10 +84,10 @@ for _en, _variants in MARKET_PHRASES.items():
 # headline stays warm across refreshes, short enough that the catalogue growing
 # to cover a phrase eventually wins.
 _XLATE_TTL_SECONDS = 7 * 24 * 3600
-# Batch size for the numbered translate prompt. Small chunks keep any single
-# reply well short of the token ceiling so a long headline can't truncate the
-# lines after it (the salvage-partial lesson from the research pipeline).
-_BATCH = 8
+# Batch size for the numbered translate prompt. Small chunks keep a batch of
+# paragraph-length stock summaries well under the token ceiling so the tail
+# lines can't truncate (the salvage-partial lesson from the research pipeline).
+_BATCH = 5
 
 
 def _catalogue(text: str, lang: str) -> Optional[str]:
@@ -188,8 +188,12 @@ def _llm_translate_batch(texts: list[str], lang: str) -> dict[str, str]:
         "the same order. No preamble, no extra lines.\n\n"
         f"{numbered}\n"
     )
-    # ~48 tokens/line covers a headline plus CJK expansion, with headroom.
-    max_tokens = min(2400, 80 + 48 * len(texts))
+    # Budget the reply by INPUT length, not a flat per-line count: a stock
+    # summary is a whole paragraph (~200 output tokens), and a fixed ~48/line
+    # ceiling truncated the tail of a summary batch — the model returned the
+    # first few lines and dropped the rest, so those summaries never localized.
+    # ~1.2x the input character count leaves headroom for CJK expansion.
+    max_tokens = min(4096, 200 + int(sum(len(t) for t in texts) * 1.2))
     # Pin to the dedicated translation provider (Sonnet) so this never routes to
     # the trading gpt-oss. source='rule' with no user/agent meters it to the
     # platform. An empty provider leaves default resolution in place.
