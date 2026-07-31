@@ -148,6 +148,12 @@ _TIER_MODELS: dict[str, dict[str, str]] = {
     "anthropic": {"brief": "claude-sonnet-5", "decision": "claude-opus-4-8",
                   "assistant": "claude-sonnet-5"},
     "openai": {"brief": "gpt-4o-mini", "decision": "gpt-4o", "assistant": "gpt-4o-mini"},
+    # Local (self-hosted Ollama) mirrors the same cheap-brief / strong-decision
+    # split the paid providers use: the 20b head is fine for analyst briefs,
+    # but trade decisions get the 120b head (owner's call, 2026-07-31). Both
+    # are free; the console's per-tier model fields still override this.
+    "local": {"brief": "gpt-oss:20b", "decision": "gpt-oss:120b",
+              "assistant": "gpt-oss:20b"},
 }
 _TIER_ENV = {"brief": "LLM_MODEL_BRIEF", "decision": "LLM_MODEL_DECISION",
              "assistant": "LLM_MODEL_ASSISTANT"}
@@ -243,15 +249,18 @@ def _tier_model(spec: ProviderSpec, tier: str) -> str:
         model = os.getenv(tier_env, "").strip()
         if model:
             return model
+    if spec.name == "local":
+        # The console's generic local-model field is explicit operator config —
+        # it pins every tier and outranks the code-default tier split below.
+        # (Falls back to LOCAL_LLM_MODEL env inside platform_settings.)
+        stored = _admin_llm_settings()["local_model"]
+        if stored:
+            return stored
     tiered = _TIER_MODELS.get(spec.name, {}).get(tier)
     if tiered:
         return tiered
     if spec.name == "openrouter":
         return os.getenv("OPENROUTER_MODEL", "").strip() or spec.default_model
-    if spec.name == "local":
-        # Console value first (falls back to LOCAL_LLM_MODEL env inside
-        # platform_settings), then the registry default.
-        return _admin_llm_settings()["local_model"] or spec.default_model
     return spec.default_model
 
 
