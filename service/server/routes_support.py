@@ -220,7 +220,18 @@ def register_support_routes(app: FastAPI, ctx: RouteContext) -> None:
                     detail = 'no email on account'
                 else:
                     try:
-                        sent = _send_email(email, f'[Sooppiy] {test_title}', test_body)
+                        # The branded shell IS what a real notification looks
+                        # like now — the test must show it. Fail-soft to plain.
+                        test_html = None
+                        try:
+                            from alert_email import wrap_basic_email
+                            test_html = wrap_basic_email(
+                                test_title, test_body,
+                                notifications.user_lang(user['id']))
+                        except Exception:  # noqa: BLE001
+                            test_html = None
+                        sent = _send_email(email, f'[Sooppiy] {test_title}',
+                                           test_body, html=test_html)
                         detail = None if sent else 'provider not configured or rejected'
                     except Exception as exc:  # noqa: BLE001
                         detail = str(exc)

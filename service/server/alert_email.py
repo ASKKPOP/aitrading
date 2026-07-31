@@ -1187,6 +1187,44 @@ def _render_text(ui: dict[str, str], title: str, body: str,
     return "\n".join(lines)
 
 
+def wrap_basic_email(title: str, body: str, lang: str) -> str:
+    """Branded HTML shell around an already-localized title/body — for emails
+    that carry no alert msg_id (support replies, announcements, notification
+    tests, admin ops alerts). Same chrome as the rich alert email, none of the
+    alert-specific sections."""
+    code = normalize_lang(lang)
+    ui = _UI.get(code, _UI['en'])
+    e = _html.escape
+    body_html = e(body).replace("\n", "<br>")
+    return (
+        '<div style="margin:0;padding:24px 12px;background:#f1f5f9;'
+        "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+        "'Noto Sans KR','Noto Sans JP','Noto Sans Thai',Arial,sans-serif;\">"
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td align="center">'
+        '<table role="presentation" cellpadding="0" cellspacing="0" '
+        'style="max-width:600px;width:100%;">'
+        '<tr><td style="background:#0f172a;border-radius:12px 12px 0 0;'
+        'padding:20px 28px;">'
+        '<div style="color:#ffffff;font-size:20px;font-weight:700;'
+        'letter-spacing:0.5px;">Sooppiy</div>'
+        f'<div style="color:#94a3b8;font-size:12px;margin-top:2px;">{e(ui["tagline"])}</div>'
+        '</td></tr>'
+        '<tr><td style="background:#ffffff;padding:24px 28px;">'
+        f'<h2 style="margin:0 0 10px;font-size:17px;color:#0f172a;">{e(title)}</h2>'
+        f'<p style="margin:0;font-size:14px;line-height:1.6;color:#334155;">'
+        f'{body_html}</p></td></tr>'
+        '<tr><td style="background:#0f172a;border-radius:0 0 12px 12px;'
+        'padding:18px 28px;">'
+        f'<a href="{DASHBOARD_URL}" style="color:#38bdf8;font-size:13px;'
+        f'font-weight:600;text-decoration:none;">{e(ui["open_app"])} →</a>'
+        f'<div style="color:#64748b;font-size:11px;line-height:1.6;'
+        f'margin-top:10px;">{e(ui["footer"])}</div>'
+        f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
+        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        '</td></tr></table></td></tr></table></div>')
+
+
 _SECTION_COLORS = {'why': '#0ea5e9', 'next': '#8b5cf6', 'action': '#10b981'}
 
 

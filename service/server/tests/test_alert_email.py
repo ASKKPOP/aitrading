@@ -239,6 +239,41 @@ class SendAlertEmailPathTestCase(DbTestCase):
         self.assertIsNone(captured["html"])
 
 
+class WrapBasicEmailTestCase(DbTestCase):
+    def test_wrapper_contains_brand_title_body_footer(self):
+        from alert_email import DASHBOARD_URL, _UI, wrap_basic_email
+        html = wrap_basic_email("제목 T", "본문 B\n둘째 줄", "ko")
+        for fragment in ("Sooppiy", "제목 T", "본문 B<br>둘째 줄",
+                         DASHBOARD_URL, _UI["ko"]["footer"]):
+            self.assertIn(fragment, html)
+
+    def test_wrapper_escapes_html(self):
+        from alert_email import wrap_basic_email
+        html = wrap_basic_email("<b>t</b>", "a <script> b", "en")
+        self.assertNotIn("<script>", html)
+        self.assertIn("&lt;script&gt;", html)
+
+    def test_notify_external_email_carries_branded_html(self):
+        import alerts
+        import notifications
+        user_id, _agent_id = self._seed_user_agent(lang="ko")
+        captured = {}
+
+        def fake_send(to_email, subject, body, html=None):
+            captured.update(body=body, html=html)
+            return True
+
+        with patch.object(alerts, "_send_email", side_effect=fake_send), \
+             patch.object(alerts, "_send_sms", return_value=False):
+            out = notifications.notify(user_id, "support", "지원 답변",
+                                       "답변 내용입니다.", external=True)
+        self.assertIn("email", out["channels"])
+        self.assertEqual(captured["body"], "답변 내용입니다.")
+        self.assertIsNotNone(captured["html"])
+        self.assertIn("지원 답변", captured["html"])
+        self.assertIn("Sooppiy", captured["html"])
+
+
 class TransactionalEmailTestCase(unittest.TestCase):
     def test_signup_and_reset_are_distinct_branded_emails(self):
         from email_i18n import verification_email
