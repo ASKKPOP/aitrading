@@ -758,6 +758,33 @@ def _ensure_cooldown(member: dict) -> None:
         conn.close()
 
 
+def _cooldown_blocked_symbol(agent_id: int, market: str, symbol: str,
+                             hours: float = 6.0) -> None:
+    """Retire a symbol the builder cannot use for a durable reason (e.g. an
+    open position outside any run blocks it). Without this the replacement
+    loop re-picks the same blocked name every tick forever — fleet 23 spent
+    an hour at 6/10 retrying SOLUSDT (2026-07-31). No source_run_id: the
+    block belongs to no run."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            "SELECT id FROM fleet_symbol_cooldowns WHERE agent_id = ? AND "
+            "market = ? AND symbol = ? AND until_ts > ?",
+            (agent_id, market, symbol, _now_iso()))
+        if cursor.fetchone() is None:
+            until = (_now_dt() + timedelta(hours=hours)).strftime(TS_FMT)
+            cursor.execute(
+                """INSERT INTO fleet_symbol_cooldowns
+                   (agent_id, market, symbol, until_ts, source_run_id)
+                   VALUES (?, ?, ?, ?, NULL)""",
+                (agent_id, market, symbol, until))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _fresh_batch_exists() -> bool:
     conn = get_db_connection()
     try:
@@ -871,10 +898,21 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             break
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
+            reason = str(exc)
+            # A position outside any run blocks this symbol until a human or
+            # the desk closes it — durable, not transient. Cool it down so
+            # the next pass surfaces other names instead of re-picking it
+            # every tick.
+            cooled = "outside any run" in reason
+            if cooled:
+                _cooldown_blocked_symbol(fleet["agent_id"],
+                                         candidate.get("market") or "",
+                                         candidate.get("symbol") or "")
             fp.emit_fleet_event(fleet["id"], "candidate_skipped",
                                 {"slot": slot["slot_index"],
                                  "symbol": candidate.get("symbol"),
-                                 "reason": str(exc)[:300]})
+                                 "cooldown": cooled,
+                                 "reason": reason[:300]})
     if run_id is None:
         if not already_waiting:      # journal the transition, not every tick
             fp.emit_fleet_event(fleet["id"], "slot_waiting",
