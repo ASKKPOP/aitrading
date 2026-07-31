@@ -489,12 +489,27 @@ const kicker: any = { fontFamily: V.mono, fontSize: 11.5, letterSpacing: '0.14em
 const cardS: any = { background: V.card, border: `1px solid ${V.line}`, borderRadius: 14, padding: '16px 18px' }
 const h2S: any = { fontFamily: V.display, fontWeight: 700, fontSize: 'clamp(28px,3.6vw,40px)', letterSpacing: '-0.02em', lineHeight: 1.08, color: V.ink, margin: '10px 0 10px' }
 
+// Last-good dashboard payloads persisted per browser, so a returning visitor
+// sees the previous numbers instantly instead of "collecting…" while the
+// live fetches run. Entries older than a day are treated as absent.
+const readLastGood = (key: string): any => {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const { t, d } = JSON.parse(raw)
+    return Date.now() - t < 24 * 3600_000 ? d : null
+  } catch { return null }
+}
+const writeLastGood = (key: string, d: any) => {
+  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), d })) } catch { /* private mode */ }
+}
+
 export function MarketingPage() {
   const { language, setLanguage } = useLanguage()
-  const [btc, setBtc] = useState<{ price: number; pct: number } | null>(null)
+  const [btc, setBtc] = useState<{ price: number; pct: number } | null>(() => readLastGood('sooppiy:home:btc'))
   // Live signal data for the dashboard preview — no hardcoded sample numbers.
-  const [psych, setPsych] = useState<any | null>(null)
-  const [fusion, setFusion] = useState<any[] | null>(null)
+  const [psych, setPsych] = useState<any | null>(() => readLastGood('sooppiy:home:psych'))
+  const [fusion, setFusion] = useState<any[] | null>(() => readLastGood('sooppiy:home:fusion'))
 
   useEffect(() => {
     let alive = true
@@ -503,7 +518,9 @@ export function MarketingPage() {
         const r = await fetch('/api/markets/crypto/ticker?symbol=BTCUSDT')
         if (!r.ok) return
         const d = await r.json()
-        if (alive) setBtc({ price: Number(d.last_price), pct: Number(d.price_24h_pct) })
+        const v = { price: Number(d.last_price), pct: Number(d.price_24h_pct) }
+        if (!v.price) return
+        if (alive) { setBtc(v); writeLastGood('sooppiy:home:btc', v) }
       } catch { /* transient */ }
     }
     load()
@@ -513,15 +530,20 @@ export function MarketingPage() {
 
   useEffect(() => {
     let alive = true
-    const loadSignals = async () => {
-      try {
-        const [pRes, fRes] = await Promise.all([
-          fetch('/api/market-intel/psych'),
-          fetch('/api/market-intel/fusion?symbols=BTC,ETH,SOL'),
-        ])
-        if (alive && pRes.ok) setPsych(await pRes.json())
-        if (alive && fRes.ok) setFusion((await fRes.json()).signals ?? null)
-      } catch { /* transient */ }
+    const loadSignals = () => {
+      // Independent fetches — psych (a fast DB snapshot read) must not wait
+      // on fusion (a live per-symbol fan-out, slow on a cold cache). An
+      // empty or failed refresh keeps the last-good data on screen.
+      fetch('/api/market-intel/psych').then(async r => {
+        if (!alive || !r.ok) return
+        const d = await r.json()
+        if (d?.available && alive) { setPsych(d); writeLastGood('sooppiy:home:psych', d) }
+      }).catch(() => { /* transient */ })
+      fetch('/api/market-intel/fusion?symbols=BTC,ETH,SOL').then(async r => {
+        if (!alive || !r.ok) return
+        const signals = (await r.json()).signals ?? null
+        if (signals?.length && alive) { setFusion(signals); writeLastGood('sooppiy:home:fusion', signals) }
+      }).catch(() => { /* transient */ })
     }
     loadSignals()
     const iv = setInterval(loadSignals, 60000)
