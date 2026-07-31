@@ -106,7 +106,7 @@ export default function SupportPage({ userToken }: { userToken: string }) {
   }
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
           {tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' })}

@@ -84,7 +84,7 @@ export default function NotificationsPage({ userToken }: { userToken: string }) 
     CATEGORY_META[category] || { icon: '•', color: 'var(--text-muted)', label: { ko: category, en: category, ja: category, th: category, vi: category, id: category } }
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
           {tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo', id: 'Notifikasi' })}
