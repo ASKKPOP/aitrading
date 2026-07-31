@@ -134,6 +134,21 @@ def validate_start_condition(obj: Any) -> dict:
         "direction": obj.get("direction"), "price": obj.get("price")})}
 
 
+def _max_run_loss_ceiling() -> float:
+    """Per-run max_loss ceiling in USD (desk-adopted 2026-07-31, item I2).
+
+    0 = OFF, so this ships dark like every other money-path change — behaviour
+    is byte-identical until a deliberate flip. When >0, a run's max_loss_usd is
+    clamped DOWN to it at validation, so no single run can risk more than the
+    ceiling. Only ever reduces, and only NEW runs (existing rows keep their
+    config). Deliberate flip: RUN_MAX_LOSS_CEILING_USD=1000."""
+    import os
+    try:
+        return max(0.0, float(os.getenv("RUN_MAX_LOSS_CEILING_USD", "0") or 0))
+    except ValueError:
+        return 0.0
+
+
 def validate_stop_conditions(obj: Any) -> dict:
     """Normalize/validate stop conditions. Empty dict is allowed (per-run
     safety rails are layered in separately)."""
@@ -175,6 +190,12 @@ def validate_stop_conditions(obj: Any) -> dict:
             if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
                 raise ValueError(f"{key} must be a positive number")
             out[key] = float(v)
+    # I2 (2026-07-31): clamp max_loss_usd DOWN to the per-run ceiling so no
+    # single run can drive the book the way the $1.3k–$2.6k runs did. Off by
+    # default; only reduces.
+    _ceiling = _max_run_loss_ceiling()
+    if _ceiling > 0 and out.get("max_loss_usd", 0.0) > _ceiling:
+        out["max_loss_usd"] = _ceiling
     mt = obj.get("max_trades")
     if mt is not None:
         if not isinstance(mt, int) or isinstance(mt, bool) or mt <= 0:

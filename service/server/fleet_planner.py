@@ -255,6 +255,10 @@ REPLACE_IMMEDIATE = frozenset({
     # The desk marked its own thesis down for three straight cycles. The slot
     # is fine, the reason for holding is not — replace it at once.
     "thesis_decayed",
+    # The desk read conviction below the floor on a HELD position for N
+    # straight cycles (I5). Same disposition as thesis_decayed: the slot is
+    # good, the thesis the position rode is gone — replace it at once.
+    "stop_event:conviction_collapse",
 })
 REPLACE_DEFERRED = frozenset({"stop_eval_failed", "synthetic_liquidation",
                               "stop_event:liq_cushion"})

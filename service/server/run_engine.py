@@ -399,6 +399,63 @@ def _recent_confidences(agent_id: int, window: int) -> "list[float]":
     return out
 
 
+# ── conviction-collapse exit (2026-07-31, desk-adopted item I5) ─────────────
+# The desk computes a `conviction` scalar every decision but today it only
+# rides in telemetry — nothing acts on it. When a HELD position's own desk has
+# read conviction below the floor for N consecutive cycles, the thesis is gone
+# but the position is still on. Close it before it round-trips. Prod KAITO:
+# peaked +$11, gave it all back, and only exited once conviction had already
+# fallen to 0.275 — this rail would have closed it earlier. Ships dark.
+def _conviction_exit_enabled() -> bool:
+    return (os.getenv("RUN_CONVICTION_EXIT", "false") or "false").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _conviction_exit_floor() -> float:
+    try:
+        return max(0.0, float(os.getenv("RUN_CONVICTION_EXIT_FLOOR", "0.35") or 0.35))
+    except ValueError:
+        return 0.35
+
+
+def _conviction_exit_strikes() -> int:
+    try:
+        return max(1, int(os.getenv("RUN_CONVICTION_EXIT_STRIKES", "2") or 2))
+    except ValueError:
+        return 2
+
+
+def _recent_run_convictions(run_id: int, window: int) -> "list[float]":
+    """The most recent `window` conviction scalars for THIS run, newest first.
+    Missing/None conviction is skipped, so a run must have ACTUALLY read low
+    conviction `window` times — an absent score never triggers the exit."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT payload FROM run_events
+               WHERE run_id = ? AND event_type = 'decision'
+               ORDER BY id DESC LIMIT ?""",
+            (run_id, window))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001 — telemetry read, never blocks a cycle
+        return []
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    out: list[float] = []
+    for row in rows:
+        try:
+            val = json.loads(row["payload"] or "{}").get("conviction")
+        except (ValueError, TypeError):
+            continue
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            out.append(float(val))
+    return out
+
+
 def _conf_percentile_skip(agent_id: int, gate_confidence: "float | None",
                           min_confidence: "float | None") -> "tuple[Optional[str], Optional[float]]":
     """(skip_reason, effective_min_confidence).
@@ -914,6 +971,19 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             _trailing_lock_hit(run.get("peak_pnl_usd"), pnl["total"],
                                conditions.get("trail")):
         return "stop_event:trailing_lock"
+
+    # Conviction-collapse exit (2026-07-31, desk item I5). Ships dark. A held
+    # position whose desk has read conviction below the floor for N straight
+    # cycles is being carried on a thesis the desk no longer believes — close
+    # it. Only reads the DB when armed (hot path); needs `strikes` real reads
+    # below the floor, so a single wobble or an absent score cannot trigger it.
+    if has_position and pnl["mark_age_ok"] and _conviction_exit_enabled():
+        _floor = _conviction_exit_floor()
+        _strikes = _conviction_exit_strikes()
+        if _floor > 0:
+            _convs = _recent_run_convictions(run["id"], _strikes)
+            if len(_convs) >= _strikes and all(c < _floor for c in _convs):
+                return "stop_event:conviction_collapse"
 
     pc = conditions.get("price_cross")
     if pc:
