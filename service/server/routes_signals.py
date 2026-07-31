@@ -165,6 +165,17 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                 detail='Polymarket paper trading does not support short/cover. Use buy/sell of outcome tokens instead.',
             )
 
+        # Isolated-margin leverage (validator clamps to 1..10). Mirrors
+        # execute_paper_trade: MARGIN = notional/L is debited at open, and a
+        # close returns the escrow at the POSITION's own leverage. L=1 is the
+        # prior fully-funded model and stays byte-identical to it.
+        lev = float(data.leverage or 1.0)
+        if market == 'polymarket' and lev > 1.0:
+            raise HTTPException(
+                status_code=400,
+                detail='Polymarket paper trading does not support leverage.',
+            )
+
         try:
             qty = float(data.quantity)
         except Exception:
@@ -292,6 +303,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
             begin_write_transaction(cursor)
             signal_id = _reserve_signal_id(cursor)
 
+            position_lev = 1.0
             if action_lower in ('sell', 'cover'):
                 # None = the unowned book; a manual signal never trades a
                 # position an active run opened (that book is the run's).
@@ -299,6 +311,12 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                                             polymarket_token_id, None)
                 current_qty = float(pos['quantity']) if pos else 0.0
                 position_entry_price = float(pos['entry_price']) if pos and pos['entry_price'] is not None else None
+                # The POSITION's leverage — the source of truth for what was
+                # escrowed at open — not the caller's. 1 for legacy rows.
+                try:
+                    position_lev = max(1.0, float(pos['leverage'])) if pos and pos['leverage'] else 1.0
+                except (KeyError, TypeError, ValueError):
+                    position_lev = 1.0
                 if action_lower == 'sell':
                     if current_qty <= 0:
                         raise HTTPException(status_code=400, detail='No long position to sell')
@@ -311,11 +329,24 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                         raise HTTPException(status_code=400, detail='Insufficient short position quantity')
 
             if action_lower in ['buy', 'short']:
-                total_deduction = trade_value + fee
+                # Only the margin (notional/L) + fee is due on open. At L=1
+                # trade_value/1.0 is the same float as trade_value.
+                margin_due = trade_value / lev
+                total_deduction = margin_due + fee
                 cursor.execute('SELECT cash FROM agents WHERE id = ?', (agent_id,))
                 row = cursor.fetchone()
                 current_cash = row['cash'] if row else 0
                 if current_cash < total_deduction:
+                    # Two literal templates (not one interpolated label): the
+                    # i18n error catalogue matches raise sites by template.
+                    if lev > 1.0:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=(
+                                f'Insufficient cash. Required: ${total_deduction:.2f} '
+                                f'(margin: ${margin_due:.2f} + fee: ${fee:.2f}), Available: ${current_cash:.2f}'
+                            ),
+                        )
                     raise HTTPException(
                         status_code=400,
                         detail=(
@@ -374,16 +405,32 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                 cursor=cursor,
                 token_id=polymarket_token_id,
                 outcome=polymarket_outcome,
+                leverage=lev,
             )
 
             if action_lower in ['buy', 'short']:
-                cursor.execute('UPDATE agents SET cash = cash - ? WHERE id = ?', (trade_value + fee, agent_id))
+                # Open: debit MARGIN = notional/L (shorts escrow the same).
+                cursor.execute('UPDATE agents SET cash = cash - ? WHERE id = ?', (trade_value / lev + fee, agent_id))
             elif action_lower == 'sell':
-                cursor.execute('UPDATE agents SET cash = cash + ? WHERE id = ?', (trade_value - fee, agent_id))
+                if position_lev > 1.0:
+                    # Return escrowed margin (entry×qty/L) + P&L − fee.
+                    entry = float(position_entry_price or 0)
+                    sell_credit = entry * qty / position_lev + (price - entry) * qty - fee
+                else:
+                    # Legacy fully-funded expression kept verbatim: L=1 rows
+                    # must stay byte-identical to the pre-leverage code.
+                    sell_credit = trade_value - fee
+                cursor.execute('UPDATE agents SET cash = cash + ? WHERE id = ?', (sell_credit, agent_id))
             else:
                 if position_entry_price is None:
                     raise HTTPException(status_code=400, detail='Short position entry price is missing')
-                cover_credit = ((2 * position_entry_price) - price) * qty - fee
+                if position_lev > 1.0:
+                    # Return escrowed margin (entry×qty/L) + short P&L − fee.
+                    cover_credit = (position_entry_price * qty / position_lev
+                                    + (position_entry_price - price) * qty - fee)
+                else:
+                    # Legacy collateral expression kept verbatim (see above).
+                    cover_credit = ((2 * position_entry_price) - price) * qty - fee
                 cursor.execute('UPDATE agents SET cash = cash + ? WHERE id = ?', (cover_credit, agent_id))
 
             challenge_trade_count += len(record_challenge_trades_for_signal(

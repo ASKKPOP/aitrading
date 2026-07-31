@@ -60,7 +60,7 @@ export async function fetchPrice(token: string, symbol: string, market = 'crypto
 
 export async function placeOrder(token: string, body: {
   market: string; action: 'buy' | 'sell' | 'short' | 'cover'; symbol: string;
-  price: number; quantity: number; content?: string;
+  price: number; quantity: number; content?: string; leverage?: number;
 }): Promise<{ ok: boolean; message: string; signalId?: number }> {
   try {
     const res = await fetch('/api/signals/realtime', {

@@ -596,7 +596,7 @@ def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str,
     if market == 'polymarket':
         cursor.execute(
             """
-            SELECT quantity, entry_price
+            SELECT quantity, entry_price, leverage
             FROM positions
             WHERE agent_id = ? AND market = ? AND token_id = ?
             """ + scope,
@@ -605,7 +605,7 @@ def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str,
     else:
         cursor.execute(
             """
-            SELECT quantity, entry_price
+            SELECT quantity, entry_price, leverage
             FROM positions
             WHERE agent_id = ? AND symbol = ? AND market = ?
             """ + scope,
