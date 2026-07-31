@@ -110,6 +110,10 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)', id: 'Klik sebuah kartu untuk membuka monitor langsung TRADING itu (grafik · catatan peristiwa · jeda/hentikan)' }),
     memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách', id: 'Anggaran' }),
+    showFinished: tr(language, { ko: '종료된 TRADING 보기', en: 'Show finished TRADINGs',
+      ja: '終了した TRADING を表示', th: 'แสดง TRADING ที่จบแล้ว', vi: 'Hiện TRADING đã kết thúc', id: 'Tampilkan TRADING yang selesai' }),
+    hideFinished: tr(language, { ko: '종료된 TRADING 숨기기', en: 'Hide finished TRADINGs',
+      ja: '終了した TRADING を隠す', th: 'ซ่อน TRADING ที่จบแล้ว', vi: 'Ẩn TRADING đã kết thúc', id: 'Sembunyikan TRADING yang selesai' }),
     tabMonitor: tr(language, { ko: '실시간 모니터', en: 'Live monitor', ja: 'ライブモニター', th: 'มอนิเตอร์สด', vi: 'Theo dõi trực tiếp', id: 'Monitor langsung' }),
     tabActivity: tr(language, { ko: '거래 활동', en: 'Trading activity', ja: '取引アクティビティ', th: 'กิจกรรมเทรด', vi: 'Hoạt động giao dịch', id: 'Aktivitas trading' }),
     actAll: tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' }),
@@ -157,6 +161,12 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [error, setError] = useState<string | null>(null)
   // Monitor box tabs: cards (실시간 모니터) | trading activity (거래 활동)
   const [monTab, setMonTab] = useState<'monitor' | 'activity'>('monitor')
+  // Finished members stay attributed to the fleet forever (list_members
+  // returns every run ever rotated through it, and the index NEEDS them for
+  // P&L), but a rotating sleeve accumulates stopped cards without bound —
+  // fleet 22 showed 6 정지됨 cards around its 2 live ones. Hide them by
+  // default behind the same toggle the TRADING grid uses (PR #42).
+  const [showFinished, setShowFinished] = useState(false)
   const [trades, setTrades] = useState<any[]>([])
   const [actMkt, setActMkt] = useState('all')
 
@@ -235,6 +245,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   useEffect(() => () => {
     Object.values(memberTimers.current).forEach(clearTimeout)
   }, [])
+
+  const finishedCount = members.filter(m => m.status === 'stopped').length
+  const visibleMembers = showFinished ? members : members.filter(m => m.status !== 'stopped')
 
   const launch = async () => {
     setBusy(true); setError(null)
@@ -441,9 +454,18 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
           )}
           {(!monitorOnly || monTab === 'monitor') ? (
           <>
-          {members.length > 0 && onSelectRun && (
+          {visibleMembers.length > 0 && onSelectRun && (
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 6 }}>
               💡 {T.clickHint}
+            </div>
+          )}
+          {finishedCount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+              <button onClick={() => setShowFinished(v => !v)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>
+                {showFinished ? '▾' : '▸'} {showFinished ? T.hideFinished : T.showFinished} ({finishedCount})
+              </button>
             </div>
           )}
           <style>{`
@@ -455,7 +477,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
           `}</style>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))', gap: 8, marginBottom: 12 }}>
-            {members.map(m => (
+            {visibleMembers.map(m => (
               <div key={m.run_id}
                 onClick={onSelectRun ? () => onSelectRun(m.run_id) : undefined}
                 style={{ border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 9, padding: '9px 11px', fontSize: 12.5,
