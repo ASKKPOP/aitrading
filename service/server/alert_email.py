@@ -1232,33 +1232,43 @@ def _render_html(ui: dict[str, str], title: str, body: str,
                 f'{e(exp[key])}</div></div></td></tr>')
     # live run snapshot
     if snap is not None:
+        # Two-cell table rows, not flexbox — Gmail drops justify-content and
+        # the P&L column would collapse against the label.
         rows = []
         if snap["count"] == 0:
             rows.append(
                 '<div style="font-size:13px;color:#64748b;">'
                 f'{e(ui["no_runs"])}</div>')
         else:
+            body_rows = []
             for run in snap["runs"]:
                 pnl = run["pnl"]
                 pnl_color = ('#64748b' if pnl is None
                              else ('#dc2626' if pnl < 0 else '#16a34a'))
-                rows.append(
-                    '<div style="display:flex;justify-content:space-between;'
-                    'font-size:13px;line-height:1.9;color:#334155;">'
-                    f'<span>Run #{run["id"]} {e(str(run["symbol"]))} '
+                body_rows.append(
+                    '<tr>'
+                    '<td style="font-size:13px;line-height:1.9;color:#334155;'
+                    'padding:0;">'
+                    f'Run #{run["id"]} {e(str(run["symbol"]))} '
                     f'<span style="color:#94a3b8;">({e(str(run["market"]))})</span> — '
-                    f'{e(_status_label(run["status"], lang))}</span>'
-                    f'<span style="font-weight:600;color:{pnl_color};">'
-                    f'{e(_pnl_text(pnl))}</span></div>')
+                    f'{e(_status_label(run["status"], lang))}</td>'
+                    f'<td align="right" style="font-size:13px;font-weight:600;'
+                    f'color:{pnl_color};padding:0;white-space:nowrap;">'
+                    f'{e(_pnl_text(pnl))}</td></tr>')
             total = snap["total"]
             total_color = '#dc2626' if total < 0 else '#16a34a'
+            body_rows.append(
+                '<tr>'
+                '<td style="font-size:13px;color:#0f172a;font-weight:700;'
+                'border-top:1px solid #e2e8f0;padding:8px 0 0;">'
+                f'{e(ui["total"])} ({snap["count"]} {e(ui["active_runs"])})</td>'
+                f'<td align="right" style="font-size:13px;font-weight:700;'
+                f'color:{total_color};border-top:1px solid #e2e8f0;'
+                f'padding:8px 0 0;white-space:nowrap;">{e(_pnl_text(total))}</td>'
+                '</tr>')
             rows.append(
-                '<div style="display:flex;justify-content:space-between;'
-                'font-size:13px;border-top:1px solid #e2e8f0;margin-top:6px;'
-                'padding-top:8px;color:#0f172a;font-weight:700;">'
-                f'<span>{e(ui["total"])} ({snap["count"]} {e(ui["active_runs"])})</span>'
-                f'<span style="color:{total_color};">{e(_pnl_text(total))}</span>'
-                '</div>')
+                '<table role="presentation" width="100%" cellpadding="0" '
+                'cellspacing="0">' + "".join(body_rows) + '</table>')
         parts.append(
             '<tr><td style="background:#ffffff;padding:6px 28px 18px;">'
             '<div style="background:#f8fafc;border:1px solid #e2e8f0;'
