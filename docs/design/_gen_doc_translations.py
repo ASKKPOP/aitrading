@@ -77,6 +77,7 @@ SOURCES: dict[str, tuple[str, str]] = {
     "top10": ("research/parameters/2-ai-trading-parameters-en.html", "en"),
     "hybrid": ("research/parameters/2-hybrid-strategy-en.html", "en"),
     "decisions": ("design/decisions-guide-en.html", "en"),
+    "how-it-works": ("design/how-ai-trading-works-en.html", "en"),
 }
 
 # Markdown-sourced groups: the build converts these to HTML, so translate the
@@ -98,6 +99,7 @@ OUT_PATTERN: dict[str, str] = {
     "top10": "research/parameters/2-ai-trading-parameters-{lang}.html",
     "hybrid": "research/parameters/2-hybrid-strategy-{lang}.html",
     "decisions": "design/decisions-guide-{lang}.html",
+    "how-it-works": "design/how-ai-trading-works-{lang}.html",
     "psych-report": "research/parameters/2-chart-vs-human-psychology-report-{lang}.md",
     "framework": "research/parameters/2-hybrid-strategy-framework-{lang}.md",
     "backtest-report": "research/parameters/3-phase4-backtest-report-{lang}.md",
@@ -114,6 +116,7 @@ EXISTING: dict[str, set[str]] = {
     "top10": {"en", "ko"},
     "hybrid": {"en", "ko"},
     "decisions": {"en", "ko", "ja", "th", "vi"},
+    "how-it-works": {"en"},
     "psych-report": {"en", "ko"},
     "framework": {"en", "ko"},
     "backtest-report": {"en", "ko"},

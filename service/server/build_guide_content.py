@@ -72,6 +72,14 @@ SOURCES: list[dict] = [
      "lang": "th", "group": "decisions", "title": "ระบบเทรดอัตโนมัติตัดสินใจอย่างไร"},
     {"key": "decisions-vi", "src": "design/decisions-guide-vi.html", "kind": "html",
      "lang": "vi", "group": "decisions", "title": "Hệ thống giao dịch tự động quyết định thế nào"},
+    # The Plan-17-era pipeline explainer (2026-07-31): the nine-station loop,
+    # who authors what, the Order Intent rendered as an end-user card, a cycle
+    # as a real prompt/answer conversation, and the 10-agent production
+    # verification. Member-facing sibling of docs/plan/18 — same content, the
+    # raw JSON block replaced by the intent-card visualization and the
+    # engineering cross-links removed (they cannot resolve inside the guide).
+    {"key": "how-it-works-en", "src": "design/how-ai-trading-works-en.html", "kind": "html",
+     "lang": "en", "group": "how-it-works", "title": "How AI Automated Trading Works"},
     # Engineering analysis behind the smart-routing + hot-issue features. Kept
     # owner_only alongside architecture: it carries file-level implementation
     # plans, LLM cost modelling and merge sequencing. The member-facing version
@@ -123,6 +131,7 @@ _TRANSLATED_SOURCES = {
     "top10": ("research/parameters/2-ai-trading-parameters-{lang}.html", "html"),
     "hybrid": ("research/parameters/2-hybrid-strategy-{lang}.html", "html"),
     "decisions": ("design/decisions-guide-{lang}.html", "html"),
+    "how-it-works": ("design/how-ai-trading-works-{lang}.html", "html"),
     "psych-report": ("research/parameters/2-chart-vs-human-psychology-report-{lang}.md", "md"),
     "framework": ("research/parameters/2-hybrid-strategy-framework-{lang}.md", "md"),
     "backtest-report": ("research/parameters/3-phase4-backtest-report-{lang}.md", "md"),
@@ -176,6 +185,12 @@ _TRANSLATED_TITLES = {
         "id": "Strategi Hibrida: Grafik × Psikologi"},
     "decisions": {
         "id": "Bagaimana armada Anda memutuskan untuk trading"},
+    "how-it-works": {
+        "ko": "AI 자동매매는 어떻게 작동하는가",
+        "ja": "AI自動売買はどのように動くのか",
+        "th": "การเทรดอัตโนมัติด้วย AI ทำงานอย่างไร",
+        "vi": "Giao dịch tự động bằng AI hoạt động thế nào",
+        "id": "Bagaimana Trading Otomatis AI Bekerja"},
     "psych-report": {
         "ja": "チャート分析 vs 人間心理 — 検証済みの数値",
         "th": "การวิเคราะห์กราฟ vs จิตวิทยามนุษย์ — ตัวเลขที่ตรวจสอบแล้ว",
@@ -244,6 +259,9 @@ GROUPS = [
     {"group": "decisions", "ko": "AI 판단과 주문", "en": "How Decisions Become Orders",
      "ja": "AIの判断と注文", "th": "การตัดสินใจกลายเป็นคำสั่งอย่างไร",
      "vi": "Từ quyết định đến lệnh", "id": "Dari Keputusan ke Order"},
+    {"group": "how-it-works", "ko": "AI 자동매매 작동 원리", "en": "How AI Trading Works",
+     "ja": "AI自動売買のしくみ", "th": "หลักการทำงานของ AI เทรด",
+     "vi": "Cách AI giao dịch vận hành", "id": "Cara Kerja Trading AI"},
     {"group": "market-hours", "ko": "내 시장 개장 시간", "en": "When Your Markets Are Open",
      "ja": "市場の開場時間", "th": "เวลาเปิดตลาดของคุณ",
      "vi": "Giờ mở cửa thị trường", "id": "Jam Buka Pasar Anda"},

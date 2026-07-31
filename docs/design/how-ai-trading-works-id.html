@@ -1,0 +1,465 @@
+<!-- machine-translated from design/how-ai-trading-works-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cara Kerja Perdagangan Otomatis AI — Pipeline Plan-17</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7c4dd6; --machine: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a72e8; --machine: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a72e8; --machine: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .bubble { max-width: 88%; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; border: 1px solid var(--border); }
+  .bubble .who { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; letter-spacing: .02em; }
+  .bubble.platform { align-self: flex-start; background: var(--surface-1); }
+  .bubble.platform .who { color: var(--machine); }
+  .bubble.desk { align-self: flex-end; background: var(--surface-1); border-left: 3px solid var(--ai); }
+  .bubble.desk .who { color: var(--ai); }
+  .bubble.result { align-self: center; background: var(--ok-bg); color: var(--good-txt); font-weight: 600; border: none; font-size: 12.5px; }
+  .bubble.result.refuse { background: var(--crit-bg); color: var(--crit); }
+  .bubble pre { margin: 6px 0 0; padding: 8px 10px; }
+  /* intent card — the end-user rendering of one decision */
+  .intentcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+                padding: 16px 18px; margin: 14px 0; }
+  .ic-head { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--grid); }
+  .ic-title { font-weight: 700; font-size: 14px; }
+  .ic-row { display: grid; grid-template-columns: 92px 220px 1fr; gap: 14px; align-items: start;
+            padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  @media (max-width: 720px) { .ic-row { grid-template-columns: 1fr; gap: 6px; } }
+  .ic-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+          color: var(--ink-2); background: var(--page); border: 1px solid var(--grid);
+          border-radius: 6px; padding: 3px 8px; justify-self: start; }
+  .ic-x { font-size: 13px; color: var(--ink-2); }
+  .ic-x strong { color: var(--ink-1); }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 16px;
+          padding: 3px 11px; border: 1px solid var(--border); }
+  .pill.sel { background: var(--ok-bg); color: var(--good-txt); border-color: var(--s3); }
+  .pill.dim { color: var(--ink-3); }
+  .pill.quote { font-weight: 500; font-style: italic; color: var(--ink-2); }
+  .pill.grow { background: var(--chg-bg); color: var(--s2); }
+  .pill.bank { background: var(--ok-bg); color: var(--good-txt); }
+  .pill.turn, .pill.later { background: var(--crit-bg); color: var(--ai); }
+  :root[data-theme="dark"] .pill.turn, :root[data-theme="dark"] .pill.later,
+  :root:not([data-theme="light"]) .pill.turn, :root:not([data-theme="light"]) .pill.later { color: var(--ai); }
+  .frac { position: relative; display: inline-block; width: 180px; height: 22px;
+          background: var(--page); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+  .frac-fill { position: absolute; inset: 0 auto 0 0; background: var(--ok-bg); border-right: 2px solid var(--s3); }
+  .frac-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 12px; font-weight: 700; color: var(--ink-1); }
+  .ic-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 0 4px; }
+  .ic-menu-lbl { font-size: 12.5px; color: var(--ink-3); }
+  .ic-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .ic-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .ic-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cara Kerja Perdagangan Otomatis AI</h1>
+<p class="sub">Pipeline lengkap seperti yang berjalan di sooppiy.com hari ini, setelah Plan 17 (Order Intent): siapa yang memutuskan apa, dalam urutan apa, melalui gate mana — dengan bukti nyata dari verifikasi produksi 10-agent tanggal 2026-07-31.</p>
+<p class="meta">Diperbarui 2026-07-31. Setiap angka di §6 diukur pada platform produksi, bukan disimulasikan — sepuluh agen uji menjalankan mesin sungguhan dari awal hingga akhir sebelum halaman ini diterbitkan.</p>
+
+<div class="tocbox">
+<ol>
+  <li><a href="#loop">Loop 30 menit, dari awal hingga akhir</a></li>
+  <li><a href="#who">Siapa yang menulis apa — AI vs mesin</a></li>
+  <li><a href="#intent">Order Intent dan pergantian basis</a></li>
+  <li><a href="#rails">Rel asimetris dan compiler</a></li>
+  <li><a href="#chat">Sebuah siklus sebagai percakapan — prompt nyata, jawaban nyata</a></li>
+  <li><a href="#verify">Verifikasi produksi 10-agent</a></li>
+  <li><a href="#today">Apa yang sudah aktif hari ini, dan apa yang masih menunggu bukti</a></li>
+</ol>
+</div>
+
+<h2 id="loop">1. Loop 30 menit, dari awal hingga akhir</h2>
+
+<p>Setiap run otomatisasi adalah satu meja perdagangan AI yang ditugaskan untuk satu simbol pada satu book. Worker membangunkannya sesuai intervalnya sendiri (biasanya 30 menit), dan satu <strong>cycle</strong> mengalir melalui sembilan stasiun. Hanya satu yang merupakan LLM; sisanya adalah mesin deterministik yang memasok data, mengatur rel, dan mencatat jurnal.</p>
+
+<figure>
+<svg viewBox="0 0 1020 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle pipeline">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+  <!-- row 1 -->
+  <rect x="10" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="42">1 · Scheduler</text>
+  <text x="22" y="58">due_run_ids() setiap ~30 detik;</text>
+  <text x="22" y="72">klaim sewa, paling banyak satu kali</text>
+
+  <rect x="230" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="42">2 · Gerbang-awal (0 LLM)</text>
+  <text x="242" y="58">pasar buka? budget masih ada?</text>
+  <text x="242" y="72">master hold? fence utuh?</text>
+
+  <rect x="450" y="20" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="42">3 · Router E1 (0 LLM)</text>
+  <text x="462" y="58">tape tenang → light (1 call)</text>
+  <text x="462" y="72">event/shock/near-stop → penuh (6)</text>
+
+  <rect x="670" y="20" width="180" height="64" rx="8" fill="var(--crit-bg)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="42">4 · Meja perdagangan (LLM)</text>
+  <text x="682" y="58">melihat book, P&amp;L, HWM,</text>
+  <text x="682" y="72">ringkasan margin, tesis, tape</text>
+
+  <!-- row 2 -->
+  <rect x="670" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="682" y="162">5 · JSON Keputusan</text>
+  <text x="682" y="178">aksi + tingkat keyakinan + skor</text>
+  <text x="682" y="192">+ blok order (bracket, ukuran)</text>
+  <text x="682" y="206">+ NIAT ORDER (Rencana 17)</text>
+
+  <rect x="450" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="162">6 · Parse + rails</text>
+  <text x="462" y="178">basis ditentukan oleh intent, tidak pernah</text>
+  <text x="462" y="192">oleh model; opens clamp ↓</text>
+  <text x="462" y="206">exits clamp ↑, close tidak terel</text>
+
+  <rect x="230" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="162">7 · Compiler</text>
+  <text x="242" y="178">total fungsi (intent × book × side)</text>
+  <text x="242" y="192">→ beli | jual | short | tutup</text>
+  <text x="242" y="206">tabel §6, diuji per sel</text>
+
+  <rect x="10" y="140" width="180" height="78" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="22" y="162">8 · Tumpukan gerbang (split)</text>
+  <text x="22" y="178">opens: fee edge, conf rank,</text>
+  <text x="22" y="192">Kelly/vol/exposure, dust, R:R</text>
+  <text x="22" y="206">exits: market open + hanya fee</text>
+
+  <!-- row 3 -->
+  <rect x="10" y="270" width="180" height="64" rx="8" fill="var(--ok-bg)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text class="lab-strong" x="22" y="292">9 · Ledger</text>
+  <text x="22" y="308">execute_paper_trade, biaya,</text>
+  <text x="22" y="322">stop terpasang, fence berkomitmen</text>
+
+  <rect x="230" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="242" y="292">Jurnal</text>
+  <text x="242" y="308">decision · order_intent ·</text>
+  <text x="242" y="322">gate_skip · trade · equity</text>
+
+  <rect x="450" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="462" y="292">Antar siklus</text>
+  <text x="462" y="308">SL/TP watcher 30d · liq daemon</text>
+  <text x="462" y="322">20d (Plan 16, armed) · trail lock</text>
+
+  <rect x="670" y="270" width="180" height="64" rx="8" fill="var(--surface-1)" stroke="var(--axis)"/>
+  <text class="lab-strong" x="682" y="292">Umpan Balik</text>
+  <text x="682" y="308">adaptasi ladder · ringkasan survival ·</text>
+  <text x="682" y="322">dataset shadow pairing</text>
+
+  <!-- arrows row1 -->
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar)">
+    <path d="M190 52 L226 52"/><path d="M410 52 L446 52"/><path d="M630 52 L666 52"/>
+    <path d="M760 84 L760 136"/>
+    <path d="M666 179 L634 179"/><path d="M446 179 L414 179"/><path d="M226 179 L194 179"/>
+    <path d="M100 218 L100 266"/>
+    <path d="M190 302 L226 302"/><path d="M410 302 L446 302"/><path d="M630 302 L666 302"/>
+  </g>
+  <!-- feedback loop back to desk -->
+  <g stroke="var(--s3)" stroke-width="1.5" fill="none" color="var(--s3)" stroke-dasharray="5 4" marker-end="url(#ar)">
+    <path d="M850 270 C 960 230, 960 120, 854 60"/>
+  </g>
+  <text x="905" y="170" style="fill:var(--s3)" transform="rotate(90 905 170)" text-anchor="middle">prompt siklus berikutnya</text>
+
+  <!-- legend -->
+  <rect x="10" y="390" width="1000" height="150" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text class="lab-strong" x="26" y="414">Membaca gambaran</text>
+  <text x="26" y="436">• Kotak ungu adalah satu-satunya tempat model berjalan. Stasiun 3 memutuskan seberapa banyak model yang digunakan: ~9 dari 10 siklus diarahkan ke jalur ringan satu panggilan,</text>
+  <text x="34" y="452">sehingga prompt ringan ITU ADALAH jalur keputusan produksi — itulah sebabnya Plan 17 menempatkan permintaan intent pada kedua jalur, bukan hanya pada yang mahal.</text>
+  <text x="26" y="474">• Stasiun 6–8 hanya bisa memperkecil order pembukaan atau menolaknya, dan hanya bisa memperbesar order penutupan atau meloloskannya.</text>
+  <text x="26" y="496">• Loop putus-putus hijau adalah alasan desk ini membaik: setiap trade, penolakan, pembacaan margin, dan nyaris-gagal yang dihasilkannya diumpankan kembali ke</text>
+  <text x="34" y="512">prompt yang dibaca pada siklus berikutnya. Desk melakukan trading dengan riwayatnya sendiri di depannya.</text>
+</svg>
+<figcaption>Satu siklus. Desk (ungu) menyusun penilaian; setiap stasiun lain bersifat deterministik, tercatat dalam jurnal, dan tidak dapat menambah risiko dengan sendirinya.</figcaption>
+</figure>
+
+<h2 id="who">2. Siapa menyusun apa — AI vs mesin</h2>
+
+<p>Aturan desain seluruh platform: <strong>setiap keputusan trading dimiliki oleh AI sooppiy.com; tugas mesin adalah membatasinya, mengompilasinya, dan mencatatnya</strong>. Plan 17 memindahkan angka-angka penentu terakhir dari kolom mesin ke kolom AI.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Pertanyaan</th><th>Sebelum Plan 17</th><th>Sejak Plan 17</th></tr>
+<tr><td>Arah (bull/bear)</td><td>AI (<code>buy</code>/<code>sell</code>)</td><td>AI (kata kerja + maksud)</td></tr>
+<tr><td>Apakah order ini membuka, menambah, mengunci untung, atau meratakan posisi</td><td><span class="chip crit">tidak ada yang bisa menyatakannya</span> — disimpulkan dari status book</td><td><span class="chip ok">AI menyatakannya</span>: <code>open/add/reduce/close/flip/hold/arm</code></td></tr>
+<tr><td>Ukuran entry</td><td>mesin: <code>max_bet × adapt × conviction</code></td><td>AI <code>size_frac</code> dari max bet, dibatasi hanya untuk mengecilkan</td></tr>
+<tr><td>Ukuran exit</td><td><span class="chip crit">mesin, dari BUDGET</span> — tidak pernah merujuk pada posisi; "bank half" tidak dapat dinyatakan</td><td><span class="chip ok">AI, fraksi dari APA YANG DIPEGANG</span> — perubahan basis</td></tr>
+<tr><td>Bracket (stop/target)</td><td>flat 5%/10% untuk setiap instrumen</td><td>AI per instrumen, dibatasi rel (stop hanya mengetat, R:R floor)</td></tr>
+<tr><td>"Tutup itu"</td><td><span class="chip crit">tidak dapat dijangkau</span> dari lapisan keputusan — hanya rel stop yang bisa meratakan</td><td><span class="chip ok">niat kelas satu</span>, tidak pernah dibatasi rel, tidak pernah ditolak</td></tr>
+<tr><td>Level aksi antar-siklus</td><td>konstanta tetap (empat diukur dan keempatnya ditolak)</td><td>Dipilih AI <code>arm</code> level, mesin hanya patuh (fase 3)</td></tr>
+<tr><td>Pertahanan margin di T3</td><td>—</td><td>refleks mesin, sesuai desain (Plan 16: round-trip LLM pada health 0.15 mempertaruhkan seluruh margin pada latensi jaringan)</td></tr>
+</table>
+</div>
+
+<h2 id="intent">3. Order Intent dan basis switch</h2>
+
+<p>Meja menjawab dengan satu objek JSON. Gagasan utamanya adalah bahwa <code>size_frac</code> berarti sebuah pecahan <em>dari hal yang berbeda</em> tergantung pada apa yang sedang dilakukan meja tersebut — dan platform, bukan model, yang menentukan yang mana:</p>
+
+<figure>
+<svg viewBox="0 0 1020 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Basis switch">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="380" y="20" width="260" height="60" rx="8" fill="var(--surface-1)" stroke="var(--ai)" stroke-width="1.5"/>
+  <text class="lab-strong" x="398" y="44">"reduce, size_frac: 0.5"</text>
+  <text x="398" y="62">kalimat meja</text>
+
+  <g stroke="var(--axis)" stroke-width="1.5" fill="none" color="var(--axis)" marker-end="url(#ar2)">
+    <path d="M450 80 L260 130"/><path d="M570 80 L760 130"/>
+  </g>
+
+  <rect x="60" y="134" width="380" height="120" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text class="lab-strong" x="78" y="158">MENGAMBIL risiko: buka · tambah · sisi baru flip</text>
+  <text x="78" y="180">basis = MAX BET (anggaran)</text>
+  <text x="78" y="198">0.5 = setengah dari uang yang boleh Anda komitmenkan</text>
+  <text x="78" y="220">rel hanya boleh MENGECILKANNYA; setiap gerbang entri berlaku;</text>
+  <text x="78" y="238">penolakan itu aman — perdagangan tersebut cukup tidak terjadi</text>
+
+  <rect x="580" y="134" width="380" height="120" rx="8" fill="var(--ok-bg)" stroke="var(--s3)"/>
+  <text class="lab-strong" x="598" y="158">MENGURANGI risiko: reduce · close · aksi arm berikutnya</text>
+  <text x="598" y="180">basis = POSISI YANG ANDA PEGANG</text>
+  <text x="598" y="198">0.5 = setengah dari yang benar-benar Anda miliki, hingga ke unit</text>
+  <text x="598" y="220">rel hanya boleh MEMPERBESARNYA (dust → $1 min); close adalah</text>
+  <text x="598" y="238">TIDAK PERNAH direl — menolak flatten ADALAH risikonya</text>
+</svg>
+<figcaption>Basis berubah mengikuti intent, dan <code>size_basis</code> dicap oleh platform. Model yang mengatakan "reduce half my budget" sedang bingung, dan kebingungan tersebut dikoreksi, bukannya dituruti.</figcaption>
+</figure>
+
+<h3>Perintah desk, field demi field</h3>
+<div class="intentcard">
+  <div class="ic-head">
+    <span class="ic-title">Satu keputusan, sebagaimana AI desk Anda benar-benar mengirimkannya</span>
+    <span class="chip ok">setiap field dicatat dalam jurnal</span>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">intent</div>
+    <div class="ic-v"><span class="pill sel">reduce</span></div>
+    <div class="ic-x"><strong>Apa yang ingin saya lakukan.</strong> Satu kata dari menu tetap yang berisi tujuh pilihan — di sini, "amankan sebagian posisi saya". Menu tersebut adalah seluruh kosakatanya; desk tidak dapat menciptakan kata kerja kedelapan.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">size_frac</div>
+    <div class="ic-v"><span class="frac"><span class="frac-fill" style="width:50%"></span><span class="frac-lbl">0.5</span></span></div>
+    <div class="ic-x"><strong>Berapa banyak.</strong> Setengah — <em>dari posisi yang dipegangnya</em>karena ini adalah exit. Platform, bukan model, yang menentukan terhadap apa fraksi ini diukur: exit diukur terhadap book, entry diukur terhadap max bet.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">arm</div>
+    <div class="ic-v"><span class="pill dim">tidak ada di siklus ini</span></div>
+    <div class="ic-x"><strong>Sebuah standing trigger, opsional.</strong> "Jika harga naik di atas 27,800, bank setengah tanpa menunggu siklus berikutnya." Desk menentukan levelnya; mesin mengawasinya setiap menit dan hanya patuh. Sebuah arm hanya bisa <em>shed</em> risiko.</div>
+  </div>
+  <div class="ic-row">
+    <div class="ic-k">why</div>
+    <div class="ic-v"><span class="pill quote">"bank setengah saat menguat; thesis masih utuh tapi sudah extended"</span></div>
+    <div class="ic-x"><strong>Satu kalimat, wajib.</strong> Alasannya dicatat di samping order, sehingga Anda selalu bisa membaca kembali <em>why</em> desk Anda melakukan apa yang dilakukannya.</div>
+  </div>
+  <div class="ic-menu">
+    <span class="ic-menu-lbl">Menu lengkapnya:</span>
+    <span class="pill grow">open</span><span class="pill grow">add</span>
+    <span class="pill bank">reduce</span><span class="pill bank">close</span>
+    <span class="pill turn">flip</span>
+    <span class="pill dim">hold</span><span class="pill later">arm</span>
+  </div>
+  <div class="ic-legend">
+    <span class="k"><span class="sw" style="background:var(--s2)"></span> mengambil risiko — dapat dikurangi atau ditolak</span>
+    <span class="k"><span class="sw" style="background:var(--s3)"></span> melepaskan risiko — tidak pernah ditolak</span>
+    <span class="k"><span class="sw" style="background:var(--ai)"></span> membalikkan / bertindak nanti</span>
+  </div>
+</div>
+
+<h2 id="rails">4. Rel-rel asimetris dan compiler</h2>
+
+<p>Buku besar hanya pernah menjalankan empat kata kerja — <code>buy | sell | short | cover</code> — dan itu tidak berubah. Intent <em>compile</em> ke mereka melalui satu fungsi total atas (intent × book × side), sehingga tidak ada keadaan book di mana kalimat desk memiliki makna yang tidak terdefinisi. Ini adalah tabelnya, persis seperti yang dirilis dan persis seperti yang diuji sel demi sel:</p>
+
+<div class="scroll">
+<table>
+<tr><th>Intent</th><th>Buku spot (long)</th><th>Futures, beli</th><th>Futures, jual</th><th>Netral</th></tr>
+<tr><td><code>open/add</code> (bullish)</td><td>beli</td><td>beli</td><td><strong>tutup penuh, lalu beli</strong></td><td>beli</td></tr>
+<tr><td><code>open/add</code> (bearish)</td><td>→ tahan (tanpa short spot)</td><td>jual (mengurangi menuju pandangan)</td><td>short</td><td>short (futures) / tahan (spot)</td></tr>
+<tr><td><code>reduce</code></td><td>jual × frac <em>dari book</em></td><td>jual × frac <em>dari book</em></td><td>tutup × frac <em>dari buku</em></td><td>tanpa aksi, dicatat</td></tr>
+<tr><td><code>close</code></td><td>jual penuh</td><td>jual penuh</td><td>tutup penuh</td><td>tanpa aksi, dicatat</td></tr>
+<tr><td><code>flip</code></td><td>jual penuh (menurun menjadi tutup)</td><td>jual penuh + short</td><td>tutup penuh + beli</td><td>→ buka</td></tr>
+<tr><td><code>hold</code> / <code>arm</code></td><td colspan="4">tidak ada order; <code>arm</code> menyimpan pemicu pilihan AI yang akan dipatuhi oleh pemindaian kontrol 60 detik (fase 3)</td></tr>
+</table>
+</div>
+
+<div class="card ok">
+<p style="margin:0 0 8px"><strong>Mengapa asimetri ini adalah keseluruhan argumen keamanan.</strong></p>
+<p style="margin:0">Otoritas dipindahkan ke AI, tetapi hanya dalam arah di mana kesalahan dapat dibatasi. Ketika desk meminta untuk <em>mengambil</em> risiko, hal itu dapat dibatasi dan ditolak oleh sembilan gerbang. Ketika ia meminta untuk <em>melepaskan</em>risiko, tidak ada apa pun di platform yang diizinkan untuk mengatakan tidak — sebuah reduce dapat diperbesar (sebuah dust slice menjadi minimum $1) tetapi tidak pernah diperkecil, dan sebuah close melewati setiap konfigurasi gate termasuk confidence floor. Bukti produksi di bawah ini: sebuah <code>close</code> pada confidence 0.10 terhadap floor 0.99 meratakan book, dan sebuah intent yang menumpang pada <code>hold</code> verb tetap closed.</p>
+</div>
+
+<h2 id="chat">5. Sebuah cycle sebagai percakapan — prompt nyata, jawaban nyata</h2>
+
+<p>Seperti apa sebenarnya sebuah cycle, menggunakan teks asli dari verifikasi produksi (agent 38 / run 839, ETHUSDT, dan agent 45 / run 846, LINKUSDT). Jawaban desk di bawah ini adalah output model verbatim dari prod, termasuk <code>why</code> kalimatnya sendiri.</p>
+
+<div class="chat">
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (prompt, diringkas)</div>
+    Anda adalah trading desk untuk satu symbol. Tentukan aksi cycle INI.<br>
+    Symbol: ETHUSDT (crypto, spot), harga sekarang 1907.4.<br>
+    Position dalam book run ini: 0 units. Spot book tanpa inventory: 'sell' TIDAK tersedia — pembacaan bearish berarti 'hold'.<br>
+    Kalibrasi confidence dengan jujur… nilai empat komponen… tempatkan bracket instrumen INI…<br>
+    <em>Nyatakan juga order Anda sebagai intent: open|add memperbesar exposure (fraction dari max bet Anda); reduce|close membukukannya (fraction dari APA YANG ANDA PEGANG)… lebih baik arm daripada hold kapan pun Anda bisa menyebutkan level yang akan mengubah pikiran Anda.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (output model nyata, prod cycle 1)</div>
+    <pre><code>{"action":"buy","confidence":0.62,
+ "order_intent":{"intent":"open","size_frac":0.05,
+  "why":"Initiate a 5% position at current market price;
+   stop-loss will automatically close the trade if it falls 2%"}}</code></pre>
+  </div>
+  <div class="bubble result">dicatat: intent=open · basis=budget · dikompilasi → [buy ×0.05 of max bet] · mode=shadow → sizing lama dieksekusi, pairing dicatat</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (cycle berikutnya, sekarang holding)</div>
+    Position dalam book run ini: 0.97598457 units… 'sell' mengurangi/menutup long ini; 'buy' menambahkannya.<br>
+    Open P&amp;L dan high-water mark ditampilkan. <em>reduce|close size_frac adalah fraction dari APA YANG ANDA PEGANG — 0.5 berarti setengah dari position Anda; banking adalah aksi first-class, bukan ketiadaan add.</em>
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (keputusan skenario QA)</div>
+    <pre><code>{"action":"sell","confidence":0.9,
+ "order_intent":{"intent":"reduce","size_frac":0.6}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: compiled → sell ×0.6 OF THE BOOK · terjual 0.58559074 dari 0.97598457 · tersisa 40.0000% · exit berbasis budget seharusnya sudah meratakan posisi ini</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 846, LINKUSDT, holding)</div>
+    Posisi dalam book run ini: 119.6… units… menu intent seperti di atas.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (output model asli, prod)</div>
+    <pre><code>{"action":"hold",
+ "order_intent":{"intent":"hold",
+  "why":"Maintain current exposure until clearer trend emerges."}}</code></pre>
+  </div>
+  <div class="bubble result">dicatat: sebuah hold yang sadar-posisi dengan alasannya sendiri — baris baseline dari shadow dataset</div>
+
+  <div class="bubble platform"><div class="who">PLATFORM → DESK (run 841, XRPUSDT futures, SHORT 1848.258)</div>
+    Futures book, saat ini SHORT… menu intent seperti di atas.
+  </div>
+  <div class="bubble desk"><div class="who">DESK → PLATFORM (QA scenario: kasus sulit)</div>
+    <pre><code>{"action":"hold","confidence":0.10,
+ "order_intent":{"intent":"close"}}</code></pre>
+  </div>
+  <div class="bubble result">APPLY: intent menggantikan hold · compiled → cover full · 1848.258 ditutup, book flat · confidence 0.10 vs floor 0.99 — dan ini TIDAK ditolak, karena rail yang menolak flatten adalah risikonya</div>
+</div>
+
+<h2 id="verify">6. Verifikasi produksi 10-agen — 2026-07-31</h2>
+
+<p>Sepuluh agen didaftarkan di production (<code>qa-oi-*</code>, agents 37–46, runs 838–847, simulated ledger, terhubung ke designated debug user). Lima menjalankan deterministic scenario matrix melalui <strong>real <code>run_cycle</code> terhadap production MySQL</strong>; lima menjalankan <strong>jalur keputusan LLM yang sebenarnya</strong>. Setiap book kemudian diratakan menggunakan fitur itu sendiri (apply-mode <code>close</code>) dan semua sepuluh run berhenti.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">reduce 0.6 — book dipertahankan</div><div class="val">40.0000%</div><div class="d">0.39039383 dari 0.97598457 ETH</div></div>
+  <div class="tile"><div class="lbl">kurangi 0.5 futures long</div><div class="val">50.0000%</div><div class="d">13.47109776 dari 26.94219552 SOL</div></div>
+  <div class="tile"><div class="lbl">kurangi tripwire 0.3</div><div class="val">70.0000%</div><div class="d">dipertahankan — budget sizing seharusnya sudah meratakan</div></div>
+  <div class="tile"><div class="lbl">close pada conf 0.10</div><div class="val">flat</div><div class="d">vs floor 0.99 — bukan ditolak, sesuai desain</div></div>
+</div>
+
+<div class="scroll">
+<table>
+<tr><th>#</th><th>Skenario (run)</th><th>Apa yang ditegaskan</th><th>Diukur di prod</th><th></th></tr>
+<tr><td>1</td><td>Spot, <strong>shadow</strong> (838 BTC)</td><td>Intent dicatat di jurnal di samping keputusan; order tidak tersentuh</td><td>event: <code>reduce 0.6, basis=position, intent_size $600.00 vs machine $1000</code>; sell legacy berukuran entry tetap berjalan tanpa perubahan</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>2</td><td>Spot, <strong>terapkan reduce 0.6</strong> (839 ETH)</td><td>Exit = fraksi dari BOOK</td><td>terjual 0.58559074 dari 0.97598457 → exit/open = <strong>0.600000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>3</td><td>Long futures, <strong>terapkan reduce 0.5</strong> (840 SOL 2×)</td><td>Dikompilasi <code>sell × frac dari book</code></td><td>terjual 13.47109776 dari 26.94219552 → <strong>0.500000</strong></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>4</td><td>Short futures, <strong>terapkan close pada verb HOLD dengan conf 0.10</strong>  (841 XRP 2×)</td><td>Dikompilasi <code>cover full</code>; intent mengesampingkan hold; confidence gates dilewati; close-on-flat adalah no-op yang dicatat</td><td>1848.25801682 tertutup, book flat; close-on-flat sebelumnya dicatat <code>close_on_flat_noop</code></td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>5</td><td>Tripwire + dust + arm (842 DOGE)</td><td>§2 regresi defek; dust rail bertambah; arm dicatat tanpa order</td><td>dipertahankan persis <strong>0.700000</strong> di mana budget sizing menjadi flat; <code>reduce 0.0001</code> railed UP ke 0.001 (dicatat from→to, <code>dust_slice_grown</code>); arm dicatat, tidak ada trade</td><td><span class="chip ok">PASS</span></td></tr>
+<tr><td>6–10</td><td>Jalur LLM langsung (843–847)</td><td>Model asli menerima ask, intent asli diproses end-to-end</td><td>kelima-limanya menghasilkan keputusan nyata; intent verbatim yang tertangkap: <code>open 0.05</code> dengan why-sentence, dua position-aware <code>hold</code>s; 2 dari 5 siklus tidak memberikan verdict yang dapat diuraikan (batasan model kecil yang diketahui)</td><td><span class="chip ok">PASS</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<p style="margin:0 0 8px"><strong>Pass kedua yang independen.</strong> Fraksi-fraksi di atas diturunkan ulang dari ledger <code>signals</code> mentah oleh SQL — bukan dari jalur kode yang sama yang menghasilkannya:</p>
+<pre style="margin:0"><code>run 839: opened 0.97598457,  exited 0.58559074  → exit/open = 0.600000
+run 840: opened 26.94219552, exited 13.47109776 → exit/open = 0.500000
+run 842: opened 14257.40315659, exited 4277.22094698 → exit/open = 0.300000</code></pre>
+<p style="margin:8px 0 0">14 <code>order_intent</code> event yang dijurnal di 8 runs; 0 traceback dan 0 error engine di seluruh platform selama seluruh periode tersebut; runs live milik platform sendiri (825, 836, 837) berjalan tanpa gangguan. Semua book QA rata, semua 10 runs dihentikan, driver dilepas.</p>
+</div>
+
+<div class="card chg">
+<p style="margin:0 0 8px"><strong>Dua temuan jujur dari sesi yang sama.</strong></p>
+<p style="margin:0 0 6px">① <strong>Bracket house-default berada TEPAT PADA batas bawah R:R.</strong> Dua open QA ditolak dengan <code>reward 0.1082 &lt; 2× risiko 0.0541</code> — bracket default 5%/10% menghitung reward = 2.0000× risk dan pembulatan float menentukan di sisi mana dari batas ketat <code>&lt;</code> ia jatuh. Sudah ada sebelumnya (bukan Plan 17), intermiten menurut harga entry, layak diperbaiki dengan satu baris (<code>&lt;</code> → epsilon kecil).</p>
+<p style="margin:0">② <strong>Kepatuhan intent live-model bersifat parsial.</strong> gpt-oss:20b lokal menghasilkan intent yang valid pada kira-kira separuh siklus nyata yang diamati dan sama sekali tidak menghasilkan JSON yang dapat diurai pada sebagian lainnya. Pipeline-nya sudah terbukti; laju pertumbuhan shadow dataset bergantung pada model, bukan pada mekanismenya.</p>
+</div>
+
+<h2 id="today">7. Apa yang sudah live hari ini, dan apa yang masih menunggu bukti</h2>
+
+<div class="scroll">
+<table>
+<tr><th>Kapabilitas</th><th>Status</th><th>Gerbang menuju langkah berikutnya</th></tr>
+<tr><td>Intent ditanya, diurai, di-rail, dikompilasi, dicatat — kedua jalur keputusan</td><td><span class="chip ok">LIVE (shadow)</span></td><td>—</td></tr>
+<tr><td>Dataset reduce berpasangan (<code>intent_size_usd</code> vs <code>machine_size_usd</code>)</td><td><span class="chip ok">mengumpulkan</span></td><td>membutuhkan run yang menahan posisi</td></tr>
+<tr><td>Terapkan: <code>reduce</code>/<code>close</code> eksekusi berbasis posisi</td><td><span class="chip warn">dibangun + terverifikasi prod, menunggu promosi</span></td><td>≥30 observasi reduce berpasangan, shadow ≥ machine pada median banked-per-exit</td></tr>
+<tr><td><code>arm</code> disimpan dan dievaluasi oleh control scan</td><td><span class="chip warn">fase 3</span></td><td>validate_stop_conditions whitelist + evaluator; uji melalui API</td></tr>
+<tr><td><code>flip</code> eksekusi (+ interaksi whipsaw-guard)</td><td><span class="chip warn">fase 4</span></td><td>kohort anggaran kecil live — counterfactual-nya tidak dapat di-shadow</td></tr>
+<tr><td><code>leverage</code> pengurangan (add_margin)</td><td><span class="chip warn">fase 5</span></td><td>bersama dengan Plan 16 fase 4</td></tr>
+<tr><td>Pertahanan likuidasi (Plan 16)</td><td><span class="chip ok">LIVE + AKTIF</span></td><td>Refleks T3 diaktifkan 2026-07-30; jalur eskalasi dibuktikan oleh test, belum pernah dipicu secara live</td></tr>
+</table>
+</div>
+
+
+
+
+</div>
+</body>
+</html>
