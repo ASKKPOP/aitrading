@@ -284,8 +284,8 @@ function fmtPx(v: number | null | undefined): string {
 // and the section's 1s clock re-renders so value / unrealized P&L move every
 // second like a real terminal. Shorts run 1x on full collateral, so the
 // synthetic liquidation sits at exactly 2× entry (run_engine._evaluate_stop).
-function BookBlock({ run, snap, tick, lang }: {
-  run: Run; snap: any; tick: any; lang: Language
+function BookBlock({ run, snap, tick, lang, liqDefense }: {
+  run: Run; snap: any; tick: any; lang: Language; liqDefense?: any
 }) {
   const L = {
     qty: tr(lang, { ko: '수량', en: 'Qty', ja: '数量', th: 'จำนวน', vi: 'KL', id: 'Jml' }),
@@ -302,6 +302,12 @@ function BookBlock({ run, snap, tick, lang }: {
     flat: tr(lang, { ko: '포지션 없음 — 현금 대기', en: 'No position — holding cash',
       ja: 'ポジションなし — 現金待機', th: 'ไม่มีสถานะ — ถือเงินสด', vi: 'Không vị thế — giữ tiền mặt', id: 'Tidak ada posisi — memegang kas' }),
     trades: tr(lang, { ko: '거래', en: 'trades', ja: '取引', th: 'ดีล', vi: 'lệnh', id: 'transaksi' }),
+    defense: tr(lang, { ko: '청산 방어', en: 'Liq. defense', ja: '清算防御', th: 'ป้องกันการล้าง', vi: 'Phòng vệ thanh lý', id: 'Pertahanan likuidasi' }),
+    health: tr(lang, { ko: '건전도', en: 'health', ja: '健全度', th: 'สุขภาพ', vi: 'sức khỏe', id: 'kesehatan' }),
+    toLiq: tr(lang, { ko: '청산까지', en: 'to liq', ja: '清算まで', th: 'ถึงล้าง', vi: 'đến TL', id: 'ke likuidasi' }),
+    noLev: tr(lang, { ko: '레버리지 노출 없음 — 방어 불필요', en: 'no leveraged exposure',
+      ja: 'レバレッジ無し', th: 'ไม่มีเลเวอเรจ', vi: 'không có đòn bẩy', id: 'tanpa leverage' }),
+    reflexArmed: tr(lang, { ko: '반사 무장', en: 'reflex armed', ja: 'リフレックス作動', th: 'พร้อมรีเฟล็กซ์', vi: 'phản xạ sẵn sàng', id: 'refleks siap' }),
   }
   const mono: React.CSSProperties = {
     fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace',
@@ -313,8 +319,37 @@ function BookBlock({ run, snap, tick, lang }: {
   const pos = snap?.position
   const qtySigned = pos ? Number(pos.quantity || 0) : 0
 
+  // Liquidation Defense Daemon (Plan 16) readout — the daemon's latest
+  // margin_state for this run, streamed as `margin` events. Present only for a
+  // leveraged position (spot/cash books cannot be liquidated). tier T0/T1 =
+  // nominal, T2 = defend, T3 = auto-flatten (reflex).
+  const def = liqDefense && typeof liqDefense === 'object' ? liqDefense : null
+  const tier: string | undefined = def?.tier
+  const tierColor = tier === 'T3' ? '#d03b3b' : tier === 'T2' ? '#e08a1e' : '#0ca30c'
+  const dHealth = def?.health != null ? Number(def.health) : null
+  const dTtl = def?.ttl_hours != null ? Number(def.ttl_hours) : null
+  const dLiq = def?.liq_price != null ? Number(def.liq_price) : null
+  const kv = (label: string, val: React.ReactNode) => (
+    <span style={{ whiteSpace: 'nowrap' }}><span style={lbl}>{label} </span>{val}</span>
+  )
+  const defenseItem = (
+    <div style={{ ...mono, fontSize: 10, marginTop: 4, padding: '4px 8px',
+      borderRadius: 7, background: 'var(--bg-secondary,rgba(0,0,0,0.04))',
+      display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+      border: tier === 'T2' || tier === 'T3' ? `1px solid ${tierColor}` : '1px solid transparent' }}>
+      <span style={{ whiteSpace: 'nowrap' }}><span style={lbl}>🛡 </span>{L.defense}</span>
+      {def ? (<>
+        <b style={{ color: tierColor }}>{tier}</b>
+        {dHealth != null && kv(L.health, `${(dHealth * 100).toFixed(1)}%`)}
+        {dTtl != null && kv(L.toLiq, `~${dTtl < 100 ? dTtl.toFixed(1) : '99+'}h`)}
+        {dLiq != null && kv(L.liq, fmtPx(dLiq))}
+      </>) : (<span style={lbl}>· {L.noLev}</span>)}
+    </div>
+  )
+
   if (!pos || Math.abs(qtySigned) < 1e-12) {
     return (
+      <>
       <div style={{ ...mono, fontSize: 10.5, marginTop: 6, padding: '5px 8px',
         borderRadius: 7, background: 'var(--bg-secondary,rgba(0,0,0,0.04))',
         display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -326,6 +361,8 @@ function BookBlock({ run, snap, tick, lang }: {
           <span style={lbl}> · {trades} {L.trades}</span>
         </span>
       </div>
+      {defenseItem}
+      </>
     )
   }
 
@@ -342,6 +379,7 @@ function BookBlock({ run, snap, tick, lang }: {
     <span style={{ whiteSpace: 'nowrap' }}><span style={lbl}>{label} </span>{val}</span>
   )
   return (
+    <>
     <div style={{ ...mono, fontSize: 10.5, marginTop: 6, padding: '6px 8px',
       borderRadius: 7, background: 'var(--bg-secondary,rgba(0,0,0,0.04))',
       display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -378,6 +416,8 @@ function BookBlock({ run, snap, tick, lang }: {
         </span>
       </div>
     </div>
+    {defenseItem}
+    </>
   )
 }
 
@@ -403,6 +443,10 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   const { language } = useLanguage()
   const [runs, setRuns] = useState<Run[]>([])
   const [equityByRun, setEquityByRun] = useState<Record<number, number[]>>({})
+  // Latest liquidation-defense margin_state per run (Plan 16), seeded from the
+  // REST event history and appended from the live stream — same pattern as
+  // equity above. Only leveraged positions emit `margin` events.
+  const [liqByRun, setLiqByRun] = useState<Record<number, any>>({})
   const [selected, setSelected] = useState<number | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   // Id of the draft being re-configured. It opens the same modal as create,
@@ -535,6 +579,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
             .filter((e: any) => e.event_type === 'equity')
             .map((e: any) => Number(e.payload?.total ?? 0))
           setEquityByRun((prev) => ({ ...prev, [run.id]: series.length ? series : [0] }))
+          const margins = (d.events || []).filter((e: any) => e.event_type === 'margin')
+          if (margins.length) {
+            const last = margins[margins.length - 1]
+            setLiqByRun((prev) => ({ ...prev, [run.id]: last.payload }))
+          }
         })
         .catch(() => { /* transient */ })
     }
@@ -552,6 +601,19 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
         const base = prev[rid] || [0]
         const merged = base.concat(eqs.map((e) => Number(e.payload?.total ?? 0)))
         next[rid] = merged.length > 4096 ? merged.slice(merged.length - 4096) : merged
+      }
+      return next
+    })
+  }, [eventsByRun])
+
+  // append live margin events into the per-run liquidation-defense state
+  useEffect(() => {
+    setLiqByRun((prev) => {
+      const next = { ...prev }
+      for (const [ridStr, events] of Object.entries(eventsByRun)) {
+        const margins = events.filter((e) => e.event_type === 'margin')
+        if (!margins.length) continue
+        next[Number(ridStr)] = margins[margins.length - 1].payload
       }
       return next
     })
@@ -928,7 +990,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                 </div>
               )}
               {/* live book — the contract/holding state of this run's tuple */}
-              <BookBlock run={run} snap={snapByRun[run.id]}
+              <BookBlock run={run} snap={snapByRun[run.id]} liqDefense={liqByRun[run.id]}
                 tick={run.status === 'running' ? tick : null} lang={language} />
               <div style={{ marginTop: 8 }}>
                 <RunSparkline values={equityByRun[run.id] || [0]}
