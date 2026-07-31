@@ -136,14 +136,22 @@ class CacheAndWarmTests(unittest.TestCase):
         sched.assert_called_once()
         self.assertEqual(sched.call_args.args[0], [src])  # queued for warming
 
-    def test_warm_disabled_by_default_returns_english_without_scheduling(self):
-        # Default (MARKET_I18N_LLM_WARM unset) must not touch the model at all.
+    def test_warm_enabled_by_default_schedules(self):
+        # Default (unset) is ON now that translation runs on the dedicated model.
         src = "Apple beats on earnings, shares pop"
         with patch.dict(market_i18n.os.environ, {}, clear=False), \
              patch.object(market_i18n, "_schedule_warm") as sched:
             market_i18n.os.environ.pop("MARKET_I18N_LLM_WARM", None)
             out = market_i18n.localize_text(src, "ko")
-        self.assertEqual(out, src)  # English original, no warming scheduled
+        self.assertEqual(out, src)   # English now, localizes on a later request
+        sched.assert_called_once()
+
+    def test_warm_kill_switch_disables_scheduling(self):
+        src = "Apple beats on earnings, shares pop"
+        with patch.dict(market_i18n.os.environ, {"MARKET_I18N_LLM_WARM": "0"}), \
+             patch.object(market_i18n, "_schedule_warm") as sched:
+            out = market_i18n.localize_text(src, "ko")
+        self.assertEqual(out, src)
         sched.assert_not_called()
 
     def test_cache_hit_resolves_inline_without_warming(self):
@@ -183,6 +191,26 @@ class CacheAndWarmTests(unittest.TestCase):
             market_i18n._warm([a, b], "ko")
         self.assertNotIn(market_i18n._cache_key(a, "ko"), self._store)
         self.assertEqual(self._store[market_i18n._cache_key(b, "ko")], "브라보 번역")
+
+    def test_translate_batch_pins_dedicated_provider(self):
+        # Tier C must run on the dedicated translation model (Sonnet), never the
+        # trading gpt-oss — assert the LLM context in force during the call.
+        from llm_client import current_llm_context
+        seen = {}
+
+        def capture(*a, **k):
+            ctx = current_llm_context()
+            seen["provider"] = ctx.provider if ctx else None
+            seen["model"] = ctx.model if ctx else None
+            return "1. 번역"
+
+        with patch.object(market_i18n, "llm_configured", return_value=True), \
+             patch.object(market_i18n, "generate_text", side_effect=capture):
+            out = market_i18n._llm_translate_batch(["A headline"], "ko")
+        self.assertEqual(seen["provider"], market_i18n._XLATE_PROVIDER)
+        self.assertEqual(seen["provider"], "anthropic")
+        self.assertEqual(seen["model"], "claude-sonnet-5")
+        self.assertEqual(out, {"A headline": "번역"})
 
     def test_warm_model_none_caches_nothing(self):
         src = "Another external headline"
