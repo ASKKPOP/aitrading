@@ -224,7 +224,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
   }
 
   return (
-    <div style={{ maxWidth: '760px' }}>
+    <div style={{ maxWidth: '760px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '2px' }}>
         {tr(language, { ko: '설정', en: 'Settings', ja: '設定', th: 'ตั้งค่า', vi: 'Cài đặt', id: 'Pengaturan' })}
       </h1>
