@@ -486,6 +486,38 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
     () => (showStopped ? runs : runs.filter((r) => r.status !== 'stopped')),
     [runs, showStopped])
 
+  // The fleet monitor box above this grid no longer re-lists its members as
+  // cards (owner: "the same trading showed twice"). This grid is the single
+  // per-run surface; fleet members are grouped under a 🚀 divider so the
+  // fleet context survives the merge.
+  type RunDivider = { dividerKey: string; dividerLabel: string }
+  const displayRuns = useMemo<(Run | RunDivider)[]>(() => {
+    const fleets = new Map<number, Run[]>()
+    const solo: Run[] = []
+    for (const r of visibleRuns) {
+      const fid = (r as any).fleet_id
+      if (fid) { const a = fleets.get(fid) || []; a.push(r); fleets.set(fid, a) }
+      else solo.push(r)
+    }
+    if (fleets.size === 0) return visibleRuns
+    const out: (Run | RunDivider)[] = []
+    for (const [fid, rs] of fleets) {
+      out.push({
+        dividerKey: `fleet-${fid}`,
+        dividerLabel: `🚀 #${fid} · ${tr(language, { ko: '자동 편성 멤버', en: 'Fleet members', ja: '自動編成メンバー', th: 'สมาชิกกองยาน', vi: 'Thành viên fleet', id: 'Anggota fleet' })} (${rs.length})`,
+      })
+      out.push(...rs)
+    }
+    if (solo.length > 0) {
+      out.push({
+        dividerKey: 'solo',
+        dividerLabel: tr(language, { ko: '개별 TRADING', en: 'Standalone tradings', ja: '個別トレーディング', th: 'การเทรดเดี่ยว', vi: 'Trading riêng lẻ', id: 'Trading mandiri' }),
+      })
+      out.push(...solo)
+    }
+    return out
+  }, [visibleRuns, language])
+
   const activeRunIds = useMemo(
     () => runs.filter((r) => ['armed', 'running', 'paused', 'stopping'].includes(r.status))
       .map((r) => r.id),
@@ -802,7 +834,17 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       `}</style>
       <div style={{ display: 'grid', gap: 12, marginTop: 18,
         gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-        {visibleRuns.map((run) => {
+        {displayRuns.map((item) => {
+          if ('dividerKey' in item) {
+            return (
+              <div key={item.dividerKey}
+                style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 -4px', fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary,#8a8073)' }}>
+                {item.dividerLabel}
+                <span style={{ flex: 1, height: 1, background: 'var(--border-color,rgba(0,0,0,0.1))' }} />
+              </div>
+            )
+          }
+          const run = item
           const tick = tickByRun[run.id]
           const pnl = Number(run.realized_pnl_usd || 0)
           const pnlColor = pnl > 0 ? '#0ca30c' : pnl < 0 ? '#d03b3b' : 'var(--text-muted,#898781)'

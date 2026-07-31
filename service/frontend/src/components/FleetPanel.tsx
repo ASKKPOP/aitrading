@@ -485,6 +485,45 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             }
             @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
           `}</style>
+          {monitorOnly ? (
+            // Merged with the runs grid below (owner: "the same trading showed
+            // twice") — the monitor box keeps a one-line chip strip for
+            // at-a-glance fleet state; the full per-run cards live ONLY in the
+            // grid, grouped under the 🚀 fleet divider.
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+              {visibleMembers.map(m => {
+                const total = m.total_pnl_usd ?? m.realized_pnl_usd
+                const t = total != null ? Number(total) : null
+                return (
+                  <button key={m.run_id}
+                    onClick={onSelectRun ? () => onSelectRun(m.run_id) : undefined}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px',
+                      borderRadius: 16, border: '1px solid var(--border-color,rgba(0,0,0,0.12))',
+                      background: 'transparent', color: 'inherit', fontSize: 12.5,
+                      cursor: onSelectRun ? 'pointer' : undefined, position: 'relative' }}>
+                    {memberFlash[m.run_id] != null && (
+                      <span key={memberFlash[m.run_id]} style={{ position: 'absolute', inset: 0, borderRadius: 16,
+                        pointerEvents: 'none', ['--sp-flash-color' as any]: 'rgba(12,163,12,0.85)',
+                        animation: 'sp-run-flash 2s ease-out forwards' }} />
+                    )}
+                    {m.status === 'running' && (
+                      <span style={{ width: 6, height: 6, borderRadius: 6, background: '#0ca30c',
+                        display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
+                    )}
+                    <b>{m.symbol}</b>
+                    {m.thesis?.direction === 'short' && (
+                      <span style={{ fontSize: 10.5, color: 'var(--text-muted,#a89f92)' }}>short</span>
+                    )}
+                    {t != null && (
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: t >= 0 ? '#2e9e6b' : '#f0663f' }}>
+                        {t >= 0 ? '+' : ''}{t.toFixed(2)}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))', gap: 8, marginBottom: 12 }}>
             {visibleMembers.map(m => (
               <div key={m.run_id}
@@ -536,6 +575,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               </div>
             ))}
           </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             {fleet.status === 'active' && <button style={{ ...chip(false), opacity: busy ? 0.55 : 1 }} onClick={() => act('pause')} disabled={busy}>{spin('pause')}{T.pause}</button>}
             {fleet.status === 'paused' && <button style={{ ...chip(false), opacity: busy ? 0.55 : 1 }} onClick={() => act('resume')} disabled={busy}>{spin('resume')}{T.resume}</button>}
