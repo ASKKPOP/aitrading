@@ -105,7 +105,7 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(missing, [], f"catalogue drifted from market_intel: {missing}")
 
 
-class LlmCacheTests(unittest.TestCase):
+class CacheAndWarmTests(unittest.TestCase):
     def setUp(self):
         # Isolate the KV cache to a per-test dict so cache state can't leak.
         self._store: dict = {}
@@ -117,52 +117,82 @@ class LlmCacheTests(unittest.TestCase):
         self._set.start()
         self.addCleanup(self._get.stop)
         self.addCleanup(self._set.stop)
+        # Clear the process-global in-flight set between tests.
+        with market_i18n._inflight_lock:
+            market_i18n._inflight.clear()
 
-    def test_external_text_translated_and_cached(self):
+    def _seed(self, src, lang, value):
+        self._store[market_i18n._cache_key(src, lang)] = value
+
+    # ── the request path never calls the model ─────────────────────────────
+    def test_cold_miss_returns_english_and_schedules_warm(self):
         src = "Apple beats on earnings, shares pop"
-        with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text", return_value="1. 애플 실적 호조, 주가 급등") as gen:
+        with patch.object(market_i18n, "generate_text") as gen, \
+             patch.object(market_i18n, "_schedule_warm") as sched:
+            out = market_i18n.localize_text(src, "ko")
+        gen.assert_not_called()          # no model call on the request path
+        self.assertEqual(out, src)        # English now
+        sched.assert_called_once()
+        self.assertEqual(sched.call_args.args[0], [src])  # queued for warming
+
+    def test_cache_hit_resolves_inline_without_warming(self):
+        src = "Apple beats on earnings, shares pop"
+        self._seed(src, "ko", "애플 실적 호조, 주가 급등")
+        with patch.object(market_i18n, "_schedule_warm") as sched:
             out = market_i18n.localize_text(src, "ko")
         self.assertEqual(out, "애플 실적 호조, 주가 급등")
-        gen.assert_called_once()
-        # Second call is served from cache — no second model call.
+        sched.assert_not_called()
+
+    def test_catalogue_resolves_inline_only_miss_is_warmed(self):
+        with patch.object(market_i18n, "_schedule_warm") as sched:
+            out = market_i18n.localize_texts([_KNOWN, "External only text"], "ko")
+        self.assertEqual(out[0], MARKET_PHRASES[_KNOWN]["ko"])  # catalogue inline
+        self.assertEqual(out[1], "External only text")           # English now
+        sched.assert_called_once()
+        self.assertEqual(sched.call_args.args[0], ["External only text"])
+
+    # ── the background warmer populates the cache ──────────────────────────
+    def test_warm_translates_and_caches(self):
+        src = "Apple beats on earnings, shares pop"
         with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text") as gen2:
-            out2 = market_i18n.localize_text(src, "ko")
-        gen2.assert_not_called()
-        self.assertEqual(out2, "애플 실적 호조, 주가 급등")
+             patch.object(market_i18n, "generate_text", return_value="1. 애플 실적 호조, 주가 급등"):
+            market_i18n._warm([src], "ko")
+        self.assertEqual(self._store[market_i18n._cache_key(src, "ko")], "애플 실적 호조, 주가 급등")
+        # After warming, the request path serves it inline.
+        with patch.object(market_i18n, "_schedule_warm") as sched:
+            self.assertEqual(market_i18n.localize_text(src, "ko"), "애플 실적 호조, 주가 급등")
+        sched.assert_not_called()
 
-    def test_unconfigured_llm_falls_back_to_english(self):
-        src = "Some fresh external headline"
-        with patch.object(market_i18n, "llm_configured", return_value=False), \
-             patch.object(market_i18n, "generate_text") as gen:
-            out = market_i18n.localize_text(src, "ko")
-        gen.assert_not_called()
-        self.assertEqual(out, src)
+    def test_warm_salvages_dropped_line(self):
+        a, b = "Headline alpha", "Headline bravo"
+        # Model returns only line 2 — line 1 stays uncached (English), line 2 caches.
+        with patch.object(market_i18n, "llm_configured", return_value=True), \
+             patch.object(market_i18n, "generate_text", return_value="2. 브라보 번역"):
+            market_i18n._warm([a, b], "ko")
+        self.assertNotIn(market_i18n._cache_key(a, "ko"), self._store)
+        self.assertEqual(self._store[market_i18n._cache_key(b, "ko")], "브라보 번역")
 
-    def test_model_returning_none_falls_back_to_english(self):
+    def test_warm_model_none_caches_nothing(self):
         src = "Another external headline"
         with patch.object(market_i18n, "llm_configured", return_value=True), \
              patch.object(market_i18n, "generate_text", return_value=None):
-            out = market_i18n.localize_text(src, "ko")
-        self.assertEqual(out, src)
+            market_i18n._warm([src], "ko")
+        self.assertEqual(self._store, {})
 
-    def test_dropped_line_salvages_the_rest(self):
-        a, b = "Headline alpha", "Headline bravo"
-        # Model returns only line 2 — line 1 must stay English, line 2 wins.
-        with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text", return_value="2. 브라보 번역"):
-            out = market_i18n.localize_texts([a, b], "ko")
-        self.assertEqual(out, [a, "브라보 번역"])
+    # ── scheduling: dedup + no-model guards ────────────────────────────────
+    def test_schedule_warm_skips_unconfigured_model(self):
+        with patch.object(market_i18n, "llm_configured", return_value=False), \
+             patch.object(market_i18n.threading, "Thread") as thread:
+            market_i18n._schedule_warm(["x"], "ko")
+        thread.assert_not_called()
+        self.assertEqual(market_i18n._inflight, set())  # marks released
 
-    def test_catalogue_wins_over_llm_in_mixed_batch(self):
+    def test_schedule_warm_dedupes_inflight(self):
         with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text", return_value="1. 외부 번역") as gen:
-            out = market_i18n.localize_texts([_KNOWN, "External only text"], "ko")
-        # Only the non-catalogue string is sent to the model.
-        gen.assert_called_once()
-        self.assertEqual(out[0], MARKET_PHRASES[_KNOWN]["ko"])
-        self.assertEqual(out[1], "외부 번역")
+             patch.object(market_i18n.threading, "Thread") as thread:
+            market_i18n._schedule_warm(["x"], "ko")   # claims + spawns
+            market_i18n._schedule_warm(["x"], "ko")   # already in flight → skip
+        self.assertEqual(thread.call_count, 1)
 
 
 class PayloadLocalizerTests(unittest.TestCase):
@@ -172,7 +202,12 @@ class PayloadLocalizerTests(unittest.TestCase):
         patch.object(
             market_i18n, "set_json",
             lambda k, v, ttl_seconds=None: self._store.__setitem__(k, v) or True).start()
+        # Warming is async in production; keep it out of these wiring tests.
+        patch.object(market_i18n, "_schedule_warm", lambda texts, lang: None).start()
         self.addCleanup(patch.stopall)
+
+    def _seed(self, src, lang, value):
+        self._store[market_i18n._cache_key(src, lang)] = value
 
     def test_news_payload_deep_copied_and_localized(self):
         payload = {
@@ -185,11 +220,12 @@ class PayloadLocalizerTests(unittest.TestCase):
                            "overall_sentiment_label": "Bullish"}],
             }],
         }
+        # External strings resolve inline only when already cached (warmed).
+        self._seed("Fresh headline here", "ko", "헤드라인")
+        self._seed("Item title", "ko", "항목 제목")
+        # "Item summary body" deliberately left uncached — stays English (deferred).
         original = copy.deepcopy(payload)
-        with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text",
-                          return_value="1. 헤드라인\n2. 항목 제목\n3. 항목 요약"):
-            out = market_i18n.localize_news_payload(payload, "ko")
+        out = market_i18n.localize_news_payload(payload, "ko")
         # Original (the shared cache object) is untouched.
         self.assertEqual(payload, original)
         cat = out["categories"][0]
@@ -200,10 +236,10 @@ class PayloadLocalizerTests(unittest.TestCase):
         # Enum + external sentiment label are left raw for the frontend to map.
         self.assertEqual(cat["summary"]["activity_level"], "active")
         self.assertEqual(cat["items"][0]["overall_sentiment_label"], "Bullish")
-        # External free text went through the model.
+        # Cached external free text is localized; uncached stays English.
         self.assertEqual(cat["summary"]["top_headline"], "헤드라인")
         self.assertEqual(cat["items"][0]["title"], "항목 제목")
-        self.assertEqual(cat["items"][0]["summary"], "항목 요약")
+        self.assertEqual(cat["items"][0]["summary"], "Item summary body")
 
     def test_macro_payload_localizes_via_catalogue_only(self):
         payload = {
@@ -237,17 +273,18 @@ class PayloadLocalizerTests(unittest.TestCase):
             "summary": "AAPL keeps a constructive setup.",
             "analysis": {"bullish_factors": ["Monthly trend remains constructive."]},
         }]}
-        with patch.object(market_i18n, "llm_configured", return_value=True), \
-             patch.object(market_i18n, "generate_text", return_value="1. 애플 우호적 구도 유지"):
-            out = market_i18n.localize_featured_stocks_payload(payload, "ko")
+        # The free-text summary is external — it localizes once warmed into cache.
+        self._seed("AAPL keeps a constructive setup.", "ko", "애플 우호적 구도 유지")
+        out = market_i18n.localize_featured_stocks_payload(payload, "ko")
         item = out["items"][0]
+        # Factors are fixed vocabulary → catalogue, inline.
         self.assertEqual(item["bullish_factors"][0],
                          MARKET_PHRASES["Short-term momentum is positive."]["ko"])
         self.assertEqual(item["risk_factors"][0],
                          MARKET_PHRASES["Price is approaching the recent resistance zone."]["ko"])
         self.assertEqual(item["analysis"]["bullish_factors"][0],
                          MARKET_PHRASES["Monthly trend remains constructive."]["ko"])
-        self.assertEqual(item["summary"], "애플 우호적 구도 유지")  # LLM path
+        self.assertEqual(item["summary"], "애플 우호적 구도 유지")  # cached (warmed)
         # Enums untouched.
         self.assertEqual(item["signal"], "buy")
         self.assertEqual(item["trend_status"], "bullish")
