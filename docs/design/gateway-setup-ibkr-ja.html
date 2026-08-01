@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>必要なもの</h2>
+  <h2><span class="no">1</span>始める前に</h2>
+  <ul><li>Interactive Brokersで本人確認(KYC)を完了した口座。未認証の口座はキーを作成できても取引には使えません。</li><li>Interactive Brokersでの二段階認証(2FA)の有効化。どの取引所もキー作成時に2FAコード(多くはメール確認も)を求めます。</li><li>このページを取引所サイトと並べて開き、シークレットを作成してから接続するまでの間、安全に保管できる場所を用意してください。</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>利用可能な地域と現地規制</h2>
+  <div class="card"><p>各国の現地法人を通じて多くの国で営業する規制対象ブローカーです。取引できる商品や適用される証拠金規制は、口座が属する法人(IBKR LLC、IBKR UK、IBKR Japanなど)によって異なります。</p></div>
+  <div class="note">どの取引所を利用できるかを決めるのはSooppiyではありません — 取引所のKYCと、お住まいの地域の法律です。ここでゲートウェイを接続しても取引所が利用可能になるわけではなく、法的に利用できない取引所はキー自体を拒否します。これは事実の案内であり法的助言ではありません。アクセス規定は変わるため、居住国について取引所の規約で直接ご確認ください。</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>必要なもの</h2>
   <div class="card"><ul><li>Client Portal Gateway URL</li><li>IBKR口座番号</li></ul></div>
   <div class="note red">必ず取引(TRADE)権限のみを付与してください — 出金権限は絶対に不可。取引所がIP許可リストを提供する場合は使用してください。少額から始めましょう。キーはSooppiyのサーバーで暗号化(AES-GCM)保存され、保存後は再表示されません。</div>
+  <div class="note"><b>IP制限 — 今は設定しないでください。</b> 一部の取引所ではキーを特定のサーバーアドレスに固定できます。Sooppiyはホスティングリージョンを移転する予定で、旧アドレスに固定したキーは移転した瞬間に動作しなくなります。ただし控えておく点として、BinanceとBybitはIP制限のないキーの取引権限を90日後に無効化するため、その時点でキーを見直す予定を立てておいてください。</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Interactive Brokersで資格情報を作成する</h2>
+  <h2><span class="no">4</span>Interactive Brokersで資格情報を作成する</h2>
   <ol><li>IBKRはAPIキー/シークレットを使いません — <b>Client Portal Gateway</b>のセッションそのものが資格情報です。IBKRサイトからダウンロードし、Sooppiyサーバーから到達できる場所で実行してください。</li><li>ブラウザでゲートウェイ(通常 https://localhost:5000)にIBKRアカウントでログインします。</li><li>口座番号(例: <code>DU1234567</code>)を控えてください。<b>D</b>で始まる口座はペーパー口座で、シャドーはペーパー口座でのみ動作します。</li></ol>
+  <div class="note red"><b>シークレット</b>は作成時に<b>一度だけ</b>表示されます。コピーせず画面を閉じると復元できず、キーを削除して作り直す必要があります。Sooppiyも保存後は再表示しません。</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>アカウントページで接続する</h2>
+  <h2><span class="no">5</span>どの値をどこに入力するか</h2>
+  <table>
+    <tr><th>Interactive Brokersでの名称</th><th>Sooppiyの入力欄</th></tr>
+    <tr><td>The address you log in to the gateway at</td><td><b>Client Portal Gateway URL</b></td></tr><tr><td>Account id shown in the Client Portal</td><td><b>IBKR口座番号</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>アカウントページで接続する</h2>
   <ol><li><b>アカウント</b> → <b>取引ゲートウェイ</b>を開きます。</li><li>地域を選び(おすすめ順になるだけで、全ブローカー接続可能)、<b>Interactive Brokers</b>を選択します。</li><li>手順2で作成した資格情報を貼り付けます。</li><li>実取引規約を読んで同意します — シャドーのみ使う場合でも必要です。</li><li><b>ゲートウェイを接続</b>を押します。アカウントは<b>paper</b>モードで始まり、まだInteractive Brokersには何も送信されません。</li><li>アカウントカードで<b>shadow</b>(まず推奨)か<b>live</b>に切り替えます。</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>各モードでInteractive Brokersに起きること</h2>
+  <h2><span class="no">7</span>接続した後</h2>
+  <ol><li><b>接続済みゲートウェイ</b>に状態表示とともに現れます。キー方式の取引所は「認証情報を保存済み」と表示されますが、点検すべきセッションがないという意味で正常です。</li><li>自動売買ルールが自動的に切り替わることはありません。ルールの口座種別をshadowまたはliveにして初めてInteractive Brokersに注文が届きます。</li><li>まず<b>shadow</b>で数日運用し、<b>ドリフト記録</b>パネルを確認してからliveを検討してください。</li><li>いつでもInteractive Brokers側でキーを削除すればアクセスは即座に遮断されます — Sooppiyの設定に関係なくすべての注文が止まります。</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>各モードでInteractive Brokersに起きること</h2>
   <table>
     <tr><th>モード</th><th>動作</th></tr>
     <tr><td>paper</td><td><b>paper / シミュレーター</b> — すべての取引はSooppiy内部台帳のみに記録されます。Interactive Brokersには接続しません。</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>取引所の注意点</h2>
+  <h2><span class="no">9</span>取引所の注意点</h2>
   <ul><li>ゲートウェイのセッションは数分のアイドルで失効します。Sooppiyが自動で維持し、切れたら通知します — アカウントページのバナーで現在の状態を確認できます。</li><li>「自己署名証明書」は自分のマシンやプライベートネットワーク上のゲートウェイにのみ使用してください。</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>トラブルシューティング</h2>
+  <h2><span class="no">10</span>トラブルシューティング</h2>
   <table>
     <tr><th>症状</th><th>意味 / 対処</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>“gateway session is not authenticated”</td><td>ブラウザでClient Portal Gatewayを開き再ログインしてください — キープアライブで復旧できないほどセッションが失効しています。</td></tr>

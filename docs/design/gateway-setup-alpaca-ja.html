@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>必要なもの</h2>
+  <h2><span class="no">1</span>始める前に</h2>
+  <ul><li>Alpacaで本人確認(KYC)を完了した口座。未認証の口座はキーを作成できても取引には使えません。</li><li>Alpacaでの二段階認証(2FA)の有効化。どの取引所もキー作成時に2FAコード(多くはメール確認も)を求めます。</li><li>このページを取引所サイトと並べて開き、シークレットを作成してから接続するまでの間、安全に保管できる場所を用意してください。</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>利用可能な地域と現地規制</h2>
+  <div class="card"><p>米国上場株を扱う<b>米国のブローカーディーラー</b>です。米国居住者と対応国リストの海外居住者が対象なので、口座開設前にリストを確認してください。米国市場の時間とパターンデイトレード規制は、Sooppiyではなくご自身の口座に適用されます。</p></div>
+  <div class="note">どの取引所を利用できるかを決めるのはSooppiyではありません — 取引所のKYCと、お住まいの地域の法律です。ここでゲートウェイを接続しても取引所が利用可能になるわけではなく、法的に利用できない取引所はキー自体を拒否します。これは事実の案内であり法的助言ではありません。アクセス規定は変わるため、居住国について取引所の規約で直接ご確認ください。</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>必要なもの</h2>
   <div class="card"><ul><li>APIキー</li><li>APIシークレット</li></ul></div>
   <div class="note red">必ず取引(TRADE)権限のみを付与してください — 出金権限は絶対に不可。取引所がIP許可リストを提供する場合は使用してください。少額から始めましょう。キーはSooppiyのサーバーで暗号化(AES-GCM)保存され、保存後は再表示されません。</div>
+  <div class="note"><b>IP制限 — 今は設定しないでください。</b> 一部の取引所ではキーを特定のサーバーアドレスに固定できます。Sooppiyはホスティングリージョンを移転する予定で、旧アドレスに固定したキーは移転した瞬間に動作しなくなります。ただし控えておく点として、BinanceとBybitはIP制限のないキーの取引権限を90日後に無効化するため、その時点でキーを見直す予定を立てておいてください。</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Alpacaで資格情報を作成する</h2>
+  <h2><span class="no">4</span>Alpacaで資格情報を作成する</h2>
   <ol><li>app.alpaca.marketsにログインし、接続したい口座のダッシュボードを開きます。</li><li>右パネルの<b>API Keys</b>でキーペアを生成します。シークレットは一度だけ表示されます。</li><li>ペーパーとライブは口座もキーも別です: ペーパーキーはペーパー環境のみ、ライブキーはライブのみで動作します。シャドー運用中はペーパーキー、実取引時にライブキーへ差し替えてください。</li></ol>
+  <div class="note red"><b>シークレット</b>は作成時に<b>一度だけ</b>表示されます。コピーせず画面を閉じると復元できず、キーを削除して作り直す必要があります。Sooppiyも保存後は再表示しません。</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>アカウントページで接続する</h2>
+  <h2><span class="no">5</span>どの値をどこに入力するか</h2>
+  <table>
+    <tr><th>Alpacaでの名称</th><th>Sooppiyの入力欄</th></tr>
+    <tr><td>API Key ID</td><td><b>APIキー</b></td></tr><tr><td>Secret Key</td><td><b>APIシークレット</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>アカウントページで接続する</h2>
   <ol><li><b>アカウント</b> → <b>取引ゲートウェイ</b>を開きます。</li><li>地域を選び(おすすめ順になるだけで、全ブローカー接続可能)、<b>Alpaca</b>を選択します。</li><li>手順2で作成した資格情報を貼り付けます。</li><li>実取引規約を読んで同意します — シャドーのみ使う場合でも必要です。</li><li><b>ゲートウェイを接続</b>を押します。アカウントは<b>paper</b>モードで始まり、まだAlpacaには何も送信されません。</li><li>アカウントカードで<b>shadow</b>(まず推奨)か<b>live</b>に切り替えます。</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>各モードでAlpacaに起きること</h2>
+  <h2><span class="no">7</span>接続した後</h2>
+  <ol><li><b>接続済みゲートウェイ</b>に状態表示とともに現れます。キー方式の取引所は「認証情報を保存済み」と表示されますが、点検すべきセッションがないという意味で正常です。</li><li>自動売買ルールが自動的に切り替わることはありません。ルールの口座種別をshadowまたはliveにして初めてAlpacaに注文が届きます。</li><li>まず<b>shadow</b>で数日運用し、<b>ドリフト記録</b>パネルを確認してからliveを検討してください。</li><li>いつでもAlpaca側でキーを削除すればアクセスは即座に遮断されます — Sooppiyの設定に関係なくすべての注文が止まります。</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>各モードでAlpacaに起きること</h2>
   <table>
     <tr><th>モード</th><th>動作</th></tr>
     <tr><td>paper</td><td><b>paper / シミュレーター</b> — すべての取引はSooppiy内部台帳のみに記録されます。Alpacaには接続しません。</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>取引所の注意点</h2>
+  <h2><span class="no">9</span>取引所の注意点</h2>
   <ul><li>米国株・ETF専用で、注文は米国市場の時間帯に処理されます。</li><li>Alpacaの利用可否は居住国によります — 口座開設時にAlpacaの対応国リストを確認してください。</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>トラブルシューティング</h2>
+  <h2><span class="no">10</span>トラブルシューティング</h2>
   <table>
     <tr><th>症状</th><th>意味 / 対処</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>すべての注文で “forbidden” / 403</td><td>ほぼ確実にペーパーキーをライブ環境で(またはその逆で)使っています。モードに合ったキーペアか確認してください。</td></tr>

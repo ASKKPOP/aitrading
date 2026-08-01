@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>Bạn cần gì</h2>
+  <h2><span class="no">1</span>Trước khi bắt đầu</h2>
+  <ul><li>Một tài khoản tại Upbit đã hoàn tất xác minh danh tính (KYC) — tài khoản chưa xác minh vẫn tạo được khóa nhưng không giao dịch được.</li><li>Bật xác thực hai lớp (2FA) tại Upbit. Mọi sàn đều yêu cầu mã 2FA (và thường cả xác nhận email) ngay khi bạn tạo khóa.</li><li>Mở trang này cạnh website của sàn, và chuẩn bị nơi an toàn để giữ bí mật trong khoảnh khắc giữa lúc tạo và lúc kết nối.</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>Khả dụng và quy định địa phương</h2>
+  <div class="card"><p>Là sàn của <b>Hàn Quốc</b> hoạt động theo đăng ký VASP của Hàn Quốc. Trên thực tế cần cư trú tại Hàn Quốc, số điện thoại Hàn Quốc và tài khoản K-Bank liên kết để nạp KRW. Người không cư trú thường không hoàn tất được xác minh.</p></div>
+  <div class="note">Sooppiy không quyết định ai được dùng sàn nào — KYC của sàn và luật nơi bạn sống quyết định. Kết nối cổng ở đây không làm cho một sàn trở nên khả dụng với bạn, và sàn bạn không được phép dùng sẽ tự từ chối khóa của bạn. Đây là thông tin thực tế, không phải tư vấn pháp lý; quy định truy cập thay đổi, hãy xác nhận trên trang điều khoản của sàn cho quốc gia bạn.</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>Bạn cần gì</h2>
   <div class="card"><ul><li>Khóa API</li><li>Bí mật API</li></ul></div>
   <div class="note red">Chỉ cấp quyền GIAO DỊCH (TRADE) — tuyệt đối không cấp quyền rút tiền. Dùng danh sách IP cho phép nếu sàn hỗ trợ. Bắt đầu với số tiền nhỏ. Khóa của bạn được mã hóa (AES-GCM) trên máy chủ Sooppiy và không hiển thị lại sau khi lưu.</div>
+  <div class="note"><b>Giới hạn IP — tạm thời đừng đặt.</b> Một số sàn cho phép khóa chỉ dùng được từ một địa chỉ máy chủ. Sooppiy sắp chuyển khu vực máy chủ, và khóa ghim theo địa chỉ cũ sẽ ngừng hoạt động ngay khi chuyển. Một điều nên ghi lại: Binance và Bybit vô hiệu hóa quyền giao dịch của khóa không giới hạn IP sau 90 ngày, hãy lên lịch xem lại khóa khi đó.</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Tạo thông tin xác thực tại Upbit</h2>
+  <h2><span class="no">4</span>Tạo thông tin xác thực tại Upbit</h2>
   <ol><li>Đăng nhập upbit.com → <b>마이페이지</b> (Trang của tôi) → <b>Open API 관리</b> (Quản lý Open API).</li><li>Tích <b>자산조회</b> (tra cứu tài sản) và <b>주문</b> (đặt lệnh). Tuyệt đối không tích quyền rút tiền.</li><li>Upbit BẮT BUỘC đăng ký địa chỉ IP của máy chủ gọi trên khóa — thiếu nó mọi yêu cầu đều bị từ chối.</li></ol>
+  <div class="note red"><b>Bí mật (secret)</b> chỉ hiển thị <b>đúng một lần</b> khi tạo. Nếu đóng màn hình mà chưa sao chép thì không thể khôi phục — bạn phải xóa khóa và tạo lại. Sooppiy cũng không hiển thị lại sau khi lưu.</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>Kết nối trên trang Tài khoản</h2>
+  <h2><span class="no">5</span>Giá trị nào điền vào đâu</h2>
+  <table>
+    <tr><th>Tên gọi tại Upbit</th><th>Ô nhập của Sooppiy</th></tr>
+    <tr><td>Access key (액세스 키)</td><td><b>Khóa API</b></td></tr><tr><td>Secret key (시크릿 키)</td><td><b>Bí mật API</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>Kết nối trên trang Tài khoản</h2>
   <ol><li>Mở <b>Tài khoản</b> → <b>Cổng giao dịch</b>.</li><li>Chọn khu vực (chỉ ảnh hưởng thứ tự đề xuất — mọi broker vẫn kết nối được) rồi chọn <b>Upbit</b>.</li><li>Dán thông tin xác thực từ bước 2.</li><li>Đọc và chấp nhận điều khoản giao dịch thật — bắt buộc kể cả khi chỉ định dùng shadow.</li><li>Nhấn <b>Kết nối cổng</b>. Tài khoản bắt đầu ở chế độ <b>paper</b>: chưa có gì gửi tới Upbit.</li><li>Chuyển tài khoản sang <b>shadow</b> (nên làm trước) hoặc <b>live</b> trên thẻ tài khoản.</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>Mỗi chế độ làm gì với Upbit</h2>
+  <h2><span class="no">7</span>Sau khi kết nối</h2>
+  <ol><li>Cổng xuất hiện trong <b>Cổng đã kết nối</b> kèm dòng trạng thái. Sàn dùng cặp khóa hiển thị “đã lưu thông tin xác thực” — bình thường, vì không có phiên nào để kiểm tra.</li><li>Quy tắc tự động không tự chuyển. Lệnh chỉ tới Upbit khi bạn đặt loại tài khoản của quy tắc đó là shadow hoặc live.</li><li>Hãy bắt đầu ở <b>shadow</b> và xem bảng <b>Bản ghi lệch</b> vài ngày trước khi cân nhắc live.</li><li>Thu hồi quyền bất cứ lúc nào bằng cách xóa khóa tại Upbit — mọi lệnh dừng ngay, bất kể Sooppiy đang đặt gì.</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>Mỗi chế độ làm gì với Upbit</h2>
   <table>
     <tr><th>Chế độ</th><th>Điều gì xảy ra</th></tr>
     <tr><td>paper</td><td><b>paper / mô phỏng</b> — mọi giao dịch chỉ nằm trong sổ nội bộ của Sooppiy. Không hề liên hệ Upbit.</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>Lưu ý riêng của sàn</h2>
+  <h2><span class="no">9</span>Lưu ý riêng của sàn</h2>
   <ul><li>Thị trường KRW (dạng KRW-BTC). Sổ của bạn vẫn tính bằng USD: Sooppiy ghi lại tỷ giá KRW/USD dùng cho từng lệnh (lấy từ chính sổ KRW-USDT của Upbit lúc đó) — và từ chối giao dịch nếu không có tỷ giá.</li><li>Lệnh <b>mua</b> market trên Upbit đặt theo số tiền KRW (không phải số coin); lượng coin thực mua được đọc lại từ sàn và mọi chênh lệch hiện trong bản ghi lệch.</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>Xử lý sự cố</h2>
+  <h2><span class="no">10</span>Xử lý sự cố</h2>
   <table>
     <tr><th>Triệu chứng</th><th>Ý nghĩa / cách xử lý</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>Khóa đã lưu không còn đọc được (ví dụ sau khi xoay khóa máy chủ). Kết nối lại broker với thông tin mới.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Chấp nhận điều khoản của broker này trên trang Tài khoản — sự đồng ý được ghi riêng từng broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>Sàn vẫn đang kiểm chứng shadow. Shadow dùng được ngay; giao dịch thật mở khi kiểm chứng xong.</td></tr><tr><td>“no_authorization_ip” / mọi yêu cầu 401</td><td>IP máy chủ gọi chưa đăng ký trên khóa. Thêm trong phần quản lý Open API của Upbit.</td></tr><tr><td>“could not fetch KRW/USD rate — order refused”</td><td>Không lấy được giá KRW-USDT của Upbit lúc đó. Lệnh bị từ chối thay vì đoán; sẽ thử lại ở chu kỳ kế tiếp của quy tắc.</td></tr>

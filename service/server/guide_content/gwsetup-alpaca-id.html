@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>Yang Anda butuhkan</h2>
+  <h2><span class="no">1</span>Sebelum mulai</h2>
+  <ul><li>Akun di Alpaca yang sudah menyelesaikan verifikasi identitas (KYC) — akun belum terverifikasi bisa membuat kunci tetapi tidak bisa dipakai bertransaksi.</li><li>Autentikasi dua faktor (2FA) aktif di Alpaca. Semua bursa meminta kode 2FA (dan sering konfirmasi email) tepat saat Anda membuat kunci.</li><li>Halaman ini terbuka di samping situs bursa, dan tempat aman untuk menyimpan secret selama sesaat antara pembuatan dan penyambungan.</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>Ketersediaan dan aturan setempat</h2>
+  <div class="card"><p>Sebuah <b>broker-dealer AS</b> untuk saham yang tercatat di AS. Melayani penduduk AS dan daftar negara yang didukung — periksa daftar itu sebelum membuka akun. Jam pasar AS dan aturan pattern day trading berlaku pada akun Anda, bukan pada Sooppiy.</p></div>
+  <div class="note">Sooppiy tidak menentukan siapa yang boleh memakai suatu bursa — KYC bursa dan hukum setempat Andalah yang menentukan. Menghubungkan gateway di sini tidak membuat sebuah bursa tersedia bagi Anda, dan bursa yang tidak boleh Anda pakai secara hukum akan menolak kunci Anda. Ini panduan faktual, bukan nasihat hukum; aturan akses berubah, jadi konfirmasikan di halaman ketentuan bursa untuk negara Anda.</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>Yang Anda butuhkan</h2>
   <div class="card"><ul><li>Kunci API</li><li>Secret API</li></ul></div>
   <div class="note red">Berikan izin TRADE saja — jangan pernah izin penarikan dana. Gunakan daftar IP yang diizinkan bila bursa menyediakannya. Mulailah dari nominal kecil. Kunci Anda dienkripsi (AES-GCM) di server Sooppiy dan tidak akan ditampilkan lagi setelah disimpan.</div>
+  <div class="note"><b>Pembatasan IP — biarkan kosong untuk saat ini.</b> Sebagian bursa memungkinkan mengunci kunci ke satu alamat server. Sooppiy sedang memindahkan wilayah hosting, dan kunci yang dipatok ke alamat lama akan berhenti bekerja begitu perpindahan terjadi. Satu hal untuk dicatat: Binance dan Bybit menonaktifkan izin trading kunci tanpa pembatasan IP setelah 90 hari, jadi rencanakan meninjau kunci saat itu.</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Buat kredensial di Alpaca</h2>
+  <h2><span class="no">4</span>Buat kredensial di Alpaca</h2>
   <ol><li>Masuk ke app.alpaca.markets dan buka dasbor akun yang ingin dihubungkan.</li><li>Buat pasangan kunci dari <b>API Keys</b> di panel kanan. Secret hanya ditampilkan sekali.</li><li>Paper dan live adalah akun terpisah dengan kunci terpisah: kunci paper hanya bekerja di lingkungan paper, kunci live hanya di live. Pakai kunci paper selama shadow; ganti ke kunci live saat akan live.</li></ol>
+  <div class="note red"><b>Secret</b> hanya ditampilkan <b>satu kali</b> saat pembuatan. Jika Anda menutup layar tanpa menyalinnya, nilainya tidak bisa dipulihkan — Anda harus menghapus kunci dan membuat yang baru. Sooppiy juga tidak menampilkannya lagi setelah disimpan.</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>Hubungkan di halaman Akun</h2>
+  <h2><span class="no">5</span>Nilai mana masuk ke mana</h2>
+  <table>
+    <tr><th>Namanya di Alpaca</th><th>Kolom isian Sooppiy</th></tr>
+    <tr><td>API Key ID</td><td><b>Kunci API</b></td></tr><tr><td>Secret Key</td><td><b>Secret API</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>Hubungkan di halaman Akun</h2>
   <ol><li>Buka <b>Akun</b> → <b>Gateway trading</b>.</li><li>Pilih wilayah (hanya memengaruhi urutan rekomendasi — semua broker tetap bisa dihubungkan) lalu pilih <b>Alpaca</b>.</li><li>Tempel kredensial dari langkah 2.</li><li>Baca dan terima ketentuan trading live — wajib meskipun Anda hanya berencana memakai shadow.</li><li>Tekan <b>Hubungkan gateway</b>. Akun dimulai dalam mode <b>paper</b>: belum ada yang dikirim ke Alpaca.</li><li>Alihkan akun ke <b>shadow</b> (disarankan lebih dulu) atau <b>live</b> pada kartu akun.</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>Apa yang dilakukan tiap mode dengan Alpaca</h2>
+  <h2><span class="no">7</span>Setelah terhubung</h2>
+  <ol><li>Gateway muncul di <b>Gateway terhubung</b> dengan baris status. Bursa berbasis pasangan kunci menampilkan “kredensial tersimpan” — normal, karena tidak ada sesi untuk diperiksa.</li><li>Aturan otomatisasi tidak berpindah sendiri. Order baru sampai ke Alpaca bila Anda menyetel jenis akun aturan tersebut ke shadow atau live.</li><li>Mulailah di <b>shadow</b> dan baca panel <b>Catatan penyimpangan</b> selama beberapa hari sebelum mempertimbangkan live.</li><li>Cabut akses kapan saja dengan menghapus kunci di Alpaca — semua order langsung berhenti, apa pun setelan Sooppiy.</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>Apa yang dilakukan tiap mode dengan Alpaca</h2>
   <table>
     <tr><th>Mode</th><th>Yang terjadi</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — semua transaksi hanya tercatat di buku internal Sooppiy. Alpaca tidak pernah dihubungi.</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>Catatan khusus bursa</h2>
+  <h2><span class="no">9</span>Catatan khusus bursa</h2>
   <ul><li>Saham dan ETF AS; order diproses selama sesi pasar AS.</li><li>Ketersediaan Alpaca bergantung negara domisili — cek daftar negara yang didukung Alpaca saat membuka akun.</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>Pemecahan masalah</h2>
+  <h2><span class="no">10</span>Pemecahan masalah</h2>
   <table>
     <tr><th>Gejala</th><th>Arti / tindakan</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>Kunci tersimpan tidak lagi bisa dibaca (mis. setelah rotasi kunci server). Hubungkan ulang broker dengan kredensial baru.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Terima ketentuan untuk broker ini di halaman Akun — persetujuan dicatat per broker.</td></tr><tr><td>“forbidden” / 403 pada semua order</td><td>Hampir selalu kunci paper dipakai di lingkungan live atau sebaliknya. Cocokkan pasangan kunci dengan mode yang dipakai.</td></tr>
