@@ -48,6 +48,10 @@ export function AccountsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  // Per-broker connection guide (guide_content gwsetup-* docs), shown inline.
+  const [guideHtml, setGuideHtml] = useState<string | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [guideBusy, setGuideBusy] = useState(false)
 
   const authHeaders: any = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
@@ -67,6 +71,9 @@ export function AccountsPage() {
     regionLabel: tr(language, { ko: '지역', en: 'Region', ja: '地域', th: 'ภูมิภาค', vi: 'Khu vực', id: 'Wilayah' }),
     regionGlobal: tr(language, { ko: '글로벌', en: 'Global', ja: 'グローバル', th: 'ทั่วโลก', vi: 'Toàn cầu', id: 'Global' }),
     recommended: tr(language, { ko: '이 지역 추천', en: 'Recommended for this region', ja: 'この地域のおすすめ', th: 'แนะนำสำหรับภูมิภาคนี้', vi: 'Được đề xuất cho khu vực này', id: 'Direkomendasikan untuk wilayah ini' }),
+    guideBtn: tr(language, { ko: '연결 가이드 보기', en: 'Connection guide', ja: '接続ガイドを見る', th: 'ดูคู่มือการเชื่อมต่อ', vi: 'Xem hướng dẫn kết nối', id: 'Lihat panduan koneksi' }),
+    guideErr: tr(language, { ko: '가이드를 불러오지 못했습니다.', en: 'Could not load the guide.', ja: 'ガイドを読み込めませんでした。', th: 'โหลดคู่มือไม่สำเร็จ', vi: 'Không tải được hướng dẫn.', id: 'Tidak dapat memuat panduan.' }),
+    guideClose: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
     otherBrokers: tr(language, { ko: '기타 브로커', en: 'Other brokers', ja: 'その他のブローカー', th: 'โบรกเกอร์อื่น', vi: 'Broker khác', id: 'Broker lainnya' }),
     connect: tr(language, { ko: '게이트웨이 연결', en: 'Connect gateway', ja: 'ゲートウェイを接続', th: 'เชื่อมต่อเกตเวย์', vi: 'Kết nối cổng', id: 'Hubungkan gateway' }),
     warn: tr(language, { ko: '실거래는 실제 자금을 위험에 노출시킵니다. 반드시 거래(TRADE) 권한으로 한정된 API 키만 사용하세요 — 출금 권한은 절대 안 됩니다. 소액으로 시작하세요.', en: 'Real trading risks real money. Only ever use API keys scoped to TRADE — never withdrawal. Start small.', ja: '実取引は実際の資金を失う恐れがあります。出金権限のないキーのみ使用してください。', th: 'การเทรดจริงมีความเสี่ยงต่อเงินจริง ใช้คีย์ที่จำกัดสิทธิ์เฉพาะการเทรดเท่านั้น', vi: 'Giao dịch thật có rủi ro mất tiền thật. Chỉ dùng khóa giới hạn quyền TRADE.', id: 'Trading sungguhan mempertaruhkan uang sungguhan. Selalu gunakan kunci API yang dibatasi hanya untuk TRADE — jangan pernah untuk penarikan dana. Mulailah dari nominal kecil.' }),
@@ -166,6 +173,29 @@ export function AccountsPage() {
   const isIbkr = broker === 'ibkr'
   const needsPassphrase = (specs[broker]?.fields || []).includes('passphrase')
 
+  async function openGuide() {
+    if (!broker || guideBusy) return
+    setGuideBusy(true)
+    try {
+      // Reader's language first, English as the runtime fallback — same
+      // policy as the docs pages.
+      for (const lang of language === 'en' ? ['en'] : [language, 'en']) {
+        const res = await fetch(`${API_BASE}/guide/doc/gwsetup-${broker}-${lang}`,
+          { headers: { Authorization: `Bearer ${token}` } })
+        if (res.ok) {
+          setGuideHtml(await res.text())
+          setGuideOpen(true)
+          return
+        }
+      }
+      setError(T.guideErr)
+    } catch {
+      setError(T.guideErr)
+    } finally {
+      setGuideBusy(false)
+    }
+  }
+
   async function connect() {
     setError(''); setNotice('')
     if (isIbkr) {
@@ -238,6 +268,32 @@ export function AccountsPage() {
         </div>
       </div>
 
+      {/* Per-broker connection guide — standalone doc in a modal iframe. The
+          doc paints its own light/dark palette, so the frame stays unthemed. */}
+      {guideOpen && guideHtml && (
+        <div onClick={() => setGuideOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 60,
+                   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: 'min(920px, 100%)', height: 'min(82vh, 900px)', background: 'var(--bg-card,#fffdf9)',
+                     borderRadius: 14, border: '1px solid var(--border-color,#d3c8b6)',
+                     display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 14px', borderBottom: '1px solid var(--border-color,#d3c8b6)' }}>
+              <b style={{ fontSize: 14 }}>📖 {broker}</b>
+              <button onClick={() => setGuideOpen(false)}
+                style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary,#8a8073)',
+                         fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
+                ✕ {T.guideClose}
+              </button>
+            </div>
+            <iframe title="gateway guide" srcDoc={guideHtml}
+              sandbox=""
+              style={{ flex: 1, width: '100%', border: 'none', background: '#fff' }} />
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
         {/* Simulator — always available, needs no setup */}
         <div style={card(accounts.length === 0)}>
@@ -298,6 +354,15 @@ export function AccountsPage() {
               </select>
             )
           })()}
+          {broker && (
+            <button onClick={openGuide} disabled={guideBusy}
+              style={{ display: 'block', marginBottom: 10, padding: '5px 11px', borderRadius: 7,
+                       border: '1px solid var(--border-color,#d3c8b6)', background: 'var(--bg-secondary,#fff)',
+                       color: 'var(--accent-primary,#c26a45)', fontSize: 12.5, fontWeight: 600,
+                       cursor: guideBusy ? 'wait' : 'pointer' }}>
+              📖 {T.guideBtn} — {broker}
+            </button>
+          )}
           {isIbkr ? (
             <>
               <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', lineHeight: 1.5, margin: '2px 0 10px' }}>
