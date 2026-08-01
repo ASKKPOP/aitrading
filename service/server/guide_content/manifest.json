@@ -134,6 +134,87 @@
       "th": "เดมอนป้องกันการบังคับปิดสถานะ (ผู้ดูแล)",
       "vi": "Daemon phòng vệ thanh lý (quản trị)",
       "id": "Daemon Pertahanan Likuidasi (admin)"
+    },
+    {
+      "group": "gwsetup-binance",
+      "en": "Connect Binance",
+      "ko": "바이낸스 연결 가이드",
+      "ja": "Binance接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Binance",
+      "vi": "Hướng dẫn kết nối Binance",
+      "id": "Panduan Menghubungkan Binance"
+    },
+    {
+      "group": "gwsetup-alpaca",
+      "en": "Connect Alpaca",
+      "ko": "알파카 연결 가이드",
+      "ja": "Alpaca接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Alpaca",
+      "vi": "Hướng dẫn kết nối Alpaca",
+      "id": "Panduan Menghubungkan Alpaca"
+    },
+    {
+      "group": "gwsetup-ibkr",
+      "en": "Connect Interactive Brokers",
+      "ko": "IBKR 연결 가이드",
+      "ja": "IBKR接続ガイド",
+      "th": "คู่มือเชื่อมต่อ IBKR",
+      "vi": "Hướng dẫn kết nối IBKR",
+      "id": "Panduan Menghubungkan IBKR"
+    },
+    {
+      "group": "gwsetup-bybit",
+      "en": "Connect Bybit",
+      "ko": "바이비트 연결 가이드",
+      "ja": "Bybit接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Bybit",
+      "vi": "Hướng dẫn kết nối Bybit",
+      "id": "Panduan Menghubungkan Bybit"
+    },
+    {
+      "group": "gwsetup-okx",
+      "en": "Connect OKX",
+      "ko": "OKX 연결 가이드",
+      "ja": "OKX接続ガイド",
+      "th": "คู่มือเชื่อมต่อ OKX",
+      "vi": "Hướng dẫn kết nối OKX",
+      "id": "Panduan Menghubungkan OKX"
+    },
+    {
+      "group": "gwsetup-kraken",
+      "en": "Connect Kraken",
+      "ko": "크라켄 연결 가이드",
+      "ja": "Kraken接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Kraken",
+      "vi": "Hướng dẫn kết nối Kraken",
+      "id": "Panduan Menghubungkan Kraken"
+    },
+    {
+      "group": "gwsetup-cryptocom",
+      "en": "Connect Crypto.com Exchange",
+      "ko": "Crypto.com 거래소 연결 가이드",
+      "ja": "Crypto.com Exchange接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Crypto.com Exchange",
+      "vi": "Hướng dẫn kết nối Crypto.com Exchange",
+      "id": "Panduan Menghubungkan Crypto.com Exchange"
+    },
+    {
+      "group": "gwsetup-upbit",
+      "en": "Connect Upbit",
+      "ko": "업비트 연결 가이드",
+      "ja": "Upbit接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Upbit",
+      "vi": "Hướng dẫn kết nối Upbit",
+      "id": "Panduan Menghubungkan Upbit"
+    },
+    {
+      "group": "gwsetup-kucoin",
+      "en": "Connect KuCoin",
+      "ko": "쿠코인 연결 가이드",
+      "ja": "KuCoin接続ガイド",
+      "th": "คู่มือเชื่อมต่อ KuCoin",
+      "vi": "Hướng dẫn kết nối KuCoin",
+      "id": "Panduan Menghubungkan KuCoin"
     }
   ],
   "docs": [
@@ -700,6 +781,330 @@
       "lang": "id",
       "group": "backtest-report",
       "title": "Backtest Strategi Fase-4 — Hasil Go/No-Go"
+    },
+    {
+      "key": "gwsetup-binance-en",
+      "lang": "en",
+      "group": "gwsetup-binance",
+      "title": "Connect Binance"
+    },
+    {
+      "key": "gwsetup-binance-ko",
+      "lang": "ko",
+      "group": "gwsetup-binance",
+      "title": "바이낸스 연결 가이드"
+    },
+    {
+      "key": "gwsetup-binance-ja",
+      "lang": "ja",
+      "group": "gwsetup-binance",
+      "title": "Binance接続ガイド"
+    },
+    {
+      "key": "gwsetup-binance-th",
+      "lang": "th",
+      "group": "gwsetup-binance",
+      "title": "คู่มือเชื่อมต่อ Binance"
+    },
+    {
+      "key": "gwsetup-binance-vi",
+      "lang": "vi",
+      "group": "gwsetup-binance",
+      "title": "Hướng dẫn kết nối Binance"
+    },
+    {
+      "key": "gwsetup-binance-id",
+      "lang": "id",
+      "group": "gwsetup-binance",
+      "title": "Panduan Menghubungkan Binance"
+    },
+    {
+      "key": "gwsetup-alpaca-en",
+      "lang": "en",
+      "group": "gwsetup-alpaca",
+      "title": "Connect Alpaca"
+    },
+    {
+      "key": "gwsetup-alpaca-ko",
+      "lang": "ko",
+      "group": "gwsetup-alpaca",
+      "title": "알파카 연결 가이드"
+    },
+    {
+      "key": "gwsetup-alpaca-ja",
+      "lang": "ja",
+      "group": "gwsetup-alpaca",
+      "title": "Alpaca接続ガイド"
+    },
+    {
+      "key": "gwsetup-alpaca-th",
+      "lang": "th",
+      "group": "gwsetup-alpaca",
+      "title": "คู่มือเชื่อมต่อ Alpaca"
+    },
+    {
+      "key": "gwsetup-alpaca-vi",
+      "lang": "vi",
+      "group": "gwsetup-alpaca",
+      "title": "Hướng dẫn kết nối Alpaca"
+    },
+    {
+      "key": "gwsetup-alpaca-id",
+      "lang": "id",
+      "group": "gwsetup-alpaca",
+      "title": "Panduan Menghubungkan Alpaca"
+    },
+    {
+      "key": "gwsetup-ibkr-en",
+      "lang": "en",
+      "group": "gwsetup-ibkr",
+      "title": "Connect Interactive Brokers"
+    },
+    {
+      "key": "gwsetup-ibkr-ko",
+      "lang": "ko",
+      "group": "gwsetup-ibkr",
+      "title": "IBKR 연결 가이드"
+    },
+    {
+      "key": "gwsetup-ibkr-ja",
+      "lang": "ja",
+      "group": "gwsetup-ibkr",
+      "title": "IBKR接続ガイド"
+    },
+    {
+      "key": "gwsetup-ibkr-th",
+      "lang": "th",
+      "group": "gwsetup-ibkr",
+      "title": "คู่มือเชื่อมต่อ IBKR"
+    },
+    {
+      "key": "gwsetup-ibkr-vi",
+      "lang": "vi",
+      "group": "gwsetup-ibkr",
+      "title": "Hướng dẫn kết nối IBKR"
+    },
+    {
+      "key": "gwsetup-ibkr-id",
+      "lang": "id",
+      "group": "gwsetup-ibkr",
+      "title": "Panduan Menghubungkan IBKR"
+    },
+    {
+      "key": "gwsetup-bybit-en",
+      "lang": "en",
+      "group": "gwsetup-bybit",
+      "title": "Connect Bybit"
+    },
+    {
+      "key": "gwsetup-bybit-ko",
+      "lang": "ko",
+      "group": "gwsetup-bybit",
+      "title": "바이비트 연결 가이드"
+    },
+    {
+      "key": "gwsetup-bybit-ja",
+      "lang": "ja",
+      "group": "gwsetup-bybit",
+      "title": "Bybit接続ガイド"
+    },
+    {
+      "key": "gwsetup-bybit-th",
+      "lang": "th",
+      "group": "gwsetup-bybit",
+      "title": "คู่มือเชื่อมต่อ Bybit"
+    },
+    {
+      "key": "gwsetup-bybit-vi",
+      "lang": "vi",
+      "group": "gwsetup-bybit",
+      "title": "Hướng dẫn kết nối Bybit"
+    },
+    {
+      "key": "gwsetup-bybit-id",
+      "lang": "id",
+      "group": "gwsetup-bybit",
+      "title": "Panduan Menghubungkan Bybit"
+    },
+    {
+      "key": "gwsetup-okx-en",
+      "lang": "en",
+      "group": "gwsetup-okx",
+      "title": "Connect OKX"
+    },
+    {
+      "key": "gwsetup-okx-ko",
+      "lang": "ko",
+      "group": "gwsetup-okx",
+      "title": "OKX 연결 가이드"
+    },
+    {
+      "key": "gwsetup-okx-ja",
+      "lang": "ja",
+      "group": "gwsetup-okx",
+      "title": "OKX接続ガイド"
+    },
+    {
+      "key": "gwsetup-okx-th",
+      "lang": "th",
+      "group": "gwsetup-okx",
+      "title": "คู่มือเชื่อมต่อ OKX"
+    },
+    {
+      "key": "gwsetup-okx-vi",
+      "lang": "vi",
+      "group": "gwsetup-okx",
+      "title": "Hướng dẫn kết nối OKX"
+    },
+    {
+      "key": "gwsetup-okx-id",
+      "lang": "id",
+      "group": "gwsetup-okx",
+      "title": "Panduan Menghubungkan OKX"
+    },
+    {
+      "key": "gwsetup-kraken-en",
+      "lang": "en",
+      "group": "gwsetup-kraken",
+      "title": "Connect Kraken"
+    },
+    {
+      "key": "gwsetup-kraken-ko",
+      "lang": "ko",
+      "group": "gwsetup-kraken",
+      "title": "크라켄 연결 가이드"
+    },
+    {
+      "key": "gwsetup-kraken-ja",
+      "lang": "ja",
+      "group": "gwsetup-kraken",
+      "title": "Kraken接続ガイド"
+    },
+    {
+      "key": "gwsetup-kraken-th",
+      "lang": "th",
+      "group": "gwsetup-kraken",
+      "title": "คู่มือเชื่อมต่อ Kraken"
+    },
+    {
+      "key": "gwsetup-kraken-vi",
+      "lang": "vi",
+      "group": "gwsetup-kraken",
+      "title": "Hướng dẫn kết nối Kraken"
+    },
+    {
+      "key": "gwsetup-kraken-id",
+      "lang": "id",
+      "group": "gwsetup-kraken",
+      "title": "Panduan Menghubungkan Kraken"
+    },
+    {
+      "key": "gwsetup-cryptocom-en",
+      "lang": "en",
+      "group": "gwsetup-cryptocom",
+      "title": "Connect Crypto.com Exchange"
+    },
+    {
+      "key": "gwsetup-cryptocom-ko",
+      "lang": "ko",
+      "group": "gwsetup-cryptocom",
+      "title": "Crypto.com 거래소 연결 가이드"
+    },
+    {
+      "key": "gwsetup-cryptocom-ja",
+      "lang": "ja",
+      "group": "gwsetup-cryptocom",
+      "title": "Crypto.com Exchange接続ガイド"
+    },
+    {
+      "key": "gwsetup-cryptocom-th",
+      "lang": "th",
+      "group": "gwsetup-cryptocom",
+      "title": "คู่มือเชื่อมต่อ Crypto.com Exchange"
+    },
+    {
+      "key": "gwsetup-cryptocom-vi",
+      "lang": "vi",
+      "group": "gwsetup-cryptocom",
+      "title": "Hướng dẫn kết nối Crypto.com Exchange"
+    },
+    {
+      "key": "gwsetup-cryptocom-id",
+      "lang": "id",
+      "group": "gwsetup-cryptocom",
+      "title": "Panduan Menghubungkan Crypto.com Exchange"
+    },
+    {
+      "key": "gwsetup-upbit-en",
+      "lang": "en",
+      "group": "gwsetup-upbit",
+      "title": "Connect Upbit"
+    },
+    {
+      "key": "gwsetup-upbit-ko",
+      "lang": "ko",
+      "group": "gwsetup-upbit",
+      "title": "업비트 연결 가이드"
+    },
+    {
+      "key": "gwsetup-upbit-ja",
+      "lang": "ja",
+      "group": "gwsetup-upbit",
+      "title": "Upbit接続ガイド"
+    },
+    {
+      "key": "gwsetup-upbit-th",
+      "lang": "th",
+      "group": "gwsetup-upbit",
+      "title": "คู่มือเชื่อมต่อ Upbit"
+    },
+    {
+      "key": "gwsetup-upbit-vi",
+      "lang": "vi",
+      "group": "gwsetup-upbit",
+      "title": "Hướng dẫn kết nối Upbit"
+    },
+    {
+      "key": "gwsetup-upbit-id",
+      "lang": "id",
+      "group": "gwsetup-upbit",
+      "title": "Panduan Menghubungkan Upbit"
+    },
+    {
+      "key": "gwsetup-kucoin-en",
+      "lang": "en",
+      "group": "gwsetup-kucoin",
+      "title": "Connect KuCoin"
+    },
+    {
+      "key": "gwsetup-kucoin-ko",
+      "lang": "ko",
+      "group": "gwsetup-kucoin",
+      "title": "쿠코인 연결 가이드"
+    },
+    {
+      "key": "gwsetup-kucoin-ja",
+      "lang": "ja",
+      "group": "gwsetup-kucoin",
+      "title": "KuCoin接続ガイド"
+    },
+    {
+      "key": "gwsetup-kucoin-th",
+      "lang": "th",
+      "group": "gwsetup-kucoin",
+      "title": "คู่มือเชื่อมต่อ KuCoin"
+    },
+    {
+      "key": "gwsetup-kucoin-vi",
+      "lang": "vi",
+      "group": "gwsetup-kucoin",
+      "title": "Hướng dẫn kết nối KuCoin"
+    },
+    {
+      "key": "gwsetup-kucoin-id",
+      "lang": "id",
+      "group": "gwsetup-kucoin",
+      "title": "Panduan Menghubungkan KuCoin"
     }
   ]
 }
