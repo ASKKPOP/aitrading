@@ -133,7 +133,10 @@ export function buildNavSections(
       items: [
         { path: '/getting-started', icon: '🧭', label: tr(language, { ko: '시작하기', en: 'Getting Started', ja: 'はじめに', th: 'เริ่มต้น', vi: 'Bắt đầu', id: 'Panduan awal' }), requiresAuth: false },
         { path: '/backtest', icon: '⏮', label: tr(language, { ko: '백테스트', en: 'Backtest', ja: 'バックテスト', th: 'แบ็คเทสต์', vi: 'Backtest', id: 'Backtest' }), requiresAuth: false },
-        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn', id: 'Panduan & dokumen' }), requiresAuth: true, ownerOnly: true },
+        // Visible to every signed-in member since 2026-08-01 (owner request).
+        // Owner-only DOC GROUPS (ops-keys, architecture, …) stay gated by the
+        // backend manifest — this only controls the nav link.
+        { path: '/docs/guide', icon: '📖', label: tr(language, { ko: '가이드 · 문서', en: 'Guide & Docs', ja: 'ガイド・文書', th: 'คู่มือ·เอกสาร', vi: 'Hướng dẫn', id: 'Panduan & dokumen' }), requiresAuth: true },
         { path: '/discussions', icon: '○', label: t.nav.discussions, requiresAuth: false, badge: notificationCounts.discussion, category: 'discussion' as const },
       ]
     },
