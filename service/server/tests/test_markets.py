@@ -42,7 +42,7 @@ class CapabilityTests(unittest.TestCase):
 
     def test_automatable_set_matches_legacy_plus_expansion_markets(self):
         self.assertEqual(markets.automatable_markets(),
-                         ('a-stock', 'crypto', 'forex', 'futures', 'us-stock'))
+                         ('crypto', 'forex', 'futures', 'us-stock'))
 
     def test_options_are_tradeable_but_not_automatable(self):
         # A rule cannot express "roll to the next expiry", so runs may not
@@ -58,7 +58,7 @@ class CapabilityTests(unittest.TestCase):
         self.assertTrue(markets.supports_short('nonsense'))
 
     def test_cash_markets_have_a_multiplier_of_one(self):
-        for market in ('us-stock', 'crypto', 'polymarket', 'forex', 'a-stock'):
+        for market in ('us-stock', 'crypto', 'polymarket', 'forex'):
             self.assertEqual(markets.contract_multiplier(market), 1.0)
         self.assertEqual(markets.contract_multiplier('nonsense'), 1.0)
 
@@ -179,45 +179,6 @@ class CmeSessionTests(unittest.TestCase):
         self.assertTrue(markets.is_market_open('futures', datetime(2026, 7, 26, 18, 0, tzinfo=ET)))
         self.assertTrue(markets.is_market_open('forex', datetime(2026, 7, 26, 17, 0, tzinfo=ET)))
 
-
-class SseSessionTests(unittest.TestCase):
-    """Shanghai/Shenzhen: 09:30-11:30 and 13:00-15:00 China Standard Time."""
-
-    CST = ZoneInfo('Asia/Shanghai')
-
-    def test_morning_and_afternoon_sessions(self):
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 10, 0, tzinfo=self.CST)))
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 14, 0, tzinfo=self.CST)))
-
-    def test_midday_break_is_closed(self):
-        # The feature no other calendar in the registry has.
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 21, 12, 0, tzinfo=self.CST)))
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 11, 29, tzinfo=self.CST)))
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 21, 11, 30, tzinfo=self.CST)))
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 21, 12, 59, tzinfo=self.CST)))
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 13, 0, tzinfo=self.CST)))
-
-    def test_boundaries(self):
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 21, 9, 29, tzinfo=self.CST)))
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 9, 30, tzinfo=self.CST)))
-        self.assertTrue(markets.is_market_open('a-stock', datetime(2026, 7, 21, 14, 59, tzinfo=self.CST)))
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 21, 15, 0, tzinfo=self.CST)))
-
-    def test_weekday_comes_from_the_shanghai_clock_not_new_york(self):
-        # Monday 10:00 CST is Sunday 22:00 ET. Deriving the weekday from ET
-        # would read this as a weekend and close the market.
-        monday_open = datetime(2026, 7, 20, 10, 0, tzinfo=self.CST)
-        self.assertEqual(monday_open.astimezone(ET).weekday(), 6)  # Sunday in ET
-        self.assertTrue(markets.is_market_open('a-stock', monday_open))
-
-        # And the mirror: Saturday 10:00 CST is Friday 22:00 ET — still closed.
-        saturday = datetime(2026, 7, 25, 10, 0, tzinfo=self.CST)
-        self.assertEqual(saturday.astimezone(ET).weekday(), 4)  # Friday in ET
-        self.assertFalse(markets.is_market_open('a-stock', saturday))
-
-    def test_closed_on_weekend(self):
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 25, 10, 0, tzinfo=self.CST)))
-        self.assertFalse(markets.is_market_open('a-stock', datetime(2026, 7, 26, 10, 0, tzinfo=self.CST)))
 
 
 class UnknownMarketTests(unittest.TestCase):

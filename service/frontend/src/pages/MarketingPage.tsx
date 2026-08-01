@@ -662,13 +662,12 @@ export function MarketingPage() {
     ],
 
     mmKicker: tr(language, { ko: '마켓과 모드', en: 'MARKETS & MODES', ja: 'マーケットとモード', th: 'ตลาดและโหมด', vi: 'THỊ TRƯỜNG & CHẾ ĐỘ', id: 'PASAR & MODE' }),
-    mmH: tr(language, { ko: '일곱 개 마켓, 네 가지 매매 방식', en: 'Seven markets. Four ways to trade.', ja: '7つのマーケット、4つの取引方法。', th: 'เจ็ดตลาด สี่วิธีเทรด', vi: 'Bảy thị trường. Bốn cách giao dịch.', id: 'Tujuh pasar. Empat cara bertransaksi.' }),
+    mmH: tr(language, { ko: '여섯 개 마켓, 네 가지 매매 방식', en: 'Six markets. Four ways to trade.', ja: '6つのマーケット、4つの取引方法。', th: 'หกตลาด สี่วิธีเทรด', vi: 'Sáu thị trường. Bốn cách giao dịch.', id: 'Enam pasar. Empat cara bertransaksi.' }),
     markets: [
       { n: tr(language, { ko: '크립토', en: 'Crypto', ja: '暗号資産', th: 'คริปโต', vi: 'Crypto', id: 'Kripto' }), sub: 'Hyperliquid', auto: true },
       { n: tr(language, { ko: '미국 주식', en: 'US stocks', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' }), sub: tr(language, { ko: '주식·ETF', en: 'Stocks & ETFs', ja: '株式・ETF', th: 'หุ้น·ETF', vi: 'CP & ETF', id: 'Saham & ETF' }), auto: true },
       { n: tr(language, { ko: '외환', en: 'Forex', ja: 'FX', th: 'ฟอเร็กซ์', vi: 'Forex', id: 'Forex' }), sub: tr(language, { ko: '주요 통화쌍', en: 'Major pairs', ja: '主要通貨ペア', th: 'คู่หลัก', vi: 'Cặp chính', id: 'Pasangan mata uang utama' }), auto: true },
       { n: tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Futures', id: 'Futures' }), sub: tr(language, { ko: '지수·상품', en: 'Index & commodity', ja: '指数・商品', th: 'ดัชนี·สินค้า', vi: 'Chỉ số & hàng hóa', id: 'Indeks & komoditas' }), auto: true },
-      { n: tr(language, { ko: '중국 A주', en: 'China A-shares', ja: '中国A株', th: 'หุ้นจีน A', vi: 'CP loại A (TQ)', id: 'Saham A Tiongkok' }), sub: tr(language, { ko: '본토 상장', en: 'Mainland listings', ja: '本土上場', th: 'จดทะเบียนแผ่นดินใหญ่', vi: 'Niêm yết đại lục', id: 'Pencatatan daratan Tiongkok' }), auto: true },
       { n: tr(language, { ko: '예측 시장', en: 'Prediction', ja: '予測市場', th: 'ตลาดคาดการณ์', vi: 'Dự đoán', id: 'Prediksi' }), sub: 'Polymarket', auto: false },
       { n: tr(language, { ko: '옵션', en: 'Options', ja: 'オプション', th: 'ออปชั่น', vi: 'Quyền chọn', id: 'Opsi' }), sub: tr(language, { ko: '주식 옵션', en: 'Equity options', ja: '株式オプション', th: 'ออปชั่นหุ้น', vi: 'Quyền chọn CP', id: 'Opsi saham' }), auto: false },
     ],

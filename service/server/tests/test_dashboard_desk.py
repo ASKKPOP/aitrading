@@ -186,15 +186,13 @@ class Decisions(_Base):
 class Sessions(_Base):
 
     def test_seoul_matches_the_published_market_hours(self):
-        """Same numbers the generated market-hours guide prints: Shanghai
-        09:30 CST is 10:30 in Seoul, NYSE 09:30 ET is 22:30."""
+        """Same numbers the generated market-hours guide prints: NYSE 09:30 ET
+        is 22:30 in Seoul."""
         s = dashboard.sessions("Asia/Seoul",
                                datetime(2026, 7, 29, 2, 0, tzinfo=timezone.utc))
         by = {m["market"]: m for m in s["markets"]}
         self.assertEqual(s["timezone"], "Asia/Seoul")
         self.assertEqual(by["crypto"]["bands"], [[0.0, 24.0]])
-        self.assertEqual(by["a-stock"]["bands"][0][0], 10.5)
-        self.assertEqual(by["a-stock"]["bands"][1][0], 14.0)
         self.assertEqual(by["us-stock"]["bands"][-1][0], 22.5)
 
     def test_a_different_zone_shifts_the_bands(self):

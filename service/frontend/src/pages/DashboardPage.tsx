@@ -157,7 +157,6 @@ const MARKET_LABEL: Record<string, Record<Language, string>> = {
   crypto: { ko: '크립토', en: 'Crypto', ja: '暗号資産', th: 'คริปโต', vi: 'Tiền mã hóa', id: 'Kripto' },
   forex: { ko: '외환', en: 'Forex', ja: '外国為替', th: 'ฟอเร็กซ์', vi: 'Ngoại hối', id: 'Forex' },
   futures: { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Hợp đồng tương lai', id: 'Futures' },
-  'a-stock': { ko: '중국 A주', en: 'China A-shares', ja: '中国A株', th: 'หุ้น A จีน', vi: 'Cổ phiếu A Trung Quốc', id: 'Saham A Tiongkok' },
   'us-stock': { ko: '미국 주식', en: 'US stocks', ja: '米国株', th: 'หุ้นสหรัฐฯ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' },
 }
 

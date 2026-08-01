@@ -315,7 +315,7 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
         # which is exactly the "realized today $-154,418" / "$-10,521" that
         # tripped the account daily-loss breaker 49 times in 7 days and
         # hard-blocked every new order. Currency conversion stays — that is a
-        # real unit change (a CNY A-share P&L genuinely is not USD).
+        # real unit change (a JPY-quoted P&L genuinely is not USD).
         currency = markets.position_currency(row["market"], row["symbol"])
         pnl = None
         if side == "buy":
@@ -344,7 +344,7 @@ def trade_stats(agent_id: int, cursor=None, run_id: Optional[int] = None) -> dic
             book["qty"] -= closed
         if pnl is not None:
             # To USD. These stats feed a single cross-market risk gate, so a
-            # CNY A-share PnL and a USD futures PnL cannot be summed in their
+            # A JPY-quoted PnL and a USD futures PnL cannot be summed in their
             # native units. Point value is deliberately NOT applied — see the
             # note above the currency lookup.
             pnl = to_usd(pnl, currency)

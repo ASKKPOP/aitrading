@@ -140,7 +140,7 @@ class ThesisClampTests(unittest.TestCase):
     def test_short_forced_long_where_unsupported(self):
         t = sr.clamp_thesis({"direction": "short", "expected_move_pct": 2,
                              "horizon_hours": 24, "confidence": 0.6},
-                            "a-stock", 1.5, momentum_sign=-1.0)
+                            "polymarket", 1.5, momentum_sign=-1.0)
         self.assertEqual(t["direction"], "long")
 
     def test_fallback_thesis_in_bounds(self):

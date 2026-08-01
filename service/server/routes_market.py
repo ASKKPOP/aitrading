@@ -93,37 +93,6 @@ FUTURES_SYMBOLS: tuple[str, ...] = (
     'ZC', 'ZS', 'ZW',                                       # grains
 )
 
-# Tradable A-shares, carrying the exchange suffix because a six-digit board
-# code alone is ambiguous between Shanghai (.SS) and Shenzhen (.SZ). These are
-# the mainland large caps Yahoo serves reliably; all quote in CNY.
-A_STOCK_SYMBOLS: tuple[str, ...] = (
-    '600519.SS',  # Kweichow Moutai
-    '601398.SS',  # ICBC
-    '601857.SS',  # PetroChina
-    '600036.SS',  # China Merchants Bank
-    '601288.SS',  # Agricultural Bank of China
-    '600900.SS',  # China Yangtze Power
-    '601988.SS',  # Bank of China
-    '600028.SS',  # Sinopec
-    '601628.SS',  # China Life
-    '600030.SS',  # CITIC Securities
-    '600276.SS',  # Jiangsu Hengrui Medicine
-    '601318.SS',  # Ping An Insurance
-    '600887.SS',  # Inner Mongolia Yili
-    '601899.SS',  # Zijin Mining
-    '600309.SS',  # Wanhua Chemical
-    '000001.SZ',  # Ping An Bank
-    '000002.SZ',  # China Vanke
-    '000333.SZ',  # Midea Group
-    '000651.SZ',  # Gree Electric
-    '000858.SZ',  # Wuliangye Yibin
-    '002594.SZ',  # BYD
-    '300750.SZ',  # CATL
-    '002415.SZ',  # Hikvision
-    '300059.SZ',  # East Money
-    '002475.SZ',  # Luxshare Precision
-)
-
 # Underlyings whose option chains are offered. Kept to the liquid names — an
 # illiquid chain is all zero-bid strikes, which prices at a stale last trade.
 OPTION_UNDERLYINGS: tuple[str, ...] = (
@@ -381,7 +350,6 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'stock': list(US_STOCK_SYMBOLS),
                 'forex': list(FOREX_SYMBOLS),
                 'futures': list(FUTURES_SYMBOLS),
-                'a_stock': list(A_STOCK_SYMBOLS),
                 'option_underlyings': list(OPTION_UNDERLYINGS),
             }
 

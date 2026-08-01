@@ -153,12 +153,12 @@ T = {
         "vi": "Thị trường có giờ cố định — theo giờ của bạn",
         "id": "Pasar berjam tetap — dalam waktu Anda"},
     "sched_p": {
-        "en": "US stocks and China A-shares open at fixed exchange hours. Below is each session converted into every region's local clock, on a normal weekday.",
-        "ko": "미국 주식과 중국 A주는 정해진 거래소 시간에 열립니다. 아래는 평일 기준으로 각 개장 시간을 지역별 현지 시각으로 변환한 것입니다.",
-        "ja": "米国株と中国A株は決まった取引所時間に開きます。以下は平日基準で、各セッションを地域ごとの現地時刻に変換したものです。",
-        "th": "หุ้นสหรัฐฯ และหุ้น A จีนเปิดตามเวลาตลาดที่กำหนด ด้านล่างคือแต่ละช่วงเวลาที่แปลงเป็นเวลาท้องถิ่นของแต่ละพื้นที่ในวันธรรมดา",
-        "vi": "Cổ phiếu Mỹ và cổ phiếu A Trung Quốc mở theo giờ sàn cố định. Bên dưới là mỗi phiên quy đổi sang giờ địa phương của từng khu vực, trong một ngày thường.",
-        "id": "Saham AS dan saham A Tiongkok buka pada jam bursa tetap. Di bawah ini tiap sesi dikonversi ke jam lokal setiap wilayah, pada hari kerja biasa."},
+        "en": "US stocks open at fixed exchange hours. Below is the session converted into every region's local clock, on a normal weekday.",
+        "ko": "미국 주식은 정해진 거래소 시간에 열립니다. 아래는 평일 기준으로 개장 시간을 지역별 현지 시각으로 변환한 것입니다.",
+        "ja": "米国株は決まった取引所時間に開きます。以下は平日基準で、セッションを地域ごとの現地時刻に変換したものです。",
+        "th": "หุ้นสหรัฐฯ เปิดตามเวลาตลาดที่กำหนด ด้านล่างคือช่วงเวลาที่แปลงเป็นเวลาท้องถิ่นของแต่ละพื้นที่ในวันธรรมดา",
+        "vi": "Cổ phiếu Mỹ mở theo giờ sàn cố định. Bên dưới là phiên quy đổi sang giờ địa phương của từng khu vực, trong một ngày thường.",
+        "id": "Saham AS buka pada jam bursa tetap. Di bawah ini sesi dikonversi ke jam lokal setiap wilayah, pada hari kerja biasa."},
     "region_h": {
         "en": "Region", "ko": "지역", "ja": "地域", "th": "ภูมิภาค", "vi": "Khu vực",
         "id": "Wilayah"},
@@ -262,15 +262,13 @@ MARKET_NAME = {
                  "vi": "Cổ phiếu Mỹ", "id": "Saham AS"},
     "options": {"en": "Options", "ko": "옵션", "ja": "オプション", "th": "ออปชั่น",
                 "vi": "Quyền chọn", "id": "Opsi"},
-    "a-stock": {"en": "China A-shares", "ko": "중국 A주", "ja": "中国A株", "th": "หุ้น A จีน",
-                "vi": "Cổ phiếu A (TQ)", "id": "Saham A Tiongkok"},
     "polymarket": {"en": "Prediction", "ko": "예측 시장", "ja": "予測市場", "th": "ตลาดทำนาย",
                    "vi": "Thị trường dự đoán", "id": "Pasar prediksi"},
 }
 
 ALWAYS = ["crypto", "forex", "futures"]
-SCHEDULED = ["us-stock", "a-stock"]
-MATRIX_COLS = ["crypto", "forex", "futures", "us-stock", "options", "a-stock", "polymarket"]
+SCHEDULED = ["us-stock"]
+MATRIX_COLS = ["crypto", "forex", "futures", "us-stock", "options", "polymarket"]
 
 # Planned region -> market position, ported from region-aware-trading-plan.html
 # section 5 ("y" = the plan's "yes", "p" = the plan's "review"). Indonesia is
@@ -278,23 +276,23 @@ MATRIX_COLS = ["crypto", "forex", "futures", "us-stock", "options", "a-stock", "
 # roadmap, not legal advice; the caption on the table says so.
 MATRIX = {
     "United States": {"crypto": "y", "forex": "y", "futures": "y", "us-stock": "y",
-                      "options": "y", "a-stock": "p", "polymarket": "p"},
+                      "options": "y", "polymarket": "p"},
     "Canada": {"crypto": "y", "forex": "y", "futures": "y", "us-stock": "y",
-               "options": "y", "a-stock": "p", "polymarket": "p"},
+               "options": "y", "polymarket": "p"},
     "Australia": {"crypto": "y", "forex": "y", "futures": "y", "us-stock": "y",
-                  "options": "p", "a-stock": "p", "polymarket": "p"},
+                  "options": "p", "polymarket": "p"},
     "Singapore": {"crypto": "y", "forex": "y", "futures": "y", "us-stock": "y",
-                  "options": "p", "a-stock": "y", "polymarket": "p"},
+                  "options": "p", "polymarket": "p"},
     "South Korea": {"crypto": "p", "forex": "p", "futures": "y", "us-stock": "y",
-                    "options": "p", "a-stock": "y", "polymarket": "p"},
+                    "options": "p", "polymarket": "p"},
     "Japan": {"crypto": "p", "forex": "y", "futures": "y", "us-stock": "y",
-              "options": "p", "a-stock": "y", "polymarket": "p"},
+              "options": "p", "polymarket": "p"},
     "Thailand": {"crypto": "p", "forex": "p", "futures": "y", "us-stock": "y",
-                 "options": "p", "a-stock": "y", "polymarket": "p"},
+                 "options": "p", "polymarket": "p"},
     "Vietnam": {"crypto": "p", "forex": "p", "futures": "y", "us-stock": "y",
-                "options": "p", "a-stock": "y", "polymarket": "p"},
+                "options": "p", "polymarket": "p"},
     "Indonesia": {"crypto": "p", "forex": "p", "futures": "y", "us-stock": "y",
-                  "options": "p", "a-stock": "y", "polymarket": "p"},
+                  "options": "p", "polymarket": "p"},
 }
 
 # Venue routing, ported from plan section 6. crypto_soon marks a domestic
@@ -511,16 +509,14 @@ def _gap_bars(lang: str) -> str:
 
 
 def _sched_table(lang: str) -> str:
-    """One table: every region's US-stock and A-share windows in local time."""
+    """One table: every region's US-stock window in local time."""
     head = (f'<tr><th>{T["region_h"][lang]}</th>'
-            f'<th>{MARKET_NAME["us-stock"][lang]}</th>'
-            f'<th>{MARKET_NAME["a-stock"][lang]}</th></tr>')
+            f'<th>{MARKET_NAME["us-stock"][lang]}</th></tr>')
     rows = []
     for canon, tz in REGIONS:
         us = _window_text(_bands("us-stock", tz), lang)
-        a = _window_text(_bands("a-stock", tz), lang)
         rows.append(f'<tr><td class="m">{REGION_NAME[canon][lang]}</td>'
-                    f'<td class="h">{us}</td><td class="h">{a}</td></tr>')
+                    f'<td class="h">{us}</td></tr>')
     return f'<div class="sw"><table>{head}{"".join(rows)}</table></div>'
 
 

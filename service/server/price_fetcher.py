@@ -805,22 +805,13 @@ def _yahoo_symbol(symbol: str, market: str) -> Optional[str]:
         if not root or not root.isalnum():
             return None
         return f"{root}=F"
-    if market == "a-stock":
-        # Canonical form carries the exchange suffix (600519.SS / 000001.SZ)
-        # because the six-digit code alone is ambiguous between Shanghai and
-        # Shenzhen. The dot is meaningful here, so the share-class dash
-        # rewrite below must not run.
-        board, _, venue = cleaned.partition(".")
-        if not board.isdigit() or venue not in ("SS", "SZ"):
-            return None
-        return f"{board}.{venue}"
     return cleaned.replace(".", "-")
 
 
 def _get_yahoo_chart_price(symbol: str, executed_at: Optional[str], market: str) -> Optional[float]:
     """Spot or historical price from Yahoo's public chart endpoint.
 
-    Serves forex today; futures and A-shares reuse it in later phases (see
+    Serves forex today; futures reuses it in later phases (see
     docs/plan/13-market-expansion.md). Yahoo rejects the default requests
     User-Agent with HTTP 429, hence the browser header.
     """

@@ -36,7 +36,6 @@ _MARKET_FEE_RATES: dict[str, float] = {
     # US equities: ~$0.005/share plus SEC/TAF on the sell — well under 0.01%.
     "us-stock": 0.00005,
     # SSE/SZSE commission plus the 0.05% stamp duty charged on sells.
-    "a-stock": 0.00025,
     # Polymarket takes no per-trade fee; gas is not modelled here.
     "polymarket": 0.0,
 }

@@ -51,7 +51,7 @@ class DarkByDefault(FeeTestBase):
 
     def test_disabled_is_byte_identical_to_the_legacy_flat_rate(self):
         with patch.dict("os.environ", {"FEE_PER_MARKET": "false"}):
-            for m in ("crypto", "futures", "forex", "us-stock", "a-stock", None):
+            for m in ("crypto", "futures", "forex", "us-stock", None):
                 self.assertEqual(fees.fee_rate(m), fees.TRADE_FEE_RATE)
 
     def test_an_explicit_override_still_applies_while_dark(self):
@@ -74,7 +74,7 @@ class Rates(FeeTestBase):
         self.assertAlmostEqual(fees.fee_rate("crypto"), 0.00045)
 
     def test_every_table_market_is_cheaper_than_the_legacy_flat(self):
-        for m in ("crypto", "futures", "forex", "us-stock", "a-stock", "polymarket"):
+        for m in ("crypto", "futures", "forex", "us-stock", "polymarket"):
             self.assertLess(fees.fee_rate(m), fees.TRADE_FEE_RATE,
                             f"{m} should not still pay the crypto-taker rate")
 

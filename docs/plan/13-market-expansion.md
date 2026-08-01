@@ -1,3 +1,8 @@
+> **2026-08-01 — China A-shares removed.** Per owner decision, the `a-stock`
+> market (phase 4 below) has been removed from the platform entirely — market
+> registry, symbols, prices, research, docs and UI. The phase notes below are
+> retained as history only.
+
 # Plan 13 — Market Expansion (외환 / 선물 / A주 / 옵션)
 
 **Date:** 2026-07-19
