@@ -1,15 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../appShared'
-import { LANGUAGES, fearGreedLabel, tr } from '../i18n'
-import type { Language } from '../i18n'
-
-// Derived from LANGUAGES, never hand-listed. This was a literal
-// Record<string, string> of five codes — the loose `string` key meant adding a
-// sixth language typechecked clean while the landing page kept offering five,
-// so a visitor could not select the language the rest of the product served.
-const LANGS: [Language, string][] =
-  LANGUAGES.map(({ value }) => [value, value.toUpperCase()])
+import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { fearGreedLabel, tr } from '../i18n'
 
 // Public landing page — quiet editorial, zero animation, compact blocks.
 // Narrative: the AI *measures* market footprints (quant × qualitative × psychology
@@ -505,7 +498,7 @@ const writeLastGood = (key: string, d: any) => {
 }
 
 export function MarketingPage() {
-  const { language, setLanguage } = useLanguage()
+  const { language } = useLanguage()
   const [btc, setBtc] = useState<{ price: number; pct: number } | null>(() => readLastGood('sooppiy:home:btc'))
   // Live signal data for the dashboard preview — no hardcoded sample numbers.
   const [psych, setPsych] = useState<any | null>(() => readLastGood('sooppiy:home:psych'))
@@ -725,7 +718,6 @@ export function MarketingPage() {
           .mkt-topbar-row { gap: 8px; height: 54px; }
           .mkt-login { display: none !important; }
           .mkt-signup { font-size: 13px !important; padding: 7px 12px !important; }
-          .mkt-langs button { font-size: 10.5px !important; padding: 3px 5px !important; }
           .mkt-wordmark { font-size: 17px !important; }
           .mkt-logo { width: 32px; height: 32px; }
         }
@@ -737,11 +729,8 @@ export function MarketingPage() {
         <div className="mkt-topbar-row" style={{ ...wrap }}>
           <img src="/logo.svg" alt="" width={46} height={46} className="mkt-logo" style={{ display: 'block', flexShrink: 0 }} />
           <span className="mkt-wordmark" style={{ fontFamily: V.display, fontSize: 21, fontWeight: 700 }}>Sooppiy</span>
-          <span className="mkt-langs" style={{ marginLeft: 'auto', display: 'flex', gap: 2, border: `1px solid ${V.line}`, borderRadius: 999, padding: '3px 6px', flexShrink: 0 }}>
-            {LANGS.map(([code, label]) => (
-              <button key={code} onClick={() => setLanguage(code)}
-                style={{ background: language === code ? V.accent : 'none', color: language === code ? V.accentOn : V.mut, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 9px', borderRadius: 999, fontFamily: V.sans }}>{label}</button>
-            ))}
+          <span className="mkt-langs" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+            <LanguageSwitcher />
           </span>
           <Link to="/login" className="mkt-auth mkt-login" style={{ ...pillBtn, color: V.ink, padding: '9px 16px' }}>{T.login}</Link>
           <Link to="/register" className="mkt-auth mkt-signup" style={{ ...pillBtn, color: V.accentOn, background: V.accent, padding: '9px 18px' }}>{T.signup}</Link>

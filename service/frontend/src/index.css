@@ -271,14 +271,99 @@ a {
   gap: 10px;
 }
 
-.control-pill-group {
+/* Language switcher — one compact trigger + a popover menu (see
+   components/LanguageSwitcher.tsx). Six inline pills were 484px wide on a
+   375px phone; this stays ~64px however long the language list gets. */
+.lang-switch {
+  position: relative;
   display: inline-flex;
-  gap: 0;
-  padding: 3px;
+  flex-shrink: 0;
+}
+
+.lang-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
   border-radius: 999px;
-  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.lang-switch-btn:hover { color: var(--text-primary); }
+
+.lang-switch-code { letter-spacing: 0.04em; }
+
+.lang-switch-caret { font-size: 9px; opacity: 0.7; }
+
+.lang-switch-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 300;
+  min-width: 168px;
+  padding: 5px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.28));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lang-switch-menu--left { right: auto; left: 0; }
+
+/* The menu floats over page copy, so it must be fully opaque — the shared
+   light-theme surface gradient the trigger uses is ~95% and lets headings
+   read through it. */
+:root[data-theme='light'] .lang-switch-menu {
+  background: #fbf7f0;
+  border-color: rgba(108, 87, 58, 0.16);
+}
+
+.lang-switch-opt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lang-switch-opt:hover:not(.active) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.lang-switch-opt.active {
+  background: var(--accent-primary);
+  color: var(--accent-contrast);
+}
+
+.lang-switch-opt-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.75;
+  min-width: 18px;
 }
 
 .control-pill {
@@ -1619,7 +1704,7 @@ button:disabled {
 :root[data-theme='light'] .landing-interaction-card,
 :root[data-theme='light'] .landing-command-line,
 :root[data-theme='light'] .landing-agent-chip,
-:root[data-theme='light'] .control-pill-group,
+:root[data-theme='light'] .lang-switch-btn,
 :root[data-theme='light'] .theme-toggle {
   background:
     linear-gradient(180deg, rgba(248, 243, 234, 0.96), rgba(243, 237, 227, 0.94));
@@ -2474,6 +2559,11 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  /* Grid items default to min-width:auto, so the column was sized by the
+     min-content width of .intel-panel-tabs — 441px inside a 343px phone
+     column, pushing the whole board off-screen. Zeroing it lets the tab
+     strip's own overflow-x:auto scroll instead. */
+  min-width: 0;
 }
 
 .intel-side-column {
@@ -3593,6 +3683,10 @@ button:disabled {
 .leaderboard-metric-tabs {
   display: inline-flex;
   width: fit-content;
+  /* fit-content alone let the row grow past the viewport once the labels are
+     Korean/Indonesian; wrapping keeps every tab reachable on a phone. */
+  max-width: 100%;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
   margin-bottom: 20px;
