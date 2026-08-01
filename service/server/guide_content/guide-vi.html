@@ -71,12 +71,12 @@ ul{padding-left:19px;margin:6px 0} li{margin:4px 0}
 .sv-m{font:600 10px ui-monospace,Menlo,monospace;fill:var(--muted)}
 .sv-lb{font:700 10px system-ui,sans-serif;fill:var(--muted);letter-spacing:.08em}
 .sv-box{fill:var(--surface);stroke:var(--border)}
-.sv-card{fill:var(--card);stroke:var(--baseline)}
+.sv-card{fill:var(--card);stroke:var(--muted)}
 .sv-acc{fill:color-mix(in srgb,var(--accent) 12%,var(--card));stroke:var(--accent)}
 .sv-good{fill:color-mix(in srgb,var(--good) 12%,var(--card));stroke:var(--good)}
 .sv-bad{fill:color-mix(in srgb,var(--critical) 10%,var(--card));stroke:var(--critical)}
 .sv-warn{fill:color-mix(in srgb,var(--yellow) 14%,var(--card));stroke:var(--yellow)}
-.sv-line{stroke:var(--baseline);stroke-width:1.4;fill:none}
+.sv-line{stroke:var(--muted);stroke-width:1.4;fill:none}
 .sv-accline{stroke:var(--accent);stroke-width:1.6;fill:none}
 .sv-goodline{stroke:var(--good);stroke-width:1.6;fill:none}
 .sv-badline{stroke:var(--critical);stroke-width:1.6;fill:none}
@@ -114,7 +114,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <svg viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Full pipeline">
     <defs>
       <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+        <path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
       <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
       <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -207,7 +207,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
       <rect x="672" y="388" width="272" height="66" rx="9" class="sv-good"/>
       <text x="808" y="408" text-anchor="middle" class="sv-t">BƯỚC 9 · Khớp lệnh Giấy</text>
       <text x="808" y="424" text-anchor="middle" class="sv-s">SL −5% / TP +10% tự động thiết lập · theo dõi 30s</text>
-      <text x="808" y="440" text-anchor="middle" class="sv-m">chỉ tài khoản mô phỏng · không khớp lệnh thật</text>
+      <text x="808" y="440" text-anchor="middle" class="sv-m">khớp trên sổ mô phỏng · live đi qua cổng</text>
     </g>
     <path d="M320 421 H366" class="sv-accline" marker-end="url(#arA)"/>
     <path d="M624 421 H670" class="sv-goodline" marker-end="url(#arG)"/>
@@ -235,10 +235,10 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   </div>
 
   <div class="kpi-row">
-    <div class="kpi"><div class="lb">Thực thi</div><div class="vl">Chỉ Giấy</div><div class="hint">Mã lệnh tài khoản thật hoàn toàn bị vô hiệu hóa</div></div>
+    <div class="kpi"><div class="lb">Thực thi</div><div class="vl">Paper trước</div><div class="hint">Quy tắc live gửi lệnh thật qua cổng (danh sách cho phép + giới hạn)</div></div>
     <div class="kpi"><div class="lb">Cổng rủi ro</div><div class="vl">Kiểm tra ba lớp</div><div class="hint">Kelly → giới hạn → ngắt mạch</div></div>
     <div class="kpi"><div class="lb">Kiểm thử</div><div class="vl">Hơn 1,100 vượt qua</div><div class="hint">Bao gồm kiểm thử mở rộng tín hiệu &amp; hướng dẫn</div></div>
-    <div class="kpi"><div class="lb">Tác vụ nền</div><div class="vl">23</div><div class="hint">Bao gồm risk_watcher·psych·scanner</div></div>
+    <div class="kpi"><div class="lb">Tác vụ nền</div><div class="vl">37</div><div class="hint">Bao gồm risk_watcher·psych·scanner</div></div>
   </div>
 </div></section>
 
@@ -385,7 +385,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <svg viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-analyst structure">
     <defs>
       <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+        <path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
       <marker id="ar3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
     </defs>
@@ -446,7 +446,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <div class="diagram">
   <svg viewBox="0 0 940 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Automation tick sequence">
     <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker></defs>
+      <path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
     <line x1="30" y1="75" x2="910" y2="75" class="sv-line" marker-end="url(#ar4)"/>
     <g>
       <circle cx="70" cy="75" r="5" fill="var(--accent)"/>
@@ -482,7 +482,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
   <svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk gate flow">
     <defs>
       <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0 0L10 5L0 10z" fill="var(--baseline)"/></marker>
+        <path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
       <marker id="ar5g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0 0L10 5L0 10z" fill="var(--good)"/></marker>
       <marker id="ar5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
