@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>준비물</h2>
+  <h2><span class="no">1</span>시작하기 전에</h2>
+  <ul><li>Alpaca에서 본인 확인(KYC)을 마친 계정. 미인증 계정은 키를 만들 수는 있어도 거래에 사용할 수 없습니다.</li><li>Alpaca 계정의 2단계 인증(2FA) 활성화. 모든 거래소가 키 생성 시점에 2FA 코드(대개 이메일 확인도)를 요구합니다.</li><li>이 페이지를 거래소 사이트와 나란히 열어두고, 시크릿을 만든 뒤 연결하기까지 잠시 안전하게 보관할 곳을 준비하세요.</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>이용 가능 지역과 현지 규정</h2>
+  <div class="card"><p>미국 상장 주식을 다루는 <b>미국 브로커-딜러</b>입니다. 미국 거주자와 지원 국가 목록의 해외 거주자를 대상으로 하니 계좌 개설 전 목록을 확인하세요. 미국 장 시간과 패턴 데이트레이딩(PDT) 규정은 Sooppiy가 아니라 회원님 계좌에 적용됩니다.</p></div>
+  <div class="note">어느 거래소를 이용할 수 있는지는 Sooppiy가 정하지 않습니다 — 거래소의 KYC와 회원님 거주지 법률이 정합니다. 여기서 게이트웨이를 연결한다고 해서 해당 거래소를 이용할 수 있게 되는 것은 아니며, 법적으로 이용할 수 없는 거래소는 키 자체를 거부합니다. 이는 사실 안내이며 법률 자문이 아닙니다. 접근 규정은 바뀌므로 거주 국가 기준으로 거래소 약관에서 직접 확인하세요.</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>준비물</h2>
   <div class="card"><ul><li>API 키</li><li>API 시크릿</li></ul></div>
   <div class="note red">반드시 거래(TRADE) 권한만 부여하세요 — 출금 권한은 절대 안 됩니다. 거래소가 IP 허용목록을 제공하면 사용하세요. 소액으로 시작하세요. 키는 Sooppiy 서버에 암호화(AES-GCM)되어 저장되며 저장 후 다시 표시되지 않습니다.</div>
+  <div class="note"><b>IP 제한 — 지금은 설정하지 마세요.</b> 일부 거래소는 키를 특정 서버 주소로 고정할 수 있습니다. Sooppiy는 호스팅 리전을 이전할 예정이라, 이전 주소로 고정한 키는 이전하는 순간 동작을 멈춥니다. 다만 기억해 두실 점: 바이낸스와 바이비트는 IP 제한이 없는 키의 거래 권한을 90일 후 비활성화하므로, 그때 키를 다시 점검할 일정을 잡아두세요.</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Alpaca에서 자격 증명 만들기</h2>
+  <h2><span class="no">4</span>Alpaca에서 자격 증명 만들기</h2>
   <ol><li>app.alpaca.markets에 로그인해 연결할 계정의 대시보드를 엽니다.</li><li>우측 패널의 <b>API Keys</b>에서 키 쌍을 생성합니다. 시크릿은 한 번만 표시됩니다.</li><li>페이퍼와 라이브는 계정도 키도 별개입니다: 페이퍼 키는 페이퍼 환경에서만, 라이브 키는 라이브에서만 동작합니다. 섀도 운용 중에는 페이퍼 키를 쓰고, 실거래 전환 시 라이브 키로 교체하세요.</li></ol>
+  <div class="note red"><b>시크릿</b>은 생성 시 <b>딱 한 번만</b> 표시됩니다. 복사하지 않고 화면을 닫으면 복구할 수 없어 키를 삭제하고 새로 만들어야 합니다. Sooppiy도 저장 후에는 다시 보여주지 않습니다.</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>계정 페이지에서 연결하기</h2>
+  <h2><span class="no">5</span>어느 값을 어디에 입력하나</h2>
+  <table>
+    <tr><th>Alpaca에서의 이름</th><th>Sooppiy 입력란</th></tr>
+    <tr><td>API Key ID</td><td><b>API 키</b></td></tr><tr><td>Secret Key</td><td><b>API 시크릿</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>계정 페이지에서 연결하기</h2>
   <ol><li><b>계정</b> → <b>거래 게이트웨이</b>를 엽니다.</li><li>지역을 선택하고(추천 정렬일 뿐, 모든 브로커 연결 가능) <b>Alpaca</b>을(를) 선택합니다.</li><li>2단계에서 만든 자격 증명을 붙여넣습니다.</li><li>실거래 약관을 읽고 동의합니다 — 섀도만 쓸 계획이어도 필요합니다.</li><li><b>게이트웨이 연결</b>을 누릅니다. 계정은 <b>paper</b> 모드로 시작하며 아직 Alpaca에는 아무것도 전송되지 않습니다.</li><li>계정 카드에서 <b>shadow</b>(먼저 권장) 또는 <b>live</b>로 전환합니다.</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>각 모드에서 Alpaca에 일어나는 일</h2>
+  <h2><span class="no">7</span>연결한 다음</h2>
+  <ol><li><b>연결된 게이트웨이</b> 목록에 상태 표시와 함께 나타납니다. 키 방식 거래소는 “자격 증명 저장됨”으로 표시되는데, 점검할 세션이 없다는 뜻이며 정상입니다.</li><li>자동매매 규칙이 저절로 바뀌지는 않습니다. 규칙의 계정 유형을 shadow 또는 live로 설정해야 비로소 Alpaca에 주문이 전달됩니다.</li><li>먼저 <b>shadow</b>로 며칠 운영하며 <b>드리프트 기록</b> 패널을 확인한 뒤 실거래를 검토하세요.</li><li>언제든 Alpaca에서 키를 삭제하면 접근이 즉시 차단됩니다 — Sooppiy 설정과 무관하게 모든 주문이 멈춥니다.</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>각 모드에서 Alpaca에 일어나는 일</h2>
   <table>
     <tr><th>모드</th><th>동작</th></tr>
     <tr><td>paper</td><td><b>paper / 시뮬레이터</b> — 모든 거래가 Sooppiy 내부 원장에만 기록됩니다. Alpaca에는 접속하지 않습니다.</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>거래소 특이사항</h2>
+  <h2><span class="no">9</span>거래소 특이사항</h2>
   <ul><li>미국 주식·ETF 전용이며 주문은 미국장 시간에 처리됩니다.</li><li>알파카 가입 가능 여부는 거주 국가에 따라 다릅니다 — 계좌 개설 시 알파카의 지원 국가 목록을 확인하세요.</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>문제 해결</h2>
+  <h2><span class="no">10</span>문제 해결</h2>
   <table>
     <tr><th>증상</th><th>의미 / 조치</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>저장된 키를 더 이상 읽을 수 없는 상태입니다(예: 서버 키 교체 후). 새 자격 증명으로 브로커를 다시 연결하세요.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>계정 페이지에서 이 브로커의 실거래 약관에 동의하세요 — 동의는 브로커별로 기록됩니다.</td></tr><tr><td>모든 주문에서 “forbidden” / 403</td><td>대부분 페이퍼 키를 라이브 환경에(또는 그 반대로) 쓴 경우입니다. 현재 모드에 맞는 키 쌍인지 확인하세요.</td></tr>

@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>What you need</h2>
+  <h2><span class="no">1</span>Before you start</h2>
+  <ul><li>An account at OKX that has finished the venue's identity verification — an unverified account can create a key but cannot trade with it.</li><li>Two-factor authentication switched on at OKX. Every venue asks for a 2FA code (and often an email confirmation) at the moment you create the key.</li><li>This page open next to the venue's site, and somewhere safe to hold the secret for the minute between creating it and connecting it.</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>Availability and local rules</h2>
+  <div class="card"><p>Not available to residents of the <b>United States</b>. Availability elsewhere varies — OKX operates licensed entities in some markets (including Singapore) and restricts others.</p></div>
+  <div class="note">Sooppiy does not decide who may use a venue — the venue's own KYC does, and your local law does. Connecting a gateway here does not make a venue available to you, and a venue you cannot legally use will simply refuse your key. This is factual guidance, not legal advice; access rules change, so confirm on the venue's own terms page for your country.</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>What you need</h2>
   <div class="card"><ul><li>API key</li><li>API secret</li><li>API passphrase (chosen when the key is created)</li></ul></div>
   <div class="note red">Grant TRADE permission only — never withdrawal. Use the venue's IP allowlist when it offers one. Start small. Your keys are encrypted at rest (AES-GCM) on Sooppiy's server and are never shown again after you save them.</div>
+  <div class="note"><b>IP restriction — leave it unset for now.</b> Some venues let you lock a key to one server address. Sooppiy is moving its hosting region, and a key pinned to the old address would stop working the moment it moves. One consequence worth diarising: Binance and Bybit disable an unrestricted key's trading permission after 90 days, so plan to revisit the key then.</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Create your credentials at OKX</h2>
+  <h2><span class="no">4</span>Create your credentials at OKX</h2>
   <ol><li>Log in at okx.com → profile icon → <b>API keys</b> → <b>Create API key</b>.</li><li>You choose the <b>passphrase</b> yourself at creation — OKX signs every request with it, so Sooppiy needs all three values.</li><li>Permissions: <b>Trade</b> (plus Read). Never Withdraw.</li><li>For shadow comparison, switch OKX into <b>Demo trading</b> mode first and create a demo API key there — demo and real keys are separate.</li></ol>
+  <div class="note red">The <b>secret</b> is shown exactly once, at creation. If you close that screen without copying it you cannot recover it — you have to delete the key and make a new one. Sooppiy never shows it again either, once saved.</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>Connect it on the Accounts page</h2>
+  <h2><span class="no">5</span>Where each value goes</h2>
+  <table>
+    <tr><th>At OKX it is called</th><th>Paste it into Sooppiy's field</th></tr>
+    <tr><td>API key</td><td><b>API key</b></td></tr><tr><td>Secret key</td><td><b>API secret</b></td></tr><tr><td>Passphrase</td><td><b>API passphrase (chosen when the key is created)</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>Connect it on the Accounts page</h2>
   <ol><li>Open <b>Accounts</b> → <b>Trading gateway</b>.</li><li>Pick your region (ordering only — every broker stays available) and choose <b>OKX</b>.</li><li>Paste the credentials from step 2.</li><li>Read and accept the live-trading terms — required even if you only plan to use shadow.</li><li>Press <b>Connect gateway</b>. The account starts in <b>paper</b> mode: nothing is sent to OKX yet.</li><li>Switch the account to <b>shadow</b> (recommended first) or <b>live</b> on the account card.</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>What each mode does with OKX</h2>
+  <h2><span class="no">7</span>After you connect</h2>
+  <ol><li>The gateway appears under <b>Connected gateways</b> with a health line. Key-pair venues show “credentials on file” — normal, it means there is no session to probe.</li><li>Your automation rules do not switch by themselves. A rule only reaches OKX when you set that rule's account type to shadow or live.</li><li>Start in <b>shadow</b> and read the <b>Drift records</b> panel for a few days before considering live.</li><li>To revoke access at any time, delete the key at OKX — that stops every order instantly, whatever Sooppiy is set to.</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>What each mode does with OKX</h2>
   <table>
     <tr><th>Mode</th><th>What happens</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — every trade stays on Sooppiy's internal ledger. OKX is never contacted.</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>Venue notes</h2>
+  <h2><span class="no">9</span>Venue notes</h2>
   <ul><li>Spot only for now, USDT pairs (BTC-USDT style).</li><li>Sooppiy pins market buys to base-currency sizing — the configured amount is coins, never a USDT spend.</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>Troubleshooting</h2>
+  <h2><span class="no">10</span>Troubleshooting</h2>
   <table>
     <tr><th>Symptom</th><th>What it means / what to do</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>The stored key can no longer be read (for example after a server key rotation). Reconnect the broker with fresh credentials.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Accept the terms for this broker on the Accounts page — consent is recorded per broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>The venue is still in its shadow rollout. Shadow works today; live opens when the soak completes.</td></tr><tr><td>code 50105 / “Passphrase incorrect”</td><td>The passphrase Sooppiy stored differs from the one set at key creation. Reconnect the broker and re-enter all three values.</td></tr><tr><td>code 50111 / “Invalid OK-ACCESS-KEY”</td><td>Usually a real key while the venue expects a demo key (or the reverse) — the two environments have separate keys.</td></tr>

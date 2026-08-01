@@ -53,6 +53,25 @@ S = {
     subtitle="How to create the API credentials at {name} and connect them on the Accounts page.",
     badge_live="live trading available",
     badge_gated="shadow first — live rollout in progress",
+    h_avail="Availability and local rules",
+    avail_note="Sooppiy does not decide who may use a venue — the venue's own KYC does, and your local law does. Connecting a gateway here does not make a venue available to you, and a venue you cannot legally use will simply refuse your key. This is factual guidance, not legal advice; access rules change, so confirm on the venue's own terms page for your country.",
+    h_before="Before you start",
+    before_steps=[
+        "An account at {name} that has finished the venue's identity verification — an unverified account can create a key but cannot trade with it.",
+        "Two-factor authentication switched on at {name}. Every venue asks for a 2FA code (and often an email confirmation) at the moment you create the key.",
+        "This page open next to the venue's site, and somewhere safe to hold the secret for the minute between creating it and connecting it.",
+    ],
+    h_paste="Where each value goes",
+    paste_th=["At {name} it is called", "Paste it into Sooppiy's field"],
+    once_warn="The <b>secret</b> is shown exactly once, at creation. If you close that screen without copying it you cannot recover it — you have to delete the key and make a new one. Sooppiy never shows it again either, once saved.",
+    ip_note="<b>IP restriction — leave it unset for now.</b> Some venues let you lock a key to one server address. Sooppiy is moving its hosting region, and a key pinned to the old address would stop working the moment it moves. One consequence worth diarising: Binance and Bybit disable an unrestricted key's trading permission after 90 days, so plan to revisit the key then.",
+    h_after="After you connect",
+    after_steps=[
+        "The gateway appears under <b>Connected gateways</b> with a health line. Key-pair venues show “credentials on file” — normal, it means there is no session to probe.",
+        "Your automation rules do not switch by themselves. A rule only reaches {name} when you set that rule's account type to shadow or live.",
+        "Start in <b>shadow</b> and read the <b>Drift records</b> panel for a few days before considering live.",
+        "To revoke access at any time, delete the key at {name} — that stops every order instantly, whatever Sooppiy is set to.",
+    ],
     h_need="What you need",
     h_create="Create your credentials at {name}",
     h_connect="Connect it on the Accounts page",
@@ -88,6 +107,25 @@ S = {
     subtitle="{name}에서 API 자격 증명을 만들고 계정 페이지에서 연결하는 방법.",
     badge_live="실거래 가능",
     badge_gated="섀도 우선 — 실거래는 단계적 오픈 중",
+    h_avail="이용 가능 지역과 현지 규정",
+    avail_note="어느 거래소를 이용할 수 있는지는 Sooppiy가 정하지 않습니다 — 거래소의 KYC와 회원님 거주지 법률이 정합니다. 여기서 게이트웨이를 연결한다고 해서 해당 거래소를 이용할 수 있게 되는 것은 아니며, 법적으로 이용할 수 없는 거래소는 키 자체를 거부합니다. 이는 사실 안내이며 법률 자문이 아닙니다. 접근 규정은 바뀌므로 거주 국가 기준으로 거래소 약관에서 직접 확인하세요.",
+    h_before="시작하기 전에",
+    before_steps=[
+        "{name}에서 본인 확인(KYC)을 마친 계정. 미인증 계정은 키를 만들 수는 있어도 거래에 사용할 수 없습니다.",
+        "{name} 계정의 2단계 인증(2FA) 활성화. 모든 거래소가 키 생성 시점에 2FA 코드(대개 이메일 확인도)를 요구합니다.",
+        "이 페이지를 거래소 사이트와 나란히 열어두고, 시크릿을 만든 뒤 연결하기까지 잠시 안전하게 보관할 곳을 준비하세요.",
+    ],
+    h_paste="어느 값을 어디에 입력하나",
+    paste_th=["{name}에서의 이름", "Sooppiy 입력란"],
+    once_warn="<b>시크릿</b>은 생성 시 <b>딱 한 번만</b> 표시됩니다. 복사하지 않고 화면을 닫으면 복구할 수 없어 키를 삭제하고 새로 만들어야 합니다. Sooppiy도 저장 후에는 다시 보여주지 않습니다.",
+    ip_note="<b>IP 제한 — 지금은 설정하지 마세요.</b> 일부 거래소는 키를 특정 서버 주소로 고정할 수 있습니다. Sooppiy는 호스팅 리전을 이전할 예정이라, 이전 주소로 고정한 키는 이전하는 순간 동작을 멈춥니다. 다만 기억해 두실 점: 바이낸스와 바이비트는 IP 제한이 없는 키의 거래 권한을 90일 후 비활성화하므로, 그때 키를 다시 점검할 일정을 잡아두세요.",
+    h_after="연결한 다음",
+    after_steps=[
+        "<b>연결된 게이트웨이</b> 목록에 상태 표시와 함께 나타납니다. 키 방식 거래소는 “자격 증명 저장됨”으로 표시되는데, 점검할 세션이 없다는 뜻이며 정상입니다.",
+        "자동매매 규칙이 저절로 바뀌지는 않습니다. 규칙의 계정 유형을 shadow 또는 live로 설정해야 비로소 {name}에 주문이 전달됩니다.",
+        "먼저 <b>shadow</b>로 며칠 운영하며 <b>드리프트 기록</b> 패널을 확인한 뒤 실거래를 검토하세요.",
+        "언제든 {name}에서 키를 삭제하면 접근이 즉시 차단됩니다 — Sooppiy 설정과 무관하게 모든 주문이 멈춥니다.",
+    ],
     h_need="준비물",
     h_create="{name}에서 자격 증명 만들기",
     h_connect="계정 페이지에서 연결하기",
@@ -123,6 +161,25 @@ S = {
     subtitle="{name}でAPI資格情報を作成し、アカウントページで接続する方法。",
     badge_live="実取引可能",
     badge_gated="シャドー優先 — 実取引は段階的に開放中",
+    h_avail="利用可能な地域と現地規制",
+    avail_note="どの取引所を利用できるかを決めるのはSooppiyではありません — 取引所のKYCと、お住まいの地域の法律です。ここでゲートウェイを接続しても取引所が利用可能になるわけではなく、法的に利用できない取引所はキー自体を拒否します。これは事実の案内であり法的助言ではありません。アクセス規定は変わるため、居住国について取引所の規約で直接ご確認ください。",
+    h_before="始める前に",
+    before_steps=[
+        "{name}で本人確認(KYC)を完了した口座。未認証の口座はキーを作成できても取引には使えません。",
+        "{name}での二段階認証(2FA)の有効化。どの取引所もキー作成時に2FAコード(多くはメール確認も)を求めます。",
+        "このページを取引所サイトと並べて開き、シークレットを作成してから接続するまでの間、安全に保管できる場所を用意してください。",
+    ],
+    h_paste="どの値をどこに入力するか",
+    paste_th=["{name}での名称", "Sooppiyの入力欄"],
+    once_warn="<b>シークレット</b>は作成時に<b>一度だけ</b>表示されます。コピーせず画面を閉じると復元できず、キーを削除して作り直す必要があります。Sooppiyも保存後は再表示しません。",
+    ip_note="<b>IP制限 — 今は設定しないでください。</b> 一部の取引所ではキーを特定のサーバーアドレスに固定できます。Sooppiyはホスティングリージョンを移転する予定で、旧アドレスに固定したキーは移転した瞬間に動作しなくなります。ただし控えておく点として、BinanceとBybitはIP制限のないキーの取引権限を90日後に無効化するため、その時点でキーを見直す予定を立てておいてください。",
+    h_after="接続した後",
+    after_steps=[
+        "<b>接続済みゲートウェイ</b>に状態表示とともに現れます。キー方式の取引所は「認証情報を保存済み」と表示されますが、点検すべきセッションがないという意味で正常です。",
+        "自動売買ルールが自動的に切り替わることはありません。ルールの口座種別をshadowまたはliveにして初めて{name}に注文が届きます。",
+        "まず<b>shadow</b>で数日運用し、<b>ドリフト記録</b>パネルを確認してからliveを検討してください。",
+        "いつでも{name}側でキーを削除すればアクセスは即座に遮断されます — Sooppiyの設定に関係なくすべての注文が止まります。",
+    ],
     h_need="必要なもの",
     h_create="{name}で資格情報を作成する",
     h_connect="アカウントページで接続する",
@@ -158,6 +215,25 @@ S = {
     subtitle="วิธีสร้างข้อมูลรับรอง API ที่ {name} และเชื่อมต่อในหน้าบัญชี",
     badge_live="เทรดจริงได้",
     badge_gated="เริ่มที่ shadow — การเทรดจริงกำลังทยอยเปิด",
+    h_avail="ความพร้อมให้บริการและกฎท้องถิ่น",
+    avail_note="Sooppiy ไม่ได้เป็นผู้ตัดสินว่าใครใช้กระดานใดได้ — KYC ของกระดานและกฎหมายท้องถิ่นของคุณเป็นผู้ตัดสิน การเชื่อมต่อเกตเวย์ที่นี่ไม่ได้ทำให้กระดานนั้นใช้ได้กับคุณ และกระดานที่คุณใช้ไม่ได้ตามกฎหมายจะปฏิเสธคีย์ของคุณเอง นี่คือข้อมูลข้อเท็จจริง ไม่ใช่คำแนะนำทางกฎหมาย กฎการเข้าถึงเปลี่ยนได้ โปรดยืนยันในหน้าข้อกำหนดของกระดานสำหรับประเทศของคุณ",
+    h_before="ก่อนเริ่ม",
+    before_steps=[
+        "บัญชีที่ {name} ซึ่งยืนยันตัวตน (KYC) เรียบร้อยแล้ว บัญชีที่ยังไม่ยืนยันสร้างคีย์ได้แต่ใช้เทรดไม่ได้",
+        "เปิดใช้การยืนยันสองขั้นตอน (2FA) ที่ {name} ทุกกระดานจะขอรหัส 2FA (และมักขอยืนยันทางอีเมล) ตอนสร้างคีย์",
+        "เปิดหน้านี้คู่กับเว็บของกระดาน และเตรียมที่ปลอดภัยสำหรับเก็บความลับชั่วครู่ระหว่างสร้างกับเชื่อมต่อ",
+    ],
+    h_paste="ค่าไหนใส่ช่องไหน",
+    paste_th=["ชื่อที่ {name} ใช้", "ช่องกรอกใน Sooppiy"],
+    once_warn="<b>ความลับ (secret)</b> จะแสดง<b>เพียงครั้งเดียว</b>ตอนสร้าง หากปิดหน้าจอโดยไม่คัดลอกจะกู้คืนไม่ได้ ต้องลบคีย์แล้วสร้างใหม่ และ Sooppiy ก็จะไม่แสดงอีกหลังบันทึก",
+    ip_note="<b>การจำกัด IP — ยังไม่ต้องตั้งตอนนี้</b> บางกระดานให้ล็อกคีย์ไว้กับที่อยู่เซิร์ฟเวอร์เดียวได้ Sooppiy กำลังจะย้ายภูมิภาคโฮสติ้ง คีย์ที่ล็อกกับที่อยู่เดิมจะหยุดทำงานทันทีที่ย้าย สิ่งที่ควรจดไว้: Binance และ Bybit ปิดสิทธิ์เทรดของคีย์ที่ไม่จำกัด IP หลัง 90 วัน จึงควรวางแผนกลับมาตรวจคีย์ตอนนั้น",
+    h_after="หลังเชื่อมต่อแล้ว",
+    after_steps=[
+        "เกตเวย์จะปรากฏใน <b>เกตเวย์ที่เชื่อมต่อ</b> พร้อมบรรทัดสถานะ กระดานแบบคู่คีย์จะแสดงว่า “บันทึกข้อมูลรับรองแล้ว” ซึ่งเป็นปกติ เพราะไม่มีเซสชันให้ตรวจ",
+        "กฎอัตโนมัติจะไม่เปลี่ยนเอง คำสั่งจะไปถึง {name} ก็ต่อเมื่อคุณตั้งประเภทบัญชีของกฎนั้นเป็น shadow หรือ live",
+        "เริ่มที่ <b>shadow</b> และดูแผง <b>บันทึกดริฟต์</b> สักสองสามวันก่อนพิจารณา live",
+        "ยกเลิกสิทธิ์ได้ทุกเมื่อโดยลบคีย์ที่ {name} — คำสั่งทั้งหมดจะหยุดทันที ไม่ว่า Sooppiy จะตั้งค่าไว้อย่างไร",
+    ],
     h_need="สิ่งที่ต้องมี",
     h_create="สร้างข้อมูลรับรองที่ {name}",
     h_connect="เชื่อมต่อในหน้าบัญชี",
@@ -193,6 +269,25 @@ S = {
     subtitle="Cách tạo thông tin xác thực API tại {name} và kết nối trên trang Tài khoản.",
     badge_live="đã mở giao dịch thật",
     badge_gated="shadow trước — giao dịch thật đang mở dần",
+    h_avail="Khả dụng và quy định địa phương",
+    avail_note="Sooppiy không quyết định ai được dùng sàn nào — KYC của sàn và luật nơi bạn sống quyết định. Kết nối cổng ở đây không làm cho một sàn trở nên khả dụng với bạn, và sàn bạn không được phép dùng sẽ tự từ chối khóa của bạn. Đây là thông tin thực tế, không phải tư vấn pháp lý; quy định truy cập thay đổi, hãy xác nhận trên trang điều khoản của sàn cho quốc gia bạn.",
+    h_before="Trước khi bắt đầu",
+    before_steps=[
+        "Một tài khoản tại {name} đã hoàn tất xác minh danh tính (KYC) — tài khoản chưa xác minh vẫn tạo được khóa nhưng không giao dịch được.",
+        "Bật xác thực hai lớp (2FA) tại {name}. Mọi sàn đều yêu cầu mã 2FA (và thường cả xác nhận email) ngay khi bạn tạo khóa.",
+        "Mở trang này cạnh website của sàn, và chuẩn bị nơi an toàn để giữ bí mật trong khoảnh khắc giữa lúc tạo và lúc kết nối.",
+    ],
+    h_paste="Giá trị nào điền vào đâu",
+    paste_th=["Tên gọi tại {name}", "Ô nhập của Sooppiy"],
+    once_warn="<b>Bí mật (secret)</b> chỉ hiển thị <b>đúng một lần</b> khi tạo. Nếu đóng màn hình mà chưa sao chép thì không thể khôi phục — bạn phải xóa khóa và tạo lại. Sooppiy cũng không hiển thị lại sau khi lưu.",
+    ip_note="<b>Giới hạn IP — tạm thời đừng đặt.</b> Một số sàn cho phép khóa chỉ dùng được từ một địa chỉ máy chủ. Sooppiy sắp chuyển khu vực máy chủ, và khóa ghim theo địa chỉ cũ sẽ ngừng hoạt động ngay khi chuyển. Một điều nên ghi lại: Binance và Bybit vô hiệu hóa quyền giao dịch của khóa không giới hạn IP sau 90 ngày, hãy lên lịch xem lại khóa khi đó.",
+    h_after="Sau khi kết nối",
+    after_steps=[
+        "Cổng xuất hiện trong <b>Cổng đã kết nối</b> kèm dòng trạng thái. Sàn dùng cặp khóa hiển thị “đã lưu thông tin xác thực” — bình thường, vì không có phiên nào để kiểm tra.",
+        "Quy tắc tự động không tự chuyển. Lệnh chỉ tới {name} khi bạn đặt loại tài khoản của quy tắc đó là shadow hoặc live.",
+        "Hãy bắt đầu ở <b>shadow</b> và xem bảng <b>Bản ghi lệch</b> vài ngày trước khi cân nhắc live.",
+        "Thu hồi quyền bất cứ lúc nào bằng cách xóa khóa tại {name} — mọi lệnh dừng ngay, bất kể Sooppiy đang đặt gì.",
+    ],
     h_need="Bạn cần gì",
     h_create="Tạo thông tin xác thực tại {name}",
     h_connect="Kết nối trên trang Tài khoản",
@@ -228,6 +323,25 @@ S = {
     subtitle="Cara membuat kredensial API di {name} dan menghubungkannya di halaman Akun.",
     badge_live="trading live tersedia",
     badge_gated="shadow dulu — trading live dibuka bertahap",
+    h_avail="Ketersediaan dan aturan setempat",
+    avail_note="Sooppiy tidak menentukan siapa yang boleh memakai suatu bursa — KYC bursa dan hukum setempat Andalah yang menentukan. Menghubungkan gateway di sini tidak membuat sebuah bursa tersedia bagi Anda, dan bursa yang tidak boleh Anda pakai secara hukum akan menolak kunci Anda. Ini panduan faktual, bukan nasihat hukum; aturan akses berubah, jadi konfirmasikan di halaman ketentuan bursa untuk negara Anda.",
+    h_before="Sebelum mulai",
+    before_steps=[
+        "Akun di {name} yang sudah menyelesaikan verifikasi identitas (KYC) — akun belum terverifikasi bisa membuat kunci tetapi tidak bisa dipakai bertransaksi.",
+        "Autentikasi dua faktor (2FA) aktif di {name}. Semua bursa meminta kode 2FA (dan sering konfirmasi email) tepat saat Anda membuat kunci.",
+        "Halaman ini terbuka di samping situs bursa, dan tempat aman untuk menyimpan secret selama sesaat antara pembuatan dan penyambungan.",
+    ],
+    h_paste="Nilai mana masuk ke mana",
+    paste_th=["Namanya di {name}", "Kolom isian Sooppiy"],
+    once_warn="<b>Secret</b> hanya ditampilkan <b>satu kali</b> saat pembuatan. Jika Anda menutup layar tanpa menyalinnya, nilainya tidak bisa dipulihkan — Anda harus menghapus kunci dan membuat yang baru. Sooppiy juga tidak menampilkannya lagi setelah disimpan.",
+    ip_note="<b>Pembatasan IP — biarkan kosong untuk saat ini.</b> Sebagian bursa memungkinkan mengunci kunci ke satu alamat server. Sooppiy sedang memindahkan wilayah hosting, dan kunci yang dipatok ke alamat lama akan berhenti bekerja begitu perpindahan terjadi. Satu hal untuk dicatat: Binance dan Bybit menonaktifkan izin trading kunci tanpa pembatasan IP setelah 90 hari, jadi rencanakan meninjau kunci saat itu.",
+    h_after="Setelah terhubung",
+    after_steps=[
+        "Gateway muncul di <b>Gateway terhubung</b> dengan baris status. Bursa berbasis pasangan kunci menampilkan “kredensial tersimpan” — normal, karena tidak ada sesi untuk diperiksa.",
+        "Aturan otomatisasi tidak berpindah sendiri. Order baru sampai ke {name} bila Anda menyetel jenis akun aturan tersebut ke shadow atau live.",
+        "Mulailah di <b>shadow</b> dan baca panel <b>Catatan penyimpangan</b> selama beberapa hari sebelum mempertimbangkan live.",
+        "Cabut akses kapan saja dengan menghapus kunci di {name} — semua order langsung berhenti, apa pun setelan Sooppiy.",
+    ],
     h_need="Yang Anda butuhkan",
     h_create="Buat kredensial di {name}",
     h_connect="Hubungkan di halaman Akun",
@@ -272,23 +386,17 @@ B = {
     "fields": ["key", "secret"],
     "steps": {
         "en": ["Log in at binance.com → profile icon → <b>Account</b> → <b>API Management</b> → <b>Create API</b> (system-generated).",
-               "Enable <b>Reading</b> and <b>Spot &amp; Margin Trading</b>. Leave withdrawals disabled.",
-               "Add Sooppiy's server IP to the key's IP access restriction if you use one (recommended)."],
+               "Enable <b>Reading</b> and <b>Spot &amp; Margin Trading</b>. Leave withdrawals disabled."],
         "ko": ["binance.com 로그인 → 프로필 아이콘 → <b>Account</b> → <b>API Management</b> → <b>Create API</b>(시스템 생성).",
-               "<b>Reading</b>과 <b>Spot &amp; Margin Trading</b>을 활성화하세요. 출금은 비활성 상태로 두세요.",
-               "IP 접근 제한을 쓴다면 Sooppiy 서버 IP를 등록하세요(권장)."],
+               "<b>Reading</b>과 <b>Spot &amp; Margin Trading</b>을 활성화하세요. 출금은 비활성 상태로 두세요."],
         "ja": ["binance.comにログイン → プロフィール → <b>Account</b> → <b>API Management</b> → <b>Create API</b>(システム生成)。",
-               "<b>Reading</b>と<b>Spot &amp; Margin Trading</b>を有効化。出金は無効のままにします。",
-               "IPアクセス制限を使う場合はSooppiyサーバーのIPを登録してください(推奨)。"],
+               "<b>Reading</b>と<b>Spot &amp; Margin Trading</b>を有効化。出金は無効のままにします。"],
         "th": ["เข้าสู่ระบบ binance.com → ไอคอนโปรไฟล์ → <b>Account</b> → <b>API Management</b> → <b>Create API</b> (แบบ system-generated)",
-               "เปิดใช้ <b>Reading</b> และ <b>Spot &amp; Margin Trading</b> ปล่อยการถอนเงินให้ปิดไว้",
-               "หากใช้การจำกัด IP ให้เพิ่ม IP เซิร์ฟเวอร์ของ Sooppiy (แนะนำ)"],
+               "เปิดใช้ <b>Reading</b> และ <b>Spot &amp; Margin Trading</b> ปล่อยการถอนเงินให้ปิดไว้"],
         "vi": ["Đăng nhập binance.com → biểu tượng hồ sơ → <b>Account</b> → <b>API Management</b> → <b>Create API</b> (system-generated).",
-               "Bật <b>Reading</b> và <b>Spot &amp; Margin Trading</b>. Giữ quyền rút tiền ở trạng thái tắt.",
-               "Nếu dùng giới hạn IP, thêm IP máy chủ của Sooppiy (khuyến nghị)."],
+               "Bật <b>Reading</b> và <b>Spot &amp; Margin Trading</b>. Giữ quyền rút tiền ở trạng thái tắt."],
         "id": ["Masuk ke binance.com → ikon profil → <b>Account</b> → <b>API Management</b> → <b>Create API</b> (system-generated).",
-               "Aktifkan <b>Reading</b> dan <b>Spot &amp; Margin Trading</b>. Biarkan penarikan dana nonaktif.",
-               "Jika memakai pembatasan IP, tambahkan IP server Sooppiy (disarankan)."],
+               "Aktifkan <b>Reading</b> dan <b>Spot &amp; Margin Trading</b>. Biarkan penarikan dana nonaktif."],
     },
     "shadow": {
         "en": "<b>shadow</b> — your rule's fills stay simulated, and the same order is ALSO sent to the Binance Spot <b>Testnet</b> (testnet.binance.vision) for comparison; the drift is journalled. Note: the testnet has its own separate keys — create a testnet key there if you want shadow comparison fills, and switch to your real keys before going live.",
@@ -870,6 +978,95 @@ TITLES = {
                  "th": "คู่มือเชื่อมต่อ KuCoin", "vi": "Hướng dẫn kết nối KuCoin", "id": "Panduan Menghubungkan KuCoin"},
 }
 
+
+# What the venue calls each credential → the Sooppiy connect-form field it
+# belongs in. This is the step members get wrong most often: the venue's
+# wording rarely matches ours (Alpaca "Key ID", Kraken "Private Key",
+# Upbit "Access key").
+PASTE_MAP = {
+    "binance":   [("API Key", "key"), ("Secret Key", "secret")],
+    "alpaca":    [("API Key ID", "key"), ("Secret Key", "secret")],
+    "ibkr":      [("The address you log in to the gateway at", "gwurl"),
+                  ("Account id shown in the Client Portal", "acct")],
+    "bybit":     [("API Key", "key"), ("API Secret", "secret")],
+    "okx":       [("API key", "key"), ("Secret key", "secret"), ("Passphrase", "pass")],
+    "kraken":    [("API Key", "key"), ("Private Key", "secret")],
+    "cryptocom": [("API Key", "key"), ("Secret Key", "secret")],
+    "upbit":     [("Access key (액세스 키)", "key"), ("Secret key (시크릿 키)", "secret")],
+    "kucoin":    [("API Key", "key"), ("API Secret", "secret"), ("API Passphrase", "pass")],
+}
+
+
+# Where each venue may legally be used. FACTS a member needs before spending
+# time on a key — not legal advice, and deliberately phrased so: eligibility is
+# decided by the venue's own KYC and by the member's local law, never by
+# Sooppiy. Verify against the venue's current terms; access rules change.
+AVAIL = {
+"binance": {
+ "en": "Not available to residents of the <b>United States</b> — binance.com blocks US users, and Binance.US is a separate company Sooppiy does not connect to. Restricted or limited in several other jurisdictions; derivatives access varies by country. Your eligibility is settled at Binance's own KYC.",
+ "ko": "<b>미국</b> 거주자는 이용할 수 없습니다 — binance.com은 미국 사용자를 차단하며, Binance.US는 별개 회사로 Sooppiy가 연결하지 않습니다. 일부 국가에서는 이용이 제한되며 파생상품 접근 범위도 국가마다 다릅니다. 최종 가입 가능 여부는 바이낸스의 KYC에서 결정됩니다.",
+ "ja": "<b>米国</b>居住者は利用できません — binance.comは米国ユーザーをブロックしており、Binance.USはSooppiyが接続しない別会社です。他のいくつかの法域でも制限があり、デリバティブの提供範囲は国により異なります。最終的な可否はBinanceのKYCで決まります。",
+ "th": "ผู้พำนักใน<b>สหรัฐอเมริกา</b>ใช้ไม่ได้ — binance.com บล็อกผู้ใช้สหรัฐฯ และ Binance.US เป็นบริษัทแยกที่ Sooppiy ไม่ได้เชื่อมต่อ บางเขตอำนาจศาลมีข้อจำกัด และการเข้าถึงอนุพันธ์ต่างกันไปตามประเทศ สิทธิ์ของคุณตัดสินที่ KYC ของ Binance เอง",
+ "vi": "Không khả dụng với người cư trú tại <b>Hoa Kỳ</b> — binance.com chặn người dùng Mỹ, và Binance.US là công ty riêng mà Sooppiy không kết nối. Bị hạn chế ở một số khu vực pháp lý khác; quyền truy cập phái sinh khác nhau theo quốc gia. Điều kiện của bạn do KYC của Binance quyết định.",
+ "id": "Tidak tersedia bagi penduduk <b>Amerika Serikat</b> — binance.com memblokir pengguna AS, dan Binance.US adalah perusahaan terpisah yang tidak dihubungkan Sooppiy. Dibatasi di beberapa yurisdiksi lain; akses derivatif berbeda per negara. Kelayakan Anda ditentukan oleh KYC Binance sendiri."},
+"bybit": {
+ "en": "Not available to residents of the <b>United States</b>. Restricted in several other jurisdictions and unavailable to UK retail users for derivatives. Check Bybit's restricted-country list before creating a key.",
+ "ko": "<b>미국</b> 거주자는 이용할 수 없습니다. 일부 국가에서도 제한되며 영국 개인 투자자는 파생상품을 이용할 수 없습니다. 키를 만들기 전에 바이비트의 제한 국가 목록을 확인하세요.",
+ "ja": "<b>米国</b>居住者は利用できません。他のいくつかの法域でも制限があり、英国のリテール利用者はデリバティブを利用できません。キー作成前にBybitの制限国リストを確認してください。",
+ "th": "ผู้พำนักใน<b>สหรัฐอเมริกา</b>ใช้ไม่ได้ มีข้อจำกัดในบางเขตอำนาจศาล และผู้ใช้รายย่อยในสหราชอาณาจักรใช้อนุพันธ์ไม่ได้ ตรวจรายชื่อประเทศที่ถูกจำกัดของ Bybit ก่อนสร้างคีย์",
+ "vi": "Không khả dụng với người cư trú tại <b>Hoa Kỳ</b>. Bị hạn chế ở một số khu vực khác và người dùng cá nhân tại Anh không dùng được phái sinh. Hãy kiểm tra danh sách quốc gia bị hạn chế của Bybit trước khi tạo khóa.",
+ "id": "Tidak tersedia bagi penduduk <b>Amerika Serikat</b>. Dibatasi di beberapa yurisdiksi lain dan pengguna ritel Inggris tidak dapat mengakses derivatif. Periksa daftar negara terbatas Bybit sebelum membuat kunci."},
+"okx": {
+ "en": "Not available to residents of the <b>United States</b>. Availability elsewhere varies — OKX operates licensed entities in some markets (including Singapore) and restricts others.",
+ "ko": "<b>미국</b> 거주자는 이용할 수 없습니다. 그 외 지역은 국가별로 다르며, OKX는 일부 시장(싱가포르 등)에서 라이선스 법인을 운영하고 다른 지역은 제한합니다.",
+ "ja": "<b>米国</b>居住者は利用できません。その他の地域は国により異なり、OKXは一部市場(シンガポールなど)でライセンス法人を運営し、他地域は制限しています。",
+ "th": "ผู้พำนักใน<b>สหรัฐอเมริกา</b>ใช้ไม่ได้ พื้นที่อื่นแตกต่างกันไป — OKX มีนิติบุคคลที่ได้รับใบอนุญาตในบางตลาด (รวมสิงคโปร์) และจำกัดในบางแห่ง",
+ "vi": "Không khả dụng với người cư trú tại <b>Hoa Kỳ</b>. Nơi khác thì khác nhau — OKX vận hành pháp nhân được cấp phép ở một số thị trường (gồm Singapore) và hạn chế ở nơi khác.",
+ "id": "Tidak tersedia bagi penduduk <b>Amerika Serikat</b>. Ketersediaan di tempat lain bervariasi — OKX mengoperasikan entitas berlisensi di beberapa pasar (termasuk Singapura) dan membatasi yang lain."},
+"kraken": {
+ "en": "One of the few venues here that <b>does serve US residents</b> (most states), alongside the EU, UK, Japan and much of Asia. Product availability still varies by country and by US state.",
+ "ko": "여기 있는 거래소 중 <b>미국 거주자를 지원하는</b> 몇 안 되는 곳입니다(대부분의 주). EU·영국·일본과 아시아 상당 지역도 지원합니다. 다만 상품별 이용 가능 범위는 국가와 미국 주에 따라 다릅니다.",
+ "ja": "ここに挙げた取引所の中で<b>米国居住者に対応する</b>数少ない一つです(大半の州)。EU・英国・日本およびアジアの多くも対象です。ただし取扱商品は国や米国の州により異なります。",
+ "th": "เป็นหนึ่งในไม่กี่กระดานที่นี่ที่<b>ให้บริการผู้พำนักในสหรัฐฯ</b> (เกือบทุกรัฐ) รวมถึงสหภาพยุโรป สหราชอาณาจักร ญี่ปุ่น และเอเชียส่วนใหญ่ ผลิตภัณฑ์ที่ใช้ได้ยังต่างกันตามประเทศและรัฐ",
+ "vi": "Một trong số ít sàn ở đây <b>có phục vụ người cư trú Hoa Kỳ</b> (hầu hết các bang), cùng EU, Anh, Nhật Bản và phần lớn châu Á. Sản phẩm khả dụng vẫn khác nhau theo quốc gia và theo bang.",
+ "id": "Salah satu dari sedikit bursa di sini yang <b>melayani penduduk AS</b> (sebagian besar negara bagian), selain UE, Inggris, Jepang, dan sebagian besar Asia. Ketersediaan produk tetap berbeda per negara dan per negara bagian."},
+"cryptocom": {
+ "en": "The Exchange serves many markets including the <b>United States</b> in most states, but product access differs by country and state — and the Exchange is a different service from the Crypto.com App.",
+ "ko": "거래소(Exchange)는 <b>미국</b>을 포함한 다수 시장을 지원하지만(대부분의 주), 상품별 이용 범위는 국가·주에 따라 다릅니다. 또한 Exchange는 Crypto.com 앱과 별개 서비스입니다.",
+ "ja": "Exchangeは<b>米国</b>(大半の州)を含む多くの市場に対応しますが、取扱商品は国や州により異なります。またExchangeはCrypto.comアプリとは別のサービスです。",
+ "th": "Exchange ให้บริการหลายตลาดรวมถึง<b>สหรัฐอเมริกา</b>ในเกือบทุกรัฐ แต่การเข้าถึงผลิตภัณฑ์ต่างกันตามประเทศและรัฐ และ Exchange เป็นคนละบริการกับแอป Crypto.com",
+ "vi": "Sàn phục vụ nhiều thị trường gồm <b>Hoa Kỳ</b> ở hầu hết các bang, nhưng quyền truy cập sản phẩm khác nhau theo quốc gia và bang — và Exchange là dịch vụ khác với ứng dụng Crypto.com.",
+ "id": "Exchange melayani banyak pasar termasuk <b>Amerika Serikat</b> di sebagian besar negara bagian, tetapi akses produk berbeda per negara dan negara bagian — dan Exchange adalah layanan berbeda dari aplikasi Crypto.com."},
+"upbit": {
+ "en": "A <b>Korean</b> exchange operating under Korea's VASP registration. Practically it requires Korean residency, a Korean phone number and a linked K-Bank account for KRW deposits. Non-residents generally cannot complete verification.",
+ "ko": "국내 VASP 신고를 마친 <b>한국</b> 거래소입니다. 실질적으로 국내 거주·국내 휴대전화·KRW 입금용 케이뱅크 계좌 연동이 필요하며, 비거주자는 일반적으로 인증을 완료할 수 없습니다.",
+ "ja": "韓国のVASP登録の下で運営される<b>韓国</b>の取引所です。実務上、韓国在住・韓国の電話番号・KRW入金用のK-Bank口座連携が必要で、非居住者は通常、認証を完了できません。",
+ "th": "เป็นกระดานของ<b>เกาหลีใต้</b> ที่ดำเนินการภายใต้การจดทะเบียน VASP ของเกาหลี ในทางปฏิบัติต้องพำนักในเกาหลี มีเบอร์โทรเกาหลี และผูกบัญชี K-Bank สำหรับฝากเงิน KRW ผู้ที่ไม่ได้พำนักมักยืนยันตัวตนไม่ผ่าน",
+ "vi": "Là sàn của <b>Hàn Quốc</b> hoạt động theo đăng ký VASP của Hàn Quốc. Trên thực tế cần cư trú tại Hàn Quốc, số điện thoại Hàn Quốc và tài khoản K-Bank liên kết để nạp KRW. Người không cư trú thường không hoàn tất được xác minh.",
+ "id": "Bursa <b>Korea Selatan</b> yang beroperasi di bawah registrasi VASP Korea. Praktisnya memerlukan domisili Korea, nomor telepon Korea, dan rekening K-Bank tertaut untuk setoran KRW. Non-penduduk umumnya tidak dapat menyelesaikan verifikasi."},
+"kucoin": {
+ "en": "Not available to residents of the <b>United States</b>. Availability elsewhere varies and verification level affects limits — check KuCoin's terms for your country before creating a key.",
+ "ko": "<b>미국</b> 거주자는 이용할 수 없습니다. 그 외 지역은 국가별로 다르고 인증 등급에 따라 한도가 달라지므로, 키를 만들기 전에 거주 국가 기준 약관을 확인하세요.",
+ "ja": "<b>米国</b>居住者は利用できません。その他の地域は国により異なり、認証レベルで上限が変わります。キー作成前に居住国の規約を確認してください。",
+ "th": "ผู้พำนักใน<b>สหรัฐอเมริกา</b>ใช้ไม่ได้ พื้นที่อื่นแตกต่างกันและระดับการยืนยันตัวตนมีผลต่อวงเงิน ตรวจข้อกำหนดสำหรับประเทศของคุณก่อนสร้างคีย์",
+ "vi": "Không khả dụng với người cư trú tại <b>Hoa Kỳ</b>. Nơi khác thì khác nhau và mức xác minh ảnh hưởng tới hạn mức — hãy xem điều khoản cho quốc gia của bạn trước khi tạo khóa.",
+ "id": "Tidak tersedia bagi penduduk <b>Amerika Serikat</b>. Ketersediaan di tempat lain bervariasi dan tingkat verifikasi memengaruhi limit — periksa ketentuan untuk negara Anda sebelum membuat kunci."},
+"alpaca": {
+ "en": "A <b>US broker-dealer</b> for US-listed stocks. It serves US residents and a list of supported non-US countries — check that list before opening the account. US market hours and pattern-day-trading rules apply to your account, not to Sooppiy.",
+ "ko": "미국 상장 주식을 다루는 <b>미국 브로커-딜러</b>입니다. 미국 거주자와 지원 국가 목록의 해외 거주자를 대상으로 하니 계좌 개설 전 목록을 확인하세요. 미국 장 시간과 패턴 데이트레이딩(PDT) 규정은 Sooppiy가 아니라 회원님 계좌에 적용됩니다.",
+ "ja": "米国上場株を扱う<b>米国のブローカーディーラー</b>です。米国居住者と対応国リストの海外居住者が対象なので、口座開設前にリストを確認してください。米国市場の時間とパターンデイトレード規制は、Sooppiyではなくご自身の口座に適用されます。",
+ "th": "เป็น<b>โบรกเกอร์-ดีลเลอร์สหรัฐฯ</b> สำหรับหุ้นจดทะเบียนในสหรัฐฯ ให้บริการผู้พำนักในสหรัฐฯ และประเทศที่รองรับ ตรวจรายชื่อก่อนเปิดบัญชี เวลาทำการตลาดสหรัฐฯ และกฎ pattern day trading ใช้กับบัญชีของคุณ ไม่ใช่กับ Sooppiy",
+ "vi": "Là <b>broker-dealer Hoa Kỳ</b> cho cổ phiếu niêm yết tại Mỹ. Phục vụ người cư trú Mỹ và danh sách quốc gia được hỗ trợ — hãy kiểm tra danh sách trước khi mở tài khoản. Giờ giao dịch Mỹ và quy định pattern day trading áp dụng cho tài khoản của bạn, không phải Sooppiy.",
+ "id": "Sebuah <b>broker-dealer AS</b> untuk saham yang tercatat di AS. Melayani penduduk AS dan daftar negara yang didukung — periksa daftar itu sebelum membuka akun. Jam pasar AS dan aturan pattern day trading berlaku pada akun Anda, bukan pada Sooppiy."},
+"ibkr": {
+ "en": "A regulated broker operating in most countries through local entities. Which products you may trade, and the margin rules that apply, depend on the entity your account sits under (IBKR LLC, IBKR UK, IBKR Japan and so on).",
+ "ko": "각국 현지 법인을 통해 대부분의 국가에서 영업하는 규제 브로커입니다. 거래 가능한 상품과 적용되는 증거금 규정은 계좌가 속한 법인(IBKR LLC, IBKR UK, IBKR Japan 등)에 따라 달라집니다.",
+ "ja": "各国の現地法人を通じて多くの国で営業する規制対象ブローカーです。取引できる商品や適用される証拠金規制は、口座が属する法人(IBKR LLC、IBKR UK、IBKR Japanなど)によって異なります。",
+ "th": "เป็นโบรกเกอร์ที่อยู่ภายใต้การกำกับ ดำเนินงานในหลายประเทศผ่านนิติบุคคลท้องถิ่น ผลิตภัณฑ์ที่เทรดได้และกฎมาร์จิ้นขึ้นกับนิติบุคคลที่บัญชีของคุณสังกัด (IBKR LLC, IBKR UK, IBKR Japan ฯลฯ)",
+ "vi": "Một broker chịu quản lý, hoạt động tại hầu hết các nước qua pháp nhân địa phương. Sản phẩm bạn được giao dịch và quy định ký quỹ áp dụng tùy theo pháp nhân mà tài khoản của bạn thuộc về (IBKR LLC, IBKR UK, IBKR Japan…).",
+ "id": "Broker teregulasi yang beroperasi di sebagian besar negara melalui entitas lokal. Produk yang boleh Anda perdagangkan dan aturan margin yang berlaku bergantung pada entitas tempat akun Anda berada (IBKR LLC, IBKR UK, IBKR Japan, dan seterusnya)."},
+}
+
 CSS = """
 :root{
   --page:#f9f9f7; --surface:#f1f0ec; --grid:#e1e0d9; --card:#ffffff;
@@ -919,6 +1116,12 @@ def render(broker: str, lang: str) -> str:
     steps_html = "".join(f"<li>{x}</li>" for x in b["steps"][lang])
     connect_html = "".join(f"<li>{x.format(name=name)}</li>" for x in s["connect_steps"])
     notes_html = "".join(f"<li>{x}</li>" for x in b["notes"][lang])
+    avail_html = AVAIL[broker][lang]
+    before_html = "".join(f"<li>{x.format(name=name)}</li>" for x in s["before_steps"])
+    after_html = "".join(f"<li>{x.format(name=name)}</li>" for x in s["after_steps"])
+    paste_h = [h.format(name=name) for h in s["paste_th"]]
+    paste_rows = "".join(f"<tr><td>{lbl}</td><td><b>{field_rows[k]}</b></td></tr>"
+                         for lbl, k in PASTE_MAP[broker])
     badge = (f'<span class="tag ok">{s["badge_live"]}</span>' if live
              else f'<span class="tag warn">{s["badge_gated"]}</span>')
     mode_live = (s["mode_live_live"] if live else s["mode_live_gated"]).format(name=name)
@@ -946,23 +1149,49 @@ def render(broker: str, lang: str) -> str:
 </header>
 
 <section>
-  <h2><span class="no">1</span>{s["h_need"]}</h2>
+  <h2><span class="no">1</span>{s["h_before"]}</h2>
+  <ul>{before_html}</ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>{s["h_avail"]}</h2>
+  <div class="card"><p>{avail_html}</p></div>
+  <div class="note">{s["avail_note"]}</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>{s["h_need"]}</h2>
   <div class="card"><ul>{fields_html}</ul></div>
   <div class="note red">{s["warn_keys"]}</div>
+  <div class="note">{s["ip_note"]}</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>{s["h_create"].format(name=name)}</h2>
+  <h2><span class="no">4</span>{s["h_create"].format(name=name)}</h2>
   <ol>{steps_html}</ol>
+  <div class="note red">{s["once_warn"]}</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>{s["h_connect"]}</h2>
+  <h2><span class="no">5</span>{s["h_paste"]}</h2>
+  <table>
+    <tr><th>{paste_h[0]}</th><th>{paste_h[1]}</th></tr>
+    {paste_rows}
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>{s["h_connect"]}</h2>
   <ol>{connect_html}</ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>{s["h_modes"].format(name=name)}</h2>
+  <h2><span class="no">7</span>{s["h_after"]}</h2>
+  <ol>{after_html}</ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>{s["h_modes"].format(name=name)}</h2>
   <table>
     <tr><th>{mode_h[0]}</th><th>{mode_h[1]}</th></tr>
     <tr><td>paper</td><td>{s["mode_sim"].format(name=name)}</td></tr>
@@ -973,12 +1202,12 @@ def render(broker: str, lang: str) -> str:
 </section>
 
 <section>
-  <h2><span class="no">5</span>{s["h_notes"]}</h2>
+  <h2><span class="no">9</span>{s["h_notes"]}</h2>
   <ul>{notes_html}</ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>{s["h_trouble"]}</h2>
+  <h2><span class="no">10</span>{s["h_trouble"]}</h2>
   <table>
     <tr><th>{trouble_h[0]}</th><th>{trouble_h[1]}</th></tr>
     {trouble_rows}

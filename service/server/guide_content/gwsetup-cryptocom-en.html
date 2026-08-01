@@ -51,23 +51,49 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </header>
 
 <section>
-  <h2><span class="no">1</span>What you need</h2>
+  <h2><span class="no">1</span>Before you start</h2>
+  <ul><li>An account at Crypto.com Exchange that has finished the venue's identity verification — an unverified account can create a key but cannot trade with it.</li><li>Two-factor authentication switched on at Crypto.com Exchange. Every venue asks for a 2FA code (and often an email confirmation) at the moment you create the key.</li><li>This page open next to the venue's site, and somewhere safe to hold the secret for the minute between creating it and connecting it.</li></ul>
+</section>
+
+<section>
+  <h2><span class="no">2</span>Availability and local rules</h2>
+  <div class="card"><p>The Exchange serves many markets including the <b>United States</b> in most states, but product access differs by country and state — and the Exchange is a different service from the Crypto.com App.</p></div>
+  <div class="note">Sooppiy does not decide who may use a venue — the venue's own KYC does, and your local law does. Connecting a gateway here does not make a venue available to you, and a venue you cannot legally use will simply refuse your key. This is factual guidance, not legal advice; access rules change, so confirm on the venue's own terms page for your country.</div>
+</section>
+
+<section>
+  <h2><span class="no">3</span>What you need</h2>
   <div class="card"><ul><li>API key</li><li>API secret</li></ul></div>
   <div class="note red">Grant TRADE permission only — never withdrawal. Use the venue's IP allowlist when it offers one. Start small. Your keys are encrypted at rest (AES-GCM) on Sooppiy's server and are never shown again after you save them.</div>
+  <div class="note"><b>IP restriction — leave it unset for now.</b> Some venues let you lock a key to one server address. Sooppiy is moving its hosting region, and a key pinned to the old address would stop working the moment it moves. One consequence worth diarising: Binance and Bybit disable an unrestricted key's trading permission after 90 days, so plan to revisit the key then.</div>
 </section>
 
 <section>
-  <h2><span class="no">2</span>Create your credentials at Crypto.com Exchange</h2>
+  <h2><span class="no">4</span>Create your credentials at Crypto.com Exchange</h2>
   <ol><li>This is the <b>Exchange</b> (exchange.crypto.com), not the mobile app. Log in → <b>Settings</b> → <b>API Keys</b> → create a key.</li><li>Permission: trading enabled, withdrawals disabled. Add an IP allowlist if offered.</li><li>For shadow comparison, the Exchange's <b>UAT sandbox</b> is a separate environment with its own keys.</li></ol>
+  <div class="note red">The <b>secret</b> is shown exactly once, at creation. If you close that screen without copying it you cannot recover it — you have to delete the key and make a new one. Sooppiy never shows it again either, once saved.</div>
 </section>
 
 <section>
-  <h2><span class="no">3</span>Connect it on the Accounts page</h2>
+  <h2><span class="no">5</span>Where each value goes</h2>
+  <table>
+    <tr><th>At Crypto.com Exchange it is called</th><th>Paste it into Sooppiy's field</th></tr>
+    <tr><td>API Key</td><td><b>API key</b></td></tr><tr><td>Secret Key</td><td><b>API secret</b></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">6</span>Connect it on the Accounts page</h2>
   <ol><li>Open <b>Accounts</b> → <b>Trading gateway</b>.</li><li>Pick your region (ordering only — every broker stays available) and choose <b>Crypto.com Exchange</b>.</li><li>Paste the credentials from step 2.</li><li>Read and accept the live-trading terms — required even if you only plan to use shadow.</li><li>Press <b>Connect gateway</b>. The account starts in <b>paper</b> mode: nothing is sent to Crypto.com Exchange yet.</li><li>Switch the account to <b>shadow</b> (recommended first) or <b>live</b> on the account card.</li></ol>
 </section>
 
 <section>
-  <h2><span class="no">4</span>What each mode does with Crypto.com Exchange</h2>
+  <h2><span class="no">7</span>After you connect</h2>
+  <ol><li>The gateway appears under <b>Connected gateways</b> with a health line. Key-pair venues show “credentials on file” — normal, it means there is no session to probe.</li><li>Your automation rules do not switch by themselves. A rule only reaches Crypto.com Exchange when you set that rule's account type to shadow or live.</li><li>Start in <b>shadow</b> and read the <b>Drift records</b> panel for a few days before considering live.</li><li>To revoke access at any time, delete the key at Crypto.com Exchange — that stops every order instantly, whatever Sooppiy is set to.</li></ol>
+</section>
+
+<section>
+  <h2><span class="no">8</span>What each mode does with Crypto.com Exchange</h2>
   <table>
     <tr><th>Mode</th><th>What happens</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — every trade stays on Sooppiy's internal ledger. Crypto.com Exchange is never contacted.</td></tr>
@@ -78,12 +104,12 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 </section>
 
 <section>
-  <h2><span class="no">5</span>Venue notes</h2>
+  <h2><span class="no">9</span>Venue notes</h2>
   <ul><li>Spot only for now, USDT pairs (BTC_USDT style).</li><li>Market buys on this venue are quoted in spend amount; Sooppiy converts your coin quantity at the decision price and the drift journal records the actual fill.</li></ul>
 </section>
 
 <section>
-  <h2><span class="no">6</span>Troubleshooting</h2>
+  <h2><span class="no">10</span>Troubleshooting</h2>
   <table>
     <tr><th>Symptom</th><th>What it means / what to do</th></tr>
     <tr><td>“credentials are missing or cannot be decrypted”</td><td>The stored key can no longer be read (for example after a server key rotation). Reconnect the broker with fresh credentials.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Accept the terms for this broker on the Accounts page — consent is recorded per broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>The venue is still in its shadow rollout. Shadow works today; live opens when the soak completes.</td></tr><tr><td>code 10002 / “UNAUTHORIZED”</td><td>Usually keys from the other environment (UAT vs live). Each environment only accepts its own keys.</td></tr>
