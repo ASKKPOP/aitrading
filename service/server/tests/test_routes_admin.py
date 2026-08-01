@@ -155,20 +155,49 @@ class StaleOAuthIdentityTests(_Base):
     """A Google identity whose linked user was deleted must not resurrect the
     ghost user_id — the callback should create a fresh user and re-link."""
 
+    def test_repeat_login_is_not_created(self):
+        """created=True routes a member to /getting-started — a returning
+        login or an email-link must never count as a first visit."""
+        import database
+        from routes_oauth import _find_or_create_user_from_google
+
+        google_user = {"sub": "g-sub-repeat", "email": "repeat@example.com"}
+        first_id, first_created = _find_or_create_user_from_google(google_user)
+        self.assertTrue(first_created)
+        again_id, again_created = _find_or_create_user_from_google(google_user)
+        self.assertEqual(again_id, first_id)
+        self.assertFalse(again_created)
+        # Existing email account linking Google for the first time: not new.
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO users (email, password_hash, points, lang) VALUES (?, 'x', 0, 'en')",
+            ("linked@example.com",),
+        )
+        linked_id = cur.lastrowid
+        conn.commit(); conn.close()
+        got_id, got_created = _find_or_create_user_from_google(
+            {"sub": "g-sub-linked", "email": "linked@example.com"})
+        self.assertEqual(got_id, linked_id)
+        self.assertFalse(got_created)
+
     def test_stale_identity_creates_fresh_user(self):
         import database
         from routes_oauth import _find_or_create_user_from_google
 
         google_user = {"sub": "g-sub-123", "email": "boss@example.com"}
         # First sign-in: creates user + identity link.
-        first_id = _find_or_create_user_from_google(google_user)
+        first_id, first_created = _find_or_create_user_from_google(google_user)
+        self.assertTrue(first_created)
         # Simulate the data reset: user deleted, identity row left behind.
         conn = database.get_db_connection()
         cur = conn.cursor()
         cur.execute("DELETE FROM users WHERE id = ?", (first_id,))
         conn.commit(); conn.close()
-        # Second sign-in must NOT return the ghost id.
-        second_id = _find_or_create_user_from_google(google_user)
+        # Second sign-in must NOT return the ghost id. It creates a FRESH
+        # user, so created is True again — this member genuinely is new.
+        second_id, second_created = _find_or_create_user_from_google(google_user)
+        self.assertTrue(second_created)
         self.assertNotEqual(second_id, first_id)
         conn = database.get_db_connection()
         cur = conn.cursor()
@@ -184,7 +213,7 @@ class StaleOAuthIdentityTests(_Base):
     def test_admin_user_delete_cascades_oauth_identity(self):
         import database
         from routes_oauth import _find_or_create_user_from_google
-        user_id = _find_or_create_user_from_google({"sub": "g-sub-9", "email": "del@example.com"})
+        user_id, _created = _find_or_create_user_from_google({"sub": "g-sub-9", "email": "del@example.com"})
         r = self.client.delete(f"/api/admin/users/{user_id}", headers=ADMIN)
         self.assertEqual(r.status_code, 200)
         conn = database.get_db_connection()
