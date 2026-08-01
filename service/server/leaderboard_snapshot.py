@@ -69,11 +69,15 @@ def _not_test_agent(alias: str = "a") -> str:
     if not _EXCLUDE_NAME_PREFIXES:
         return "1=1"
     # LIKE literal: escape ' and the % / _ wildcards so a prefix is matched
-    # literally. ESCAPE '\\' makes the escaped wildcards inert.
+    # literally. The escape char is '!' DELIBERATELY, not backslash: inside a
+    # MySQL string literal a backslash escapes the closing quote, so
+    # ESCAPE '\' is a 1064 syntax error on prod while passing fine on SQLite —
+    # it 500'd /api/profit/history live on 2026-08-01. '!' is inert in both.
     def esc(p: str) -> str:
-        return p.replace("'", "''").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return (p.replace("'", "''").replace("!", "!!")
+                 .replace("%", "!%").replace("_", "!_"))
     return " AND ".join(
-        f"{alias}.name NOT LIKE '{esc(p)}%' ESCAPE '\\'" for p in _EXCLUDE_NAME_PREFIXES)
+        f"{alias}.name NOT LIKE '{esc(p)}%' ESCAPE '!'" for p in _EXCLUDE_NAME_PREFIXES)
 
 
 def rankable_where(alias: str = "a") -> str:
