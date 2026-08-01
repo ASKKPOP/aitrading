@@ -1,13 +1,24 @@
 """Invariants for the 5-language transactional email catalogue."""
 from analysis_agents import LANG_NAMES
-from email_i18n import verification_email
+from email_i18n import _COPY, verification_email
 
 LANGS = tuple(LANG_NAMES)
+PURPOSES = tuple(_COPY)
+
+
+def test_every_purpose_covers_every_language():
+    # verification_email falls back to the signup copy for an unknown purpose
+    # and to English for an unknown lang — both silent. Parity is the only
+    # thing that stops a new purpose shipping half-translated.
+    for purpose, langs in _COPY.items():
+        assert set(langs) == set(LANGS), f"{purpose}: {set(LANGS) ^ set(langs)}"
+        for lang, copy in langs.items():
+            assert set(copy) == {"subject", "heading", "intro", "note"}, f"{purpose}/{lang}"
 
 
 def test_all_langs_render_code_and_branding():
     for lang in LANGS:
-        for purpose in ("signup", "reset"):
+        for purpose in PURPOSES:
             subj, html = verification_email("654321", lang, purpose)
             assert subj.strip(), f"{lang}/{purpose}: empty subject"
             assert "654321" in html, f"{lang}/{purpose}: code missing"

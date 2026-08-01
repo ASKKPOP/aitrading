@@ -152,6 +152,42 @@
       "cwd": "service/frontend",
       "port": 3021,
       "autoPort": false
+    },
+    {
+      "name": "backend-8041",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "--app-dir",
+        "service/server",
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8041"
+      ],
+      "port": 8041
+    },
+    {
+      "name": "frontend-3041",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3041",
+        "--strictPort",
+        "--host",
+        "administr.localhost"
+      ],
+      "cwd": "service/frontend",
+      "port": 3041,
+      "url": "http://administr.localhost:3041",
+      "env": {
+        "VITE_PROXY_TARGET": "http://127.0.0.1:8041"
+      }
     }
   ]
 }

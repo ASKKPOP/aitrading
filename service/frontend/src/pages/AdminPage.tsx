@@ -3,7 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { LANGUAGES, tr } from '../i18n'
 
 // Manager console — served on administr.sooppiy.com (App.tsx hostname gate).
 // Admins sign in with email + password (admin_users, routes_admin_auth.py);
@@ -130,7 +130,14 @@ export function AdminPage() {
   const [contracts, setContracts] = useState<any | null>(null)
   const [planList, setPlanList] = useState<any[]>([])
   const [adminPlans, setAdminPlans] = useState<any[]>([])
-  const [grant, setGrant] = useState({ email: '', plan_code: 'junior', days: '30', note: '' })
+  const [grant, setGrant] = useState({ email: '', plan_code: 'junior', days: '30', note: '',
+    method: 'manual', reference: '', amount_usd: '' })
+  // Manual member creation. `invite` holds the last result so the admin can see
+  // whether the set-password email actually went out.
+  const [newMember, setNewMember] = useState({ email: '', lang: 'en', plan_code: '', days: '30' })
+  const [invite, setInvite] = useState<any | null>(null)
+  // Which member rows have their agent sub-table open.
+  const [openAgents, setOpenAgents] = useState<Record<number, boolean>>({})
   const [newPlan, setNewPlan] = useState({ code: '', name: '', price: '', sort: '10' })
   const [assets, setAssets] = useState<any | null>(null)
   const [positions, setPositions] = useState<any | null>(null)
@@ -189,6 +196,21 @@ export function AdminPage() {
     cancelConfirm: tr(language, { ko: '이 구독을 해지할까요? 회원은 즉시 구독 페이지로 이동됩니다.', en: 'Cancel this subscription? The member is gated to the subscribe page immediately.', ja: 'この購読を解約しますか？会員は直ちに購読ページへ誘導されます。', th: 'ยกเลิกการสมัครนี้หรือไม่ สมาชิกจะถูกพาไปหน้าสมัครทันที', vi: 'Hủy đăng ký này? Thành viên sẽ bị chuyển ngay tới trang đăng ký.', id: 'Batalkan langganan ini? Anggota tersebut langsung diarahkan ke halaman berlangganan.' }),
     grantTitle: tr(language, { ko: '수동 부여 — 결제 없이 플랜 지급 (무료 제공·기존회원·엔터프라이즈 계약)', en: 'Manual grant — assign a plan without payment (comps, grandfathered members, enterprise contracts)', ja: '手動付与 — 決済なしでプランを割り当て（無償提供・既存会員・エンタープライズ契約）', th: 'ให้สิทธิ์เอง — กำหนดแพลนโดยไม่ต้องชำระเงิน (ให้ฟรี, สมาชิกเดิม, สัญญาองค์กร)', vi: 'Cấp thủ công — gán gói không cần thanh toán (tặng, thành viên cũ, hợp đồng doanh nghiệp)', id: 'Pemberian manual — tetapkan paket tanpa pembayaran (kompensasi, anggota lama, kontrak enterprise)' }),
     grantBtn: tr(language, { ko: '부여', en: 'Grant', ja: '付与', th: 'ให้สิทธิ์', vi: 'Cấp', id: 'Berikan' }),
+    payMethod: tr(language, { ko: '결제 수단', en: 'Payment method', ja: '決済手段', th: 'วิธีชำระเงิน', vi: 'Phương thức thanh toán', id: 'Metode pembayaran' }),
+    payMethodComp: tr(language, { ko: 'manual — 무상 제공 (매출 미집계)', en: 'manual — comp (not counted as revenue)', ja: 'manual — 無償提供（売上に計上しない）', th: 'manual — ให้ฟรี (ไม่นับเป็นรายได้)', vi: 'manual — tặng (không tính doanh thu)', id: 'manual — gratis (tidak dihitung sebagai pendapatan)' }),
+    payReference: tr(language, { ko: '입금 참조 (tx 해시·입금자명)', en: 'Payment reference (tx hash, sender name)', ja: '入金参照 (txハッシュ・振込名義)', th: 'อ้างอิงการชำระ (tx hash, ชื่อผู้โอน)', vi: 'Tham chiếu thanh toán (tx hash, tên người gửi)', id: 'Referensi pembayaran (tx hash, nama pengirim)' }),
+    payAmount: tr(language, { ko: '금액 (USD)', en: 'Amount (USD)', ja: '金額 (USD)', th: 'จำนวนเงิน (USD)', vi: 'Số tiền (USD)', id: 'Jumlah (USD)' }),
+    payRecordHint: tr(language, { ko: '사이트 밖에서 받은 결제를 기록하려면 수단·참조·금액을 채우세요. 금액이 0보다 크면 매출로 집계됩니다.', en: 'Fill in method, reference and amount to record a payment taken outside the site. Any amount above 0 counts as revenue.', ja: 'サイト外で受け取った決済を記録するには、手段・参照・金額を入力してください。0より大きい金額は売上に計上されます。', th: 'กรอกวิธี อ้างอิง และจำนวนเงิน เพื่อบันทึกการชำระที่รับนอกเว็บไซต์ จำนวนที่มากกว่า 0 จะนับเป็นรายได้', vi: 'Điền phương thức, tham chiếu và số tiền để ghi nhận khoản thanh toán nhận ngoài trang web. Số tiền lớn hơn 0 được tính là doanh thu.', id: 'Isi metode, referensi, dan jumlah untuk mencatat pembayaran yang diterima di luar situs. Jumlah di atas 0 dihitung sebagai pendapatan.' }),
+    addMember: tr(language, { ko: '회원 추가', en: 'Add member', ja: '会員を追加', th: 'เพิ่มสมาชิก', vi: 'Thêm thành viên', id: 'Tambah anggota' }),
+    addMemberHint: tr(language, { ko: '계정을 만들고 비밀번호 설정 코드를 이메일로 보냅니다. 관리자는 비밀번호를 정하지 않으며, 회원이 코드로 직접 설정하기 전까지는 로그인할 수 없습니다. 코드는 7일간 유효합니다.', en: 'Creates the account and emails a code to set a password. You never choose their password — they cannot sign in until they set one. The code is valid for 7 days.', ja: 'アカウントを作成し、パスワード設定コードをメールで送ります。管理者はパスワードを決めず、会員がコードで設定するまでログインできません。コードの有効期間は7日間です。', th: 'สร้างบัญชีและส่งรหัสสำหรับตั้งรหัสผ่านทางอีเมล ผู้ดูแลไม่ได้ตั้งรหัสผ่านให้ และสมาชิกจะเข้าสู่ระบบไม่ได้จนกว่าจะตั้งเอง รหัสใช้ได้ 7 วัน', vi: 'Tạo tài khoản và gửi email mã để đặt mật khẩu. Bạn không chọn mật khẩu cho họ — họ không thể đăng nhập cho đến khi tự đặt. Mã có hiệu lực 7 ngày.', id: 'Membuat akun dan mengirim kode via email untuk mengatur kata sandi. Anda tidak memilih kata sandi mereka — mereka tidak bisa masuk sampai mengaturnya sendiri. Kode berlaku 7 hari.' }),
+    addMemberBtn: tr(language, { ko: '추가하고 초대 보내기', en: 'Add and send invite', ja: '追加して招待を送る', th: 'เพิ่มและส่งคำเชิญ', vi: 'Thêm và gửi lời mời', id: 'Tambah dan kirim undangan' }),
+    memberLang: tr(language, { ko: '메일 언어', en: 'Email language', ja: 'メールの言語', th: 'ภาษาอีเมล', vi: 'Ngôn ngữ email', id: 'Bahasa email' }),
+    planNone: tr(language, { ko: '(플랜 없음)', en: '(no plan)', ja: '（プランなし）', th: '(ไม่มีแพลน)', vi: '(không gói)', id: '(tanpa paket)' }),
+    inviteSent: tr(language, { ko: '초대 메일을 보냈습니다', en: 'Invite email sent', ja: '招待メールを送信しました', th: 'ส่งอีเมลคำเชิญแล้ว', vi: 'Đã gửi email mời', id: 'Email undangan terkirim' }),
+    inviteFailed: tr(language, { ko: '계정은 생성됐지만 메일 발송에 실패했습니다 — 서버 로그의 코드를 전달하거나, 회원에게 비밀번호 찾기를 안내하세요', en: 'Account created but the email failed — pass on the code from the server log, or tell the member to use "forgot password"', ja: 'アカウントは作成されましたがメール送信に失敗しました — サーバーログのコードを伝えるか、会員にパスワード再設定を案内してください', th: 'สร้างบัญชีแล้วแต่ส่งอีเมลไม่สำเร็จ — ส่งรหัสจากล็อกเซิร์ฟเวอร์ให้ หรือแนะนำให้สมาชิกใช้ "ลืมรหัสผ่าน"', vi: 'Đã tạo tài khoản nhưng gửi email thất bại — chuyển mã từ log máy chủ, hoặc bảo thành viên dùng "quên mật khẩu"', id: 'Akun dibuat tetapi email gagal terkirim — sampaikan kode dari log server, atau minta anggota memakai "lupa kata sandi"' }),
+    agentsCount: (n: number) => tr(language, { ko: `에이전트 ${n}개`, en: `${n} agent${n === 1 ? '' : 's'}`, ja: `エージェント${n}件`, th: `${n} เอเจนต์`, vi: `${n} agent`, id: `${n} agen` }),
+    noAgents: tr(language, { ko: '에이전트 없음', en: 'No agents', ja: 'エージェントなし', th: 'ไม่มีเอเจนต์', vi: 'Không có agent', id: 'Tidak ada agen' }),
+    equityOfAgent: tr(language, { ko: '에이전트별 곡선 — 표시 중', en: 'Per-agent curve — showing', ja: 'エージェント別の推移 — 表示中', th: 'กราฟรายเอเจนต์ — กำลังแสดง', vi: 'Đường theo từng agent — đang hiện', id: 'Kurva per agen — menampilkan' }),
     llmTitle: tr(language, { ko: '🤖 AI 모델 라우팅 (LLM)', en: '🤖 AI model routing (LLM)', ja: '🤖 AIモデルルーティング (LLM)', th: '🤖 การกำหนดเส้นทางโมเดล AI (LLM)', vi: '🤖 Định tuyến mô hình AI (LLM)', id: '🤖 Perutean model AI (LLM)' }),
     llmHint: tr(language, {
       ko: '티어별 프로바이더/모델을 플랫폼 전역으로 지정합니다. Local AI 서버 URL은 운영자의 자체 AI 서버(Ollama 등, OpenAI 호환)를 가리킵니다. 저장한 값이 .env보다 우선하며, 비우면 .env로 돌아갑니다. 사용자가 직접 프로바이더를 지정한 실행에는 적용되지 않고, 워커에는 30초 안에 반영됩니다.',
@@ -354,6 +376,9 @@ export function AdminPage() {
       if (which === 'members') {
         setUsers(await call('users?limit=200'))
         setAgents(await call(`agents?q=${encodeURIComponent(q)}&limit=100`))
+        // The add-member form offers a plan, so this tab needs the plan list too.
+        const mp = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
+        setPlanList(mp.plans || [])
       }
       if (which === 'subscriptions') {
         setSubs(await call(`subscriptions?status=${encodeURIComponent(subFilter)}&limit=100`))
@@ -557,30 +582,119 @@ export function AdminPage() {
       {/* ── Members ── */}
       {tab === 'members' && (
         <>
+          {/* Add a member by hand — accounts sold or comped offline. No password
+              is chosen here: the member sets their own from the emailed code. */}
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>＋ {T.addMember}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginBottom: 10 }}>{T.addMemberHint}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input placeholder={T.email} value={newMember.email} type="email"
+                onChange={e => setNewMember(p => ({ ...p, email: e.target.value }))}
+                style={{ ...inputStyle, width: 240 }} />
+              <select value={newMember.lang} onChange={e => setNewMember(p => ({ ...p, lang: e.target.value }))}
+                style={inputStyle} title={T.memberLang}>
+                {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+              </select>
+              <select value={newMember.plan_code} onChange={e => setNewMember(p => ({ ...p, plan_code: e.target.value }))} style={inputStyle}>
+                <option value="">{T.planNone}</option>
+                {planList.map((p: any) => (
+                  <option key={p.code} value={p.code}>{p.name || p.code}</option>
+                ))}
+              </select>
+              {newMember.plan_code && (
+                <input placeholder={T.grantDays} value={newMember.days} inputMode="numeric"
+                  onChange={e => setNewMember(p => ({ ...p, days: e.target.value }))}
+                  style={{ ...inputStyle, width: 80 }} />
+              )}
+              <button style={primaryBtn} disabled={!newMember.email.trim()}
+                onClick={async () => {
+                  setError(''); setInvite(null)
+                  try {
+                    const res = await call('members', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        email: newMember.email.trim(), lang: newMember.lang,
+                        plan_code: newMember.plan_code,
+                        days: parseInt(newMember.days, 10) || 30,
+                      }),
+                    })
+                    setInvite(res)
+                    setNewMember(p => ({ ...p, email: '' }))
+                    await refresh('members')
+                  } catch (e: any) {
+                    if (e?.message !== '401') setError(String(e?.message || e))
+                  }
+                }}>{T.addMemberBtn}</button>
+            </div>
+            {invite && (
+              <div style={{ fontSize: 12, marginTop: 10, color: invite.invite_sent ? '#22c55e' : '#eab308' }}>
+                {invite.invite_sent ? `✓ ${invite.email} — ${T.inviteSent}` : `⚠️ ${invite.email} — ${T.inviteFailed}`}
+              </div>
+            )}
+          </div>
+
           <div style={tableCard}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
               <thead><tr><th style={th}>ID</th><th style={th}>{T.email}</th><th style={th}>{T.status}</th><th style={th}>{T.plan}</th><th style={th}>{T.trading}</th><th style={th}>MFA</th><th style={th}>{T.agent}</th><th style={th}>{T.created}</th><th style={th}></th></tr></thead>
               <tbody>
                 {(users?.users || []).map((u: any) => (
-                  <tr key={u.id}>
-                    <td style={td}>{u.id}</td><td style={{ ...td, fontWeight: 600 }}>{u.email}</td>
-                    <td style={{ ...td, color: u.status === 'suspended' ? '#ef4444' : '#22c55e' }}>{u.status}</td>
-                    <td style={td}>{u.plan_code || '—'}</td>
-                    <td style={td}>{tradingBadge(u.trading_mode)}</td>
-                    <td style={td}>{u.mfa_enabled ? '✓' : '—'}</td>
-                    <td style={td}>{u.agent_name || '—'}</td>
-                    <td style={td}>{fmtDate(u.created_at)}</td>
-                    <td style={{ ...td, whiteSpace: 'nowrap' }}>
-                      <button style={actionBtn} onClick={async () => {
-                        setMemberDetail(null)
-                        try { setMemberDetail(await call(`members/${u.id}`)) } catch { /* handled */ }
-                      }}>{T.detail}</button>{' '}
-                      {u.status === 'suspended'
-                        ? <button style={actionBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'active' }) }, 'members')}>{T.activate}</button>
-                        : <button style={dangerBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'suspended' }) }, 'members')}>{T.suspend}</button>}{' '}
-                      <button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`users/${u.id}`, { method: 'DELETE' }, 'members')}>{T.del}</button>
-                    </td>
-                  </tr>
+                  <Fragment key={u.id}>
+                    <tr>
+                      <td style={td}>{u.id}</td><td style={{ ...td, fontWeight: 600 }}>{u.email}</td>
+                      <td style={{ ...td, color: u.status === 'suspended' ? '#ef4444' : '#22c55e' }}>{u.status}</td>
+                      <td style={td}>{u.plan_code || '—'}</td>
+                      <td style={td}>{tradingBadge(u.trading_mode)}</td>
+                      <td style={td}>{u.mfa_enabled ? '✓' : '—'}</td>
+                      {/* A member can own several agents. One row per member,
+                          agents in the sub-table below — the list used to
+                          repeat the member once per agent. */}
+                      <td style={td}>
+                        {u.agent_count
+                          ? <button style={actionBtn}
+                              onClick={() => setOpenAgents(p => ({ ...p, [u.id]: !p[u.id] }))}>
+                              {openAgents[u.id] ? '▾' : '▸'} {T.agentsCount(u.agent_count)}
+                            </button>
+                          : <span style={{ color: 'var(--text-muted,#8a8073)' }}>—</span>}
+                      </td>
+                      <td style={td}>{fmtDate(u.created_at)}</td>
+                      <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                        <button style={actionBtn} onClick={async () => {
+                          setMemberDetail(null)
+                          try { setMemberDetail(await call(`members/${u.id}`)) } catch { /* handled */ }
+                        }}>{T.detail}</button>{' '}
+                        {u.status === 'suspended'
+                          ? <button style={actionBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'active' }) }, 'members')}>{T.activate}</button>
+                          : <button style={dangerBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'suspended' }) }, 'members')}>{T.suspend}</button>}{' '}
+                        <button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`users/${u.id}`, { method: 'DELETE' }, 'members')}>{T.del}</button>
+                      </td>
+                    </tr>
+                    {openAgents[u.id] && (
+                      <tr>
+                        <td style={{ ...td, padding: '4px 10px 12px 34px' }} colSpan={9}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse',
+                            border: '1px solid var(--border-color,#332d22)', borderRadius: 8 }}>
+                            <thead><tr><th style={th}>ID</th><th style={th}>{T.agent}</th><th style={th}>Cash</th><th style={th}>Points</th><th style={th}>Trades</th><th style={th}>{T.tabPositions}</th><th style={th}>{T.created}</th><th style={th}></th></tr></thead>
+                            <tbody>
+                              {(u.agents || []).map((a: any) => (
+                                <tr key={a.id}>
+                                  <td style={td}>{a.id}</td>
+                                  <td style={{ ...td, fontWeight: 600 }}>{a.name}</td>
+                                  <td style={td}>{fmtMoney(a.cash)}</td>
+                                  <td style={td}>{a.points}</td>
+                                  <td style={td}>{a.trade_count}</td>
+                                  <td style={td}>{a.open_positions}</td>
+                                  <td style={td}>{fmtDate(a.created_at)}</td>
+                                  <td style={td}><button style={dangerBtn}
+                                    onClick={() => window.confirm(T.delConfirm) && act(`agents/${a.id}`, { method: 'DELETE' }, 'members')}>{T.del}</button></td>
+                                </tr>
+                              ))}
+                              {!(u.agents || []).length && <tr><td style={td} colSpan={8}>{T.noAgents}</td></tr>}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
                 {!(users?.users || []).length && <tr><td style={td} colSpan={9}>{T.noData}</td></tr>}
               </tbody>
@@ -611,24 +725,38 @@ export function AdminPage() {
                 </div>
                 <div>
                   <div style={sectionTitle}>{tr(language, { ko: '자산 추이', en: 'Equity history', ja: '資産推移', th: 'ประวัติสินทรัพย์', vi: 'Lịch sử tài sản', id: 'Riwayat ekuitas' })}</div>
+                  {/* Snapshots are per agent and not on a shared clock, so they
+                      cannot be summed — say whose curve this is. */}
+                  {(memberDetail.agents || []).length > 1 && memberDetail.equity_agent_name && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginBottom: 6 }}>
+                      {T.equityOfAgent}: {memberDetail.equity_agent_name}
+                    </div>
+                  )}
                   <TrendChart data={memberDetail.equity_history || []} xKey="recorded_at" series={[['total_value', '#c26a45']]} />
                 </div>
               </div>
               <div style={sectionTitle}>{tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '未決済ポジション', th: 'สถานะที่เปิดอยู่', vi: 'Vị thế đang mở', id: 'Posisi terbuka' })} ({(memberDetail.positions || []).length})</div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr><th style={th}>Symbol</th><th style={th}>Side</th><th style={th}>Qty</th><th style={th}>Entry</th><th style={th}>Now</th></tr></thead>
+                <thead><tr><th style={th}>{T.agent}</th><th style={th}>Symbol</th><th style={th}>Side</th><th style={th}>Qty</th><th style={th}>Entry</th><th style={th}>Now</th></tr></thead>
                 <tbody>
                   {(memberDetail.positions || []).slice(0, 10).map((p: any, i: number) => (
-                    <tr key={i}><td style={{ ...td, fontWeight: 600 }}>{p.symbol}</td><td style={td}>{p.side}</td>
+                    <tr key={i}><td style={td}>{p.agent_name || '—'}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{p.symbol}</td><td style={td}>{p.side}</td>
                       <td style={td}>{p.quantity}</td><td style={td}>{p.entry_price}</td><td style={td}>{p.current_price ?? '—'}</td></tr>
                   ))}
-                  {!(memberDetail.positions || []).length && <tr><td style={td} colSpan={5}>{T.noData}</td></tr>}
+                  {!(memberDetail.positions || []).length && <tr><td style={td} colSpan={6}>{T.noData}</td></tr>}
                 </tbody>
               </table>
             </div>
           )}
 
-          <div style={sectionTitle}>{tr(language, { ko: '에이전트 계정', en: 'Agent accounts', ja: 'エージェントアカウント', th: 'บัญชีเอเจนต์', vi: 'Tài khoản agent', id: 'Akun agen' })}</div>
+          {/* Kept alongside the per-member sub-tables above: this one is
+              searchable and also covers agents with no member behind them
+              (self-registered claw agents), which a per-member view cannot. */}
+          <div style={sectionTitle}>{tr(language, { ko: '에이전트 계정 — 전체', en: 'Agent accounts — all', ja: 'エージェントアカウント — 全件', th: 'บัญชีเอเจนต์ — ทั้งหมด', vi: 'Tài khoản agent — tất cả', id: 'Akun agen — semua' })}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginBottom: 10 }}>
+            {tr(language, { ko: '회원에 연결되지 않은 에이전트를 포함한 전체 목록입니다. 회원별 에이전트는 위 표에서 펼쳐 보세요.', en: 'Every agent, including ones not linked to a member. For a member\'s own agents, expand their row above.', ja: '会員に紐づかないエージェントも含む全件です。会員ごとのエージェントは上の表を展開してください。', th: 'รายการทั้งหมด รวมเอเจนต์ที่ไม่ผูกกับสมาชิก สำหรับเอเจนต์ของสมาชิก ให้กางแถวด้านบน', vi: 'Toàn bộ agent, gồm cả agent không gắn với thành viên. Xem agent của từng thành viên bằng cách mở rộng hàng phía trên.', id: 'Semua agen, termasuk yang tidak terkait anggota. Untuk agen milik anggota, buka barisnya di tabel atas.' })}
+          </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <input placeholder={T.search} value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && refresh('members')} style={{ ...inputStyle, width: 260 }} />
@@ -808,10 +936,34 @@ export function AdminPage() {
                 onClick={() => {
                   act('subscriptions/grant', {
                     method: 'POST',
-                    body: JSON.stringify({ email: grant.email.trim(), plan_code: grant.plan_code, days: parseInt(grant.days, 10) || 30, note: grant.note }),
+                    body: JSON.stringify({ email: grant.email.trim(), plan_code: grant.plan_code,
+                      days: parseInt(grant.days, 10) || 30, note: grant.note,
+                      method: grant.method, reference: grant.reference,
+                      amount_usd: parseFloat(grant.amount_usd) || 0 }),
                   }, 'subscriptions')
-                  setGrant(p => ({ ...p, email: '', note: '' }))
+                  setGrant(p => ({ ...p, email: '', note: '', reference: '', amount_usd: '' }))
                 }}>{T.grantBtn}</button>
+            </div>
+            {/* Record a payment taken off-site (in-person transfer, a USDT hash
+                sent over chat) rather than only comping the plan. An amount
+                above 0 lands in the revenue chart; 'manual' + 0 does not. */}
+            <div style={{ borderTop: '1px solid var(--border-color,#332d22)', marginTop: 12, paddingTop: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted,#a49b8a)', marginBottom: 8 }}>{T.payRecordHint}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select value={grant.method} onChange={e => setGrant(p => ({ ...p, method: e.target.value }))}
+                  style={inputStyle} title={T.payMethod}>
+                  <option value="manual">{T.payMethodComp}</option>
+                  <option value="usdt">usdt</option>
+                  <option value="bank">bank</option>
+                  <option value="paypal">paypal</option>
+                </select>
+                <input placeholder={T.payReference} value={grant.reference}
+                  onChange={e => setGrant(p => ({ ...p, reference: e.target.value }))}
+                  style={{ ...inputStyle, width: 280, fontFamily: 'ui-monospace, monospace' }} />
+                <input placeholder={T.payAmount} value={grant.amount_usd} inputMode="decimal"
+                  onChange={e => setGrant(p => ({ ...p, amount_usd: e.target.value }))}
+                  style={{ ...inputStyle, width: 120 }} />
+              </div>
             </div>
             {(subs?.subscriptions || []).filter((s: any) => s.method === 'manual' && s.status === 'active').length > 0 && (
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>

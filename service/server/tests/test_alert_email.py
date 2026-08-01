@@ -59,7 +59,10 @@ class CatalogueParityTestCase(unittest.TestCase):
 
     def test_transactional_copy_parity(self):
         from email_i18n import _CHROME, _COPY
-        self.assertEqual(set(_COPY), {'signup', 'reset'})
+        # 'invite' is the admin-created-member email (routes_admin_manage
+        # POST /api/admin/members) — its own copy, because a member who never
+        # chose a password cannot be told to "reset" one.
+        self.assertEqual(set(_COPY), {'signup', 'reset', 'invite'})
         for purpose, variants in _COPY.items():
             self.assertEqual(set(variants), set(LANGS), purpose)
             for lang, fields in variants.items():

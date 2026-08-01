@@ -2,6 +2,7 @@
 routes_admin_manage.py — the extended manager-console API.
 
 Member management
+  POST /api/admin/members                       add a member + email an invite
   GET  /api/admin/members/{user_id}             full member detail
   POST /api/admin/members/{user_id}/status      suspend / reactivate
 
@@ -43,6 +44,7 @@ from __future__ import annotations
 
 import logging
 import re
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -50,16 +52,30 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from admin_auth import audit, require_admin
+from analysis_agents import normalize_lang
 from database import get_db_connection
+from email_sender import send_verification_code_email
 from leaderboard_snapshot import read_leaderboard_snapshot, refresh_leaderboard_snapshot
 from routes_shared import RouteContext, utc_now_iso_z
 from routes_subscriptions import SUBSCRIPTION_DAYS
+from routes_users import _store_code
+from utils import hash_password
 
 logger = logging.getLogger("routes_admin_manage")
 
 # Networks we are willing to publish a deposit address for. Free-typing this
 # is how a subscriber ends up sending TRC20 funds to an ERC20 address.
 SUPPORTED_USDT_NETWORKS = ("TRC20", "ERC20", "BEP20", "SOL", "POLYGON")
+
+# Payment rails a manual grant may be recorded against. 'manual' is the comp.
+GRANT_METHODS = ("manual", "usdt", "bank", "paypal")
+
+# An admin-created member is handed their code out of band (chat, in person),
+# so the 5-minute reset window is useless here. Keep this in step with the
+# '7 days' wording in the 'invite' email copy.
+INVITE_TTL_SECONDS = 7 * 24 * 3600
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+\.[^@\s]+$")
 
 
 def _mask_address(value: str) -> str:
@@ -83,8 +99,44 @@ def _cutoff(days: int) -> str:
     return (_now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
 
+def _activate_subscription(cursor: Any, user_id: int, plan_code: str, days: int,
+                           admin_id: int, method: str = "manual", reference: str = "",
+                           amount_usd: float = 0.0, note: str = "") -> tuple[str, int]:
+    """Cancel whatever the member is on and put them on *plan_code* for *days*.
+
+    Shared by the grant endpoint and by member-create-with-plan. Returns
+    (expires_at, replaced) — replaced is how many pending/active rows were
+    superseded. Caller commits."""
+    now = _now()
+    cursor.execute(
+        "UPDATE user_subscriptions SET status = 'cancelled', decided_by = ?, "
+        "decided_at = ?, note = 'replaced by manual grant' "
+        "WHERE user_id = ? AND status IN ('pending', 'active')",
+        (admin_id, _iso(now), user_id),
+    )
+    replaced = cursor.rowcount
+    expires_at = _iso(now + timedelta(days=days))
+    cursor.execute(
+        "INSERT INTO user_subscriptions (user_id, plan_code, status, method, reference, "
+        "amount_usd, started_at, expires_at, decided_by, decided_at, note) "
+        "VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, plan_code, method, reference.strip()[:500], max(0.0, float(amount_usd or 0)),
+         _iso(now), expires_at, admin_id, _iso(now), note[:1000]),
+    )
+    return expires_at, replaced
+
+
 class MemberStatusBody(BaseModel):
     status: str
+
+
+class MemberCreateBody(BaseModel):
+    email: str
+    lang: str = "en"
+    # Optional: create and put on a plan in one step. "" leaves them unpaid.
+    plan_code: str = ""
+    days: int = 30
+    note: str = ""
 
 
 class SubscriptionDecisionBody(BaseModel):
@@ -97,6 +149,12 @@ class SubscriptionGrantBody(BaseModel):
     plan_code: str
     days: int = 30
     note: str = ""
+    # A grant is a comp by default (method 'manual', amount 0 — not revenue).
+    # Set these to record a payment taken outside the site: an in-person bank
+    # transfer, a USDT send whose hash arrived by chat. Those ARE revenue.
+    method: str = "manual"
+    reference: str = ""
+    amount_usd: float = 0.0
 
 
 class PlanCreateBody(BaseModel):
@@ -171,11 +229,15 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 raise HTTPException(status_code=404, detail="User not found")
             detail: dict[str, Any] = {"user": dict(user)}
 
+            # A member may run several agents. `agent` is kept as the oldest one
+            # for the callers that still read a single agent; `agents` is the
+            # truth. Positions and trades below span every agent they own.
             cursor.execute(
                 "SELECT id, name, cash, deposited, points, reputation_score, created_at "
-                "FROM agents WHERE user_id = ?", (user_id,))
-            agent = cursor.fetchone()
-            detail["agent"] = dict(agent) if agent else None
+                "FROM agents WHERE user_id = ? ORDER BY id", (user_id,))
+            agents = [dict(r) for r in cursor.fetchall()]
+            detail["agents"] = agents
+            detail["agent"] = agents[0] if agents else None
 
             cursor.execute(
                 "SELECT id, plan_code, status, method, reference, amount_usd, started_at, "
@@ -183,21 +245,32 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 "WHERE user_id = ? ORDER BY id DESC LIMIT 20", (user_id,))
             detail["subscriptions"] = [dict(r) for r in cursor.fetchall()]
 
-            if agent:
-                aid = agent["id"]
+            if agents:
+                ids = tuple(a["id"] for a in agents)
+                marks = ",".join("?" * len(ids))
                 cursor.execute(
-                    "SELECT symbol, market, side, quantity, entry_price, current_price, opened_at "
-                    "FROM positions WHERE agent_id = ? ORDER BY id DESC LIMIT 50", (aid,))
+                    "SELECT p.agent_id, a.name AS agent_name, p.symbol, p.market, p.side, "
+                    "p.quantity, p.entry_price, p.current_price, p.opened_at "
+                    f"FROM positions p JOIN agents a ON a.id = p.agent_id "
+                    f"WHERE p.agent_id IN ({marks}) ORDER BY p.id DESC LIMIT 50", ids)
                 detail["positions"] = [dict(r) for r in cursor.fetchall()]
                 cursor.execute(
-                    "SELECT signal_id, market, symbol, side, entry_price, quantity, created_at "
-                    "FROM signals WHERE agent_id = ? AND message_type = 'operation' "
-                    "ORDER BY id DESC LIMIT 50", (aid,))
+                    "SELECT s.agent_id, a.name AS agent_name, s.signal_id, s.market, s.symbol, "
+                    "s.side, s.entry_price, s.quantity, s.created_at "
+                    f"FROM signals s JOIN agents a ON a.id = s.agent_id "
+                    f"WHERE s.agent_id IN ({marks}) AND s.message_type = 'operation' "
+                    "ORDER BY s.id DESC LIMIT 50", ids)
                 detail["trades"] = [dict(r) for r in cursor.fetchall()]
+                # Equity is one curve per agent and the snapshots are not taken
+                # on a shared clock, so they cannot be summed honestly. This is
+                # the oldest agent's curve — equity_agent_id says whose.
+                aid = agents[0]["id"]
                 cursor.execute(
                     "SELECT total_value, cash, position_value, profit, recorded_at "
                     "FROM profit_history WHERE agent_id = ? ORDER BY id DESC LIMIT 90", (aid,))
                 detail["equity_history"] = [dict(r) for r in cursor.fetchall()][::-1]
+                detail["equity_agent_id"] = aid
+                detail["equity_agent_name"] = agents[0]["name"]
             else:
                 detail["positions"] = []
                 detail["trades"] = []
@@ -205,6 +278,65 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return detail
+
+    @app.post('/api/admin/members')
+    async def admin_member_create(body: MemberCreateBody, authorization: str = Header(None)):
+        """Add a member by hand — the path for accounts sold or comped offline.
+
+        The account is created with a random password nobody holds, and the
+        member sets their own from the emailed code (the ordinary reset
+        endpoint). A mail failure is reported, not raised: the account still
+        exists and the admin can resend from the member's own reset flow."""
+        admin = require_admin(authorization)
+        email = body.email.strip().lower()
+        if not _EMAIL_RE.match(email) or len(email) > 254:
+            raise HTTPException(status_code=400, detail="Invalid email address")
+        lang = normalize_lang(body.lang)
+        days = max(1, min(body.days, 3650))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="A member with that email exists")
+            # Validate the plan BEFORE creating anything, so a typo cannot
+            # leave a stray account behind.
+            if body.plan_code:
+                cursor.execute(
+                    "SELECT code FROM subscription_plans WHERE code = ? AND active = 1",
+                    (body.plan_code,))
+                if not cursor.fetchone():
+                    raise HTTPException(status_code=404, detail="Unknown plan")
+            cursor.execute(
+                "INSERT INTO users (email, password_hash, lang) VALUES (?, ?, ?)",
+                (email, hash_password(secrets.token_urlsafe(32)), lang))
+            user_id = cursor.lastrowid
+            if body.plan_code:
+                _activate_subscription(cursor, user_id, body.plan_code, days,
+                                       admin["id"], note=body.note or "created by admin")
+            conn.commit()
+        finally:
+            conn.close()
+
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        now = _now()
+        _store_code(f"reset:{email}", {
+            "code": code,
+            "expires_at": now + timedelta(seconds=INVITE_TTL_SECONDS),
+            "attempts": 0,
+            "last_sent_at": now,
+        }, ctx, INVITE_TTL_SECONDS)
+        invite_sent = send_verification_code_email(email, code, lang, purpose="invite")
+        if not invite_sent:
+            # Same fallback as signup: without Resend configured the code only
+            # exists in the log, and the admin has to read it from there.
+            logger.info("[Email] Invite code for %s: %s", email, code)
+
+        audit(admin, "member.create", f"user:{user_id}",
+              f"email={email} lang={lang} plan={body.plan_code or '—'} invite_sent={invite_sent}")
+        return {"ok": True, "user_id": user_id, "email": email, "lang": lang,
+                "plan_code": body.plan_code or None, "invite_sent": invite_sent,
+                "invite_expires_at": _iso(now + timedelta(seconds=INVITE_TTL_SECONDS))}
 
     @app.post('/api/admin/members/{user_id}/status')
     async def admin_member_status(user_id: int, body: MemberStatusBody,
@@ -384,9 +516,15 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                                        authorization: str = Header(None)):
         """Manually give a member a plan — comps, grandfathered accounts, and
         enterprise contracts (the one path that may grant contact-only plans).
-        Replaces any pending/active subscription; amount 0 (not revenue)."""
+        Replaces any pending/active subscription. Defaults to a comp (method
+        'manual', amount 0, not revenue); pass method/reference/amount_usd to
+        record a payment that was taken outside the site."""
         admin = require_admin(authorization)
         days = max(1, min(body.days, 3650))
+        if body.method not in GRANT_METHODS:
+            raise HTTPException(status_code=400,
+                                detail=f"Method must be one of {', '.join(GRANT_METHODS)}")
+        amount = max(0.0, float(body.amount_usd or 0))
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
@@ -405,28 +543,18 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 (body.plan_code,))
             if not cursor.fetchone():
                 raise HTTPException(status_code=404, detail="Unknown plan")
-            now = _now()
-            cursor.execute(
-                "UPDATE user_subscriptions SET status = 'cancelled', decided_by = ?, "
-                "decided_at = ?, note = 'replaced by manual grant' "
-                "WHERE user_id = ? AND status IN ('pending', 'active')",
-                (admin["id"], _iso(now), user["id"]),
-            )
-            replaced = cursor.rowcount
-            cursor.execute(
-                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, amount_usd, "
-                "started_at, expires_at, decided_by, decided_at, note) "
-                "VALUES (?, ?, 'active', 'manual', 0, ?, ?, ?, ?, ?)",
-                (user["id"], body.plan_code, _iso(now), _iso(now + timedelta(days=days)),
-                 admin["id"], _iso(now), body.note[:1000]),
-            )
+            expires_at, replaced = _activate_subscription(
+                cursor, user["id"], body.plan_code, days, admin["id"],
+                method=body.method, reference=body.reference,
+                amount_usd=amount, note=body.note)
             conn.commit()
         finally:
             conn.close()
         audit(admin, "subscription.grant", f"user:{user['id']}",
-              f"email={user['email']} plan={body.plan_code} days={days} replaced={replaced}")
+              f"email={user['email']} plan={body.plan_code} days={days} "
+              f"method={body.method} amount={amount} replaced={replaced}")
         return {"ok": True, "status": "active", "user_id": user["id"],
-                "expires_at": _iso(now + timedelta(days=days)), "replaced": replaced}
+                "expires_at": expires_at, "replaced": replaced}
 
     @app.post('/api/admin/subscriptions/{sub_id}/approve')
     async def admin_subscription_approve(sub_id: int, body: SubscriptionDecisionBody,
