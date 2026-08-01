@@ -36,7 +36,10 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-MAX_BLOCK_LEN = 6000
+# 10000 fits the ENTIRE default-enabled trader set (the busiest site, ~9.1K
+# with the us-stock earnings skill riding) — at the defaults nothing is ever
+# silently dropped; the budget only bites once an admin adds custom skills.
+MAX_BLOCK_LEN = 10000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -160,6 +163,234 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "clearly see the trade, the correct output is a low number and "
             "hold: no swing without a visible edge. State which evidence "
             "would raise or lower the number."
+        ),
+    },
+    # ── full-catalogue expansion (2026-08-01, owner: "get all skills") ─────
+    # The ten skills below complete the port of the marian2js/trading-skills
+    # decision library — the one researched repo whose content maps onto
+    # decision prompts (the exchange repos are execution/API material that
+    # sooppiy's deterministic gateway already owns). Priorities interleave
+    # with the original six, whose bodies must NOT change here: prod seeded
+    # them insert-if-missing, so editing a shipped body in this catalogue
+    # would silently diverge code from the live rows (use the admin API or
+    # /reset for that).
+    {
+        "slug": "thesis-validation",
+        "name": "Thesis Validation",
+        "description": ("A thesis is a falsifiable claim: facts vs "
+                        "assumptions, timeframe fit, dependency load, "
+                        "concrete invalidation."),
+        "prompts": ["trader"],
+        "priority": 15,
+        "body": (
+            "A thesis is a falsifiable claim, not a vibe. Restate it as one "
+            "testable statement, then separate observed facts from inference "
+            "and assumption. Check the timeframe: evidence and catalysts "
+            "must match the intended holding period — a one-day trade "
+            "justified by a twelve-month story is a mismatch. Count the "
+            "dependencies that must stay true (macro backdrop, leadership, "
+            "earnings follow-through); a heavy dependency load weakens the "
+            "claim. Require a concrete invalidation condition — 'it feels "
+            "wrong' is not one. Name the strongest counterargument before "
+            "siding with the thesis. A plausible narrative with a missing "
+            "evidence link is promising but incomplete, not tradeable."
+        ),
+    },
+    {
+        "slug": "macro-event-analysis",
+        "name": "Macro Event Analysis",
+        "description": ("Rank events by decision impact via sensitivity, "
+                        "surprise capacity, transmission, timing; events "
+                        "are risk, not signals."),
+        "prompts": ["trader"],
+        "priority": 25,
+        "body": (
+            "Rank upcoming events by decision impact, not calendar length. "
+            "Score each on market sensitivity (does this asset historically "
+            "react), surprise capacity (room between consensus and current "
+            "positioning), transmission speed (rates, FX, risk appetite), "
+            "and timing pressure (overnight or clustered releases compress "
+            "decision time). Classify primary / secondary / background and "
+            "prepare only for primary. An important release does not "
+            "guarantee direction — treat events as risk to plan around, not "
+            "signals to trade on. Holding through a primary event demands "
+            "extra edge or reduced exposure; when consensus context is "
+            "missing or stale, say so and lean cautious."
+        ),
+    },
+    {
+        "slug": "position-management",
+        "name": "Position Management",
+        "description": ("Manage against the original plan, not the P&L; "
+                        "hold / manage actively / exit decisively, with the "
+                        "condition that changes it."),
+        "prompts": ["light", "trader"],
+        "priority": 45,
+        "body": (
+            "Manage an open position against the ORIGINAL plan, not against "
+            "the unrealized P&L. Compare current behavior with the thesis "
+            "and its invalidation logic; separate normal noise from "
+            "evidence of weakening. Widening a stop after entry without a "
+            "new thesis is risk drift, not strategy. Once the trade has "
+            "paid, the question changes from 'is the idea valid' to 'how "
+            "much am I willing to give back' — protect gains deliberately. "
+            "Holding through a scheduled catalyst by inertia is a decision; "
+            "make it explicitly. End every review with one clear action — "
+            "hold with plan intact, manage actively (trim, tighten), or "
+            "exit decisively — and name the condition that would change it."
+        ),
+    },
+    {
+        "slug": "pre-trade-readiness",
+        "name": "Pre-Trade Readiness",
+        "description": ("Shortest chain of checks, stop at the first "
+                        "blocker; verdicts ready / with conditions / not "
+                        "ready / reject."),
+        "prompts": ["trader"],
+        "priority": 55,
+        "body": (
+            "Before any new position, run the shortest chain of checks that "
+            "answers the actual question, and stop at the first blocking "
+            "issue. Verdict ladder: ready (checks pass — proceed with "
+            "normal discipline); ready with conditions (proceed ONLY if the "
+            "stated constraints hold — smaller size, tighter stop, defined "
+            "timing); not ready yet (a gap in evidence, structure, or risk "
+            "must close first — hold); reject (forcing this trade forward "
+            "is process failure). A blocked check is an answer, not an "
+            "obstacle: 'not ready' costs nothing, while a forced entry pays "
+            "fees to learn what the checks already knew. State the verdict "
+            "and the single binding constraint explicitly."
+        ),
+    },
+    {
+        "slug": "evidence-gap-check",
+        "name": "Evidence Gap Check",
+        "description": ("Known vs assumed; rank gaps by decision impact; "
+                        "blocking gaps mean lower confidence and hold, "
+                        "never confident prose."),
+        "prompts": ["trader"],
+        "priority": 70,
+        "body": (
+            "Separate what is known from what is assumed before trusting an "
+            "idea. Rank the missing information by decision impact, not "
+            "curiosity: a gap that blocks action (no invalidation "
+            "condition, no timeframe fit) is different from one that merely "
+            "reduces confidence. Never fill a gap with confident prose — an "
+            "unstated assumption is the most expensive kind. More "
+            "information is not better information; the question is whether "
+            "the SPECIFIC evidence this claim needs, for this holding "
+            "period, has been seen. When blocking gaps remain, the honest "
+            "output is lower confidence and hold, plus the single "
+            "highest-value fact that would close the gap."
+        ),
+    },
+    {
+        "slug": "earnings-preview",
+        "name": "Earnings Preview",
+        "description": ("Rank reports by benchmark relevance, debate "
+                        "intensity, read-through, positioning risk; "
+                        "importance is not certainty."),
+        "prompts": ["trader"],
+        "markets": ["us-stock"],
+        "priority": 75,
+        "body": (
+            "Around earnings, rank reports by what can actually move this "
+            "position: benchmark relevance (can it move the sector or "
+            "supply chain), debate intensity (is there a live disagreement "
+            "beyond beat-or-miss), read-through strength (will peers react "
+            "to the same datapoints), and positioning risk (does sentiment "
+            "make holding through dangerous). An important report is not a "
+            "predictable trade — importance and certainty are different "
+            "axes. Frame the key debate going in, decide explicitly whether "
+            "holding through the print is justified, and treat an unusually "
+            "strong pre-report run-up as positioning risk, not as "
+            "confirmation."
+        ),
+    },
+    {
+        "slug": "catalyst-map",
+        "name": "Catalyst Map",
+        "description": ("Score catalysts on timing, transmission, decision "
+                        "impact, overlap; shared event chains are "
+                        "concentration."),
+        "prompts": ["planner"],
+        "priority": 80,
+        "body": (
+            "Map what could move the candidates before choosing among "
+            "them. For each catalyst score: timing relevance (inside the "
+            "actual decision window), transmission strength (does it reach "
+            "these names directly, via peers, supply chain, or a macro "
+            "channel), decision impact (could it change the plan or the "
+            "holding period), and overlap (several candidates hanging on "
+            "the same event chain is concentration, not diversification). "
+            "Classify primary / secondary / background and prepare only "
+            "for primary. A longer event list is not better preparation — "
+            "a map that names which exposure depends on which event is."
+        ),
+    },
+    {
+        "slug": "watchlist-review",
+        "name": "Watchlist Review",
+        "description": ("Triage candidates by actionability: catalyst "
+                        "relevance, tradability, readiness, redundancy — "
+                        "not familiarity."),
+        "prompts": ["planner"],
+        "priority": 85,
+        "body": (
+            "Triage candidates by actionability, not familiarity. For "
+            "each: catalyst relevance (a concrete reason it matters NOW "
+            "for this timeframe), tradability (liquidity and instrument "
+            "fit), setup readiness (enough evidence to justify the risk), "
+            "and redundancy (does it add distinct exposure, or duplicate "
+            "an existing position's driver). Classify active focus / "
+            "monitor / remove. Several names sharing one catalyst chain "
+            "are the same bet wearing different tickers — pick the best "
+            "expression of it. A popular name with no current reason "
+            "earns monitor, never active."
+        ),
+    },
+    {
+        "slug": "execution-plan-check",
+        "name": "Execution Plan Check",
+        "description": ("A valid setup with an unexecutable plan is "
+                        "fragile: urgency vs order method, spread/depth, "
+                        "session timing, stop realism."),
+        "prompts": ["trader"],
+        "priority": 90,
+        "body": (
+            "An order plan is executable only if the market can actually "
+            "fill it as imagined. Check: does the urgency match the entry "
+            "method; will spread, thin depth, or session timing (open, "
+            "close, overnight) make the assumed fill unrealistic; is the "
+            "stop operationally believable — a stop becomes a market order "
+            "in a fast move and can fill far from its price; is there a "
+            "credible way to reduce if liquidity deteriorates. Around "
+            "scheduled catalysts, execution risk rises exactly when the "
+            "idea looks most urgent. A valid setup with an unexecutable "
+            "plan is fragile — shrink size or wait for better conditions "
+            "rather than pretending the fill will be clean."
+        ),
+    },
+    {
+        "slug": "portfolio-concentration",
+        "name": "Portfolio Concentration",
+        "description": ("Diversification is shared drivers, not ticker "
+                        "count; judge the add against the book; elevated "
+                        "means smaller."),
+        "prompts": ["planner"],
+        "priority": 95,
+        "body": (
+            "Diversification is measured in shared drivers, not ticker "
+            "count. Before adding exposure check: single-name dependence, "
+            "correlated-cluster dependence (same sector, theme, or "
+            "benchmark leaders — several holdings plus a thematic basket "
+            "can be one bet), and exit flexibility (illiquid or "
+            "hard-to-reduce exposure makes the same weight riskier). Judge "
+            "the ADD against the book: a good idea can still be too large "
+            "in context. Classify acceptable / elevated / too "
+            "concentrated; when elevated, take the smaller size — "
+            "concentration risk compounds precisely when the shared "
+            "driver breaks."
         ),
     },
     {

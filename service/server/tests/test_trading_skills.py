@@ -57,12 +57,28 @@ class RegistryTests(_Db):
         trader = {s["slug"] for s in trading_skills.skills_for_prompt("trader")}
         light = {s["slug"] for s in trading_skills.skills_for_prompt("light")}
         self.assertIn("market-regime-lens", trader)
+        self.assertIn("thesis-validation", trader)
         self.assertNotIn("market-regime-lens", light)
         self.assertIn("risk-reward-structure", light)
+        self.assertIn("position-management", light)
         self.assertIn("data-honesty", light)
         planner = {s["slug"] for s in trading_skills.skills_for_prompt("planner")}
-        self.assertEqual(planner, {"position-sizing-discipline", "data-honesty"})
+        self.assertEqual(planner, {"position-sizing-discipline", "data-honesty",
+                                   "catalyst-map", "watchlist-review",
+                                   "portfolio-concentration"})
         self.assertEqual(trading_skills.skills_for_prompt("nonsense"), [])
+
+    def test_defaults_never_hit_the_budget(self):
+        # The catalogue ships with EVERY skill enabled; the budget exists for
+        # admin-authored additions, not to silently prune the defaults. Every
+        # enabled matching skill must appear in the block for every site and
+        # market combination.
+        for site in trading_skills.PROMPT_SITES:
+            for market in (None, "us-stock", "crypto"):
+                block = trading_skills.skills_block(site, market)
+                for skill in trading_skills.skills_for_prompt(site, market):
+                    self.assertIn(f"### {skill['name']}\n", block,
+                                  f"{skill['slug']} dropped from {site}/{market}")
 
     def test_selection_by_market(self):
         trading_skills.create_skill(
@@ -92,16 +108,21 @@ class RegistryTests(_Db):
         self.assertEqual(trading_skills.skills_block("trader"), "")
 
     def test_block_budget_skips_whole_skills(self):
+        # Two admin-authored max-size skills blow the trader budget; the
+        # overflow must skip whole skills (the lowest-priority ones), never
+        # truncate mid-body.
         trading_skills.create_skill(
             "huge", "Huge Skill", "x" * trading_skills.MAX_BODY_LEN,
             prompts=["trader"], priority=1)
+        trading_skills.create_skill(
+            "huge2", "Huge Skill Two", "y" * trading_skills.MAX_BODY_LEN,
+            prompts=["trader"], priority=2)
         block = trading_skills.skills_block("trader")
         self.assertIn("Huge Skill", block)
         # Budget: header + sections never exceed MAX_BLOCK_LEN (+ final \n).
         self.assertLessEqual(len(block), trading_skills.MAX_BLOCK_LEN + 1)
-        # The lowest-priority base skill must have been skipped whole, and no
-        # section may be truncated mid-body (every included body intact).
-        self.assertNotIn("Data Honesty", block)
+        last = trading_skills.skills_for_prompt("trader")[-1]
+        self.assertNotIn(f"### {last['name']}\n", block)
         self.assertIn("x" * trading_skills.MAX_BODY_LEN, block)
 
     def test_fail_soft_when_table_broken(self):
@@ -175,6 +196,7 @@ class PromptInjectionTests(_Db):
         prompt = captured[0]
         self.assertIn("Risk/Reward Structure", prompt)
         self.assertIn("Exit Discipline", prompt)
+        self.assertIn("Position Management", prompt)
         self.assertIn("Data Honesty", prompt)
         # trader-only skills must not ride on the cheap path
         self.assertNotIn("Market Regime Lens", prompt)

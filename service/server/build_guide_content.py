@@ -109,6 +109,13 @@ SOURCES: list[dict] = [
     {"key": "liq-defense-en", "src": "plan/16-liquidation-defense-daemon.html",
      "kind": "html", "lang": "en", "group": "liq-defense",
      "title": "Plan 16 — Liquidation Defense Daemon", "owner_only": True},
+    # Plan 20 as shipped (PR #179): the skills registry, its zero-LLM
+    # selection, the four prompt injection sites and the admin CRUD. Owner-
+    # gated for the same reason as `liq-defense`: prompt-engineering detail,
+    # env behaviour and the admin API are operator material.
+    {"key": "trading-skills-en", "src": "plan/20-trading-skills.html",
+     "kind": "html", "lang": "en", "group": "trading-skills",
+     "title": "Plan 20 — Trading Skills: How It Works", "owner_only": True},
 ]
 
 # ── machine-translated bodies (2026-07-29) ─────────────────────────────────
@@ -125,13 +132,15 @@ SOURCES: list[dict] = [
 # Listed as a table rather than 34 more literal dicts: the source path and kind
 # are a property of the GROUP, and repeating them per language is how the group
 # title and the file it points at drift apart.
-_OWNER_GROUPS = {"ops-keys", "architecture", "extensions", "liq-defense"}
+_OWNER_GROUPS = {"ops-keys", "architecture", "extensions", "liq-defense",
+                 "trading-skills"}
 _TRANSLATED_SOURCES = {
     # group: (path template, kind)
     "ops-keys": ("design/api-keys-reference-{lang}.html", "html"),
     "architecture": ("12-system-architecture-report-{lang}.html", "html"),
     "extensions": ("reports/2026-07-25-extension-e1-e2-analysis-{lang}.html", "html"),
     "liq-defense": ("plan/16-liquidation-defense-daemon-{lang}.html", "html"),
+    "trading-skills": ("plan/20-trading-skills-{lang}.html", "html"),
     "guide": ("design/ai-trading-guide-{lang}.html", "html"),
     "gateway": ("design/live-trading-gateway-guide-{lang}.html", "html"),
     "smart": ("design/smart-trading-features-{lang}.html", "html"),
@@ -170,6 +179,12 @@ _TRANSLATED_TITLES = {
         "th": "แผน 16 — เดมอนป้องกันการถูกบังคับปิดสถานะ",
         "vi": "Kế hoạch 16 — Daemon phòng vệ thanh lý",
         "id": "Rencana 16 — Daemon Pertahanan Likuidasi"},
+    "trading-skills": {
+        "ko": "플랜 20 — 트레이딩 스킬: 작동 원리",
+        "ja": "プラン20 — トレーディングスキル：その仕組み",
+        "th": "แผน 20 — ทักษะการเทรด: หลักการทำงาน",
+        "vi": "Kế hoạch 20 — Kỹ năng giao dịch: Cách hoạt động",
+        "id": "Rencana 20 — Keterampilan Trading: Cara Kerjanya"},
     "guide": {
         "ja": "AI自動売買パイプライン完全ガイド",
         "th": "คู่มือฉบับสมบูรณ์: ไปป์ไลน์เทรด AI",
@@ -288,6 +303,11 @@ GROUPS = [
      "th": "เดมอนป้องกันการบังคับปิดสถานะ (ผู้ดูแล)",
      "vi": "Daemon phòng vệ thanh lý (quản trị)",
      "id": "Daemon Pertahanan Likuidasi (admin)"},
+    {"group": "trading-skills", "ko": "트레이딩 스킬 (관리자)",
+     "en": "Trading Skills (owner)", "ja": "トレーディングスキル（管理者）",
+     "th": "ทักษะการเทรด (ผู้ดูแล)",
+     "vi": "Kỹ năng giao dịch (quản trị)",
+     "id": "Keterampilan Trading (admin)"},
 ]
 
 # ── Plan 19: per-broker gateway connection guides ───────────────────────────

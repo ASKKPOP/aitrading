@@ -1,6 +1,13 @@
 # Plan 20 — Trading Skills: house decision methods the desk actually reads
 
-*2026-08-01. Status: v1 implemented (this PR).*
+*2026-08-01. Status: v1 implemented (PR #179); catalogue expanded to the
+full 16-skill set the same day per the owner's "get all skills" — the ten
+additions complete the marian2js decision library (thesis-validation,
+macro-event-analysis, position-management, pre-trade-readiness,
+evidence-gap-check, earnings-preview [us-stock-scoped], catalyst-map,
+watchlist-review, execution-plan-check, portfolio-concentration), and the
+per-prompt budget rose to 10,000 chars so the default set never silently
+truncates (busiest site: trader/us-stock ≈ 9.1K).*
 
 ## Why
 
