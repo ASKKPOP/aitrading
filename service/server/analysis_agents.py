@@ -445,6 +445,16 @@ def _guidelines_block(guidelines: Optional[str]) -> str:
             f"{guidelines}\n\n")
 
 
+def _skills_block(site: str, market: Optional[str] = None) -> str:
+    """Trading skills (Plan 20) for one prompt site. Fail-soft to "" — a
+    skills-registry problem must never break an analysis."""
+    try:
+        from trading_skills import skills_block
+        return skills_block(site, market=market)
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def ai_only_orders() -> bool:
     """PRIMARY RULE: an order is decided by the AI, or it is not placed.
 
@@ -481,7 +491,8 @@ def _hold_only(decision: dict[str, Any], reason: str) -> dict[str, Any]:
 def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           guidelines: Optional[str] = None,
                           memory: str = "",
-                          position_state: str = "") -> dict[str, Any]:
+                          position_state: str = "",
+                          skills: str = "") -> dict[str, Any]:
     if not llm_configured():
         # No provider at all. The engine still runs and still reports, but it
         # does not trade on a rule signal — see ai_only_orders().
@@ -496,6 +507,7 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         f"{lang_line}\n"
         + memory
         + _guidelines_block(guidelines)
+        + skills
         # Position awareness (2026-07-29). This path took no position input of
         # any kind — not size, entry, P&L, high-water mark, nor even whether a
         # position existed. That is worst exactly here: the E1 router escalates
@@ -649,7 +661,8 @@ def _parse_verification_json(text: str) -> Optional[dict[str, Any]]:
 def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
                      technical: dict[str, Any], decision: dict[str, Any],
                      lang: str, guidelines: Optional[str] = None,
-                     memory: str = "") -> Optional[dict[str, Any]]:
+                     memory: str = "",
+                     skills: str = "") -> Optional[dict[str, Any]]:
     """Adversarial second pass: a strong-tier call that tries to REFUTE the
     trader's decision. Returns {verdict, adjusted_confidence, reason} or None
     (fail-open) when unconfigured/unparseable. VERIFY_PROVIDER optionally runs
@@ -660,6 +673,7 @@ def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
     prompt = (
         memory +
         _guidelines_block(guidelines) +
+        skills +
         "You are an independent risk verifier. Your job is to try to REFUTE the trading "
         f"decision below for {symbol} ({market}). Check: (1) do the analyst briefs actually "
         "support the action, or is evidence mixed/contradictory? (2) is the confidence "
@@ -884,7 +898,8 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
     _emit(progress, "decision", "start")
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                                      guidelines=guidelines, memory=memory,
-                                     position_state=position_state)
+                                     position_state=position_state,
+                                     skills=_skills_block("trader", market))
     _emit(progress, "decision", "done",
           action=decision.get("action"), confidence=decision.get("confidence"))
 
@@ -893,7 +908,8 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
     _emit(progress, "verify", "start")
     try:
         verification = _verify_decision(symbol, market, briefs, technical, decision, lang,
-                                        guidelines=guidelines, memory=memory)
+                                        guidelines=guidelines, memory=memory,
+                                        skills=_skills_block("verifier", market))
     except Exception:  # noqa: BLE001
         verification = None
     decision = _apply_verification(decision, verification)

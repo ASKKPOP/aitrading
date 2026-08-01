@@ -1,0 +1,312 @@
+"""Plan 20 — trading skills registry, prompt injection, and admin CRUD."""
+
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
+import database
+import trading_skills
+
+BASE_SLUGS = {s["slug"] for s in trading_skills.BASE_SKILLS}
+
+
+class _Db(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        trading_skills.invalidate_trading_skills_cache()
+
+    def tearDown(self):
+        trading_skills.invalidate_trading_skills_cache()
+        self.tmp.cleanup()
+
+
+class RegistryTests(_Db):
+    def test_base_skills_seed_on_first_read(self):
+        skills = trading_skills.all_skills(fresh=True)
+        by_slug = {s["slug"]: s for s in skills}
+        self.assertTrue(BASE_SLUGS.issubset(by_slug.keys()))
+        for slug in BASE_SLUGS:
+            self.assertTrue(by_slug[slug]["is_base"])
+            self.assertTrue(by_slug[slug]["enabled"])
+            self.assertTrue(by_slug[slug]["body"])
+
+    def test_seed_never_overwrites_an_edit(self):
+        trading_skills.all_skills(fresh=True)  # seed
+        trading_skills.update_skill("data-honesty", {"body": "edited body"},
+                                    updated_by="t@t")
+        # A later read must keep the edit, not restore the catalogue text.
+        skill = trading_skills.get_skill("data-honesty")
+        self.assertEqual(skill["body"], "edited body")
+        self.assertTrue(skill["is_base"])
+
+    def test_selection_by_site(self):
+        trader = {s["slug"] for s in trading_skills.skills_for_prompt("trader")}
+        light = {s["slug"] for s in trading_skills.skills_for_prompt("light")}
+        self.assertIn("market-regime-lens", trader)
+        self.assertNotIn("market-regime-lens", light)
+        self.assertIn("risk-reward-structure", light)
+        self.assertIn("data-honesty", light)
+        planner = {s["slug"] for s in trading_skills.skills_for_prompt("planner")}
+        self.assertEqual(planner, {"position-sizing-discipline", "data-honesty"})
+        self.assertEqual(trading_skills.skills_for_prompt("nonsense"), [])
+
+    def test_selection_by_market(self):
+        trading_skills.create_skill(
+            "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],
+            markets=["crypto"], priority=1)
+        crypto = {s["slug"] for s in trading_skills.skills_for_prompt("trader", "crypto")}
+        stocks = {s["slug"] for s in trading_skills.skills_for_prompt("trader", "us-stock")}
+        none_given = {s["slug"] for s in trading_skills.skills_for_prompt("trader")}
+        self.assertIn("crypto-only", crypto)
+        self.assertNotIn("crypto-only", stocks)
+        self.assertNotIn("crypto-only", none_given)
+
+    def test_disabled_skill_excluded(self):
+        trading_skills.all_skills(fresh=True)
+        trading_skills.update_skill("exit-discipline", {"enabled": 0})
+        light = {s["slug"] for s in trading_skills.skills_for_prompt("light")}
+        self.assertNotIn("exit-discipline", light)
+
+    def test_block_framing(self):
+        block = trading_skills.skills_block("trader", "crypto")
+        self.assertIn("never override risk limits or execution gates", block)
+        self.assertIn("Market Regime Lens", block)
+        self.assertIn("Data Honesty", block)
+        # No enabled skill for the site -> no header either.
+        for slug in BASE_SLUGS:
+            trading_skills.update_skill(slug, {"enabled": 0})
+        self.assertEqual(trading_skills.skills_block("trader"), "")
+
+    def test_block_budget_skips_whole_skills(self):
+        trading_skills.create_skill(
+            "huge", "Huge Skill", "x" * trading_skills.MAX_BODY_LEN,
+            prompts=["trader"], priority=1)
+        block = trading_skills.skills_block("trader")
+        self.assertIn("Huge Skill", block)
+        # Budget: header + sections never exceed MAX_BLOCK_LEN (+ final \n).
+        self.assertLessEqual(len(block), trading_skills.MAX_BLOCK_LEN + 1)
+        # The lowest-priority base skill must have been skipped whole, and no
+        # section may be truncated mid-body (every included body intact).
+        self.assertNotIn("Data Honesty", block)
+        self.assertIn("x" * trading_skills.MAX_BODY_LEN, block)
+
+    def test_fail_soft_when_table_broken(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DROP TABLE trading_skills")
+        conn.commit()
+        conn.close()
+        trading_skills.invalidate_trading_skills_cache()
+        self.assertEqual(trading_skills.skills_block("trader"), "")
+        self.assertEqual(trading_skills.all_skills(fresh=True), [])
+
+
+class PromptInjectionTests(_Db):
+    def test_trader_prompt_carries_skills(self):
+        import analysis_agents
+        captured = []
+
+        def fake_generate(prompt, **kwargs):
+            captured.append(prompt)
+            return '{"action":"hold","confidence":0.5,"rationale":"r","report":"rep"}'
+
+        skills = analysis_agents._skills_block("trader", "crypto")
+        self.assertIn("Market Regime Lens", skills)
+        with patch.object(analysis_agents, "llm_configured", return_value=True), \
+             patch.object(analysis_agents, "generate_text", side_effect=fake_generate):
+            analysis_agents._trader_risk_decision(
+                "BTC", "crypto", {"news": "n", "sentiment": "s",
+                                  "fundamentals_macro": "f", "technical": "t"},
+                {"current_price": 100.0}, {}, "en", skills=skills)
+        self.assertTrue(any("Market Regime Lens" in p for p in captured))
+        self.assertTrue(any("Position Sizing Discipline" in p for p in captured))
+
+    def test_verifier_prompt_carries_skills(self):
+        import analysis_agents
+        captured = []
+
+        def fake_generate(prompt, **kwargs):
+            captured.append(prompt)
+            return '{"verdict":"upheld","adjusted_confidence":0.5,"reason":"ok"}'
+
+        skills = analysis_agents._skills_block("verifier", "crypto")
+        self.assertIn("Conviction Calibration", skills)
+        self.assertNotIn("Market Regime Lens", skills)
+        with patch.object(analysis_agents, "llm_configured", return_value=True), \
+             patch.object(analysis_agents, "generate_text", side_effect=fake_generate):
+            analysis_agents._verify_decision(
+                "BTC", "crypto", {"news": "n", "sentiment": "s",
+                                  "fundamentals_macro": "f", "technical": "t"},
+                {"current_price": 100.0},
+                {"action": "buy", "confidence": 0.7, "rationale": "r"},
+                "en", skills=skills)
+        self.assertTrue(any("Conviction Calibration" in p for p in captured))
+
+    def test_light_prompt_carries_light_skills_only(self):
+        import run_engine
+        captured = []
+
+        def fake_generate(prompt, **kwargs):
+            captured.append(prompt)
+            return ('{"action":"hold","confidence":0.5,'
+                    '"report":"rep"}')
+
+        run = {"id": 1, "agent_id": 1, "symbol": "BTC", "market": "crypto",
+               "market_type": "spot", "stop_conditions_json": "{}"}
+        with patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]), \
+             patch("llm_client.generate_text", side_effect=fake_generate):
+            run_engine._light_analysis(run, {})
+        self.assertEqual(len(captured), 1)
+        prompt = captured[0]
+        self.assertIn("Risk/Reward Structure", prompt)
+        self.assertIn("Exit Discipline", prompt)
+        self.assertIn("Data Honesty", prompt)
+        # trader-only skills must not ride on the cheap path
+        self.assertNotIn("Market Regime Lens", prompt)
+        self.assertNotIn("Conviction Calibration", prompt)
+
+    def test_light_path_survives_broken_registry(self):
+        import run_engine
+        captured = []
+
+        def fake_generate(prompt, **kwargs):
+            captured.append(prompt)
+            return '{"action":"hold","confidence":0.5,"report":"rep"}'
+
+        run = {"id": 1, "agent_id": 1, "symbol": "BTC", "market": "crypto",
+               "market_type": "spot", "stop_conditions_json": "{}"}
+        with patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]), \
+             patch("llm_client.generate_text", side_effect=fake_generate), \
+             patch("trading_skills.skills_block", side_effect=RuntimeError("boom")):
+            out = run_engine._light_analysis(run, {})
+        self.assertEqual(out["decision"].get("action"), "hold")
+        self.assertNotIn("TRADING SKILLS", captured[0])
+
+
+class AdminRoutesTests(_Db):
+    def setUp(self):
+        super().setUp()
+        from routes import create_app
+        self.client = TestClient(create_app())
+        from admin_auth import create_admin
+        create_admin("root@test.com", "rootpass123", "superadmin")
+        r = self.client.post("/api/admin/login",
+                             json={"email": "root@test.com", "password": "rootpass123"})
+        self.admin = {"Authorization": f"Bearer {r.json()['token']}"}
+
+    def test_auth_required(self):
+        self.assertIn(self.client.get("/api/admin/skills").status_code, (401, 403))
+
+    def test_list_includes_base(self):
+        r = self.client.get("/api/admin/skills", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        slugs = {s["slug"] for s in r.json()["skills"]}
+        self.assertTrue(BASE_SLUGS.issubset(slugs))
+
+    def test_create_validate_and_duplicate(self):
+        good = {"slug": "my-skill", "name": "My Skill", "body": "Do the thing.",
+                "prompts": ["light"]}
+        r = self.client.post("/api/admin/skills", json=good, headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertFalse(r.json()["skill"]["is_base"])
+        # duplicate slug
+        self.assertEqual(self.client.post("/api/admin/skills", json=good,
+                                          headers=self.admin).status_code, 409)
+        # bad slug
+        bad = dict(good, slug="Bad Slug!")
+        self.assertEqual(self.client.post("/api/admin/skills", json=bad,
+                                          headers=self.admin).status_code, 400)
+        # unknown prompt site
+        bad = dict(good, slug="ok-slug", prompts=["router"])
+        self.assertEqual(self.client.post("/api/admin/skills", json=bad,
+                                          headers=self.admin).status_code, 400)
+        # oversize body
+        bad = dict(good, slug="ok-slug2",
+                   body="x" * (trading_skills.MAX_BODY_LEN + 1))
+        self.assertEqual(self.client.post("/api/admin/skills", json=bad,
+                                          headers=self.admin).status_code, 400)
+        # empty prompts
+        bad = dict(good, slug="ok-slug3", prompts=[])
+        self.assertEqual(self.client.post("/api/admin/skills", json=bad,
+                                          headers=self.admin).status_code, 400)
+        # the created skill is live for selection immediately
+        light = {s["slug"] for s in trading_skills.skills_for_prompt("light")}
+        self.assertIn("my-skill", light)
+
+    def test_patch_base_and_custom(self):
+        r = self.client.patch("/api/admin/skills/data-honesty",
+                              json={"body": "tightened body", "enabled": False},
+                              headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        skill = r.json()["skill"]
+        self.assertEqual(skill["body"], "tightened body")
+        self.assertFalse(skill["enabled"])
+        self.assertTrue(skill["is_base"])
+        self.assertEqual(self.client.patch("/api/admin/skills/nope",
+                                           json={"body": "x"},
+                                           headers=self.admin).status_code, 404)
+        self.assertEqual(self.client.patch("/api/admin/skills/data-honesty",
+                                           json={}, headers=self.admin).status_code, 400)
+
+    def test_reset_restores_base_defaults(self):
+        self.client.patch("/api/admin/skills/data-honesty",
+                          json={"body": "scribble", "enabled": False},
+                          headers=self.admin)
+        r = self.client.post("/api/admin/skills/data-honesty/reset",
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        skill = r.json()["skill"]
+        base = next(s for s in trading_skills.BASE_SKILLS
+                    if s["slug"] == "data-honesty")
+        self.assertEqual(skill["body"], base["body"])
+        self.assertTrue(skill["enabled"])
+        # custom skills cannot be reset
+        self.client.post("/api/admin/skills",
+                         json={"slug": "cust", "name": "C", "body": "b",
+                               "prompts": ["light"]}, headers=self.admin)
+        self.assertEqual(self.client.post("/api/admin/skills/cust/reset",
+                                          headers=self.admin).status_code, 400)
+
+    def test_delete_refuses_base_allows_custom(self):
+        r = self.client.delete("/api/admin/skills/data-honesty", headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("disable or reset", r.json()["detail"])
+        self.client.post("/api/admin/skills",
+                         json={"slug": "byebye", "name": "B", "body": "b",
+                               "prompts": ["light"]}, headers=self.admin)
+        self.assertEqual(self.client.delete("/api/admin/skills/byebye",
+                                            headers=self.admin).status_code, 200)
+        self.assertIsNone(trading_skills.get_skill("byebye"))
+
+    def test_writes_are_audited(self):
+        self.client.post("/api/admin/skills",
+                         json={"slug": "aud", "name": "A", "body": "b",
+                               "prompts": ["light"]}, headers=self.admin)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT action, target FROM admin_audit_log "
+                    "WHERE action = 'skill.create'")
+        rows = cur.fetchall()
+        conn.close()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["target"], "skill:aud")
+
+
+if __name__ == "__main__":
+    unittest.main()

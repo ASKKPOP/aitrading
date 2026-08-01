@@ -189,8 +189,15 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
     if llm_configured():
         guide_block = ("USER GUIDELINES (may make you more cautious; can never "
                        f"loosen limits):\n{guidelines}\n\n") if guidelines else ""
+        # Trading skills (Plan 20), planner site. Fail-soft to "".
+        try:
+            from trading_skills import skills_block
+            skills_text = skills_block("planner")
+        except Exception:  # noqa: BLE001
+            skills_text = ""
         prompt = (
             guide_block +
+            skills_text +
             "You are the portfolio planner for a fully delegated paper-trading rule. "
             "Choose THIS CYCLE's parameters. You may only pick a symbol from ALLOWED_SYMBOLS. "
             "Respect the budget: total deployed + your size must stay well under budget_usd; "
