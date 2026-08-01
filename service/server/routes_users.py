@@ -104,13 +104,18 @@ def _code_key(email: str) -> str:
     return f"auth:vcode:{email}"
 
 
-def _store_code(email: str, payload: dict, ctx: "RouteContext") -> None:
-    """Write a code entry to Redis (with TTL), falling back to ctx."""
+def _store_code(email: str, payload: dict, ctx: "RouteContext",
+                ttl_seconds: int = _CODE_TTL_SECONDS) -> None:
+    """Write a code entry to Redis (with TTL), falling back to ctx.
+
+    ttl_seconds only bounds the Redis key; expiry is enforced from the
+    payload's own expires_at, which the ctx fallback relies on. Admin invites
+    pass a longer TTL — keep the two in step or Redis evicts a live code."""
     serialisable = {
         k: (v.isoformat() if isinstance(v, datetime) else v)
         for k, v in payload.items()
     }
-    if not _cache_set(_code_key(email), serialisable, ttl_seconds=_CODE_TTL_SECONDS):
+    if not _cache_set(_code_key(email), serialisable, ttl_seconds=ttl_seconds):
         ctx.verification_codes[email] = payload  # fallback keeps native datetime objects
 
 

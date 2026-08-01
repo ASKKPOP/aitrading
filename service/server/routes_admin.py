@@ -5,7 +5,7 @@ Everything an operator needs in one gated surface:
   GET    /api/admin/overview            platform counts + money totals
   GET    /api/admin/agents              agent accounts (search, paging)
   DELETE /api/admin/agents/{id}         delete an agent + all its content
-  GET    /api/admin/users               human user accounts
+  GET    /api/admin/users               human user accounts (agents nested)
   DELETE /api/admin/users/{id}          delete a user (+ linked agent cascade)
   GET    /api/admin/transactions        money movements: trades + points ledger
   GET    /api/admin/automation          all automation rules + recent runs
@@ -217,6 +217,10 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
+            # One row per PERSON. This used to LEFT JOIN agents, which fanned a
+            # member with ten agents into ten rows — and silently broke paging,
+            # because LIMIT then counted joined rows while total counted users.
+            # Agents come back as a nested list in a second query instead.
             cursor.execute(
                 """
                 SELECT u.id, u.email, u.created_at, COALESCE(u.mfa_enabled, 0) AS mfa_enabled,
@@ -229,19 +233,40 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
                           WHEN SUM(c.account_type = 'shadow') > 0 THEN 'shadow'
                           WHEN COUNT(*) > 0 THEN 'simulator'
                           ELSE NULL END
-                        FROM automation_configs c WHERE c.agent_id = a.id) AS trading_mode,
-                       a.id AS agent_id, a.name AS agent_name
+                        FROM automation_configs c
+                        JOIN agents ua ON ua.id = c.agent_id
+                        WHERE ua.user_id = u.id) AS trading_mode
                 FROM users u
-                LEFT JOIN agents a ON a.user_id = u.id
                 ORDER BY u.id DESC LIMIT ? OFFSET ?
                 """,
                 (limit, max(0, offset)),
             )
             users = [dict(r) for r in cursor.fetchall()]
+            by_user: dict[int, list[dict[str, Any]]] = {u["id"]: [] for u in users}
+            if by_user:
+                placeholders = ",".join("?" * len(by_user))
+                cursor.execute(
+                    f"""
+                    SELECT a.user_id, a.id, a.name, a.cash, a.points, a.created_at,
+                           (SELECT COUNT(*) FROM signals s
+                            WHERE s.agent_id = a.id AND s.message_type = 'operation')
+                             AS trade_count,
+                           (SELECT COUNT(*) FROM positions p WHERE p.agent_id = a.id)
+                             AS open_positions
+                    FROM agents a WHERE a.user_id IN ({placeholders}) ORDER BY a.id
+                    """,
+                    tuple(by_user),
+                )
+                for row in cursor.fetchall():
+                    agent = dict(row)
+                    by_user[agent.pop("user_id")].append(agent)
+            for user in users:
+                user["agents"] = by_user[user["id"]]
+                user["agent_count"] = len(user["agents"])
             total = _count(cursor, "SELECT COUNT(*) FROM users")
         finally:
             conn.close()
-        return {"users": users, "total": total}
+        return {"users": users, "total": total, "limit": limit, "offset": max(0, offset)}
 
     @app.delete('/api/admin/users/{user_id}')
     async def admin_delete_user(user_id: int, authorization: str = Header(None)):

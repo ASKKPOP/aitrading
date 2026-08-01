@@ -502,6 +502,192 @@ class MemberManagementTests(_Base):
             self.assertIn(key, body)
 
 
+class MemberRosterTests(_Base):
+    """The roster is a list of PEOPLE. A member with ten agents is still one
+    member — the old LEFT JOIN fanned them out into ten rows, which also broke
+    paging (LIMIT counted joined rows while total counted users)."""
+
+    def _add_agent(self, user_id: int, name: str) -> int:
+        from utils import hash_password
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO agents (name, password_hash, cash, user_id) "
+                    "VALUES (?, ?, 100000.0, ?)",
+                    (name, hash_password("x" * 12), user_id))
+        agent_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        return agent_id
+
+    def test_a_member_with_many_agents_is_one_row(self):
+        session = self._make_user()
+        uid = session["user_id"]
+        for i in range(3):
+            self._add_agent(uid, f"bot-{i}")
+        r = self.client.get("/api/admin/users", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        rows = [u for u in body["users"] if u["id"] == uid]
+        self.assertEqual(len(rows), 1, f"member repeated: {rows}")
+        self.assertEqual([a["name"] for a in rows[0]["agents"]], ["bot-0", "bot-1", "bot-2"])
+        self.assertEqual(rows[0]["agent_count"], 3)
+        self.assertEqual(len(body["users"]), body["total"])
+
+    def test_paging_counts_members_not_agent_rows(self):
+        for n in range(3):
+            session = self._make_user(f"m{n}@x.com", "memberpass1")
+            self._add_agent(session["user_id"], f"bot-{n}-a")
+            self._add_agent(session["user_id"], f"bot-{n}-b")
+        r = self.client.get("/api/admin/users?limit=2", headers=self.admin)
+        body = r.json()
+        self.assertEqual(len(body["users"]), 2)
+        self.assertEqual(body["total"], 3)
+        r = self.client.get("/api/admin/users?limit=2&offset=2", headers=self.admin)
+        self.assertEqual(len(r.json()["users"]), 1)
+
+    def test_trading_mode_is_the_riskiest_across_all_agents(self):
+        session = self._make_user()
+        uid = session["user_id"]
+        sim_agent = self._add_agent(uid, "sim-bot")
+        live_agent = self._add_agent(uid, "live-bot")
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for agent_id, account_type in ((sim_agent, "simulator"), (live_agent, "live")):
+            cur.execute("INSERT INTO automation_configs (agent_id, symbol, market, account_type) "
+                        "VALUES (?, 'BTC', 'crypto', ?)", (agent_id, account_type))
+        conn.commit()
+        conn.close()
+        r = self.client.get("/api/admin/users", headers=self.admin)
+        row = [u for u in r.json()["users"] if u["id"] == uid][0]
+        self.assertEqual(row["trading_mode"], "live")
+
+    def test_member_detail_lists_every_agent(self):
+        session = self._make_user()
+        uid = session["user_id"]
+        self._add_agent(uid, "bot-a")
+        self._add_agent(uid, "bot-b")
+        r = self.client.get(f"/api/admin/members/{uid}", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual([a["name"] for a in r.json()["agents"]], ["bot-a", "bot-b"])
+
+
+class MemberCreateTests(_Base):
+    """Admins can add a member by hand. The account is created with no usable
+    password — the member sets their own via the emailed code."""
+
+    def test_create_sends_an_invite_and_leaves_no_usable_password(self):
+        with patch("routes_admin_manage.send_verification_code_email",
+                   return_value=True) as sent:
+            r = self.client.post("/api/admin/members",
+                                 json={"email": "New@X.com", "lang": "ko"},
+                                 headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertTrue(r.json()["invite_sent"])
+        uid = r.json()["user_id"]
+        # The code goes to the member's inbox, never back over the API.
+        self.assertNotIn("code", r.json())
+        self.assertNotIn("password", r.text.lower())
+        self.assertTrue(sent.called)
+        emailed, code, lang = sent.call_args[0][:3]
+        self.assertEqual(emailed, "new@x.com")  # normalised
+        self.assertEqual(lang, "ko")
+        self.assertRegex(code, r"^\d{6}$")
+
+        # No password works until the member sets one.
+        r = self.client.post("/api/users/login",
+                             json={"email": "new@x.com", "password": ""})
+        self.assertEqual(r.status_code, 401)
+
+        # The emailed code drives the normal reset endpoint.
+        r = self.client.post("/api/users/reset-password",
+                             json={"email": "new@x.com", "code": code,
+                                   "new_password": "chosen12345"})
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.post("/api/users/login",
+                             json={"email": "new@x.com", "password": "chosen12345"})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["user_id"], uid)
+
+    def test_create_can_grant_a_plan_in_one_step(self):
+        with patch("routes_admin_manage.send_verification_code_email", return_value=True):
+            r = self.client.post("/api/admin/members",
+                                 json={"email": "paid@x.com", "plan_code": "pro", "days": 90},
+                                 headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.get("/api/admin/subscriptions?status=active", headers=self.admin)
+        rows = [s for s in r.json()["subscriptions"] if s["email"] == "paid@x.com"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["plan_code"], "pro")
+
+    def test_duplicate_and_malformed_emails_are_refused(self):
+        self._make_user("dupe@x.com", "memberpass1")
+        with patch("routes_admin_manage.send_verification_code_email", return_value=True):
+            r = self.client.post("/api/admin/members", json={"email": "dupe@x.com"},
+                                 headers=self.admin)
+            self.assertEqual(r.status_code, 400)
+            r = self.client.post("/api/admin/members", json={"email": "not-an-email"},
+                                 headers=self.admin)
+            self.assertEqual(r.status_code, 400)
+            r = self.client.post("/api/admin/members",
+                                 json={"email": "x@y.com", "plan_code": "gold"},
+                                 headers=self.admin)
+            self.assertEqual(r.status_code, 404)
+
+    def test_a_failed_invite_email_still_creates_the_member(self):
+        with patch("routes_admin_manage.send_verification_code_email", return_value=False):
+            r = self.client.post("/api/admin/members", json={"email": "nomail@x.com"},
+                                 headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertFalse(r.json()["invite_sent"])
+
+    def test_creating_a_member_requires_an_admin(self):
+        r = self.client.post("/api/admin/members", json={"email": "anon@x.com"})
+        self.assertEqual(r.status_code, 401)
+
+
+class ManualPaymentRecordTests(_Base):
+    """A grant may record a real payment (method / reference / amount) rather
+    than only a zero-amount comp."""
+
+    def test_grant_records_the_payment_it_was_given_for(self):
+        self._make_user("payer@x.com", "memberpass1")
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "payer@x.com", "plan_code": "pro", "days": 30,
+                                   "method": "usdt", "reference": "0xabc123",
+                                   "amount_usd": 49.5, "note": "paid in person"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.get("/api/admin/subscriptions?status=active", headers=self.admin)
+        row = [s for s in r.json()["subscriptions"] if s["email"] == "payer@x.com"][0]
+        self.assertEqual(row["method"], "usdt")
+        self.assertEqual(row["reference"], "0xabc123")
+        self.assertEqual(row["amount_usd"], 49.5)
+        # A recorded payment IS revenue; a comp is not.
+        r = self.client.get("/api/admin/analytics", headers=self.admin)
+        self.assertEqual(sum(m["revenue"] for m in r.json()["revenue_by_month"]), 49.5)
+
+    def test_comp_grant_still_defaults_to_manual_and_zero(self):
+        self._make_user("comp@x.com", "memberpass1")
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "comp@x.com", "plan_code": "pro"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.get("/api/admin/subscriptions?status=active", headers=self.admin)
+        row = [s for s in r.json()["subscriptions"] if s["email"] == "comp@x.com"][0]
+        self.assertEqual(row["method"], "manual")
+        self.assertEqual(row["amount_usd"], 0)
+        r = self.client.get("/api/admin/analytics", headers=self.admin)
+        self.assertEqual(sum(m["revenue"] for m in r.json()["revenue_by_month"]), 0)
+
+    def test_an_unknown_payment_method_is_refused(self):
+        self._make_user("bad@x.com", "memberpass1")
+        r = self.client.post("/api/admin/subscriptions/grant",
+                             json={"email": "bad@x.com", "plan_code": "pro",
+                                   "method": "carrier-pigeon"},
+                             headers=self.admin)
+        self.assertEqual(r.status_code, 400, r.text)
+
+
 class StatsAndModerationTests(_Base):
     def test_stats_endpoints_shape(self):
         for path, keys in (

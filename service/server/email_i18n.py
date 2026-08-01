@@ -125,6 +125,54 @@ _COPY = {
                         'abaikan email ini — dan jangan bagikan kode kepada siapa '
                         'pun.')},
     },
+    # Admin-created account. The member never chose a password, so the copy
+    # cannot say "reset" — and the code lives 7 days, not 5 minutes, because
+    # this is handed over out of band rather than requested on the spot.
+    'invite': {
+        'en': {'subject': 'Your Sooppiy account is ready — set your password',
+               'heading': 'Set your password',
+               'intro': 'An administrator created a Sooppiy account for this '
+                        'address. Use this code to set your password:',
+               'note': ('The code expires in 7 days and can be used once. You '
+                        'cannot sign in until you set a password. Never share the '
+                        'code with anyone — Sooppiy staff will never ask for it.')},
+        'ko': {'subject': 'Sooppiy 계정이 준비되었습니다 — 비밀번호를 설정하세요',
+               'heading': '비밀번호 설정',
+               'intro': '관리자가 이 주소로 Sooppiy 계정을 생성했습니다. 아래 코드를 '
+                        '입력해 비밀번호를 설정하세요:',
+               'note': ('이 코드는 7일 후 만료되며 1회만 사용할 수 있습니다. 비밀번호를 '
+                        '설정하기 전까지는 로그인할 수 없습니다. 코드는 절대 타인과 '
+                        '공유하지 마세요 — Sooppiy는 절대 코드를 묻지 않습니다.')},
+        'ja': {'subject': 'Sooppiyアカウントの準備ができました — パスワードを設定してください',
+               'heading': 'パスワードの設定',
+               'intro': '管理者がこのアドレスでSooppiyアカウントを作成しました。次の'
+                        'コードを入力してパスワードを設定してください：',
+               'note': ('このコードの有効期限は7日間で、1回のみ使用できます。パスワードを'
+                        '設定するまでログインできません。コードは誰にも共有しないで'
+                        'ください — Sooppiyがコードをお尋ねすることはありません。')},
+        'th': {'subject': 'บัญชี Sooppiy ของคุณพร้อมแล้ว — ตั้งรหัสผ่านของคุณ',
+               'heading': 'ตั้งรหัสผ่านของคุณ',
+               'intro': 'ผู้ดูแลระบบได้สร้างบัญชี Sooppiy สำหรับที่อยู่นี้ '
+                        'ใช้รหัสนี้เพื่อตั้งรหัสผ่านของคุณ:',
+               'note': ('รหัสนี้จะหมดอายุใน 7 วันและใช้ได้ครั้งเดียว '
+                        'คุณจะเข้าสู่ระบบไม่ได้จนกว่าจะตั้งรหัสผ่าน อย่าเปิดเผยรหัสให้ใคร '
+                        '— เจ้าหน้าที่ Sooppiy จะไม่ขอรหัสนี้จากคุณ')},
+        'vi': {'subject': 'Tài khoản Sooppiy của bạn đã sẵn sàng — hãy đặt mật khẩu',
+               'heading': 'Đặt mật khẩu của bạn',
+               'intro': 'Quản trị viên đã tạo một tài khoản Sooppiy cho địa chỉ '
+                        'này. Dùng mã này để đặt mật khẩu:',
+               'note': ('Mã hết hạn sau 7 ngày và chỉ dùng được một lần. Bạn không '
+                        'thể đăng nhập cho đến khi đặt mật khẩu. Không chia sẻ mã '
+                        'với bất kỳ ai — nhân viên Sooppiy không bao giờ hỏi mã này.')},
+        'id': {'subject': 'Akun Sooppiy Anda sudah siap — atur kata sandi Anda',
+               'heading': 'Atur kata sandi Anda',
+               'intro': 'Seorang admin membuat akun Sooppiy untuk alamat ini. '
+                        'Gunakan kode ini untuk mengatur kata sandi Anda:',
+               'note': ('Kode kedaluwarsa dalam 7 hari dan hanya bisa dipakai '
+                        'sekali. Anda tidak bisa masuk sampai kata sandi diatur. '
+                        'Jangan bagikan kepada siapa pun — staf Sooppiy tidak akan '
+                        'pernah memintanya.')},
+    },
 }
 
 
