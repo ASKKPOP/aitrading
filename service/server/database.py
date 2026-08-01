@@ -1386,6 +1386,10 @@ def init_database():
         # Leverage (2026-07-23): isolated-margin leverage per position. 1 =
         # fully-funded (the prior behavior). Drives margin cash + liquidation.
         "ALTER TABLE positions ADD COLUMN leverage REAL NOT NULL DEFAULT 1",
+        # Futures limit orders carry the terminal's slider leverage to the
+        # fill (margin = notional/L). 1 = the legacy fully-funded fill.
+        # MySQL mirror: alembic 0039.
+        "ALTER TABLE resting_orders ADD COLUMN leverage REAL NOT NULL DEFAULT 1",
     ):
         try:
             cursor.execute(_ddl)
@@ -3065,6 +3069,7 @@ def init_database():
             side         TEXT NOT NULL,
             quantity     REAL NOT NULL,
             limit_price  REAL NOT NULL,
+            leverage     REAL NOT NULL DEFAULT 1,
             stop_loss    REAL,
             take_profit  REAL,
             status       TEXT NOT NULL DEFAULT 'open',

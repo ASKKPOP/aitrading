@@ -333,7 +333,7 @@ export function TerminalPage({ mode }: { mode: 'spot' | 'futures' }) {
     if (!token || !basisPrice || qtyN <= 0) return
     setBusy(true); setMsg(null)
     try {
-      const body: any = { market: 'crypto', side: action, symbol, quantity: qtyN, limit_price: basisPrice }
+      const body: any = { market: 'crypto', side: action, symbol, quantity: qtyN, limit_price: basisPrice, ...(isSpot ? {} : { leverage }) }
       if (!isSpot && (action === 'buy' || action === 'short')) {
         if (tpInput) body.take_profit = parseFloat(tpInput)
         if (slInput) body.stop_loss = parseFloat(slInput)

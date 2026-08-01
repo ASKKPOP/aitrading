@@ -846,8 +846,10 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.post('/api/orders')
     async def create_resting_order(data: dict, authorization: str = Header(None)):
         """Place a GTC limit order. Body: {market, side, symbol, quantity,
-        limit_price, stop_loss?, take_profit?}. Refused if it would fill
-        immediately — the market button is one click away."""
+        limit_price, stop_loss?, take_profit?, leverage?}. leverage (clamped
+        1..10, default 1) is what the fill debits margin at — the futures
+        terminal sends its slider value; spot never sends it. Refused if it
+        would fill immediately — the market button is one click away."""
         from starlette.concurrency import run_in_threadpool
 
         from crypto_feed import fetch_ticker
@@ -875,7 +877,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             agent['id'], market, str(data.get('side') or ''), symbol,
             data.get('quantity'), data.get('limit_price'), live_price,
             data.get('stop_loss'), data.get('take_profit'),
-            'limit order (terminal)')
+            data.get('leverage'), 'limit order (terminal)')
         if err:
             status = 409 if err == 'would_fill_immediately' else 422
             raise HTTPException(status_code=status, detail=err)

@@ -11,7 +11,9 @@ Semantics (deliberately minimal — a terminal feature, not a matching engine):
   `would_fill_immediately` — the terminal's market button is one click away,
   and refusing beats surprising the user with an instant "limit" fill.
 - Fills execute at the observed market price (which satisfies the limit), at
-  leverage 1 — identical to the terminals' market orders today.
+  the order's leverage (clamped 1..10 at placement; the spot terminal never
+  sends it, so spot stays at the fully-funded 1x) — identical to the
+  terminals' market orders.
 - stop_loss / take_profit ride the order and are registered on the position by
   the executor at fill time (never-loosen semantics live there).
 - Exactly-once across crashes: every fill carries
@@ -53,6 +55,16 @@ MAX_QUANTITY = 1_000_000
 STALE_FILLING_SECONDS = 600
 
 
+def _clamp_leverage(v: Any) -> float:
+    # Same clamp as the realtime endpoint's validator (routes_models): 1×…10×,
+    # invalid/absent ⇒ 1× (the fully-funded legacy fill).
+    try:
+        v = float(v or 1.0)
+    except (TypeError, ValueError):
+        return 1.0
+    return max(1.0, min(10.0, v))
+
+
 def resting_orders_enabled() -> bool:
     return os.getenv("RESTING_ORDERS_ENABLED", "true").strip().lower() in (
         "1", "true", "yes", "on")
@@ -69,6 +81,7 @@ def place_resting_order(agent_id: int, market: str, side: str, symbol: str,
                         market_price: Optional[float],
                         stop_loss: Optional[float] = None,
                         take_profit: Optional[float] = None,
+                        leverage: Any = None,
                         content: str = "") -> tuple[Optional[dict], Optional[str]]:
     """Validate and insert an open resting order.
 
@@ -97,6 +110,7 @@ def place_resting_order(agent_id: int, market: str, side: str, symbol: str,
         return None, "invalid limit price"
     if market_price is None or market_price <= 0:
         return None, "live price unavailable — try again"
+    leverage = _clamp_leverage(leverage)
 
     # Refuse orders that would fill on the next tick: the user wanted a limit,
     # not a market order in disguise.
@@ -141,10 +155,10 @@ def place_resting_order(agent_id: int, market: str, side: str, symbol: str,
             return None, f"open-order cap reached ({MAX_OPEN_PER_AGENT})"
         cursor.execute(
             """INSERT INTO resting_orders
-               (agent_id, market, symbol, side, quantity, limit_price,
+               (agent_id, market, symbol, side, quantity, limit_price, leverage,
                 stop_loss, take_profit, status, content, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)""",
-            (agent_id, market, symbol, side, quantity, limit_price,
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)""",
+            (agent_id, market, symbol, side, quantity, limit_price, leverage,
              stop_loss, take_profit, content or "", now, now))
         order_id = cursor.lastrowid
         conn.commit()
@@ -152,7 +166,7 @@ def place_resting_order(agent_id: int, market: str, side: str, symbol: str,
         conn.close()
     return {
         "id": order_id, "market": market, "symbol": symbol, "side": side,
-        "quantity": quantity, "limit_price": limit_price,
+        "quantity": quantity, "limit_price": limit_price, "leverage": leverage,
         "stop_loss": stop_loss, "take_profit": take_profit,
         "status": "open", "created_at": now,
     }, None
@@ -200,8 +214,8 @@ def list_resting_orders(agent_id: int, status: Optional[str] = "open",
         args.append(max(1, min(int(limit), 200)))
         cursor.execute(
             f"""SELECT id, market, symbol, side, quantity, limit_price,
-                       stop_loss, take_profit, status, reason, signal_id,
-                       created_at, updated_at
+                       leverage, stop_loss, take_profit, status, reason,
+                       signal_id, created_at, updated_at
                 FROM resting_orders WHERE {where}
                 ORDER BY id DESC LIMIT ?""", args)
         return [dict(r) for r in cursor.fetchall()]
@@ -253,7 +267,7 @@ def run_resting_orders_tick() -> dict[str, Any]:
     try:
         cursor.execute(
             """SELECT id, agent_id, market, symbol, side, quantity, limit_price,
-                      stop_loss, take_profit, status, updated_at
+                      leverage, stop_loss, take_profit, status, updated_at
                FROM resting_orders WHERE status IN ('open', 'filling')""")
         rows = [dict(r) for r in cursor.fetchall()]
     finally:
@@ -317,6 +331,7 @@ def run_resting_orders_tick() -> dict[str, Any]:
                 content=order.get("content") or f"limit order #{order['id']} (terminal)",
                 stop_loss=order["stop_loss"], take_profit=order["take_profit"],
                 client_order_id=f"resting:{order['id']}",
+                leverage=_clamp_leverage(order.get("leverage")),
             )
 
             begin_write_transaction(cursor)
