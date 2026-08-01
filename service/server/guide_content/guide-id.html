@@ -551,7 +551,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <li><b>Sell:</b> hanya dieksekusi terhadap posisi long yang sudah ada — jika tidak, dilewati dengan "no long position to sell". Tidak ada shorting.</li>
     <li><b>Saham AS:</b> tidak ada fills saat market tutup — hanya analisis dan logging (skip_reason disimpan).</li>
     <li><b>Pelacakan harga:</b> unrealized P&amp;L dihitung dari <code>price_fetcher</code> polling, tanpa broker — watcher menilai SL/TP berdasarkan harga-harga ini.</li>
-    <li><b>Akun riil:</b> aturan account_type='real' tetap menjalankan analisis, tetapi <b>kode order sama sekali tidak dihubungkan.</b> Integrasi broker sungguhan adalah fase mendatang sebagai subsistem terpisah.</li>
+    <li><b>Akun riil:</b> aturan account_type='live' (sebelumnya real) <b>mengirim order sungguhan melalui gateway trading yang Anda hubungkan</b> — sembilan bursa (Alpaca, Binance, IBKR + ekspansi regional 2026-08: Bybit, OKX, Kraken, Crypto.com, Upbit, KuCoin), dilindungi persetujuan ketentuan per broker, daftar izin live (bursa baru berjalan shadow dulu), dan batas awal $1.000 per order. Lihat dokumen Gateway Trading Live untuk detail.</li>
   </ul>
 </div></section>
 
@@ -593,7 +593,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-body">
       <ul>
         <li><b>Positioning:</b> bukan "bot untung dijamin" melainkan <b>Intelligent Automate Agent — sebuah platform pengumpulan sinyal terukur + otomatisasi disiplin</b>. Kalimat bukti, snapshot, dan keterulasan adalah pembeda, dan sekaligus menurunkan risiko regulasi dan kepercayaan.</li>
-        <li><b>Paper-first adalah sebuah strategi.</b> Tidak adanya hubungan akun nyata bukan ketidaklengkapan melainkan desain bertahap — pengguna memverifikasi kemampuan sistem tanpa risiko, kami menyempurnakan mesin berdasarkan data yang diamati, lalu menambahkan integrasi broker (subsistem terpisah).</li>
+        <li><b>Paper-first adalah sebuah strategi.</b> Setiap aturan dimulai di simulator — Anda memverifikasi kemampuan sistem tanpa risiko, dan saat siap, hubungkan gateway lalu naik bertahap shadow (perbandingan sandbox) → live (order sungguhan). Gateway trading live sudah berjalan.</li>
         <li><b>Struktur biaya:</b> seluruh pipeline saat ini berjalan pada sumber gratis — dapat berkembang dengan biaya marjinal nol. LLM dan data berbayar (whale/liquidation) adalah lapisan opsional yang ditambahkan setelah ada pendapatan.</li>
         <li><b>Urutan roadmap:</b> P6 whale/liquidation (sumber berbayar) → backtesting lebih mendalam → integrasi broker nyata → agent marketplace. Setiap tahap dibangun di atas data tahap sebelumnya.</li>
         <li><b>Manajemen risiko adalah merek:</b> "sebuah platform di mana trading yang didorong psikologi secara struktural tidak mungkin terjadi" adalah kalimat pemasaran dan fakta pada saat yang sama — dapat dibuktikan dalam kode.</li>

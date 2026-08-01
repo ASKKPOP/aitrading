@@ -123,7 +123,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → buku besar + sandbox</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">Buku besar sebagai acuan · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Buku besar sebagai acuan · sandbox bursa / validasi-saja / jurnal</text>
     <text class="sm" x="747" y="178" text-anchor="middle">Selisih (drift) dicatat di position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -166,12 +166,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>ID Kunci API + Rahasia</td><td>alpaca.markets → API Keys (kunci paper dan live berbeda)</td><td>Hanya izin trading. shadow otomatis menggunakan endpoint paper</td></tr>
     <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Akun → API Management</td><td><b>Jangan pernah berikan izin penarikan (withdrawal).</b> Centang hanya TRADE. shadow menggunakan testnet</td></tr>
     <tr><td><b>IBKR</b></td><td>URL Client Portal Gateway + nomor akun</td><td>Jalankan dan login langsung ke Client Portal Gateway yang dirilis oleh IBKR</td><td>Tidak ada API key — <b>sesi gateway itu sendiri adalah kredensial.</b> Harus berupa alamat yang dapat diakses server. Jika nomor akun diawali dengan <code>D</code>, berarti akun simulasi (shadow hanya berfungsi pada akun simulasi)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>Hanya izin trading. shadow memakai lingkungan demo-trading (kunci demo terpisah)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>Passphrase Anda tetapkan saat membuat kunci. shadow memakai demo trading (kunci demo terpisah)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>Tanpa sandbox — shadow mengirim order <b>validasi-saja</b> milik Kraken (tidak mungkin tereksekusi). Khususkan kunci untuk Sooppiy (jangan dibagi dengan aplikasi lain)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>Kunci Exchange. shadow memakai sandbox UAT (kunci terpisah)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → Manajemen Open API</td><td>Wajib mendaftarkan IP server. Pasar KRW — kurs dicatat per eksekusi. shadow hanya mencatat, tidak mengirim apa pun ke Upbit</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>Kunci v2. shadow memakai endpoint uji order (tidak mungkin tereksekusi)</td></tr>
   </table>
+  <div class="note"><b>Ekspansi regional (2026-08-01):</b> Bybit, OKX, Kraken, Crypto.com, Upbit, dan KuCoin kini dapat dihubungkan, semuanya berjalan <b>shadow dulu</b>. Order live di bursa baru ditolak dengan pesan eksplisit (tidak pernah diam-diam menjadi simulasi) sampai Sooppiy mengaktifkannya setelah masa uji, dan bursa yang baru dibuka membawa batas $1.000 per order pada awalnya (melebihi batas ditolak, bukan diperkecil). Tiap broker punya panduan koneksi langkah demi langkah di halaman Akun — pilih broker lalu tekan tombol 📖.</div>
 
   <h3>STEP 2 — Menghubungkan gateway di halaman Accounts <span class="sub" style="display:inline">/ Hubungkan di halaman Accounts</span></h3>
   <ul>
     <li><b>Accounts</b> halaman → pilih broker pada kartu <b>Trading Gateway</b>. Daftar dimuat dari server (<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: Masukkan key+secret. IBKR: Masukkan URL gateway + nomor akun (ada opsi sertifikat self-signed untuk gateway lokal).</li>
+    <li>Alpaca/Binance: Masukkan key+secret. IBKR: Masukkan URL gateway + nomor akun (ada opsi sertifikat self-signed untuk gateway lokal). OKX/KuCoin juga memerlukan passphrase API.</li>
     <li>Kunci di server <b>Dienkripsi dan disimpan dengan AES-GCM</b>dan tidak tersimpan di localStorage browser, langsung terhapus dari kolom input setelah disimpan dan tidak akan ditampilkan lagi.</li>
   </ul>
 

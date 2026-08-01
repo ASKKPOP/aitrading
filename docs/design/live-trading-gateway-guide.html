@@ -123,7 +123,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → 원장 + 샌드박스</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">원장이 기준 · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">원장이 기준 · 거래소 샌드박스 / 검증전용 / 저널</text>
     <text class="sm" x="747" y="178" text-anchor="middle">드리프트는 position_reconciliations에 기록</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -166,12 +166,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (paper와 live 키는 별개)</td><td>거래 권한만. shadow는 자동으로 paper 엔드포인트 사용</td></tr>
     <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>계정 → API Management</td><td><b>출금 권한 절대 금지.</b> 거래(TRADE)만 체크. shadow는 testnet 사용</td></tr>
     <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + 계좌번호</td><td>IBKR이 배포하는 Client Portal Gateway를 직접 실행·로그인</td><td>API 키가 없음 — <b>게이트웨이 세션이 곧 자격증명.</b> 서버가 접근 가능한 주소여야 함. 계좌번호가 <code>D</code>로 시작하면 모의계좌(shadow는 모의계좌에서만 동작)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>거래 권한만. shadow는 데모 트레이딩 환경 사용(데모 키 별도)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>패스프레이즈는 키 생성 시 직접 설정. shadow는 데모 트레이딩 사용(데모 키 별도)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>샌드박스 없음 — shadow는 크라켄의 <b>검증 전용</b> 주문(절대 체결 불가)을 보냄. 키는 Sooppiy 전용으로(다른 앱과 공유 금지)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>거래소(Exchange) 키. shadow는 UAT 샌드박스 사용(키 별도)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → Open API 관리</td><td>서버 IP 등록 필수. KRW 마켓 — 환율은 체결 시점에 기록. shadow는 기록만 하고 업비트에 아무것도 전송하지 않음</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>v2 키. shadow는 주문 테스트 엔드포인트 사용(절대 체결 불가)</td></tr>
   </table>
+  <div class="note"><b>지역 확장 (2026-08-01):</b> Bybit·OKX·Kraken·Crypto.com·Upbit·KuCoin이 추가되어 지금 연결할 수 있으며, 모두 <b>shadow 우선</b>으로 운영됩니다. 신규 거래소의 live 주문은 검증 기간이 끝나 플랫폼에서 활성화될 때까지 명시적 메시지와 함께 거부되고(몰래 시뮬레이션으로 바뀌지 않음), 새로 열린 거래소는 초기 주문당 $1,000 한도가 적용됩니다(초과 시 축소가 아니라 거부). 브로커별 상세 연결 가이드는 계정 페이지에서 브로커 선택 후 📖 버튼으로 볼 수 있습니다.</div>
 
   <h3>STEP 2 — 계좌 페이지에서 게이트웨이 연결 <span class="sub" style="display:inline">/ Connect on the Accounts page</span></h3>
   <ul>
     <li><b>계좌(Accounts)</b> 페이지 → <b>거래 게이트웨이</b> 카드에서 브로커 선택. 목록은 서버에서 불러옵니다(<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: 키+시크릿 입력. IBKR: 게이트웨이 URL + 계좌번호 입력(로컬 게이트웨이의 자체서명 인증서 옵션 있음).</li>
+    <li>Alpaca/Binance: 키+시크릿 입력. IBKR: 게이트웨이 URL + 계좌번호 입력(로컬 게이트웨이의 자체서명 인증서 옵션 있음). OKX/KuCoin은 패스프레이즈도 함께 입력합니다.</li>
     <li>키는 서버에서 <b>AES-GCM으로 암호화 저장</b>되며, 브라우저 localStorage에 남지 않고 저장 즉시 입력창에서 지워지며 다시 표시되지 않습니다.</li>
   </ul>
 
