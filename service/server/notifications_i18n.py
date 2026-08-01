@@ -77,6 +77,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': 'its max-loss stop',
             'stop_event:profit_target': 'its profit target',
             'stop_event:trailing_lock': 'its trailing profit lock',
+            'stop_event:conviction_collapse': "the desk losing conviction",
             'stop_event:liq_cushion': 'the liquidation cushion',
         },
         'ko': {
@@ -100,6 +101,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': '최대 손실 스탑',
             'stop_event:profit_target': '목표 수익',
             'stop_event:trailing_lock': '추적 이익 보호',
+            'stop_event:conviction_collapse': '확신 붕괴',
             'stop_event:liq_cushion': '청산 보호선',
         },
         'ja': {
@@ -123,6 +125,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': '最大損失ストップ',
             'stop_event:profit_target': '利益目標',
             'stop_event:trailing_lock': 'トレーリング利益ロック',
+            'stop_event:conviction_collapse': '確信度の崩壊',
             'stop_event:liq_cushion': '清算クッション',
         },
         'th': {
@@ -146,6 +149,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': 'จุดหยุดขาดทุนสูงสุด',
             'stop_event:profit_target': 'เป้าหมายกำไร',
             'stop_event:trailing_lock': 'การล็อกกำไรแบบเลื่อนตาม',
+            'stop_event:conviction_collapse': 'ความเชื่อมั่นล่มสลาย',
             'stop_event:liq_cushion': 'แนวกันการบังคับปิดสถานะ',
         },
         'vi': {
@@ -169,6 +173,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': 'điểm dừng lỗ tối đa',
             'stop_event:profit_target': 'mục tiêu lợi nhuận',
             'stop_event:trailing_lock': 'khóa lợi nhuận trượt',
+            'stop_event:conviction_collapse': 'niềm tin sụp đổ',
             'stop_event:liq_cushion': 'vùng đệm thanh lý',
         },
         'id': {
@@ -192,6 +197,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
             'stop_event:max_loss': 'batas kerugian maksimumnya',
             'stop_event:profit_target': 'target profitnya',
             'stop_event:trailing_lock': 'penguncian profit beruntunnya',
+            'stop_event:conviction_collapse': 'runtuhnya keyakinan',
             'stop_event:liq_cushion': 'bantalan likuidasi',
         },
     },
