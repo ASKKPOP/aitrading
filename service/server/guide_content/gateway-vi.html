@@ -124,7 +124,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → sổ cái + sandbox</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">Sổ cái là chuẩn · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Sổ cái là chuẩn · sandbox sàn / chỉ-kiểm-tra / nhật ký</text>
     <text class="sm" x="747" y="178" text-anchor="middle">Độ lệch được ghi lại trong position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -167,12 +167,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>Mã ID Khóa API + Mã bí mật</td><td>alpaca.markets → API Keys (khóa paper và live là riêng biệt)</td><td>Chỉ cần quyền giao dịch. shadow sẽ tự động dùng endpoint paper</td></tr>
     <tr><td><b>Binance</b></td><td>Khóa API + Mã bí mật</td><td>Tài khoản → API Management</td><td><b>Tuyệt đối không cấp quyền rút tiền.</b> Chỉ chọn giao dịch (TRADE). shadow dùng testnet</td></tr>
     <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + số tài khoản</td><td>Tự chạy và đăng nhập Client Portal Gateway do IBKR phát hành</td><td>Không có API key — <b>phiên cổng giao dịch chính là thông tin xác thực.</b> Địa chỉ phải truy cập được từ server. Nếu số tài khoản bắt đầu bằng<code>D</code>thì đó là tài khoản mô phỏng (shadow chỉ hoạt động với tài khoản mô phỏng)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>Chỉ quyền giao dịch. shadow dùng môi trường demo (khóa demo riêng)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>Tự đặt passphrase khi tạo khóa. shadow dùng demo trading (khóa demo riêng)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>Không có sandbox — shadow gửi lệnh <b>chỉ-kiểm-tra</b> của Kraken (không bao giờ khớp). Dùng khóa riêng cho Sooppiy (không chia sẻ với ứng dụng khác)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>Khóa của Exchange. shadow dùng sandbox UAT (khóa riêng)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → Quản lý Open API</td><td>Bắt buộc đăng ký IP máy chủ. Thị trường KRW — tỷ giá ghi theo từng khớp lệnh. shadow chỉ ghi nhật ký, không gửi gì tới Upbit</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>Khóa v2. shadow dùng endpoint kiểm tra lệnh (không bao giờ khớp)</td></tr>
   </table>
+  <div class="note"><b>Mở rộng khu vực (2026-08-01):</b> Đã thêm Bybit, OKX, Kraken, Crypto.com, Upbit và KuCoin — kết nối được ngay, tất cả chạy <b>shadow trước</b>. Lệnh live trên sàn mới bị từ chối kèm thông báo rõ ràng (không bao giờ âm thầm thành mô phỏng) cho tới khi Sooppiy kích hoạt sau giai đoạn kiểm chứng, và sàn mới mở ban đầu có giới hạn $1.000 mỗi lệnh (vượt hạn bị từ chối, không bị thu nhỏ). Mỗi broker có hướng dẫn kết nối từng bước trên trang Tài khoản — chọn broker rồi nhấn nút 📖.</div>
 
   <h3>BƯỚC 2 — Kết nối cổng giao dịch tại trang Tài khoản <span class="sub" style="display:inline">/ Kết nối tại trang Accounts</span></h3>
   <ul>
     <li><b>Tài khoản (Accounts)</b> Trang → thẻ <b>Cổng giao dịch</b> chọn broker. Danh sách được tải từ server (<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: nhập khóa + mã bí mật. IBKR: nhập URL cổng kết nối + số tài khoản (có tùy chọn chứng chỉ tự ký cho cổng kết nối cục bộ).</li>
+    <li>Alpaca/Binance: nhập khóa + mã bí mật. IBKR: nhập URL cổng kết nối + số tài khoản (có tùy chọn chứng chỉ tự ký cho cổng kết nối cục bộ). OKX/KuCoin cần nhập thêm passphrase.</li>
     <li>Khóa được <b>mã hóa và lưu trữ bằng AES-GCM</b> trên máy chủ, không lưu lại trong localStorage của trình duyệt và bị xóa khỏi ô nhập ngay sau khi lưu, không hiển thị lại.</li>
   </ul>
 

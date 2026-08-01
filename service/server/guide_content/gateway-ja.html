@@ -124,7 +124,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → 元帳 + サンドボックス</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">元帳が基準 · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">元帳が基準 · 取引所サンドボックス / 検証専用 / ジャーナル</text>
     <text class="sm" x="747" y="178" text-anchor="middle">ドリフトは position_reconciliations に記録</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -167,12 +167,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>APIキーID + シークレット</td><td>alpaca.markets → API Keys (paperとliveのキーは別々)</td><td>取引権限のみ。shadowは自動的にpaperエンドポイントを使用</td></tr>
     <tr><td><b>Binance</b></td><td>APIキー + シークレット</td><td>アカウント → API Management</td><td><b>出金権限は絶対に付与しないこと。</b> 取引(TRADE)のみチェック。shadowはtestnetを使用</td></tr>
     <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + 口座番号</td><td>IBKRが配布するClient Portal Gatewayを直接実行・ログイン</td><td>APIキーはなし — <b>ゲートウェイのセッションがそのまま認証情報になる。</b> サーバーからアクセス可能なアドレスである必要がある。口座番号が <code>D</code>で始まる場合は模擬口座(shadowは模擬口座でのみ動作)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>取引権限のみ。shadowはデモトレード環境を使用(デモキーは別)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>パスフレーズはキー作成時に自分で設定。shadowはデモトレードを使用(デモキーは別)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>サンドボックスなし — shadowはKrakenの<b>検証専用</b>注文(絶対に約定しない)を送信。キーはSooppiy専用に(他アプリと共有禁止)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>取引所(Exchange)キー。shadowはUATサンドボックスを使用(キーは別)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → Open API管理</td><td>サーバーIP登録必須。KRWマーケット — 為替レートは約定時に記録。shadowは記録のみでUpbitには何も送信しない</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>v2キー。shadowは注文テストエンドポイントを使用(絶対に約定しない)</td></tr>
   </table>
+  <div class="note"><b>地域拡張 (2026-08-01):</b> Bybit・OKX・Kraken・Crypto.com・Upbit・KuCoinが追加され、今すぐ接続できます。すべて<b>shadow優先</b>で運用されます。新規取引所のlive注文は、検証期間が完了しプラットフォームで有効化されるまで明示的なメッセージとともに拒否され(無断でシミュレーションに切り替わることはありません)、新しく開放された取引所には当初、注文あたり$1,000の上限があります(超過時は縮小ではなく拒否)。ブローカーごとの詳細な接続ガイドは、アカウントページでブローカーを選び📖ボタンから見られます。</div>
 
   <h3>STEP 2 — 口座ページでゲートウェイを接続 <span class="sub" style="display:inline">/ 口座(Accounts)ページで接続する</span></h3>
   <ul>
     <li><b>口座(Accounts)</b> ページ → <b>取引ゲートウェイ</b> カードでブローカーを選択。リストはサーバーから読み込まれます(<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: キー+シークレットを入力。IBKR: ゲートウェイURL + 口座番号を入力(ローカルゲートウェイの自己署名証明書オプションあり)。</li>
+    <li>Alpaca/Binance: キー+シークレットを入力。IBKR: ゲートウェイURL + 口座番号を入力(ローカルゲートウェイの自己署名証明書オプションあり)。 OKX/KuCoinはパスフレーズも併せて入力します。</li>
     <li>キーはサーバー側で<b>AES-GCMで暗号化保存</b>され、ブラウザのlocalStorageには残らず、保存後は入力欄から即座に消去され再表示されません。</li>
   </ul>
 

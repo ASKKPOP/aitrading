@@ -124,7 +124,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → ledger + sandbox</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">Ledger is the baseline · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">Ledger is the baseline · venue sandbox / validate-only / journal</text>
     <text class="sm" x="747" y="178" text-anchor="middle">Drift is recorded in position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -167,12 +167,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>API Key ID + Secret</td><td>alpaca.markets → API Keys (paper and live keys are separate)</td><td>Trading permission only. shadow automatically uses the paper endpoint</td></tr>
     <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>Account → API Management</td><td><b>Withdrawal permission is absolutely forbidden.</b> Check only Trade (TRADE). shadow uses testnet</td></tr>
     <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + account number</td><td>Run and log in directly to the Client Portal Gateway distributed by IBKR</td><td>No API key — <b>the gateway session itself is the credential.</b> Must be an address the server can access. If the account number starts with <code>D</code>, it is a simulated account (shadow only works with simulated accounts)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>Trade permission only. shadow uses the demo-trading environment (separate demo keys)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>You set the passphrase at key creation. shadow uses demo trading (separate demo keys)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>No sandbox — shadow sends Kraken's <b>validate-only</b> order (can never fill). Dedicate the key to Sooppiy (never share it with another app)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>Exchange keys. shadow uses the UAT sandbox (separate keys)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → Open API management</td><td>Server IP registration required. KRW markets — the FX rate is recorded per fill. shadow only journals and sends nothing to Upbit</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>v2 keys. shadow uses the order-test endpoint (can never fill)</td></tr>
   </table>
+  <div class="note"><b>Regional expansion (2026-08-01):</b> Bybit, OKX, Kraken, Crypto.com, Upbit and KuCoin are connectable now, all running <b>shadow first</b>. Live orders on a new venue are refused with an explicit message (never a silent simulation) until Sooppiy enables it after its rollout soak, and newly enabled venues carry a $1,000 per-order limit at first (over-limit orders are refused, never resized). Each broker has a step-by-step connection guide on the Accounts page — pick the broker and press the 📖 button.</div>
 
   <h3>STEP 2 — Connect the gateway on the Accounts page <span class="sub" style="display:inline">Connect on the Accounts page</span></h3>
   <ul>
     <li><b>Accounts</b> page → <b>Trading Gateway</b> card, select the broker. The list is loaded from the server (<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: Enter key + secret. IBKR: Enter gateway URL + account number (option for self-signed certificate on local gateway).</li>
+    <li>Alpaca/Binance: Enter key + secret. IBKR: Enter gateway URL + account number (option for self-signed certificate on local gateway). OKX/KuCoin additionally need the API passphrase.</li>
     <li>Keys are <b>encrypted and stored on the server using AES-GCM</b>, never remain in the browser's localStorage, and are cleared from the input field immediately after saving, never to be displayed again.</li>
   </ul>
 

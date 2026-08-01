@@ -124,7 +124,7 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
 
     <rect class="box" x="620" y="126" width="255" height="66" rx="12" stroke="var(--aqua)"/>
     <text class="lbl" x="747" y="146" text-anchor="middle">shadow → บัญชี + แซนด์บ็อกซ์</text>
-    <text class="sm" x="747" y="163" text-anchor="middle">บัญชีเป็นค่าอ้างอิง · Alpaca paper / Binance testnet</text>
+    <text class="sm" x="747" y="163" text-anchor="middle">บัญชีเป็นค่าอ้างอิง · แซนด์บ็อกซ์ / ตรวจสอบเท่านั้น / บันทึก</text>
     <text class="sm" x="747" y="178" text-anchor="middle">ความคลาดเคลื่อนถูกบันทึกใน position_reconciliations</text>
 
     <rect class="box" x="620" y="232" width="255" height="72" rx="12" stroke="var(--critical)"/>
@@ -167,12 +167,19 @@ svg .arrow{stroke:var(--baseline);stroke-width:1.6;fill:none;marker-end:url(#arr
     <tr><td><b>Alpaca</b></td><td>รหัส API Key ID + Secret</td><td>alpaca.markets → API Keys (คีย์ paper และ live แยกกัน)</td><td>สิทธิ์เทรดเท่านั้น shadow จะใช้ปลายทาง paper โดยอัตโนมัติ</td></tr>
     <tr><td><b>Binance</b></td><td>API Key + Secret</td><td>บัญชี → API Management</td><td><b>ห้ามให้สิทธิ์ถอนเงินโดยเด็ดขาด</b> ติ๊กเฉพาะ เทรด(TRADE) เท่านั้น shadow จะใช้ testnet</td></tr>
     <tr><td><b>IBKR</b></td><td>Client Portal Gateway URL + หมายเลขบัญชี</td><td>รัน Client Portal Gateway ที่ IBKR แจกจ่ายและล็อกอินด้วยตนเอง</td><td>ไม่มี API key — <b>เซสชันของเกตเวย์คือข้อมูลรับรองในตัวเอง</b> ต้องเป็นที่อยู่ที่เซิร์ฟเวอร์เข้าถึงได้ หากหมายเลขบัญชีขึ้นต้นด้วย <code>D</code> แสดงว่าเป็นบัญชีจำลอง (shadow ทำงานได้เฉพาะกับบัญชีจำลองเท่านั้น)</td></tr>
+    <tr><td><b>Bybit</b></td><td>API Key + Secret</td><td>bybit.com → API</td><td>สิทธิ์เทรดเท่านั้น shadow ใช้สภาพแวดล้อมเดโม (คีย์เดโมแยกต่างหาก)</td></tr>
+    <tr><td><b>OKX</b></td><td>Key + Secret + Passphrase</td><td>okx.com → API keys</td><td>ตั้งพาสเฟรสเองตอนสร้างคีย์ shadow ใช้เดโมเทรดดิง (คีย์เดโมแยก)</td></tr>
+    <tr><td><b>Kraken</b></td><td>API Key + Secret</td><td>kraken.com → Settings → API</td><td>ไม่มีแซนด์บ็อกซ์ — shadow ส่งคำสั่งแบบ<b>ตรวจสอบเท่านั้น</b>ของ Kraken (ไม่มีทางจับคู่) ใช้คีย์เฉพาะกับ Sooppiy (ห้ามแชร์กับแอปอื่น)</td></tr>
+    <tr><td><b>Crypto.com</b></td><td>API Key + Secret</td><td>exchange.crypto.com → API Keys</td><td>คีย์ของ Exchange shadow ใช้แซนด์บ็อกซ์ UAT (คีย์แยก)</td></tr>
+    <tr><td><b>Upbit</b></td><td>Access Key + Secret</td><td>upbit.com → จัดการ Open API</td><td>ต้องลงทะเบียน IP เซิร์ฟเวอร์ ตลาด KRW — บันทึกอัตราแลกเปลี่ยนทุกการจับคู่ shadow บันทึกอย่างเดียว ไม่ส่งอะไรไป Upbit</td></tr>
+    <tr><td><b>KuCoin</b></td><td>Key + Secret + Passphrase</td><td>kucoin.com → API Management</td><td>คีย์ v2 shadow ใช้ endpoint ทดสอบคำสั่ง (ไม่มีทางจับคู่)</td></tr>
   </table>
+  <div class="note"><b>การขยายระดับภูมิภาค (2026-08-01):</b> เพิ่ม Bybit, OKX, Kraken, Crypto.com, Upbit และ KuCoin เชื่อมต่อได้แล้ววันนี้ ทั้งหมดรันแบบ <b>shadow ก่อน</b> คำสั่ง live บนกระดานใหม่จะถูกปฏิเสธพร้อมข้อความชัดเจน (ไม่มีการแอบเปลี่ยนเป็นการจำลอง) จนกว่า Sooppiy จะเปิดใช้งานหลังช่วงทดสอบเสร็จ และกระดานที่เพิ่งเปิดมีเพดานคำสั่งละ $1,000 ในช่วงแรก (เกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด) แต่ละโบรกเกอร์มีคู่มือเชื่อมต่อทีละขั้นในหน้าบัญชี — เลือกโบรกเกอร์แล้วกดปุ่ม 📖</div>
 
   <h3>STEP 2 — เชื่อมต่อเกตเวย์ที่หน้าบัญชี <span class="sub" style="display:inline">/ เชื่อมต่อได้ที่หน้า Accounts</span></h3>
   <ul>
     <li><b>บัญชี(Accounts)</b> หน้า → <b>เกตเวย์เทรด</b> เลือกโบรกเกอร์จากการ์ด รายการจะถูกโหลดจากเซิร์ฟเวอร์(<code>GET /api/execution/brokers</code>).</li>
-    <li>Alpaca/Binance: ป้อนคีย์+รหัสลับ IBKR: ป้อน URL เกตเวย์ + หมายเลขบัญชี (มีตัวเลือกใบรับรองที่ลงนามด้วยตนเองสำหรับเกตเวย์ภายในเครื่อง)</li>
+    <li>Alpaca/Binance: ป้อนคีย์+รหัสลับ IBKR: ป้อน URL เกตเวย์ + หมายเลขบัญชี (มีตัวเลือกใบรับรองที่ลงนามด้วยตนเองสำหรับเกตเวย์ภายในเครื่อง) OKX/KuCoin ต้องกรอกพาสเฟรสด้วย</li>
     <li>คีย์จะถูก<b>เข้ารหัสด้วย AES-GCM และจัดเก็บไว้ที่เซิร์ฟเวอร์</b>โดยจะไม่คงอยู่ใน localStorage ของเบราว์เซอร์ และจะถูกลบออกจากช่องป้อนข้อมูลทันทีหลังบันทึก จะไม่แสดงซ้ำอีก</li>
   </ul>
 

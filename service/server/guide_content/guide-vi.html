@@ -551,7 +551,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <li><b>Bán:</b> chỉ thực thi đối với vị thế mua (long) hiện có — nếu không sẽ bị bỏ qua với "no long position to sell". Không bán khống (shorting).</li>
     <li><b>Cổ phiếu Mỹ:</b> không khớp lệnh khi thị trường đóng cửa — chỉ phân tích và ghi log (skip_reason được lưu).</li>
     <li><b>Theo dõi giá:</b> lãi/lỗ chưa thực hiện được tính từ <code>price_fetcher</code> polling, không qua broker — bộ theo dõi (watcher) đánh giá SL/TP dựa trên các mức giá này.</li>
-    <li><b>Tài khoản thật:</b> các quy tắc account_type='real' vẫn chạy phân tích, nhưng <b>mã lệnh giao dịch (order code) đơn giản là không được kết nối chút nào.</b>Việc tích hợp broker thực sẽ là một giai đoạn trong tương lai, dưới dạng một hệ thống con riêng biệt.</li>
+    <li><b>Tài khoản thật:</b> quy tắc account_type='live' (trước là real) <b>gửi lệnh thật qua cổng giao dịch bạn đã kết nối</b> — chín sàn (Alpaca, Binance, IBKR + mở rộng khu vực 2026-08: Bybit, OKX, Kraken, Crypto.com, Upbit, KuCoin), được bảo vệ bởi việc chấp nhận điều khoản theo từng broker, danh sách cho phép live (sàn mới chạy shadow trước) và giới hạn ban đầu $1.000 mỗi lệnh. Xem tài liệu Cổng giao dịch thật để biết chi tiết.</li>
   </ul>
 </div></section>
 
@@ -593,7 +593,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-body">
       <ul>
         <li><b>Định vị:</b> không phải một "bot đảm bảo lợi nhuận" mà là một <b>Intelligent Automate Agent — một nền tảng thu thập tín hiệu có thể đo lường + tự động hóa có kỷ luật</b>. Các câu bằng chứng, ảnh chụp nhanh, và khả năng xem lại là những yếu tố khác biệt, đồng thời giúp giảm rủi ro pháp lý và rủi ro niềm tin.</li>
-        <li><b>Paper-first là một chiến lược.</b> Việc chưa kết nối tài khoản thật không phải là sự chưa hoàn thiện mà là thiết kế theo giai đoạn — người dùng kiểm chứng năng lực của hệ thống mà không chịu rủi ro thật, chúng tôi cải thiện engine dựa trên dữ liệu quan sát được, sau đó mới bổ sung tích hợp broker (một hệ thống con riêng biệt).</li>
+        <li><b>Paper-first là một chiến lược.</b> Mọi quy tắc bắt đầu trên trình mô phỏng — bạn kiểm chứng năng lực hệ thống không rủi ro, và khi sẵn sàng thì kết nối cổng rồi nâng dần shadow (so khớp mô phỏng) → live (lệnh thật). Cổng giao dịch thật đã vận hành.</li>
         <li><b>Cấu trúc chi phí:</b> toàn bộ pipeline hiện tại chạy trên các nguồn miễn phí — mở rộng quy mô với chi phí cận biên bằng 0. LLMs và dữ liệu trả phí (whale/liquidation) là các lớp tùy chọn được thêm vào sau khi có doanh thu.</li>
         <li><b>Thứ tự lộ trình:</b> P6 whale/liquidation (nguồn trả phí) → backtesting sâu hơn → tích hợp broker thật → chợ agent (agent marketplace). Mỗi giai đoạn xây dựng dựa trên dữ liệu của giai đoạn trước.</li>
         <li><b>Quản lý rủi ro là thương hiệu:</b> "một nền tảng nơi giao dịch theo cảm xúc là điều không thể xảy ra về mặt cấu trúc" vừa là một câu marketing vừa là một sự thật — có thể chứng minh được bằng code.</li>

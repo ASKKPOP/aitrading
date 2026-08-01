@@ -298,17 +298,23 @@ MATRIX = {
 # Venue routing, ported from plan section 6. crypto_soon marks a domestic
 # exchange with no adapter yet (shown with a "coming" tag). note is a key into
 # VENUE_NOTE below. Broker names are proper nouns and stay untranslated.
+# Crypto venues mirror execution/base.py REGION_VENUES — the same matrix the
+# Accounts page recommends per region (2026-08-01 regional gateway, Plan 19).
+# Binance is live today; the other venues connect now and run shadow first.
 VENUE = {
-    "United States": {"sf": "Alpaca · IBKR", "cx": "Binance.US · Coinbase",
-                      "cx_soon": False, "note": "both"},
-    "Canada": {"sf": "IBKR", "cx": "", "cx_soon": False, "note": "confirm"},
-    "Australia": {"sf": "IBKR", "cx": "", "cx_soon": False, "note": "confirm"},
-    "Singapore": {"sf": "IBKR", "cx": "Binance", "cx_soon": False, "note": "dash"},
-    "South Korea": {"sf": "IBKR", "cx": "Upbit · Bithumb", "cx_soon": True, "note": "domestic"},
-    "Japan": {"sf": "IBKR", "cx": "bitFlyer · Coincheck", "cx_soon": True, "note": "domestic"},
-    "Thailand": {"sf": "IBKR", "cx": "Bitkub", "cx_soon": True, "note": "domestic"},
-    "Vietnam": {"sf": "IBKR", "cx": "", "cx_soon": False, "note": "confirm"},
-    "Indonesia": {"sf": "IBKR", "cx": "Indodax · Tokocrypto", "cx_soon": True, "note": "domestic"},
+    "United States": {"sf": "Alpaca · IBKR", "cx": "Binance · Bybit · OKX · Kraken · Crypto.com",
+                      "cx_soon": False, "note": "shadow_first"},
+    "Canada": {"sf": "IBKR", "cx": "Binance · Bybit · OKX · Kraken · Crypto.com",
+               "cx_soon": False, "note": "shadow_first"},
+    "Australia": {"sf": "IBKR", "cx": "Binance · Bybit · OKX · Kraken · Crypto.com",
+                  "cx_soon": False, "note": "shadow_first"},
+    "Singapore": {"sf": "IBKR", "cx": "Crypto.com · KuCoin · OKX",
+                  "cx_soon": False, "note": "shadow_first"},
+    "South Korea": {"sf": "IBKR", "cx": "Upbit · Kraken", "cx_soon": False, "note": "shadow_first"},
+    "Japan": {"sf": "IBKR", "cx": "Kraken", "cx_soon": False, "note": "shadow_first"},
+    "Thailand": {"sf": "IBKR", "cx": "Binance · Bybit · KuCoin", "cx_soon": False, "note": "shadow_first"},
+    "Vietnam": {"sf": "IBKR", "cx": "Binance · Bybit · KuCoin", "cx_soon": False, "note": "shadow_first"},
+    "Indonesia": {"sf": "IBKR", "cx": "Binance · Bybit · KuCoin", "cx_soon": False, "note": "shadow_first"},
 }
 
 VENUE_NOTE = {
@@ -324,6 +330,13 @@ VENUE_NOTE = {
         "en": "Local crypto exchange support coming", "ko": "국내 거래소 지원 준비 중",
         "ja": "国内取引所への対応を準備中", "th": "กำลังเตรียมรองรับตลาดคริปโตในประเทศ",
         "vi": "Sắp hỗ trợ sàn crypto nội địa", "id": "Dukungan bursa kripto lokal segera hadir"},
+    "shadow_first": {
+        "en": "Connect on the Accounts page — new venues run shadow first; live opens per venue",
+        "ko": "계정 페이지에서 연결 — 신규 거래소는 shadow 우선, live는 거래소별 순차 오픈",
+        "ja": "アカウントページで接続 — 新規取引所はshadow優先、liveは取引所ごとに順次開放",
+        "th": "เชื่อมต่อในหน้าบัญชี — กระดานใหม่รัน shadow ก่อน ส่วน live ทยอยเปิดทีละแห่ง",
+        "vi": "Kết nối trên trang Tài khoản — sàn mới chạy shadow trước; live mở dần theo từng sàn",
+        "id": "Hubungkan di halaman Akun — bursa baru berjalan shadow dulu; live dibuka per bursa"},
 }
 
 # Member-facing roadmap (plan section 7 phases, rephrased). Each is (title, desc).
@@ -358,16 +371,16 @@ ROADMAP = [
               "th": "กำหนดตลาดที่เทรดได้เป็นรายประเทศเมื่อผ่านการพิจารณา",
               "vi": "Các thị trường bạn được giao dịch, thiết lập theo từng quốc gia khi được thông qua.",
               "id": "Pasar yang bisa Anda perdagangkan, diatur per negara begitu disetujui."}},
-    {"live": False,
-     "title": {"en": "Local venues", "ko": "국내 거래소",
-               "ja": "国内取引所", "th": "ตลาดในประเทศ",
-               "vi": "Sàn nội địa", "id": "Bursa lokal"},
-     "desc": {"en": "Direct support for domestic crypto exchanges — Upbit, bitFlyer, Bitkub, Indodax and more.",
-              "ko": "업비트, bitFlyer, Bitkub, Indodax 등 국내 가상자산 거래소를 직접 지원합니다.",
-              "ja": "Upbit、bitFlyer、Bitkub、Indodax など国内の暗号資産取引所に直接対応します。",
-              "th": "รองรับตลาดคริปโตในประเทศโดยตรง — Upbit, bitFlyer, Bitkub, Indodax และอื่น ๆ",
-              "vi": "Hỗ trợ trực tiếp các sàn crypto nội địa — Upbit, bitFlyer, Bitkub, Indodax và nhiều sàn khác.",
-              "id": "Dukungan langsung untuk bursa kripto domestik — Upbit, bitFlyer, Bitkub, Indodax, dan lainnya."}},
+    {"live": True,
+     "title": {"en": "Regional venues", "ko": "지역 거래소",
+               "ja": "地域の取引所", "th": "กระดานเทรดประจำภูมิภาค",
+               "vi": "Sàn theo khu vực", "id": "Bursa regional"},
+     "desc": {"en": "Upbit, Bybit, OKX, Kraken, Crypto.com and KuCoin connect today and run shadow first; live opens per venue after its rollout check. More local venues (bitFlyer, Bitkub, Indodax) are being evaluated.",
+              "ko": "업비트·Bybit·OKX·Kraken·Crypto.com·KuCoin을 지금 연결할 수 있으며 shadow 우선으로 운영됩니다. live는 검증이 끝나는 거래소부터 순차 오픈됩니다. bitFlyer, Bitkub, Indodax 등 추가 국내 거래소는 검토 중입니다.",
+              "ja": "Upbit・Bybit・OKX・Kraken・Crypto.com・KuCoinは今すぐ接続でき、shadow優先で運用されます。liveは検証が完了した取引所から順次開放されます。bitFlyer、Bitkub、Indodaxなどの追加国内取引所は検討中です。",
+              "th": "Upbit, Bybit, OKX, Kraken, Crypto.com และ KuCoin เชื่อมต่อได้แล้ววันนี้และรัน shadow ก่อน ส่วน live ทยอยเปิดทีละกระดานหลังผ่านการตรวจสอบ กระดานท้องถิ่นเพิ่มเติม (bitFlyer, Bitkub, Indodax) อยู่ระหว่างการประเมิน",
+              "vi": "Upbit, Bybit, OKX, Kraken, Crypto.com và KuCoin kết nối được ngay và chạy shadow trước; live mở dần theo từng sàn sau kiểm chứng. Các sàn nội địa khác (bitFlyer, Bitkub, Indodax) đang được đánh giá.",
+              "id": "Upbit, Bybit, OKX, Kraken, Crypto.com, dan KuCoin dapat dihubungkan hari ini dan berjalan shadow dulu; live dibuka per bursa setelah pemeriksaan. Bursa lokal lain (bitFlyer, Bitkub, Indodax) sedang dievaluasi."}},
 ]
 
 

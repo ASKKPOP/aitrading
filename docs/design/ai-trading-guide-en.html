@@ -550,7 +550,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <li><b>Sell:</b> executes only against an existing long position — otherwise skipped with "no long position to sell". No shorting.</li>
     <li><b>US stocks:</b> no fills while the market is closed — analysis and logging only (skip_reason saved).</li>
     <li><b>Price tracking:</b> unrealized P&amp;L is computed from <code>price_fetcher</code> polling, no broker — the watcher judges SL/TP against these prices.</li>
-    <li><b>Real accounts:</b> account_type='real' rules still run analysis, but <b>the order code simply isn't wired at all.</b> Real broker integration is a future phase as a separate subsystem.</li>
+    <li><b>Real accounts:</b> account_type='live' (formerly real) rules <b>route real orders through your connected trading gateway</b> — nine venues (Alpaca, Binance, IBKR + the 2026-08 regional expansion: Bybit, OKX, Kraken, Crypto.com, Upbit, KuCoin), protected by per-broker terms consent, the live allowlist (new venues run shadow first) and an initial $1,000 per-order limit. See the Live Trading Gateway doc for details.</li>
   </ul>
 </div></section>
 
@@ -592,7 +592,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <div class="persona-body">
       <ul>
         <li><b>Positioning:</b> not a "guaranteed-profit bot" but an <b>Intelligent Automate Agent — a platform of measurable signal collection + disciplined automation</b>. Evidence sentences, snapshots, and reviewability are the differentiators, and they lower regulatory and trust risk at the same time.</li>
-        <li><b>Paper-first is a strategy.</b> No real-account hookup is not incompleteness but staged design — users verify the system's skill risk-free, we improve the engine on observed data, then layer on broker integration (a separate subsystem).</li>
+        <li><b>Paper-first is a strategy.</b> Every rule starts on the simulator — you verify the system's skill risk-free, and when ready you connect a gateway and step up shadow (sandbox comparison) → live (real orders). The live trading gateway is already running.</li>
         <li><b>Cost structure:</b> the entire current pipeline runs on free sources — scales at zero marginal cost. LLMs and paid data (whale/liquidation) are optional layers added after revenue.</li>
         <li><b>Roadmap order:</b> P6 whale/liquidation (paid sources) → deeper backtesting → real broker integration → agent marketplace. Each stage builds on the previous stage's data.</li>
         <li><b>Risk management is the brand:</b> "a platform where psychology-driven trading is structurally impossible" is a marketing line and a fact at the same time — provable in code.</li>
