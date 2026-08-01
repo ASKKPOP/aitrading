@@ -2822,6 +2822,28 @@ def init_database():
         )
     """)
 
+    # ── Plan 20: trading skills — house decision methods for the desk ────────
+    # Base skills seed from trading_skills.BASE_SKILLS (insert-if-missing);
+    # bodies live here, not on the filesystem, because skills/ is excluded
+    # from the Docker image. Mirror of alembic 0038.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trading_skills (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug         TEXT UNIQUE NOT NULL,
+            name         TEXT NOT NULL,
+            description  TEXT NOT NULL,
+            body         TEXT NOT NULL,
+            prompts_json TEXT NOT NULL,
+            markets_json TEXT,
+            priority     INTEGER NOT NULL DEFAULT 100,
+            enabled      INTEGER NOT NULL DEFAULT 1,
+            is_base      INTEGER NOT NULL DEFAULT 0,
+            updated_by   TEXT,
+            created_at   TEXT NOT NULL,
+            updated_at   TEXT NOT NULL
+        )
+    """)
+
     # ── Plan 14: Full Auto Trading (fleet mode) — mirror of alembic 0028 ─────
     # A fleet is an envelope row owning ordinary trading_runs. One non-terminal
     # fleet per USER via active_fleet_key ('user:{user_id}', NULL when

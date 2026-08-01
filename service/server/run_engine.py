@@ -2492,12 +2492,20 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         inventory_rule = ("Spot book with no inventory: 'sell' is NOT available "
                           "(nothing to reduce) — a bearish read means 'hold'.")
     position_state = _position_state_line(run, cfg, pos_qty, thesis)
+    # Trading skills (Plan 20): house decision methods scoped to the light
+    # site. Fail-soft — a skills-registry problem must never break a cycle.
+    try:
+        from trading_skills import skills_block
+        skills_text = skills_block("light", market=run.get("market"))
+    except Exception:  # noqa: BLE001
+        skills_text = ""
     prompt = (
         "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
         f"Symbol: {run['symbol']} ({run['market']}, {market_type}), price now {entry}.\n"
         f"Position in this run's book: {pos_qty} units (negative = short, 0 = flat). "
         f"{inventory_rule}\n"
         f"{position_state}"
+        f"{skills_text}"
         f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
         f"Recent closes: {json.dumps(candles_summary, default=str)[:400]}\n"
         "Calibrate confidence honestly across the full range, two decimals: "
