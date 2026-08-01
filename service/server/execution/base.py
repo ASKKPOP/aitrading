@@ -24,6 +24,9 @@ class OrderStatus(str, Enum):
     PARTIAL_FILL  = "partial_fill"
     REJECTED      = "rejected"
     CANCELLED     = "cancelled"
+    # Dry-run shadow only: the venue validated the order (auth, symbol, size)
+    # without placing it. Never a fill; terminal by construction.
+    VALIDATED     = "validated"
 
 
 class ExecutionMode(str, Enum):
@@ -39,7 +42,65 @@ class ExecutionMode(str, Enum):
     LIVE   = "live"
 
 
-AVAILABLE_BROKERS = ("alpaca", "binance", "ibkr")
+@dataclass(frozen=True)
+class BrokerSpec:
+    """Declarative per-broker metadata (Plan 19).
+
+    fields — credential blob keys the connect form must supply.
+    shadow — how a shadow rule exercises this venue:
+        sandbox  — real order to the venue's test environment.
+        dry_run  — validate-only call against the LIVE endpoint; the request
+                   is unfillable by construction (venue's own test/validate API).
+        journal  — no network call at all; the intended order is journalled.
+    quote  — the venue's quote currency. Non-USD/USDT quotes (KRW) force an
+             FX capture at fill recording (broker_orders.fx_rate_usd).
+    """
+    fields: tuple
+    shadow: str
+    quote: str
+
+
+BROKER_SPECS: dict[str, BrokerSpec] = {
+    "alpaca":    BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USD"),
+    "binance":   BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USDT"),
+    "ibkr":      BrokerSpec(fields=("gateway_url", "account_id"),   shadow="sandbox", quote="USD"),
+    "bybit":     BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USDT"),
+    "okx":       BrokerSpec(fields=("key", "secret", "passphrase"), shadow="sandbox", quote="USDT"),
+    "kraken":    BrokerSpec(fields=("key", "secret"),               shadow="dry_run", quote="USD"),
+    "cryptocom": BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USDT"),
+    "upbit":     BrokerSpec(fields=("key", "secret"),               shadow="journal", quote="KRW"),
+    "kucoin":    BrokerSpec(fields=("key", "secret", "passphrase"), shadow="dry_run", quote="USDT"),
+}
+
+AVAILABLE_BROKERS = tuple(BROKER_SPECS)
+
+# Plan 19 §2 — which venues the Accounts page recommends per region
+# (users.region country codes; GLOBAL is the fallback row). Informational
+# ordering only, never a geo-block: every venue stays connectable everywhere.
+REGION_VENUES: dict[str, tuple] = {
+    "GLOBAL": ("binance", "bybit", "okx", "kraken", "cryptocom"),
+    "KR": ("upbit", "kraken"),
+    "JP": ("kraken",),
+    "TH": ("binance", "bybit", "kucoin"),
+    "VN": ("binance", "bybit", "kucoin"),
+    "ID": ("binance", "bybit", "kucoin"),
+    "PH": ("binance", "bybit", "kucoin"),
+    "SG": ("cryptocom", "kucoin", "okx"),
+}
+
+# Longest-first so USDT wins over USD and IDR never eats the R of EUR.
+_KNOWN_QUOTES = ("USDT", "USDC", "KRW", "USD", "EUR", "JPY", "BUSD")
+
+
+def split_symbol(symbol: str, default_quote: str = "USDT") -> tuple:
+    """Split a Sooppiy symbol (BTCUSDT / BTC/USDT / BTC-USDT / bare BTC) into
+    (base, quote). Bare assets get *default_quote* — every venue adapter needs
+    an explicit pair, and the platform's crypto feed quotes in USDT."""
+    s = symbol.upper().replace("/", "").replace("-", "").replace("_", "")
+    for q in _KNOWN_QUOTES:
+        if s.endswith(q) and len(s) > len(q):
+            return s[: -len(q)], q
+    return s, default_quote
 
 
 @dataclass
@@ -60,6 +121,11 @@ class Order:
     error_message:   Optional[str]      = None
     filled_qty:      Optional[float]    = None
 
+    # Non-USD venues (Upbit/KRW): the fill's quote currency and the FX rate
+    # (quote units per USD) captured AT fill time — persisted, never recomputed.
+    quote_currency: Optional[str]   = None
+    fx_rate_usd:    Optional[float] = None
+
     # Optional FK / context
     db_id:      Optional[int] = None
     signal_id:  Optional[int] = None
@@ -74,6 +140,7 @@ class Order:
             OrderStatus.FILLED,
             OrderStatus.REJECTED,
             OrderStatus.CANCELLED,
+            OrderStatus.VALIDATED,
         )
 
 

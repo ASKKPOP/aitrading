@@ -18,7 +18,7 @@ from pydantic import BaseModel, field_validator
 from typing import Optional
 
 import database
-from execution.base import AVAILABLE_BROKERS, ExecutionMode
+from execution.base import AVAILABLE_BROKERS, BROKER_SPECS, REGION_VENUES, ExecutionMode
 from execution.crypto import encrypt_credentials
 from routes_shared import RouteContext, utc_now_iso_z
 
@@ -26,12 +26,14 @@ from routes_shared import RouteContext, utc_now_iso_z
 # ── Request / response models ─────────────────────────────────────────────────
 
 class CreateBrokerAccountRequest(BaseModel):
-    """Alpaca and Binance authenticate with a key/secret pair. IBKR does not —
-    its Client Portal Gateway holds the session, so it takes the gateway URL and
-    the account id instead. One model, validated per broker."""
+    """Most venues authenticate with a key/secret pair; OKX and KuCoin add a
+    passphrase; IBKR has neither — its Client Portal Gateway holds the session,
+    so it takes the gateway URL and the account id instead. One model,
+    validated per broker from BROKER_SPECS."""
     broker: str
     api_key: str = ""
     api_secret: str = ""
+    passphrase: str = ""
     gateway_url: str = ""
     account_id: str = ""
     allow_self_signed: bool = False
@@ -57,7 +59,13 @@ class CreateBrokerAccountRequest(BaseModel):
             }
         if not self.api_key.strip() or not self.api_secret.strip():
             raise ValueError(f"{self.broker} requires api_key and api_secret")
-        return {"key": self.api_key.strip(), "secret": self.api_secret.strip()}
+        blob = {"key": self.api_key.strip(), "secret": self.api_secret.strip()}
+        spec = BROKER_SPECS.get(self.broker)
+        if spec and "passphrase" in spec.fields:
+            if not self.passphrase.strip():
+                raise ValueError(f"{self.broker} requires api_key, api_secret and passphrase")
+            blob["passphrase"] = self.passphrase.strip()
+        return blob
 
 
 class SetExecutionModeRequest(BaseModel):
@@ -84,7 +92,18 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
     # ── GET /api/execution/brokers ────────────────────────────────────────────
     @app.get("/api/execution/brokers")
     def list_brokers():
-        return {"brokers": list(AVAILABLE_BROKERS)}
+        """Broker names plus the per-broker connect-form spec and the regional
+        recommendation matrix (Plan 19). Informational only — every broker
+        stays connectable regardless of region."""
+        return {
+            "brokers": list(AVAILABLE_BROKERS),
+            "specs": {
+                name: {"fields": list(spec.fields), "shadow": spec.shadow,
+                       "quote": spec.quote}
+                for name, spec in BROKER_SPECS.items()
+            },
+            "regions": {code: list(venues) for code, venues in REGION_VENUES.items()},
+        }
 
     # ── POST /api/execution/accounts ─────────────────────────────────────────
     @app.post("/api/execution/accounts", status_code=201)

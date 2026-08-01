@@ -27,10 +27,16 @@ export function AccountsPage() {
   const { language } = useLanguage()
   const [me, setMe] = useState<any>(null)
   const [brokers, setBrokers] = useState<string[]>([])
+  // Per-broker connect-form spec + regional recommendations (Plan 19).
+  const [specs, setSpecs] = useState<Record<string, { fields: string[] }>>({})
+  const [regions, setRegions] = useState<Record<string, string[]>>({})
+  const [region, setRegion] = useState('GLOBAL')
   const [accounts, setAccounts] = useState<BrokerAccount[]>([])
   const [broker, setBroker] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [apiSecret, setApiSecret] = useState('')
+  // OKX and KuCoin key pairs carry a third secret set at key creation.
+  const [passphrase, setPassphrase] = useState('')
   // IBKR authenticates through its Client Portal Gateway, not a key/secret.
   const [gatewayUrl, setGatewayUrl] = useState('')
   const [accountId, setAccountId] = useState('')
@@ -56,6 +62,12 @@ export function AccountsPage() {
     exchange: tr(language, { ko: '브로커', en: 'Broker', ja: 'ブローカー', th: 'โบรกเกอร์', vi: 'Broker', id: 'Broker' }),
     apiKey: tr(language, { ko: 'API 키', en: 'API key', ja: 'APIキー', th: 'คีย์ API', vi: 'Khóa API', id: 'Kunci API' }),
     apiSecret: tr(language, { ko: 'API 시크릿', en: 'API secret', ja: 'APIシークレット', th: 'ความลับ API', vi: 'Bí mật API', id: 'Secret API' }),
+    passphrase: tr(language, { ko: 'API 패스프레이즈 (키 생성 시 설정)', en: 'API passphrase (set when the key was created)', ja: 'APIパスフレーズ (キー作成時に設定)', th: 'พาสเฟรส API (ตั้งตอนสร้างคีย์)', vi: 'Passphrase API (đặt khi tạo khóa)', id: 'Passphrase API (dibuat saat kunci dibuat)' }),
+    needPassphrase: tr(language, { ko: '이 브로커는 API 키·시크릿과 함께 패스프레이즈도 필요합니다.', en: 'This broker also needs the API passphrase alongside the key and secret.', ja: 'このブローカーはキーとシークレットに加えパスフレーズが必要です。', th: 'โบรกเกอร์นี้ต้องใช้พาสเฟรสร่วมกับคีย์และความลับ', vi: 'Broker này cần cả passphrase cùng khóa và bí mật.', id: 'Broker ini juga memerlukan passphrase selain kunci dan secret.' }),
+    regionLabel: tr(language, { ko: '지역', en: 'Region', ja: '地域', th: 'ภูมิภาค', vi: 'Khu vực', id: 'Wilayah' }),
+    regionGlobal: tr(language, { ko: '글로벌', en: 'Global', ja: 'グローバル', th: 'ทั่วโลก', vi: 'Toàn cầu', id: 'Global' }),
+    recommended: tr(language, { ko: '이 지역 추천', en: 'Recommended for this region', ja: 'この地域のおすすめ', th: 'แนะนำสำหรับภูมิภาคนี้', vi: 'Được đề xuất cho khu vực này', id: 'Direkomendasikan untuk wilayah ini' }),
+    otherBrokers: tr(language, { ko: '기타 브로커', en: 'Other brokers', ja: 'その他のブローカー', th: 'โบรกเกอร์อื่น', vi: 'Broker khác', id: 'Broker lainnya' }),
     connect: tr(language, { ko: '게이트웨이 연결', en: 'Connect gateway', ja: 'ゲートウェイを接続', th: 'เชื่อมต่อเกตเวย์', vi: 'Kết nối cổng', id: 'Hubungkan gateway' }),
     warn: tr(language, { ko: '실거래는 실제 자금을 위험에 노출시킵니다. 반드시 거래(TRADE) 권한으로 한정된 API 키만 사용하세요 — 출금 권한은 절대 안 됩니다. 소액으로 시작하세요.', en: 'Real trading risks real money. Only ever use API keys scoped to TRADE — never withdrawal. Start small.', ja: '実取引は実際の資金を失う恐れがあります。出金権限のないキーのみ使用してください。', th: 'การเทรดจริงมีความเสี่ยงต่อเงินจริง ใช้คีย์ที่จำกัดสิทธิ์เฉพาะการเทรดเท่านั้น', vi: 'Giao dịch thật có rủi ro mất tiền thật. Chỉ dùng khóa giới hạn quyền TRADE.', id: 'Trading sungguhan mempertaruhkan uang sungguhan. Selalu gunakan kunci API yang dibatasi hanya untuk TRADE — jangan pernah untuk penarikan dana. Mulailah dari nominal kecil.' }),
     tcs: tr(language, { ko: '실거래 약관에 동의합니다. 실제 자금이 사용되며 손실이 발생할 수 있음을 이해합니다.', en: 'I accept the live-trading terms and understand real money is at risk.', ja: '実取引の規約に同意し、実資金のリスクを理解します。', th: 'ฉันยอมรับข้อกำหนดการเทรดจริงและเข้าใจความเสี่ยงของเงินจริง', vi: 'Tôi chấp nhận điều khoản giao dịch thật và hiểu rủi ro mất tiền.', id: 'Saya menerima ketentuan trading live dan memahami bahwa uang sungguhan dipertaruhkan.' }),
@@ -105,6 +117,7 @@ export function AccountsPage() {
   function localizeConnectError(raw: string): string {
     if (raw.includes('gateway_url must start with')) return T.errGatewayScheme
     if (raw.includes('requires gateway_url and account_id')) return T.needIbkr
+    if (/requires api_key, api_secret and passphrase/.test(raw)) return T.needPassphrase
     if (/requires api_key and api_secret/.test(raw)) return T.needBoth
     return language === 'en' ? raw : `${T.detailQuote}: ${raw}`
   }
@@ -142,6 +155,8 @@ export function AccountsPage() {
       .then(d => {
         const list: string[] = d.brokers || []
         setBrokers(list)
+        setSpecs(d.specs || {})
+        setRegions(d.regions || {})
         setBroker(prev => prev || list[0] || '')
       })
       .catch(() => {})
@@ -149,6 +164,7 @@ export function AccountsPage() {
   }, [token, loadAccounts])
 
   const isIbkr = broker === 'ibkr'
+  const needsPassphrase = (specs[broker]?.fields || []).includes('passphrase')
 
   async function connect() {
     setError(''); setNotice('')
@@ -156,6 +172,8 @@ export function AccountsPage() {
       if (!gatewayUrl.trim() || !accountId.trim()) { setError(T.needIbkr); return }
     } else if (!apiKey.trim() || !apiSecret.trim()) {
       setError(T.needBoth); return
+    } else if (needsPassphrase && !passphrase.trim()) {
+      setError(T.needPassphrase); return
     }
     if (!acceptedTcs) { setError(T.tcsRequired); return }
     setBusy(true)
@@ -167,7 +185,8 @@ export function AccountsPage() {
       const payload = isIbkr
         ? { broker, gateway_url: gatewayUrl.trim(), account_id: accountId.trim(),
             allow_self_signed: allowSelfSigned }
-        : { broker, api_key: apiKey.trim(), api_secret: apiSecret.trim() }
+        : { broker, api_key: apiKey.trim(), api_secret: apiSecret.trim(),
+            ...(needsPassphrase ? { passphrase: passphrase.trim() } : {}) }
       const res = await fetch(`${API_BASE}/execution/accounts`, {
         method: 'POST', headers: authHeaders, body: JSON.stringify(payload),
       })
@@ -188,7 +207,7 @@ export function AccountsPage() {
         setError(b?.detail || 'Could not record consent'); return
       }
       // Drop the secrets from component state the moment they are stored.
-      setApiKey(''); setApiSecret(''); setAccountId(''); setAcceptedTcs(false)
+      setApiKey(''); setApiSecret(''); setPassphrase(''); setAccountId(''); setAcceptedTcs(false)
       setNotice(T.saved)
       loadAccounts()
     } catch (e) {
@@ -245,10 +264,40 @@ export function AccountsPage() {
             ⚠️ {T.warn}
           </div>
 
+          {/* Region drives ordering only — every broker stays connectable. */}
+          {Object.keys(regions).length > 0 && (
+            <>
+              <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>{T.regionLabel}</label>
+              <select value={region} onChange={e => setRegion(e.target.value)} style={field}>
+                {Object.keys(regions).map(code =>
+                  <option key={code} value={code}>{code === 'GLOBAL' ? T.regionGlobal : code}</option>)}
+              </select>
+            </>
+          )}
           <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>{T.exchange}</label>
-          <select value={broker} onChange={e => setBroker(e.target.value)} style={field}>
-            {brokers.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
+          {(() => {
+            const rec = (regions[region] || []).filter(b => brokers.includes(b))
+            const rest = brokers.filter(b => !rec.includes(b))
+            if (rec.length === 0) {
+              return (
+                <select value={broker} onChange={e => setBroker(e.target.value)} style={field}>
+                  {brokers.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              )
+            }
+            return (
+              <select value={broker} onChange={e => setBroker(e.target.value)} style={field}>
+                <optgroup label={`★ ${T.recommended}`}>
+                  {rec.map(b => <option key={b} value={b}>{b}</option>)}
+                </optgroup>
+                {rest.length > 0 && (
+                  <optgroup label={T.otherBrokers}>
+                    {rest.map(b => <option key={b} value={b}>{b}</option>)}
+                  </optgroup>
+                )}
+              </select>
+            )
+          })()}
           {isIbkr ? (
             <>
               <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', lineHeight: 1.5, margin: '2px 0 10px' }}>
@@ -270,6 +319,10 @@ export function AccountsPage() {
                 autoComplete="off" spellCheck={false} style={field} />
               <input value={apiSecret} onChange={e => setApiSecret(e.target.value)} placeholder={T.apiSecret}
                 type="password" autoComplete="new-password" spellCheck={false} style={field} />
+              {needsPassphrase && (
+                <input value={passphrase} onChange={e => setPassphrase(e.target.value)} placeholder={T.passphrase}
+                  type="password" autoComplete="new-password" spellCheck={false} style={field} />
+              )}
             </>
           )}
 
