@@ -142,7 +142,7 @@ class UpbitBroker(Broker):
         else:
             order.status = OrderStatus.REJECTED
             err = data.get("error") or {}
-            order.error_message = str(err.get("message") or resp.text)
+            order.error_message = str(err.get("message") or err.get("name") or resp.text)
             _logger.warning("[UpbitBroker] rejected %s %s for agent %s: %s",
                             order.side, order.symbol, order.agent_id,
                             order.error_message)
