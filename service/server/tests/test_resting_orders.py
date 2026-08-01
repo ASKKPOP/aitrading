@@ -282,6 +282,146 @@ class WatcherTests(_RestingBase):
         self.assertEqual(self.client.get("/api/orders", headers=a["headers"]).json()["count"], 1)
 
 
+class LeverageTests(_RestingBase):
+    """Money tests mirroring test_realtime_leverage.py: a futures limit fill
+    debits MARGIN = notional/L + fee at the OBSERVED price, closes return the
+    escrow at the POSITION's leverage, and L=1 (or leverage omitted — the spot
+    terminal never sends it) stays byte-identical to today's fully-funded
+    fills."""
+
+    def _open_order(self, a, live_price=64_000, **kw) -> int:
+        with patch("crypto_feed.fetch_ticker",
+                   return_value={"symbol": "BTCUSDT", "last_price": live_price}):
+            r = self._place(a["headers"], **kw)
+        assert r.status_code == 200, r.text
+        return r.json()["id"]
+
+    def _fill(self, price: float) -> dict:
+        with patch("crypto_feed.fetch_tickers",
+                   return_value=_tickers({"BTC": price})):
+            return resting_orders.run_resting_orders_tick()
+
+    def _position(self, agent_id: int):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT quantity, entry_price, leverage FROM positions "
+                    "WHERE agent_id = ? AND symbol = 'BTC' AND run_id IS NULL",
+                    (agent_id,))
+        row = cur.fetchone()
+        conn.close()
+        return row
+
+    def test_leveraged_buy_fill_debits_margin_and_stamps_leverage(self):
+        from fees import fee_rate
+        a = self._agent()
+        qty, lev, fill_price = 0.01, 5.0, 59_950
+        self._open_order(a, limit_price=60_000, quantity=qty, leverage=lev)
+        cash_before = self._cash(a["id"])
+        result = self._fill(fill_price)
+        self.assertEqual(result["filled"], 1, result)
+        notional = fill_price * qty
+        fee = notional * fee_rate("crypto")
+        self.assertEqual(self._cash(a["id"]), cash_before - (notional / lev + fee))
+        pos = self._position(a["id"])
+        self.assertEqual(float(pos["leverage"]), lev)
+        self.assertEqual(float(pos["quantity"]), qty)
+
+    def test_leveraged_short_fill_escrows_margin(self):
+        from fees import fee_rate
+        a = self._agent()
+        qty, lev, fill_price = 0.01, 4.0, 71_000
+        self._open_order(a, side="short", limit_price=70_000, quantity=qty,
+                         leverage=lev)
+        cash_before = self._cash(a["id"])
+        result = self._fill(fill_price)
+        self.assertEqual(result["filled"], 1, result)
+        notional = fill_price * qty
+        fee = notional * fee_rate("crypto")
+        self.assertEqual(self._cash(a["id"]), cash_before - (notional / lev + fee))
+        pos = self._position(a["id"])
+        self.assertEqual(float(pos["quantity"]), -qty)
+        self.assertEqual(float(pos["leverage"]), lev)
+
+    def test_l1_omitted_fill_byte_identical_to_legacy(self):
+        # No leverage key at all (the spot terminal's body): debit must be the
+        # EXACT legacy expression notional + fee — not a margin formula.
+        from fees import fee_rate
+        a = self._agent()
+        qty, fill_price = 0.01, 59_950
+        self._open_order(a, limit_price=60_000, quantity=qty)
+        cash_before = self._cash(a["id"])
+        self._fill(fill_price)
+        notional = fill_price * qty
+        fee = notional * fee_rate("crypto")
+        self.assertEqual(self._cash(a["id"]), cash_before - (notional + fee))
+        self.assertEqual(float(self._position(a["id"])["leverage"]), 1.0)
+
+    def test_explicit_l1_identical_to_omitted(self):
+        a = self._agent("lev-omit")
+        b = self._agent("lev-explicit")
+        self._open_order(a, limit_price=60_000, quantity=0.01)
+        self._open_order(b, limit_price=60_000, quantity=0.01, leverage=1.0)
+        result = self._fill(59_950)
+        self.assertEqual(result["filled"], 2, result)
+        self.assertEqual(self._cash(a["id"]), self._cash(b["id"]))
+
+    def test_leverage_clamped_to_1_10_and_invalid_is_1(self):
+        from fees import fee_rate
+        for name, sent, effective in (("clamp-hi", 100, 10.0),
+                                      ("clamp-lo", 0.5, 1.0),
+                                      ("clamp-bad", "abc", 1.0)):
+            a = self._agent(name)
+            r_body = None
+            with patch("crypto_feed.fetch_ticker",
+                       return_value={"symbol": "BTCUSDT", "last_price": 64_000}):
+                r = self._place(a["headers"], limit_price=60_000, quantity=0.01,
+                                leverage=sent)
+            self.assertEqual(r.status_code, 200, r.text)
+            r_body = r.json()
+            self.assertEqual(r_body["leverage"], effective, name)
+        # Money check on the clamped-to-10 case.
+        a = self._agent("clamp-money")
+        self._open_order(a, limit_price=60_000, quantity=0.01, leverage=100)
+        cash_before = self._cash(a["id"])
+        self._fill(59_950)
+        notional = 59_950 * 0.01
+        fee = notional * fee_rate("crypto")
+        self.assertEqual(self._cash(a["id"]), cash_before - (notional / 10.0 + fee))
+        self.assertEqual(float(self._position(a["id"])["leverage"]), 10.0)
+
+    def test_close_returns_escrow_at_position_leverage(self):
+        # Open long at 5x via a leveraged limit fill, then a sell limit sent
+        # with a DIFFERENT leverage (2x — the terminal sends the slider on
+        # every action): the credit must use the POSITION's 5x, proving the
+        # caller's leverage is ignored on closes.
+        from fees import fee_rate
+        a = self._agent()
+        qty, lev = 0.01, 5.0
+        self._open_order(a, limit_price=60_000, quantity=qty, leverage=lev)
+        self._fill(59_950)
+        entry = float(self._position(a["id"])["entry_price"])
+        self._open_order(a, side="sell", limit_price=66_000, quantity=qty,
+                         leverage=2.0)
+        cash_before = self._cash(a["id"])
+        exit_price = 66_100
+        result = self._fill(exit_price)
+        self.assertEqual(result["filled"], 1, result)
+        fee = exit_price * qty * fee_rate("crypto")
+        credit = entry * qty / lev + (exit_price - entry) * qty - fee
+        self.assertEqual(self._cash(a["id"]), cash_before + credit)
+        self.assertIsNone(self._position(a["id"]))
+
+    def test_leverage_round_trips_through_the_api(self):
+        a = self._agent()
+        with patch("crypto_feed.fetch_ticker",
+                   return_value={"symbol": "BTCUSDT", "last_price": 64_000}):
+            r = self._place(a["headers"], limit_price=60_000, leverage=5)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["leverage"], 5.0)
+        listed = self.client.get("/api/orders", headers=a["headers"]).json()
+        self.assertEqual(listed["orders"][0]["leverage"], 5.0)
+
+
 class GatewayBoundaryTests(unittest.TestCase):
     def test_engine_never_touches_the_live_gateway(self):
         """Simulator-only is a stated guarantee (real-gateway testing is
