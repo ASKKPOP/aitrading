@@ -478,3 +478,66 @@ class AdminCascadeTests(FleetTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExposureFeasibilityClamp(unittest.TestCase):
+    """The build-time exposure gate (2026-08-01). Prod fleet 24: $17k bets at
+    5x sized $25-34k orders against a $10k per-symbol cap -> 100% risk-stage
+    blocks -> idle-retire -> identical rebuild, an infinite churn loop that
+    traded nothing. The full bet must be deployable at build time."""
+
+    THESIS = {"symbol": "SOLUSDT", "market": "crypto", "direction": "long",
+              "confidence": 0.7, "expected_move_pct": 4.0, "horizon_hours": 48}
+
+    def test_fleet24_config_is_clamped_to_deployable(self):
+        """FAIL-BEFORE/PASS-AFTER: the exact prod shape. run_budget 56,616.67
+        at balanced (0.30) composed max_bet 16,985 with 5x leverage — every
+        full-size order 84,925 notional vs the 10,000 cap. After the clamp
+        max_bet is cap/leverage = 2,000, so the whole bet deploys."""
+        settings = fp.compose_run_settings(
+            self.THESIS, 56_616.67,
+            {"risk_appetite": "balanced", "lang": "en", "leverage": 5})
+        self.assertAlmostEqual(settings["max_bet_usd"], 2000.0, places=2)
+        self.assertLessEqual(
+            settings["max_bet_usd"] * settings["leverage"], 10_000.0)
+
+    def test_stop_scales_to_the_clamped_bet(self):
+        """max_loss must size to the bet the run can DEPLOY, not the pre-clamp
+        fantasy — otherwise the stop sits miles beyond the real position."""
+        settings = fp.compose_run_settings(
+            self.THESIS, 56_616.67,
+            {"risk_appetite": "balanced", "lang": "en", "leverage": 5})
+        expected = round(2000.0 * fp._tier("stop_loss_frac_of_bet",
+                                           "balanced"), 2)
+        self.assertAlmostEqual(
+            settings["stop_conditions"]["max_loss_usd"], expected, places=2)
+
+    def test_sane_fleet_is_untouched(self):
+        """Fleet 25's shape (max_bet ~1.4k at 1x) fits the cap — no clamp."""
+        settings = fp.compose_run_settings(
+            self.THESIS, 4770.0,
+            {"risk_appetite": "balanced", "lang": "en", "leverage": 1})
+        self.assertAlmostEqual(settings["max_bet_usd"], 1431.0, places=2)
+
+    def test_owner_raised_cap_is_honored(self):
+        """A deliberately raised max_symbol_exposure_usd loosens the clamp —
+        the gate mirrors the risk engine's number, it does not impose 10k."""
+        with patch.object(fp, "_exposure_cap_usd", return_value=50_000.0):
+            settings = fp.compose_run_settings(
+                self.THESIS, 56_616.67,
+                {"risk_appetite": "balanced", "lang": "en", "leverage": 5})
+        self.assertAlmostEqual(settings["max_bet_usd"], 10_000.0, places=2)
+
+    def test_cap_zero_disables_the_clamp(self):
+        """0 disables the risk-gate check, so it disables the build gate too."""
+        with patch.object(fp, "_exposure_cap_usd", return_value=0.0):
+            settings = fp.compose_run_settings(
+                self.THESIS, 56_616.67,
+                {"risk_appetite": "balanced", "lang": "en", "leverage": 5})
+        self.assertAlmostEqual(settings["max_bet_usd"], 16_985.0, places=2)
+
+    def test_unreadable_limits_fail_soft_to_default(self):
+        """A limits read failure clamps to the engine DEFAULT (10k) — smaller
+        is the safe direction; failing open reproduces the churn."""
+        self.assertEqual(fp._exposure_cap_usd({"agent_id": None}), 10_000.0)
+        self.assertEqual(fp._exposure_cap_usd({}), 10_000.0)

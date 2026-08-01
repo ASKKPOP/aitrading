@@ -704,6 +704,41 @@ def allocate_budget(total: float, theses: list[dict]) -> list[float]:
     return [_math.floor(a * 100) / 100 for a in alloc]
 
 
+def _exposure_cap_usd(fleet: dict) -> float:
+    """The owner's per-symbol exposure cap — the SAME number the risk gate
+    enforces on every order. Fail-soft to the engine default: clamping a bet
+    smaller is the safe direction, while failing open reproduces the churn
+    this gate exists to prevent. 0 means the owner disabled the cap."""
+    try:
+        from risk_engine import get_risk_limits
+        return float(get_risk_limits(int(fleet["agent_id"]))
+                     ["max_symbol_exposure_usd"])
+    except Exception:  # noqa: BLE001 — missing/unreadable limits ⇒ default
+        return 10_000.0
+
+
+def _clamp_bet_to_exposure_cap(max_bet: float, leverage: float,
+                               fleet: dict) -> float:
+    """Exposure-feasibility clamp (2026-08-01). Fleet 24 was composed with
+    $17k bets at 5× — every order it sized ($25–34k notional) exceeded the
+    owner's $10,000 per-symbol exposure cap, the risk gate blocked 100% of
+    entries, idle-retire freed the slots, and replacement build-parity
+    rebuilt the identical impossible config: an infinite churn loop that
+    traded nothing (prod runs 903–906, two full laps). Same class as the
+    fee-infeasible thesis (PR #94): arithmetic knowable at BUILD time
+    belongs at build time, and compose_run_settings is the one builder both
+    the initial build and the replacement path share.
+
+    The invariant: the run's FULL bet must be deployable — max_bet × leverage
+    ≤ cap — so no order the engine can size is born un-passable. Only ever
+    reduces; a 0 cap (owner disabled) clamps nothing, mirroring the gate."""
+    cap = _exposure_cap_usd(fleet)
+    if cap <= 0:
+        return max_bet
+    feasible = round(cap / max(1.0, float(leverage or 1.0)), 2)
+    return min(max_bet, feasible)
+
+
 def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     """Thesis + slot budget → the run-creation payload. Deterministic clamps
     only — including the §6.4 percent→fraction unit conversion (a 2.5% thesis
@@ -737,6 +772,9 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     fleet_lev = fleet.get("leverage")
     leverage = float(fleet_lev) if fleet_lev else _tier("auto_leverage", risk)
     leverage = max(1.0, min(10.0, leverage))
+    # Exposure feasibility: after leverage is known and BEFORE the stop is
+    # scaled, so max_loss/trail size to the bet the run can actually deploy.
+    max_bet = _clamp_bet_to_exposure_cap(max_bet, leverage, fleet)
     # Hoisted: the trailing lock arms against this, so it must exist before
     # the stop_conditions literal is built.
     max_loss_usd = round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2)
