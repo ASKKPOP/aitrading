@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 19 — Real Trading Gateway: Regional Exchange Expansion</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea;
+    --ai: #7a5cd6; --mach: #898781;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+      --ai: #9a7fe8; --mach: #6e6c66;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13;
+    --ai: #9a7fe8; --mach: #6e6c66;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 44px 0 10px; }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  .sub { color: var(--ink-2); margin: 0 0 6px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .card.ai { border-left: 3px solid var(--ai); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .val { font-size: 21px; font-weight: 600; margin-top: 3px; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 7px 10px 7px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; }
+  .chip.ok   { background: var(--ok-bg);  color: var(--good-txt); }
+  .chip.warn { background: var(--warn-bg); color: #8a6100; }
+  :root[data-theme="dark"] .chip.warn, :root:not([data-theme="light"]) .chip.warn { color: #fab219; }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  .chip.ai   { background: rgba(122,92,214,.14); color: var(--ai); }
+  .chip.mach { background: var(--page); color: var(--ink-3); border: 1px solid var(--grid); }
+  figure { margin: 0; } figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-3); }
+  svg .lab { fill: var(--ink-2); } svg .lab-strong { fill: var(--ink-1); font-weight: 600; }
+  code { font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .kr { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  .kr p { margin: 6px 0; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; } li { margin: 5px 0; }
+  .tocbox { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; margin: 18px 0; }
+  .tocbox ol { margin: 6px 0; } .tocbox a { color: var(--s1); text-decoration: none; }
+  .pipes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; margin: 16px 0; }
+  @media (max-width: 780px) { .pipes { grid-template-columns: 1fr; } }
+  .pipe h3 { margin: 0 0 10px; text-align: center; }
+  .pnode { border: 1px solid var(--border); background: var(--page); border-radius: 8px;
+           padding: 8px 12px; margin: 0 0 4px; font-size: 13px; }
+  .pnode b { display: block; font-size: 13.5px; }
+  .pnode span { color: var(--ink-2); font-size: 12.3px; }
+  .pnode .file { display: block; color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .pnode.bad { border-left: 3px solid var(--crit); }
+  .pnode.chg { border-left: 3px solid var(--s2); background: var(--chg-bg); }
+  .pnode.keep { border-left: 3px solid var(--s3); }
+  .pnode.aiN { border-left: 3px solid var(--ai); }
+  .parrow { text-align: center; color: var(--ink-3); font-size: 15px; margin: 0 0 4px; }
+  .legendline { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; }
+  .legendline .k { display: inline-flex; align-items: center; gap: 6px; }
+  .legendline .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 19 — Real Trading Gateway: Regional Exchange Expansion</h1>
+<p class="sub">From 3 broker adapters to a region-aware gateway covering the exchanges Sooppiy users actually hold accounts at.</p>
+<p class="meta">2026-07-31 · builds on <code>service/server/execution/</code> (router, gateway, AES-GCM vault, reconciler, keepalive — live since 2026-07-19) · status: PLAN</p>
+
+<div class="tocbox">
+<b>Contents</b>
+<ol>
+  <li><a href="#today">Where the gateway stands today</a></li>
+  <li><a href="#matrix">Target matrix — region × exchange</a></li>
+  <li><a href="#venues">Venue API fact sheet</a></li>
+  <li><a href="#arch">Architecture — what changes, what stays</a></li>
+  <li><a href="#shadow">The shadow problem — three strategies, per venue</a></li>
+  <li><a href="#decisions">Key design decisions</a></li>
+  <li><a href="#phases">Phased rollout</a></li>
+  <li><a href="#safety">Safety rails for live money</a></li>
+  <li><a href="#testing">Testing &amp; verification</a></li>
+  <li><a href="#risks">Risks</a></li>
+  <li><a href="#kr">한국어 요약</a></li>
+</ol>
+</div>
+
+<h2 id="today">1 · Where the gateway stands today</h2>
+
+<div class="tiles">
+  <div class="tile"><div class="lbl">Adapters live</div><div class="val">3</div><div class="d">alpaca · binance (spot) · ibkr</div></div>
+  <div class="tile"><div class="lbl">Target after this plan</div><div class="val">9</div><div class="d">+ bybit, okx, kraken, upbit, kucoin, cryptocom</div></div>
+  <div class="tile"><div class="lbl">Execution modes</div><div class="val">3</div><div class="d">simulator · shadow · live (per rule)</div></div>
+  <div class="tile"><div class="lbl">New code surface</div><div class="val">~6 files</div><div class="d">one adapter each, ~150–250 lines apiece</div></div>
+</div>
+
+<div class="card ok">
+<b>The hard part is already built.</b> The execution layer shipped 2026-07-19 and has been hardened since:
+<ul>
+  <li><b><code>Broker</code> ABC</b> (<code>execution/base.py</code>) — 4 methods: <code>submit_order</code>, <code>get_order_status</code>, <code>cancel_order</code>, <code>get_broker_positions</code>. A new venue is one subclass.</li>
+  <li><b><code>gateway.py</code></b> — the rule's <code>account_type</code> is the only routing switch. Live is refused (never silently downgraded) without credentials + per-broker T&amp;Cs consent. Endpoint pinning ensures shadow can never reach a real venue.</li>
+  <li><b>Credential vault</b> — AES-GCM (<code>execution/crypto.py</code>, <code>EXECUTION_ENCRYPTION_KEY</code>), decrypt-tested before any live order routes.</li>
+  <li><b>Workers</b> — <code>order_reconciler</code> (settles SUBMITTED orders against the venue's answer, journals drift, alerts the owner) and <code>gateway_keepalive</code> (IBKR session).</li>
+  <li><b>API + UI</b> — <code>routes_execution.py</code> (accounts, mode switch, T&amp;Cs accept, orders, reconciliations, health) and <code>AccountsPage.tsx</code>.</li>
+</ul>
+This plan is therefore <b>adapter work plus regional plumbing</b>, not a new execution engine.
+</div>
+
+<h2 id="matrix">2 · Target matrix — region × exchange</h2>
+<p>The matrix below is the product requirement (owner-set). One column per venue this plan adds or keeps; chips mark the delivery phase.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Region</th><th>Venues offered</th><th>Delivery</th><th>Notes</th></tr>
+<tr><td><b>Global</b></td><td>Binance · Bybit · OKX · Kraken · Crypto.com</td>
+    <td><span class="chip ok">binance live</span> <span class="chip warn">P1: bybit·okx·kraken</span> <span class="chip mach">P3: crypto.com</span></td>
+    <td>Baseline set shown everywhere.</td></tr>
+<tr><td><b>South Korea</b></td><td>Upbit (dominant) · Kraken</td>
+    <td><span class="chip warn">P1: kraken</span> <span class="chip crit">P2: upbit</span></td>
+    <td>Upbit = KRW quote + JWT auth + no sandbox — its own phase.</td></tr>
+<tr><td><b>Japan</b></td><td>Locally licensed venues · Kraken</td>
+    <td><span class="chip warn">P1: kraken</span> <span class="chip mach">P4: evaluate bitFlyer first</span></td>
+    <td>JP licensed venues (bitFlyer / GMO / Coincheck) evaluated in P4; JPY quote shares the FX work Upbit forces in P2.</td></tr>
+<tr><td><b>TH · VN · ID · PH</b></td><td>Binance · Bybit · KuCoin</td>
+    <td><span class="chip ok">binance live</span> <span class="chip warn">P1: bybit</span> <span class="chip mach">P3: kucoin</span></td>
+    <td>Regional Binance entities (e.g. <code>api.binance.th</code>) share the API shape — adapter takes a base-URL override, no new code.</td></tr>
+<tr><td><b>Singapore</b></td><td>Crypto.com · KuCoin · OKX</td>
+    <td><span class="chip warn">P1: okx</span> <span class="chip mach">P3: kucoin·crypto.com</span></td>
+    <td><b>Revolut: out of scope</b> — no generally-available public trading API. SG users are covered by the other three.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<b>Positioning note.</b> Sooppiy is a <i>gateway</i>, not a broker: users connect exchange accounts <i>they</i> opened under <i>their own</i> regional KYC. The region matrix drives what the Accounts page recommends per region — it is informational, not a geo-block. Venue availability/licensing stays the user's relationship with their exchange.
+</div>
+
+<h2 id="venues">3 · Venue API fact sheet</h2>
+<p>What each adapter has to speak. This table is the checklist an adapter PR must satisfy.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Venue</th><th>Auth scheme</th><th>Sandbox / demo</th><th>Order dry-run</th><th>Symbol format</th><th>Quote</th><th>Credential fields</th></tr>
+<tr><td><b>Binance</b> <span class="chip ok">live</span></td><td>HMAC-SHA256 query sig + <code>X-MBX-APIKEY</code></td><td>✅ testnet.binance.vision</td><td>✅ <code>/order/test</code></td><td><code>BTCUSDT</code></td><td>USDT</td><td>key · secret</td></tr>
+<tr><td><b>Bybit</b> (v5)</td><td>HMAC-SHA256 over <code>ts+key+recv+payload</code>, <code>X-BAPI-*</code> headers</td><td>✅ demo env</td><td>—</td><td><code>BTCUSDT</code></td><td>USDT</td><td>key · secret</td></tr>
+<tr><td><b>OKX</b> (v5)</td><td>base64(HMAC-SHA256(<code>ts+method+path+body</code>)) + passphrase header</td><td>✅ <code>x-simulated-trading: 1</code></td><td>—</td><td><code>BTC-USDT</code></td><td>USDT</td><td>key · secret · <b>passphrase</b></td></tr>
+<tr><td><b>Kraken</b></td><td>HMAC-SHA512(path + SHA256(nonce+postdata)), monotonic nonce</td><td>❌ (futures only)</td><td>✅ <code>validate=true</code> on AddOrder</td><td><code>XBTUSD</code> (XBT-for-BTC legacy)</td><td>USD · EUR</td><td>key · secret</td></tr>
+<tr><td><b>Crypto.com</b> (v1)</td><td>JSON-RPC body, HMAC-SHA256 over <code>method+id+key+params+nonce</code></td><td>✅ UAT sandbox</td><td>—</td><td><code>BTC_USDT</code></td><td>USDT · USD</td><td>key · secret</td></tr>
+<tr><td><b>Upbit</b></td><td>JWT (HS256) with nonce + SHA512 query-hash claim</td><td>❌ none</td><td>❌ none</td><td><code>KRW-BTC</code> (quote first!)</td><td><b>KRW</b></td><td>key · secret</td></tr>
+<tr><td><b>KuCoin</b></td><td>base64(HMAC-SHA256(<code>ts+method+path+body</code>)) + encrypted passphrase, key v2</td><td>❌ (discontinued)</td><td>✅ <code>/orders/test</code></td><td><code>BTC-USDT</code></td><td>USDT</td><td>key · secret · <b>passphrase</b></td></tr>
+<tr><td><b>bitFlyer</b> (P4 eval)</td><td>HMAC-SHA256(<code>ts+method+path+body</code>)</td><td>❌ none</td><td>❌ none</td><td><code>BTC_JPY</code></td><td><b>JPY</b></td><td>key · secret</td></tr>
+</table>
+</div>
+
+<div class="card chg">
+<b>Two structural consequences fall out of this table.</b>
+<ol>
+<li><b>Credentials are no longer always key+secret.</b> OKX and KuCoin add a passphrase. The vault already stores an arbitrary encrypted JSON blob (IBKR proved it), but <code>routes_execution.CreateBrokerAccountRequest</code> validates fields per broker — that validator grows a per-broker required-fields map.</li>
+<li><b>Quote currency is no longer always ~USD.</b> Upbit (KRW) and any JP venue (JPY) break the ledger's implicit USD assumption. Fills must be converted at a recorded FX rate before touching the platform ledger — see §6.4.</li>
+</ol>
+</div>
+
+<h2 id="arch">4 · Architecture — what changes, what stays</h2>
+
+<figure>
+<svg viewBox="0 0 1020 560" role="img" aria-label="Order path from automation rule through gateway and router to regional venues">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--axis)"/>
+    </marker>
+  </defs>
+
+  <!-- Sources -->
+  <rect x="20" y="20" width="215" height="52" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text x="127" y="42" text-anchor="middle" class="lab-strong">Automation rule / fleet run</text>
+  <text x="127" y="59" text-anchor="middle">account_type: simulator | shadow | live</text>
+
+  <rect x="255" y="20" width="180" height="52" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text x="345" y="42" text-anchor="middle" class="lab-strong">Manual / signal trade</text>
+  <text x="345" y="59" text-anchor="middle">routes_signals · terminal</text>
+
+  <line x1="127" y1="72" x2="127" y2="108" stroke="var(--axis)" marker-end="url(#arr)"/>
+  <line x1="345" y1="72" x2="345" y2="108" stroke="var(--axis)" marker-end="url(#arr)"/>
+
+  <!-- Gateway -->
+  <rect x="20" y="110" width="415" height="74" rx="8" fill="var(--surface-1)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text x="227" y="132" text-anchor="middle" class="lab-strong">execution/gateway.py — UNCHANGED</text>
+  <text x="227" y="149" text-anchor="middle">live_refusal_reason: credentials decrypt? · T&amp;Cs accepted?</text>
+  <text x="227" y="166" text-anchor="middle">endpoint pinning: shadow NEVER reaches a real venue</text>
+
+  <!-- Vault, right side -->
+  <rect x="490" y="20" width="240" height="60" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text x="610" y="42" text-anchor="middle" class="lab-strong">Credential vault (AES-GCM)</text>
+  <text x="610" y="59" text-anchor="middle">+ passphrase field for okx · kucoin</text>
+  <line x1="490" y1="80" x2="437" y2="122" stroke="var(--axis)" marker-end="url(#arr)"/>
+
+  <!-- Workers, right side -->
+  <rect x="760" y="20" width="240" height="60" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <text x="880" y="42" text-anchor="middle" class="lab-strong">Workers — order_reconciler</text>
+  <text x="880" y="59" text-anchor="middle">get_order_status REQUIRED per adapter</text>
+
+  <line x1="227" y1="184" x2="227" y2="218" stroke="var(--axis)" marker-end="url(#arr)"/>
+
+  <!-- Router -->
+  <rect x="20" y="220" width="415" height="56" rx="8" fill="var(--surface-1)" stroke="var(--s3)" stroke-width="1.5"/>
+  <text x="227" y="242" text-anchor="middle" class="lab-strong">ExecutionRouter — UNCHANGED</text>
+  <text x="227" y="259" text-anchor="middle">persists broker_orders · journals position_reconciliations</text>
+
+  <line x1="227" y1="276" x2="227" y2="310" stroke="var(--axis)" marker-end="url(#arr)"/>
+
+  <!-- Registry (changed) -->
+  <rect x="20" y="312" width="980" height="88" rx="8" fill="var(--chg-bg)" stroke="var(--s2)" stroke-width="1.5"/>
+  <text x="510" y="334" text-anchor="middle" class="lab-strong">Adapter registry — EXTENDED (execution/base.py + router._build_real_broker)</text>
+  <text x="510" y="352" text-anchor="middle">AVAILABLE_BROKERS + per-broker: credential schema · symbol normaliser · shadow strategy · quote currency</text>
+  <text x="510" y="370" text-anchor="middle">capability flags: has_sandbox · has_dry_run — decide the shadow lane (§5)</text>
+  <text x="510" y="388" text-anchor="middle">LIVE_BROKER_ALLOWLIST env gate — a venue takes real money only after its shadow soak (§8)</text>
+
+  <!-- Venue boxes -->
+  <line x1="120" y1="400" x2="120" y2="434" stroke="var(--axis)" marker-end="url(#arr)"/>
+  <line x1="350" y1="400" x2="350" y2="434" stroke="var(--axis)" marker-end="url(#arr)"/>
+  <line x1="590" y1="400" x2="590" y2="434" stroke="var(--axis)" marker-end="url(#arr)"/>
+  <line x1="850" y1="400" x2="850" y2="434" stroke="var(--axis)" marker-end="url(#arr)"/>
+
+  <rect x="20" y="436" width="200" height="100" rx="8" fill="var(--surface-1)" stroke="var(--s3)"/>
+  <text x="120" y="458" text-anchor="middle" class="lab-strong">Today</text>
+  <text x="120" y="478" text-anchor="middle">binance (spot)</text>
+  <text x="120" y="495" text-anchor="middle">alpaca (US stocks)</text>
+  <text x="120" y="512" text-anchor="middle">ibkr (CPAPI session)</text>
+
+  <rect x="250" y="436" width="200" height="100" rx="8" fill="var(--surface-1)" stroke="var(--s2)"/>
+  <text x="350" y="458" text-anchor="middle" class="lab-strong">Phase 1 — Global</text>
+  <text x="350" y="478" text-anchor="middle">bybit (demo env)</text>
+  <text x="350" y="495" text-anchor="middle">okx (simulated hdr)</text>
+  <text x="350" y="512" text-anchor="middle">kraken (validate=true)</text>
+
+  <rect x="480" y="436" width="220" height="100" rx="8" fill="var(--surface-1)" stroke="var(--crit)"/>
+  <text x="590" y="458" text-anchor="middle" class="lab-strong">Phase 2 — Korea</text>
+  <text x="590" y="478" text-anchor="middle">upbit — JWT · KRW quote</text>
+  <text x="590" y="495" text-anchor="middle">market-buy priced in KRW cost</text>
+  <text x="590" y="512" text-anchor="middle">no sandbox → journal-only shadow</text>
+
+  <rect x="730" y="436" width="270" height="100" rx="8" fill="var(--surface-1)" stroke="var(--mach)"/>
+  <text x="865" y="458" text-anchor="middle" class="lab-strong">Phase 3–4 — SEA / SG / JP</text>
+  <text x="865" y="478" text-anchor="middle">kucoin (/orders/test) · crypto.com (UAT)</text>
+  <text x="865" y="495" text-anchor="middle">bitFlyer evaluation (JPY)</text>
+  <text x="865" y="512" text-anchor="middle">region-aware Accounts UI</text>
+</svg>
+<figcaption>Order path. Green boxes ship unchanged; the orange registry band is where this plan's backend work concentrates. Every order still persists to <code>broker_orders</code> and reconciles through the existing worker.</figcaption>
+</figure>
+
+<h2 id="shadow">5 · The shadow problem — three strategies, per venue</h2>
+<p>Shadow mode today assumes every broker has a sandbox. The fact sheet shows that assumption dies with this expansion: Kraken, Upbit, KuCoin and bitFlyer have no usable spot sandbox. Rather than faking one, each adapter declares which of <b>three shadow strategies</b> it supports — and the router records which one produced each reconciliation row.</p>
+
+<div class="pipes">
+  <div class="pipe">
+    <h3>A · Sandbox shadow</h3>
+    <div class="pnode keep"><b>Real order → venue sandbox</b><span>binance testnet · bybit demo · okx simulated · crypto.com UAT</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode"><b>Real fill comes back</b><span>true price/qty drift vs ledger</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode ok"><b>reconciliation: full</b><span>strongest signal — today's behaviour</span></div>
+  </div>
+  <div class="pipe">
+    <h3>B · Dry-run shadow</h3>
+    <div class="pnode chg"><b>Validate-only call → LIVE endpoint</b><span>kraken validate=true · kucoin /orders/test · binance /order/test</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode"><b>Venue checks auth, symbol, size, balance</b><span>no order is placed, no fill exists</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode ok"><b>reconciliation: accepted / rejected</b><span>proves the live path would not bounce</span></div>
+  </div>
+  <div class="pipe">
+    <h3>C · Journal-only shadow</h3>
+    <div class="pnode bad"><b>No network call at all</b><span>upbit · bitFlyer — nothing safe to hit</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode"><b>Record intended order + live book price</b><span>via price_fetcher at decision time</span></div>
+    <div class="parrow">↓</div>
+    <div class="pnode"><b>reconciliation: journal</b><span>weakest signal — soak gate compensates with a longer window (§8)</span></div>
+  </div>
+</div>
+
+<div class="card crit">
+<b>Invariant kept from gateway.py:</b> a shadow rule must never reach a real venue <i>with an order that can fill</i>. Strategy B touches the live endpoint but only through the venue's own validate/test call — the request is provably unfillable by construction. Strategy C makes no call at all. Nothing here relaxes the endpoint-pinning rule; it refines it per venue.
+</div>
+
+<h2 id="decisions">6 · Key design decisions</h2>
+
+<h3>6.1 · One registry, declarative per-broker metadata</h3>
+<p><code>AVAILABLE_BROKERS</code> stays the single source of truth (the market-registry lesson: hand-maintained parallel lists rot). It grows from a tuple of names into a small table consumed by <i>both</i> the request validator and the router factory:</p>
+<pre><code>BROKER_SPECS = {
+  "binance":   Spec(fields=("key","secret"),              shadow="sandbox",  quote="USDT"),
+  "bybit":     Spec(fields=("key","secret"),              shadow="sandbox",  quote="USDT"),
+  "okx":       Spec(fields=("key","secret","passphrase"), shadow="sandbox",  quote="USDT"),
+  "kraken":    Spec(fields=("key","secret"),              shadow="dry_run",  quote="USD"),
+  "cryptocom": Spec(fields=("key","secret"),              shadow="sandbox",  quote="USDT"),
+  "upbit":     Spec(fields=("key","secret"),              shadow="journal",  quote="KRW"),
+  "kucoin":    Spec(fields=("key","secret","passphrase"), shadow="dry_run",  quote="USDT"),
+  "alpaca":    Spec(fields=("key","secret"),              shadow="sandbox",  quote="USD"),
+  "ibkr":      Spec(fields=("gateway_url","account_id"),  shadow="sandbox",  quote="USD"),
+}</code></pre>
+
+<h3>6.2 · Symbol normalisation lives in the adapter, canonical form lives in the platform</h3>
+<p>The platform keeps speaking <code>BTC/USDT</code>-style canonical symbols. Each adapter owns a two-way mapper: <code>BTCUSDT</code> (Binance/Bybit) · <code>BTC-USDT</code> (OKX/KuCoin) · <code>BTC_USDT</code> (Crypto.com) · <code>XBTUSD</code> (Kraken — including the XBT rename) · <code>KRW-BTC</code> (Upbit — quote-first ordering). The mapper is required for <code>get_order_status</code> too: the Binance adapter already proved a lookup with the wrong symbol form reports "order does not exist".</p>
+
+<h3>6.3 · Upbit's market-order quirk is a first-class case, not a patch</h3>
+<p>Upbit market <b>buys</b> are priced in KRW <i>cost</i> (<code>ord_type=price</code>), market <b>sells</b> in asset <i>volume</i> (<code>ord_type=market</code>). The <code>Order</code> dataclass carries quantity; the Upbit adapter converts quantity→cost using the decision-time price for buys, and the reconciler reads back the <i>actual</i> filled volume from the order lookup. This asymmetry is exactly the kind of thing the drift journal exists to catch — the adapter must never pretend the requested and filled quantities are the same number.</p>
+
+<h3>6.4 · Non-USD quotes get an explicit FX step</h3>
+<p>The ledger is USD-denominated. For KRW (and later JPY) venues, the adapter records the fill in venue currency <i>and</i> the FX rate used, on the <code>broker_orders</code> row (two new nullable columns: <code>quote_currency</code>, <code>fx_rate_usd</code>). Conversion happens once, at fill-recording, from a rate captured at that moment — never recomputed later (the NaN-poisoning and drift lessons both say: persist what you used). Reconciler drift compares in venue currency, so FX noise can't masquerade as fill drift.</p>
+
+<h3>6.5 · Pre-flight validation against venue trading rules</h3>
+<p>Every venue enforces min-notional / lot-size / price-precision. Each adapter fetches its venue's instrument rules (exchangeInfo-equivalents), caches them in-process with a daily TTL, and rejects a non-conforming order <i>before</i> submission with an i18n-routed error (per the i18n sweep rule: every user-visible refusal goes through the catalogue). A predictable local rejection beats a venue rejection string the user can't read.</p>
+
+<h3>6.6 · Kraken nonces need a per-account monotonic source</h3>
+<p>Kraken invalidates a key on nonce regression, and prod runs a worker plus an API process. The Kraken adapter takes nonces from a DB-backed monotonic counter per broker account (single UPDATE … RETURNING-style bump), not <code>time.time()</code> — two processes sharing a key would otherwise race and permanently error the key.</p>
+
+<h3>6.7 · Region-aware Accounts UI, no geo-blocking</h3>
+<p><code>GET /api/execution/brokers</code> grows an optional <code>?region=</code> parameter returning the matrix in §2 (recommended-first ordering). The frontend shows "recommended for your region" grouping on <code>AccountsPage.tsx</code>; every venue stays connectable regardless of region. Region source: user's existing language/locale setting as a default, user-overridable.</p>
+
+<h2 id="phases">7 · Phased rollout</h2>
+
+<figure>
+<svg viewBox="0 0 1020 190" role="img" aria-label="Timeline of the four delivery phases">
+  <line x1="30" y1="150" x2="990" y2="150" stroke="var(--axis)"/>
+  <rect x="30"  y="40" width="150" height="70" rx="8" fill="var(--chg-bg)" stroke="var(--s2)"/>
+  <text x="105" y="63" text-anchor="middle" class="lab-strong">P0 · Plumbing</text>
+  <text x="105" y="81" text-anchor="middle">registry · schemas</text>
+  <text x="105" y="97" text-anchor="middle">~2 days</text>
+  <rect x="200" y="40" width="200" height="70" rx="8" fill="var(--surface-1)" stroke="var(--s2)"/>
+  <text x="300" y="63" text-anchor="middle" class="lab-strong">P1 · Global tier</text>
+  <text x="300" y="81" text-anchor="middle">bybit · okx · kraken</text>
+  <text x="300" y="97" text-anchor="middle">~5 days + 7-day soak</text>
+  <rect x="420" y="40" width="180" height="70" rx="8" fill="var(--surface-1)" stroke="var(--crit)"/>
+  <text x="510" y="63" text-anchor="middle" class="lab-strong">P2 · Korea</text>
+  <text x="510" y="81" text-anchor="middle">upbit + FX layer</text>
+  <text x="510" y="97" text-anchor="middle">~4 days + 14-day soak</text>
+  <rect x="620" y="40" width="180" height="70" rx="8" fill="var(--surface-1)" stroke="var(--mach)"/>
+  <text x="710" y="63" text-anchor="middle" class="lab-strong">P3 · SEA / SG</text>
+  <text x="710" y="81" text-anchor="middle">kucoin · crypto.com</text>
+  <text x="710" y="97" text-anchor="middle">~4 days + 7-day soak</text>
+  <rect x="820" y="40" width="170" height="70" rx="8" fill="var(--surface-1)" stroke="var(--mach)"/>
+  <text x="905" y="63" text-anchor="middle" class="lab-strong">P4 · JP + UI</text>
+  <text x="905" y="81" text-anchor="middle">bitFlyer eval · region UI</text>
+  <text x="905" y="97" text-anchor="middle">~3 days</text>
+  <circle cx="105" cy="150" r="5" fill="var(--s2)"/>
+  <circle cx="300" cy="150" r="5" fill="var(--s2)"/>
+  <circle cx="510" cy="150" r="5" fill="var(--crit)"/>
+  <circle cx="710" cy="150" r="5" fill="var(--mach)"/>
+  <circle cx="905" cy="150" r="5" fill="var(--mach)"/>
+  <text x="105" y="175" text-anchor="middle">week 1</text>
+  <text x="300" y="175" text-anchor="middle">week 1–2</text>
+  <text x="510" y="175" text-anchor="middle">week 3</text>
+  <text x="710" y="175" text-anchor="middle">week 4</text>
+  <text x="905" y="175" text-anchor="middle">week 5</text>
+</svg>
+<figcaption>Soaks overlap the next phase's build — the calendar is ~5 weeks, hands-on time ~18 days. Every phase deploys to prod (standing rule) with the new venue live-gated off until its soak passes.</figcaption>
+</figure>
+
+<div class="scroll">
+<table>
+<tr><th>Phase</th><th>Deliverables</th><th>Acceptance (all must hold)</th></tr>
+<tr><td><b>P0 · Plumbing</b></td>
+    <td>BROKER_SPECS registry · passphrase field through vault + validator · shadow-strategy field on reconciliation rows · <code>quote_currency</code>/<code>fx_rate_usd</code> columns · <code>LIVE_BROKER_ALLOWLIST</code> gate in <code>live_refusal_reason</code></td>
+    <td>Existing 3 brokers behave byte-identically (regression suite) · a broker absent from the allowlist refuses live with an i18n message · mutation test on the allowlist check</td></tr>
+<tr><td><b>P1 · Global tier</b></td>
+    <td>bybit.py · okx.py · kraken.py — each: submit, status lookup, cancel, positions, symbol mapper, pre-flight rules · signature unit tests against published test vectors</td>
+    <td>Shadow soak ≥7 days on prod with reconciliation status <code>ok</code>/<code>accepted</code> ≥99% · kraken nonce survives worker+API concurrency test · reconciler settles a deliberately part-filled testnet order correctly</td></tr>
+<tr><td><b>P2 · Korea</b></td>
+    <td>upbit.py (JWT, KRW-BTC mapping, buy-by-cost) · FX capture at fill · journal-only shadow lane · Accounts UI shows Upbit for KR</td>
+    <td>14-day journal soak: intended vs book price divergence within slippage model · FX rate persisted on every KRW row · buy/sell asymmetry covered by tests that fail if ord_type mapping flips</td></tr>
+<tr><td><b>P3 · SEA / SG</b></td>
+    <td>kucoin.py (passphrase v2 signing, /orders/test) · cryptocom.py (JSON-RPC signing, UAT) · regional Binance base-URL override</td>
+    <td>Same soak bar as P1 · KuCoin encrypted-passphrase path proven against a real key (the v1/v2 signing difference is the classic integration failure)</td></tr>
+<tr><td><b>P4 · JP + UI</b></td>
+    <td>bitFlyer feasibility spike (API + JPY reuse of P2 FX work) — go/no-go doc · region parameter on /brokers · AccountsPage regional grouping · docs + skills/ update for agent authors</td>
+    <td>Region matrix served from one table (no frontend copy) · UI verified in all 6 languages · bitFlyer decision recorded in this doc with a dated note</td></tr>
+</table>
+</div>
+
+<h2 id="safety">8 · Safety rails for live money</h2>
+<div class="card crit">
+<ol>
+<li><b>Per-venue live allowlist.</b> <code>LIVE_BROKER_ALLOWLIST</code> (env, default: <code>alpaca,binance,ibkr</code> — today's set). A new adapter can shadow immediately but cannot take live orders until its name is added post-soak. Checked inside <code>live_refusal_reason</code> so refusal messaging is consistent and nothing downgrades silently.</li>
+<li><b>Per-order notional cap for new venues.</b> <code>EXECUTION_MAX_ORDER_USD</code> (default 1,000) applies to any venue in its first 30 allowlisted days. Caps are refusals, not resizes — resizing an order the AI sized is a silent decision change (Plan 17 rails logic).</li>
+<li><b>T&amp;Cs stay per-broker.</b> <code>broker_live_optins</code> is already keyed by broker string — each new venue automatically requires its own explicit "this is real money" acceptance. No change needed; a test asserts a Bybit opt-in does not unlock OKX.</li>
+<li><b>Reconciler coverage is a merge gate.</b> <code>get_order_status</code> is optional in the ABC for historical reasons; for new adapters it is mandatory — an adapter PR without a working status lookup does not merge, because SUBMITTED orders would never settle (§ the order-drift alert path depends on it).</li>
+<li><b>Kill switch.</b> Emptying <code>LIVE_BROKER_ALLOWLIST</code> halts all live routing platform-wide with an explicit refusal — one env var, no deploy.</li>
+</ol>
+</div>
+
+<h2 id="testing">9 · Testing &amp; verification</h2>
+<ul>
+<li><b>Signature unit tests</b> — every adapter's signing function verified against the venue's published example vectors (Kraken and OKX both document one), with mocked <code>httpx</code>. Sockets blocked in the suite: the quant-crypto leak taught that try/except-wrapped fetches hide missing mocks.</li>
+<li><b>Contract tests shared across adapters</b> — one parametrised suite runs every adapter through: reject-without-credentials, symbol round-trip, status-map completeness (every venue state maps to an <code>OrderStatus</code>), part-fill settlement, error-never-raises.</li>
+<li><b>Testnet integration scripts</b> — <code>research/</code>-style manual scripts per sandbox venue, run before each soak starts; not in CI (external, flaky, credentialed).</li>
+<li><b>Mutation pass</b> — per repo standard: flip the allowlist check, swap Upbit's ord_type mapping, break a symbol mapper — confirm tests fail before reporting coverage.</li>
+<li><b>Soak = monitoring, not a checkbox</b> — the automation-monitoring cadence watches <code>position_reconciliations</code> per venue; the acceptance percentages in §7 are measured there, on prod.</li>
+</ul>
+
+<h2 id="risks">10 · Risks</h2>
+<div class="scroll">
+<table>
+<tr><th>Risk</th><th>Sev</th><th>Mitigation</th></tr>
+<tr><td>Upbit has no sandbox and no dry-run — first fillable order is real money</td><td><span class="chip crit">high</span></td><td>Journal-only soak is 14 days (2× normal) + notional cap + first live enablement on the owner's own account only</td></tr>
+<tr><td>Kraken nonce corruption invalidates the user's API key across concurrent processes</td><td><span class="chip warn">med</span></td><td>DB-backed monotonic nonce (§6.6) + concurrency test in P1 acceptance</td></tr>
+<tr><td>KRW/JPY FX conversion drifts the USD ledger</td><td><span class="chip warn">med</span></td><td>Rate persisted per fill (§6.4); reconciler compares in venue currency; drift alerts already exist</td></tr>
+<tr><td>KuCoin v1-vs-v2 key signing mismatch (encrypted passphrase)</td><td><span class="chip warn">med</span></td><td>Key-version field in credential blob; both paths unit-tested; P3 acceptance requires a real-key proof</td></tr>
+<tr><td>Regional entity drift (Binance TH/ID endpoints, Upbit SG) — same brand, different API base + rules</td><td><span class="chip warn">med</span></td><td>Base-URL override per account (P3); instrument rules always fetched from the account's actual base</td></tr>
+<tr><td>JP licensed-venue integration turns out to need more than an adapter (ToS, API quotas)</td><td><span class="chip mach">low</span></td><td>P4 is an explicit go/no-go spike, not a commitment; Kraken already covers JP in the interim</td></tr>
+<tr><td>Revolut expectation from the matrix</td><td><span class="chip mach">low</span></td><td>Declared out of scope here (no public trading API); revisit only if that changes</td></tr>
+</table>
+</div>
+
+<h2 id="kr">11 · 한국어 요약</h2>
+<div class="kr">
+<p><b>목표.</b> 현재 3개(alpaca·binance·ibkr)인 실거래 게이트웨이 어댑터를 지역별 수요에 맞춰 9개로 확장합니다 — Bybit, OKX, Kraken, Crypto.com, Upbit, KuCoin 추가(일본 현지 거래소는 P4에서 bitFlyer부터 타당성 평가). Revolut은 공개 트레이딩 API가 없어 제외합니다.</p>
+<p><b>핵심 판단.</b> 실행 엔진(라우터·게이트웨이·AES-GCM 자격증명 금고·정합성 워커)은 이미 완성되어 있으므로, 이 계획은 새 엔진이 아니라 <b>어댑터 추가 + 지역 배관 작업</b>입니다. 거래소별로 인증 방식(HMAC 변형, OKX/KuCoin의 passphrase, Upbit의 JWT), 심볼 표기(BTCUSDT/BTC-USDT/XBTUSD/KRW-BTC), 그리고 샌드박스 유무가 전부 달라 — 어댑터마다 셋 중 하나의 섀도 전략(샌드박스 / 검증전용 dry-run / 기록전용 저널)을 선언합니다.</p>
+<p><b>업비트가 가장 까다롭습니다.</b> 샌드박스·드라이런이 전혀 없고, KRW 호가라 원장(USD)에 FX 환산 단계가 필요하며, 시장가 매수는 수량이 아닌 <b>KRW 금액</b>으로 주문하는 비대칭이 있습니다. 그래서 한국(P2)을 별도 페이즈로 분리하고 저널 소크 기간을 14일로 2배 잡았습니다.</p>
+<p><b>안전장치.</b> ① 거래소별 라이브 허용목록(<code>LIVE_BROKER_ALLOWLIST</code>) — 소크 통과 전에는 새 거래소로 실주문 불가, ② 신규 거래소 첫 30일 주문당 명목금액 상한(축소가 아닌 거부), ③ 거래소별 실거래 약관 동의(기존 구조 그대로), ④ 상태조회(<code>get_order_status</code>) 미구현 어댑터는 머지 불가, ⑤ 허용목록 비우기 = 전체 킬스위치.</p>
+<p><b>일정.</b> P0 배관(~2일) → P1 글로벌 bybit·okx·kraken(~5일+7일 소크) → P2 업비트(~4일+14일 소크) → P3 kucoin·crypto.com(~4일+7일 소크) → P4 일본 평가+지역별 UI(~3일). 소크는 다음 페이즈 개발과 병행 — 달력 기준 약 5주, 실작업 약 18일. 모든 페이즈는 표준 규칙대로 prod(sooppiy.com)까지 배포하되 신규 거래소는 소크 통과 전 라이브 게이트 OFF 상태로 배포합니다.</p>
+</div>
+
+<p class="meta">Plan 19 · 2026-07-31 · companion to Plan 17 (AI Order Authority) and the execution layer shipped 2026-07-19. When a venue decision changes, edit the relevant section with a dated note.</p>
+
+</div>
+</body>
+</html>

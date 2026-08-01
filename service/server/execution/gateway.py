@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any, Optional
 
-from execution.base import ExecutionMode, Order, OrderStatus
+from execution.base import BROKER_SPECS, ExecutionMode, Order, OrderStatus
 
 _logger = logging.getLogger(__name__)
 
@@ -45,6 +46,38 @@ NOT_ACCEPTED_TCS = (
     "live trading selected but the live-trading terms have not been accepted "
     "for this broker — accept them on the Accounts page"
 )
+NOT_ALLOWLISTED = (
+    "live trading selected but this broker is not yet enabled for live "
+    "orders on this platform — it can run in shadow while its rollout "
+    "soak completes"
+)
+
+# Plan 19 §8: the venues that were taking live orders before the regional
+# expansion. A venue outside this set is "new": it must appear in
+# LIVE_BROKER_ALLOWLIST to take live orders at all, and while enabled its
+# per-order notional is capped (a cap is a refusal, never a resize).
+_LEGACY_LIVE_BROKERS = ("alpaca", "binance", "ibkr")
+
+
+def _live_broker_allowlist() -> tuple:
+    """Brokers allowed to take LIVE orders. Empty env = platform-wide kill
+    switch: every live order is refused with an explicit message."""
+    raw = os.environ.get("LIVE_BROKER_ALLOWLIST")
+    if raw is None:
+        return _LEGACY_LIVE_BROKERS
+    return tuple(b.strip().lower() for b in raw.split(",") if b.strip())
+
+
+def _max_order_usd_for(broker: str) -> Optional[float]:
+    """Per-order notional cap. Applies only to non-legacy venues (Plan 19 §8);
+    legacy brokers keep their pre-expansion behaviour. 0 disables the cap."""
+    if broker in _LEGACY_LIVE_BROKERS:
+        return None
+    try:
+        cap = float(os.environ.get("EXECUTION_MAX_ORDER_USD", "1000"))
+    except ValueError:
+        cap = 1000.0
+    return cap if cap > 0 else None
 
 
 def normalize_account_type(value: Optional[str]) -> str:
@@ -85,9 +118,13 @@ def _has_usable_credentials(account: dict[str, Any]) -> bool:
         creds = decrypt_credentials(blob)
     except Exception:  # noqa: BLE001 — any failure means "unusable"
         return False
-    if (account.get("broker") or "").strip().lower() == "ibkr":
-        return bool(creds.get("gateway_url") and creds.get("account_id"))
-    return bool(creds.get("key") and creds.get("secret"))
+    broker = (account.get("broker") or "").strip().lower()
+    spec = BROKER_SPECS.get(broker)
+    if spec is None:
+        return bool(creds.get("key") and creds.get("secret"))
+    # Every field the broker's spec names must be present — OKX and KuCoin
+    # need a passphrase on top of the key/secret pair, IBKR has neither.
+    return all(creds.get(f) for f in spec.fields)
 
 
 def _has_accepted_live_tcs(agent_id: int, broker: str) -> bool:
@@ -125,6 +162,12 @@ def live_refusal_reason(agent_id: int, account_type: Optional[str]) -> Optional[
     # one place consent is recorded.
     if not _has_accepted_live_tcs(agent_id, account.get("broker") or ""):
         return NOT_ACCEPTED_TCS
+    # Plan 19: a venue takes live money only after its shadow soak passes and
+    # it is added to the allowlist. Checked here so the refusal reaches the
+    # user through the same path as every other live gate — never a silent
+    # downgrade. An empty allowlist is the platform-wide kill switch.
+    if (account.get("broker") or "").strip().lower() not in _live_broker_allowlist():
+        return NOT_ALLOWLISTED
     return None
 
 
@@ -470,6 +513,33 @@ def submit_live(agent_id: int, symbol: str, market: str, side: str,
     broker = _broker_for(account, ExecutionMode.LIVE)
     order = _build_order(agent_id, symbol, market, side, quantity, price,
                          ExecutionMode.LIVE, broker.broker_name)
+
+    # Defense in depth: automation checks live_refusal_reason before calling,
+    # but submit_live is the last gate before real money — enforce the
+    # allowlist and the new-venue notional cap here too. Caps REFUSE, never
+    # resize: resizing an order the AI sized is a silent decision change.
+    broker_name = broker.broker_name
+    if broker_name != "paper" and broker_name not in _live_broker_allowlist():
+        order.status = OrderStatus.REJECTED
+        order.error_message = NOT_ALLOWLISTED
+        try:
+            order.db_id = _persist_order(order)
+        except Exception:  # noqa: BLE001
+            _logger.exception("[live] could not persist refused order for agent %s", agent_id)
+        return order
+    cap = _max_order_usd_for(broker_name)
+    if cap is not None and quantity * price > cap:
+        order.status = OrderStatus.REJECTED
+        order.error_message = (
+            f"order notional ${quantity * price:,.2f} exceeds the "
+            f"${cap:,.0f} per-order limit for newly enabled venues"
+        )
+        try:
+            order.db_id = _persist_order(order)
+        except Exception:  # noqa: BLE001
+            _logger.exception("[live] could not persist refused order for agent %s", agent_id)
+        return order
+
     try:
         order = _run_coro(broker.submit_order(order))
     except Exception as exc:  # noqa: BLE001 — infrastructure failure
@@ -499,8 +569,23 @@ def submit_shadow(agent_id: int, symbol: str, market: str, side: str,
     if not account or not _has_usable_credentials(account):
         return None
 
+    # Plan 19 §5: journal-strategy venues (no sandbox, no dry-run — Upbit)
+    # get NO network call at all in shadow. The intended order is journalled
+    # against the ledger so the soak has something to measure, and that's it.
+    broker_name = (account.get("broker") or "").strip().lower()
+    spec = BROKER_SPECS.get(broker_name)
+    if spec is not None and spec.shadow == "journal":
+        try:
+            _journal_shadow(agent_id, broker_name, symbol, side,
+                            ledger_quantity, signal_id)
+        except Exception:  # noqa: BLE001
+            _logger.exception("[shadow] journal failed for agent %s", agent_id)
+        return None
+
     # SHADOW pins the broker to its sandbox even if the stored account row says
-    # live — "run by simulation" must never reach a real venue.
+    # live — "run by simulation" must never reach a real venue. For dry-run
+    # venues (kraken/kucoin) the non-live adapter uses the venue's validate/
+    # test call: it touches the live endpoint but is unfillable by construction.
     broker = _broker_for(account, ExecutionMode.SHADOW)
     order = _build_order(agent_id, symbol, market, side, quantity, price,
                          ExecutionMode.SHADOW, broker.broker_name, signal_id)
@@ -521,8 +606,43 @@ def submit_shadow(agent_id: int, symbol: str, market: str, side: str,
                                    ledger_quantity, price,
                                    ExecutionMode.SHADOW, "paper", signal_id)
         ledger_side.db_id = signal_id
+        # A dry-run's answer is accept/reject, never a fill — record it as
+        # such rather than letting drift math read "no fill" as agreement.
+        status_override = None
+        if order.status is OrderStatus.VALIDATED:
+            status_override = "accepted"
+        elif spec is not None and spec.shadow == "dry_run" \
+                and order.status is OrderStatus.REJECTED:
+            status_override = "rejected"
         _record_reconciliation(agent_id, broker.broker_name, ledger_side,
-                               order, error_message=error_msg)
+                               order, error_message=error_msg,
+                               status_override=status_override)
     except Exception:  # noqa: BLE001
         _logger.exception("[shadow] reconciliation failed for agent %s", agent_id)
     return order
+
+
+def _journal_shadow(agent_id: int, broker: str, symbol: str, side: str,
+                    ledger_quantity: float, signal_id: Optional[int]) -> None:
+    """Journal-only shadow: one position_reconciliations row, status 'journal'.
+
+    broker_qty stays NULL — there is deliberately no broker-side number to
+    compare, and inventing one would let a fake agreement pass for a soak."""
+    from database import get_db_connection
+    from routes_shared import utc_now_iso_z
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO position_reconciliations
+               (agent_id, broker, paper_order_id, broker_order_id,
+                symbol, paper_qty, broker_qty, drift, status, error_message, recorded_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            (agent_id, broker, signal_id, None, symbol,
+             ledger_quantity, None, None, "journal",
+             f"journal-only shadow ({side}); venue has no sandbox or dry-run",
+             utc_now_iso_z()),
+        )
+        conn.commit()
+    finally:
+        conn.close()

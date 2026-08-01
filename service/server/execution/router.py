@@ -55,8 +55,9 @@ def _persist_order(order: Order) -> int:
         """INSERT INTO broker_orders
            (agent_id, symbol, market, side, quantity, price, status,
             execution_mode, broker, broker_order_id, error_message,
-            signal_id, leader_id, token_id, outcome, created_at, filled_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            signal_id, leader_id, token_id, outcome, created_at, filled_at,
+            quote_currency, fx_rate_usd)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             order.agent_id, order.symbol, order.market, order.side,
             order.quantity, order.price, order.status.value,
@@ -65,6 +66,7 @@ def _persist_order(order: Order) -> int:
             order.signal_id, order.leader_id, order.token_id, order.outcome,
             order.created_at or utc_now_iso_z(),
             order.filled_at,
+            order.quote_currency, order.fx_rate_usd,
         ),
     )
     db_id = cursor.lastrowid
@@ -98,6 +100,7 @@ def _record_reconciliation(
     paper_order: Order,
     shadow_order: Order,
     error_message: Optional[str] = None,
+    status_override: Optional[str] = None,
 ) -> None:
     from database import get_db_connection
     from routes_shared import utc_now_iso_z
@@ -110,6 +113,10 @@ def _record_reconciliation(
     status = "ok" if (drift is None or drift < 0.001) else "drift"
     if error_message:
         status = "error"
+    # Dry-run shadow (Plan 19): the venue's answer is accepted/rejected, not a
+    # fill — the caller names the outcome so it can't be misread as agreement.
+    if status_override:
+        status = status_override
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -183,6 +190,35 @@ def _build_real_broker(account: dict) -> Broker:
             paper=(mode != "live"),
             verify_tls=not _truthy(creds.get("allow_self_signed")),
         )
+    # Plan 19 venues. sandbox=True means "not live": the venue's test
+    # environment for sandbox brokers, the validate-only path for dry-run
+    # brokers (kraken/kucoin). Journal-strategy brokers (upbit) are never
+    # built in non-live mode — gateway.submit_shadow short-circuits first.
+    mode = account.get("execution_mode", "shadow")
+    sandbox = mode != "live"
+    if broker_name == "bybit":
+        from execution.bybit import BybitBroker
+        return BybitBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                           sandbox=sandbox)
+    if broker_name == "okx":
+        from execution.okx import OKXBroker
+        return OKXBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                         passphrase=creds.get("passphrase", ""), sandbox=sandbox)
+    if broker_name == "kraken":
+        from execution.kraken import KrakenBroker
+        return KrakenBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                            validate_only=sandbox, account_id=account.get("id"))
+    if broker_name == "cryptocom":
+        from execution.cryptocom import CryptocomBroker
+        return CryptocomBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                               sandbox=sandbox)
+    if broker_name == "upbit":
+        from execution.upbit import UpbitBroker
+        return UpbitBroker(key=creds.get("key", ""), secret=creds.get("secret", ""))
+    if broker_name == "kucoin":
+        from execution.kucoin import KucoinBroker
+        return KucoinBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                            passphrase=creds.get("passphrase", ""), test_only=sandbox)
 
     return PaperBroker()
 

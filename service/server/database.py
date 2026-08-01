@@ -1379,6 +1379,10 @@ def init_database():
         "ALTER TABLE automation_configs ADD COLUMN schedule_json TEXT",
         # Order reconciler — broker-confirmed final fill quantity
         "ALTER TABLE broker_orders ADD COLUMN filled_qty NUMERIC(20,8)",
+        # Plan 19 — non-USD venues (Upbit/KRW): fill's quote currency and the
+        # FX rate captured at fill time; persisted, never recomputed.
+        "ALTER TABLE broker_orders ADD COLUMN quote_currency TEXT",
+        "ALTER TABLE broker_orders ADD COLUMN fx_rate_usd REAL",
         # Leverage (2026-07-23): isolated-margin leverage per position. 1 =
         # fully-funded (the prior behavior). Drives margin cash + liquidation.
         "ALTER TABLE positions ADD COLUMN leverage REAL NOT NULL DEFAULT 1",
@@ -1827,6 +1831,8 @@ def init_database():
             created_at       TEXT    DEFAULT (datetime('now')),
             filled_at        TEXT,
             filled_qty       NUMERIC(20,8),
+            quote_currency   TEXT,
+            fx_rate_usd      REAL,
             FOREIGN KEY (agent_id)  REFERENCES agents(id),
             FOREIGN KEY (signal_id) REFERENCES signals(signal_id)
         )
@@ -1865,6 +1871,16 @@ def init_database():
             user_agent   TEXT,
             created_at   TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
+    # Plan 19 — Kraken invalidates an API key on nonce regression, and prod
+    # runs a worker plus an API process. One monotonic counter per broker
+    # account, bumped inside a transaction, is the only safe nonce source.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS broker_nonces (
+            account_id  INTEGER PRIMARY KEY,
+            nonce       BIGINT NOT NULL DEFAULT 0
         )
     """)
 
