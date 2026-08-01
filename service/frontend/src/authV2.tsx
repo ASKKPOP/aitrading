@@ -386,7 +386,9 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
       const body = await r.json()
       storeUserToken(body.token)
       onLogin(body.token)
-      navigate('/my-trading')
+      // A brand-new member's first stop is the beginner overview, not an
+      // empty trading book.
+      navigate('/getting-started')
     } finally {
       setLoading(false)
     }
@@ -711,7 +713,9 @@ export function GoogleCallbackPage({ onLogin }: { onLogin: (token: string) => vo
       .then(d => {
         storeUserToken(d.token)
         onLogin(d.token)
-        navigate('/my-trading')
+        // The backend says whether this callback just CREATED the account —
+        // only a first-visit member is routed to the beginner overview.
+        navigate(d.created ? '/getting-started' : '/my-trading')
       })
       .catch(d => setError(errMessage(d, tr(language, { ko: 'Google 로그인에 실패했습니다', en: 'Google sign-in failed', ja: 'Googleログインに失敗しました', th: 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ', vi: 'Đăng nhập Google thất bại', id: 'Gagal masuk dengan Google' }))))
   }, [params, onLogin, navigate, language])

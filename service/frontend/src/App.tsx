@@ -524,6 +524,10 @@ function AppRouter({
         <Routes>
           <Route path="/subscribe" element={<SubscribePage userToken={userToken} onSignOut={userLogout} />} />
           <Route path="/contract" element={<ContractPage userToken={userToken} />} />
+          {/* The beginner overview is public for anonymous visitors, so an
+              unpaid member must be able to read it too — new signups land
+              here first before choosing a plan. */}
+          <Route path="/getting-started" element={<GettingStartedPage />} />
           <Route path="*" element={<Navigate to="/subscribe" replace />} />
         </Routes>
       </Suspense>

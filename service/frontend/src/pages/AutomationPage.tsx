@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { FleetPanel } from '../components/FleetPanel'
@@ -88,6 +88,14 @@ export function AutomationPage() {
   const [error, setError] = useState('')
   const [removeError, setRemoveError] = useState('')
   const [removingId, setRemovingId] = useState<number | null>(null)
+  // Simulator / real-account context switch (top of page). Shares the
+  // chrome's localStorage key. 'real' is only reachable when a trading
+  // gateway is actually connected — picking it without one goes to /accounts.
+  const [acctMode, setAcctMode] = useState<'simulator' | 'real'>(
+    () => (localStorage.getItem('account_type') === 'real' ? 'real' : 'simulator'))
+  const [gwBroker, setGwBroker] = useState<string | null>(null)
+  const [acctBusy, setAcctBusy] = useState(false)
+  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
 
   // ① Make by New Trading — the modal lives in RunsLiveSection; bumping this
@@ -275,6 +283,45 @@ export function AutomationPage() {
   }
 
   const authHeaders: any = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+
+  // A stored 'real' with no connected gateway is a lie — re-check on mount and
+  // fall back to simulator so the switch never claims an account that isn't there.
+  useEffect(() => {
+    if (!token) return
+    fetch(`${API_BASE}/execution/health`, { headers: authHeaders })
+      .then(r => r.ok ? r.json() : null)
+      .then(h => {
+        if (!h) return
+        if (h.configured) setGwBroker(h.broker || null)
+        else if (acctMode === 'real') {
+          localStorage.setItem('account_type', 'simulator')
+          setAcctMode('simulator')
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  async function pickReal() {
+    if (acctBusy) return
+    setAcctBusy(true)
+    try {
+      const r = await fetch(`${API_BASE}/execution/health`, { headers: authHeaders })
+      const h = r.ok ? await r.json() : null
+      if (h?.configured) {
+        localStorage.setItem('account_type', 'real')
+        setAcctMode('real')
+        setGwBroker(h.broker || null)
+      } else {
+        // No real account set up yet — take them where they connect one.
+        navigate('/accounts')
+      }
+    } catch {
+      navigate('/accounts')
+    } finally {
+      setAcctBusy(false)
+    }
+  }
 
   async function refresh() {
     try {
@@ -601,8 +648,43 @@ export function AutomationPage() {
     )
   })()
 
+  const acctBtn = (active: boolean): any => ({
+    padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 700,
+    cursor: acctBusy ? 'wait' : 'pointer',
+    border: '1px solid ' + (active ? 'transparent' : 'var(--border-color,#d3c8b6)'),
+    background: active ? 'var(--accent-primary,#c26a45)' : 'transparent',
+    color: active ? '#fff' : 'var(--text-secondary,#8a8073)',
+  })
+
   return (
     <div>
+      {/* ── Simulator / real-account switch. Same pair as the app chrome:
+             real without a connected gateway routes to /accounts. ── */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+        <button style={acctBtn(acctMode === 'simulator')}
+          title={tr(language, { ko: '모의 지갑 — 페이퍼 트레이딩', en: 'Simulated wallet — paper trading', ja: '模擬ウォレット', th: 'กระเป๋าจำลอง — เทรดกระดาษ', vi: 'Ví mô phỏng', id: 'Dompet simulasi — paper trading' })}
+          onClick={() => { localStorage.setItem('account_type', 'simulator'); setAcctMode('simulator') }}>
+          ◐ {tr(language, { ko: '시뮬레이터', en: 'Simulator', ja: 'シミュレーター', th: 'จำลอง', vi: 'Mô phỏng', id: 'Simulator' })}
+        </button>
+        <button style={acctBtn(acctMode === 'real')} disabled={acctBusy}
+          title={tr(language, { ko: '실계좌 — 거래소 연결', en: 'Real account — connect an exchange', ja: '実口座 — 取引所を接続', th: 'บัญชีจริง — เชื่อมต่อกระดานเทรด', vi: 'Tài khoản thật — kết nối sàn', id: 'Akun asli — hubungkan bursa' })}
+          onClick={pickReal}>
+          ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật', id: 'Asli' })}
+        </button>
+        {acctMode === 'real' && gwBroker && (
+          <span style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)' }}>
+            {tr(language, {
+              ko: `연결된 게이트웨이: ${gwBroker} — live 규칙의 주문이 이 게이트웨이로 전송됩니다`,
+              en: `connected gateway: ${gwBroker} — live rules route their orders through it`,
+              ja: `接続中のゲートウェイ: ${gwBroker} — live ルールの注文はここに送信されます`,
+              th: `เกตเวย์ที่เชื่อมต่อ: ${gwBroker} — กฎ live ส่งคำสั่งผ่านเกตเวย์นี้`,
+              vi: `cổng đã kết nối: ${gwBroker} — quy tắc live gửi lệnh qua cổng này`,
+              id: `gateway terhubung: ${gwBroker} — aturan live mengirim order melaluinya`,
+            })}
+          </span>
+        )}
+      </div>
+
       <div className="header" style={{ display: 'flex', justifyContent: 'space-between',
         alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>

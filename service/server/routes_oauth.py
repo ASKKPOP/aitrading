@@ -125,13 +125,17 @@ def _fetch_google_userinfo(access_token: str) -> dict[str, Any]:
     return body
 
 
-def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "en") -> int:
-    """Map a Google identity to a Sooppiy user. Returns user_id.
+def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "en") -> tuple[int, bool]:
+    """Map a Google identity to a Sooppiy user. Returns (user_id, created).
 
     Three cases, in priority:
       1. (provider, provider_user_id) already in oauth_identities → reuse.
       2. users.email matches Google email → link a new oauth_identity row.
       3. neither → create a new user, then link.
+
+    `created` is True only in case 3 — the frontend routes a brand-new
+    member's first visit to /getting-started, and a returning member who
+    merely linked Google must not be treated as new.
     """
     sub = str(google_user.get("sub") or "")
     email = (google_user.get("email") or "").strip().lower()
@@ -154,7 +158,7 @@ def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "e
         )
         row = cur.fetchone()
         if row:
-            return int(row["user_id"])
+            return int(row["user_id"]), False
         # Drop any stale link for this Google account so the re-link INSERT
         # below can't collide with the UNIQUE(provider, provider_user_id) index.
         cur.execute(
@@ -174,7 +178,7 @@ def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "e
                     (user_id, sub, email, now),
                 )
                 conn.commit()
-                return user_id
+                return user_id, False
 
         # 3. brand-new user — assign a random password since OAuth-only users
         # can't sign in via the password endpoint until they set one.
@@ -190,7 +194,7 @@ def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "e
             (user_id, sub, email, now),
         )
         conn.commit()
-        return user_id
+        return user_id, True
     finally:
         conn.close()
 
@@ -247,10 +251,13 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         from signup_lang import resolve_signup_lang
         # Offload the (sync, network) geo lookup off the event loop; fail-soft.
         lang = await asyncio.to_thread(resolve_signup_lang, request)
-        user_id = _find_or_create_user_from_google(user_info, lang=lang)
+        user_id, created = _find_or_create_user_from_google(user_info, lang=lang)
         session_token = _create_user_session(user_id)
         return JSONResponse({
             "token":   session_token,
             "user_id": user_id,
             "email":   (user_info.get("email") or "").strip().lower(),
+            # True only when this callback just created the account — the
+            # frontend sends a first-visit member to /getting-started.
+            "created": created,
         })
