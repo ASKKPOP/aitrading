@@ -118,22 +118,6 @@ REGISTRY: dict[str, MarketSpec] = {
         price_decimals=2,
         server_priced=True,
     ),
-    'a-stock': MarketSpec(
-        value='a-stock',
-        # First non-USD market. Positions settle in CNY; portfolio aggregates
-        # convert via fx_rates.to_usd().
-        currency='CNY',
-        contract_multiplier=1.0,
-        session='sse',
-        price_provider='yahoo',
-        # No retail stock borrow on the mainland exchanges — 融券 is a
-        # margin-account facility, not something the simulated ledger models.
-        supports_short=False,
-        tradeable=True,
-        automatable=True,
-        price_decimals=2,
-        server_priced=True,
-    ),
     'options': MarketSpec(
         value='options',
         currency='USD',
@@ -295,13 +279,6 @@ _FX_WEEK_BOUNDARY_MIN = 17 * 60
 _CME_HALT_START_MIN = 17 * 60
 _CME_OPEN_MIN = 18 * 60
 
-# Shanghai / Shenzhen: 09:30–11:30 and 13:00–15:00 China Standard Time, with a
-# two-hour midday break that neither NYSE nor Globex has.
-_CST = ZoneInfo('Asia/Shanghai')
-_SSE_MORNING = (9 * 60 + 30, 11 * 60 + 30)
-_SSE_AFTERNOON = (13 * 60, 15 * 60)
-
-
 def is_session_open(session: str, now: datetime | None = None) -> bool:
     now_et = (now or datetime.now(_ET)).astimezone(_ET)
     weekday = now_et.weekday()  # Mon=0 .. Sun=6
@@ -309,16 +286,6 @@ def is_session_open(session: str, now: datetime | None = None) -> bool:
 
     if session == '24x7':
         return True
-    if session == 'sse':
-        # The one calendar not anchored to New York — a Shanghai trading day
-        # starts while it is still the previous evening in ET, so the weekday
-        # must come from the local clock or Monday's session reads as Sunday.
-        now_cst = (now or datetime.now(_CST)).astimezone(_CST)
-        if now_cst.weekday() >= 5:
-            return False
-        cst_minutes = now_cst.hour * 60 + now_cst.minute
-        return (_SSE_MORNING[0] <= cst_minutes < _SSE_MORNING[1]
-                or _SSE_AFTERNOON[0] <= cst_minutes < _SSE_AFTERNOON[1])
     if session == 'nyse':
         return weekday < 5 and _NYSE_OPEN_MIN <= minutes < _NYSE_CLOSE_MIN
     if session == '24x5':

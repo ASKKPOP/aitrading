@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Markets the sessions strip covers, in the design's order. Derived list, not
 # a hand-kept one — see markets.tradeable_markets() for why enumerating by
 # hand is how a market silently goes missing from a panel.
-_SESSION_ORDER = ("crypto", "forex", "futures", "a-stock", "us-stock")
+_SESSION_ORDER = ("crypto", "forex", "futures", "us-stock")
 
 # How far back the decision feed looks. A member who has not traded in three
 # days should see their last decisions, not an empty card.

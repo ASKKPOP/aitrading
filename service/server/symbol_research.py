@@ -85,12 +85,11 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
     "us-stock": {"technical": .35, "news": .25, "macro": .15, "policy": .10, "social": .10, "psych": .05},
     "futures":  {"technical": .40, "macro": .35, "news": .15, "psych": .10},
     "forex":    {"technical": .40, "macro": .40, "news": .20},
-    "a-stock":  {"technical": .50, "news": .30, "macro": .20},
 }
 
 # top-K per market keeps cross-market diversity (a hot crypto tape must not
 # starve every other market out of the survivor set)
-SURVIVORS_PER_MARKET = {"crypto": 4, "us-stock": 4, "futures": 2, "forex": 2, "a-stock": 2}
+SURVIVORS_PER_MARKET = {"crypto": 4, "us-stock": 4, "futures": 2, "forex": 2}
 
 LIQUIDITY_FLOOR_USD = {"crypto": 5_000_000.0}   # curated lists elsewhere are exempt
 MIN_CANDLES = 30
@@ -98,10 +97,10 @@ MIN_CANDLES = 30
 # volatility sweet spot per market class: %/day realized vol band that a run
 # horizon can actually harvest (too low = nothing to trade, too high = SL churn)
 VOL_BAND = {"crypto": (1.5, 5.0), "us-stock": (0.8, 2.5), "futures": (0.5, 2.5),
-            "forex": (0.2, 1.2), "a-stock": (0.8, 3.0)}
+            "forex": (0.2, 1.2)}
 
 SPREAD_PROXY_PCT = {"crypto": 0.05, "us-stock": 0.02, "futures": 0.02,
-                    "forex": 0.02, "a-stock": 0.05}
+                    "forex": 0.02}
 
 THESIS_BOUNDS = {
     "expected_move_pct_min": 0.3,
@@ -163,8 +162,6 @@ def build_universe() -> list[dict[str, str]]:
         out.extend({"symbol": s, "market": "futures"} for s in routes_market.FUTURES_SYMBOLS)
     if "forex" in autom:
         out.extend({"symbol": s, "market": "forex"} for s in routes_market.FOREX_SYMBOLS)
-    if "a-stock" in autom:
-        out.extend({"symbol": s, "market": "a-stock"} for s in routes_market.A_STOCK_SYMBOLS)
     return out
 
 

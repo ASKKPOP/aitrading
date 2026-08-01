@@ -13,7 +13,7 @@ Henry's requirements, traced end-to-end:
 
 | # | Requirement | Where it lands |
 |---|---|---|
-| a | Research high-potential symbols across spot / futures / us-stock / others | `symbol_research.py` global 3-stage funnel (§4) over `markets.automatable_markets()` = crypto, us-stock, futures, forex, a-stock |
+| a | Research high-potential symbols across spot / futures / us-stock / others | `symbol_research.py` global 3-stage funnel (§4) over `markets.automatable_markets()` = crypto, us-stock, futures, forex *(a-stock removed 2026-08-01 per owner — China trading dropped platform-wide)* |
 | b | "Expected profit" defined from technical + human/psychology + social + economics + global issues + **government law & policy** + other parameters | 8-factor-family taxonomy (§5) incl. new `policy_feed.py` (Federal Register) and Polymarket geopolitics odds — policy is a first-class Stage-1 factor, not an afterthought |
 | c | Analyze and rank AI trading targets | Deterministic EPS composite + fee-adjusted EV/day ranking; one bounded LLM thesis call per refresh (§4.3, §5.3) |
 | d | User defines ONLY how many runs | One N stepper; budget **defaults** from tier, risk defaults to balanced, markets default to all — everything else behind an Advanced expander (§9). Deviation surfaced as open question Q1. |
@@ -112,7 +112,6 @@ Driven by `markets.automatable_markets()` (polymarket/options auto-excluded — 
 | us-stock | `routes_market.US_STOCK_SYMBOLS` (72 — **not** "STOCK_SYMBOLS", QA-corrected) ∪ `market_intel._get_hot_us_stock_symbols()` | ~80 |
 | futures | `routes_market.FUTURES_SYMBOLS` (21 roots, all with `FUTURES_MULTIPLIERS`) | 21 |
 | forex | `routes_market.FOREX_SYMBOLS` | 30 |
-| a-stock | `routes_market.A_STOCK_SYMBOLS` (CNY → `fx_rates.to_usd()` for metadata) | 25 |
 
 ### 4.2 Stage 1 — deterministic factor screen (zero LLM)
 
@@ -127,7 +126,7 @@ Driven by `markets.automatable_markets()` (polymarket/options auto-excluded — 
 - News cadence is made honest: `MARKET_NEWS_REFRESH_INTERVAL` → **4h** (4 categories × 6 passes = 24 AV calls/day, exactly fitting the 25/day free cap deterministically instead of first-25-wins). Factor tables state real freshness 4–6h. Per-ticker headlines stay on Finnhub (60/min free).
 - StockTwits is read **only through existing snapshot tables** — research adds no second caller against an undocumented rate limit.
 
-The scorer itself is pure functions on snapshots + candles (§5). Hard gates (liquidity floor, ≥30 candles, Hyperliquid-priceable for crypto) drop candidates; scored factors produce the composite; **top-K per market** (4 crypto / 4 us-stock / 2 futures / 2 forex / 2 a-stock ⇒ ≤ 14–16 survivors) keeps cross-market diversity.
+The scorer itself is pure functions on snapshots + candles (§5). Hard gates (liquidity floor, ≥30 candles, Hyperliquid-priceable for crypto) drop candidates; scored factors produce the composite; **top-K per market** (4 crypto / 4 us-stock / 2 futures / 2 forex ⇒ ≤ 12–14 survivors) keeps cross-market diversity.
 
 ### 4.3 Stage 2 — ONE batched LLM thesis call
 

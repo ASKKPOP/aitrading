@@ -1,7 +1,7 @@
 """USD conversion for the non-USD markets.
 
 Positions settle in their native currency (Plan 13 decision 2: store native,
-convert only for aggregates). A-share books CNY, a JPY-quoted forex pair books
+convert only for aggregates). A JPY-quoted forex pair books
 JPY. Anything that sums across markets — portfolio totals, leaderboards, the
 risk gate — has to land in one unit first, and that unit is USD.
 

@@ -44,7 +44,6 @@ class OpenMarketsScopeTests(unittest.TestCase):
         self.assertIsNotNone(scope)
         self.assertIn("crypto", scope)         # 24x7, always open
         self.assertNotIn("us-stock", scope)    # NYSE closed at 18:00 ET
-        self.assertNotIn("a-stock", scope)     # SSE closed overnight ET
 
     def test_us_session_includes_us_stock(self):
         scope = fleet_planner._open_markets_scope(_THU_MIDDAY)

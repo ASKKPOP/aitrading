@@ -1,9 +1,9 @@
-"""Plan 13 phases 3-5: futures, A-shares and options.
+"""Plan 13 phases 3-5: futures and options.
 
 Covers the parts that are cheap to get subtly wrong and expensive to notice:
 the contract multiplier (a missing 50x is a silently wrong P&L, not a crash),
-the OCC symbol parse, the option mark, and the FX conversion that stops a CNY
-A-share P&L from being summed into a USD total as though it were dollars.
+the OCC symbol parse, the option mark, and the FX conversion that stops a
+non-USD P&L from being summed into a USD total as though it were dollars.
 
 Every network call is stubbed — these must not depend on Yahoo being up.
 """
@@ -28,7 +28,6 @@ import price_fetcher
 import trading_runs
 from routes import create_app
 from routes_market import (
-    A_STOCK_SYMBOLS,
     FUTURES_SYMBOLS,
     OPTION_UNDERLYINGS,
     US_STOCK_SYMBOLS,
@@ -46,15 +45,6 @@ class SymbolUniverseTests(unittest.TestCase):
     def test_multipliers_are_positive(self):
         for root, mult in markets.FUTURES_MULTIPLIERS.items():
             self.assertGreater(mult, 0, f"{root} has a non-positive multiplier")
-
-    def test_a_shares_carry_an_exchange_suffix(self):
-        # A bare six-digit code is ambiguous between Shanghai and Shenzhen.
-        for symbol in A_STOCK_SYMBOLS:
-            self.assertRegex(symbol, r'^\d{6}\.(SS|SZ)$')
-
-    def test_every_a_share_resolves_to_a_yahoo_ticker(self):
-        for symbol in A_STOCK_SYMBOLS:
-            self.assertIsNotNone(price_fetcher._yahoo_symbol(symbol, 'a-stock'), symbol)
 
     def test_option_underlyings_are_plain_tickers(self):
         for symbol in OPTION_UNDERLYINGS:
@@ -79,15 +69,13 @@ class YahooSymbolTests(unittest.TestCase):
         self.assertEqual(price_fetcher._yahoo_symbol('ES=F', 'futures'), 'ES=F')
         self.assertEqual(price_fetcher._yahoo_symbol('es', 'futures'), 'ES=F')
 
-    def test_a_share_dot_is_preserved(self):
+    def test_share_class_dot_is_rewritten(self):
         # The us-stock branch rewrites '.' to '-' for share classes (BRK.B ->
-        # BRK-B). Applying that here would produce '600519-SS' and 404.
-        self.assertEqual(price_fetcher._yahoo_symbol('600519.SS', 'a-stock'), '600519.SS')
+        # BRK-B).
         self.assertEqual(price_fetcher._yahoo_symbol('BRK.B', 'us-stock'), 'BRK-B')
 
     def test_malformed_symbols_fail_fast(self):
-        for symbol, market in [('600519', 'a-stock'), ('AAPL.SS', 'a-stock'),
-                               ('600519.NYSE', 'a-stock'), ('', 'futures'),
+        for symbol, market in [('', 'futures'),
                                ('ES!', 'futures'), ('EUR', 'forex')]:
             self.assertIsNone(price_fetcher._yahoo_symbol(symbol, market),
                               f'{symbol} ({market}) should not resolve')
@@ -178,7 +166,6 @@ class FuturesBookTests(unittest.TestCase):
     def test_spot_markets_are_not(self):
         self.assertFalse(trading_runs.is_futures_book('crypto', 'spot'))
         self.assertFalse(trading_runs.is_futures_book('us-stock', None))
-        self.assertFalse(trading_runs.is_futures_book('a-stock', 'spot'))
 
 
 class FxConversionTests(unittest.TestCase):
@@ -243,7 +230,6 @@ class MarketExpansionRouteTests(unittest.TestCase):
         with patch('price_fetcher._get_hyperliquid_available_symbols', return_value=set()):
             body = self.client.get('/api/markets/symbols').json()
         self.assertIn('ES', body['futures'])
-        self.assertIn('600519.SS', body['a_stock'])
         self.assertIn('AAPL', body['option_underlyings'])
 
     def test_option_chain_rejects_an_unlisted_underlying(self):
@@ -366,15 +352,6 @@ class FuturesPnlTests(unittest.TestCase):
         self._round_trip(100.0, 110.0, 'AAPL', 'us-stock', qty=3.0)
         self.assertAlmostEqual(risk_engine.trade_stats(self.agent_id)["realized_today"],
                                30.0, places=6)
-
-    def test_a_share_pnl_is_converted_from_cny_to_usd(self):
-        import risk_engine
-        # 10 CNY/share * 100 shares = 1000 CNY. At 0.14 USD/CNY that is $140 —
-        # summing it as 1000 into a USD total would overstate it ~7x.
-        with patch.object(fx_rates, '_fetch_rate', return_value=0.14):
-            self._round_trip(50.0, 60.0, '600519.SS', 'a-stock', qty=100.0)
-            realized = risk_engine.trade_stats(self.agent_id)["realized_today"]
-        self.assertAlmostEqual(realized, 140.0, places=6)
 
 
 class _Cookie:

@@ -291,7 +291,6 @@ export const MARKETS: MarketEntry[] = [
   { value: 'all', supported: true, labels: { ko: '전체', en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' } },
   { value: 'us-stock', supported: true, labels: { ko: '미국주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' } },
   { value: 'crypto', supported: true, labels: { ko: '암호화폐 (테스트)', en: 'Crypto (Testing)', ja: '暗号資産（テスト中）', th: 'คริปโต (ทดสอบ)', vi: 'Tiền mã hóa (Thử nghiệm)', id: 'Kripto (Uji coba)' } },
-  { value: 'a-stock', supported: true, labels: { ko: 'A주 (테스트)', en: 'A-Share (Testing)', ja: 'A株（テスト中）', th: 'A-Share (ทดสอบ)', vi: 'A-Share (Thử nghiệm)', id: 'A-Share (Uji coba)' } },
   { value: 'polymarket', supported: true, labels: { ko: 'Polymarket (테스트)', en: 'Polymarket (Testing)', ja: 'Polymarket（テスト中）', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)', id: 'Polymarket (Uji coba)' } },
   { value: 'forex', supported: true, labels: { ko: '외환 (테스트)', en: 'Forex (Testing)', ja: '外国為替（テスト中）', th: 'Forex (ทดสอบ)', vi: 'Forex (Thử nghiệm)', id: 'Forex (Uji coba)' } },
   { value: 'options', supported: true, labels: { ko: '옵션 (테스트)', en: 'Options (Testing)', ja: 'オプション（テスト中）', th: 'ออปชั่น (ทดสอบ)', vi: 'Quyền chọn (Thử nghiệm)', id: 'Opsi (Uji coba)' } },

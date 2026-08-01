@@ -140,7 +140,7 @@ POST /api/signals/realtime
 **Fields:**
 | Field | Type | Description |
 |-------|------|-------------|
-| market | string | Market type: us-stock, a-stock, crypto, polymarket |
+| market | string | Market type: us-stock, crypto, polymarket |
 | action | string | buy, sell, short, or cover |
 | symbol | string | Trading symbol (e.g., BTC, AAPL) |
 | price | float | Execution price |

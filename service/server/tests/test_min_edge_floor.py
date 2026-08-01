@@ -109,7 +109,7 @@ class TheDeployedUniverse(Base):
     def test_the_floor_is_not_market_dependent(self):
         """The whole point: the same tiny move is refused everywhere, however
         cheap the venue."""
-        for mkt in ("crypto", "futures", "forex", "us-stock", "a-stock"):
+        for mkt in ("crypto", "futures", "forex", "us-stock"):
             self.assertIsNotNone(self.skip(0.4, mkt))    # 0.10% realized
 
 

@@ -7,13 +7,13 @@ import { API_BASE } from '../appShared'
 
 type SymbolLists = {
   crypto: string[]; crypto_pairs: string[]; stock: string[]; forex: string[]
-  futures: string[]; a_stock: string[]; option_underlyings: string[]
+  futures: string[]; option_underlyings: string[]
 }
 type Option = { value: string; label: string }
 
 const EMPTY_LISTS: SymbolLists = {
   crypto: [], crypto_pairs: [], stock: [], forex: [],
-  futures: [], a_stock: [], option_underlyings: [],
+  futures: [], option_underlyings: [],
 }
 let listsCache: SymbolLists | null = null
 let listsPromise: Promise<SymbolLists> | null = null
@@ -30,7 +30,6 @@ function loadLists(): Promise<SymbolLists> {
           stock: Array.isArray(d.stock) ? d.stock : [],
           forex: Array.isArray(d.forex) ? d.forex : [],
           futures: Array.isArray(d.futures) ? d.futures : [],
-          a_stock: Array.isArray(d.a_stock) ? d.a_stock : [],
           option_underlyings: Array.isArray(d.option_underlyings) ? d.option_underlyings : [],
         }
         return listsCache
@@ -245,11 +244,8 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
         if (!alive) return
         let symbols: string[]
         if (variant === 'pair') symbols = lists.crypto_pairs
-        // Exact match before the substring checks below — 'a-stock' would otherwise
-        // match .includes('stock') and be offered US tickers.
         else if (m === 'forex') symbols = lists.forex
         else if (m === 'futures') symbols = lists.futures
-        else if (m === 'a-stock') symbols = lists.a_stock
         else if (m.includes('crypto')) symbols = lists.crypto
         else if (m.includes('stock')) symbols = lists.stock
         else symbols = [...lists.crypto, ...lists.stock.filter(s => !lists.crypto.includes(s))]
