@@ -1,0 +1,334 @@
+<!-- machine-translated from plan/20-trading-skills.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch 20 — Kỹ năng giao dịch: Cách hoạt động</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kế hoạch 20 — Kỹ năng giao dịch: Cách hoạt động</h1>
+
+<div class="chips">
+  <div class="chip"><b>16</b><span>kỹ năng cơ bản (được giữ lại, có thể chỉnh sửa, không bao giờ bị xóa)</span></div>
+  <div class="chip"><b>4</b><span>gợi ý quyết định được chèn vào</span></div>
+  <div class="chip"><b>0</b><span>số lượt gọi LLM dùng để chọn kỹ năng</span></div>
+  <div class="chip"><b>10,000</b><span>ngân sách ký tự cho mỗi prompt</span></div>
+  <div class="chip"><b>30s</b><span>TTL bộ nhớ đệm worker</span></div>
+</div>
+
+<h2>1. Bức tranh tổng quan — kỹ năng tồn tại ở đâu và hoạt động ở đâu</h2>
+<div class="card">
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--good)"/>
+    </marker>
+  </defs>
+
+  <!-- sources column -->
+  <rect class="box-accent" x="20" y="30" width="200" height="64"/>
+  <text x="120" y="55" text-anchor="middle" class="t-b">BASE_SKILLS (trong mã nguồn)</text>
+  <text x="120" y="74" text-anchor="middle" class="t-small">trading_skills.py — được đóng gói trong image</text>
+
+  <rect class="box" x="20" y="130" width="200" height="64"/>
+  <text x="120" y="155" text-anchor="middle" class="t-b">Bảng điều khiển Admin / API</text>
+  <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — ghi có kiểm toán</text>
+
+  <rect class="box-dim" x="20" y="230" width="200" height="64"/>
+  <text x="120" y="252" text-anchor="middle" class="t-b">thư mục skills/ trong repo</text>
+  <text x="120" y="270" text-anchor="middle" class="t-small">chỉ là tài liệu external-agent — KHÔNG có trong</text>
+  <text x="120" y="284" text-anchor="middle" class="t-small">docker image, AI không bao giờ đọc</text>
+
+  <!-- DB -->
+  <rect class="box" x="300" y="80" width="190" height="90"/>
+  <text x="395" y="108" text-anchor="middle" class="t-b">bảng trading_skills</text>
+  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (prod) / SQLite (dev)</text>
+  <text x="395" y="145" text-anchor="middle" class="t-small">slug · nội dung · prompts · thị trường</text>
+  <text x="395" y="161" text-anchor="middle" class="t-small">ưu tiên · đã bật · là cơ sở</text>
+
+  <!-- cache -->
+  <rect class="box" x="560" y="92" width="150" height="66"/>
+  <text x="635" y="118" text-anchor="middle" class="t-b">bộ nhớ đệm registry</text>
+  <text x="635" y="137" text-anchor="middle" class="t-small">TTL 30 giây cho mỗi tiến trình</text>
+
+  <!-- skills_block -->
+  <rect class="box-accent" x="760" y="86" width="180" height="78"/>
+  <text x="850" y="112" text-anchor="middle" class="t-b">skills_block(site)</text>
+  <text x="850" y="131" text-anchor="middle" class="t-small">bộ lọc xác định + giới hạn ngân sách</text>
+  <text x="850" y="148" text-anchor="middle" class="t-small">fail-soft → ""</text>
+
+  <!-- prompts row -->
+  <rect class="box" x="300" y="250" width="640" height="70"/>
+  <text x="620" y="272" text-anchor="middle" class="t-b">4 lời nhắc quyết định</text>
+  <text x="380" y="300" text-anchor="middle">nhẹ</text>
+  <text x="540" y="300" text-anchor="middle">trader</text>
+  <text x="700" y="300" text-anchor="middle">verifier</text>
+  <text x="860" y="300" text-anchor="middle">planner</text>
+
+  <!-- gates -->
+  <rect class="box" x="300" y="350" width="640" height="40"/>
+  <text x="620" y="375" text-anchor="middle" class="t-small">LLM answer → hợp đồng đầu ra JSON (danh sách hành động cho phép, giới hạn kẹp, thẩm quyền giá) → cổng rủi ro/thực thi tất định → order</text>
+
+  <!-- arrows -->
+  <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
+  <text x="252" y="60" class="t-small">seed chèn-nếu-chưa-tồn-tại</text>
+  <path class="ln" d="M220,162 C260,162 260,150 300,145" marker-end="url(#ar)"/>
+  <text x="238" y="178" class="t-small">CRUD + vô hiệu hóa</text>
+  <path class="ln" d="M490,125 L560,125" marker-end="url(#ar)"/>
+  <path class="ln" d="M710,125 L760,125" marker-end="url(#ar)"/>
+  <path class="ln-good" d="M850,164 L850,250" marker-end="url(#ar-g)"/>
+  <text x="842" y="205" text-anchor="end" class="t-small">khung văn bản, chỉ mang tính cảnh báo</text>
+  <path class="ln" d="M620,320 L620,350" marker-end="url(#ar)"/>
+</svg>
+<p class="legend">Ô đường nét đứt là giả định cũ mà thiết kế này phải phá vỡ: repo <code>skills/</code> là bề mặt xuất bản dành cho các agent bên ngoài và bị loại khỏi Docker image — vì vậy nội dung skill nằm trong DB, còn danh mục gốc được đóng gói trong code và tự khởi tạo seed.</p>
+</div>
+
+<h2>2. Luồng chu kỳ quyết định — nơi các skill tham gia vào một chu kỳ giao dịch thực tế</h2>
+<div class="card">
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="30" width="170" height="56"/>
+  <text x="105" y="53" text-anchor="middle" class="t-b">chu kỳ run_cycle</text>
+  <text x="105" y="71" text-anchor="middle" class="t-small">claim → pre-gates</text>
+
+  <rect class="box" x="250" y="30" width="200" height="56"/>
+  <text x="350" y="53" text-anchor="middle" class="t-b">E1 _classify_situation</text>
+  <text x="350" y="71" text-anchor="middle" class="t-small">zero-LLM · KHÔNG có skill ở đây (theo thiết kế)</text>
+
+  <!-- light path -->
+  <rect class="box-accent" x="540" y="10" width="400" height="96"/>
+  <text x="740" y="32" text-anchor="middle" class="t-b">Đường LIGHT — 1 lượt gọi LLM</text>
+  <text x="740" y="52" text-anchor="middle" class="t-small">giá + luận điểm + đóng lệnh + quy tắc tồn kho</text>
+  <text x="740" y="72" text-anchor="middle">💡 kỹ năng: tỷ lệ rủi ro-lợi nhuận · thoát lệnh · quản lý vị thế · tính trung thực dữ liệu</text>
+  <text x="740" y="92" text-anchor="middle" class="t-small">(loại trừ skill regime + conviction — light có rubric riêng)</text>
+
+  <!-- full path -->
+  <rect class="box" x="540" y="140" width="400" height="230"/>
+  <text x="740" y="162" text-anchor="middle" class="t-b">Đường FULL — 6 lượt gọi LLM</text>
+  <rect class="box" x="560" y="176" width="360" height="40"/>
+  <text x="740" y="200" text-anchor="middle" class="t-small">4 bản phân tích chuyên gia (news · sentiment · macro · technical) — không có skill, chỉ có dữ liệu</text>
+  <rect class="box-accent" x="560" y="228" width="360" height="52"/>
+  <text x="740" y="248" text-anchor="middle" class="t-b">Quyết định của Trader + Risk</text>
+  <text x="740" y="268" text-anchor="middle">💡 tất cả 12 skill của trader (13 trên us-stock: earnings-preview chỉ áp dụng riêng ở đó)</text>
+  <rect class="box-accent" x="560" y="292" width="360" height="52"/>
+  <text x="740" y="312" text-anchor="middle" class="t-b">Verifier đối kháng (cố gắng BÁC BỎ)</text>
+  <text x="740" y="332" text-anchor="middle">💡 kỹ năng: hiệu chỉnh mức độ tin cậy · tính trung thực của dữ liệu</text>
+  <text x="740" y="360" text-anchor="middle" class="t-small">memory + user guidelines + skills nằm cạnh nhau trong cả hai prompt</text>
+
+  <!-- planner -->
+  <rect class="box-accent" x="20" y="150" width="200" height="70"/>
+  <text x="120" y="174" text-anchor="middle" class="t-b">Bộ lập kế hoạch chế độ Agent</text>
+  <text x="120" y="192" text-anchor="middle" class="t-small">chọn symbol / size / cadence</text>
+  <text x="120" y="210" text-anchor="middle">💡 định cỡ · danh sách theo dõi · bản đồ chất xúc tác · mức độ tập trung · tính trung thực</text>
+
+  <!-- output -->
+  <rect class="box" x="250" y="390" width="690" height="34"/>
+  <text x="595" y="411" text-anchor="middle" class="t-small">hợp đồng JSON → trọng số độ tin cậy → fee/edge + budget + risk gates → thực thi paper/shadow/live</text>
+
+  <path class="ln" d="M190,58 L250,58" marker-end="url(#ar)"/>
+  <path class="ln" d="M450,50 C500,45 500,50 540,52" marker-end="url(#ar)"/>
+  <text x="482" y="38" class="t-small">yên tĩnh</text>
+  <path class="ln" d="M450,70 C500,90 500,180 540,200" marker-end="url(#ar)"/>
+  <text x="466" y="110" class="t-small">sự kiện · cú sốc · chế độ · gần điểm dừng lỗ</text>
+  <path class="ln" d="M740,106 L740,140" style="display:none"/>
+  <path class="ln" d="M540,60 C520,60 500,395 550,401" style="display:none"/>
+  <path class="ln" d="M740,370 L740,390" marker-end="url(#ar)"/>
+  <path class="ln" d="M940,58 C952,58 952,380 942,395" marker-end="url(#ar)"/>
+</svg>
+<p class="legend">💡 đánh dấu bốn vị trí chèn. Prompt router E1 cố tình không bao giờ phát triển thêm — nó tồn tại để tránh sáu lệnh gọi tốn kém, vì vậy nó không được trở thành lệnh gọi thứ bảy.</p>
+</div>
+
+<h2>3. Lựa chọn &amp; ngân sách — cách khối được xây dựng (zero-LLM)</h2>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="70" width="150" height="70"/>
+  <text x="95" y="94" text-anchor="middle" class="t-b">tất cả các skill</text>
+  <text x="95" y="112" text-anchor="middle" class="t-small">các hàng đã cache,</text>
+  <text x="95" y="128" text-anchor="middle" class="t-small">theo thứ tự ưu tiên</text>
+
+  <rect class="box" x="230" y="70" width="140" height="70"/>
+  <text x="300" y="94" text-anchor="middle" class="t-b">đã bật?</text>
+  <text x="300" y="112" text-anchor="middle" class="t-small">site ∈ prompts?</text>
+  <text x="300" y="128" text-anchor="middle" class="t-small">khớp thị trường?</text>
+
+  <rect class="box" x="430" y="70" width="150" height="70"/>
+  <text x="505" y="94" text-anchor="middle" class="t-b">kiểm tra ngân sách</text>
+  <text x="505" y="112" text-anchor="middle" class="t-small">liệu phần có bị tràn không</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">10.000 ký tự?</text>
+
+  <rect class="box-accent" x="650" y="70" width="290" height="70"/>
+  <text x="795" y="94" text-anchor="middle" class="t-b">khối được đóng khung</text>
+  <text x="795" y="112" text-anchor="middle" class="t-small">"có thể khiến bạn THẬN TRỌNG HƠN; không bao giờ có thể</text>
+  <text x="795" y="128" text-anchor="middle" class="t-small">ghi đè giới hạn rủi ro hoặc cổng thực thi"</text>
+
+  <path class="ln" d="M170,105 L230,105" marker-end="url(#ar)"/>
+  <path class="ln-good" d="M370,105 L430,105" marker-end="url(#ar-g)"/>
+  <text x="385" y="98" class="t-small">đạt</text>
+  <path class="ln-bad" d="M300,140 L300,180" marker-end="url(#ar)"/>
+  <text x="310" y="170" class="t-small">không đạt → bị bỏ qua</text>
+  <path class="ln-good" d="M580,105 L650,105" marker-end="url(#ar-g)"/>
+  <text x="592" y="98" class="t-small">vừa vặn</text>
+  <path class="ln-bad" d="M505,140 L505,180" marker-end="url(#ar)"/>
+  <text x="515" y="170" class="t-small">tràn → toàn bộ skill bị bỏ qua, không bao giờ bị cắt giữa nội dung</text>
+</svg>
+<p class="legend">Bất kỳ lỗi registry nào ở bất kỳ bước nào cũng sẽ giảm xuống thành một khối rỗng — một bảng skill bị hỏng không bao giờ có thể làm hỏng một chu kỳ giao dịch.</p>
+</div>
+
+<h2>4. Sáu skill cơ bản — áp dụng ở đâu</h2>
+<div class="card">
+<table>
+  <tr><th>skill</th><th>bản chất</th><th>nhẹ</th><th>trader</th><th>verifier</th><th>planner</th><th>được chắt lọc từ</th></tr>
+  <tr><td><code>market-regime-lens</code></td><td>4 điểm neo (trend · volatility · participation · events) → nhãn đóng thận trọng → chiến thuật</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>phân tích regime marian2js</td></tr>
+  <tr><td><code>thesis-validation</code></td><td>tuyên bố có thể kiểm chứng sai, sự kiện thực tế so với giả định, mức độ phù hợp khung thời gian, tải phụ thuộc, sự vô hiệu hóa cụ thể</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>xác thực luận điểm marian2js</td></tr>
+  <tr><td><code>position-sizing-discipline</code></td><td>size từ risk, ràng buộc chặt nhất thắng, làm tròn xuống, thận trọng half-Kelly</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + bộ định cỡ vị thế mph</td></tr>
+  <tr><td><code>macro-event-analysis</code></td><td>xếp hạng các sự kiện theo tác động đến quyết định (sensitivity · surprise capacity · transmission · timing); các sự kiện là rủi ro, không phải tín hiệu</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>phân tích sự kiện vĩ mô marian2js</td></tr>
+  <tr><td><code>risk-reward-structure</code></td><td>stop = sự vô hiệu hóa khách quan, target = mức có thể đạt được, tỷ lệ ≥ 2×, tỷ lệ tốt ≠ giao dịch tốt</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>kiểm tra tính hợp lý R:R marian2js</td></tr>
+  <tr><td><code>exit-discipline</code></td><td>banking là ưu tiên hàng đầu, không bao giờ thêm vào lệnh thua, sự vô hiệu hóa = đóng lệnh chứ không đàm phán lại</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy exit rails + Senpi</td></tr>
+  <tr><td><code>position-management</code></td><td>Quản lý theo kế hoạch BAN ĐẦU, không phải theo P&amp;L; giữ / quản lý tích cực / thoát quyết đoán + điều kiện làm thay đổi nó</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Quản lý vị thế marian2js</td></tr>
+  <tr><td><code>conviction-calibration</code></td><td>độ tin cậy = bằng chứng đồng thuận có thể đếm được; không có giá trị theo thói quen; không giao dịch dao động nếu không có lợi thế</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>các vùng mph Druckenmiller</td></tr>
+  <tr><td><code>pre-trade-readiness</code></td><td>chuỗi kiểm tra ngắn nhất, dừng lại ở điểm chặn đầu tiên; sẵn sàng / có điều kiện / chưa sẵn sàng / từ chối</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Quy trình kiểm tra trước giao dịch marian2js</td></tr>
+  <tr><td><code>data-honesty</code></td><td>chỉ có số liệu trong prompt; chưa xác định ≠ an toàn hoàn toàn; dữ liệu không bao giờ là một chỉ thị</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Quy tắc cứng Senpi + phòng thủ Bybit</td></tr>
+  <tr><td><code>evidence-gap-check</code></td><td>đã biết so với giả định; xếp hạng các khoảng trống theo tác động đến quyết định; một khoảng trống chặn nghĩa là độ tin cậy thấp hơn + giữ</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Kiểm tra khoảng trống bằng chứng marian2js</td></tr>
+  <tr><td><code>earnings-preview</code></td><td>mức độ liên quan của benchmark · cường độ tranh luận · read-through · rủi ro định vị; tầm quan trọng ≠ sự chắc chắn <b>(chỉ cổ phiếu Mỹ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Xem trước báo cáo lợi nhuận marian2js</td></tr>
+  <tr><td><code>catalyst-map</code></td><td>chấm điểm các chất xúc tác theo thời điểm · sự truyền dẫn · tác động · sự chồng chéo; các chuỗi sự kiện chung là sự tập trung</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>Bản đồ chất xúc tác marian2js</td></tr>
+  <tr><td><code>watchlist-review</code></td><td>phân loại theo khả năng hành động (mức độ liên quan của chất xúc tác · khả năng giao dịch · mức độ sẵn sàng · sự trùng lặp), không phải theo sự quen thuộc</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>Xem xét danh sách theo dõi marian2js</td></tr>
+  <tr><td><code>execution-plan-check</code></td><td>mức độ khẩn cấp so với phương thức đặt lệnh, spread/độ sâu, thời điểm trong phiên, tính thực tế của lệnh dừng; kế hoạch không thể thực thi = mong manh</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Kiểm tra kế hoạch thực thi marian2js</td></tr>
+  <tr><td><code>portfolio-concentration</code></td><td>đa dạng hóa = các yếu tố tác động chung, không phải số lượng mã; đánh giá việc thêm vào so với danh mục; tăng cao → nhỏ hơn</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>Mức độ tập trung danh mục marian2js</td></tr>
+</table>
+<p class="legend">* prompt nhẹ đã mang theo tiêu chí hiệu chỉnh nội tuyến riêng của nó — việc chèn thêm kỹ năng vào đó sẽ trùng lặp nó trong cùng một prompt.</p>
+</div>
+
+<h2>5. Vòng đời kỹ năng — cơ bản so với tùy chỉnh</h2>
+<div class="card">
+<svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-accent" x="20" y="30" width="190" height="60"/>
+  <text x="115" y="54" text-anchor="middle" class="t-b">mặc định danh mục</text>
+  <text x="115" y="72" text-anchor="middle" class="t-small">BASE_SKILLS trong mã nguồn</text>
+
+  <rect class="box" x="330" y="30" width="180" height="60"/>
+  <text x="420" y="54" text-anchor="middle" class="t-b">Hàng DB (cơ bản)</text>
+  <text x="420" y="72" text-anchor="middle" class="t-small">is_base = 1</text>
+
+  <rect class="box" x="630" y="30" width="180" height="60"/>
+  <text x="720" y="54" text-anchor="middle" class="t-b">đã chỉnh sửa / đã vô hiệu hóa</text>
+  <text x="720" y="72" text-anchor="middle" class="t-small">phiên bản của admin được ưu tiên</text>
+
+  <rect class="box" x="330" y="160" width="180" height="60"/>
+  <text x="420" y="184" text-anchor="middle" class="t-b">Hàng DB (tùy chỉnh)</text>
+  <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
+
+  <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
+  <text x="228" y="52" class="t-small">seed nếu thiếu slug</text>
+  <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
+  <text x="540" y="42" class="t-small">PATCH / vô hiệu hóa</text>
+  <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
+  <text x="537" y="98" class="t-small">POST /reset → mặc định</text>
+  <path class="ln-bad" d="M420,90 L420,124"/>
+  <text x="430" y="112" class="t-small">DELETE → 400 "hãy vô hiệu hóa hoặc reset thay vào đó"</text>
+  <path class="ln" d="M160,190 L330,190" marker-end="url(#ar)"/>
+  <text x="175" y="182" class="t-small">POST /api/admin/skills</text>
+  <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
+  <text x="530" y="182" class="t-small">DELETE → đã xóa</text>
+</svg>
+<p class="legend">Seeding chỉ chèn khi thiếu (insert-if-missing) — việc khởi động lại hoặc triển khai lại không bao giờ có thể ghi đè lên chỉnh sửa của admin. Đó chính là điều làm cho "base skills được giữ lại, nhưng có thể được sửa đổi" đúng theo cả hai chiều.</p>
+</div>
+
+<h2>6. Các lớp an toàn — tại sao văn bản prompt không thể trực tiếp tác động đến một lệnh</h2>
+<div class="card">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="35" width="200" height="60"/>
+  <text x="120" y="59" text-anchor="middle" class="t-b">1 · khung chỉ mang tính cảnh báo (caution-only)</text>
+  <text x="120" y="77" text-anchor="middle" class="t-small">skills chỉ có thể siết chặt, không bao giờ nới lỏng</text>
+  <rect class="box" x="262" y="35" width="200" height="60"/>
+  <text x="362" y="59" text-anchor="middle" class="t-b">2 · hợp đồng đầu ra (output contract)</text>
+  <text x="362" y="77" text-anchor="middle" class="t-small">danh sách trắng hành động · các mức giới hạn (clamps) · chỉ JSON</text>
+  <rect class="box" x="504" y="35" width="200" height="60"/>
+  <text x="604" y="59" text-anchor="middle" class="t-b">3 · thẩm quyền về giá</text>
+  <text x="604" y="77" text-anchor="middle" class="t-small">giá nhập từ model bị hạ cấp; giá thị trường thực tế được điền vào</text>
+  <rect class="box-accent" x="746" y="35" width="194" height="60"/>
+  <text x="843" y="59" text-anchor="middle" class="t-b">4 · các cổng xác định (deterministic gates)</text>
+  <text x="843" y="77" text-anchor="middle" class="t-small">ngân sách · rủi ro · phí · quyền hạn</text>
+  <path class="ln" d="M220,65 L262,65" marker-end="url(#ar)"/>
+  <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
+  <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
+</svg>
+<p class="legend">Trong v1, phần thân của skill chỉ do admin biên soạn và bị giới hạn kích thước hai lần (4,000 cho mỗi body tại route, 10,000 cho mỗi prompt tại builder). Ngay cả một body độc hại cũng không thể vượt qua các lớp 2–4 — chúng chạy bên ngoài prompt.</p>
+</div>
+
+<h2>7. Vận hành nó — admin API + thời gian lan truyền</h2>
+<div class="card">
+<table>
+  <tr><th>lệnh gọi</th><th>chức năng</th><th>ghi chú</th></tr>
+  <tr><td><code>GET /api/admin/skills</code></td><td>liệt kê tất cả các skills (base + custom)</td><td>đọc mới, bỏ qua cache</td></tr>
+  <tr><td><code>POST /api/admin/skills</code></td><td>tạo skill tùy chỉnh (custom skill)</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 409 khi trùng lặp</td></tr>
+  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>chỉnh sửa name/description/body/prompts/markets/priority/enabled</td><td>base skills có thể chỉnh sửa; slug không thể thay đổi</td></tr>
+  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>khôi phục các giá trị mặc định của catalogue + bật lại</td><td>chỉ base — 400 đối với custom</td></tr>
+  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>xóa skill tùy chỉnh (custom skill)</td><td>base → 400 "hãy vô hiệu hóa hoặc đặt lại thay vì xóa"</td></tr>
+</table>
+<p class="legend">Mỗi lần ghi đều được ghi lại trong <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>) và làm mất hiệu lực cache của tiến trình API ngay lập tức. <b>worker là một tiến trình riêng biệt</b>: nó hội tụ thông qua TTL 30 giây của registry — một chỉnh sửa sẽ đến được chu kỳ quyết định tiếp theo trong khoảng ~30 giây, và một fleet đang chạy sẽ tiếp nhận nó ở chu kỳ tiếp theo (v1 cố tình không đóng băng skills theo từng lần chạy; xem phần non-goals của tài liệu thiết kế).</p>
+</div>
+
+<h2>8. Kiểm chứng trên môi trường production</h2>
+<div class="card">
+<table>
+  <tr><th>kiểm tra</th><th>cách thực hiện</th><th>chứng minh điều gì</th></tr>
+  <tr><td>registry hoạt động trực tiếp (live)</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>bảng có thể truy cập được, 6 base skills đã được seed</td></tr>
+  <tr><td>lựa chọn chính xác</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> các tập hợp slug</td><td>phạm vi site + market đúng như thiết kế</td></tr>
+  <tr><td>injection có thật</td><td>thực thi <code>_light_analysis</code> trong worker với <code>generate_text</code> được giả lập (stubbed)</td><td>đường dẫn mã prod thực tế xây dựng các prompt mang theo skills block — vẫn hoạt động ngay cả khi có 0 lượt chạy đang hoạt động</td></tr>
+</table>
+</div>
+
+<p class="legend" style="margin-top:28px">Spec đi kèm: <code>docs/plan/20-trading-skills.md</code> · đã phát hành trong PR #179 (squash <code>ba43060</code>) · hoạt động trên sooppiy.com từ 2026-08-01.</p>
+
+</div>
+</body>
+</html>
