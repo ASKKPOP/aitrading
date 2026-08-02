@@ -84,6 +84,11 @@ export function AutomationPage() {
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
   const [runLev, setRunLev] = useState(1)   // leverage for ⓪/① single-run modes
+  // Book type for ⓪/① single-run modes. A spot book is long-only cash — the
+  // backend refuses leveraged spot with no stop (routes_runs
+  // validate_run_payload), so leverage is only offered on futures books and
+  // spot always submits 1×.
+  const [runType, setRunType] = useState<'spot' | 'futures'>('spot')
   const [agentBudget, setAgentBudget] = useState<number>(5000)
   const [error, setError] = useState('')
   const [removeError, setRemoveError] = useState('')
@@ -388,7 +393,8 @@ export function AutomationPage() {
         interval_minutes: preset.interval_minutes,
         min_confidence: preset.min_confidence,
         risk_level: simpleRisk,
-        leverage: runLev,
+        market_type: runType,
+        leverage: runType === 'futures' ? runLev : 1,
       })
     } catch (e: any) { setError(e.message) }
   }
@@ -403,7 +409,8 @@ export function AutomationPage() {
         run_budget_usd: agentBudget,
         interval_minutes: 60,
         min_confidence: 0.65,
-        leverage: runLev,
+        market_type: runType,
+        leverage: runType === 'futures' ? runLev : 1,
       })
     } catch (e: any) { setError(e.message) }
   }
@@ -433,25 +440,44 @@ export function AutomationPage() {
     color: active ? 'var(--accent-primary,#c26a45)' : 'inherit',
   })
 
-  // Leverage picker shared by ⓪ 1종목 위임 and ① 간편 (isolated margin;
-  // liquidation at a (100/L)% adverse move). 1× = fully funded.
+  // Book picker shared by ⓪ 1종목 위임 and ① 간편: spot (long-only cash, no
+  // leverage shown — always submits 1×) or futures (can short; isolated
+  // margin, liquidation at a (100/L)% adverse move).
   const leveragePicker = (
     <div style={{ marginBottom: 16 }}>
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>
-        {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
+        {tr(language, { ko: '거래 유형', en: 'Book type', ja: '取引タイプ', th: 'ประเภทบัญชี', vi: 'Loại sổ', id: 'Jenis akun' })}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[1, 2, 3, 5, 10].map(l => (
-          <button key={l} style={chip(runLev === l)} onClick={() => setRunLev(l)}>
-            {l === 1 ? tr(language, { ko: '1× 자동', en: '1× (none)', ja: '1×', th: '1×', vi: '1×', id: '1× (tanpa leverage)' }) : `${l}×`}
-          </button>
-        ))}
+        <button style={chip(runType === 'spot')} onClick={() => setRunType('spot')}>
+          {tr(language, { ko: '현물', en: 'Spot', ja: '現物', th: 'สปอต', vi: 'Giao ngay', id: 'Spot' })}
+        </button>
+        <button style={chip(runType === 'futures')} onClick={() => setRunType('futures')}>
+          {tr(language, { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Hợp đồng tương lai', id: 'Futures' })}
+        </button>
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6 }}>
-        {runLev === 1
-          ? tr(language, { ko: '레버리지 없음 — 완전 자금형(청산 없음).', en: 'No leverage — fully funded (no liquidation).', ja: 'レバレッジなし。', th: 'ไม่มีเลเวอเรจ', vi: 'Không đòn bẩy.', id: 'Tanpa leverage — didanai penuh (tidak ada likuidasi).' })
-          : tr(language, { ko: `${runLev}배 격리 마진 — 같은 증거금으로 ${runLev}배 포지션, 진입가에서 ${(100 / runLev).toFixed(0)}% 역행 시 청산.`, en: `${runLev}× isolated margin — ${runLev}× the position for the same margin, liquidates on a ${(100 / runLev).toFixed(0)}% adverse move.`, ja: `${runLev}倍分離マージン、${(100 / runLev).toFixed(0)}%逆行で清算。`, th: `${runLev}× ล้างพอร์ตเมื่อสวน ${(100 / runLev).toFixed(0)}%`, vi: `${runLev}× thanh lý khi giá đi ngược ${(100 / runLev).toFixed(0)}%.`, id: `Margin terisolasi ${runLev}× — posisi ${runLev}× lipat dengan margin yang sama, terlikuidasi pada pergerakan berlawanan ${(100 / runLev).toFixed(0)}%.` })}
+        {runType === 'spot'
+          ? tr(language, { ko: '현물 — 완전 자금형 매수 전용(레버리지·청산 없음).', en: 'Spot — fully funded, long-only (no leverage, no liquidation).', ja: '現物 — 全額拠出の買いのみ(レバレッジ・清算なし)。', th: 'สปอต — เงินเต็มจำนวน ซื้อเท่านั้น (ไม่มีเลเวอเรจ)', vi: 'Giao ngay — vốn đầy đủ, chỉ mua (không đòn bẩy, không thanh lý).', id: 'Spot — didanai penuh, hanya beli (tanpa leverage, tanpa likuidasi).' })
+          : tr(language, { ko: '선물 — 하락장에서 숏 진입 가능.', en: 'Futures — the desk can also short a bearish read.', ja: '先物 — 弱気読みではショートも可能。', th: 'ฟิวเจอร์ส — เปิดชอร์ตได้', vi: 'Hợp đồng tương lai — có thể bán khống khi thị trường giảm.', id: 'Futures — bisa short saat pasar turun.' })}
       </div>
+      {runType === 'futures' && <div style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>
+          {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[1, 2, 3, 5, 10].map(l => (
+            <button key={l} style={chip(runLev === l)} onClick={() => setRunLev(l)}>
+              {l === 1 ? tr(language, { ko: '1× 자동', en: '1× (none)', ja: '1×', th: '1×', vi: '1×', id: '1× (tanpa leverage)' }) : `${l}×`}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6 }}>
+          {runLev === 1
+            ? tr(language, { ko: '레버리지 없음 — 완전 자금형(청산 없음).', en: 'No leverage — fully funded (no liquidation).', ja: 'レバレッジなし。', th: 'ไม่มีเลเวอเรจ', vi: 'Không đòn bẩy.', id: 'Tanpa leverage — didanai penuh (tidak ada likuidasi).' })
+            : tr(language, { ko: `${runLev}배 격리 마진 — 같은 증거금으로 ${runLev}배 포지션, 진입가에서 ${(100 / runLev).toFixed(0)}% 역행 시 청산.`, en: `${runLev}× isolated margin — ${runLev}× the position for the same margin, liquidates on a ${(100 / runLev).toFixed(0)}% adverse move.`, ja: `${runLev}倍分離マージン、${(100 / runLev).toFixed(0)}%逆行で清算。`, th: `${runLev}× ล้างพอร์ตเมื่อสวน ${(100 / runLev).toFixed(0)}%`, vi: `${runLev}× thanh lý khi giá đi ngược ${(100 / runLev).toFixed(0)}%.`, id: `Margin terisolasi ${runLev}× — posisi ${runLev}× lipat dengan margin yang sama, terlikuidasi pada pergerakan berlawanan ${(100 / runLev).toFixed(0)}%.` })}
+        </div>
+      </div>}
     </div>
   )
 
