@@ -156,6 +156,10 @@ export function AdminPage() {
   // [] = all markets) only at save time.
   const [skills, setSkills] = useState<any[]>([])
   const [skillEdit, setSkillEdit] = useState<any | null>(null)
+  // Which skill rows have their full body unfolded (read-only view — the
+  // 16 bodies together run ~9KB, so the table shows summaries and each row
+  // expands on demand instead of rendering every body inline).
+  const [openSkills, setOpenSkills] = useState<Record<string, boolean>>({})
   const [threads, setThreads] = useState<any | null>(null)
   const [activeThread, setActiveThread] = useState<any | null>(null)
   const [reply, setReply] = useState('')
@@ -1442,8 +1446,13 @@ export function AdminPage() {
               </thead>
               <tbody>
                 {skills.map((s: any) => (
-                  <tr key={s.slug} style={{ opacity: s.enabled ? 1 : 0.5 }}>
+                  <Fragment key={s.slug}>
+                  <tr style={{ opacity: s.enabled ? 1 : 0.5 }}>
                     <td style={{ ...td, fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap' }}>
+                      <button style={{ ...actionBtn, padding: '1px 7px', marginRight: 6 }} title={T.detail}
+                        onClick={() => setOpenSkills(p => ({ ...p, [s.slug]: !p[s.slug] }))}>
+                        {openSkills[s.slug] ? '▾' : '▸'}
+                      </button>
                       {s.slug}
                       {s.is_base && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, border: '1px solid var(--accent-primary,#d8a95e)', color: 'var(--accent-primary,#d8a95e)', borderRadius: 5, padding: '0px 4px' }}>base</span>}
                     </td>
@@ -1476,6 +1485,19 @@ export function AdminPage() {
                       )}
                     </td>
                   </tr>
+                  {openSkills[s.slug] && (
+                    <tr>
+                      <td style={{ ...td, background: 'var(--bg-primary,#1b1811)' }} colSpan={6}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 6 }}>
+                          {T.skillBody} · {s.body.length} / {SKILL_BODY_MAX}
+                          {s.updated_by ? ` · ${s.updated_by} · ${s.updated_at || ''}` : ''}
+                        </div>
+                        <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12.5, lineHeight: 1.6,
+                          whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: 980 }}>{s.body}</div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
                 {!skills.length && <tr><td style={td} colSpan={6}>{T.noData}</td></tr>}
               </tbody>
