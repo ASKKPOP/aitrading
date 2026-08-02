@@ -711,6 +711,137 @@ EXPLAIN: dict[str, dict[str, dict[str, str]]] = {
                        'lanjutan yang umum setelah stop.'),
         },
     },
+    'fleet_partial_build': {
+        'en': {
+            'why': ('Fleets only compose slots into markets that are open right now '
+                    'and have research candidates that pass the safety gates. At '
+                    'build time, fewer symbols qualified than the slot count you '
+                    'chose — typically because the other markets were closed (e.g. '
+                    'a weekend or overnight start).'),
+            'next': ('The budget for the missing slots is reserved, not spent. The '
+                     'fleet supervisor retries them continuously; as markets open '
+                     'and new research qualifies, the empty slots are composed '
+                     'automatically and you get another email.'),
+            'action': ('Nothing is required. If you prefer a full fleet immediately, '
+                       'you can stop this fleet and start it when your target '
+                       'markets are open.'),
+        },
+        'ko': {
+            'why': ('플릿은 지금 열려 있는 시장 중 안전 게이트를 통과한 리서치 후보가 있는 '
+                    '시장에만 슬롯을 구성합니다. 빌드 시점에 선택하신 슬롯 수보다 적은 종목만 '
+                    '조건을 충족했습니다 — 보통 다른 시장이 휴장 중일 때(주말·야간 시작 등) '
+                    '발생합니다.'),
+            'next': ('비어 있는 슬롯의 예산은 소진되지 않고 예약된 상태로 유지됩니다. 플릿 '
+                     '감독자가 계속 재시도하며, 시장이 열리고 새 리서치가 조건을 충족하면 '
+                     '빈 슬롯이 자동으로 구성되고 다시 이메일을 보내드립니다.'),
+            'action': ('별도의 조치는 필요 없습니다. 처음부터 전체 슬롯을 원하시면 이 플릿을 '
+                       '중지하고 목표 시장이 열려 있을 때 시작할 수 있습니다.'),
+        },
+        'ja': {
+            'why': ('フリートは、現在開場中でかつ安全ゲートを通過したリサーチ候補がある市場に'
+                    'のみ枠を構成します。ビルド時点で、選択された枠数より少ない銘柄しか条件を'
+                    '満たしませんでした — 通常、他の市場が休場中（週末や夜間の開始など）に'
+                    '起こります。'),
+            'next': ('埋まっていない枠の予算は消費されず、確保されたままです。フリート・'
+                     'スーパーバイザーが継続的に再試行し、市場が開き新しいリサーチが条件を'
+                     '満たし次第、空き枠は自動的に構成され、改めてメールをお送りします。'),
+            'action': ('特に操作は不要です。最初からすべての枠を埋めたい場合は、この'
+                       'フリートを停止し、対象市場の開場中に開始し直すこともできます。'),
+        },
+        'th': {
+            'why': ('ฟลีทจะจัดสรรช่องเฉพาะในตลาดที่เปิดทำการอยู่และมีผลวิจัยที่ผ่านเกณฑ์ความ'
+                    'ปลอดภัยเท่านั้น ณ เวลาสร้าง มีสัญลักษณ์ที่ผ่านเกณฑ์น้อยกว่าจำนวนช่องที่คุณเลือก '
+                    '— โดยทั่วไปเพราะตลาดอื่นปิดทำการ (เช่น เริ่มในวันหยุดสุดสัปดาห์หรือกลางคืน)'),
+            'next': ('งบประมาณของช่องที่ยังว่างถูกกันไว้ ไม่ได้ถูกใช้ ตัวควบคุมดูแลฟลีทจะพยายามต่อ'
+                     'เนื่อง เมื่อตลาดเปิดและมีผลวิจัยใหม่ที่ผ่านเกณฑ์ ช่องว่างจะถูกจัดสรรโดย'
+                     'อัตโนมัติและคุณจะได้รับอีเมลอีกครั้ง'),
+            'action': ('ไม่ต้องดำเนินการใด ๆ หากต้องการฟลีทเต็มจำนวนทันที คุณสามารถหยุดฟลีทนี้'
+                       'และเริ่มใหม่เมื่อตลาดเป้าหมายเปิดทำการ'),
+        },
+        'vi': {
+            'why': ('Fleet chỉ ghép vị trí vào các thị trường đang mở cửa và có ứng viên '
+                    'nghiên cứu vượt qua các cổng an toàn. Tại thời điểm xây dựng, số '
+                    'mã đạt chuẩn ít hơn số vị trí bạn chọn — thường do các thị trường '
+                    'khác đang đóng cửa (ví dụ bắt đầu vào cuối tuần hoặc ban đêm).'),
+            'next': ('Ngân sách của các vị trí còn thiếu được giữ lại, không bị tiêu. Bộ '
+                     'giám sát fleet liên tục thử lại; khi thị trường mở cửa và nghiên '
+                     'cứu mới đạt chuẩn, các vị trí trống sẽ tự động được ghép và bạn '
+                     'sẽ nhận thêm email.'),
+            'action': ('Không cần làm gì. Nếu muốn fleet đầy đủ ngay từ đầu, bạn có thể '
+                       'dừng fleet này và khởi động khi các thị trường mục tiêu mở cửa.'),
+        },
+        'id': {
+            'why': ('Fleet hanya menyusun slot ke pasar yang sedang buka dan memiliki '
+                    'kandidat riset yang lolos gerbang keamanan. Saat pembuatan, '
+                    'jumlah simbol yang memenuhi syarat lebih sedikit dari jumlah slot '
+                    'yang Anda pilih — biasanya karena pasar lain sedang tutup '
+                    '(misalnya mulai di akhir pekan atau malam hari).'),
+            'next': ('Anggaran untuk slot yang belum terisi dicadangkan, tidak '
+                     'terpakai. Pengawas fleet terus mencoba lagi; saat pasar buka dan '
+                     'riset baru memenuhi syarat, slot kosong akan disusun otomatis '
+                     'dan Anda menerima email lagi.'),
+            'action': ('Tidak perlu tindakan apa pun. Jika ingin fleet penuh sejak '
+                       'awal, Anda bisa menghentikan fleet ini dan memulainya saat '
+                       'pasar target sedang buka.'),
+        },
+    },
+    'fleet_slots_filled': {
+        'en': {
+            'why': ('Your fleet had fewer running slots than its target. Markets '
+                    'opened or new research qualified, so the supervisor composed '
+                    'new slots from the reserved budget.'),
+            'next': ('The new members trade under the same safety rails as the rest '
+                     'of the fleet. If slots remain, they keep filling automatically '
+                     'the same way.'),
+            'action': ('Nothing is required. You can review the new members on the '
+                       'automation dashboard.'),
+        },
+        'ko': {
+            'why': ('플릿의 가동 슬롯이 목표보다 적었는데, 시장이 열리거나 새 리서치가 조건을 '
+                    '충족하여 감독자가 예약된 예산으로 새 슬롯을 구성했습니다.'),
+            'next': ('새 멤버는 플릿의 나머지 멤버와 동일한 안전장치 아래에서 거래합니다. '
+                     '남은 슬롯이 있으면 같은 방식으로 계속 자동으로 채워집니다.'),
+            'action': ('별도의 조치는 필요 없습니다. 자동매매 대시보드에서 새 멤버를 확인할 수 '
+                       '있습니다.'),
+        },
+        'ja': {
+            'why': ('フリートの稼働枠が目標を下回っていましたが、市場が開くか新しいリサーチが'
+                    '条件を満たしたため、スーパーバイザーが確保済みの予算から新しい枠を構成'
+                    'しました。'),
+            'next': ('新しいメンバーは、フリートの他のメンバーと同じ安全レールの下で取引します。'
+                     '枠が残っている場合は、同じ方法で自動的に埋まり続けます。'),
+            'action': ('特に操作は不要です。自動売買ダッシュボードで新しいメンバーを確認'
+                       'できます。'),
+        },
+        'th': {
+            'why': ('ฟลีทของคุณมีช่องทำงานน้อยกว่าเป้าหมาย เมื่อตลาดเปิดหรือมีผลวิจัยใหม่ที่ผ่าน'
+                    'เกณฑ์ ตัวควบคุมดูแลจึงจัดสรรช่องใหม่จากงบประมาณที่กันไว้'),
+            'next': ('สมาชิกใหม่ซื้อขายภายใต้ระบบป้องกันเดียวกับสมาชิกอื่นของฟลีท '
+                     'หากยังมีช่องเหลือ ก็จะถูกเติมต่อไปโดยอัตโนมัติด้วยวิธีเดียวกัน'),
+            'action': ('ไม่ต้องดำเนินการใด ๆ คุณสามารถดูสมาชิกใหม่ได้ที่แดชบอร์ดการซื้อขาย'
+                       'อัตโนมัติ'),
+        },
+        'vi': {
+            'why': ('Fleet của bạn có ít vị trí chạy hơn mục tiêu. Thị trường đã mở '
+                    'cửa hoặc nghiên cứu mới đạt chuẩn, nên bộ giám sát đã ghép các '
+                    'vị trí mới từ ngân sách dự trữ.'),
+            'next': ('Các thành viên mới giao dịch dưới cùng các rào an toàn như phần '
+                     'còn lại của fleet. Nếu vẫn còn vị trí trống, chúng sẽ tiếp tục '
+                     'được lấp tự động theo cách tương tự.'),
+            'action': ('Không cần làm gì. Bạn có thể xem các thành viên mới trên bảng '
+                       'điều khiển giao dịch tự động.'),
+        },
+        'id': {
+            'why': ('Fleet Anda memiliki slot berjalan lebih sedikit dari target. '
+                    'Pasar telah buka atau riset baru memenuhi syarat, sehingga '
+                    'pengawas menyusun slot baru dari anggaran yang dicadangkan.'),
+            'next': ('Anggota baru berdagang di bawah rel keamanan yang sama dengan '
+                     'anggota fleet lainnya. Jika masih ada slot tersisa, slot akan '
+                     'terus terisi otomatis dengan cara yang sama.'),
+            'action': ('Tidak perlu tindakan apa pun. Anda dapat meninjau anggota '
+                       'baru di dasbor trading otomatis.'),
+        },
+    },
     'fleet_profit_target': {
         'en': {
             'why': ('Your fleet\'s total gain reached the profit goal you configured '
@@ -1061,6 +1192,8 @@ GLOSSARY_FOR: dict[str, tuple[str, ...]] = {
     'fleet_drawdown_warning': ('fleet', 'drawdown_rail'),
     'fleet_breaker': ('fleet', 'member', 'drawdown_rail'),
     'fleet_profit_target': ('fleet',),
+    'fleet_partial_build': ('fleet', 'member'),
+    'fleet_slots_filled': ('fleet', 'member'),
     'run_trade_executed': ('run', 'cycle', 'long_short'),
     'automation_trade_executed': ('run', 'cycle', 'long_short'),
     'run_goal_restart': ('run',),

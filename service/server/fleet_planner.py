@@ -1033,7 +1033,16 @@ def _do_research(fleet: dict) -> None:
                         "build_failed")
         return
 
-    allocations = allocate_budget(float(fleet["total_budget_usd"]), theses)
+    alloc_total = float(fleet["total_budget_usd"])
+    n_runs = max(int(fleet["n_runs"]), 1)
+    if len(theses) < n_runs:
+        # Under-fill reserve: handing the WHOLE budget to the few composable
+        # theses leaves the E3 backfill zero headroom — the fleet advertises
+        # replenishing:k/N but can never grow (fleet #26 live: 3/10 slots
+        # held all $10k, headroom −$1.25 vs a $500 floor). Keep each composed
+        # slot centered on B/N and reserve the missing slots' share.
+        alloc_total = alloc_total * len(theses) / n_runs
+    allocations = allocate_budget(alloc_total, theses)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1297,6 +1306,15 @@ def _do_build(fleet: dict) -> None:
                     f"partial:{total_built}/{n}",
                     extra_sets="last_supervise_at = ?",
                     extra_args=(_now_iso(),))
+        try:
+            from alerts import send_alert
+            send_alert(fleet["agent_id"], "fleet_partial_build",
+                       "fleet_partial_build",
+                       {"fleet_id": fleet["id"], "built": total_built, "n": n},
+                       dedupe_key=f"fleet:{fleet['id']}:partial_build")
+        except Exception:  # noqa: BLE001 — alerting must never break a build
+            logger.warning("partial-build alert failed (fleet %s)",
+                           fleet["id"], exc_info=True)
     else:
         _set_status(fleet["id"], (STATUS_BUILDING,), STATUS_ACTIVE, None,
                     extra_sets="last_supervise_at = ?",

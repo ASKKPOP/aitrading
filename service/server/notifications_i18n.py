@@ -762,6 +762,63 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'id': ('Fleet #{fleet_id}: evaluasi ekuitas gagal',
                'Evaluasi ekuitas berbasis harga pasar gagal karena harga usang selama {fails} kali berturut-turut — entri baru dijeda.'),
     },
+    'fleet_partial_build': {
+        'en': ('Fleet #{fleet_id}: {built} of {n} slots composed',
+               'Only {built} of the {n} slots you requested could be composed right now — '
+               'the other markets are closed or research has no qualified candidates yet. '
+               'The reserved budget for the remaining slots is untouched; they fill '
+               'automatically as markets open and new research qualifies, and you will '
+               'be emailed when they do.'),
+        'ko': ('플릿 #{fleet_id}: {n}개 중 {built}개 슬롯 구성',
+               '요청하신 {n}개 슬롯 중 지금은 {built}개만 구성할 수 있었습니다 — 나머지 시장이 '
+               '휴장 중이거나 아직 조건을 충족한 리서치 후보가 없습니다. 남은 슬롯의 예산은 '
+               '그대로 예약되어 있으며, 시장이 열리고 새 리서치가 조건을 충족하면 자동으로 '
+               '채워지고 채워질 때 이메일로 알려드립니다.'),
+        'ja': ('フリート #{fleet_id}：{n}枠中{built}枠を構成',
+               'ご指定の{n}枠のうち、現時点で構成できたのは{built}枠のみです — 他の市場が'
+               '休場中か、条件を満たすリサーチ候補がまだありません。残りの枠の予算はそのまま'
+               '確保されており、市場が開き新しいリサーチが条件を満たし次第自動的に埋まり、'
+               'その際にメールでお知らせします。'),
+        'th': ('ฟลีท #{fleet_id}: จัดสรรได้ {built} จาก {n} ช่อง',
+               'ขณะนี้จัดสรรได้เพียง {built} จาก {n} ช่องที่คุณขอ — ตลาดอื่นปิดทำการหรือยังไม่มี'
+               'ผลวิจัยที่ผ่านเกณฑ์ งบประมาณของช่องที่เหลือถูกกันไว้ครบถ้วน '
+               'และจะถูกเติมโดยอัตโนมัติเมื่อตลาดเปิดและมีผลวิจัยใหม่ที่ผ่านเกณฑ์ '
+               'โดยจะมีอีเมลแจ้งให้ทราบเมื่อเติมแล้ว'),
+        'vi': ('Fleet #{fleet_id}: đã ghép {built} trên {n} vị trí',
+               'Hiện chỉ ghép được {built} trong {n} vị trí bạn yêu cầu — các thị trường khác '
+               'đang đóng cửa hoặc chưa có ứng viên nghiên cứu đạt chuẩn. Ngân sách của các '
+               'vị trí còn lại vẫn được giữ nguyên; chúng sẽ tự động được lấp khi thị trường '
+               'mở cửa và nghiên cứu mới đạt chuẩn, và bạn sẽ nhận email khi điều đó xảy ra.'),
+        'id': ('Fleet #{fleet_id}: {built} dari {n} slot tersusun',
+               'Saat ini hanya {built} dari {n} slot yang Anda minta yang dapat disusun — '
+               'pasar lain sedang tutup atau belum ada kandidat riset yang memenuhi syarat. '
+               'Anggaran untuk slot sisanya tetap dicadangkan; slot akan terisi otomatis '
+               'saat pasar buka dan riset baru memenuhi syarat, dan Anda akan menerima '
+               'email saat itu terjadi.'),
+    },
+    'fleet_slots_filled': {
+        'en': ('Fleet #{fleet_id}: grew to {live} of {n} slots',
+               'New slots were composed for your Full Auto fleet — it now runs {live} of '
+               '{n}. Any remaining slots keep filling automatically as markets open and '
+               'research qualifies.'),
+        'ko': ('플릿 #{fleet_id}: {n}개 중 {live}개 슬롯으로 확대',
+               'Full Auto 플릿에 새 슬롯이 구성되어 현재 {n}개 중 {live}개가 가동 중입니다. '
+               '남은 슬롯은 시장 개장과 리서치 충족에 따라 계속 자동으로 채워집니다.'),
+        'ja': ('フリート #{fleet_id}：{n}枠中{live}枠に拡大',
+               'Full Autoフリートに新しい枠が構成され、現在{n}枠中{live}枠が稼働しています。'
+               '残りの枠は市場の開場とリサーチの充足に応じて自動的に埋まっていきます。'),
+        'th': ('ฟลีท #{fleet_id}: ขยายเป็น {live} จาก {n} ช่อง',
+               'มีการจัดสรรช่องใหม่ให้ฟลีท Full Auto ของคุณ — ขณะนี้ทำงาน {live} จาก {n} ช่อง '
+               'ช่องที่เหลือจะถูกเติมต่อไปโดยอัตโนมัติเมื่อตลาดเปิดและผลวิจัยผ่านเกณฑ์'),
+        'vi': ('Fleet #{fleet_id}: đã tăng lên {live} trên {n} vị trí',
+               'Các vị trí mới đã được ghép cho fleet Full Auto của bạn — hiện đang chạy '
+               '{live} trên {n}. Các vị trí còn lại sẽ tiếp tục tự động được lấp khi thị '
+               'trường mở cửa và nghiên cứu đạt chuẩn.'),
+        'id': ('Fleet #{fleet_id}: bertambah menjadi {live} dari {n} slot',
+               'Slot baru telah disusun untuk fleet Full Auto Anda — kini berjalan {live} '
+               'dari {n}. Slot yang tersisa akan terus terisi otomatis saat pasar buka dan '
+               'riset memenuhi syarat.'),
+    },
     'fleet_watchdog_stalled': {
         'en': ('Fleet #{fleet_id}: supervision stalled', 'The fleet supervisor has not run for 3+ ticks — drawdown rails may be dark. Check the worker.'),
         'ko': ('플릿 #{fleet_id}: 감독 정지', '플릿 감독자가 3틱 이상 실행되지 않았습니다 — 드로우다운 레일이 작동하지 않을 수 있습니다. 워커를 확인하세요.'),
