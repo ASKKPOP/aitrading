@@ -499,5 +499,44 @@ class FenceAndRetireTests(SupervisionBase):
         self.assertFalse(limited_rail, "rail kinds have their own budget")
 
 
+class WatchdogTests(SupervisionBase):
+    def _set_stamp(self, fleet_id, value):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET last_supervise_at = ? WHERE id = ?",
+                    (value, fleet_id))
+        conn.commit()
+        conn.close()
+
+    def _watchdog_alerts(self):
+        return [a for a in self.alerts if a["kind"] == "fleet_watchdog"]
+
+    def test_fresh_activation_does_not_trip_watchdog(self):
+        """A fleet that just went building→active has never been supervised;
+        the watchdog must not read its missing stamp as a 3-tick stall.
+        Fleets #22–#26 each false-alerted their owner seconds after
+        activation, before the first supervise pass could stamp."""
+        fleet_id = self._built_fleet()
+        self.assertEqual(fp.get_fleet(fleet_id)["status"], fp.STATUS_ACTIVE)
+        self.assertEqual(fs.check_watchdog(), 0)
+        self.assertEqual(self._watchdog_alerts(), [])
+
+    def test_stale_stamp_still_fires(self):
+        fleet_id = self._built_fleet()
+        self._set_stamp(fleet_id, "2026-01-01T00:00:00Z")
+        self.assertEqual(fs.check_watchdog(), 1)
+        hits = self._watchdog_alerts()
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["dedupe"], f"fleet:{fleet_id}:watchdog")
+
+    def test_null_stamp_still_fires(self):
+        """NULL stays stale for rows that predate activation stamping — a
+        truly unsupervised fleet must still alert."""
+        fleet_id = self._built_fleet()
+        self._set_stamp(fleet_id, None)
+        self.assertEqual(fs.check_watchdog(), 1)
+        self.assertEqual(len(self._watchdog_alerts()), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
