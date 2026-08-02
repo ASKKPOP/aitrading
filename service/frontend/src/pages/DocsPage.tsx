@@ -142,7 +142,16 @@ export function DocsPage({ token, userToken }: Props) {
       const page = v('--bg-primary')
       const card = v('--bg-card')
       const surface = v('--bg-secondary')
-      const line = v('--bg-tertiary')
+      // Borders come from the site's border tokens, NOT --bg-tertiary: on the
+      // 'claude' theme --bg-tertiary (#35342f) is a fill barely one shade off
+      // the card (#30302e), so every box outline and diagram stroke painted
+      // with it disappeared. --grid stays a hairline (chart gridlines, table
+      // row rules — subtle by design); every other border alias gets
+      // --border-strong, because each of them is some document's diagram-box
+      // outline (--line in trading-skills, --hair in architecture, --border in
+      // guide/gateway/ops-keys, --axis in the plan-16-style reports).
+      const hairline = v('--border-color')
+      const strong = v('--border-strong')
       const ink = v('--text-primary')
       const ink2 = v('--text-secondary')
       const muted = v('--text-muted')
@@ -158,8 +167,9 @@ export function DocsPage({ token, userToken }: Props) {
           --page:${page}; --bg:${page}; --ground:${page}; --surface-0:${page};
           --card:${card}; --panel:${card}; --surface-1:${card};
           --surface:${surface}; --surf:${surface}; --panel-2:${surface}; --surface-2:${surface};
-          --grid:${line}; --border:${line}; --bd:${line}; --hair:${line};
-          --border-strong:${line}; --baseline:${line};
+          --grid:${hairline};
+          --border:${strong}; --bd:${strong}; --hair:${strong}; --line:${strong};
+          --axis:${strong}; --baseline:${strong}; --border-strong:${strong};
           --ink:${ink}; --text-primary:${ink};
           --ink2:${ink2}; --ink-2:${ink2}; --ink-3:${muted}; --text-secondary:${ink2};
           --muted:${muted}; --text-muted:${muted};
