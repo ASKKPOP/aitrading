@@ -1290,10 +1290,17 @@ def _do_build(fleet: dict) -> None:
     if total_built == 0:
         _set_status(fleet["id"], (STATUS_BUILDING,), STATUS_STOPPED, "build_failed")
     elif total_built < n:
+        # seed last_supervise_at at activation: the watchdog reads NULL as
+        # stale, so an unstamped fresh fleet would false-alert before its
+        # first supervise pass
         _set_status(fleet["id"], (STATUS_BUILDING,), STATUS_ACTIVE,
-                    f"partial:{total_built}/{n}")
+                    f"partial:{total_built}/{n}",
+                    extra_sets="last_supervise_at = ?",
+                    extra_args=(_now_iso(),))
     else:
-        _set_status(fleet["id"], (STATUS_BUILDING,), STATUS_ACTIVE, None)
+        _set_status(fleet["id"], (STATUS_BUILDING,), STATUS_ACTIVE, None,
+                    extra_sets="last_supervise_at = ?",
+                    extra_args=(_now_iso(),))
 
 
 # ── tick ────────────────────────────────────────────────────────────────────
