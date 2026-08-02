@@ -60,6 +60,13 @@ _AGENT_CONTENT_TABLES: tuple[tuple[str, str], ...] = (
     ("broker_orders", "agent_id"),
     ("broker_live_optins", "agent_id"),
     ("agent_leaderboard_exclusions", "agent_id"),
+    # 2026-08-02: prod MySQL FK sweep (information_schema) — these were
+    # missing and left the final DELETE FROM agents raising 1451.
+    ("backtest_runs", "agent_id"),
+    ("chat_sessions", "agent_id"),
+    ("config_profiles", "agent_id"),
+    ("reputation_slashes", "leader_id"),
+    ("user_watches", "agent_id"),
 )
 
 
@@ -104,6 +111,17 @@ def _delete_agent_cascade(cursor, agent_id: int) -> dict[str, int]:
                 deleted[f"{fleet_table}.fleet_id"] = cursor.rowcount
         except Exception as exc:  # noqa: BLE001
             logger.warning("admin cascade %s.fleet_id failed: %s", fleet_table, exc)
+    # chat_messages key on session_id — clear via the agent's sessions
+    # BEFORE chat_sessions itself goes (same MySQL FK reasoning).
+    try:
+        cursor.execute(
+            """DELETE FROM chat_messages WHERE session_id IN
+                (SELECT id FROM chat_sessions WHERE agent_id = ?)""",
+            (agent_id,))
+        if cursor.rowcount:
+            deleted["chat_messages.session_id"] = cursor.rowcount
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("admin cascade chat_messages.session_id failed: %s", exc)
     for table, column in (("fleet_symbol_cooldowns", "agent_id"),
                           ("fleets", "agent_id")):
         try:
@@ -284,7 +302,21 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
             linked = [r["id"] for r in cursor.fetchall()]
             for aid in linked:
                 deleted[f"agent:{aid}"] = _delete_agent_cascade(cursor, aid)
-            for table in ("user_tokens", "user_api_settings", "points_transactions", "oauth_identities"):
+            # support_messages key on thread_id — clear via the user's thread
+            # BEFORE support_threads goes (prod MySQL enforces the FK).
+            try:
+                cursor.execute(
+                    """DELETE FROM support_messages WHERE thread_id IN
+                        (SELECT id FROM support_threads WHERE user_id = ?)""",
+                    (user_id,))
+                if cursor.rowcount:
+                    deleted["support_messages.thread_id"] = cursor.rowcount
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("admin user cascade support_messages failed: %s", exc)
+            # user_subscriptions was the live 2026-08-02 500: FK 1451 on the
+            # final DELETE FROM users.
+            for table in ("user_tokens", "user_api_settings", "points_transactions",
+                          "oauth_identities", "user_subscriptions", "support_threads"):
                 try:
                     cursor.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
                     if cursor.rowcount:

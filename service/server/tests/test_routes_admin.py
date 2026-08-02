@@ -119,6 +119,86 @@ class AdminDeleteTests(_Base):
         self.assertEqual(r.status_code, 404)
 
 
+class AdminDeleteFkCascadeTests(_Base):
+    """Prod MySQL enforces FKs SQLite ignores — every table holding an FK to
+    users/agents must be cleared by the delete cascade, or the final DELETE
+    raises IntegrityError 1451 and the endpoint 500s (user_subscriptions hit
+    live on 2026-08-02). SQLite won't raise, so assert no orphan rows remain
+    instead."""
+
+    def _make_user(self, email: str = "fkdel@example.com") -> int:
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO users (email, password_hash, lang) VALUES (?, 'x', 'en')",
+            (email,))
+        uid = cur.lastrowid
+        conn.commit(); conn.close()
+        return uid
+
+    def test_user_delete_clears_subscription_and_support_rows(self):
+        uid = self._make_user()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO user_subscriptions (user_id, plan_code, status) VALUES (?, 'pro', 'active')",
+            (uid,))
+        cur.execute(
+            "INSERT INTO support_threads (user_id, subject, created_at) VALUES (?, 'help', datetime('now'))",
+            (uid,))
+        tid = cur.lastrowid
+        cur.execute(
+            "INSERT INTO support_messages (thread_id, sender, body, created_at) VALUES (?, 'user', 'hi', datetime('now'))",
+            (tid,))
+        conn.commit(); conn.close()
+        r = self.client.delete(f"/api/admin/users/{uid}", headers=ADMIN)
+        self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for table, col, val in (("user_subscriptions", "user_id", uid),
+                                ("support_threads", "user_id", uid),
+                                ("support_messages", "thread_id", tid),
+                                ("users", "id", uid)):
+            cur.execute(f"SELECT COUNT(*) AS c FROM {table} WHERE {col} = ?", (val,))
+            self.assertEqual(cur.fetchone()["c"], 0, f"orphan rows left in {table}")
+        conn.close()
+
+    def test_agent_delete_clears_every_fk_table(self):
+        agent_id, _ = _register_agent(self.client, "fk-doomed")
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO backtest_runs (agent_id, config) VALUES (?, '{}')", (agent_id,))
+        cur.execute(
+            "INSERT INTO chat_sessions (agent_id, market, created_at) VALUES (?, 'crypto', datetime('now'))",
+            (agent_id,))
+        sid = cur.lastrowid
+        cur.execute(
+            "INSERT INTO chat_messages (session_id, role, content, created_at) VALUES (?, 'user', 'q', datetime('now'))",
+            (sid,))
+        cur.execute("INSERT INTO config_profiles (agent_id, name, payload_json) VALUES (?, 'p', '{}')", (agent_id,))
+        cur.execute(
+            "INSERT INTO reputation_slashes (leader_id, loss_pct, follower_count, points_deducted) VALUES (?, 1.0, 1, 1)",
+            (agent_id,))
+        cur.execute(
+            "INSERT INTO user_watches (agent_id, name, metric, comparator, threshold, created_at) VALUES (?, 'w', 'price', '>', 1, datetime('now'))",
+            (agent_id,))
+        conn.commit(); conn.close()
+        r = self.client.delete(f"/api/admin/agents/{agent_id}", headers=ADMIN)
+        self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for table, col, val in (("backtest_runs", "agent_id", agent_id),
+                                ("chat_messages", "session_id", sid),
+                                ("chat_sessions", "agent_id", agent_id),
+                                ("config_profiles", "agent_id", agent_id),
+                                ("reputation_slashes", "leader_id", agent_id),
+                                ("user_watches", "agent_id", agent_id),
+                                ("agents", "id", agent_id)):
+            cur.execute(f"SELECT COUNT(*) AS c FROM {table} WHERE {col} = ?", (val,))
+            self.assertEqual(cur.fetchone()["c"], 0, f"orphan rows left in {table}")
+        conn.close()
+
+
 class PostMentionTests(_Base):
     def test_discussion_post_mention_notifies(self):
         _, alice_token = _register_agent(self.client, "mention-alice")
