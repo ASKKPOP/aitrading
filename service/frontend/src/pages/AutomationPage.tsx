@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
+import { planFeatures } from '../entitlements'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { FleetPanel } from '../components/FleetPanel'
 import { SymbolSelect } from '../components/SymbolSelect'
@@ -61,9 +62,11 @@ type RiskKey = keyof typeof RISK_PRESETS
 // until the fetch lands (or when it fails).
 const SIMPLE_COINS_FALLBACK = ['BTC', 'ETH', 'SOL']
 
-export function AutomationPage() {
+export function AutomationPage({ planCode = null }: { planCode?: string | null }) {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
   const { language } = useLanguage()
+  // Subscription-tier shape (server-enforced too; see entitlements.ts).
+  const features = planFeatures(planCode)
 
   // Top-5 tradable universe for simple mode (fail-soft to the static fallback).
   useEffect(() => {
@@ -80,7 +83,15 @@ export function AutomationPage() {
 
   const [rules, setRules] = useState<Rule[]>([])
   const [topCoins, setTopCoins] = useState<string[]>(SIMPLE_COINS_FALLBACK)
-  const [ruleMode, setRuleMode] = useState<'agent' | 'simple' | 'fleet'>('simple')
+  const [ruleMode, setRuleMode] = useState<'agent' | 'simple' | 'fleet'>(
+    () => planFeatures(planCode).simpleMode ? 'simple' : 'agent')
+  // Plan resolves async (App fetches /users/me); clamp a mode the tier
+  // doesn't include back to ⓪, which every tier has.
+  useEffect(() => {
+    if ((ruleMode === 'simple' && !features.simpleMode)
+      || (ruleMode === 'fleet' && !features.fleetMode)) setRuleMode('agent')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planCode, ruleMode])
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
   const [runLev, setRunLev] = useState(1)   // leverage for ⓪/① single-run modes
@@ -243,7 +254,7 @@ export function AutomationPage() {
     empty: tr(language, { ko: '아직 규칙이 없습니다. 위에서 추가하세요.', en: 'No rules yet. Add one above.', ja: 'ルールはまだありません。', th: 'ยังไม่มีกฎ', vi: 'Chưa có quy tắc.', id: 'Belum ada aturan. Tambahkan satu di atas.' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.', id: 'Silakan masuk.' }),
     // ── automation-rule panel (hangs off the create modal) ──
-    ruleSection: tr(language, { ko: '또는 자동화 규칙 만들기 (AI가 일정에 따라 반복 실행)', en: 'Or create an automation rule (AI repeats it on a schedule)', ja: 'または自動売買ルールを作成（AIが定期実行）', th: 'หรือสร้างกฎอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Hoặc tạo quy tắc tự động (AI lặp lại theo lịch)', id: 'Atau buat aturan otomatisasi (AI mengulanginya sesuai jadwal)' }),
+    ruleSection: tr(language, { ko: '자동화 만들기 (AI가 일정에 따라 반복 실행)', en: 'Create automation (AI repeats it on a schedule)', ja: '自動売買を作成（AIが定期実行）', th: 'สร้างระบบอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Tạo tự động hóa (AI lặp lại theo lịch)', id: 'Buat otomatisasi (AI mengulanginya sesuai jadwal)' }),
     modeSimple: tr(language, { ko: '간편', en: 'Simple', ja: 'かんたん', th: 'ง่าย', vi: 'Đơn giản', id: 'Sederhana' }),
     modeAgent: tr(language, { ko: '1종목 위임', en: 'Agent (1 symbol)', ja: '1銘柄委任', th: 'มอบหมาย 1 เหรียญ', vi: 'Ủy quyền 1 mã', id: 'Agen (1 simbol)' }),
     modeFleet: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn', id: 'Full Auto' }),
@@ -495,8 +506,12 @@ export function AutomationPage() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
         <button style={chip(ruleMode === 'agent')} onClick={() => setRuleMode('agent')}>⓪ {T.modeAgent}</button>
-        <button style={chip(ruleMode === 'simple')} onClick={() => setRuleMode('simple')}>① {T.modeSimple}</button>
-        <button style={chip(ruleMode === 'fleet')} onClick={() => setRuleMode('fleet')}>② {T.modeFleet}</button>
+        {features.simpleMode && (
+          <button style={chip(ruleMode === 'simple')} onClick={() => setRuleMode('simple')}>① {T.modeSimple}</button>
+        )}
+        {features.fleetMode && (
+          <button style={chip(ruleMode === 'fleet')} onClick={() => setRuleMode('fleet')}>② {T.modeFleet}</button>
+        )}
       </div>
       {ruleMode !== 'fleet' && (
         <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>
@@ -517,7 +532,7 @@ export function AutomationPage() {
               <span style={{ fontSize: 11, color: 'var(--text-muted,#a89f92)' }}>💡 {T.budgetHint}</span>
             </label>
           </div>
-          {leveragePicker}
+          {features.leverage && leveragePicker}
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
             <button onClick={addAgent} disabled={busy || agentBudget < 100}
               style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
@@ -562,7 +577,7 @@ export function AutomationPage() {
               </button>
             ))}
           </div>
-          {leveragePicker}
+          {features.leverage && leveragePicker}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.simpleNote}</span>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
@@ -723,7 +738,9 @@ export function AutomationPage() {
       {/* ── The two ways to make one, above the block ── */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'stretch' }}>
         <button style={primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
-        <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
+        {features.analyst && (
+          <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
+        )}
       </div>
 
 
@@ -734,7 +751,7 @@ export function AutomationPage() {
 
       {/* ── The one block on this page ── */}
       <RunsLiveSection token={token} embedded reloadKey={runsReload}
-        hideCreateButton openCreateSignal={openCreate} extraPanel={rulePanel}
+        hideCreateButton hideCreateForm openCreateSignal={openCreate} extraPanel={rulePanel}
         openRunRequest={openRunReq} />
 
       {/* ── ② Make by AI Analyst ── */}

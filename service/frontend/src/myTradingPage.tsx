@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { API_BASE, useLanguage } from './appShared'
+import { PLAN_NAMES } from './entitlements'
 import { tr } from './i18n'
 import { signOutUser } from './authV2'
 
@@ -63,6 +64,8 @@ interface UserInfo {
   id: number
   email: string
   points: number
+  // /users/me also carries the active subscription (plan_code, expires_at).
+  subscription?: { plan_code?: string; expires_at?: string } | null
 }
 
 interface MfaStatus {
@@ -100,6 +103,17 @@ function AccountHeader({ user, mfa, onSignOut }: {
           <div style={{ marginTop: 8, fontSize: 13, opacity: 0.7 }}>
             {user && (
               <>{tr(language, { ko: '포인트: ', en: 'Points: ', ja: 'ポイント: ', th: 'คะแนน: ', vi: 'Điểm: ', id: 'Poin: ' })}<strong>{user.points}</strong> · </>
+            )}
+            {user?.subscription?.plan_code && (
+              <>
+                💎 <strong>{PLAN_NAMES[user.subscription.plan_code] || user.subscription.plan_code}</strong>
+                {user.subscription.plan_code !== 'enterprise' && (
+                  <>{' '}<Link to="/subscribe" style={{ color: '#fde68a', textDecoration: 'underline' }}>
+                    {tr(language, { ko: '플랜 업그레이드', en: 'Upgrade plan', ja: 'プランをアップグレード', th: 'อัปเกรดแผน', vi: 'Nâng cấp gói', id: 'Tingkatkan paket' })}
+                  </Link></>
+                )}
+                {' · '}
+              </>
             )}
             {mfa?.enabled
               ? <span style={{ color: '#86efac' }}>{tr(language, { ko: `2FA 활성화됨 (백업 코드 ${mfa.backup_codes_remaining}개 남음)`, en: `2FA enabled (${mfa.backup_codes_remaining} backup codes left)`, ja: `2FA有効 (バックアップコード残り${mfa.backup_codes_remaining}個)`, th: `เปิด 2FA แล้ว (เหลือรหัสสำรอง ${mfa.backup_codes_remaining} รหัส)`, vi: `Đã bật 2FA (còn ${mfa.backup_codes_remaining} mã dự phòng)`, id: `2FA aktif (${mfa.backup_codes_remaining} kode cadangan tersisa)` })}</span>

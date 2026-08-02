@@ -432,9 +432,14 @@ function BookBlock({ run, snap, tick, lang, liqDefense }: {
 // owns the structured-409 conflict flow, which the parent would otherwise have
 // to reimplement. `extraPanel` hangs additional creation UI off the same modal.
 export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
-  hideCreateButton = false, openCreateSignal = 0, extraPanel, openRunRequest }: {
+  hideCreateButton = false, hideCreateForm = false, openCreateSignal = 0,
+  extraPanel, openRunRequest }: {
   token?: string | null; embedded?: boolean; reloadKey?: number
   hideCreateButton?: boolean; openCreateSignal?: number; extraPanel?: React.ReactNode
+  // Hide the manual TRADING form in CREATE mode (Henry, 2026-08-02) — the
+  // modal then offers only extraPanel's delegation modes. Re-configuring an
+  // existing draft still shows the form; that flow has no other editor.
+  hideCreateForm?: boolean
   // Parent-driven "open this run's detail drawer" (the fleet monitor's member
   // cards use it). Nonce-keyed like openCreateSignal so the same run can be
   // reopened after the drawer is closed.
@@ -829,20 +834,22 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
             padding: '32px 24px 24px', overflowY: 'auto' }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 900, margin: 'auto' }}>
-            <CreateRunForm token={token}
-              // Remount on mode change so the form re-seeds from the run being
-              // edited instead of keeping the previous draft's values.
-              key={editRunId ?? 'create'}
-              editRun={editRunId !== null
-                ? runs.find((r) => r.id === editRunId) : undefined}
-              onDone={(startError, conflictInfo) => {
-                setShowCreate(false); setEditRunId(null)
-                if (conflictInfo) setConflict(conflictInfo)
-                else if (startError) setErr(startError)
-                load()
-              }}
-              onCancel={() => { setShowCreate(false); setEditRunId(null) }}
-              language={language} />
+            {(editRunId !== null || !hideCreateForm) && (
+              <CreateRunForm token={token}
+                // Remount on mode change so the form re-seeds from the run being
+                // edited instead of keeping the previous draft's values.
+                key={editRunId ?? 'create'}
+                editRun={editRunId !== null
+                  ? runs.find((r) => r.id === editRunId) : undefined}
+                onDone={(startError, conflictInfo) => {
+                  setShowCreate(false); setEditRunId(null)
+                  if (conflictInfo) setConflict(conflictInfo)
+                  else if (startError) setErr(startError)
+                  load()
+                }}
+                onCancel={() => { setShowCreate(false); setEditRunId(null) }}
+                language={language} />
+            )}
             {extraPanel}
           </div>
         </div>

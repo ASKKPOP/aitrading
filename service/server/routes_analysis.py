@@ -78,6 +78,14 @@ def _load_own_config(agent_id: int, config_id: int) -> Optional[dict]:
         conn.close()
 
 
+def _deny_analyst(agent_id: int) -> None:
+    """Tier gate (always-on): the one-off AI Analyst is Pro+."""
+    from entitlements import check_analyst_access
+    deny = check_analyst_access(agent_id)
+    if deny:
+        raise HTTPException(status_code=403, detail=deny)
+
+
 def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     # Any job still marked 'running' at process start belongs to a dead
@@ -94,6 +102,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         agent = _get_agent_by_token(token)
         if not agent:
             raise HTTPException(status_code=401, detail="Invalid token")
+        _deny_analyst(agent["id"])
 
         symbol = (data.symbol or "").strip()
         if not symbol:
@@ -123,6 +132,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         agent = _get_agent_by_token(token)
         if not agent:
             raise HTTPException(status_code=401, detail="Invalid token")
+        _deny_analyst(agent["id"])
 
         symbol = (data.symbol or "").strip()
         if not symbol:
@@ -193,6 +203,7 @@ def register_analysis_routes(app: FastAPI, ctx: RouteContext) -> None:
         agent = _get_agent_by_token(token)
         if not agent:
             raise HTTPException(status_code=401, detail="Invalid token")
+        _deny_analyst(agent["id"])
 
         symbol = (data.symbol or "").strip()
         if not symbol:
