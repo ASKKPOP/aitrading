@@ -2843,6 +2843,7 @@ def init_database():
             enabled      INTEGER NOT NULL DEFAULT 1,
             is_base      INTEGER NOT NULL DEFAULT 0,
             updated_by   TEXT,
+            catalog_hash TEXT,
             created_at   TEXT NOT NULL,
             updated_at   TEXT NOT NULL
         )
@@ -3005,6 +3006,10 @@ def init_database():
         )
     """)
     for _ddl in (
+        # Plan 20 catalogue sync (2026-08-02): fingerprint of what the base
+        # catalogue last wrote to the row; untouched rows auto-upgrade when
+        # the catalogue changes. MySQL mirror: alembic 0040.
+        "ALTER TABLE trading_skills ADD COLUMN catalog_hash TEXT",
         "ALTER TABLE trading_runs ADD COLUMN fleet_id INTEGER",
         "ALTER TABLE trading_runs ADD COLUMN created_via TEXT NOT NULL DEFAULT 'user'",
         "ALTER TABLE trading_runs ADD COLUMN adapt_state_json TEXT",

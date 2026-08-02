@@ -3,9 +3,12 @@
 Plan 20. A skill is a compact, prompt-ready decision-method package (the
 distilled shape of the SKILL.md ecosystem: scored anchors, closed label sets,
 invalidation-first framing) stored in the trading_skills table. Base skills
-ship in code (BASE_SKILLS) and are seeded insert-if-missing on first read, so
-an admin's edits always win over the catalogue; custom skills are added via
-the admin API.
+ship in code (BASE_SKILLS); on first read the catalogue is synced into the
+DB — missing slugs are inserted, and rows still exactly as the catalogue
+last wrote them AUTO-UPGRADE when the catalogue changes (owner rule
+2026-08-02: original skill updated → prod upgrades automatically). A row an
+admin has edited stops matching its catalog_hash and is left alone until an
+explicit reset. Custom skills are added via the admin API.
 
 Selection is deterministic and ZERO-LLM (E1 philosophy): a skill declares
 which decision prompts it applies to (light | trader | verifier | planner)
@@ -17,6 +20,7 @@ trading cycle — skills_block() degrades to "".
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import threading
@@ -36,10 +40,10 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 10000 fits the ENTIRE default-enabled trader set (the busiest site, ~9.1K
+# 14000 fits the ENTIRE default-enabled trader set (the busiest site, ~13.4K
 # with the us-stock earnings skill riding) — at the defaults nothing is ever
 # silently dropped; the budget only bites once an admin adds custom skills.
-MAX_BLOCK_LEN = 10000
+MAX_BLOCK_LEN = 14000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -170,10 +174,10 @@ BASE_SKILLS: list[dict[str, Any]] = [
     # decision library — the one researched repo whose content maps onto
     # decision prompts (the exchange repos are execution/API material that
     # sooppiy's deterministic gateway already owns). Priorities interleave
-    # with the original six, whose bodies must NOT change here: prod seeded
-    # them insert-if-missing, so editing a shipped body in this catalogue
-    # would silently diverge code from the live rows (use the admin API or
-    # /reset for that).
+    # with the original six. Since the catalog_hash sync (2026-08-02),
+    # editing a shipped body HERE is the supported upgrade path: untouched
+    # prod rows follow the catalogue automatically; admin-edited rows keep
+    # their edit until reset.
     {
         "slug": "thesis-validation",
         "name": "Thesis Validation",
@@ -393,6 +397,154 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "driver breaks."
         ),
     },
+    # ── tradermonty port (2026-08-02, owner: "do all for our sooppiy AI") ──
+    # Six judgment skills distilled from tradermonty/claude-trading-skills
+    # (MIT). Only the decision METHOD is ported — those skills' Python
+    # engines fetch FMP/FINVIZ data and emit report files, which is agent
+    # tooling, not prompt material; if their data feeds are ever wanted they
+    # become backend daemons (like psych/regime), not registry rows.
+    {
+        "slug": "market-topping-evidence",
+        "name": "Market Topping Evidence",
+        "description": ("O'Neil/Minervini topping tells: distribution-day "
+                        "clusters, leadership breakdown, defensive rotation "
+                        "→ reduce exposure by evidence count."),
+        "prompts": ["trader"],
+        "priority": 12,
+        "body": (
+            "Watch for topping evidence while the index still looks fine: "
+            "distribution days (a down session of 0.2%+ on HIGHER volume "
+            "than the prior day — institutional selling), leading names "
+            "breaking down while the index holds up, and defensive sectors "
+            "outperforming growth. These are counting signals: one "
+            "distribution day means nothing, a cluster inside a few weeks "
+            "is a warning, and a dense cluster plus broken leadership is a "
+            "reduce-exposure regime. Old signals expire — a distribution "
+            "day stops counting after roughly five weeks or once the "
+            "market rallies well past it. Escalate caution with the "
+            "evidence count; never call a top from a single tell, and let "
+            "the count argue you down from full risk before the index "
+            "confirms the correction."
+        ),
+    },
+    {
+        "slug": "news-reaction-evidence",
+        "name": "News Reaction Evidence",
+        "description": ("How price reacts to news outweighs the news; "
+                        "failure to rally on good news is exhaustion "
+                        "evidence — but require a move AGAINST, not mere "
+                        "silence."),
+        "prompts": ["trader", "verifier"],
+        "priority": 27,
+        "body": (
+            "How the market reacts to news is stronger evidence than the "
+            "news itself. A market that fails to rally on genuinely "
+            "bullish news — or fails to sell off on genuinely bearish "
+            "news — is showing that the marginal buyer or seller is "
+            "exhausted; that behavioral tell matters most when positioning "
+            "is crowded in the news's favor. Apply the test honestly: most "
+            "single events draw no visible response even in a healthy "
+            "market, so 'didn't respond' alone proves nothing — demand a "
+            "meaningful move AGAINST the favorable news before reading "
+            "exhaustion. Weigh the news source (primary/official beats "
+            "wire beats portal), and never reason from an event you "
+            "cannot verify actually happened."
+        ),
+    },
+    {
+        "slug": "drawdown-circuit-breaker",
+        "name": "Drawdown Circuit Breaker",
+        "description": ("Realized damage governs new risk: consecutive "
+                        "losses trigger a cooldown — manage what exists, "
+                        "open nothing new; survival first."),
+        "prompts": ["light", "trader"],
+        "priority": 47,
+        "body": (
+            "Realized damage governs new risk-taking. After consecutive "
+            "losing exits, enter a cooldown: no new positions and no adds "
+            "— keep managing what already exists. Escalating risk to win "
+            "back a loss is how a bad day becomes a bad month; the "
+            "breaker exists to prevent escalation after damage, not to "
+            "force liquidation of open positions. Count only REALIZED "
+            "losses for this judgment — an unrealized swing is position "
+            "management's problem, and revenge-trading a paper loss is "
+            "the same mistake earlier. When recent closed trades have "
+            "gone badly, the correct bias is smaller size, higher "
+            "evidence demands, and more holds, until a trade closed well "
+            "again. Survival outranks opportunity."
+        ),
+    },
+    {
+        "slug": "exposure-discipline",
+        "name": "Exposure Discipline",
+        "description": ("Decide posture before the trade: new-entry-allowed "
+                        "/ reduce-only / cash-priority; regime sets the "
+                        "ceiling, conflicts lower it."),
+        "prompts": ["trader"],
+        "priority": 53,
+        "body": (
+            "Decide the POSTURE before judging the trade: is this an "
+            "environment for new entries, for reduce-only, or for cash "
+            "priority? The regime read sets the baseline exposure "
+            "ceiling; participation breadth and topping evidence adjust "
+            "it within bounds. In reduce-only posture a good setup is "
+            "still a pass — trim into strength instead; in cash-priority "
+            "posture the only acceptable actions shrink exposure. When "
+            "the inputs conflict or key evidence is missing, default to "
+            "the LOWER exposure — safety first is the tie-break, and a "
+            "posture chosen before the setup is judged cannot be "
+            "negotiated upward by enthusiasm for the setup."
+        ),
+    },
+    {
+        "slug": "contrarian-crowding-gate",
+        "name": "Contrarian Crowding Gate",
+        "description": ("Shapiro sequence: crowding → news-failure → price "
+                        "confirmation, each step fail-closed; earlier "
+                        "rejection is never softened by later evidence."),
+        "prompts": ["trader", "verifier"],
+        "priority": 58,
+        "body": (
+            "Fading a crowd requires a sequence, not a feeling. Step 1: "
+            "positioning must actually be crowded — without crowding "
+            "there is no contrarian setup, only an opinion. Step 2: the "
+            "market must FAIL to reward the crowd's favorable news (the "
+            "exhaustion tell). Step 3: price action must confirm the "
+            "turn with a level that defines invalidation. Each step "
+            "settles fully before the next is considered, and each fails "
+            "closed: missing, stale, or contradictory evidence at any "
+            "step blocks the setup — it never passes by default, and a "
+            "definitive rejection at an earlier step is never softened "
+            "by promising evidence later in the chain. Until all three "
+            "confirm, the contrarian idea is a watchlist item, not a "
+            "trade."
+        ),
+    },
+    {
+        "slug": "scenario-precommit",
+        "name": "Scenario Pre-Commitment",
+        "description": ("Classify the event, map 1st/2nd/3rd-order "
+                        "effects, pre-commit if/then branches with levels; "
+                        "prefer armed exits over waiting."),
+        "prompts": ["trader"],
+        "priority": 59,
+        "body": (
+            "Trade events through pre-committed branches, not improvised "
+            "reactions. Classify the event (policy, geopolitics, "
+            "regulation, technology, commodity, corporate), then map its "
+            "first-order impact, the second-order effects on suppliers, "
+            "customers and competitors, and the third-order macro "
+            "consequences — the second-order move is often larger and "
+            "later than the headline trade. Write the branches as "
+            "if/then with named price levels: if the level breaks, then "
+            "the committed action fires. Prefer arming an exit at the "
+            "level over waiting to re-decide — a pre-committed level "
+            "acts at machine speed and without hope. A scenario is not a "
+            "prediction: hold more than one branch, each with its own "
+            "invalidation, and drop a branch the moment its invalidation "
+            "prints."
+        ),
+    },
     {
         "slug": "data-honesty",
         "name": "Data Honesty",
@@ -437,24 +589,88 @@ def invalidate_trading_skills_cache() -> None:
         _cache["rows"] = None
 
 
-def _seed_missing(cursor) -> bool:
-    """Insert base skills whose slug is absent. Never overwrites a row, so an
-    admin's edit (or disable) of a base skill always survives restarts."""
-    cursor.execute("SELECT slug FROM trading_skills")
-    present = {row["slug"] for row in cursor.fetchall()}
+def _content_hash(name: str, description: str, body: str,
+                  prompts: list[str], markets: Optional[list[str]],
+                  priority: int) -> str:
+    """Fingerprint of the catalogue-owned fields of a skill. `enabled` is
+    deliberately excluded: disabling a skill is an operator state, not a
+    content edit, and must not block a body upgrade."""
+    payload = json.dumps([name, description, body, prompts, markets,
+                          int(priority)], ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _catalogue_hash(skill: dict[str, Any]) -> str:
+    return _content_hash(skill["name"], skill["description"], skill["body"],
+                         skill["prompts"], skill.get("markets"),
+                         skill["priority"])
+
+
+def _sync_catalogue(cursor) -> bool:
+    """Seed missing base skills AND auto-upgrade untouched ones.
+
+    Owner rule (2026-08-02): when the original skill is updated, prod
+    upgrades automatically. A row's `catalog_hash` records what the
+    catalogue last wrote; if the row still matches it (nobody edited), a
+    changed catalogue overwrites the row in place. A row an admin has
+    edited no longer matches its stored hash, so it is left alone — the
+    edit wins until an explicit /reset. Rows from before this column
+    (catalog_hash NULL) are backfilled only when their content matches the
+    current catalogue byte-for-byte; anything else stays protected as a
+    presumed edit."""
+    cursor.execute(
+        "SELECT slug, name, description, body, prompts_json, markets_json, "
+        "priority, catalog_hash FROM trading_skills WHERE is_base = 1")
+    present = {row["slug"]: row for row in cursor.fetchall()}
     wrote = False
     now = _now_iso()
     for skill in BASE_SKILLS:
-        if skill["slug"] in present:
+        cat_hash = _catalogue_hash(skill)
+        row = present.get(skill["slug"])
+        if row is None:
+            cursor.execute(
+                """INSERT INTO trading_skills
+                   (slug, name, description, body, prompts_json, markets_json,
+                    priority, enabled, is_base, updated_by, catalog_hash,
+                    created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'seed', ?, ?, ?)""",
+                (skill["slug"], skill["name"], skill["description"],
+                 skill["body"], json.dumps(skill["prompts"]),
+                 json.dumps(skill["markets"]) if skill.get("markets") else None,
+                 skill["priority"], cat_hash, now, now))
+            wrote = True
             continue
-        cursor.execute(
-            """INSERT INTO trading_skills
-               (slug, name, description, body, prompts_json, markets_json,
-                priority, enabled, is_base, updated_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'seed', ?, ?)""",
-            (skill["slug"], skill["name"], skill["description"], skill["body"],
-             json.dumps(skill["prompts"]), None, skill["priority"], now, now))
-        wrote = True
+        try:
+            row_prompts = json.loads(row["prompts_json"] or "[]")
+        except Exception:  # noqa: BLE001
+            row_prompts = []
+        row_markets = None
+        if row["markets_json"]:
+            try:
+                row_markets = json.loads(row["markets_json"])
+            except Exception:  # noqa: BLE001
+                row_markets = None
+        row_hash = _content_hash(row["name"], row["description"] or "",
+                                 row["body"] or "", row_prompts, row_markets,
+                                 row["priority"] or 0)
+        if row["catalog_hash"] is None:
+            if row_hash == cat_hash:
+                cursor.execute(
+                    "UPDATE trading_skills SET catalog_hash = ? WHERE slug = ?",
+                    (cat_hash, skill["slug"]))
+                wrote = True
+            continue
+        if row_hash == row["catalog_hash"] and cat_hash != row["catalog_hash"]:
+            cursor.execute(
+                """UPDATE trading_skills SET name = ?, description = ?,
+                   body = ?, prompts_json = ?, markets_json = ?, priority = ?,
+                   catalog_hash = ?, updated_by = 'seed-upgrade',
+                   updated_at = ? WHERE slug = ?""",
+                (skill["name"], skill["description"], skill["body"],
+                 json.dumps(skill["prompts"]),
+                 json.dumps(skill["markets"]) if skill.get("markets") else None,
+                 skill["priority"], cat_hash, now, skill["slug"]))
+            wrote = True
     return wrote
 
 
@@ -490,7 +706,7 @@ def _load_rows() -> list[dict[str, Any]]:
     try:
         cursor = conn.cursor()
         begin_write_transaction(cursor)
-        if _seed_missing(cursor):
+        if _sync_catalogue(cursor):
             conn.commit()
         cursor.execute(
             "SELECT * FROM trading_skills ORDER BY priority, id")
@@ -595,7 +811,7 @@ def create_skill(slug: str, name: str, body: str, description: str = "",
 
 
 _UPDATABLE = ("name", "description", "body", "prompts_json", "markets_json",
-              "priority", "enabled")
+              "priority", "enabled", "catalog_hash")
 
 
 def update_skill(slug: str, fields: dict[str, Any],
@@ -630,7 +846,9 @@ def update_skill(slug: str, fields: dict[str, Any],
 
 def reset_skill(slug: str, updated_by: Optional[str] = None) -> bool:
     """Restore a base skill's catalogue defaults (body, description, name,
-    prompts, priority; re-enables it). False for non-base slugs."""
+    prompts, priority; re-enables it). Also restamps catalog_hash so the row
+    counts as untouched again and follows future catalogue upgrades. False
+    for non-base slugs."""
     base = _BASE_BY_SLUG.get(slug)
     if base is None:
         return False
@@ -639,9 +857,10 @@ def reset_skill(slug: str, updated_by: Optional[str] = None) -> bool:
         "description": base["description"],
         "body": base["body"],
         "prompts_json": json.dumps(base["prompts"]),
-        "markets_json": None,
+        "markets_json": json.dumps(base["markets"]) if base.get("markets") else None,
         "priority": base["priority"],
         "enabled": 1,
+        "catalog_hash": _catalogue_hash(base),
     }, updated_by=updated_by)
 
 

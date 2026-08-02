@@ -44,6 +44,79 @@ class RegistryTests(_Db):
             self.assertTrue(by_slug[slug]["enabled"])
             self.assertTrue(by_slug[slug]["body"])
 
+    def _patched_catalogue(self, slug: str, **changes):
+        patched = [dict(s) for s in trading_skills.BASE_SKILLS]
+        for i, s in enumerate(patched):
+            if s["slug"] == slug:
+                patched[i] = dict(s, **changes)
+        by_slug = {s["slug"]: s for s in patched}
+        return patch.multiple(trading_skills, BASE_SKILLS=patched,
+                              _BASE_BY_SLUG=by_slug)
+
+    def test_catalogue_upgrade_flows_to_untouched_rows(self):
+        trading_skills.all_skills(fresh=True)  # seed at v1
+        with self._patched_catalogue("data-honesty", body="v2 catalogue body",
+                                     priority=61):
+            trading_skills.invalidate_trading_skills_cache()
+            skill = trading_skills.get_skill("data-honesty")
+        self.assertEqual(skill["body"], "v2 catalogue body")
+        self.assertEqual(skill["priority"], 61)
+        self.assertEqual(skill["updated_by"], "seed-upgrade")
+
+    def test_upgrade_preserves_disabled_state(self):
+        trading_skills.all_skills(fresh=True)
+        trading_skills.update_skill("exit-discipline", {"enabled": 0})
+        # disabling is operator state, not a content edit — the body still
+        # follows the catalogue, the switch stays off
+        with self._patched_catalogue("exit-discipline", body="v2 exit body"):
+            trading_skills.invalidate_trading_skills_cache()
+            skill = trading_skills.get_skill("exit-discipline")
+        self.assertEqual(skill["body"], "v2 exit body")
+        self.assertFalse(skill["enabled"])
+
+    def test_admin_edit_blocks_upgrade_until_reset(self):
+        trading_skills.all_skills(fresh=True)
+        trading_skills.update_skill("data-honesty", {"body": "my edit"},
+                                    updated_by="t@t")
+        with self._patched_catalogue("data-honesty", body="v2 body"):
+            trading_skills.invalidate_trading_skills_cache()
+            self.assertEqual(trading_skills.get_skill("data-honesty")["body"],
+                             "my edit")
+            # reset jumps to the CURRENT catalogue and re-arms auto-upgrade
+            trading_skills.reset_skill("data-honesty")
+            self.assertEqual(trading_skills.get_skill("data-honesty")["body"],
+                             "v2 body")
+        # catalogue back at v1: the reset row (stamped v2) is untouched-at-v2,
+        # so it downgrades back with the catalogue — proving the hash re-arm
+        trading_skills.invalidate_trading_skills_cache()
+        base = next(s for s in trading_skills.BASE_SKILLS
+                    if s["slug"] == "data-honesty")
+        self.assertEqual(trading_skills.get_skill("data-honesty")["body"],
+                         base["body"])
+
+    def test_null_hash_backfills_only_on_exact_match(self):
+        trading_skills.all_skills(fresh=True)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_skills SET catalog_hash = NULL "
+                    "WHERE slug IN ('data-honesty', 'exit-discipline')")
+        # pre-hash edit: content no longer matches the catalogue
+        cur.execute("UPDATE trading_skills SET body = 'legacy edit' "
+                    "WHERE slug = 'exit-discipline'")
+        conn.commit()
+        conn.close()
+        trading_skills.all_skills(fresh=True)  # backfill pass
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT slug, catalog_hash FROM trading_skills "
+                    "WHERE slug IN ('data-honesty', 'exit-discipline')")
+        hashes = {r["slug"]: r["catalog_hash"] for r in cur.fetchall()}
+        conn.close()
+        self.assertIsNotNone(hashes["data-honesty"])   # matched -> stamped
+        self.assertIsNone(hashes["exit-discipline"])   # edited -> protected
+        self.assertEqual(trading_skills.get_skill("exit-discipline")["body"],
+                         "legacy edit")
+
     def test_seed_never_overwrites_an_edit(self):
         trading_skills.all_skills(fresh=True)  # seed
         trading_skills.update_skill("data-honesty", {"body": "edited body"},
