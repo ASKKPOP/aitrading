@@ -89,6 +89,43 @@ def _is_owner(authorization: Optional[str]) -> bool:
     return bool(email) and email.strip().lower() in _owner_emails()
 
 
+def _has_enterprise(authorization: Optional[str]) -> bool:
+    """True when the reader holds an ACTIVE enterprise subscription — via
+    their own user token, or (for a claw token) the agent's linked user.
+    Owner exemption is the caller's job (_is_owner), not this check's."""
+    token = _extract_token(authorization)
+    if not token:
+        return False
+    from services import _get_user_by_token
+    user = _get_user_by_token(token)
+    user_id = user["id"] if user else None
+    if user_id is None:
+        agent = _get_agent_by_token(token)
+        user_id = (agent or {}).get("user_id")
+    if not user_id:
+        return False
+    import database
+    from routes_subscriptions import get_subscription_state
+    conn = database.get_db_connection()
+    try:
+        cursor = conn.cursor()
+        state = get_subscription_state(cursor, user_id)
+        conn.commit()  # get_subscription_state lazy-expires stale rows
+        sub = state.get("subscription") or {}
+        return state.get("status") == "active" and sub.get("plan_code") == "enterprise"
+    finally:
+        conn.close()
+
+
+def _require_enterprise(authorization: Optional[str], is_owner: bool) -> None:
+    """403 unless the reader is the owner or an enterprise subscriber
+    (owner decision 2026-08-02: the /docs/guide library is an Enterprise
+    perk — junior/pro/professional members see an upgrade notice)."""
+    if is_owner or _has_enterprise(authorization):
+        return
+    raise HTTPException(status_code=403, detail="enterprise_required")
+
+
 def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     @app.get("/api/guide/docs")
@@ -100,16 +137,27 @@ def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
         # itself as members-only. Three of four accounts could not open any
         # guide at all, including the ones written for them.
         _require_login(authorization)
-        return _visible_manifest(_is_owner(authorization))
+        is_owner = _is_owner(authorization)
+        # The manifest feeds the /docs/guide rail only, so it carries the
+        # enterprise gate too; the gwsetup docs opened from /accounts fetch
+        # by key and never touch this endpoint.
+        _require_enterprise(authorization, is_owner)
+        return _visible_manifest(is_owner)
 
     @app.get("/api/guide/doc/{key}")
     async def guide_doc(key: str, authorization: str = Header(None)):
         _require_login(authorization)
+        is_owner = _is_owner(authorization)
         # An owner_only key is 404 (not 403) for a member, so its existence is
         # never confirmed to someone who may not read it.
-        manifest = _visible_manifest(_is_owner(authorization))
-        if not any(d["key"] == key for d in manifest["docs"]):
+        manifest = _visible_manifest(is_owner)
+        entry = next((d for d in manifest["docs"] if d["key"] == key), None)
+        if entry is None:
             raise HTTPException(status_code=404, detail="Unknown document")
+        # gwsetup connection guides open from /accounts for EVERY member with
+        # a gateway — the enterprise gate covers the /docs/guide library only.
+        if not str(entry.get("group") or "").startswith("gwsetup"):
+            _require_enterprise(authorization, is_owner)
         path = _CONTENT_DIR / f"{key}.html"   # keys come from the manifest, never the path
         if not path.exists():
             raise HTTPException(status_code=404, detail="Document not built")
