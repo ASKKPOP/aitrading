@@ -7,7 +7,14 @@ macro-event-analysis, position-management, pre-trade-readiness,
 evidence-gap-check, earnings-preview [us-stock-scoped], catalyst-map,
 watchlist-review, execution-plan-check, portfolio-concentration), and the
 per-prompt budget rose to 10,000 chars so the default set never silently
-truncates (busiest site: trader/us-stock ≈ 9.1K).*
+truncates (busiest site: trader/us-stock ≈ 9.1K). Second expansion
+2026-08-02 ("do all for our sooppiy AI"): six judgment skills distilled
+from tradermonty/claude-trading-skills (MIT) — market-topping-evidence,
+news-reaction-evidence, drawdown-circuit-breaker, exposure-discipline,
+contrarian-crowding-gate, scenario-precommit — catalogue now 22, budget
+14,000 (trader/us-stock ≈ 13.4K). Only the decision method is ported;
+that repo's Python engines are FMP/FINVIZ data tooling and would become
+backend feeds if ever wanted.*
 
 ## Why
 

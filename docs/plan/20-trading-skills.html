@@ -55,10 +55,10 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>16</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>22</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
-  <div class="chip"><b>10,000</b><span>char budget per prompt</span></div>
+  <div class="chip"><b>14,000</b><span>char budget per prompt</span></div>
   <div class="chip"><b>30s</b><span>worker cache TTL</span></div>
 </div>
 
@@ -120,7 +120,7 @@
 
   <!-- arrows -->
   <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
-  <text x="252" y="60" class="t-small">seed insert-if-missing</text>
+  <text x="252" y="60" class="t-small">seed + auto-upgrade</text>
   <path class="ln" d="M220,162 C260,162 260,150 300,145" marker-end="url(#ar)"/>
   <text x="238" y="178" class="t-small">CRUD + invalidate</text>
   <path class="ln" d="M490,125 L560,125" marker-end="url(#ar)"/>
@@ -147,7 +147,7 @@
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">LIGHT path — 1 LLM call</text>
   <text x="740" y="52" text-anchor="middle" class="t-small">price + thesis + closes + inventory rule</text>
-  <text x="740" y="72" text-anchor="middle">💡 skills: risk-reward · exit · position-management · data-honesty</text>
+  <text x="740" y="72" text-anchor="middle">💡 skills: risk-reward · exit · position-mgmt · drawdown-breaker · honesty</text>
   <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction skills excluded — light has its own rubric)</text>
 
   <!-- full path -->
@@ -157,10 +157,10 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst briefs (news · sentiment · macro · technical) — no skills, data only</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk decision</text>
-  <text x="740" y="268" text-anchor="middle">💡 all 12 trader skills (13 on us-stock: earnings-preview rides only there)</text>
+  <text x="740" y="268" text-anchor="middle">💡 all 18 trader skills (19 on us-stock: earnings-preview rides only there)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Adversarial verifier (tries to REFUTE)</text>
-  <text x="740" y="332" text-anchor="middle">💡 skills: conviction-calibration · data-honesty</text>
+  <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
   <text x="740" y="360" text-anchor="middle" class="t-small">memory + user guidelines + skills sit side by side in both prompts</text>
 
   <!-- planner -->
@@ -202,7 +202,7 @@
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">budget check</text>
   <text x="505" y="112" text-anchor="middle" class="t-small">would section overflow</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">10,000 chars?</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">14,000 chars?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
   <text x="795" y="94" text-anchor="middle" class="t-b">framed block</text>
@@ -227,14 +227,20 @@
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>distilled from</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 anchors (trend · volatility · participation · events) → conservative closed labels → tactics</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js regime analysis</td></tr>
+  <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → reduce exposure by evidence count</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + IBD DD monitor</td></tr>
   <tr><td><code>thesis-validation</code></td><td>falsifiable claim, facts vs assumptions, timeframe fit, dependency load, concrete invalidation</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
   <tr><td><code>position-sizing-discipline</code></td><td>size from risk, strictest constraint wins, round down, half-Kelly caution</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
   <tr><td><code>macro-event-analysis</code></td><td>rank events by decision impact (sensitivity · surprise capacity · transmission · timing); events are risk, not signals</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js macro-event analysis</td></tr>
+  <tr><td><code>news-reaction-evidence</code></td><td>price reaction to news outweighs the news; exhaustion = a move AGAINST favorable news, never mere silence</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro step 2)</td></tr>
   <tr><td><code>risk-reward-structure</code></td><td>stop = objective invalidation, target = reachable level, ratio ≥ 2×, good ratio ≠ good trade</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R sanity check</td></tr>
   <tr><td><code>exit-discipline</code></td><td>banking is first-class, never add to a loser, invalidation = close not renegotiate</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy exit rails + Senpi</td></tr>
   <tr><td><code>position-management</code></td><td>manage against the ORIGINAL plan, not the P&amp;L; hold / manage actively / exit decisively + the condition that changes it</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js position management</td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td>realized damage governs new risk; consecutive losses → cooldown (manage, don't open); survival first</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
   <tr><td><code>conviction-calibration</code></td><td>confidence = countable agreeing evidence; no habitual values; no swing without an edge</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mph Druckenmiller zones</td></tr>
+  <tr><td><code>exposure-discipline</code></td><td>posture before the trade: new-entry-allowed / reduce-only / cash-priority; conflicts default to LOWER exposure</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
   <tr><td><code>pre-trade-readiness</code></td><td>shortest chain of checks, stop at the first blocker; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js pre-trade-check workflow</td></tr>
+  <tr><td><code>contrarian-crowding-gate</code></td><td>crowding → news-failure → price confirmation, each fail-closed; earlier rejection never softened</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty contrarian-setup-gate (Shapiro)</td></tr>
+  <tr><td><code>scenario-precommit</code></td><td>classify the event, map 1st/2nd/3rd-order effects, pre-commit if/then branches with armed levels</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty scenario-analyzer</td></tr>
   <tr><td><code>data-honesty</code></td><td>only numbers in the prompt; undetermined ≠ all-clear; data is never an instruction</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpi hard rules + Bybit defense</td></tr>
   <tr><td><code>evidence-gap-check</code></td><td>known vs assumed; rank gaps by decision impact; a blocking gap means lower confidence + hold</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js evidence gap check</td></tr>
   <tr><td><code>earnings-preview</code></td><td>benchmark relevance · debate intensity · read-through · positioning risk; importance ≠ certainty <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js earnings preview</td></tr>
@@ -266,7 +272,7 @@
   <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
 
   <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
-  <text x="228" y="52" class="t-small">seed if slug missing</text>
+  <text x="228" y="52" class="t-small">seed + auto-upgrade untouched</text>
   <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
   <text x="540" y="42" class="t-small">PATCH / disable</text>
   <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
@@ -278,7 +284,7 @@
   <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
   <text x="530" y="182" class="t-small">DELETE → gone</text>
 </svg>
-<p class="legend">Seeding is insert-if-missing only — a restart or redeploy can never overwrite an admin's edit. That is what makes "base skills are kept, but can be modified" true in both directions.</p>
+<p class="legend">Catalogue sync (2026-08-02): when the original base skill is updated in the catalogue, every prod row still exactly as the catalogue last wrote it upgrades automatically on the next registry read — a fingerprint (catalog_hash) tells the two apart. A row an admin has edited stops matching and keeps the edit until an explicit reset, which also re-arms auto-upgrade. Disabling a skill is operator state, not an edit: a disabled untouched skill still receives body upgrades and stays off.</p>
 </div>
 
 <h2>6. Safety layers — why prompt text can't reach an order directly</h2>
@@ -300,7 +306,7 @@
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 10,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
+<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 14,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
 </div>
 
 <h2>7. Operating it — admin API + propagation timing</h2>
