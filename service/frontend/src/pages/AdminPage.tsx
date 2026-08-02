@@ -15,7 +15,11 @@ const ADMIN_TOKEN_KEY = 'sooppiy_admin_token'
 
 type Tab =
   | 'dashboard' | 'members' | 'subscriptions' | 'assets' | 'positions'
-  | 'automation' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
+  | 'automation' | 'skills' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
+
+// Prompt sites a trading skill can ride (mirror of trading_skills.PROMPT_SITES).
+const SKILL_SITES = ['light', 'trader', 'verifier', 'planner'] as const
+const SKILL_BODY_MAX = 4000
 
 const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border-color,#2a2a28)', borderRadius: 12, padding: '16px 18px' }
 const tableCard: any = { ...card, padding: 0, overflowX: 'auto' }
@@ -146,6 +150,12 @@ export function AdminPage() {
   const [llmSettings, setLlmSettings] = useState<any | null>(null)
   const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
     brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
+  // Trading skills (Plan 20): the desk's house decision methods. `skillEdit`
+  // holds the working copy for the editor card (isNew = create form); markets
+  // travel as a comma-separated string in the editor and become an array (or
+  // [] = all markets) only at save time.
+  const [skills, setSkills] = useState<any[]>([])
+  const [skillEdit, setSkillEdit] = useState<any | null>(null)
   const [threads, setThreads] = useState<any | null>(null)
   const [activeThread, setActiveThread] = useState<any | null>(null)
   const [reply, setReply] = useState('')
@@ -316,6 +326,24 @@ export function AdminPage() {
     action: tr(language, { ko: '작업', en: 'Action', ja: '操作', th: 'การกระทำ', vi: 'Hành động', id: 'Aksi' }),
     target: tr(language, { ko: '대상', en: 'Target', ja: '対象', th: 'เป้าหมาย', vi: 'Đối tượng', id: 'Target' }),
     time: tr(language, { ko: '시각', en: 'Time', ja: '時刻', th: 'เวลา', vi: 'Thời gian', id: 'Waktu' }),
+    tabSkills: tr(language, { ko: '트레이딩 스킬', en: 'Trading skills', ja: 'トレーディングスキル', th: 'ทักษะการเทรด', vi: 'Kỹ năng giao dịch', id: 'Keterampilan trading' }),
+    skillsTitle: tr(language, { ko: '🧭 트레이딩 스킬 — 데스크가 읽는 하우스 의사결정 방법론', en: '🧭 Trading skills — house decision methods the desk reads', ja: '🧭 トレーディングスキル — デスクが読むハウス意思決定手法', th: '🧭 ทักษะการเทรด — วิธีการตัดสินใจของบริษัทที่เดสก์อ่าน', vi: '🧭 Kỹ năng giao dịch — phương pháp quyết định mà bàn giao dịch đọc', id: '🧭 Keterampilan trading — metode keputusan internal yang dibaca desk' }),
+    skillsHint: tr(language, { ko: '스킬 본문은 AI 의사결정 프롬프트(light·trader·verifier·planner)에 주입됩니다. 저장 후 약 30초 안에 트레이딩 워커에 반영됩니다. 기본(base) 스킬은 수정·비활성화·기본값 복원만 가능하고 삭제할 수 없습니다.', en: 'Skill bodies are injected into the AI decision prompts (light · trader · verifier · planner). Changes reach the trading worker within ~30 s. Base skills can be edited, disabled, or reset to defaults — never deleted.', ja: 'スキル本文はAI意思決定プロンプト（light・trader・verifier・planner）に注入されます。保存後約30秒でトレーディングワーカーに反映されます。基本（base）スキルは編集・無効化・既定値への復元のみ可能で、削除はできません。', th: 'เนื้อหาทักษะจะถูกแทรกเข้าไปในพรอมป์การตัดสินใจของ AI (light · trader · verifier · planner) การเปลี่ยนแปลงจะมีผลกับเวิร์กเกอร์ภายใน ~30 วินาที ทักษะพื้นฐาน (base) แก้ไข ปิดใช้งาน หรือคืนค่าเริ่มต้นได้ แต่ลบไม่ได้', vi: 'Nội dung kỹ năng được đưa vào các prompt quyết định của AI (light · trader · verifier · planner). Thay đổi có hiệu lực với worker trong ~30 giây. Kỹ năng cơ bản (base) có thể sửa, tắt hoặc khôi phục mặc định — không bao giờ xóa được.', id: 'Isi keterampilan disuntikkan ke prompt keputusan AI (light · trader · verifier · planner). Perubahan berlaku di worker dalam ~30 detik. Keterampilan dasar (base) bisa diedit, dinonaktifkan, atau dikembalikan ke bawaan — tidak pernah bisa dihapus.' }),
+    skillNew: tr(language, { ko: '스킬 추가', en: 'Add skill', ja: 'スキル追加', th: 'เพิ่มทักษะ', vi: 'Thêm kỹ năng', id: 'Tambah keterampilan' }),
+    skillEditTitle: tr(language, { ko: '스킬 편집', en: 'Edit skill', ja: 'スキル編集', th: 'แก้ไขทักษะ', vi: 'Sửa kỹ năng', id: 'Edit keterampilan' }),
+    skillName: tr(language, { ko: '이름', en: 'Name', ja: '名前', th: 'ชื่อ', vi: 'Tên', id: 'Nama' }),
+    skillDesc: tr(language, { ko: '설명 (한 줄)', en: 'Description (one line)', ja: '説明（1行）', th: 'คำอธิบาย (หนึ่งบรรทัด)', vi: 'Mô tả (một dòng)', id: 'Deskripsi (satu baris)' }),
+    skillBody: tr(language, { ko: '본문 — 프롬프트에 그대로 주입되는 방법론 텍스트', en: 'Body — the method text injected verbatim into the prompt', ja: '本文 — プロンプトへそのまま注入される手法テキスト', th: 'เนื้อหา — ข้อความวิธีการที่ถูกแทรกเข้าพรอมป์โดยตรง', vi: 'Nội dung — văn bản phương pháp được đưa nguyên văn vào prompt', id: 'Isi — teks metode yang disuntikkan apa adanya ke prompt' }),
+    skillPrompts: tr(language, { ko: '적용 프롬프트', en: 'Prompt sites', ja: '適用プロンプト', th: 'พรอมป์ที่ใช้', vi: 'Prompt áp dụng', id: 'Situs prompt' }),
+    skillMarkets: tr(language, { ko: '시장', en: 'Markets', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' }),
+    skillMarketsPh: tr(language, { ko: '쉼표 구분, 비우면 모든 시장 (예: crypto, us-stock)', en: 'comma-separated, empty = all markets (e.g. crypto, us-stock)', ja: 'カンマ区切り、空欄＝全市場（例: crypto, us-stock）', th: 'คั่นด้วยจุลภาค เว้นว่าง = ทุกตลาด (เช่น crypto, us-stock)', vi: 'phân cách bằng dấu phẩy, trống = mọi thị trường (vd: crypto, us-stock)', id: 'dipisah koma, kosong = semua pasar (mis. crypto, us-stock)' }),
+    skillAllMarkets: tr(language, { ko: '모든 시장', en: 'all markets', ja: '全市場', th: 'ทุกตลาด', vi: 'mọi thị trường', id: 'semua pasar' }),
+    skillPriority: tr(language, { ko: '우선순위 (낮을수록 먼저)', en: 'Priority (lower = first)', ja: '優先度（小さいほど先）', th: 'ลำดับ (น้อย = ก่อน)', vi: 'Ưu tiên (thấp = trước)', id: 'Prioritas (kecil = duluan)' }),
+    skillReset: tr(language, { ko: '기본값 복원', en: 'Reset to default', ja: '既定値に戻す', th: 'คืนค่าเริ่มต้น', vi: 'Khôi phục mặc định', id: 'Kembalikan bawaan' }),
+    skillResetConfirm: tr(language, { ko: '이 기본 스킬을 출고 기본값으로 복원할까요? 현재 편집 내용은 사라집니다.', en: 'Restore this base skill to its shipped default? Current edits are lost.', ja: 'この基本スキルを出荷時の既定値に戻しますか？現在の編集内容は失われます。', th: 'คืนทักษะพื้นฐานนี้เป็นค่าเริ่มต้นจากโรงงานหรือไม่ การแก้ไขปัจจุบันจะหายไป', vi: 'Khôi phục kỹ năng cơ bản này về mặc định gốc? Chỉnh sửa hiện tại sẽ mất.', id: 'Kembalikan keterampilan dasar ini ke bawaan pabrik? Editan saat ini akan hilang.' }),
+    skillDelConfirm: tr(language, { ko: '이 커스텀 스킬을 삭제할까요?', en: 'Delete this custom skill?', ja: 'このカスタムスキルを削除しますか？', th: 'ลบทักษะที่กำหนดเองนี้หรือไม่', vi: 'Xóa kỹ năng tùy chỉnh này?', id: 'Hapus keterampilan kustom ini?' }),
+    save: tr(language, { ko: '저장', en: 'Save', ja: '保存', th: 'บันทึก', vi: 'Lưu', id: 'Simpan' }),
+    cancel: tr(language, { ko: '취소', en: 'Cancel', ja: 'キャンセル', th: 'ยกเลิก', vi: 'Hủy', id: 'Batal' }),
   }
 
   const hdr = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -413,6 +441,7 @@ export function AdminPage() {
           decision_model: s.llm_decision_model?.value || '',
         })
       }
+      if (which === 'skills') setSkills((await call('skills')).skills || [])
       if (which === 'support') setThreads(await call('support/threads?limit=200'))
       if (which === 'discussions') setDiscussions(await call(`discussions?q=${encodeURIComponent(dq)}&limit=100`))
       if (which === 'leaderboard') setLeaderboard(await call(`leaderboard?metric=${lbMetric}&limit=100`))
@@ -462,7 +491,7 @@ export function AdminPage() {
   const tabs: [Tab, string][] = [
     ['dashboard', T.tabDashboard], ['members', T.tabMembers], ['subscriptions', T.tabSubs],
     ['assets', T.tabAssets], ['positions', T.tabPositions], ['automation', T.tabAutomation],
-    ['support', T.tabSupport],
+    ['skills', T.tabSkills], ['support', T.tabSupport],
     ['discussions', T.tabDiscussions], ['leaderboard', T.tabLeaderboard],
     ...(me?.role === 'superadmin' ? [['admins', T.tabAdmins] as [Tab, string]] : []),
     ['audit', T.tabAudit],
@@ -1312,6 +1341,149 @@ export function AdminPage() {
       )}
 
       {/* ── Support conversations + announcements ── */}
+      {tab === 'skills' && (
+        <>
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.skillsTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)' }}>{T.skillsHint}</div>
+          </div>
+          {skillEdit ? (
+            <div style={{ ...card, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
+                {skillEdit.isNew ? `➕ ${T.skillNew}` : `✏️ ${T.skillEditTitle} — ${skillEdit.slug}`}
+                {!skillEdit.isNew && skillEdit.is_base && (
+                  <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, border: '1px solid var(--accent-primary,#d8a95e)', color: 'var(--accent-primary,#d8a95e)', borderRadius: 6, padding: '1px 6px' }}>BASE</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                {skillEdit.isNew && (
+                  <input placeholder="slug (a-z0-9-)" value={skillEdit.slug}
+                    onChange={e => setSkillEdit((p: any) => ({ ...p, slug: e.target.value }))}
+                    style={{ ...inputStyle, width: 220, fontFamily: 'ui-monospace, monospace' }} />
+                )}
+                <input placeholder={T.skillName} value={skillEdit.name}
+                  onChange={e => setSkillEdit((p: any) => ({ ...p, name: e.target.value }))}
+                  style={{ ...inputStyle, width: 280 }} />
+                <input type="number" title={T.skillPriority} placeholder={T.skillPriority} value={skillEdit.priority}
+                  onChange={e => setSkillEdit((p: any) => ({ ...p, priority: e.target.value }))}
+                  style={{ ...inputStyle, width: 170 }} />
+              </div>
+              <input placeholder={T.skillDesc} value={skillEdit.description}
+                onChange={e => setSkillEdit((p: any) => ({ ...p, description: e.target.value }))}
+                style={{ ...inputStyle, width: '100%', marginBottom: 8 }} />
+              <textarea placeholder={T.skillBody} value={skillEdit.body} rows={9}
+                onChange={e => setSkillEdit((p: any) => ({ ...p, body: e.target.value }))}
+                style={{ ...inputStyle, width: '100%', fontFamily: 'ui-monospace, monospace', fontSize: 12.5, lineHeight: 1.5, resize: 'vertical' }} />
+              <div style={{ fontSize: 11, marginBottom: 10, color: skillEdit.body.length > SKILL_BODY_MAX ? '#ef4444' : 'var(--text-muted,#8a8073)' }}>
+                {skillEdit.body.length} / {SKILL_BODY_MAX}
+              </div>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{T.skillPrompts}:</span>
+                {SKILL_SITES.map(site => (
+                  <label key={site} style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={(skillEdit.prompts || []).includes(site)}
+                      onChange={e => setSkillEdit((p: any) => ({
+                        ...p,
+                        prompts: e.target.checked
+                          ? [...(p.prompts || []), site]
+                          : (p.prompts || []).filter((x: string) => x !== site),
+                      }))} />
+                    {site}
+                  </label>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{T.skillMarkets}:</span>
+                <input placeholder={T.skillMarketsPh} value={skillEdit.marketsText}
+                  onChange={e => setSkillEdit((p: any) => ({ ...p, marketsText: e.target.value }))}
+                  style={{ ...inputStyle, width: 340, fontFamily: 'ui-monospace, monospace' }} />
+                <label style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!skillEdit.enabled}
+                    onChange={e => setSkillEdit((p: any) => ({ ...p, enabled: e.target.checked }))} />
+                  {T.enable}
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={primaryBtn} disabled={actBusy} onClick={async () => {
+                  const markets = skillEdit.marketsText.trim()
+                    ? skillEdit.marketsText.split(',').map((s: string) => s.trim()).filter(Boolean)
+                    : []
+                  const payload: any = {
+                    name: skillEdit.name, description: skillEdit.description,
+                    body: skillEdit.body, prompts: skillEdit.prompts,
+                    markets, priority: parseInt(skillEdit.priority, 10) || 100,
+                    enabled: !!skillEdit.enabled,
+                  }
+                  const ok = skillEdit.isNew
+                    ? await act('skills', { method: 'POST', body: JSON.stringify({ ...payload, slug: skillEdit.slug.trim() }) }, 'skills')
+                    : await act(`skills/${encodeURIComponent(skillEdit.slug)}`, { method: 'PATCH', body: JSON.stringify(payload) }, 'skills')
+                  if (ok) setSkillEdit(null)
+                }}>{T.save}</button>
+                <button style={actionBtn} onClick={() => setSkillEdit(null)}>{T.cancel}</button>
+              </div>
+            </div>
+          ) : (
+            <button style={{ ...primaryBtn, marginBottom: 14 }} onClick={() => setSkillEdit({
+              isNew: true, slug: '', name: '', description: '', body: '',
+              prompts: ['trader'], marketsText: '', priority: '100', enabled: true,
+            })}>➕ {T.skillNew}</button>
+          )}
+          <div style={tableCard}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={th}>slug</th>
+                  <th style={th}>{T.skillName}</th>
+                  <th style={th}>{T.skillPrompts}</th>
+                  <th style={th}>{T.skillMarkets}</th>
+                  <th style={th}>{T.skillPriority}</th>
+                  <th style={th}>{T.action}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {skills.map((s: any) => (
+                  <tr key={s.slug} style={{ opacity: s.enabled ? 1 : 0.5 }}>
+                    <td style={{ ...td, fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap' }}>
+                      {s.slug}
+                      {s.is_base && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, border: '1px solid var(--accent-primary,#d8a95e)', color: 'var(--accent-primary,#d8a95e)', borderRadius: 5, padding: '0px 4px' }}>base</span>}
+                    </td>
+                    <td style={td}>
+                      <div style={{ fontWeight: 600 }}>{s.enabled ? '' : '⏸ '}{s.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', maxWidth: 420 }}>{s.description}</div>
+                    </td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>{(s.prompts || []).join(' · ')}</td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>{s.markets?.length ? s.markets.join(', ') : T.skillAllMarkets}</td>
+                    <td style={td}>{s.priority}</td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                      <button style={actionBtn} onClick={() => setSkillEdit({
+                        ...s, isNew: false,
+                        marketsText: (s.markets || []).join(', '),
+                        priority: String(s.priority),
+                      })}>{T.edit}</button>{' '}
+                      <button style={actionBtn} disabled={actBusy} onClick={() =>
+                        act(`skills/${encodeURIComponent(s.slug)}`, { method: 'PATCH', body: JSON.stringify({ enabled: !s.enabled }) }, 'skills')
+                      }>{s.enabled ? T.disable : T.enable}</button>{' '}
+                      {s.is_base ? (
+                        <button style={actionBtn} disabled={actBusy} onClick={() =>
+                          window.confirm(T.skillResetConfirm) &&
+                          act(`skills/${encodeURIComponent(s.slug)}/reset`, { method: 'POST' }, 'skills')
+                        }>{T.skillReset}</button>
+                      ) : (
+                        <button style={dangerBtn} disabled={actBusy} onClick={() =>
+                          window.confirm(T.skillDelConfirm) &&
+                          act(`skills/${encodeURIComponent(s.slug)}`, { method: 'DELETE' }, 'skills')
+                        }>{T.del}</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!skills.length && <tr><td style={td} colSpan={6}>{T.noData}</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {tab === 'support' && (
         <>
           <div style={{ ...card, marginBottom: 16 }}>
