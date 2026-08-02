@@ -27,12 +27,18 @@ import database
 from routes import create_app
 
 
-def _make_user_token(email):
+def _make_user_token(email, plan=None, expires="2099-01-01T00:00:00Z"):
+    """Mint a user token; `plan` grants an active subscription of that code
+    (the guide library is enterprise-gated since 2026-08-02)."""
     from database import get_db_connection
     from services import _create_user_session
     conn = get_db_connection(); cur = conn.cursor()
     cur.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (email, "x"))
     uid = cur.lastrowid
+    if plan:
+        cur.execute(
+            "INSERT INTO user_subscriptions (user_id, plan_code, status, expires_at) "
+            "VALUES (?, ?, 'active', ?)", (uid, plan, expires))
     conn.commit(); conn.close()
     return _create_user_session(uid)
 
@@ -53,7 +59,12 @@ class GuideRoutesTests(unittest.TestCase):
             json={"name": "guide-reader", "password": "pw123", "initial_balance": 1000.0})
         assert resp.status_code == 200, resp.text
         self.agent_token = resp.json()["token"]
+        self.agent_id = resp.json()["agent_id"]
         self.owner_token = _make_user_token("info@askkpop.com")
+        # The library is enterprise-gated (2026-08-02): member reads below go
+        # through an enterprise subscriber; the plain agent token exercises
+        # the blocked path.
+        self.ent_token = _make_user_token("ent@member.com", plan="enterprise")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -68,7 +79,8 @@ class GuideRoutesTests(unittest.TestCase):
             401)
 
     def test_members_get_the_listing_without_owner_only_docs(self):
-        for tok in (self.agent_token, _make_user_token("someone@else.com")):
+        for tok in (self.ent_token,
+                    _make_user_token("someone@else.com", plan="enterprise")):
             r = self.client.get("/api/guide/docs", headers=self._h(tok))
             self.assertEqual(r.status_code, 200)
             keys = {d["key"] for d in r.json()["docs"]}
@@ -80,8 +92,7 @@ class GuideRoutesTests(unittest.TestCase):
     def test_member_listing_hides_groups_left_with_no_documents(self):
         """An empty group in the sidebar advertises material the member cannot
         open — which is how the old gate produced 'could not load'."""
-        r = self.client.get("/api/guide/docs",
-                            headers=self._h(_make_user_token("someone@else.com")))
+        r = self.client.get("/api/guide/docs", headers=self._h(self.ent_token))
         groups = {g["group"] for g in r.json()["groups"]}
         self.assertIn("decisions", groups)
         self.assertNotIn("ops-keys", groups)
@@ -100,8 +111,7 @@ class GuideRoutesTests(unittest.TestCase):
         """
         from analysis_agents import LANG_NAMES
 
-        r = self.client.get("/api/guide/docs",
-                            headers=self._h(_make_user_token("someone@else.com")))
+        r = self.client.get("/api/guide/docs", headers=self._h(self.ent_token))
         payload = r.json()
         member_groups = {g["group"] for g in payload["groups"]}
         by_group: dict[str, set] = {}
@@ -135,9 +145,9 @@ class GuideRoutesTests(unittest.TestCase):
 
     def test_doc_requires_login_and_serves_members(self):
         self.assertEqual(self.client.get("/api/guide/doc/guide-ko").status_code, 401)
-        # a logged-in member now RECEIVES a member document
+        # an ENTERPRISE member receives a member document
         r_member = self.client.get("/api/guide/doc/guide-ko",
-                                   headers=self._h(self.agent_token))
+                                   headers=self._h(self.ent_token))
         self.assertEqual(r_member.status_code, 200)
         self.assertIn("<!doctype html", r_member.text.lower())
         # owner → 200 html
@@ -154,8 +164,9 @@ class GuideRoutesTests(unittest.TestCase):
                 r = self.client.get(f"/api/guide/doc/{key}", headers=self._h(tok))
                 self.assertEqual(r.status_code, 404, f"{key} leaked to a member")
 
-    def test_member_keys_are_readable_by_members(self):
-        for tok in (self.agent_token, _make_user_token("nope@else.com")):
+    def test_member_keys_are_readable_by_enterprise_members(self):
+        for tok in (self.ent_token,
+                    _make_user_token("nope@else.com", plan="enterprise")):
             for key in ("guide-ko", "decisions-ko", "backtest-report-en"):
                 r = self.client.get(f"/api/guide/doc/{key}", headers=self._h(tok))
                 self.assertEqual(r.status_code, 200, f"{key} withheld from a member")
@@ -251,6 +262,70 @@ class OwnerAllowlistTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(re.search(r"\b[A-Za-z0-9_\-]{40,}\b", r.text),
                           "a 40+ char token-like string leaked into the owner doc")
+
+
+class EnterpriseGateTests(unittest.TestCase):
+    """Owner decision 2026-08-02: the /docs/guide library is an Enterprise
+    perk. Junior/pro/professional members (and agents whose linked user is
+    not enterprise) get 403 enterprise_required; the gwsetup connection
+    guides on /accounts stay open to every member."""
+
+    setUp = GuideRoutesTests.setUp
+    tearDown = GuideRoutesTests.tearDown
+    _h = GuideRoutesTests._h
+
+    def _link_agent(self, user_email, plan=None):
+        from database import get_db_connection
+        _make_user_token(user_email, plan=plan)  # creates the user (+plan)
+        conn = get_db_connection(); cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE email = ?", (user_email,))
+        uid = cur.fetchone()["id"]
+        cur.execute("UPDATE agents SET user_id = ? WHERE id = ?", (uid, self.agent_id))
+        conn.commit(); conn.close()
+
+    def test_non_enterprise_member_gets_403(self):
+        for plan in (None, "junior", "pro", "professional"):
+            tok = _make_user_token(f"{plan or 'free'}@member.com", plan=plan)
+            r = self.client.get("/api/guide/docs", headers=self._h(tok))
+            self.assertEqual(r.status_code, 403, f"plan={plan} listed the library")
+            self.assertEqual(r.json()["detail"], "enterprise_required")
+            r = self.client.get("/api/guide/doc/guide-ko", headers=self._h(tok))
+            self.assertEqual(r.status_code, 403, f"plan={plan} read a doc")
+
+    def test_expired_enterprise_gets_403(self):
+        tok = _make_user_token("expired@member.com", plan="enterprise",
+                               expires="2020-01-01T00:00:00Z")
+        r = self.client.get("/api/guide/docs", headers=self._h(tok))
+        self.assertEqual(r.status_code, 403)
+
+    def test_plain_agent_token_gets_403(self):
+        r = self.client.get("/api/guide/docs", headers=self._h(self.agent_token))
+        self.assertEqual(r.status_code, 403)
+        r = self.client.get("/api/guide/doc/guide-ko", headers=self._h(self.agent_token))
+        self.assertEqual(r.status_code, 403)
+
+    def test_agent_linked_to_enterprise_user_reads(self):
+        self._link_agent("agent-owner@ent.com", plan="enterprise")
+        r = self.client.get("/api/guide/doc/guide-ko", headers=self._h(self.agent_token))
+        self.assertEqual(r.status_code, 200)
+
+    def test_gwsetup_docs_stay_open_to_every_member(self):
+        """The /accounts connection guides are operational docs for anyone
+        with a gateway — the enterprise gate must not touch them."""
+        junior = _make_user_token("junior-gw@member.com", plan="junior")
+        for tok in (junior, self.agent_token):
+            r = self.client.get("/api/guide/doc/gwsetup-binance-en",
+                                headers=self._h(tok))
+            self.assertEqual(r.status_code, 200, "gwsetup blocked for a member")
+
+    def test_gate_is_403_not_404_for_member_keys(self):
+        """403 (upgrade) for real member keys, 404 for owner-only keys — the
+        owner-only existence-hiding rule survives the gate."""
+        junior = _make_user_token("junior2@member.com", plan="junior")
+        self.assertEqual(
+            self.client.get("/api/guide/doc/guide-ko", headers=self._h(junior)).status_code, 403)
+        self.assertEqual(
+            self.client.get("/api/guide/doc/api-keys-en", headers=self._h(junior)).status_code, 404)
 
 
 if __name__ == "__main__":

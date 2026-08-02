@@ -75,7 +75,7 @@ export function DocsPage({ token, userToken }: Props) {
     fetch(`${API_BASE}/guide/docs`, { headers: { Authorization: `Bearer ${auth}` } })
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json() })
       .then(m => { if (alive) setManifest(m) })
-      .catch(() => { if (alive) setError('manifest') })
+      .catch(e => { if (alive) setError(e.message === '403' ? 'enterprise' : 'manifest') })
     return () => { alive = false }
   }, [auth])
 
@@ -92,7 +92,7 @@ export function DocsPage({ token, userToken }: Props) {
     fetch(`${API_BASE}/guide/doc/${encodeURIComponent(doc.key)}`, { headers: { Authorization: `Bearer ${auth}` } })
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.text() })
       .then(t => { if (alive) { cache.current[doc.key] = t; setHtml(t) } })
-      .catch(() => { if (alive) setError('doc') })
+      .catch(e => { if (alive) setError(e.message === '403' ? 'enterprise' : 'doc') })
     return () => { alive = false }
   }, [manifest, group, docLang, auth])
 
@@ -207,7 +207,7 @@ export function DocsPage({ token, userToken }: Props) {
         {tr(language, { ko: '가이드 · 리서치 문서', en: 'Guide & Research Docs', ja: 'ガイド・リサーチ文書', th: 'คู่มือและเอกสารวิจัย', vi: 'Hướng dẫn & tài liệu nghiên cứu', id: 'Dokumen panduan & riset' })}
       </h1>
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-        {tr(language, { ko: '회원 전용 문서입니다.', en: 'Members-only documents.', ja: '会員限定の文書です。', th: 'เอกสารสำหรับสมาชิกเท่านั้น', vi: 'Tài liệu chỉ dành cho thành viên.', id: 'Dokumen khusus anggota.' })}
+        {tr(language, { ko: 'Enterprise 회원 전용 문서입니다.', en: 'Enterprise members-only documents.', ja: 'Enterprise会員限定の文書です。', th: 'เอกสารสำหรับสมาชิก Enterprise เท่านั้น', vi: 'Tài liệu chỉ dành cho thành viên Enterprise.', id: 'Dokumen khusus anggota Enterprise.' })}
       </p>
 
       {/* doc nav */}
@@ -232,7 +232,21 @@ export function DocsPage({ token, userToken }: Props) {
         </p>
       )}
 
-      {error && (
+      {error === 'enterprise' && (
+        <div style={{ padding: '22px 24px', border: '1px solid var(--border-color)', borderRadius: 12, background: 'var(--bg-card)' }}>
+          <div style={{ fontSize: 15.5, fontWeight: 700, marginBottom: 6 }}>
+            {tr(language, { ko: '가이드 문서는 Enterprise 플랜 전용입니다.', en: 'The guide library is an Enterprise plan feature.', ja: 'ガイド文書はEnterpriseプラン限定です。', th: 'คลังคู่มือนี้สำหรับแผน Enterprise เท่านั้น', vi: 'Thư viện hướng dẫn chỉ dành cho gói Enterprise.', id: 'Pustaka panduan khusus paket Enterprise.' })}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>
+            {tr(language, { ko: 'Enterprise로 업그레이드하면 전체 가이드·리서치 문서를 열람할 수 있습니다.', en: 'Upgrade to Enterprise to read the full guide and research documents.', ja: 'Enterpriseにアップグレードすると、すべてのガイド・リサーチ文書を閲覧できます。', th: 'อัปเกรดเป็น Enterprise เพื่ออ่านคู่มือและเอกสารวิจัยทั้งหมด', vi: 'Nâng cấp lên Enterprise để đọc toàn bộ hướng dẫn và tài liệu nghiên cứu.', id: 'Tingkatkan ke Enterprise untuk membaca semua dokumen panduan dan riset.' })}
+          </div>
+          <button onClick={() => navigate('/subscribe')}
+            style={{ padding: '10px 22px', borderRadius: 9, border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>
+            {tr(language, { ko: '플랜 보기', en: 'View plans', ja: 'プランを見る', th: 'ดูแผน', vi: 'Xem gói', id: 'Lihat paket' })}
+          </button>
+        </div>
+      )}
+      {error && error !== 'enterprise' && (
         <div style={{ padding: '14px 16px', border: '1px solid var(--error)', borderRadius: 10, color: 'var(--error)', fontSize: 13.5 }}>
           {tr(language, { ko: '문서를 불러오지 못했습니다. 다시 로그인 후 시도해 주세요.', en: 'Could not load the document. Please sign in again and retry.', ja: '文書を読み込めませんでした。再ログインしてお試しください。', th: 'โหลดเอกสารไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง', vi: 'Không tải được tài liệu. Vui lòng đăng nhập lại và thử lại.', id: 'Tidak dapat memuat dokumen. Silakan masuk kembali lalu coba lagi.' })}
         </div>
