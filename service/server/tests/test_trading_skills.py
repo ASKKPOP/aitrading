@@ -153,6 +153,17 @@ class RegistryTests(_Db):
                     self.assertIn(f"### {skill['name']}\n", block,
                                   f"{skill['slug']} dropped from {site}/{market}")
 
+    def test_seeded_market_scoping_survives_db_roundtrip(self):
+        # Regression (prod 2026-08-02): the original seed path hard-coded
+        # markets_json=None on insert, so earnings-preview lost its us-stock
+        # scoping ON PROD and rode every market's trader prompt. The scoping
+        # must hold through seed -> DB -> selection, not just in BASE_SKILLS.
+        trading_skills.all_skills(fresh=True)
+        crypto = {s["slug"] for s in trading_skills.skills_for_prompt("trader", "crypto")}
+        us = {s["slug"] for s in trading_skills.skills_for_prompt("trader", "us-stock")}
+        self.assertNotIn("earnings-preview", crypto)
+        self.assertIn("earnings-preview", us)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],
