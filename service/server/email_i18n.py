@@ -220,3 +220,12 @@ def verification_email(code: str, lang: str, purpose: str = 'signup') -> tuple[s
         '</td></tr>'
         '</table></td></tr></table></div>')
     return copy['subject'], html
+
+
+def verification_email_text(code: str, lang: str, purpose: str = 'signup') -> str:
+    """Plain-text body for the same email — SendGrid wants text/plain
+    listed before text/html, so the fallback rail needs both."""
+    lc = normalize_lang(lang)
+    copy = _COPY.get(purpose, _COPY['signup'])
+    copy = copy.get(lc, copy['en'])
+    return f"{copy['heading']}\n\n{copy['intro']}\n\n{code}\n\n{copy['note']}\n"
