@@ -29,6 +29,11 @@ import symbol_research as sr
 import trading_runs
 
 
+def _null_ctx():
+    import contextlib
+    return contextlib.nullcontext()
+
+
 def _candles(n=60, drift=0.8, volume=5_000_000):
     out, price = [], 100.0
     for i in range(n):
@@ -139,7 +144,7 @@ class SupervisionBase(unittest.TestCase):
         self.alert_patch = patch(
             "alerts.send_alert",
             side_effect=lambda agent_id, kind, title, body, **kw:
-            self.alerts.append({"kind": kind, "title": title,
+            self.alerts.append({"kind": kind, "title": title, "body": body,
                                 "dedupe": kw.get("dedupe_key")}))
         self.alert_patch.start()
 
@@ -151,15 +156,19 @@ class SupervisionBase(unittest.TestCase):
         self.alert_patch.stop()
         self.tmp.cleanup()
 
-    def _seed_research(self):
-        universe = [{"symbol": s, "market": "crypto"}
-                    for s in ("AAA", "BBB", "CCC", "DDD", "EEE")]
+    def _seed_research(self, symbols=("AAA", "BBB", "CCC", "DDD", "EEE"),
+                       batch_id=None):
+        """batch_id forces a NEW batch — refresh_research_batch's sentinel
+        skips a second refresh inside the same real-time window."""
+        universe = [{"symbol": s, "market": "crypto"} for s in symbols]
+        ctx = (patch.object(sr, "current_batch_id", return_value=batch_id)
+               if batch_id else _null_ctx())
         with patch.object(sr, "build_universe", return_value=universe), \
              patch.object(sr, "_read_overlays",
                           return_value={"event_window": False,
                                         "regime_blocks_longs": False,
                                         "policy": {}}), \
-             patch("cache.acquire_lock", return_value=None):
+             patch("cache.acquire_lock", return_value=None), ctx:
             sr.refresh_research_batch(
                 generate_text=lambda *a, **k: None,
                 fetch_candles=lambda s, m: _candles())
@@ -536,6 +545,96 @@ class WatchdogTests(SupervisionBase):
         self._set_stamp(fleet_id, None)
         self.assertEqual(fs.check_watchdog(), 1)
         self.assertEqual(len(self._watchdog_alerts()), 1)
+
+
+class CompositionNoticeTests(SupervisionBase):
+    """A partial build and every later slot fill must reach the member as an
+    alert (email rides the member's category switch in send_alert) — and the
+    fill must actually be able to happen: composition may not hand the whole
+    budget to the few slots it could build (fleet #26 live: 3/10 slots held
+    all $10k, headroom −$1.25 vs a $500 floor, so 'replenishing:3/10' could
+    never come true)."""
+
+    def _kind(self, kind):
+        return [a for a in self.alerts if a["kind"] == kind]
+
+    def _member_budgets(self, fleet_id):
+        import json as _json
+        return [float(_json.loads(m.get("config_snapshot_json") or "{}")
+                      .get("run_budget_usd") or 0)
+                for m in fp.list_members(fleet_id)
+                if m["status"] in ("armed", "running", "paused", "stopping")]
+
+    # ── allocation reserve ──────────────────────────────────────────────
+
+    def test_underfill_reserves_budget_for_missing_slots(self):
+        """Fewer theses than an 8-slot fleet: each slot centers on B/N and
+        the missing slots' share stays as headroom, not concentrated into
+        the composed few."""
+        fleet_id = self._built_fleet(n=8, budget=8000.0)
+        budgets = self._member_budgets(fleet_id)
+        built = len(budgets)
+        self.assertTrue(0 < built < 8)
+        self.assertLessEqual(sum(budgets), 8000.0 * built / 8 + 0.01)
+        for b in budgets:
+            self.assertLessEqual(b, 2 * 8000.0 / 8 + 0.01)
+
+    def test_full_build_still_allocates_whole_budget(self):
+        fleet_id = self._built_fleet(n=2, budget=2000.0)
+        budgets = self._member_budgets(fleet_id)
+        self.assertEqual(len(budgets), 2)
+        self.assertGreater(sum(budgets), 2000.0 * 0.98)
+
+    def test_backfill_fills_reserved_slots_when_research_qualifies(self):
+        """The 'market opened' path: new theses appear later; the E3 loop
+        must be able to fund missing slots from the reserve."""
+        fleet_id = self._built_fleet(n=8, budget=8000.0)
+        built = len(self._member_budgets(fleet_id))
+        fs.supervise_fleet(fp.get_fleet(fleet_id))  # no candidates yet
+        self._seed_research(symbols=("FFF", "GGG", "HHH"),
+                            batch_id="research:999999")
+        fs._LAST_EMPTY_ATTEMPT.clear()  # skip the empty-retry cooldown
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        live = len([m for m in fp.list_members(fleet_id)
+                    if m["status"] in ("armed", "running", "paused")])
+        self.assertGreater(live, built,
+                           "reserved budget must fund the new slots")
+
+    # ── notices ─────────────────────────────────────────────────────────
+
+    def test_partial_build_sends_notice(self):
+        fleet_id = self._built_fleet(n=8, budget=8000.0)
+        built = len(self._member_budgets(fleet_id))
+        self.assertTrue((fp.get_fleet(fleet_id)["status_reason"] or "")
+                        .startswith(f"partial:{built}/8"))
+        hits = self._kind("fleet_partial_build")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["title"], "fleet_partial_build")
+        self.assertEqual(hits[0]["body"],
+                         {"fleet_id": fleet_id, "built": built, "n": 8})
+        self.assertEqual(hits[0]["dedupe"], f"fleet:{fleet_id}:partial_build")
+
+    def test_full_build_sends_no_partial_notice(self):
+        self._built_fleet(n=2, budget=2000.0)
+        self.assertEqual(self._kind("fleet_partial_build"), [])
+
+    def test_slot_fill_sends_notice_once(self):
+        fleet_id = self._built_fleet(n=8, budget=8000.0)
+        fs.supervise_fleet(fp.get_fleet(fleet_id))  # no growth: quiet
+        self.assertEqual(self._kind("fleet_slots_filled"), [])
+        self._seed_research(symbols=("FFF", "GGG", "HHH"),
+                            batch_id="research:999999")
+        fs._LAST_EMPTY_ATTEMPT.clear()  # skip the empty-retry cooldown
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        live = len([m for m in fp.list_members(fleet_id)
+                    if m["status"] in ("armed", "running", "paused")])
+        hits = self._kind("fleet_slots_filled")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["body"],
+                         {"fleet_id": fleet_id, "live": live, "n": 8})
+        self.assertEqual(hits[0]["dedupe"], f"fleet:{fleet_id}:slots_filled")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))  # no further growth: quiet
+        self.assertEqual(len(self._kind("fleet_slots_filled")), 1)
 
 
 if __name__ == "__main__":

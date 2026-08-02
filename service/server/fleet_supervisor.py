@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
@@ -683,13 +684,20 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     live = len([m for m in fp.list_members(fleet["id"])
                 if m["status"] in ("armed", "running", "paused", "stopping")])
     if fleet["status"] == fp.STATUS_ACTIVE:
+        prev_reason = fleet.get("status_reason") or ""
         if live < n:
             fp._set_status(fleet["id"], (fp.STATUS_ACTIVE,), fp.STATUS_ACTIVE,
                            f"replenishing:{live}/{n}")
-        elif (fleet.get("status_reason") or "").startswith(("replenishing:",
-                                                            "partial:")):
+        elif prev_reason.startswith(("replenishing:", "partial:")):
             fp._set_status(fleet["id"], (fp.STATUS_ACTIVE,), fp.STATUS_ACTIVE,
                            None)
+        # an under-target fleet grew this pass (markets opened / research
+        # qualified) — tell the member, mirroring the partial-build notice
+        m = re.match(r"(?:replenishing|partial):(\d+)/", prev_reason)
+        if m and live > int(m.group(1)):
+            _alert(fleet, "fleet_slots_filled", "fleet_slots_filled",
+                   {"fleet_id": fleet["id"], "live": live, "n": n},
+                   dedupe=f"fleet:{fleet['id']}:slots_filled")
 
 
 def _unowned_qty(member: dict) -> float:

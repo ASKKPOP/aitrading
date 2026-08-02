@@ -49,7 +49,10 @@ ALERT_KINDS = ("trade_executed", "position_closed", "breaker", "verify_rejected"
                # The profit rail. _harvest has emitted this since it shipped,
                # but it was never registered, so every fleet win was filed
                # under "custom" and lost its own category and dedupe budget.
-               "fleet_profit_target")
+               "fleet_profit_target",
+               # Composition notices: fewer slots built than requested, and
+               # the later fills as markets open / research qualifies.
+               "fleet_partial_build", "fleet_slots_filled")
 
 # run_stopped is the one alert that matters (a run halted on losses) — it gets
 # its own reserved hourly budget so digests/thresholds can never starve it.

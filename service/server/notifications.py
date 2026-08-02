@@ -94,6 +94,8 @@ ALERT_KIND_CATEGORY = {
     "fleet_slot_dormant": "auto_trading_reports",
     "fleet_sms_unavailable": "auto_trading_safety",
     "fleet_profit_target": "auto_trading_reports",
+    "fleet_partial_build": "auto_trading_reports",
+    "fleet_slots_filled": "auto_trading_reports",
 }
 
 
