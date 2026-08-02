@@ -32,8 +32,10 @@ PLAN_LIMITS: dict[Optional[str], dict[str, Any]] = {
     # stays SMS-off. Run/bet caps below remain placeholders pending numbers.
     "junior": {"max_concurrent_runs": 1, "max_bet_usd": 100.0,
                "sms_allowed": True, "daily_llm_ticks": 100, "max_fleet_size": 0},
+    # max_fleet_size 3 -> 0 (Henry, 2026-08-02): N-symbol Full Auto fleets are
+    # Professional+ only; Pro keeps single-run delegation and simple mode.
     "pro": {"max_concurrent_runs": 3, "max_bet_usd": 1_000.0,
-            "sms_allowed": True, "daily_llm_ticks": 150, "max_fleet_size": 3},
+            "sms_allowed": True, "daily_llm_ticks": 150, "max_fleet_size": 0},
     "professional": {"max_concurrent_runs": 10, "max_bet_usd": 10_000.0,
                      "sms_allowed": True, "daily_llm_ticks": 400, "max_fleet_size": 10},
     "enterprise": {"max_concurrent_runs": 25, "max_bet_usd": 100_000.0,
@@ -164,6 +166,70 @@ def llm_ticks_exhausted(cursor, agent_id: int) -> Optional[str]:
 #    same class as the SMS gate (which also bypasses the flag). QA verified
 #    prod runs ENTITLEMENTS_ENFORCED=false — flag-gated fleet checks would
 #    hand any claw_ token an unmetered 25-run fleet.
+
+def plan_code_for_agent(cursor, agent_id: int) -> Optional[str]:
+    """Resolved plan of the agent's owning user (None when unlinked)."""
+    cursor.execute("SELECT user_id FROM agents WHERE id = ?", (agent_id,))
+    row = cursor.fetchone()
+    return plan_code_for_user(cursor, row["user_id"] if row else None)
+
+
+# ── tier feature gates (Henry, 2026-08-02) — ALWAYS-ON, like the fleet
+#    gates, deliberately NOT behind enforcement_enabled(): they define the
+#    shape of the paid tiers, not placeholder quota numbers. They key on the
+#    RESOLVED plan and deny only the tiers named in the spec, so unlinked /
+#    no-plan principals (the agent-native path, already barred from runs,
+#    fleets and SMS above) keep their existing behavior.
+#
+#    Junior:       spot only (no futures market_type, no leverage), system
+#                  default AI only, no one-off AI Analyst.
+#    Pro:          + futures/leverage, own AI by API key, AI Analyst.
+#    Professional: + N-symbol Full Auto fleets (max_fleet_size above).
+#    Enterprise:   everything (contract tier).
+
+def _resolved_plan_for_agent(agent_id: int) -> Optional[str]:
+    """Plan lookup on a fresh connection. Fail-SOFT to None: these gates deny
+    a specific named tier, so an unresolvable plan means 'not that tier' —
+    the same shape plan_code_for_user already has."""
+    try:
+        from database import get_db_connection
+        conn = get_db_connection()
+        try:
+            return plan_code_for_agent(conn.cursor(), agent_id)
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        logger.warning("plan lookup failed for agent %s", agent_id, exc_info=True)
+        return None
+
+
+def check_futures_access(agent_id: int, market_type: str,
+                         leverage: float) -> Optional[str]:
+    """Deny reason (or None) for a non-spot run. Junior is spot-only."""
+    if market_type != "futures" and float(leverage or 1.0) <= 1.0:
+        return None
+    if _resolved_plan_for_agent(agent_id) == "junior":
+        return ("the Junior plan is spot-only — futures and leverage need "
+                "Pro or higher")
+    return None
+
+
+def check_analyst_access(agent_id: int) -> Optional[str]:
+    """Deny reason (or None) for the one-off AI Analyst analysis."""
+    if _resolved_plan_for_agent(agent_id) == "junior":
+        return ("the Junior plan does not include the AI Analyst — "
+                "upgrade to Pro or higher")
+    return None
+
+
+def check_llm_change(cursor, user_id: Optional[int]) -> Optional[str]:
+    """Deny reason (or None) for repointing the LLM target away from the
+    system default (Junior runs on the platform's default AI only)."""
+    if plan_code_for_user(cursor, user_id) == "junior":
+        return ("the Junior plan uses the system default AI — changing the "
+                "AI provider needs Pro or higher")
+    return None
+
 
 def check_fleet_create(cursor, agent_id: int, n_runs: int) -> Optional[str]:
     """Deny reason (or None) for creating/starting a fleet."""

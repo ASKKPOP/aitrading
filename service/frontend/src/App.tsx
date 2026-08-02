@@ -612,7 +612,8 @@ function AppRouter({
               <Route path="/positions" element={<PositionsPage />} />
               {/* AI Analyst merged into Automation (one-off "analyze now" panel). */}
               <Route path="/analyst" element={<Navigate to="/automation" replace />} />
-              <Route path="/automation" element={agentGate(<AutomationPage />)} />
+              <Route path="/automation" element={agentGate(
+                <AutomationPage planCode={userInfo?.subscription?.plan_code ?? null} />)} />
               <Route path="/accounts" element={agentGate(<AccountsPage />)} />
               <Route path="/assets" element={agentGate(<AssetsPage />)} />
               <Route path="/spot" element={agentGate(<SpotPage />)} />

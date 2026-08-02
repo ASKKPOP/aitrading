@@ -760,6 +760,14 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        # Tier gate (always-on): Junior runs on the system default AI only —
+        # repointing the LLM target (own key / provider / model) is Pro+.
+        if target == 'llm':
+            from entitlements import check_llm_change
+            deny = check_llm_change(cursor, user['id'])
+            if deny:
+                conn.close()
+                raise HTTPException(status_code=403, detail=deny)
         cursor.execute(
             'SELECT id, api_key, config_json, enabled FROM user_api_settings WHERE user_id = ? AND target = ?',
             (user['id'], target),

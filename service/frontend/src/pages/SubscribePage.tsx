@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { API_BASE, useLanguage } from '../appShared'
+import { PLAN_FEATURE_BULLETS } from '../entitlements'
 import { tr } from '../i18n'
 
 // Membership gate — Sooppiy is subscription-only. A signed-in user without an
@@ -127,6 +128,16 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
       th: 'จำนวนที่ต้องโอน', vi: 'Số tiền cần chuyển', id: 'Jumlah yang dikirim' }),
     orOther: tr(language, { ko: '또는 다른 방법', en: 'Or another method', ja: 'または他の方法',
       th: 'หรือวิธีอื่น', vi: 'Hoặc phương thức khác', id: 'Atau metode lain' }),
+    upgradeTitle: tr(language, { ko: '플랜 업그레이드', en: 'Upgrade your plan', ja: 'プランをアップグレード',
+      th: 'อัปเกรดแผนของคุณ', vi: 'Nâng cấp gói của bạn', id: 'Tingkatkan paket Anda' }),
+    upgradeSubtitle: tr(language, { ko: '더 높은 플랜을 선택하면 결제 승인 후 적용됩니다.',
+      en: 'Pick a higher plan — it takes effect once the payment is approved.',
+      ja: '上位プランを選ぶと、支払いの承認後に適用されます。',
+      th: 'เลือกแผนที่สูงขึ้น — มีผลเมื่อการชำระเงินได้รับอนุมัติ',
+      vi: 'Chọn gói cao hơn — có hiệu lực sau khi thanh toán được duyệt.',
+      id: 'Pilih paket yang lebih tinggi — berlaku setelah pembayaran disetujui.' }),
+    currentPlan: tr(language, { ko: '현재 플랜', en: 'Current plan', ja: '現在のプラン',
+      th: 'แผนปัจจุบัน', vi: 'Gói hiện tại', id: 'Paket saat ini' }),
   }
 
   const authHdr: Record<string, string> = userToken ? { 'Authorization': `Bearer ${userToken}` } : {}
@@ -270,33 +281,55 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
         </div>
       )}
 
-      {status !== 'active' && status !== 'pending' && (
+      {/* An ACTIVE member keeps the plan grid — it is the upgrade path the
+          account pages link to. Only a pending payment hides it. */}
+      {status === 'active' && (
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>⬆ {T.upgradeTitle}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)', marginTop: 4 }}>{T.upgradeSubtitle}</div>
+        </div>
+      )}
+      {status !== 'pending' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 14 }}>
-          {plans.map(p => (
-            <div key={p.code} style={{ ...card, display: 'flex', flexDirection: 'column', gap: 10, borderColor: selected === p.code ? 'var(--accent-primary,#c26a45)' : undefined }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{p.name}</div>
-              {p.contact_only ? (
-                <>
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>—</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', flex: 1 }}>{T.enterpriseDesc}</div>
-                  <Link to="/contract" style={{ textDecoration: 'none' }}><button style={ghostBtn}>{T.contactUs}</button></Link>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>${Number(p.price_usd).toLocaleString()}<span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted,#8a8073)' }}>{T.perMonth}</span></div>
-                  <div style={{ flex: 1 }} />
-                  <button style={selected === p.code ? primaryBtn : ghostBtn} disabled={busy}
-                    onClick={() => { setSelected(p.code); setError('') }}>
-                    {selected === p.code ? `✓ ${T.selectedLabel}` : T.select}
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
+          {plans.map(p => {
+            const isCurrent = status === 'active' && mine?.subscription?.plan_code === p.code
+            const bullets = PLAN_FEATURE_BULLETS[p.code] || []
+            return (
+              <div key={p.code} style={{ ...card, display: 'flex', flexDirection: 'column', gap: 10, borderColor: selected === p.code ? 'var(--accent-primary,#c26a45)' : isCurrent ? '#22c55e' : undefined }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{p.name}</div>
+                  {isCurrent && (
+                    <span style={{ fontSize: 10.5, fontWeight: 700, borderRadius: 999, padding: '2px 8px', background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>✓ {T.currentPlan}</span>
+                  )}
+                </div>
+                {p.contact_only ? (
+                  <>
+                    <div style={{ fontSize: 22, fontWeight: 800 }}>—</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)' }}>{T.enterpriseDesc}</div>
+                    <ul style={{ margin: 0, padding: '0 0 0 2px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, flex: 1, fontSize: 12.5, color: 'var(--text-secondary,#a89f92)' }}>
+                      {bullets.map((b, i) => <li key={i}>✓ {tr(language, b)}</li>)}
+                    </ul>
+                    <Link to="/contract" style={{ textDecoration: 'none' }}><button style={ghostBtn}>{T.contactUs}</button></Link>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 22, fontWeight: 800 }}>${Number(p.price_usd).toLocaleString()}<span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted,#8a8073)' }}>{T.perMonth}</span></div>
+                    <ul style={{ margin: 0, padding: '0 0 0 2px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, flex: 1, fontSize: 12.5, color: 'var(--text-secondary,#a89f92)' }}>
+                      {bullets.map((b, i) => <li key={i}>✓ {tr(language, b)}</li>)}
+                    </ul>
+                    <button style={selected === p.code ? primaryBtn : ghostBtn} disabled={busy || isCurrent}
+                      onClick={() => { setSelected(p.code); setError('') }}>
+                      {isCurrent ? `✓ ${T.currentPlan}` : selected === p.code ? `✓ ${T.selectedLabel}` : T.select}
+                    </button>
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {status !== 'active' && status !== 'pending' && selected && (
+      {status !== 'pending' && selected && (
         <div style={{ ...card, marginTop: 20, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
           {/* USDT is the default rail — first, and the only one with a
               highlighted action. PayPal renders only when explicitly

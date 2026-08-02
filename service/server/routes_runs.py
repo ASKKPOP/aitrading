@@ -481,10 +481,19 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
 
+    def _check_tier_features(agent_id: int, settings: dict) -> None:
+        """Tier shape gate (always-on): Junior is spot-only."""
+        from entitlements import check_futures_access
+        deny = check_futures_access(agent_id, settings.get("market_type"),
+                                    settings.get("leverage") or 1.0)
+        if deny:
+            raise HTTPException(status_code=403, detail=deny)
+
     @app.post("/api/runs")
     async def create_run(data: RunIn, authorization: str = Header(None)):
         agent = _auth(authorization)
         settings, start_condition, stop_conditions = _validated_config(data)
+        _check_tier_features(agent["id"], settings)
         run_id = trading_runs.create_run(agent["id"], settings, start_condition,
                                          stop_conditions, data.stop_flatten)
         # Same agent-level exit profile an automation rule would have applied,
@@ -505,6 +514,7 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         """
         agent = _auth(authorization)
         settings, start_condition, stop_conditions = _validated_config(data)
+        _check_tier_features(agent["id"], settings)
         owner_id = _run_or_404(run_id, agent["id"])["agent_id"]
         try:
             trading_runs.update_draft_run(run_id, owner_id, settings,

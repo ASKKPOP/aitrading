@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import NotificationSettings from '../components/NotificationSettings'
 import { RegionPicker } from '../components/RegionSetup'
 import { API_BASE, useLanguage } from '../appShared'
+import { PLAN_FEATURE_BULLETS, PLAN_NAMES, planFeatures } from '../entitlements'
 import { tr, type TrMap } from '../i18n'
 
 type ApiTarget = {
@@ -271,6 +272,37 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         </div>
       </div>
 
+      {/* ── Membership ──────────────────────────────────── */}
+      {sectionTitle({ ko: '멤버십', en: 'Membership', ja: 'メンバーシップ', th: 'สมาชิกภาพ', vi: 'Gói thành viên', id: 'Keanggotaan' })}
+      {(() => {
+        const sub = userInfo?.subscription
+        const plan = (sub?.plan_code || '') as string
+        const bullets = PLAN_FEATURE_BULLETS[plan] || []
+        return (
+          <div className="card" style={{ padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>💎 {PLAN_NAMES[plan] || tr(language, { ko: '플랜 없음', en: 'No plan', ja: 'プランなし', th: 'ไม่มีแผน', vi: 'Chưa có gói', id: 'Tanpa paket' })}</span>
+              {sub?.expires_at && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {tr(language, { ko: '만료일', en: 'Expires', ja: '有効期限', th: 'วันหมดอายุ', vi: 'Hết hạn', id: 'Berakhir' })}: {String(sub.expires_at).slice(0, 10)}
+                </span>
+              )}
+              <div style={{ flex: 1 }} />
+              {plan !== 'enterprise' && (
+                <Link to="/subscribe" className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                  ⬆ {tr(language, { ko: '플랜 업그레이드', en: 'Upgrade plan', ja: 'プランをアップグレード', th: 'อัปเกรดแผน', vi: 'Nâng cấp gói', id: 'Tingkatkan paket' })}
+                </Link>
+              )}
+            </div>
+            {bullets.length > 0 && (
+              <ul style={{ margin: '10px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5, fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                {bullets.map((b, i) => <li key={i}>✓ {tr(language, b)}</li>)}
+              </ul>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── Preferences ─────────────────────────────────── */}
       {sectionTitle({ ko: '지역과 언어', en: 'Region & Language', ja: '地域と言語', th: 'ภูมิภาคและภาษา', vi: 'Khu vực & Ngôn ngữ', id: 'Wilayah & Bahasa' })}
       <div className="card" style={{ padding: '14px 16px' }}>
@@ -460,6 +492,10 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
 
       {targets.filter(t => t.target !== 'alerts').map(t => {
         const draft = draftOf(t)
+        // Tier gate (mirrors the server 403): Junior runs on the system
+        // default AI — the LLM target cannot be repointed or toggled.
+        const llmLocked = t.target === 'llm'
+          && !planFeatures(userInfo?.subscription?.plan_code).llmChange
         return (
           <div key={t.target} className="card" style={{ padding: '14px 16px', marginBottom: '10px', opacity: t.enabled ? 1 : 0.55 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -478,14 +514,32 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                   : tr(language, { ko: '공개 API — 키 불필요', en: 'Public API — no key needed', ja: '公開API', th: 'API สาธารณะ', vi: 'API công khai', id: 'API publik — tidak perlu kunci' })}
               </span>
               <div style={{ flex: 1 }} />
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                <input type="checkbox" checked={t.enabled} disabled={saving === t.target} onChange={() => toggleTarget(t)} />
-                {tr(language, { ko: '사용', en: 'Enabled', ja: '有効', th: 'เปิดใช้', vi: 'Bật', id: 'Aktif' })}
-              </label>
+              {!llmLocked && (
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                  <input type="checkbox" checked={t.enabled} disabled={saving === t.target} onChange={() => toggleTarget(t)} />
+                  {tr(language, { ko: '사용', en: 'Enabled', ja: '有効', th: 'เปิดใช้', vi: 'Bật', id: 'Aktif' })}
+                </label>
+              )}
             </div>
             <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '6px 0 0' }}>{targetDescription(t)}</div>
 
-            {t.requires_key && (
+            {llmLocked && (
+              <div style={{ marginTop: '10px', fontSize: '12.5px', color: 'var(--text-secondary)',
+                display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>🔒 {tr(language, {
+                  ko: 'Junior 플랜은 시스템 기본 AI를 사용합니다 — AI 변경은 Pro 플랜부터 가능합니다.',
+                  en: 'The Junior plan uses the system default AI — changing the AI needs the Pro plan or higher.',
+                  ja: 'Junior プランはシステム既定の AI を使用します — AI の変更は Pro プラン以上で可能です。',
+                  th: 'แผน Junior ใช้ AI เริ่มต้นของระบบ — การเปลี่ยน AI ต้องใช้แผน Pro ขึ้นไป',
+                  vi: 'Gói Junior dùng AI mặc định của hệ thống — đổi AI cần gói Pro trở lên.',
+                  id: 'Paket Junior memakai AI bawaan sistem — mengganti AI membutuhkan paket Pro atau lebih tinggi.' })}</span>
+                <Link to="/subscribe" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)' }}>
+                  {tr(language, { ko: '플랜 업그레이드', en: 'Upgrade plan', ja: 'プランをアップグレード', th: 'อัปเกรดแผน', vi: 'Nâng cấp gói', id: 'Tingkatkan paket' })}
+                </Link>
+              </div>
+            )}
+
+            {!llmLocked && t.requires_key && (
               <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {t.fields.includes('provider') && (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
