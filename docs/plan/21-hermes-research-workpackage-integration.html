@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 21 — Hermes Trading Research Work Package: Analysis &amp; Integration</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .bar { fill: var(--accent); opacity: .85; }
+  svg .bar-good { fill: var(--good); opacity: .85; }
+  svg .bar-warn { fill: var(--warn); opacity: .85; }
+  svg .bar-dim { fill: var(--code); stroke: var(--line); }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 21 — Hermes Trading Research Work Package: Analysis &amp; Integration</h1>
+<p class="kr">tradermonty/hermes-trading-research-agent-work-package 심층 분석과 Sooppiy 선별 통합 계획 — 패키지를 설치하는 것이 아니라, 가치 있는 부분만 우리 아키텍처로 이식한다 (2026-08-03)</p>
+
+<div class="chips">
+  <div class="chip"><b>~75</b><span>upstream skills (claude-trading-skills, MIT)</span></div>
+  <div class="chip"><b>10</b><span>slash-command bundles in the package</span></div>
+  <div class="chip"><b>5</b><span>trade-ticket approval states</span></div>
+  <div class="chip"><b>6</b><span>skills Sooppiy ALREADY ported (2026-08-02)</span></div>
+  <div class="chip"><b>23</b><span>skills in Sooppiy's registry today</span></div>
+  <div class="chip"><b>6</b><span>integration phases proposed</span></div>
+</div>
+
+<h2>1. What the work package actually is — four layers</h2>
+<p class="kr">패키지의 실체: 결정 기법은 전부 upstream 저장소에 있고, 이 패키지는 그 위의 오케스트레이션·프로세스 계약·승인 프리미티브·거버넌스 4개 레이어다</p>
+<div class="card">
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--good)"/>
+    </marker>
+    <marker id="ar-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/>
+    </marker>
+  </defs>
+
+  <!-- human at top -->
+  <rect class="box-dim" x="380" y="10" width="200" height="40"/>
+  <text x="480" y="34" text-anchor="middle" class="t-b">Human US-equity trader</text>
+
+  <!-- hermes runtime -->
+  <rect class="box" x="40" y="80" width="880" height="120"/>
+  <text x="60" y="102" class="t-b">Hermes runtime (NousResearch hermes-agent CLI, profile: trading-research-assistant)</text>
+  <rect class="box-accent" x="60" y="115" width="200" height="70"/>
+  <text x="160" y="138" text-anchor="middle" class="t-b">Orchestration</text>
+  <text x="160" y="155" text-anchor="middle" class="t-small">10 bundles · 4 cron presets</text>
+  <text x="160" y="170" text-anchor="middle" class="t-small">SOUL.md · 3 adapter skills</text>
+
+  <rect class="box-good" x="280" y="115" width="200" height="70"/>
+  <text x="380" y="138" text-anchor="middle" class="t-b">Process contracts</text>
+  <text x="380" y="155" text-anchor="middle" class="t-small">freshness · provenance · degraded</text>
+  <text x="380" y="170" text-anchor="middle" class="t-small">session-state vs posture-basis</text>
+
+  <rect class="box-good" x="500" y="115" width="200" height="70"/>
+  <text x="600" y="138" text-anchor="middle" class="t-b">Trade-ticket primitive</text>
+  <text x="600" y="155" text-anchor="middle" class="t-small">JSON Schema · 5 states</text>
+  <text x="600" y="170" text-anchor="middle" class="t-small">re-typed approval · journal bridge</text>
+
+  <rect class="box" x="720" y="115" width="180" height="70"/>
+  <text x="810" y="138" text-anchor="middle" class="t-b">Upstream governance</text>
+  <text x="810" y="155" text-anchor="middle" class="t-small">vendored / drift tests</text>
+  <text x="810" y="170" text-anchor="middle" class="t-small">upstream-status risk report</text>
+
+  <!-- upstream repo -->
+  <rect class="box" x="40" y="250" width="880" height="100"/>
+  <text x="60" y="272" class="t-b">tradermonty/claude-trading-skills — canonical upstream (~75 skills, 12 workflows, MIT)</text>
+  <text x="60" y="295" class="t-small">market-regime · core-portfolio · swing-opportunity · trade-planning · trade-memory · strategy-research · advanced-satellite · meta</text>
+  <rect class="box-dim" x="60" y="308" width="260" height="30"/>
+  <text x="190" y="327" text-anchor="middle" class="t-small">SKILL.md method text (judgment)</text>
+  <rect class="box-dim" x="340" y="308" width="260" height="30"/>
+  <text x="470" y="327" text-anchor="middle" class="t-small">Python engines (FMP / FINVIZ fetch + reports)</text>
+  <rect class="box-dim" x="620" y="308" width="280" height="30"/>
+  <text x="760" y="327" text-anchor="middle" class="t-small">workflows/*.yaml + skills-index.yaml</text>
+
+  <path class="ln" d="M480 50 L480 78" marker-end="url(#ar)"/>
+  <path class="ln" d="M480 200 L480 248" marker-end="url(#ar)"/>
+
+  <!-- boundary note -->
+  <rect class="box-warn" x="40" y="380" width="880" height="42"/>
+  <text x="480" y="397" text-anchor="middle" class="t-small">Hard stance of the package: NO order placement, NO signals, human makes every entry/exit —</text>
+  <text x="480" y="413" text-anchor="middle" class="t-small">the OPPOSITE of Sooppiy's autonomous desk. We port methods and contracts, never the runtime or the philosophy.</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--good)"></span>green boxes = the genuinely portable ideas &nbsp; <span class="dot" style="background:var(--accent)"></span>blue = Hermes-runtime specific &nbsp; dashed = context</p>
+</div>
+
+<h2>2. The key finding — we already run the distilled layer</h2>
+<p class="kr">핵심 발견: Sooppiy는 2026-08-02에 바로 이 upstream 저장소에서 증류한 6개 스킬을 이미 이식했다. 패키지 자체에는 새 결정 기법이 없다</p>
+<div class="card">
+<table>
+  <tr><th>Upstream skill(s)</th><th>Sooppiy registry row (already live)</th></tr>
+  <tr><td><code>market-top-detector</code> + <code>ibd-distribution-day-monitor</code></td><td><code>market-topping-evidence</code></td></tr>
+  <tr><td><code>news-reaction-failure-analyzer</code></td><td><code>news-reaction-evidence</code></td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td><code>drawdown-circuit-breaker</code></td></tr>
+  <tr><td><code>exposure-coach</code></td><td><code>exposure-discipline</code></td></tr>
+  <tr><td><code>cot-contrarian-detector</code> + <code>contrarian-setup-gate</code></td><td><code>contrarian-crowding-gate</code></td></tr>
+  <tr><td><code>scenario-analyzer</code></td><td><code>scenario-precommit</code></td></tr>
+</table>
+<p class="legend">Also parallel by design, nothing to do: the package's <code>x-generated</code>/vendored ownership model ≈ Sooppiy's <code>catalog_hash</code> auto-upgrade (untouched rows follow the catalogue, admin edits win until reset).</p>
+</div>
+
+<h2>3. Triage — 75 upstream skills into four buckets</h2>
+<p class="kr">75개 스킬 분류: 판단 기법(레지스트리 행으로), 데이터 엔진(데몬으로), 프로세스/메모리(기존 루프가 이미 보유), 인간 워크플로(브리프·관리자 UI로)</p>
+<div class="card">
+<svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="140" width="150" height="100"/>
+  <text x="95" y="180" text-anchor="middle" class="t-b">~75 skills</text>
+  <text x="95" y="198" text-anchor="middle" class="t-small">claude-trading-skills</text>
+  <text x="95" y="214" text-anchor="middle" class="t-small">8 categories</text>
+
+  <path class="ln-good" d="M170 165 C 240 120, 280 70, 330 62" marker-end="url(#ar-g)"/>
+  <path class="ln" d="M170 185 C 240 175, 280 160, 330 155" marker-end="url(#ar)"/>
+  <path class="ln" d="M170 200 C 240 220, 280 240, 330 248" marker-end="url(#ar)"/>
+  <path class="ln" d="M170 215 C 240 270, 280 320, 330 334" marker-end="url(#ar)"/>
+
+  <rect class="box-good" x="330" y="30" width="300" height="64"/>
+  <text x="345" y="52" class="t-b">Judgment methods — unported, high value</text>
+  <text x="345" y="70" class="t-small">crypto-regime-analyzer · ftd-detector</text>
+  <text x="345" y="85" class="t-small">(most others already covered by the 23-row registry)</text>
+
+  <rect class="box" x="330" y="124" width="300" height="62"/>
+  <text x="345" y="146" class="t-b">Data engines (FMP / FINVIZ keys)</text>
+  <text x="345" y="163" class="t-small">vcp / canslim / pead screeners · earnings-calendar</text>
+  <text x="345" y="178" class="t-small">distribution-day monitor · stockbee suite · sector/theme</text>
+
+  <rect class="box" x="330" y="216" width="300" height="62"/>
+  <text x="345" y="238" class="t-b">Process / memory / meta</text>
+  <text x="345" y="255" class="t-small">trader-memory-core · signal-postmortem · edge-* pipeline</text>
+  <text x="345" y="270" class="t-small">dual-axis-skill-reviewer · skill-designer</text>
+
+  <rect class="box" x="330" y="308" width="300" height="56"/>
+  <text x="345" y="330" class="t-b">Human workflow (bundles, briefs)</text>
+  <text x="345" y="347" class="t-small">pre-market / after-close / weekly / monthly routines</text>
+
+  <path class="ln-good" d="M630 62 L 700 62" marker-end="url(#ar-g)"/>
+  <path class="ln" d="M630 155 L 700 155" marker-end="url(#ar)"/>
+  <path class="ln" d="M630 247 L 700 247" marker-end="url(#ar)"/>
+  <path class="ln" d="M630 336 L 700 336" marker-end="url(#ar)"/>
+
+  <rect class="box-good" x="700" y="38" width="240" height="48"/>
+  <text x="820" y="58" text-anchor="middle" class="t-b">BASE_SKILLS rows — Phase 1</text>
+  <text x="820" y="75" text-anchor="middle" class="t-small">trading_skills.py (+ budget bump)</text>
+
+  <rect class="box" x="700" y="131" width="240" height="48"/>
+  <text x="820" y="151" text-anchor="middle" class="t-b">Backend daemons</text>
+  <text x="820" y="168" text-anchor="middle" class="t-small">regime.py upgrade P3 · FMP P6 (deferred)</text>
+
+  <rect class="box-dim" x="700" y="223" width="240" height="48"/>
+  <text x="820" y="243" text-anchor="middle" class="t-b">Already owned by Sooppiy</text>
+  <text x="820" y="260" text-anchor="middle" class="t-small">run_feedback · backtest gate · adapt loop</text>
+
+  <rect class="box" x="700" y="312" width="240" height="48"/>
+  <text x="820" y="332" text-anchor="middle" class="t-b">Desk briefs + admin — P4 / P5</text>
+  <text x="820" y="349" text-anchor="middle" class="t-small">notifications ×6 langs · admin console</text>
+</svg>
+</div>
+
+<h2>4. Integration map — package piece → Sooppiy module</h2>
+<p class="kr">통합 지도: 패키지의 각 조각이 Sooppiy의 어느 모듈로 이식되는가 (초록 = 이식, 점선 = 채택 안 함)</p>
+<div class="card">
+<table>
+  <tr><th>Package piece</th><th>Sooppiy destination</th><th>Phase</th><th>Verdict</th></tr>
+  <tr><td><code>crypto-regime-analyzer</code> method (6 anchors: BTC trend, alt breadth, dominance rotation, funding crowding, drawdown/vol position, thrust)</td><td>New base skill <code>crypto-regime-lens</code> (<code>markets: crypto</code>, trader prompt)</td><td>P1</td><td class="ok">port</td></tr>
+  <tr><td><code>ftd-detector</code> method (O'Neil follow-through: rally attempt day 4–7, +1.5% on rising volume; failed FTD resets)</td><td>New base skill <code>bottom-confirmation</code> (<code>markets: us-stock</code>) — offensive complement to <code>market-topping-evidence</code></td><td>P1</td><td class="ok">port</td></tr>
+  <tr><td>Data freshness + Source/Skill provenance + carried-forward vs fresh posture labeling (TICKET-013)</td><td><code>symbol_research.py</code> brief contract: <code>as_of</code> price/timestamp, source labels, staleness flag rendered into decision prompts (fixes the :496026 stale-brief class at the source)</td><td>P2</td><td class="ok">port</td></tr>
+  <tr><td>Crypto regime composite score engine (keyless CoinGecko + Binance funding)</td><td><code>regime.py</code> upgrade to 6-component 0–100 composite + admin console card</td><td>P3</td><td class="ok">port</td></tr>
+  <tr><td>Routine bundles (pre-market / after-close / weekly / monthly)</td><td>Desk briefs + monthly process-review report from existing feeds (regime, psych, hot issues, fleet P&amp;L), ×6 languages, ending with candidate skill drafts (decisions-become-skills loop)</td><td>P4</td><td class="ok">adapt</td></tr>
+  <tr><td>Trade-ticket approval primitive (re-typed confirmation, mismatch demotes)</td><td>Shadow→live promotion ticket in the admin console, layered on consent + <code>LIVE_BROKER_ALLOWLIST</code> + $1k cap. Gates <em>enablement</em>, never individual trades</td><td>P5</td><td class="wr">owner-gated</td></tr>
+  <tr><td>FMP / FINVIZ screener engines (us-stock enrichment)</td><td>Backend daemons feeding <code>symbol_research</code> — addresses us-stock data starvation; needs paid key decision</td><td>P6</td><td class="wr">deferred</td></tr>
+  <tr><td>Hermes runtime, cron gateway, SOUL, Alpaca adapter, no-execution stance, human-makes-every-decision model</td><td>— (Sooppiy has its own daemon, scheduler, 9 broker adapters, and an autonomous-desk philosophy)</td><td>—</td><td class="no">do not adopt</td></tr>
+</table>
+</div>
+
+<h2>5. Ticket lifecycle → shadow-to-live promotion gate (Phase 5, owner-gated)</h2>
+<p class="kr">티켓 수명주기의 이식: 개별 주문 승인이 아니라 shadow→live 승격 승인에만 적용 — 트레이딩 결정은 계속 데스크(AI)의 것</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- upstream lifecycle -->
+  <text x="30" y="28" class="t-b">Package lifecycle (as shipped)</text>
+  <rect class="box" x="30" y="44" width="130" height="40"/>
+  <text x="95" y="68" text-anchor="middle">DRAFT</text>
+  <rect class="box" x="220" y="44" width="150" height="40"/>
+  <text x="295" y="68" text-anchor="middle">REVIEW_READY</text>
+  <rect class="box-good" x="430" y="44" width="130" height="40"/>
+  <text x="495" y="68" text-anchor="middle" class="t-b">APPROVED</text>
+  <rect class="box" x="620" y="24" width="120" height="34"/>
+  <text x="680" y="46" text-anchor="middle">REJECTED</text>
+  <rect class="box" x="620" y="70" width="120" height="34"/>
+  <text x="680" y="92" text-anchor="middle">EXPIRED</text>
+  <rect class="box-dim" x="790" y="44" width="150" height="40"/>
+  <text x="865" y="62" text-anchor="middle" class="t-small">journal bridge →</text>
+  <text x="865" y="77" text-anchor="middle" class="t-small">trader-memory-core</text>
+
+  <path class="ln" d="M160 64 L 218 64" marker-end="url(#ar)"/>
+  <path class="ln-good" d="M370 64 L 428 64" marker-end="url(#ar-g)"/>
+  <path class="ln-bad" d="M370 52 C 480 20, 560 28, 618 38"/>
+  <path class="ln" d="M370 76 C 480 100, 560 92, 618 88" marker-end="url(#ar)"/>
+  <path class="ln" d="M560 64 L 788 64" marker-end="url(#ar)"/>
+  <text x="395" y="46" class="t-small">re-typed confirmed.* must match ticket body — any mismatch demotes back</text>
+
+  <!-- sooppiy mapping -->
+  <text x="30" y="160" class="t-b">Sooppiy mapping (P5): the ticket gates ENABLEMENT, not trades</text>
+  <rect class="box" x="30" y="176" width="180" height="52"/>
+  <text x="120" y="198" text-anchor="middle" class="t-b">Shadow rule</text>
+  <text x="120" y="215" text-anchor="middle" class="t-small">account_type: shadow</text>
+
+  <rect class="box-warn" x="280" y="176" width="240" height="52"/>
+  <text x="400" y="198" text-anchor="middle" class="t-b">Promotion ticket (admin)</text>
+  <text x="400" y="215" text-anchor="middle" class="t-small">re-type symbol · direction scope · caps</text>
+
+  <rect class="box-good" x="590" y="176" width="180" height="52"/>
+  <text x="680" y="198" text-anchor="middle" class="t-b">Live rule</text>
+  <text x="680" y="215" text-anchor="middle" class="t-small">allowlist + $1k cap + consent</text>
+
+  <rect class="box-dim" x="30" y="252" width="740" height="34"/>
+  <text x="400" y="274" text-anchor="middle" class="t-small">After promotion, every trading decision remains the desk's (owner rule 2026-08-03) — the deterministic gates and rails stay the real guarantee</text>
+
+  <path class="ln" d="M210 202 L 278 202" marker-end="url(#ar)"/>
+  <path class="ln-good" d="M520 202 L 588 202" marker-end="url(#ar-g)"/>
+</svg>
+</div>
+
+<h2>6. Prompt-budget check for the two Phase-1 skills</h2>
+<p class="kr">프롬프트 예산 검증: 두 스킬 추가 후에도 캡 이내지만, 커스텀 스킬 여유가 1k 미만으로 줄어 캡 상향(20k→24k)을 함께 반영</p>
+<div class="card">
+<svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
+  <!-- scale: 1000 chars = 20px, x0=290 -->
+  <text x="30" y="42">trader / us-stock — today</text>
+  <rect class="bar" x="290" y="28" width="357" height="18"/>
+  <text x="655" y="42" class="t-small">≈17,859 chars</text>
+
+  <text x="30" y="82">trader / us-stock + bottom-confirmation</text>
+  <rect class="bar" x="290" y="68" width="357" height="18"/>
+  <rect class="bar-good" x="647" y="68" width="24" height="18"/>
+  <text x="680" y="82" class="t-small">≈19,050 — fits, but &lt;1k headroom left</text>
+
+  <text x="30" y="122">trader / crypto + crypto-regime-lens</text>
+  <rect class="bar" x="290" y="108" width="339" height="18"/>
+  <rect class="bar-good" x="629" y="108" width="23" height="18"/>
+  <text x="662" y="122" class="t-small">≈18,100 (earnings skill does not ride crypto)</text>
+
+  <text x="30" y="162">current cap MAX_BLOCK_LEN</text>
+  <rect class="bar-dim" x="290" y="148" width="400" height="18"/>
+  <text x="700" y="162" class="t-small">20,000</text>
+
+  <text x="30" y="202">proposed cap (P1)</text>
+  <rect class="bar-warn" x="290" y="188" width="480" height="18"/>
+  <text x="780" y="202" class="t-small">24,000 + test update</text>
+</svg>
+<p class="legend">Numbers are estimates from the catalogue comment (17,859 at defaults) plus ~1.1–1.2k per new body; the test recomputes the real totals and is the arbiter. A skill that would overflow is skipped whole, never truncated — which is exactly why headroom, not fit, is the invariant.</p>
+</div>
+
+<h2>7. Phase roadmap</h2>
+<p class="kr">단계별 로드맵: P1은 스킬 예외 권한으로 즉시, P2–P4는 코드 확장, P5는 오너 결정, P6은 유료 키 결정 후</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <line x1="240" y1="16" x2="240" y2="238" class="ln" stroke-dasharray="3 4"/>
+  <text x="30" y="36" class="t-b">P1 skills + budget</text>
+  <rect class="bar-good" x="250" y="24" width="120" height="16"/>
+  <text x="380" y="37" class="t-small">trading_skills.py — 2 rows, cap bump, tests (ship now)</text>
+
+  <text x="30" y="72" class="t-b">P2 brief integrity</text>
+  <rect class="bar" x="300" y="60" width="150" height="16"/>
+  <text x="460" y="73" class="t-small">symbol_research.py — as_of / provenance / staleness flag</text>
+
+  <text x="30" y="108" class="t-b">P3 crypto composite</text>
+  <rect class="bar" x="380" y="96" width="170" height="16"/>
+  <text x="560" y="109" class="t-small">regime.py 6-component 0–100 + admin card (keyless feeds)</text>
+
+  <text x="30" y="144" class="t-b">P4 desk briefs</text>
+  <rect class="bar" x="470" y="132" width="200" height="16"/>
+  <text x="680" y="145" class="t-small">daily brief + monthly process review ×6 langs</text>
+
+  <text x="30" y="180" class="t-b">P5 promotion ticket</text>
+  <rect class="bar-warn" x="560" y="168" width="150" height="16"/>
+  <text x="720" y="181" class="t-small">owner-gated · admin console</text>
+
+  <text x="30" y="216" class="t-b">P6 FMP enrichment</text>
+  <rect class="bar-dim" x="640" y="204" width="150" height="16"/>
+  <text x="800" y="217" class="t-small">deferred · paid-key decision</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--good)"></span>immediate (skills authority) &nbsp; <span class="dot" style="background:var(--accent)"></span>code phases in order &nbsp; <span class="dot" style="background:var(--warn)"></span>needs owner decision &nbsp; dashed = deferred</p>
+</div>
+
+<h2>8. Risks and non-goals</h2>
+<p class="kr">리스크와 비목표: 예산 초과 무음 스킵, 브리프 LLM 비용, 라이브 경계, 그리고 패키지 철학의 불일치</p>
+<div class="card">
+<table>
+  <tr><th>Risk</th><th>Mitigation</th></tr>
+  <tr><td>Budget overflow silently skips skills (skip-whole, never truncate)</td><td>Cap bump to 24k in the same PR as the rows; invariant test recomputes real totals</td></tr>
+  <tr><td>New skills land without evidence of uptake</td><td>These are method-ports, not incident fixes — watch 1–2 weeks of <code>run_events</code> before tuning; compliance monitoring same as horizon-discipline</td></tr>
+  <tr><td>P4 briefs add daily LLM cost ×6 languages</td><td>Reuse market_i18n cache-only + background-warm pattern; kill-switch env</td></tr>
+  <tr><td>P5 touches the simulator/shadow/live boundary</td><td>Owner decision first; grep-verified boundary statement per standing rule; ticket gates enablement only</td></tr>
+  <tr><td>Philosophy mismatch (package = human decides everything)</td><td>Named explicitly as a non-goal: no Hermes runtime, no per-trade human gates, no signal-service UX</td></tr>
+</table>
+<p class="legend">Licensing: both repos MIT (© 2026 TraderMonty) — keep the in-code attribution comments, as the 2026-08-02 port already does. Companion text plan: <code>docs/plan/21-hermes-research-workpackage-integration.md</code></p>
+</div>
+
+</div>
+</body>
+</html>
