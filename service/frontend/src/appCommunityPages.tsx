@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { API_BASE, COMMUNITY_FEED_PAGE_SIZE, MARKETS, useLanguage } from './appShared'
-import AuthBackground from './components/AuthBackground'
+import HeroWaveBackground from './components/HeroWaveBackground'
 import { SymbolSelect } from './components/SymbolSelect'
 import { tr } from './i18n'
 import type { Language } from './i18n'
@@ -22,7 +22,7 @@ function AuthGlance({ mode, language }: { mode: 'login' | 'register'; language: 
   const accline = { stroke: 'var(--accent-primary,#c26a45)', strokeWidth: 1.6, fill: 'none', strokeDasharray: '5 4' }
 
   const chip = (no: string, label: string) => (
-    <div key={no + label} style={{ flex: '1 1 88px', background: 'var(--bg-secondary,rgba(255,255,255,0.03))', border: '1px solid var(--border-color,#3a3a3a)', borderRadius: 10, padding: '9px 8px', textAlign: 'center' as const }}>
+    <div key={no + label} style={{ background: 'var(--bg-secondary,rgba(255,255,255,0.03))', border: '1px solid var(--border-color,#3a3a3a)', borderRadius: 10, padding: '9px 8px', textAlign: 'center' as const }}>
       <b style={{ display: 'block', fontSize: 11, color: 'var(--accent-primary,#c26a45)', fontVariantNumeric: 'tabular-nums' }}>{no}</b>
       <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{label}</span>
     </div>
@@ -53,8 +53,11 @@ function AuthGlance({ mode, language }: { mode: 'login' | 'register'; language: 
   return (
     <div style={{ marginTop: 18 }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-secondary,#8a8073)', marginBottom: 10 }}>{heading}</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>{chips}</div>
+      {/* Chip strip + card-framed SVG, arranged like the home page's guide §0
+          flow-diagram block (grid of STEP chips, then the diagram in a card). */}
+      <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))', marginBottom: 12 }}>{chips}</div>
 
+      <div style={{ background: 'var(--bg-card,#10151c)', border: '1px solid var(--border-color,#3a3a3a)', borderRadius: 14, padding: 14 }}>
       {mode === 'login' ? (
         <svg viewBox="0 0 560 216" width="100%" role="img" aria-label={heading} xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -127,6 +130,7 @@ function AuthGlance({ mode, language }: { mode: 'login' | 'register'; language: 
           <text x="280" y="204" textAnchor="middle" style={s}>{tr(language, { ko: '그 전까지 실제 돈은 한 푼도 들어가지 않습니다', en: 'until then, not a cent of real money is involved', ja: 'それまで実際のお金は一切かかりません', th: 'ก่อนหน้านั้นไม่ใช้เงินจริงแม้แต่บาทเดียว', vi: 'trước đó không dùng một đồng tiền thật nào', id: 'sampai saat itu, tidak sesen pun uang sungguhan yang terlibat' })}</text>
         </svg>
       )}
+      </div>
     </div>
   )
 }
@@ -157,7 +161,11 @@ function AuthShell({
 
   return (
     <div className="auth-shell">
-      <AuthBackground />
+      {/* Same animated wave as the home page's first block; the auth screens
+          are dark in every theme, so the palette is forced dark. */}
+      <div className="auth-bg-wave" aria-hidden>
+        <HeroWaveBackground dark />
+      </div>
       <div className="auth-stage">
         <div className="auth-panel auth-panel-copy">
           <div className="auth-kicker">
