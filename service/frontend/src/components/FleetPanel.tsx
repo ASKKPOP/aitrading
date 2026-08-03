@@ -68,9 +68,11 @@ const RISK_TIERS: { key: string; label: any; desc: any }[] = [
 ]
 
 // Leverage choices for the fleet. 'auto' = the tier's default (1/2/3×);
-// a number overrides it for every run the fleet builds.
-const LEV_CHOICES: { key: string; val: number | null; label: string }[] = [
-  { key: 'auto', val: null, label: '자동 · Auto' },
+// a number overrides it for every run the fleet builds. 'auto' carries a
+// TrMap (it was a hardcoded '자동 · Auto' in every language); the numeric
+// labels stay plain strings.
+const LEV_CHOICES: { key: string; val: number | null; label: any }[] = [
+  { key: 'auto', val: null, label: { ko: '자동', en: 'Auto', ja: '自動', th: 'อัตโนมัติ', vi: 'Tự động', id: 'Otomatis' } },
   { key: '1', val: 1, label: '1×' },
   { key: '2', val: 2, label: '2×' },
   { key: '3', val: 3, label: '3×' },
@@ -100,7 +102,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     pause: tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng', id: 'Jeda' }),
     resume: tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ดำเนินต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' }),
     resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)', id: 'Lanjutkan trading (tanggung jawab Anda)' }),
-    needPlan: tr(language, { ko: '완전자동 플릿은 Pro 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Pro plan or above', ja: '完全自動フリートは Pro 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Pro ขึ้นไป', vi: 'Đội hình tự động cần gói Pro trở lên', id: 'Fleet Full Auto memerlukan paket Pro atau di atasnya' }),
+    // Fleets moved to Professional+ with the tier gates (PR #198) — keep this
+    // wording in step with entitlements.PLAN_LIMITS max_fleet_size.
+    needPlan: tr(language, { ko: '완전자동 플릿은 Professional 이상 요금제에서 사용할 수 있습니다', en: 'Full Auto fleets need a Professional plan or above', ja: '完全自動フリートは Professional 以上のプランで利用できます', th: 'ฟลีตอัตโนมัติต้องใช้แผน Professional ขึ้นไป', vi: 'Đội hình tự động cần gói Professional trở lên', id: 'Fleet Full Auto memerlukan paket Professional atau di atasnya' }),
     equity: tr(language, { ko: '평가 자산', en: 'Marked equity', ja: '評価資産', th: 'มูลค่าตามราคาตลาด', vi: 'Giá trị theo thị trường', id: 'Ekuitas berbasis harga pasar' }),
     indexLabel: tr(language, { ko: 'N종목 지수', en: 'Fleet index', ja: 'フリート指数',
       th: 'ดัชนีกองทุน', vi: 'Chỉ số nhóm', id: 'Indeks fleet' }),
@@ -366,7 +370,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {LEV_CHOICES.map(l => (
-                <button key={l.key} style={chip(levKey === l.key)} onClick={() => setLevKey(l.key)}>{l.label}</button>
+                <button key={l.key} style={chip(levKey === l.key)} onClick={() => setLevKey(l.key)}>
+                  {typeof l.label === 'string' ? l.label : tr(language, l.label)}
+                </button>
               ))}
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
