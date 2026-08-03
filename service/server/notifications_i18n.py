@@ -564,6 +564,48 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
         'id': ('Isu penting: {symbol} — posisi {side} Anda',
                '{symbol} ({market}): {triggers}. {verdict} Run #{run_id} akan dinaikkan ke meja AI penuh pada siklus berikutnya.'),
     },
+    # Plan 21 P4 — daily desk brief (market posture + light activity line;
+    # P&L stays with the run_reports digests). Machine translations; native
+    # review pending per the standing i18n note.
+    'desk_brief_daily': {
+        'en': ('Daily desk brief — {zone}',
+               'Crypto composite {score}/100 ({zone}) · regime {regime} · '
+               'Fear&Greed {fng}. Hot issues (24h): {hot24}. Your desk: '
+               '{active_runs} active runs, {decisions24} decisions in 24h. '
+               'Advisory market context — the AI desk trades; this is its '
+               'weather report.'),
+        'ko': ('일일 데스크 브리핑 — {zone}',
+               '크립토 컴포지트 {score}/100 ({zone}) · 레짐 {regime} · '
+               '공포탐욕지수 {fng}. 핫이슈(24시간): {hot24}건. 내 데스크: '
+               '활성 런 {active_runs}개, 24시간 결정 {decisions24}건. '
+               '참고용 시장 컨텍스트입니다 — 거래는 AI 데스크가 수행하며, '
+               '이 브리핑은 그 날씨 리포트입니다.'),
+        'ja': ('デイリーデスクブリーフ — {zone}',
+               'クリプト総合スコア {score}/100（{zone}）· レジーム {regime} · '
+               'Fear&Greed {fng}。ホットイシュー（24時間）：{hot24}件。'
+               'あなたのデスク：稼働中ラン {active_runs} 件、24時間の判断 '
+               '{decisions24} 件。参考用の市場コンテキストです — 取引はAI'
+               'デスクが行い、これはその天気予報です。'),
+        'th': ('สรุปเดสก์รายวัน — {zone}',
+               'คะแนนรวมคริปโต {score}/100 ({zone}) · regime {regime} · '
+               'Fear&Greed {fng} ประเด็นร้อน (24 ชม.): {hot24} รายการ '
+               'เดสก์ของคุณ: รันที่ทำงานอยู่ {active_runs} รายการ, '
+               'การตัดสินใจใน 24 ชม. {decisions24} ครั้ง '
+               'ข้อมูลตลาดเพื่ออ้างอิงเท่านั้น — AI เดสก์เป็นผู้เทรด '
+               'นี่คือรายงานสภาพอากาศของมัน'),
+        'vi': ('Bản tin desk hằng ngày — {zone}',
+               'Điểm tổng hợp crypto {score}/100 ({zone}) · regime {regime} · '
+               'Fear&Greed {fng}. Sự kiện nóng (24h): {hot24}. Desk của bạn: '
+               '{active_runs} run đang chạy, {decisions24} quyết định trong '
+               '24h. Bối cảnh thị trường chỉ để tham khảo — bàn AI thực hiện '
+               'giao dịch; đây là bản tin thời tiết của nó.'),
+        'id': ('Ringkasan desk harian — {zone}',
+               'Skor komposit kripto {score}/100 ({zone}) · regime {regime} · '
+               'Fear&Greed {fng}. Isu penting (24 jam): {hot24}. Desk Anda: '
+               '{active_runs} run aktif, {decisions24} keputusan dalam 24 '
+               'jam. Konteks pasar sebagai penasihat — meja AI yang '
+               'berdagang; ini laporan cuacanya.'),
+    },
     'breaker': {
         'en': ('Circuit breaker HALT ({scope})', 'Trading halted: {reason}'),
         'ko': ('서킷 브레이커 발동 ({scope})', '거래 중단: {reason}'),

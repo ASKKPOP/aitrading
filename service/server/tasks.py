@@ -835,6 +835,31 @@ async def report_scheduler_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def desk_brief_loop():
+    """Plan 21 P4: daily desk brief + monthly process review.
+
+    Checks every DESK_BRIEF_TICK_INTERVAL seconds whether today's brief (or
+    the month's review) is due; platform_settings markers make each send
+    once-only across restarts. Deterministic — no LLM calls.
+    """
+    from desk_brief import desk_brief_enabled, desk_brief_tick
+
+    tick_interval = _env_int("DESK_BRIEF_TICK_INTERVAL", 600, minimum=60)
+
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            if desk_brief_enabled():
+                result = await asyncio.to_thread(desk_brief_tick)
+                if result.get("daily_sent") or result.get("monthly"):
+                    print(f"[DeskBrief] tick: {result}")
+        except Exception as e:
+            print(f"[DeskBrief Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def subscription_enforcer_loop():
     """Background task for Trading Runs entitlements (Plan 10, Phase 5).
 
@@ -1872,6 +1897,7 @@ BACKGROUND_TASK_REGISTRY = {
     "fleet_planner": _fleet_planner_loop,
     "hot_issue_daemon": _hot_issue_daemon_loop,
     "orphan_reclaim": _orphan_reclaim_loop,
+    "desk_brief": desk_brief_loop,
 }
 
 
@@ -1949,6 +1975,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # runs the run loop must immediately see)
     "fleet_planner":           "settlement",
     "hot_issue_daemon":        "research",
+    # desk brief / monthly review — derived reporting, never touches trading
+    "desk_brief":              "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
