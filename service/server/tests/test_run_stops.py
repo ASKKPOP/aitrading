@@ -228,6 +228,76 @@ class RunStopsTests(unittest.TestCase):
         self.assertEqual(self._row(run_id)["status_reason"],
                          "stop_event:trailing_lock")
 
+    def test_peak_reanchors_when_the_book_goes_flat(self):
+        """A high-water mark belongs to the exposure that set it.
+
+        Prod 2026-08-02 run 921: a fresh 0.05-budget probe was stopped by
+        trailing_lock 28 SECONDS after opening, at the same price it opened at,
+        because the run's peak (+2.74) survived from a position closed hours
+        earlier — realized -3.25. Prod 2026-08-03 run 932 cycle 19: the desk
+        closed a one-cycle-old position because the prompt told it that it was
+        "holding 0% of that high-water mark", the mark again belonging to a
+        position banked two cycles before. Same stale value, two consumers.
+        """
+        run_id = self._run(stop_conditions={
+            "trail": {"activate_usd": 15.0, "giveback_frac": 0.40}})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(106.0)
+        run_engine.control_pass()
+        peaked = float(self._row(run_id)["peak_pnl_usd"])
+        self.assertGreater(peaked, 15.0)
+
+        # Bank it and go flat.
+        self._trade(run_id, "sell", 5.0, 106.0, "s1")
+        run_engine.control_pass()
+        flat_peak = float(self._row(run_id)["peak_pnl_usd"])
+        self.assertLess(flat_peak, peaked,
+                        "peak must re-anchor once the position that set it is gone")
+
+        # A fresh position must not be judged against the old exposure's best.
+        self._trade(run_id, "buy", 5.0, 106.0, "b2")
+        self._set_mark(106.0)
+        out = run_engine.control_pass()
+        self.assertEqual(out["stops_fired"], 0,
+                         "fresh position stopped by the previous position's peak")
+
+    def test_held_position_retracing_never_lowers_the_peak(self):
+        """The high-water mark is the whole mechanism — if it tracked a live
+        position down, the trailing lock could never fire and re-anchoring on
+        flat would be measuring against a moving floor."""
+        run_id = self._run(stop_conditions={
+            "trail": {"activate_usd": 15.0, "giveback_frac": 0.95}})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(106.0)
+        run_engine.control_pass()
+        peak = float(self._row(run_id)["peak_pnl_usd"])
+        self.assertGreater(peak, 15.0)
+        # Retrace while STILL HOLDING — a wide giveback keeps the lock inert.
+        self._set_mark(103.0)
+        run_engine.control_pass()
+        self.assertAlmostEqual(float(self._row(run_id)["peak_pnl_usd"]), peak,
+                               places=6)
+
+    def test_flat_peak_tracks_the_banked_total_in_either_direction(self):
+        """Re-anchoring is not "downward only" — the baseline for the next
+        exposure is the banked total, whichever way the close went. A run that
+        banked MORE than its in-flight peak must anchor UP to what it actually
+        holds, or the next position starts measuring giveback from a number
+        below its own starting equity."""
+        run_id = self._run(stop_conditions={
+            "trail": {"activate_usd": 15.0, "giveback_frac": 0.40}})
+        self._trade(run_id, "buy", 5.0, 100.0, "b1")
+        self._set_mark(104.0)
+        run_engine.control_pass()
+        in_flight = float(self._row(run_id)["peak_pnl_usd"])
+        # Close ABOVE the mark the peak was taken at.
+        self._trade(run_id, "sell", 5.0, 108.0, "s1")
+        run_engine.control_pass()
+        banked = float(self._row(run_id)["peak_pnl_usd"])
+        self.assertGreater(banked, in_flight)
+        self.assertAlmostEqual(
+            banked, float(self._row(run_id)["realized_pnl_usd"]), places=6)
+
     def test_trailing_lock_tightens_giveback_once_peak_clears_fee_multiple(self):
         """Above tighten_usd the giveback compresses, so a big peak is banked
         on a shallow retrace instead of surrendering 40% of it (the prod ZEC

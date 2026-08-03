@@ -1062,12 +1062,26 @@ def _ratchet_peak_pnl(run: dict, pnl: dict) -> None:
     high-water mark is also plain telemetry the reports read, and a run that
     later gains a trail would otherwise arm from a cold NULL."""
     pos = pnl.get("position")
-    if not (pos and float(pos.get("quantity") or 0) != 0):
-        return
+    holding = bool(pos and float(pos.get("quantity") or 0) != 0)
     cur = float(pnl.get("total") or 0)
     prev = run.get("peak_pnl_usd")
-    if prev is not None and cur <= float(prev):
-        return
+    if holding:
+        if prev is not None and cur <= float(prev):
+            return
+    else:
+        # Flat: RE-ANCHOR to the banked total. A high-water mark belongs
+        # to the exposure that set it — once that position is closed and
+        # banked, it is not a drawdown signal for the next one. Prod
+        # 2026-08-02 run 921: a fresh probe was stopped by trailing_lock 28
+        # SECONDS after opening, at its own entry price, against a peak from
+        # hours earlier (realized -3.25). Prod 2026-08-03 run 932 cycle 19:
+        # the desk closed a one-cycle-old position because _position_state_line
+        # told it it was "holding 0% of that high-water mark" — same stale
+        # value, second consumer. Anchoring is unconditional in either
+        # direction: the baseline for the NEXT exposure is simply the banked
+        # total, whatever it is.
+        if prev is not None and abs(cur - float(prev)) < 1e-9:
+            return
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
