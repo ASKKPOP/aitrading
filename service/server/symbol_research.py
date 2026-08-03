@@ -291,6 +291,15 @@ def expected_value(expected_move_pct: float, confidence: float, horizon_hours: f
 # it is a recalled number — the model naming $30,500 for BTC at $63,361.
 INVALIDATION_MAX_DIST = 0.5
 
+# ...and one too CLOSE is not a level either. Handed `last`, the model began
+# answering with `last`: batches research:496034/:496035 (2026-08-03) put BTC's
+# short invalidation 0.03% above spot and SOL's 0.07%, so ordinary noise voided
+# the thesis within the hour. The floor follows the tape — half a day's realized
+# volatility — because 0.5% is noise on 4%/day crypto and a real level on
+# 0.2%/day forex. The flat floor only applies when vol is unknown.
+INVALIDATION_MIN_DIST = 0.003
+INVALIDATION_MIN_VOL_MULT = 0.5
+
 # Numbers that are plainly not prices: percentages, and durations/periods.
 _PCT_OR_PERIOD = re.compile(
     r"\d[\d,]*(?:\.\d+)?\s*(?:%|percent|[-‑\s]*(?:min|minute|hour|hr|h|day|d|"
@@ -303,15 +312,18 @@ _RELATIVE_INVALIDATION = {
 }
 
 
-def invalidation_is_coherent(text: str, direction: str,
-                             last: Optional[float]) -> bool:
+def invalidation_is_coherent(text: str, direction: str, last: Optional[float],
+                             vol_daily_pct: Optional[float] = None) -> bool:
     """Does an absolute price level in `text` sit where it could actually fire?
 
-    A short dies on a break UP, a long on a break DOWN — so a short's level must
-    be above the current price and a long's below it. A level on the wrong side
-    is already breached the moment it is written: the desk reads the thesis every
-    cycle, correctly refuses to enter, and the run burns its slot until it
-    retires (prod runs 933/934/938, 2026-08-03).
+    Three ways it cannot. **Wrong side**: a short dies on a break UP and a long
+    on a break DOWN, so a short's level must be above the current price and a
+    long's below it — a level on the wrong side is breached the moment it is
+    written (prod runs 933/934/938, 2026-08-03). **Too far**: a level beyond
+    `INVALIDATION_MAX_DIST` is a recalled number, not a level. **Too close**: a
+    level inside noise distance is a restatement of spot and ordinary drift
+    voids the thesis within the hour, which lands the desk in the same place by
+    a different route.
 
     Relative wording ("above the 20-day moving average") carries no number and is
     always coherent. Percentages and durations are not price levels. With no
@@ -319,6 +331,9 @@ def invalidation_is_coherent(text: str, direction: str,
     """
     if not text or last is None or last <= 0:
         return True
+    min_dist = INVALIDATION_MIN_DIST
+    if vol_daily_pct:
+        min_dist = max(min_dist, INVALIDATION_MIN_VOL_MULT * vol_daily_pct / 100.0)
     scrubbed = _PCT_OR_PERIOD.sub(" ", text)
     for match in _NUMBER.finditer(scrubbed):
         try:
@@ -327,7 +342,8 @@ def invalidation_is_coherent(text: str, direction: str,
             continue
         if level <= 0:
             continue
-        if abs(level / last - 1.0) > INVALIDATION_MAX_DIST:
+        dist = abs(level / last - 1.0)
+        if dist > INVALIDATION_MAX_DIST or dist < min_dist:
             return False
         if direction == "short" and level < last:
             return False
@@ -366,7 +382,7 @@ def clamp_thesis(raw: dict[str, Any], market: str, vol_daily_pct: Optional[float
     # floor at 4dp — plain round() can nudge the value past the vol cap
     move = math.floor(move * 10000) / 10000
     invalidation = str(raw.get("invalidation") or "")[:300]
-    if not invalidation_is_coherent(invalidation, direction, last):
+    if not invalidation_is_coherent(invalidation, direction, last, vol_daily_pct):
         logger.warning("thesis invalidation incoherent (last=%s, dir=%s): %r",
                        last, direction, invalidation)
         invalidation = _RELATIVE_INVALIDATION[direction]
@@ -579,7 +595,8 @@ def generate_theses(survivors: list[dict[str, Any]],
                 and invalidation_is_coherent(
                     (prev.get("thesis") or {}).get("invalidation") or "",
                     (prev.get("thesis") or {}).get("direction") or "",
-                    s["factors"].get("last")):
+                    s["factors"].get("last"),
+                    s["factors"].get("vol_daily_pct")):
             reuse[(s["market"], s["symbol"])] = prev
         else:
             fresh_needed.append(s)
@@ -604,9 +621,12 @@ def generate_theses(survivors: list[dict[str, Any]],
             "Keep thesis, risks and invalidation to one short sentence each. "
             "`last` is the candidate's CURRENT price — use it, never a price you "
             "recall. If invalidation names an absolute level it MUST be able to "
-            "fire: ABOVE `last` for a short, BELOW `last` for a long, and within "
-            "50% of `last`. When unsure of the number, describe the level "
-            "relatively (e.g. 'below the recent swing low') instead of inventing one. "
+            "fire: ABOVE `last` for a short, BELOW `last` for a long, within 50% "
+            "of `last`, and at least half of `vol_daily_pct` away from `last` — "
+            "a level sitting on top of the current price is a restatement of it, "
+            "and ordinary noise voids the thesis within the hour. When unsure of "
+            "the number, describe the level relatively (e.g. 'below the recent "
+            "swing low') instead of inventing one. "
             "Respond with ONLY a JSON array covering every candidate.\n\n"
             f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
