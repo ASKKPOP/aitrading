@@ -329,6 +329,48 @@ def _rule_based_decision(technical: dict[str, Any], news: dict[str, Any]) -> dic
             "target": None, "stop": None, "rationale": rationale, "report": rationale}
 
 
+def _strip_markdown_emphasis(text: str) -> str:
+    """Drop `**` that the model emitted OUTSIDE a string literal.
+
+    gpt-oss intermittently bolds a JSON key — `**"confidence": 0.57,` — and
+    json.loads then rejects the entire object, so _json_objects skips it and a
+    complete decision is lost: the run journals confidence 0.0, conviction null
+    and scores null, then defaults to hold. Prod runs 923 cycle 9 and 928
+    cycle 2 (2026-08-02) and run 939 cycle 18 (2026-08-03), the last carrying a
+    usable confidence 0.57 and all four component scores.
+
+    Emphasis INSIDE a string is CONTENT, not corruption — 939's own report
+    field carries "**News analyst**" — so the same string-literal tracking the
+    brace scanner uses decides what is safe to remove.
+    """
+    out: list[str] = []
+    in_str = False
+    escaped = False
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if in_str:
+            out.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            i += 1
+            continue
+        if ch == '"':
+            in_str = True
+            out.append(ch)
+        elif text.startswith("**", i):
+            i += 2
+            continue
+        else:
+            out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def _json_objects(text: str) -> list[dict[str, Any]]:
     """Every top-level JSON object in `text`, in order.
 
@@ -337,6 +379,7 @@ def _json_objects(text: str) -> list[dict[str, Any]]:
     the match spans both, json.loads raises, and the caller falls back to
     dumping the raw text into the report. Scanning brace depth — while
     respecting string literals — parses each object on its own instead."""
+    text = _strip_markdown_emphasis(text)
     out: list[dict[str, Any]] = []
     depth = 0
     start = -1
