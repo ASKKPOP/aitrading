@@ -40,12 +40,14 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 18000 fits the ENTIRE default-enabled trader set (the busiest site, 16400
-# with the us-stock earnings skill riding, after level-integrity and
-# reachable-exits) — at the defaults nothing is ever silently dropped; the
-# budget only bites once an admin adds custom skills.
-# test_defaults_never_hit_the_budget guards this.
-MAX_BLOCK_LEN = 18000
+# 20000 fits the ENTIRE default-enabled trader set (the busiest site, 17859
+# with the us-stock earnings skill riding, after confidence-resolution) — at
+# the defaults nothing is ever silently dropped; the budget only bites once an
+# admin adds custom skills. 18000 technically still fit, with 141 characters to
+# spare, which is not headroom — the first custom skill an admin wrote would
+# have pushed a DEFAULT out instead of itself, inverting the whole point.
+# test_defaults_never_hit_the_budget guards the invariant.
+MAX_BLOCK_LEN = 20000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -249,6 +251,42 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "justifies. A bracket you derived from this setup is the only one "
             "you can vouch for; if you are not confident enough to name a stop "
             "and a target, you are not confident enough to open."
+        ),
+    },
+    {
+        # Added 2026-08-03 from monitoring evidence: since 2026-07-28, 63% of
+        # ALL decisions landed on three values — 0.62 (166x), 0.58 (156x),
+        # 0.55 (136x) — each parked just under a common gate (0.65/0.60/0.58).
+        # Runs 37/38/39 emitted 0.62 for dozens of consecutive cycles against a
+        # 0.65 gate; run 932 said 0.57 three cycles running while its own
+        # conviction climbed 0.5625 -> 0.6475. The light prompt ALREADY says
+        # "do not default to a habitual value" and is ignored, because its
+        # rubric names landmarks (0.55 / 0.65 / 0.75) and the model snaps to
+        # them and their midpoints. Telling it again does not work; it needs a
+        # construction procedure.
+        "slug": "confidence-resolution",
+        "name": "Confidence Resolution",
+        "description": ("Derive confidence from your own component scores; "
+                        "the rubric lists reference points, not a menu."),
+        "prompts": ["light", "trader"],
+        "priority": 48,
+        "body": (
+            "The confidence scale you were given lists reference points, not "
+            "a menu of allowed answers. If your number lands on a round "
+            "landmark, or exactly between two of them, that is a sign you "
+            "picked it rather than derived it. Build it from the same four "
+            "components you are about to score — thesis alignment, momentum "
+            "quality, entry quality, risk context: count how many genuinely "
+            "agree and how strongly, then state the number that follows. If "
+            "those four sit clearly above your stated confidence you are "
+            "under-reporting your own read; if they sit clearly below it you "
+            "are over-claiming. Reconcile before you emit, because one of the "
+            "two is wrong and they must tell the same story. The second "
+            "decimal has to carry information: 0.57 and 0.61 are legitimate "
+            "answers and more informative than a landmark. And if recent "
+            "cycles on this symbol repeated one number while the evidence "
+            "moved underneath it, that is anchoring, not measurement — "
+            "re-derive from what is in front of you now."
         ),
     },
     {
