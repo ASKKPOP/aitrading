@@ -702,6 +702,35 @@ class StatsAndModerationTests(_Base):
             for key in keys:
                 self.assertIn(key, r.json(), path)
 
+    def test_top_members_lists_active_agents_only(self):
+        # Active = at least one trade (operation signal) or an open position.
+        # A dormant agent with equity history (leftover QA shell) stays out.
+        session = self._make_user()
+        uid = session["user_id"]
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        from utils import hash_password
+        agents = {}
+        for name in ("traded-bot", "idle-bot"):
+            cur.execute("INSERT INTO agents (name, password_hash, cash, user_id) "
+                        "VALUES (?, ?, 100000.0, ?)", (name, hash_password("x" * 12), uid))
+            agents[name] = cur.lastrowid
+            cur.execute(
+                "INSERT INTO profit_history (agent_id, total_value, cash, position_value, "
+                "profit, recorded_at) VALUES (?, 100000, 100000, 0, 0, '2026-08-02T00:00:00Z')",
+                (agents[name],))
+        cur.execute(
+            "INSERT INTO signals (signal_id, agent_id, message_type, market, timestamp, "
+            "created_at) VALUES (?, ?, 'operation', 'crypto', 0, '2026-08-02T00:00:00Z')",
+            (900001, agents["traded-bot"]))
+        conn.commit()
+        conn.close()
+        r = self.client.get("/api/admin/stats/assets", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        names = [m["name"] for m in r.json()["top_members"]]
+        self.assertIn("traded-bot", names)
+        self.assertNotIn("idle-bot", names)
+
     def test_discussion_moderation(self):
         r = self.client.post("/api/claw/agents/selfRegister",
                              json={"name": "mod-bot", "email": "mod@x.com",

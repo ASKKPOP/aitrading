@@ -187,10 +187,15 @@ def register_admin_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            where = ""
+            # Active accounts only: an agent appears once it has traded or
+            # holds an open position. Empty shells (fresh registrations,
+            # leftover QA accounts) stay out of the console.
+            where = ("WHERE (EXISTS (SELECT 1 FROM signals s2 "
+                     "WHERE s2.agent_id = a.id AND s2.message_type = 'operation') "
+                     "OR EXISTS (SELECT 1 FROM positions p2 WHERE p2.agent_id = a.id))")
             params: list[Any] = []
             if q.strip():
-                where = "WHERE LOWER(a.name) LIKE ?"
+                where += " AND LOWER(a.name) LIKE ?"
                 params = [f"%{q.strip().lower()}%"]
             cursor.execute(
                 f"""
