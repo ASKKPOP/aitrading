@@ -287,8 +287,58 @@ def expected_value(expected_move_pct: float, confidence: float, horizon_hours: f
             "final_score": ev_per_day / denom}
 
 
+# An invalidation level further than this from the current price is not a level,
+# it is a recalled number — the model naming $30,500 for BTC at $63,361.
+INVALIDATION_MAX_DIST = 0.5
+
+# Numbers that are plainly not prices: percentages, and durations/periods.
+_PCT_OR_PERIOD = re.compile(
+    r"\d[\d,]*(?:\.\d+)?\s*(?:%|percent|[-‑\s]*(?:min|minute|hour|hr|h|day|d|"
+    r"week|wk|month|session|bar|candle)s?\b)", re.I)
+_NUMBER = re.compile(r"\$?\s*(\d[\d,]*(?:\.\d+)?)")
+
+_RELATIVE_INVALIDATION = {
+    "short": "Break above the recent swing high, or a flip to positive 5-day momentum.",
+    "long": "Break below the recent swing low, or a flip to negative 5-day momentum.",
+}
+
+
+def invalidation_is_coherent(text: str, direction: str,
+                             last: Optional[float]) -> bool:
+    """Does an absolute price level in `text` sit where it could actually fire?
+
+    A short dies on a break UP, a long on a break DOWN — so a short's level must
+    be above the current price and a long's below it. A level on the wrong side
+    is already breached the moment it is written: the desk reads the thesis every
+    cycle, correctly refuses to enter, and the run burns its slot until it
+    retires (prod runs 933/934/938, 2026-08-03).
+
+    Relative wording ("above the 20-day moving average") carries no number and is
+    always coherent. Percentages and durations are not price levels. With no
+    `last` there is nothing to check against, so we never guess.
+    """
+    if not text or last is None or last <= 0:
+        return True
+    scrubbed = _PCT_OR_PERIOD.sub(" ", text)
+    for match in _NUMBER.finditer(scrubbed):
+        try:
+            level = float(match.group(1).replace(",", ""))
+        except ValueError:
+            continue
+        if level <= 0:
+            continue
+        if abs(level / last - 1.0) > INVALIDATION_MAX_DIST:
+            return False
+        if direction == "short" and level < last:
+            return False
+        if direction == "long" and level > last:
+            return False
+    return True
+
+
 def clamp_thesis(raw: dict[str, Any], market: str, vol_daily_pct: Optional[float],
-                 momentum_sign: float) -> dict[str, Any]:
+                 momentum_sign: float,
+                 last: Optional[float] = None) -> dict[str, Any]:
     """Deterministic THESIS_BOUNDS clamps — the LLM chooses inside the box."""
     direction = str(raw.get("direction") or "").strip().lower()
     if direction not in ("long", "short") or not markets.supports_short(market):
@@ -315,6 +365,11 @@ def clamp_thesis(raw: dict[str, Any], market: str, vol_daily_pct: Optional[float
     move = max(THESIS_BOUNDS["expected_move_pct_min"], min(move_cap, abs(move)))
     # floor at 4dp — plain round() can nudge the value past the vol cap
     move = math.floor(move * 10000) / 10000
+    invalidation = str(raw.get("invalidation") or "")[:300]
+    if not invalidation_is_coherent(invalidation, direction, last):
+        logger.warning("thesis invalidation incoherent (last=%s, dir=%s): %r",
+                       last, direction, invalidation)
+        invalidation = _RELATIVE_INVALIDATION[direction]
     return {
         "direction": direction,
         "expected_move_pct": move,
@@ -322,7 +377,7 @@ def clamp_thesis(raw: dict[str, Any], market: str, vol_daily_pct: Optional[float
         "confidence": round(confidence, 4),
         "thesis": str(raw.get("thesis") or "")[:1000],
         "risks": str(raw.get("risks") or "")[:500],
-        "invalidation": str(raw.get("invalidation") or "")[:300],
+        "invalidation": invalidation,
     }
 
 
@@ -517,7 +572,14 @@ def generate_theses(survivors: list[dict[str, Any]],
     for s in survivors:
         prev = _previous_thesis(s["market"], s["symbol"])
         cur_key = _stage1_key(s)
-        if prev and prev.get("stage1_key") == cur_key and prev.get("planner") == "llm":
+        # Reuse keeps a stored thesis verbatim, so an incoherent one would
+        # survive every quiet-tape refresh (a frozen weekend us-stock price
+        # holds stage1_key steady indefinitely). Re-derive those instead.
+        if prev and prev.get("stage1_key") == cur_key and prev.get("planner") == "llm" \
+                and invalidation_is_coherent(
+                    (prev.get("thesis") or {}).get("invalidation") or "",
+                    (prev.get("thesis") or {}).get("direction") or "",
+                    s["factors"].get("last")):
             reuse[(s["market"], s["symbol"])] = prev
         else:
             fresh_needed.append(s)
@@ -529,6 +591,7 @@ def generate_theses(survivors: list[dict[str, Any]],
             f = s["factors"]
             rows.append({
                 "symbol": s["symbol"], "market": s["market"],
+                "last": f.get("last"),
                 "mom_5d": f.get("mom_5d"), "mom_20d": f.get("mom_20d"),
                 "vol_daily_pct": f.get("vol_daily_pct"), "vol_ratio": f.get("vol_ratio"),
                 "eps_raw": s["eps_raw"],
@@ -539,6 +602,11 @@ def generate_theses(survivors: list[dict[str, Any]],
             "expected_move_pct (percent, e.g. 2.5 means 2.5%), horizon_hours (4-168), "
             "confidence (0.40-0.95), thesis (<=2 sentences), risks, invalidation. "
             "Keep thesis, risks and invalidation to one short sentence each. "
+            "`last` is the candidate's CURRENT price — use it, never a price you "
+            "recall. If invalidation names an absolute level it MUST be able to "
+            "fire: ABOVE `last` for a short, BELOW `last` for a long, and within "
+            "50% of `last`. When unsure of the number, describe the level "
+            "relatively (e.g. 'below the recent swing low') instead of inventing one. "
             "Respond with ONLY a JSON array covering every candidate.\n\n"
             f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
@@ -570,7 +638,8 @@ def generate_theses(survivors: list[dict[str, Any]],
             thesis, planner = dict(reuse[key]["thesis"]), "llm"
         elif key in parsed:
             thesis, planner = clamp_thesis(parsed[key], s["market"], vol,
-                                           s["momentum_sign"]), "llm"
+                                           s["momentum_sign"],
+                                           last=s["factors"].get("last")), "llm"
         else:
             thesis, planner = fallback_thesis(s["market"], vol, s["momentum_sign"],
                                               percentile), "fallback"

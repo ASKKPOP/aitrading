@@ -151,6 +151,186 @@ class ThesisClampTests(unittest.TestCase):
         self.assertTrue(c_lo <= t["confidence"] <= c_hi)
 
 
+class InvalidationCoherenceTests(unittest.TestCase):
+    """A thesis whose invalidation level is already breached is born dead: the
+    desk reads it every cycle, correctly refuses to enter, and eventually
+    retires the run — then the fleet refills the slot from the same pool.
+
+    Payloads below are the real 2026-08-03 prod theses that paralyzed fleet 26
+    (runs 933/934/937/938 — four runs, three research batches, zero trades)."""
+
+    def test_short_level_below_price_is_rejected(self):
+        # run 934: ETH short, "close above $1,850" while ETH trades at 1875.15.
+        # A short dies on a break UP, so the level must sit ABOVE the price.
+        t = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.8, "horizon_hours": 48,
+             "confidence": 0.6, "invalidation": "Close above $1,850 on high volume."},
+            "crypto", 2.0, momentum_sign=-1.0, last=1875.15)
+        self.assertNotIn("1,850", t["invalidation"])
+        self.assertTrue(t["invalidation"])
+
+    def test_stale_epoch_price_is_rejected(self):
+        # run 933: BTC short, "$30,500" while BTC trades at 63,361 — the model
+        # recalled a 2023 price because the prompt never showed it one.
+        t = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 4.0, "horizon_hours": 72,
+             "confidence": 0.66,
+             "invalidation": "Break above $30,500 with sustained volume."},
+            "crypto", 2.0, momentum_sign=-1.0, last=63361.5)
+        self.assertNotIn("30,500", t["invalidation"])
+
+    def test_long_level_absurdly_far_below_is_rejected(self):
+        # run 937: ZEC long, "stay above $18" while ZEC trades at 488.675. The
+        # side is right for a long but the distance makes it unreachable, so
+        # the run can never invalidate — and the desk refused the bracket.
+        t = sr.clamp_thesis(
+            {"direction": "long", "expected_move_pct": 4.0, "horizon_hours": 24,
+             "confidence": 0.65,
+             "invalidation": "Failure to stay above $18 for 6 hours invalidates the long."},
+            "crypto", 2.0, momentum_sign=1.0, last=488.675)
+        self.assertNotIn("$18", t["invalidation"])
+
+    def test_long_level_above_price_is_rejected(self):
+        # Mirror of the short case: a long dies on a break DOWN, so its level
+        # must sit BELOW the price. Above it, the long is void on arrival —
+        # near enough to pass the distance rule, so only the side rule catches it.
+        t = sr.clamp_thesis(
+            {"direction": "long", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6,
+             "invalidation": "A close below $1,950 ends the long."},
+            "crypto", 2.0, momentum_sign=1.0, last=1875.0)
+        self.assertNotIn("1,950", t["invalidation"])
+        self.assertTrue(t["invalidation"])
+
+    def test_coherent_levels_survive_untouched(self):
+        # Correct-side, sane-distance levels must pass through verbatim.
+        short = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6,
+             "invalidation": "Crossing above $1,950 with strong momentum nullifies the short."},
+            "crypto", 2.0, momentum_sign=-1.0, last=1875.0)
+        self.assertIn("1,950", short["invalidation"])
+        long_ = sr.clamp_thesis(
+            {"direction": "long", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6,
+             "invalidation": "A close below $1,800 ends the long."},
+            "crypto", 2.0, momentum_sign=1.0, last=1875.0)
+        self.assertIn("1,800", long_["invalidation"])
+
+    def test_relative_levels_never_rejected(self):
+        # No absolute number to check — these are always coherent, and they are
+        # what the model emits correctly today.
+        for direction, sign in (("short", -1.0), ("long", 1.0)):
+            t = sr.clamp_thesis(
+                {"direction": direction, "expected_move_pct": 2.0,
+                 "horizon_hours": 24, "confidence": 0.6,
+                 "invalidation": "Price closes above the 20-day moving average."},
+                "crypto", 2.0, momentum_sign=sign, last=488.0)
+            self.assertIn("20-day moving average", t["invalidation"])
+
+    def test_percentages_and_durations_are_not_price_levels(self):
+        # "2%" and "48-hours" must not be read as prices — the real GM thesis.
+        # Prod emits U+2011 NON-BREAKING HYPHENs ("48‑hours"), not "-", so
+        # the scrubber is exercised with the character the model actually writes.
+        t = sr.clamp_thesis(
+            {"direction": "long", "expected_move_pct": 2.0, "horizon_hours": 48,
+             "confidence": 0.6,
+             "invalidation": "If GM falls more than 2% in the next 48‑hours, "
+                             "the bullish case is invalidated."},
+            "us-stock", 1.5, momentum_sign=1.0, last=52.4)
+        self.assertIn("2%", t["invalidation"])
+        t2 = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6,
+             "invalidation": "QCOM rallies above its 20‑day moving average."},
+            "us-stock", 1.5, momentum_sign=-1.0, last=21.0)
+        self.assertIn("20‑day moving average", t2["invalidation"])
+
+    def test_missing_price_leaves_invalidation_alone(self):
+        # No price to check against ⇒ no verdict. Never guess.
+        t = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6, "invalidation": "Break above $30,500."},
+            "crypto", 2.0, momentum_sign=-1.0, last=None)
+        self.assertIn("30,500", t["invalidation"])
+
+    def test_incoherent_stored_thesis_is_not_reused(self):
+        """Reuse keeps a stored thesis verbatim. A pre-existing bad one must be
+        re-derived, not carried forward on every quiet-tape refresh."""
+        calls = []
+
+        def fake_generate(prompt, **kw):
+            calls.append(prompt)
+            return ('[{"symbol":"SPCX","market":"us-stock","direction":"short",'
+                    '"expected_move_pct":2.0,"horizon_hours":24,"confidence":0.6,'
+                    '"thesis":"t","risks":"r","invalidation":"Close above $23.00."}]')
+
+        survivors = [{
+            "symbol": "SPCX", "market": "us-stock", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 21.0, "mom_5d": -2.0, "mom_20d": -3.0,
+                        "vol_daily_pct": 1.5, "vol_ratio": 1.1},
+        }]
+        stale = {"stage1_key": sr._stage1_key(survivors[0]), "planner": "llm",
+                 "thesis": {"direction": "short", "expected_move_pct": 2.0,
+                            "horizon_hours": 24, "confidence": 0.6,
+                            "thesis": "t", "risks": "r",
+                            "invalidation": "Break above $8.00."}}
+        with patch.object(sr, "_previous_thesis", return_value=stale):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+
+        self.assertEqual(len(calls), 1, "stale thesis was reused instead of re-derived")
+        self.assertNotIn("$8.00", out[0]["thesis"]["invalidation"])
+
+    def test_coherent_stored_thesis_is_still_reused(self):
+        """The zero-LLM quiet-tape path must survive the new check."""
+        calls = []
+
+        def fake_generate(prompt, **kw):  # pragma: no cover - must not run
+            calls.append(prompt)
+            return "[]"
+
+        survivors = [{
+            "symbol": "SPCX", "market": "us-stock", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 21.0, "mom_5d": -2.0, "mom_20d": -3.0,
+                        "vol_daily_pct": 1.5, "vol_ratio": 1.1},
+        }]
+        good = {"stage1_key": sr._stage1_key(survivors[0]), "planner": "llm",
+                "thesis": {"direction": "short", "expected_move_pct": 2.0,
+                           "horizon_hours": 24, "confidence": 0.6,
+                           "thesis": "t", "risks": "r",
+                           "invalidation": "Close above $23.00 on volume."}}
+        with patch.object(sr, "_previous_thesis", return_value=good):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+
+        self.assertEqual(calls, [], "quiet-tape reuse should spend zero LLM")
+        self.assertIn("$23.00", out[0]["thesis"]["invalidation"])
+
+    def test_thesis_prompt_carries_the_current_price(self):
+        """The defect's origin: the model was asked for a price level while the
+        prompt payload contained no price."""
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return ('[{"symbol":"BTCUSDT","market":"crypto","direction":"short",'
+                    '"expected_move_pct":2.0,"horizon_hours":24,"confidence":0.6,'
+                    '"thesis":"t","risks":"r","invalidation":"Break above $64,000."}]')
+
+        survivors = [{
+            "symbol": "BTCUSDT", "market": "crypto", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 63361.5, "mom_5d": -2.0, "mom_20d": -3.0,
+                        "vol_daily_pct": 2.0, "vol_ratio": 1.1},
+        }]
+        with patch.object(sr, "_previous_thesis", return_value=None):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+
+        self.assertIn("63361.5", captured["prompt"])
+        self.assertEqual(out[0]["thesis"]["direction"], "short")
+
+
 class ScreenTests(unittest.TestCase):
     """screen_universe with injected candles — zero network by construction."""
 
