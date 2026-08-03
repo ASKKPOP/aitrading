@@ -217,10 +217,14 @@ BASE_SKILLS: list[dict[str, Any]] = [
         # unreachable trails (runs 919/925/930, 2026-08-02) — trail_arm_pct 40
         # on positions whose maximum plausible gain was ~2%, so activation sat
         # at ~$240 on a ~$600 book and the trail could never arm.
+        # Extended the same day: run 932 authored its own 1.5%/3.2% bracket and
+        # cleared the r:r floor; run 937 deferred in the same cycle, inherited
+        # the house 8%/15% profile (1.875 vs a 2.0 floor) and was refused. Same
+        # fleet, same hour — the difference was authorship.
         "slug": "reachable-exits",
         "name": "Reachable Exits",
-        "description": ("Exit parameters you author must be reachable inside "
-                        "the move you are forecasting."),
+        "description": ("Author your own exits on every entry, and make them "
+                        "reachable inside the move you are forecasting."),
         "prompts": ["light", "trader"],
         "priority": 46,
         "body": (
@@ -237,7 +241,14 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "distance from the current price and check it against your own "
             "expected move — if a level cannot be reached inside that move, "
             "it is decoration. Prefer a smaller, reachable protective level "
-            "over a wide one that never engages."
+            "over a wide one that never engages. Always author a stop and a "
+            "target when you open or add — do not leave them unset. Omitting "
+            "them does not mean 'no bracket', it hands the trade a default "
+            "profile you did not choose and cannot see, which may be refused "
+            "outright for its geometry or may risk far more than your thesis "
+            "justifies. A bracket you derived from this setup is the only one "
+            "you can vouch for; if you are not confident enough to name a stop "
+            "and a target, you are not confident enough to open."
         ),
     },
     {
