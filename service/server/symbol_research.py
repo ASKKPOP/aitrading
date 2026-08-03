@@ -450,6 +450,7 @@ def _read_overlays() -> dict[str, Any]:
         snap = regime.evaluate_market_regime(persist=False) or {}
         overlays["regime_blocks_longs"] = snap.get("allow_new_buys") is False
         overlays["regime"] = snap.get("regime")
+        overlays["crypto_composite"] = snap.get("crypto_composite")
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -624,6 +625,22 @@ def generate_theses(survivors: list[dict[str, Any]],
         else:
             fresh_needed.append(s)
 
+    # Plan 21 P3: one compact backdrop line for crypto candidates, from the
+    # composite CACHE only (screen_universe's overlay read just warmed it —
+    # a cold cache renders nothing rather than fetching on this path).
+    composite_line = ""
+    try:
+        import regime as _regime
+        comp = _regime.evaluate_crypto_composite(cached_only=True)
+        if comp and comp.get("score") is not None:
+            composite_line = (
+                f"CRYPTO MARKET BACKDROP: composite {comp['score']}/100 "
+                f"({comp['zone']}; 100 = broad risk-on health). Use as "
+                "backdrop for crypto candidates only — judge each candidate "
+                "on its own data.\n")
+    except Exception:  # noqa: BLE001
+        composite_line = ""
+
     parsed: dict[tuple[str, str], dict[str, Any]] = {}
     for chunk in _chunked(fresh_needed, _thesis_batch_size()):
         rows = []
@@ -651,7 +668,8 @@ def generate_theses(survivors: list[dict[str, Any]],
             "the number, describe the level relatively (e.g. 'below the recent "
             "swing low') instead of inventing one. "
             "Respond with ONLY a JSON array covering every candidate.\n\n"
-            f"CANDIDATES:\n{json.dumps(rows, default=str)}"
+            + (composite_line if any(r["market"] == "crypto" for r in rows) else "")
+            + f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
         for _attempt in range(MAX_LLM_CALLS_PER_REFRESH):
             try:

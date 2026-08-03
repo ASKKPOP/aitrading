@@ -147,6 +147,7 @@ export function AdminPage() {
   const [positions, setPositions] = useState<any | null>(null)
   const [autoStats, setAutoStats] = useState<any | null>(null)
   const [autoRules, setAutoRules] = useState<any | null>(null)
+  const [regimeRead, setRegimeRead] = useState<any | null>(null)
   const [llmSettings, setLlmSettings] = useState<any | null>(null)
   const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
     brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
@@ -433,6 +434,8 @@ export function AdminPage() {
       if (which === 'automation') {
         setAutoStats(await call('stats/automation'))
         setAutoRules(await call('automation?limit=100'))
+        // Plan 21 P3: crypto composite rides the public regime payload.
+        try { setRegimeRead(await (await fetch('/api/market-intel/regime')).json()) } catch { /* advisory card only */ }
         const llm = await call('settings/llm')
         setLlmSettings(llm)
         const s = llm?.settings || {}
@@ -1246,6 +1249,34 @@ export function AdminPage() {
       {/* ── Automation ── */}
       {tab === 'automation' && autoStats && (
         <>
+          {/* Plan 21 P3: crypto regime composite (advisory) — six-component
+              0-100 posture score from the public regime payload. */}
+          {regimeRead?.crypto_composite && (
+            <div style={{ ...card, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
+                {tr(language, { ko: '크립토 레짐 컴포지트', en: 'Crypto regime composite', ja: 'クリプトレジーム総合スコア', th: 'คะแนนรวม regime คริปโต', vi: 'Điểm tổng hợp regime crypto', id: 'Skor komposit regime kripto' })}
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 28, fontWeight: 700, color: regimeRead.crypto_composite.score >= 80 ? '#22c55e' : regimeRead.crypto_composite.score >= 40 ? '#c2a545' : '#ef4444' }}>
+                  {regimeRead.crypto_composite.score}<span style={{ fontSize: 13, fontWeight: 400 }}>/100</span>
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{regimeRead.crypto_composite.zone}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)' }}>
+                  {tr(language, { ko: '100 = 광범위한 리스크온 · 자문용(집행 게이트 아님)', en: '100 = broad risk-on · advisory only (not an execution gate)', ja: '100 = 広範なリスクオン · 参考値（執行ゲートではない）', th: '100 = risk-on แบบกว้าง · เพื่ออ้างอิงเท่านั้น', vi: '100 = risk-on rộng · chỉ tham khảo', id: '100 = risk-on luas · hanya penasihat' })}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+                {Object.entries(regimeRead.crypto_composite.components || {}).map(([k, v]: [string, any]) => (
+                  <span key={k} style={{ fontSize: 11, fontFamily: 'ui-monospace, monospace', color: v == null ? 'var(--text-muted,#8a8073)' : undefined }}>
+                    {k}: {v == null ? '—' : v}
+                  </span>
+                ))}
+              </div>
+              {regimeRead.crypto_composite.as_of && (
+                <div style={{ fontSize: 10, color: 'var(--text-muted,#8a8073)', marginTop: 6 }}>as of {regimeRead.crypto_composite.as_of}</div>
+              )}
+            </div>
+          )}
           {/* LLM routing — the operator's own AI server + per-tier models,
               editable without a deploy (platform_settings). */}
           <div style={{ ...card, marginBottom: 16 }}>
