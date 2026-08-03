@@ -2540,6 +2540,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     else:
         inventory_rule = ("Spot book with no inventory: 'sell' is NOT available "
                           "(nothing to reduce) — a bearish read means 'hold'.")
+    can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
+                    or pos_qty > 0)
     position_state = _position_state_line(run, cfg, pos_qty, thesis)
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
@@ -2606,7 +2608,15 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
            'change your mind, because your next cycle is far away and the '
            'market is not.\n'
            if pos_qty else '')
-        + 'Respond ONLY with JSON: {"action": "buy"|"sell"|"hold"'
+        # A flat spot book cannot sell, and inventory_rule says so a few lines
+        # up — but the action set listed "sell" anyway, so the desk kept
+        # choosing it: 33 refusals of "spot sell with no inventory — treated as
+        # hold" across 16 runs between 2026-07-27 and 2026-08-03, including run
+        # 939's confidence-0.62 read. Telling it the verb is unavailable while
+        # offering the verb is the contradiction; stop offering it, exactly as
+        # "retire" is offered only when flat.
+        + 'Respond ONLY with JSON: {"action": "buy"'
+        + ('|"sell"' if can_sell else '') + '|"hold"'
         + ('|"retire"' if not pos_qty else '') + ', '
         '"confidence": 0.0-1.0, "scores": {"thesis_alignment": 0.0-1.0, '
         '"momentum_quality": 0.0-1.0, "entry_quality": 0.0-1.0, '
@@ -2911,7 +2921,15 @@ def run_cycle(run_id: int) -> dict:
                                         run, cfg, held,
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
-                                        else {}))
+                                        else {}),
+                                    # Same book, same vocabulary: a flat spot
+                                    # run must not be offered "sell" on the
+                                    # expensive path either.
+                                    can_sell=bool(
+                                        trading_runs.is_futures_book(
+                                            run.get("market"),
+                                            (run.get("market_type") or "spot"))
+                                        or held > 0))
         analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
         tech_block = analysts.get("technical")
         technical = tech_block.get("data") if isinstance(tech_block, dict) else None

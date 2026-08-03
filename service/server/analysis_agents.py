@@ -535,7 +535,8 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                           guidelines: Optional[str] = None,
                           memory: str = "",
                           position_state: str = "",
-                          skills: str = "") -> dict[str, Any]:
+                          skills: str = "",
+                          can_sell: bool = True) -> dict[str, Any]:
     if not llm_configured():
         # No provider at all. The engine still runs and still reports, but it
         # does not trade on a rule signal — see ai_only_orders().
@@ -564,7 +565,13 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         # 'entry' is asked for as the desk's VIEW and is recorded as
         # suggested_entry; execution always fills at the live price (P-1).
         # Saying so keeps the model from treating it as an order instruction.
-        '{"action":"buy|sell|hold","confidence":0.0-1.0,'
+        # A flat spot book cannot sell. Offering the verb anyway cost 33
+        # decisions across 16 runs (2026-07-27..08-03) to "spot sell with no
+        # inventory — treated as hold", run 939's confidence-0.62 read among
+        # them. The light path gates the same way.
+        + ('{"action":"buy|sell|hold","confidence":0.0-1.0,' if can_sell
+           else '{"action":"buy|hold","confidence":0.0-1.0,')
+        +
         # Component scores (2026-07-27). The LIGHT path already returns these
         # and the full path did not, so conviction came back None on every
         # expensive cycle — the cheap path had richer sizing input than the
@@ -795,7 +802,8 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
                  agent_id: Optional[int] = None,
                  progress: Optional[ProgressFn] = None,
                  llm_tiers: Optional[dict] = None,
-                 position_state: str = "") -> dict[str, Any]:
+                 position_state: str = "",
+                 can_sell: bool = True) -> dict[str, Any]:
     """Run the full multi-agent pipeline for one symbol and return decision + report.
 
     provider optionally forces a specific LLM provider for this run (automation
@@ -860,7 +868,8 @@ def run_analysis(symbol: str, market: str = "us-stock", lang: str = "en",
     try:
         return _run_analysis_inner(symbol, market, lang, guidelines=guidelines,
                                    progress=progress, agent_id=agent_id,
-                                   position_state=position_state)
+                                   position_state=position_state,
+                                   can_sell=can_sell)
     finally:
         if token is not None:
             reset_llm_context(token)
@@ -890,7 +899,8 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
                         guidelines: Optional[str] = None,
                         progress: Optional[ProgressFn] = None,
                         agent_id: Optional[int] = None,
-                        position_state: str = "") -> dict[str, Any]:
+                        position_state: str = "",
+                        can_sell: bool = True) -> dict[str, Any]:
     # Data gathering: technical / news / fundamentals are independent and run
     # concurrently; sentiment needs the news breakdown so it starts after news.
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -942,7 +952,8 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
                                      guidelines=guidelines, memory=memory,
                                      position_state=position_state,
-                                     skills=_skills_block("trader", market))
+                                     skills=_skills_block("trader", market),
+                                     can_sell=can_sell)
     _emit(progress, "decision", "done",
           action=decision.get("action"), confidence=decision.get("confidence"))
 
