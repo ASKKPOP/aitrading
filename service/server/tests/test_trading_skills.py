@@ -176,6 +176,24 @@ class RegistryTests(_Db):
         us = {s["slug"] for s in trading_skills.skills_for_prompt("trader", "us-stock")}
         self.assertNotIn("earnings-preview", crypto)
         self.assertIn("earnings-preview", us)
+        # Plan 21 port: each new skill rides exactly its own market.
+        self.assertIn("crypto-regime-lens", crypto)
+        self.assertNotIn("crypto-regime-lens", us)
+        self.assertIn("bottom-confirmation", us)
+        self.assertNotIn("bottom-confirmation", crypto)
+
+    def test_plan21_skills_ride_their_trader_blocks(self):
+        # The two hermes-work-package ports must actually render (not be
+        # budget-skipped) in their market's trader block, and stay off the
+        # exit-path light site — they are entry/posture methods.
+        self.assertIn("### Crypto Regime Lens\n",
+                      trading_skills.skills_block("trader", "crypto"))
+        self.assertIn("### Bottom Confirmation\n",
+                      trading_skills.skills_block("trader", "us-stock"))
+        for site in ("light", "verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("crypto-regime-lens", slugs)
+            self.assertNotIn("bottom-confirmation", slugs)
 
     def test_selection_by_market(self):
         trading_skills.create_skill(
