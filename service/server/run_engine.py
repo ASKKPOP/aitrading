@@ -2294,6 +2294,40 @@ def _desk_exit_awareness() -> bool:
             ).strip().lower() in ("1", "true", "yes", "on")
 
 
+# A brief whose invalidation the tape has already passed is worse than no brief:
+# the desk re-reads it every cycle and is asked to resist it. Prod 2026-08-03 —
+# run 938 carried "a break above 152.00" for a SHORT at 156.7 and went 7 cycles
+# without a position, treating the level as stale on cycle 5, half-doing so on
+# cycle 6, and fully regressing on cycle 7. Runs 933 and 934 died the same way.
+# `level-integrity` tells the desk to judge on structure instead; this makes
+# that the only option by not showing it the number.
+_STALE_INVALIDATION = ("(stale — the level in this brief sits where the tape has "
+                       "already passed; derive your own from the structure you "
+                       "can see)")
+
+
+def _usable_thesis(thesis: dict, entry: Optional[float]) -> dict:
+    """The stored thesis with an already-passed invalidation level removed.
+
+    Returns the thesis unchanged when there is nothing to judge (no price, no
+    direction, no level, or a relative level carrying no number). Never mutates
+    the caller's dict — the stored brief stays as written.
+    """
+    if not isinstance(thesis, dict) or not thesis or not entry:
+        return thesis
+    level = str(thesis.get("invalidation") or "")
+    direction = str(thesis.get("direction") or "").strip().lower()
+    if not level or direction not in ("long", "short"):
+        return thesis
+    try:
+        import symbol_research
+        if symbol_research.invalidation_is_coherent(level, direction, float(entry)):
+            return thesis
+    except Exception:  # noqa: BLE001 - a scrub must never break a cycle
+        return thesis
+    return {**thesis, "invalidation": _STALE_INVALIDATION}
+
+
 def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                          thesis: dict) -> str:
     """The open position's own trajectory, for the desk's exit decision.
@@ -2450,6 +2484,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         return {"decision": {}, "analysts": {}, "error": "no price"}
 
     thesis = (cfg.get("thesis") or {}) if isinstance(cfg.get("thesis"), dict) else {}
+    thesis = _usable_thesis(thesis, entry)
     candles_summary = None
     try:
         candles = price_fetcher.get_daily_candles(run["symbol"], run["market"], days=30)

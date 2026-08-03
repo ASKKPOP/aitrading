@@ -319,5 +319,85 @@ class RunEngineTests(unittest.TestCase):
         self.assertEqual(run_engine.due_run_ids(), [run_id])
 
 
+class StaleInvalidationScrubTests(unittest.TestCase):
+    """A brief whose invalidation level the tape has already passed must not
+    reach the desk verbatim.
+
+    Prod 2026-08-03: run 938 USDJPY carried "a break above 152.00" for a SHORT
+    while price sat at 156.7 — the level was wrong-side at build time and the
+    run never opened a position across 7 cycles. `level-integrity` asks the desk
+    to treat such a level as stale and judge on structure, and it did on cycle 5
+    ("making the brief stale"), half-did on cycle 6, and fully regressed on
+    cycle 7 ("Short thesis is already invalidated (price > 152), so we hold").
+    Asking the model to resist text it is shown every cycle is not stable; the
+    text should not be shown. Runs 933 and 934 died the same way earlier that
+    night, ~20 cycles and zero trades between the three.
+    """
+
+    def test_wrong_side_level_is_replaced_with_a_derive_instruction(self):
+        thesis = {"direction": "short", "invalidation": "A break above 152.00 ends it.",
+                  "rationale": "yen strength"}
+        out = run_engine._usable_thesis(thesis, 156.73)
+        self.assertNotIn("152", out["invalidation"])
+        self.assertIn("stale", out["invalidation"].lower())
+        # everything else survives untouched
+        self.assertEqual(out["rationale"], "yen strength")
+        self.assertEqual(out["direction"], "short")
+        self.assertIsNot(out, thesis, "must not mutate the stored thesis")
+        self.assertIn("152", thesis["invalidation"])
+
+    def test_absurdly_distant_level_is_replaced(self):
+        # run 937: "$18" on a $472 asset — the desk itself called it irrelevant
+        thesis = {"direction": "long",
+                  "invalidation": "Failure to stay above $18 for 6 hours."}
+        out = run_engine._usable_thesis(thesis, 472.29)
+        self.assertNotIn("$18", out["invalidation"])
+
+    def test_usable_level_is_left_alone(self):
+        thesis = {"direction": "short",
+                  "invalidation": "A break above 158.00 ends the short."}
+        out = run_engine._usable_thesis(thesis, 156.73)
+        self.assertIn("158.00", out["invalidation"])
+
+    def test_relative_level_is_left_alone(self):
+        thesis = {"direction": "short",
+                  "invalidation": "Price closes above the 20-day moving average."}
+        out = run_engine._usable_thesis(thesis, 156.73)
+        self.assertIn("20-day moving average", out["invalidation"])
+
+    def test_the_scrub_actually_reaches_the_prompt(self):
+        """The helper is worthless if it is not wired in — assert the number is
+        absent from the prompt the desk is actually handed."""
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return '{"action": "hold", "confidence": 0.5}'
+
+        run = {"id": 1, "agent_id": 1, "symbol": "USDJPY", "market": "forex",
+               "market_type": "spot"}
+        cfg = {"thesis": {"direction": "short", "horizon_hours": 24,
+                          "invalidation": "A break above 152.00 ends the short.",
+                          "rationale": "yen strength"}}
+        with patch("price_fetcher.get_price_from_market", return_value=156.73), \
+                patch("price_fetcher.get_daily_candles", return_value=[]), \
+                patch("llm_client.generate_text", side_effect=fake_generate), \
+                patch.object(run_engine, "_position_quantity", return_value=0.0), \
+                patch("trading_skills.skills_block", return_value=""):
+            run_engine._light_analysis(run, cfg)
+
+        self.assertIn("prompt", captured, "the desk was never called")
+        self.assertNotIn("152.00", captured["prompt"],
+                         "the already-passed level reached the desk verbatim")
+        self.assertIn("stale", captured["prompt"].lower())
+
+    def test_missing_price_or_direction_changes_nothing(self):
+        thesis = {"direction": "short", "invalidation": "A break above 152.00."}
+        self.assertEqual(run_engine._usable_thesis(thesis, None), thesis)
+        self.assertEqual(run_engine._usable_thesis({"invalidation": "x"}, 100.0),
+                         {"invalidation": "x"})
+        self.assertEqual(run_engine._usable_thesis({}, 100.0), {})
+
+
 if __name__ == "__main__":
     unittest.main()
