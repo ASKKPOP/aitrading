@@ -2320,6 +2320,37 @@ _STALE_INVALIDATION = ("(stale — the level in this brief sits where the tape h
                        "can see)")
 
 
+def _thesis_freshness_line(thesis: dict) -> str:
+    """One prompt line telling the desk how old its frozen brief is.
+
+    Plan 21 P2 (brief integrity, from the hermes work-package's data-freshness
+    contract): the run's thesis is frozen at build, and the desk had no way to
+    see whether the level it was handed was written an hour or a week ago —
+    the :496026 incident class. Renders nothing when the snapshot carries no
+    `as_of` (manual runs, pre-P2 fleets); a malformed timestamp also renders
+    nothing rather than a wrong number.
+    """
+    as_of = str(thesis.get("as_of") or "") if isinstance(thesis, dict) else ""
+    if not as_of:
+        return ""
+    try:
+        written = datetime.strptime(as_of, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+        age_h = (datetime.now(timezone.utc) - written).total_seconds() / 3600.0
+    except Exception:  # noqa: BLE001 — a bad stamp must never break a cycle
+        return ""
+    if age_h < 0:
+        return ""
+    if age_h < 6:
+        label = "fresh"
+    elif age_h <= 24:
+        label = "aging — verify its levels against the current price"
+    else:
+        label = ("STALE — written well before current conditions; prefer the "
+                 "structure you can see over its levels")
+    return f"Thesis brief age: {age_h:.1f}h ({label}).\n"
+
+
 def _usable_thesis(thesis: dict, entry: Optional[float]) -> dict:
     """The stored thesis with an already-passed invalidation level removed.
 
@@ -2557,6 +2588,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         f"{inventory_rule}\n"
         f"{position_state}"
         f"{skills_text}"
+        f"{_thesis_freshness_line(thesis)}"
         f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
         f"Recent closes: {json.dumps(candles_summary, default=str)[:400]}\n"
         "Calibrate confidence honestly across the full range, two decimals: "
