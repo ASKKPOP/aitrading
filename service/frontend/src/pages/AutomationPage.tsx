@@ -53,7 +53,10 @@ const normalizeAccountType = (v: string | null | undefined): string =>
 const RISK_PRESETS = {
   stable:     { interval_minutes: 240, min_confidence: 0.75, size_usd: 200,  sl: 3, tp: 6 },
   balanced:   { interval_minutes: 60,  min_confidence: 0.65, size_usd: 500,  sl: 5, tp: 10 },
-  aggressive: { interval_minutes: 30,  min_confidence: 0.55, size_usd: 1000, sl: 8, tp: 15 },
+  // tp 16, not 15: the card must match RISK_LEVEL_PRESETS on the server, and
+  // at 15 the 8/15 geometry graded 1.875 against the house RR_FLOOR of 2.0 —
+  // the rr_floor gate refused every deferred-bracket entry on this profile.
+  aggressive: { interval_minutes: 30,  min_confidence: 0.55, size_usd: 1000, sl: 8, tp: 16 },
 } as const
 type RiskKey = keyof typeof RISK_PRESETS
 

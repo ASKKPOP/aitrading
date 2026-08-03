@@ -121,6 +121,36 @@ class RunRiskLevelTests(unittest.TestCase):
                                  headers=self.auth)
         self.assertEqual(start.status_code, 200, start.text)
 
+    def test_every_preset_can_clear_the_house_rr_floor(self):
+        """A preset the house's own gate always refuses is not a risk profile,
+        it is a permanent block.
+
+        Prod 2026-08-02/03: `aggressive` shipped 8% stop / 15% target = 1.875,
+        under RR_FLOOR 2.0, so every entry that deferred its bracket to the
+        deterministic path was refused at the rr_floor gate — runs 908 and 923
+        on the 2nd, run 937 at 03:05Z on the 3rd, silently, for anyone who
+        picked that profile. `stable` and `balanced` both sit exactly on 2.0,
+        which is plainly the intended geometry.
+        """
+        from order_params import RR_FLOOR, rr_floor_violation
+        from routes_automation import RISK_LEVEL_PRESETS
+
+        for name, preset in RISK_LEVEL_PRESETS.items():
+            stop, target = preset["stop_loss_pct"], preset["take_profit_pct"]
+            self.assertGreaterEqual(
+                target, stop * RR_FLOOR,
+                f"preset {name!r} ({stop:.0%}/{target:.0%}) can never clear the "
+                f"{RR_FLOOR:g}x floor — every deferred-bracket entry is refused")
+            # ...and prove it through the gate itself, both directions.
+            for is_short in (False, True):
+                entry = 100.0
+                sl = entry * (1 + stop) if is_short else entry * (1 - stop)
+                tp = entry * (1 - target) if is_short else entry * (1 + target)
+                self.assertIsNone(
+                    rr_floor_violation(sl, tp, entry, is_short),
+                    f"preset {name!r} refused by the live gate "
+                    f"({'short' if is_short else 'long'})")
+
 
 if __name__ == "__main__":
     unittest.main()

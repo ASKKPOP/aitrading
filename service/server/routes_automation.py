@@ -33,7 +33,13 @@ RISK_LEVEL_PRESETS: dict = {
                "use_trailing": 1, "trail_pct": 0.04, "time_stop_days": 5},
     "balanced": {"stop_loss_pct": 0.05, "take_profit_pct": 0.10,
                  "use_trailing": 1, "trail_pct": 0.05, "time_stop_days": 0},
-    "aggressive": {"stop_loss_pct": 0.08, "take_profit_pct": 0.15,
+    # 0.16, not 0.15: every preset must clear order_params.RR_FLOOR (2.0), and
+    # stable/balanced both sit exactly on it. At 0.15 this one graded 1.875 and
+    # the rr_floor gate refused EVERY entry that deferred its bracket to the
+    # deterministic path — silently, for anyone who picked this profile
+    # (prod runs 908/923 on 2026-08-02, run 937 on the 3rd).
+    # test_every_preset_can_clear_the_house_rr_floor guards the invariant.
+    "aggressive": {"stop_loss_pct": 0.08, "take_profit_pct": 0.16,
                    "use_trailing": 0, "trail_pct": 0.05, "time_stop_days": 0},
 }
 

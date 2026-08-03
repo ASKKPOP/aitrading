@@ -558,7 +558,10 @@ class RiskLevelPropagationTests(RiskEngineTestCase):
         resp = self._post_rule("aggressive")
         applied = resp.json()["risk_limits"]
         self.assertAlmostEqual(applied["stop_loss_pct"], 0.08)
-        self.assertAlmostEqual(applied["take_profit_pct"], 0.15)
+        # 0.16, not the 0.15 this used to pin: at 0.15 the profile graded 1.875
+        # against RR_FLOOR 2.0 and the gate refused every deferred-bracket
+        # entry. See test_every_preset_can_clear_the_house_rr_floor.
+        self.assertAlmostEqual(applied["take_profit_pct"], 0.16)
         self.assertEqual(applied["use_trailing"], 0)
 
     def test_no_level_leaves_limits_untouched(self):
