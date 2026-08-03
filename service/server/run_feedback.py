@@ -370,6 +370,19 @@ def maybe_review_thesis(state: dict, run: dict, cfg: dict, pnl: dict,
     if generate_text is None:
         from llm_client import generate_text as _gt
         generate_text = _gt
+    # The verdict here can RETIRE a run, so it must not reason from a level the
+    # tape has already walked past. The decision prompt scrubs those (PR #208);
+    # this prompt was built separately and missed it — prod run 937 concluded
+    # "intact" citing "the price never fell below the $18 invalidation
+    # threshold" on an asset near 490, and run 898 concluded "weakened" citing
+    # "likely breached the $1,800 invalidation level". Lazy import: run_engine
+    # imports this module the same way, so neither is loaded by the other.
+    try:
+        from run_engine import _usable_thesis
+        mark = (pnl.get("position") or {}).get("current_price")
+        thesis = _usable_thesis(thesis, float(mark) if mark else None)
+    except Exception:  # noqa: BLE001 - a scrub must never break the review
+        pass
     prompt = (
         "Review this trading thesis against actual performance. Respond ONLY "
         'with JSON: {"thesis_status": "intact"|"weakened"|"invalidated", '
