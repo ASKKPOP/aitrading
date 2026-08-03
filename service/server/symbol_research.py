@@ -646,13 +646,25 @@ def generate_theses(survivors: list[dict[str, Any]],
         rows = []
         for s in chunk:
             f = s["factors"]
-            rows.append({
+            row = {
                 "symbol": s["symbol"], "market": s["market"],
                 "last": f.get("last"),
                 "mom_5d": f.get("mom_5d"), "mom_20d": f.get("mom_20d"),
                 "vol_daily_pct": f.get("vol_daily_pct"), "vol_ratio": f.get("vol_ratio"),
                 "eps_raw": s["eps_raw"],
-            })
+            }
+            # Plan 21 P6: FMP earnings proximity for us-stock candidates.
+            # Key-gated and fail-soft — without FMP_API_KEY the field is
+            # simply absent and the prompt is byte-identical to before.
+            if s["market"] == "us-stock":
+                try:
+                    import fmp_feed
+                    dte = fmp_feed.days_to_earnings(s["symbol"])
+                    if dte is not None:
+                        row["days_to_earnings"] = dte
+                except Exception:  # noqa: BLE001
+                    pass
+            rows.append(row)
         prompt = (
             "You are a trading research analyst. For EACH candidate below, emit one JSON "
             "object with keys: symbol, market, direction ('long'|'short'), "
@@ -667,7 +679,11 @@ def generate_theses(survivors: list[dict[str, Any]],
             "and ordinary noise voids the thesis within the hour. When unsure of "
             "the number, describe the level relatively (e.g. 'below the recent "
             "swing low') instead of inventing one. "
-            "Respond with ONLY a JSON array covering every candidate.\n\n"
+            + ("`days_to_earnings` counts calendar days to that us-stock "
+               "candidate's next earnings print — weigh holding-through-print "
+               "risk in the horizon and confidence you assign. "
+               if any("days_to_earnings" in r for r in rows) else "")
+            + "Respond with ONLY a JSON array covering every candidate.\n\n"
             + (composite_line if any(r["market"] == "crypto" for r in rows) else "")
             + f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
