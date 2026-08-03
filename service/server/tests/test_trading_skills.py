@@ -141,6 +141,19 @@ class RegistryTests(_Db):
                                    "portfolio-concentration"})
         self.assertEqual(trading_skills.skills_for_prompt("nonsense"), [])
 
+    def test_horizon_discipline_rides_exit_sites(self):
+        # Anti-churn skill (2026-08-03): must ride BOTH sites that produce
+        # exit decisions — every observed intra-horizon churn close came
+        # through the light route, opens come through trader.
+        for site in ("light", "trader"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertIn("horizon-discipline", slugs)
+            self.assertIn("### Horizon Discipline\n",
+                          trading_skills.skills_block(site))
+        for site in ("verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("horizon-discipline", slugs)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every

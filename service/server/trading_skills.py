@@ -40,10 +40,11 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 14000 fits the ENTIRE default-enabled trader set (the busiest site, ~13.4K
-# with the us-stock earnings skill riding) — at the defaults nothing is ever
-# silently dropped; the budget only bites once an admin adds custom skills.
-MAX_BLOCK_LEN = 14000
+# 16000 fits the ENTIRE default-enabled trader set (the busiest site, ~14.5K
+# with the us-stock earnings skill riding, after horizon-discipline) — at the
+# defaults nothing is ever silently dropped; the budget only bites once an
+# admin adds custom skills. test_defaults_never_hit_the_budget guards this.
+MAX_BLOCK_LEN = 16000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -142,6 +143,39 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "holding costs nothing; with a position open, 'hold' is a "
             "decision to stay exposed and must be justified like any other "
             "action."
+        ),
+    },
+    {
+        # Added 2026-08-03 from monitoring evidence: 9 intra-horizon
+        # round-trips across 5+ runs in 2 days (runs 908/921/925/930/932),
+        # ≈ −6 cumulative — every close carried a days-out stated horizon
+        # and a capital-protection rationale with no named trigger.
+        "slug": "horizon-discipline",
+        "name": "Horizon Discipline",
+        "description": ("A fresh position gets its stated horizon; small "
+                        "adverse drift is not invalidation; sub-horizon "
+                        "exits need one named trigger from a closed set."),
+        "prompts": ["light", "trader"],
+        "priority": 42,
+        "body": (
+            "The stated horizon is part of the trade's structure, equal in "
+            "rank to the stop and target. If you opened on a multi-day "
+            "thesis, closing within the first cycles because the position "
+            "shows a small loss is not risk management — it relabels normal "
+            "noise as danger and pays the fee schedule twice. Fees plus "
+            "spread make sub-hour round trips negative-expectancy at "
+            "ordinary edge. Before any close or reduce earlier than the "
+            "stated horizon, name ONE specific trigger from this closed "
+            "set: invalidation level touched; a named piece of thesis "
+            "evidence reversed; stop or trailing lock fired; margin health "
+            "genuinely impaired (state the number); or a pre-committed "
+            "scheduled event. 'Protect capital', 'unfavorable R:R now', or "
+            "restating the entry thesis in reverse are NOT triggers — if "
+            "the trend you entered on persists, the position stays. A small "
+            "unrealized loss inside the stop distance is the expected cost "
+            "of owning the trade; the stop is where the claim dies, not the "
+            "first red cycle. Closing and re-entering the same side within "
+            "a few cycles is churn: hold instead."
         ),
     },
     {
