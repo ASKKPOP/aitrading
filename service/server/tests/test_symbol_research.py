@@ -246,6 +246,74 @@ class InvalidationCoherenceTests(unittest.TestCase):
             "us-stock", 1.5, momentum_sign=-1.0, last=21.0)
         self.assertIn("20‑day moving average", t2["invalidation"])
 
+    def test_level_pinned_to_spot_is_rejected(self):
+        """Given `last`, the model started answering WITH `last`. Real batches
+        research:496034 and :496035 (2026-08-03) — a level 0.03% from spot is
+        not a level, it is a restatement of spot, and ordinary noise fires it
+        within minutes. Reproduced 7 of 8 bare-number levels across both."""
+        for txt, last in (("Price closes above 63140.4.", 63159.5),
+                          ("Price closes above 1865.", 1866.05),
+                          ("Price closes above 73.0.", 73.0495),
+                          ("Price moves above $63,140.", 63159.5),
+                          ("Price climbs above $73.07.", 73.05)):
+            t = sr.clamp_thesis(
+                {"direction": "short", "expected_move_pct": 2.0,
+                 "horizon_hours": 24, "confidence": 0.6, "invalidation": txt},
+                "crypto", 2.0, momentum_sign=-1.0, last=last)
+            self.assertEqual(t["invalidation"],
+                             sr._RELATIVE_INVALIDATION["short"],
+                             f"noise-distance level survived: {txt}")
+
+    def test_min_distance_scales_with_volatility(self):
+        """A 0.5% level is noise on 4%/day crypto and a real level on 0.2%/day
+        forex — the floor must follow the tape, not a fixed percent."""
+        txt, last = "Price closes above 100.5.", 100.0          # 0.5% away
+        quiet = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 1.0, "horizon_hours": 24,
+             "confidence": 0.6, "invalidation": txt},
+            "forex", 0.2, momentum_sign=-1.0, last=last)
+        self.assertIn("100.5", quiet["invalidation"])
+        wild = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 4.0, "horizon_hours": 24,
+             "confidence": 0.6, "invalidation": txt},
+            "crypto", 4.0, momentum_sign=-1.0, last=last)
+        self.assertEqual(wild["invalidation"], sr._RELATIVE_INVALIDATION["short"])
+
+    def test_flat_floor_applies_when_volatility_is_unknown(self):
+        """vol_daily_pct is None whenever there are under 5 usable returns
+        (symbol_research.py:196), so the flat floor is the only thing standing
+        between a spot-pinned level and the desk."""
+        near = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6, "invalidation": "Price closes above 100.1."},
+            "crypto", None, momentum_sign=-1.0, last=100.0)          # 0.1% away
+        self.assertEqual(near["invalidation"], sr._RELATIVE_INVALIDATION["short"])
+        far = sr.clamp_thesis(
+            {"direction": "short", "expected_move_pct": 2.0, "horizon_hours": 24,
+             "confidence": 0.6, "invalidation": "Price closes above 101.0."},
+            "crypto", None, momentum_sign=-1.0, last=100.0)          # 1.0% away
+        self.assertIn("101.0", far["invalidation"])
+
+    def test_thesis_prompt_states_the_minimum_distance(self):
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return "[]"
+
+        survivors = [{
+            "symbol": "BTCUSDT", "market": "crypto", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 63159.5, "mom_5d": -2.0, "mom_20d": -3.0,
+                        "vol_daily_pct": 2.0, "vol_ratio": 1.1},
+        }]
+        with patch.object(sr, "_previous_thesis", return_value=None):
+            sr.generate_theses(survivors, generate_text=fake_generate)
+        low = captured["prompt"].lower()
+        self.assertIn("vol_daily_pct", low)
+        self.assertTrue("at least" in low and "away from" in low,
+                        "prompt must state a MINIMUM distance, not only a maximum")
+
     def test_missing_price_leaves_invalidation_alone(self):
         # No price to check against ⇒ no verdict. Never guess.
         t = sr.clamp_thesis(

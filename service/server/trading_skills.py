@@ -40,11 +40,12 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 16000 fits the ENTIRE default-enabled trader set (the busiest site, ~14.5K
-# with the us-stock earnings skill riding, after horizon-discipline) — at the
-# defaults nothing is ever silently dropped; the budget only bites once an
-# admin adds custom skills. test_defaults_never_hit_the_budget guards this.
-MAX_BLOCK_LEN = 16000
+# 18000 fits the ENTIRE default-enabled trader set (the busiest site, 16400
+# with the us-stock earnings skill riding, after level-integrity and
+# reachable-exits) — at the defaults nothing is ever silently dropped; the
+# budget only bites once an admin adds custom skills.
+# test_defaults_never_hit_the_budget guards this.
+MAX_BLOCK_LEN = 18000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -176,6 +177,67 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "of owning the trade; the stop is where the claim dies, not the "
             "first red cycle. Closing and re-entering the same side within "
             "a few cycles is churn: hold instead."
+        ),
+    },
+    {
+        # Added 2026-08-03 from monitoring evidence: research batches
+        # :496026/:496031/:496032 shipped invalidation levels on the WRONG SIDE
+        # of entry (BTC short "above $30,500" at 63,361), paralyzing 4/4 fleet-26
+        # runs; the follow-on batches :496034/:496035 then pinned levels ON spot
+        # (BTC 0.03% away), void within the hour. Fixed upstream in
+        # symbol_research, but the desk must not trust a level it can see is
+        # unusable.
+        "slug": "level-integrity",
+        "name": "Level Integrity",
+        "description": ("A price level must be able to fire: right side of "
+                        "spot, and far enough out that noise cannot trip it."),
+        "prompts": ["light", "trader"],
+        "priority": 17,
+        "body": (
+            "Before you use any price level handed to you — invalidation, "
+            "stop, target — check that it could actually fire. A level that "
+            "kills a SHORT must sit ABOVE the current price; one that kills a "
+            "LONG must sit BELOW it. A level on the wrong side is already "
+            "breached, which means the brief is stale, not that the trade is "
+            "dead: say the level is unusable and judge the setup on structure "
+            "and momentum instead of refusing on the level alone. A level "
+            "sitting on top of the current price is equally unusable — if it "
+            "is closer than about half a day's typical range, ordinary noise "
+            "will trip it within the hour, so treat it as absent rather than "
+            "as a live trigger, and do not report the thesis as invalidated "
+            "because price drifted a few basis points past it. A level far "
+            "outside the recent range (multiples of spot) is a recalled "
+            "number, not a level. When the level you were given is unusable "
+            "in any of these ways, state that plainly in your report and "
+            "anchor your own stop to the structure you can see."
+        ),
+    },
+    {
+        # Added 2026-08-03 from monitoring evidence: 3 desk-authored
+        # unreachable trails (runs 919/925/930, 2026-08-02) — trail_arm_pct 40
+        # on positions whose maximum plausible gain was ~2%, so activation sat
+        # at ~$240 on a ~$600 book and the trail could never arm.
+        "slug": "reachable-exits",
+        "name": "Reachable Exits",
+        "description": ("Exit parameters you author must be reachable inside "
+                        "the move you are forecasting."),
+        "prompts": ["light", "trader"],
+        "priority": 46,
+        "body": (
+            "Every exit parameter you author has to be reachable inside the "
+            "move you are actually forecasting. A trailing stop whose "
+            "activation threshold sits beyond your own target can never arm — "
+            "it reads like protection and provides none. Keep the trail "
+            "activation at or below the target distance, and well inside the "
+            "expected move, or the position rides with no trail at all. The "
+            "same test applies to the stop and the target: a stop wider than "
+            "the move you expect will never be hit before your thesis has "
+            "already failed, and a target beyond the horizon you stated is "
+            "not a plan. Before you emit them, restate each level as a "
+            "distance from the current price and check it against your own "
+            "expected move — if a level cannot be reached inside that move, "
+            "it is decoration. Prefer a smaller, reachable protective level "
+            "over a wide one that never engages."
         ),
     },
     {
