@@ -749,6 +749,9 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 LEFT JOIN users u ON u.id = a.user_id
                 JOIN profit_history p ON p.id = (
                     SELECT MAX(p2.id) FROM profit_history p2 WHERE p2.agent_id = a.id)
+                WHERE (EXISTS (SELECT 1 FROM signals s
+                       WHERE s.agent_id = a.id AND s.message_type = 'operation')
+                    OR EXISTS (SELECT 1 FROM positions po WHERE po.agent_id = a.id))
                 ORDER BY p.total_value DESC LIMIT 20
                 """)
             top_members = [dict(r) for r in cursor.fetchall()]

@@ -29,6 +29,30 @@ def _register_agent(client: TestClient, name: str) -> tuple[int, str]:
     return body["agent_id"], body["token"]
 
 
+def _record_trade(agent_id: int) -> None:
+    """One executed trade (operation signal) — makes the agent 'active'."""
+    conn = database.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO signals (signal_id, agent_id, message_type, market, timestamp, created_at) "
+        "VALUES (?, ?, 'operation', 'crypto', 0, '2026-08-02T00:00:00Z')",
+        (900000 + agent_id, agent_id))
+    conn.commit()
+    conn.close()
+
+
+def _open_position(agent_id: int) -> None:
+    """One open position — also makes the agent 'active'."""
+    conn = database.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO positions (agent_id, symbol, market, side, quantity, entry_price, opened_at) "
+        "VALUES (?, 'BTC', 'crypto', 'long', 1, 100, '2026-08-02T00:00:00Z')",
+        (agent_id,))
+    conn.commit()
+    conn.close()
+
+
 class _Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -75,16 +99,30 @@ class AdminReadTests(_Base):
         self.assertGreaterEqual(ov["total_sim_cash"], 100000)
         self.assertIn("recent_agents", ov)
 
-    def test_agents_list_and_search(self):
-        _register_agent(self.client, "alpha-bot")
-        _register_agent(self.client, "beta-bot")
+    def test_agents_list_shows_active_only(self):
+        # Active = at least one trade (operation signal) or an open position.
+        # Empty shells (fresh registrations, leftover QA accounts) are hidden.
+        traded_id, _ = _register_agent(self.client, "alpha-bot")
+        holding_id, _ = _register_agent(self.client, "beta-bot")
+        _register_agent(self.client, "ghost-bot")
+        _record_trade(traded_id)
+        _open_position(holding_id)
         r = self.client.get("/api/admin/agents", headers=ADMIN)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["total"], 2)
+        body = r.json()
+        self.assertEqual(body["total"], 2)
+        self.assertEqual({a["name"] for a in body["agents"]}, {"alpha-bot", "beta-bot"})
+
+    def test_agents_search_only_matches_active(self):
+        traded_id, _ = _register_agent(self.client, "alpha-bot")
+        _register_agent(self.client, "ghost-bot")
+        _record_trade(traded_id)
         r = self.client.get("/api/admin/agents?q=alpha", headers=ADMIN)
         body = r.json()
         self.assertEqual(body["total"], 1)
         self.assertEqual(body["agents"][0]["name"], "alpha-bot")
+        r = self.client.get("/api/admin/agents?q=ghost", headers=ADMIN)
+        self.assertEqual(r.json()["total"], 0)
 
     def test_transactions_and_automation_shapes(self):
         r = self.client.get("/api/admin/transactions", headers=ADMIN)
