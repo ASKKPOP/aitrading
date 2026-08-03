@@ -145,7 +145,17 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "renegotiate the stop. When flat and the read is unclear, "
             "holding costs nothing; with a position open, 'hold' is a "
             "decision to stay exposed and must be justified like any other "
-            "action."
+            "action. Scaling out is indexed to the trade's progress, not to "
+            "the passage of cycles. Reducing again every cycle merely because "
+            "the position is still green turns a winner into dust before it "
+            "can reach the target you set — halving each cycle leaves an "
+            "eighth of the position after three, and a fee is paid on every "
+            "leg. Before reducing a second time, ask how much closer to your "
+            "stated target price has actually come since the last reduction; "
+            "if it has not covered a meaningful further part of that "
+            "distance, hold what you have, because the previous reduction "
+            "already banked that ground. A fresh reduction wants a fresh "
+            "milestone, a named reversal signal, or the target itself."
         ),
     },
     {
