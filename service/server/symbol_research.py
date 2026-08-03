@@ -352,6 +352,29 @@ def invalidation_is_coherent(text: str, direction: str, last: Optional[float],
     return True
 
 
+def thesis_market_type(market: str, direction: str) -> str:
+    """The venue a thesis will be written to.
+
+    Only crypto has a futures book in this system, so a short anywhere else
+    lands on spot — which has no inventory to sell.
+    """
+    return "futures" if (direction == "short" and market == "crypto") else "spot"
+
+
+def thesis_is_expressible(market: str, direction: str) -> bool:
+    """Can the venue this thesis lands on actually hold the position?
+
+    `markets.supports_short()` answers at the MARKET level — forex is
+    supports_short=True — but the run is created with a market_type, and a spot
+    book cannot short regardless of market. Prod 2026-08-03: run 938 carried a
+    forex short on market_type 'spot' and spent ten cycles reporting "Short
+    thesis matches recent yen rally but entry is unfavourable and we cannot
+    short, so we hold." Run 928 did the same on crypto spot the day before.
+    Neither could ever have traded.
+    """
+    return direction != "short" or thesis_market_type(market, direction) != "spot"
+
+
 def clamp_thesis(raw: dict[str, Any], market: str, vol_daily_pct: Optional[float],
                  momentum_sign: float,
                  last: Optional[float] = None) -> dict[str, Any]:
@@ -666,10 +689,11 @@ def generate_theses(survivors: list[dict[str, Any]],
         ev = expected_value(thesis["expected_move_pct"], thesis["confidence"],
                             thesis["horizon_hours"], vol, s["market"])
         session_factor = 1.0 if s.get("session_open", True) else 0.85
+        expressible = thesis_is_expressible(s["market"], thesis["direction"])
         out.append({**s, "thesis": thesis, "planner": planner,
                     "ev_per_day_pct": ev["ev_per_day_pct"],
                     "final_score": ev["final_score"] * session_factor,
-                    "selectable": 1 if ev["ev_pct"] > 0 else 0,
+                    "selectable": 1 if (ev["ev_pct"] > 0 and expressible) else 0,
                     "stage1_key": _stage1_key(s)})
     out.sort(key=lambda t: t["final_score"], reverse=True)
     return out
@@ -752,8 +776,7 @@ def persist_batch(batch_id: str, theses: list[dict[str, Any]]) -> int:
         begin_write_transaction(cur)
         for t in theses:
             th = t["thesis"]
-            market_type = "futures" if (th["direction"] == "short"
-                                        and t["market"] == "crypto") else "spot"
+            market_type = thesis_market_type(t["market"], th["direction"])
             fs = {"factors": t["factors"], "subscores": t["subscores"],
                   "coverage": t["coverage"], "stage1_key": t.get("stage1_key")}
             cur.execute(

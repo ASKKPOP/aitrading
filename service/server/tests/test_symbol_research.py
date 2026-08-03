@@ -151,6 +151,73 @@ class ThesisClampTests(unittest.TestCase):
         self.assertTrue(c_lo <= t["confidence"] <= c_hi)
 
 
+class ShortVenueTests(unittest.TestCase):
+    """A short needs a book that can express it.
+
+    Prod 2026-08-03: run 938 carried a forex SHORT written onto market_type
+    'spot' and spent ten cycles saying so — "Short thesis matches recent yen
+    rally but entry is unfavourable and WE CANNOT SHORT, so we hold." Run 928
+    did the same on crypto spot on 2026-08-02. The venue rule mapped shorts to
+    futures only for crypto, so every other market's short landed on a spot
+    book with no inventory to sell.
+    """
+
+    def test_crypto_short_gets_the_futures_venue(self):
+        self.assertEqual(sr.thesis_market_type("crypto", "short"), "futures")
+        self.assertTrue(sr.thesis_is_expressible("crypto", "short"))
+
+    def test_longs_stay_on_spot_everywhere(self):
+        for market in ("crypto", "us-stock", "forex", "futures"):
+            self.assertEqual(sr.thesis_market_type(market, "long"), "spot")
+            self.assertTrue(sr.thesis_is_expressible(market, "long"))
+
+    def test_short_with_no_shortable_venue_is_not_expressible(self):
+        # forex is supports_short=True at the MARKET level, which is what let
+        # this through — the venue it actually lands on is what matters.
+        for market in ("forex", "us-stock", "futures"):
+            self.assertEqual(sr.thesis_market_type(market, "short"), "spot")
+            self.assertFalse(sr.thesis_is_expressible(market, "short"),
+                             f"{market} short would be written to a spot book")
+
+    def test_inexpressible_shorts_are_not_selectable(self):
+        """select_targets filters on selectable=1, so this is what stops the
+        fleet building a run that can never trade."""
+        def fake_generate(prompt, **kw):
+            return ('[{"symbol":"USDJPY","market":"forex","direction":"short",'
+                    '"expected_move_pct":1.2,"horizon_hours":24,"confidence":0.71,'
+                    '"thesis":"yen strength","risks":"r",'
+                    '"invalidation":"A break above the recent swing high."}]')
+
+        survivors = [{
+            "symbol": "USDJPY", "market": "forex", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 156.7, "mom_5d": -1.0, "mom_20d": -2.0,
+                        "vol_daily_pct": 0.4, "vol_ratio": 1.0},
+        }]
+        with patch.object(sr, "_previous_thesis", return_value=None):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+        self.assertEqual(out[0]["thesis"]["direction"], "short")
+        self.assertEqual(out[0]["selectable"], 0,
+                         "an unshortable short must never reach the fleet")
+
+    def test_expressible_positive_ev_thesis_stays_selectable(self):
+        def fake_generate(prompt, **kw):
+            return ('[{"symbol":"BTCUSDT","market":"crypto","direction":"short",'
+                    '"expected_move_pct":4.0,"horizon_hours":24,"confidence":0.7,'
+                    '"thesis":"t","risks":"r",'
+                    '"invalidation":"A break above the recent swing high."}]')
+
+        survivors = [{
+            "symbol": "BTCUSDT", "market": "crypto", "eps_raw": 1.0,
+            "momentum_sign": -1.0, "session_open": True,
+            "factors": {"last": 63000.0, "mom_5d": -3.0, "mom_20d": -4.0,
+                        "vol_daily_pct": 2.0, "vol_ratio": 1.1},
+        }]
+        with patch.object(sr, "_previous_thesis", return_value=None):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+        self.assertEqual(out[0]["selectable"], 1)
+
+
 class InvalidationCoherenceTests(unittest.TestCase):
     """A thesis whose invalidation level is already breached is born dead: the
     desk reads it every cycle, correctly refuses to enter, and eventually
