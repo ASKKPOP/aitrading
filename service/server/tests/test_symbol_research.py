@@ -218,6 +218,75 @@ class ShortVenueTests(unittest.TestCase):
         self.assertEqual(out[0]["selectable"], 1)
 
 
+class RRFeasibilityTests(unittest.TestCase):
+    """A thesis whose own invalidation sits farther away than its expected
+    move can pay for can never clear the desk's 2:1 R:R floor.
+
+    Prod 2026-08-04: run 948 (ZC long, 2.5% expected move, stop at $460 ≈ 3%
+    below) burned 8 idle cycles emitting "R:R geometry fails" and retired
+    without ever trading; 947 (HG) and 943 idled on the same shape, and the
+    live batch had HG long 2.0% with its level 4.3% away marked selectable=1 —
+    loaded to rebuild the identical idle run. Fifth instance of the
+    infeasible-at-build class: gate it at build or churn forever.
+    """
+
+    def test_948_geometry_is_infeasible(self):
+        thesis = {"invalidation": "If price falls below $460.",
+                  "expected_move_pct": 2.5}
+        self.assertFalse(sr.thesis_rr_feasible(thesis, 474.0))
+
+    def test_hg_live_batch_geometry_is_infeasible(self):
+        thesis = {"invalidation": "price falling below the recent swing low "
+                                  "near $6.30", "expected_move_pct": 2.0}
+        self.assertFalse(sr.thesis_rr_feasible(thesis, 6.58))
+
+    def test_near_level_with_room_is_feasible(self):
+        thesis = {"invalidation": "A break above $63800 voids the short.",
+                  "expected_move_pct": 4.0}
+        self.assertTrue(sr.thesis_rr_feasible(thesis, 63000.0))
+
+    def test_relative_invalidation_has_nothing_to_judge(self):
+        self.assertIsNone(sr.invalidation_distance_pct(
+            "Break above the recent swing high.", 63000.0))
+        self.assertTrue(sr.thesis_rr_feasible(
+            {"invalidation": "Break above the recent swing high.",
+             "expected_move_pct": 0.5}, 63000.0))
+
+    def test_percentages_and_periods_are_not_levels(self):
+        self.assertIsNone(sr.invalidation_distance_pct(
+            "a 3% adverse move within 24 hours", 100.0))
+
+    def test_distance_uses_the_nearest_level(self):
+        dist = sr.invalidation_distance_pct(
+            "support between $460 and $470", 474.0)
+        self.assertAlmostEqual(dist, (1 - 470.0 / 474.0) * 100.0, places=6)
+
+    def test_exactly_at_the_floor_is_feasible(self):
+        # 75/100 is exactly representable: dist = 25%, floor needs move >= 50%.
+        thesis = {"invalidation": "below $75", "expected_move_pct": 50.0}
+        self.assertTrue(sr.thesis_rr_feasible(thesis, 100.0))
+        thesis["expected_move_pct"] = 49.9
+        self.assertFalse(sr.thesis_rr_feasible(thesis, 100.0))
+
+    def test_infeasible_thesis_is_not_selectable(self):
+        def fake_generate(prompt, **kw):
+            return ('[{"symbol":"ZC","market":"futures","direction":"long",'
+                    '"expected_move_pct":2.5,"horizon_hours":48,"confidence":0.7,'
+                    '"thesis":"t","risks":"r",'
+                    '"invalidation":"If price falls below $460."}]')
+
+        survivors = [{
+            "symbol": "ZC", "market": "futures", "eps_raw": 1.0,
+            "momentum_sign": 1.0, "session_open": True,
+            "factors": {"last": 474.0, "mom_5d": 2.0, "mom_20d": 3.0,
+                        "vol_daily_pct": 1.5, "vol_ratio": 1.0},
+        }]
+        with patch.object(sr, "_previous_thesis", return_value=None):
+            out = sr.generate_theses(survivors, generate_text=fake_generate)
+        self.assertEqual(out[0]["selectable"], 0,
+                         "an unbracketable thesis must never reach the fleet")
+
+
 class InvalidationCoherenceTests(unittest.TestCase):
     """A thesis whose invalidation level is already breached is born dead: the
     desk reads it every cycle, correctly refuses to enter, and eventually

@@ -36,6 +36,7 @@ from typing import Any, Optional
 import cache
 import markets
 from database import begin_write_transaction, get_db_connection
+from order_params import RR_FLOOR
 
 logger = logging.getLogger(__name__)
 
@@ -352,6 +353,57 @@ def invalidation_is_coherent(text: str, direction: str, last: Optional[float],
     return True
 
 
+def invalidation_distance_pct(text: str, last: Optional[float]) -> Optional[float]:
+    """Distance from `last` to the nearest absolute level in `text`, in percent.
+
+    Feasibility wants the level a desk would actually lean its stop on — the
+    nearest one. Returns None when there is no numeric level (relative wording),
+    no `last`, or every number is a percentage/period rather than a price, so a
+    caller can only ever gate on a level it can actually see.
+    """
+    if not text or last is None or last <= 0:
+        return None
+    best: Optional[float] = None
+    scrubbed = _PCT_OR_PERIOD.sub(" ", text)
+    for match in _NUMBER.finditer(scrubbed):
+        try:
+            level = float(match.group(1).replace(",", ""))
+        except ValueError:
+            continue
+        if level <= 0:
+            continue
+        dist = abs(level / last - 1.0) * 100.0
+        if best is None or dist < best:
+            best = dist
+    return best
+
+
+def thesis_rr_feasible(thesis: dict, last: Optional[float]) -> bool:
+    """Can this thesis EVER clear the house R:R floor at the desk?
+
+    The desk's stop leans on the thesis's own invalidation level and its honest
+    target is capped by the thesis's own expected move, so a thesis whose
+    invalidation sits farther than expected_move_pct / RR_FLOOR away is
+    unexpressible: prod 948 (ZC long, 2.5% move vs a stop ~3% away) burned 8
+    idle cycles refusing to bracket it and retired; 947/943 idled on the same
+    geometry, and the 2026-08-04 batch had HG long 2.0% with its level 4.3%
+    away marked selectable — loaded to rebuild the same idle run. Judged at
+    build time because the desk-side skills are right to refuse: the fix is to
+    stop selecting the unexpressible, not to teach the desk looser stops.
+    A thesis with no extractable level passes — there is nothing to judge.
+    """
+    dist = invalidation_distance_pct(str(thesis.get("invalidation") or ""), last)
+    if dist is None:
+        return True
+    try:
+        move = float(thesis.get("expected_move_pct") or 0)
+    except (TypeError, ValueError):
+        return True
+    if move <= 0:
+        return True
+    return move >= RR_FLOOR * dist
+
+
 def thesis_market_type(market: str, direction: str) -> str:
     """The venue a thesis will be written to.
 
@@ -647,7 +699,11 @@ def generate_theses(survivors: list[dict[str, Any]],
             "fire: ABOVE `last` for a short, BELOW `last` for a long, within 50% "
             "of `last`, and at least half of `vol_daily_pct` away from `last` — "
             "a level sitting on top of the current price is a restatement of it, "
-            "and ordinary noise voids the thesis within the hour. When unsure of "
+            "and ordinary noise voids the thesis within the hour. An absolute "
+            "level must ALSO sit within expected_move_pct / 2 of `last`: the "
+            "desk trades at 2:1 reward-to-risk, so a stop farther than half "
+            "the expected move can never be bracketed and the thesis will be "
+            "discarded. When unsure of "
             "the number, describe the level relatively (e.g. 'below the recent "
             "swing low') instead of inventing one. "
             "Respond with ONLY a JSON array covering every candidate.\n\n"
@@ -690,10 +746,12 @@ def generate_theses(survivors: list[dict[str, Any]],
                             thesis["horizon_hours"], vol, s["market"])
         session_factor = 1.0 if s.get("session_open", True) else 0.85
         expressible = thesis_is_expressible(s["market"], thesis["direction"])
+        feasible = thesis_rr_feasible(thesis, s["factors"].get("last"))
         out.append({**s, "thesis": thesis, "planner": planner,
                     "ev_per_day_pct": ev["ev_per_day_pct"],
                     "final_score": ev["final_score"] * session_factor,
-                    "selectable": 1 if (ev["ev_pct"] > 0 and expressible) else 0,
+                    "selectable": 1 if (ev["ev_pct"] > 0 and expressible
+                                        and feasible) else 0,
                     "stage1_key": _stage1_key(s)})
     out.sort(key=lambda t: t["final_score"], reverse=True)
     return out
