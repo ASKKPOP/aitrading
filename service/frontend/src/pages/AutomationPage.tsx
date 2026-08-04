@@ -254,7 +254,6 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     remove: tr(language, { ko: '제거', en: 'Remove', ja: '削除', th: 'ลบ', vi: 'Xóa', id: 'Hapus' }),
     removeFailed: tr(language, { ko: '규칙 제거에 실패했습니다 — 잠시 후 다시 시도하세요', en: 'Failed to remove the rule — try again shortly', ja: 'ルールの削除に失敗しました — しばらくして再試行してください', th: 'ลบกฎไม่สำเร็จ — ลองใหม่อีกครั้ง', vi: 'Xóa quy tắc thất bại — thử lại sau', id: 'Gagal menghapus aturan — coba lagi sebentar' }),
     yourRules: tr(language, { ko: '내 자동화 규칙', en: 'Your automation rules', ja: '自動売買ルール', th: 'กฎอัตโนมัติของคุณ', vi: 'Quy tắc của bạn', id: 'Aturan otomatisasi Anda' }),
-    empty: tr(language, { ko: '아직 규칙이 없습니다. 위에서 추가하세요.', en: 'No rules yet. Add one above.', ja: 'ルールはまだありません。', th: 'ยังไม่มีกฎ', vi: 'Chưa có quy tắc.', id: 'Belum ada aturan. Tambahkan satu di atas.' }),
     login: tr(language, { ko: '로그인하세요.', en: 'Please log in.', ja: 'ログインしてください。', th: 'กรุณาเข้าสู่ระบบ', vi: 'Vui lòng đăng nhập.', id: 'Silakan masuk.' }),
     // ── automation-rule panel (hangs off the create modal) ──
     ruleSection: tr(language, { ko: '자동화 만들기 (AI가 일정에 따라 반복 실행)', en: 'Create automation (AI repeats it on a schedule)', ja: '自動売買を作成（AIが定期実行）', th: 'สร้างระบบอัตโนมัติ (AI ทำซ้ำตามเวลา)', vi: 'Tạo tự động hóa (AI lặp lại theo lịch)', id: 'Buat otomatisasi (AI mengulanginya sesuai jadwal)' }),
@@ -589,13 +588,15 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         </>
       )}
 
+      {/* Legacy list: nothing on this page creates a rule anymore (both modes
+          above make TRADING runs), so an empty list means the section has no
+          job — hide it. It must still render when rules exist, because Remove
+          is the only way to stop a running rule. */}
+      {rules.length > 0 && <>
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '20px 0 10px' }}>{T.yourRules}</div>
       {removeError && <div style={{ color: '#f0663f', fontSize: 12.5, marginBottom: 10 }}>⚠️ {removeError}</div>}
-      {rules.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>{T.empty}</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rules.map(r => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rules.map(r => (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 0', borderTop: '1px solid var(--border-color,#d3c8b6)' }}>
               <b style={{ fontSize: 14 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
               <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
@@ -613,9 +614,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
               )}
               <button onClick={() => remove(r.id)} disabled={removingId !== null} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12, opacity: removingId === r.id ? 0.5 : 1 }}>{removingId === r.id ? '⏳ ' : ''}{T.remove}</button>
             </div>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
+      </>}
     </div>
   )
 
