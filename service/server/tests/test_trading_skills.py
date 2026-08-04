@@ -207,6 +207,19 @@ class RegistryTests(_Db):
             self.assertNotIn("crypto-regime-lens", slugs)
             self.assertNotIn("bottom-confirmation", slugs)
 
+    def test_mined_statistical_skills_ride_every_trader_block(self):
+        # The two agiprolabs-mining ports are market-agnostic entry/sizing
+        # methods: they must render (not be budget-skipped) in EVERY market's
+        # trader block, and stay off the exit-path light site.
+        for market in (None, "us-stock", "crypto", "futures", "forex"):
+            block = trading_skills.skills_block("trader", market)
+            self.assertIn("### Volatility Context\n", block, market)
+            self.assertIn("### Reversion Requires a Range\n", block, market)
+        for site in ("light", "verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("volatility-context", slugs)
+            self.assertNotIn("mean-reversion-guard", slugs)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],
