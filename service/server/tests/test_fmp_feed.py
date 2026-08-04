@@ -43,6 +43,8 @@ class _Cache(unittest.TestCase):
     def setUp(self):
         fmp_feed._cache["at"] = 0.0
         fmp_feed._cache["by_symbol"] = None
+        fmp_feed._cache["fmp"] = None
+        fmp_feed._cache["av"] = None
 
     tearDown = setUp
 
@@ -112,13 +114,46 @@ class AlphaVantageFallbackTests(_Cache):
             self.assertEqual(get.call_args[1]["params"]["function"],
                              "EARNINGS_CALENDAR")
 
-    def test_fmp_preferred_when_both_keys_exist(self):
-        payload = [{"symbol": "NVDA", "date": _in_days(4)}]
+    def test_both_keys_union_with_fmp_winning_conflicts(self):
+        # The 2026-08-04 SPCX print: FMP's thin tier (16 symbols) missed a
+        # fleet symbol reporting THAT DAY while AV carried it. Both sources
+        # must be fetched and unioned; FMP's date wins per-symbol conflicts.
+        fmp_payload = [{"symbol": "NVDA", "date": _in_days(4)}]
+        av_text = self._csv([f"NVDA,NVIDIA,{_in_days(6)},2026-07-31,1.01,USD",
+                             f"SPCX,SpaceX,{_in_days(0)},2026-06-30,0.10,USD"])
+
+        def route(url, **kw):
+            if "alphavantage" in url:
+                return _resp(text=av_text)
+            return _resp(fmp_payload)
+
         with patch.dict(os.environ, {"FMP_API_KEY": "k",
                                      "ALPHA_VANTAGE_API_KEY": "avkey"}), \
-             patch("fmp_feed.requests.get", return_value=_resp(payload)) as get:
+             patch("fmp_feed.requests.get", side_effect=route) as get:
+            self.assertEqual(fmp_feed.days_to_earnings("NVDA"), 4,
+                             "FMP's date must win the conflict")
+            self.assertEqual(fmp_feed.days_to_earnings("SPCX"), 0,
+                             "AV-only symbols must survive the union")
+            self.assertEqual(get.call_count, 2, "both sources, one refresh")
+
+    def test_av_rate_limit_does_not_evict_prior_av_knowledge(self):
+        # AV's free key is 25 req/day and prod's commodities refresher
+        # already saturates it. A failed AV refresh must serve AV's LAST map
+        # alongside fresh FMP rows — a desk that knew about today's print at
+        # 09:00 must not forget it at 15:00, before the print.
+        fmp_payload = [{"symbol": "NVDA", "date": _in_days(4)}]
+        fmp_feed._cache["av"] = {"SPCX": _in_days(0)}
+
+        def route(url, **kw):
+            if "alphavantage" in url:
+                raise RuntimeError("rate limited")
+            return _resp(fmp_payload)
+
+        with patch.dict(os.environ, {"FMP_API_KEY": "k",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get", side_effect=route):
+            self.assertEqual(fmp_feed.days_to_earnings("SPCX"), 0)
             self.assertEqual(fmp_feed.days_to_earnings("NVDA"), 4)
-            self.assertIn("/stable/earnings-calendar", get.call_args[0][0])
 
     def test_demo_av_key_counts_as_unset(self):
         with patch.dict(os.environ, {"FMP_API_KEY": "",
