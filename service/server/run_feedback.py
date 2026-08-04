@@ -383,13 +383,34 @@ def maybe_review_thesis(state: dict, run: dict, cfg: dict, pnl: dict,
         thesis = _usable_thesis(thesis, float(mark) if mark else None)
     except Exception:  # noqa: BLE001 - a scrub must never break the review
         pass
+    # 956 (2026-08-04): the thesis speaks in percents but this line spoke raw
+    # dollars with no denominator — the reviewer bridged the units itself,
+    # called a −0.56% position "a ~−6% loss", and a run whose own 2% stop was
+    # nowhere near being hit was retired and flattened. State the units and do
+    # the one division the model keeps getting wrong (937/898 above are the
+    # stale-level flavor of the same blindness).
+    pct_line = ""
+    try:
+        p = pnl.get("position") or {}
+        p_qty = abs(float(p.get("quantity") or 0))
+        p_entry = float(p.get("entry_price") or 0)
+        if p_qty and p_entry:
+            pct = float(pnl.get("unrealized") or 0) / (p_qty * p_entry) * 100.0
+            pct_line = f", position_return={pct:+.2f}%"
+    except Exception:  # noqa: BLE001 - the bridge must never break the review
+        pct_line = ""
+    unit_note = ("PnL figures are US dollars, not percentages"
+                 + ("; judge percent moves only from position_return."
+                    if pct_line else "."))
     prompt = (
         "Review this trading thesis against actual performance. Respond ONLY "
         'with JSON: {"thesis_status": "intact"|"weakened"|"invalidated", '
         '"rationale": "<one sentence>"}\n'
         f"Thesis: {json.dumps(thesis, default=str)[:800]}\n"
         f"Performance: closes={state['closes']}, wins={state['wins']}, "
-        f"total_pnl={pnl.get('total')}, unrealized={pnl.get('unrealized')}"
+        f"total_pnl={pnl.get('total')} USD, "
+        f"unrealized={pnl.get('unrealized')} USD{pct_line}\n"
+        f"{unit_note}"
     )
     text = None
     try:
