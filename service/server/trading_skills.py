@@ -40,15 +40,16 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 24000 fits the ENTIRE default-enabled trader set (the busiest site is
-# trader/us-stock at 19,671 after the Plan 21 port added bottom-confirmation;
-# trader/crypto sits at 19,227 with crypto-regime-lens) — at the defaults
-# nothing is ever silently dropped; the budget only bites once an admin adds
-# custom skills. The previous 20000 cap technically still fit, with 329
-# characters to spare, which is not headroom — the first custom skill an admin
-# wrote would have pushed a DEFAULT out instead of itself, inverting the whole
-# point. test_defaults_never_hit_the_budget guards the invariant.
-MAX_BLOCK_LEN = 24000
+# 28000 fits the ENTIRE default-enabled trader set (the busiest site is
+# trader/us-stock at 22,560 after the agiprolabs mining added
+# volatility-context and mean-reversion-guard; trader/crypto sits at 21,825)
+# — at the defaults nothing is ever silently dropped; the budget only bites
+# once an admin adds custom skills. The previous 24000 cap technically still
+# fit, with 1,440 characters to spare, which is not headroom — a max-size
+# custom skill (MAX_BODY_LEN + section framing ≈ 4,030) would have pushed a
+# DEFAULT out instead of itself, inverting the whole point.
+# test_defaults_never_hit_the_budget guards the invariant.
+MAX_BLOCK_LEN = 28000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -805,6 +806,75 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "accounts. This is the offensive complement to topping "
             "evidence: distribution counts argue exposure down from highs; "
             "follow-through confirmation argues it up from lows."
+        ),
+    },
+    # ── agiprolabs mining (2026-08-03, owner: "can we do for some part
+    # this?") ────────────────────────────────────────────────────────────────
+    # Two statistical-method skills distilled from
+    # agiprolabs/claude-trading-skills (MIT): volatility-modeling +
+    # regime-detection → volatility-context, and mean-reversion
+    # (Hurst / half-life / z-score framework) → mean-reversion-guard.
+    # Method only, per the standing rule — their pandas/GARCH engines are
+    # agent tooling, not prompt material. The third mined candidate
+    # (prediction-market strategy) was dropped deliberately: polymarket is
+    # automatable=False in markets.py and prod has zero polymarket runs, so
+    # a polymarket-scoped skill has no injection site today.
+    {
+        "slug": "volatility-context",
+        "name": "Volatility Context",
+        "description": ("Judge ranges, stops, and size against the asset's "
+                        "own volatility history; compression is loaded, "
+                        "extremes revert; never widen a stop at constant "
+                        "size."),
+        "prompts": ["trader"],
+        "priority": 22,
+        "body": (
+            "Judge every range, stop, and size against the asset's OWN "
+            "volatility history, not a house number. Compare the recent "
+            "ranges shown to the asset's typical ranges: near the quiet end "
+            "of its history, compression is loaded, not safe — narrow ranges "
+            "precede expansion, so a breakout from a long squeeze deserves "
+            "respect and a stop set for the coming range, not the current "
+            "one. Near the extreme end, volatility itself mean-reverts even "
+            "when price does not — do not project panic-sized ranges forward "
+            "indefinitely, but while they last, elevated ranges demand "
+            "smaller size: the same percentage stop at double the volatility "
+            "is double the dollar risk, so size down until a stop that "
+            "clears the noise still fits the risk budget. Never respond to a "
+            "widened range by widening the stop at constant size — that "
+            "doubles risk precisely when conditions are worst. When ranges "
+            "are so elevated that a noise-clearing stop cannot fit the "
+            "budget at any meaningful size, the trade has no valid "
+            "expression this cycle: pass, rather than take a tight stop "
+            "that ordinary noise will fire."
+        ),
+    },
+    {
+        "slug": "mean-reversion-guard",
+        "name": "Reversion Requires a Range",
+        "description": ("Fading a move requires proof of a range, an entry "
+                        "at its extreme, a mid-range target, and a time "
+                        "budget; persistence is the default."),
+        "prompts": ["trader"],
+        "priority": 26,
+        "body": (
+            "'Too far, must snap back' is not a thesis. Liquid markets trend "
+            "more often than they revert — persistence is the default "
+            "assumption, and a stretched move is first of all evidence of "
+            "strength. Fading a move requires proof of a RANGE, not a "
+            "feeling of excess: repeated rejections at both edges in the "
+            "data shown, a flat larger-timeframe structure, and contained "
+            "volatility. Without that proof, a counter-trend entry is a "
+            "knife-catch wearing statistics. When the proof exists, trade "
+            "the range's discipline: enter only at a genuine extreme of the "
+            "range; target the middle, not the far edge, because the middle "
+            "is where reversion's probability lives; and give the trade a "
+            "time budget alongside its stop — reversion decays, so if price "
+            "has not begun returning within the horizon your range read "
+            "implies, the read is wrong: exit on time, do not wait for the "
+            "price stop. A stretch that keeps widening after entry is not a "
+            "better price; it is the trend telling you the range is gone. "
+            "Never add to a reversion trade on that reasoning."
         ),
     },
 ]
