@@ -40,16 +40,16 @@ MAX_DESCRIPTION_LEN = 300
 MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
-# 28000 fits the ENTIRE default-enabled trader set (the busiest site is
-# trader/us-stock at 22,560 after the agiprolabs mining added
-# volatility-context and mean-reversion-guard; trader/crypto sits at 21,825)
-# — at the defaults nothing is ever silently dropped; the budget only bites
-# once an admin adds custom skills. The previous 24000 cap technically still
-# fit, with 1,440 characters to spare, which is not headroom — a max-size
-# custom skill (MAX_BODY_LEN + section framing ≈ 4,030) would have pushed a
-# DEFAULT out instead of itself, inverting the whole point.
+# 30000 fits the ENTIRE default-enabled trader set (the busiest site is
+# trader/us-stock at 24,272 after the finance-skills mining added
+# stage-discipline; trader/crypto sits at 21,825) — at the defaults nothing
+# is ever silently dropped; the budget only bites once an admin adds custom
+# skills. The previous 28000 cap technically still fit, with 3,728
+# characters to spare, which is not headroom — a max-size custom skill
+# (MAX_BODY_LEN + section framing ≈ 4,030) would have pushed a DEFAULT out
+# instead of itself, inverting the whole point.
 # test_defaults_never_hit_the_budget guards the invariant.
-MAX_BLOCK_LEN = 28000
+MAX_BLOCK_LEN = 30000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -819,6 +819,58 @@ BASE_SKILLS: list[dict[str, Any]] = [
     # (prediction-market strategy) was dropped deliberately: polymarket is
     # automatable=False in markets.py and prod has zero polymarket runs, so
     # a polymarket-scoped skill has no injection site today.
+    # ── himself65/finance-skills mining (2026-08-04, owner: "do the
+    # BASE_SKILLS mining") ───────────────────────────────────────────────────
+    # One judgment skill distilled from himself65/finance-skills (MIT):
+    # sepa-strategy (Minervini stage analysis + trend template + base
+    # counting) → stage-discipline. Method only, per the standing rule — that
+    # skill's yfinance workflow is agent tooling, not prompt material. Adapted
+    # to the data the us-stock technical brief actually carries (ma5/10/20/60,
+    # long-window ma50/ma200 + golden-cross state, 20-day support/resistance):
+    # no 150-day MA, no RS rating — the stage read degrades to a blocking gap
+    # when the long window is missing, it never assumes Stage 2.
+    {
+        "slug": "stage-discipline",
+        "name": "Stage Discipline",
+        "description": ("Four-stage read from the data shown: only Stage 2 "
+                        "earns fresh longs (Stage 4 for shorts); late bases "
+                        "shrink size; extended-from-base means wait; an "
+                        "unresolvable stage is a blocking gap."),
+        "prompts": ["trader"],
+        "markets": ["us-stock"],
+        "priority": 16,
+        "body": (
+            "Every symbol lives in one of four stages, and only one of them "
+            "earns a fresh long. Classify from the data shown before judging "
+            "any entry. Stage 1, basing: price oscillating around flat "
+            "medium and long averages with no net progress — stand aside and "
+            "monitor. Stage 2, advancing: higher highs and higher lows, "
+            "price above its medium and long averages with those averages "
+            "rising (bullish stacking), pullbacks holding above prior "
+            "support — the only stage where fresh longs are justified. "
+            "Stage 3, topping: wide, loose swings near the highs, breakouts "
+            "that fail within days, momentum flattening — no new longs; "
+            "protect what has paid. Stage 4, declining: price below falling "
+            "averages, rallies dying at lower highs — no longs at any "
+            "price. A Stage 4 name that looks cheap is not value; it is a "
+            "downtrend still in force. Shorting mirrors the ladder: only "
+            "Stage 4 justifies fresh shorts, and a Stage 2 uptrend is never "
+            "'due' for one. If the data shown cannot resolve the stage — "
+            "long averages missing, history thin — that is a blocking gap: "
+            "lower confidence and prefer hold; never assume Stage 2. Within "
+            "Stage 2, respect maturity and extension. Each "
+            "consolidation-then-breakout cycle since the trend began is a "
+            "base: the first and second carry the best odds; a "
+            "fourth-or-later base is crowded and fails more often, so cut "
+            "size and demand a cleaner setup. And an entry is only as good "
+            "as its distance from structure: a Stage 2 name trading far "
+            "above its most recent consolidation — measured against the "
+            "ranges shown, not a house number — is extended, and chasing it "
+            "buys someone else's exit. Prefer entries near the base or on a "
+            "pullback toward the rising averages, or wait for the next base "
+            "to form."
+        ),
+    },
     {
         "slug": "volatility-context",
         "name": "Volatility Context",
