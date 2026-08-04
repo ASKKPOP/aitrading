@@ -814,6 +814,11 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             "invalidation": (thesis.get("invalidation") or "")[:300],
             "batch_id": thesis.get("batch_id"),
             "planner": thesis.get("planner"),
+            # Plan 21 P2 (brief integrity): the research row's authorship
+            # time rides the frozen snapshot so the desk can be told the
+            # brief's AGE at decision time instead of reading a days-old
+            # level as current (the :496026 stale-brief class).
+            "as_of": thesis.get("created_at"),
         },
         "feedback": True,
     }

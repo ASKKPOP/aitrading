@@ -450,6 +450,7 @@ def _read_overlays() -> dict[str, Any]:
         snap = regime.evaluate_market_regime(persist=False) or {}
         overlays["regime_blocks_longs"] = snap.get("allow_new_buys") is False
         overlays["regime"] = snap.get("regime")
+        overlays["crypto_composite"] = snap.get("crypto_composite")
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -624,18 +625,46 @@ def generate_theses(survivors: list[dict[str, Any]],
         else:
             fresh_needed.append(s)
 
+    # Plan 21 P3: one compact backdrop line for crypto candidates, from the
+    # composite CACHE only (screen_universe's overlay read just warmed it —
+    # a cold cache renders nothing rather than fetching on this path).
+    composite_line = ""
+    try:
+        import regime as _regime
+        comp = _regime.evaluate_crypto_composite(cached_only=True)
+        if comp and comp.get("score") is not None:
+            composite_line = (
+                f"CRYPTO MARKET BACKDROP: composite {comp['score']}/100 "
+                f"({comp['zone']}; 100 = broad risk-on health). Use as "
+                "backdrop for crypto candidates only — judge each candidate "
+                "on its own data.\n")
+    except Exception:  # noqa: BLE001
+        composite_line = ""
+
     parsed: dict[tuple[str, str], dict[str, Any]] = {}
     for chunk in _chunked(fresh_needed, _thesis_batch_size()):
         rows = []
         for s in chunk:
             f = s["factors"]
-            rows.append({
+            row = {
                 "symbol": s["symbol"], "market": s["market"],
                 "last": f.get("last"),
                 "mom_5d": f.get("mom_5d"), "mom_20d": f.get("mom_20d"),
                 "vol_daily_pct": f.get("vol_daily_pct"), "vol_ratio": f.get("vol_ratio"),
                 "eps_raw": s["eps_raw"],
-            })
+            }
+            # Plan 21 P6: FMP earnings proximity for us-stock candidates.
+            # Key-gated and fail-soft — without FMP_API_KEY the field is
+            # simply absent and the prompt is byte-identical to before.
+            if s["market"] == "us-stock":
+                try:
+                    import fmp_feed
+                    dte = fmp_feed.days_to_earnings(s["symbol"])
+                    if dte is not None:
+                        row["days_to_earnings"] = dte
+                except Exception:  # noqa: BLE001
+                    pass
+            rows.append(row)
         prompt = (
             "You are a trading research analyst. For EACH candidate below, emit one JSON "
             "object with keys: symbol, market, direction ('long'|'short'), "
@@ -650,8 +679,13 @@ def generate_theses(survivors: list[dict[str, Any]],
             "and ordinary noise voids the thesis within the hour. When unsure of "
             "the number, describe the level relatively (e.g. 'below the recent "
             "swing low') instead of inventing one. "
-            "Respond with ONLY a JSON array covering every candidate.\n\n"
-            f"CANDIDATES:\n{json.dumps(rows, default=str)}"
+            + ("`days_to_earnings` counts calendar days to that us-stock "
+               "candidate's next earnings print — weigh holding-through-print "
+               "risk in the horizon and confidence you assign. "
+               if any("days_to_earnings" in r for r in rows) else "")
+            + "Respond with ONLY a JSON array covering every candidate.\n\n"
+            + (composite_line if any(r["market"] == "crypto" for r in rows) else "")
+            + f"CANDIDATES:\n{json.dumps(rows, default=str)}"
         )
         for _attempt in range(MAX_LLM_CALLS_PER_REFRESH):
             try:

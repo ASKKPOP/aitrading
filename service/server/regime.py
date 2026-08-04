@@ -144,6 +144,205 @@ def compute_regime(
     }
 
 
+# ──────────────── crypto composite (Plan 21 P3) ────────────────
+# Six-component 0–100 crypto posture score, distilled from the hermes
+# work-package upstream's crypto-regime-analyzer (tradermonty/
+# claude-trading-skills, MIT). Keyless: OKX candles + funding only — the
+# upstream's CoinGecko dominance component is replaced by a relative-strength
+# proxy (BTC 30d return vs the alt universe's median) computed from candles
+# we already fetch. 100 = broad risk-on health, 0 = critical risk-off.
+# Advisory-only, same stance as the regime bands: displayed, journaled, and
+# rendered as research backdrop — never an enforcement input.
+
+_COMPOSITE_TTL_SECONDS = 1800.0
+_composite_cache: dict[str, Any] = {"at": 0.0, "value": None}
+
+# OKX-listed majors used for breadth / relative strength / thrust. BTC is the
+# reserve asset and scored separately.
+COMPOSITE_ALTS = ("ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT", "DOGEUSDT",
+                  "ADAUSDT", "LINKUSDT", "AVAXUSDT")
+
+COMPOSITE_WEIGHTS = {
+    "btc_trend": 0.25,      # reserve asset's primary trend intact?
+    "alt_breadth": 0.20,    # % of alts above their 200DMA
+    "dominance_proxy": 0.15,  # capital rotation: alts vs BTC 30d
+    "funding": 0.15,        # perp leverage crowding (contrarian at extremes)
+    "cycle": 0.15,          # drawdown from ~1y high + realized-vol percentile
+    "thrust": 0.10,         # % of universe positive over 30d
+}
+
+# neutral perp funding ≈ 0.01% / 8h; ±0.075% is deeply crowded territory
+_FUNDING_NEUTRAL = 0.0001
+_FUNDING_EXTREME_DEV = 0.00075
+
+
+def _sma(closes: list[float], n: int) -> Optional[float]:
+    if len(closes) < n:
+        return None
+    return sum(closes[-n:]) / n
+
+
+def _ret_pct(closes: list[float], days: int) -> Optional[float]:
+    if len(closes) < days + 1 or closes[-days - 1] <= 0:
+        return None
+    return (closes[-1] - closes[-days - 1]) / closes[-days - 1] * 100.0
+
+
+def score_btc_trend(closes: list[float]) -> Optional[float]:
+    """Price vs 50/200DMA stack (+40 each) and 200DMA slope over 20d (+20)."""
+    sma50, sma200 = _sma(closes, 50), _sma(closes, 200)
+    sma200_prior = _sma(closes[:-20], 200) if len(closes) >= 220 else None
+    if sma50 is None or sma200 is None:
+        return None
+    score = 0.0
+    if closes[-1] > sma50:
+        score += 40.0
+    if closes[-1] > sma200:
+        score += 40.0
+    if sma200_prior is not None and sma200 > sma200_prior:
+        score += 20.0
+    return score
+
+
+def score_alt_breadth(alt_closes: list[list[float]]) -> Optional[float]:
+    """% of the alt universe trading above its own 200DMA."""
+    above = total = 0
+    for closes in alt_closes:
+        sma200 = _sma(closes, 200)
+        if sma200 is None:
+            continue
+        total += 1
+        if closes[-1] > sma200:
+            above += 1
+    return above / total * 100.0 if total else None
+
+
+def score_dominance_proxy(btc_closes: list[float],
+                          alt_closes: list[list[float]]) -> Optional[float]:
+    """Rotation read without CoinGecko: median alt 30d return minus BTC's.
+
+    Alts outperforming BTC ≈ falling dominance ≈ broad risk appetite (high).
+    BTC outperforming in a BTC downtrend ≈ rising-dominance flight to safety
+    (extra penalty). Clamped to a ±25pp spread window.
+    """
+    btc30 = _ret_pct(btc_closes, 30)
+    alt30s = sorted(r for r in (_ret_pct(c, 30) for c in alt_closes)
+                    if r is not None)
+    if btc30 is None or not alt30s:
+        return None
+    median_alt = alt30s[len(alt30s) // 2] if len(alt30s) % 2 else \
+        (alt30s[len(alt30s) // 2 - 1] + alt30s[len(alt30s) // 2]) / 2
+    spread = max(-25.0, min(25.0, median_alt - btc30))
+    score = 50.0 + spread * 1.6
+    if btc30 < 0 and spread < 0:
+        score -= 15.0  # flight to safety: BTC falling, alts falling harder
+    return max(0.0, min(100.0, score))
+
+
+def score_funding(rates: list[float]) -> Optional[float]:
+    """Average 8h funding vs neutral. Crowded longs (positive excess) are
+    penalized at full weight, crowded shorts at 60% — a short squeeze hurts
+    the crowd, not this desk's default long book."""
+    if not rates:
+        return None
+    excess = sum(rates) / len(rates) - _FUNDING_NEUTRAL
+    if excess >= 0:
+        penalty = min(1.0, excess / _FUNDING_EXTREME_DEV)
+    else:
+        penalty = min(1.0, -excess / _FUNDING_EXTREME_DEV) * 0.6
+    return (1.0 - penalty) * 100.0
+
+
+def score_cycle(closes: list[float]) -> Optional[float]:
+    """Drawdown position (60%) + realized-vol percentile (40%); the vol leg
+    drops out (weight folds into drawdown) when the series is too short."""
+    if not closes or max(closes) <= 0:
+        return None
+    dd = closes[-1] / max(closes) - 1.0  # ≤ 0
+    dd_score = (1.0 - min(1.0, -dd / 0.8)) * 100.0
+    vol_pct = vol_percentile(rolling_sigma_series(closes))
+    if vol_pct is None:
+        return dd_score
+    return 0.6 * dd_score + 0.4 * (100.0 - vol_pct)
+
+
+def score_thrust(btc_closes: list[float],
+                 alt_closes: list[list[float]]) -> Optional[float]:
+    """% of the universe (BTC + alts) positive over 30d."""
+    rets = [r for r in (_ret_pct(c, 30) for c in [btc_closes, *alt_closes])
+            if r is not None]
+    if not rets:
+        return None
+    return sum(1 for r in rets if r > 0) / len(rets) * 100.0
+
+
+def compose_crypto_composite(
+        components: dict[str, Optional[float]]) -> Optional[dict[str, Any]]:
+    """Weighted 0–100 score; a missing component's weight is redistributed
+    proportionally across the present ones (upstream convention). None when
+    every component is missing."""
+    present = {k: v for k, v in components.items()
+               if v is not None and k in COMPOSITE_WEIGHTS}
+    if not present:
+        return None
+    total_w = sum(COMPOSITE_WEIGHTS[k] for k in present)
+    score = sum(COMPOSITE_WEIGHTS[k] * v for k, v in present.items()) / total_w
+    zone = "RISK_ON" if score >= 80 else ("NEUTRAL" if score >= 40 else "RISK_OFF")
+    return {
+        "score": round(score, 1),
+        "zone": zone,
+        "components": {k: (round(v, 1) if v is not None else None)
+                       for k, v in components.items()},
+        "missing": sorted(k for k in COMPOSITE_WEIGHTS if k not in present),
+    }
+
+
+def evaluate_crypto_composite(cached_only: bool = False) -> Optional[dict[str, Any]]:
+    """TTL-cached composite (30 min). `cached_only=True` never fetches —
+    consumers on a prompt path use it so a cold cache costs nothing."""
+    import time as _time
+    now = _time.monotonic()
+    cached = _composite_cache["value"]
+    if cached is not None and now - _composite_cache["at"] < _COMPOSITE_TTL_SECONDS:
+        return cached
+    if cached_only:
+        return None
+    try:
+        from crypto_feed import fetch_candles, fetch_funding_rate
+        btc_closes = [c["close"] for c in fetch_candles("BTCUSDT", bar="1D",
+                                                        limit=400)]
+        alt_closes: list[list[float]] = []
+        for sym in COMPOSITE_ALTS:
+            try:
+                alt_closes.append([c["close"] for c in
+                                   fetch_candles(sym, bar="1D", limit=260)])
+            except Exception:  # noqa: BLE001 — one dead alt never kills the read
+                continue
+        rates: list[float] = []
+        for sym in ("BTCUSDT", *COMPOSITE_ALTS):
+            try:
+                rates.append(float(fetch_funding_rate(sym)["funding_rate"]))
+            except Exception:  # noqa: BLE001
+                continue
+        result = compose_crypto_composite({
+            "btc_trend": score_btc_trend(btc_closes),
+            "alt_breadth": score_alt_breadth(alt_closes),
+            "dominance_proxy": score_dominance_proxy(btc_closes, alt_closes),
+            "funding": score_funding(rates),
+            "cycle": score_cycle(btc_closes),
+            "thrust": score_thrust(btc_closes, alt_closes),
+        })
+        if result is not None:
+            result["as_of"] = _now_iso()
+            result["universe_alts"] = len(alt_closes)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("crypto composite unavailable: %s", exc)
+        return cached  # stale beats absent; None when never computed
+    _composite_cache["value"] = result
+    _composite_cache["at"] = now
+    return result
+
+
 # ─────────────────────────── persistence ───────────────────────────
 
 def _record_transition(regime: str, detail: dict[str, Any]) -> None:
@@ -271,6 +470,16 @@ def evaluate_market_regime(persist: bool = True) -> dict[str, Any]:
     result["enforced"] = scfg.regime_filter_enabled()
     result["note"] = ("bands are unvalidated placeholders pending Phase-4 "
                       "walk-forward; advisory-only until REGIME_FILTER_ENABLED")
+
+    # Plan 21 P3: the six-component composite rides the same payload
+    # (advisory, TTL-cached — at most one fetch sweep per 30 min per
+    # process). Fail-soft: a composite problem never breaks the regime read.
+    try:
+        composite = evaluate_crypto_composite()
+        if composite is not None:
+            result["crypto_composite"] = composite
+    except Exception:  # noqa: BLE001
+        pass
 
     if persist:
         try:

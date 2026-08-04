@@ -62,6 +62,13 @@ class AutomationConfigIn(BaseModel):
     budget_usd: Optional[float] = None
     # Plan 06 C3 — trading-window schedule (days/hours/timezone)
     schedule: Optional[dict] = None
+    # Plan 21 P5 — live promotion ticket (from the hermes work-package's
+    # trade-ticket APPROVED contract): promoting a rule TO account_type
+    # 'live' requires the caller to RE-TYPE symbol, the word 'live', and
+    # size_usd here. It gates ENABLEMENT only — order-time live gating
+    # (gateway configured, T&Cs consent, broker allowlist, caps) is
+    # unchanged in execution/gateway.
+    live_confirm: Optional[dict] = None
 
     @field_validator("risk_level")
     @classmethod
@@ -168,6 +175,42 @@ def _auth(authorization: Optional[str]):
     return agent
 
 
+def _deny_live_without_confirmation(data: "AutomationConfigIn",
+                                    currently_live: bool) -> None:
+    """Plan 21 P5 — the shadow→live promotion ticket.
+
+    A rule may only BECOME live when the payload re-types the three values
+    that define what goes live: the symbol, the literal word 'live', and the
+    per-trade size. A mismatch (or absence) is a 400 naming each bad field —
+    the caller either corrects the confirmation or fixes the rule body, the
+    exact demote-on-mismatch contract of the upstream trade ticket. Rules
+    that are already live (edits not changing the account), simulator, and
+    shadow rules pass untouched; order-time live gates are unchanged.
+    """
+    from execution.gateway import normalize_account_type
+    if normalize_account_type(data.account_type) != "live" or currently_live:
+        return
+    confirm = data.live_confirm if isinstance(data.live_confirm, dict) else {}
+    bad: list[str] = []
+    if str(confirm.get("symbol") or "").strip().upper() != \
+            (data.symbol or "").strip().upper():
+        bad.append("symbol")
+    if str(confirm.get("account_type") or "").strip().lower() != "live":
+        bad.append("account_type")
+    try:
+        if abs(float(confirm.get("size_usd")) - float(data.size_usd)) > 1e-9:
+            bad.append("size_usd")
+    except (TypeError, ValueError):
+        bad.append("size_usd")
+    if bad:
+        raise HTTPException(
+            status_code=400,
+            detail=("promoting this rule to live requires re-typed "
+                    "confirmation: send live_confirm with the rule's own "
+                    "values re-entered; missing or mismatched: "
+                    + ", ".join(bad)))
+
+
 def _deny_auto_execute_without_plan(agent_id: int) -> None:
     """Plan 10 D9: the automation engine gets the SAME entitlement gate as
     the runs engine — otherwise anyone rejected by run limits simply creates
@@ -250,6 +293,8 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
                                     detail="agent mode requires budget_usd (100..1,000,000)")
             auto_execute = True
             account_type = "simulator"
+        else:
+            _deny_live_without_confirmation(data, currently_live=False)
         if auto_execute:
             _deny_auto_execute_without_plan(agent["id"])
             if data.enabled:
@@ -287,10 +332,19 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM automation_configs WHERE id = ? AND agent_id = ?",
+            cursor.execute("SELECT id, account_type FROM automation_configs "
+                           "WHERE id = ? AND agent_id = ?",
                            (config_id, agent["id"]))
-            if not cursor.fetchone():
+            existing = cursor.fetchone()
+            if not existing:
                 raise HTTPException(status_code=404, detail="Rule not found")
+            # Plan 21 P5: the ticket fires on the TRANSITION to live only —
+            # editing an already-live rule needs no re-confirmation.
+            from execution.gateway import normalize_account_type
+            _deny_live_without_confirmation(
+                data,
+                currently_live=(normalize_account_type(
+                    existing["account_type"] or "") == "live"))
             begin_write_transaction(cursor)
             cursor.execute(
                 """UPDATE automation_configs SET symbol=?, market=?, provider=?, interval_minutes=?,
