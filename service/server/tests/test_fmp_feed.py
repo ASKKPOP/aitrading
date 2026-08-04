@@ -65,6 +65,10 @@ class KeyGateTests(_Cache):
             self.assertEqual(fmp_feed.days_to_earnings("nvda"), 9)
             self.assertIsNone(fmp_feed.days_to_earnings("TSLA"))
             self.assertEqual(get.call_count, 1, "second read must hit the cache")
+            # Regression pin (2026-08-03): /api/v3/earning_calendar is
+            # legacy-only — new FMP accounts get a 403 there. The stable
+            # tree is the supported endpoint.
+            self.assertIn("/stable/earnings-calendar", get.call_args[0][0])
 
     def test_fetch_failure_serves_stale(self):
         fmp_feed._cache["by_symbol"] = {"AAPL": _in_days(2)}

@@ -25,7 +25,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-FMP_BASE = "https://financialmodelingprep.com/api/v3"
+# The /api/v3 tree is legacy-only (accounts created before 2025-08-31 get a
+# 403 "Legacy Endpoint"); the stable tree serves the same calendar shape.
+FMP_BASE = "https://financialmodelingprep.com/stable"
 
 _CACHE_TTL_SECONDS = 6 * 3600.0
 _cache: dict[str, Any] = {"at": 0.0, "by_symbol": None}
@@ -56,7 +58,7 @@ def upcoming_earnings(force: bool = False) -> dict[str, str]:
     end = (_today() + timedelta(days=EARNINGS_WINDOW_DAYS)).strftime("%Y-%m-%d")
     try:
         resp = requests.get(
-            f"{FMP_BASE}/earning_calendar",
+            f"{FMP_BASE}/earnings-calendar",
             params={"from": start, "to": end,
                     "apikey": os.getenv("FMP_API_KEY", "").strip()},
             timeout=10)
