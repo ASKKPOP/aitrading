@@ -166,6 +166,18 @@ class RegistryTests(_Db):
         self.assertNotIn("### Earnings Preview\n",
                          trading_skills.skills_block("light", "crypto"))
 
+    def test_risk_reward_structure_warns_that_silence_forfeits_the_bracket(self):
+        # 2026-08-04: 956 MSFT burned 3 consecutive cycles at conviction up to
+        # 0.765 — the light route authored NO parseable bracket, the flat
+        # default (8% stop / 15% target) stood in, and 15 < 2x8 fails the R:R
+        # floor deterministically. The desk never knew its silence was the
+        # cause. The skill must say so on every site that can author entries.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("silence forfeits the bracket", block,
+                          f"authorship clause missing from {site}")
+            self.assertIn("REFUSED at the gate", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
