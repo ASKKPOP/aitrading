@@ -261,7 +261,14 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "outright for its geometry or may risk far more than your thesis "
             "justifies. A bracket you derived from this setup is the only one "
             "you can vouch for; if you are not confident enough to name a stop "
-            "and a target, you are not confident enough to open."
+            "and a target, you are not confident enough to open. And when the "
+            "structure itself refuses the trade — the only honest stop sits "
+            "farther away than your expected move can pay for — do not spend "
+            "cycle after cycle re-refusing the same geometry. If the same "
+            "structural gap has blocked a bracket for two or three consecutive "
+            "cycles and nothing about the structure has changed, retire: the "
+            "slot is capital, and an unexpressible thesis returns it to the "
+            "build queue instead of waiting for a level that cannot arrive."
         ),
     },
     {
