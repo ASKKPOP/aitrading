@@ -373,6 +373,28 @@ class ReplacementTests(SupervisionBase):
                      if m["status"] in ("running", "armed")}
         self.assertNotIn(member["symbol"], live_syms)
 
+    def test_idle_retire_writes_cooldown_and_varies_symbol(self):
+        # vary-on-idle (2026-08-04): 939/940 idle-retired after ~43 hold
+        # cycles and were parity-eligible for an identical rebuild. An
+        # idle_retired member's symbol must cool down so the replacement
+        # carries a different name.
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        self._stop_member(member, "idle_retired")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT until_ts FROM fleet_symbol_cooldowns WHERE "
+            "agent_id = ? AND symbol = ?", (self.agent_id, member["symbol"]))
+        rows = cur.fetchall()
+        conn.close()
+        self.assertEqual(len(rows), 1, "idle retire must write a cooldown")
+        live_syms = {m["symbol"] for m in fp.list_members(fleet_id)
+                     if m["status"] in ("running", "armed")}
+        self.assertNotIn(member["symbol"], live_syms,
+                         "replacement rebuilt the never-traded symbol")
+
     def test_positions_held_keeps_slot_occupied(self):
         """A flatten-timeout zombie: slot occupied, no replacement, symbol
         excluded — until the unowned book clears (round-5 critical)."""

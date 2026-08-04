@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 import sys
 import tempfile
 import unittest
@@ -200,6 +201,66 @@ class AllocationTests(unittest.TestCase):
                                            {"risk_appetite": "stable",
                                             "lang": "en"})
         self.assertTrue(settings["stop_flatten"])
+
+
+class GateCalibrationTests(FleetTestBase):
+    """F3's second blind spot (2026-08-04): the gate clamp keys on the THESIS
+    writer's confidence, but the gate judges the DESK's cycle confidence — a
+    lower distribution. 939/940 carried 0.70+ theses, kept 0.65 gates, and
+    idle-retired after ~43 hold cycles while 956 traded through its 0.57
+    gate. The builder must cap the gate at the market's own recent p75."""
+
+    def _seed_decisions(self, market, confidences):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO trading_runs (agent_id, symbol, market, status, "
+            "created_at) VALUES (?, 'SEED', ?, 'stopped', ?)",
+            (self.agent_id, market, "2026-08-01T00:00:00Z"))
+        run_id = cur.lastrowid
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        for i, c in enumerate(confidences):
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, i + 1, ts, json.dumps({"confidence": c})))
+        conn.commit()
+        conn.close()
+
+    def _compose(self, market="us-stock", thesis_conf=0.75):
+        thesis = {"symbol": "NVDA", "market": market, "direction": "long",
+                  "confidence": thesis_conf, "expected_move_pct": 3.0,
+                  "horizon_hours": 48}
+        return fp.compose_run_settings(thesis, 1000.0,
+                                       {"risk_appetite": "balanced",
+                                        "lang": "en"})
+
+    def test_gate_capped_at_market_p75(self):
+        # 40 decisions clustered where us-stock actually lives: p75 = 0.58.
+        confs = [0.40] * 10 + [0.52] * 10 + [0.55] * 10 + [0.58] * 6 + [0.62] * 4
+        self._seed_decisions("us-stock", confs)
+        settings = self._compose(thesis_conf=0.75)
+        self.assertAlmostEqual(settings["min_confidence"], 0.58, places=2)
+
+    def test_no_samples_leaves_gate_alone(self):
+        settings = self._compose(market="crypto", thesis_conf=0.75)
+        # balanced tier gate 0.60, F3 clamp min(0.60, 0.70) = 0.60 — unchanged
+        self.assertAlmostEqual(settings["min_confidence"], 0.60, places=2)
+
+    def test_under_min_samples_leaves_gate_alone(self):
+        self._seed_decisions("us-stock", [0.30] * 29)  # 29 < 30
+        settings = self._compose(thesis_conf=0.75)
+        self.assertAlmostEqual(settings["min_confidence"], 0.60, places=2)
+
+    def test_floor_holds_against_a_weak_market(self):
+        self._seed_decisions("us-stock", [0.30] * 40)  # p75 = 0.30
+        settings = self._compose(thesis_conf=0.75)
+        self.assertAlmostEqual(settings["min_confidence"], 0.50, places=2)
+
+    def test_other_markets_decisions_do_not_leak(self):
+        self._seed_decisions("crypto", [0.30] * 40)
+        settings = self._compose(market="us-stock", thesis_conf=0.75)
+        self.assertAlmostEqual(settings["min_confidence"], 0.60, places=2)
 
 
 class BuildTests(FleetTestBase):

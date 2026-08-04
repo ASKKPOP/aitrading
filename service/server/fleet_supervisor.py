@@ -593,6 +593,14 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
                 continue  # zombie still open — occupied, symbol excluded
             # zombie closed ⇒ fall through to replacement
 
+        # vary-on-idle (2026-08-04): a member that idle-retired NEVER traded —
+        # replacing it with the same symbol rebuilds the same idleness (939/
+        # 940 held ~43 cycles each and were parity-eligible for rebuild). The
+        # cooldown row makes select_targets pick a different name for half a
+        # day; replacement itself stays immediate.
+        if reason == "idle_retired":
+            _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
+
         if reason in fp.REPLACE_DEFERRED:
             if reason == "synthetic_liquidation":
                 _ensure_cooldown(member)
@@ -742,7 +750,7 @@ def _zombie_open_qty(member: dict) -> float:
         conn.close()
 
 
-def _ensure_cooldown(member: dict) -> None:
+def _ensure_cooldown(member: dict, hours: float | None = None) -> None:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -754,7 +762,7 @@ def _ensure_cooldown(member: dict) -> None:
              member["id"]))
         if cursor.fetchone() is None:
             until = (_now_dt() + timedelta(
-                hours=fp.LIQUIDATION_COOLDOWN_HOURS)).strftime(TS_FMT)
+                hours=hours or fp.LIQUIDATION_COOLDOWN_HOURS)).strftime(TS_FMT)
             cursor.execute(
                 """INSERT INTO fleet_symbol_cooldowns
                    (agent_id, market, symbol, until_ts, source_run_id)
