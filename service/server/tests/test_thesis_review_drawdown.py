@@ -106,6 +106,63 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class ReviewPromptUnitBridgeTests(DrawdownReviewTests):
+    """956 MSFT, 2026-08-04 20:01Z: the review prompt reported PnL as raw
+    dollars with no denominator while the thesis spoke in percents. The
+    reviewer bridged the units itself, called a -0.56% position "a ~-6%
+    loss", verdicted `invalidated`, and a run whose own 2% stop was nowhere
+    near being hit was retired and flattened at a real -31 USD. Third harm
+    from this prompt's blindness (937/898 were the stale-level flavor); the
+    prompt must state its units and do the one division the model keeps
+    getting wrong."""
+
+    def _prompt_for(self, pnl):
+        # max_loss 80 -> drawdown trigger at 28 USD, below every fixture's
+        # drawdown, so each test fires the review on its own numbers instead
+        # of leaning on suite-order env pollution.
+        state, run, cfg = self._fixture(max_loss=80.0)
+        cfg["thesis"] = {"direction": "long", "rationale": "capex momentum",
+                         "expected_move_pct": 4.0}
+        captured = {}
+
+        def gen(prompt, **kw):
+            captured["prompt"] = prompt
+            return '{"thesis_status": "intact", "rationale": "ok"}'
+
+        rf.maybe_review_thesis(state, run, cfg, pnl, generate_text=gen)
+        return captured.get("prompt", "")
+
+    def test_956_geometry_carries_its_true_percent(self):
+        pnl = {"total": -30.47, "unrealized": -30.47,
+               "position": {"quantity": 10.89575213,
+                            "entry_price": 495.605988,
+                            "current_price": 492.809998}}
+        prompt = self._prompt_for(pnl)
+        self.assertTrue(prompt, "review never called the model")
+        self.assertIn("position_return=-0.56%", prompt)
+        self.assertIn("US dollars, not percentages", prompt)
+
+    def test_short_side_percent_uses_absolute_notional(self):
+        # short 10 @ 100, mark 104 -> unrealized -40 on 1000 notional = -4.00%
+        # (a negative-quantity notional must not flip the sign or divide by a
+        # negative base). -40 also clears the 0.35 x 100 drawdown trigger.
+        pnl = {"total": -40.0, "unrealized": -40.0,
+               "position": {"quantity": -10.0, "entry_price": 100.0,
+                            "current_price": 104.0}}
+        prompt = self._prompt_for(pnl)
+        self.assertIn("position_return=-4.00%", prompt)
+
+    def test_missing_entry_price_gets_the_unit_note_without_a_return(self):
+        # The scrub tests' own fixture shape: position without entry_price.
+        # The bridge must degrade to the plain unit note, never crash.
+        pnl = {"total": -40.0, "unrealized": -40.0,
+               "position": {"quantity": 1.0, "current_price": 100.0}}
+        prompt = self._prompt_for(pnl)
+        self.assertTrue(prompt)
+        self.assertNotIn("position_return=", prompt)
+        self.assertIn("US dollars, not percentages", prompt)
+
+
 class ReviewPromptScrubTests(DrawdownReviewTests):
     """The review reads the raw thesis, and its verdict can RETIRE a run.
 
