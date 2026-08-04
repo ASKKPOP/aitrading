@@ -220,6 +220,22 @@ class RegistryTests(_Db):
             self.assertNotIn("volatility-context", slugs)
             self.assertNotIn("mean-reversion-guard", slugs)
 
+    def test_stage_discipline_rides_us_stock_trader_only(self):
+        # finance-skills mining (2026-08-04): an entry/posture method like
+        # bottom-confirmation — it must render (not be budget-skipped) in the
+        # us-stock trader block, stay off every other market's trader block,
+        # and stay off the exit-path light site entirely.
+        block = trading_skills.skills_block("trader", "us-stock")
+        self.assertIn("### Stage Discipline\n", block)
+        self.assertIn("never assume Stage 2", block)
+        for market in (None, "crypto", "futures", "forex"):
+            self.assertNotIn(
+                "### Stage Discipline\n",
+                trading_skills.skills_block("trader", market))
+        for site in ("light", "verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("stage-discipline", slugs)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],
@@ -248,7 +264,7 @@ class RegistryTests(_Db):
         self.assertEqual(trading_skills.skills_block("trader"), "")
 
     def test_block_budget_skips_whole_skills(self):
-        # Two admin-authored max-size skills blow the trader budget; the
+        # Three admin-authored max-size skills blow the trader budget; the
         # overflow must skip whole skills (the lowest-priority ones), never
         # truncate mid-body.
         trading_skills.create_skill(
@@ -257,6 +273,9 @@ class RegistryTests(_Db):
         trading_skills.create_skill(
             "huge2", "Huge Skill Two", "y" * trading_skills.MAX_BODY_LEN,
             prompts=["trader"], priority=2)
+        trading_skills.create_skill(
+            "huge3", "Huge Skill Three", "z" * trading_skills.MAX_BODY_LEN,
+            prompts=["trader"], priority=3)
         block = trading_skills.skills_block("trader")
         self.assertIn("Huge Skill", block)
         # Budget: header + sections never exceed MAX_BLOCK_LEN (+ final \n).
