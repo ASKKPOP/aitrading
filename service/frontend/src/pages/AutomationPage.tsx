@@ -156,11 +156,12 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // Reporting it as one number reads as current performance. Show both.
   const [assets, setAssets] = useState<{ total: number; unrealized: number;
     realized: number; realizedCurrent: number; cash: number; inUse: number;
-    since: string | null; trades: any[] } | null>(null)
-  // Summary-strip period filter — scopes the realized side of the Profit tile.
-  // Deposit, lifetime and the rails tile are point-in-time / fixed-epoch
-  // figures a period cannot apply to.
+    since: string | null; trades: any[]; positions: any[] } | null>(null)
+  // Summary-strip period filter — scopes lifetime, profit and the rails tile
+  // (deposit is a point-in-time balance no period can apply to). Each tile
+  // opens a detail modal with the numbers behind it.
   const [sumPeriod, setSumPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week')
+  const [sumDetail, setSumDetail] = useState<null | 'deposit' | 'lifetime' | 'profit' | 'rails'>(null)
   useEffect(() => {
     if (!token) return
     let dead = false
@@ -186,7 +187,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           return c && (!min || c < min) ? c : min
         }, null as string | null)
         const cash = pos.cash ?? 0
-        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades })
+        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades, positions })
       } catch { /* transient */ }
     }
     loadAssets()
@@ -240,6 +241,38 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     sumDay: tr(language, { ko: '일', en: 'd', ja: '日', th: 'วัน', vi: 'ngày', id: 'h' }),
     sumHour: tr(language, { ko: '시간', en: 'h', ja: '時間', th: 'ชม.', vi: 'giờ', id: 'j' }),
     sumNoHistory: tr(language, { ko: '거래 내역 없음', en: 'no history yet', ja: '取引履歴なし', th: 'ยังไม่มีประวัติ', vi: 'chưa có lịch sử', id: 'belum ada riwayat' }),
+    // ── tile detail modals ──
+    dHint: tr(language, { ko: '클릭하면 상세 보기', en: 'click for details', ja: 'クリックで詳細', th: 'คลิกเพื่อดูรายละเอียด', vi: 'nhấn để xem chi tiết', id: 'klik untuk detail' }),
+    dOpenPositions: tr(language, { ko: '보유 포지션', en: 'Open positions', ja: '保有ポジション', th: 'สถานะที่ถืออยู่', vi: 'Vị thế đang mở', id: 'Posisi terbuka' }),
+    dNoPositions: tr(language, { ko: '열린 포지션 없음', en: 'no open positions', ja: '保有ポジションなし', th: 'ไม่มีสถานะเปิดอยู่', vi: 'không có vị thế mở', id: 'tidak ada posisi terbuka' }),
+    dGoAssets: tr(language, { ko: '자산 페이지 전체 보기 →', en: 'Open the full assets page →', ja: '資産ページを開く →', th: 'เปิดหน้าทรัพย์สินทั้งหมด →', vi: 'Mở trang tài sản đầy đủ →', id: 'Buka halaman aset lengkap →' }),
+    dFirstTrade: tr(language, { ko: '첫 자동매매', en: 'First automated trade', ja: '最初の自動売買', th: 'เทรดอัตโนมัติครั้งแรก', vi: 'Giao dịch tự động đầu tiên', id: 'Perdagangan otomatis pertama' }),
+    dTotalSpan: tr(language, { ko: '총 운영 기간', en: 'Total lifetime', ja: '総運用期間', th: 'ระยะเวลารวม', vi: 'Tổng thời gian hoạt động', id: 'Total masa operasi' }),
+    dWindowSpan: tr(language, { ko: '선택 기간 내 운영', en: 'Operated within selected period', ja: '選択期間内の運用', th: 'ดำเนินการในช่วงที่เลือก', vi: 'Hoạt động trong kỳ đã chọn', id: 'Beroperasi dalam periode terpilih' }),
+    dTradeCount: tr(language, { ko: '기간 내 체결', en: 'Fills in period', ja: '期間内の約定', th: 'รายการจับคู่ในช่วงเวลา', vi: 'Lệnh khớp trong kỳ', id: 'Eksekusi dalam periode' }),
+    dLastTrade: tr(language, { ko: '마지막 체결', en: 'Last fill', ja: '直近の約定', th: 'จับคู่ล่าสุด', vi: 'Lệnh khớp gần nhất', id: 'Eksekusi terakhir' }),
+    dRealizedPeriod: tr(language, { ko: '실현 손익 (기간)', en: 'Realized P&L (period)', ja: '実現損益（期間）', th: 'กำไรที่รับรู้ (ช่วงเวลา)', vi: 'Lãi/lỗ đã chốt (kỳ)', id: 'Laba rugi direalisasi (periode)' }),
+    dUnrealizedNow: tr(language, { ko: '미실현 손익 (현재 보유)', en: 'Unrealized P&L (current open book)', ja: '含み損益（現在の保有）', th: 'กำไรที่ยังไม่รับรู้ (สถานะปัจจุบัน)', vi: 'Lãi/lỗ chưa chốt (vị thế hiện tại)', id: 'Laba rugi belum direalisasi (posisi saat ini)' }),
+    dRealizedLife: tr(language, { ko: '실현 손익 (전체)', en: 'Realized P&L (lifetime)', ja: '実現損益（累計）', th: 'กำไรที่รับรู้ (ทั้งหมด)', vi: 'Lãi/lỗ đã chốt (toàn bộ)', id: 'Laba rugi direalisasi (sepanjang waktu)' }),
+    dUnrealNote: tr(language, {
+      ko: '미실현은 지금 열려 있는 포지션의 평가손익입니다 — 기간 필터와 무관하게 항상 현재 기준입니다.',
+      en: 'Unrealized is the mark-to-market of the positions open right now — always current, regardless of the period filter.',
+      ja: '含み損益は現在保有中のポジションの評価損益です — 期間フィルタに関係なく常に現時点の値です。',
+      th: 'กำไรที่ยังไม่รับรู้คือมูลค่าตลาดของสถานะที่เปิดอยู่ตอนนี้ — เป็นค่าปัจจุบันเสมอ ไม่ขึ้นกับตัวกรองช่วงเวลา',
+      vi: 'Lãi/lỗ chưa chốt là giá trị thị trường của các vị thế đang mở — luôn là số hiện tại, không phụ thuộc bộ lọc kỳ.',
+      id: 'Belum direalisasi adalah nilai pasar posisi yang terbuka saat ini — selalu terkini, terlepas dari filter periode.' }),
+    dFills: tr(language, { ko: '기간 내 체결 내역', en: 'Fills in this period', ja: '期間内の約定履歴', th: 'รายการจับคู่ในช่วงนี้', vi: 'Lệnh khớp trong kỳ này', id: 'Eksekusi pada periode ini' }),
+    dNoFills: tr(language, { ko: '기간 내 체결 없음', en: 'no fills in this period', ja: '期間内の約定なし', th: 'ไม่มีรายการจับคู่ในช่วงนี้', vi: 'không có lệnh khớp trong kỳ này', id: 'tidak ada eksekusi pada periode ini' }),
+    dRailsWhat: tr(language, {
+      ko: `${EXIT_RAILS_EPOCH}에 청산 구조가 교체되었습니다. 이전 구조는 손절 폭이 예산 기준으로 과도하게 넓어 포지션을 스스로 닫지 못했고, 누적 손실의 대부분이 그 구간에서 발생했습니다. 이 숫자는 현행 구조(포지션 기준 손절 + 트레일링 락)에서의 실현 손익만 분리한 것입니다.`,
+      en: `The exit rails were replaced on ${EXIT_RAILS_EPOCH}. The old structure sized stops off the run budget — too wide to ever close a position on its own — and most of the lifetime loss comes from that cohort. This figure isolates realized P&L under the current rails (position-scaled stops + trailing lock).`,
+      ja: `${EXIT_RAILS_EPOCH} に決済ルールが刷新されました。旧ルールは損切り幅が予算基準で広すぎて自らポジションを閉じられず、累計損失の大半はその期間のものです。この数字は現行ルール（ポジション基準の損切り＋トレーリングロック）での実現損益だけを切り出したものです。`,
+      th: `กติกาปิดสถานะถูกเปลี่ยนเมื่อ ${EXIT_RAILS_EPOCH} โครงสร้างเดิมตั้งจุดตัดขาดทุนตามงบของรอบซึ่งกว้างเกินกว่าจะปิดสถานะเองได้ และการขาดทุนสะสมส่วนใหญ่มาจากช่วงนั้น ตัวเลขนี้แยกเฉพาะกำไรที่รับรู้ภายใต้กติกาปัจจุบัน (ตัดขาดทุนตามขนาดสถานะ + trailing lock)`,
+      vi: `Cơ chế thoát lệnh được thay thế ngày ${EXIT_RAILS_EPOCH}. Cơ chế cũ đặt mức cắt lỗ theo ngân sách của phiên — quá rộng để tự đóng vị thế — và phần lớn khoản lỗ tích lũy đến từ giai đoạn đó. Con số này tách riêng lãi/lỗ đã chốt dưới cơ chế hiện tại (cắt lỗ theo vị thế + trailing lock).`,
+      id: `Aturan keluar diganti pada ${EXIT_RAILS_EPOCH}. Struktur lama menetapkan stop berdasarkan anggaran run — terlalu lebar untuk pernah menutup posisi sendiri — dan sebagian besar kerugian kumulatif berasal dari masa itu. Angka ini memisahkan laba rugi direalisasi di bawah aturan saat ini (stop berskala posisi + trailing lock).` }),
+    dRailsCur: tr(language, { ko: '현행 구조 실현 (전체)', en: 'Current rails, realized (all)', ja: '現行ルールの実現（累計）', th: 'กติกาปัจจุบัน รับรู้แล้ว (ทั้งหมด)', vi: 'Cơ chế hiện tại, đã chốt (toàn bộ)', id: 'Aturan saat ini, direalisasi (semua)' }),
+    dRailsOld: tr(language, { ko: '이전 구조 실현', en: 'Legacy rails, realized', ja: '旧ルールの実現', th: 'กติกาเดิม รับรู้แล้ว', vi: 'Cơ chế cũ, đã chốt', id: 'Aturan lama, direalisasi' }),
+    dRailsWin: tr(language, { ko: '현행 구조 실현 (기간)', en: 'Current rails, realized (period)', ja: '現行ルールの実現（期間）', th: 'กติกาปัจจุบัน รับรู้แล้ว (ช่วงเวลา)', vi: 'Cơ chế hiện tại, đã chốt (kỳ)', id: 'Aturan saat ini, direalisasi (periode)' }),
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới', id: 'Buat lewat TRADING baru' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay', id: 'Buat lewat Analis AI — analisis sekarang' }),
@@ -623,36 +656,51 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   const primaryBtn: any = { padding: '12px 22px', borderRadius: 10, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
   const secondaryBtn: any = { padding: '12px 22px', borderRadius: 10, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
 
+  // Everything the period chips govern, shared by the strip and the tile
+  // detail modals. Calendar-period start is local time: today 00:00 / Monday /
+  // 1st / Jan 1. Unrealized is the current open book — a period cannot
+  // re-price the past — so it stays constant across chips and the labels say
+  // which side is windowed.
+  const periodLabel: Record<string, string> = { today: T.sumToday, week: T.sumWeek, month: T.sumMonth, year: T.sumYear }
+  const win = assets && (() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0)
+    if (sumPeriod === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+    else if (sumPeriod === 'month') d.setDate(1)
+    else if (sumPeriod === 'year') { d.setMonth(0); d.setDate(1) }
+    const periodStart = d.getTime()
+    const ts = (c: any) => c ? new Date(String(c).replace(' ', 'T')).getTime() : NaN
+    const localDate = (ms: number) => {
+      const x = new Date(ms)
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+    }
+    // trades arrive newest-first from the API; both lists keep that order
+    const trades = assets.trades.filter((t: any) => ts(t.created_at) >= periodStart)
+    const realized = trades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    // Rails inside the window: both boundaries apply — the fixed epoch (same
+    // string compare as the lifetime figure) AND the chip's start.
+    const railsTrades = trades.filter((t: any) => (t.created_at || '') >= EXIT_RAILS_EPOCH)
+    const realizedRails = railsTrades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    const railsSince = periodStart > ts(`${EXIT_RAILS_EPOCH} 00:00:00`) ? localDate(periodStart) : EXIT_RAILS_EPOCH
+    const dur = (ms: number) => ({ d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) })
+    const sinceMs = assets.since ? ts(assets.since) : NaN
+    const life = Number.isFinite(sinceMs) && Date.now() > sinceMs ? dur(Date.now() - sinceMs) : null
+    // 운영 기간 under a chip = the overlap of [first trade, now] with the window
+    const opStartMs = Number.isFinite(sinceMs) ? Math.max(sinceMs, periodStart) : NaN
+    const opWindow = Number.isFinite(opStartMs) && Date.now() > opStartMs ? dur(Date.now() - opStartMs) : null
+    const profit = realized + assets.unrealized
+    return { periodStart, trades, realized, railsTrades, realizedRails, railsSince, life, opStartMs, opWindow, profit, localDate }
+  })()
+
   // Account summary. Lives in the page header, right-aligned: it is reference
   // data you glance at, not the thing you came to do — the create buttons are.
   // Full-width tiles under the buttons pushed the actual TRADING list below
   // the fold on a laptop.
-  const summaryStrip = assets && (() => {
-    // Calendar-period start (local time): today 00:00 / Monday / 1st / Jan 1.
-    const periodStart = (() => {
-      const d = new Date(); d.setHours(0, 0, 0, 0)
-      if (sumPeriod === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-      else if (sumPeriod === 'month') d.setDate(1)
-      else if (sumPeriod === 'year') { d.setMonth(0); d.setDate(1) }
-      return d.getTime()
-    })()
-    const realizedPeriod = assets.trades.reduce((s: number, t: any) => {
-      const c = t.created_at
-      return c && new Date(String(c).replace(' ', 'T')).getTime() >= periodStart
-        ? s + (t.pnl ?? 0) : s
-    }, 0)
-    const profit = realizedPeriod + assets.unrealized
-    let life: { d: number; h: number } | null = null
-    if (assets.since) {
-      const ms = Date.now() - new Date(assets.since.replace(' ', 'T')).getTime()
-      if (ms > 0) life = { d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) }
-    }
-    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px' }
+  const summaryStrip = assets && win && (() => {
+    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer' }
     const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap' }
     const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
     const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
     const periods: Array<'today' | 'week' | 'month' | 'year'> = ['today', 'week', 'month', 'year']
-    const periodLabel: Record<string, string> = { today: T.sumToday, week: T.sumWeek, month: T.sumMonth, year: T.sumYear }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -668,26 +716,26 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           ))}
         </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        <Link to="/assets" style={{ ...tile, textDecoration: 'none', color: 'inherit' }}>
+        <button style={tile} title={T.dHint} onClick={() => setSumDetail('deposit')}>
           <div style={kSt}>💰 {T.sumDeposit}</div>
           <div style={vSt}>{fmtUsd(assets.total)}</div>
           <div style={sSt}>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</div>
-        </Link>
-        <div style={tile}>
+        </button>
+        <button style={tile} title={T.dHint} onClick={() => setSumDetail('lifetime')}>
           <div style={kSt}>📅 {T.sumLifetime}</div>
-          <div style={vSt}>{life ? <>{life.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{life.h}{T.sumHour}</span></> : '—'}</div>
-          <div style={sSt}>{assets.since ? `${assets.since.slice(0, 10)} ${T.sumSince}` : T.sumNoHistory}</div>
-        </div>
-        <div style={tile}>
+          <div style={vSt}>{win.opWindow ? <>{win.opWindow.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{win.opWindow.h}{T.sumHour}</span></> : '—'}</div>
+          <div style={sSt}>{Number.isFinite(win.opStartMs) ? `${win.localDate(win.opStartMs)} ${T.sumSince}` : T.sumNoHistory}</div>
+        </button>
+        <button style={tile} title={T.dHint} onClick={() => setSumDetail('profit')}>
           <div style={kSt}>📈 {T.sumProfit}</div>
-          <div style={{ ...vSt, color: pnlColor(profit) }}>{profit >= 0 ? '+' : ''}{fmtUsd(profit)}</div>
-          <div style={sSt}>{T.assetsRealized} {realizedPeriod >= 0 ? '+' : ''}{fmtUsd(realizedPeriod)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
-        </div>
-        <div style={tile}>
+          <div style={{ ...vSt, color: pnlColor(win.profit) }}>{win.profit >= 0 ? '+' : ''}{fmtUsd(win.profit)}</div>
+          <div style={sSt}>{T.assetsRealized} {win.realized >= 0 ? '+' : ''}{fmtUsd(win.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+        </button>
+        <button style={tile} title={T.dHint} onClick={() => setSumDetail('rails')}>
           <div style={kSt}>🛡️ {T.sumCurrentRails}</div>
-          <div style={{ ...vSt, color: pnlColor(assets.realizedCurrent) }}>{assets.realizedCurrent >= 0 ? '+' : ''}{fmtUsd(assets.realizedCurrent)}</div>
-          <div style={sSt}>{T.sumRailsSince} {EXIT_RAILS_EPOCH}</div>
-        </div>
+          <div style={{ ...vSt, color: pnlColor(win.realizedRails) }}>{win.realizedRails >= 0 ? '+' : ''}{fmtUsd(win.realizedRails)}</div>
+          <div style={sSt}>{T.sumRailsSince} {win.railsSince}</div>
+        </button>
       </div>
       </div>
     )
@@ -759,6 +807,108 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         openRunRequest={openRunReq} />
 
       {/* ── ② Make by AI Analyst ── */}
+      {/* ── Summary-tile detail modal: the numbers behind whichever tile was
+             clicked, scoped to the same period chip as the strip ── */}
+      {sumDetail && assets && win && (() => {
+        const titles: Record<string, string> = {
+          deposit: `💰 ${T.sumDeposit}`, lifetime: `📅 ${T.sumLifetime}`,
+          profit: `📈 ${T.sumProfit}`, rails: `🛡️ ${T.sumCurrentRails}`,
+        }
+        const rowSt: any = { display: 'flex', justifyContent: 'space-between', gap: 16, padding: '7px 0', borderBottom: '1px solid var(--border-color,rgba(0,0,0,0.07))', fontSize: 13.5 }
+        const row = (k: string, v: string, color?: string) => (
+          <div key={k} style={rowSt}>
+            <span style={{ color: 'var(--text-secondary,#8a8073)' }}>{k}</span>
+            <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: color || 'inherit' }}>{v}</span>
+          </div>
+        )
+        const money = (n: number) => `${n >= 0 ? '+' : ''}${fmtUsd(n)}`
+        const durStr = (x: { d: number; h: number } | null) => x ? `${x.d}${T.sumDay} ${x.h}${T.sumHour}` : '—'
+        const when = (c: any) => String(c || '').replace('T', ' ').slice(0, 16)
+        const fills = (list: any[]) => (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>{T.dFills}</div>
+            {list.length === 0
+              ? <div style={{ fontSize: 12.5, color: 'var(--text-muted,#a89f92)' }}>{T.dNoFills}</div>
+              : <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                  {list.map((t: any, i: number) => (
+                    <div key={t.signal_id ?? i} style={{ ...rowSt, fontSize: 12.5 }}>
+                      <span style={{ color: 'var(--text-secondary,#8a8073)', fontVariantNumeric: 'tabular-nums' }}>{when(t.created_at)}</span>
+                      <span style={{ fontWeight: 600 }}>{t.symbol} <span style={{ fontWeight: 500, color: 'var(--text-muted,#a89f92)' }}>{t.side}</span></span>
+                      {/* pnl is null on the opening leg — there is nothing to realize yet */}
+                      <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: t.pnl == null ? 'var(--text-muted,#a89f92)' : pnlColor(t.pnl) }}>{t.pnl == null ? '—' : money(t.pnl)}</span>
+                    </div>
+                  ))}
+                </div>}
+          </div>
+        )
+        return (
+          <div role="dialog" aria-modal="true" aria-label={titles[sumDetail]}
+            onClick={() => setSumDetail(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 560, margin: 'auto', background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{titles[sumDetail]}</div>
+                {sumDetail !== 'deposit' && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 7, background: 'rgba(194,106,69,0.14)', color: 'var(--accent-primary,#c26a45)' }}>{periodLabel[sumPeriod]}</span>
+                )}
+                <button onClick={() => setSumDetail(null)} aria-label="close"
+                  style={{ marginLeft: 'auto', border: 'none', background: 'transparent', color: 'var(--text-secondary,#8a8073)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+              </div>
+
+              {sumDetail === 'deposit' && <>
+                {row(T.sumDeposit, fmtUsd(assets.total))}
+                {row(T.sumCash, fmtUsd(assets.cash))}
+                {row(T.sumInUse, fmtUsd(assets.inUse))}
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>{T.dOpenPositions}</div>
+                  {assets.positions.length === 0
+                    ? <div style={{ fontSize: 12.5, color: 'var(--text-muted,#a89f92)' }}>{T.dNoPositions}</div>
+                    : <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                        {assets.positions.map((p: any, i: number) => (
+                          <div key={p.id ?? i} style={{ ...rowSt, fontSize: 12.5 }}>
+                            <span style={{ fontWeight: 600 }}>{p.symbol} <span style={{ fontWeight: 500, color: 'var(--text-muted,#a89f92)' }}>{p.side}</span></span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary,#8a8073)' }}>{fmtUsd(Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0))}</span>
+                            <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: pnlColor(p.pnl ?? 0) }}>{money(p.pnl ?? 0)}</span>
+                          </div>
+                        ))}
+                      </div>}
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <Link to="/assets" style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-primary,#c26a45)', textDecoration: 'none' }}>{T.dGoAssets}</Link>
+                </div>
+              </>}
+
+              {sumDetail === 'lifetime' && <>
+                {row(T.dFirstTrade, assets.since ? when(assets.since) : T.sumNoHistory)}
+                {row(T.dTotalSpan, durStr(win.life))}
+                {row(`${T.dWindowSpan} · ${periodLabel[sumPeriod]}`, durStr(win.opWindow))}
+                {row(T.dTradeCount, String(win.trades.length))}
+                {row(T.dLastTrade, win.trades.length ? when(win.trades[0].created_at) : '—')}
+              </>}
+
+              {sumDetail === 'profit' && <>
+                {row(`${T.sumProfit} · ${periodLabel[sumPeriod]}`, money(win.profit), pnlColor(win.profit))}
+                {row(T.dRealizedPeriod, money(win.realized), pnlColor(win.realized))}
+                {row(T.dUnrealizedNow, money(assets.unrealized), pnlColor(assets.unrealized))}
+                {row(T.dRealizedLife, money(assets.realized), pnlColor(assets.realized))}
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 8, lineHeight: 1.5 }}>{T.dUnrealNote}</div>
+                {fills(win.trades)}
+              </>}
+
+              {sumDetail === 'rails' && <>
+                {row(`${T.dRailsWin} · ${periodLabel[sumPeriod]}`, money(win.realizedRails), pnlColor(win.realizedRails))}
+                {row(T.dRailsCur, money(assets.realizedCurrent), pnlColor(assets.realizedCurrent))}
+                {row(T.dRailsOld, money(assets.realized - assets.realizedCurrent), pnlColor(assets.realized - assets.realizedCurrent))}
+                {row(T.sumRailsSince, win.railsSince)}
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 8, lineHeight: 1.5 }}>{T.dRailsWhat}</div>
+                {fills(win.railsTrades)}
+              </>}
+            </div>
+          </div>
+        )
+      })()}
+
       {showAnalyst && (
         <div role="dialog" aria-modal="true" aria-label={T.makeByAnalyst}
           onClick={() => setShowAnalyst(false)}
