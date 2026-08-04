@@ -457,7 +457,10 @@ BASE_SKILLS: list[dict[str, Any]] = [
         "description": ("Rank reports by benchmark relevance, debate "
                         "intensity, read-through, positioning risk; "
                         "importance is not certainty."),
-        "prompts": ["trader"],
+        # 2026-08-04: extended to the light site alongside the earnings-date
+        # brief line — the discipline was trader-only while the light path
+        # carried nearly every us-stock cycle, and no path had the date.
+        "prompts": ["light", "trader"],
         "markets": ["us-stock"],
         "priority": 75,
         "body": (
@@ -471,7 +474,11 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "axes. Frame the key debate going in, decide explicitly whether "
             "holding through the print is justified, and treat an unusually "
             "strong pre-report run-up as positioning risk, not as "
-            "confirmation."
+            "confirmation. The same discipline applies to entries: opening "
+            "fresh exposure within days of this symbol's own print is a bet "
+            "on the print itself — take it only if your rationale names the "
+            "print and prices both outcomes, and prefer acting BEFORE the "
+            "report window to being forced to react through the gap."
         ),
     },
     {

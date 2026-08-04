@@ -6,15 +6,23 @@ prompt material. Scope for P6 is the single highest-value signal for the
 data-starved us-stock desk: **days to the next earnings print** per symbol,
 so the thesis writer can price holding-through-print risk.
 
-Degraded mode is the contract: without ``FMP_API_KEY`` every reader returns
+Degraded mode is the contract: without a key every reader returns
 None/{} and research proceeds exactly as before — the key's absence must
 never subtract anything that exists today. One calendar call covers the
 whole window and is cached for six hours; a fetch failure serves the stale
 map (stale beats absent) and never raises into the research cycle.
+
+Alpha Vantage fallback (2026-08-04): FMP_API_KEY has never been set on prod,
+so this feed shipped dead — the us-stock desks (939 TSLA / 940 NVDA) hold
+positions with zero knowledge of scheduled prints. Prod DOES carry
+ALPHA_VANTAGE_API_KEY for stock prices, and its EARNINGS_CALENDAR endpoint
+serves the same symbol→date map as CSV. FMP stays preferred when its key
+exists; Alpha Vantage is the fallback, same cache, same degraded contract.
 """
 
 from __future__ import annotations
 
+import csv
 import logging
 import os
 import time
@@ -39,16 +47,77 @@ def fmp_enabled() -> bool:
     return bool(os.getenv("FMP_API_KEY", "").strip())
 
 
+def _alphavantage_key() -> str:
+    # price_fetcher ships a "demo" default; a demo key serves nothing real.
+    key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
+    return "" if key == "demo" else key
+
+
+def feed_enabled() -> bool:
+    return fmp_enabled() or bool(_alphavantage_key())
+
+
 def _today() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _within_window(date: str, start: str, end: str) -> bool:
+    return bool(date) and start <= date <= end
+
+
+def _fetch_fmp(start: str, end: str) -> dict[str, str]:
+    resp = requests.get(
+        f"{FMP_BASE}/earnings-calendar",
+        params={"from": start, "to": end,
+                "apikey": os.getenv("FMP_API_KEY", "").strip()},
+        timeout=10)
+    resp.raise_for_status()
+    rows = resp.json()
+    by_symbol: dict[str, str] = {}
+    for row in rows if isinstance(rows, list) else []:
+        sym = str(row.get("symbol") or "").strip().upper()
+        date = str(row.get("date") or "").strip()
+        if sym and date and (sym not in by_symbol or date < by_symbol[sym]):
+            by_symbol[sym] = date
+    return by_symbol
+
+
+def _fetch_alphavantage(start: str, end: str) -> dict[str, str]:
+    # CSV: symbol,name,reportDate,fiscalDateEnding,estimate,currency.
+    # The 3-month horizon is the smallest offered; the window filter below
+    # keeps parity with the FMP query's 14-day range.
+    resp = requests.get(
+        "https://www.alphavantage.co/query",
+        params={"function": "EARNINGS_CALENDAR", "horizon": "3month",
+                "apikey": _alphavantage_key()},
+        timeout=30)
+    resp.raise_for_status()
+    by_symbol: dict[str, str] = {}
+    reader = csv.reader(resp.text.splitlines())
+    header = next(reader, None) or []
+    try:
+        sym_i = header.index("symbol")
+        date_i = header.index("reportDate")
+    except ValueError:
+        return {}
+    for row in reader:
+        if len(row) <= max(sym_i, date_i):
+            continue
+        sym = row[sym_i].strip().upper()
+        date = row[date_i].strip()
+        if (sym and _within_window(date, start, end)
+                and (sym not in by_symbol or date < by_symbol[sym])):
+            by_symbol[sym] = date
+    return by_symbol
 
 
 def upcoming_earnings(force: bool = False) -> dict[str, str]:
     """symbol -> next earnings date (YYYY-MM-DD) inside the window.
 
-    {} without a key, on a cold failed fetch, or when FMP returns nothing.
+    {} without any key, on a cold failed fetch, or when the source returns
+    nothing. FMP is preferred when its key exists; Alpha Vantage otherwise.
     """
-    if not fmp_enabled():
+    if not feed_enabled():
         return {}
     now = time.monotonic()
     cached = _cache["by_symbol"]
@@ -57,21 +126,12 @@ def upcoming_earnings(force: bool = False) -> dict[str, str]:
     start = _today().strftime("%Y-%m-%d")
     end = (_today() + timedelta(days=EARNINGS_WINDOW_DAYS)).strftime("%Y-%m-%d")
     try:
-        resp = requests.get(
-            f"{FMP_BASE}/earnings-calendar",
-            params={"from": start, "to": end,
-                    "apikey": os.getenv("FMP_API_KEY", "").strip()},
-            timeout=10)
-        resp.raise_for_status()
-        rows = resp.json()
-        by_symbol: dict[str, str] = {}
-        for row in rows if isinstance(rows, list) else []:
-            sym = str(row.get("symbol") or "").strip().upper()
-            date = str(row.get("date") or "").strip()
-            if sym and date and (sym not in by_symbol or date < by_symbol[sym]):
-                by_symbol[sym] = date
+        if fmp_enabled():
+            by_symbol = _fetch_fmp(start, end)
+        else:
+            by_symbol = _fetch_alphavantage(start, end)
     except Exception as exc:  # noqa: BLE001
-        logger.debug("fmp earnings calendar unavailable: %s", exc)
+        logger.debug("earnings calendar unavailable: %s", exc)
         return cached if cached is not None else {}
     _cache["by_symbol"] = by_symbol
     _cache["at"] = now

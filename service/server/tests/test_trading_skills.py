@@ -154,6 +154,18 @@ class RegistryTests(_Db):
             slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
             self.assertNotIn("horizon-discipline", slugs)
 
+    def test_earnings_preview_rides_the_light_site_for_us_stock(self):
+        # 2026-08-04: the print-gap discipline was trader-only while the light
+        # route carried nearly every us-stock cycle — and until the earnings
+        # date brief, no path knew a print was coming at all.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site, "us-stock")
+            self.assertIn("### Earnings Preview\n", block,
+                          f"earnings-preview missing from {site}/us-stock")
+            self.assertIn("opening fresh exposure within days", block)
+        self.assertNotIn("### Earnings Preview\n",
+                         trading_skills.skills_block("light", "crypto"))
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
