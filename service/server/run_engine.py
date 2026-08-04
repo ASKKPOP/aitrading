@@ -2373,6 +2373,37 @@ def _usable_thesis(thesis: dict, entry: Optional[float]) -> dict:
     return {**thesis, "invalidation": _STALE_INVALIDATION}
 
 
+# A print inside this many calendar days is close enough to shape THIS
+# cycle's decision; further out it is noise on a 4h-168h horizon.
+EARNINGS_BRIEF_DAYS = 5
+
+
+def _earnings_state_line(run: dict) -> str:
+    """A scheduled earnings print is a session gap with a date on it.
+
+    The session-close brief below warns a desk it is about to lose the
+    ability to act for hours; a print does the same for the minutes that
+    matter most, and us-stock desks (939 TSLA / 940 NVDA) held positions
+    with no knowledge of it. Shown flat AND holding — entering fresh
+    exposure into a print is the same unpriced gap as carrying one through
+    it. Fail-soft: no feed key, no date, or a far date all render as "".
+    """
+    if (run.get("market") or "") != "us-stock":
+        return ""
+    try:
+        import fmp_feed
+        days = fmp_feed.days_to_earnings(run.get("symbol") or "")
+    except Exception:  # noqa: BLE001 — a feed problem must never block a cycle
+        return ""
+    if days is None or days > EARNINGS_BRIEF_DAYS:
+        return ""
+    when = "TODAY" if days == 0 else f"in {days} calendar day(s)"
+    return (f"{run.get('symbol')} reports earnings {when}. A print is a gap "
+            "you cannot act through: decide EXPLICITLY whether any position "
+            "should carry through it, and treat fresh exposure opened this "
+            "close to the print as a bet on the print itself.\n")
+
+
 def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                          thesis: dict) -> str:
     """The open position's own trajectory, for the desk's exit decision.
@@ -2573,7 +2604,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                           "(nothing to reduce) — a bearish read means 'hold'.")
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
-    position_state = _position_state_line(run, cfg, pos_qty, thesis)
+    position_state = (_position_state_line(run, cfg, pos_qty, thesis)
+                      + _earnings_state_line(run))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -2949,11 +2981,12 @@ def run_cycle(run_id: int) -> dict:
                                     provider=cfg.get("provider") or None,
                                     agent_id=run["agent_id"],
                                     llm_tiers=cfg.get("llm_tiers") or None,
-                                    position_state=_position_state_line(
+                                    position_state=(_position_state_line(
                                         run, cfg, held,
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
-                                        else {}),
+                                        else {})
+                                        + _earnings_state_line(run)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.

@@ -23,7 +23,7 @@ import fmp_feed
 import symbol_research as sr
 
 
-def _resp(payload, status=200):
+def _resp(payload=None, status=200, text=""):
     class R:
         def raise_for_status(self):
             if status >= 400:
@@ -31,6 +31,7 @@ def _resp(payload, status=200):
 
         def json(self):
             return payload
+    R.text = text
     return R()
 
 
@@ -47,9 +48,11 @@ class _Cache(unittest.TestCase):
 
 
 class KeyGateTests(_Cache):
-    def test_disabled_without_key(self):
-        with patch.dict(os.environ, {"FMP_API_KEY": ""}):
+    def test_disabled_without_any_key(self):
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": ""}):
             self.assertFalse(fmp_feed.fmp_enabled())
+            self.assertFalse(fmp_feed.feed_enabled())
             with patch("fmp_feed.requests.get",
                        side_effect=AssertionError("must not call")):
                 self.assertEqual(fmp_feed.upcoming_earnings(), {})
@@ -83,6 +86,74 @@ class KeyGateTests(_Cache):
         with patch.dict(os.environ, {"FMP_API_KEY": "k"}):
             self.assertIsNone(fmp_feed.days_to_earnings("OLD"))
             self.assertIsNone(fmp_feed.days_to_earnings("BAD"))
+
+
+class AlphaVantageFallbackTests(_Cache):
+    """FMP_API_KEY has never been set on prod, so the feed shipped dead while
+    prod carried a working ALPHA_VANTAGE_API_KEY the whole time. The fallback
+    serves the same symbol→date map from AV's EARNINGS_CALENDAR CSV; FMP stays
+    preferred when its key exists."""
+
+    def _csv(self, rows):
+        head = "symbol,name,reportDate,fiscalDateEnding,estimate,currency"
+        return "\n".join([head] + rows)
+
+    def test_av_used_when_fmp_key_missing(self):
+        text = self._csv([f"NVDA,NVIDIA,{_in_days(3)},2026-07-31,1.01,USD",
+                          f"TSLA,Tesla,{_in_days(9)},2026-06-30,0.55,USD"])
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get", return_value=_resp(text=text)) as get:
+            self.assertTrue(fmp_feed.feed_enabled())
+            self.assertEqual(fmp_feed.days_to_earnings("NVDA"), 3)
+            self.assertEqual(fmp_feed.days_to_earnings("tsla"), 9)
+            self.assertEqual(get.call_count, 1, "second read must hit the cache")
+            self.assertIn("alphavantage.co", get.call_args[0][0])
+            self.assertEqual(get.call_args[1]["params"]["function"],
+                             "EARNINGS_CALENDAR")
+
+    def test_fmp_preferred_when_both_keys_exist(self):
+        payload = [{"symbol": "NVDA", "date": _in_days(4)}]
+        with patch.dict(os.environ, {"FMP_API_KEY": "k",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get", return_value=_resp(payload)) as get:
+            self.assertEqual(fmp_feed.days_to_earnings("NVDA"), 4)
+            self.assertIn("/stable/earnings-calendar", get.call_args[0][0])
+
+    def test_demo_av_key_counts_as_unset(self):
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": "demo"}):
+            self.assertFalse(fmp_feed.feed_enabled())
+            with patch("fmp_feed.requests.get",
+                       side_effect=AssertionError("must not call")):
+                self.assertEqual(fmp_feed.upcoming_earnings(), {})
+
+    def test_av_rows_outside_window_are_dropped_and_earliest_dupe_wins(self):
+        text = self._csv([
+            f"NVDA,NVIDIA,{_in_days(60)},2026-10-31,1.10,USD",   # beyond window
+            f"AAPL,Apple,{_in_days(8)},2026-06-30,1.40,USD",
+            f"AAPL,Apple,{_in_days(2)},2026-03-31,1.35,USD",     # earlier wins
+        ])
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get", return_value=_resp(text=text)):
+            self.assertIsNone(fmp_feed.days_to_earnings("NVDA"))
+            self.assertEqual(fmp_feed.days_to_earnings("AAPL"), 2)
+
+    def test_av_malformed_csv_is_empty_not_fatal(self):
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get",
+                   return_value=_resp(text="totally,unexpected\n1,2")):
+            self.assertEqual(fmp_feed.upcoming_earnings(), {})
+
+    def test_av_failure_serves_stale(self):
+        fmp_feed._cache["by_symbol"] = {"NVDA": _in_days(2)}
+        fmp_feed._cache["at"] = -1e9  # expired
+        with patch.dict(os.environ, {"FMP_API_KEY": "",
+                                     "ALPHA_VANTAGE_API_KEY": "avkey"}), \
+             patch("fmp_feed.requests.get", side_effect=RuntimeError("down")):
+            self.assertEqual(fmp_feed.days_to_earnings("NVDA"), 2)
 
 
 class ResearchEnrichmentTests(_Cache):

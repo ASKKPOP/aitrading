@@ -399,5 +399,69 @@ class StaleInvalidationScrubTests(unittest.TestCase):
         self.assertEqual(run_engine._usable_thesis({}, 100.0), {})
 
 
+class EarningsBriefTests(unittest.TestCase):
+    """A scheduled print is a session gap with a date, and the us-stock desks
+    (939 TSLA / 940 NVDA) held positions with zero knowledge of it — the FMP
+    feed that should have supplied the date shipped key-gated and the key was
+    never set. The brief line is shown flat AND holding: fresh exposure opened
+    into a print is the same unpriced gap as carrying one through it."""
+
+    def _run(self, market="us-stock", symbol="NVDA"):
+        return {"id": 1, "agent_id": 1, "symbol": symbol, "market": market,
+                "market_type": "spot"}
+
+    def test_near_print_renders_with_day_count(self):
+        with patch("fmp_feed.days_to_earnings", return_value=2):
+            line = run_engine._earnings_state_line(self._run())
+        self.assertIn("NVDA reports earnings in 2 calendar day(s)", line)
+        self.assertIn("gap", line)
+
+    def test_print_today_says_today(self):
+        with patch("fmp_feed.days_to_earnings", return_value=0):
+            line = run_engine._earnings_state_line(self._run(symbol="TSLA"))
+        self.assertIn("TSLA reports earnings TODAY", line)
+
+    def test_far_print_and_unknown_render_nothing(self):
+        with patch("fmp_feed.days_to_earnings",
+                   return_value=run_engine.EARNINGS_BRIEF_DAYS + 1):
+            self.assertEqual(run_engine._earnings_state_line(self._run()), "")
+        with patch("fmp_feed.days_to_earnings", return_value=None):
+            self.assertEqual(run_engine._earnings_state_line(self._run()), "")
+
+    def test_non_us_stock_never_queries_the_feed(self):
+        with patch("fmp_feed.days_to_earnings",
+                   side_effect=AssertionError("crypto must not query")):
+            self.assertEqual(
+                run_engine._earnings_state_line(self._run(market="crypto")), "")
+
+    def test_feed_failure_is_silent(self):
+        with patch("fmp_feed.days_to_earnings", side_effect=RuntimeError("down")):
+            self.assertEqual(run_engine._earnings_state_line(self._run()), "")
+
+    def test_the_line_actually_reaches_the_light_prompt(self):
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return '{"action": "hold", "confidence": 0.5}'
+
+        run = self._run()
+        cfg = {"thesis": {"direction": "long", "horizon_hours": 24,
+                          "invalidation": "below the recent swing low",
+                          "rationale": "momentum"}}
+        with patch("price_fetcher.get_price_from_market", return_value=500.0), \
+                patch("price_fetcher.get_daily_candles", return_value=[]), \
+                patch("llm_client.generate_text", side_effect=fake_generate), \
+                patch.object(run_engine, "_position_quantity", return_value=0.0), \
+                patch("trading_skills.skills_block", return_value=""), \
+                patch("fmp_feed.days_to_earnings", return_value=2):
+            run_engine._light_analysis(run, cfg)
+
+        self.assertIn("prompt", captured, "the desk was never called")
+        self.assertIn("NVDA reports earnings in 2 calendar day(s)",
+                      captured["prompt"],
+                      "the earnings brief never reached the desk (flat run)")
+
+
 if __name__ == "__main__":
     unittest.main()
