@@ -56,14 +56,14 @@
 <h1>Plan 20 — Trading Skills: Cara Kerjanya</h1>
 
 <div class="chips">
-  <div class="chip"><b>30</b><span>skill dasar (dipertahankan, dapat diedit, tidak dapat dihapus)</span></div>
+  <div class="chip"><b>31</b><span>skill dasar (dipertahankan, dapat diedit, tidak dapat dihapus)</span></div>
   <div class="chip"><b>4</b><span>prompt keputusan yang disisipkan</span></div>
   <div class="chip"><b>0</b><span>panggilan LLM yang digunakan untuk memilih skill</span></div>
-  <div class="chip"><b>28,000</b><span>budget karakter per prompt</span></div>
+  <div class="chip"><b>30,000</b><span>batas karakter per prompt</span></div>
   <div class="chip"><b>30s</b><span>TTL cache worker</span></div>
 </div>
 
-<h2>1. Gambaran umum — di mana skill berada dan di mana skill bertindak</h2>
+<h2>1. Gambaran besar — di mana skill berada dan di mana ia beraksi</h2>
 <div class="card">
 <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -85,8 +85,8 @@
   <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — penulisan yang diaudit</text>
 
   <rect class="box-dim" x="20" y="230" width="200" height="64"/>
-  <text x="120" y="252" text-anchor="middle" class="t-b">direktori skills/ pada repo</text>
-  <text x="120" y="270" text-anchor="middle" class="t-small">hanya dokumentasi agen eksternal — TIDAK ADA di</text>
+  <text x="120" y="252" text-anchor="middle" class="t-b">direktori repo skills/</text>
+  <text x="120" y="270" text-anchor="middle" class="t-small">hanya dokumentasi agen eksternal — TIDAK dalam</text>
   <text x="120" y="284" text-anchor="middle" class="t-small">docker image, tidak pernah dibaca oleh AI</text>
 
   <!-- DB -->
@@ -94,7 +94,7 @@
   <text x="395" y="108" text-anchor="middle" class="t-b">tabel trading_skills</text>
   <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (produksi) / SQLite (pengembangan)</text>
   <text x="395" y="145" text-anchor="middle" class="t-small">slug · body · prompts · pasar</text>
-  <text x="395" y="161" text-anchor="middle" class="t-small">priority · diaktifkan · is_base</text>
+  <text x="395" y="161" text-anchor="middle" class="t-small">prioritas · diaktifkan · is_base</text>
 
   <!-- cache -->
   <rect class="box" x="560" y="92" width="150" height="66"/>
@@ -105,7 +105,7 @@
   <rect class="box-accent" x="760" y="86" width="180" height="78"/>
   <text x="850" y="112" text-anchor="middle" class="t-b">skills_block(site)</text>
   <text x="850" y="131" text-anchor="middle" class="t-small">filter deterministik + budget</text>
-  <text x="850" y="148" text-anchor="middle" class="t-small">fail-soft → ""</text>
+  <text x="850" y="148" text-anchor="middle" class="t-small">gagal-lunak → ""</text>
 
   <!-- prompts row -->
   <rect class="box" x="300" y="250" width="640" height="70"/>
@@ -117,7 +117,7 @@
 
   <!-- gates -->
   <rect class="box" x="300" y="350" width="640" height="40"/>
-  <text x="620" y="375" text-anchor="middle" class="t-small">Jawaban LLM → kontrak output JSON (whitelist aksi, clamp, otoritas harga) → gerbang risiko/eksekusi deterministik → order</text>
+  <text x="620" y="375" text-anchor="middle" class="t-small">Jawaban LLM → kontrak output JSON (whitelist tindakan, clamp, otoritas harga) → gate risiko/eksekusi deterministik → order</text>
 
   <!-- arrows -->
   <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
@@ -130,26 +130,26 @@
   <text x="842" y="205" text-anchor="end" class="t-small">teks berbingkai, hanya peringatan</text>
   <path class="ln" d="M620,320 L620,350" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Kotak putus-putus adalah asumsi lama yang harus dipatahkan oleh desain ini: repo <code>skills/</code> adalah permukaan publikasi untuk agen eksternal dan dikecualikan dari Docker image — sehingga isi skill disimpan di DB, dan katalog dasar dikirim dalam kode dan melakukan seeding sendiri.</p>
+<p class="legend">Kotak putus-putus adalah asumsi lama yang harus dipatahkan oleh desain ini: repo <code>skills/</code> adalah permukaan publikasi untuk agen eksternal dan dikecualikan dari Docker image — sehingga body skill disimpan di DB, dan katalog dasar dikirim dalam kode dan melakukan seed sendiri.</p>
 </div>
 
-<h2>2. Alur siklus keputusan — di mana skill masuk ke dalam siklus trading langsung</h2>
+<h2>2. Alur siklus keputusan — di mana skill masuk ke siklus trading live</h2>
 <div class="card">
 <svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="30" width="170" height="56"/>
   <text x="105" y="53" text-anchor="middle" class="t-b">run_cycle tick</text>
-  <text x="105" y="71" text-anchor="middle" class="t-small">klaim → pre-gates</text>
+  <text x="105" y="71" text-anchor="middle" class="t-small">claim → pra-gerbang</text>
 
   <rect class="box" x="250" y="30" width="200" height="56"/>
   <text x="350" y="53" text-anchor="middle" class="t-b">E1 _classify_situation</text>
-  <text x="350" y="71" text-anchor="middle" class="t-small">zero-LLM · TIDAK ADA skill di sini (by design)</text>
+  <text x="350" y="71" text-anchor="middle" class="t-small">zero-LLM · TIDAK ADA skill di sini (secara desain)</text>
 
   <!-- light path -->
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">jalur LIGHT — 1 panggilan LLM</text>
   <text x="740" y="52" text-anchor="middle" class="t-small">harga + thesis + closes + aturan inventory</text>
   <text x="740" y="72" text-anchor="middle">💡 9 skill light (10 pada us-stock: earnings-preview juga berlaku di sana)</text>
-  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration dikecualikan — light memiliki rubriknya sendiri)</text>
+  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + kalibrasi-conviction dikecualikan — light memiliki rubriknya sendiri)</text>
 
   <!-- full path -->
   <rect class="box" x="540" y="140" width="400" height="230"/>
@@ -158,21 +158,21 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst brief (news · sentiment · macro · technical) — tanpa skill, hanya data</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Keputusan Trader + Risk</text>
-  <text x="740" y="268" text-anchor="middle">💡 seluruh 24 skill trader yang market-agnostic (26 pada us-stock · 25 pada crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 semua 24 skill trader yang tidak terikat market (27 pada us-stock · 25 pada crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Verifier adversarial (mencoba MEMBANTAH)</text>
   <text x="740" y="332" text-anchor="middle">💡 keyakinan · reaksi-berita · gerbang-kontrarian · kejujuran</text>
-  <text x="740" y="360" text-anchor="middle" class="t-small">memori + panduan pengguna + skill berada berdampingan di kedua prompt</text>
+  <text x="740" y="360" text-anchor="middle" class="t-small">memory + user guidelines + skills berada bersebelahan di kedua prompt</text>
 
   <!-- planner -->
   <rect class="box-accent" x="20" y="150" width="200" height="70"/>
-  <text x="120" y="174" text-anchor="middle" class="t-b">Perencana mode-Agen</text>
+  <text x="120" y="174" text-anchor="middle" class="t-b">Perencana mode agen</text>
   <text x="120" y="192" text-anchor="middle" class="t-small">memilih symbol / size / cadence</text>
-  <text x="120" y="210" text-anchor="middle">💡 ukuran posisi · watchlist · peta katalis · konsentrasi · kejujuran</text>
+  <text x="120" y="210" text-anchor="middle">💡 ukuran posisi · watchlist · pemetaan katalis · konsentrasi · kejujuran</text>
 
   <!-- output -->
   <rect class="box" x="250" y="390" width="690" height="34"/>
-  <text x="595" y="411" text-anchor="middle" class="t-small">Kontrak JSON → pembobotan konviksi → fee/edge + budget + risk gates → eksekusi paper/shadow/live</text>
+  <text x="595" y="411" text-anchor="middle" class="t-small">Kontrak JSON → pembobotan konviksi → gate fee/edge + anggaran + risiko → eksekusi paper/shadow/live</text>
 
   <path class="ln" d="M190,58 L250,58" marker-end="url(#ar)"/>
   <path class="ln" d="M450,50 C500,45 500,50 540,52" marker-end="url(#ar)"/>
@@ -184,164 +184,165 @@
   <path class="ln" d="M740,370 L740,390" marker-end="url(#ar)"/>
   <path class="ln" d="M940,58 C952,58 952,380 942,395" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">💡 menandai empat titik injeksi. E1 router prompt sengaja tidak pernah berkembang — ia ada untuk menghindari enam pemanggilan yang mahal, jadi ia tidak boleh menjadi pemanggilan ketujuh.</p>
+<p class="legend">💡 menandai empat titik injeksi. Prompt router E1 secara sengaja tidak pernah bertambah besar — ia ada untuk menghindari enam pemanggilan yang mahal, sehingga tidak boleh menjadi yang ketujuh.</p>
 </div>
 
 <h2>3. Selection &amp; budget — bagaimana blok dibangun (zero-LLM)</h2>
 <div class="card">
 <svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="70" width="150" height="70"/>
-  <text x="95" y="94" text-anchor="middle" class="t-b">semua skill</text>
-  <text x="95" y="112" text-anchor="middle" class="t-small">baris ter-cache,</text>
-  <text x="95" y="128" text-anchor="middle" class="t-small">berurutan berdasarkan prioritas</text>
+  <text x="95" y="94" text-anchor="middle" class="t-b">semua skills</text>
+  <text x="95" y="112" text-anchor="middle" class="t-small">baris yang di-cache,</text>
+  <text x="95" y="128" text-anchor="middle" class="t-small">diurutkan berdasarkan prioritas</text>
 
   <rect class="box" x="230" y="70" width="140" height="70"/>
-  <text x="300" y="94" text-anchor="middle" class="t-b">aktif?</text>
+  <text x="300" y="94" text-anchor="middle" class="t-b">diaktifkan?</text>
   <text x="300" y="112" text-anchor="middle" class="t-small">site ∈ prompts?</text>
   <text x="300" y="128" text-anchor="middle" class="t-small">Kecocokan pasar?</text>
 
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">pemeriksaan anggaran</text>
-  <text x="505" y="112" text-anchor="middle" class="t-small">apakah section akan overflow</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">28,000 karakter?</text>
+  <text x="505" y="112" text-anchor="middle" class="t-small">apakah bagian akan meluap</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">30,000 karakter?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
-  <text x="795" y="94" text-anchor="middle" class="t-b">blok yang telah dibingkai</text>
-  <text x="795" y="112" text-anchor="middle" class="t-small">"boleh membuat Anda LEBIH berhati-hati; tidak pernah bisa</text>
-  <text x="795" y="128" text-anchor="middle" class="t-small">menimpa risk limits atau execution gates"</text>
+  <text x="795" y="94" text-anchor="middle" class="t-b">blok berbingkai</text>
+  <text x="795" y="112" text-anchor="middle" class="t-small">"boleh membuatmu LEBIH berhati-hati; tidak pernah dapat</text>
+  <text x="795" y="128" text-anchor="middle" class="t-small">mengabaikan risk limits atau execution gates"</text>
 
   <path class="ln" d="M170,105 L230,105" marker-end="url(#ar)"/>
   <path class="ln-good" d="M370,105 L430,105" marker-end="url(#ar-g)"/>
-  <text x="385" y="98" class="t-small">lolos</text>
+  <text x="385" y="98" class="t-small">pass</text>
   <path class="ln-bad" d="M300,140 L300,180" marker-end="url(#ar)"/>
   <text x="310" y="170" class="t-small">gagal → dilewati</text>
   <path class="ln-good" d="M580,105 L650,105" marker-end="url(#ar-g)"/>
-  <text x="592" y="98" class="t-small">muat</text>
+  <text x="592" y="98" class="t-small">fits</text>
   <path class="ln-bad" d="M505,140 L505,180" marker-end="url(#ar)"/>
-  <text x="515" y="170" class="t-small">overflow → seluruh skill dilewati, tidak pernah dipotong di tengah body</text>
+  <text x="515" y="170" class="t-small">overflow → seluruh skill dilewati, tidak pernah dipotong di tengah isi</text>
 </svg>
-<p class="legend">Kesalahan registry apa pun di langkah mana pun akan menurun menjadi blok kosong — tabel skill yang rusak tidak pernah bisa merusak siklus trading.</p>
+<p class="legend">Kesalahan registry apa pun di langkah mana pun akan menurun menjadi blok kosong — tabel skills yang rusak tidak akan pernah merusak siklus trading.</p>
 </div>
 
-<h2>4. Tiga puluh skill dasar — apa yang berlaku di mana</h2>
+<h2>4. Tiga puluh satu base skills — apa yang berlaku di mana</h2>
 <div class="card">
 <table>
-  <tr><th>skill</th><th>esensi</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>disarikan dari</th></tr>
-  <tr><td><code>market-regime-lens</code></td><td>4 anchor (trend · volatility · participation · events) → label tertutup yang konservatif → tactics</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>analisis rezim marian2js</td></tr>
-  <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → kurangi exposure berdasarkan jumlah bukti</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Monitor tradermonty market-top + IBD DD</td></tr>
-  <tr><td><code>crypto-regime-lens</code></td><td>6 anchor (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); konflik menurunkan exposure <b>(hanya kripto)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
-  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: rally attempt day 4+, kenaikan indeks besar dengan volume naik mengonfirmasi re-entry; undercut me-reset hitungan; scouting size sebelum konfirmasi <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
-  <tr><td><code>thesis-validation</code></td><td>klaim yang dapat difalsifikasi, fakta vs asumsi, kesesuaian kerangka waktu, beban dependensi, invalidasi konkret</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Validasi tesis marian2js</td></tr>
-  <tr><td><code>level-integrity</code></td><td>level harus mampu memicu: sisi kanan dari spot, bebas dari noise setengah hari, berada dalam rentang terkini; level yang tidak dapat digunakan = katakan demikian dan jangkarkan pada struktur yang terlihat</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (level sisi-salah, 2026-08-03)</td></tr>
-  <tr><td><code>position-sizing-discipline</code></td><td>ukuran ditentukan dari risiko, batasan paling ketat yang menang, bulatkan ke bawah, kehati-hatian half-Kelly</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
-  <tr><td><code>volatility-context</code></td><td>nilai rentang, stop dan ukuran terhadap riwayat volatilitas aset itu SENDIRI; kompresi bersifat termuati, ekstrem akan kembali (revert); jangan pernah melebarkan stop pada ukuran yang tetap</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs pemodelan volatilitas + deteksi rezim</td></tr>
-  <tr><td><code>macro-event-analysis</code></td><td>peringkatkan peristiwa berdasarkan dampak keputusan (sensitivitas · kapasitas kejutan · transmisi · waktu); peristiwa adalah risiko, bukan sinyal</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>analisis peristiwa makro marian2js</td></tr>
-  <tr><td><code>mean-reversion-guard</code></td><td>melakukan fade terhadap sebuah pergerakan memerlukan bukti adanya sebuah RANGE, entry pada titik ekstremnya, target di tengah-rentang dan anggaran waktu; persistensi adalah default; jangan pernah menambah posisi karena "harga lebih baik"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (Hurst · half-life · z-score)</td></tr>
-  <tr><td><code>news-reaction-evidence</code></td><td>reaksi harga terhadap berita lebih penting daripada berita itu sendiri; exhaustion = pergerakan yang BERLAWANAN dengan berita yang menguntungkan, bukan sekadar keheningan</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro langkah 2)</td></tr>
-  <tr><td><code>risk-reward-structure</code></td><td>stop = pembatalan yang objektif, target = level yang dapat dicapai, rasio ≥ 2×, rasio yang baik ≠ trade yang baik</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemeriksaan validitas R:R marian2js</td></tr>
-  <tr><td><code>exit-discipline</code></td><td>banking bersifat prioritas utama, jangan pernah menambah posisi pada trade yang merugi, invalidation = tutup bukan negosiasi ulang</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy exit rails + Senpi</td></tr>
-  <tr><td><code>horizon-discipline</code></td><td>posisi baru mendapatkan horizon yang telah ditetapkan; drift merugikan yang kecil BUKAN invalidation; keluar sebelum horizon memerlukan satu pemicu bernama dari sekumpulan tertutup — "melindungi modal" bukan salah satunya</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (churn dalam-horizon, 2026-08-03)</td></tr>
-  <tr><td><code>position-management</code></td><td>kelola berdasarkan rencana AWAL, bukan P&amp;L; tahan / kelola secara aktif / keluar dengan tegas + kondisi yang mengubahnya</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>manajemen posisi marian2js</td></tr>
-  <tr><td><code>reachable-exits</code></td><td>buat sendiri stop, target, dan trail pada setiap entry, masing-masing dapat dicapai dalam pergerakan yang Anda perkirakan; mengabaikannya menyerahkan trade pada default yang tidak terlihat; geometri yang tidak dapat diungkapkan → pensiunkan slot</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (trail yang tidak dapat dicapai, 2026-08-03)</td></tr>
-  <tr><td><code>drawdown-circuit-breaker</code></td><td>kerugian yang terealisasi mengatur risiko baru; kerugian berturut-turut → cooldown (kelola, jangan membuka); kelangsungan hidup diutamakan</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
-  <tr><td><code>confidence-resolution</code></td><td>turunkan confidence dari empat skor komponen Anda sendiri; rubrik mencantumkan titik referensi, bukan menu; nilai landmark atau midpoint dipilih, bukan diturunkan — desimal kedua harus membawa informasi</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (confidence terkuantisasi, 2026-08-03)</td></tr>
-  <tr><td><code>conviction-calibration</code></td><td>confidence = bukti yang sejalan dan dapat dihitung; tidak ada nilai kebiasaan; tidak ada swing tanpa edge</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>zona mph Druckenmiller</td></tr>
-  <tr><td><code>exposure-discipline</code></td><td>posisi sebelum trade: new-entry-allowed / reduce-only / cash-priority; konflik secara default mengarah ke eksposur LEBIH RENDAH</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
-  <tr><td><code>pre-trade-readiness</code></td><td>rantai pemeriksaan terpendek, berhenti pada penghalang pertama; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Alur kerja pra-pemeriksaan-transaksi marian2js</td></tr>
+  <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>disarikan dari</th></tr>
+  <tr><td><code>market-regime-lens</code></td><td>4 anchor (tren · volatilitas · partisipasi · peristiwa) → label tertutup konservatif → taktik</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>analisis rezim marian2js</td></tr>
+  <tr><td><code>market-topping-evidence</code></td><td>kelompok distribution-day, kerusakan leadership, rotasi defensif → kurangi eksposur berdasarkan jumlah evidence</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + monitor DD IBD</td></tr>
+  <tr><td><code>crypto-regime-lens</code></td><td>6 anchor (tren BTC · breadth altcoin · rotasi dominance · funding crowding · posisi cycle · thrust); konflik menurunkan eksposur <b>(khusus kripto)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
+  <tr><td><code>bottom-confirmation</code></td><td>Follow-through O'Neil: hari ke-4+ rally attempt, kenaikan indeks besar dengan volume naik mengonfirmasi re-entry; undercut mereset hitungan; scouting size sebelum konfirmasi <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
+  <tr><td><code>thesis-validation</code></td><td>klaim yang dapat difalsifikasi, fakta vs asumsi, kesesuaian dengan kerangka waktu, beban dependensi, invalidasi yang konkret</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>validasi tesis marian2js</td></tr>
+  <tr><td><code>stage-discipline</code></td><td>empat tahap pembacaan dari data yang ditampilkan: hanya Stage 2 yang layak untuk long baru (Stage 4 untuk short baru); basis keempat-atau-lebih memotong ukuran; extended-from-base berarti tunggu; tahap yang tidak dapat diselesaikan adalah blocking gap, tidak pernah diasumsikan Stage 2 <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (tahap Minervini)</td></tr>
+  <tr><td><code>level-integrity</code></td><td>sebuah level harus mampu fire: di sisi kanan spot, bebas dari noise setengah hari, di dalam range terkini; level yang tidak dapat digunakan = katakan demikian dan jangkarkan pada struktur yang terlihat</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (level sisi-salah, 2026-08-03)</td></tr>
+  <tr><td><code>position-sizing-discipline</code></td><td>ukuran dari risiko, batasan paling ketat menang, bulatkan ke bawah, kehati-hatian half-Kelly</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
+  <tr><td><code>volatility-context</code></td><td>nilai range, stop dan ukuran terhadap riwayat volatilitas aset ITU SENDIRI; kompresi bermuatan, ekstrem berbalik; jangan pernah melebarkan stop pada ukuran tetap</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs pemodelan volatilitas + deteksi rezim</td></tr>
+  <tr><td><code>macro-event-analysis</code></td><td>urutkan peristiwa berdasarkan dampak keputusan (sensitivity · surprise capacity · transmission · timing); peristiwa adalah risiko, bukan sinyal</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Analisis peristiwa makro marian2js</td></tr>
+  <tr><td><code>mean-reversion-guard</code></td><td>memudarkan sebuah gerakan memerlukan bukti adanya RANGE, entry pada titik ekstremnya, target mid-range dan anggaran waktu; persistensi adalah default; jangan pernah menambah posisi pada "harga yang lebih baik"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (Hurst · half-life · z-score)</td></tr>
+  <tr><td><code>news-reaction-evidence</code></td><td>reaksi harga terhadap berita melebihi berita itu sendiri; exhaustion = gerakan YANG BERLAWANAN dengan berita yang menguntungkan, tidak pernah sekadar keheningan</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro langkah 2)</td></tr>
+  <tr><td><code>risk-reward-structure</code></td><td>stop = invalidasi objektif, target = level yang dapat dicapai, rasio ≥ 2×, rasio yang baik ≠ trade yang baik</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Pemeriksaan validitas R:R marian2js</td></tr>
+  <tr><td><code>exit-discipline</code></td><td>banking adalah first-class, jangan pernah menambah posisi pada yang merugi, invalidasi = tutup bukan negosiasi ulang</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy exit rails + Senpi</td></tr>
+  <tr><td><code>horizon-discipline</code></td><td>posisi baru mendapatkan horizon yang telah ditentukan; drift kecil yang merugikan BUKAN invalidasi; keluar sub-horizon memerlukan satu trigger bernama dari set tertutup — "melindungi modal" bukan salah satunya</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (churn intra-horizon, 2026-08-03)</td></tr>
+  <tr><td><code>position-management</code></td><td>Kelola berdasarkan rencana ASLI, bukan P&amp;L; tahan / kelola secara aktif / keluar dengan tegas + kondisi yang mengubahnya</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>manajemen posisi marian2js</td></tr>
+  <tr><td><code>reachable-exits</code></td><td>buat sendiri stop, target, dan trail pada setiap entry, masing-masing dapat dicapai dalam pergerakan yang Anda perkirakan; mengabaikannya membuat trade menggunakan default yang tidak terlihat; geometri yang tidak dapat diekspresikan → hentikan slot</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (trail tidak dapat dicapai, 2026-08-03)</td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td>kerusakan yang terealisasi mengatur risiko baru; kerugian berturut-turut → cooldown (kelola, jangan buka); kelangsungan hidup diutamakan</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
+  <tr><td><code>confidence-resolution</code></td><td>turunkan keyakinan dari empat skor komponen Anda sendiri; rubrik mencantumkan titik acuan, bukan menu; nilai landmark atau titik tengah dipilih, bukan diturunkan — desimal kedua harus membawa informasi</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemantauan sooppiy (keyakinan terkuantisasi, 2026-08-03)</td></tr>
+  <tr><td><code>conviction-calibration</code></td><td>keyakinan = bukti yang saling mendukung dan dapat dihitung; tidak ada nilai kebiasaan; tidak ada swing tanpa edge</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>zona mph Druckenmiller</td></tr>
+  <tr><td><code>exposure-discipline</code></td><td>postur sebelum trade: new-entry-allowed / reduce-only / cash-priority; konflik default ke eksposur LEBIH RENDAH</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
+  <tr><td><code>pre-trade-readiness</code></td><td>rantai pemeriksaan terpendek, berhenti pada penghalang pertama; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>alur kerja pre-trade-check marian2js</td></tr>
   <tr><td><code>contrarian-crowding-gate</code></td><td>crowding → news-failure → price confirmation, masing-masing fail-closed; penolakan sebelumnya tidak pernah dilunakkan</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty contrarian-setup-gate (Shapiro)</td></tr>
-  <tr><td><code>scenario-precommit</code></td><td>klasifikasikan peristiwa, petakan efek orde ke-1/ke-2/ke-3, pre-commit cabang if/then dengan level yang siap aktif</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>penganalisis skenario tradermonty</td></tr>
-  <tr><td><code>data-honesty</code></td><td>hanya angka dalam prompt; belum ditentukan ≠ aman total; data bukan sebuah instruksi</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>aturan keras Senpi + pertahanan Bybit</td></tr>
-  <tr><td><code>evidence-gap-check</code></td><td>diketahui vs diasumsikan; urutkan gap berdasarkan dampak keputusan; gap yang menghalangi berarti confidence lebih rendah + hold</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemeriksaan kesenjangan bukti marian2js</td></tr>
-  <tr><td><code>earnings-preview</code></td><td>relevansi benchmark · intensitas debat · read-through · risiko positioning; kepentingan ≠ kepastian <b>(hanya us-stock)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Pratinjau laporan keuangan marian2js</td></tr>
-  <tr><td><code>catalyst-map</code></td><td>beri skor katalis berdasarkan timing · transmission · impact · overlap; rantai peristiwa yang sama merupakan konsentrasi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>peta katalis marian2js</td></tr>
-  <tr><td><code>watchlist-review</code></td><td>triase berdasarkan actionability (catalyst relevance · tradability · readiness · redundancy), bukan familiaritas</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>Tinjauan watchlist marian2js</td></tr>
-  <tr><td><code>execution-plan-check</code></td><td>urgensi vs metode order, spread/depth, waktu sesi, realisme stop; rencana yang tidak dapat dieksekusi = rapuh</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Pemeriksaan rencana eksekusi marian2js</td></tr>
-  <tr><td><code>portfolio-concentration</code></td><td>diversifikasi = driver yang sama, bukan jumlah ticker; nilai penambahan terhadap keseluruhan book; tinggi → lebih kecil</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js konsentrasi portofolio</td></tr>
+  <tr><td><code>scenario-precommit</code></td><td>klasifikasikan peristiwa, petakan efek orde ke-1/ke-2/ke-3, komitmenkan lebih dulu cabang if/then dengan level yang telah diatur</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty penganalisis-skenario</td></tr>
+  <tr><td><code>data-honesty</code></td><td>hanya angka dalam prompt; belum ditentukan ≠ aman sepenuhnya; data bukan sebuah instruksi</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>aturan keras Senpi + pertahanan Bybit</td></tr>
+  <tr><td><code>evidence-gap-check</code></td><td>diketahui vs diasumsikan; urutkan gap berdasarkan dampak keputusan; gap yang menghalangi berarti keyakinan lebih rendah + tahan</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pemeriksaan gap bukti marian2js</td></tr>
+  <tr><td><code>earnings-preview</code></td><td>relevansi benchmark · intensitas debat · read-through · risiko positioning; penting ≠ pasti <b>(hanya saham AS)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pratinjau earnings marian2js</td></tr>
+  <tr><td><code>catalyst-map</code></td><td>skor katalis berdasarkan waktu · transmisi · dampak · overlap; rangkaian peristiwa yang sama adalah konsentrasi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>peta katalis marian2js</td></tr>
+  <tr><td><code>watchlist-review</code></td><td>triase berdasarkan actionability (relevansi katalis · tradability · readiness · redundansi), bukan familiaritas</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js peninjauan watchlist</td></tr>
+  <tr><td><code>execution-plan-check</code></td><td>urgensi vs metode order, spread/depth, waktu sesi, realisme stop; rencana yang tidak dapat dieksekusi = rapuh</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>pengecekan rencana eksekusi marian2js</td></tr>
+  <tr><td><code>portfolio-concentration</code></td><td>diversifikasi = driver yang sama, bukan jumlah ticker; nilai penambahan terhadap book; elevated → lebih kecil</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js konsentrasi portofolio</td></tr>
 </table>
-<p class="legend">* prompt ringan ini sudah membawa rubrik kalibrasi inline miliknya sendiri — menyisipkan skill di situ akan menduplikasinya dalam satu prompt.</p>
+<p class="legend">* prompt light sudah memiliki rubrik kalibrasi inline sendiri — menyisipkan skill di sana akan menduplikasinya dalam satu prompt.</p>
 </div>
 
-<h2>5. Siklus hidup Skill — base vs custom</h2>
+<h2>5. Siklus hidup skill — base vs custom</h2>
 <div class="card">
 <svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
   <rect class="box-accent" x="20" y="30" width="190" height="60"/>
-  <text x="115" y="54" text-anchor="middle" class="t-b">default katalog</text>
-  <text x="115" y="72" text-anchor="middle" class="t-small">BASE_SKILLS dalam kode</text>
+  <text x="115" y="54" text-anchor="middle" class="t-b">katalog default</text>
+  <text x="115" y="72" text-anchor="middle" class="t-small">BASE_SKILLS di kode</text>
 
   <rect class="box" x="330" y="30" width="180" height="60"/>
-  <text x="420" y="54" text-anchor="middle" class="t-b">Baris DB (dasar)</text>
+  <text x="420" y="54" text-anchor="middle" class="t-b">Baris DB (basis)</text>
   <text x="420" y="72" text-anchor="middle" class="t-small">is_base = 1</text>
 
   <rect class="box" x="630" y="30" width="180" height="60"/>
   <text x="720" y="54" text-anchor="middle" class="t-b">diedit / dinonaktifkan</text>
-  <text x="720" y="72" text-anchor="middle" class="t-small">versi admin yang berlaku</text>
+  <text x="720" y="72" text-anchor="middle" class="t-small">versi admin yang menang</text>
 
   <rect class="box" x="330" y="160" width="180" height="60"/>
-  <text x="420" y="184" text-anchor="middle" class="t-b">Baris DB (kustom)</text>
+  <text x="420" y="184" text-anchor="middle" class="t-b">Baris DB (khusus)</text>
   <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
 
   <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
-  <text x="228" y="52" class="t-small">seed + auto-upgrade tidak disentuh</text>
+  <text x="228" y="52" class="t-small">seed + auto-upgrade tidak tersentuh</text>
   <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
-  <text x="540" y="42" class="t-small">PATCH / nonaktifkan</text>
+  <text x="540" y="42" class="t-small">PATCH / disable</text>
   <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
   <text x="537" y="98" class="t-small">POST /reset → default</text>
   <path class="ln-bad" d="M420,90 L420,124"/>
-  <text x="430" y="112" class="t-small">DELETE → 400 "disable atau reset saja"</text>
+  <text x="430" y="112" class="t-small">DELETE → 400 "nonaktifkan atau atur ulang saja"</text>
   <path class="ln" d="M160,190 L330,190" marker-end="url(#ar)"/>
   <text x="175" y="182" class="t-small">POST /api/admin/skills</text>
   <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
   <text x="530" y="182" class="t-small">DELETE → hilang</text>
 </svg>
-<p class="legend">Sinkronisasi katalog (2026-08-02): saat base skill asli diperbarui di katalog, setiap baris prod yang masih persis seperti yang terakhir ditulis oleh katalog akan otomatis upgrade pada pembacaan registry berikutnya — sebuah fingerprint (catalog_hash) membedakan keduanya. Baris yang telah diedit oleh admin berhenti cocok dan tetap mempertahankan edit tersebut hingga reset eksplisit dilakukan, yang juga mengaktifkan kembali auto-upgrade. Menonaktifkan skill adalah status operator, bukan edit: skill yang dinonaktifkan dan tidak disentuh tetap menerima upgrade body dan tetap off.</p>
+<p class="legend">Sinkronisasi Catalogue (2026-08-02): ketika base skill asli diperbarui di catalogue, setiap baris prod yang masih sama persis seperti yang terakhir ditulis oleh catalogue akan otomatis upgrade pada pembacaan registry berikutnya — sebuah fingerprint (catalog_hash) membedakan keduanya. Baris yang telah diedit admin berhenti mencocokkan dan tetap mempertahankan editan tersebut hingga ada reset eksplisit, yang juga mengaktifkan kembali auto-upgrade. Menonaktifkan skill adalah status operator, bukan editan: skill yang dinonaktifkan namun tidak tersentuh tetap menerima upgrade body dan tetap off.</p>
 </div>
 
 <h2>6. Lapisan keamanan — mengapa teks prompt tidak dapat langsung mencapai order</h2>
 <div class="card">
 <svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="35" width="200" height="60"/>
-  <text x="120" y="59" text-anchor="middle" class="t-b">1 · framing khusus peringatan</text>
-  <text x="120" y="77" text-anchor="middle" class="t-small">skills dapat memperketat, tidak pernah memperlonggar</text>
+  <text x="120" y="59" text-anchor="middle" class="t-b">1 · framing caution-only</text>
+  <text x="120" y="77" text-anchor="middle" class="t-small">skill dapat memperketat, tidak pernah memperlonggar</text>
   <rect class="box" x="262" y="35" width="200" height="60"/>
   <text x="362" y="59" text-anchor="middle" class="t-b">2 · kontrak output</text>
-  <text x="362" y="77" text-anchor="middle" class="t-small">daftar tindakan yang diizinkan · pembatasan · hanya JSON</text>
+  <text x="362" y="77" text-anchor="middle" class="t-small">daftar putih aksi · pembatas · hanya JSON</text>
   <rect class="box" x="504" y="35" width="200" height="60"/>
   <text x="604" y="59" text-anchor="middle" class="t-b">3 · otoritas harga</text>
-  <text x="604" y="77" text-anchor="middle" class="t-small">entri model diturunkan; harga live yang mengisi</text>
+  <text x="604" y="77" text-anchor="middle" class="t-small">entri model diturunkan; harga live mengisi</text>
   <rect class="box-accent" x="746" y="35" width="194" height="60"/>
-  <text x="843" y="59" text-anchor="middle" class="t-b">4 · gate deterministik</text>
+  <text x="843" y="59" text-anchor="middle" class="t-b">4 · gerbang deterministik</text>
   <text x="843" y="77" text-anchor="middle" class="t-small">budget · risiko · biaya · hak akses</text>
   <path class="ln" d="M220,65 L262,65" marker-end="url(#ar)"/>
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies hanya ditulis oleh admin di v1 dan dibatasi ukurannya dua kali (4,000 per body di route, 28,000 per prompt di builder). Bahkan body yang bersifat hostile tidak dapat melewati lapisan 2–4 — lapisan-lapisan tersebut berjalan di luar prompt.</p>
+<p class="legend">Skill bodies hanya ditulis oleh admin di v1 dan dibatasi ukurannya dua kali (4,000 per body di route, 30,000 per prompt di builder). Bahkan body yang berbahaya tidak dapat melewati layer 2–4 — mereka berjalan di luar prompt.</p>
 </div>
 
 <h2>7. Mengoperasikannya — admin API + waktu propagasi</h2>
 <div class="card">
 <table>
-  <tr><th>panggilan</th><th>fungsi</th><th>catatan</th></tr>
-  <tr><td><code>GET /api/admin/skills</code></td><td>daftar semua skill (base + custom)</td><td>pembacaan segar, melewati cache</td></tr>
-  <tr><td><code>POST /api/admin/skills</code></td><td>buat skill custom</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 409 jika duplikat</td></tr>
-  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>edit nama/deskripsi/isi/prompts/markets/priority/enabled</td><td>base skill dapat diedit; slug tidak dapat diubah</td></tr>
-  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>pulihkan default katalog + aktifkan kembali</td><td>hanya base — 400 untuk custom</td></tr>
-  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>hapus skill custom</td><td>base → 400 "disable atau reset saja"</td></tr>
+  <tr><th>panggilan</th><th>melakukan</th><th>catatan</th></tr>
+  <tr><td><code>GET /api/admin/skills</code></td><td>daftar semua skill (base + custom)</td><td>pembacaan baru, melewati cache</td></tr>
+  <tr><td><code>POST /api/admin/skills</code></td><td>membuat skill custom</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 409 saat duplikat</td></tr>
+  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>mengedit name/description/body/prompts/markets/priority/enabled</td><td>base skill dapat diedit; slug tidak dapat diubah</td></tr>
+  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>mengembalikan default katalog + mengaktifkan kembali</td><td>hanya base — 400 untuk custom</td></tr>
+  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>menghapus skill custom</td><td>base → 400 "nonaktifkan atau reset sebagai gantinya"</td></tr>
 </table>
-<p class="legend">Setiap penulisan dicatat dalam <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>) dan langsung membatalkan cache proses API. <b>worker adalah proses terpisah</b>: ia menyesuaikan diri melalui TTL 30 detik pada registry — sebuah perubahan mencapai siklus keputusan berikutnya dalam ~30 detik, dan fleet yang sedang berjalan akan menerapkannya pada siklus berikutnya (v1 sengaja tidak membekukan skill per run; lihat non-goals pada dokumen desain).</p>
+<p class="legend">Setiap penulisan dicatat di <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>) dan langsung membatalkan cache proses API. Worker <b>adalah proses yang terpisah</b>: ia konvergen melalui TTL 30 detik pada registry — sebuah edit mencapai siklus keputusan berikutnya dalam ~30 detik, dan fleet yang sedang berjalan akan mengambilnya pada siklus berikutnya (v1 secara sengaja tidak membekukan skill per run; lihat non-goals pada design doc).</p>
 </div>
 
 <h2>8. Memverifikasinya di prod</h2>
 <div class="card">
 <table>
-  <tr><th>periksa</th><th>cara</th><th>membuktikan</th></tr>
-  <tr><td>registry aktif</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>tabel dapat dijangkau, 30 base skill telah di-seed</td></tr>
-  <tr><td>pemilihan benar</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> kumpulan slug</td><td>site + market scoping sesuai desain</td></tr>
-  <tr><td>injeksi nyata</td><td>exec <code>_light_analysis</code> di worker dengan <code>generate_text</code> di-stub</td><td>jalur kode prod yang sebenarnya membangun prompt yang membawa blok skills — tetap berfungsi meski 0 run aktif</td></tr>
+  <tr><th>periksa</th><th>bagaimana</th><th>membuktikan</th></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table dapat diakses, 31 base skill telah di-seed</td></tr>
+  <tr><td>seleksi benar</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> kumpulan slug</td><td>site + market scoping sesuai desain</td></tr>
+  <tr><td>injection nyata</td><td>exec <code>_light_analysis</code> di worker dengan <code>generate_text</code> di-stub</td><td>code path prod yang sebenarnya membangun prompt yang membawa skills block — bekerja bahkan dengan 0 active run</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Spesifikasi pendamping: <code>docs/plan/20-trading-skills.md</code> · dirilis dalam PR #179 (squash <code>ba43060</code>) · aktif di sooppiy.com sejak 2026-08-01 · katalog bertambah menjadi 30 skill melalui #186, #193, #215, #221 dan #222 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Spesifikasi pendamping: <code>docs/plan/20-trading-skills.md</code> · dirilis dalam PR #179 (squash <code>ba43060</code>) · live di sooppiy.com sejak 2026-08-01 · katalog bertambah menjadi 31 skill melalui #186, #193, #215, #221, #222 dan #224 (2026-08-04).</p>
 
 </div>
 </body>
