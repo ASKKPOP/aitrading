@@ -56,7 +56,7 @@
 <h1>プラン 20 — トレーディングスキル：仕組み</h1>
 
 <div class="chips">
-  <div class="chip"><b>31</b><span>ベーススキル（保持・編集可能・削除不可）</span></div>
+  <div class="chip"><b>32</b><span>ベーススキル（保持・編集可能・削除不可）</span></div>
   <div class="chip"><b>4</b><span>注入される判断プロンプト</span></div>
   <div class="chip"><b>0</b><span>スキル選定に費やされる LLM 呼び出し</span></div>
   <div class="chip"><b>30,000</b><span>プロンプトあたりの文字予算</span></div>
@@ -158,7 +158,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">アナリストブリーフ 4種（ニュース · センチメント · マクロ · テクニカル）— スキルなし、データのみ</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">トレーダー + リスク判断</text>
-  <text x="740" y="268" text-anchor="middle">💡 マーケット非依存のトレーダースキル全24個（us-stock では27個 · crypto では25個）</text>
+  <text x="740" y="268" text-anchor="middle">💡 マーケット非依存のトレーダースキル全24個（us-stock では28個 · crypto では25個）</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">敵対的検証者（REFUTE を試みる）</text>
   <text x="740" y="332" text-anchor="middle">💡 コンビクション・ニュースリアクション・コントラリアンゲート・オネスティ</text>
@@ -223,13 +223,14 @@
 <p class="legend">どのステップでもレジストリエラーが発生した場合は空のブロックに縮退する — 壊れたスキルテーブルが取引サイクルを壊すことは決してない。</p>
 </div>
 
-<h2>4. 31の基本スキル — どこに適用されるか</h2>
+<h2>4. 32の基本スキル — どこに適用されるか</h2>
 <div class="card">
 <table>
   <tr><th>スキル</th><th>本質</th><th>軽量</th><th>トレーダー</th><th>検証者</th><th>プランナー</th><th>抽出元</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4つのアンカー（トレンド・ボラティリティ・参加度・イベント） → 保守的なクローズドラベル → 戦術</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js レジーム分析</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>分配日クラスター、リーダーシップの崩壊、ディフェンシブローテーション → 証拠数に応じてエクスポージャーを削減</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + IBD DDモニター</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6つのアンカー（BTCトレンド・アルトブレッドス・ドミナンスローテーション・ファンディング混雑・サイクル位置・スラスト）；矛盾があればエクスポージャーを下げる<b>（暗号資産のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty 暗号資産レジーム分析ツール</td></tr>
+  <tr><td><code>breadth-context</code></td><td>注入された米国市場ブレッドス（breadth）ラインを環境証拠として読む：8日平均のしきい値（70%以上は幅広いラリー → 40%未満は極端な弱さ）、長期トレンドが水準の意味を決める；構造的弱気ゾーンは防御的レジーム；ブレッドスラインが無ければ市場の健全性はUNKNOWN — 健全とは決して見なさない<b>（米国株のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer（+ live CSV feed）</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>オニールのフォロースルー：ラリー試行4日目以降、上昇出来高を伴う大幅な指数上昇が再エントリーを確認；下抜けはカウントをリセット；確認前のスカウティングサイズ<b>（米国株のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector（オニール）</td></tr>
   <tr><td><code>thesis-validation</code></td><td>反証可能な主張、事実と仮定の区別、時間軸の適合性、依存度、具体的な無効化条件</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js シーシス検証</td></tr>
   <tr><td><code>stage-discipline</code></td><td>表示されたデータからの4段階の読み取り:新規ロングを獲得できるのはステージ2のみ(ステージ4は新規ショート);4番目以降のベースはサイズを削減;ベースから拡張している場合は待機を意味する;判定不能なステージはブロッキングギャップであり、ステージ2と仮定してはならない <b>(米国株のみ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minerviniステージ)</td></tr>
@@ -336,13 +337,13 @@
 <div class="card">
 <table>
   <tr><th>確認</th><th>方法</th><th>証明</th></tr>
-  <tr><td>レジストリが稼働中</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>テーブルに到達可能、31個のベーススキルがシード済み</td></tr>
+  <tr><td>レジストリが稼働中</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>テーブルに到達可能、32個のベーススキルがシード済み</td></tr>
   <tr><td>選択が正しい</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slugセット</td><td>サイトと市場のスコープが設計通り</td></tr>
   <tr><td>インジェクションが本物</td><td>exec <code>_light_analysis</code> ワーカー内で <code>generate_text</code> スタブ化</td><td>実際の本番コードパスはスキルブロックを含むプロンプトを構築します — アクティブな実行が0件でも動作します</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">コンパニオン仕様: <code>docs/plan/20-trading-skills.md</code> · PR #179でリリース（squash <code>ba43060</code>) · 2026-08-01からsooppiy.comで稼働中 · カタログは#186、#193、#215、#221、#222、#224（2026-08-04）を通じて31個のスキルまで成長しました。</p>
+<p class="legend" style="margin-top:28px">コンパニオン仕様: <code>docs/plan/20-trading-skills.md</code> · PR #179でリリース（squash <code>ba43060</code>) · 2026-08-01からsooppiy.comで稼働中 · カタログは#186、#193、#215、#221、#222、#224、#226（2026-08-04）を通じて32個のスキルまで成長しました。</p>
 
 </div>
 </body>

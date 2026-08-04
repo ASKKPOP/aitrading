@@ -2404,6 +2404,42 @@ def _earnings_state_line(run: dict) -> str:
             "close to the print as a bet on the print itself.\n")
 
 
+def _breadth_state_line(run: dict) -> str:
+    """US market breadth as market-environment evidence (advisory).
+
+    The catalogue already teaches distribution counting and follow-through
+    confirmation (market-topping-evidence / bottom-confirmation), but the
+    desk's prompt carried no market-wide data to apply them to — every
+    us-stock desk read only its own symbol's candles. This supplies the
+    missing evidence from the public tradermonty breadth CSV. Advisory
+    only: it informs exposure posture, never a per-symbol signal, and a
+    feed problem renders "".
+    """
+    if (run.get("market") or "") != "us-stock":
+        return ""
+    try:
+        import breadth_feed
+        b = breadth_feed.latest_breadth()
+    except Exception:  # noqa: BLE001 — a feed problem must never block a cycle
+        return ""
+    if not b:
+        return ""
+    trend = {1: "rising", -1: "falling"}.get(b.get("trend200"))
+    line = (f"US market breadth (advisory, S&P 500, data to {b['date']}): "
+            f"{b['above_ma200']:.0%} of stocks above their 200-day MA "
+            f"(8-day avg {b['above_ma200_8ema']:.0%}"
+            + (f", long-term breadth trend {trend}" if trend else "")
+            + f"); {b['above_ma50']:.0%} above their 50-day MA.")
+    if b.get("pink_zone"):
+        line += (" Structural bearish zone: the long-term breadth trend is "
+                 "falling AND short-term breadth sits below it.")
+    if b.get("bearish"):
+        line += " The dataset's backtested bearish breadth signal is ACTIVE."
+    line += (" Weigh this as market-environment evidence for exposure "
+             "posture, not as a signal about this symbol.")
+    return line + "\n"
+
+
 def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                          thesis: dict) -> str:
     """The open position's own trajectory, for the desk's exit decision.
@@ -2605,7 +2641,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
-                      + _earnings_state_line(run))
+                      + _earnings_state_line(run)
+                      + _breadth_state_line(run))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -2986,7 +3023,8 @@ def run_cycle(run_id: int) -> dict:
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
-                                        + _earnings_state_line(run)),
+                                        + _earnings_state_line(run)
+                                        + _breadth_state_line(run)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.

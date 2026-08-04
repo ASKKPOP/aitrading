@@ -56,7 +56,7 @@
 <h1>Plan 20 — ทักษะการเทรด: วิธีการทำงาน</h1>
 
 <div class="chips">
-  <div class="chip"><b>31</b><span>ทักษะพื้นฐาน (คงไว้, แก้ไขได้, ลบไม่ได้)</span></div>
+  <div class="chip"><b>32</b><span>ทักษะพื้นฐาน (คงไว้, แก้ไขได้, ลบไม่ได้)</span></div>
   <div class="chip"><b>4</b><span>พรอมป์การตัดสินใจที่ถูกแทรกเข้าไป</span></div>
   <div class="chip"><b>0</b><span>จำนวนการเรียก LLM ที่ใช้ในการเลือกทักษะ</span></div>
   <div class="chip"><b>30,000</b><span>งบประมาณตัวอักษรต่อพรอมป์</span></div>
@@ -158,7 +158,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 บทวิเคราะห์นักวิเคราะห์ (ข่าว · ความรู้สึกตลาด · เศรษฐกิจมหภาค · เทคนิค) — ไม่มีทักษะ, ข้อมูลเท่านั้น</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">การตัดสินใจของ Trader + Risk</text>
-  <text x="740" y="268" text-anchor="middle">💡 ทักษะ trader ที่ไม่ขึ้นกับตลาดทั้งหมด 24 รายการ (27 รายการบน us-stock · 25 รายการบน crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 ทักษะ trader ที่ไม่ขึ้นกับตลาดทั้งหมด 24 รายการ (28 รายการบน us-stock · 25 รายการบน crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">ผู้ตรวจสอบเชิงโต้แย้ง (พยายาม REFUTE)</text>
   <text x="740" y="332" text-anchor="middle">💡 ความเชื่อมั่น · การตอบสนองต่อข่าว · เกตสวนกระแส · ความซื่อตรง</text>
@@ -223,13 +223,14 @@
 <p class="legend">ข้อผิดพลาดของ registry ในขั้นตอนใดก็ตามจะลดระดับเป็นบล็อกเปล่า — ตาราง skills ที่พังจะไม่สามารถทำให้ trading cycle พังตามไปด้วย</p>
 </div>
 
-<h2>4. สกิลพื้นฐานทั้งสามสิบเอ็ด — ใช้ที่ไหนบ้าง</h2>
+<h2>4. สกิลพื้นฐานทั้งสามสิบสอง — ใช้ที่ไหนบ้าง</h2>
 <div class="card">
 <table>
   <tr><th>ทักษะ</th><th>สาระสำคัญ</th><th>สว่าง</th><th>เทรดเดอร์</th><th>ผู้ตรวจสอบ</th><th>ตัววางแผน</th><th>กลั่นมาจาก</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 จุดอ้างอิง (แนวโน้ม · ความผันผวน · การมีส่วนร่วม · เหตุการณ์) → ป้ายกำกับแบบปิดที่ระมัดระวัง → กลยุทธ์</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การวิเคราะห์ regime ด้วย marian2js</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → ลด exposure ตามจำนวนหลักฐาน</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัวติดตาม tradermonty market-top + IBD DD</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6 anchors (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); ความขัดแย้งลด exposure <b>(คริปโตเท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัววิเคราะห์ระบอบตลาดคริปโต tradermonty</td></tr>
+  <tr><td><code>breadth-context</code></td><td>อ่านบรรทัด market breadth ของตลาดสหรัฐฯ ที่ถูกแทรกเข้ามา เป็นหลักฐานสภาพแวดล้อม: เกณฑ์ค่าเฉลี่ย 8 วัน (70%+ คือการปรับตัวขึ้นแบบกว้าง → ต่ำกว่า 40% คือความอ่อนแอสุดขั้ว), แนวโน้มระยะยาวเป็นตัวกำหนดความหมายของระดับ; โซนขาลงเชิงโครงสร้างคือระบอบเชิงป้องกัน; หากไม่มีบรรทัด breadth สุขภาพตลาดคือ UNKNOWN — ไม่ใช่แข็งแรง <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ live CSV feed)</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: วันพยายามฟื้นตัว (rally attempt) วันที่ 4 เป็นต้นไป ดัชนีปรับตัวขึ้นแรงพร้อมปริมาณการซื้อขายที่เพิ่มขึ้นเป็นการยืนยันการกลับเข้าซื้อ; การหลุดต่ำกว่าระดับเดิมจะรีเซ็ตการนับ; การสำรวจขนาดก่อนการยืนยัน <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>ข้อสมมติฐานที่พิสูจน์ได้ว่าเป็นเท็จ, ข้อเท็จจริงเทียบกับสมมติฐาน, ความเหมาะสมกับกรอบเวลา, ภาระการพึ่งพา, การพิสูจน์ความไม่ถูกต้องที่เป็นรูปธรรม</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การตรวจสอบความถูกต้องของวิทยานิพนธ์ marian2js</td></tr>
   <tr><td><code>stage-discipline</code></td><td>การอ่านสี่ระยะจากข้อมูลที่แสดง: มีเพียง Stage 2 เท่านั้นที่เปิด long ใหม่ได้ (Stage 4 เปิด short ใหม่); ฐานที่สี่ขึ้นไปให้ลดขนาด; extended-from-base หมายถึงให้รอ; ระยะที่ไม่สามารถระบุได้คือช่องว่างที่ต้องหยุด (blocking gap) ห้ามสันนิษฐานว่าเป็น Stage 2 <b>(เฉพาะหุ้นสหรัฐฯ เท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (ระยะของ Minervini)</td></tr>
@@ -336,13 +337,13 @@
 <div class="card">
 <table>
   <tr><th>ตรวจสอบ</th><th>อย่างไร</th><th>พิสูจน์</th></tr>
-  <tr><td>registry ทำงานอยู่</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table เข้าถึงได้ มี 31 base skills ที่ seed ไว้</td></tr>
+  <tr><td>registry ทำงานอยู่</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table เข้าถึงได้ มี 32 base skills ที่ seed ไว้</td></tr>
   <tr><td>การเลือกถูกต้อง</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> ชุด slug</td><td>site + market scoping ตามที่ออกแบบไว้</td></tr>
   <tr><td>การ injection เป็นจริง</td><td>ดำเนินการ <code>_light_analysis</code> ใน worker โดยที่ <code>generate_text</code> ถูก stub ไว้</td><td>โค้ด prod จริงสร้าง prompts ที่มีบล็อก skills — ทำงานได้แม้มี 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">สเปกคู่กัน: <code>docs/plan/20-trading-skills.md</code> · เผยแพร่ใน PR #179 (squash <code>ba43060</code>) · ใช้งานจริงบน sooppiy.com ตั้งแต่ 2026-08-01 · แคตตาล็อกขยายเป็น 31 skills ผ่าน #186, #193, #215, #221, #222 และ #224 (2026-08-04)</p>
+<p class="legend" style="margin-top:28px">สเปกคู่กัน: <code>docs/plan/20-trading-skills.md</code> · เผยแพร่ใน PR #179 (squash <code>ba43060</code>) · ใช้งานจริงบน sooppiy.com ตั้งแต่ 2026-08-01 · แคตตาล็อกขยายเป็น 32 skills ผ่าน #186, #193, #215, #221, #222, #224 และ #226 (2026-08-04)</p>
 
 </div>
 </body>

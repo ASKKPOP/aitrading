@@ -41,8 +41,8 @@ MAX_BODY_LEN = 4000
 # Per-prompt injection budget. Skills are added priority-order until the next
 # one would overflow; overflow skips that skill, it never truncates mid-body.
 # 30000 fits the ENTIRE default-enabled trader set (the busiest site is
-# trader/us-stock at 24,272 after the finance-skills mining added
-# stage-discipline; trader/crypto sits at 21,825) — at the defaults nothing
+# trader/us-stock at 25,384 after the tradermonty breadth mining added
+# breadth-context; trader/crypto sits at 21,825) — at the defaults nothing
 # is ever silently dropped; the budget only bites once an admin adds custom
 # skills. The previous 28000 cap technically still fit, with 3,728
 # characters to spare, which is not headroom — a max-size custom skill
@@ -927,6 +927,37 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "price stop. A stretch that keeps widening after entry is not a "
             "better price; it is the trend telling you the range is gone. "
             "Never add to a reversion trade on that reasoning."
+        ),
+    },
+    {
+        "slug": "breadth-context",
+        "name": "Breadth Context",
+        "description": ("Read the market-breadth line as environment "
+                        "evidence: 8-day-average thresholds, trend-qualified "
+                        "levels, defensive zone; missing data is not health."),
+        "prompts": ["trader"],
+        "markets": ["us-stock"],
+        "priority": 13,
+        "body": (
+            "When the prompt carries a US market breadth line, read it as "
+            "market-environment evidence before siding with any single-name "
+            "thesis. Anchor on the 8-day average of stocks above their "
+            "200-day MA: above 70% is a broad rally, 60-70% healthy "
+            "participation, near 50% neutral, 40-50% weakening, below 40% "
+            "extreme weakness where trough formation becomes possible, and "
+            "below 20% crisis territory that has historically preceded "
+            "major bottoms. A level never stands alone: the same reading is "
+            "healthier inside a rising long-term breadth trend than a "
+            "falling one, so let the trend qualify the level. A structural "
+            "bearish zone (long-term trend falling AND short-term breadth "
+            "below it) is a defensive regime that can persist for weeks — "
+            "fresh full-size longs are not owed there, and adds to winners "
+            "want extra justification. Narrow breadth while the index holds "
+            "near its highs is input for topping-evidence counting; extreme "
+            "lows argue patience for follow-through confirmation, not "
+            "bottom-guessing. If no breadth line is present, treat market "
+            "health as UNKNOWN — a missing feed is never evidence of "
+            "health."
         ),
     },
 ]

@@ -56,7 +56,7 @@
 <h1>Plan 20 — Kỹ Năng Giao Dịch: Cách Thức Hoạt Động</h1>
 
 <div class="chips">
-  <div class="chip"><b>31</b><span>kỹ năng cơ bản (được giữ lại, có thể chỉnh sửa, không thể xóa)</span></div>
+  <div class="chip"><b>32</b><span>kỹ năng cơ bản (được giữ lại, có thể chỉnh sửa, không thể xóa)</span></div>
   <div class="chip"><b>4</b><span>các prompt quyết định được chèn vào</span></div>
   <div class="chip"><b>0</b><span>số lệnh gọi LLM dùng để chọn kỹ năng</span></div>
   <div class="chip"><b>30,000</b><span>ngân sách ký tự mỗi prompt</span></div>
@@ -158,7 +158,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 bản tóm tắt phân tích (tin tức · tâm lý thị trường · vĩ mô · kỹ thuật) — không có kỹ năng, chỉ có dữ liệu</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Quyết định Trader + Risk</text>
-  <text x="740" y="268" text-anchor="middle">💡 toàn bộ 24 kỹ năng trader không phụ thuộc thị trường (27 trên us-stock · 25 trên crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 toàn bộ 24 kỹ năng trader không phụ thuộc thị trường (28 trên us-stock · 25 trên crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Người xác minh đối kháng (cố gắng BÁC BỎ)</text>
   <text x="740" y="332" text-anchor="middle">💡 độ tin cậy · phản ứng tin tức · cổng ngược xu hướng · tính trung thực</text>
@@ -223,13 +223,14 @@
 <p class="legend">Bất kỳ lỗi registry nào ở bất kỳ bước nào cũng suy giảm thành một khối rỗng — một bảng kỹ năng bị hỏng không bao giờ có thể làm hỏng một chu kỳ giao dịch.</p>
 </div>
 
-<h2>4. Ba mươi mốt kỹ năng cơ bản — áp dụng ở đâu</h2>
+<h2>4. Ba mươi hai kỹ năng cơ bản — áp dụng ở đâu</h2>
 <div class="card">
 <table>
   <tr><th>kỹ năng</th><th>bản chất</th><th>nhẹ</th><th>nhà giao dịch</th><th>trình xác minh</th><th>trình lập kế hoạch</th><th>được chắt lọc từ</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 điểm neo (xu hướng · biến động · mức độ tham gia · sự kiện) → nhãn đóng thận trọng → chiến thuật</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>phân tích chế độ marian2js</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>cụm ngày phân phối, sự sụp đổ của nhóm dẫn dắt, xoay vòng phòng thủ → giảm mức độ tiếp xúc theo số lượng bằng chứng</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Máy giám sát tradermonty market-top + IBD DD</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6 điểm neo (xu hướng BTC · độ rộng altcoin · xoay vòng thống trị · mức độ chen chúc funding · vị trí chu kỳ · lực đẩy); xung đột làm giảm mức độ tiếp xúc <b>(chỉ crypto)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
+  <tr><td><code>breadth-context</code></td><td>đọc dòng market breadth (độ rộng thị trường) của thị trường Mỹ được đưa vào như bằng chứng môi trường: ngưỡng trung bình 8 ngày (70%+ là đợt tăng trên diện rộng → dưới 40% là suy yếu cực độ), xu hướng dài hạn quyết định ý nghĩa của mức; vùng giảm giá cấu trúc là chế độ phòng thủ; thiếu dòng breadth nghĩa là sức khỏe thị trường UNKNOWN, không bao giờ là khỏe mạnh <b>(chỉ us-stock)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ live CSV feed)</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: ngày cố gắng tăng thứ 4 trở lên, mức tăng chỉ số lớn cùng khối lượng gia tăng xác nhận việc tái nhập; việc giảm dưới mức reset lại số đếm; quy mô thăm dò trước khi xác nhận <b>(chỉ us-stock)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>luận điểm có thể bác bỏ, sự kiện so với giả định, mức độ phù hợp khung thời gian, tải trọng phụ thuộc, sự vô hiệu hóa cụ thể</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>xác thực luận điểm marian2js</td></tr>
   <tr><td><code>stage-discipline</code></td><td>đọc bốn giai đoạn từ dữ liệu hiển thị: chỉ Stage 2 mới được vào lệnh long mới (Stage 4 là short mới); một base thứ tư trở lên thì giảm size; extended-from-base nghĩa là chờ; một stage không thể xác định là một khoảng trống chặn (blocking gap), không bao giờ mặc định là Stage 2 <b>(chỉ áp dụng cổ phiếu Mỹ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (các giai đoạn Minervini)</td></tr>
@@ -336,13 +337,13 @@
 <div class="card">
 <table>
   <tr><th>kiểm tra</th><th>như thế nào</th><th>chứng minh</th></tr>
-  <tr><td>registry đang hoạt động</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table có thể truy cập được, 31 base skill đã được seed</td></tr>
+  <tr><td>registry đang hoạt động</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table có thể truy cập được, 32 base skill đã được seed</td></tr>
   <tr><td>lựa chọn đúng</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> các slug set</td><td>site + market scoping đúng như thiết kế</td></tr>
   <tr><td>injection thực tế</td><td>exec <code>_light_analysis</code> trong worker với <code>generate_text</code> được stub hoá</td><td>đường dẫn code prod thực tế xây dựng các prompt mang theo skills block — vẫn hoạt động ngay cả khi có 0 run đang active</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Spec đồng hành: <code>docs/plan/20-trading-skills.md</code> · đã được ship trong PR #179 (squash <code>ba43060</code>) · hoạt động trên sooppiy.com từ 2026-08-01 · catalogue đã tăng lên 31 skill qua #186, #193, #215, #221, #222 và #224 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Spec đồng hành: <code>docs/plan/20-trading-skills.md</code> · đã được ship trong PR #179 (squash <code>ba43060</code>) · hoạt động trên sooppiy.com từ 2026-08-01 · catalogue đã tăng lên 32 skill qua #186, #193, #215, #221, #222, #224 và #226 (2026-08-04).</p>
 
 </div>
 </body>
