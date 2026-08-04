@@ -15,6 +15,17 @@ import { fmtUsd, pnlColor } from './tradeShared'
 // lifetime P&L number reads as current performance when it is not.
 const EXIT_RAILS_EPOCH = '2026-07-25'
 
+// Calendar-period start in local time: today 00:00 / Monday / 1st / Jan 1.
+// Shared by the summary fetch (as the server aggregate's `since`) and the
+// strip's client-side window over the capped fill list.
+const periodStartMs = (p: 'today' | 'week' | 'month' | 'year') => {
+  const d = new Date(); d.setHours(0, 0, 0, 0)
+  if (p === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  else if (p === 'month') d.setDate(1)
+  else if (p === 'year') { d.setMonth(0); d.setDate(1) }
+  return d.getTime()
+}
+
 // Automation (Target 3). The page itself is deliberately one block — the live
 // TRADING grid — with two ways to make a new one sitting above it:
 //
@@ -156,7 +167,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // Reporting it as one number reads as current performance. Show both.
   const [assets, setAssets] = useState<{ total: number; unrealized: number;
     realized: number; realizedCurrent: number; cash: number; inUse: number;
-    since: string | null; trades: any[]; positions: any[] } | null>(null)
+    since: string | null; trades: any[]; positions: any[]; summary: any } | null>(null)
   // Summary-strip period filter — scopes lifetime, profit and the rails tile
   // (deposit is a point-in-time balance no period can apply to). Each tile
   // opens a detail modal with the numbers behind it.
@@ -173,27 +184,39 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         const value = positions.reduce((s: number, p: any) =>
           s + Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0), 0)
         const unrealized = positions.reduce((s: number, p: any) => s + (p.pnl ?? 0), 0)
+        // The list is capped at 200 rows (server cap) — it feeds the fill
+        // lists in the tile modals only. Every SUM comes from the server-side
+        // aggregate below, which has no row cap.
         const mine = await (await fetch(`${API_BASE}/positions/trades?limit=200`,
           { headers: { Authorization: `Bearer ${token}` } })).json()
         const mineTrades = mine.trades || []
-        const realized = mineTrades.reduce(
+        let summary: any = null
+        try {
+          const sinceIso = new Date(periodStartMs(sumPeriod)).toISOString()
+          const sm = await (await fetch(
+            `${API_BASE}/positions/trades/summary?since=${encodeURIComponent(sinceIso)}&split=${EXIT_RAILS_EPOCH}`,
+            { headers: { Authorization: `Bearer ${token}` } })).json()
+          if (typeof sm?.pnl === 'number') summary = sm
+        } catch { /* fall back to the capped list below */ }
+        const realized = summary ? summary.pnl : mineTrades.reduce(
           (s: number, t: any) => s + (t.pnl ?? 0), 0)
-        const realizedCurrent = mineTrades.reduce(
+        const realizedCurrent = summary ? summary.split.pnl : mineTrades.reduce(
           (s: number, t: any) =>
             (t.created_at || '') >= EXIT_RAILS_EPOCH ? s + (t.pnl ?? 0) : s, 0)
         // earliest trade = "lifetime" anchor (first automated activity)
-        const since = mineTrades.reduce((min: string | null, t: any) => {
-          const c = t.created_at
-          return c && (!min || c < min) ? c : min
-        }, null as string | null)
+        const since = summary ? summary.first_trade : mineTrades.reduce(
+          (min: string | null, t: any) => {
+            const c = t.created_at
+            return c && (!min || c < min) ? c : min
+          }, null as string | null)
         const cash = pos.cash ?? 0
-        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades, positions })
+        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades, positions, summary })
       } catch { /* transient */ }
     }
     loadAssets()
     const iv = setInterval(loadAssets, 10000)
     return () => { dead = true; clearInterval(iv) }
-  }, [token])
+  }, [token, sumPeriod])
 
   async function startRunFromAnalysis(symbol: string, market: string) {
     setRunStartBusy(true); setRunStartErr('')
@@ -663,23 +686,31 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // which side is windowed.
   const periodLabel: Record<string, string> = { today: T.sumToday, week: T.sumWeek, month: T.sumMonth, year: T.sumYear }
   const win = assets && (() => {
-    const d = new Date(); d.setHours(0, 0, 0, 0)
-    if (sumPeriod === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-    else if (sumPeriod === 'month') d.setDate(1)
-    else if (sumPeriod === 'year') { d.setMonth(0); d.setDate(1) }
-    const periodStart = d.getTime()
+    const periodStart = periodStartMs(sumPeriod)
     const ts = (c: any) => c ? new Date(String(c).replace(' ', 'T')).getTime() : NaN
     const localDate = (ms: number) => {
       const x = new Date(ms)
       return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
     }
-    // trades arrive newest-first from the API; both lists keep that order
+    // trades arrive newest-first from the API; both lists keep that order.
+    // The lists feed the modal fill views only — the window is [periodStart,
+    // now], so the newest fills are always inside the 200-row cap; only a
+    // long window's tail can truncate, and the sums don't come from here.
     const trades = assets.trades.filter((t: any) => ts(t.created_at) >= periodStart)
-    const realized = trades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    const railsTrades = trades.filter((t: any) => (t.created_at || '') >= EXIT_RAILS_EPOCH)
+    // Windowed sums: the server aggregate when it matches the active chip
+    // (fetches keyed on sumPeriod, so right after a chip switch the stored
+    // window is the previous chip's — fall back to the capped-list sums for
+    // that one poll rather than show the wrong period's number).
+    const sm = assets.summary?.window?.since === new Date(periodStart).toISOString()
+      ? assets.summary : null
+    const realized = sm ? sm.window.pnl
+      : trades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
     // Rails inside the window: both boundaries apply — the fixed epoch (same
     // string compare as the lifetime figure) AND the chip's start.
-    const railsTrades = trades.filter((t: any) => (t.created_at || '') >= EXIT_RAILS_EPOCH)
-    const realizedRails = railsTrades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    const realizedRails = sm ? sm.window.split_pnl
+      : railsTrades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    const tradeCount = sm ? sm.window.trades : trades.length
     const railsSince = periodStart > ts(`${EXIT_RAILS_EPOCH} 00:00:00`) ? localDate(periodStart) : EXIT_RAILS_EPOCH
     const dur = (ms: number) => ({ d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000) })
     const sinceMs = assets.since ? ts(assets.since) : NaN
@@ -688,7 +719,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     const opStartMs = Number.isFinite(sinceMs) ? Math.max(sinceMs, periodStart) : NaN
     const opWindow = Number.isFinite(opStartMs) && Date.now() > opStartMs ? dur(Date.now() - opStartMs) : null
     const profit = realized + assets.unrealized
-    return { periodStart, trades, realized, railsTrades, realizedRails, railsSince, life, opStartMs, opWindow, profit, localDate }
+    return { periodStart, trades, realized, railsTrades, realizedRails, tradeCount, railsSince, life, opStartMs, opWindow, profit, localDate }
   })()
 
   // Account summary. Lives in the page header, right-aligned: it is reference
@@ -883,7 +914,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {row(T.dFirstTrade, assets.since ? when(assets.since) : T.sumNoHistory)}
                 {row(T.dTotalSpan, durStr(win.life))}
                 {row(`${T.dWindowSpan} · ${periodLabel[sumPeriod]}`, durStr(win.opWindow))}
-                {row(T.dTradeCount, String(win.trades.length))}
+                {row(T.dTradeCount, String(win.tradeCount))}
                 {row(T.dLastTrade, win.trades.length ? when(win.trades[0].created_at) : '—')}
               </>}
 
