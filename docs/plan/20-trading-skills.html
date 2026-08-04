@@ -55,10 +55,10 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>30</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>31</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
-  <div class="chip"><b>28,000</b><span>char budget per prompt</span></div>
+  <div class="chip"><b>30,000</b><span>char budget per prompt</span></div>
   <div class="chip"><b>30s</b><span>worker cache TTL</span></div>
 </div>
 
@@ -157,7 +157,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst briefs (news · sentiment · macro · technical) — no skills, data only</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk decision</text>
-  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (26 on us-stock · 25 on crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (27 on us-stock · 25 on crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Adversarial verifier (tries to REFUTE)</text>
   <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
@@ -202,7 +202,7 @@
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">budget check</text>
   <text x="505" y="112" text-anchor="middle" class="t-small">would section overflow</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">28,000 chars?</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">30,000 chars?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
   <text x="795" y="94" text-anchor="middle" class="t-b">framed block</text>
@@ -222,7 +222,7 @@
 <p class="legend">Any registry error at any step degrades to an empty block — a broken skills table can never break a trading cycle.</p>
 </div>
 
-<h2>4. The thirty base skills — what applies where</h2>
+<h2>4. The thirty-one base skills — what applies where</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>distilled from</th></tr>
@@ -231,6 +231,7 @@
   <tr><td><code>crypto-regime-lens</code></td><td>6 anchors (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); conflicts lower exposure <b>(crypto only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: rally attempt day 4+, big index gain on rising volume confirms re-entry; undercut resets the count; scouting size before confirmation <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>falsifiable claim, facts vs assumptions, timeframe fit, dependency load, concrete invalidation</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
+  <tr><td><code>stage-discipline</code></td><td>four-stage read from the data shown: only Stage 2 earns fresh longs (Stage 4 fresh shorts); a fourth-or-later base cuts size; extended-from-base means wait; an unresolvable stage is a blocking gap, never assumed Stage 2 <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minervini stages)</td></tr>
   <tr><td><code>level-integrity</code></td><td>a level must be able to fire: right side of spot, clear of half-a-day's noise, inside the recent range; an unusable level = say so and anchor to visible structure</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (wrong-side levels, 2026-08-03)</td></tr>
   <tr><td><code>position-sizing-discipline</code></td><td>size from risk, strictest constraint wins, round down, half-Kelly caution</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
   <tr><td><code>volatility-context</code></td><td>judge ranges, stops and size against the asset's OWN volatility history; compression is loaded, extremes revert; never widen a stop at constant size</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs volatility-modeling + regime-detection</td></tr>
@@ -314,7 +315,7 @@
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 28,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
+<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 30,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
 </div>
 
 <h2>7. Operating it — admin API + propagation timing</h2>
@@ -334,13 +335,13 @@
 <div class="card">
 <table>
   <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 30 base skills seeded</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 31 base skills seeded</td></tr>
   <tr><td>selection correct</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug sets</td><td>site + market scoping as designed</td></tr>
   <tr><td>injection real</td><td>exec <code>_light_analysis</code> in the worker with <code>generate_text</code> stubbed</td><td>the actual prod code path builds prompts carrying the skills block — works even with 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 30 skills via #186, #193, #215, #221 and #222 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 31 skills via #186, #193, #215, #221, #222 and #224 (2026-08-04).</p>
 
 </div>
 </body>
