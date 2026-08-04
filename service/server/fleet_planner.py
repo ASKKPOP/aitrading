@@ -271,6 +271,11 @@ REPLACE_NEVER = frozenset({"user_stop", "fleet_stop_all", "agent_deleted",
 SLOT_CLOSING = frozenset({"user_stop", "fleet_stop_all"})
 
 LIQUIDATION_COOLDOWN_HOURS = 24
+# A run that idle-retired never traded — its symbol proved un-actionable for
+# this desk today. Cool it long enough that the replacement must carry a
+# DIFFERENT symbol instead of rebuilding the same idleness (939/940
+# 2026-08-04: ~43 hold cycles each, recalled, parity-eligible for rebuild).
+IDLE_SYMBOL_COOLDOWN_HOURS = 12
 
 
 def _now_dt() -> datetime:
@@ -739,6 +744,45 @@ def _clamp_bet_to_exposure_cap(max_bet: float, leverage: float,
     return min(max_bet, feasible)
 
 
+def _market_confidence_ceiling(market: str, days: int = 14,
+                               min_samples: int = 30) -> Optional[float]:
+    """p75 of the market's decision confidence over the last `days` days.
+
+    None (no clamp) when the market has fewer than `min_samples` decisions or
+    the lookup fails for any reason — compose_run_settings must keep working
+    with no DB at all (the allocation unit tests call it bare), so this is
+    fail-soft end to end.
+    """
+    try:
+        cutoff = (_now_dt() - timedelta(days=days)).strftime(TS_FMT)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT e.payload FROM run_events e
+                   JOIN trading_runs r ON r.id = e.run_id
+                   WHERE e.event_type = 'decision' AND r.market = ?
+                   AND e.ts >= ?""",
+                (market, cutoff))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+        confs = []
+        for row in rows:
+            try:
+                c = json.loads(row["payload"]).get("confidence")
+                if c is not None:
+                    confs.append(float(c))
+            except (ValueError, TypeError, KeyError):
+                continue
+        if len(confs) < min_samples:
+            return None
+        confs.sort()
+        return confs[int(len(confs) * 0.75)]
+    except Exception:  # noqa: BLE001 - a calibration read must never block a build
+        return None
+
+
 def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     """Thesis + slot budget → the run-creation payload. Deterministic clamps
     only — including the §6.4 percent→fraction unit conversion (a 2.5% thesis
@@ -767,6 +811,17 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     thesis_conf = float(thesis.get("confidence") or 0.5)
     min_conf = min(_tier("min_confidence", risk),
                    max(0.50, round(thesis_conf - 0.05, 2)))
+    # F3's second blind spot (2026-08-04): the clamp keys on the THESIS
+    # writer's confidence, but the gate is applied to the DESK's cycle
+    # confidence — a different, lower distribution. 939/940 carried 0.70+
+    # theses, so F3 left their gates at 0.65, and only ~15% of decisions in
+    # ANY market clear 0.65 (7-day measure) — both idled ~43 cycles to the
+    # no-trade recall while 956 traded fine through its 0.57 gate. Cap the
+    # gate at the market's OWN recent p75 so a desk is never asked for a
+    # conviction its market demonstrably rarely produces.
+    ceiling = _market_confidence_ceiling(market)
+    if ceiling is not None:
+        min_conf = max(0.50, min(min_conf, round(ceiling, 2)))
     # Leverage: the fleet's explicit setting wins ("set"); None/0 ⇒ auto by
     # tier ("auto"). Clamp to the 1–10× the run route accepts.
     fleet_lev = fleet.get("leverage")
