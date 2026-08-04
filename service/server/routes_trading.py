@@ -942,6 +942,64 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 decorate_polymarket_item(item, fetch_remote=False)
         return {'trades': rows, 'count': len(rows)}
 
+    @app.get('/api/positions/trades/summary')
+    async def get_my_trades_summary(since: str = None, split: str = None,
+                                    authorization: str = Header(None)):
+        """Aggregate realized P&L over ALL of the agent's fills, in SQL.
+
+        The trades list above is capped at 200 rows; any client that sums it
+        gets a window that silently shrinks as new fills push old ones out
+        (the /automation summary tiles did exactly that). created_at is an
+        ISO-8601 UTC string ('...T...Z') on both dialects, so plain lexical
+        >= comparisons window it correctly.
+
+        - `split`: fixed boundary (e.g. the 2026-07-25 exit-rails epoch) —
+          returns the sum/count at or after it.
+        - `since`: period-window start (client's chip, as UTC ISO) — returns
+          the windowed sum/count plus the window∩split overlap.
+        """
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        cols = ["COALESCE(SUM(pnl), 0) AS pnl", "COUNT(*) AS trades",
+                "MIN(created_at) AS first_trade", "MAX(created_at) AS last_trade"]
+        params: list = []
+        if split:
+            cols += ["COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS split_pnl",
+                     "SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS split_trades"]
+            params += [split, split]
+        if since:
+            # window∩split: both boundaries are ISO strings, so the later one
+            # lexically is the later instant (date-only 'YYYY-MM-DD' sorts
+            # before every 'YYYY-MM-DDT...' of the same day).
+            win_split = max(since, split) if split else since
+            cols += ["COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS window_pnl",
+                     "SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS window_trades",
+                     "COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS window_split_pnl"]
+            params += [since, since, win_split]
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""SELECT {', '.join(cols)} FROM signals
+                WHERE agent_id = ? AND message_type = 'operation'""",
+            (*params, agent['id']))
+        row = dict(cursor.fetchone())
+        conn.close()
+
+        out = {'pnl': row['pnl'], 'trades': int(row['trades'] or 0),
+               'first_trade': row['first_trade'], 'last_trade': row['last_trade']}
+        if split:
+            out['split'] = {'since': split, 'pnl': row['split_pnl'],
+                            'trades': int(row['split_trades'] or 0)}
+        if since:
+            out['window'] = {'since': since, 'pnl': row['window_pnl'],
+                             'trades': int(row['window_trades'] or 0),
+                             'split_pnl': row['window_split_pnl']}
+        return out
+
     @app.get('/api/agents/{agent_id}/positions')
     async def get_agent_positions(agent_id: int):
         conn = get_db_connection()
