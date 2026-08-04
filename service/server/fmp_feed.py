@@ -16,8 +16,14 @@ Alpha Vantage fallback (2026-08-04): FMP_API_KEY has never been set on prod,
 so this feed shipped dead — the us-stock desks (939 TSLA / 940 NVDA) hold
 positions with zero knowledge of scheduled prints. Prod DOES carry
 ALPHA_VANTAGE_API_KEY for stock prices, and its EARNINGS_CALENDAR endpoint
-serves the same symbol→date map as CSV. FMP stays preferred when its key
-exists; Alpha Vantage is the fallback, same cache, same degraded contract.
+serves the same symbol→date map as CSV.
+
+Union (2026-08-04): "FMP preferred, AV fallback" proved wrong the first day
+it faced a real print — FMP's plan tier served 16 symbols in a peak-season
+window and missed SPCX reporting THAT DAY, while AV's window carried 2,674
+symbols including it. Every keyed source is now fetched and unioned (FMP
+wins per-symbol conflicts), with per-source stale maps so AV's daily
+rate-limit cannot evict print knowledge mid-day. Same degraded contract.
 """
 
 from __future__ import annotations
@@ -38,7 +44,10 @@ logger = logging.getLogger(__name__)
 FMP_BASE = "https://financialmodelingprep.com/stable"
 
 _CACHE_TTL_SECONDS = 6 * 3600.0
-_cache: dict[str, Any] = {"at": 0.0, "by_symbol": None}
+# by_symbol is the served union; fmp/av hold each source's last good map so
+# one source failing a refresh (AV's free key rate-limits daily) can never
+# evict the other's — or its own prior — knowledge mid-day.
+_cache: dict[str, Any] = {"at": 0.0, "by_symbol": None, "fmp": None, "av": None}
 
 EARNINGS_WINDOW_DAYS = 14
 
@@ -114,8 +123,12 @@ def _fetch_alphavantage(start: str, end: str) -> dict[str, str]:
 def upcoming_earnings(force: bool = False) -> dict[str, str]:
     """symbol -> next earnings date (YYYY-MM-DD) inside the window.
 
-    {} without any key, on a cold failed fetch, or when the source returns
-    nothing. FMP is preferred when its key exists; Alpha Vantage otherwise.
+    {} without any key, on a cold failed fetch, or when the sources return
+    nothing. Every keyed source is fetched and the maps unioned — FMP's date
+    wins per-symbol conflicts (2026-08-04: FMP's thin tier served 16 symbols
+    and missed a fleet symbol printing that day; AV's window carried 2,674).
+    A source that fails a refresh contributes its last good map instead;
+    only when every live fetch fails does the whole stale union serve.
     """
     if not feed_enabled():
         return {}
@@ -125,14 +138,26 @@ def upcoming_earnings(force: bool = False) -> dict[str, str]:
         return cached
     start = _today().strftime("%Y-%m-%d")
     end = (_today() + timedelta(days=EARNINGS_WINDOW_DAYS)).strftime("%Y-%m-%d")
-    try:
-        if fmp_enabled():
-            by_symbol = _fetch_fmp(start, end)
-        else:
-            by_symbol = _fetch_alphavantage(start, end)
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("earnings calendar unavailable: %s", exc)
+    fmp_map, av_map = _cache["fmp"], _cache["av"]
+    sources = failures = 0
+    if fmp_enabled():
+        sources += 1
+        try:
+            fmp_map = _cache["fmp"] = _fetch_fmp(start, end)
+        except Exception as exc:  # noqa: BLE001
+            failures += 1
+            logger.debug("FMP earnings calendar unavailable: %s", exc)
+    if _alphavantage_key():
+        sources += 1
+        try:
+            av_map = _cache["av"] = _fetch_alphavantage(start, end)
+        except Exception as exc:  # noqa: BLE001
+            failures += 1
+            logger.debug("Alpha Vantage earnings calendar unavailable: %s", exc)
+    if failures == sources:
         return cached if cached is not None else {}
+    by_symbol = dict(av_map or {})
+    by_symbol.update(fmp_map or {})
     _cache["by_symbol"] = by_symbol
     _cache["at"] = now
     return by_symbol
