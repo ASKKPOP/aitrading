@@ -236,6 +236,22 @@ class RegistryTests(_Db):
             slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
             self.assertNotIn("stage-discipline", slugs)
 
+    def test_breadth_context_rides_us_stock_trader_only(self):
+        # tradermonty mining (2026-08-04): teaches the desk to read the
+        # breadth line the run_engine now injects — us-stock only, like the
+        # feed itself. It must render (not be budget-skipped) in the
+        # us-stock trader block and stay off everything else.
+        block = trading_skills.skills_block("trader", "us-stock")
+        self.assertIn("### Breadth Context\n", block)
+        self.assertIn("never evidence of health", block)
+        for market in (None, "crypto", "futures", "forex"):
+            self.assertNotIn(
+                "### Breadth Context\n",
+                trading_skills.skills_block("trader", market))
+        for site in ("light", "verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("breadth-context", slugs)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],

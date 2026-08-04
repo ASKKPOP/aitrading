@@ -55,7 +55,7 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>31</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>32</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
   <div class="chip"><b>30,000</b><span>char budget per prompt</span></div>
@@ -157,7 +157,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst briefs (news · sentiment · macro · technical) — no skills, data only</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk decision</text>
-  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (27 on us-stock · 25 on crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (28 on us-stock · 25 on crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Adversarial verifier (tries to REFUTE)</text>
   <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
@@ -222,13 +222,14 @@
 <p class="legend">Any registry error at any step degrades to an empty block — a broken skills table can never break a trading cycle.</p>
 </div>
 
-<h2>4. The thirty-one base skills — what applies where</h2>
+<h2>4. The thirty-two base skills — what applies where</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>distilled from</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 anchors (trend · volatility · participation · events) → conservative closed labels → tactics</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js regime analysis</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → reduce exposure by evidence count</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + IBD DD monitor</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6 anchors (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); conflicts lower exposure <b>(crypto only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
+  <tr><td><code>breadth-context</code></td><td>read the injected US market-breadth line as environment evidence: 8-day-average thresholds (70%+ broad rally → below 40% extreme weakness), the long-term trend qualifies the level, the structural bearish zone is a defensive regime; a missing breadth line means market health UNKNOWN, never healthy <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ live CSV feed)</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: rally attempt day 4+, big index gain on rising volume confirms re-entry; undercut resets the count; scouting size before confirmation <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>falsifiable claim, facts vs assumptions, timeframe fit, dependency load, concrete invalidation</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
   <tr><td><code>stage-discipline</code></td><td>four-stage read from the data shown: only Stage 2 earns fresh longs (Stage 4 fresh shorts); a fourth-or-later base cuts size; extended-from-base means wait; an unresolvable stage is a blocking gap, never assumed Stage 2 <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minervini stages)</td></tr>
@@ -335,13 +336,13 @@
 <div class="card">
 <table>
   <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 31 base skills seeded</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 32 base skills seeded</td></tr>
   <tr><td>selection correct</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug sets</td><td>site + market scoping as designed</td></tr>
   <tr><td>injection real</td><td>exec <code>_light_analysis</code> in the worker with <code>generate_text</code> stubbed</td><td>the actual prod code path builds prompts carrying the skills block — works even with 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 31 skills via #186, #193, #215, #221, #222 and #224 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 32 skills via #186, #193, #215, #221, #222, #224 and #226 (2026-08-04).</p>
 
 </div>
 </body>

@@ -56,7 +56,7 @@
 <h1>Plan 20 — Trading Skills: Cara Kerjanya</h1>
 
 <div class="chips">
-  <div class="chip"><b>31</b><span>skill dasar (dipertahankan, dapat diedit, tidak dapat dihapus)</span></div>
+  <div class="chip"><b>32</b><span>skill dasar (dipertahankan, dapat diedit, tidak dapat dihapus)</span></div>
   <div class="chip"><b>4</b><span>prompt keputusan yang disisipkan</span></div>
   <div class="chip"><b>0</b><span>panggilan LLM yang digunakan untuk memilih skill</span></div>
   <div class="chip"><b>30,000</b><span>batas karakter per prompt</span></div>
@@ -158,7 +158,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst brief (news · sentiment · macro · technical) — tanpa skill, hanya data</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Keputusan Trader + Risk</text>
-  <text x="740" y="268" text-anchor="middle">💡 semua 24 skill trader yang tidak terikat market (27 pada us-stock · 25 pada crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 semua 24 skill trader yang tidak terikat market (28 pada us-stock · 25 pada crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Verifier adversarial (mencoba MEMBANTAH)</text>
   <text x="740" y="332" text-anchor="middle">💡 keyakinan · reaksi-berita · gerbang-kontrarian · kejujuran</text>
@@ -223,13 +223,14 @@
 <p class="legend">Kesalahan registry apa pun di langkah mana pun akan menurun menjadi blok kosong — tabel skills yang rusak tidak akan pernah merusak siklus trading.</p>
 </div>
 
-<h2>4. Tiga puluh satu base skills — apa yang berlaku di mana</h2>
+<h2>4. Tiga puluh dua base skills — apa yang berlaku di mana</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>disarikan dari</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 anchor (tren · volatilitas · partisipasi · peristiwa) → label tertutup konservatif → taktik</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>analisis rezim marian2js</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>kelompok distribution-day, kerusakan leadership, rotasi defensif → kurangi eksposur berdasarkan jumlah evidence</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + monitor DD IBD</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6 anchor (tren BTC · breadth altcoin · rotasi dominance · funding crowding · posisi cycle · thrust); konflik menurunkan eksposur <b>(khusus kripto)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
+  <tr><td><code>breadth-context</code></td><td>membaca baris market breadth pasar AS yang disuntikkan sebagai bukti lingkungan: ambang rata-rata 8 hari (70%+ rally luas → di bawah 40% kelemahan ekstrem), tren jangka panjang menentukan makna level; zona bearish struktural adalah rezim defensif; tanpa baris breadth kesehatan pasar UNKNOWN, tidak pernah dianggap sehat <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ live CSV feed)</td></tr>
   <tr><td><code>bottom-confirmation</code></td><td>Follow-through O'Neil: hari ke-4+ rally attempt, kenaikan indeks besar dengan volume naik mengonfirmasi re-entry; undercut mereset hitungan; scouting size sebelum konfirmasi <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>klaim yang dapat difalsifikasi, fakta vs asumsi, kesesuaian dengan kerangka waktu, beban dependensi, invalidasi yang konkret</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>validasi tesis marian2js</td></tr>
   <tr><td><code>stage-discipline</code></td><td>empat tahap pembacaan dari data yang ditampilkan: hanya Stage 2 yang layak untuk long baru (Stage 4 untuk short baru); basis keempat-atau-lebih memotong ukuran; extended-from-base berarti tunggu; tahap yang tidak dapat diselesaikan adalah blocking gap, tidak pernah diasumsikan Stage 2 <b>(hanya saham AS)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (tahap Minervini)</td></tr>
@@ -336,13 +337,13 @@
 <div class="card">
 <table>
   <tr><th>periksa</th><th>bagaimana</th><th>membuktikan</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table dapat diakses, 31 base skill telah di-seed</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table dapat diakses, 32 base skill telah di-seed</td></tr>
   <tr><td>seleksi benar</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> kumpulan slug</td><td>site + market scoping sesuai desain</td></tr>
   <tr><td>injection nyata</td><td>exec <code>_light_analysis</code> di worker dengan <code>generate_text</code> di-stub</td><td>code path prod yang sebenarnya membangun prompt yang membawa skills block — bekerja bahkan dengan 0 active run</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Spesifikasi pendamping: <code>docs/plan/20-trading-skills.md</code> · dirilis dalam PR #179 (squash <code>ba43060</code>) · live di sooppiy.com sejak 2026-08-01 · katalog bertambah menjadi 31 skill melalui #186, #193, #215, #221, #222 dan #224 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Spesifikasi pendamping: <code>docs/plan/20-trading-skills.md</code> · dirilis dalam PR #179 (squash <code>ba43060</code>) · live di sooppiy.com sejak 2026-08-01 · katalog bertambah menjadi 32 skill melalui #186, #193, #215, #221, #222, #224 dan #226 (2026-08-04).</p>
 
 </div>
 </body>

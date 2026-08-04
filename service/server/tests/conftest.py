@@ -17,6 +17,9 @@ os.environ["RISK_ENGINE_ENABLED"] = "false"
 os.environ["PSYCH_FEED_ENABLED"] = "false"
 os.environ["QUANT_CRYPTO_ENABLED"] = "false"
 os.environ["SCANNER_ENABLED"] = "false"
+# The breadth feed is keyless, so without this it would fetch a LIVE public
+# CSV from inside any test that renders a us-stock decision prompt.
+os.environ["BREADTH_FEED_ENABLED"] = "false"
 
 # Notification-delivery tests exercise alerts/notifications with external=True;
 # blank the provider credentials so no machine's .env can make a test send a

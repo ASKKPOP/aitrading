@@ -463,5 +463,89 @@ class EarningsBriefTests(unittest.TestCase):
                       "the earnings brief never reached the desk (flat run)")
 
 
+class BreadthBriefTests(unittest.TestCase):
+    """The catalogue teaches distribution counting and follow-through
+    confirmation, but the us-stock desks had no market-wide data to apply
+    them to — each read only its own symbol's candles. The breadth line
+    supplies that evidence, advisory only, and renders "" on any problem."""
+
+    def _run(self, market="us-stock", symbol="NVDA"):
+        return {"id": 1, "agent_id": 1, "symbol": symbol, "market": market,
+                "market_type": "spot"}
+
+    def _snapshot(self, **over):
+        snap = {"date": "2026-07-31", "above_ma200": 0.70,
+                "above_ma200_8ema": 0.69, "above_ma200_200ema": 0.62,
+                "trend200": 1, "bearish": False, "above_ma50": 0.65,
+                "pink_zone": False}
+        snap.update(over)
+        return snap
+
+    def test_healthy_snapshot_renders_the_numbers(self):
+        with patch("breadth_feed.latest_breadth",
+                   return_value=self._snapshot()):
+            line = run_engine._breadth_state_line(self._run())
+        self.assertIn("70% of stocks above their 200-day MA", line)
+        self.assertIn("8-day avg 69%", line)
+        self.assertIn("long-term breadth trend rising", line)
+        self.assertIn("65% above their 50-day MA", line)
+        self.assertIn("not as a signal about this symbol", line)
+        self.assertNotIn("bearish", line.lower())
+
+    def test_defensive_flags_render_when_set(self):
+        with patch("breadth_feed.latest_breadth",
+                   return_value=self._snapshot(trend200=-1, bearish=True,
+                                              pink_zone=True)):
+            line = run_engine._breadth_state_line(self._run())
+        self.assertIn("long-term breadth trend falling", line)
+        self.assertIn("Structural bearish zone", line)
+        self.assertIn("bearish breadth signal is ACTIVE", line)
+
+    def test_bootstrap_trend_zero_omits_the_trend_clause(self):
+        with patch("breadth_feed.latest_breadth",
+                   return_value=self._snapshot(trend200=0)):
+            line = run_engine._breadth_state_line(self._run())
+        self.assertNotIn("breadth trend", line)
+        self.assertIn("70% of stocks", line)
+
+    def test_non_us_stock_never_queries_the_feed(self):
+        with patch("breadth_feed.latest_breadth",
+                   side_effect=AssertionError("crypto must not query")):
+            self.assertEqual(
+                run_engine._breadth_state_line(self._run(market="crypto")), "")
+
+    def test_missing_snapshot_and_feed_failure_are_silent(self):
+        with patch("breadth_feed.latest_breadth", return_value=None):
+            self.assertEqual(run_engine._breadth_state_line(self._run()), "")
+        with patch("breadth_feed.latest_breadth",
+                   side_effect=RuntimeError("down")):
+            self.assertEqual(run_engine._breadth_state_line(self._run()), "")
+
+    def test_the_line_actually_reaches_the_light_prompt(self):
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return '{"action": "hold", "confidence": 0.5}'
+
+        run = self._run()
+        cfg = {"thesis": {"direction": "long", "horizon_hours": 24,
+                          "invalidation": "below the recent swing low",
+                          "rationale": "momentum"}}
+        with patch("price_fetcher.get_price_from_market", return_value=500.0), \
+                patch("price_fetcher.get_daily_candles", return_value=[]), \
+                patch("llm_client.generate_text", side_effect=fake_generate), \
+                patch.object(run_engine, "_position_quantity", return_value=0.0), \
+                patch("trading_skills.skills_block", return_value=""), \
+                patch("fmp_feed.days_to_earnings", return_value=None), \
+                patch("breadth_feed.latest_breadth",
+                      return_value=self._snapshot()):
+            run_engine._light_analysis(run, cfg)
+
+        self.assertIn("prompt", captured, "the desk was never called")
+        self.assertIn("US market breadth (advisory", captured["prompt"],
+                      "the breadth brief never reached the desk")
+
+
 if __name__ == "__main__":
     unittest.main()
