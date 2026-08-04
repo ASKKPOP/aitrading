@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>プラン20 — トレーディングスキル：その仕組み</title>
+<title>Plan 20 — トレーディングスキル: 仕組み</title>
 <style>
   :root {
     --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
@@ -53,14 +53,14 @@
 <body>
 <div class="wrap">
 
-<h1>プラン20 — トレーディングスキル：その仕組み</h1>
+<h1>Plan 20 — トレーディングスキル: 仕組み</h1>
 
 <div class="chips">
-  <div class="chip"><b>22</b><span>ベーススキル（保持、編集可能、削除不可）</span></div>
-  <div class="chip"><b>4</b><span>注入される判断プロンプト</span></div>
-  <div class="chip"><b>0</b><span>スキル選定に費やされたLLM呼び出し</span></div>
-  <div class="chip"><b>14,000</b><span>プロンプトあたりの文字数上限</span></div>
-  <div class="chip"><b>30秒</b><span>ワーカーキャッシュTTL</span></div>
+  <div class="chip"><b>30</b><span>ベーススキル(保持、編集可、削除不可)</span></div>
+  <div class="chip"><b>4</b><span>注入された判断プロンプト</span></div>
+  <div class="chip"><b>0</b><span>スキル選定に使用されたLLM呼び出し</span></div>
+  <div class="chip"><b>28,000</b><span>プロンプトごとの文字数上限</span></div>
+  <div class="chip"><b>30s</b><span>ワーカーキャッシュTTL</span></div>
 </div>
 
 <h2>1. 全体像 — スキルがどこに存在し、どこで作用するか</h2>
@@ -77,39 +77,39 @@
 
   <!-- sources column -->
   <rect class="box-accent" x="20" y="30" width="200" height="64"/>
-  <text x="120" y="55" text-anchor="middle" class="t-b">BASE_SKILLS（コード内）</text>
+  <text x="120" y="55" text-anchor="middle" class="t-b">BASE_SKILLS (コード内)</text>
   <text x="120" y="74" text-anchor="middle" class="t-small">trading_skills.py — イメージに同梱</text>
 
   <rect class="box" x="20" y="130" width="200" height="64"/>
   <text x="120" y="155" text-anchor="middle" class="t-b">管理コンソール / API</text>
-  <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — 監査付き書き込み</text>
+  <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — 監査済み書き込み</text>
 
   <rect class="box-dim" x="20" y="230" width="200" height="64"/>
-  <text x="120" y="252" text-anchor="middle" class="t-b">リポジトリ skills/ ディレクトリ</text>
-  <text x="120" y="270" text-anchor="middle" class="t-small">外部エージェント向けドキュメントのみ — 含まれない</text>
-  <text x="120" y="284" text-anchor="middle" class="t-small">dockerイメージには含まれず、AIによって読み込まれない</text>
+  <text x="120" y="252" text-anchor="middle" class="t-b">repo skills/ ディレクトリ</text>
+  <text x="120" y="270" text-anchor="middle" class="t-small">外部エージェント向けドキュメントのみ — 以下には含まれない:</text>
+  <text x="120" y="284" text-anchor="middle" class="t-small">dockerイメージ、AIには読み込まれない</text>
 
   <!-- DB -->
   <rect class="box" x="300" y="80" width="190" height="90"/>
   <text x="395" y="108" text-anchor="middle" class="t-b">trading_skills テーブル</text>
-  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL（本番）/ SQLite（開発）</text>
-  <text x="395" y="145" text-anchor="middle" class="t-small">slug・body・prompts・markets</text>
+  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (本番) / SQLite (開発)</text>
+  <text x="395" y="145" text-anchor="middle" class="t-small">slug · body · prompts · markets</text>
   <text x="395" y="161" text-anchor="middle" class="t-small">priority · enabled · is_base</text>
 
   <!-- cache -->
   <rect class="box" x="560" y="92" width="150" height="66"/>
   <text x="635" y="118" text-anchor="middle" class="t-b">レジストリキャッシュ</text>
-  <text x="635" y="137" text-anchor="middle" class="t-small">プロセスごとに30秒TTL</text>
+  <text x="635" y="137" text-anchor="middle" class="t-small">プロセスごとに30秒のTTL</text>
 
   <!-- skills_block -->
   <rect class="box-accent" x="760" y="86" width="180" height="78"/>
   <text x="850" y="112" text-anchor="middle" class="t-b">skills_block(site)</text>
-  <text x="850" y="131" text-anchor="middle" class="t-small">決定的フィルタ＋予算制御</text>
+  <text x="850" y="131" text-anchor="middle" class="t-small">決定論的フィルター + 予算</text>
   <text x="850" y="148" text-anchor="middle" class="t-small">フェイルソフト → ""</text>
 
   <!-- prompts row -->
   <rect class="box" x="300" y="250" width="640" height="70"/>
-  <text x="620" y="272" text-anchor="middle" class="t-b">4つの判断プロンプト</text>
+  <text x="620" y="272" text-anchor="middle" class="t-b">4つの決定プロンプト</text>
   <text x="380" y="300" text-anchor="middle">ライト</text>
   <text x="540" y="300" text-anchor="middle">トレーダー</text>
   <text x="700" y="300" text-anchor="middle">検証者</text>
@@ -117,23 +117,23 @@
 
   <!-- gates -->
   <rect class="box" x="300" y="350" width="640" height="40"/>
-  <text x="620" y="375" text-anchor="middle" class="t-small">LLMの回答 → JSON出力契約（アクションのホワイトリスト、クランプ、価格権限） → 決定的なリスク／実行ゲート → 注文</text>
+  <text x="620" y="375" text-anchor="middle" class="t-small">LLM回答 → JSON出力コントラクト（アクション許可リスト、クランプ、価格権限） → 決定論的リスク・実行ゲート → 注文</text>
 
   <!-- arrows -->
   <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
-  <text x="252" y="60" class="t-small">シード＋自動アップグレード</text>
+  <text x="252" y="60" class="t-small">seed + 自動アップグレード</text>
   <path class="ln" d="M220,162 C260,162 260,150 300,145" marker-end="url(#ar)"/>
-  <text x="238" y="178" class="t-small">CRUD＋無効化</text>
+  <text x="238" y="178" class="t-small">CRUD + 無効化</text>
   <path class="ln" d="M490,125 L560,125" marker-end="url(#ar)"/>
   <path class="ln" d="M710,125 L760,125" marker-end="url(#ar)"/>
   <path class="ln-good" d="M850,164 L850,250" marker-end="url(#ar-g)"/>
-  <text x="842" y="205" text-anchor="end" class="t-small">枠囲みテキスト、注意喚起のみ</text>
+  <text x="842" y="205" text-anchor="end" class="t-small">枠付きテキスト、注意事項のみ</text>
   <path class="ln" d="M620,320 L620,350" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">破線ボックスは、この設計が打ち破らなければならなかった旧来の前提です：リポジトリ <code>skills/</code> は外部エージェント向けの公開用の場であり、Dockerイメージからは除外されています — そのため、スキル本体はDBに存在し、ベースカタログはコードに同梱され自己シードされます。</p>
+<p class="legend">破線ボックスは、この設計が打破しなければならなかった旧来の前提である：リポジトリ <code>skills/</code> は外部エージェント向けの公開用サーフェスであり、Dockerイメージから除外されている — そのためスキル本体はDBに存在し、基本カタログはコードとして提供され、自身でシードされる。</p>
 </div>
 
-<h2>2. 判断サイクルのフロー — スキルがライブトレーディングサイクルにどこで入るか</h2>
+<h2>2. 決定サイクルフロー — スキルがライブトレーディングサイクルに入る場所</h2>
 <div class="card">
 <svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="30" width="170" height="56"/>
@@ -142,49 +142,49 @@
 
   <rect class="box" x="250" y="30" width="200" height="56"/>
   <text x="350" y="53" text-anchor="middle" class="t-b">E1 _classify_situation</text>
-  <text x="350" y="71" text-anchor="middle" class="t-small">LLMゼロ · ここにスキルはない（設計上）</text>
+  <text x="350" y="71" text-anchor="middle" class="t-small">LLMゼロ · スキルはここには存在しない（設計上）</text>
 
   <!-- light path -->
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">LIGHTパス — LLM呼び出し1回</text>
-  <text x="740" y="52" text-anchor="middle" class="t-small">価格＋テーゼ＋クローズ＋在庫ルール</text>
-  <text x="740" y="72" text-anchor="middle">💡 スキル：リスクリワード · イグジット · ポジション管理 · ドローダウンブレーカー · honesty</text>
-  <text x="740" y="92" text-anchor="middle" class="t-small">（regimeとconvictionのスキルは除外 — lightは独自の基準を持つ）</text>
+  <text x="740" y="52" text-anchor="middle" class="t-small">価格 + 論拠 + クローズ + 在庫ルール</text>
+  <text x="740" y="72" text-anchor="middle">💡 9個のlightスキル（us-stockでは10個：earnings-previewもここに含まれる）</text>
+  <text x="740" y="92" text-anchor="middle" class="t-small">（レジーム + コンビクション・キャリブレーションは除外 — lightは独自のルーブリックを持つ）</text>
 
   <!-- full path -->
   <rect class="box" x="540" y="140" width="400" height="230"/>
   <text x="740" y="162" text-anchor="middle" class="t-b">FULLパス — LLM呼び出し6回</text>
   <rect class="box" x="560" y="176" width="360" height="40"/>
-  <text x="740" y="200" text-anchor="middle" class="t-small">4つのアナリストブリーフ（ニュース · センチメント · マクロ · テクニカル）— スキルなし、データのみ</text>
+  <text x="740" y="200" text-anchor="middle" class="t-small">4つのアナリストブリーフ（ニュース · センチメント · マクロ · テクニカル） — スキルなし、データのみ</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
-  <text x="740" y="248" text-anchor="middle" class="t-b">トレーダー＋リスク判断</text>
-  <text x="740" y="268" text-anchor="middle">💡 全18トレーダースキル（us-stockでは19：earnings-previewはそこでのみ適用）</text>
+  <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Riskの決定</text>
+  <text x="740" y="268" text-anchor="middle">💡 24個すべてのmarket-agnosticなtraderスキル（us-stockでは26個 · cryptoでは25個）</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
-  <text x="740" y="312" text-anchor="middle" class="t-b">敵対的検証者（REFUTEを試みる）</text>
-  <text x="740" y="332" text-anchor="middle">💡 確信度・ニュース反応・逆張りゲート・正直さ</text>
-  <text x="740" y="360" text-anchor="middle" class="t-small">メモリ + ユーザーガイドライン + スキルは両方のプロンプトで並んで配置される</text>
+  <text x="740" y="312" text-anchor="middle" class="t-b">敵対的verifier（REFUTEを試みる）</text>
+  <text x="740" y="332" text-anchor="middle">💡 コンビクション · ニュースリアクション · コントラリアンゲート · オネスティ</text>
+  <text x="740" y="360" text-anchor="middle" class="t-small">メモリー + ユーザーガイドライン + スキルが両方のプロンプトに並んで配置される</text>
 
   <!-- planner -->
   <rect class="box-accent" x="20" y="150" width="200" height="70"/>
   <text x="120" y="174" text-anchor="middle" class="t-b">エージェントモードプランナー</text>
-  <text x="120" y="192" text-anchor="middle" class="t-small">symbol / size / cadence を選択</text>
-  <text x="120" y="210" text-anchor="middle">💡 サイジング・ウォッチリスト・カタリストマップ・集中度・正直さ</text>
+  <text x="120" y="192" text-anchor="middle" class="t-small">シンボル／サイズ／頻度を選択する</text>
+  <text x="120" y="210" text-anchor="middle">💡 サイジング · ウォッチリスト · カタリストマップ · 集中度 · 誠実性</text>
 
   <!-- output -->
   <rect class="box" x="250" y="390" width="690" height="34"/>
-  <text x="595" y="411" text-anchor="middle" class="t-small">JSONコントラクト → コンビクションウェイティング → フィー/エッジ + バジェット + リスクゲート → paper/shadow/live実行</text>
+  <text x="595" y="411" text-anchor="middle" class="t-small">JSONコントラクト → コンビクション重み付け → 手数料/エッジ + 予算 + リスクゲート → ペーパー/シャドウ/ライブ実行</text>
 
   <path class="ln" d="M190,58 L250,58" marker-end="url(#ar)"/>
   <path class="ln" d="M450,50 C500,45 500,50 540,52" marker-end="url(#ar)"/>
-  <text x="482" y="38" class="t-small">静寂</text>
+  <text x="482" y="38" class="t-small">静音</text>
   <path class="ln" d="M450,70 C500,90 500,180 540,200" marker-end="url(#ar)"/>
-  <text x="466" y="110" class="t-small">イベント・ショック・レジーム・ストップ近接</text>
+  <text x="466" y="110" class="t-small">イベント · ショック · レジーム · ニアストップ</text>
   <path class="ln" d="M740,106 L740,140" style="display:none"/>
   <path class="ln" d="M540,60 C520,60 500,395 550,401" style="display:none"/>
   <path class="ln" d="M740,370 L740,390" marker-end="url(#ar)"/>
   <path class="ln" d="M940,58 C952,58 952,380 942,395" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">💡 4つの注入箇所を示す。E1ルータープロンプトは意図的に肥大化しない — 6回の高コストな呼び出しを避けるために存在しており、7回目になってはならない。</p>
+<p class="legend">💡 4つの注入箇所を示す。E1ルータープロンプトは意図的に肥大化しない — 高コストな6回の呼び出しを避けるために存在しているため、7回目になってはならない。</p>
 </div>
 
 <h2>3. 選定 &amp; 予算 — ブロックの構築方法（ゼロLLM）</h2>
@@ -192,148 +192,156 @@
 <svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="70" width="150" height="70"/>
   <text x="95" y="94" text-anchor="middle" class="t-b">全スキル</text>
-  <text x="95" y="112" text-anchor="middle" class="t-small">キャッシュされた行、</text>
-  <text x="95" y="128" text-anchor="middle" class="t-small">優先順位順</text>
+  <text x="95" y="112" text-anchor="middle" class="t-small">キャッシュされた行,</text>
+  <text x="95" y="128" text-anchor="middle" class="t-small">優先順位付き</text>
 
   <rect class="box" x="230" y="70" width="140" height="70"/>
-  <text x="300" y="94" text-anchor="middle" class="t-b">有効ですか?</text>
-  <text x="300" y="112" text-anchor="middle" class="t-small">site ∈ prompts?</text>
-  <text x="300" y="128" text-anchor="middle" class="t-small">マーケットマッチ?</text>
+  <text x="300" y="94" text-anchor="middle" class="t-b">有効か？</text>
+  <text x="300" y="112" text-anchor="middle" class="t-small">サイト ∈ プロンプト？</text>
+  <text x="300" y="128" text-anchor="middle" class="t-small">マーケットマッチ？</text>
 
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">予算チェック</text>
-  <text x="505" y="112" text-anchor="middle" class="t-small">セクションがオーバーフローするかどうか</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">14,000文字?</text>
+  <text x="505" y="112" text-anchor="middle" class="t-small">セクションがオーバーフローするか</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">28,000文字？</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
-  <text x="795" y="94" text-anchor="middle" class="t-b">フレーム化ブロック</text>
+  <text x="795" y="94" text-anchor="middle" class="t-b">フレーム化されたブロック</text>
   <text x="795" y="112" text-anchor="middle" class="t-small">「より慎重にさせることはあっても、決して</text>
-  <text x="795" y="128" text-anchor="middle" class="t-small">リスク制限や実行ゲートを上書きすることはできない」</text>
+  <text x="795" y="128" text-anchor="middle" class="t-small">リスク制限や実行ゲートを上書きしない」</text>
 
   <path class="ln" d="M170,105 L230,105" marker-end="url(#ar)"/>
   <path class="ln-good" d="M370,105 L430,105" marker-end="url(#ar-g)"/>
-  <text x="385" y="98" class="t-small">pass</text>
+  <text x="385" y="98" class="t-small">合格</text>
   <path class="ln-bad" d="M300,140 L300,180" marker-end="url(#ar)"/>
-  <text x="310" y="170" class="t-small">失敗 → スキップ</text>
+  <text x="310" y="170" class="t-small">不合格 → スキップ</text>
   <path class="ln-good" d="M580,105 L650,105" marker-end="url(#ar-g)"/>
-  <text x="592" y="98" class="t-small">適合</text>
+  <text x="592" y="98" class="t-small">収まる</text>
   <path class="ln-bad" d="M505,140 L505,180" marker-end="url(#ar)"/>
-  <text x="515" y="170" class="t-small">overflow → スキル全体がスキップされ、本文の途中で切り詰められることはない</text>
+  <text x="515" y="170" class="t-small">オーバーフロー → スキル全体をスキップ、本文の途中で切り詰めることはない</text>
 </svg>
-<p class="legend">どのステップでもレジストリエラーが発生した場合、空のブロックに縮退する — 壊れたスキルテーブルがトレーディングサイクルを壊すことは決してない。</p>
+<p class="legend">どのステップでもレジストリエラーが発生した場合は空のブロックに縮退する — 壊れたスキルテーブルがトレーディングサイクルを壊すことは決してない。</p>
 </div>
 
-<h2>4. 6つの基本スキル — どこで何が適用されるか</h2>
+<h2>4. 30の基本スキル — どこに適用されるか</h2>
 <div class="card">
 <table>
-  <tr><th>スキル</th><th>本質</th><th>ライト</th><th>トレーダー</th><th>検証者</th><th>プランナー</th><th>抽出元</th></tr>
-  <tr><td><code>market-regime-lens</code></td><td>4つのアンカー（trend · volatility · participation · events）→ 保守的な閉じたラベル → 戦術</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsのレジーム分析</td></tr>
-  <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → 証拠件数に応じてエクスポージャーを削減</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty マーケットトップ + IBD DD モニター</td></tr>
-  <tr><td><code>thesis-validation</code></td><td>反証可能な主張、事実と仮定の区別、timeframe fit、dependency load、具体的な無効化条件</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsの論文検証</td></tr>
-  <tr><td><code>position-sizing-discipline</code></td><td>リスクからサイズを算出、最も厳しい制約が優先、切り捨て、half-Kelly caution</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph ポジションサイザー</td></tr>
-  <tr><td><code>macro-event-analysis</code></td><td>意思決定への影響度でイベントをランク付け（sensitivity · surprise capacity · transmission · timing）；イベントはシグナルではなくリスクである</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsのマクロイベント分析</td></tr>
-  <tr><td><code>news-reaction-evidence</code></td><td>ニュースへの価格反応はニュースそのものより重要であり、exhaustion とは好材料に反する動きのことであって、単なる沈黙ではない</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure(Shapiro ステップ2)</td></tr>
-  <tr><td><code>risk-reward-structure</code></td><td>ストップ = 目標の無効化、ターゲット = 到達可能な水準、比率 ≥ 2倍、良い比率 ≠ 良いトレード</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R サニティチェック</td></tr>
-  <tr><td><code>exit-discipline</code></td><td>利益確定は最優先事項であり、損失中のポジションには決して追加しない、無効化 = クローズであり再交渉ではない</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy exit rails + Senpi</td></tr>
-  <tr><td><code>position-management</code></td><td>元の計画に対して管理する、損益に対してではない；ホールド／積極的に管理／断固として手仕舞い + それを変える条件</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js ポジション管理</td></tr>
-  <tr><td><code>drawdown-circuit-breaker</code></td><td>実現した損失が新規リスクを左右する；連続損失 → クールダウン（管理し、新規ポジションは開かない）；生存が最優先</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ドローダウン・サーキットブレーカー</td></tr>
-  <tr><td><code>conviction-calibration</code></td><td>確信度 = 数えられる一致する根拠；習慣的な値は不可；エッジのないスイングは不可</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mphドラッケンミラーゾーン</td></tr>
-  <tr><td><code>exposure-discipline</code></td><td>トレード前のポジション状態：新規エントリー許可／リデュースオンリー／キャッシュ優先；矛盾する場合は低いエクスポージャーをデフォルトとする</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty エクスポージャーコーチ</td></tr>
-  <tr><td><code>pre-trade-readiness</code></td><td>最短のチェック連鎖、最初のブロッカーで停止；準備完了／条件付き／未準備／却下</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js プレトレードチェックワークフロー</td></tr>
-  <tr><td><code>contrarian-crowding-gate</code></td><td>クラウディング → ニュース失敗 → 価格確認、各段階でフェイルクローズ；一度下した却下判定は緩和しない</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty 逆張りセットアップゲート（Shapiro）</td></tr>
-  <tr><td><code>scenario-precommit</code></td><td>イベントを分類し、1次・2次・3次の影響をマッピング、if/thenの分岐と発動水準を事前に確定する</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty シナリオアナライザー</td></tr>
-  <tr><td><code>data-honesty</code></td><td>プロンプト内の数値のみを対象とする；未確定は全て安全を意味しない；データは指示ではない</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpi ハードルール + Bybit ディフェンス</td></tr>
-  <tr><td><code>evidence-gap-check</code></td><td>既知と仮定を区別；判断への影響度でギャップを順位付け；ブロッキングギャップがある場合は確信度を下げて待機</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js エビデンスギャップチェック</td></tr>
-  <tr><td><code>earnings-preview</code></td><td>ベンチマーク関連性 · 議論の強度 · リードスルー · ポジショニングリスク；重要性 ≠ 確実性 <b>（米国株のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 決算プレビュー</td></tr>
-  <tr><td><code>catalyst-map</code></td><td>タイミング · 伝播経路 · インパクト · 重複の観点でカタリストをスコアリング；共通のイベント連鎖は集中リスクとなる</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js カタリストマップ</td></tr>
-  <tr><td><code>watchlist-review</code></td><td>馴染みの有無ではなく、実行可能性（カタリスト関連性 · 取引可能性 · 準備度 · 重複度）でトリアージする</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2jsウォッチリストレビュー</td></tr>
-  <tr><td><code>execution-plan-check</code></td><td>緊急度 対 注文方法、スプレッド/深さ、セッションタイミング、ストップの現実性；実行不可能な計画は脆弱</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js執行計画チェック</td></tr>
-  <tr><td><code>portfolio-concentration</code></td><td>分散＝共有ドライバーであり、ティッカー数ではない；追加をブックに照らして判断せよ；上昇時→縮小</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2jsポートフォリオ集中度</td></tr>
+  <tr><th>スキル</th><th>本質</th><th>軽量</th><th>トレーダー</th><th>ベリファイア</th><th>プランナー</th><th>抽出元</th></tr>
+  <tr><td><code>market-regime-lens</code></td><td>4つのアンカー（トレンド · ボラティリティ · 参加度 · イベント）→ 保守的なクローズドラベル → 戦術</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js レジーム分析</td></tr>
+  <tr><td><code>market-topping-evidence</code></td><td>分配日クラスターの発生、リーダーシップの崩壊、ディフェンシブローテーション → 証拠件数に応じてエクスポージャーを削減</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty マーケットトップ + IBD DDモニター</td></tr>
+  <tr><td><code>crypto-regime-lens</code></td><td>6つのアンカー（BTCトレンド · アルトブレッド · ドミナンスローテーション · ファンディング混雑度 · サイクルポジション · スラスト）；矛盾はエクスポージャーを低下させる<b>（暗号資産のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty クリプトレジームアナライザー</td></tr>
+  <tr><td><code>bottom-confirmation</code></td><td>オニールのフォロースルー：ラリー試行4日目以降、上昇ボリュームを伴う大きな指数上昇が再エントリーを確認する；下抜けはカウントをリセットする；確認前のスカウティングサイズ<b>（米国株のみ）</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty FTDディテクター（オニール）</td></tr>
+  <tr><td><code>thesis-validation</code></td><td>反証可能な主張、事実と仮定の区別、タイムフレーム適合性、依存度、具体的な無効化条件</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js テーゼ検証</td></tr>
+  <tr><td><code>level-integrity</code></td><td>レベルが機能するには：スポットの右側、半日分のノイズをクリアした位置、直近レンジの内側にあること；使えないレベルはそう明言し、目に見える構造にアンカーする</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiyモニタリング（誤った側のレベル、2026-08-03）</td></tr>
+  <tr><td><code>position-sizing-discipline</code></td><td>リスクからサイズを決め、最も厳しい制約が優先され、切り下げ、ハーフケリーで慎重に</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mphポジションサイザー</td></tr>
+  <tr><td><code>volatility-context</code></td><td>レンジ、ストップ、サイズはその資産自身のボラティリティ履歴に照らして判断する；圧縮はロードされ、極端値は回帰する；一定サイズでストップを広げてはならない</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabsボラティリティモデリング + レジーム検知</td></tr>
+  <tr><td><code>macro-event-analysis</code></td><td>意思決定への影響度（感度・サプライズの余地・伝達・タイミング）でイベントをランク付けする；イベントはシグナルではなくリスクである</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsマクロイベント分析</td></tr>
+  <tr><td><code>mean-reversion-guard</code></td><td>動きをフェードするにはレンジの証拠、その極値でのエントリー、レンジ中間のターゲット、時間予算が必要である；持続がデフォルトである；「より良い価格」では絶対に追加してはならない</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs平均回帰（ハースト・半減期・zスコア）</td></tr>
+  <tr><td><code>news-reaction-evidence</code></td><td>ニュースへの価格の反応はニュース自体よりも重要である；エグゾーションとは好材料に対する逆方向の動きであり、単なる沈黙ではない</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermontyニュース反応失敗（Shapiroステップ2）</td></tr>
+  <tr><td><code>risk-reward-structure</code></td><td>ストップ＝客観的な無効化、ターゲット＝到達可能なレベル、比率は2倍以上、良い比率が良いトレードを意味するわけではない</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js リスクリワード整合性チェック</td></tr>
+  <tr><td><code>exit-discipline</code></td><td>利益確定は最優先事項であり、負けているポジションに追加してはならない、無効化＝クローズであり再交渉ではない</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiyイグジットレール + Senpi</td></tr>
+  <tr><td><code>horizon-discipline</code></td><td>新規ポジションには明示されたホライズンが与えられる；小さな逆方向の変動は無効化ではない；ホライズン未達での決済には決まったセットからの明示的な1つのトリガーが必要である――「資本を守る」はそれに該当しない</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiyモニタリング（ホライズン内の churn、2026-08-03）</td></tr>
+  <tr><td><code>position-management</code></td><td>P&amp;Lではなく当初のプランに対してマネジメントする；ホールド／積極的にマネジメント／決定的にイグジット + それを変える条件</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsポジションマネジメント</td></tr>
+  <tr><td><code>reachable-exits</code></td><td>予測した値動きの範囲内で到達可能なストップ、ターゲット、トレールを各エントリーごとに自分で設定すること。これらを省略すると、取引は見えないデフォルト値に委ねられる;表現不能なジオメトリ → スロットを撤退させる</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy モニタリング(到達不能なトレール、2026-08-03)</td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td>確定した損害が新規リスクを規定する; 連続損失 → クールダウン（新規建てはせず、管理に徹する）; 生存を最優先とする</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ドローダウン・サーキットブレーカー</td></tr>
+  <tr><td><code>confidence-resolution</code></td><td>自分自身の4つの構成要素スコアから確信度を導き出すこと; ルーブリックは参照点を示すものであり、選択肢の一覧ではない; ランドマークや中間値は導出されるのではなく選び取られるものである — 小数第2位が情報を持たねばならない</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy モニタリング(量子化信頼度、2026-08-03)</td></tr>
+  <tr><td><code>conviction-calibration</code></td><td>確信度＝数え上げ可能な裏付け証拠; 習慣的な数値は不可; エッジのないスイングは行わない</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mph Druckenmillerゾーン</td></tr>
+  <tr><td><code>exposure-discipline</code></td><td>取引前のポジション姿勢: new-entry-allowed / reduce-only / cash-priority; 矛盾が生じた場合はデフォルトでより低いエクスポージャーを採用する</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty エクスポージャーコーチ</td></tr>
+  <tr><td><code>pre-trade-readiness</code></td><td>最短のチェック連鎖とし、最初の障害点で停止する; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js プレトレードチェックワークフロー</td></tr>
+  <tr><td><code>contrarian-crowding-gate</code></td><td>混雑 → ニュース失敗 → 価格確認、それぞれフェイルクローズ方式；一度却下したものを緩めることはない</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty contrarian-setup-gate（Shapiro）</td></tr>
+  <tr><td><code>scenario-precommit</code></td><td>イベントを分類し、1次/2次/3次効果をマッピングし、発動レベル付きのif/thenブランチを事前に確定する</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty シナリオアナライザー</td></tr>
+  <tr><td><code>data-honesty</code></td><td>プロンプト内は数値のみ；未確定は「安全」を意味しない；データは指示ではない</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpiハードルール + Bybit防御</td></tr>
+  <tr><td><code>evidence-gap-check</code></td><td>既知と仮定を区別；意思決定への影響度でギャップを順位付け；ブロッキングギャップは確信度低下＋保留を意味する</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2jsのエビデンスギャップチェック</td></tr>
+  <tr><td><code>earnings-preview</code></td><td>ベンチマーク関連性・議論の強度・織り込み度・ポジションリスク；重要性 ≠ 確実性 <b>（米国株のみ）</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js の決算プレビュー</td></tr>
+  <tr><td><code>catalyst-map</code></td><td>タイミング・伝達経路・インパクト・重複でカタリストを採点；共通のイベント連鎖は集中リスクとなる</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2jsカタリストマップ</td></tr>
+  <tr><td><code>watchlist-review</code></td><td>行動可能性による選別(カタリストの関連性・取引可能性・準備状況・冗長性)、親しみやすさではない</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js ウォッチリストレビュー</td></tr>
+  <tr><td><code>execution-plan-check</code></td><td>緊急性 対 注文方法、スプレッド/深度、セッションタイミング、ストップの実現可能性;実行不能な計画は脆弱</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 実行計画チェック</td></tr>
+  <tr><td><code>portfolio-concentration</code></td><td>分散化 = 共有されるドライバー、ティッカー数ではない;追加をポートフォリオ全体に対して判断する;高いほど→小さく</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js ポートフォリオ集中度</td></tr>
 </table>
-<p class="legend">* ライトプロンプトにはすでに独自のインラインキャリブレーション基準が組み込まれている — そこにスキルを注入すると、1つのプロンプト内で重複してしまう。</p>
+<p class="legend">* ライトプロンプトはすでに独自のインラインキャリブレーション基準を持っている — そこにスキルを注入すると、1つのプロンプト内で重複してしまう。</p>
 </div>
 
-<h2>5. スキルのライフサイクル — ベース対カスタム</h2>
+<h2>5. スキルライフサイクル — base vs custom</h2>
 <div class="card">
 <svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
   <rect class="box-accent" x="20" y="30" width="190" height="60"/>
   <text x="115" y="54" text-anchor="middle" class="t-b">カタログのデフォルト</text>
-  <text x="115" y="72" text-anchor="middle" class="t-small">コード内のBASE_SKILLS</text>
+  <text x="115" y="72" text-anchor="middle" class="t-small">コード内の BASE_SKILLS</text>
 
   <rect class="box" x="330" y="30" width="180" height="60"/>
-  <text x="420" y="54" text-anchor="middle" class="t-b">DB行（ベース）</text>
+  <text x="420" y="54" text-anchor="middle" class="t-b">DB行(base)</text>
   <text x="420" y="72" text-anchor="middle" class="t-small">is_base = 1</text>
 
   <rect class="box" x="630" y="30" width="180" height="60"/>
-  <text x="720" y="54" text-anchor="middle" class="t-b">編集済み／無効化</text>
-  <text x="720" y="72" text-anchor="middle" class="t-small">管理者のバージョンが優先</text>
+  <text x="720" y="54" text-anchor="middle" class="t-b">編集済み / 無効化</text>
+  <text x="720" y="72" text-anchor="middle" class="t-small">管理者のバージョンが優先される</text>
 
   <rect class="box" x="330" y="160" width="180" height="60"/>
-  <text x="420" y="184" text-anchor="middle" class="t-b">DB行（カスタム）</text>
+  <text x="420" y="184" text-anchor="middle" class="t-b">DB行(custom)</text>
   <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
 
   <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
-  <text x="228" y="52" class="t-small">シード＋自動アップグレードは未変更</text>
+  <text x="228" y="52" class="t-small">シード + 自動アップグレードは未変更</text>
   <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
-  <text x="540" y="42" class="t-small">PATCH／無効化</text>
+  <text x="540" y="42" class="t-small">PATCH / 無効化</text>
   <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
-  <text x="537" y="98" class="t-small">POST /reset → デフォルト</text>
+  <text x="537" y="98" class="t-small">POST /reset → デフォルトへ</text>
   <path class="ln-bad" d="M420,90 L420,124"/>
-  <text x="430" y="112" class="t-small">DELETE → 400「無効化またはリセットしてください」</text>
+  <text x="430" y="112" class="t-small">DELETE → 400 「無効化またはリセットを使用してください」</text>
   <path class="ln" d="M160,190 L330,190" marker-end="url(#ar)"/>
   <text x="175" y="182" class="t-small">POST /api/admin/skills</text>
   <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
-  <text x="530" y="182" class="t-small">DELETE → 削除済み</text>
+  <text x="530" y="182" class="t-small">DELETE → 削除される</text>
 </svg>
-<p class="legend">カタログ同期（2026-08-02）：カタログ内の元のベーススキルが更新されると、カタログが最後に書き込んだ通りのままの本番行はすべて、次回のレジストリ読み取り時に自動的にアップグレードされる — フィンガープリント（catalog_hash）が両者を区別する。管理者が編集した行は一致しなくなり、明示的なリセットが行われるまで編集内容を保持し、リセットにより自動アップグレードも再度有効になる。スキルを無効化することはオペレーターの状態であり、編集ではない：無効化された未編集のスキルは、本文のアップグレードを引き続き受け取るが、無効のままである。</p>
+<p class="legend">カタログ同期(2026-08-02):カタログ内の元のbaseスキルが更新されると、カタログが最後に書き込んだ状態のままの本番の行はすべて、次のレジストリ読み取り時に自動的にアップグレードされる — フィンガープリント(catalog_hash)が両者を区別する。管理者が編集した行は一致しなくなり、明示的なリセットが行われるまで編集内容を保持し、リセットによって自動アップグレードも再度有効になる。スキルを無効化することは編集ではなく運用者の状態である:無効化された未変更のスキルも本体のアップグレードを受け取るが、無効の状態を保つ。</p>
 </div>
 
 <h2>6. 安全レイヤー — プロンプトテキストが直接注文に到達できない理由</h2>
 <div class="card">
 <svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="35" width="200" height="60"/>
-  <text x="120" y="59" text-anchor="middle" class="t-b">1・注意喚起のみの枠組み</text>
-  <text x="120" y="77" text-anchor="middle" class="t-small">スキルは制限を強めることはできても、緩めることはできない</text>
+  <text x="120" y="59" text-anchor="middle" class="t-b">1 · 慎重さのみのフレーミング</text>
+  <text x="120" y="77" text-anchor="middle" class="t-small">スキルは制限を強めることはできるが、緩めることはできない</text>
   <rect class="box" x="262" y="35" width="200" height="60"/>
-  <text x="362" y="59" text-anchor="middle" class="t-b">2・出力契約</text>
-  <text x="362" y="77" text-anchor="middle" class="t-small">アクションのホワイトリスト・クランプ・JSONのみ</text>
+  <text x="362" y="59" text-anchor="middle" class="t-b">2 · 出力コントラクト</text>
+  <text x="362" y="77" text-anchor="middle" class="t-small">アクションのホワイトリスト · クランプ · JSONのみ</text>
   <rect class="box" x="504" y="35" width="200" height="60"/>
-  <text x="604" y="59" text-anchor="middle" class="t-b">3・価格権限</text>
-  <text x="604" y="77" text-anchor="middle" class="t-small">モデルの入力値は降格され、ライブ価格が反映される</text>
+  <text x="604" y="59" text-anchor="middle" class="t-b">3 · 価格の権限</text>
+  <text x="604" y="77" text-anchor="middle" class="t-small">モデルの入力値は降格され、ライブ価格が適用される</text>
   <rect class="box-accent" x="746" y="35" width="194" height="60"/>
-  <text x="843" y="59" text-anchor="middle" class="t-b">4・確定的ゲート</text>
-  <text x="843" y="77" text-anchor="middle" class="t-small">予算・リスク・手数料・権限</text>
+  <text x="843" y="59" text-anchor="middle" class="t-b">4 · 決定論的ゲート</text>
+  <text x="843" y="77" text-anchor="middle" class="t-small">予算 · リスク · 手数料 · 権限</text>
   <path class="ln" d="M220,65 L262,65" marker-end="url(#ar)"/>
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">スキル本文はv1では管理者のみが作成でき、サイズは二重に制限されている（ルートでは本文ごとに4,000、ビルダーではプロンプトごとに14,000）。悪意のある本文であっても、レイヤー2〜4を回避することはできない — これらはプロンプトの外側で動作する。</p>
+<p class="legend">スキル本体はv1では管理者のみが作成でき、サイズは二重に制限されている(ルートでは本体1つあたり4,000、ビルダーではプロンプト1つあたり28,000)。悪意のある本体であっても、レイヤー2〜4を回避することはできない — これらはプロンプトの外部で実行される。</p>
 </div>
 
-<h2>7. 運用方法 — 管理者API＋反映タイミング</h2>
+<h2>7. 運用する — 管理API + 反映タイミング</h2>
 <div class="card">
 <table>
-  <tr><th>呼び出し</th><th>動作</th><th>備考</th></tr>
-  <tr><td><code>GET /api/admin/skills</code></td><td>全スキルの一覧（ベース＋カスタム）</td><td>キャッシュを経由しない新規読み込み</td></tr>
-  <tr><td><code>POST /api/admin/skills</code></td><td>カスタムスキルを作成</td><td>スラッグ <code>[a-z0-9-]</code> ≤48 · 本文 ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 重複時は409</td></tr>
-  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>name/description/body/prompts/markets/priority/enabledを編集</td><td>ベーススキルは編集可能；slugは不変</td></tr>
-  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>カタログのデフォルトに復元＋再有効化</td><td>ベースのみ — カスタムの場合は400</td></tr>
-  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>カスタムスキルを削除</td><td>ベース → 400「disable or reset instead」</td></tr>
+  <tr><th>コール</th><th>です</th><th>注記</th></tr>
+  <tr><td><code>GET /api/admin/skills</code></td><td>全スキルを一覧表示する（ベース + カスタム）</td><td>キャッシュを回避して最新の状態を取得する</td></tr>
+  <tr><td><code>POST /api/admin/skills</code></td><td>カスタムスキルを作成する</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 重複時は409</td></tr>
+  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>name/description/body/prompts/markets/priority/enabledを編集する</td><td>ベーススキルは編集可能；slugは不変</td></tr>
+  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>カタログのデフォルトに復元 + 再有効化</td><td>ベースのみ — カスタムには400</td></tr>
+  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>カスタムスキルを削除する</td><td>ベース → 400 "disable or reset instead"</td></tr>
 </table>
-<p class="legend">すべての書き込みは<code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>)に記録され、APIプロセスのキャッシュを即座に無効化する。<b>workerは別プロセスであり</b>：registryの30秒TTLを通じて収束する — 編集は次の判断サイクル内（約30秒）に反映され、稼働中のフリートは次のサイクルで取り込む（v1では意図的に実行ごとにスキルを固定しない；設計ドキュメントのnon-goalsを参照）。</p>
+<p class="legend">すべての書き込みは<code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>に記録され、APIプロセスのキャッシュを即座に無効化する。<b>workerは別プロセスである</b>：レジストリの30秒TTLを通じて収束する — 編集は次の判定サイクル内（約30秒）に反映され、稼働中のフリートは次のサイクルでそれを取り込む（v1では意図的にrun単位でスキルを固定しない；デザインドキュメントのnon-goalsを参照）。</p>
 </div>
 
-<h2>8. 本番環境での検証</h2>
+<h2>8. 本番環境で検証する</h2>
 <div class="card">
 <table>
-  <tr><th>確認</th><th>方法</th><th>証明</th></tr>
-  <tr><td>registryが有効</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>テーブルに到達可能、6つのベーススキルがシード済み</td></tr>
-  <tr><td>選択が正しい</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slugセット</td><td>設計通りのsite＋marketスコーピング</td></tr>
-  <tr><td>注入が実際に行われている</td><td>exec <code>_light_analysis</code>でworker内、<code>generate_text</code>をスタブ化した状態</td><td>実際の本番コードパスがskillsブロックを含むプロンプトを構築する — 稼働中のrunが0件でも動作する</td></tr>
+  <tr><th>確認</th><th>方法</th><th>証明する</th></tr>
+  <tr><td>レジストリが有効</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>テーブルに到達可能、30個のベーススキルがシードされている</td></tr>
+  <tr><td>選択が正しい</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code>slugセット</td><td>site + marketのスコープが設計通りである</td></tr>
+  <tr><td>注入が実際に機能する</td><td>exec <code>_light_analysis</code>をworker内で実行し、<code>generate_text</code>をスタブ化する</td><td>実際の本番コードパスがskillsブロックを含むプロンプトを構築する — アクティブなrunが0でも動作する</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">関連仕様: <code>docs/plan/20-trading-skills.md</code>) · PR #179でリリース（squash <code>ba43060</code>) · 2026-08-01よりsooppiy.comで稼働中。</p>
+<p class="legend" style="margin-top:28px">コンパニオン仕様: <code>docs/plan/20-trading-skills.md</code> · PR #179（squash <code>ba43060</code>）で出荷 · 2026-08-01よりsooppiy.comで稼働中 · #186、#193、#215、#221、#222（2026-08-04）を通じてカタログは30スキルに成長した。</p>
 
 </div>
 </body>

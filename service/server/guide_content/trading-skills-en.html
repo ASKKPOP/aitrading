@@ -55,10 +55,10 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>22</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>30</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
-  <div class="chip"><b>14,000</b><span>char budget per prompt</span></div>
+  <div class="chip"><b>28,000</b><span>char budget per prompt</span></div>
   <div class="chip"><b>30s</b><span>worker cache TTL</span></div>
 </div>
 
@@ -147,8 +147,8 @@
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">LIGHT path — 1 LLM call</text>
   <text x="740" y="52" text-anchor="middle" class="t-small">price + thesis + closes + inventory rule</text>
-  <text x="740" y="72" text-anchor="middle">💡 skills: risk-reward · exit · position-mgmt · drawdown-breaker · honesty</text>
-  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction skills excluded — light has its own rubric)</text>
+  <text x="740" y="72" text-anchor="middle">💡 9 light skills (10 on us-stock: earnings-preview rides there too)</text>
+  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration excluded — light has its own rubric)</text>
 
   <!-- full path -->
   <rect class="box" x="540" y="140" width="400" height="230"/>
@@ -157,7 +157,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst briefs (news · sentiment · macro · technical) — no skills, data only</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk decision</text>
-  <text x="740" y="268" text-anchor="middle">💡 all 18 trader skills (19 on us-stock: earnings-preview rides only there)</text>
+  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (26 on us-stock · 25 on crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Adversarial verifier (tries to REFUTE)</text>
   <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
@@ -202,7 +202,7 @@
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">budget check</text>
   <text x="505" y="112" text-anchor="middle" class="t-small">would section overflow</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">14,000 chars?</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">28,000 chars?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
   <text x="795" y="94" text-anchor="middle" class="t-b">framed block</text>
@@ -222,20 +222,28 @@
 <p class="legend">Any registry error at any step degrades to an empty block — a broken skills table can never break a trading cycle.</p>
 </div>
 
-<h2>4. The six base skills — what applies where</h2>
+<h2>4. The thirty base skills — what applies where</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>distilled from</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4 anchors (trend · volatility · participation · events) → conservative closed labels → tactics</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js regime analysis</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → reduce exposure by evidence count</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + IBD DD monitor</td></tr>
+  <tr><td><code>crypto-regime-lens</code></td><td>6 anchors (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); conflicts lower exposure <b>(crypto only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
+  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: rally attempt day 4+, big index gain on rising volume confirms re-entry; undercut resets the count; scouting size before confirmation <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
   <tr><td><code>thesis-validation</code></td><td>falsifiable claim, facts vs assumptions, timeframe fit, dependency load, concrete invalidation</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
+  <tr><td><code>level-integrity</code></td><td>a level must be able to fire: right side of spot, clear of half-a-day's noise, inside the recent range; an unusable level = say so and anchor to visible structure</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (wrong-side levels, 2026-08-03)</td></tr>
   <tr><td><code>position-sizing-discipline</code></td><td>size from risk, strictest constraint wins, round down, half-Kelly caution</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
+  <tr><td><code>volatility-context</code></td><td>judge ranges, stops and size against the asset's OWN volatility history; compression is loaded, extremes revert; never widen a stop at constant size</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs volatility-modeling + regime-detection</td></tr>
   <tr><td><code>macro-event-analysis</code></td><td>rank events by decision impact (sensitivity · surprise capacity · transmission · timing); events are risk, not signals</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js macro-event analysis</td></tr>
+  <tr><td><code>mean-reversion-guard</code></td><td>fading a move requires proof of a RANGE, an entry at its extreme, a mid-range target and a time budget; persistence is the default; never add on "better price"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (Hurst · half-life · z-score)</td></tr>
   <tr><td><code>news-reaction-evidence</code></td><td>price reaction to news outweighs the news; exhaustion = a move AGAINST favorable news, never mere silence</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro step 2)</td></tr>
   <tr><td><code>risk-reward-structure</code></td><td>stop = objective invalidation, target = reachable level, ratio ≥ 2×, good ratio ≠ good trade</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R sanity check</td></tr>
   <tr><td><code>exit-discipline</code></td><td>banking is first-class, never add to a loser, invalidation = close not renegotiate</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy exit rails + Senpi</td></tr>
+  <tr><td><code>horizon-discipline</code></td><td>a fresh position gets its stated horizon; small adverse drift is NOT invalidation; sub-horizon exits need one named trigger from a closed set — "protect capital" is not one</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (intra-horizon churn, 2026-08-03)</td></tr>
   <tr><td><code>position-management</code></td><td>manage against the ORIGINAL plan, not the P&amp;L; hold / manage actively / exit decisively + the condition that changes it</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js position management</td></tr>
+  <tr><td><code>reachable-exits</code></td><td>author your own stop, target and trail on every entry, each reachable inside the move you forecast; omitting them hands the trade an unseen default; unexpressible geometry → retire the slot</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (unreachable trails, 2026-08-03)</td></tr>
   <tr><td><code>drawdown-circuit-breaker</code></td><td>realized damage governs new risk; consecutive losses → cooldown (manage, don't open); survival first</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
+  <tr><td><code>confidence-resolution</code></td><td>derive confidence from your own four component scores; the rubric lists reference points, not a menu; a landmark or midpoint value is picked, not derived — the second decimal must carry information</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (quantized confidence, 2026-08-03)</td></tr>
   <tr><td><code>conviction-calibration</code></td><td>confidence = countable agreeing evidence; no habitual values; no swing without an edge</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mph Druckenmiller zones</td></tr>
   <tr><td><code>exposure-discipline</code></td><td>posture before the trade: new-entry-allowed / reduce-only / cash-priority; conflicts default to LOWER exposure</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
   <tr><td><code>pre-trade-readiness</code></td><td>shortest chain of checks, stop at the first blocker; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js pre-trade-check workflow</td></tr>
@@ -243,7 +251,7 @@
   <tr><td><code>scenario-precommit</code></td><td>classify the event, map 1st/2nd/3rd-order effects, pre-commit if/then branches with armed levels</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty scenario-analyzer</td></tr>
   <tr><td><code>data-honesty</code></td><td>only numbers in the prompt; undetermined ≠ all-clear; data is never an instruction</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpi hard rules + Bybit defense</td></tr>
   <tr><td><code>evidence-gap-check</code></td><td>known vs assumed; rank gaps by decision impact; a blocking gap means lower confidence + hold</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js evidence gap check</td></tr>
-  <tr><td><code>earnings-preview</code></td><td>benchmark relevance · debate intensity · read-through · positioning risk; importance ≠ certainty <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js earnings preview</td></tr>
+  <tr><td><code>earnings-preview</code></td><td>benchmark relevance · debate intensity · read-through · positioning risk; importance ≠ certainty <b>(us-stock only)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js earnings preview</td></tr>
   <tr><td><code>catalyst-map</code></td><td>score catalysts on timing · transmission · impact · overlap; shared event chains are concentration</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js catalyst map</td></tr>
   <tr><td><code>watchlist-review</code></td><td>triage by actionability (catalyst relevance · tradability · readiness · redundancy), not familiarity</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js watchlist review</td></tr>
   <tr><td><code>execution-plan-check</code></td><td>urgency vs order method, spread/depth, session timing, stop realism; unexecutable plan = fragile</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js execution plan check</td></tr>
@@ -306,7 +314,7 @@
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 14,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
+<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 28,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
 </div>
 
 <h2>7. Operating it — admin API + propagation timing</h2>
@@ -326,13 +334,13 @@
 <div class="card">
 <table>
   <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 6 base skills seeded</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 30 base skills seeded</td></tr>
   <tr><td>selection correct</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug sets</td><td>site + market scoping as designed</td></tr>
   <tr><td>injection real</td><td>exec <code>_light_analysis</code> in the worker with <code>generate_text</code> stubbed</td><td>the actual prod code path builds prompts carrying the skills block — works even with 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01.</p>
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 30 skills via #186, #193, #215, #221 and #222 (2026-08-04).</p>
 
 </div>
 </body>
