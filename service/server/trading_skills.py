@@ -126,7 +126,16 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "distance BEFORE friction; then ask separately whether the trade "
             "is good — a good ratio on a weak thesis is still a weak trade. "
             "State what would invalidate the structure even when the ratio "
-            "looks attractive."
+            "looks attractive. Authoring the bracket is part of the entry, "
+            "and silence forfeits the bracket: state your stop and target "
+            "explicitly in your decision output every time you open or add. "
+            "If you stay silent, the platform substitutes the account's flat "
+            "default bracket, and when that default's ratio sits below the "
+            "2:1 floor your entry is REFUSED at the gate — cycle after "
+            "cycle, however strong the conviction, and nothing you change "
+            "except the bracket will unblock it. An entry you did not "
+            "bracket yourself is delegated to a geometry that may be unable "
+            "to trade at all."
         ),
     },
     {
