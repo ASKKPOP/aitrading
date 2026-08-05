@@ -324,7 +324,45 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "structural gap has blocked a bracket for two or three consecutive "
             "cycles and nothing about the structure has changed, retire: the "
             "slot is capital, and an unexpressible thesis returns it to the "
-            "build queue instead of waiting for a level that cannot arrive."
+            "build queue instead of waiting for a level that cannot arrive. "
+            "The same anti-churn test applies to ENTRIES: if the gate has "
+            "refused the same bracket twice, the third identical attempt is "
+            "churn, not persistence — rising conviction does not change the "
+            "geometry that was refused. Re-derive the bracket from the "
+            "structure (a different stop anchor, a different target level) "
+            "or stand down; never resubmit the same refused numbers."
+        ),
+    },
+    {
+        # Added 2026-08-05 from the HYPE case: 949's short deteriorated
+        # −4.6 → −8.9 → −14.5 across ~12h of consecutive 'hold' reads, then
+        # capitulated at the worst price. Each hold was individually
+        # defensible; the SEQUENCE was the failure — nothing in the prompt
+        # made the desk confront the aging of its own loss.
+        "slug": "loss-aging",
+        "name": "Loss Aging",
+        "description": ("A worsening loser held cycle after cycle is a "
+                        "decision by default; holds on an aging loss need "
+                        "escalating, named justification."),
+        "prompts": ["light", "trader"],
+        "priority": 45,
+        "body": (
+            "Losses age, and an aging loss quietly becomes the largest "
+            "decision on your book. When a position has moved against you "
+            "for several consecutive cycles, each further 'hold' is not the "
+            "same decision repeated — it is a bigger decision than the last "
+            "one, because the loss is bigger and the thesis older. Escalate "
+            "your own burden of proof as the loss grows: once the drawdown "
+            "exceeds about twice your typical banked win, holding requires "
+            "a NAMED, checkable reason (a level that must break, an event "
+            "with a date, a structure still intact) and a stated point at "
+            "which you stop being wrong-and-waiting; once it exceeds several "
+            "typical wins, the honest question is no longer 'will it come "
+            "back' but 'would I open this position now at this price' — if "
+            "the answer is no, you are holding a trade you would refuse. "
+            "Deterioration across three or more cycles with no action taken "
+            "is a decision by default, and the worst kind: the market is "
+            "making it for you, at its price, on its schedule."
         ),
     },
     {
@@ -534,7 +572,13 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "fresh exposure within days of this symbol's own print is a bet "
             "on the print itself — take it only if your rationale names the "
             "print and prices both outcomes, and prefer acting BEFORE the "
-            "report window to being forced to react through the gap."
+            "report window to being forced to react through the gap. AFTER "
+            "the print, the gap is information that RESETS your map: the "
+            "pre-print thesis, and every support or resistance level drawn "
+            "from pre-print prices, are stale until re-derived on the new "
+            "range. The first post-print session belongs to re-derivation — "
+            "neither chase the gap because it is large nor fade it by "
+            "reflex; both are trades on the old map."
         ),
     },
     {
