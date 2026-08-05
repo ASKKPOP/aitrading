@@ -225,5 +225,115 @@ class BillingSyncTests(unittest.TestCase):
             conn.close()
 
 
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+
+def _register_user(client: TestClient, db) -> tuple[int, str]:
+    """Insert a user + session token directly (register route needs email codes)."""
+    import secrets
+    conn = db.get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (email, password_hash) VALUES ('pay@t.dev', 'x')")
+        user_id = cur.lastrowid
+        token = secrets.token_urlsafe(24)
+        cur.execute("INSERT INTO user_tokens (user_id, token, expires_at) VALUES (?, ?, "
+                    "'2030-01-01T00:00:00Z')", (user_id, token))
+        conn.commit()
+        return user_id, token
+    finally:
+        conn.close()
+
+
+class StripeCheckoutTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["STRIPE_SECRET_KEY"] = "sk_test_x"
+        from routes import create_app
+        self.client = TestClient(create_app())
+        self.user_id, self.token = _register_user(self.client, database)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE subscription_plans SET stripe_price_id = 'price_jr' "
+                        "WHERE code = 'junior'")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        os.environ["STRIPE_SECRET_KEY"] = ""
+        self.tmp.cleanup()
+
+    def _h(self):
+        return {"Authorization": f"Bearer {self.token}"}
+
+    def test_checkout_returns_hosted_url_and_saves_customer(self):
+        with patch("stripe.Customer.create", return_value={"id": "cus_1"}) as cc, \
+             patch("stripe.checkout.Session.create",
+                   return_value={"url": "https://checkout.stripe.com/x"}) as sc:
+            r = self.client.post("/api/subscriptions/stripe/checkout",
+                                 json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["url"], "https://checkout.stripe.com/x")
+        cc.assert_called_once()
+        kwargs = sc.call_args.kwargs
+        self.assertEqual(kwargs["mode"], "subscription")
+        self.assertEqual(kwargs["client_reference_id"], str(self.user_id))
+        self.assertEqual(kwargs["line_items"], [{"price": "price_jr", "quantity": 1}])
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT stripe_customer_id FROM users WHERE id = ?",
+                        (self.user_id,))
+            self.assertEqual(dict(cur.fetchone())["stripe_customer_id"], "cus_1")
+        finally:
+            conn.close()
+
+    def test_checkout_409_when_autorenew_active(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=self.user_id, plan_code="junior",
+            external_id="I-1")
+        r = self.client.post("/api/subscriptions/stripe/checkout",
+                             json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 409)
+
+    def test_checkout_503_when_unconfigured(self):
+        os.environ["STRIPE_SECRET_KEY"] = ""
+        r = self.client.post("/api/subscriptions/stripe/checkout",
+                             json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 503)
+
+    def test_checkout_503_when_plan_has_no_price(self):
+        r = self.client.post("/api/subscriptions/stripe/checkout",
+                             json={"plan_code": "pro"}, headers=self._h())
+        self.assertEqual(r.status_code, 503)
+
+    def test_portal_returns_url(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET stripe_customer_id = 'cus_9' WHERE id = ?",
+                        (self.user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        with patch("stripe.billing_portal.Session.create",
+                   return_value={"url": "https://billing.stripe.com/p"}):
+            r = self.client.post("/api/subscriptions/stripe/portal", headers=self._h())
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["url"], "https://billing.stripe.com/p")
+
+    def test_portal_404_without_customer(self):
+        r = self.client.post("/api/subscriptions/stripe/portal", headers=self._h())
+        self.assertEqual(r.status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()
