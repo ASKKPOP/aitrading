@@ -198,14 +198,6 @@ def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "e
             (user_id, sub, email, now),
         )
         conn.commit()
-        # Every new signup gets a welcome email, Google OAuth included. A mail
-        # outage must never fail the signup — the account and session are
-        # already committed.
-        try:
-            send_welcome_email(email or f"google-{sub}@sooppiy.com", lang)
-        except Exception:
-            _logger.warning("welcome email failed for google signup user_id=%s",
-                            user_id, exc_info=True)
         return user_id, True
     finally:
         conn.close()
@@ -264,6 +256,17 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         # Offload the (sync, network) geo lookup off the event loop; fail-soft.
         lang = await asyncio.to_thread(resolve_signup_lang, request)
         user_id, created = _find_or_create_user_from_google(user_info, lang=lang)
+        if created:
+            # Every new signup gets a welcome email, Google OAuth included.
+            # Off the event loop (mail providers can hang for seconds) and
+            # fail-soft: the account is already committed.
+            email_addr = (user_info.get("email") or "").strip().lower()
+            if email_addr:
+                try:
+                    await asyncio.to_thread(send_welcome_email, email_addr, lang)
+                except Exception:  # noqa: BLE001
+                    _logger.warning("welcome email failed for google signup "
+                                    "user_id=%s", user_id, exc_info=True)
         session_token = _create_user_session(user_id)
         return JSONResponse({
             "token":   session_token,

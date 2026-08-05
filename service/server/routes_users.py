@@ -167,10 +167,12 @@ def _daily_quota_hit(quota_key: str, limit: int, ctx: "RouteContext",
     count = quota.get('count', 0) if quota and quota.get('day') == today else 0
     if count >= limit:
         return True
+    # ttl_seconds must cover the whole day: the default 300s Redis TTL would
+    # silently reset the "daily" cap every 5 minutes on a Redis deployment.
     _store_code(quota_key, {
         'day': today, 'count': count + 1,
         'expires_at': now + timedelta(hours=24), 'attempts': 0,
-    }, ctx)
+    }, ctx, ttl_seconds=86_400)
     return False
 
 
