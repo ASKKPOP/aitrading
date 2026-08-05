@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, marketLabel, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
-import { HelpTip } from './HelpTip'
+import { GuideBadge, HelpTip } from './HelpTip'
 import { tr } from '../i18n'
 
 // Plan 14 — Full Auto (fleet mode). The user sets only N and presses go; the
@@ -460,14 +460,11 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                 color: 'var(--text-secondary,#8a8073)' }}>
                 INDEX
               </span>
-              <button onClick={() => setShowIndexGuide(true)} title={T.idxGuideOpen}
-                aria-label={T.idxGuideOpen}
+              <GuideBadge onClick={() => setShowIndexGuide(true)} title={T.idxGuideOpen}
                 style={{ width: 20, height: 20, borderRadius: 10, padding: 0, fontSize: 12,
                   fontWeight: 700, lineHeight: 1, cursor: 'pointer',
                   border: '1px solid var(--border-color,rgba(0,0,0,0.2))',
-                  background: 'transparent', color: 'var(--text-secondary,#8a8073)' }}>
-                ?
-              </button>
+                  background: 'transparent', color: 'var(--text-secondary,#8a8073)' }} />
               <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 color: index.pnl_pct >= 0 ? '#2e9e6b' : '#f0663f' }}>
                 {index.pnl_pct >= 0 ? '+' : ''}{index.pnl_pct.toFixed(2)}%
