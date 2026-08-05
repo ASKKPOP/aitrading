@@ -289,6 +289,14 @@ class UserResetPasswordRequest(BaseModel):
         return v
 
 
+class PhoneSendCodeRequest(BaseModel):
+    phone: str
+
+
+class PhoneVerifyRequest(BaseModel):
+    code: str
+
+
 class PointsTransferRequest(BaseModel):
     to_user_id: int
     amount: int
