@@ -238,6 +238,18 @@ class RegistryTests(_Db):
                           f"post-print clause missing from {site}")
             self.assertIn("both are trades on the old map", block)
 
+    def test_reentry_discipline_teaches_flat_retirement(self):
+        # 949 case (2026-08-05): flat for 7+ consecutive cycles at
+        # conviction 0.24-0.29 after its -14.5 loss, burning an LLM read
+        # per cycle. The never-traded idle rail cannot collect it and the
+        # retire verb went unused — the desk needs to know that a flat
+        # book with no arriving read IS the retire case.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("not waiting, it is occupying capital", block,
+                          f"flat-retirement clause missing from {site}")
+            self.assertIn("retire verb exists for exactly this", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
