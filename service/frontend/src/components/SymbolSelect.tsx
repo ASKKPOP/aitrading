@@ -67,6 +67,32 @@ function loadTopSymbols(): Promise<string[]> {
   return topPromise
 }
 
+// The us-stock list is ~70 flat tickers — as one native dropdown it runs off
+// the top of the screen and nothing signals where anything is. Grouping boxes
+// (optgroups) give the OS popup section headers users can scan. Groups are
+// matched against the fetched list (never invented), and anything the server
+// adds that no group claims falls into 기타 · Other, so list drift can only
+// ever mislabel a symbol, not hide it. Labels are bilingual like the crypto
+// top-volume group below.
+const US_STOCK_GROUPS: Array<{ label: string; symbols: string[] }> = [
+  { label: '💻 대형 기술주 · Mega-cap tech',
+    symbols: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AVGO', 'NFLX',
+              'CRM', 'ORCL', 'ADBE', 'AMD', 'INTC', 'QCOM', 'CSCO', 'IBM'] },
+  { label: '🏦 금융·헬스케어·소비 · Finance / Health / Consumer',
+    symbols: ['BRK.B', 'LLY', 'JPM', 'V', 'MA', 'UNH', 'JNJ', 'ABBV', 'PFE', 'MRK',
+              'BAC', 'TMO', 'XOM', 'CVX', 'COST', 'HD', 'PG', 'WMT', 'KO', 'PEP',
+              'MCD', 'SBUX', 'NKE', 'DIS'] },
+  { label: '🏭 산업·통신·자동차 · Industrial / Telecom / Auto',
+    symbols: ['GE', 'CAT', 'BA', 'VZ', 'T', 'F', 'GM'] },
+  { label: '🚀 성장·핀테크·크립토 · Growth / Fintech / Crypto-linked',
+    symbols: ['PLTR', 'UBER', 'COIN', 'HOOD', 'MSTR', 'SNOW', 'SHOP', 'PYPL',
+              'SOFI', 'RIVN', 'LCID'] },
+  { label: '🆕 2026 신규 상장 · 2026 listings',
+    symbols: ['SPCX', 'SKHY', 'CBRS', 'QNT'] },
+  { label: '📊 ETF',
+    symbols: ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'GLD', 'SLV', 'TLT'] },
+]
+
 let polyCache: Option[] | null = null
 let polyPromise: Promise<Option[]> | null = null
 
@@ -293,6 +319,36 @@ export function SymbolSelect({ market, variant, value, onChange, placeholder, cl
     : opts
 
   const opt = (o: Option) => <option key={o.value} value={o.value}>{o.label}</option>
+
+  // Grouped stock picker (see US_STOCK_GROUPS above). Only for the pure
+  // stock market — the '' (all-markets) list mixes crypto in, where these
+  // groups would misfile everything unmatched.
+  if ((market || '').toLowerCase().includes('stock') && !variant) {
+    const used = new Set<string>()
+    const groups = US_STOCK_GROUPS.map(g => ({
+      label: g.label,
+      opts: opts.filter(o => {
+        if (!g.symbols.includes(o.value) || used.has(o.value)) return false
+        used.add(o.value)
+        return true
+      }),
+    })).filter(g => g.opts.length > 0)
+    const other = opts.filter(o => !used.has(o.value))
+    return (
+      <select
+        className={className}
+        style={style}
+        value={value}
+        required={required}
+        disabled={disabled}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">{placeholder ?? '—'}</option>
+        {groups.map(g => <optgroup key={g.label} label={g.label}>{g.opts.map(opt)}</optgroup>)}
+        {other.length > 0 && <optgroup label="기타 · Other">{other.map(opt)}</optgroup>}
+      </select>
+    )
+  }
 
   return (
     <select
