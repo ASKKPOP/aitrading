@@ -23,14 +23,15 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 
 import billing_sync
 from database import get_db_connection
 from routes_shared import RouteContext
-from routes_subscriptions import (PlanOrderBody, _frontend_url, _load_plan,
-                                  _require_user)
+from routes_subscriptions import (PlanOrderBody, _alert_new_subscription,
+                                  _frontend_url, _load_plan, _require_user)
 
 logger = logging.getLogger("routes_billing")
 
@@ -76,6 +77,51 @@ def _stripe_customer_id(user: dict) -> str:
     finally:
         conn.close()
     return customer_id
+
+
+def _handle_stripe_event(event: dict) -> None:
+    etype = event.get("type", "")
+    obj = (event.get("data") or {}).get("object") or {}
+    if etype == "checkout.session.completed":
+        meta = obj.get("metadata") or {}
+        user_id = int(obj.get("client_reference_id") or meta.get("user_id") or 0)
+        sub_id = obj.get("subscription") or ""
+        plan_code = meta.get("plan_code") or ""
+        if not (user_id and sub_id and plan_code):
+            logger.warning("stripe checkout.session.completed missing fields: %s", obj)
+            return
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=user_id, plan_code=plan_code,
+            external_id=sub_id)
+        _alert_new_subscription(email=None, plan_code=plan_code, amount=None,
+                                method="stripe", status_note="auto-activated",
+                                reference=sub_id)
+    elif etype == "invoice.paid":
+        sub_id = obj.get("subscription") or ""
+        period_end = None
+        lines = ((obj.get("lines") or {}).get("data") or [])
+        end_ts = (lines[0].get("period") or {}).get("end") if lines else None
+        if end_ts:
+            period_end = datetime.fromtimestamp(int(end_ts), tz=timezone.utc)
+        if sub_id:
+            billing_sync.extend_subscription("stripe", sub_id, period_end)
+    elif etype == "customer.subscription.updated":
+        sub_id = obj.get("id") or ""
+        items = ((obj.get("items") or {}).get("data") or [])
+        price_id = ((items[0].get("price") or {}).get("id") or "") if items else ""
+        plan_code = billing_sync.plan_for_stripe_price(price_id) if price_id else None
+        period_end = None
+        if obj.get("current_period_end"):
+            period_end = datetime.fromtimestamp(int(obj["current_period_end"]),
+                                                tz=timezone.utc)
+        billing_sync.apply_subscription_update(
+            "stripe", sub_id, plan_code=plan_code,
+            cancel_at_period_end=bool(obj.get("cancel_at_period_end")),
+            period_end=period_end)
+    elif etype == "customer.subscription.deleted":
+        if obj.get("id"):
+            billing_sync.end_subscription("stripe", obj["id"])
+    # anything else: recorded in billing_events, deliberately ignored
 
 
 def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -130,3 +176,34 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             logger.error("Stripe portal session failed: %s", exc)
             raise HTTPException(status_code=502, detail="Card processor error")
         return {"url": session["url"]}
+
+    @app.post('/api/webhooks/stripe')
+    async def stripe_webhook(request: Request,
+                             stripe_signature: str = Header(None)):
+        secret = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
+        if not secret:
+            raise HTTPException(status_code=503, detail="Stripe webhook not configured")
+        payload = await request.body()
+        import stripe
+        try:
+            event = stripe.Webhook.construct_event(payload, stripe_signature or "",
+                                                   secret)
+        except Exception:  # noqa: BLE001 — bad signature or malformed payload
+            raise HTTPException(status_code=400, detail="Invalid signature")
+        event = event.to_dict()
+        event_id = str(event.get("id") or "")
+        if not event_id:
+            raise HTTPException(status_code=400, detail="Event has no id")
+        if not billing_sync.record_billing_event(
+                "stripe", event_id, str(event.get("type") or ""),
+                payload.decode("utf-8", "replace")):
+            return {"ok": True, "duplicate": True}
+        try:
+            _handle_stripe_event(event)
+        except Exception as exc:  # noqa: BLE001
+            # Un-record so Stripe's retry is processed, then let it retry.
+            billing_sync.delete_billing_event("stripe", event_id)
+            logger.exception("stripe webhook processing failed: %s", exc)
+            _alert_webhook_failure("stripe", event_id, exc)
+            raise HTTPException(status_code=500, detail="Processing failed")
+        return {"ok": True}

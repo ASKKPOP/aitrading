@@ -369,5 +369,135 @@ class StripeCheckoutTests(unittest.TestCase):
         self.assertEqual(r.status_code, 502)
 
 
+import hashlib
+import hmac as hmac_mod
+import json
+import time
+
+
+def _stripe_sig(payload: bytes, secret: str) -> str:
+    ts = str(int(time.time()))
+    mac = hmac_mod.new(secret.encode(),
+                       f"{ts}.{payload.decode()}".encode(), hashlib.sha256).hexdigest()
+    return f"t={ts},v1={mac}"
+
+
+class StripeWebhookTests(unittest.TestCase):
+    SECRET = "whsec_test"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["STRIPE_WEBHOOK_SECRET"] = self.SECRET
+        from routes import create_app
+        self.client = TestClient(create_app())
+        self.user_id, self.token = _register_user(self.client, database)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE subscription_plans SET stripe_price_id = 'price_jr' "
+                        "WHERE code = 'junior'")
+            cur.execute("UPDATE subscription_plans SET stripe_price_id = 'price_pro' "
+                        "WHERE code = 'pro'")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        os.environ["STRIPE_WEBHOOK_SECRET"] = ""
+        self.tmp.cleanup()
+
+    def _post(self, event: dict, sig: str | None = None):
+        # Real Stripe events always carry "object": "event"; the installed
+        # stripe SDK's construct_event() reads event.object internally and
+        # raises if it's absent, so every fixture needs it set.
+        event = {**event, "object": "event"}
+        payload = json.dumps(event).encode()
+        return self.client.post(
+            "/api/webhooks/stripe", content=payload,
+            headers={"Stripe-Signature": sig or _stripe_sig(payload, self.SECRET),
+                     "Content-Type": "application/json"})
+
+    def _checkout_completed(self, event_id="evt_cs1", sub_id="sub_A"):
+        return {"id": event_id, "type": "checkout.session.completed",
+                "data": {"object": {"client_reference_id": str(self.user_id),
+                                    "subscription": sub_id,
+                                    "metadata": {"user_id": str(self.user_id),
+                                                 "plan_code": "junior"}}}}
+
+    def test_bad_signature_rejected(self):
+        r = self._post(self._checkout_completed(), sig="t=1,v1=deadbeef")
+        self.assertEqual(r.status_code, 400)
+
+    def test_checkout_completed_activates(self):
+        r = self._post(self._checkout_completed())
+        self.assertEqual(r.status_code, 200, r.text)
+        import billing_sync
+        sub = billing_sync.active_autorenew(self.user_id)
+        self.assertIsNotNone(sub)
+        self.assertEqual((sub["method"], sub["plan_code"], sub["external_id"]),
+                         ("stripe", "junior", "sub_A"))
+
+    def test_duplicate_event_is_noop(self):
+        self._post(self._checkout_completed())
+        r = self._post(self._checkout_completed())
+        self.assertEqual(r.status_code, 200)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) AS c FROM user_subscriptions "
+                        "WHERE external_id = 'sub_A'")
+            self.assertEqual(int(dict(cur.fetchone())["c"]), 1)
+        finally:
+            conn.close()
+
+    def test_invoice_paid_extends(self):
+        self._post(self._checkout_completed())
+        period_end = int(time.time()) + 30 * 86400
+        r = self._post({"id": "evt_inv1", "type": "invoice.paid",
+                        "data": {"object": {"subscription": "sub_A",
+                                            "lines": {"data": [{"period": {"end": period_end}}]}}}})
+        self.assertEqual(r.status_code, 200)
+        import billing_sync
+        expires = billing_sync.active_autorenew(self.user_id)["expires_at"]
+        from datetime import datetime, timedelta, timezone
+        want = (datetime.fromtimestamp(period_end, tz=timezone.utc)
+                + timedelta(days=billing_sync.GRACE_DAYS)).strftime("%Y-%m-%d")
+        self.assertTrue(expires.startswith(want))
+
+    def test_subscription_updated_switches_plan_and_flags_cancel(self):
+        self._post(self._checkout_completed())
+        r = self._post({"id": "evt_up1", "type": "customer.subscription.updated",
+                        "data": {"object": {"id": "sub_A", "cancel_at_period_end": True,
+                                            "items": {"data": [{"price": {"id": "price_pro"}}]}}}})
+        self.assertEqual(r.status_code, 200)
+        row = None
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT plan_code, cancel_at_period_end FROM user_subscriptions "
+                        "WHERE external_id = 'sub_A'")
+            row = dict(cur.fetchone())
+        finally:
+            conn.close()
+        self.assertEqual(row["plan_code"], "pro")
+        self.assertEqual(int(row["cancel_at_period_end"]), 1)
+
+    def test_subscription_deleted_ends_access(self):
+        self._post(self._checkout_completed())
+        r = self._post({"id": "evt_del1", "type": "customer.subscription.deleted",
+                        "data": {"object": {"id": "sub_A"}}})
+        self.assertEqual(r.status_code, 200)
+        import billing_sync
+        self.assertIsNone(billing_sync.active_autorenew(self.user_id))
+
+    def test_unknown_event_stored_and_ignored(self):
+        r = self._post({"id": "evt_odd", "type": "charge.refunded",
+                        "data": {"object": {}}})
+        self.assertEqual(r.status_code, 200)
+
+
 if __name__ == "__main__":
     unittest.main()
