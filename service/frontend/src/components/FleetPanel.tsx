@@ -110,6 +110,45 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
       th: 'ดัชนีกองทุน', vi: 'Chỉ số nhóm', id: 'Indeks fleet' }),
     indexBase: tr(language, { ko: '기준', en: 'base', ja: '基準', th: 'ฐาน', vi: 'gốc', id: 'basis' }),
     indexBudget: tr(language, { ko: '예산', en: 'budget', ja: '予算', th: 'งบ', vi: 'ngân sách', id: 'anggaran' }),
+    // ── fleet index guide ((?) on the index card) ──
+    idxGuideOpen: tr(language, { ko: '지수 설명 보기', en: 'What is this index?', ja: 'この指数とは？', th: 'ดัชนีนี้คืออะไร', vi: 'Chỉ số này là gì?', id: 'Apa indeks ini?' }),
+    idxGuideTitle: tr(language, { ko: 'N종목 지수란?', en: 'What is the fleet index?', ja: 'フリート指数とは？', th: 'ดัชนีฟลีตคืออะไร?', vi: 'Chỉ số nhóm là gì?', id: 'Apa itu indeks fleet?' }),
+    idxGuideWhat: tr(language, {
+      ko: '이 숫자는 코인 가격도, 계좌 잔고도 아닙니다. 이 플릿(자동 편성)만의 성과 지수로, 플릿을 시작한 순간을 100으로 놓고 다시 계산한 값입니다.',
+      en: 'This number is not a coin price and not your account balance. It is this fleet\'s own performance index, rebased to 100 at the moment the fleet launched.',
+      ja: 'この数字はコイン価格でも口座残高でもありません。このフリートだけの成果指数で、開始時点を100として再計算した値です。',
+      th: 'ตัวเลขนี้ไม่ใช่ราคาเหรียญและไม่ใช่ยอดเงินในบัญชี แต่เป็นดัชนีผลงานของฟลีตนี้เอง โดยตั้งจุดเริ่มต้นไว้ที่ 100 ณ ตอนเริ่มฟลีต',
+      vi: 'Con số này không phải giá coin và không phải số dư tài khoản. Nó là chỉ số hiệu quả riêng của nhóm này, quy về 100 tại thời điểm khởi chạy.',
+      id: 'Angka ini bukan harga koin dan bukan saldo akun Anda. Ini adalah indeks kinerja fleet ini sendiri, ditetapkan ulang ke 100 pada saat fleet diluncurkan.' }),
+    idxGuideRead: tr(language, {
+      ko: '읽는 법: 100보다 크면 수익, 작으면 손실입니다. 예를 들어 99.93은 예산 대비 −0.07%라는 뜻입니다. 옆의 %와 $ 값은 같은 변화를 예산 기준 백분율과 금액으로 보여줍니다.',
+      en: 'How to read it: above 100 means profit, below 100 means loss. For example 99.93 means −0.07% on the fleet budget. The % and $ beside it show that same change as a percentage and in dollars.',
+      ja: '読み方: 100より上なら利益、下なら損失。例えば99.93は予算比−0.07%という意味です。隣の%と$は同じ変化を百分率と金額で示します。',
+      th: 'วิธีอ่าน: สูงกว่า 100 คือกำไร ต่ำกว่า 100 คือขาดทุน เช่น 99.93 หมายถึง −0.07% ของงบฟลีต ส่วน % และ $ ข้าง ๆ แสดงการเปลี่ยนแปลงเดียวกันเป็นเปอร์เซ็นต์และจำนวนเงิน',
+      vi: 'Cách đọc: trên 100 là lãi, dưới 100 là lỗ. Ví dụ 99.93 nghĩa là −0.07% trên ngân sách nhóm. Giá trị % và $ bên cạnh thể hiện cùng thay đổi đó theo phần trăm và bằng tiền.',
+      id: 'Cara membacanya: di atas 100 berarti untung, di bawah 100 berarti rugi. Misalnya 99.93 berarti −0.07% dari anggaran fleet. Nilai % dan $ di sampingnya menunjukkan perubahan yang sama dalam persentase dan dolar.' }),
+    idxGuideWhy: tr(language, {
+      ko: '왜 지수로 보여주나요? 계좌 전체 합계에서는 작은 플릿의 성과가 보이지 않기 때문입니다. 100 기준으로 다시 계산하면 예산이 다른 플릿끼리도 성과를 바로 비교할 수 있습니다.',
+      en: 'Why an index? In the account total, a small fleet\'s result is invisible. Rebasing to 100 makes fleets of different budgets directly comparable.',
+      ja: 'なぜ指数？口座合計では小さなフリートの成果が見えないためです。100基準なら予算が違うフリート同士も直接比較できます。',
+      th: 'ทำไมต้องเป็นดัชนี? เพราะในยอดรวมบัญชี ผลงานของฟลีตเล็ก ๆ จะมองไม่เห็น การตั้งฐานที่ 100 ทำให้เทียบฟลีตที่งบต่างกันได้ทันที',
+      vi: 'Tại sao dùng chỉ số? Trong tổng tài khoản, kết quả của một nhóm nhỏ sẽ không nhìn thấy được. Quy về 100 giúp so sánh trực tiếp các nhóm có ngân sách khác nhau.',
+      id: 'Mengapa indeks? Dalam total akun, hasil fleet kecil tidak terlihat. Penetapan ulang ke 100 membuat fleet dengan anggaran berbeda dapat dibandingkan langsung.' }),
+    idxGuideLine: tr(language, {
+      ko: '아래 작은 줄의 의미 — 기준 100: 시작점 · 예산: 이 플릿에 배정된 금액 · 날짜: 플릿 시작일.',
+      en: 'The small line underneath — base 100: the starting point · budget: the amount allocated to this fleet · date: the fleet\'s launch date.',
+      ja: '下の小さな行の意味 — 基準100: 開始点 · 予算: このフリートへの配分額 · 日付: 開始日。',
+      th: 'บรรทัดเล็กด้านล่าง — ฐาน 100: จุดเริ่มต้น · งบ: จำนวนเงินที่จัดสรรให้ฟลีตนี้ · วันที่: วันเริ่มฟลีต',
+      vi: 'Dòng nhỏ bên dưới — gốc 100: điểm xuất phát · ngân sách: số tiền phân bổ cho nhóm này · ngày: ngày khởi chạy.',
+      id: 'Baris kecil di bawah — basis 100: titik awal · anggaran: jumlah yang dialokasikan ke fleet ini · tanggal: tanggal peluncuran fleet.' }),
+    idxGuideAccount: tr(language, {
+      ko: '내 전체 자산이 궁금하면 페이지 상단의 계좌 요약(현재 예치금 · 총 수익)을 보세요 — 이 지수는 이 플릿 하나만 답합니다.',
+      en: 'For your overall money, look at the account summary at the top of the page (deposit · profit) — this index answers only for this one fleet.',
+      ja: '資産全体は上部の口座サマリー（預入・総収益）を見てください — この指数はこのフリートだけの答えです。',
+      th: 'หากอยากรู้เงินโดยรวม ให้ดูสรุปบัญชีด้านบนของหน้า (เงินฝาก · กำไร) — ดัชนีนี้ตอบเฉพาะฟลีตนี้เท่านั้น',
+      vi: 'Về tổng tài sản, hãy xem phần tóm tắt tài khoản ở đầu trang (số dư · lợi nhuận) — chỉ số này chỉ trả lời cho riêng nhóm này.',
+      id: 'Untuk keseluruhan dana Anda, lihat ringkasan akun di bagian atas halaman (setoran · keuntungan) — indeks ini hanya menjawab untuk fleet yang satu ini.' }),
+    close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
     monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp', id: 'Full Auto — monitor langsung' }),
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)', id: 'Klik sebuah kartu untuk membuka monitor langsung TRADING itu (grafik · catatan peristiwa · jeda/hentikan)' }),
@@ -171,6 +210,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   // fleet 22 showed 6 정지됨 cards around its 2 live ones. Hide them by
   // default behind the same toggle the TRADING grid uses (PR #42).
   const [showFinished, setShowFinished] = useState(false)
+  // (?) next to the fleet index — owner report: members read 99.93 as a
+  // price or a balance. The badge says INDEX; this opens the full guide.
+  const [showIndexGuide, setShowIndexGuide] = useState(false)
   const [trades, setTrades] = useState<any[]>([])
   const [actMkt, setActMkt] = useState('all')
 
@@ -409,6 +451,22 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                 color: index.value >= index.base ? '#2e9e6b' : '#f0663f' }}>
                 {index.value.toFixed(2)}
               </span>
+              {/* Owner report: members read this as a price or balance — say
+                  INDEX right on the number, and (?) opens the full guide. */}
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.08em',
+                padding: '2px 7px', borderRadius: 5,
+                border: '1px solid var(--border-color,rgba(0,0,0,0.18))',
+                color: 'var(--text-secondary,#8a8073)' }}>
+                INDEX
+              </span>
+              <button onClick={() => setShowIndexGuide(true)} title={T.idxGuideOpen}
+                aria-label={T.idxGuideOpen}
+                style={{ width: 20, height: 20, borderRadius: 10, padding: 0, fontSize: 12,
+                  fontWeight: 700, lineHeight: 1, cursor: 'pointer',
+                  border: '1px solid var(--border-color,rgba(0,0,0,0.2))',
+                  background: 'transparent', color: 'var(--text-secondary,#8a8073)' }}>
+                ?
+              </button>
               <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 color: index.pnl_pct >= 0 ? '#2e9e6b' : '#f0663f' }}>
                 {index.pnl_pct >= 0 ? '+' : ''}{index.pnl_pct.toFixed(2)}%
@@ -669,6 +727,34 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
           </>
           )}
         </>
+      )}
+      {/* Fleet-index guide, opened by the (?) on the index card. z 600 +
+          32px top padding: dialogs must outrank the z-500 sticky nav. */}
+      {showIndexGuide && (
+        <div role="dialog" aria-modal="true" aria-label={T.idxGuideTitle}
+          onClick={() => setShowIndexGuide(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '32px 24px 24px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 560, margin: 'auto', background: 'var(--bg-card,#fff)',
+              border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 800 }}>🎯 {T.idxGuideTitle}</div>
+              <button onClick={() => setShowIndexGuide(false)} aria-label="close"
+                style={{ marginLeft: 'auto', border: 'none', background: 'transparent',
+                  color: 'var(--text-secondary,#8a8073)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>
+                ✕
+              </button>
+            </div>
+            {[T.idxGuideWhat, T.idxGuideRead, T.idxGuideWhy, T.idxGuideLine, T.idxGuideAccount].map((p, i) => (
+              <p key={i} style={{ fontSize: 13.5, lineHeight: 1.6, margin: '0 0 10px',
+                color: i === 0 ? 'inherit' : 'var(--text-secondary,#5f574c)' }}>
+                {p}
+              </p>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
