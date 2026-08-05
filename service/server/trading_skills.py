@@ -212,7 +212,12 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "the entries that just failed; absent that, stand flat or "
             "consider whether the OPPOSITE read now has the evidence. "
             "Feeling more confident is not new evidence; the entries that "
-            "lost were also confident."
+            "lost were also confident. And when standing flat has itself "
+            "become the read — several consecutive cycles below actionable "
+            "conviction with nothing new arriving — a desk with no read is "
+            "not waiting, it is occupying capital another thesis could "
+            "use. The retire verb exists for exactly this: hand the slot "
+            "back and let the fleet build a thesis somebody believes."
         ),
     },
     {
