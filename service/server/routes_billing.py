@@ -201,8 +201,14 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
         try:
             _handle_stripe_event(event)
         except Exception as exc:  # noqa: BLE001
-            # Un-record so Stripe's retry is processed, then let it retry.
-            billing_sync.delete_billing_event("stripe", event_id)
+            try:
+                billing_sync.delete_billing_event("stripe", event_id)
+            except Exception:  # noqa: BLE001 — double fault: the event row may
+                # remain recorded, so provider retries would no-op as duplicates.
+                # Log loudly; the alert below still fires so an operator can
+                # delete the billing_events row and replay the event.
+                logger.exception("stripe webhook un-record ALSO failed for %s",
+                                 event_id)
             logger.exception("stripe webhook processing failed: %s", exc)
             _alert_webhook_failure("stripe", event_id, exc)
             raise HTTPException(status_code=500, detail="Processing failed")

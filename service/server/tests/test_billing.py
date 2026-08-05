@@ -498,6 +498,39 @@ class StripeWebhookTests(unittest.TestCase):
                         "data": {"object": {}}})
         self.assertEqual(r.status_code, 200)
 
+    def test_handler_failure_unrecords_and_retry_reprocesses(self):
+        event = self._checkout_completed(event_id="evt_fail1", sub_id="sub_F")
+        with patch("routes_billing.billing_sync.upsert_autorenew_subscription",
+                   side_effect=RuntimeError("boom")):
+            r = self._post(event)
+        self.assertEqual(r.status_code, 500)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) AS c FROM billing_events "
+                        "WHERE provider = 'stripe' AND event_id = 'evt_fail1'")
+            self.assertEqual(int(dict(cur.fetchone())["c"]), 0)
+        finally:
+            conn.close()
+        # provider retry with the SAME event id must now be processed
+        r = self._post(event)
+        self.assertEqual(r.status_code, 200, r.text)
+        import billing_sync
+        sub = billing_sync.active_autorenew(self.user_id)
+        self.assertEqual(sub["external_id"], "sub_F")
+
+    def test_unknown_event_row_is_recorded(self):
+        self._post({"id": "evt_odd2", "type": "charge.refunded",
+                    "data": {"object": {}}})
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT type FROM billing_events "
+                        "WHERE provider = 'stripe' AND event_id = 'evt_odd2'")
+            self.assertEqual(dict(cur.fetchone())["type"], "charge.refunded")
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()
