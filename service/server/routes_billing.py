@@ -21,6 +21,7 @@ billing_sync (idempotent per provider event id).
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -125,6 +126,50 @@ def _handle_stripe_event(event: dict) -> None:
         if obj.get("id"):
             billing_sync.end_subscription("stripe", obj["id"])
     # anything else: recorded in billing_events, deliberately ignored
+
+
+def _parse_paypal_time(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _handle_paypal_event(event: dict) -> None:
+    etype = event.get("event_type", "")
+    res = event.get("resource") or {}
+    if etype == "BILLING.SUBSCRIPTION.ACTIVATED":
+        sub_id = res.get("id") or ""
+        user_id = int(res.get("custom_id") or 0)
+        plan_code = billing_sync.plan_for_paypal_plan(res.get("plan_id") or "")
+        period_end = _parse_paypal_time(
+            ((res.get("billing_info") or {}).get("next_billing_time")) or "")
+        if not (sub_id and user_id and plan_code):
+            logger.warning("paypal ACTIVATED missing fields: %s", res)
+            return
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=user_id, plan_code=plan_code,
+            external_id=sub_id, period_end=period_end)
+        _alert_new_subscription(email=None, plan_code=plan_code, amount=None,
+                                method="paypal", status_note="auto-activated",
+                                reference=sub_id)
+    elif etype == "PAYMENT.SALE.COMPLETED":
+        sub_id = res.get("billing_agreement_id") or ""
+        if sub_id:
+            billing_sync.extend_subscription("paypal", sub_id)
+    elif etype == "BILLING.SUBSCRIPTION.UPDATED":
+        sub_id = res.get("id") or ""
+        plan_code = billing_sync.plan_for_paypal_plan(res.get("plan_id") or "")
+        if sub_id and plan_code:
+            billing_sync.apply_subscription_update("paypal", sub_id,
+                                                   plan_code=plan_code)
+    elif etype in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.SUSPENDED"):
+        if res.get("id"):
+            billing_sync.mark_cancelled("paypal", res["id"])
+    elif etype == "BILLING.SUBSCRIPTION.EXPIRED":
+        if res.get("id"):
+            billing_sync.end_subscription("paypal", res["id"])
+    # anything else: recorded, ignored
 
 
 def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -319,5 +364,53 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
                                  event_id)
             logger.exception("stripe webhook processing failed: %s", exc)
             _alert_webhook_failure("stripe", event_id, exc)
+            raise HTTPException(status_code=500, detail="Processing failed")
+        return {"ok": True}
+
+    @app.post('/api/webhooks/paypal')
+    async def paypal_webhook(request: Request):
+        webhook_id = os.getenv("PAYPAL_WEBHOOK_ID", "").strip()
+        if not (_paypal_configured() and webhook_id):
+            raise HTTPException(status_code=503, detail="PayPal webhook not configured")
+        event = await request.json()
+        headers = request.headers
+        access = _paypal_token()
+        verify = requests.post(
+            f"{_paypal_base()}/v1/notifications/verify-webhook-signature",
+            headers={"Authorization": f"Bearer {access}"},
+            json={
+                "auth_algo": headers.get("paypal-auth-algo", ""),
+                "cert_url": headers.get("paypal-cert-url", ""),
+                "transmission_id": headers.get("paypal-transmission-id", ""),
+                "transmission_sig": headers.get("paypal-transmission-sig", ""),
+                "transmission_time": headers.get("paypal-transmission-time", ""),
+                "webhook_id": webhook_id,
+                "webhook_event": event,
+            },
+            timeout=20,
+        )
+        if (verify.status_code != 200
+                or verify.json().get("verification_status") != "SUCCESS"):
+            raise HTTPException(status_code=400, detail="Invalid signature")
+        event_id = str(event.get("id") or "")
+        if not event_id:
+            raise HTTPException(status_code=400, detail="Event has no id")
+        if not billing_sync.record_billing_event(
+                "paypal", event_id, str(event.get("event_type") or ""),
+                json.dumps(event)):
+            return {"ok": True, "duplicate": True}
+        try:
+            _handle_paypal_event(event)
+        except Exception as exc:  # noqa: BLE001
+            try:
+                billing_sync.delete_billing_event("paypal", event_id)
+            except Exception:  # noqa: BLE001 — double fault: the event row may
+                # remain recorded, so provider retries would no-op as duplicates.
+                # Log loudly; the alert below still fires so an operator can
+                # delete the billing_events row and replay the event.
+                logger.exception("paypal webhook un-record ALSO failed for %s",
+                                 event_id)
+            logger.exception("paypal webhook processing failed: %s", exc)
+            _alert_webhook_failure("paypal", event_id, exc)
             raise HTTPException(status_code=500, detail="Processing failed")
         return {"ok": True}
