@@ -211,6 +211,33 @@ class RegistryTests(_Db):
                           f"ledger-shape clause missing from {site}")
             self.assertIn("cut losers early and small", block)
 
+    def test_loss_aging_rides_both_sites(self):
+        # HYPE case: 949 held a deteriorating short -4.6 -> -8.9 -> -14.5
+        # across ~12h of consecutive holds, then capitulated at the worst
+        # price. The sequence, not any single hold, was the failure.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("### Loss Aging\n", block,
+                          f"loss-aging missing from {site}")
+            self.assertIn("decision by default", block)
+            self.assertIn("would I open this position now", block)
+
+    def test_reachable_exits_covers_entry_churn(self):
+        # 956 case: four identical refused entries at conviction up to 0.81.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("third identical attempt is", block,
+                          f"entry-churn clause missing from {site}")
+            self.assertIn("never resubmit the same refused numbers", block)
+
+    def test_earnings_preview_covers_post_print(self):
+        # SPCX case: +9.4% post-print gap; pre-print levels are stale.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site, "us-stock")
+            self.assertIn("RESETS your map", block,
+                          f"post-print clause missing from {site}")
+            self.assertIn("both are trades on the old map", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
