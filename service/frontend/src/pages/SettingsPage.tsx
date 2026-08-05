@@ -21,6 +21,19 @@ type ApiTarget = {
   updated_at: string | null
 }
 
+// Normalize a FastAPI error body to a renderable string. Validation errors
+// come back as `detail: [{ loc, msg, type }, ...]` — that shape can't be
+// rendered as a React child without crashing the tree (see authV2.tsx errMessage).
+function errMessage(data: any, fallback: string): string {
+  const d = data?.detail
+  if (typeof d === 'string') return d
+  if (Array.isArray(d)) {
+    return d.map((e: any) => e?.msg || e?.message || JSON.stringify(e)).join('; ')
+  }
+  if (d && typeof d === 'object') return d.msg || d.message || JSON.stringify(d)
+  return fallback
+}
+
 const LLM_PROVIDERS = ['openai', 'gemini', 'grok', 'qwen', 'glm', 'openrouter', 'anthropic', 'local']
 
 // Per-provider model choices. First entry mirrors the server default in
@@ -158,7 +171,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         method: 'POST', headers: auth(), body: JSON.stringify({ phone: alertPrefs.phone }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setPhoneError(data.detail || `${res.status}`); return }
+      if (!res.ok) { setPhoneError(errMessage(data, `${res.status}`)); return }
       setCodeSent(true)
     } catch {
       setPhoneError(tr(language, { ko: '저장 실패', en: 'Save failed', ja: '保存失敗', th: 'บันทึกล้มเหลว', vi: 'Lưu thất bại', id: 'Gagal menyimpan' }))
@@ -175,7 +188,7 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
         method: 'POST', headers: auth(), body: JSON.stringify({ code: verifyCode }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setPhoneError(data.detail || `${res.status}`); return }
+      if (!res.ok) { setPhoneError(errMessage(data, `${res.status}`)); return }
       setCodeSent(false)
       setVerifyCode('')
       await fetchMe()

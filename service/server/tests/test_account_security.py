@@ -184,6 +184,40 @@ class PhoneVerificationTests(unittest.TestCase):
                              json={"code": "000000"}, headers=self._h())
         self.assertEqual(r.status_code, 400)
 
+    def test_send_code_409_probe_stamps_cooldown(self):
+        # A 409 (phone-taken) response must still stamp the per-user
+        # cooldown — otherwise it's an unthrottled oracle an attacker can
+        # use to sweep phone numbers looking for verified members.
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO users (email, password_hash, phone, "
+                        "phone_verified_at) VALUES ('o3@t.dev', 'x', "
+                        "'+821077778888', '2026-01-01T00:00:00Z')")
+            conn.commit()
+        finally:
+            conn.close()
+        with patch("routes_users._send_sms", return_value=True):
+            r1 = self.client.post("/api/users/phone/send-code",
+                                  json={"phone": "+821077778888"}, headers=self._h())
+            self.assertEqual(r1.status_code, 409)
+            # Any subsequent send-code for this user — even a different,
+            # untaken phone — must now be throttled by the stamped cooldown.
+            r2 = self.client.post("/api/users/phone/send-code",
+                                  json={"phone": "+821012340000"}, headers=self._h())
+        self.assertEqual(r2.status_code, 429)
+
+    def test_send_code_daily_cap(self):
+        with patch("routes_users.CODE_RESEND_COOLDOWN_SECONDS", 0), \
+             patch("routes_users._send_sms", return_value=True):
+            for _ in range(10):
+                r = self.client.post("/api/users/phone/send-code",
+                                     json={"phone": "+821012345678"}, headers=self._h())
+                self.assertEqual(r.status_code, 200, r.text)
+            r = self.client.post("/api/users/phone/send-code",
+                                 json={"phone": "+821012345678"}, headers=self._h())
+        self.assertEqual(r.status_code, 429)
+
     def test_verify_alerts_config_preserves_existing_keys(self):
         conn = database.get_db_connection()
         try:
@@ -274,6 +308,18 @@ class SmsPasswordResetTests(unittest.TestCase):
                              json={"phone": "+818011112222", "code": "000000",
                                    "new_password": "brandnewpw1"})
         self.assertEqual(r.status_code, 400)
+
+    def test_forgot_sms_daily_cap(self):
+        with patch("routes_users.CODE_RESEND_COOLDOWN_SECONDS", 0), \
+             patch("routes_users._send_sms", return_value=True) as sms:
+            for _ in range(5):
+                r = self.client.post("/api/users/forgot-password-sms",
+                                     json={"phone": "+818011112222"})
+                self.assertEqual(r.status_code, 200, r.text)
+            r = self.client.post("/api/users/forgot-password-sms",
+                                 json={"phone": "+818011112222"})
+        self.assertEqual(r.status_code, 200, r.text)  # still generic — never leaks the cap
+        self.assertEqual(sms.call_count, 5)
 
     def test_unverified_phone_never_receives_reset(self):
         conn = database.get_db_connection()

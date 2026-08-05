@@ -104,6 +104,11 @@ API_TARGET_CATALOG: dict = {
 MAX_CODE_ATTEMPTS = 5
 CODE_RESEND_COOLDOWN_SECONDS = 30
 
+# Per-day SMS caps — a cost and harassment bound independent of the
+# per-send cooldown above (the cooldown limits *rate*, this limits *volume*).
+PHONE_SEND_DAILY_LIMIT = 10
+SMS_RESET_DAILY_LIMIT = 5
+
 # ── Verification-code store ───────────────────────────────────────────────────
 # Primary: Redis with TTL (survives restarts, works behind a load balancer).
 # Fallback: ctx.verification_codes (per-process dict, preserves test isolation).
@@ -148,6 +153,25 @@ def _delete_code(email: str, ctx: "RouteContext") -> None:
     """Remove a code entry from Redis and ctx."""
     _cache_delete(_code_key(email))
     ctx.verification_codes.pop(email, None)
+
+
+def _daily_quota_hit(quota_key: str, limit: int, ctx: "RouteContext",
+                     now: datetime) -> bool:
+    """True if `quota_key` already used up `limit` sends today (UTC).
+
+    Otherwise bumps today's counter and returns False. Reuses the
+    verification-code store (Redis/ctx) under a distinct key namespace so a
+    daily SMS cap can't collide with an in-flight code."""
+    today = now.strftime('%Y-%m-%d')
+    quota = _load_code(quota_key, ctx)
+    count = quota.get('count', 0) if quota and quota.get('day') == today else 0
+    if count >= limit:
+        return True
+    _store_code(quota_key, {
+        'day': today, 'count': count + 1,
+        'expires_at': now + timedelta(hours=24), 'attempts': 0,
+    }, ctx)
+    return False
 
 
 def _user_llm_settings(user_id: int) -> dict | None:
@@ -410,10 +434,14 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.close()
 
         if account_exists:
-            lang = row['lang'] or 'en'
-            if not _send_sms(phone, sms_i18n.reset_sms(code, lang)):
-                # Fallback: log code when Twilio is not configured (local dev).
-                _logger.info('[SMS] Password-reset code for %s: %s', phone, code)
+            # Daily cap only counts real sends — a probe against a phone with
+            # no verified account never reaches here, so it can't be used to
+            # run down the real owner's quota.
+            if not _daily_quota_hit(f'smsresetquota:{phone}', SMS_RESET_DAILY_LIMIT, ctx, now):
+                lang = row['lang'] or 'en'
+                if not _send_sms(phone, sms_i18n.reset_sms(code, lang)):
+                    # Fallback: log code when Twilio is not configured (local dev).
+                    _logger.info('[SMS] Password-reset code for %s: %s', phone, code)
         return {'success': True, 'message': 'If an account exists, a code was sent'}
 
     @app.post('/api/users/reset-password-sms')
@@ -473,6 +501,20 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not _PHONE_RE.match(phone):
             raise HTTPException(status_code=400,
                                 detail='Phone must be in international format (+…)')
+        store_key = f"phone:{user['id']}"
+        now = datetime.now(timezone.utc)
+        # Cooldown first: an authenticated attacker can otherwise sweep phone
+        # numbers via the 409-taken check below at full speed, using the 409
+        # itself as an unthrottled oracle for which phones belong to verified
+        # members. Checking the cooldown before the DB lookup — and stamping
+        # it even on a 409 refusal — means every probe costs the prober their
+        # cooldown regardless of the outcome.
+        existing = _load_code(store_key, ctx)
+        if existing:
+            last_sent_at = existing.get('last_sent_at')
+            if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                raise HTTPException(status_code=429,
+                                    detail='Please wait before requesting another code')
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
@@ -484,17 +526,15 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         if taken:
+            _store_code(store_key, {'code': None, 'phone': phone,
+                                    'expires_at': now, 'attempts': 0,
+                                    'last_sent_at': now}, ctx)
             raise HTTPException(status_code=409,
                                 detail='This phone number is already verified '
                                        'on another account')
-        store_key = f"phone:{user['id']}"
-        now = datetime.now(timezone.utc)
-        existing = _load_code(store_key, ctx)
-        if existing:
-            last_sent_at = existing.get('last_sent_at')
-            if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
-                raise HTTPException(status_code=429,
-                                    detail='Please wait before requesting another code')
+        if _daily_quota_hit(f"phonequota:{user['id']}", PHONE_SEND_DAILY_LIMIT, ctx, now):
+            raise HTTPException(status_code=429,
+                                detail='Daily SMS limit reached — try again tomorrow')
         code = f'{secrets.randbelow(1_000_000):06d}'
         _store_code(store_key, {
             'code': code, 'phone': phone,

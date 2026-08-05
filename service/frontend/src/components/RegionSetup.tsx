@@ -119,10 +119,6 @@ export function RegionPicker({ token, language, onSaved, compact }: {
         {opts.regions.map(r => (
           <button key={r.region} onClick={() => {
             setRegion(r.region)
-            // Suggest the region's language only while the member has not
-            // chosen one themselves — a Korean speaker in Singapore must not
-            // have their language reset by picking SG.
-            if (!opts.locale_confirmed) setLang(r.suggested_lang)
             setState('idle')
           }}
             className={`control-pill ${region === r.region ? 'active' : ''}`}

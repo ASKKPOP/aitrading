@@ -21,6 +21,7 @@ Env vars (all required for Google to be enabled):
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import secrets as _secrets
 from datetime import datetime, timedelta, timezone
@@ -33,9 +34,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 import database
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
+from email_sender import send_welcome_email
 from routes_shared import RouteContext
 from services import _create_user_session
 from utils import hash_password
+
+_logger = logging.getLogger(__name__)
 
 
 _STATE_TTL_SECONDS = 600         # OAuth state nonces live 10 min
@@ -194,6 +198,14 @@ def _find_or_create_user_from_google(google_user: dict[str, Any], lang: str = "e
             (user_id, sub, email, now),
         )
         conn.commit()
+        # Every new signup gets a welcome email, Google OAuth included. A mail
+        # outage must never fail the signup — the account and session are
+        # already committed.
+        try:
+            send_welcome_email(email or f"google-{sub}@sooppiy.com", lang)
+        except Exception:
+            _logger.warning("welcome email failed for google signup user_id=%s",
+                            user_id, exc_info=True)
         return user_id, True
     finally:
         conn.close()

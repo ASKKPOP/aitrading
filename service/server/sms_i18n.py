@@ -27,8 +27,8 @@ _RESET = {
 
 
 def verification_sms(code: str, lang: str) -> str:
-    return _VERIFY[normalize_lang(lang)].format(code=code)
+    return _VERIFY.get(normalize_lang(lang), _VERIFY['en']).format(code=code)
 
 
 def reset_sms(code: str, lang: str) -> str:
-    return _RESET[normalize_lang(lang)].format(code=code)
+    return _RESET.get(normalize_lang(lang), _RESET['en']).format(code=code)
