@@ -25,5 +25,7 @@ os.environ["BREADTH_FEED_ENABLED"] = "false"
 # blank the provider credentials so no machine's .env can make a test send a
 # real SendGrid email or Twilio SMS.
 for _key in ("SENDGRID_API_KEY", "ALERT_FROM_EMAIL",
-             "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"):
+             "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER",
+             "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
+             "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID"):
     os.environ[_key] = ""

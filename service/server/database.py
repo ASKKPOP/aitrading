@@ -725,6 +725,7 @@ def init_database():
             points INTEGER DEFAULT 0,
             verification_code TEXT,
             code_expires_at TEXT,
+            stripe_customer_id TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
@@ -1390,6 +1391,13 @@ def init_database():
         # fill (margin = notional/L). 1 = the legacy fully-funded fill.
         # MySQL mirror: alembic 0039.
         "ALTER TABLE resting_orders ADD COLUMN leverage REAL NOT NULL DEFAULT 1",
+        # Billing auto-renew: Stripe/PayPal external IDs and state
+        "ALTER TABLE users ADD COLUMN stripe_customer_id TEXT",
+        "ALTER TABLE subscription_plans ADD COLUMN stripe_price_id TEXT",
+        "ALTER TABLE subscription_plans ADD COLUMN paypal_plan_id TEXT",
+        "ALTER TABLE user_subscriptions ADD COLUMN external_id TEXT",
+        "ALTER TABLE user_subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE user_subscriptions ADD COLUMN cancel_at_period_end INTEGER NOT NULL DEFAULT 0",
     ):
         try:
             cursor.execute(_ddl)
@@ -2474,7 +2482,9 @@ def init_database():
             price_usd    REAL NOT NULL DEFAULT 0,
             contact_only INTEGER NOT NULL DEFAULT 0,
             active       INTEGER NOT NULL DEFAULT 1,
-            sort_order   INTEGER NOT NULL DEFAULT 0
+            sort_order   INTEGER NOT NULL DEFAULT 0,
+            stripe_price_id TEXT,
+            paypal_plan_id TEXT
         )
     """)
 
@@ -2492,6 +2502,9 @@ def init_database():
             decided_by INTEGER,
             decided_at TEXT,
             note       TEXT,
+            external_id TEXT,
+            auto_renew INTEGER NOT NULL DEFAULT 0,
+            cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
@@ -2516,6 +2529,28 @@ def init_database():
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
+
+    # Webhook idempotency + audit for auto-renew billing (Stripe / PayPal).
+    # UNIQUE(provider, event_id) is the dedup gate: a redelivered webhook hits
+    # the constraint and is answered 200 without re-applying state.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS billing_events (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            provider     TEXT NOT NULL,
+            event_id     TEXT NOT NULL,
+            type         TEXT,
+            payload      TEXT,
+            processed_at TEXT,
+            UNIQUE(provider, event_id)
+        )
+    """)
+    try:
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_subscriptions_external
+            ON user_subscriptions(method, external_id)
+        """)
+    except Exception:
+        pass
 
     # Seed the four plans once (idempotent).
     cursor.execute("SELECT COUNT(*) AS c FROM subscription_plans")
