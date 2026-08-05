@@ -265,3 +265,69 @@ def bull_from_action(action: Optional[str]) -> Optional[bool]:
     if a in ("sell", "short"):
         return False
     return None
+
+
+# ── arm execution (2026-08-05) ─────────────────────────────────────────────
+# An `arm` is the desk PRE-COMMITTING an exit to a price level so it fires
+# BETWEEN decision cycles. Until now nothing consumed one: 54 arm intents
+# were emitted lifetime and every single one was discarded.
+#
+# Cycle 65 measured why that mattered. On 2026-08-05 every losing run was in
+# PROFIT first, and for four of seven the profit existed ONLY between
+# decisions — dwell above half-peak was 5-20 minutes against a ~45 minute
+# cycle, so runs 967 and 957 never had a single cycle while in profit. The
+# desk cannot bank what it never sees, and no prompt lesson can reach a
+# window in which no prompt is rendered. The arm is the mechanism that can.
+#
+# GAP-THROUGH SEMANTICS, resolved from this module's own doctrine: ARM_THEN
+# is restricted to ("reduce", "close"), so an arm can only ever SHED risk.
+# The asymmetry at the top of this file says a risk-shedding intent may be
+# clamped UP and is never refused — "there is no safe reason to refuse a
+# flatten; refusing one is how a rail becomes the risk". Therefore a fired
+# arm executes at the NEXT AVAILABLE MARK regardless of how far price gapped
+# past the level. Slippage is journalled, never a veto.
+
+# Conditions this executor can actually evaluate. `health_below` parses and
+# journals but does NOT fire — margin health is not carried on the control
+# pass. Kept explicit rather than silently ignored: an unexecutable arm the
+# desk believes in is exactly the "flag with no executor" class of bug.
+EXECUTABLE_ARM_CONDITIONS = ("price_below", "price_above")
+
+
+def arm_fires(arm: Optional[dict], *, mark: Optional[float]) -> bool:
+    """Does this armed exit trigger at `mark`? Pure predicate, fail-closed.
+
+    Fail-closed matters in both directions here: a missing/garbage arm must
+    never fire (it would exit a position the desk never asked to exit), and
+    a missing mark must never fire (it would price the exit on data we have
+    already declared untrustworthy — the stop_eval_failed lesson).
+    """
+    if not isinstance(arm, dict) or mark is None:
+        return False
+    try:
+        m = float(mark)
+        level = float(arm.get("level"))
+    except (TypeError, ValueError):
+        return False
+    if m <= 0 or level <= 0:
+        return False
+    cond = str(arm.get("if") or "").strip().lower()
+    if cond not in EXECUTABLE_ARM_CONDITIONS:
+        return False
+    if str(arm.get("then") or "").strip().lower() not in ARM_THEN:
+        return False
+    return m < level if cond == "price_below" else m > level
+
+
+def arm_exit_fraction(arm: Optional[dict]) -> float:
+    """How much of the position a fired arm sheds. `close` is always the
+    whole book; `reduce` carries its own fraction. Clamped to (0, 1]."""
+    if not isinstance(arm, dict):
+        return 0.0
+    if str(arm.get("then") or "").strip().lower() == "close":
+        return 1.0
+    try:
+        f = float(arm.get("size_frac"))
+    except (TypeError, ValueError):
+        return 0.0
+    return f if 0.0 < f <= 1.0 else 0.0

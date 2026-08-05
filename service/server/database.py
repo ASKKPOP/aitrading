@@ -2701,6 +2701,7 @@ def init_database():
             claim_expires_at        TEXT,
             realized_pnl_usd        REAL    NOT NULL DEFAULT 0,
             peak_pnl_usd            REAL,
+            armed_order_json        TEXT,
             created_at              TEXT    NOT NULL,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )
@@ -3056,6 +3057,11 @@ def init_database():
         # ratcheted each scan, read by the trailing profit lock. NULL until
         # first in profit (manual runs stay NULL — inert without a trail cfg).
         "ALTER TABLE trading_runs ADD COLUMN peak_pnl_usd REAL",
+        # Arm executor (2026-08-05): the desk's pre-committed exit level, so
+        # a bank/protect fires BETWEEN decision cycles. 54 arm intents were
+        # emitted and discarded before this column existed because nothing
+        # persisted them. NULL = nothing armed.
+        "ALTER TABLE trading_runs ADD COLUMN armed_order_json TEXT",
         # Fleet take-profit + auto-restart (2026-07-26): NULL = disabled; on
         # reaching the gain the fleet banks everything and spawns a successor.
         "ALTER TABLE fleets ADD COLUMN profit_target_frac REAL",

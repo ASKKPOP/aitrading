@@ -535,3 +535,57 @@ class WiringTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ArmPredicateTests(unittest.TestCase):
+    """`arm_fires` is the pure trigger predicate for the arm executor. It is
+    guarded twice on purpose (here and in run_engine._fire_armed_order); this
+    class pins THIS layer so the redundancy cannot rot away unnoticed."""
+
+    LONG_BANK = {"if": "price_above", "then": "reduce",
+                 "level": 100.0, "size_frac": 0.5}
+    PROTECT = {"if": "price_below", "then": "close", "level": 100.0}
+
+    def test_fires_only_on_the_correct_side_of_the_level(self):
+        self.assertTrue(OI.arm_fires(self.LONG_BANK, mark=100.01))
+        self.assertFalse(OI.arm_fires(self.LONG_BANK, mark=100.0))
+        self.assertFalse(OI.arm_fires(self.LONG_BANK, mark=99.99))
+        self.assertTrue(OI.arm_fires(self.PROTECT, mark=99.99))
+        self.assertFalse(OI.arm_fires(self.PROTECT, mark=100.0))
+
+    def test_a_missing_mark_never_fires(self):
+        # Never price an exit on data already declared untrustworthy.
+        self.assertFalse(OI.arm_fires(self.PROTECT, mark=None))
+        self.assertFalse(OI.arm_fires(self.PROTECT, mark=0))
+        self.assertFalse(OI.arm_fires(self.PROTECT, mark="x"))
+
+    def test_a_garbage_arm_never_fires(self):
+        # Firing on a malformed arm would exit a position nobody asked to exit.
+        for bad in (None, {}, "arm", {"if": "price_below"},
+                    {"if": "price_below", "then": "close", "level": 0},
+                    {"if": "price_below", "then": "close", "level": "x"},
+                    {"if": "nonsense", "then": "close", "level": 100.0},
+                    {"if": "price_below", "then": "open", "level": 100.0}):
+            self.assertFalse(OI.arm_fires(bad, mark=99.0), bad)
+
+    def test_health_below_parses_but_is_not_executable(self):
+        # Explicitly inert rather than silently ignored — margin health is
+        # not carried on the control pass.
+        arm = {"if": "health_below", "then": "close", "level": 0.5}
+        self.assertIsNotNone(OI.parse({"intent": "arm", "arm": arm}))
+        self.assertNotIn("health_below", OI.EXECUTABLE_ARM_CONDITIONS)
+        self.assertFalse(OI.arm_fires(arm, mark=0.1))
+
+    def test_it_fires_through_an_arbitrarily_large_gap(self):
+        # ARM_THEN is exits-only so an arm can only SHED risk, and this
+        # module never refuses that. Distance is journalled, not vetoed.
+        self.assertTrue(OI.arm_fires(self.PROTECT, mark=1.0))
+
+    def test_exit_fraction_close_is_whole_book_reduce_carries_its_own(self):
+        self.assertEqual(OI.arm_exit_fraction(self.PROTECT), 1.0)
+        self.assertEqual(OI.arm_exit_fraction(self.LONG_BANK), 0.5)
+        for bad in (None, {}, {"then": "reduce"},
+                    {"then": "reduce", "size_frac": 0},
+                    {"then": "reduce", "size_frac": 1.5},
+                    {"then": "reduce", "size_frac": "x"}):
+            self.assertEqual(OI.arm_exit_fraction(bad), 0.0, bad)

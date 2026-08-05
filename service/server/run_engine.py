@@ -1150,6 +1150,123 @@ def _flatten_run(run: dict) -> tuple[bool, Optional[str]]:
     return False, skip
 
 
+# ── arm executor (2026-08-05) ──────────────────────────────────────────────
+
+def _store_armed_order(run_id: int, arm: Optional[dict], seq: int) -> None:
+    """Persist (or clear) the desk's pre-committed exit level.
+
+    Each cycle's arm REPLACES the previous one — the desk is restating its
+    standing order with fresh information, and a stale level from hours ago
+    is exactly the class of bug that stopped run 921 twenty-eight seconds
+    after it opened (see _ratchet_peak_pnl). Passing arm=None clears.
+    """
+    payload = None
+    if isinstance(arm, dict):
+        payload = json.dumps({"arm": arm, "seq": int(seq),
+                              "armed_at": _now_iso()})
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            "UPDATE trading_runs SET armed_order_json = ? WHERE id = ?",
+            (payload, run_id))
+        conn.commit()
+    except Exception:  # noqa: BLE001 — arming must never break a cycle
+        logger.debug("arm store failed for run %s", run_id, exc_info=True)
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _fire_armed_order(run: dict, pnl: dict, out: dict) -> None:
+    """Execute the desk's armed exit if its level has been reached.
+
+    THE WHOLE POINT is that this runs on the CONTROL PASS, not the decision
+    cycle — it is the only path that can act between two decisions. Cycle 65
+    measured why that is the largest loss class: on 2026-08-05 every losing
+    run was in profit first, and for four of seven the profit existed ONLY
+    between cycles (5-20 min dwell against a ~45 min cycle), so the desk
+    never saw it. 54 arm intents had been emitted lifetime and every one was
+    discarded for want of this function.
+
+    Safety: fires ONLY reduce/close (ARM_THEN enforces it), so it can only
+    shed risk; fail-closed on a missing arm, missing position or missing
+    mark; honours the manual breaker exactly like _flatten_run; one-shot —
+    the arm is cleared before the trade so a retry cannot double-fire, and
+    the client_order_id makes the execution idempotent regardless.
+    """
+    raw = run.get("armed_order_json")
+    if not raw:
+        return
+    try:
+        blob = json.loads(raw)
+        arm = blob.get("arm")
+        armed_seq = int(blob.get("seq") or 0)
+    except (ValueError, TypeError):
+        _store_armed_order(run["id"], None, 0)      # unparseable: clear it
+        return
+
+    pos = pnl.get("position") or {}
+    try:
+        qty = float(pos.get("quantity") or 0)
+        mark = pos.get("current_price")
+        mark = float(mark) if mark is not None else None
+    except (TypeError, ValueError):
+        return
+    if not qty:
+        # Flat: the exposure that justified this arm is gone. A standing
+        # order against a position that no longer exists is the stale-peak
+        # bug wearing a different hat.
+        _store_armed_order(run["id"], None, 0)
+        return
+    if not pnl.get("mark_age_ok", True) or mark is None:
+        return                                       # never act on a stale mark
+    if not order_intent.arm_fires(arm, mark=mark):
+        return
+
+    frac = order_intent.arm_exit_fraction(arm)
+    if frac <= 0:
+        _store_armed_order(run["id"], None, 0)
+        return
+    if _manual_halt_blocks(run["agent_id"], run["market"]):
+        return                                       # retry next tick
+
+    exit_qty = abs(qty) * frac
+    if exit_qty <= 0:
+        return
+    side = "cover" if qty < 0 else "sell"
+    # Clear FIRST: a crash between here and the trade must not leave a live
+    # arm that fires again on the next tick. The client_order_id is the
+    # second, independent guard.
+    _store_armed_order(run["id"], None, 0)
+    from automation import execute_paper_trade
+    signal_id, skip = execute_paper_trade(
+        run["agent_id"], run["symbol"], run["market"], side, exit_qty,
+        float(mark),
+        content=f"Trading run #{run['id']} armed exit",
+        run_id=run["id"],
+        client_order_id=f"run:{run['id']}:arm:{armed_seq}")
+    level = None
+    try:
+        level = float(arm.get("level"))
+    except (TypeError, ValueError):
+        pass
+    emit_telemetry_event(run["id"], "armed_exit", {
+        "armed_seq": armed_seq, "if": arm.get("if"), "level": level,
+        "then": arm.get("then"), "size_frac": frac,
+        "mark": mark, "qty": exit_qty, "side": side,
+        # Slippage is REPORTED, never a veto — an arm may only shed risk and
+        # this module never refuses that. A large value means price gapped.
+        "slippage_pct": (round((mark - level) / level * 100.0, 4)
+                         if level else None),
+        "executed": bool(signal_id), "skip": skip})
+    if signal_id:
+        out["armed_exits_fired"] = out.get("armed_exits_fired", 0) + 1
+
+
 # ── control pass (sync, zero-LLM) ──────────────────────────────────────────
 
 def _start_condition_fires(run: dict) -> bool:
@@ -1254,6 +1371,7 @@ def control_pass() -> dict:
     _guard_active_key) — a run that lost its exclusivity lock must not trade.
     Returns counters for logs."""
     out = {"armed_started": 0, "stopping_finished": 0, "stops_fired": 0,
+           "armed_exits_fired": 0,
            "eval_failures": 0, "keys_healed": 0, "keys_conflicted": 0}
     conn = get_db_connection()
     try:
@@ -1414,6 +1532,15 @@ def _control_active(run: dict, out: dict) -> None:
         pnl = compute_run_pnl(run)
         _cache_realized_pnl(run["id"], pnl["realized"])
         _ratchet_peak_pnl(run, pnl)
+        # The desk's pre-committed exit. This is the ONLY path that can act
+        # between two decision cycles, which is where the profit lived on
+        # 2026-08-05 (see _fire_armed_order). Never allowed to break the
+        # control pass — stop evaluation above it has already run.
+        try:
+            _fire_armed_order(run, pnl, out)
+        except Exception:  # noqa: BLE001
+            logger.warning("armed exit failed for run %s", run["id"],
+                           exc_info=True)
         try:
             from run_reports import evaluate_thresholds
             evaluate_thresholds(run, pnl)
@@ -3387,8 +3514,18 @@ def run_cycle(run_id: int) -> dict:
                      "intent_size_usd": (round(intent_size, 4)
                                          if intent_size is not None else None),
                      "machine_size_usd": cfg.get("max_bet_usd")})
+                # Arm EXECUTES from 2026-08-05 (cycle 65). It is not an
+                # ordinary exit — it is a standing order evaluated on the
+                # control pass, so it is the only mechanism that can act
+                # between two decisions. That is precisely where the profit
+                # lived on 08-05: for four of seven losing runs the entire
+                # favourable excursion (5-20 min) fell between cycles ~45 min
+                # apart, and the desk never saw it. Persist it here; the
+                # control pass fires it. Each cycle's arm replaces the last.
+                if oi_mode == "apply" and oi_railed["intent"] == "arm":
+                    _store_armed_order(run_id, oi_railed.get("arm"), seq)
                 # Phase 1 apply: exits only. reduce/close compile to a single
-                # position-basis step; everything else (open/add/flip/arm)
+                # position-basis step; everything else (open/add/flip)
                 # stays journal-only until its own phase — gated on shadow
                 # evidence, not on this code existing.
                 if oi_mode == "apply" \

@@ -284,6 +284,19 @@ class RegistryTests(_Db):
                           f"exit-verb clause missing from {site}")
             self.assertIn("An empty 'why' on a full close", block)
 
+    def test_arm_the_level_you_cannot_wait_for_rides_both_exit_sites(self):
+        # Cycle 65: profitable excursions lasted 5-20 min against ~45 min
+        # cycles, so four of seven losing runs were NEVER seen in profit at
+        # a decision. The arm executes between cycles now (PR: arm executor)
+        # — this is the lesson that tells the desk to use it, and to place a
+        # REACHABLE level rather than the 10%+ ones that always expired.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("ARM THE LEVEL YOU CANNOT WAIT FOR", block,
+                          f"arm lesson missing from {site}")
+            self.assertIn("Make it REACHABLE", block)
+            self.assertIn("Arm to BANK", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
