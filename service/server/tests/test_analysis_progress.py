@@ -8,8 +8,10 @@ WebGL2 visualization depends on:
     gather:technical / gather:news / gather:fundamentals_macro   (concurrent)
     gather:sentiment                                             (after news)
     brief:news / brief:sentiment / brief:fundamentals_macro / brief:technical
+    memory:recall                                                (desk memory)
     decision
     verify
+    memory:write                                                 (desk memory)
 """
 
 from __future__ import annotations
@@ -32,7 +34,7 @@ from routes import create_app
 ALL_STEPS = {
     "gather:technical", "gather:news", "gather:fundamentals_macro", "gather:sentiment",
     "brief:news", "brief:sentiment", "brief:fundamentals_macro", "brief:technical",
-    "decision", "verify",
+    "memory:recall", "decision", "verify", "memory:write",
 }
 
 
@@ -72,10 +74,13 @@ class RunAnalysisProgressTests(unittest.TestCase):
         idx = {(e["step"], e["status"]): i for i, e in enumerate(events)}
         # sentiment gathering needs the news breakdown
         self.assertGreater(idx[("gather:sentiment", "start")], idx[("gather:news", "done")])
-        # the trader debate needs all four briefs; verify runs last
+        # the trader debate needs all four briefs and the recalled desk memory
         for role in ("news", "sentiment", "fundamentals_macro", "technical"):
-            self.assertGreater(idx[("decision", "start")], idx[(f"brief:{role}", "done")])
+            self.assertGreater(idx[("memory:recall", "start")], idx[(f"brief:{role}", "done")])
+        self.assertGreater(idx[("decision", "start")], idx[("memory:recall", "done")])
         self.assertGreater(idx[("verify", "start")], idx[("decision", "done")])
+        # what this run taught the desk is written back after verification
+        self.assertGreater(idx[("memory:write", "start")], idx[("verify", "done")])
 
     def test_decision_and_verify_carry_details(self):
         events, _ = self._run()

@@ -942,11 +942,13 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
 
     # Desk memory (Plan 11 F4): durable lessons from this agent's earlier
     # analyses, injected next to the user guidelines. Fail-soft to "".
+    _emit(progress, "memory:recall", "start")
     try:
         from analysis_memory import memory_block
         memory = memory_block(agent_id, symbol)
     except Exception:  # noqa: BLE001
         memory = ""
+    _emit(progress, "memory:recall", "done", found=bool(memory))
 
     _emit(progress, "decision", "start")
     decision = _trader_risk_decision(symbol, market, briefs, technical, news, lang,
@@ -972,11 +974,14 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
 
     # Write back what this run taught the desk. Fail-soft and non-blocking to
     # the result: a memory-write problem must not fail an analysis.
+    _emit(progress, "memory:write", "start")
     try:
         from analysis_memory import remember_analysis
         remember_analysis(agent_id, symbol, market, briefs, decision)
+        _emit(progress, "memory:write", "done", saved=True)
     except Exception:  # noqa: BLE001
-        pass
+        # Fail-soft: a memory-write problem must not fail (or redden) the run.
+        _emit(progress, "memory:write", "done", saved=False)
 
     return {
         "symbol": symbol,
