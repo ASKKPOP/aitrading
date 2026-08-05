@@ -135,7 +135,15 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "cycle, however strong the conviction, and nothing you change "
             "except the bracket will unblock it. An entry you did not "
             "bracket yourself is delegated to a geometry that may be unable "
-            "to trade at all."
+            "to trade at all. The stop must also SURVIVE NOISE: a stop "
+            "inside the symbol's routine per-cycle range converts ordinary "
+            "fluctuation into realized loss — on a leveraged crypto book "
+            "anything inside ~1% of entry is a noise-trigger, not "
+            "protection (a 0.65% stop on SOL was collected within the hour "
+            "by a 0.74% wiggle; a second desk paid the same tax before it). "
+            "If the honest, noise-clear stop makes your 2:1 target "
+            "unreachable, the geometry refuses the trade — walk away rather "
+            "than shrinking the stop to fit."
         ),
     },
     {
