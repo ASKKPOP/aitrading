@@ -21,6 +21,7 @@ Env vars (all required for Google to be enabled):
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import secrets as _secrets
 from datetime import datetime, timedelta, timezone
@@ -33,9 +34,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 import database
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
+from email_sender import send_welcome_email
 from routes_shared import RouteContext
 from services import _create_user_session
 from utils import hash_password
+
+_logger = logging.getLogger(__name__)
 
 
 _STATE_TTL_SECONDS = 600         # OAuth state nonces live 10 min
@@ -252,6 +256,17 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         # Offload the (sync, network) geo lookup off the event loop; fail-soft.
         lang = await asyncio.to_thread(resolve_signup_lang, request)
         user_id, created = _find_or_create_user_from_google(user_info, lang=lang)
+        if created:
+            # Every new signup gets a welcome email, Google OAuth included.
+            # Off the event loop (mail providers can hang for seconds) and
+            # fail-soft: the account is already committed.
+            email_addr = (user_info.get("email") or "").strip().lower()
+            if email_addr:
+                try:
+                    await asyncio.to_thread(send_welcome_email, email_addr, lang)
+                except Exception:  # noqa: BLE001
+                    _logger.warning("welcome email failed for google signup "
+                                    "user_id=%s", user_id, exc_info=True)
         session_token = _create_user_session(user_id)
         return JSONResponse({
             "token":   session_token,

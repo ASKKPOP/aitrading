@@ -1398,6 +1398,9 @@ def init_database():
         "ALTER TABLE user_subscriptions ADD COLUMN external_id TEXT",
         "ALTER TABLE user_subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE user_subscriptions ADD COLUMN cancel_at_period_end INTEGER NOT NULL DEFAULT 0",
+        # Account security — phone verification (Task 1)
+        "ALTER TABLE users ADD COLUMN phone TEXT",
+        "ALTER TABLE users ADD COLUMN phone_verified_at TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -1490,6 +1493,10 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_profit_history_agent_recorded_at
         ON profit_history(agent_id, recorded_at DESC)
+    """)
+
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)
     """)
 
     cursor.execute("""

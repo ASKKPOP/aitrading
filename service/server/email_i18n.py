@@ -222,6 +222,118 @@ def verification_email(code: str, lang: str, purpose: str = 'signup') -> tuple[s
     return copy['subject'], html
 
 
+# lang -> {'subject', 'heading', 'body', 'steps', 'cta'} for the post-signup
+# welcome email (no code block, so it gets its own dict shape rather than
+# reusing _COPY's).
+_WELCOME = {
+    'en': {'subject': 'Welcome to Sooppiy — your account is ready',
+           'heading': 'Welcome to Sooppiy',
+           'body': ('Your account is ready. Sooppiy watches AI trading for '
+                    'you: follow agents, mirror their signals, and let the '
+                    'automation desk manage runs within the limits you set.'),
+           'steps': ['Choose a membership plan to unlock the platform',
+                     'Explore the market and the trading terminal',
+                     'Set your notification preferences (email · SMS)'],
+           'cta': 'Sign in'},
+    'ko': {'subject': 'Sooppiy에 오신 것을 환영합니다 — 계정이 준비되었습니다',
+           'heading': 'Sooppiy에 오신 것을 환영합니다',
+           'body': ('계정이 준비되었습니다. Sooppiy는 AI 트레이딩을 대신 지켜봅니다: '
+                    '에이전트를 팔로우하고, 시그널을 미러링하고, 설정한 한도 안에서 '
+                    '자동 트레이딩 데스크가 운용하도록 맡겨보세요.'),
+           'steps': ['멤버십 플랜을 선택해 플랫폼을 열어보세요',
+                     '마켓과 트레이딩 터미널을 둘러보세요',
+                     '알림 설정(이메일 · SMS)을 구성하세요'],
+           'cta': '로그인'},
+    'ja': {'subject': 'Sooppiyへようこそ — アカウントの準備ができました',
+           'heading': 'Sooppiyへようこそ',
+           'body': ('アカウントの準備ができました。SooppiyはAIトレーディングをあなたの'
+                    '代わりに見守ります：エージェントをフォローし、シグナルをミラーし、'
+                    '設定した上限の範囲で自動売買デスクに運用を任せられます。'),
+           'steps': ['メンバーシッププランを選んでプラットフォームを開く',
+                     'マーケットとトレーディングターミナルを見てみる',
+                     '通知設定（メール · SMS）を構成する'],
+           'cta': 'サインイン'},
+    'th': {'subject': 'ยินดีต้อนรับสู่ Sooppiy — บัญชีของคุณพร้อมแล้ว',
+           'heading': 'ยินดีต้อนรับสู่ Sooppiy',
+           'body': ('บัญชีของคุณพร้อมแล้ว Sooppiy เฝ้าดูการเทรดด้วย AI แทนคุณ: '
+                    'ติดตามเอเจนต์ คัดลอกสัญญาณ และให้เดสก์อัตโนมัติจัดการรันภายในขีดจำกัดที่คุณตั้ง'),
+           'steps': ['เลือกแพ็กเกจสมาชิกเพื่อปลดล็อกแพลตฟอร์ม',
+                     'สำรวจตลาดและเทอร์มินัลเทรด',
+                     'ตั้งค่าการแจ้งเตือน (อีเมล · SMS)'],
+           'cta': 'เข้าสู่ระบบ'},
+    'vi': {'subject': 'Chào mừng đến với Sooppiy — tài khoản của bạn đã sẵn sàng',
+           'heading': 'Chào mừng đến với Sooppiy',
+           'body': ('Tài khoản của bạn đã sẵn sàng. Sooppiy theo dõi giao dịch AI '
+                    'thay cho bạn: theo dõi các agent, sao chép tín hiệu, và để bàn '
+                    'tự động quản lý các phiên trong giới hạn bạn đặt ra.'),
+           'steps': ['Chọn gói thành viên để mở khóa nền tảng',
+                     'Khám phá thị trường và terminal giao dịch',
+                     'Thiết lập tùy chọn thông báo (email · SMS)'],
+           'cta': 'Đăng nhập'},
+    'id': {'subject': 'Selamat datang di Sooppiy — akun Anda siap',
+           'heading': 'Selamat datang di Sooppiy',
+           'body': ('Akun Anda sudah siap. Sooppiy memantau trading AI untuk '
+                    'Anda: ikuti agen, tiru sinyalnya, dan biarkan meja otomasi '
+                    'mengelola run dalam batas yang Anda tentukan.'),
+           'steps': ['Pilih paket keanggotaan untuk membuka platform',
+                     'Jelajahi pasar dan terminal trading',
+                     'Atur preferensi notifikasi (email · SMS)'],
+           'cta': 'Masuk'},
+}
+
+
+def welcome_email(lang: str) -> tuple[str, str]:
+    """(subject, html) for the post-signup welcome email. Reuses the same
+    header/card/footer shell as verification_email."""
+    lc = normalize_lang(lang)
+    c = _WELCOME.get(lc, _WELCOME['en'])
+    chrome = _CHROME.get(lc, _CHROME['en'])
+    e = _html.escape
+    steps = ''.join(f'<li style="margin:6px 0">{e(s)}</li>' for s in c['steps'])
+    html = (
+        '<div style="margin:0;padding:24px 12px;background:#f1f5f9;'
+        "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+        "'Noto Sans KR','Noto Sans JP','Noto Sans Thai',Arial,sans-serif;\">"
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td align="center">'
+        '<table role="presentation" cellpadding="0" cellspacing="0" '
+        'style="max-width:520px;width:100%;">'
+        # header
+        '<tr><td style="background:#0f172a;border-radius:12px 12px 0 0;'
+        'padding:20px 28px;">'
+        '<div style="color:#ffffff;font-size:20px;font-weight:700;'
+        'letter-spacing:0.5px;">Sooppiy</div>'
+        f'<div style="color:#94a3b8;font-size:12px;margin-top:2px;">{e(chrome["tagline"])}</div>'
+        '</td></tr>'
+        # card
+        '<tr><td style="background:#ffffff;padding:28px;">'
+        f'<h2 style="margin:0 0 12px;font-size:18px;color:#0f172a;">{e(c["heading"])}</h2>'
+        f'<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#334155;">'
+        f'{e(c["body"])}</p>'
+        f'<ol style="margin:0 0 22px;padding-left:20px;font-size:14px;'
+        f'line-height:1.6;color:#334155;">{steps}</ol>'
+        f'<p style="margin:0 0 4px;"><a href="{SITE_URL}" style="background:#0f172a;'
+        f'color:#ffffff;padding:10px 22px;border-radius:8px;text-decoration:none;'
+        f'font-size:14px;display:inline-block;">{e(c["cta"])}</a></p>'
+        '</td></tr>'
+        # footer
+        '<tr><td style="background:#0f172a;border-radius:0 0 12px 12px;'
+        'padding:16px 28px;">'
+        f'<div style="color:#64748b;font-size:11px;line-height:1.6;">{e(chrome["footer"])}</div>'
+        f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
+        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        '</td></tr>'
+        '</table></td></tr></table></div>')
+    return c['subject'], html
+
+
+def welcome_email_text(lang: str) -> str:
+    lc = normalize_lang(lang)
+    c = _WELCOME.get(lc, _WELCOME['en'])
+    steps = '\n'.join(f'  {i}. {s}' for i, s in enumerate(c['steps'], 1))
+    return f"{c['heading']}\n\n{c['body']}\n\n{steps}\n\n{SITE_URL}\n"
+
+
 def verification_email_text(code: str, lang: str, purpose: str = 'signup') -> str:
     """Plain-text body for the same email — SendGrid wants text/plain
     listed before text/html, so the fallback rail needs both."""

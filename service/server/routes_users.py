@@ -2,16 +2,24 @@ import asyncio
 import hmac
 import json
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel
 
+from alerts import _send_sms
+from analysis_agents import LANG_NAMES
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
-from email_sender import send_verification_code_email
+from email_sender import send_verification_code_email, send_welcome_email
 from database import get_db_connection
+import sms_i18n
 from routes_models import (
+    PhoneForgotPasswordRequest,
+    PhoneResetPasswordRequest,
+    PhoneSendCodeRequest,
+    PhoneVerifyRequest,
     PointsExchangeRequest,
     PointsTransferRequest,
     UserApiSettingRequest,
@@ -23,6 +31,8 @@ from routes_models import (
 from routes_shared import RouteContext
 from services import _create_user_session, _get_agent_by_token, _get_user_by_token
 from utils import _extract_token, hash_password, verify_password
+
+_PHONE_RE = re.compile(r'^\+[1-9]\d{7,14}$')
 
 _logger = logging.getLogger(__name__)
 
@@ -94,6 +104,11 @@ API_TARGET_CATALOG: dict = {
 MAX_CODE_ATTEMPTS = 5
 CODE_RESEND_COOLDOWN_SECONDS = 30
 
+# Per-day SMS caps — a cost and harassment bound independent of the
+# per-send cooldown above (the cooldown limits *rate*, this limits *volume*).
+PHONE_SEND_DAILY_LIMIT = 10
+SMS_RESET_DAILY_LIMIT = 5
+
 # ── Verification-code store ───────────────────────────────────────────────────
 # Primary: Redis with TTL (survives restarts, works behind a load balancer).
 # Fallback: ctx.verification_codes (per-process dict, preserves test isolation).
@@ -140,6 +155,27 @@ def _delete_code(email: str, ctx: "RouteContext") -> None:
     ctx.verification_codes.pop(email, None)
 
 
+def _daily_quota_hit(quota_key: str, limit: int, ctx: "RouteContext",
+                     now: datetime) -> bool:
+    """True if `quota_key` already used up `limit` sends today (UTC).
+
+    Otherwise bumps today's counter and returns False. Reuses the
+    verification-code store (Redis/ctx) under a distinct key namespace so a
+    daily SMS cap can't collide with an in-flight code."""
+    today = now.strftime('%Y-%m-%d')
+    quota = _load_code(quota_key, ctx)
+    count = quota.get('count', 0) if quota and quota.get('day') == today else 0
+    if count >= limit:
+        return True
+    # ttl_seconds must cover the whole day: the default 300s Redis TTL would
+    # silently reset the "daily" cap every 5 minutes on a Redis deployment.
+    _store_code(quota_key, {
+        'day': today, 'count': count + 1,
+        'expires_at': now + timedelta(hours=24), 'attempts': 0,
+    }, ctx, ttl_seconds=86_400)
+    return False
+
+
 def _user_llm_settings(user_id: int) -> dict | None:
     """The user's own LLM provider/model/key from the Settings page, or None.
 
@@ -169,6 +205,14 @@ def _user_llm_settings(user_id: int) -> dict | None:
     except Exception:  # noqa: BLE001
         _logger.warning('user llm settings lookup failed for user %s', user_id, exc_info=True)
         return None
+
+
+def _chosen_lang(raw: str | None) -> str | None:
+    """The member's explicit signup language — only trusted when it is a
+    supported code. Anything else returns None and the geo guess stands."""
+    if raw and raw in LANG_NAMES:
+        return raw
+    return None
 
 
 class UserLanguageRequest(BaseModel):
@@ -203,7 +247,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         from signup_lang import resolve_signup_lang
         # Offload the (sync, network) geo lookup so a slow geo API can't stall
         # the shared event loop during signup — fail-soft returns 'en' anyway.
-        lang = await asyncio.to_thread(resolve_signup_lang, request)
+        lang = _chosen_lang(data.lang) or await asyncio.to_thread(resolve_signup_lang, request)
         if not send_verification_code_email(data.email, code, lang):
             # Fallback: log code when Resend is not configured (local dev).
             _logger.info('[Email] Verification code for %s: %s', data.email, code)
@@ -235,10 +279,13 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400, detail='User already exists')
 
         password_hash = hash_password(data.password)
+        chosen = _chosen_lang(data.lang)
         from signup_lang import resolve_signup_locale
         # Offload the (sync, network) geo lookup so a slow geo API can't stall
         # the shared event loop during signup — fail-soft returns 'en' anyway.
         lang, geo_country = await asyncio.to_thread(resolve_signup_locale, request)
+        if chosen:
+            lang = chosen
         # geo_country only. `region` stays NULL until the member answers the
         # first-run prompt: an IP guess must never grant a jurisdiction.
         cursor.execute(
@@ -266,6 +313,13 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.commit()
         conn.close()
         _delete_code(data.email, ctx)
+
+        try:
+            await asyncio.to_thread(send_welcome_email, data.email, lang)
+        except Exception as exc:  # noqa: BLE001 — a mail outage must never
+            # fail a signup; the account and session are already committed.
+            _logger.warning('[Email] welcome email to %s failed: %s',
+                            data.email, exc)
 
         return {'success': True, 'token': token, 'user_id': user_id}
 
@@ -345,6 +399,221 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.close()
         _delete_code(store_key, ctx)
         return {'success': True, 'message': 'Password updated'}
+
+    @app.post('/api/users/forgot-password-sms')
+    async def forgot_password_sms(data: PhoneForgotPasswordRequest):
+        phone = data.phone.strip()
+        if not _PHONE_RE.match(phone):
+            raise HTTPException(status_code=400,
+                                detail='Phone must be in international format (+…)')
+        # Same code store as email reset, under a 'smsreset:' namespace so a
+        # phone-verification code can never reset a password (and vice versa).
+        store_key = f'smsreset:{phone}'
+        now = datetime.now(timezone.utc)
+        existing = _load_code(store_key, ctx)
+        if existing:
+            last_sent_at = existing.get('last_sent_at')
+            if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                raise HTTPException(status_code=429, detail='Please wait before requesting another code')
+
+        code = f'{secrets.randbelow(1_000_000):06d}'
+        # Store the entry even when no account matches so the cooldown 429
+        # cannot be used to probe which phones are registered/verified.
+        _store_code(store_key, {
+            'code': code,
+            'expires_at': now + timedelta(minutes=5),
+            'attempts': 0,
+            'last_sent_at': now,
+        }, ctx)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id, lang FROM users WHERE phone = ? AND phone_verified_at IS NOT NULL',
+            (phone,))
+        row = cursor.fetchone()
+        account_exists = row is not None
+        conn.close()
+
+        if account_exists:
+            # Daily cap only counts real sends — a probe against a phone with
+            # no verified account never reaches here, so it can't be used to
+            # run down the real owner's quota.
+            if not _daily_quota_hit(f'smsresetquota:{phone}', SMS_RESET_DAILY_LIMIT, ctx, now):
+                lang = row['lang'] or 'en'
+                if not _send_sms(phone, sms_i18n.reset_sms(code, lang)):
+                    # Fallback: log code when Twilio is not configured (local dev).
+                    _logger.info('[SMS] Password-reset code for %s: %s', phone, code)
+        return {'success': True, 'message': 'If an account exists, a code was sent'}
+
+    @app.post('/api/users/reset-password-sms')
+    async def reset_password_sms(data: PhoneResetPasswordRequest):
+        phone = data.phone.strip()
+        if not _PHONE_RE.match(phone):
+            raise HTTPException(status_code=400,
+                                detail='Phone must be in international format (+…)')
+        store_key = f'smsreset:{phone}'
+        stored = _load_code(store_key, ctx)
+        if stored is None:
+            raise HTTPException(status_code=400, detail='No code sent')
+
+        if stored['expires_at'] < datetime.now(timezone.utc):
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=400, detail='Code expired')
+
+        stored['attempts'] = stored.get('attempts', 0) + 1
+        _store_code(store_key, stored, ctx)  # persist the attempt count
+        if stored['attempts'] > MAX_CODE_ATTEMPTS:
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=429, detail='Too many attempts. Request a new code.')
+
+        if not hmac.compare_digest(str(stored['code']), str(data.code or '')):
+            raise HTTPException(status_code=400, detail='Invalid code')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id FROM users WHERE phone = ? AND phone_verified_at IS NOT NULL',
+            (phone,))
+        row = cursor.fetchone()
+        if row is None:
+            conn.close()
+            _delete_code(store_key, ctx)
+            # Generic detail: don't reveal whether the phone is registered.
+            raise HTTPException(status_code=400, detail='Invalid code')
+
+        cursor.execute('UPDATE users SET password_hash = ? WHERE id = ?',
+                       (hash_password(data.new_password), row['id']))
+        # Sign out existing sessions — a reset implies the old credential
+        # may be compromised.
+        cursor.execute('DELETE FROM user_tokens WHERE user_id = ?', (row['id'],))
+        conn.commit()
+        conn.close()
+        _delete_code(store_key, ctx)
+        return {'success': True, 'message': 'Password updated'}
+
+    @app.post('/api/users/phone/send-code')
+    async def phone_send_code(data: PhoneSendCodeRequest,
+                              authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token) if token else None
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        phone = data.phone.strip()
+        if not _PHONE_RE.match(phone):
+            raise HTTPException(status_code=400,
+                                detail='Phone must be in international format (+…)')
+        store_key = f"phone:{user['id']}"
+        now = datetime.now(timezone.utc)
+        # Cooldown first: an authenticated attacker can otherwise sweep phone
+        # numbers via the 409-taken check below at full speed, using the 409
+        # itself as an unthrottled oracle for which phones belong to verified
+        # members. Checking the cooldown before the DB lookup — and stamping
+        # it even on a 409 refusal — means every probe costs the prober their
+        # cooldown regardless of the outcome.
+        existing = _load_code(store_key, ctx)
+        if existing:
+            last_sent_at = existing.get('last_sent_at')
+            if last_sent_at and (now - last_sent_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                raise HTTPException(status_code=429,
+                                    detail='Please wait before requesting another code')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'SELECT id FROM users WHERE phone = ? '
+                'AND phone_verified_at IS NOT NULL AND id != ?',
+                (phone, user['id']))
+            taken = cursor.fetchone() is not None
+        finally:
+            conn.close()
+        if taken:
+            _store_code(store_key, {'code': None, 'phone': phone,
+                                    'expires_at': now, 'attempts': 0,
+                                    'last_sent_at': now}, ctx)
+            raise HTTPException(status_code=409,
+                                detail='This phone number is already verified '
+                                       'on another account')
+        if _daily_quota_hit(f"phonequota:{user['id']}", PHONE_SEND_DAILY_LIMIT, ctx, now):
+            raise HTTPException(status_code=429,
+                                detail='Daily SMS limit reached — try again tomorrow')
+        code = f'{secrets.randbelow(1_000_000):06d}'
+        _store_code(store_key, {
+            'code': code, 'phone': phone,
+            'expires_at': now + timedelta(minutes=5),
+            'attempts': 0, 'last_sent_at': now,
+        }, ctx)
+        lang = user.get('lang') or 'en'
+        if not _send_sms(phone, sms_i18n.verification_sms(code, lang)):
+            # Twilio unconfigured (local dev) — same fallback as email codes.
+            _logger.info('[SMS] Verification code for %s: %s', phone, code)
+        return {'success': True, 'message': 'Code sent'}
+
+    @app.post('/api/users/phone/verify')
+    async def phone_verify(data: PhoneVerifyRequest,
+                           authorization: str = Header(None)):
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token) if token else None
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        store_key = f"phone:{user['id']}"
+        stored = _load_code(store_key, ctx)
+        if stored is None:
+            raise HTTPException(status_code=400, detail='No code sent')
+        if stored['expires_at'] < datetime.now(timezone.utc):
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=400, detail='Code expired')
+        stored['attempts'] = stored.get('attempts', 0) + 1
+        _store_code(store_key, stored, ctx)
+        if stored['attempts'] > MAX_CODE_ATTEMPTS:
+            _delete_code(store_key, ctx)
+            raise HTTPException(status_code=429,
+                                detail='Too many attempts. Request a new code.')
+        if not hmac.compare_digest(str(stored['code']), str(data.code or '')):
+            raise HTTPException(status_code=400, detail='Invalid code')
+        phone = stored.get('phone') or ''
+        now_iso = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'SELECT id FROM users WHERE phone = ? '
+                'AND phone_verified_at IS NOT NULL AND id != ?',
+                (phone, user['id']))
+            if cursor.fetchone():
+                raise HTTPException(status_code=409,
+                                    detail='This phone number is already '
+                                           'verified on another account')
+            cursor.execute(
+                'UPDATE users SET phone = ?, phone_verified_at = ? WHERE id = ?',
+                (phone, now_iso, user['id']))
+            # Sync the alerts contact point so SMS alerts use the verified
+            # number without a second entry step. Delivery still obeys the
+            # member's notification switches + A2P consent — unchanged.
+            cursor.execute(
+                "SELECT config_json FROM user_api_settings "
+                "WHERE user_id = ? AND target = 'alerts'", (user['id'],))
+            row = cursor.fetchone()
+            if row:
+                try:
+                    cfg = json.loads(dict(row)['config_json'] or '{}')
+                except (TypeError, ValueError):
+                    cfg = {}
+                cfg['phone'] = phone
+                cursor.execute(
+                    "UPDATE user_api_settings SET config_json = ? "
+                    "WHERE user_id = ? AND target = 'alerts'",
+                    (json.dumps(cfg), user['id']))
+            else:
+                cursor.execute(
+                    "INSERT INTO user_api_settings (user_id, target, enabled, config_json) "
+                    "VALUES (?, 'alerts', 1, ?)",
+                    (user['id'], json.dumps({'phone': phone})))
+            conn.commit()
+        finally:
+            conn.close()
+        _delete_code(store_key, ctx)
+        return {'success': True, 'phone': phone}
 
     @app.post('/api/users/login')
     async def user_login(data: UserLoginRequest):
@@ -426,6 +695,8 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             # The first-run prompt reads this. False only once the member has
             # answered — a geolocation guess never flips it.
             'locale_confirmed': bool(user.get('locale_confirmed_at')),
+            'phone': user.get('phone'),
+            'phone_verified': bool(user.get('phone_verified_at')),
             'subscription_status': sub['status'],
             'subscription': sub['subscription'],
         }
