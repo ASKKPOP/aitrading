@@ -783,6 +783,20 @@ class PaypalWebhookTests(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_verify_network_failure_gives_502(self):
+        def fake_post(url, **kw):
+            if url.endswith("/v1/oauth2/token"):
+                return _Resp(200, {"access_token": "tok"})
+            raise ConnectionError("paypal down")
+
+        with patch("routes_subscriptions.requests.post", side_effect=fake_post), \
+             patch("routes_billing.requests.post", side_effect=fake_post):
+            r = self.client.post("/api/webhooks/paypal",
+                                 json={"id": "WHE-NET",
+                                       "event_type": "PAYMENT.SALE.COMPLETED",
+                                       "resource": {}})
+        self.assertEqual(r.status_code, 502)
+
 
 if __name__ == "__main__":
     unittest.main()

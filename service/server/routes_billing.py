@@ -374,23 +374,31 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=503, detail="PayPal webhook not configured")
         event = await request.json()
         headers = request.headers
-        access = _paypal_token()
-        verify = requests.post(
-            f"{_paypal_base()}/v1/notifications/verify-webhook-signature",
-            headers={"Authorization": f"Bearer {access}"},
-            json={
-                "auth_algo": headers.get("paypal-auth-algo", ""),
-                "cert_url": headers.get("paypal-cert-url", ""),
-                "transmission_id": headers.get("paypal-transmission-id", ""),
-                "transmission_sig": headers.get("paypal-transmission-sig", ""),
-                "transmission_time": headers.get("paypal-transmission-time", ""),
-                "webhook_id": webhook_id,
-                "webhook_event": event,
-            },
-            timeout=20,
-        )
-        if (verify.status_code != 200
-                or verify.json().get("verification_status") != "SUCCESS"):
+        try:
+            access = _paypal_token()
+            verify = requests.post(
+                f"{_paypal_base()}/v1/notifications/verify-webhook-signature",
+                headers={"Authorization": f"Bearer {access}"},
+                json={
+                    "auth_algo": headers.get("paypal-auth-algo", ""),
+                    "cert_url": headers.get("paypal-cert-url", ""),
+                    "transmission_id": headers.get("paypal-transmission-id", ""),
+                    "transmission_sig": headers.get("paypal-transmission-sig", ""),
+                    "transmission_time": headers.get("paypal-transmission-time", ""),
+                    "webhook_id": webhook_id,
+                    "webhook_event": event,
+                },
+                timeout=20,
+            )
+            verified = (verify.status_code == 200
+                        and verify.json().get("verification_status") == "SUCCESS")
+        except HTTPException:
+            raise  # _paypal_token's own 502 — already logged there
+        except Exception as exc:  # noqa: BLE001 — network/parse failure: PayPal
+            # retries on any non-2xx, so a controlled 502 keeps the event alive.
+            logger.error("paypal webhook verification call failed: %s", exc)
+            raise HTTPException(status_code=502, detail="PayPal verification unavailable")
+        if not verified:
             raise HTTPException(status_code=400, detail="Invalid signature")
         event_id = str(event.get("id") or "")
         if not event_id:
