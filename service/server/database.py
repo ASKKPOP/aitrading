@@ -2544,13 +2544,10 @@ def init_database():
             UNIQUE(provider, event_id)
         )
     """)
-    try:
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_user_subscriptions_external
-            ON user_subscriptions(method, external_id)
-        """)
-    except Exception:
-        pass
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_subscriptions_external
+        ON user_subscriptions(method, external_id)
+    """)
 
     # Seed the four plans once (idempotent).
     cursor.execute("SELECT COUNT(*) AS c FROM subscription_plans")

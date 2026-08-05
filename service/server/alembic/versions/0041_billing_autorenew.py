@@ -7,8 +7,8 @@ keep pushing it forward (period_end + 3-day grace) on each paid invoice.
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0036"
-down_revision = "0035"
+revision = "0041"
+down_revision = "0040"
 branch_labels = None
 depends_on = None
 
@@ -46,7 +46,7 @@ def upgrade():
             )
         """)
         op.execute("CREATE INDEX idx_user_subscriptions_external "
-                   "ON user_subscriptions(method(16), external_id(64))")
+                   "ON user_subscriptions(method, external_id)")
 
 
 def downgrade():
