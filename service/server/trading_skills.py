@@ -174,7 +174,45 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "if it has not covered a meaningful further part of that "
             "distance, hold what you have, because the previous reduction "
             "already banked that ground. A fresh reduction wants a fresh "
-            "milestone, a named reversal signal, or the target itself."
+            "milestone, a named reversal signal, or the target itself. "
+            "Mind the SHAPE of your ledger, not only its sign: a desk that "
+            "banks winners in +3 slices while surrendering −15 chunks needs "
+            "a win rate no desk has — the asymmetry, not any single loss, "
+            "is what bleeds an account (measured live: one day's book gave "
+            "back five banked wins to two oversized losses). If you bank "
+            "winners early and small, you must cut losers early and small; "
+            "a position sitting at a loss several times your typical banked "
+            "win has already spent those wins, and holding it further "
+            "demands an extraordinary, named reason — not hope."
+        ),
+    },
+    {
+        # Added 2026-08-05 from the -57 day: 955 and 957 kept re-entering
+        # SHORT into a rising overnight tape (short, cut, short, cut) — the
+        # thesis direction is frozen at build, so a desk whose market flipped
+        # keeps expressing a dead read in fresh trades. The adapt bump
+        # (+0.05/loss) proved too weak a brake against a read the market had
+        # already refused twice.
+        "slug": "reentry-discipline",
+        "name": "Re-entry Discipline",
+        "description": ("Two losing closes in one direction flip the burden "
+                        "of proof; a re-entry on the read that just lost "
+                        "twice needs materially new evidence."),
+        "prompts": ["light", "trader"],
+        "priority": 44,
+        "body": (
+            "A losing close is the market grading your read. One loss can "
+            "be noise; after TWO losing closes in the same direction on the "
+            "same symbol within a day, the burden of proof flips: the tape "
+            "has refused that read twice, and re-entering the same "
+            "direction on the same evidence is not persistence, it is "
+            "arguing with the grader at a fee each attempt. Before any such "
+            "re-entry, name what is MATERIALLY new — a fresh level, a "
+            "regime signal, a refreshed thesis — that was not present in "
+            "the entries that just failed; absent that, stand flat or "
+            "consider whether the OPPOSITE read now has the evidence. "
+            "Feeling more confident is not new evidence; the entries that "
+            "lost were also confident."
         ),
     },
     {

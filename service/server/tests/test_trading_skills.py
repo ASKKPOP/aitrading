@@ -191,6 +191,26 @@ class RegistryTests(_Db):
                           f"noise-floor clause missing from {site}")
             self.assertIn("shrinking the stop to fit", block)
 
+    def test_reentry_discipline_rides_both_sites(self):
+        # 2026-08-05, the -57 day: 955/957 re-entered SHORT into a rising
+        # tape repeatedly (short, cut, short, cut). The desk must know that
+        # two same-direction losing closes flip the burden of proof.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("### Re-entry Discipline\n", block,
+                          f"reentry-discipline missing from {site}")
+            self.assertIn("burden of proof flips", block)
+            self.assertIn("not new evidence", block)
+
+    def test_exit_discipline_names_the_ledger_shape(self):
+        # Same day: five banked wins (+0.5..+4.7) surrendered to two
+        # oversized losses (-17.6, -31). The asymmetry is the bleed.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("SHAPE of your ledger", block,
+                          f"ledger-shape clause missing from {site}")
+            self.assertIn("cut losers early and small", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
