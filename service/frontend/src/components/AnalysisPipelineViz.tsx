@@ -12,6 +12,10 @@ import { Language, tr } from '../i18n'
 //   memory:recall -> decision -> verify -> memory:write
 // (memory:recall/memory:write are the desk-memory read and write-back around
 // the trader debate — the final implemented pipeline, not the v1 four-band one.)
+// Each card carries a one-line description of what that step does TODAY —
+// sources gathered, what the debate weighs (briefs+memory+guidelines+skills),
+// the verifier's verdict set — sourced from analysis_agents.py. Update the
+// __desc:* labels below when the pipeline gains or changes a step.
 // Card states: pending (dim), running (pulsing accent + flowing edge),
 // done (accent + duration), error (red). No green anywhere — the guide
 // diagrams reserve color for accent/critical only, and the diagram is
@@ -19,7 +23,9 @@ import { Language, tr } from '../i18n'
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error'
 export type StepInfo = { status: StepStatus; runs: number; startedAt?: number; endedAt?: number }
-export type LogEntry = { ts: string; step: string; status: string; detail?: string }
+// extra carries the step event's payload beyond step/status/ts (action,
+// confidence, verdict, found, saved, detail…) — localized at render time.
+export type LogEntry = { ts: string; step: string; status: string; extra?: Record<string, any> }
 
 export const PIPELINE_STEPS = [
   'gather:news', 'gather:sentiment', 'gather:fundamentals_macro', 'gather:technical',
@@ -44,13 +50,16 @@ const ST_COLOR: Record<StepStatus, string> = {
 const COL_X = [12, 252, 492, 732]          // 4 role columns
 const COL_W = 216
 const cx = (i: number) => COL_X[i] + COL_W / 2
-const GATHER_Y = 22, BRIEF_Y = 116, ROW_H = 46
-const BUS_Y = 196
-const MEM = { x: 34, y: 222, w: 210, h: 52 }   // desk-memory recall, feeds the debate
-const DEC = { x: 290, y: 222, w: 380, h: 52 }
-const VER = { x: 360, y: 312, w: 240, h: 46 }
-const WRI = { x: 360, y: 396, w: 240, h: 46 }  // desk-memory write-back
-const VIEW_H = 456
+// Rows grew one line: every card now carries a description of what the step
+// actually does today (sources gathered, what the debate weighs, the
+// verifier's verdicts), so the diagram documents the real pipeline.
+const GATHER_Y = 22, BRIEF_Y = 128, ROW_H = 62
+const BUS_Y = 210
+const MEM = { x: 34, y: 236, w: 210, h: 64 }   // desk-memory recall, feeds the debate
+const DEC = { x: 290, y: 236, w: 380, h: 64 }
+const VER = { x: 330, y: 336, w: 300, h: 62 }
+const WRI = { x: 330, y: 428, w: 300, h: 62 }  // desk-memory write-back
+const VIEW_H = 504
 
 function StepCard({ x, y, w, h, title, stepId, info, labels }: {
   x: number; y: number; w: number; h: number
@@ -68,16 +77,23 @@ function StepCard({ x, y, w, h, title, stepId, info, labels }: {
     : status === 'done' ? `✓ ${labels.__done}` + (dur ? ` · ${dur}` : '')
     : null
   const midX = x + w / 2
+  const desc = labels[`__desc:${stepId}`]
   return (
     <g className={`plv-card plv-${status}`}>
       <rect x={x} y={y} width={w} height={h} rx={8} className="plv-box" />
-      <text x={midX} y={y + 16} textAnchor="middle" className="plv-t"
+      <text x={midX} y={y + 15} textAnchor="middle" className="plv-t"
         opacity={status === 'pending' ? 0.55 : 1}>
         {title}
         {(info?.runs ?? 0) > 1 && <tspan fill="var(--g-accent)"> ×{info!.runs}</tspan>}
       </text>
+      {desc && (
+        <text x={midX} y={y + 27} textAnchor="middle" className="plv-d"
+          opacity={status === 'pending' ? 0.6 : 1}>
+          {desc}
+        </text>
+      )}
       {statusLine && (
-        <text x={midX} y={y + 29} textAnchor="middle" className="plv-s" fill={ST_COLOR[status]}>
+        <text x={midX} y={y + 40} textAnchor="middle" className="plv-s" fill={ST_COLOR[status]}>
           {statusLine}
         </text>
       )}
@@ -143,6 +159,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
           }
           .plv-t { font: 600 11.5px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; fill: var(--g-ink); }
           .plv-s { font: 500 10px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; }
+          .plv-d { font: 500 9px system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif; fill: var(--g-ink2); }
           .plv-m { font: 600 9.5px ui-monospace,"SF Mono",Menlo,monospace; fill: var(--g-muted); }
           .plv-pending .plv-box { fill: var(--g-surface); stroke: var(--g-border); stroke-width: 1; }
           .plv-running .plv-box { fill: color-mix(in srgb, var(--g-accent) 12%, var(--g-card)); stroke: var(--g-accent); stroke-width: 1.6;
@@ -236,6 +253,31 @@ export function analysisStepLabels(language: Language): Record<string, string> {
     __done: tr(language, { ko: '완료', en: 'done', ja: '完了', th: 'เสร็จ', vi: 'xong', id: 'selesai' }),
     __pipeline: tr(language, { ko: '실시간 파이프라인 모니터', en: 'Live pipeline monitor', ja: 'リアルタイム・パイプライン', th: 'มอนิเตอร์ไปป์ไลน์สด', vi: 'Giám sát pipeline trực tiếp', id: 'Monitor alur langsung' }),
     __stepLog: tr(language, { ko: '단계 로그', en: 'Step log', ja: 'ステップログ', th: 'บันทึกขั้นตอน', vi: 'Nhật ký bước', id: 'Catatan langkah' }),
+    // ── per-card descriptions: what each step actually does today ──
+    '__desc:gather:news': tr(language, { ko: '헤드라인 수집 · 감성 태깅', en: 'Headlines + sentiment tags', ja: 'ヘッドライン収集・感情タグ', th: 'เก็บพาดหัวข่าว + ป้ายอารมณ์', vi: 'Thu tin tức + gắn nhãn cảm xúc', id: 'Berita utama + label sentimen' }),
+    '__desc:gather:sentiment': tr(language, { ko: '소셜·공포탐욕지수·고래 흐름', en: 'Social · Fear&Greed · whale flows', ja: 'ソーシャル・恐怖強欲・クジラ動向', th: 'โซเชียล · Fear&Greed · เงินวาฬ', vi: 'Mạng xã hội · Fear&Greed · dòng cá voi', id: 'Sosial · Fear&Greed · arus whale' }),
+    '__desc:gather:fundamentals_macro': tr(language, { ko: '매크로 신호·예측시장·금리 지표', en: 'Macro regime · Polymarket · rates', ja: 'マクロ指標・予測市場・金利', th: 'สัญญาณมหภาค · ตลาดพยากรณ์ · ดอกเบี้ย', vi: 'Tín hiệu vĩ mô · Polymarket · lãi suất', id: 'Sinyal makro · Polymarket · suku bunga' }),
+    '__desc:gather:technical': tr(language, { ko: 'RSI·이평선·변동성·시그널 점수', en: 'RSI · MAs · volatility · signal score', ja: 'RSI・移動平均・ボラ・シグナル点', th: 'RSI · เส้นค่าเฉลี่ย · ความผันผวน · คะแนน', vi: 'RSI · MA · biến động · điểm tín hiệu', id: 'RSI · MA · volatilitas · skor sinyal' }),
+    '__desc:brief:news': tr(language, { ko: '오늘 뉴스가 시사하는 바 요약', en: 'What today’s news implies', ja: '今日のニュースの含意を要約', th: 'สรุปนัยของข่าววันนี้', vi: 'Hàm ý của tin tức hôm nay', id: 'Apa arti berita hari ini' }),
+    '__desc:brief:sentiment': tr(language, { ko: '군중 심리: 순풍인가 역지표인가', en: 'Crowd mood: tailwind or contrarian', ja: '群集心理: 追い風か逆張り警告か', th: 'อารมณ์ฝูงชน: หนุนหรือสวนทาง', vi: 'Tâm lý đám đông: thuận hay ngược', id: 'Mood pasar: dukung atau kontra' }),
+    '__desc:brief:fundamentals_macro': tr(language, { ko: '매크로 환경이 우호적인지 판단', en: 'Is the macro backdrop supportive?', ja: 'マクロ環境は追い風か判断', th: 'ภาพมหภาคเอื้อหรือไม่', vi: 'Bối cảnh vĩ mô có thuận lợi?', id: 'Apakah latar makro mendukung?' }),
+    '__desc:brief:technical': tr(language, { ko: '추세·모멘텀·지지/저항 해석', en: 'Trend, momentum, support/resistance', ja: 'トレンド・勢い・支持/抵抗を解釈', th: 'แนวโน้ม โมเมนตัม แนวรับ/ต้าน', vi: 'Xu hướng, đà, hỗ trợ/kháng cự', id: 'Tren, momentum, support/resistance' }),
+    '__desc:memory:recall': tr(language, { ko: '과거 분석의 교훈 불러오기', en: 'Recall lessons from past runs', ja: '過去の分析の教訓を想起', th: 'เรียกบทเรียนจากรอบก่อน', vi: 'Gọi lại bài học các lần trước', id: 'Panggil pelajaran run lalu' }),
+    '__desc:decision': tr(language, { ko: '브리프 4건+메모리+가이드라인+스킬 토론 → 액션·신뢰도·주문 의도', en: 'Briefs + memory + guidelines + skills → action · confidence · order intent', ja: '4ブリーフ+記憶+指針+スキルを討議 → アクション・信頼度・注文意図', th: 'ถก 4 สรุป+ความจำ+แนวทาง+สกิล → แอ็กชัน · ความมั่นใจ · เจตนาออเดอร์', vi: '4 tóm tắt + bộ nhớ + kỹ năng → hành động · độ tin cậy · ý định lệnh', id: '4 ringkasan + memori + skill → aksi · keyakinan · niat order' }),
+    '__desc:verify': tr(language, { ko: '독립 검증자가 반박 시도 → 유지/약화/기각', en: 'Independent refute pass → upheld/weakened/rejected', ja: '独立検証者が反証 → 維持/弱化/棄却', th: 'ผู้ตรวจอิสระลองหักล้าง → คง/อ่อนลง/ตก', vi: 'Kiểm chứng độc lập → giữ/giảm/bác', id: 'Verifikasi independen → tetap/lemah/tolak' }),
+    '__desc:memory:write': tr(language, { ko: '이번 결정의 교훈을 저장', en: 'Save what this run taught', ja: '今回の教訓を保存', th: 'บันทึกบทเรียนรอบนี้', vi: 'Lưu bài học lần chạy này', id: 'Simpan pelajaran run ini' }),
+    // ── step-log detail labels (localized rendering of event extras) ──
+    __action: tr(language, { ko: '액션', en: 'action', ja: 'アクション', th: 'แอ็กชัน', vi: 'hành động', id: 'aksi' }),
+    __confidence: tr(language, { ko: '신뢰도', en: 'confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'độ tin cậy', id: 'keyakinan' }),
+    __verdict: tr(language, { ko: '판정', en: 'verdict', ja: '判定', th: 'คำตัดสิน', vi: 'phán quyết', id: 'putusan' }),
+    __verdict_upheld: tr(language, { ko: '유지', en: 'upheld', ja: '維持', th: 'คงเดิม', vi: 'giữ nguyên', id: 'dipertahankan' }),
+    __verdict_weakened: tr(language, { ko: '약화', en: 'weakened', ja: '弱化', th: 'อ่อนลง', vi: 'giảm nhẹ', id: 'dilemahkan' }),
+    __verdict_rejected: tr(language, { ko: '기각', en: 'rejected', ja: '棄却', th: 'ตกไป', vi: 'bác bỏ', id: 'ditolak' }),
+    __verdict_skipped: tr(language, { ko: '생략', en: 'skipped', ja: 'スキップ', th: 'ข้าม', vi: 'bỏ qua', id: 'dilewati' }),
+    __memFound: tr(language, { ko: '저장된 교훈 발견', en: 'stored lessons found', ja: '保存済みの教訓あり', th: 'พบบทเรียนที่บันทึกไว้', vi: 'có bài học đã lưu', id: 'ada pelajaran tersimpan' }),
+    __memNone: tr(language, { ko: '저장된 교훈 없음', en: 'no stored lessons yet', ja: '保存済みの教訓なし', th: 'ยังไม่มีบทเรียน', vi: 'chưa có bài học', id: 'belum ada pelajaran' }),
+    __memSaved: tr(language, { ko: '교훈 저장됨', en: 'lesson saved', ja: '教訓を保存', th: 'บันทึกบทเรียนแล้ว', vi: 'đã lưu bài học', id: 'pelajaran disimpan' }),
+    __memNotSaved: tr(language, { ko: '저장 안 됨', en: 'not saved', ja: '保存されず', th: 'ไม่ได้บันทึก', vi: 'không lưu được', id: 'tidak tersimpan' }),
   }
   for (const role of Object.keys(roles)) {
     labels[`gather:${role}`] = `${gather} · ${roles[role]}`
@@ -271,10 +313,10 @@ export function useAnalysisStream(token: string | null) {
       }
       return { ...prev, [evt.step]: next }
     })
-    const extras = Object.entries(evt)
-      .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k))
-      .map(([k, v]) => `${k}=${v}`).join(' ')
-    setLog(prev => [...prev, { ts: evt.ts, step: evt.step, status: evt.status, detail: extras || undefined }])
+    const extra = Object.fromEntries(Object.entries(evt)
+      .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k)))
+    setLog(prev => [...prev, { ts: evt.ts, step: evt.step, status: evt.status,
+                               extra: Object.keys(extra).length ? extra : undefined }])
   }
 
   async function run(symbol: string, market: string, lang: string,
@@ -359,10 +401,10 @@ export function useAnalysisRun(token: string | null) {
       } else if (evt.status === 'done') { cur.status = 'done'; cur.endedAt = t }
       else if (evt.status === 'error') { cur.status = 'error'; cur.endedAt = t }
       next[evt.step] = cur
-      const extras = Object.entries(evt)
-        .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k))
-        .map(([k, v]) => `${k}=${v}`).join(' ')
-      entries.push({ ts: evt.ts, step: evt.step, status: evt.status, detail: extras || undefined })
+      const extra = Object.fromEntries(Object.entries(evt)
+        .filter(([k]) => !['step', 'status', 'ts', 'event'].includes(k)))
+      entries.push({ ts: evt.ts, step: evt.step, status: evt.status,
+                     extra: Object.keys(extra).length ? extra : undefined })
     }
     setSteps(next); setLog(entries)
     setRunInfo({ id: job.job_id, symbol: job.symbol, market: job.market, created_at: job.created_at })
@@ -425,6 +467,23 @@ export function useAnalysisRun(token: string | null) {
 
 // ── Shared monitor panel: flowchart + timestamped step log ──
 
+// Localized rendering of a step event's extra payload. Known keys (action,
+// confidence, verdict, found, saved) read as words in the UI language; the
+// error `detail` string and anything unknown pass through verbatim.
+function formatLogExtra(extra: Record<string, any>, labels: Record<string, string>): string {
+  const parts: string[] = []
+  for (const [k, v] of Object.entries(extra)) {
+    if (k === 'action' && v != null) parts.push(`${labels.__action} ${String(v).toUpperCase()}`)
+    else if (k === 'confidence' && typeof v === 'number') parts.push(`${labels.__confidence} ${Math.round(v * 100)}%`)
+    else if (k === 'verdict' && v != null) parts.push(`${labels.__verdict} ${labels[`__verdict_${v}`] || v}`)
+    else if (k === 'found') parts.push(v ? labels.__memFound : labels.__memNone)
+    else if (k === 'saved') parts.push(v ? labels.__memSaved : labels.__memNotSaved)
+    else if (k === 'detail') parts.push(String(v))
+    else parts.push(`${k}=${v}`)
+  }
+  return parts.join(' · ')
+}
+
 export function AnalysisMonitorPanel({ language, steps, log }: {
   language: Language
   steps: Record<string, StepInfo>
@@ -452,7 +511,7 @@ export function AnalysisMonitorPanel({ language, steps, log }: {
               <span style={{ color: e.status === 'error' ? '#f0663f' : e.status === 'done' ? '#3987e5' : 'var(--text-primary,inherit)' }}>
                 {labels[e.step] || e.step} — {e.status === 'start' ? labels.__start : e.status === 'done' ? labels.__done : labels.__error}
               </span>
-              {e.detail && <span style={{ color: 'var(--text-secondary,#8a8073)' }}>{e.detail}</span>}
+              {e.extra && <span style={{ color: 'var(--text-secondary,#8a8073)' }}>{formatLogExtra(e.extra, labels)}</span>}
             </div>
           ))}
         </div>
