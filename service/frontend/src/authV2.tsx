@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { API_BASE, useLanguage } from './appShared'
-import { tr } from './i18n'
+import { Language, tr } from './i18n'
 
 
 export const USER_TOKEN_KEY = 'sooppiy_user_token'
@@ -342,7 +342,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
 
 export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
   const navigate = useNavigate()
-  const { language } = useLanguage()
+  const { language, setLanguage } = useLanguage()
   const providers = useProviders()
   const [step, setStep] = useState<'email' | 'verify'>('email')
   const [email, setEmail] = useState('')
@@ -358,7 +358,7 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
       const r = await fetch(`${API_BASE}/users/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, lang: language }),
       })
       if (!r.ok) {
         setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '코드를 보낼 수 없습니다', en: 'Could not send code', ja: 'コードを送信できませんでした', th: 'ไม่สามารถส่งรหัสได้', vi: 'Không thể gửi mã', id: 'Tidak dapat mengirim kode' })))
@@ -377,7 +377,7 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
       const r = await fetch(`${API_BASE}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, password }),
+        body: JSON.stringify({ email, code, password, lang: language }),
       })
       if (!r.ok) {
         setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '가입에 실패했습니다', en: 'Registration failed', ja: '登録に失敗しました', th: 'ลงทะเบียนไม่สำเร็จ', vi: 'Đăng ký thất bại', id: 'Pendaftaran gagal' })))
@@ -403,6 +403,19 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
     >
       {step === 'email' ? (
         <form onSubmit={sendCode}>
+          <div style={{ marginBottom: 6, fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>
+            {tr(language, { ko: '언어', en: 'Language', ja: '言語', th: 'ภาษา', vi: 'Ngôn ngữ', id: 'Bahasa' })}
+          </div>
+          <select value={language}
+            onChange={e => setLanguage(e.target.value as Language)}
+            style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 14, width: '100%', marginBottom: 10 }}>
+            <option value="en">English</option>
+            <option value="ko">한국어</option>
+            <option value="ja">日本語</option>
+            <option value="th">ไทย</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="id">Bahasa Indonesia</option>
+          </select>
           <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' })} value={email}
             onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
           {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
@@ -450,7 +463,9 @@ export function ForgotPasswordPage() {
   const navigate = useNavigate()
   const { language } = useLanguage()
   const [step, setStep] = useState<'email' | 'reset' | 'done'>('email')
+  const [method, setMethod] = useState<'email' | 'phone'>('email')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
@@ -460,10 +475,10 @@ export function ForgotPasswordPage() {
     e.preventDefault()
     setError(''); setLoading(true)
     try {
-      const r = await fetch(`${API_BASE}/users/forgot-password`, {
+      const r = await fetch(`${API_BASE}/users/${method === 'phone' ? 'forgot-password-sms' : 'forgot-password'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(method === 'phone' ? { phone } : { email }),
       })
       if (!r.ok) {
         setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '코드를 보낼 수 없습니다', en: 'Could not send code', ja: 'コードを送信できませんでした', th: 'ไม่สามารถส่งรหัสได้', vi: 'Không thể gửi mã', id: 'Tidak dapat mengirim kode' })))
@@ -481,10 +496,10 @@ export function ForgotPasswordPage() {
     e.preventDefault()
     setError(''); setLoading(true)
     try {
-      const r = await fetch(`${API_BASE}/users/reset-password`, {
+      const r = await fetch(`${API_BASE}/users/${method === 'phone' ? 'reset-password-sms' : 'reset-password'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, new_password: newPassword }),
+        body: JSON.stringify(method === 'phone' ? { phone, code, new_password: newPassword } : { email, code, new_password: newPassword }),
       })
       if (!r.ok) {
         setError(errMessage(await r.json().catch(() => null), tr(language, { ko: '비밀번호를 변경할 수 없습니다', en: 'Could not reset password', ja: 'パスワードをリセットできませんでした', th: 'ไม่สามารถรีเซ็ตรหัสผ่านได้', vi: 'Không thể đặt lại mật khẩu', id: 'Tidak dapat mengatur ulang kata sandi' })))
@@ -515,13 +530,34 @@ export function ForgotPasswordPage() {
     <AuthShell
       title={tr(language, { ko: '비밀번호 재설정', en: 'Reset your password', ja: 'パスワードをリセット', th: 'รีเซ็ตรหัสผ่านของคุณ', vi: 'Đặt lại mật khẩu của bạn', id: 'Atur ulang kata sandi Anda' })}
       subtitle={step === 'email'
-        ? tr(language, { ko: '가입한 이메일로 6자리 코드를 보내드립니다.', en: "Enter your account email and we'll send a 6-digit code.", ja: 'アカウントのメールアドレスに6桁のコードを送信します。', th: 'กรอกอีเมลบัญชีของคุณ แล้วเราจะส่งรหัส 6 หลักให้', vi: 'Nhập email tài khoản và chúng tôi sẽ gửi mã 6 chữ số.', id: 'Masukkan email akun Anda dan kami akan mengirim kode 6 digit.' })
-        : tr(language, { ko: `${email}로 보낸 코드를 입력한 뒤 새 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${email}, then choose a new password.`, ja: `${email} に送信したコードを入力し、新しいパスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${email} แล้วตั้งรหัสผ่านใหม่`, vi: `Nhập mã chúng tôi đã gửi đến ${email}, sau đó chọn mật khẩu mới.`, id: `Masukkan kode yang kami kirim ke ${email}, lalu pilih kata sandi baru.` })}
+        ? (method === 'phone'
+          ? tr(language, { ko: '인증된 휴대폰 번호로 코드를 보내드립니다.', en: "We'll text a code to your verified phone number.", ja: '認証済みの電話番号にコードを送信します。', th: 'เราจะส่งรหัสไปยังเบอร์โทรที่ยืนยันแล้วของคุณ', vi: 'Chúng tôi sẽ nhắn mã đến số điện thoại đã xác minh của bạn.', id: 'Kami akan mengirim kode ke nomor telepon terverifikasi Anda.' })
+          : tr(language, { ko: '가입한 이메일로 6자리 코드를 보내드립니다.', en: "Enter your account email and we'll send a 6-digit code.", ja: 'アカウントのメールアドレスに6桁のコードを送信します。', th: 'กรอกอีเมลบัญชีของคุณ แล้วเราจะส่งรหัส 6 หลักให้', vi: 'Nhập email tài khoản và chúng tôi sẽ gửi mã 6 chữ số.', id: 'Masukkan email akun Anda dan kami akan mengirim kode 6 digit.' }))
+        : tr(language, { ko: `${method === 'phone' ? phone : email}로 보낸 코드를 입력한 뒤 새 비밀번호를 설정하세요.`, en: `Enter the code we sent to ${method === 'phone' ? phone : email}, then choose a new password.`, ja: `${method === 'phone' ? phone : email} に送信したコードを入力し、新しいパスワードを設定してください。`, th: `กรอกรหัสที่เราส่งไปยัง ${method === 'phone' ? phone : email} แล้วตั้งรหัสผ่านใหม่`, vi: `Nhập mã chúng tôi đã gửi đến ${method === 'phone' ? phone : email}, sau đó chọn mật khẩu mới.`, id: `Masukkan kode yang kami kirim ke ${method === 'phone' ? phone : email}, lalu pilih kata sandi baru.` })}
     >
       {step === 'email' ? (
         <form onSubmit={sendResetCode}>
-          <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' })} value={email}
-            onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button type="button" onClick={() => { setMethod('email'); setError('') }}
+              style={method === 'email'
+                ? { ...buttonStyle, flex: 1 }
+                : { ...buttonStyle, flex: 1, background: 'transparent', color: 'var(--text-muted, #6b7280)', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}>
+              {tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email', id: 'Email' })}
+            </button>
+            <button type="button" onClick={() => { setMethod('phone'); setError('') }}
+              style={method === 'phone'
+                ? { ...buttonStyle, flex: 1 }
+                : { ...buttonStyle, flex: 1, background: 'transparent', color: 'var(--text-muted, #6b7280)', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}>
+              {tr(language, { ko: '휴대폰', en: 'Phone', ja: '携帯電話', th: 'โทรศัพท์', vi: 'Điện thoại', id: 'Ponsel' })}
+            </button>
+          </div>
+          {method === 'phone' ? (
+            <input type="tel" placeholder="+821012345678" value={phone}
+              onChange={e => setPhone(e.target.value)} required style={inputStyle} autoComplete="tel" />
+          ) : (
+            <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' })} value={email}
+              onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
+          )}
           {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…', id: 'Mengirim…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã', id: 'Kirim kode' })}
