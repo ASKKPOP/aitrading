@@ -193,5 +193,82 @@ class PhoneVerificationTests(unittest.TestCase):
         self.assertTrue(cfg["sms_consent"])
 
 
+class SmsPasswordResetTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        from routes import create_app
+        self.client = TestClient(create_app())
+        self.user_id, self.token = _mk_user(database, email="sms@t.dev", lang="ja")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET phone = '+818011112222', "
+                        "phone_verified_at = '2026-01-01T00:00:00Z' WHERE id = ?",
+                        (self.user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_forgot_sms_generic_for_unknown_phone(self):
+        with patch("routes_users._send_sms", return_value=True) as sms:
+            r1 = self.client.post("/api/users/forgot-password-sms",
+                                  json={"phone": "+818011112222"})
+            r2 = self.client.post("/api/users/forgot-password-sms",
+                                  json={"phone": "+818099990000"})
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(r1.json(), r2.json())     # identical bodies — no probing
+        self.assertEqual(sms.call_count, 1)        # only the real, verified phone
+
+    def test_reset_by_sms_happy_path_kills_sessions(self):
+        with patch("routes_users._send_sms", return_value=True) as sms:
+            self.client.post("/api/users/forgot-password-sms",
+                             json={"phone": "+818011112222"})
+        code = "".join(ch for ch in sms.call_args.args[1] if ch.isdigit())[:6]
+        r = self.client.post("/api/users/reset-password-sms",
+                             json={"phone": "+818011112222", "code": code,
+                                   "new_password": "brandnewpw1"})
+        self.assertEqual(r.status_code, 200, r.text)
+        # old token dead
+        me = self.client.get("/api/users/me",
+                             headers={"Authorization": f"Bearer {self.token}"})
+        self.assertEqual(me.status_code, 401)
+        # new password logs in
+        login = self.client.post("/api/users/login",
+                                 json={"email": "sms@t.dev",
+                                       "password": "brandnewpw1"})
+        self.assertEqual(login.status_code, 200, login.text)
+
+    def test_reset_sms_wrong_code(self):
+        with patch("routes_users._send_sms", return_value=True):
+            self.client.post("/api/users/forgot-password-sms",
+                             json={"phone": "+818011112222"})
+        r = self.client.post("/api/users/reset-password-sms",
+                             json={"phone": "+818011112222", "code": "000000",
+                                   "new_password": "brandnewpw1"})
+        self.assertEqual(r.status_code, 400)
+
+    def test_unverified_phone_never_receives_reset(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET phone_verified_at = NULL WHERE id = ?",
+                        (self.user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        with patch("routes_users._send_sms", return_value=True) as sms:
+            r = self.client.post("/api/users/forgot-password-sms",
+                                 json={"phone": "+818011112222"})
+        self.assertEqual(r.status_code, 200)
+        sms.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
