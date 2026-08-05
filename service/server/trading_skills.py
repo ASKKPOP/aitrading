@@ -152,7 +152,22 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "by a 0.74% wiggle; a second desk paid the same tax before it). "
             "If the honest, noise-clear stop makes your 2:1 target "
             "unreachable, the geometry refuses the trade — walk away rather "
-            "than shrinking the stop to fit."
+            "than shrinking the stop to fit. FINALLY, your stop is not the "
+            "only thing that ends this position. The run is retired on "
+            "EQUITY drawdown from its high-water mark, and the Risk rail "
+            "line states how far that is as a price move right now. "
+            "Reconcile the two every time you size or add: if the rail is "
+            "nearer than your stop, your stop is decorative — the rail "
+            "fires first and you are retired on a move you had explicitly "
+            "budgeted for. And understand what an add does to it. The rail "
+            "is a FIXED number of dollars, so doubling the position HALVES "
+            "the price distance to it: an add is never only an increase in "
+            "exposure, it is simultaneously a tightening of the rail that "
+            "retires you. Before adding, read the rail distance and ask "
+            "whether it will still sit OUTSIDE the symbol's routine range "
+            "afterwards. If it will not, the add converts a survivable "
+            "position into one an ordinary day's noise will close — size "
+            "the add smaller, or keep the position you have."
         ),
     },
     {

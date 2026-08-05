@@ -2448,6 +2448,64 @@ def _hold_streak_line(run: dict, pos_qty: float) -> str:
         return ""
 
 
+def _brake_distance_line(run: dict, pos_qty: float) -> str:
+    """How far the equity brake is, expressed as a price move.
+
+    The desk authors its stop in PRICE PERCENT on the position. The platform
+    retires the run on EQUITY drawdown from the high-water mark in USD
+    (run_feedback's drawdown_brake, at retire_drawdown_frac x max_loss_usd).
+    Nothing reconciled the two, so the rail that actually ends the run was
+    invisible to the desk that gets ended by it.
+
+    Prod 971 (2026-08-05): authored a 3.5% stop while its brake sat 0.72%
+    away — 4.9x tighter — and was retired on a -0.62% move it had explicitly
+    budgeted for. An audit of 21 runs found the brake inside the desk's own
+    stop in SEVEN of them; 960 was carrying a 2.9x gap live at the time.
+    The gap widens with every add, because the rail is a fixed dollar amount
+    while an add only grows the notional it is divided by.
+
+    Fact only; the judgment lives in risk-reward-structure. Held books only,
+    and fail-soft: any missing or untrustworthy input renders "".
+    """
+    if not pos_qty:
+        return ""
+    try:
+        stops = json.loads(run.get("stop_conditions_json") or "{}")
+        max_loss = float(stops.get("max_loss_usd") or 0)
+        if max_loss <= 0:
+            return ""            # no P&L stop at all — nothing to report
+        pnl = compute_run_pnl(run) or {}
+        # An unknown mark must never be rendered as a confident distance:
+        # the same reasoning as _position_state_line's P&L suppression.
+        if not pnl.get("mark_age_ok"):
+            return ""
+        mark = float((pnl.get("position") or {}).get("current_price") or 0)
+        notional = abs(float(pos_qty)) * mark
+        if mark <= 0 or notional <= 0:
+            return ""
+        total = float(pnl.get("total") or 0)
+        import run_feedback           # local: matches the cycle path's import
+        state = run_feedback.load_state(run)
+        peak = max(float(state.get("peak_total_pnl") or 0), total)
+        # Read the fraction from the rail itself so this line can never drift
+        # out of sync with the brake it describes.
+        frac = float(run_feedback.ADAPT_BOUNDS["retire_drawdown_frac"])
+        room = frac * max_loss - (peak - total)
+        if room <= 0:
+            return ("Risk rail: this run is already at or past the equity "
+                    "drawdown that retires it — the next cycle may close the "
+                    "book regardless of your stop.\n")
+        pct = room / notional * 100.0
+        return (f"Risk rail: this run is RETIRED when equity falls a further "
+                f"${room:,.2f} from its high-water mark. At your current "
+                f"position size that is a {pct:.2f}% adverse price move. "
+                f"This rail is separate from the stop you author and can be "
+                f"much tighter than it; adding to the position divides this "
+                f"distance.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _breadth_state_line(run: dict) -> str:
     """US market breadth as market-environment evidence (advisory).
 
@@ -2687,7 +2745,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
-                      + _hold_streak_line(run, pos_qty))
+                      + _hold_streak_line(run, pos_qty)
+                      + _brake_distance_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -3070,7 +3129,8 @@ def run_cycle(run_id: int) -> dict:
                                         else {})
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
-                                        + _hold_streak_line(run, held)),
+                                        + _hold_streak_line(run, held)
+                                        + _brake_distance_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.
