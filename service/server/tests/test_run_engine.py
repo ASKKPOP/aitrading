@@ -463,6 +463,64 @@ class EarningsBriefTests(unittest.TestCase):
                       "the earnings brief never reached the desk (flat run)")
 
 
+class HoldStreakBriefTests(unittest.TestCase):
+    """949 (2026-08-05): NINE consecutive flat holds at conviction
+    0.24-0.30 with the flat-retirement clause in context and the retire
+    verb untouched — because each cycle's prompt shows only that cycle,
+    the desk cannot count its own streak. The brief supplies the fact;
+    the skill supplies the judgment."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _seed(self, actions):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT OR IGNORE INTO users (id, email, password_hash, "
+            "created_at) VALUES (1, 's@x.com', 'x', '2026-01-01T00:00:00Z')")
+        cur.execute(
+            "INSERT OR IGNORE INTO agents (id, name, token_hash, cash, "
+            "user_id, created_at) "
+            "VALUES (1, 'streak', 'th', 1000, 1, '2026-01-01T00:00:00Z')")
+        cur.execute(
+            "INSERT INTO trading_runs (agent_id, symbol, market, status, "
+            "created_at) VALUES (1, 'HYPEUSDT', 'crypto', 'running', "
+            "'2026-08-01T00:00:00Z')")
+        run_id = cur.lastrowid
+        for i, a in enumerate(actions):
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, i + 1, f"2026-08-05T0{i}:00:00Z",
+                 json.dumps({"action": a, "confidence": 0.3})))
+        conn.commit()
+        conn.close()
+        return {"id": run_id, "agent_id": 1, "symbol": "HYPEUSDT",
+                "market": "crypto"}
+
+    def test_long_flat_streak_renders_the_count(self):
+        run = self._seed(["sell"] + ["hold"] * 9)
+        line = run_engine._hold_streak_line(run, 0.0)
+        self.assertIn("flat with no action for 9 consecutive cycles", line)
+
+    def test_streak_resets_at_the_last_trade_action(self):
+        run = self._seed(["hold"] * 6 + ["buy"] + ["hold"] * 2)
+        self.assertEqual(run_engine._hold_streak_line(run, 0.0), "")
+
+    def test_short_streak_and_held_position_render_nothing(self):
+        run = self._seed(["hold"] * 3)
+        self.assertEqual(run_engine._hold_streak_line(run, 0.0), "")
+        run9 = self._seed(["hold"] * 9)
+        self.assertEqual(run_engine._hold_streak_line(run9, 5.0), "")
+
+
 class BreadthBriefTests(unittest.TestCase):
     """The catalogue teaches distribution counting and follow-through
     confirmation, but the us-stock desks had no market-wide data to apply

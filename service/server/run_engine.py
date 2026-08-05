@@ -2404,6 +2404,50 @@ def _earnings_state_line(run: dict) -> str:
             "close to the print as a bet on the print itself.\n")
 
 
+HOLD_STREAK_BRIEF_MIN = 4
+
+
+def _hold_streak_line(run: dict, pos_qty: float) -> str:
+    """The desk's own flat streak, as a fact it cannot otherwise perceive.
+
+    reentry-discipline's flat-retirement clause asks the desk to weigh
+    retiring after "several consecutive cycles below actionable conviction"
+    — but each cycle's prompt shows only that cycle, so the desk cannot
+    count its own streak (949: NINE consecutive flat holds at conviction
+    0.24–0.30, clause in context, retire verb untouched — the lesson had
+    no data to fire on). Fact only; the judgment lives in the skill.
+    Flat books only, and fail-soft: any lookup problem renders "".
+    """
+    if pos_qty:
+        return ""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT payload FROM run_events WHERE run_id = ? AND "
+                "event_type = 'decision' ORDER BY seq DESC LIMIT 12",
+                (run["id"],))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+        streak = 0
+        for row in rows:
+            try:
+                action = json.loads(row["payload"]).get("action")
+            except (ValueError, TypeError):
+                break
+            if action != "hold":
+                break
+            streak += 1
+        if streak < HOLD_STREAK_BRIEF_MIN:
+            return ""
+        return (f"Streak: you have been flat with no action for {streak} "
+                "consecutive cycles.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _breadth_state_line(run: dict) -> str:
     """US market breadth as market-environment evidence (advisory).
 
@@ -2642,7 +2686,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
                       + _earnings_state_line(run)
-                      + _breadth_state_line(run))
+                      + _breadth_state_line(run)
+                      + _hold_streak_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -3024,7 +3069,8 @@ def run_cycle(run_id: int) -> dict:
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
                                         + _earnings_state_line(run)
-                                        + _breadth_state_line(run)),
+                                        + _breadth_state_line(run)
+                                        + _hold_streak_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.
