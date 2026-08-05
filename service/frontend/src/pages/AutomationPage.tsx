@@ -7,7 +7,7 @@ import { AnalysisMonitorPanel, analysisStepLabels, useAnalysisRun } from '../com
 import { FleetPanel } from '../components/FleetPanel'
 import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
-import { tr } from '../i18n'
+import { fearGreedLabel, tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
 import { fmtUsd, pnlColor } from './tradeShared'
 
@@ -423,7 +423,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       if (bull || bear) chips.push(`▲${bull} ▼${bear}`)
     } else if (role === 'sentiment') {
       const fng = data.psych?.fear_greed
-      if (fng?.value != null) chips.push(`${T.chipFearGreed} ${fng.value}${fng.classification ? ` (${fng.classification})` : ''}`)
+      if (fng?.value != null) chips.push(`${T.chipFearGreed} ${fng.value}${fng.classification ? ` (${fearGreedLabel(language, fng.classification)})` : ''}`)
       const st = data.stocktwits
       if (st && (st.bullish != null || st.bearish != null)) chips.push(`StockTwits ▲${st.bullish ?? '?'} ▼${st.bearish ?? '?'}`)
       const whales = data.whales?.events
