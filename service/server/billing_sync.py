@@ -56,8 +56,14 @@ def record_billing_event(provider: str, event_id: str, event_type: str,
                  _iso(_now())))
             conn.commit()
             return True
-        except Exception:  # noqa: BLE001 — UNIQUE(provider, event_id) hit = duplicate
+        except Exception as exc:  # noqa: BLE001
             conn.rollback()
+            # Only a UNIQUE(provider, event_id) violation means "duplicate".
+            # Any other failure must propagate so the webhook answers 500 and
+            # the provider retries instead of silently dropping the event.
+            if ("IntegrityError" not in type(exc).__name__
+                    and "Duplicate" not in str(exc)):
+                raise
             return False
     finally:
         conn.close()
@@ -90,10 +96,15 @@ def upsert_autorenew_subscription(*, provider: str, user_id: int, plan_code: str
             (provider, external_id))
         row = cur.fetchone()
         if row:
+            row_id = dict(row)["id"]
+            cur.execute(
+                "UPDATE user_subscriptions SET status = 'superseded' "
+                "WHERE user_id = ? AND id != ? AND status IN ('active', 'pending')",
+                (user_id, row_id))
             cur.execute(
                 "UPDATE user_subscriptions SET status = 'active', plan_code = ?, "
                 "expires_at = ?, auto_renew = 1, cancel_at_period_end = 0 WHERE id = ?",
-                (plan_code, _expires(period_end), dict(row)["id"]))
+                (plan_code, _expires(period_end), row_id))
         else:
             cur.execute(
                 "UPDATE user_subscriptions SET status = 'superseded' "

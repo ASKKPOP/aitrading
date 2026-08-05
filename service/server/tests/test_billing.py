@@ -195,6 +195,35 @@ class BillingSyncTests(unittest.TestCase):
         self.assertEqual(ids["stripe_price_id"], "price_jr")
         self.assertEqual(ids["paypal_plan_id"], "P-JR")
 
+    def test_record_event_reraises_non_duplicate_errors(self):
+        import billing_sync
+        from unittest.mock import patch
+        with patch.object(billing_sync, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            with self.assertRaises(RuntimeError):
+                billing_sync.record_billing_event("stripe", "evt_x", "t", "{}")
+
+    def test_reactivation_does_not_break_one_active_invariant(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=self.user_id, plan_code="junior",
+            external_id="sub_old")
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=self.user_id, plan_code="pro",
+            external_id="I-new")
+        # late event re-activates the old, superseded subscription
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=self.user_id, plan_code="junior",
+            external_id="sub_old")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) AS c FROM user_subscriptions "
+                        "WHERE user_id = ? AND status = 'active'", (self.user_id,))
+            self.assertEqual(int(dict(cur.fetchone())["c"]), 1)
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()
