@@ -147,6 +147,27 @@ class PhoneVerificationTests(unittest.TestCase):
                                  json={"phone": "+821099998888"}, headers=self._h())
         self.assertEqual(r.status_code, 409)
 
+    def test_verify_409_when_taken_by_another_user_mid_flight(self):
+        # Both users request a code for the same phone before either has
+        # verified (send-code's own uniqueness check lets both through) —
+        # the second user's verify call must still be rejected once the
+        # first has claimed the phone.
+        other_id, other_token = _mk_user(database, email="o2@t.dev")
+        with patch("routes_users._send_sms", return_value=True) as sms:
+            self.client.post("/api/users/phone/send-code",
+                             json={"phone": "+821055554444"}, headers=self._h())
+            my_code = "".join(ch for ch in sms.call_args.args[1] if ch.isdigit())[:6]
+            self.client.post("/api/users/phone/send-code",
+                             json={"phone": "+821055554444"},
+                             headers={"Authorization": f"Bearer {other_token}"})
+            other_code = "".join(ch for ch in sms.call_args.args[1] if ch.isdigit())[:6]
+        r = self.client.post("/api/users/phone/verify",
+                             json={"code": my_code}, headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+        r = self.client.post("/api/users/phone/verify", json={"code": other_code},
+                             headers={"Authorization": f"Bearer {other_token}"})
+        self.assertEqual(r.status_code, 409)
+
     def test_send_code_cooldown(self):
         with patch("routes_users._send_sms", return_value=True):
             self.client.post("/api/users/phone/send-code",
