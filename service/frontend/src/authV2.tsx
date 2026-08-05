@@ -587,7 +587,9 @@ export function ForgotPasswordPage() {
           </button>
           <button type="button" onClick={() => { setStep('email'); setCode(''); setNewPassword(''); setError('') }}
             style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
-            {tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác', id: 'Gunakan email lain' })}
+            {method === 'phone'
+              ? tr(language, { ko: '다른 번호 사용', en: 'Use a different number', ja: '別の番号を使う', th: 'ใช้เบอร์อื่น', vi: 'Dùng số khác', id: 'Gunakan nomor lain' })
+              : tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác', id: 'Gunakan email lain' })}
           </button>
         </form>
       )}
