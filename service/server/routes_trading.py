@@ -1000,6 +1000,54 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                              'split_pnl': row['window_split_pnl']}
         return out
 
+    @app.get('/api/positions/trades/series')
+    async def get_my_trades_series(since: str = None, split: str = None,
+                                   authorization: str = Header(None)):
+        """Hourly realized-P&L buckets over ALL of the agent's fills, in SQL —
+        the data behind the summary-tile profit graphs.
+
+        Same cap rationale as the summary aggregate above: a curve summed from
+        the 200-row trades list flattens its oldest days once a window holds
+        more fills than the cap. Buckets are UTC hours (first 13 chars of the
+        ISO created_at, space-format legacy rows normalized to 'T'); the
+        client accumulates and re-buckets to local days, so no timezone
+        arithmetic lives in SQL. GROUP BY only emits hours that traded, so
+        the payload scales with activity, not the window length.
+        """
+        token = _extract_token(authorization)
+        agent = _get_agent_by_token(token)
+        if not agent:
+            raise HTTPException(status_code=401, detail='Invalid token')
+
+        # Binding order follows placeholder order in the SQL text: the split
+        # CASE lives in the SELECT list, so its param comes FIRST.
+        select_params: list = []
+        split_col = ""
+        if split:
+            split_col = ", COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS split_pnl"
+            select_params.append(split)
+        where = ["agent_id = ?", "message_type = 'operation'"]
+        where_params: list = [agent['id']]
+        if since:
+            where.append("created_at >= ?")
+            where_params.append(since)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""SELECT REPLACE(SUBSTR(created_at, 1, 13), ' ', 'T') AS t,
+                       COALESCE(SUM(pnl), 0) AS pnl,
+                       COUNT(*) AS trades{split_col}
+                FROM signals
+                WHERE {' AND '.join(where)}
+                GROUP BY t ORDER BY t""",
+            (*select_params, *where_params))
+        points = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        for p in points:
+            p['trades'] = int(p['trades'] or 0)
+        return {'points': points}
+
     @app.get('/api/agents/{agent_id}/positions')
     async def get_agent_positions(agent_id: int):
         conn = get_db_connection()
