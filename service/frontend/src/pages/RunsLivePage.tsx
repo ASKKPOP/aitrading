@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { HelpTip } from '../components/HelpTip'
+import { GuideBadge, HelpTip } from '../components/HelpTip'
 import { RunSparkline } from '../components/RunSparkline'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { useRunStream } from '../hooks/useRunStream'
@@ -1015,7 +1015,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           const acts = run.status === 'running'
             ? activityLines(run, tick, eventsByRun[run.id] || [], language) : []
           return (
-            <div key={run.id}
+            <div key={run.id} data-help-zone
               onClick={() => setSelected(run.id)}
               style={{ background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))',
                 borderRadius: 12, padding: 14, cursor: 'pointer', position: 'relative' }}>
@@ -1042,14 +1042,12 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                       display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
                   )}
                   {statusLabel(run.status, language)}
-                  <button onClick={(e) => { e.stopPropagation(); setShowCardGuide(true) }}
-                    title={tr(language, CARD_GUIDE.open)} aria-label={tr(language, CARD_GUIDE.open)}
+                  <GuideBadge onClick={(e) => { e.stopPropagation(); setShowCardGuide(true) }}
+                    title={tr(language, CARD_GUIDE.open)}
                     style={{ width: 18, height: 18, borderRadius: 9, padding: 0, fontSize: 11,
                       fontWeight: 700, lineHeight: 1, cursor: 'pointer',
                       border: '1px solid var(--border-color,rgba(0,0,0,0.2))',
-                      background: 'transparent', color: 'var(--text-secondary,#8a8073)' }}>
-                    ?
-                  </button>
+                      background: 'transparent', color: 'var(--text-secondary,#8a8073)' }} />
                 </span>
               </div>
               {/* A `running` badge on a run that cannot open a position is the

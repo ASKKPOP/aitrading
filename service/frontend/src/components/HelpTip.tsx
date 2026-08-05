@@ -2,6 +2,61 @@ import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
 
+// Owner request: the ? badges must not sit on the page permanently — they
+// fade in when the pointer is over the part they explain and fade back out
+// on mouse leave. The reveal zone is the nearest ancestor marked
+// data-help-zone, falling back to the badge's direct parent (the label/control
+// row it sits in). Keyboard focus inside the zone also reveals the badge, and
+// touch devices (no hover) keep it always visible.
+export function useHelpReveal(btnRef: { current: HTMLElement | null }, open: boolean) {
+  const [hovered, setHovered] = useState(false)
+  const [canHover] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches)
+
+  useEffect(() => {
+    if (!canHover) return
+    const btn = btnRef.current
+    const zone = (btn?.closest('[data-help-zone]') as HTMLElement | null) || btn?.parentElement
+    if (!zone) return
+    const show = () => setHovered(true)
+    const hide = () => setHovered(false)
+    zone.addEventListener('mouseenter', show)
+    zone.addEventListener('mouseleave', hide)
+    zone.addEventListener('focusin', show)
+    zone.addEventListener('focusout', hide)
+    return () => {
+      zone.removeEventListener('mouseenter', show)
+      zone.removeEventListener('mouseleave', hide)
+      zone.removeEventListener('focusin', show)
+      zone.removeEventListener('focusout', hide)
+    }
+  }, [canHover])
+
+  return !canHover || hovered || open
+}
+
+export function helpRevealStyle(shown: boolean) {
+  return {
+    opacity: shown ? 1 : 0,
+    pointerEvents: shown ? undefined : ('none' as const),
+    transition: 'opacity .15s ease',
+  }
+}
+
+// Same reveal behavior for the dialog-opening (?) buttons (fleet index and
+// TRADING-card guides) that predate HelpTip and manage their own dialogs —
+// they keep their onClick/style, only the hover reveal is shared.
+export function GuideBadge({ onClick, title, style }: { onClick: (e: any) => void; title: string; style?: any }) {
+  const btnRef = useRef<HTMLButtonElement | null>(null)
+  const shown = useHelpReveal(btnRef, false)
+  return (
+    <button ref={btnRef} type="button" onClick={onClick} title={title} aria-label={title}
+      style={{ ...style, ...helpRevealStyle(shown) }}>
+      ?
+    </button>
+  )
+}
+
 // Inline "?" badge → click opens a small explainer bubble for the control it
 // sits next to. Fixed positioning (not absolute) so the bubble is never
 // clipped by the sidebar's overflow or a modal's stacking context; z-index 700
@@ -11,6 +66,7 @@ export function HelpTip({ text, style }: { text: string; style?: any }) {
   const { language } = useLanguage()
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null)
   const btnRef = useRef<HTMLButtonElement | null>(null)
+  const shown = useHelpReveal(btnRef, !!pos)
 
   const label = tr(language, { ko: '이게 뭔가요?', en: 'What is this?', ja: 'これは何？', th: 'นี่คืออะไร', vi: 'Đây là gì?', id: 'Apa ini?' })
 
@@ -46,7 +102,7 @@ export function HelpTip({ text, style }: { text: string; style?: any }) {
         style={{ width: 18, height: 18, borderRadius: 9, border: '1px solid rgba(138,128,115,0.55)',
           background: 'transparent', color: 'var(--text-secondary,#8a8073)', fontSize: 11, fontWeight: 700,
           lineHeight: 1, cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
-          justifyContent: 'center', padding: 0, flexShrink: 0, ...style }}>?</button>
+          justifyContent: 'center', padding: 0, flexShrink: 0, ...helpRevealStyle(shown), ...style }}>?</button>
       {pos && (
         <div role="tooltip" onClick={e => e.stopPropagation()}
           style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 700,
