@@ -40,6 +40,19 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
 .brf{height:100%;border-radius:5px}
 .brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h session timeline */
+.tl{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:5px;
+ font-size:12.7px}
+.tll{color:var(--ink2);line-height:1.35}
+.tlt{position:relative;height:24px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;background:var(--ai)}
+.axis{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:10.5px;color:var(--muted);
+ margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;
+ vertical-align:-1px}
+@media(max-width:520px){.tl,.axis{grid-template-columns:76px 1fr}.tll{font-size:11.4px}}
 /* matrix pills */
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
@@ -79,6 +92,10 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <h2>정해진 시간에 열리는 시장 — 내 시각 기준</h2>
 <p>미국 주식은 정해진 거래소 시간에 열립니다. 아래는 평일 기준으로 개장 시간을 지역별 현지 시각으로 변환한 것입니다.</p>
 <div class="sw"><table><tr><th>지역</th><th>미국 주식</th></tr><tr><td class="m">미국</td><td class="h">09:30–16:00</td></tr><tr><td class="m">캐나다</td><td class="h">09:30–16:00</td></tr><tr><td class="m">호주</td><td class="h">23:30–06:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">싱가포르</td><td class="h">21:30–04:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">대한민국</td><td class="h">22:30–05:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">일본</td><td class="h">22:30–05:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">태국</td><td class="h">20:30–03:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">베트남</td><td class="h">20:30–03:00 <span class=nd>(다음 날)</span></td></tr><tr><td class="m">인도네시아</td><td class="h">20:30–03:00 <span class=nd>(다음 날)</span></td></tr></table></div>
+
+<h2>미국 장이 내 하루의 어디에 오는가</h2>
+<p>위 표는 '얼마나'를 알려줍니다. 아래 그래프는 '언제'를 보여줍니다. 각 막대는 해당 지역 현지 시각으로 자정부터 자정까지의 하루 전체이며, 미국 장이 실제로 놓이는 위치에 표시됩니다.</p>
+<div class="fig"><div class="tl"><div class="tll">미국 / 캐나다</div><div class="tlt"><div class="tlb" style="left:39.58%;width:27.08%"></div></div></div><div class="tl"><div class="tll">호주</div><div class="tlt"><div class="tlb" style="left:0%;width:25%"></div><div class="tlb" style="left:97.92%;width:2.083%"></div></div></div><div class="tl"><div class="tll">싱가포르</div><div class="tlt"><div class="tlb" style="left:0%;width:16.67%"></div><div class="tlb" style="left:89.58%;width:10.42%"></div></div></div><div class="tl"><div class="tll">대한민국 / 일본</div><div class="tlt"><div class="tlb" style="left:0%;width:20.83%"></div><div class="tlb" style="left:93.75%;width:6.25%"></div></div></div><div class="tl"><div class="tll">태국 / 베트남 / 인도네시아</div><div class="tlt"><div class="tlb" style="left:0%;width:12.5%"></div><div class="tlb" style="left:85.42%;width:14.58%"></div></div></div><div class="axis"><div></div><div class="axl"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div></div><div class="lgd"><span><i style="background:var(--ai)"></i>미국 주식 개장 (NYSE)</span><span><i style="background:var(--surf);border:1px solid var(--grid)"></i>휴장</span></div><p class="cap">아시아 지역 막대는 왼쪽부터 읽으세요. 하루를 여는 막대는 전날 저녁에 시작된 장이며, 위 표에서 그 시간대에 '다음 날' 표시가 붙는 이유입니다. 가상자산·외환·선물은 평일에 거의 하루 전체를 덮기 때문에 제외했습니다.</p></div>
 
 <h2>지역별로 거래할 수 있는 시장</h2>
 <p>지역별 제어 기능을 순차 적용하면서 계획된 이용 범위입니다. <b>검토 중</b>인 시장은 해당 국가에서 검토가 진행 중이며 확정되면 열립니다. 이는 로드맵이며 법적 보장이 아닙니다.</p>

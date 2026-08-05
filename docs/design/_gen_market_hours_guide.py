@@ -246,6 +246,34 @@ T = {
         "vi": "Đang xét", "id": "Ditinjau"},
     "hrs": {"en": "{h}h", "ko": "{h}시간", "ja": "{h}時間", "th": "{h} ชม.",
             "vi": "{h} giờ", "id": "{h} jam"},
+    "tl_h": {
+        "en": "Where the US session falls in your day",
+        "ko": "미국 장이 내 하루의 어디에 오는가",
+        "ja": "米国市場は一日のどこに来るか",
+        "th": "ตลาดสหรัฐฯ อยู่ตรงไหนของวันคุณ",
+        "vi": "Phiên Mỹ nằm ở đâu trong ngày của bạn",
+        "id": "Di mana sesi AS jatuh dalam hari Anda"},
+    "tl_p": {
+        "en": "The table above says how long. This says when. Each bar is one full day on that region's own clock, midnight to midnight, with the US session drawn where it actually lands.",
+        "ko": "위 표는 '얼마나'를 알려줍니다. 아래 그래프는 '언제'를 보여줍니다. 각 막대는 해당 지역 현지 시각으로 자정부터 자정까지의 하루 전체이며, 미국 장이 실제로 놓이는 위치에 표시됩니다.",
+        "ja": "上の表は「どれだけ」を示します。こちらは「いつ」です。各バーはその地域の現地時刻で深夜から深夜までの一日を表し、米国市場が実際に入る位置に描かれています。",
+        "th": "ตารางด้านบนบอกว่านานแค่ไหน ส่วนภาพนี้บอกว่าเมื่อไหร่ แต่ละแถบคือหนึ่งวันเต็มตามเวลาท้องถิ่นของภูมิภาคนั้น ตั้งแต่เที่ยงคืนถึงเที่ยงคืน โดยวางช่วงตลาดสหรัฐฯ ไว้ตามตำแหน่งจริง",
+        "vi": "Bảng trên cho biết bao lâu. Hình này cho biết khi nào. Mỗi thanh là trọn một ngày theo giờ địa phương của khu vực đó, từ nửa đêm đến nửa đêm, với phiên Mỹ được vẽ đúng chỗ nó rơi vào.",
+        "id": "Tabel di atas menyatakan berapa lama. Grafik ini menyatakan kapan. Tiap batang adalah satu hari penuh dalam jam lokal wilayah tersebut, dari tengah malam ke tengah malam, dengan sesi AS digambar tepat pada posisinya."},
+    "tl_cap": {
+        "en": "Read the Asian rows left to right: the band that opens the day is the session that began the previous evening — which is why those windows are marked “next day” in the table above. Crypto, forex and futures are left out; on a weekday they would cover almost the whole bar.",
+        "ko": "아시아 지역 막대는 왼쪽부터 읽으세요. 하루를 여는 막대는 전날 저녁에 시작된 장이며, 위 표에서 그 시간대에 '다음 날' 표시가 붙는 이유입니다. 가상자산·외환·선물은 평일에 거의 하루 전체를 덮기 때문에 제외했습니다.",
+        "ja": "アジアの行は左から読んでください。一日の始まりにある帯は前日の夜に開いた立会いで、上の表でその時間帯に「翌日」と付くのはこのためです。暗号資産・外国為替・先物は平日はほぼ一日中開いているため除いています。",
+        "th": "อ่านแถวของเอเชียจากซ้ายไปขวา แถบที่เปิดวันคือช่วงที่เริ่มตั้งแต่เย็นวันก่อน จึงเป็นเหตุผลที่ตารางด้านบนกำกับว่า 'วันถัดไป' ไม่รวมคริปโต ฟอเร็กซ์ และฟิวเจอร์ส เพราะในวันธรรมดาจะครอบคลุมเกือบทั้งแถบ",
+        "vi": "Đọc các hàng châu Á từ trái sang phải: dải mở đầu ngày chính là phiên đã bắt đầu từ tối hôm trước — đó là lý do các khung giờ đó được ghi 'hôm sau' ở bảng trên. Không hiển thị tiền mã hoá, ngoại hối và hợp đồng tương lai; ngày thường chúng sẽ phủ gần trọn thanh.",
+        "id": "Baca baris Asia dari kiri ke kanan: pita yang membuka hari adalah sesi yang dimulai malam sebelumnya — itulah sebabnya jam tersebut ditandai 'hari berikutnya' di tabel di atas. Kripto, forex, dan futures tidak ditampilkan; pada hari kerja semuanya akan menutupi hampir seluruh batang."},
+    "lg_us": {
+        "en": "US stocks open (NYSE)", "ko": "미국 주식 개장 (NYSE)",
+        "ja": "米国株 取引時間（NYSE）", "th": "ตลาดหุ้นสหรัฐฯ เปิด (NYSE)",
+        "vi": "Cổ phiếu Mỹ mở cửa (NYSE)", "id": "Saham AS buka (NYSE)"},
+    "lg_cl": {
+        "en": "closed", "ko": "휴장", "ja": "閉場", "th": "ปิด", "vi": "đóng cửa",
+        "id": "tutup"},
     "soon": {
         "en": "coming", "ko": "준비 중", "ja": "準備中", "th": "เร็ว ๆ นี้",
         "vi": "sắp có", "id": "segera"},
@@ -472,6 +500,19 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
 .brf{height:100%;border-radius:5px}
 .brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h session timeline */
+.tl{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:5px;
+ font-size:12.7px}
+.tll{color:var(--ink2);line-height:1.35}
+.tlt{position:relative;height:24px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;background:var(--ai)}
+.axis{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:10.5px;color:var(--muted);
+ margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;
+ vertical-align:-1px}
+@media(max-width:520px){.tl,.axis{grid-template-columns:76px 1fr}.tll{font-size:11.4px}}
 /* matrix pills */
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
@@ -519,6 +560,40 @@ def _gap_bars(lang: str) -> str:
             f'<div class="brt"><div class="brf" style="width:{pct}%;background:{color}"></div></div>'
             f'<div class="brv">{T["hrs"][lang].format(h=h)}</div></div>')
     return '<div class="bars">' + "".join(out) + "</div>"
+
+
+def _timeline(lang: str) -> str:
+    """The US session drawn in place across each region's own 24-hour day.
+
+    Regions whose windows match to the minute share a row — that is what folds
+    Bangkok, Ho Chi Minh and Jakarta together without hard-coding which zones
+    happen to agree, so a tzdata change re-splits them on the next run.
+    """
+    groups: list[tuple[tuple, list[str]]] = []
+    for canon, tz in REGIONS:
+        sig = tuple(_bands("us-stock", tz))
+        for sig_seen, names in groups:
+            if sig_seen == sig:
+                names.append(canon)
+                break
+        else:
+            groups.append((sig, [canon]))
+
+    rows = []
+    for sig, names in groups:
+        label = " / ".join(REGION_NAME[c][lang] for c in names)
+        bands = "".join(
+            f'<div class="tlb" style="left:{a / 24 * 100:.4g}%;'
+            f'width:{(b - a) / 24 * 100:.4g}%"></div>' for a, b in sig)
+        rows.append(f'<div class="tl"><div class="tll">{label}</div>'
+                    f'<div class="tlt">{bands}</div></div>')
+    axis = "".join(f"<span>{h:02d}</span>" for h in (0, 4, 8, 12, 16, 20, 24))
+    rows.append(f'<div class="axis"><div></div><div class="axl">{axis}</div></div>')
+    rows.append(
+        f'<div class="lgd"><span><i style="background:var(--ai)"></i>'
+        f'{T["lg_us"][lang]}</span><span><i style="background:var(--surf);'
+        f'border:1px solid var(--grid)"></i>{T["lg_cl"][lang]}</span></div>')
+    return "".join(rows)
 
 
 def _sched_table(lang: str) -> str:
@@ -600,6 +675,10 @@ def build(lang: str) -> str:
 <h2>{t('sched_h')}</h2>
 <p>{t('sched_p')}</p>
 {_sched_table(lang)}
+
+<h2>{t('tl_h')}</h2>
+<p>{t('tl_p')}</p>
+<div class="fig">{_timeline(lang)}<p class="cap">{t('tl_cap')}</p></div>
 
 <h2>{t('matrix_h')}</h2>
 <p>{t('matrix_p')}</p>
