@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { API_BASE, useLanguage } from '../appShared'
 import { planFeatures } from '../entitlements'
-import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
+import { AnalysisMonitorPanel, analysisStepLabels, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { FleetPanel } from '../components/FleetPanel'
 import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
@@ -374,6 +374,25 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     confidence: tr(language, { ko: '신뢰도', en: 'Confidence', ja: '信頼度', th: 'ความมั่นใจ', vi: 'Độ tin cậy', id: 'Keyakinan' }),
     startRunNow: tr(language, { ko: '이 설정으로 자동매매 시작', en: 'Start auto-trading with this', ja: 'この設定で自動売買開始', th: 'เริ่มเทรดอัตโนมัติด้วยค่านี้', vi: 'Bắt đầu tự động với thiết lập này', id: 'Mulai trading otomatis dengan ini' }),
     analystDisclaimer: tr(language, { ko: '리서치 목적일 뿐 — 투자 자문이 아닙니다.', en: 'Research only — not financial advice.', ja: '調査目的のみ — 投資助言ではありません。', th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน', vi: 'Chỉ nghiên cứu — không phải lời khuyên đầu tư.', id: 'Hanya riset — bukan nasihat keuangan.' }),
+    // ── decision detail (component scores · verification · order intent) ──
+    decisionDetail: tr(language, { ko: '결정 상세', en: 'Decision detail', ja: '判断の詳細', th: 'รายละเอียดการตัดสินใจ', vi: 'Chi tiết quyết định', id: 'Detail keputusan' }),
+    scoreThesis: tr(language, { ko: '논지 정합', en: 'Thesis alignment', ja: '論旨整合', th: 'สอดคล้องธีสิส', vi: 'Khớp luận điểm', id: 'Keselarasan tesis' }),
+    scoreMomentum: tr(language, { ko: '모멘텀 질', en: 'Momentum quality', ja: '勢いの質', th: 'คุณภาพโมเมนตัม', vi: 'Chất lượng đà', id: 'Kualitas momentum' }),
+    scoreEntry: tr(language, { ko: '진입 질', en: 'Entry quality', ja: 'エントリーの質', th: 'คุณภาพจุดเข้า', vi: 'Chất lượng điểm vào', id: 'Kualitas entry' }),
+    scoreRisk: tr(language, { ko: '리스크 맥락', en: 'Risk context', ja: 'リスク文脈', th: 'บริบทความเสี่ยง', vi: 'Bối cảnh rủi ro', id: 'Konteks risiko' }),
+    verifyLabel: tr(language, { ko: '검증', en: 'Verification', ja: '検証', th: 'การตรวจสอบ', vi: 'Kiểm chứng', id: 'Verifikasi' }),
+    orderIntentLabel: tr(language, { ko: '주문 의도', en: 'Order intent', ja: '注文意図', th: 'เจตนาออเดอร์', vi: 'Ý định lệnh', id: 'Niat order' }),
+    targetLabel: tr(language, { ko: '목표가', en: 'Target', ja: '目標値', th: 'เป้าหมาย', vi: 'Mục tiêu', id: 'Target' }),
+    stopLabel: tr(language, { ko: '손절가', en: 'Stop', ja: '損切り', th: 'จุดตัดขาดทุน', vi: 'Cắt lỗ', id: 'Stop' }),
+    suggestedEntryLabel: tr(language, { ko: '제안 진입가', en: 'Suggested entry', ja: '提案エントリー', th: 'จุดเข้าที่แนะนำ', vi: 'Điểm vào đề xuất', id: 'Entry usulan' }),
+    ruleFallback: tr(language, { ko: '규칙 기반 결정 — AI가 결정하지 않았습니다', en: 'Rule-based decision — not authored by the AI', ja: 'ルールベース判断 — AIによる判断ではありません', th: 'ตัดสินโดยกฎ — ไม่ใช่การตัดสินของ AI', vi: 'Quyết định theo quy tắc — không phải do AI', id: 'Keputusan berbasis aturan — bukan dari AI' }),
+    // ── brief-card data chips ──
+    chipHeadlines: tr(language, { ko: '헤드라인', en: 'headlines', ja: '見出し', th: 'พาดหัว', vi: 'tin', id: 'berita' }),
+    chipFearGreed: tr(language, { ko: '공포·탐욕', en: 'Fear&Greed', ja: '恐怖強欲', th: 'Fear&Greed', vi: 'Fear&Greed', id: 'Fear&Greed' }),
+    chipWhale: tr(language, { ko: '고래 이벤트', en: 'whale events', ja: 'クジラ動向', th: 'ธุรกรรมวาฬ', vi: 'giao dịch cá voi', id: 'aktivitas whale' }),
+    chipMacro: tr(language, { ko: '매크로', en: 'Macro', ja: 'マクロ', th: 'มหภาค', vi: 'Vĩ mô', id: 'Makro' }),
+    chipPrice: tr(language, { ko: '현재가', en: 'Price', ja: '現在値', th: 'ราคา', vi: 'Giá', id: 'Harga' }),
+    chipSignal: tr(language, { ko: '시그널', en: 'Signal', ja: 'シグナル', th: 'สัญญาณ', vi: 'Tín hiệu', id: 'Sinyal' }),
     // ── run creation from the two rule-panel modes ──
     createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.', ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.', id: 'Tidak dapat membuat TRADING.' }),
     startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다 — 아래 목록에서 확인하세요.', en: 'Could not start the TRADING — see the list below.', ja: 'TRADING を開始できませんでした — 下の一覧を確認してください。', th: 'เริ่ม TRADING ไม่สำเร็จ — ดูรายการด้านล่าง', vi: 'Không khởi động được TRADING — xem danh sách bên dưới.', id: 'Tidak dapat memulai TRADING — lihat daftar di bawah.' }),
@@ -385,6 +404,41 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     sentiment: tr(language, { ko: '심리', en: 'Sentiment', ja: 'センチメント', th: 'ความรู้สึก', vi: 'Tâm lý', id: 'Sentimen' }),
     fundamentals_macro: tr(language, { ko: '펀더멘털 & 매크로', en: 'Fundamentals & Macro', ja: 'ファンダメンタル・マクロ', th: 'ปัจจัยพื้นฐานและมหภาค', vi: 'Cơ bản & Vĩ mô', id: 'Fundamental & Makro' }),
     technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật', id: 'Teknikal' }),
+  }
+
+  // Pipeline-step labels (role descriptions + verdict words) shared with the
+  // monitor so the brief cards and decision detail speak the same language.
+  const stepLabels = analysisStepLabels(language)
+
+  // Key data behind each analyst's brief, as small chips — what the role
+  // actually saw (headline tone, F&G, whales, macro regime, signal score).
+  function briefChips(role: string, data: any): string[] {
+    if (!data || typeof data !== 'object') return []
+    const chips: string[] = []
+    if (role === 'news') {
+      if (typeof data.count === 'number') chips.push(`${data.count} ${T.chipHeadlines}`)
+      const bd = data.sentiment_breakdown || {}
+      const bull = (bd['bullish'] || 0) + (bd['somewhat-bullish'] || 0)
+      const bear = (bd['bearish'] || 0) + (bd['somewhat-bearish'] || 0)
+      if (bull || bear) chips.push(`▲${bull} ▼${bear}`)
+    } else if (role === 'sentiment') {
+      const fng = data.psych?.fear_greed
+      if (fng?.value != null) chips.push(`${T.chipFearGreed} ${fng.value}${fng.classification ? ` (${fng.classification})` : ''}`)
+      const st = data.stocktwits
+      if (st && (st.bullish != null || st.bearish != null)) chips.push(`StockTwits ▲${st.bullish ?? '?'} ▼${st.bearish ?? '?'}`)
+      const whales = data.whales?.events
+      if (Array.isArray(whales) && whales.length) chips.push(`${whales.length} ${T.chipWhale}`)
+    } else if (role === 'fundamentals_macro') {
+      const m = data.macro
+      if (m?.verdict) chips.push(`${T.chipMacro} ${m.verdict} (${m.bullish_count ?? 0}/${m.total_count ?? 0})`)
+      if (Array.isArray(data.polymarket) && data.polymarket.length) chips.push(`Polymarket ${data.polymarket.length}`)
+      if (data.fred) chips.push('FRED')
+    } else if (role === 'technical') {
+      if (data.current_price != null) chips.push(`${T.chipPrice} ${data.current_price}`)
+      if (data.signal) chips.push(`${T.chipSignal} ${String(data.signal).toUpperCase()}${data.signal_score != null ? ` (${data.signal_score})` : ''}`)
+      if (data.trend_status) chips.push(String(data.trend_status))
+    }
+    return chips
   }
 
   const authHeaders: any = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -1112,16 +1166,89 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {analyze.result.decision?.report && (
                   <p style={{ marginTop: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{analyze.result.decision.report}</p>
                 )}
+                {(() => {
+                  // Decision detail: the component scores, the verifier's
+                  // verdict, and the desk's order intent — the parts of the
+                  // final pipeline that the action/confidence header hides.
+                  const d = analyze.result.decision || {}
+                  const scores = d.scores || {}
+                  const scoreRows: Array<[string, number]> = ([
+                    [T.scoreThesis, scores.thesis_alignment], [T.scoreMomentum, scores.momentum_quality],
+                    [T.scoreEntry, scores.entry_quality], [T.scoreRisk, scores.risk_context],
+                  ] as Array<[string, any]>).filter((r): r is [string, number] => typeof r[1] === 'number')
+                  const ver = d.verification
+                  const oi = d.order_intent
+                  const levels: string[] = []
+                  if (d.suggested_entry != null) levels.push(`${T.suggestedEntryLabel} ${d.suggested_entry}`)
+                  if (d.target != null) levels.push(`${T.targetLabel} ${d.target}`)
+                  if (d.stop != null) levels.push(`${T.stopLabel} ${d.stop}`)
+                  const isRule = d.decided_by === 'rule'
+                  if (!scoreRows.length && !ver && !oi?.intent && !levels.length && !isRule) return null
+                  const verColor = ver?.verdict === 'rejected' ? '#f0663f' : ver?.verdict === 'weakened' ? '#e3a008' : '#3987e5'
+                  return (
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.decisionDetail}</div>
+                      {scoreRows.length > 0 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: 10 }}>
+                          {scoreRows.map(([label, v]) => (
+                            <div key={label}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 3 }}>
+                                <span style={{ color: 'var(--text-secondary,#8a8073)' }}>{label}</span>
+                                <b style={{ fontVariantNumeric: 'tabular-nums' }}>{Math.round(v * 100)}%</b>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 2, background: 'var(--border-color,rgba(0,0,0,0.12))' }}>
+                                <div style={{ height: 4, borderRadius: 2, width: `${Math.round(v * 100)}%`, background: '#3987e5' }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5 }}>
+                        {ver?.verdict && (
+                          <div>
+                            <b style={{ color: verColor }}>{T.verifyLabel}: {stepLabels[`__verdict_${ver.verdict}`] || ver.verdict}</b>
+                            {typeof ver.adjusted_confidence === 'number' && <span style={{ color: 'var(--text-secondary,#8a8073)' }}> · {T.confidence} {Math.round(ver.adjusted_confidence * 100)}%</span>}
+                            {ver.reason && <span style={{ color: 'var(--text-secondary,#8a8073)' }}> — {ver.reason}</span>}
+                          </div>
+                        )}
+                        {oi?.intent && (
+                          <div>
+                            <b>{T.orderIntentLabel}: {String(oi.intent).toUpperCase()}</b>
+                            {typeof oi.size_frac === 'number' && oi.size_frac > 0 && <span style={{ color: 'var(--text-secondary,#8a8073)' }}> · {Math.round(oi.size_frac * 100)}%</span>}
+                            {oi.why && <span style={{ color: 'var(--text-secondary,#8a8073)' }}> — {oi.why}</span>}
+                          </div>
+                        )}
+                        {levels.length > 0 && (
+                          <div style={{ color: 'var(--text-secondary,#8a8073)', fontVariantNumeric: 'tabular-nums' }}>{levels.join(' · ')}</div>
+                        )}
+                        {isRule && <div style={{ color: '#e3a008' }}>⚠️ {T.ruleFallback}</div>}
+                      </div>
+                    </div>
+                  )
+                })()}
                 {analyze.result.analysts && (
                   <>
                     <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '14px 0 10px' }}>{T.analystBriefs}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 14 }}>
-                      {Object.entries(analyze.result.analysts).map(([role, v]: any) => (
-                        <div key={role} style={{ border: '1px solid var(--border-color,#d3c8b6)', borderRadius: 10, padding: 14 }}>
-                          <div style={{ fontWeight: 700, marginBottom: 6 }}>{roleLabels[role] || role}</div>
-                          <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--text-secondary,#5f574c)', whiteSpace: 'pre-wrap' }}>{v.brief}</div>
-                        </div>
-                      ))}
+                      {Object.entries(analyze.result.analysts).map(([role, v]: any) => {
+                        const chips = briefChips(role, v?.data)
+                        return (
+                          <div key={role} style={{ border: '1px solid var(--border-color,#d3c8b6)', borderRadius: 10, padding: 14 }}>
+                            <div style={{ fontWeight: 700 }}>{roleLabels[role] || role}</div>
+                            {stepLabels[`__desc:brief:${role}`] && (
+                              <div style={{ fontSize: 11, color: 'var(--text-muted,#a89f92)', marginTop: 2 }}>{stepLabels[`__desc:brief:${role}`]}</div>
+                            )}
+                            {chips.length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '8px 0 2px' }}>
+                                {chips.map((c, i) => (
+                                  <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, border: '1px solid var(--border-color,#d3c8b6)', color: 'var(--text-secondary,#8a8073)', fontVariantNumeric: 'tabular-nums' }}>{c}</span>
+                                ))}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--text-secondary,#5f574c)', whiteSpace: 'pre-wrap', marginTop: 6 }}>{v.brief}</div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </>
                 )}
