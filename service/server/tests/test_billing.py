@@ -455,7 +455,10 @@ class StripeWebhookTests(unittest.TestCase):
 
     def test_invoice_paid_extends(self):
         self._post(self._checkout_completed())
-        period_end = int(time.time()) + 30 * 86400
+        # 100 days out — deliberately far from the checkout's own default
+        # (30 + GRACE_DAYS) expiry so this assertion can't pass by coincidence
+        # if invoice.paid stops actually extending the subscription.
+        period_end = int(time.time()) + 100 * 86400
         r = self._post({"id": "evt_inv1", "type": "invoice.paid",
                         "data": {"object": {"subscription": "sub_A",
                                             "lines": {"data": [{"period": {"end": period_end}}]}}}})
