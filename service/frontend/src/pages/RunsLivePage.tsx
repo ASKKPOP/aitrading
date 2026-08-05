@@ -56,6 +56,87 @@ const STATUS_COLOR: Record<string, string> = {
   stopped: '#898781',
 }
 
+// The (?) field guide on every TRADING card. The card speaks trader shorthand
+// (45m, ≥50%, 마크가, 격리, TP/SL) — each row below explains one thing the
+// card actually shows, in the order the card shows it. Terms mirror the
+// card's own localized labels so the guide and the card read as one.
+const CARD_GUIDE = {
+  open: { ko: '카드 항목 설명 보기', en: 'What do these fields mean?', ja: 'カード項目の説明', th: 'ช่องเหล่านี้คืออะไร', vi: 'Các trường này nghĩa là gì?', id: 'Apa arti kolom-kolom ini?' },
+  title: { ko: 'TRADING 카드 읽는 법', en: 'How to read a TRADING card', ja: 'TRADING カードの読み方', th: 'วิธีอ่านการ์ด TRADING', vi: 'Cách đọc thẻ TRADING', id: 'Cara membaca kartu TRADING' },
+  rows: [
+    { term: { ko: '종목 · 시장 · 🚀#N', en: 'Symbol · market · 🚀#N', ja: '銘柄 · 市場 · 🚀#N', th: 'เหรียญ · ตลาด · 🚀#N', vi: 'Mã · thị trường · 🚀#N', id: 'Simbol · pasar · 🚀#N' },
+      desc: { ko: '거래하는 종목과 시장입니다. "fut"는 선물 장부라는 뜻이고, 🚀#N 배지는 이 TRADING이 N번 자동 편성 플릿의 일원이라는 표시입니다. "실행 중"이면 AI가 주기마다 판단하고 있습니다.',
+        en: 'What this TRADING trades and where. "fut" means a futures book; the 🚀#N badge means it belongs to Full-Auto fleet #N. "Running" means the AI is deciding on schedule.',
+        ja: '取引する銘柄と市場。「fut」は先物ブック、🚀#N はフリート#N の一員という意味。「実行中」ならAIが周期ごとに判断しています。',
+        th: 'สิ่งที่ TRADING นี้เทรดและตลาดที่เทรด "fut" คือบัญชีฟิวเจอร์ส ป้าย 🚀#N หมายถึงเป็นสมาชิกฟลีต #N "กำลังทำงาน" คือ AI กำลังตัดสินใจตามรอบ',
+        vi: 'Mã và thị trường mà TRADING này giao dịch. "fut" là sổ hợp đồng tương lai; huy hiệu 🚀#N nghĩa là thuộc nhóm tự động #N. "Đang chạy" nghĩa là AI đang quyết định theo chu kỳ.',
+        id: 'Apa yang diperdagangkan TRADING ini dan di mana. "fut" berarti buku futures; lencana 🚀#N berarti anggota fleet Full-Auto #N. "Berjalan" berarti AI memutuskan sesuai jadwal.' } },
+    { term: { ko: 'spot/futures · 45m · ≥50%', en: 'spot/futures · 45m · ≥50%', ja: 'spot/futures · 45m · ≥50%', th: 'spot/futures · 45m · ≥50%', vi: 'spot/futures · 45m · ≥50%', id: 'spot/futures · 45m · ≥50%' },
+      desc: { ko: '전략 요약 줄입니다. spot(현물)/futures(선물)는 장부 종류, 45m은 AI가 45분마다 판단한다는 뜻, ≥50%는 신뢰도 문턱 — AI 확신이 이 값 미만이면 진입하지 않습니다.',
+        en: 'The strategy line. spot/futures is the book type, 45m means the AI decides every 45 minutes, and ≥50% is the confidence floor — the AI does not enter unless its conviction clears it.',
+        ja: '戦略行。spot/futures はブック種別、45m はAIが45分ごとに判断する意味、≥50% は信頼度の下限 — これ未満では新規に入りません。',
+        th: 'บรรทัดกลยุทธ์: spot/futures คือชนิดบัญชี, 45m คือ AI ตัดสินใจทุก 45 นาที, ≥50% คือเกณฑ์ความมั่นใจขั้นต่ำ — ต่ำกว่านี้ AI จะไม่เข้า',
+        vi: 'Dòng chiến lược: spot/futures là loại sổ, 45m nghĩa là AI quyết định mỗi 45 phút, ≥50% là ngưỡng tin cậy — dưới mức này AI không vào lệnh.',
+        id: 'Baris strategi: spot/futures adalah jenis buku, 45m berarti AI memutuskan tiap 45 menit, ≥50% adalah ambang keyakinan — di bawah itu AI tidak masuk.' } },
+    { term: { ko: '📋 메모 줄', en: '📋 note line', ja: '📋 メモ行', th: 'บรรทัด 📋', vi: 'Dòng 📋', id: 'Baris 📋' },
+      desc: { ko: 'AI의 최근 판단 메모입니다 — 왜 진입/보류했는지, 어떤 리스크 조정이 걸려 있는지를 그대로 보여줍니다 (예: "risk: confidence 0.42 below threshold 0.5" = 확신 부족으로 보류).',
+        en: 'The AI\'s latest decision note — why it entered or held, or which risk adjustment is active (e.g. "risk: confidence 0.42 below threshold 0.5" = held for lack of conviction).',
+        ja: 'AIの直近の判断メモ — なぜ入った/見送ったか、どのリスク調整が効いているか（例: "risk: confidence 0.42 below threshold 0.5" = 確信不足で見送り）。',
+        th: 'บันทึกการตัดสินใจล่าสุดของ AI — ทำไมเข้า/รอ หรือมีการปรับความเสี่ยงใด (เช่น "risk: confidence 0.42 below threshold 0.5" = รอเพราะความมั่นใจไม่พอ)',
+        vi: 'Ghi chú quyết định mới nhất của AI — vì sao vào/chờ, hay điều chỉnh rủi ro nào đang bật (vd. "risk: confidence 0.42 below threshold 0.5" = chờ vì thiếu tự tin).',
+        id: 'Catatan keputusan terbaru AI — mengapa masuk atau menahan, atau penyesuaian risiko yang aktif (mis. "risk: confidence 0.42 below threshold 0.5" = ditahan karena kurang yakin).' } },
+    { term: { ko: '포지션 없음 — 현금 대기', en: 'No position — holding cash', ja: 'ポジションなし — 現金待機', th: 'ไม่มีสถานะ — ถือเงินสด', vi: 'Không vị thế — giữ tiền mặt', id: 'Tidak ada posisi — memegang kas' },
+      desc: { ko: '지금은 열린 포지션이 없고 예산이 현금으로 대기 중이라는 뜻입니다. AI가 조건이 맞는 순간을 기다리고 있는 정상 상태입니다.',
+        en: 'No position is open right now; the budget waits in cash. This is a normal state — the AI is waiting for a setup that clears its rules.',
+        ja: '現在ポジションはなく、予算は現金で待機中。AIが条件の揃う瞬間を待っている正常な状態です。',
+        th: 'ยังไม่มีสถานะเปิด งบรออยู่เป็นเงินสด เป็นสภาวะปกติ — AI กำลังรอจังหวะที่ผ่านกติกา',
+        vi: 'Hiện không có vị thế mở; ngân sách chờ bằng tiền mặt. Đây là trạng thái bình thường — AI đang đợi cơ hội đạt điều kiện.',
+        id: 'Tidak ada posisi terbuka saat ini; anggaran menunggu dalam bentuk kas. Ini normal — AI menunggu peluang yang lolos aturannya.' } },
+    { term: { ko: '롱/숏 · 수량 · 진입가 · 마크가 · 평가액', en: 'LONG/SHORT · qty · entry · mark · value', ja: 'ロング/ショート · 数量 · 進入価格 · マーク価格 · 評価額', th: 'ลอง/ชอร์ต · จำนวน · ราคาเข้า · ราคามาร์ก · มูลค่า', vi: 'LONG/SHORT · KL · giá vào · giá mark · giá trị', id: 'LONG/SHORT · jml · harga masuk · harga pasar · nilai' },
+      desc: { ko: '열린 포지션의 기본 정보입니다. 롱은 상승, 숏은 하락에 베팅. 진입가는 살(팔) 때 가격, 마크가는 지금 가격, 평가액은 포지션의 현재 가치입니다.',
+        en: 'The open position\'s basics. LONG bets on a rise, SHORT on a fall. Entry is the price it opened at, mark is the price now, value is what the position is worth at the mark.',
+        ja: '保有ポジションの基本。ロングは上昇、ショートは下落に賭けます。進入価格は建てた価格、マーク価格は現在価格、評価額は現在価値。',
+        th: 'ข้อมูลพื้นฐานของสถานะ: ลองเดิมพันขาขึ้น ชอร์ตขาลง ราคาเข้าคือราคาที่เปิด ราคามาร์กคือราคาตอนนี้ มูลค่าคือมูลค่าปัจจุบันของสถานะ',
+        vi: 'Thông tin cơ bản của vị thế: LONG đặt cược giá lên, SHORT giá xuống. Giá vào là giá mở, giá mark là giá hiện tại, giá trị là giá trị vị thế theo giá mark.',
+        id: 'Dasar-dasar posisi terbuka. LONG bertaruh naik, SHORT turun. Harga masuk adalah harga saat dibuka, harga pasar adalah harga sekarang, nilai adalah nilai posisi pada harga pasar.' } },
+    { term: { ko: '미실현 vs 실현', en: 'Unrealized vs realized', ja: '含み損益と実現損益', th: 'ยังไม่รับรู้ vs รับรู้แล้ว', vi: 'Chưa chốt vs đã chốt', id: 'Belum vs sudah direalisasi' },
+      desc: { ko: '미실현은 지금 닫으면 생길 손익(가격 따라 계속 변함), 실현은 이미 닫은 거래로 확정된 손익입니다.',
+        en: 'Unrealized is what you would make or lose if the position closed right now (it moves with price). Realized is banked P&L from trades already closed.',
+        ja: '含みは今閉じた場合の損益（価格で変動）、実現は既に閉じた取引で確定した損益。',
+        th: 'ยังไม่รับรู้คือกำไร/ขาดทุนถ้าปิดตอนนี้ (ขยับตามราคา) รับรู้แล้วคือผลที่ล็อกจากดีลที่ปิดไปแล้ว',
+        vi: 'Chưa chốt là lãi/lỗ nếu đóng ngay bây giờ (thay đổi theo giá). Đã chốt là lãi/lỗ cố định từ các lệnh đã đóng.',
+        id: 'Belum direalisasi adalah untung/rugi jika posisi ditutup sekarang (bergerak mengikuti harga). Direalisasi adalah laba rugi yang sudah dikunci dari transaksi yang ditutup.' } },
+    { term: { ko: '격리 N배 · 담보 · 청산가', en: 'Isolated Nx · collateral · liq. price', ja: '分離N倍 · 担保 · 清算価格', th: 'แยก Nx · หลักประกัน · ราคาล้าง', vi: 'Cô lập Nx · ký quỹ · giá thanh lý', id: 'Terisolasi Nx · jaminan · harga likuidasi' },
+      desc: { ko: '선물 포지션에만 나옵니다. N배는 레버리지, 담보는 이 포지션에 잠긴 증거금, 청산가는 가격이 여기까지 역행하면 포지션이 강제 종료되는 지점입니다. 격리라서 최대 손실은 담보까지입니다.',
+        en: 'Futures only. Nx is the leverage, collateral is the margin locked to this position, and the liquidation price is where an adverse move force-closes it. Isolated margin caps the worst case at the collateral.',
+        ja: '先物のみ。N倍はレバレッジ、担保はこのポジションの証拠金、清算価格は逆行で強制終了される価格。分離マージンなので最大損失は担保まで。',
+        th: 'เฉพาะฟิวเจอร์ส: Nx คือเลเวอเรจ หลักประกันคือมาร์จิ้นที่ล็อกไว้ ราคาล้างคือจุดที่ราคาสวนจนถูกบังคับปิด มาร์จิ้นแบบแยกจำกัดขาดทุนสูงสุดที่หลักประกัน',
+        vi: 'Chỉ với futures: Nx là đòn bẩy, ký quỹ là số tiền khóa cho vị thế này, giá thanh lý là mức giá ngược chiều khiến vị thế bị đóng bắt buộc. Ký quỹ cô lập giới hạn lỗ tối đa ở mức ký quỹ.',
+        id: 'Hanya futures. Nx adalah leverage, jaminan adalah margin yang terkunci untuk posisi ini, harga likuidasi adalah titik di mana pergerakan berlawanan menutup paksa posisi. Margin terisolasi membatasi kerugian maksimum sebesar jaminan.' } },
+    { term: { ko: 'TP / SL', en: 'TP / SL', ja: 'TP / SL', th: 'TP / SL', vi: 'TP / SL', id: 'TP / SL' },
+      desc: { ko: '자동 청산 브래킷입니다. TP(익절)는 이익이 그 금액에 닿으면, SL(손절)은 손실이 그 금액에 닿으면 포지션을 자동으로 닫습니다.',
+        en: 'The automatic exit bracket. TP (take-profit) closes the position when profit reaches that amount; SL (stop-loss) closes it when the loss reaches that amount.',
+        ja: '自動決済ブラケット。TP（利確）は利益が到達したら、SL（損切り）は損失が到達したら自動で閉じます。',
+        th: 'กรอบปิดอัตโนมัติ: TP ปิดเมื่อกำไรถึงจำนวนนั้น SL ปิดเมื่อขาดทุนถึงจำนวนนั้น',
+        vi: 'Khung thoát tự động: TP (chốt lời) đóng vị thế khi lãi chạm mức đó; SL (cắt lỗ) đóng khi lỗ chạm mức đó.',
+        id: 'Braket keluar otomatis. TP (ambil untung) menutup posisi saat profit mencapai jumlah itu; SL (stop rugi) menutupnya saat kerugian mencapai jumlah itu.' } },
+    { term: { ko: '🛡 청산 방어', en: '🛡 Liq. defense', ja: '🛡 清算防御', th: '🛡 ป้องกันการล้าง', vi: '🛡 Phòng vệ thanh lý', id: '🛡 Pertahanan likuidasi' },
+      desc: { ko: '레버리지 포지션이 청산가에 다가가면 단계별(T1/T2/T3)로 개입하는 방어 데몬의 상태입니다. 건전도·청산까지 남은 거리를 보여주며, 레버리지가 없으면 "방어 불필요"로 표시됩니다.',
+        en: 'The defense daemon that steps in (tiers T1/T2/T3) as a leveraged position approaches liquidation. It shows health and distance to liquidation; with no leverage it reads "no defense needed".',
+        ja: 'レバレッジポジションが清算に近づくと段階的（T1/T2/T3）に介入する防御デーモンの状態。健全度と清算までの距離を表示し、レバレッジ無しなら「防御不要」。',
+        th: 'ดีมอนป้องกันที่เข้าแทรกเป็นขั้น (T1/T2/T3) เมื่อสถานะเลเวอเรจใกล้ถูกล้าง แสดงสุขภาพและระยะถึงจุดล้าง ถ้าไม่มีเลเวอเรจจะขึ้นว่าไม่จำเป็น',
+        vi: 'Daemon phòng vệ can thiệp theo bậc (T1/T2/T3) khi vị thế đòn bẩy tiến gần thanh lý. Hiển thị sức khỏe và khoảng cách đến thanh lý; không có đòn bẩy thì ghi "không cần phòng vệ".',
+        id: 'Daemon pertahanan yang turun tangan bertahap (T1/T2/T3) saat posisi ber-leverage mendekati likuidasi. Menampilkan kesehatan dan jarak ke likuidasi; tanpa leverage tertulis "tidak perlu pertahanan".' } },
+    { term: { ko: '그래프 · ±$ · ⧗', en: 'Sparkline · ±$ · ⧗', ja: 'グラフ · ±$ · ⧗', th: 'กราฟ · ±$ · ⧗', vi: 'Biểu đồ · ±$ · ⧗', id: 'Grafik · ±$ · ⧗' },
+      desc: { ko: '작은 그래프는 이 TRADING의 최근 손익 곡선, 왼쪽 아래 ±$는 이 TRADING의 누적 실현 손익입니다. ⧗는 가격 데이터의 나이 — 가격 갱신 주기 때문에 몇 분 전 값일 수 있습니다.',
+        en: 'The small chart is this TRADING\'s recent P&L curve; the ±$ at the bottom left is its cumulative realized P&L. ⧗ is the age of the price data — refresh cycles mean it can be a few minutes old.',
+        ja: '小さなグラフは直近の損益曲線、左下の±$は累積実現損益。⧗は価格データの経過時間 — 更新周期の都合で数分前の値のことがあります。',
+        th: 'กราฟเล็กคือเส้นกำไร/ขาดทุนล่าสุดของ TRADING นี้ ±$ ซ้ายล่างคือกำไรรับรู้สะสม ⧗ คืออายุของข้อมูลราคา — อาจเก่าไม่กี่นาทีตามรอบรีเฟรช',
+        vi: 'Biểu đồ nhỏ là đường lãi/lỗ gần đây của TRADING này; ±$ góc dưới trái là lãi/lỗ đã chốt lũy kế. ⧗ là tuổi của dữ liệu giá — có thể cũ vài phút theo chu kỳ cập nhật.',
+        id: 'Grafik kecil adalah kurva laba rugi terkini TRADING ini; ±$ di kiri bawah adalah laba rugi direalisasi kumulatifnya. ⧗ adalah umur data harga — bisa beberapa menit karena siklus pembaruan.' } },
+  ],
+} as const
+
 // A raw status ("stopped") and a raw reason ("stop_event:max_loss") tell the
 // user nothing — the reason in particular is the only thing that explains WHY
 // a TRADING ended. Both are rendered through these maps in the active locale.
@@ -498,6 +579,9 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
   // counter toggle, because a protective stop's reason (max_loss, liquidation)
   // must stay findable.
   const [showStopped, setShowStopped] = useState(false)
+  // (?) on every TRADING card — owner report: members can't decode the card's
+  // trader shorthand (45m, ≥50%, 마크가, 격리, TP/SL…). One shared field guide.
+  const [showCardGuide, setShowCardGuide] = useState(false)
   const stoppedCount = useMemo(
     () => runs.filter((r) => r.status === 'stopped').length, [runs])
 
@@ -948,7 +1032,16 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                     <span style={{ width: 6, height: 6, borderRadius: 6, background: '#0ca30c',
                       display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
                   )}
-                  {statusLabel(run.status, language)}</span>
+                  {statusLabel(run.status, language)}
+                  <button onClick={(e) => { e.stopPropagation(); setShowCardGuide(true) }}
+                    title={tr(language, CARD_GUIDE.open)} aria-label={tr(language, CARD_GUIDE.open)}
+                    style={{ width: 18, height: 18, borderRadius: 9, padding: 0, fontSize: 11,
+                      fontWeight: 700, lineHeight: 1, cursor: 'pointer',
+                      border: '1px solid var(--border-color,rgba(0,0,0,0.2))',
+                      background: 'transparent', color: 'var(--text-secondary,#8a8073)' }}>
+                    ?
+                  </button>
+                </span>
               </div>
               {/* A `running` badge on a run that cannot open a position is the
                   single most misleading thing this page can say. The chip sits
@@ -1014,6 +1107,38 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
           )
         })}
       </div>
+
+      {/* Card field guide, opened by the (?) on any card. z 600 + 32px top
+          padding: dialogs must outrank the z-500 sticky nav. */}
+      {showCardGuide && (
+        <div role="dialog" aria-modal="true" aria-label={tr(language, CARD_GUIDE.title)}
+          onClick={() => setShowCardGuide(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '32px 24px 24px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 640, margin: 'auto', background: 'var(--bg-card,#fff)',
+              border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ fontSize: 16, fontWeight: 800 }}>💡 {tr(language, CARD_GUIDE.title)}</div>
+              <button onClick={() => setShowCardGuide(false)} aria-label="close"
+                style={{ marginLeft: 'auto', border: 'none', background: 'transparent',
+                  color: 'var(--text-secondary,#8a8073)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>
+                ✕
+              </button>
+            </div>
+            {CARD_GUIDE.rows.map((r, i) => (
+              <div key={i} style={{ padding: '9px 0',
+                borderTop: i > 0 ? '1px solid var(--border-color,rgba(0,0,0,0.07))' : 'none' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3,
+                  fontVariantNumeric: 'tabular-nums' }}>{tr(language, r.term)}</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.55,
+                  color: 'var(--text-secondary,#5f574c)' }}>{tr(language, r.desc)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selected !== null && (
         <RunDetail runId={selected} token={token}
