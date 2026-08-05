@@ -8,7 +8,9 @@ import { tr } from '../i18n'
 // Membership gate — Sooppiy is subscription-only. A signed-in user without an
 // active subscription lands here (App.tsx gate). Four tiers: junior $60 /
 // pro $250 / professional $500 per month, enterprise via the contract page.
-// Payment: PayPal (redirect flow, instant) or bank transfer (admin approval).
+// Payment: Stripe (card/Apple Pay/Google Pay) or PayPal — both auto-renewing
+// subscriptions, activated via webhook (hence the return-state polling) —
+// or USDT / bank transfer (admin approval, one-time).
 const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border-color,#2a2a28)', borderRadius: 14, padding: '22px 20px' }
 const primaryBtn: any = { padding: '10px 18px', borderRadius: 8, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14, width: '100%' }
 const ghostBtn: any = { ...primaryBtn, background: 'transparent', border: '1px solid var(--border-color,#2a2a28)', color: 'inherit' }
@@ -19,6 +21,7 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
   const [params] = useSearchParams()
   const [plans, setPlans] = useState<any[]>([])
   const [paypalAvailable, setPaypalAvailable] = useState(false)
+  const [stripeAvailable, setStripeAvailable] = useState(false)
   const [bankInfo, setBankInfo] = useState('')
   const [usdt, setUsdt] = useState<{ available: boolean; address: string; network: string }>(
     { available: false, address: '', network: 'TRC20' })
@@ -138,6 +141,32 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
       id: 'Pilih paket yang lebih tinggi — berlaku setelah pembayaran disetujui.' }),
     currentPlan: tr(language, { ko: '현재 플랜', en: 'Current plan', ja: '現在のプラン',
       th: 'แผนปัจจุบัน', vi: 'Gói hiện tại', id: 'Paket saat ini' }),
+    payCard: tr(language, { ko: '카드로 구독 — 카드 · Apple Pay · Google Pay', en: 'Subscribe with card — card · Apple Pay · Google Pay',
+      ja: 'カードで購読 — カード · Apple Pay · Google Pay', th: 'สมัครด้วยบัตร — บัตร · Apple Pay · Google Pay',
+      vi: 'Đăng ký bằng thẻ — thẻ · Apple Pay · Google Pay', id: 'Berlangganan dengan kartu — kartu · Apple Pay · Google Pay' }),
+    autoRenewNote: tr(language, { ko: '매월 자동 갱신 · 언제든 해지 가능', en: 'Renews monthly · cancel anytime',
+      ja: '毎月自動更新 · いつでも解約可能', th: 'ต่ออายุรายเดือน · ยกเลิกได้ทุกเมื่อ',
+      vi: 'Gia hạn hằng tháng · hủy bất cứ lúc nào', id: 'Diperpanjang bulanan · batalkan kapan saja' }),
+    activating: tr(language, { ko: '결제 확인 중 — 곧 활성화됩니다…', en: 'Payment received — activating…',
+      ja: '支払いを確認中 — まもなく有効になります…', th: 'ได้รับการชำระเงินแล้ว — กำลังเปิดใช้งาน…',
+      vi: 'Đã nhận thanh toán — đang kích hoạt…', id: 'Pembayaran diterima — mengaktifkan…' }),
+    stripeCancelled: tr(language, { ko: '카드 결제가 취소되었습니다.', en: 'Card checkout was cancelled.',
+      ja: 'カード決済がキャンセルされました。', th: 'การชำระด้วยบัตรถูกยกเลิก',
+      vi: 'Thanh toán thẻ đã bị hủy.', id: 'Pembayaran kartu dibatalkan.' }),
+    renewsAuto: tr(language, { ko: '자동 갱신', en: 'Renews automatically', ja: '自動更新',
+      th: 'ต่ออายุอัตโนมัติ', vi: 'Tự động gia hạn', id: 'Diperpanjang otomatis' }),
+    cancelsOn: tr(language, { ko: '해지 예정일', en: 'Cancels on', ja: '解約予定日',
+      th: 'จะยกเลิกในวันที่', vi: 'Sẽ hủy vào', id: 'Berakhir pada' }),
+    manageSub: tr(language, { ko: '구독 관리', en: 'Manage subscription', ja: '購読を管理',
+      th: 'จัดการการสมัคร', vi: 'Quản lý gói đăng ký', id: 'Kelola langganan' }),
+    changePlan: tr(language, { ko: '플랜 변경 (다음 결제 주기부터 적용)', en: 'Change plan (applies next billing cycle)',
+      ja: 'プラン変更 (次の請求サイクルから適用)', th: 'เปลี่ยนแพ็กเกจ (มีผลรอบบิลถัดไป)',
+      vi: 'Đổi gói (áp dụng từ chu kỳ sau)', id: 'Ganti paket (berlaku siklus berikutnya)' }),
+    cancelAutoRenew: tr(language, { ko: '자동 갱신 해지', en: 'Cancel auto-renewal', ja: '自動更新を解約',
+      th: 'ยกเลิกการต่ออายุอัตโนมัติ', vi: 'Hủy tự động gia hạn', id: 'Batalkan perpanjangan otomatis' }),
+    cancelKeepsAccess: tr(language, { ko: '해지해도 현재 결제 기간이 끝날 때까지는 이용할 수 있습니다.', en: 'You keep access until the end of the current billing period.',
+      ja: '解約後も現在の請求期間の終了までご利用いただけます。', th: 'คุณยังใช้งานได้จนสิ้นสุดรอบบิลปัจจุบัน',
+      vi: 'Bạn vẫn dùng được đến hết chu kỳ thanh toán hiện tại.', id: 'Anda tetap punya akses hingga akhir periode tagihan saat ini.' }),
   }
 
   const authHdr: Record<string, string> = userToken ? { 'Authorization': `Bearer ${userToken}` } : {}
@@ -147,6 +176,7 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
       const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
       setPlans(p.plans || [])
       setPaypalAvailable(!!p.paypal_available)
+      setStripeAvailable(!!p.stripe_available)
       setBankInfo(p.bank_transfer_info || '')
       setUsdt({ available: !!p.usdt_available, address: p.usdt_address || '',
         network: p.usdt_network || 'TRC20' })
@@ -191,10 +221,48 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     }).catch(e => { setError(String(e?.message || e)); setBusy(false); setNotice('') })
   }, [params, userToken])
 
+  // Stripe/PayPal auto-renew returns: activation lands via webhook, so poll.
+  useEffect(() => {
+    const stripeMode = params.get('stripe')
+    const paypalMode = params.get('paypal')
+    if (stripeMode === 'cancel') { setError(T.stripeCancelled); return }
+    if ((stripeMode !== 'success' && paypalMode !== 'sub-return') || !userToken) return
+    setBusy(true); setNotice(T.activating)
+    let tries = 0
+    const timer = setInterval(async () => {
+      tries += 1
+      try {
+        const m = await fetch(`${API_BASE}/subscriptions/me`, { headers: authHdr })
+          .then(r => r.ok ? r.json() : null)
+        if (m?.status === 'active' && Number(m?.subscription?.auto_renew)) {
+          clearInterval(timer)
+          setNotice(T.paypalDone)
+          setTimeout(() => { window.location.href = '/' }, 1200)
+          return
+        }
+      } catch { /* keep polling */ }
+      if (tries >= 15) { clearInterval(timer); setBusy(false); setNotice('') }
+    }, 2000)
+    return () => clearInterval(timer)
+  }, [params, userToken])
+
+  async function startStripe(planCode: string) {
+    setBusy(true); setError('')
+    try {
+      const r = await fetch(`${API_BASE}/subscriptions/stripe/checkout`, {
+        method: 'POST',
+        headers: { ...authHdr, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan_code: planCode }),
+      })
+      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
+      window.location.href = (await r.json()).url
+    } catch (e: any) { setError(String(e?.message || e)); setBusy(false) }
+  }
+
   async function startPaypal(planCode: string) {
     setBusy(true); setError('')
     try {
-      const r = await fetch(`${API_BASE}/subscriptions/paypal/create-order`, {
+      const r = await fetch(`${API_BASE}/subscriptions/paypal/subscribe`, {
         method: 'POST',
         headers: { ...authHdr, 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan_code: planCode }),
@@ -265,6 +333,66 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
           <div style={{ fontSize: 13, color: 'var(--text-muted,#8a8073)', marginTop: 6 }}>
             {mine?.subscription?.plan_code} · {T.expires}: {String(mine?.subscription?.expires_at || '').slice(0, 10)}
           </div>
+          {Number(mine?.subscription?.auto_renew) === 1 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted,#8a8073)' }}>
+                {Number(mine?.subscription?.cancel_at_period_end) === 1
+                  ? `${T.cancelsOn}: ${String(mine?.subscription?.expires_at || '').slice(0, 10)}`
+                  : `↻ ${T.renewsAuto}`}
+              </div>
+              {mine?.subscription?.method === 'stripe' && (
+                <button style={{ ...ghostBtn, width: 'auto', marginTop: 10 }} disabled={busy}
+                  onClick={async () => {
+                    setBusy(true); setError('')
+                    try {
+                      const r = await fetch(`${API_BASE}/subscriptions/stripe/portal`, {
+                        method: 'POST', headers: authHdr })
+                      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
+                      window.location.href = (await r.json()).url
+                    } catch (e: any) { setError(String(e?.message || e)); setBusy(false) }
+                  }}>{T.manageSub}</button>
+              )}
+              {mine?.subscription?.method === 'paypal' && (
+                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {plans.filter(p => !p.contact_only && p.code !== mine?.subscription?.plan_code).map(p => (
+                      <button key={p.code} style={{ ...ghostBtn, width: 'auto' }} disabled={busy}
+                        onClick={async () => {
+                          setBusy(true); setError('')
+                          try {
+                            const r = await fetch(`${API_BASE}/subscriptions/paypal/change-plan`, {
+                              method: 'POST',
+                              headers: { ...authHdr, 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ plan_code: p.code }),
+                            })
+                            if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
+                            const b = await r.json()
+                            if (b.approve_url) { window.location.href = b.approve_url; return }
+                            await loadState()
+                          } catch (e: any) { setError(String(e?.message || e)) }
+                          setBusy(false)
+                        }}>{p.name} — {T.changePlan}</button>
+                    ))}
+                  </div>
+                  {Number(mine?.subscription?.cancel_at_period_end) !== 1 && (
+                    <button style={{ background: 'none', border: 'none', color: 'var(--text-muted,#8a8073)', cursor: 'pointer', fontSize: 12.5, textDecoration: 'underline' }}
+                      disabled={busy}
+                      onClick={async () => {
+                        setBusy(true); setError('')
+                        try {
+                          const r = await fetch(`${API_BASE}/subscriptions/paypal/cancel`, {
+                            method: 'POST', headers: authHdr })
+                          if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
+                          await loadState()
+                        } catch (e: any) { setError(String(e?.message || e)) }
+                        setBusy(false)
+                      }}>{T.cancelAutoRenew}</button>
+                  )}
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)' }}>{T.cancelKeepsAccess}</div>
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ marginTop: 14 }}>
             <Link to="/"><button style={{ ...primaryBtn, width: 'auto' }}>{T.goApp}</button></Link>
           </div>
@@ -331,6 +459,17 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
 
       {status !== 'pending' && selected && (
         <div style={{ ...card, marginTop: 20, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
+          {stripeAvailable && (
+            <div style={{ marginBottom: 18 }}>
+              <button style={primaryBtn} disabled={busy} onClick={() => startStripe(selected)}>
+                💳 {T.payCard}
+              </button>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)', marginTop: 6, textAlign: 'center' }}>
+                {T.autoRenewNote}
+              </div>
+            </div>
+          )}
+
           {/* USDT is the default rail — first, and the only one with a
               highlighted action. PayPal renders only when explicitly
               re-enabled server-side (PAYPAL_UI_ENABLED). */}
