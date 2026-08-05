@@ -250,6 +250,30 @@ class RegistryTests(_Db):
                           f"flat-retirement clause missing from {site}")
             self.assertIn("retire verb exists for exactly this", block)
 
+    def test_flat_retirement_is_gated_on_the_streak_line(self):
+        # Regression 2026-08-05: within hours of #238, FIVE newborn ZEC desks
+        # retired on cycle 1 — one at conviction 0.70 on a thesis it agreed
+        # with. The clause made retire salient with no precondition a fresh
+        # desk could check. It must bind to the Streak brief line, which
+        # renders only after 4+ consecutive flat holds.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("only when the Streak line", block,
+                          f"newborn guard missing from {site}")
+            self.assertIn("retiring at birth wastes the build", block)
+
+    def test_risk_rail_reconciliation_rides_both_entry_sites(self):
+        # 2026-08-05: run 971 authored a 3.5% stop while its equity brake sat
+        # 0.72% away and was retired on a -0.62% move it had budgeted for.
+        # An audit of 21 runs found the brake INSIDE the desk's own stop in
+        # seven. The desk must reconcile its authored stop against the rail,
+        # and must know an add divides the distance to it.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("Risk rail", block,
+                          f"rail reconciliation missing from {site}")
+            self.assertIn("doubling the position HALVES", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every

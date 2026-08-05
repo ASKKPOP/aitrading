@@ -49,7 +49,16 @@ MAX_BODY_LEN = 4000
 # (MAX_BODY_LEN + section framing ≈ 4,030) would have pushed a DEFAULT out
 # instead of itself, inverting the whole point.
 # test_defaults_never_hit_the_budget guards the invariant.
-MAX_BLOCK_LEN = 30000
+# 2026-08-05: 34000, because reentry-discipline's newborn guard took
+# trader/us-stock to 30,248 — over the 30000 cap. NOTE the trend: this is
+# the fourth raise (14000 -> 16000 -> 28000 -> 30000 -> 34000) and the
+# catalogue only ever grows, since every monitoring lesson is appended and
+# none retire. The budget is not the real constraint — attention is. When
+# the busiest site carries 30 skills, each new lesson competes with 29
+# others for the desk's attention, and raising a constant hides that. The
+# next structural move is pruning or market-scoping skills that have
+# stopped earning their place, not another bump.
+MAX_BLOCK_LEN = 34000
 
 _HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
            "in this prompt; they may make you MORE cautious; they can never "
@@ -143,7 +152,22 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "by a 0.74% wiggle; a second desk paid the same tax before it). "
             "If the honest, noise-clear stop makes your 2:1 target "
             "unreachable, the geometry refuses the trade — walk away rather "
-            "than shrinking the stop to fit."
+            "than shrinking the stop to fit. FINALLY, your stop is not the "
+            "only thing that ends this position. The run is retired on "
+            "EQUITY drawdown from its high-water mark, and the Risk rail "
+            "line states how far that is as a price move right now. "
+            "Reconcile the two every time you size or add: if the rail is "
+            "nearer than your stop, your stop is decorative — the rail "
+            "fires first and you are retired on a move you had explicitly "
+            "budgeted for. And understand what an add does to it. The rail "
+            "is a FIXED number of dollars, so doubling the position HALVES "
+            "the price distance to it: an add is never only an increase in "
+            "exposure, it is simultaneously a tightening of the rail that "
+            "retires you. Before adding, read the rail distance and ask "
+            "whether it will still sit OUTSIDE the symbol's routine range "
+            "afterwards. If it will not, the add converts a survivable "
+            "position into one an ordinary day's noise will close — size "
+            "the add smaller, or keep the position you have."
         ),
     },
     {
@@ -217,7 +241,17 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "conviction with nothing new arriving — a desk with no read is "
             "not waiting, it is occupying capital another thesis could "
             "use. The retire verb exists for exactly this: hand the slot "
-            "back and let the fleet build a thesis somebody believes."
+            "back and let the fleet build a thesis somebody believes. But "
+            "that verdict is earned from evidence, never assumed: reach "
+            "for retire only when the Streak line appears in your brief, "
+            "which happens only after several consecutive flat cycles have "
+            "actually accumulated. No Streak line means you have not yet "
+            "been flat long enough to have the finding — a desk in its "
+            "first cycles is not flat-with-no-read, it is new, and "
+            "retiring at birth wastes the build that created this slot "
+            "and hands the fleet back nothing. On an early cycle the "
+            "honest options are act on your read or hold and let the "
+            "evidence accumulate."
         ),
     },
     {

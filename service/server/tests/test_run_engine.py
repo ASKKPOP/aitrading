@@ -521,6 +521,140 @@ class HoldStreakBriefTests(unittest.TestCase):
         self.assertEqual(run_engine._hold_streak_line(run9, 5.0), "")
 
 
+class BrakeDistanceBriefTests(unittest.TestCase):
+    """The desk authors its stop in price %, the platform retires the run on
+    equity drawdown in USD, and nothing reconciled the two. Run 971 authored
+    a 3.5% stop with its brake 0.72% away and was retired on a -0.62% move.
+    The brief supplies the distance; the skill supplies the judgment."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, *, max_loss=85.26, peak=9.79):
+        # size_mult must be a real ladder value: load_state ASSERTS it and
+        # silently returns the default state (peak 0.0) otherwise, which
+        # would quietly make every case here read a peak it never set.
+        return {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+                "stop_conditions_json": json.dumps({"max_loss_usd": max_loss}),
+                "adapt_state_json": json.dumps({"v": 1, "peak_total_pnl": peak,
+                                                "size_mult": 1.0})}
+
+    def _pnl(self, *, total=-54.50, mark=517.34, ok=True):
+        return {"total": total, "mark_age_ok": ok,
+                "position": {"current_price": mark, "entry_price": 520.55}}
+
+    def test_renders_the_rail_as_a_price_move(self):
+        # 971's real numbers: room = 0.70*85.26 - (9.79 - -54.50) = -4.60 =>
+        # already past the rail. Back it off to a live-but-tight case.
+        run = self._run(peak=0.0)
+        with patch.object(run_engine, "compute_run_pnl",
+                               return_value=self._pnl(total=-10.0)):
+            line = run_engine._brake_distance_line(run, 15.8115)
+        # room = 59.682 - 10 = 49.682 ; notional = 15.8115*517.34 = 8180.0
+        self.assertIn("Risk rail", line)
+        self.assertIn("0.61% adverse price move", line)
+        self.assertIn("adding to the position divides this distance", line)
+
+    def test_add_halves_the_distance(self):
+        # Same equity room, double the position => half the price distance.
+        run = self._run(peak=0.0)
+        with patch.object(run_engine, "compute_run_pnl",
+                               return_value=self._pnl(total=-10.0)):
+            one = run_engine._brake_distance_line(run, 7.9058)
+            two = run_engine._brake_distance_line(run, 15.8115)
+        self.assertIn("1.21% adverse price move", one)
+        self.assertIn("0.61% adverse price move", two)
+
+    def test_past_the_rail_says_so_without_a_percentage(self):
+        run = self._run(peak=9.79)
+        with patch.object(run_engine, "compute_run_pnl",
+                               return_value=self._pnl(total=-54.50)):
+            line = run_engine._brake_distance_line(run, 15.8115)
+        self.assertIn("already at or past", line)
+        self.assertNotIn("adverse price move", line)
+
+    def test_fail_soft_on_flat_book_stale_mark_and_no_stop(self):
+        run = self._run()
+        self.assertEqual(run_engine._brake_distance_line(run, 0.0), "")
+        with patch.object(run_engine, "compute_run_pnl",
+                               return_value=self._pnl(ok=False)):
+            self.assertEqual(
+                run_engine._brake_distance_line(run, 15.8115), "")
+        with patch.object(run_engine, "compute_run_pnl",
+                               return_value=self._pnl()):
+            self.assertEqual(
+                run_engine._brake_distance_line(self._run(max_loss=0),
+                                                15.8115), "")
+
+    def test_the_line_is_actually_WIRED_into_the_light_prompt(self):
+        # A brief line that renders correctly but is not concatenated into
+        # the prompt is a no-op. Unwiring the light path once passed the
+        # ENTIRE suite (3313 tests) — this is the guard for that.
+        seen = {}
+
+        def _capture(prompt, **kw):
+            seen["prompt"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        import llm_client
+        import price_fetcher
+        run = {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+               "market_type": "spot"}
+        with patch.object(price_fetcher, "get_price_from_market",
+                          return_value=517.34), \
+            patch.object(price_fetcher, "get_daily_candles",
+                         return_value=[]), \
+            patch.object(run_engine, "_position_quantity",
+                         return_value=15.8115), \
+            patch.object(run_engine, "_brake_distance_line",
+                         return_value="RAIL_SENTINEL\n"), \
+                patch.object(llm_client, "generate_text", _capture):
+            run_engine._light_analysis(run, {})
+        self.assertIn("RAIL_SENTINEL", seen.get("prompt", ""),
+                      "brake line is not wired into the light prompt")
+
+    def test_the_line_is_actually_WIRED_into_the_full_prompt(self):
+        seen = {}
+
+        def _capture(*a, **kw):
+            seen["position_state"] = kw.get("position_state") or ""
+            raise RuntimeError("stop here — the kwarg is all we need")
+
+        import analysis_agents
+        with patch.object(run_engine, "_brake_distance_line",
+                          return_value="RAIL_SENTINEL\n"), \
+                patch.object(analysis_agents, "run_analysis", _capture):
+            try:
+                run_engine.run_cycle(-1)          # no such run: exits early
+            except Exception:                      # noqa: BLE001
+                pass
+        # run_cycle(-1) never reaches the call, so assert on the source wiring
+        # of the composed kwarg instead — both sites must carry the line.
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_brake_distance_line(run, held)", src,
+                      "brake line is not wired into the full prompt")
+
+    def test_tracks_the_rail_constant_it_describes(self):
+        # Hardcoding 0.70 here would let the line drift out of sync with the
+        # brake. It must read the fraction from run_feedback itself.
+        import run_feedback
+        run = self._run(peak=0.0)
+        with patch.dict(run_feedback.ADAPT_BOUNDS,
+                             {"retire_drawdown_frac": 0.35}):
+            with patch.object(run_engine, "compute_run_pnl",
+                                   return_value=self._pnl(total=0.0)):
+                line = run_engine._brake_distance_line(run, 15.8115)
+        # 0.35*85.26 = 29.841 over notional 8180.0 = 0.36%
+        self.assertIn("0.36% adverse price move", line)
+
+
 class BreadthBriefTests(unittest.TestCase):
     """The catalogue teaches distribution counting and follow-through
     confirmation, but the us-stock desks had no market-wide data to apply
