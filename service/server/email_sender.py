@@ -62,6 +62,27 @@ def _send_via_sendgrid(to_email: str, subject: str, text: str, html: str) -> boo
         return False
 
 
+def _deliver(to_email: str, subject: str, text: str, html: str) -> bool:
+    """Shared delivery rail: Resend first, then the SendGrid alert account,
+    then no-op. Returns True if either provider accepted the email."""
+    if _RESEND_AVAILABLE and _resend_lib is not None:
+        try:
+            _resend_lib.Emails.send({
+                "from": EMAIL_FROM,
+                "to": to_email,
+                "subject": subject,
+                "html": html,
+            })
+            _logger.info("[Email] Sent to %s via Resend", to_email)
+            return True
+        except Exception as exc:
+            _logger.warning("[Email] Failed to send to %s: %s", to_email, exc)
+    if _send_via_sendgrid(to_email, subject, text, html):
+        _logger.info("[Email] Sent to %s via SendGrid", to_email)
+        return True
+    return False
+
+
 def send_verification_code_email(to_email: str, code: str, lang: str = "en",
                                  purpose: str = "signup") -> bool:
     """Send a 6-digit code to *to_email*, localized to *lang*. `purpose`
@@ -74,21 +95,14 @@ def send_verification_code_email(to_email: str, code: str, lang: str = "en",
     """
     from email_i18n import verification_email, verification_email_text
     subject, html = verification_email(code, lang, purpose)
-    if _RESEND_AVAILABLE and _resend_lib is not None:
-        try:
-            _resend_lib.Emails.send({
-                "from": EMAIL_FROM,
-                "to": to_email,
-                "subject": subject,
-                "html": html,
-            })
-            _logger.info("[Email] Verification code sent to %s (%s)", to_email, lang)
-            return True
-        except Exception as exc:
-            _logger.warning("[Email] Failed to send to %s: %s", to_email, exc)
-    if _send_via_sendgrid(to_email, subject,
-                          verification_email_text(code, lang, purpose), html):
-        _logger.info("[Email] Verification code sent to %s via SendGrid (%s)",
-                     to_email, lang)
-        return True
-    return False
+    return _deliver(to_email, subject,
+                    verification_email_text(code, lang, purpose), html)
+
+
+def send_welcome_email(to_email: str, lang: str = "en") -> bool:
+    """Post-signup welcome. Same rails as the code emails: Resend when
+    configured, the SendGrid alert account otherwise, no-op last."""
+    from email_i18n import welcome_email, welcome_email_text
+    subject, html = welcome_email(lang)
+    text = welcome_email_text(lang)
+    return _deliver(to_email, subject, text, html)

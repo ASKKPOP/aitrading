@@ -10,8 +10,9 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from alerts import _send_sms
+from analysis_agents import LANG_NAMES
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
-from email_sender import send_verification_code_email
+from email_sender import send_verification_code_email, send_welcome_email
 from database import get_db_connection
 import sms_i18n
 from routes_models import (
@@ -180,6 +181,14 @@ def _user_llm_settings(user_id: int) -> dict | None:
         return None
 
 
+def _chosen_lang(raw: str | None) -> str | None:
+    """The member's explicit signup language — only trusted when it is a
+    supported code. Anything else returns None and the geo guess stands."""
+    if raw and raw in LANG_NAMES:
+        return raw
+    return None
+
+
 class UserLanguageRequest(BaseModel):
     lang: str
 
@@ -212,7 +221,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         from signup_lang import resolve_signup_lang
         # Offload the (sync, network) geo lookup so a slow geo API can't stall
         # the shared event loop during signup — fail-soft returns 'en' anyway.
-        lang = await asyncio.to_thread(resolve_signup_lang, request)
+        lang = _chosen_lang(data.lang) or await asyncio.to_thread(resolve_signup_lang, request)
         if not send_verification_code_email(data.email, code, lang):
             # Fallback: log code when Resend is not configured (local dev).
             _logger.info('[Email] Verification code for %s: %s', data.email, code)
@@ -244,10 +253,13 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=400, detail='User already exists')
 
         password_hash = hash_password(data.password)
+        chosen = _chosen_lang(data.lang)
         from signup_lang import resolve_signup_locale
         # Offload the (sync, network) geo lookup so a slow geo API can't stall
         # the shared event loop during signup — fail-soft returns 'en' anyway.
         lang, geo_country = await asyncio.to_thread(resolve_signup_locale, request)
+        if chosen:
+            lang = chosen
         # geo_country only. `region` stays NULL until the member answers the
         # first-run prompt: an IP guess must never grant a jurisdiction.
         cursor.execute(
@@ -275,6 +287,13 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.commit()
         conn.close()
         _delete_code(data.email, ctx)
+
+        try:
+            await asyncio.to_thread(send_welcome_email, data.email, lang)
+        except Exception as exc:  # noqa: BLE001 — a mail outage must never
+            # fail a signup; the account and session are already committed.
+            _logger.warning('[Email] welcome email to %s failed: %s',
+                            data.email, exc)
 
         return {'success': True, 'token': token, 'user_id': user_id}
 

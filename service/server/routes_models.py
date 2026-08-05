@@ -263,12 +263,14 @@ class FollowRequest(BaseModel):
 
 class UserSendCodeRequest(BaseModel):
     email: EmailStr
+    lang: Optional[str] = None
 
 
 class UserRegisterRequest(BaseModel):
     email: EmailStr
     code: str
     password: str
+    lang: Optional[str] = None
 
 
 class UserLoginRequest(BaseModel):

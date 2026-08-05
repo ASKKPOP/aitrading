@@ -270,5 +270,93 @@ class SmsPasswordResetTests(unittest.TestCase):
         sms.assert_not_called()
 
 
+class SignupLangAndWelcomeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        from routes import create_app
+        self.client = TestClient(create_app())
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_chosen_lang_stored_and_welcome_sent(self):
+        import routes_users
+        sent = {}
+
+        def fake_send_code(email, code, lang, purpose='signup'):
+            sent['code'] = code
+            sent['lang'] = lang
+            return True
+
+        with patch.object(routes_users, "send_verification_code_email",
+                          side_effect=fake_send_code):
+            r = self.client.post("/api/users/send-code",
+                                 json={"email": "l@t.dev", "lang": "th"})
+            self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(sent['lang'], 'th')
+
+        with patch.object(routes_users, "send_welcome_email",
+                          return_value=True) as welcome:
+            r = self.client.post("/api/users/register",
+                                 json={"email": "l@t.dev", "code": sent['code'],
+                                       "password": "longenough1", "lang": "th"})
+            self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT lang FROM users WHERE email = 'l@t.dev'")
+            self.assertEqual(dict(cur.fetchone())["lang"], "th")
+        finally:
+            conn.close()
+        welcome.assert_called_once()
+        self.assertEqual(welcome.call_args.args, ("l@t.dev", "th"))
+
+    def test_invalid_lang_falls_back_to_guess(self):
+        import routes_users
+        sent = {}
+
+        def fake_send_code(email, code, lang, purpose='signup'):
+            sent['code'] = code
+            sent['lang'] = lang
+            return True
+
+        with patch.object(routes_users, "send_verification_code_email",
+                          side_effect=fake_send_code):
+            self.client.post("/api/users/send-code",
+                             json={"email": "g@t.dev", "lang": "xx"})
+        self.assertIn(sent['lang'], {"en", "ko", "ja", "th", "vi", "id"})
+
+    def test_welcome_failure_does_not_fail_signup(self):
+        import routes_users
+        sent = {}
+
+        def fake_send_code(email, code, lang, purpose='signup'):
+            sent['code'] = code
+            return True
+
+        with patch.object(routes_users, "send_verification_code_email",
+                          side_effect=fake_send_code):
+            self.client.post("/api/users/send-code",
+                             json={"email": "w@t.dev", "lang": "en"})
+        with patch.object(routes_users, "send_welcome_email",
+                          side_effect=RuntimeError("mail down")):
+            r = self.client.post("/api/users/register",
+                                 json={"email": "w@t.dev", "code": sent['code'],
+                                       "password": "longenough1", "lang": "en"})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertIn("token", r.json())
+
+    def test_welcome_templates_all_langs(self):
+        from email_i18n import welcome_email, welcome_email_text
+        for lang in ("en", "ko", "ja", "th", "vi", "id"):
+            subject, html = welcome_email(lang)
+            self.assertTrue(subject and "<" in html)
+            self.assertIn("sooppiy.com", html)
+            self.assertTrue(welcome_email_text(lang))
+
+
 if __name__ == "__main__":
     unittest.main()
