@@ -9,7 +9,9 @@ import { Language, tr } from '../i18n'
 // Mirrors the real step events streamed from /api/analysis/run/stream:
 //   gather:news|sentiment|fundamentals_macro|technical  (run concurrently)
 //   brief:news|sentiment|fundamentals_macro|technical   (run concurrently)
-//   decision -> verify
+//   memory:recall -> decision -> verify -> memory:write
+// (memory:recall/memory:write are the desk-memory read and write-back around
+// the trader debate — the final implemented pipeline, not the v1 four-band one.)
 // Card states: pending (dim), running (pulsing accent + flowing edge),
 // done (accent + duration), error (red). No green anywhere — the guide
 // diagrams reserve color for accent/critical only, and the diagram is
@@ -22,7 +24,7 @@ export type LogEntry = { ts: string; step: string; status: string; detail?: stri
 export const PIPELINE_STEPS = [
   'gather:news', 'gather:sentiment', 'gather:fundamentals_macro', 'gather:technical',
   'brief:news', 'brief:sentiment', 'brief:fundamentals_macro', 'brief:technical',
-  'decision', 'verify',
+  'memory:recall', 'decision', 'verify', 'memory:write',
 ] as const
 
 const ROLES = ['news', 'sentiment', 'fundamentals_macro', 'technical'] as const
@@ -44,9 +46,11 @@ const COL_W = 216
 const cx = (i: number) => COL_X[i] + COL_W / 2
 const GATHER_Y = 22, BRIEF_Y = 116, ROW_H = 46
 const BUS_Y = 196
+const MEM = { x: 34, y: 222, w: 210, h: 52 }   // desk-memory recall, feeds the debate
 const DEC = { x: 290, y: 222, w: 380, h: 52 }
 const VER = { x: 360, y: 312, w: 240, h: 46 }
-const VIEW_H = 372
+const WRI = { x: 360, y: 396, w: 240, h: 46 }  // desk-memory write-back
+const VIEW_H = 456
 
 function StepCard({ x, y, w, h, title, stepId, info, labels }: {
   x: number; y: number; w: number; h: number
@@ -115,6 +119,7 @@ export function AnalysisPipelineViz({ steps, labels }: {
   )
 
   const dec = steps['decision']; const ver = steps['verify']
+  const mem = steps['memory:recall']; const wri = steps['memory:write']
   return (
     <div className="plv-wrap" style={{ width: '100%', borderRadius: 14,
                   border: '1px solid var(--g-border)', background: 'var(--g-card)',
@@ -185,7 +190,11 @@ export function AnalysisPipelineViz({ steps, labels }: {
         {edge('e-bus-dec', `M480 ${BUS_Y} V${DEC.y - 2}`,
           { color: dec?.status === 'running' ? ST_COLOR.running : dec?.status === 'done' ? ST_COLOR.done : dec?.status === 'error' ? ST_COLOR.error : 'var(--g-baseline)', flow: dec?.status === 'running' })}
 
-        {/* band 3: decision */}
+        {/* band 3: desk-memory recall + decision. The recalled lessons flow
+            into the debate alongside the four briefs. */}
+        <StepCard x={MEM.x} y={MEM.y} w={MEM.w} h={MEM.h} stepId="memory:recall"
+          title={labels['memory:recall'] || 'memory:recall'} info={mem} labels={labels} />
+        {edge('e-mem-dec', `M${MEM.x + MEM.w} ${MEM.y + MEM.h / 2} H${DEC.x - 2}`, edgeState(mem, dec))}
         <StepCard x={DEC.x} y={DEC.y} w={DEC.w} h={DEC.h} stepId="decision"
           title={labels['decision'] || 'decision'} info={dec} labels={labels} />
 
@@ -195,6 +204,11 @@ export function AnalysisPipelineViz({ steps, labels }: {
         {/* band 4: verify */}
         <StepCard x={VER.x} y={VER.y} w={VER.w} h={VER.h} stepId="verify"
           title={labels['verify'] || 'verify'} info={ver} labels={labels} />
+
+        {/* verify -> desk-memory write-back: what this run taught the desk */}
+        {edge('e-ver-wri', `M480 ${VER.y + VER.h} V${WRI.y - 2}`, edgeState(ver, wri))}
+        <StepCard x={WRI.x} y={WRI.y} w={WRI.w} h={WRI.h} stepId="memory:write"
+          title={labels['memory:write'] || 'memory:write'} info={wri} labels={labels} />
       </svg>
     </div>
   )
@@ -212,8 +226,10 @@ export function analysisStepLabels(language: Language): Record<string, string> {
     technical: tr(language, { ko: '기술적 분석', en: 'Technical', ja: 'テクニカル', th: 'เทคนิค', vi: 'Kỹ thuật', id: 'Teknikal' }),
   }
   const labels: Record<string, string> = {
-    decision: tr(language, { ko: '트레이더+리스크 결정', en: 'Trader + Risk decision', ja: 'トレーダー+リスク判断', th: 'ตัดสินใจเทรด+ความเสี่ยง', vi: 'Quyết định Trader + Rủi ro', id: 'Keputusan trader + risiko' }),
+    'memory:recall': tr(language, { ko: '데스크 메모리 회상', en: 'Desk memory recall', ja: 'デスク記憶の想起', th: 'เรียกความจำของเดสก์', vi: 'Truy hồi bộ nhớ desk', id: 'Panggil memori desk' }),
+    decision: tr(language, { ko: '트레이더+리스크 결정 · 스킬 적용', en: 'Trader + Risk decision · skills', ja: 'トレーダー+リスク判断 · スキル適用', th: 'ตัดสินใจเทรด+ความเสี่ยง · ใช้สกิล', vi: 'Quyết định Trader + Rủi ro · kỹ năng', id: 'Keputusan trader + risiko · skill' }),
     verify: tr(language, { ko: '검증', en: 'Verify', ja: '検証', th: 'ตรวจสอบ', vi: 'Xác minh', id: 'Verifikasi' }),
+    'memory:write': tr(language, { ko: '데스크 메모리 기록', en: 'Desk memory write-back', ja: 'デスク記憶へ記録', th: 'บันทึกความจำของเดสก์', vi: 'Ghi lại bộ nhớ desk', id: 'Tulis memori desk' }),
     __running: tr(language, { ko: '실행 중', en: 'running', ja: '実行中', th: 'กำลังทำงาน', vi: 'đang chạy', id: 'berjalan' }),
     __error: tr(language, { ko: '오류', en: 'error', ja: 'エラー', th: 'ผิดพลาด', vi: 'lỗi', id: 'galat' }),
     __start: tr(language, { ko: '시작', en: 'start', ja: '開始', th: 'เริ่ม', vi: 'bắt đầu', id: 'mulai' }),
