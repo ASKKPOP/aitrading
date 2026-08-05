@@ -142,10 +142,17 @@ received, activating…" until the webhook lands.
    recurring Price per paid plan; enable Apple Pay / Google Pay (domain
    verification for sooppiy.com); configure Customer Portal (allowed plan
    switches, cancel at period end); create webhook endpoint
-   `https://sooppiy.com/api/webhooks/stripe` with the four events above; copy
-   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price ids.
+   `https://sooppiy.com/api/webhooks/stripe` with the four events above; pin
+   the webhook endpoint's API version when creating it (the handlers accept
+   both the classic invoice shape and the 2025-03-31.basil
+   parent.subscription_details shape, but pinning avoids surprises on future
+   Stripe version bumps); copy `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   price ids.
 2. PayPal developer dashboard (live): create a Product + monthly billing Plan
-   per paid tier; create webhook for the five subscription events; copy
+   per paid tier; create webhook for the six subscription events
+   (BILLING.SUBSCRIPTION.ACTIVATED, BILLING.SUBSCRIPTION.UPDATED,
+   PAYMENT.SALE.COMPLETED, BILLING.SUBSCRIPTION.CANCELLED,
+   BILLING.SUBSCRIPTION.SUSPENDED, BILLING.SUBSCRIPTION.EXPIRED); copy
    `PAYPAL_WEBHOOK_ID`, live client id/secret.
 3. Seed `subscription_plans.stripe_price_id` / `paypal_plan_id` on prod.
 4. Set env on prod, flip `PAYPAL_API_BASE` + `PAYPAL_UI_ENABLED`, deploy,

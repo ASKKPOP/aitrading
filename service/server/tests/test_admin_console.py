@@ -131,6 +131,30 @@ class SubscriptionFlowTests(_Base):
         r = self.client.get("/api/subscriptions/me", headers=user_h)
         self.assertEqual(r.json()["status"], "none")
 
+    def test_approve_blocks_autorenew_pending_row(self):
+        session = self._make_user()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
+                "external_id, auto_renew) VALUES (?, 'junior', 'pending', 'stripe', "
+                "'sub_pending', 1)", (session["user_id"],))
+            sub_id = cur.lastrowid
+            conn.commit()
+        finally:
+            conn.close()
+        r = self.client.post(f"/api/admin/subscriptions/{sub_id}/approve",
+                             json={"note": "attempt"}, headers=self.admin)
+        self.assertEqual(r.status_code, 400)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT status FROM user_subscriptions WHERE id = ?", (sub_id,))
+            self.assertEqual(dict(cur.fetchone())["status"], "pending")
+        finally:
+            conn.close()
+
     def test_enterprise_uses_contract_form(self):
         session = self._make_user()
         user_h = {"Authorization": f"Bearer {session['token']}"}

@@ -130,7 +130,7 @@ def extend_subscription(provider: str, external_id: str,
         cur = conn.cursor()
         cur.execute(
             "UPDATE user_subscriptions SET status = 'active', expires_at = ? "
-            "WHERE method = ? AND external_id = ?",
+            "WHERE method = ? AND external_id = ? AND status != 'superseded'",
             (_expires(period_end), provider, external_id))
         conn.commit()
     finally:

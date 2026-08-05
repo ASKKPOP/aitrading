@@ -101,7 +101,13 @@ def _handle_stripe_event(event: dict) -> None:
                                 method="stripe", status_note="auto-activated",
                                 reference=sub_id)
     elif etype == "invoice.paid":
-        sub_id = obj.get("subscription") or ""
+        # Stripe API 2025-03-31.basil moved Invoice.subscription to
+        # parent.subscription_details.subscription — accept both shapes so a
+        # dashboard-default webhook version can't silently stop renewals.
+        sub_id = (obj.get("subscription")
+                  or ((obj.get("parent") or {}).get("subscription_details")
+                      or {}).get("subscription")
+                  or "")
         period_end = None
         lines = ((obj.get("lines") or {}).get("data") or [])
         end_ts = (lines[0].get("period") or {}).get("end") if lines else None
@@ -266,17 +272,6 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
                             if link.get("rel") == "approve"), None)
         if not approve_url:
             raise HTTPException(status_code=502, detail="PayPal returned no approval link")
-        conn = get_db_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
-                "reference, external_id, auto_renew, amount_usd) "
-                "VALUES (?, ?, 'pending', 'paypal', ?, ?, 1, ?)",
-                (user["id"], plan["code"], sub["id"], sub["id"], plan["price_usd"]))
-            conn.commit()
-        finally:
-            conn.close()
         return {"subscription_id": sub["id"], "approve_url": approve_url}
 
     @app.post('/api/subscriptions/paypal/change-plan')

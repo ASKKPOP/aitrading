@@ -197,11 +197,32 @@ class BillingSyncTests(unittest.TestCase):
 
     def test_record_event_reraises_non_duplicate_errors(self):
         import billing_sync
-        from unittest.mock import patch
-        with patch.object(billing_sync, "get_db_connection",
-                          side_effect=RuntimeError("db down")):
+        from unittest.mock import MagicMock, patch
+        conn = MagicMock()
+        conn.cursor.return_value.execute.side_effect = RuntimeError("db down")
+        with patch.object(billing_sync, "get_db_connection", return_value=conn):
             with self.assertRaises(RuntimeError):
                 billing_sync.record_billing_event("stripe", "evt_x", "t", "{}")
+        conn.rollback.assert_called_once()
+        conn.close.assert_called_once()
+
+    def test_extend_does_not_resurrect_superseded(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=self.user_id, plan_code="junior",
+            external_id="sub_old2")
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=self.user_id, plan_code="pro",
+            external_id="I-new2")
+        billing_sync.extend_subscription("stripe", "sub_old2")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT status FROM user_subscriptions "
+                        "WHERE external_id = 'sub_old2'")
+            self.assertEqual(dict(cur.fetchone())["status"], "superseded")
+        finally:
+            conn.close()
 
     def test_reactivation_does_not_break_one_active_invariant(self):
         import billing_sync
@@ -470,6 +491,21 @@ class StripeWebhookTests(unittest.TestCase):
                 + timedelta(days=billing_sync.GRACE_DAYS)).strftime("%Y-%m-%d")
         self.assertTrue(expires.startswith(want))
 
+    def test_invoice_paid_extends_with_basil_parent_shape(self):
+        self._post(self._checkout_completed(event_id="evt_csb", sub_id="sub_B"))
+        period_end = int(time.time()) + 45 * 86400
+        r = self._post({"id": "evt_invb", "type": "invoice.paid",
+                        "data": {"object": {
+                            "parent": {"subscription_details": {"subscription": "sub_B"}},
+                            "lines": {"data": [{"period": {"end": period_end}}]}}}})
+        self.assertEqual(r.status_code, 200, r.text)
+        import billing_sync
+        expires = billing_sync.active_autorenew(self.user_id)["expires_at"]
+        from datetime import datetime, timedelta, timezone
+        want = (datetime.fromtimestamp(period_end, tz=timezone.utc)
+                + timedelta(days=billing_sync.GRACE_DAYS)).strftime("%Y-%m-%d")
+        self.assertTrue(expires.startswith(want))
+
     def test_subscription_updated_switches_plan_and_flags_cancel(self):
         self._post(self._checkout_completed())
         r = self._post({"id": "evt_up1", "type": "customer.subscription.updated",
@@ -575,7 +611,7 @@ class PaypalSubscribeTests(unittest.TestCase):
     def _h(self):
         return {"Authorization": f"Bearer {self.token}"}
 
-    def test_subscribe_returns_approve_url_and_pending_row(self):
+    def test_subscribe_returns_approve_url_without_creating_rows(self):
         def fake_post(url, **kw):
             if url.endswith("/v1/oauth2/token"):
                 return _Resp(200, {"access_token": "tok"})
@@ -595,13 +631,11 @@ class PaypalSubscribeTests(unittest.TestCase):
         conn = database.get_db_connection()
         try:
             cur = conn.cursor()
-            cur.execute("SELECT status, method, external_id, auto_renew "
-                        "FROM user_subscriptions WHERE user_id = ?", (self.user_id,))
-            row = dict(cur.fetchone())
+            cur.execute("SELECT COUNT(*) AS c FROM user_subscriptions "
+                        "WHERE user_id = ?", (self.user_id,))
+            self.assertEqual(int(dict(cur.fetchone())["c"]), 0)
         finally:
             conn.close()
-        self.assertEqual((row["status"], row["method"], row["external_id"]),
-                         ("pending", "paypal", "I-NEW"))
 
     def test_subscribe_409_when_autorenew_active(self):
         import billing_sync
