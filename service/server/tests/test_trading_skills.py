@@ -178,6 +178,19 @@ class RegistryTests(_Db):
                           f"authorship clause missing from {site}")
             self.assertIn("REFUSED at the gate", block)
 
+    def test_risk_reward_structure_names_the_noise_floor(self):
+        # Watch (a) fired 2026-08-05: SECOND sub-1% authored stop-out. 955
+        # authored stop_pct 0.65 on leveraged SOL (rails had already rescued
+        # a NEGATIVE authored target); price wandered +0.74% and donated
+        # -17.6 within the hour. 941 paid -8.045 to the same class. The
+        # bracket skill must name the too-NEAR failure mode as it names the
+        # too-FAR one (reachable-exits).
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("noise-trigger, not protection", block,
+                          f"noise-floor clause missing from {site}")
+            self.assertIn("shrinking the stop to fit", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
