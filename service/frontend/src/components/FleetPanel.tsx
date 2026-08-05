@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, marketLabel, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
+import { HelpTip } from './HelpTip'
 import { tr } from '../i18n'
 
 // Plan 14 — Full Auto (fleet mode). The user sets only N and presses go; the
@@ -498,6 +499,18 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             <span style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)' }}>
               −{Math.round(fleet.warn_loss_frac * 100)}% ⚠︎ / −{Math.round(fleet.stop_loss_frac * 100)}% ⏹
             </span>
+            <HelpTip text={(() => {
+              const warn = Math.round(fleet.warn_loss_frac * 100)
+              const stop = Math.round(fleet.stop_loss_frac * 100)
+              return tr(language, {
+                ko: `플릿의 현재 상태 표시줄입니다. ACTIVE는 운용 중이라는 뜻이고, 「보충 대기 중 (k/N)」은 목표 N개 중 k개가 준비되어 나머지를 AI가 채우는 중이라는 뜻입니다. 평가 자산은 현재 시세로 계산한 플릿 가치이며, 옆의 숫자는 예산 대비 손익입니다. 손실이 −${warn}%에 이르면 신규 진입이 정지되고(⚠︎), −${stop}%에 이르면 전체가 자동 청산됩니다(⏹).`,
+                en: `The fleet's current status bar. ACTIVE means it is running; "Replenishing (k/N)" means k of the target N TRADINGs are in place and the AI is building the rest. Marked equity is the fleet's value at current prices; the figure next to it is P&L versus budget. If the loss reaches −${warn}% new entries pause (⚠︎); at −${stop}% everything is closed automatically (⏹).`,
+                ja: `フリートの現在の状態バーです。ACTIVE は運用中、「補充待ち (k/N)」は目標 N 件のうち k 件が稼働し残りをAIが構築中という意味です。評価資産は現在価格で計算したフリートの価値で、隣の数字は予算比の損益です。損失が −${warn}% に達すると新規エントリーが停止し(⚠︎)、−${stop}% で全体が自動清算されます(⏹)。`,
+                th: `แถบสถานะปัจจุบันของฟลีต ACTIVE คือกำลังทำงาน "กำลังเติม (k/N)" คือมี k จากเป้า N TRADING แล้วและ AI กำลังสร้างที่เหลือ มูลค่าตามราคาตลาดคือมูลค่าฟลีตที่ราคาปัจจุบัน ตัวเลขข้างๆ คือกำไรขาดทุนเทียบกับงบ ถ้าขาดทุนถึง −${warn}% จะหยุดการเข้าใหม่ (⚠︎) และถึง −${stop}% จะปิดทั้งหมดอัตโนมัติ (⏹)`,
+                vi: `Thanh trạng thái hiện tại của fleet. ACTIVE nghĩa là đang chạy; "Đang bổ sung (k/N)" nghĩa là k trên N TRADING mục tiêu đã sẵn sàng và AI đang tạo phần còn lại. Giá trị theo thị trường là giá trị fleet theo giá hiện tại; con số bên cạnh là lãi/lỗ so với ngân sách. Nếu lỗ chạm −${warn}%, lệnh mới bị tạm dừng (⚠︎); chạm −${stop}%, tất cả được đóng tự động (⏹).`,
+                id: `Bilah status fleet saat ini. ACTIVE berarti sedang berjalan; "Menunggu pemenuhan (k/N)" berarti k dari target N TRADING sudah terpasang dan AI sedang membangun sisanya. Ekuitas berbasis harga pasar adalah nilai fleet pada harga saat ini; angka di sebelahnya adalah laba rugi terhadap anggaran. Jika kerugian mencapai −${warn}% entri baru dijeda (⚠︎); pada −${stop}% semuanya ditutup otomatis (⏹).`,
+              })
+            })()} />
           </div>
           {warned && (
             <div style={{ marginBottom: 10, padding: '10px 12px', borderRadius: 8, background: 'rgba(240,102,63,0.12)', fontSize: 12.5 }}>
@@ -523,6 +536,14 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                   {lbl}
                 </button>
               ))}
+              <HelpTip style={{ alignSelf: 'center', marginBottom: 4 }} text={tr(language, {
+                ko: '「실시간 모니터」는 플릿의 각 TRADING을 카드로 보여줍니다 — 카드를 누르면 차트와 이벤트 로그가 있는 상세 화면이 열립니다.\n「거래 활동」은 계정의 최근 체결 내역(매수/매도·수량·가격·손익)을 표로 보여줍니다.',
+                en: '"Live monitor" shows each TRADING in the fleet as a card — click one to open its detail view with chart and event log.\n"Trading activity" lists the account\'s recent fills (side, amount, price, P&L) in a table.',
+                ja: '「ライブモニター」はフリートの各 TRADING をカードで表示します — カードを押すとチャートとイベントログのある詳細画面が開きます。\n「取引アクティビティ」はアカウントの最近の約定（売買・数量・価格・損益）を表で表示します。',
+                th: '"มอนิเตอร์สด" แสดงแต่ละ TRADING ในฟลีตเป็นการ์ด — กดการ์ดเพื่อเปิดหน้ารายละเอียดพร้อมกราฟและบันทึกเหตุการณ์\n"กิจกรรมเทรด" แสดงรายการซื้อขายล่าสุดของบัญชี (ฝั่งซื้อ/ขาย จำนวน ราคา กำไรขาดทุน) เป็นตาราง',
+                vi: '"Theo dõi trực tiếp" hiển thị mỗi TRADING trong fleet dưới dạng thẻ — nhấp vào một thẻ để mở màn hình chi tiết với biểu đồ và nhật ký sự kiện.\n"Hoạt động giao dịch" liệt kê các lệnh khớp gần đây của tài khoản (mua/bán, số lượng, giá, lãi/lỗ) trong một bảng.',
+                id: '"Monitor langsung" menampilkan setiap TRADING dalam fleet sebagai kartu — klik salah satu untuk membuka tampilan detailnya dengan grafik dan catatan peristiwa.\n"Aktivitas trading" menampilkan transaksi terbaru akun (arah, jumlah, harga, laba rugi) dalam sebuah tabel.',
+              })} />
             </div>
           )}
           {(!monitorOnly || monTab === 'monitor') ? (
@@ -647,12 +668,28 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
               {spin('stop')}{T.stopAll}
             </button>
+            <HelpTip style={{ alignSelf: 'center' }} text={tr(language, {
+              ko: '「일시정지」는 신규 진입만 멈춥니다 — 보유 포지션과 손절/익절 보호는 그대로 유지되며, 「재개」로 이어서 운용합니다.\n「전체 정지 (청산)」은 플릿 전체를 정지하고 모든 포지션을 즉시 청산합니다. 정지된 플릿은 다시 시작할 수 없고 새로 만들어야 합니다.',
+              en: '"Pause" only stops new entries — open positions and their SL/TP protection stay active, and Resume continues the fleet.\n"Stop all (flatten)" halts the whole fleet and closes every position immediately. A stopped fleet cannot be restarted — you launch a new one.',
+              ja: '「一時停止」は新規エントリーだけを止めます — 保有ポジションと損切り/利確の保護はそのまま維持され、「再開」で続行します。\n「全停止（清算）」はフリート全体を停止し、全ポジションを即座に清算します。停止したフリートは再開できず、新しく作成します。',
+              th: '"พัก" หยุดเฉพาะการเข้าใหม่ — สถานะที่ถืออยู่และการป้องกัน SL/TP ยังทำงาน และกด "ดำเนินต่อ" เพื่อทำงานต่อ\n"หยุดทั้งหมด (ปิดสถานะ)" หยุดทั้งฟลีตและปิดทุกสถานะทันที ฟลีตที่หยุดแล้วเริ่มใหม่ไม่ได้ ต้องสร้างใหม่',
+              vi: '"Tạm dừng" chỉ ngừng mở lệnh mới — các vị thế đang mở và bảo vệ SL/TP vẫn hoạt động, nhấn "Tiếp tục" để chạy tiếp.\n"Dừng tất cả (đóng lệnh)" dừng toàn bộ fleet và đóng mọi vị thế ngay lập tức. Fleet đã dừng không thể chạy lại — bạn khởi chạy fleet mới.',
+              id: '"Jeda" hanya menghentikan entri baru — posisi terbuka beserta proteksi SL/TP-nya tetap aktif, dan "Lanjutkan" meneruskan fleet.\n"Hentikan semua (tutup posisi)" menghentikan seluruh fleet dan segera menutup setiap posisi. Fleet yang sudah dihentikan tidak bisa dijalankan lagi — Anda meluncurkan yang baru.',
+            })} />
           </div>
           {error && (
             <div style={{ color: '#f0663f', fontSize: 12.5, marginTop: 8 }}>⚠️ {error}</div>
           )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
             <span style={{ fontWeight: 600 }}>{T.goal}</span>
+            <HelpTip text={tr(language, {
+              ko: '플릿 전체 수익률이 이 %에 도달하면 모든 포지션을 청산해 이익을 확정하고, 같은 설정의 플릿이 자동으로 다시 시작됩니다. 0이면 목표 없이 중지할 때까지 계속 운용합니다. 옆의 $ 금액은 현재 예산 기준으로 환산한 목표액입니다.',
+              en: "When the fleet's total gain reaches this %, every position is closed to bank the profit, then a fleet with the same settings restarts automatically. 0 means no goal — it runs until you stop it. The $ figure next to it is that target converted for the current budget.",
+              ja: 'フリート全体の利益率がこの%に達すると全ポジションを決済して利益を確定し、同じ設定のフリートが自動的に再開します。0 なら目標なしで、停止するまで運用を続けます。隣の$金額は現在の予算で換算した目標額です。',
+              th: 'เมื่อกำไรรวมของฟลีตถึง % นี้ ทุกสถานะจะถูกปิดเพื่อเก็บกำไร แล้วฟลีตที่ตั้งค่าเหมือนเดิมจะเริ่มใหม่อัตโนมัติ ถ้าเป็น 0 คือไม่มีเป้า — ทำงานจนกว่าคุณจะหยุด ตัวเลข $ ข้างๆ คือเป้าที่แปลงตามงบปัจจุบัน',
+              vi: 'Khi tổng lợi nhuận của fleet đạt % này, mọi vị thế được đóng để chốt lời, rồi một fleet cùng thiết lập tự khởi động lại. 0 nghĩa là không có mục tiêu — chạy đến khi bạn dừng. Số $ bên cạnh là mục tiêu quy đổi theo ngân sách hiện tại.',
+              id: 'Ketika total keuntungan fleet mencapai % ini, semua posisi ditutup untuk membukukan profit, lalu fleet dengan pengaturan yang sama otomatis dimulai ulang. 0 berarti tanpa target — berjalan sampai Anda menghentikannya. Angka $ di sebelahnya adalah target itu dihitung dari anggaran saat ini.',
+            })} />
             <input type="number" min={0} max={500} step={0.5}
               defaultValue={fleet.profit_target_frac ? +(fleet.profit_target_frac * 100).toFixed(2) : 0}
               onChange={e => setGoalPct(Number(e.target.value))}

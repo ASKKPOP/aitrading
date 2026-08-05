@@ -5,6 +5,7 @@ import { API_BASE, useLanguage } from '../appShared'
 import { planFeatures } from '../entitlements'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { FleetPanel } from '../components/FleetPanel'
+import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
@@ -825,6 +826,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           onClick={pickReal}>
           ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật', id: 'Asli' })}
         </button>
+        <HelpTip text={tr(language, {
+          ko: '시뮬레이터는 가상 자금으로 실전과 똑같이 연습하는 모의 지갑입니다 — 실제 돈이 사용되지 않습니다. 실계좌는 Coinbase·Bybit 등 거래소를 연결해 실제 자금으로 거래하는 모드이며, 게이트웨이가 연결되어 있지 않으면 계좌 연결 페이지로 이동합니다.',
+          en: 'Simulator is a paper wallet — you practice with virtual funds and no real money is used. Real connects an exchange (Coinbase, Bybit, …) and trades with actual funds; without a connected gateway it takes you to the account-connection page.',
+          ja: 'シミュレーターは仮想資金で本番同様に練習できる模擬ウォレットです — 実際のお金は使われません。実口座は Coinbase・Bybit などの取引所を接続して実資金で取引するモードで、ゲートウェイ未接続の場合は口座接続ページに移動します。',
+          th: 'จำลอง คือกระเป๋าเงินทดลอง — ฝึกเทรดด้วยเงินเสมือน ไม่ใช้เงินจริง ส่วน บัญชีจริง คือการเชื่อมต่อกระดานเทรด (Coinbase, Bybit ฯลฯ) เพื่อเทรดด้วยเงินจริง หากยังไม่ได้เชื่อมต่อเกตเวย์จะพาไปหน้าเชื่อมต่อบัญชี',
+          vi: 'Mô phỏng là ví giấy — bạn luyện tập với vốn ảo, không dùng tiền thật. Tài khoản thật kết nối sàn giao dịch (Coinbase, Bybit, …) và giao dịch bằng tiền thật; nếu chưa kết nối gateway sẽ đưa bạn đến trang kết nối tài khoản.',
+          id: 'Simulator adalah dompet simulasi — Anda berlatih dengan dana virtual tanpa uang sungguhan. Akun asli menghubungkan bursa (Coinbase, Bybit, …) dan bertransaksi dengan dana nyata; tanpa gateway yang terhubung, Anda akan dibawa ke halaman penghubungan akun.',
+        })} />
         {acctMode === 'real' && gwBroker && (
           <span style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)' }}>
             {tr(language, {
@@ -854,6 +863,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         {features.analyst && (
           <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
         )}
+        <HelpTip style={{ alignSelf: 'center' }} text={tr(language, {
+          ko: '「새 TRADING으로 만들기」는 종목·주기·예산 등을 직접 설정하는 생성 폼을 엽니다.\n「AI 애널리스트로 만들기」는 네 명의 AI 애널리스트가 지금 바로 일회성 분석을 실행합니다 — 주문은 나가지 않으며, 결과가 마음에 들면 그 설정으로 자동매매를 시작할 수 있습니다.',
+          en: '"Make by New Trading" opens the create form where you set the symbol, interval and budget yourself.\n"Make by AI Analyst" runs a one-off analysis by four AI analysts right now — no order is placed, and if you like the result you can start auto-trading with those settings.',
+          ja: '「新しい TRADING で作成」はシンボル・周期・予算などを自分で設定する作成フォームを開きます。\n「AIアナリストで作成」は4人のAIアナリストが今すぐ1回限りの分析を実行します — 注文は出されず、結果が気に入ればその設定で自動売買を開始できます。',
+          th: '"สร้างด้วย TRADING ใหม่" เปิดฟอร์มสร้างที่คุณตั้งค่าสัญลักษณ์ รอบเวลา และงบเอง\n"สร้างด้วยนักวิเคราะห์ AI" ให้นักวิเคราะห์ AI สี่คนวิเคราะห์ครั้งเดียวทันที — ไม่ส่งคำสั่งซื้อขาย และถ้าพอใจผลลัพธ์ก็เริ่มเทรดอัตโนมัติด้วยค่านั้นได้',
+          vi: '"Tạo bằng TRADING mới" mở biểu mẫu để bạn tự đặt mã, chu kỳ và ngân sách.\n"Tạo bằng nhà phân tích AI" chạy ngay một phân tích một lần bởi bốn nhà phân tích AI — không đặt lệnh, và nếu ưng kết quả bạn có thể bắt đầu giao dịch tự động với thiết lập đó.',
+          id: '"Buat lewat TRADING baru" membuka formulir pembuatan tempat Anda sendiri mengatur simbol, interval, dan anggaran.\n"Buat lewat Analis AI" langsung menjalankan analisis sekali jalan oleh empat analis AI — tidak ada order yang dipasang, dan jika hasilnya Anda sukai, Anda bisa memulai trading otomatis dengan pengaturan itu.',
+        })} />
       </div>
 
 
