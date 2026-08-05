@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { API_BASE, useLanguage } from '../appShared'
 import { planFeatures } from '../entitlements'
 import { AnalysisMonitorPanel, useAnalysisRun } from '../components/AnalysisPipelineViz'
@@ -173,6 +174,23 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // opens a detail modal with the numbers behind it.
   const [sumPeriod, setSumPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week')
   const [sumDetail, setSumDetail] = useState<null | 'deposit' | 'lifetime' | 'profit' | 'rails'>(null)
+  // Profit-graph data for the open tile modal: hourly realized-P&L buckets
+  // from the capless server aggregate (the 200-row trades list would flatten
+  // a long window's oldest days — same trap as #219). Lifetime charts the
+  // whole history; the other tiles chart the active period window.
+  const [seriesPts, setSeriesPts] = useState<Array<{ t: string; pnl: number; trades: number; split_pnl?: number }> | null>(null)
+  useEffect(() => {
+    if (!token || !sumDetail) { setSeriesPts(null); return }
+    let dead = false
+    const qs = sumDetail === 'lifetime'
+      ? `?split=${EXIT_RAILS_EPOCH}`
+      : `?since=${encodeURIComponent(new Date(periodStartMs(sumPeriod)).toISOString())}&split=${EXIT_RAILS_EPOCH}`
+    fetch(`${API_BASE}/positions/trades/series${qs}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!dead) setSeriesPts(d?.points ?? null) })
+      .catch(() => { if (!dead) setSeriesPts(null) })
+    return () => { dead = true }
+  }, [token, sumDetail, sumPeriod])
   useEffect(() => {
     if (!token) return
     let dead = false
@@ -296,6 +314,18 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     dRailsCur: tr(language, { ko: '현행 구조 실현 (전체)', en: 'Current rails, realized (all)', ja: '現行ルールの実現（累計）', th: 'กติกาปัจจุบัน รับรู้แล้ว (ทั้งหมด)', vi: 'Cơ chế hiện tại, đã chốt (toàn bộ)', id: 'Aturan saat ini, direalisasi (semua)' }),
     dRailsOld: tr(language, { ko: '이전 구조 실현', en: 'Legacy rails, realized', ja: '旧ルールの実現', th: 'กติกาเดิม รับรู้แล้ว', vi: 'Cơ chế cũ, đã chốt', id: 'Aturan lama, direalisasi' }),
     dRailsWin: tr(language, { ko: '현행 구조 실현 (기간)', en: 'Current rails, realized (period)', ja: '現行ルールの実現（期間）', th: 'กติกาปัจจุบัน รับรู้แล้ว (ช่วงเวลา)', vi: 'Cơ chế hiện tại, đã chốt (kỳ)', id: 'Aturan saat ini, direalisasi (periode)' }),
+    // ── tile detail modal graphs ──
+    gProfit: tr(language, { ko: '누적 실현 손익', en: 'Cumulative realized P&L', ja: '累積実現損益', th: 'กำไรรับรู้สะสม', vi: 'Lãi/lỗ đã chốt lũy kế', id: 'Laba rugi direalisasi kumulatif' }),
+    gDeposit: tr(language, { ko: '예치금 추이', en: 'Deposit over time', ja: '預入残高の推移', th: 'เงินฝากตามช่วงเวลา', vi: 'Số dư theo thời gian', id: 'Setoran dari waktu ke waktu' }),
+    gDepositNote: tr(language, {
+      ko: '실현 체결 기준으로 재구성한 추정 곡선입니다 — 미실현 평가 변동은 포함하지 않습니다.',
+      en: 'Reconstructed from realized fills — an estimate that excludes unrealized mark-to-market swings.',
+      ja: '実現約定から再構成した推定曲線です — 含み損益の変動は含みません。',
+      th: 'สร้างขึ้นใหม่จากรายการที่รับรู้แล้ว — เป็นค่าประมาณ ไม่รวมความผันผวนของกำไรที่ยังไม่รับรู้',
+      vi: 'Tái dựng từ các lệnh đã chốt — là ước tính, không gồm biến động lãi/lỗ chưa chốt.',
+      id: 'Direkonstruksi dari eksekusi yang direalisasi — perkiraan yang tidak mencakup fluktuasi belum direalisasi.' }),
+    gRails: tr(language, { ko: '누적 실현 손익 (현행 구조)', en: 'Cumulative realized P&L (current rails)', ja: '累積実現損益（現行ルール）', th: 'กำไรรับรู้สะสม (กติกาปัจจุบัน)', vi: 'Lãi/lỗ đã chốt lũy kế (cơ chế hiện tại)', id: 'Laba rugi direalisasi kumulatif (aturan saat ini)' }),
+    gNoData: tr(language, { ko: '그래프를 그릴 체결이 부족합니다', en: 'not enough fills to draw a graph', ja: 'グラフを描くには約定が不足しています', th: 'รายการไม่พอสำหรับวาดกราฟ', vi: 'chưa đủ lệnh khớp để vẽ biểu đồ', id: 'eksekusi belum cukup untuk menggambar grafik' }),
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới', id: 'Buat lewat TRADING baru' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay', id: 'Buat lewat Analis AI — analisis sekarang' }),
@@ -872,10 +902,66 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 </div>}
           </div>
         )
+        // The tile's profit graph. Buckets arrive as UTC hours (server emits
+        // only hours that traded); re-bucket to LOCAL hours (오늘) or local
+        // days (longer chips / lifetime) so the axis matches the user's
+        // calendar, then accumulate. Deposit re-anchors the same curve so its
+        // last point equals the current balance.
+        const chartRows = (() => {
+          if (!seriesPts) return null
+          const useHours = sumDetail !== 'lifetime' && sumPeriod === 'today'
+          const key = sumDetail === 'rails' ? 'split_pnl' : 'pnl'
+          const acc = new Map<string, number>()
+          for (const p of seriesPts) {
+            const d = new Date(`${p.t}:00:00Z`)
+            if (isNaN(d.getTime())) continue
+            const label = useHours
+              ? `${String(d.getHours()).padStart(2, '0')}:00`
+              : win.localDate(d.getTime())
+            acc.set(label, (acc.get(label) || 0) + (Number((p as any)[key]) || 0))
+          }
+          let cum = 0
+          const rows = [...acc.entries()].map(([t, v]) => { cum += v; return { t, v: cum } })
+          if (sumDetail === 'deposit' && rows.length) {
+            const total = rows[rows.length - 1].v
+            for (const r of rows) r.v = assets.total - total + r.v
+          }
+          return rows
+        })()
+        const gTitle: Record<string, string> = { deposit: T.gDeposit, lifetime: T.gProfit, profit: T.gProfit, rails: T.gRails }
+        const lineColor = sumDetail === 'deposit' ? 'var(--accent-primary,#c26a45)'
+          : pnlColor(chartRows?.length ? chartRows[chartRows.length - 1].v : 0)
+        const chart = (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>
+              📈 {gTitle[sumDetail]}{sumDetail !== 'lifetime' ? ` · ${periodLabel[sumPeriod]}` : ''}
+            </div>
+            {!chartRows || chartRows.length < 2
+              ? <div style={{ height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, color: 'var(--text-muted,#a89f92)' }}>{T.gNoData}</div>
+              : <ResponsiveContainer width="100%" height={150}>
+                  <LineChart data={chartRows} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" strokeOpacity={0.4} />
+                    <XAxis dataKey="t" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} width={58}
+                      domain={['auto', 'auto']} tickFormatter={(v: number) => fmtUsd(v, 0)} />
+                    <Tooltip
+                      contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 12 }}
+                      formatter={(v: any) => [typeof v === 'number' ? `$${fmtUsd(v)}` : '—', gTitle[sumDetail]] as [string, string]} />
+                    {sumDetail !== 'deposit' && (
+                      <ReferenceLine y={0} stroke="var(--text-muted)" strokeDasharray="4 4" strokeOpacity={0.5} />
+                    )}
+                    <Line type="monotone" dataKey="v" stroke={lineColor} strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>}
+            {sumDetail === 'deposit' && chartRows && chartRows.length >= 2 && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted,#a89f92)', marginTop: 4, lineHeight: 1.45 }}>{T.gDepositNote}</div>
+            )}
+          </div>
+        )
         return (
           <div role="dialog" aria-modal="true" aria-label={titles[sumDetail]}
             onClick={() => setSumDetail(null)}
-            style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}>
+            style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px 24px 24px', overflowY: 'auto' }}>
             <div onClick={e => e.stopPropagation()}
               style={{ width: '100%', maxWidth: 560, margin: 'auto', background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -891,6 +977,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {row(T.sumDeposit, fmtUsd(assets.total))}
                 {row(T.sumCash, fmtUsd(assets.cash))}
                 {row(T.sumInUse, fmtUsd(assets.inUse))}
+                {chart}
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>{T.dOpenPositions}</div>
                   {assets.positions.length === 0
@@ -916,6 +1003,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {row(`${T.dWindowSpan} · ${periodLabel[sumPeriod]}`, durStr(win.opWindow))}
                 {row(T.dTradeCount, String(win.tradeCount))}
                 {row(T.dLastTrade, win.trades.length ? when(win.trades[0].created_at) : '—')}
+                {chart}
               </>}
 
               {sumDetail === 'profit' && <>
@@ -924,6 +1012,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {row(T.dUnrealizedNow, money(assets.unrealized), pnlColor(assets.unrealized))}
                 {row(T.dRealizedLife, money(assets.realized), pnlColor(assets.realized))}
                 <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 8, lineHeight: 1.5 }}>{T.dUnrealNote}</div>
+                {chart}
                 {fills(win.trades)}
               </>}
 
@@ -933,6 +1022,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                 {row(T.dRailsOld, money(assets.realized - assets.realizedCurrent), pnlColor(assets.realized - assets.realizedCurrent))}
                 {row(T.sumRailsSince, win.railsSince)}
                 <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 8, lineHeight: 1.5 }}>{T.dRailsWhat}</div>
+                {chart}
                 {fills(win.railsTrades)}
               </>}
             </div>
@@ -942,8 +1032,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
 
       {showAnalyst && (
         <div role="dialog" aria-modal="true" aria-label={T.makeByAnalyst}
+          // z 600 + 32px top padding: the sticky top nav is z-index 500 and
+          // covered this modal's first rows (the Close button) at z 60 —
+          // same fix as the create modal in RunsLivePage.
           onClick={() => setShowAnalyst(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}>
+          style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px 24px 24px', overflowY: 'auto' }}>
           <div onClick={e => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 900, margin: 'auto', background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
