@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
+import { HelpTip } from '../components/HelpTip'
 import { RunSparkline } from '../components/RunSparkline'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { useRunStream } from '../hooks/useRunStream'
@@ -966,12 +967,20 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       )}
 
       {stoppedCount > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginTop: 10 }}>
           <button onClick={() => setShowStopped((v) => !v)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
               fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>
             {showStopped ? '▾' : '▸'} {showStopped ? T.hideStopped : T.showStopped} ({stoppedCount})
           </button>
+          <HelpTip text={tr(language, {
+            ko: '목표 달성·수동 정지·손절 등으로 끝난 TRADING의 기록입니다. 펼치면 각 TRADING의 최종 손익과 종료 사유를 확인할 수 있습니다. 괄호 안 숫자는 종료된 TRADING 개수입니다.',
+            en: "The record of TRADINGs that have ended — goal reached, stopped manually, or stopped out. Expand it to see each one's final P&L and why it ended. The number in parentheses is how many have finished.",
+            ja: '目標達成・手動停止・損切りなどで終了した TRADING の記録です。開くと各 TRADING の最終損益と終了理由を確認できます。括弧内の数字は終了した TRADING の数です。',
+            th: 'บันทึกของ TRADING ที่จบแล้ว — ถึงเป้า หยุดเอง หรือโดนตัดขาดทุน กดเปิดเพื่อดูกำไรขาดทุนสุดท้ายและเหตุผลที่จบของแต่ละรายการ ตัวเลขในวงเล็บคือจำนวน TRADING ที่จบแล้ว',
+            vi: 'Lịch sử các TRADING đã kết thúc — đạt mục tiêu, dừng thủ công hoặc bị cắt lỗ. Mở ra để xem lãi/lỗ cuối cùng và lý do kết thúc của từng cái. Số trong ngoặc là số TRADING đã kết thúc.',
+            id: 'Riwayat TRADING yang telah berakhir — target tercapai, dihentikan manual, atau kena stop. Bentangkan untuk melihat P&L akhir dan alasan berakhirnya masing-masing. Angka dalam kurung adalah jumlah TRADING yang sudah selesai.',
+          })} />
         </div>
       )}
 

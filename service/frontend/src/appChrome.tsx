@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { useLanguage, useTheme, THEMES } from './appShared'
 import { AiUsagePill } from './components/AiUsagePill'
+import { HelpTip } from './components/HelpTip'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { tr } from './i18n'
 
@@ -435,6 +436,15 @@ export function Sidebar({
         >
           ● {tr(language, { ko: '실계좌', en: 'Real', ja: 'リアル', th: 'จริง', vi: 'Thật', id: 'Asli' })}
         </Link>
+        <HelpTip style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.4)' }}
+          text={tr(language, {
+            ko: '시뮬레이터는 가상 자금으로 실전과 똑같이 연습하는 모의 지갑입니다 — 실제 돈이 사용되지 않습니다. 실계좌는 Coinbase·Bybit 등 거래소를 연결해 실제 자금으로 거래하는 모드이며, 누르면 계좌 연결 페이지로 이동합니다.',
+            en: 'Simulator is a paper wallet — you practice with virtual funds and no real money is used. Real connects an exchange (Coinbase, Bybit, …) and trades with actual funds; clicking it opens the account-connection page.',
+            ja: 'シミュレーターは仮想資金で本番同様に練習できる模擬ウォレットです — 実際のお金は使われません。実口座は Coinbase・Bybit などの取引所を接続して実資金で取引するモードで、押すと口座接続ページに移動します。',
+            th: 'จำลอง คือกระเป๋าเงินทดลอง — ฝึกเทรดด้วยเงินเสมือน ไม่ใช้เงินจริง ส่วน บัญชีจริง คือการเชื่อมต่อกระดานเทรด (Coinbase, Bybit ฯลฯ) เพื่อเทรดด้วยเงินจริง กดแล้วจะเปิดหน้าเชื่อมต่อบัญชี',
+            vi: 'Mô phỏng là ví giấy — bạn luyện tập với vốn ảo, không dùng tiền thật. Tài khoản thật kết nối sàn giao dịch (Coinbase, Bybit, …) và giao dịch bằng tiền thật; nhấn vào sẽ mở trang kết nối tài khoản.',
+            id: 'Simulator adalah dompet simulasi — Anda berlatih dengan dana virtual tanpa uang sungguhan. Akun asli menghubungkan bursa (Coinbase, Bybit, …) dan bertransaksi dengan dana nyata; mengekliknya membuka halaman penghubungan akun.',
+          })} />
       </div>
 
       {/* Nav sections */}
