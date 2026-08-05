@@ -286,6 +286,14 @@ class StripeCheckoutTests(unittest.TestCase):
         self.assertEqual(kwargs["mode"], "subscription")
         self.assertEqual(kwargs["client_reference_id"], str(self.user_id))
         self.assertEqual(kwargs["line_items"], [{"price": "price_jr", "quantity": 1}])
+        self.assertEqual(kwargs["metadata"],
+                         {"user_id": str(self.user_id), "plan_code": "junior"})
+        self.assertEqual(kwargs["subscription_data"],
+                         {"metadata": {"user_id": str(self.user_id),
+                                       "plan_code": "junior"}})
+        cc_kwargs = cc.call_args.kwargs
+        self.assertEqual(cc_kwargs["email"], "pay@t.dev")
+        self.assertEqual(cc_kwargs["metadata"], {"user_id": str(self.user_id)})
         conn = database.get_db_connection()
         try:
             cur = conn.cursor()
@@ -333,6 +341,32 @@ class StripeCheckoutTests(unittest.TestCase):
     def test_portal_404_without_customer(self):
         r = self.client.post("/api/subscriptions/stripe/portal", headers=self._h())
         self.assertEqual(r.status_code, 404)
+
+    def test_checkout_reuses_saved_customer(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET stripe_customer_id = 'cus_saved' "
+                        "WHERE id = ?", (self.user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        with patch("stripe.Customer.create") as cc, \
+             patch("stripe.checkout.Session.create",
+                   return_value={"url": "https://checkout.stripe.com/x"}) as sc:
+            r = self.client.post("/api/subscriptions/stripe/checkout",
+                                 json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+        cc.assert_not_called()
+        self.assertEqual(sc.call_args.kwargs["customer"], "cus_saved")
+
+    def test_checkout_502_when_stripe_errors(self):
+        with patch("stripe.Customer.create", return_value={"id": "cus_1"}), \
+             patch("stripe.checkout.Session.create",
+                   side_effect=RuntimeError("stripe down")):
+            r = self.client.post("/api/subscriptions/stripe/checkout",
+                                 json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 502)
 
 
 if __name__ == "__main__":

@@ -60,8 +60,12 @@ def _stripe_customer_id(user: dict) -> str:
     existing = (user.get("stripe_customer_id") or "").strip()
     if existing:
         return existing
-    customer = _stripe().Customer.create(
-        email=user.get("email"), metadata={"user_id": str(user["id"])})
+    try:
+        customer = _stripe().Customer.create(
+            email=user.get("email"), metadata={"user_id": str(user["id"])})
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Stripe customer create failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Card processor error")
     customer_id = customer["id"]
     conn = get_db_connection()
     try:
@@ -94,17 +98,21 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=503,
                                 detail="This plan is not configured for card payments")
         customer_id = _stripe_customer_id(user)
-        session = _stripe().checkout.Session.create(
-            mode="subscription",
-            customer=customer_id,
-            client_reference_id=str(user["id"]),
-            line_items=[{"price": price_id, "quantity": 1}],
-            metadata={"user_id": str(user["id"]), "plan_code": plan["code"]},
-            subscription_data={"metadata": {"user_id": str(user["id"]),
-                                            "plan_code": plan["code"]}},
-            success_url=f"{_frontend_url()}/subscribe?stripe=success",
-            cancel_url=f"{_frontend_url()}/subscribe?stripe=cancel",
-        )
+        try:
+            session = _stripe().checkout.Session.create(
+                mode="subscription",
+                customer=customer_id,
+                client_reference_id=str(user["id"]),
+                line_items=[{"price": price_id, "quantity": 1}],
+                metadata={"user_id": str(user["id"]), "plan_code": plan["code"]},
+                subscription_data={"metadata": {"user_id": str(user["id"]),
+                                                "plan_code": plan["code"]}},
+                success_url=f"{_frontend_url()}/subscribe?stripe=success",
+                cancel_url=f"{_frontend_url()}/subscribe?stripe=cancel",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Stripe checkout session failed: %s", exc)
+            raise HTTPException(status_code=502, detail="Card processor error")
         return {"url": session["url"]}
 
     @app.post('/api/subscriptions/stripe/portal')
@@ -115,6 +123,10 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
         customer_id = (user.get("stripe_customer_id") or "").strip()
         if not customer_id:
             raise HTTPException(status_code=404, detail="No card subscription on file")
-        session = _stripe().billing_portal.Session.create(
-            customer=customer_id, return_url=f"{_frontend_url()}/subscribe")
+        try:
+            session = _stripe().billing_portal.Session.create(
+                customer=customer_id, return_url=f"{_frontend_url()}/subscribe")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Stripe portal session failed: %s", exc)
+            raise HTTPException(status_code=502, detail="Card processor error")
         return {"url": session["url"]}
