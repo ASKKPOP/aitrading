@@ -25,13 +25,16 @@ import logging
 import os
 from datetime import datetime, timezone
 
+import requests
 from fastapi import FastAPI, Header, HTTPException, Request
 
 import billing_sync
 from database import get_db_connection
 from routes_shared import RouteContext
 from routes_subscriptions import (PlanOrderBody, _alert_new_subscription,
-                                  _frontend_url, _load_plan, _require_user)
+                                  _frontend_url, _load_plan, _paypal_base,
+                                  _paypal_configured, _paypal_token,
+                                  _require_user)
 
 logger = logging.getLogger("routes_billing")
 
@@ -176,6 +179,111 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             logger.error("Stripe portal session failed: %s", exc)
             raise HTTPException(status_code=502, detail="Card processor error")
         return {"url": session["url"]}
+
+    @app.post('/api/subscriptions/paypal/subscribe')
+    async def paypal_subscribe(body: PlanOrderBody, authorization: str = Header(None)):
+        user = _require_user(authorization)
+        if not _paypal_configured():
+            raise HTTPException(status_code=503, detail="PayPal is not configured")
+        if billing_sync.active_autorenew(user["id"]):
+            raise HTTPException(status_code=409, detail=ALREADY_AUTORENEW)
+        conn = get_db_connection()
+        try:
+            plan = _load_plan(conn.cursor(), body.plan_code)
+        finally:
+            conn.close()
+        paypal_plan_id = (billing_sync.billing_ids_for_plan(plan["code"])
+                          .get("paypal_plan_id") or "")
+        if not paypal_plan_id:
+            raise HTTPException(status_code=503,
+                                detail="This plan is not configured for PayPal")
+        access = _paypal_token()
+        resp = requests.post(
+            f"{_paypal_base()}/v1/billing/subscriptions",
+            headers={"Authorization": f"Bearer {access}"},
+            json={
+                "plan_id": paypal_plan_id,
+                "custom_id": str(user["id"]),
+                "application_context": {
+                    "return_url": f"{_frontend_url()}/subscribe?paypal=sub-return",
+                    "cancel_url": f"{_frontend_url()}/subscribe?paypal=cancel",
+                    "user_action": "SUBSCRIBE_NOW",
+                },
+            },
+            timeout=20,
+        )
+        if resp.status_code not in (200, 201):
+            logger.error("PayPal subscribe failed: %s %s", resp.status_code,
+                         resp.text[:300])
+            raise HTTPException(status_code=502, detail="PayPal subscription failed")
+        sub = resp.json()
+        approve_url = next((link["href"] for link in sub.get("links", [])
+                            if link.get("rel") == "approve"), None)
+        if not approve_url:
+            raise HTTPException(status_code=502, detail="PayPal returned no approval link")
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
+                "reference, external_id, auto_renew, amount_usd) "
+                "VALUES (?, ?, 'pending', 'paypal', ?, ?, 1, ?)",
+                (user["id"], plan["code"], sub["id"], sub["id"], plan["price_usd"]))
+            conn.commit()
+        finally:
+            conn.close()
+        return {"subscription_id": sub["id"], "approve_url": approve_url}
+
+    @app.post('/api/subscriptions/paypal/change-plan')
+    async def paypal_change_plan(body: PlanOrderBody, authorization: str = Header(None)):
+        user = _require_user(authorization)
+        current = billing_sync.active_autorenew(user["id"])
+        if not current or current["method"] != "paypal":
+            raise HTTPException(status_code=404, detail="No active PayPal subscription")
+        conn = get_db_connection()
+        try:
+            plan = _load_plan(conn.cursor(), body.plan_code)
+        finally:
+            conn.close()
+        paypal_plan_id = (billing_sync.billing_ids_for_plan(plan["code"])
+                          .get("paypal_plan_id") or "")
+        if not paypal_plan_id:
+            raise HTTPException(status_code=503,
+                                detail="This plan is not configured for PayPal")
+        access = _paypal_token()
+        resp = requests.post(
+            f"{_paypal_base()}/v1/billing/subscriptions/{current['external_id']}/revise",
+            headers={"Authorization": f"Bearer {access}"},
+            json={"plan_id": paypal_plan_id},
+            timeout=20,
+        )
+        if resp.status_code not in (200, 204):
+            logger.error("PayPal revise failed: %s %s", resp.status_code, resp.text[:300])
+            raise HTTPException(status_code=502, detail="PayPal plan change failed")
+        # Plan actually flips on the BILLING.SUBSCRIPTION.UPDATED webhook.
+        links = (resp.json().get("links", []) if resp.status_code == 200 else [])
+        approve_url = next((link["href"] for link in links
+                            if link.get("rel") == "approve"), None)
+        return {"ok": True, "approve_url": approve_url}
+
+    @app.post('/api/subscriptions/paypal/cancel')
+    async def paypal_cancel(authorization: str = Header(None)):
+        user = _require_user(authorization)
+        current = billing_sync.active_autorenew(user["id"])
+        if not current or current["method"] != "paypal":
+            raise HTTPException(status_code=404, detail="No active PayPal subscription")
+        access = _paypal_token()
+        resp = requests.post(
+            f"{_paypal_base()}/v1/billing/subscriptions/{current['external_id']}/cancel",
+            headers={"Authorization": f"Bearer {access}"},
+            json={"reason": "Member cancelled from the subscribe page"},
+            timeout=20,
+        )
+        if resp.status_code not in (200, 204):
+            logger.error("PayPal cancel failed: %s %s", resp.status_code, resp.text[:300])
+            raise HTTPException(status_code=502, detail="PayPal cancel failed")
+        billing_sync.mark_cancelled("paypal", current["external_id"])
+        return {"ok": True}
 
     @app.post('/api/webhooks/stripe')
     async def stripe_webhook(request: Request,

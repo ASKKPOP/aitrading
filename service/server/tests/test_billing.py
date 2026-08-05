@@ -532,5 +532,132 @@ class StripeWebhookTests(unittest.TestCase):
             conn.close()
 
 
+class _Resp:
+    def __init__(self, status_code=200, body=None):
+        self.status_code = status_code
+        self._body = body or {}
+        self.text = json.dumps(self._body)
+
+    def json(self):
+        return self._body
+
+
+class PaypalSubscribeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["PAYPAL_CLIENT_ID"] = "cid"
+        os.environ["PAYPAL_CLIENT_SECRET"] = "sec"
+        from routes import create_app
+        self.client = TestClient(create_app())
+        self.user_id, self.token = _register_user(self.client, database)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE subscription_plans SET paypal_plan_id = 'P-JR' "
+                        "WHERE code = 'junior'")
+            cur.execute("UPDATE subscription_plans SET paypal_plan_id = 'P-PRO' "
+                        "WHERE code = 'pro'")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        os.environ["PAYPAL_CLIENT_ID"] = ""
+        os.environ["PAYPAL_CLIENT_SECRET"] = ""
+        self.tmp.cleanup()
+
+    def _h(self):
+        return {"Authorization": f"Bearer {self.token}"}
+
+    def test_subscribe_returns_approve_url_and_pending_row(self):
+        def fake_post(url, **kw):
+            if url.endswith("/v1/oauth2/token"):
+                return _Resp(200, {"access_token": "tok"})
+            if url.endswith("/v1/billing/subscriptions"):
+                self.assertEqual(kw["json"]["plan_id"], "P-JR")
+                self.assertEqual(kw["json"]["custom_id"], str(self.user_id))
+                return _Resp(201, {"id": "I-NEW", "links": [
+                    {"rel": "approve", "href": "https://paypal.com/approve/x"}]})
+            raise AssertionError(f"unexpected POST {url}")
+
+        with patch("routes_subscriptions.requests.post", side_effect=fake_post), \
+             patch("routes_billing.requests.post", side_effect=fake_post):
+            r = self.client.post("/api/subscriptions/paypal/subscribe",
+                                 json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["approve_url"], "https://paypal.com/approve/x")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT status, method, external_id, auto_renew "
+                        "FROM user_subscriptions WHERE user_id = ?", (self.user_id,))
+            row = dict(cur.fetchone())
+        finally:
+            conn.close()
+        self.assertEqual((row["status"], row["method"], row["external_id"]),
+                         ("pending", "paypal", "I-NEW"))
+
+    def test_subscribe_409_when_autorenew_active(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=self.user_id, plan_code="junior",
+            external_id="sub_1")
+        r = self.client.post("/api/subscriptions/paypal/subscribe",
+                             json={"plan_code": "junior"}, headers=self._h())
+        self.assertEqual(r.status_code, 409)
+
+    def test_change_plan_revises(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=self.user_id, plan_code="junior",
+            external_id="I-CUR")
+
+        def fake_post(url, **kw):
+            if url.endswith("/v1/oauth2/token"):
+                return _Resp(200, {"access_token": "tok"})
+            if url.endswith("/v1/billing/subscriptions/I-CUR/revise"):
+                self.assertEqual(kw["json"]["plan_id"], "P-PRO")
+                return _Resp(200, {"links": []})
+            raise AssertionError(f"unexpected POST {url}")
+
+        with patch("routes_subscriptions.requests.post", side_effect=fake_post), \
+             patch("routes_billing.requests.post", side_effect=fake_post):
+            r = self.client.post("/api/subscriptions/paypal/change-plan",
+                                 json={"plan_code": "pro"}, headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+
+    def test_cancel_stops_renewal_keeps_access(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="paypal", user_id=self.user_id, plan_code="junior",
+            external_id="I-CAN")
+
+        def fake_post(url, **kw):
+            if url.endswith("/v1/oauth2/token"):
+                return _Resp(200, {"access_token": "tok"})
+            if url.endswith("/v1/billing/subscriptions/I-CAN/cancel"):
+                return _Resp(204, {})
+            raise AssertionError(f"unexpected POST {url}")
+
+        with patch("routes_subscriptions.requests.post", side_effect=fake_post), \
+             patch("routes_billing.requests.post", side_effect=fake_post):
+            r = self.client.post("/api/subscriptions/paypal/cancel", headers=self._h())
+        self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT status, auto_renew, cancel_at_period_end "
+                        "FROM user_subscriptions WHERE external_id = 'I-CAN'")
+            row = dict(cur.fetchone())
+        finally:
+            conn.close()
+        self.assertEqual(row["status"], "active")
+        self.assertEqual(int(row["auto_renew"]), 0)
+        self.assertEqual(int(row["cancel_at_period_end"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
