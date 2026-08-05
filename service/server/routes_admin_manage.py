@@ -565,13 +565,17 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "SELECT id, user_id, plan_code, status FROM user_subscriptions WHERE id = ?",
+                "SELECT id, user_id, plan_code, status, auto_renew, method, external_id "
+                "FROM user_subscriptions WHERE id = ?",
                 (sub_id,))
             row = cursor.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Subscription not found")
             if row["status"] != "pending":
                 raise HTTPException(status_code=400, detail=f"Subscription is {row['status']}, not pending")
+            if row["auto_renew"] or (row["method"] in ("stripe", "paypal") and row["external_id"]):
+                raise HTTPException(status_code=400,
+                                    detail="Auto-renew subscriptions activate via the provider webhook only")
             cursor.execute(
                 "UPDATE user_subscriptions SET status = 'active', started_at = ?, expires_at = ?, "
                 "decided_by = ?, decided_at = ?, note = ? WHERE id = ?",

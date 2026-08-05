@@ -47,6 +47,7 @@ import requests
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
+import billing_sync
 from database import get_db_connection
 from routes_shared import RouteContext
 from services import _get_user_by_token
@@ -174,7 +175,8 @@ def get_subscription_state(cursor, user_id: int) -> dict[str, Any]:
     )
     cursor.execute(
         """
-        SELECT id, plan_code, status, method, started_at, expires_at, created_at
+        SELECT id, plan_code, status, method, started_at, expires_at, created_at,
+               external_id, auto_renew, cancel_at_period_end
         FROM user_subscriptions
         WHERE user_id = ? AND status IN ('active', 'pending')
         ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, id DESC
@@ -232,6 +234,7 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             # paypal_available now means "show the PayPal button": configured
             # AND not hidden. The capture route stays reachable either way.
             "paypal_available": _paypal_configured() and _paypal_ui_enabled(),
+            "stripe_available": billing_sync.stripe_configured(),
             "bank_transfer_info": _bank_info(),
             "usdt_available": bool(_usdt_address()),
             "usdt_address": _usdt_address(),
