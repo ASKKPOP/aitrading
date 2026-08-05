@@ -2448,6 +2448,85 @@ def _hold_streak_line(run: dict, pos_qty: float) -> str:
         return ""
 
 
+def _typical_daily_move_pct(run: dict) -> Optional[float]:
+    """This symbol's ORDINARY day, as a percentage. Median absolute
+    close-to-close change over the recent daily bars.
+
+    Median, not mean: one event day must not redefine "ordinary". Returns
+    None when the history is too short to say, because a fabricated noise
+    floor is worse than none — the caller renders nothing.
+    """
+    try:
+        import price_fetcher
+        candles = price_fetcher.get_daily_candles(
+            run["symbol"], run["market"], days=30) or []
+        closes = [float(c["close"]) for c in candles[-21:] if c.get("close")]
+        if len(closes) < 6:
+            return None
+        moves = [abs(b - a) / a * 100.0
+                 for a, b in zip(closes, closes[1:]) if a]
+        if len(moves) < 5:
+            return None
+        moves.sort()
+        mid = len(moves) // 2
+        return (moves[mid] if len(moves) % 2
+                else (moves[mid - 1] + moves[mid]) / 2.0)
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return None
+
+
+def _exit_size_line(run: dict, pos_qty: float) -> str:
+    """Scale the adverse move the desk is reacting to, and name the verb.
+
+    Measured over 2026-08-04/05 (84 closes): losing TRIMS cost -1.53 on
+    average and are harmless; losing FULL closes cost -6.68 and carry 91%
+    of all loss. Every one of the six catastrophic losses dumped 100% of
+    the book on a 0.49-1.74% move, and 37 of 38 losing closes were taken on
+    a move under 1% — at a MEDIAN of 28% of the desk's own authored stop.
+    Only 1 of 38 ever reached that stop.
+
+    The desk was never told how big the move it is reacting to actually is
+    relative to an ordinary day, nor that "reduce" is available instead of
+    "close" — every existing exit lesson says what NOT to do without
+    supplying either number or an alternative verb. This supplies both.
+    Fact and verb only; the judgment lives in exit-discipline. Held books
+    only, fail-soft to "".
+    """
+    if not pos_qty:
+        return ""
+    try:
+        pnl = compute_run_pnl(run) or {}
+        if not pnl.get("mark_age_ok"):
+            return ""
+        pos = pnl.get("position") or {}
+        ent = float(pos.get("entry_price") or 0)
+        mark = float(pos.get("current_price") or 0)
+        if ent <= 0 or mark <= 0:
+            return ""
+        move = (mark - ent) / ent * 100.0
+        if pos_qty < 0:                       # a short profits as price falls
+            move = -move
+        if move >= 0:
+            return ""                         # this line is about adverse drift
+        adverse = abs(move)
+        bits = [f"Exit scale: the move against you is {adverse:.2f}%."]
+        day = _typical_daily_move_pct(run)
+        if day and day > 0:
+            bits.append(f"An ordinary day on this symbol moves {day:.2f}%, "
+                        f"so this is {adverse / day * 100:.0f}% of one "
+                        f"ordinary day.")
+        bits.append(
+            "If you act, choose the VERB deliberately: 'reduce' with a "
+            "size_frac sheds part of the book and keeps the thesis alive; "
+            "'close' ends it entirely. Closing the WHOLE position is the "
+            "expensive verb and it is only warranted when the thesis is "
+            "actually dead — say why in the intent's 'why' field when you "
+            "use it.")
+        return " ".join(bits) + "\n"
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _brake_distance_line(run: dict, pos_qty: float) -> str:
     """How far the equity brake is, expressed as a price move.
 
@@ -2746,7 +2825,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
                       + _hold_streak_line(run, pos_qty)
-                      + _brake_distance_line(run, pos_qty))
+                      + _brake_distance_line(run, pos_qty)
+                      + _exit_size_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -3130,7 +3210,8 @@ def run_cycle(run_id: int) -> dict:
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
                                         + _hold_streak_line(run, held)
-                                        + _brake_distance_line(run, held)),
+                                        + _brake_distance_line(run, held)
+                                        + _exit_size_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.

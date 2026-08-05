@@ -521,6 +521,106 @@ class HoldStreakBriefTests(unittest.TestCase):
         self.assertEqual(run_engine._hold_streak_line(run9, 5.0), "")
 
 
+class ExitSizeBriefTests(unittest.TestCase):
+    """Losing trims averaged -1.53 and were harmless; losing FULL closes
+    averaged -6.68 and carried 91% of all loss (84 closes, 08-04/05). The
+    desk was never told the SCALE of the move it reacts to, nor that
+    'reduce' exists as an alternative to 'close'."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    _RUN = {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto"}
+
+    def _pnl(self, ent=523.75, mark=521.16, ok=True):
+        return {"mark_age_ok": ok,
+                "position": {"entry_price": ent, "current_price": mark}}
+
+    def test_states_the_move_against_an_ordinary_day_and_names_the_verb(self):
+        # run 967's real numbers: bought 523.75, sold 521.16 = -0.49%.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl()), \
+             patch.object(run_engine, "_typical_daily_move_pct",
+                          return_value=2.0):
+            line = run_engine._exit_size_line(self._RUN, 4.327)
+        self.assertIn("move against you is 0.49%", line)
+        self.assertIn("ordinary day on this symbol moves 2.00%", line)
+        self.assertIn("25% of one ordinary day", line)
+        self.assertIn("'reduce'", line)
+        self.assertIn("Closing the WHOLE position is the expensive verb", line)
+
+    def test_silent_when_the_position_is_in_profit(self):
+        # This brief is about adverse drift; a winner must not be nagged.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(mark=530.0)):
+            self.assertEqual(run_engine._exit_size_line(self._RUN, 4.327), "")
+        # ...and a SHORT in profit (price fell) is likewise silent.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(mark=500.0)):
+            self.assertEqual(run_engine._exit_size_line(self._RUN, -4.327), "")
+
+    def test_short_reads_adverse_in_its_own_direction(self):
+        # price ROSE against a short => adverse.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(mark=530.0)), \
+             patch.object(run_engine, "_typical_daily_move_pct",
+                          return_value=None):
+            line = run_engine._exit_size_line(self._RUN, -4.327)
+        self.assertIn("move against you is 1.19%", line)
+        self.assertNotIn("ordinary day", line)   # no data => no fabricated floor
+
+    def test_fail_soft_on_flat_book_and_stale_mark(self):
+        self.assertEqual(run_engine._exit_size_line(self._RUN, 0.0), "")
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(ok=False)):
+            self.assertEqual(run_engine._exit_size_line(self._RUN, 4.327), "")
+
+    def test_typical_move_is_a_median_and_needs_enough_history(self):
+        import price_fetcher
+        bars = [{"close": c} for c in
+                (100, 101, 100, 101, 100, 101, 100, 130)]   # one event day
+        with patch.object(price_fetcher, "get_daily_candles",
+                          return_value=bars):
+            v = run_engine._typical_daily_move_pct(self._RUN)
+        self.assertLess(v, 2.0, "the 30% event day redefined 'ordinary'")
+        with patch.object(price_fetcher, "get_daily_candles",
+                          return_value=[{"close": 100}, {"close": 101}]):
+            self.assertIsNone(run_engine._typical_daily_move_pct(self._RUN))
+
+    def test_the_line_is_actually_WIRED_into_the_light_prompt(self):
+        seen = {}
+
+        def _capture(prompt, **kw):
+            seen["prompt"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        import llm_client
+        import price_fetcher
+        run = dict(self._RUN, market_type="spot")
+        with patch.object(price_fetcher, "get_price_from_market",
+                          return_value=521.16), \
+            patch.object(price_fetcher, "get_daily_candles", return_value=[]), \
+            patch.object(run_engine, "_position_quantity", return_value=4.327), \
+            patch.object(run_engine, "_exit_size_line",
+                         return_value="EXITSIZE_SENTINEL\n"), \
+                patch.object(llm_client, "generate_text", _capture):
+            run_engine._light_analysis(run, {})
+        self.assertIn("EXITSIZE_SENTINEL", seen.get("prompt", ""),
+                      "exit-size line is not wired into the light prompt")
+
+    def test_the_line_is_actually_WIRED_into_the_full_prompt(self):
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_exit_size_line(run, held)", src,
+                      "exit-size line is not wired into the full prompt")
+
+
 class BrakeDistanceBriefTests(unittest.TestCase):
     """The desk authors its stop in price %, the platform retires the run on
     equity drawdown in USD, and nothing reconciled the two. Run 971 authored

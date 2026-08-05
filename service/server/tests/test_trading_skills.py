@@ -274,6 +274,16 @@ class RegistryTests(_Db):
                           f"rail reconciliation missing from {site}")
             self.assertIn("doubling the position HALVES", block)
 
+    def test_exit_verb_choice_rides_both_exit_sites(self):
+        # 2026-08-04/05: losing FULL closes carried 91% of all loss while
+        # losing trims were harmless. No existing exit lesson offered the
+        # desk the cheaper verb; this one does.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("CHOOSE THE EXIT VERB DELIBERATELY", block,
+                          f"exit-verb clause missing from {site}")
+            self.assertIn("An empty 'why' on a full close", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
