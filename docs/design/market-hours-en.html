@@ -40,6 +40,19 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
 .brf{height:100%;border-radius:5px}
 .brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h session timeline */
+.tl{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:5px;
+ font-size:12.7px}
+.tll{color:var(--ink2);line-height:1.35}
+.tlt{position:relative;height:24px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;background:var(--ai)}
+.axis{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:10.5px;color:var(--muted);
+ margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;
+ vertical-align:-1px}
+@media(max-width:520px){.tl,.axis{grid-template-columns:76px 1fr}.tll{font-size:11.4px}}
 /* matrix pills */
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
@@ -79,6 +92,10 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <h2>Fixed-hours markets — in your time</h2>
 <p>US stocks open at fixed exchange hours. Below is the session converted into every region's local clock, on a normal weekday.</p>
 <div class="sw"><table><tr><th>Region</th><th>US stocks</th></tr><tr><td class="m">United States</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Canada</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Australia</td><td class="h">23:30–06:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">Singapore</td><td class="h">21:30–04:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">South Korea</td><td class="h">22:30–05:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">Japan</td><td class="h">22:30–05:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">Thailand</td><td class="h">20:30–03:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">Vietnam</td><td class="h">20:30–03:00 <span class=nd>(next day)</span></td></tr><tr><td class="m">Indonesia</td><td class="h">20:30–03:00 <span class=nd>(next day)</span></td></tr></table></div>
+
+<h2>Where the US session falls in your day</h2>
+<p>The table above says how long. This says when. Each bar is one full day on that region's own clock, midnight to midnight, with the US session drawn where it actually lands.</p>
+<div class="fig"><div class="tl"><div class="tll">United States / Canada</div><div class="tlt"><div class="tlb" style="left:39.58%;width:27.08%"></div></div></div><div class="tl"><div class="tll">Australia</div><div class="tlt"><div class="tlb" style="left:0%;width:25%"></div><div class="tlb" style="left:97.92%;width:2.083%"></div></div></div><div class="tl"><div class="tll">Singapore</div><div class="tlt"><div class="tlb" style="left:0%;width:16.67%"></div><div class="tlb" style="left:89.58%;width:10.42%"></div></div></div><div class="tl"><div class="tll">South Korea / Japan</div><div class="tlt"><div class="tlb" style="left:0%;width:20.83%"></div><div class="tlb" style="left:93.75%;width:6.25%"></div></div></div><div class="tl"><div class="tll">Thailand / Vietnam / Indonesia</div><div class="tlt"><div class="tlb" style="left:0%;width:12.5%"></div><div class="tlb" style="left:85.42%;width:14.58%"></div></div></div><div class="axis"><div></div><div class="axl"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div></div><div class="lgd"><span><i style="background:var(--ai)"></i>US stocks open (NYSE)</span><span><i style="background:var(--surf);border:1px solid var(--grid)"></i>closed</span></div><p class="cap">Read the Asian rows left to right: the band that opens the day is the session that began the previous evening — which is why those windows are marked “next day” in the table above. Crypto, forex and futures are left out; on a weekday they would cover almost the whole bar.</p></div>
 
 <h2>What you can trade, by region</h2>
 <p>Planned availability as we roll region controls out. A <b>Pending</b> market is under review for that country and opens once it is cleared — this is a roadmap, not a legal guarantee.</p>

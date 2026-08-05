@@ -40,6 +40,19 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
 .brf{height:100%;border-radius:5px}
 .brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h session timeline */
+.tl{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:5px;
+ font-size:12.7px}
+.tll{color:var(--ink2);line-height:1.35}
+.tlt{position:relative;height:24px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;background:var(--ai)}
+.axis{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:10.5px;color:var(--muted);
+ margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;
+ vertical-align:-1px}
+@media(max-width:520px){.tl,.axis{grid-template-columns:76px 1fr}.tll{font-size:11.4px}}
 /* matrix pills */
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
@@ -79,6 +92,10 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <h2>Thị trường có giờ cố định — theo giờ của bạn</h2>
 <p>Cổ phiếu Mỹ mở theo giờ sàn cố định. Bên dưới là phiên quy đổi sang giờ địa phương của từng khu vực, trong một ngày thường.</p>
 <div class="sw"><table><tr><th>Khu vực</th><th>Cổ phiếu Mỹ</th></tr><tr><td class="m">Hoa Kỳ</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Canada</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Úc</td><td class="h">23:30–06:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Singapore</td><td class="h">21:30–04:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Hàn Quốc</td><td class="h">22:30–05:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Nhật Bản</td><td class="h">22:30–05:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Thái Lan</td><td class="h">20:30–03:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Việt Nam</td><td class="h">20:30–03:00 <span class=nd>(hôm sau)</span></td></tr><tr><td class="m">Indonesia</td><td class="h">20:30–03:00 <span class=nd>(hôm sau)</span></td></tr></table></div>
+
+<h2>Phiên Mỹ nằm ở đâu trong ngày của bạn</h2>
+<p>Bảng trên cho biết bao lâu. Hình này cho biết khi nào. Mỗi thanh là trọn một ngày theo giờ địa phương của khu vực đó, từ nửa đêm đến nửa đêm, với phiên Mỹ được vẽ đúng chỗ nó rơi vào.</p>
+<div class="fig"><div class="tl"><div class="tll">Hoa Kỳ / Canada</div><div class="tlt"><div class="tlb" style="left:39.58%;width:27.08%"></div></div></div><div class="tl"><div class="tll">Úc</div><div class="tlt"><div class="tlb" style="left:0%;width:25%"></div><div class="tlb" style="left:97.92%;width:2.083%"></div></div></div><div class="tl"><div class="tll">Singapore</div><div class="tlt"><div class="tlb" style="left:0%;width:16.67%"></div><div class="tlb" style="left:89.58%;width:10.42%"></div></div></div><div class="tl"><div class="tll">Hàn Quốc / Nhật Bản</div><div class="tlt"><div class="tlb" style="left:0%;width:20.83%"></div><div class="tlb" style="left:93.75%;width:6.25%"></div></div></div><div class="tl"><div class="tll">Thái Lan / Việt Nam / Indonesia</div><div class="tlt"><div class="tlb" style="left:0%;width:12.5%"></div><div class="tlb" style="left:85.42%;width:14.58%"></div></div></div><div class="axis"><div></div><div class="axl"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div></div><div class="lgd"><span><i style="background:var(--ai)"></i>Cổ phiếu Mỹ mở cửa (NYSE)</span><span><i style="background:var(--surf);border:1px solid var(--grid)"></i>đóng cửa</span></div><p class="cap">Đọc các hàng châu Á từ trái sang phải: dải mở đầu ngày chính là phiên đã bắt đầu từ tối hôm trước — đó là lý do các khung giờ đó được ghi 'hôm sau' ở bảng trên. Không hiển thị tiền mã hoá, ngoại hối và hợp đồng tương lai; ngày thường chúng sẽ phủ gần trọn thanh.</p></div>
 
 <h2>Bạn được giao dịch gì, theo khu vực</h2>
 <p>Khả dụng theo kế hoạch khi chúng tôi triển khai kiểm soát theo khu vực. Thị trường <b>Đang xét</b> đang được rà soát cho quốc gia đó và sẽ mở khi được thông qua — đây là lộ trình, không phải cam kết pháp lý.</p>

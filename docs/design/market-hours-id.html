@@ -40,6 +40,19 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 .brt{height:18px;background:var(--surf);border-radius:5px;overflow:hidden}
 .brf{height:100%;border-radius:5px}
 .brv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650}
+/* 24h session timeline */
+.tl{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:5px;
+ font-size:12.7px}
+.tll{color:var(--ink2);line-height:1.35}
+.tlt{position:relative;height:24px;background:var(--surf);border-radius:5px;overflow:hidden}
+.tlb{position:absolute;top:0;height:100%;background:var(--ai)}
+.axis{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:10.5px;color:var(--muted);
+ margin-top:4px}
+.axl{display:flex;justify-content:space-between}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px;font-size:12.3px;color:var(--ink2)}
+.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;
+ vertical-align:-1px}
+@media(max-width:520px){.tl,.axis{grid-template-columns:76px 1fr}.tll{font-size:11.4px}}
 /* matrix pills */
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .p-go{background:color-mix(in srgb,var(--go) 17%,transparent);color:var(--go)}
@@ -79,6 +92,10 @@ td.h{font-variant-numeric:tabular-nums;white-space:nowrap}
 <h2>Pasar berjam tetap — dalam waktu Anda</h2>
 <p>Saham AS buka pada jam bursa tetap. Di bawah ini sesi dikonversi ke jam lokal setiap wilayah, pada hari kerja biasa.</p>
 <div class="sw"><table><tr><th>Wilayah</th><th>Saham AS</th></tr><tr><td class="m">Amerika Serikat</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Kanada</td><td class="h">09:30–16:00</td></tr><tr><td class="m">Australia</td><td class="h">23:30–06:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Singapura</td><td class="h">21:30–04:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Korea Selatan</td><td class="h">22:30–05:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Jepang</td><td class="h">22:30–05:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Thailand</td><td class="h">20:30–03:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Vietnam</td><td class="h">20:30–03:00 <span class=nd>(besok)</span></td></tr><tr><td class="m">Indonesia</td><td class="h">20:30–03:00 <span class=nd>(besok)</span></td></tr></table></div>
+
+<h2>Di mana sesi AS jatuh dalam hari Anda</h2>
+<p>Tabel di atas menyatakan berapa lama. Grafik ini menyatakan kapan. Tiap batang adalah satu hari penuh dalam jam lokal wilayah tersebut, dari tengah malam ke tengah malam, dengan sesi AS digambar tepat pada posisinya.</p>
+<div class="fig"><div class="tl"><div class="tll">Amerika Serikat / Kanada</div><div class="tlt"><div class="tlb" style="left:39.58%;width:27.08%"></div></div></div><div class="tl"><div class="tll">Australia</div><div class="tlt"><div class="tlb" style="left:0%;width:25%"></div><div class="tlb" style="left:97.92%;width:2.083%"></div></div></div><div class="tl"><div class="tll">Singapura</div><div class="tlt"><div class="tlb" style="left:0%;width:16.67%"></div><div class="tlb" style="left:89.58%;width:10.42%"></div></div></div><div class="tl"><div class="tll">Korea Selatan / Jepang</div><div class="tlt"><div class="tlb" style="left:0%;width:20.83%"></div><div class="tlb" style="left:93.75%;width:6.25%"></div></div></div><div class="tl"><div class="tll">Thailand / Vietnam / Indonesia</div><div class="tlt"><div class="tlb" style="left:0%;width:12.5%"></div><div class="tlb" style="left:85.42%;width:14.58%"></div></div></div><div class="axis"><div></div><div class="axl"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div></div><div class="lgd"><span><i style="background:var(--ai)"></i>Saham AS buka (NYSE)</span><span><i style="background:var(--surf);border:1px solid var(--grid)"></i>tutup</span></div><p class="cap">Baca baris Asia dari kiri ke kanan: pita yang membuka hari adalah sesi yang dimulai malam sebelumnya — itulah sebabnya jam tersebut ditandai 'hari berikutnya' di tabel di atas. Kripto, forex, dan futures tidak ditampilkan; pada hari kerja semuanya akan menutupi hampir seluruh batang.</p></div>
 
 <h2>Yang bisa diperdagangkan, per wilayah</h2>
 <p>Ketersediaan terencana seiring kami menerapkan kontrol per wilayah. Pasar <b>Ditinjau</b> sedang dikaji untuk negara itu dan terbuka setelah disetujui — ini peta jalan, bukan jaminan hukum.</p>
