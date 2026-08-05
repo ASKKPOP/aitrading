@@ -798,5 +798,39 @@ class PaypalWebhookTests(unittest.TestCase):
         self.assertEqual(r.status_code, 502)
 
 
+class PlansEndpointTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        from routes import create_app
+        self.client = TestClient(create_app())
+        self.user_id, self.token = _register_user(self.client, database)
+
+    def tearDown(self):
+        os.environ["STRIPE_SECRET_KEY"] = ""
+        self.tmp.cleanup()
+
+    def test_stripe_available_flag(self):
+        r = self.client.get("/api/subscriptions/plans")
+        self.assertFalse(r.json()["stripe_available"])
+        os.environ["STRIPE_SECRET_KEY"] = "sk_test_x"
+        r = self.client.get("/api/subscriptions/plans")
+        self.assertTrue(r.json()["stripe_available"])
+
+    def test_me_includes_autorenew_fields(self):
+        import billing_sync
+        billing_sync.upsert_autorenew_subscription(
+            provider="stripe", user_id=self.user_id, plan_code="junior",
+            external_id="sub_me")
+        r = self.client.get("/api/subscriptions/me",
+                            headers={"Authorization": f"Bearer {self.token}"})
+        sub = r.json()["subscription"]
+        self.assertEqual(sub["external_id"], "sub_me")
+        self.assertEqual(int(sub["auto_renew"]), 1)
+        self.assertEqual(int(sub["cancel_at_period_end"]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
