@@ -149,7 +149,28 @@ $SSH "
   rm -rf /tmp/newmkt /tmp/sooppiy-mkt.tgz /tmp/sooppiy-deploy.tgz
 "
 
-# ── 7. verify, and say plainly if someone raced us ─────────────────────────
+# ── 7. prune superseded backups ────────────────────────────────────────────
+# Every deploy leaves a .prev-*/.env.bak-* per surface. Left alone they pile up
+# and the real rollback path hides among a dozen lookalikes — which is how a
+# previous session ended up with ten near-identical copies. Keep the two newest:
+# one to undo this deploy, one to undo the deploy before it.
+#
+# .env.bak-* matters most. Each is a full copy of the live secret set, so an
+# unbounded pile is extra copies of every API key sitting on disk.
+#
+# Sort by mtime, never by name — tags are not lexically ordered (.env.bak-welcome
+# has no date in it at all).
+say "pruning superseded backups (keeping the 2 newest per surface)"
+$SSH "
+  prune() { sudo ls -dt \$1 2>/dev/null | tail -n +\$((${KEEP_BACKUPS:-2} + 1)) | xargs -r sudo rm -rf; }
+  prune '$REMOTE/app.prev-*'
+  prune '$REMOTE/admin-site.prev-*'
+  prune '$REMOTE/.env.bak-*'
+  prune '/usr/share/nginx/sooppiy.prev-*'
+  prune '/usr/share/nginx/sooppiy-marketing.prev-*'
+"
+
+# ── 8. verify, and say plainly if someone raced us ─────────────────────────
 say "verifying"
 sleep 8
 RUNNING=$($SSH "docker inspect sooppiy-backend --format '{{.Config.Image}}'")
