@@ -1040,6 +1040,52 @@ class BreakevenRatchetTests(unittest.TestCase):
                     {"position": {"quantity": 0, "current_price": 500.0}}):
             self.assertEqual(run_engine._breakeven_arm_usd(bad), 0.0)
 
+    def test_a_reduce_cannot_retro_arm_the_floor(self):
+        # Run 976 (2026-08-06): entered 1.3166 GC ~4317, peaked +7.22 while
+        # the full-book arm was 11.36 — never armed. The desk then reduced
+        # half; sized off the CURRENT book the arm fell to 5.68 < 7.22 and
+        # the floor fired the same second at -5.10, flattening a position
+        # that then recovered (its replacement caught +16.9 of the move).
+        # Anchored to the largest book ever held, the bar stays 11.36 and
+        # the floor stays quiet.
+        reduced = {"position": {"quantity": 0.658, "current_price": 4314.1}}
+        arm = run_engine._breakeven_arm_usd(reduced, floor_qty=1.3166)
+        self.assertAlmostEqual(arm, 1.3166 * 4314.1 * 0.002, places=4)
+        self.assertFalse(run_engine._breakeven_floor_hit(7.22, -5.10, arm))
+
+    def test_current_book_sizing_is_the_pinned_defect(self):
+        # The same inputs WITHOUT the anchor DO fire — kept as the
+        # fail-before record of the 976 bug. If this ever stops firing,
+        # the default sizing changed and the anchor above needs a re-think.
+        reduced = {"position": {"quantity": 0.658, "current_price": 4314.1}}
+        arm = run_engine._breakeven_arm_usd(reduced)
+        self.assertTrue(run_engine._breakeven_floor_hit(7.22, -5.10, arm))
+
+    def test_a_constant_book_is_unchanged_by_the_anchor(self):
+        # 973-class fire: the book never changed size, so floor_qty equals
+        # the current qty and behaviour is identical to pre-fix.
+        pnl = {"position": {"quantity": 5.0, "current_price": 500.0}}
+        self.assertAlmostEqual(
+            run_engine._breakeven_arm_usd(pnl, floor_qty=5.0),
+            run_engine._breakeven_arm_usd(pnl))
+
+    def test_an_add_still_fires_at_the_bigger_books_bar(self):
+        # 971-class: an add makes the max book THE current book; a peak
+        # that cleared that bar still fires the floor at <= 0.
+        pnl = {"position": {"quantity": 50.0, "current_price": 500.0}}
+        arm = run_engine._breakeven_arm_usd(pnl, floor_qty=50.0)
+        self.assertAlmostEqual(arm, 50.0)
+        self.assertTrue(run_engine._breakeven_floor_hit(60.0, -0.01, arm))
+
+    def test_floor_qty_is_fail_soft(self):
+        pnl = {"position": {"quantity": 5.0, "current_price": 500.0}}
+        # 0.0 (the helper's failure value) falls back to the current book
+        self.assertAlmostEqual(run_engine._breakeven_arm_usd(pnl, floor_qty=0.0), 5.0)
+        self.assertAlmostEqual(run_engine._breakeven_arm_usd(pnl, floor_qty=None), 5.0)
+        # a flat book never arms, whatever the history says
+        flat = {"position": {"quantity": 0, "current_price": 500.0}}
+        self.assertEqual(run_engine._breakeven_arm_usd(flat, floor_qty=9.9), 0.0)
+
     def test_fail_closed_on_missing_inputs(self):
         self.assertFalse(run_engine._breakeven_floor_hit(None, -50.0, self.ARM))
         self.assertFalse(run_engine._breakeven_floor_hit(16.15, -50.0, 0.0))
@@ -1055,17 +1101,89 @@ class BreakevenRatchetTests(unittest.TestCase):
 
     def test_it_is_WIRED_into_stop_evaluation(self):
         # A rail nothing calls is the exact bug this fixes — the configured
-        # trailing lock has never fired once.
+        # trailing lock has never fired once. The max-book anchor must be
+        # wired too: an anchor computed but not passed is the 976 bug back.
         import inspect
         src = inspect.getsource(run_engine._evaluate_stop)
         self.assertIn("_breakeven_floor_hit(", src)
-        self.assertIn("_breakeven_arm_usd(pnl)", src)
+        self.assertIn("_breakeven_arm_usd(pnl, _run_max_abs_qty(run))", src)
 
     def test_it_works_with_NO_trail_config_at_all(self):
         # run 961 carries stop_conditions_json = {} and therefore had no peak
         # protection of any kind. The ratchet must not depend on `trail`.
         self.assertFalse(run_engine._trailing_lock_hit(16.15, -54.50, None))
         self.assertTrue(run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
+
+
+class RunMaxQtyReplayTests(unittest.TestCase):
+    """_run_max_abs_qty replays the run's own trade events with the same
+    signed-qty convention as pnl_audit (buy/cover build a long, sell/short
+    build a short). It anchors the breakeven floor's arm threshold so a
+    reduce cannot lower the bar under an already-earned peak (run 976)."""
+
+    RUN_ID = 424242
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _seed_events(self, events):
+        # Direct inserts with explicit seq — run_events.seq is NOT NULL and
+        # UNIQUE per run, and _emit_event needs a trading_runs row to track
+        # it, which this test deliberately does not create.
+        conn = database.get_db_connection()
+        try:
+            cursor = conn.cursor()
+            database.begin_write_transaction(cursor)
+            for seq, (event_type, payload) in enumerate(events, start=1):
+                cursor.execute(
+                    "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (self.RUN_ID, seq, event_type,
+                     f"2026-08-06T00:00:{seq:02d}Z", json.dumps(payload)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _seed_trades(self, legs):
+        self._seed_events([("trade", {"side": side, "quantity": qty,
+                                      "price": 100.0})
+                           for side, qty in legs])
+
+    def test_replay_tracks_the_largest_book_not_the_last(self):
+        # 976's shape: build 1.3166, reduce half, flatten the rest. The
+        # largest book is the entry-sized one even though the run ends flat.
+        self._seed_trades([("buy", 1.0), ("buy", 0.3166),
+                           ("sell", 0.658), ("sell", 0.6586)])
+        self.assertAlmostEqual(
+            run_engine._run_max_abs_qty({"id": self.RUN_ID}), 1.3166, places=6)
+
+    def test_shorts_replay_with_the_same_convention(self):
+        # sell/short grow a short book; cover shrinks it. Max is 3.0.
+        self._seed_trades([("sell", 2.0), ("short", 1.0), ("cover", 2.5)])
+        self.assertAlmostEqual(
+            run_engine._run_max_abs_qty({"id": self.RUN_ID}), 3.0, places=6)
+
+    def test_non_trade_events_and_garbage_are_ignored(self):
+        self._seed_events([
+            ("equity", {"total": 5.0}),
+            ("trade", {"side": "buy", "quantity": "not-a-number"}),
+            ("trade", {"side": "buy", "quantity": 2.0}),
+        ])
+        self.assertAlmostEqual(
+            run_engine._run_max_abs_qty({"id": self.RUN_ID}), 2.0, places=6)
+
+    def test_no_history_and_db_failure_are_fail_soft_zero(self):
+        self.assertEqual(run_engine._run_max_abs_qty({"id": self.RUN_ID}), 0.0)
+        with patch.object(run_engine, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            self.assertEqual(
+                run_engine._run_max_abs_qty({"id": self.RUN_ID}), 0.0)
 
 
 class FlattenRealizedJournalTests(unittest.TestCase):
