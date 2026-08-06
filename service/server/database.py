@@ -2766,6 +2766,41 @@ def init_database():
         ON run_events(event_type, ts)
     """)
 
+    # Durable corpus of what has been learned about this desk — monitoring
+    # findings AND the desk's own decisions with the outcomes they produced.
+    # Deliberately dialect-neutral: no FTS5, no FULLTEXT. The corpus is small
+    # and scoring happens in Python, so retrieval behaves identically on
+    # SQLite and MySQL. Indexed columns are VARCHAR, not TEXT: MySQL cannot
+    # build a UNIQUE index on TEXT without a prefix length.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS desk_memory (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            kind       VARCHAR(24)  NOT NULL,
+            source     VARCHAR(255) NOT NULL,
+            ts         VARCHAR(32)  NOT NULL,
+            run_id     INTEGER,
+            symbol     VARCHAR(32),
+            market     VARCHAR(32),
+            tags_json  TEXT,
+            title      VARCHAR(255) NOT NULL,
+            body       TEXT NOT NULL,
+            sha        VARCHAR(64)  NOT NULL,
+            created_at VARCHAR(32)  NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_desk_memory_sha
+        ON desk_memory(sha)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_desk_memory_kind_ts
+        ON desk_memory(kind, ts)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_desk_memory_run
+        ON desk_memory(run_id)
+    """)
+
     # Report delivery journal — the row is written BEFORE the external send
     # (status pending -> sent) so a worker restart can neither double-send a
     # digest nor permanently swallow a run_stopped alert (a sweep retries

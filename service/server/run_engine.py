@@ -46,6 +46,7 @@ from typing import Any, Optional
 
 import order_intent
 import trading_runs
+import desk_memory_ingest
 from database import begin_write_transaction, get_db_connection
 from order_params import (
     exit_prices as order_exit_prices,
@@ -4473,4 +4474,14 @@ async def tick() -> dict:
         asyncio.get_running_loop().create_task(_dispatch(run_id))
         dispatched += 1
     counters.update({"enabled": True, "due": len(due), "dispatched": dispatched})
+    # The desk corpus rides this tick rather than running its own loop. It is
+    # throttled internally and is never allowed to fail a trading tick: a
+    # corpus that cannot be written is a lost lesson, a tick that dies is a
+    # position nobody is managing.
+    try:
+        ingested = await asyncio.to_thread(desk_memory_ingest.maybe_ingest)
+        if ingested:
+            counters["memory_ingested"] = ingested
+    except Exception:  # noqa: BLE001
+        logger.warning("desk memory ingest failed", exc_info=True)
     return counters
