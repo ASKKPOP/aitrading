@@ -14,6 +14,50 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 81 — 2026-08-06 09:49Z (prod DB clock)
+
+Owner is asleep from this beat; the loop continues on cron `688d79c1`
+(`13,43 * * * *`) plus the 24h sweep `d869c56a` — both confirmed armed.
+
+**1. Working per plan?** Yes. 8 runs live, `20260806-pendflush`, docs
+200/200, **0 tracebacks** over 22m, `ratchet_audit` EXIT=0.
+
+**2. Losses and WHY.** 08-06 ledger **−19.21**, unchanged for a third
+consecutive beat — no closes since 08:54. DRIFT −9.56, unchanged and
+already explained (#257 is forward-only; both affected runs are
+`stopped`). **#257 has not yet been exercised live** — no run has entered
+`stopping` since it deployed. That remains the open verification.
+
+**3. What we missed.** Nothing new. **The named watch from cycle 80 is
+NOT tripped.** One new arm this beat, and it is a clean one:
+
+| run | verb | distance |
+|---|---|---|
+| 979 SI | `reduce` 0.5 @ 62.4 | 0.483% = **0.24** ordinary days |
+
+That is well inside the skill's ≤~1 ask. Post-#253 tally is now **5 arms
+— 4 `reduce`, 1 `close` = 20% full-book** (down from 25% by dilution, not
+by evidence) against the 45% pre-fix base rate. n=5.
+
+Reachability across every post-#253 arm keeps 968 as the *sole* outlier:
+
+| run | ordinary days |
+|---|---|
+| 979 SI | **0.24** |
+| 975 BTCUSDT | **0.75** |
+| 975 BTCUSDT | 1.28 |
+| 968 USDKRW | 2.03 |
+| 968 USDKRW | 2.65 (the `close 1.0`) |
+
+Four of five arms are at or near the ask. 968 is the only run drifting on
+both verb and distance — still **n=1**, so the #253 clause stays closed.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing. No reproduced evidence; the watch is holding.
+
+---
+
 ## Cycle 80 — 2026-08-06 09:30Z (prod DB clock)
 
 **1. Working per plan?** Yes. 8 runs live, both containers on
