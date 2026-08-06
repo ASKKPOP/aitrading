@@ -1282,3 +1282,136 @@ class FlattenRealizedJournalTests(unittest.TestCase):
         evs = self.client.get(f"/api/runs/{run_id}/events?limit=500",
                               headers=h).json()["events"]
         self.assertFalse([e for e in evs if e["event_type"] == "adapt"])
+
+
+class PendingCloseFlushTests(unittest.TestCase):
+    """Cycle 79. #249 fixed the forced flatten's missing `adapt` and its own
+    comment named the mechanism — "no later cycle ever processes this leg".
+    That is equally true of every OTHER close still pending when a run stops.
+    Measured 08-06: 960's reduce (-4.3752) and 976's reduce (-2.3142) never
+    reached the adapt stream at all — 70% of that day's ledger-vs-adapt
+    drift, a bigger hole than the one #249 was raised for."""
+
+    RUN_ID = 960
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("INSERT OR IGNORE INTO users (id, email, "
+                        "password_hash, created_at) VALUES (1, 'p@x.com', "
+                        "'x', '2026-01-01T00:00:00Z')")
+            cur.execute("INSERT OR IGNORE INTO agents (id, name, token_hash, "
+                        "cash, user_id, created_at) VALUES (7, 'pf', 'th', "
+                        "1000, 1, '2026-01-01T00:00:00Z')")
+            cur.execute("INSERT INTO trading_runs (id, agent_id, symbol, "
+                        "market, status, created_at) VALUES (?, 7, 'SI', "
+                        "'futures', 'stopping', '2026-08-06T00:00:00Z')",
+                        (self.RUN_ID,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _signal(self, sid, side, price, qty, fee, coid):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO signals (id, signal_id, agent_id, "
+                "message_type, market, symbol, side, entry_price, quantity, "
+                "fee_usd, run_id, client_order_id, timestamp, created_at) "
+                "VALUES (?, ?, 7, 'operation', 'futures', 'SI', ?, ?, ?, ?, "
+                "?, ?, '2026-08-06T00:00:00Z', '2026-08-06T00:00:00Z')",
+                (sid, f"sig-{sid}", side, price, qty, fee, self.RUN_ID, coid))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _adapts(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT payload FROM run_events WHERE run_id = ? "
+                        "AND event_type = 'adapt' ORDER BY seq",
+                        (self.RUN_ID,))
+            return [json.loads(dict(r)["payload"]) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def _open_and_reduce(self):
+        # 960's shape: open, then a reduce whose adapt never fired.
+        self._signal(1, "buy", 100.0, 10.0, 0.0, "run:960:cyc:1")
+        self._signal(2, "sell", 90.0, 5.0, 0.0, "run:960:cyc:32")
+
+    def test_a_close_the_next_cycle_never_ingested_is_journalled(self):
+        self._open_and_reduce()
+        self.assertEqual(
+            run_engine._flush_pending_close_adapts({"id": self.RUN_ID}), 1)
+        rows = self._adapts()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["trigger"], "pending_close")
+        self.assertEqual(rows[0]["signal_id"], 2)
+        self.assertAlmostEqual(rows[0]["realized"], -50.0, places=4)
+
+    def test_a_close_already_journalled_is_not_journalled_twice(self):
+        self._open_and_reduce()
+        emit = run_engine.emit_telemetry_event
+        emit(self.RUN_ID, "adapt", {"trigger": "losing_close",
+                                    "signal_id": 2, "realized": -50.0})
+        self.assertEqual(
+            run_engine._flush_pending_close_adapts({"id": self.RUN_ID}), 0)
+        self.assertEqual(len(self._adapts()), 1)
+
+    def test_the_flatten_leg_is_left_to_249_and_never_double_journalled(self):
+        # #249's flatten_close carries NO signal_id, so an id-only watermark
+        # would miss it and re-journal the flatten on the bounded retry.
+        self._signal(1, "buy", 100.0, 10.0, 0.0, "run:960:cyc:1")
+        self._signal(2, "sell", 90.0, 10.0, 0.0, "run:960:flatten")
+        run_engine.emit_telemetry_event(
+            self.RUN_ID, "adapt", {"trigger": "flatten_close",
+                                   "realized": -100.0})
+        self.assertEqual(
+            run_engine._flush_pending_close_adapts({"id": self.RUN_ID}), 0)
+        self.assertEqual([r["trigger"] for r in self._adapts()],
+                         ["flatten_close"])
+
+    def test_running_it_twice_is_idempotent(self):
+        # _control_stopping retries a failed flatten; the watermark is read
+        # from the run's OWN adapt events, so a second pass emits nothing.
+        self._open_and_reduce()
+        first = run_engine._flush_pending_close_adapts({"id": self.RUN_ID})
+        second = run_engine._flush_pending_close_adapts({"id": self.RUN_ID})
+        self.assertEqual((first, second), (1, 0))
+        self.assertEqual(len(self._adapts()), 1)
+
+    def test_an_opening_leg_is_not_a_close(self):
+        self._signal(1, "buy", 100.0, 10.0, 0.0, "run:960:cyc:1")
+        self.assertEqual(
+            run_engine._flush_pending_close_adapts({"id": self.RUN_ID}), 0)
+        self.assertEqual(self._adapts(), [])
+
+    def test_a_db_failure_never_wedges_the_stop(self):
+        self._open_and_reduce()
+        with patch.object(run_engine, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            self.assertEqual(
+                run_engine._flush_pending_close_adapts({"id": self.RUN_ID}), 0)
+
+    def test_it_is_actually_WIRED_into_the_stopping_path(self):
+        # A flush that renders but is never called is a no-op that looks
+        # fully tested — the _brake_distance_line lesson. Assert both that
+        # _control_stopping calls it AND that the call precedes the flatten,
+        # since the flatten leg must not exist as a signal yet.
+        import inspect
+        src = inspect.getsource(run_engine._control_stopping)
+        self.assertIn("_flush_pending_close_adapts(run)", src)
+        self.assertLess(src.index("_flush_pending_close_adapts"),
+                        src.index("_flatten_run"),
+                        "flush must run BEFORE the flatten leg is created")
