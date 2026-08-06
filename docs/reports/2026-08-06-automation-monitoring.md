@@ -14,6 +14,58 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 84 — 2026-08-06 12:12Z (prod DB clock)
+
+**1. Working per plan?** Yes. `20260806-fillorder` stable (tag compared),
+**0 tracebacks**, 7 runs live, docs 200/200, `ratchet_audit` clean.
+
+**2. Losses and WHY — nothing new; a prediction came true instead.**
+Ledger **−30.05 → −30.17** (−0.12, negligible).
+
+The real movement was in the **adapt** column: **−9.65 → −19.51**, which
+narrowed DRIFT from **−20.53 to −10.66**. Those are exactly the lagged
+adapts cycle 83 said were missing, landing on the next cycle:
+
+| run | when | realized |
+|---|---|---|
+| 975 | 11:39:01 | −11.5084 |
+| 977 | 11:43:34 | +1.6457 |
+| 979 | 11:54:59 | −0.1286 |
+
+Cycle 83 attributed the −20.53 to "closes that had not yet emitted their
+next-cycle adapts — the documented lag, not a new hole." **That
+explanation is now confirmed by the numbers arriving.** Worth stating
+because it is the rarer outcome: a prior conclusion held up.
+
+**3. What we missed — and an honest read on #257.**
+
+**974 SOLUSDT `idle_retired` at 11:06:28 — the first run to stop since
+#257 deployed — and it emitted NO `pending_close`. That is correct, and
+it is also not a test.** 974 ran **12 cycles over 8h19m with zero
+trades**, so `leg_outcomes` had nothing to return. The call *did*
+execute — the run transitioned through `_control_stopping`, and the flush
+is wired at its top (verified by source inspection inside the running
+image, twice) — but the null case and the "didn't run" case produce the
+same observable. **#257's non-null path remains untested live**, and I am
+not going to count 974 as evidence.
+
+**The freeze is not resolving — it is lengthening.** GC has now printed
+`4320.700195` for **4h15m** and SI `62.099998` for **3h54m**; USDKRW and
+SLV are also static. BTCUSDT and ETHUSDT move. `fill_audit` still reports
+**$12,124.96** at stalled prices.
+
+*974's cost, noted not acted on:* 12 multi-agent cycles and a capital
+slot for 8h19m to produce nothing. That is the documented dead-capital
+shape and the idle-retire rail fired at its configured limit — working as
+designed, not a defect.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing. Two PRs landed two minutes before this beat;
+what they need now is live cycles, not another change.
+
+---
+
 ## Inter-cycle ship — 2026-08-06 12:10Z — owner asked to cover the FILL side; PRs #260 + #261
 
 Owner: *"can we cover?"* on cycle 83's finding that trades are executing at
