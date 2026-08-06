@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal Compliance Review — 8 Jurisdictions</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  h3 { font-size: 15.5px; margin: 24px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .card.warn { border-color: var(--warn); }
+  .card.bad { border-color: var(--bad); }
+  .card.good { border-color: var(--good); }
+  .jur { border-left: 3px solid var(--accent); padding-left: 14px; margin: 24px 0;
+         overflow-x: auto; }
+  .jur h3 { margin-top: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 128px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip b.bad { color: var(--bad); } .chip b.warn { color: var(--warn); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  ol, ul { padding-left: 22px; }
+  li { margin: 6px 0; }
+  .tag { display: inline-block; font-size: 11px; border: 1px solid var(--line);
+         border-radius: 6px; padding: 1px 7px; color: var(--muted); white-space: nowrap; }
+  .tag.no { border-color: var(--bad); color: var(--bad); }
+  .tag.ok { border-color: var(--good); color: var(--good); }
+  .tag.wn { border-color: var(--warn); color: var(--warn); }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wn { color: var(--warn); }
+  .t-small { font-size: 11.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Legal Compliance Review — Privacy Policy, Terms, Refunds</h1>
+<p class="kr">8개 관할권 문서 검토 — 미국·캐나다·호주·한국·일본·베트남·인도네시아·태국 (2026-08-05)</p>
+
+<div class="card bad">
+<b>What this is, and what it is not.</b> I audited the two published documents
+(<code>privacypolicy.astro</code>, <code>termsconditions.astro</code>) and the new pricing/refund page against the
+statutory requirements I know for each market, and produced a gap list. <b>This is not legal advice and it is
+not a compliance certification.</b> I cannot verify compliance — only a qualified lawyer admitted in each
+jurisdiction can, and several items below require exactly that. My knowledge has a cutoff of May 2026;
+where a rule was moving at that point I have marked it <span class="tag wn">verify</span>.
+<p style="margin:8px 0 0">Treat this as the brief you hand to counsel, not as a substitute for one.</p>
+<p class="kr" style="margin:8px 0 0">현재 공개된 두 문서와 신규 가격/환불 페이지를 각 시장의 법정 요건과 대조해 <b>갭 목록</b>을 만든 것입니다. <b>법률 자문도, 컴플라이언스 인증도 아닙니다.</b> 실제 적합성 판단은 각 관할권 변호사만 가능하며, 아래 여러 항목이 바로 그 대상입니다. 지식 기준일은 2026년 5월이고, 당시 변동 중이던 사항은 <span class="tag wn">verify</span>로 표시했습니다. 변호사에게 넘길 브리프로 쓰십시오.</p>
+</div>
+
+<div class="chips">
+  <div class="chip"><b class="bad">2</b><span>false statements live right now</span></div>
+  <div class="chip"><b class="bad">8/8</b><span>markets need a licensing opinion</span></div>
+  <div class="chip"><b class="warn">0</b><span>legal entity named anywhere</span></div>
+  <div class="chip"><b class="warn">3</b><span>markets need local registration</span></div>
+  <div class="chip"><b>0</b><span>cookie consent mechanism</span></div>
+</div>
+
+<h2>Verdict first</h2>
+<p class="kr">결론 요약</p>
+
+<div class="card">
+<ol>
+<li><b>Two statements on the live site are now false</b> and get worse the moment you charge — Privacy Policy §2
+("the Service has no paid features at this time") and the old Terms §8, which I already rewrote. The privacy
+one is still live.</li>
+<li><b>The biggest risk in this review is not the documents — it is financial-services licensing.</b> Charging a
+fee for trading signals and running automation against a customer's brokerage account is a regulated activity
+in all eight markets under different names. No amount of policy wording fixes that. This needs a licensing
+opinion before you take money from any of these countries.</li>
+<li><b>"No refunds" is not lawful as an absolute in several of these markets</b> — in Australia a flat
+"no refunds" statement is itself an offence under the ACL, independent of whether you would have refunded.</li>
+<li><b>The arbitration + class-waiver + California-law clause (Terms §15) is unenforceable against consumers</b>
+in several target markets and is a liability in itself.</li>
+<li><b>No legal entity is identified anywhere</b> — no company name, registration number, or address. Korea and
+Japan make that disclosure mandatory to sell to consumers at all, and Stripe will ask for it too.</li>
+</ol>
+<p class="kr">① 라이브 사이트에 <b>거짓 문구 2개</b>(개인정보처리방침 2조는 아직 수정 전). ② 이 검토에서 가장 큰 리스크는 문서가 아니라 <b>금융업 인허가</b>입니다 — 8개국 모두에서 규제 대상 행위이며 문구로 해결되지 않습니다. ③ <b>"환불 없음"의 절대적 표현은 위법</b>인 시장이 있습니다(호주는 표시 자체가 위반). ④ <b>중재·집단소송 포기·캘리포니아법 조항</b>은 여러 시장에서 소비자 상대로 집행 불가. ⑤ <b>법인 정보가 어디에도 없습니다</b> — 한국·일본은 이 표시가 판매의 법정 요건입니다.</p>
+</div>
+
+<h2>Part A — Defects in the current documents</h2>
+<p class="kr">A부 — 현재 문서 자체의 결함 (관할권 무관, 전부 수정 대상)</p>
+
+<h3>A.1 Privacy Policy</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>Location</th><th>Defect</th><th>Severity</th></tr>
+<tr><td>1</td><td>§2, final paragraph</td><td>"We do not currently collect payment card or billing information — the Service has no paid features at this time." <b>False once billing goes live.</b> Also wrong on substance: Stripe/PayPal collect card data, but you will hold customer ids, last-4, billing country and subscription state</td><td class="no">Critical</td></tr>
+<tr><td>2</td><td>§1</td><td>No legal entity name, company registration number, or registered address. "Sooppiy" alone does not identify a controller</td><td class="no">Critical</td></tr>
+<tr><td>3</td><td>throughout</td><td>No <b>lawful basis</b> stated per processing purpose (contract / consent / legitimate interest). GDPR-style regimes and PIPA/PDPA equivalents all require this</td><td class="no">High</td></tr>
+<tr><td>4</td><td>§6 Retention</td><td>"a reasonable period afterward" — no periods given. Korea, Thailand, Indonesia and Japan expect stated retention per data category</td><td class="no">High</td></tr>
+<tr><td>5</td><td>§10 Transfers</td><td>Does not name destination countries, recipients, or safeguards. Korea requires <b>separate consent</b> with country/recipient/items/timing disclosed; Vietnam requires a transfer-impact dossier; Indonesia and Thailand impose conditions</td><td class="no">High</td></tr>
+<tr><td>6</td><td>§8 Rights</td><td>Names only EEA/UK/California. Seven of your eight target markets grant statutory rights not mentioned here</td><td class="no">High</td></tr>
+<tr><td>7</td><td>missing</td><td>No <b>automated decision-making</b> disclosure. Your product's whole premise is an AI making trading decisions about the user. Korea PIPA art. 37-2 (2023) grants refusal/explanation rights; GDPR art. 22; Australia's 2024 amendments add transparency duties <span class="tag wn">verify commencement</span></td><td class="no">High</td></tr>
+<tr><td>8</td><td>missing</td><td>No <b>breach-notification</b> commitment. Indonesia requires 3×24 hours, Thailand 72 hours, Korea and others have their own clocks</td><td class="wn">Medium</td></tr>
+<tr><td>9</td><td>missing</td><td>No privacy officer / DPO / local representative named. Korea requires a published CPO; Thailand requires a local representative for foreign controllers targeting Thai users</td><td class="no">High</td></tr>
+<tr><td>10</td><td>§8 cookies</td><td>Policy says control cookies "through your browser" — there is <b>no consent mechanism on the site at all</b>. No banner exists on any page</td><td class="wn">Medium</td></tr>
+<tr><td>11</td><td>§2</td><td>Does not disclose that connected <b>broker API credentials</b> are collected and stored. That is arguably the most sensitive data you hold</td><td class="no">High</td></tr>
+</table>
+</div>
+
+<h3>A.2 Terms &amp; Conditions</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>Location</th><th>Defect</th><th>Severity</th></tr>
+<tr><td>1</td><td>§15 Governing law</td><td>California law + AAA arbitration + class-action waiver, applied to consumers worldwide. <b>Void or unenforceable against consumers</b> in Quebec (CPA s.11.1 bans both), and vulnerable under Australian unfair-contract-terms law and Korean 약관규제법. An unenforceable clause does not just fail — it can taint the surrounding terms</td><td class="no">Critical</td></tr>
+<tr><td>2</td><td>header / §17</td><td>No legal entity, registration number, or physical address. Mandatory disclosure in Korea (전자상거래법) and Japan (特定商取引法)</td><td class="no">Critical</td></tr>
+<tr><td>3</td><td>§8.4 (new)</td><td>"All subscription fees are non-refundable" — needs an <b>express mandatory-rights carve-out placed with the exclusion, not only at the end</b>. In Australia this specific phrasing risk is an offence, not a mere unenforceability</td><td class="no">Critical</td></tr>
+<tr><td>4</td><td>§16 Changes</td><td>Unilateral amendment by continued use. Restricted in Quebec, and an unfair-term risk in Australia. Material changes normally need advance notice and a right to cancel</td><td class="wn">High</td></tr>
+<tr><td>5</td><td>§11–12</td><td>Broad "AS IS" and liability exclusions. Japan's 消費者契約法 voids clauses fully exempting a business from liability; the ACL cannot be excluded at all</td><td class="wn">High</td></tr>
+<tr><td>6</td><td>§2</td><td>Says Sooppiy "does not route orders to a broker… unless a specific feature explicitly states otherwise." The live execution layer exists — this reads as a disclaimer of something you actually do</td><td class="wn">Medium</td></tr>
+<tr><td>7</td><td>missing</td><td>No complaints/dispute contact separate from arbitration, and no ODR reference. Several regimes expect a stated complaints path</td><td class="wn">Medium</td></tr>
+</table>
+<p class="t-small">§8 (subscriptions, fees, refunds) was rewritten on 2026-08-05 and is materially better than what it replaced — the defects above are what remains.</p>
+</div>
+
+<h2>Part B — Per-jurisdiction requirements</h2>
+<p class="kr">B부 — 관할권별 요건</p>
+
+<div class="card warn">
+Columns are: <b>Privacy</b> — the data-protection statute and what it adds beyond the current policy.
+<b>Consumer / refund</b> — whether "no refunds, no proration" survives. <b>Selling formalities</b> — mandatory
+disclosures or registrations to sell to consumers there. <b>Financial licensing</b> — the question that
+matters most, treated separately in Part C.
+</div>
+
+<div class="jur">
+<h3>United States <span class="tag">largest auto-renew exposure</span></h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td>No federal omnibus law. State laws — CCPA/CPRA (CA), plus VA, CO, CT, UT, TX, OR, MT, FL and others. CCPA thresholds ($25M revenue / 100k consumers) may not be met yet, but the policy already promises CCPA rights</td><td class="wn">Thin but not fatal</td></tr>
+<tr><td>Auto-renew</td><td><b>ROSCA</b> — clear and conspicuous disclosure <em>before</em> obtaining billing information, express informed consent, and simple cancellation. <b>California ARL</b> is stricter and directly hits your design: a free trial converting to paid requires an <b>affirmative acknowledgment</b> and a <b>reminder before the first charge</b>. New York and others have their own</td><td class="no">Not implemented</td></tr>
+<tr><td>Refunds</td><td>No federal right to refund for digital services. "No refunds" is generally enforceable <em>if</em> clearly disclosed pre-purchase. FTC Act §5 punishes the deception, not the strictness</td><td class="ok">Survives, if disclosed</td></tr>
+<tr><td>FTC negative-option rule</td><td>The 2024 "click-to-cancel" rule was vacated on appeal in 2025; ROSCA and state ARLs are unaffected and remain the operative constraints <span class="tag wn">verify current status</span></td><td class="wn">Verify</td></tr>
+</table>
+<p><b>Do:</b> pre-charge trial reminder email, an explicit acknowledgment checkbox at checkout capturing the auto-renew terms, and cancellation available by the same channel as signup. The trial reminder is not optional if you sell to California.</p>
+</div>
+
+<div class="jur">
+<h3>Canada</h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>PIPEDA</b> federally; <b>Quebec Law 25</b> is the strict one — designated privacy officer published, granular consent, portability, and <b>automated decision-making disclosure on request</b>. Alberta/BC PIPA. Federal Bill C-27/CPPA did not pass before prorogation <span class="tag wn">verify</span></td><td class="no">Gaps 3, 7, 9</td></tr>
+<tr><td>Consumer</td><td>Provincial. <b>Quebec CPA s.11.1 voids arbitration and class-action waiver clauses against consumers</b> — your §15 is void there. Distance-contract disclosure and cancellation rules also apply</td><td class="no">§15 void</td></tr>
+<tr><td>Language</td><td><b>Charter of the French Language (Bill 96)</b> — consumer contracts and related documents must be available in French for Quebec consumers</td><td class="no">No French version</td></tr>
+<tr><td>Anti-spam</td><td>CASL governs commercial electronic messages — consent, identification, unsubscribe</td><td class="wn">Check marketing email</td></tr>
+</table>
+</div>
+
+<div class="jur">
+<h3>Australia <span class="tag no">"no refunds" is an offence risk</span></h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>Privacy Act 1988</b> + APPs. Small-business exemption (&lt;A$3M turnover) may apply now but is unreliable and was targeted for repeal. The 2024 amendment package adds automated-decision transparency and a serious-invasion tort <span class="tag wn">verify commencement dates</span></td><td class="wn">Plan for full APP compliance</td></tr>
+<tr><td>Consumer</td><td><b>Australian Consumer Law</b> — consumer guarantees <b>cannot be excluded, restricted or modified</b>. A blanket "no refunds" representation is itself a breach; the ACCC has penalised businesses for exactly this wording</td><td class="no">Must be reworded</td></tr>
+<tr><td>Unfair terms</td><td>Unfair contract terms regime, with <b>civil penalties since Nov 2023</b>. Auto-renewal, unilateral variation (§16), and broad liability exclusions (§11–12) are the classic flagged categories</td><td class="no">High exposure</td></tr>
+</table>
+<p><b>Do:</b> add the standard ACL statement — "Our services come with guarantees that cannot be excluded under the Australian Consumer Law" — <em>adjacent to</em> the no-refund clause, not buried at the end of it.</p>
+</div>
+
+<div class="jur">
+<h3>South Korea <span class="tag no">mandatory seller disclosure missing</span></h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>개인정보보호법 (PIPA)</b>, 2023 amendment. Requires: published <b>개인정보 보호책임자 (CPO)</b> with contact; retention period per data item; third-party provision detail (recipient, purpose, items, period); <b>separate explicit consent for overseas transfer</b> disclosing country, recipient, items and timing; and <b>art. 37-2 rights to refuse or demand explanation of automated decisions</b> — directly relevant to an AI that trades for the user</td><td class="no">Gaps 3, 4, 5, 7, 9</td></tr>
+<tr><td>E-commerce</td><td><b>전자상거래법</b> — mandatory published disclosure of 상호, 대표자, 주소, 전화번호, 이메일, <b>사업자등록번호</b>, <b>통신판매업 신고번호</b>, and hosting provider. This is a condition of selling to Korean consumers, not a nicety</td><td class="no">Entirely absent</td></tr>
+<tr><td>Refunds</td><td>청약철회 — 7 days. For digital content, withdrawal <b>can</b> be restricted where consumption began with the consumer's prior separate consent <em>and</em> the seller took the prescribed measures. Your §8.4 consent language is aimed at this; it only works with a recorded, separate consent step</td><td class="wn">Conditional — build the consent</td></tr>
+<tr><td>Standard terms</td><td><b>약관규제법</b> — unfair standard-form clauses void. §15 (foreign law + arbitration + class waiver) is a strong candidate</td><td class="no">§15 at risk</td></tr>
+</table>
+</div>
+
+<div class="jur">
+<h3>Japan <span class="tag no">特商法 disclosure page missing</span></h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>APPI (個人情報保護法)</b> — specify 利用目的; consent for third-party provision; <b>cross-border transfer consent with information about the destination country's regime</b>; publish business name, address, representative, request procedure, complaint contact for 保有個人データ</td><td class="no">Gaps 2, 3, 5, 9</td></tr>
+<tr><td>Selling formalities</td><td><b>特定商取引法</b> 通信販売 — a <b>特定商取引法に基づく表記</b> page is mandatory: seller name, address, phone, price, additional charges, payment method and timing, delivery/provision timing, and the <b>返品特約</b> (return policy). If the return policy is not properly stated, a statutory return right applies by default</td><td class="no">Page does not exist</td></tr>
+<tr><td>Refunds</td><td>No cooling-off for 通信販売 (unlike door-to-door). A clearly stated no-return policy is workable — <b>but only if stated in the 特商法 page in the prescribed manner</b></td><td class="wn">Depends on the page above</td></tr>
+<tr><td>Consumer contracts</td><td><b>消費者契約法</b> — clauses that wholly exempt the business from liability are void; §11–12 are drafted broadly enough to be caught</td><td class="wn">Narrow the exclusions</td></tr>
+</table>
+</div>
+
+<div class="jur">
+<h3>Vietnam</h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>Decree 13/2023/ND-CP (PDPD)</b> — consent form and granularity, data-subject rights, and a <b>cross-border transfer impact assessment dossier filed with the Ministry of Public Security</b>. A Personal Data Protection Law was passed in 2025 with effect from 2026 <span class="tag wn">verify current text and transition</span></td><td class="no">Transfer dossier not filed</td></tr>
+<tr><td>Localization</td><td><b>Decree 53/2022</b> (Cybersecurity Law) — data localization and a local branch or representative office can be required of foreign providers on request from the authorities</td><td class="wn">Contingent obligation</td></tr>
+<tr><td>Consumer</td><td><b>Law on Protection of Consumer Rights 2023</b> (in force 2024) — distance-contract duties, prohibited standard terms, and registration of standard-form contracts for certain categories</td><td class="wn">Review §15, §16</td></tr>
+<tr><td>E-commerce</td><td>Decrees 52/2013 and 85/2021 — notification/registration duties for e-commerce activity directed at Vietnam</td><td class="wn">Verify applicability</td></tr>
+</table>
+</div>
+
+<div class="jur">
+<h3>Indonesia <span class="tag no">PSE registration is a hard blocker</span></h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Operating permit</td><td><b>PSE registration</b> (Permenkominfo 5/2020) — foreign electronic system operators serving Indonesian users must register. Non-registration has resulted in <b>access blocking</b> of major platforms. This is operational, not theoretical</td><td class="no">Not registered</td></tr>
+<tr><td>Privacy</td><td><b>PDP Law 27/2022</b>, fully enforceable since Oct 2024 — lawful basis, DPO where required, <b>breach notification within 3×24 hours</b>, cross-border transfer conditions, data-subject rights</td><td class="no">Gaps 3, 5, 8, 9</td></tr>
+<tr><td>Language</td><td><b>Law 24/2009</b> + Presidential Reg 63/2019 — agreements involving Indonesian parties must be in Bahasa Indonesia (a bilingual version is the norm)</td><td class="no">No Indonesian version</td></tr>
+<tr><td>Consumer</td><td>Law 8/1999 and PP 80/2019 (e-commerce) — disclosure and consumer-right duties</td><td class="wn">Review</td></tr>
+</table>
+</div>
+
+<div class="jur">
+<h3>Thailand</h3>
+<table>
+<tr><th>Area</th><th>What applies</th><th>Status</th></tr>
+<tr><td>Privacy</td><td><b>PDPA</b> — lawful basis, data-subject rights, <b>72-hour breach notification</b>, DPO where applicable, and <b>a local representative in Thailand is required for a foreign controller offering goods or services to data subjects in Thailand</b></td><td class="no">No local representative</td></tr>
+<tr><td>Consumer</td><td>Consumer Protection Act; unfair contract terms legislation. The <b>Direct Sales and Direct Marketing Act</b> imposes registration duties on direct-marketing sales to consumers <span class="tag wn">verify applicability to a foreign online seller</span></td><td class="wn">Verify</td></tr>
+<tr><td>Refunds</td><td>No general statutory cooling-off for online digital services, but unfair-terms review applies to blanket exclusions</td><td class="wn">Moderate</td></tr>
+</table>
+</div>
+
+<h2>Part C — The licensing question <span class="tag no">read this one</span></h2>
+<p class="kr">C부 — 금융업 인허가: 이 검토에서 가장 큰 리스크</p>
+
+<div class="card bad">
+You charge a fee. In exchange, an AI produces trading signals and decisions for an identified individual
+user, and — where the user connects a broker — places orders on that user's account. In every one of these
+eight markets, some part of that is a regulated activity. The disclaimer "nothing here is investment advice"
+is evidence, not a defence: regulators look at what the service does, not at what it calls itself.
+<p style="margin:8px 0 0">Two features push you toward the heavier end of every regime: the advice is
+<b>personalised</b> (per user, per portfolio, per risk setting) rather than an impersonal newsletter, and the
+system can <b>execute</b> rather than merely suggest.</p>
+<p class="kr" style="margin:8px 0 0">수수료를 받고, 특정 개인 사용자를 위해 AI가 매매 신호·판단을 생성하며, 브로커 연결 시 그 계좌에 주문까지 넣습니다. 8개국 모두에서 이 중 일부는 규제 대상 행위입니다. "투자 자문이 아님" 문구는 방어가 아니라 정황 증거일 뿐이며, 규제기관은 명칭이 아니라 실제 기능을 봅니다. 특히 ① 자문이 <b>개인 맞춤형</b>이고 ② 시스템이 <b>주문 집행</b>까지 한다는 두 가지가 가장 무거운 쪽으로 분류시킵니다.</p>
+</div>
+
+<div class="card">
+<table>
+<tr><th>Market</th><th>Regime that likely bites</th><th>The specific question for counsel</th></tr>
+<tr><td>USA</td><td>Investment Advisers Act 1940 (SEC / state RIA); <b>CFTC/NFA CTA registration</b> for futures and commodity advice</td><td>Does the publisher's exclusion (<i>Lowe v. SEC</i>) survive when signals are personalised per user and can auto-execute? My read: probably not</td></tr>
+<tr><td>Canada</td><td>Provincial securities regulators (CSA) — adviser registration</td><td>Does the service constitute advising in securities in each province where you have users?</td></tr>
+<tr><td>Australia</td><td><b>AFSL</b> under the Corporations Act; ASIC has an active focus on copy trading</td><td>Is this personal advice, general advice, or dealing? Copy-trading has been treated as a financial service</td></tr>
+<tr><td>Korea</td><td><b>자본시장법</b> — 유사투자자문업 신고 at minimum; 투자자문업 인가 if personalised; <b>투자일임업</b> if the system trades the account</td><td>Does automated execution on a user's connected account amount to discretionary investment management?</td></tr>
+<tr><td>Japan</td><td><b>金融商品取引法</b> — 投資助言・代理業 registration for advice for compensation</td><td>Does a paid subscription giving AI-generated trading direction require registration?</td></tr>
+<tr><td>Vietnam</td><td>Securities Law — advisory licensing; digital-asset status changed in 2025/26 <span class="tag wn">verify</span></td><td>Can a foreign entity provide paid investment advisory to residents at all?</td></tr>
+<tr><td>Indonesia</td><td><b>OJK</b> licensing; crypto supervision moved from Bappebti to OJK in Jan 2025. Indonesia has <b>criminally prosecuted unlicensed "robot trading" operators</b></td><td>Highest enforcement risk of the eight. Get this opinion before accepting a single Indonesian subscriber</td></tr>
+<tr><td>Thailand</td><td>SEC Thailand — investment advisory licensing; the Digital Asset Business royal decree covers digital-asset advice</td><td>Does the crypto side trigger digital-asset advisory licensing separately from securities?</td></tr>
+</table>
+</div>
+
+<div class="card warn">
+<b>The pragmatic path most platforms take,</b> and the one worth pricing before you build compliance for eight
+countries: <b>geo-restrict at signup</b> to the markets where you have an opinion, and open others as opinions
+come in. That is a billing-country check plus a terms clause, and it is far cheaper than eight licensing
+analyses done at once. It also matches what your payment providers will expect you to be able to state.
+<p class="kr" style="margin:8px 0 0">현실적인 경로: 의견서를 확보한 시장만 열고 나머지는 <b>가입 단계에서 지역 제한</b>한 뒤 순차 개방. 결제 국가 확인 + 약관 조항이면 되며, 8개국 인허가 검토를 한꺼번에 하는 것보다 훨씬 저렴합니다.</p>
+</div>
+
+<h2>Part D — What to do, in order</h2>
+<p class="kr">D부 — 실행 순서</p>
+
+<div class="card">
+<table>
+<tr><th>#</th><th>Action</th><th>Needs a lawyer?</th><th>Blocks what</th></tr>
+<tr><td>1</td><td>Fix Privacy Policy §2 — remove "no paid features at this time", describe billing data actually held (customer id, last-4, billing country, subscription state) and the payment processors as recipients</td><td class="ok">No</td><td>Stripe review; it is a false statement today</td></tr>
+<tr><td>2</td><td>Publish the legal entity — company name, registration number, registered address, contact phone — in both documents and the footer</td><td class="ok">No</td><td>Korea and Japan sales; Stripe onboarding</td></tr>
+<tr><td>3</td><td>Disclose broker API credential storage in the Privacy Policy</td><td class="ok">No</td><td>Accuracy; it is your most sensitive data</td></tr>
+<tr><td>4</td><td>Add the ACL mandatory-guarantees sentence beside the no-refund clause</td><td class="wn">Review</td><td>Australian offence risk</td></tr>
+<tr><td>5</td><td>Build the checkout consent step (auto-renew acknowledgment + immediate-commencement consent), recorded with timestamp and terms version</td><td class="wn">Review wording</td><td>US ARL/ROSCA, Korea 청약철회 exception</td></tr>
+<tr><td>6</td><td>Pre-charge trial reminder email (day 4 of 7)</td><td class="ok">No</td><td>California ARL; also the top cause of trial chargebacks</td></tr>
+<tr><td>7</td><td>Rewrite Privacy Policy for lawful basis, retention periods, named transfer destinations, automated decision rights, breach notification, and a per-market rights section</td><td class="no">Yes</td><td>Korea, Japan, Indonesia, Thailand, Vietnam, Quebec</td></tr>
+<tr><td>8</td><td>Replace Terms §15 with a consumer-carve-out structure (local law and local courts for consumers in their home jurisdiction)</td><td class="no">Yes</td><td>Quebec void clause; Australia and Korea unfair-terms risk</td></tr>
+<tr><td>9</td><td>Japan 特定商取引法に基づく表記 page</td><td class="no">Yes</td><td>Selling to Japanese consumers</td></tr>
+<tr><td>10</td><td>Korea 전자상거래법 seller disclosure block + 통신판매업 신고</td><td class="no">Yes</td><td>Selling to Korean consumers</td></tr>
+<tr><td>11</td><td>Indonesia PSE registration; Thailand local representative; Vietnam transfer dossier</td><td class="no">Yes</td><td>Operating in those markets at all</td></tr>
+<tr><td>12</td><td>Bahasa Indonesia and French (Quebec) versions of the consumer terms</td><td class="no">Yes</td><td>Indonesia and Quebec</td></tr>
+<tr><td>13</td><td><b>Financial-services licensing opinion per market</b>, or geo-restrict to the markets you have opinions for</td><td class="no">Yes — priority</td><td>Everything. This is the one that closes a business, not just a page</td></tr>
+</table>
+<p><b>Items 1–3 and 6 are mine to do now</b> — they are factual corrections and a reminder email, and they carry no legal judgment. Everything from 7 down needs counsel, and 13 needs it first.</p>
+<p class="kr">1–3번과 6번은 사실 관계 정정과 알림 메일이라 지금 제가 처리할 수 있습니다. 7번부터는 변호사가 필요하고, 그중 13번이 최우선입니다.</p>
+</div>
+
+<div class="card">
+<h3>Honest limits of this review</h3>
+<ul>
+<li>I audited <b>documents against requirements</b>. I did not and cannot assess how you actually process data
+in practice, which is what an audit under any of these statutes really examines.</li>
+<li>Statute names and obligations are stated to the best of my knowledge as of <b>May 2026</b>. Privacy and
+consumer law in Vietnam, Indonesia and Australia were all mid-transition then; treat every
+<span class="tag wn">verify</span> as a research task, not a finding.</li>
+<li>I have deliberately not drafted replacement legal text for items 7–12. Wrong legal drafting that reads
+convincingly is more dangerous than an obvious gap.</li>
+<li>Thresholds matter and I do not know your numbers — CCPA, the Australian small-business exemption, and
+several DPO duties turn on revenue or data volume.</li>
+</ul>
+<p class="kr">이 검토는 <b>문서 대 요건</b> 대조입니다. 실제 데이터 처리 실무는 확인할 수 없었고, 진짜 감사는 그 부분을 봅니다. 법령 내용은 <b>2026년 5월</b> 기준 지식이며, 베트남·인도네시아·호주는 당시 전환기였습니다. 7–12번의 대체 법률 문안은 일부러 작성하지 않았습니다 — 그럴듯하지만 틀린 법률 문안은 명백한 공백보다 위험합니다.</p>
+</div>
+
+<p class="kr" style="margin-top:30px">Reviewed: <code>marketing/src/pages/privacypolicy.astro</code> (145 lines), <code>marketing/src/pages/termsconditions.astro</code> (as amended 2026-08-05), <code>marketing/src/pages/pricing.astro</code>. Not legal advice.</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,190 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+---
+
+<LegalLayout
+  title="Pricing"
+  description="Sooppiy subscription plans, billing terms, refund policy and cancellation."
+  lastUpdated="August 5, 2026"
+>
+
+<div class="legal-notice">
+  <p>
+    Every new account starts with 7 days of the Junior plan free — no payment
+    method required, and nothing is charged when the trial ends. Automation
+    simply pauses until you choose a plan.
+  </p>
+</div>
+
+<h2>Plans</h2>
+
+<div class="plan-scroll">
+  <table class="plans">
+    <thead>
+      <tr>
+        <th>Plan</th>
+        <th>Price</th>
+        <th>Free trial</th>
+        <th>What it includes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Junior</th>
+        <td><strong>$60</strong><span class="per">/month</span></td>
+        <td><span class="pill pill-on">7 days</span></td>
+        <td>Spot markets, manual trading, signals, and the $100,000 simulated paper ledger. Runs on the platform's default AI; no AI Analyst.</td>
+      </tr>
+      <tr>
+        <th scope="row">Pro</th>
+        <td><strong>$250</strong><span class="per">/month</span></td>
+        <td><span class="pill">—</span></td>
+        <td>Everything in Junior, plus futures and leverage, the AI Analyst, and your own AI provider by API key.</td>
+      </tr>
+      <tr>
+        <th scope="row">Professional</th>
+        <td><strong>$500</strong><span class="per">/month</span></td>
+        <td><span class="pill">—</span></td>
+        <td>Everything in Pro, plus multi-symbol Full Auto fleets — the complete automation desk.</td>
+      </tr>
+      <tr>
+        <th scope="row">Enterprise</th>
+        <td><strong>Contact us</strong></td>
+        <td><span class="pill">—</span></td>
+        <td>Custom limits and terms by contract.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p class="fine">
+  Prices are in US dollars, exclusive of tax. Any applicable VAT, GST or
+  sales tax is calculated and shown by our payment provider at checkout.
+  Accepted payment methods are shown on the subscribe page and may include
+  card (including Apple Pay and Google Pay), PayPal, USDT, and bank
+  transfer.
+</p>
+
+<h2>Free trial</h2>
+<p>
+  Every new account automatically receives a <strong>7-day free trial</strong>
+  of the <strong>Junior</strong> plan. <strong>No payment method is
+  required</strong>, and the trial never converts into a paid subscription:
+  nothing is charged during the trial and nothing is charged when it ends.
+  On day 8 your automation is paused and the subscribe page opens; access
+  resumes when you choose a plan.
+</p>
+<p>
+  The trial is limited to <strong>one per account</strong> and is provided on
+  the Junior plan only. Pro and Professional bill from the first day.
+  Subscribing during the trial ends the trial and begins your paid period
+  immediately.
+</p>
+
+<h2>Billing and renewal</h2>
+<p>
+  Subscriptions are billed <strong>monthly in advance</strong>. Card and
+  PayPal subscriptions renew automatically on each billing date until you
+  cancel; USDT and bank-transfer payments buy a single 30-day period and do
+  not renew by themselves. You can change plans at any time: upgrades take
+  effect immediately (on the USDT/bank rails you pay only the prorated
+  difference for the days remaining), and downgrades take effect at your
+  next billing date. If a card payment fails, our payment provider will
+  retry it; if it keeps failing, access ends when the paid period expires.
+</p>
+
+<h2>Refunds</h2>
+<p>
+  <strong>Subscription fees are non-refundable, and unused time is not
+  pro-rated.</strong>
+</p>
+<p>
+  Sooppiy is not a passive content service. From the moment a billing period
+  begins, the platform spends money on your behalf that it cannot recover:
+  paid AI model inference for your research, decisions and verifications;
+  licensed market, news and sentiment data; and continuous compute for your
+  automation runs, monitoring and alerting. Those costs are consumed as you
+  use the service. Specifically:
+</p>
+<ul>
+  <li>No refund is given for a billing period that has started — used or unused, whole or partial.</li>
+  <li>Cancelling mid-period does not refund, credit or pro-rate the remaining days. Access continues to the end of the period you already paid for.</li>
+  <li>Downgrading applies at the next billing cycle; the difference for the current period is not refunded.</li>
+  <li>Not using the service during a period is not grounds for a refund.</li>
+</ul>
+<p>
+  The 7-day free trial exists so you can evaluate the platform fully before
+  any charge is made. We do refund duplicate or clearly erroneous charges and
+  charges arising from confirmed fraudulent use of a payment method, and we
+  may credit periods materially affected by an extended outage. Nothing here
+  limits rights you have under consumer-protection law that cannot be waived.
+</p>
+
+<h2>Cancellation</h2>
+<p>
+  <strong>You can cancel at any time.</strong> Cancelling stops the next
+  renewal — it does not end the period you have already paid for. Your
+  access, automation runs and alerts continue until the end of that period,
+  after which the account returns to an unsubscribed state.
+</p>
+<ul>
+  <li><strong>Card:</strong> Manage subscription → billing portal → cancel.</li>
+  <li><strong>PayPal:</strong> Manage subscription → cancel auto-renewal.</li>
+  <li><strong>USDT / bank transfer:</strong> nothing renews by itself — a period simply ends unless you pay for another.</li>
+  <li><strong>During the free trial:</strong> there is nothing to cancel — no payment method is on file and the trial simply ends.</li>
+</ul>
+
+<h2>Export your data before you cancel</h2>
+<div class="legal-notice">
+  <p>
+    Your trading history, run journals, decision logs, positions, P&amp;L
+    records and research outputs can only be viewed and exported while your
+    subscription is active. Export them before your access ends.
+  </p>
+</div>
+<p>
+  Once access ends you can no longer export your data yourself. High-resolution
+  operational data is also deleted on a rolling retention schedule regardless
+  of subscription status, and it cannot be reconstructed — not by support, and
+  not by subscribing again. Re-subscribing restores your account, but not data
+  that has already aged out. If you skip the export, the loss is permanent.
+</p>
+
+<h2>Questions</h2>
+<p>
+  Billing questions go to <a href="mailto:support@sooppiy.com">support@sooppiy.com</a>.
+  The full terms are in our <a href="/termsconditions">Terms and Conditions</a>
+  — section 8 covers subscriptions, fees and refunds.
+</p>
+
+</LegalLayout>
+
+<style>
+.plan-scroll { overflow-x: auto; margin-bottom: 1rem; }
+table.plans {
+  width: 100%; border-collapse: collapse; min-width: 560px;
+  font-size: .9375rem; color: var(--text-2);
+}
+table.plans th, table.plans td {
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  padding: .875rem .75rem; text-align: left; vertical-align: top;
+  line-height: 1.6;
+}
+table.plans thead th {
+  font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 1px solid rgba(0,0,0,.16);
+}
+table.plans tbody th[scope='row'] {
+  font-weight: 700; color: var(--text); white-space: nowrap;
+}
+table.plans td strong { color: var(--text); font-weight: 700; }
+.per { color: var(--text-muted); font-size: .8125rem; margin-left: .15rem; }
+.pill {
+  display: inline-block; font-size: .75rem; font-weight: 600;
+  padding: .15rem .5rem; border-radius: 999px;
+  background: rgba(0,0,0,.05); color: var(--text-muted);
+}
+.pill-on { background: var(--accent-soft); color: var(--accent-h); }
+.fine { font-size: .8125rem !important; color: var(--text-muted) !important; }
+</style>
