@@ -92,8 +92,15 @@ def repeat_price_fills(since: str, *, conn=None,
     try:
         cursor = conn.cursor()
         trades = _rows(cursor,
+                       # ⚠️ ORDER BY ts, NOT seq. `seq` is per-RUN, so a
+                       # seq-ordered scan across runs interleaves fills out
+                       # of chronological order — the first live run paired
+                       # run 960's 08:18:07 fill as the "repeat" of run
+                       # 979's 08:54:26 one and printed a pair whose repeat
+                       # predated its first. Caught by live data, not by any
+                       # fixture, because fixtures seed one run in order.
                        "SELECT run_id, ts, payload FROM run_events WHERE "
-                       "event_type = 'trade' AND ts >= ? ORDER BY seq",
+                       "event_type = 'trade' AND ts >= ? ORDER BY ts, seq",
                        (since,))
         first_seen: dict[tuple[str, float], str] = {}
         out: list[dict[str, Any]] = []
