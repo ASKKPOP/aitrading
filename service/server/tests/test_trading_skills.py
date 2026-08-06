@@ -294,8 +294,33 @@ class RegistryTests(_Db):
             block = trading_skills.skills_block(site)
             self.assertIn("ARM THE LEVEL YOU CANNOT WAIT FOR", block,
                           f"arm lesson missing from {site}")
-            self.assertIn("Make it REACHABLE", block)
+            self.assertIn("REACHABLE MEANS REACHABLE BY YOUR", block)
             self.assertIn("Arm to BANK", block)
+
+    def test_arm_reachability_is_anchored_to_the_cycle_not_the_day(self):
+        # Cycle 82: the skill told the desk "cycles are roughly 45 minutes
+        # apart" AND "a level inside roughly one ordinary day's move" — two
+        # horizons ~30x apart. 64 arms authored, ZERO ever fired, none within
+        # 0.48% of its level. The yardstick was the wrong clock.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("~45 minutes", block, f"cycle horizon missing from {site}")
+            self.assertIn("64 arms placed here", block,
+                          f"the measured 64/0 evidence missing from {site}")
+            self.assertNotIn("inside roughly one ordinary day's move", block,
+                             f"the wrong yardstick survives in {site}")
+
+    def test_the_skill_no_longer_claims_every_cycle_replaces_the_arm(self):
+        # _store_armed_order runs ONLY on intent == "arm", so a reduce or
+        # hold cycle leaves the arm standing. The skill said the opposite —
+        # 968 armed close 1.0 at 09:27, reduced at 10:12 without restating,
+        # and the full-book arm stood on.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertNotIn("Each cycle's arm replaces the last", block,
+                             f"the false lifetime claim survives in {site}")
+            self.assertIn("does NOT expire when you act on something else",
+                          block, f"the true lifetime missing from {site}")
 
     def test_arm_verb_discipline_reaches_both_sites(self):
         # 968 armed `close 1.0` (2026-08-06 06:25Z). #245's exit-verb lesson
