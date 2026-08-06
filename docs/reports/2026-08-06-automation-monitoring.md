@@ -14,6 +14,37 @@ Suggestions + shipped solutions.
 
 ---
 
+## ⏸️ LOOP HELD — 2026-08-06 21:56Z (owner)
+
+Owner: *"hold monitoring, I will clean all history and then monitoring
+again."* **Both crons cancelled** (`688d79c1`, `d869c56a`); `CronList`
+confirms none scheduled. Temp worktrees and scratch files removed.
+
+**Final state at hold**
+
+| | |
+|---|---|
+| prod image | `20260806-lossfloor`, prod == `main` (`e93cfb2`) |
+| tracebacks | **0** |
+| docs | 200 / 200 |
+| **2026-08-06 ledger** | **−101.55** (8 flattens, 13 runs closed on the day) |
+| fleet | **0 running** |
+
+**⚠️ The fleet is at zero because it was STOPPED, not because it drained.**
+972 (+1.43) and 977 (−2.91) both closed with `status_reason:
+fleet_stop_all` at 21:51:47 and 21:51:53 — a deliberate stop consistent
+with the owner's cleanup. Cycle 101 predicted a self-emptying drain to
+0/10; **that is not what happened here, and I am not claiming the
+prediction landed.**
+
+**⏸️ PR #267 is PARKED — verified, not merged.** A 4-line punctuation fix
+to the loss-verdict brief (two sentences ran together on the live
+render). fail-before 2/2, 3558 pass, ruff clean, CI reproduced locally
+(Actions in `major_outage`). **Merge and deploy in one step when
+monitoring resumes.** Nothing else is in flight.
+
+---
+
 ## Inter-cycle ship — 2026-08-06 21:48Z — owner's −0.99 house floor; PR #266 (`20260806-lossfloor`)
 
 Owner, after last night's losses: *"we must be verification & Analysis
