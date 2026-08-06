@@ -70,7 +70,7 @@
 <p class="kr">서비스 이용 규칙 — 7일 무료 체험 · 환불 없음 · 요금제 · 해지와 데이터 백업 (owner-set 2026-08-05)</p>
 
 <div class="chips">
-  <div class="chip"><b>7</b><span>day Junior trial, no card needed</span></div>
+  <div class="chip"><b>7</b><span>day Junior trial, card up front</span></div>
   <div class="chip"><b>0</b><span>refunds, 0 proration</span></div>
   <div class="chip"><b>3</b><span>paid tiers + enterprise</span></div>
   <div class="chip"><b>5</b><span>site texts that now contradict</span></div>
@@ -83,72 +83,67 @@ has to be built, because <b>none of rule 1 or rule 3 exists in code today</b>.
 <p class="kr" style="margin:8px 0 0">1–3절은 고객에게 보여질 규칙, 4절은 현재 이와 어긋나는 문구, 5절은 새로 만들어야 하는 것 — <b>규칙 1과 3은 지금 코드에 존재하지 않습니다</b>.</p>
 </div>
 
-<h2>1. Free trial — Junior, 7 days, no payment method</h2>
-<p class="kr">규칙 1 — 주니어 7일 무료, 결제수단 없이 (2026-08-05 소유자 확정)</p>
-
-<div class="card warn">
-<b>Revised 2026-08-05.</b> The owner reversed the original card-up-front design the same day it was
-written: <i>"TRIAL is first 7 days don't need subscription payment (Stripe, PayPal)"</i>, and
-<i>"after 7 days, stop all user daemon and services, email to user and always open Subscription
-page."</i> This section now describes the card-free design — which is what is implemented
-(<code>billing_sync.grant_trial</code>, branch <code>feat/trial-reminder</code>).
-<p class="kr" style="margin:8px 0 0"><b>2026-08-05 개정.</b> 카드 선등록 방식은 같은 날 소유자 지시로 폐기되었습니다. 현재 구현된 것은 아래의 카드 없는 체험입니다.</p>
-</div>
+<h2>1. Free trial — Junior, 7 days, card up front</h2>
+<p class="kr">규칙 1 — 주니어 7일 무료, 카드 선등록 후 자동 전환</p>
 
 <div class="rule">
 <h3>The rule as customers read it</h3>
 <div class="card good">
-<b>Junior — first 7 days free, no card.</b> Every new account automatically receives 7 days of the
-Junior plan. No payment method is collected, and the trial never converts into a paid
-subscription: nothing is charged during the trial and nothing is charged when it ends. On day 8
-your automation is paused, you are emailed, and the subscribe page opens; access resumes when you
-choose and pay for a plan.
-<p style="margin:10px 0 0">The free trial is offered <b>once per account</b>, on the Junior plan only.
-Pro and Professional bill from day one. Subscribing to a paid plan during the trial ends the trial
-and begins the paid period immediately.</p>
-<p class="kr" style="margin:10px 0 0"><b>주니어 첫 7일 무료 — 카드 불필요.</b> 새 계정은 가입 즉시 주니어 7일 체험을 자동으로 받습니다. 결제수단을 수집하지 않으며, 체험은 유료 구독으로 전환되지 않습니다 — 체험 중에도, 종료 시에도 청구가 없습니다. 8일째에 자동화가 일시정지되고 이메일 안내 후 구독 페이지가 열립니다. 무료 체험은 <b>계정당 1회</b>, 주니어 플랜에만 적용됩니다. 체험 중 유료 플랜을 구독하면 체험이 종료되고 즉시 유료 기간이 시작됩니다.</p>
+<b>Junior — first 7 days free.</b> New members start on the Junior plan free for 7 days. A payment
+method is required at sign-up. On day 8 the Junior subscription renews automatically at
+<b>$60 / month</b> unless you cancel during the trial. Cancel any time before the trial ends and you
+are never charged.
+<p style="margin:10px 0 0">The free trial is offered <b>once per person</b>, on the Junior plan only.
+Pro and Professional bill from day one. Starting a paid plan directly, or upgrading during the trial,
+ends the trial and begins billing immediately.</p>
+<p class="kr" style="margin:10px 0 0"><b>주니어 첫 7일 무료.</b> 가입 시 결제수단 등록이 필요하며, 8일째부터 월 $60로 자동 결제됩니다. 체험 기간 중 해지하면 청구되지 않습니다. 무료 체험은 <b>1인 1회</b>, 주니어 플랜에만 적용됩니다. Pro·Professional은 첫날부터 청구되며, 체험 중 상위 플랜으로 변경하면 체험이 종료되고 즉시 결제가 시작됩니다.</p>
 </div>
 
-<h4>What bounds the cost of a card-free trial</h4>
-<p>A no-card trial is a bill with no floor only if it has no hard stop. This one stops itself: the
-trial is an ordinary subscription row that expires on day 7, at which point
-<code>PLAN_LIMITS[None]</code> zeroes the member's run allowance and the subscription enforcer pauses
-every daemon they own. Seven days of Junior-tier LLM/data quota per account is the maximum spend,
-and the day-4 reminder plus expiry notice are sent by the same sweep that pauses the runs.</p>
-<p class="kr">카드 없는 체험의 비용은 7일에서 강제로 끝납니다. 체험은 7일째 만료되는 일반 구독 행이며, 만료 즉시 실행 한도가 0이 되어 모든 데몬이 일시정지됩니다. 계정당 최대 지출은 주니어 등급 7일치 쿼터입니다.</p>
+<h4>Why card-up-front, and what it costs you</h4>
+<p>The card is collected at sign-up and the provider runs the 7 days as a native trial. This is one flow
+with no second paywall, and it is what both providers support natively —
+Stripe <code>subscription_data.trial_period_days = 7</code>, PayPal a <code>TRIAL</code> billing cycle on the Junior plan.</p>
+<p>The trade-off is real and worth naming: requiring a card cuts sign-ups compared with a no-card trial.
+You are trading top-of-funnel volume for conversion and for near-zero trial abuse. Given that every
+trial user consumes paid LLM inference and market-data quota from the first minute, that is the correct
+side to be on — a no-card trial on this product is a bill with no floor.</p>
+<p class="kr">카드 선등록은 가입 전환율을 낮추지만, 체험 사용자도 첫 순간부터 유료 LLM 추론과 시장데이터 쿼터를 소모하므로 이 제품에서는 옳은 선택입니다. 카드 없는 체험은 상한 없는 비용입니다.</p>
 
-<h4>One trial per account — the enforcement question</h4>
-<p>With no card there is no payment fingerprint, so the guard keys on the account's subscription
-history: <b>any prior subscription row — active, expired, or superseded — blocks a new trial</b>
-(<code>billing_sync.has_prior_subscription</code>). A lapsed trial therefore never earns a second one.
-Email aliasing can still mint fresh accounts; verified phone (shipped in #242) is the strong key to
-add if repeated-account abuse actually shows up. Watch it, don't pre-build it.</p>
-<p class="kr">카드가 없으므로 카드 지문 대신 <b>계정의 구독 이력</b>이 기준입니다 — 어떤 상태든 구독 행이 하나라도 있으면 새 체험이 부여되지 않습니다. 반복 가입 남용이 실제로 관측되면 이미 구현된 휴대폰 인증을 키로 추가하십시오.</p>
+<h4>One trial per person — the enforcement question</h4>
+<p>"Once per person" is only as strong as what you key it on. Email is trivially recycled. Ranked by strength:</p>
+<table>
+<tr><th>Key</th><th>Strength</th><th>Note</th></tr>
+<tr><td>Payment fingerprint <span class="tag ok">recommended</span></td><td>Strong</td><td>Stripe returns a card <code>fingerprint</code> stable across re-adds; block a trial if it has been used</td></tr>
+<tr><td>Verified phone</td><td>Strong</td><td>Already built — phone verification shipped in #242</td></tr>
+<tr><td>Email address</td><td class="no">Weak</td><td>Free aliasing defeats it; use as a secondary signal only</td></tr>
+</table>
+<p>Phone is already in the product, so keying on <b>verified phone + card fingerprint</b> costs little and closes the obvious hole.</p>
+<p class="kr">"1인 1회"는 무엇을 기준으로 잡는지에 달려 있습니다. 이메일은 쉽게 우회됩니다. 이미 구현된 <b>휴대폰 인증</b>과 <b>카드 지문</b>을 함께 키로 쓰는 것이 비용 대비 가장 확실합니다.</p>
 </div>
 
 <div class="card">
-<svg viewBox="0 0 960 160" role="img" aria-label="Trial timeline: sign-up with no card, 7 free days, automation paused on day 8, subscribe to resume">
+<svg viewBox="0 0 960 160" role="img" aria-label="Trial timeline: sign-up with card, 7 free days, automatic first charge on day 8">
   <rect class="box-accent" x="10" y="26" width="200" height="54"/>
   <text class="t-b" x="110" y="48" text-anchor="middle">Day 0 — sign-up</text>
-  <text class="t-s" x="110" y="66" text-anchor="middle">no card · $0 · trial granted</text>
+  <text class="t-s" x="110" y="66" text-anchor="middle">card collected · $0 charged</text>
 
   <rect class="box" x="255" y="26" width="270" height="54"/>
   <text class="t-b" x="390" y="48" text-anchor="middle">Days 1–7 — Junior, free</text>
-  <text class="t-s" x="390" y="66" text-anchor="middle">full Junior access · day-4 reminder email</text>
+  <text class="t-s" x="390" y="66" text-anchor="middle">full Junior access · cancel any time, never charged</text>
 
   <rect class="box-warn" x="570" y="26" width="220" height="54"/>
-  <text class="t-b" x="680" y="48" text-anchor="middle">Day 8 — access pauses</text>
-  <text class="t-s" x="680" y="66" text-anchor="middle">daemons stop · email · $0 charged</text>
+  <text class="t-b" x="680" y="48" text-anchor="middle">Day 8 — first charge</text>
+  <text class="t-s" x="680" y="66" text-anchor="middle">$60 automatically</text>
 
   <rect class="box" x="835" y="26" width="115" height="54"/>
-  <text class="t-b" x="892" y="48" text-anchor="middle">Subscribe</text>
-  <text class="t-s" x="892" y="66" text-anchor="middle">to resume</text>
+  <text class="t-b" x="892" y="48" text-anchor="middle">Monthly</text>
+  <text class="t-s" x="892" y="66" text-anchor="middle">until cancelled</text>
 
   <path class="ln" d="M210 53 H250" marker-end="url(#ar)"/>
   <path class="ln" d="M525 53 H565" marker-end="url(#ar)"/>
   <path class="ln" d="M790 53 H830" marker-end="url(#ar)"/>
-  <text class="t-s" x="390" y="112" text-anchor="middle">no refund question can arise — nothing is ever charged automatically</text>
-  <text class="t-s" x="680" y="112" text-anchor="middle">paying opens a fresh 30-day period; rule 2 applies from that charge on</text>
+  <text class="t-s" x="390" y="112" text-anchor="middle">no refund applies here — nothing has been charged yet</text>
+  <text class="t-s" x="680" y="112" text-anchor="middle">from this charge on, rule 2 applies: no refund, no proration</text>
   <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
     <path d="M0,0 L8,4 L0,8 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
 </svg>
@@ -215,11 +210,11 @@ exception turns on, and it needs to be a recorded checkbox, not a line buried in
 <table>
 <tr><th>Plan</th><th>Price</th><th>Billing</th><th>Free trial</th><th>What it unlocks</th></tr>
 <tr><td><b>Junior</b> <code>junior</code></td><td><b>$60</b> / month</td><td>Monthly, in advance</td><td class="ok">7 days</td><td>Spot markets, manual trading, signals, paper ledger. AI features locked; no Analyst</td></tr>
-<tr><td><b>Pro</b> <code>pro</code></td><td><b>$119</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds futures, Analyst, your own AI key. No fleets</td></tr>
-<tr><td><b>Professional</b> <code>professional</code></td><td><b>$199</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds AI fleets — the full automation desk</td></tr>
+<tr><td><b>Pro</b> <code>pro</code></td><td><b>$250</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds futures, Analyst, your own AI key. No fleets</td></tr>
+<tr><td><b>Professional</b> <code>professional</code></td><td><b>$500</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds AI fleets — the full automation desk</td></tr>
 <tr><td><b>Enterprise</b> <code>enterprise</code></td><td>Contact us</td><td>By contract</td><td class="no">None</td><td>Custom terms</td></tr>
 </table>
-<p class="t-small">Prices are USD and match <code>subscription_plans</code> as set on prod 2026-08-05 (the owner repriced Pro $250→$119 and Professional $500→$199 on 2026-08-05; the <code>database.py</code> seed, which only applies to fresh installs, was brought in line on 2026-08-06). Tier capabilities follow the owner's feature-gate spec of 2026-08-02. Currency, taxes and any local VAT/GST are shown at checkout by the payment provider.</p>
+<p class="t-small">Prices are USD and match <code>subscription_plans</code> as seeded on prod. Tier capabilities follow the owner's feature-gate spec of 2026-08-02. Currency, taxes and any local VAT/GST are shown at checkout by the payment provider.</p>
 <p class="kr">가격은 USD이며 운영 DB의 <code>subscription_plans</code>와 일치합니다. 세금·부가세는 결제 단계에서 결제사가 표시합니다.</p>
 </div>
 
@@ -231,10 +226,9 @@ account returns to unsubscribed and the platform locks.
 <ul style="margin:8px 0 0">
 <li><b>Card (Stripe):</b> Manage subscription → the Stripe Customer Portal → cancel.</li>
 <li><b>PayPal:</b> Manage subscription → Cancel auto-renewal.</li>
-<li><b>USDT / bank transfer:</b> nothing renews by itself — the period simply ends unless a new payment is made.</li>
-<li><b>During the free trial:</b> nothing to cancel — no payment method is on file and the trial simply ends on day 7.</li>
+<li><b>During the free trial:</b> cancel any time before day 8 and no charge is ever made.</li>
 </ul>
-<p class="kr" style="margin:8px 0 0"><b>언제든 해지할 수 있습니다.</b> 해지는 다음 갱신을 중지할 뿐, 이미 결제한 기간을 종료시키지 않습니다. <code>expires_at</code>까지 이용·자동화·알림이 유지된 뒤 잠금 상태가 됩니다. USDT·계좌이체는 자동 갱신이 없어 기간이 끝나면 그대로 종료됩니다. 체험 기간에는 등록된 결제수단이 없으므로 해지할 것도 없습니다 — 7일째에 저절로 끝납니다.</p>
+<p class="kr" style="margin:8px 0 0"><b>언제든 해지할 수 있습니다.</b> 해지는 다음 갱신을 중지할 뿐, 이미 결제한 기간을 종료시키지 않습니다. <code>expires_at</code>까지 이용·자동화·알림이 유지된 뒤 잠금 상태가 됩니다. 체험 기간 중 해지하면 청구가 발생하지 않습니다.</p>
 </div>
 
 <h3>3.3 Back up your activity before you cancel <span class="tag">customer obligation</span></h3>
@@ -269,7 +263,7 @@ first (§5.3), publish the rule with it.
 <div class="card">
 <table>
 <tr><th>#</th><th>File</th><th>Current text</th><th>Problem</th><th>Change to</th></tr>
-<tr><td>1</td><td><code>marketing/src/pages/termsconditions.astro</code> §8 Fees</td><td>"The Service is currently free to use. Sooppiy may introduce paid features or subscriptions in the future…"</td><td class="no">Flatly false once you charge. This is the page Stripe's reviewer opens</td><td><span class="tag ok">done 2026-08-05</span> §8.1–8.7 written (card-free trial wording)</td></tr>
+<tr><td>1</td><td><code>marketing/src/pages/termsconditions.astro</code> §8 Fees</td><td>"The Service is currently free to use. Sooppiy may introduce paid features or subscriptions in the future…"</td><td class="no">Flatly false once you charge. This is the page Stripe's reviewer opens</td><td>Replace with the full fee / trial / no-refund / cancellation terms from §1–3</td></tr>
 <tr><td>2</td><td><code>marketing/src/pages/index.astro</code> :54</td><td>"Free to join · No approval queue · Ships in minutes"</td><td class="no">Implies permanently free</td><td>"7 days free · No approval queue · Ships in minutes"</td></tr>
 <tr><td>3</td><td><code>marketing/src/pages/index.astro</code> :66</td><td>Stat tile: "<b>Free</b> paper-follow"</td><td class="no">Same</td><td>"<b>7-day</b> free trial"</td></tr>
 <tr><td>4</td><td><code>marketing/src/pages/index.astro</code> :326</td><td>"Free to join. No approval process…"</td><td class="no">Same</td><td>"Start free for 7 days. No approval process…"</td></tr>
@@ -291,16 +285,25 @@ from the site before activation, and §2 of this document is the content for it.
 <p class="kr">구현이 필요한 것 — 규칙 1과 3은 현재 코드에 없습니다</p>
 
 <div class="card">
-<h3>5.1 Trial support <span class="tag ok">built 2026-08-05 — card-free, platform-side</span></h3>
-<p><b>Superseded note (2026-08-05):</b> the provider-native trial described below was never built.
-The owner's card-free reversal made it unnecessary — the shipped design
-(branch <code>feat/trial-reminder</code>) is entirely platform-side:
-<code>billing_sync.grant_trial()</code> inserts an ordinary active Junior row
-(<code>method='trial'</code>, <code>auto_renew=0</code>, <code>expires_at=+7d</code>) at both signup paths;
-lazy expiry plus <code>PLAN_LIMITS[None]</code> pause every daemon on day 8; the day-4 reminder and
-expiry notice ride <code>subscription_enforcer_loop</code>; once-per-account is enforced by
-<code>has_prior_subscription()</code>. <b>No Stripe trial period, no PayPal TRIAL cycle, no
-trial-related webhook is needed</b> — the providers never see the trial at all.</p>
+<h3>5.1 Trial support <span class="tag no">does not exist</span></h3>
+<p>Subscription status today is only <code>pending | active | expired</code>. There is no trial state, no
+<code>trial_ends_at</code>, and no once-per-person guard. Needed:</p>
+<ul>
+<li><b>Stripe:</b> pass <code>subscription_data.trial_period_days = 7</code> on the Junior Checkout Session only.
+Stripe then sends <code>customer.subscription.trial_will_end</code> (3 days out) and bills on day 8 —
+the existing <code>invoice.paid</code> handler already covers the conversion.</li>
+<li><b>PayPal:</b> the Junior billing plan needs a second <code>billing_cycles</code> entry with
+<code>tenure_type: "TRIAL"</code>, <code>total_cycles: 1</code>, price <code>0</code>, sequence 1 — the paid REGULAR cycle
+becomes sequence 2. <span class="wn">This changes step 2.3 of the payment-keys guide: the Junior plan
+must be created with the trial cycle, and a plan already created without one cannot have it added —
+it has to be recreated.</span></li>
+<li><b>Entitlements:</b> a trialing user must get full Junior access, so the membership gate in
+<code>App.tsx</code> has to treat trial as active.</li>
+<li><b>Once-per-person guard:</b> keyed on verified phone + Stripe card fingerprint, checked before the
+trial is granted.</li>
+<li><b>Webhook:</b> subscribe to <code>customer.subscription.trial_will_end</code> and send the day-4 reminder
+— an unannounced first charge is the single most common trial chargeback.</li>
+</ul>
 
 <h3>5.2 Explicit consent checkbox at checkout <span class="tag no">does not exist</span></h3>
 <p>Per §2's jurisdiction note: a recorded checkbox for immediate commencement of the digital service and
@@ -312,21 +315,21 @@ row — an unrecorded consent is no consent when a dispute arrives.</p>
 trades with P&amp;L, run history and run events, decision/journal logs, and research theses — CSV or JSON,
 scoped to the requesting user, downloadable while the subscription is active.</p>
 
-<h3>5.4 Publish the pricing publicly <span class="tag ok">page written 2026-08-05</span></h3>
-<p><b>Note (2026-08-05):</b> <code>marketing/src/pages/pricing.astro</code> now exists — tiers, the
-card-free 7-day trial, the no-refund policy and cancellation, linked from the marketing nav and
-footer. It ships with the next marketing deploy.</p>
+<h3>5.4 Publish the pricing publicly <span class="tag no">blocked today</span></h3>
+<p><code>App.tsx</code>'s membership gate renders <code>/subscribe</code> only for signed-in users, so neither a
+prospective customer nor a Stripe reviewer can see $60 / $250 / $500. Add a public pricing section or a
+public <code>/pricing</code> route showing the tiers, the 7-day trial and the no-refund term.</p>
 </div>
 
 <div class="card">
 <h3>Order of work</h3>
 <table>
 <tr><th>#</th><th>Do</th><th>Why this order</th></tr>
-<tr><td>1</td><td>Rewrite T&amp;C §8 + publish refund/cancellation policy <span class="tag ok">done 2026-08-05</span></td><td>Blocks Stripe activation; costs no code</td></tr>
-<tr><td>2</td><td>Public pricing page <span class="tag ok">done 2026-08-05</span></td><td>Blocks Stripe activation; costs no code</td></tr>
+<tr><td>1</td><td>Rewrite T&amp;C §8 + publish refund/cancellation policy</td><td>Blocks Stripe activation; costs no code</td></tr>
+<tr><td>2</td><td>Public pricing page</td><td>Blocks Stripe activation; costs no code</td></tr>
 <tr><td>3</td><td>"Export my data"</td><td>Rule 3.3 cannot be published honestly without it</td></tr>
-<tr><td>4</td><td>Trial support (card-free) <span class="tag ok">done 2026-08-05</span> — consent checkbox still open</td><td>Rule 1 shipped platform-side; no provider trial cycles involved</td></tr>
-<tr><td>5</td><td>Update the remaining "free" site texts (§4 items 2–6)</td><td>Last — they should describe a trial that actually works</td></tr>
+<tr><td>4</td><td>Trial support + once-per-person guard + consent checkbox</td><td>Rule 1; the largest piece, and PayPal plans must be created with the trial cycle from the start</td></tr>
+<tr><td>5</td><td>Update the 5 site texts</td><td>Last — they should describe a trial that actually works</td></tr>
 </table>
 <p class="t-small">1 and 2 are documentation and a page; 3–4 are real engineering. If Stripe registration is the near-term goal, 1 and 2 alone unblock it — the trial can ship after activation, since a plan without a trial is still a valid plan.</p>
 <p class="kr">1·2는 문서·페이지 작업이고 3·4는 실제 개발입니다. 스트라이프 승인만이 당면 목표라면 1·2만으로 해소되며, 체험 기능은 승인 이후에 출시해도 됩니다.</p>
