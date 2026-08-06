@@ -24,6 +24,13 @@ AGENT_SIGNALS_CACHE_TTL_SECONDS = 15
 PRICE_API_RATE_LIMIT = 1.0
 PRICE_QUOTE_CACHE_TTL_SECONDS = 10
 MAX_ABS_PROFIT_DISPLAY = 1e12
+# The balance a NEW agent is seeded with when none is supplied. This is the
+# default at creation time and nothing else: every per-agent profit figure is
+# measured against that agent's own `agents.starting_capital`, which is
+# recorded at creation. Env-overridable so moving the house seed never needs a
+# code change, and defined once so the value cannot drift between the
+# leaderboard, the profile endpoint and the profit-history writer.
+DEFAULT_AGENT_SEED_CAPITAL = float(os.getenv('AGENT_SEED_CAPITAL') or 100000.0)
 LEADERBOARD_CACHE_TTL_SECONDS = 60
 DISCUSSION_COOLDOWN_SECONDS = 60
 REPLY_COOLDOWN_SECONDS = 20

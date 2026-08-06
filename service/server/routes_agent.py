@@ -23,6 +23,7 @@ from routes_models import (
 )
 from routes_shared import (
     AGENT_MESSAGE_SUMMARY_CACHE_KEY_PREFIX,
+    DEFAULT_AGENT_SEED_CAPITAL,
     AGENT_MESSAGE_SUMMARY_CACHE_TTL_SECONDS,
     PUBLIC_COUNT_CACHE_KEY_PREFIX,
     PUBLIC_COUNT_CACHE_TTL_SECONDS,
@@ -464,12 +465,18 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             password_hash = hash_password(data.password)
             wallet = validate_address(data.wallet_address) if data.wallet_address else ''
 
+            # starting_capital is seeded from the same value as cash: profit is
+            # measured against what the agent actually began with, so an agent
+            # registered with 1,000 must not be scored against the 100,000
+            # default (that read as an instant -99%).
             cursor.execute(
                 """
-                INSERT INTO agents (name, password_hash, wallet_address, cash)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO agents (name, password_hash, wallet_address, cash,
+                                    starting_capital)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (agent_name, password_hash, wallet, data.initial_balance),
+                (agent_name, password_hash, wallet, data.initial_balance,
+                 data.initial_balance),
             )
 
             agent_id = cursor.lastrowid
@@ -705,7 +712,8 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
             'token': token,
             'wallet_address': agent.get('wallet_address'),
             'points': agent.get('points', 0),
-            'cash': agent.get('cash', 100000.0),
+            'cash': agent.get('cash', agent.get('starting_capital')
+                    or DEFAULT_AGENT_SEED_CAPITAL),
             'reputation_score': agent.get('reputation_score', 0),
             'experiment_assignments': experiment_assignments,
         }

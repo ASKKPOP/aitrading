@@ -28,7 +28,7 @@ from routes_models import (
     UserResetPasswordRequest,
     UserSendCodeRequest,
 )
-from routes_shared import RouteContext
+from routes_shared import DEFAULT_AGENT_SEED_CAPITAL, RouteContext
 from services import _create_user_session, _get_agent_by_token, _get_user_by_token
 from utils import _extract_token, hash_password, verify_password
 
@@ -1155,8 +1155,10 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
                 # Password is random and unused — this agent authenticates only
                 # through the linked user account (token issued below).
                 cursor.execute(
-                    'INSERT INTO agents (name, password_hash, wallet_address, cash, user_id) VALUES (?, ?, ?, ?, ?)',
-                    (name, hash_password(secrets.token_urlsafe(24)), '', 100000.0, user['id']),
+                    'INSERT INTO agents (name, password_hash, wallet_address, cash,'
+                    ' starting_capital, user_id) VALUES (?, ?, ?, ?, ?, ?)',
+                    (name, hash_password(secrets.token_urlsafe(24)), '',
+                     DEFAULT_AGENT_SEED_CAPITAL, DEFAULT_AGENT_SEED_CAPITAL, user['id']),
                 )
                 agent_id = cursor.lastrowid
                 conn.commit()

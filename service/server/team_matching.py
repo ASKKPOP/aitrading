@@ -6,6 +6,8 @@ import hashlib
 import random
 from typing import Any
 
+from routes_shared import DEFAULT_AGENT_SEED_CAPITAL
+
 
 def stable_seed(value: str) -> int:
     digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
@@ -51,10 +53,18 @@ def _agent_feature(cursor: Any, agent_id: int) -> dict[str, Any]:
     )
     profit_row = cursor.fetchone()
 
+    cursor.execute("SELECT starting_capital FROM agents WHERE id = ?", (agent_id,))
+    seed_row = cursor.fetchone()
+
     trade_count = int(activity["trade_count"] or 0) if activity else 0
     strategy_count = int(activity["strategy_count"] or 0) if activity else 0
     discussion_count = int(activity["discussion_count"] or 0) if activity else 0
-    return_pct_30d = float(profit_row["profit"] or 0) / 100000.0 * 100 if profit_row else 0.0
+    # Percent of the capital THIS agent started with. Dividing by a fixed
+    # 100,000 mis-scales every agent seeded with anything else.
+    seed = float((seed_row["starting_capital"] if seed_row else None)
+                 or DEFAULT_AGENT_SEED_CAPITAL)
+    return_pct_30d = (float(profit_row["profit"] or 0) / seed * 100
+                      if profit_row and seed else 0.0)
     activity_score = trade_count * 2 + strategy_count * 1.4 + discussion_count
 
     return {

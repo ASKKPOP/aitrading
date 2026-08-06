@@ -28,10 +28,12 @@ import os
 from typing import Any, Optional
 
 import database
+from routes_shared import DEFAULT_AGENT_SEED_CAPITAL
 
-# Pulled in from routes_trading at the call site to avoid an import cycle
-# (routes_trading imports from this module via the endpoint hot path).
-INITIAL_CAPITAL = 100_000.0
+# Not pulled from routes_trading: that would be an import cycle (it imports
+# this module on the endpoint hot path). routes_shared is cycle-free and is
+# the single definition of the house seed.
+INITIAL_CAPITAL = DEFAULT_AGENT_SEED_CAPITAL
 
 # Who belongs on a public performance board (2026-07-28). ONE definition,
 # because three separate code paths rank agents — the materialized snapshot
@@ -132,7 +134,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                         ),
                         0
                     ) -
-                    (? + COALESCE(a.deposited, 0))
+                    (COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0))
                 ) AS profit,
                 (
                     (
@@ -147,8 +149,8 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                             ),
                             0
                         ) -
-                        (? + COALESCE(a.deposited, 0))
-                    ) / NULLIF((? + COALESCE(a.deposited, 0)), 0) * 100
+                        (COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0))
+                    ) / NULLIF((COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0)), 0) * 100
                 ) AS profit_percent,
                 (
                     SELECT COUNT(*)
@@ -158,7 +160,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
             FROM agents a
             LEFT JOIN positions p ON p.agent_id = a.id
             WHERE """ + _not_test_agent("a") + """
-            GROUP BY a.id, a.name, a.cash, a.deposited
+            GROUP BY a.id, a.name, a.cash, a.deposited, a.starting_capital
         )
         SELECT
             ap.*,
