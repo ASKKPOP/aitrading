@@ -14,6 +14,82 @@ Suggestions + shipped solutions.
 
 ---
 
+## Inter-cycle ship — 2026-08-06 12:10Z — owner asked to cover the FILL side; PRs #260 + #261
+
+Owner: *"can we cover?"* on cycle 83's finding that trades are executing at
+frozen marks. Two parts, AI-first order, image `20260806-fillorder`.
+
+### Part 1 — the lesson I owed
+
+**#259 shipped an observable with no lesson.** `_mark_freshness_line` gave
+the desk the FACT of a motionless tape and **no skill attached any
+judgment to it.** Data Honesty already teaches *"if a needed input is
+missing or stale, treat it as a reason for caution"* — a frozen price is
+precisely the case it missed, because it does not look stale at all. It
+looks like a healthy quote, **and it still fills.**
+
+The clause now refuses OPEN/ADD and level-setting on a motionless price,
+and carves out reduce/close as the one act that still makes sense.
+
+### Part 2 — the record the desk cannot keep
+
+`fill_audit` splits realized P&L into earned vs booked-against-a-stalled
+tape. Signature: two fills on the SAME symbol at the SAME price to full
+float precision, separated by real time. **Live prod, first run:**
+
+| run | symbol | price | gap | notional |
+|---|---|---|---|---|
+| 977 | GC | 4320.700195 | 181m | 712.21 |
+| 979 | SI | 62.099998 | 172m | 2,572.69 |
+| 968 | USDKRW | 1428.310059 | 136m | 32.60 |
+| 960 | SI | 62.320000 | 45m | 2,444.25 |
+| 979 | SI | 62.099998 | 36m | 5,145.39 |
+| 960 | SI | 62.099998 | 35m | 1,217.81 |
+
+**$12,124.96 of notional transacted at a stalled price**, across 3
+symbols — and correctly silent on BTCUSDT and ETHUSDT, which move.
+
+### The budget was measured, not bumped
+
+The clause overflowed `trader/us-stock` by **166 chars** and **silently
+dropped `execution-plan-check`**, a 667-char safety skill. That
+combination sits at **~33,890 of 34,000** while every other site/market
+pair has 3,700–30,800 spare. Room came from compressing this catalogue's
+own arm lesson (mine, #253/#259) — **not** a fifth `MAX_BLOCK_LEN` raise
+— and the ceiling is now documented at the constant.
+
+### Three defects in my own work, all caught before or at verification
+
+1. **The skill test was appended AFTER `if __name__ == "__main__"`** and
+   was never collected. Fail-before caught it.
+2. **Its guard would have passed vacuously** if Data Honesty ever left a
+   site. Now asserts the skill's presence unconditionally.
+3. **`fill_audit` paired fills in `seq` order** — and `run_events.seq` is
+   **per-run**, so a cross-run scan interleaved them out of time order.
+   The first live run printed run 960's 08:18:07 fill as the "repeat" of
+   run 979's 08:54:26 one — **a repeat predating its first**. Fixed in
+   **#261** (`ORDER BY ts, seq`) with a regression test that seeds two
+   runs whose seq order reverses their time order. The corrected total
+   rose from $6,979.57 to $12,124.96.
+
+**That is the THIRD time live data has caught a defect in one of these
+tools that its own unit tests passed** (#253's flatten-timestamp and
+duplicate-status-row traps were the first two). Fixtures are tidy; prod
+is not.
+
+**Verified:** fail-before real on both PRs, mutation 6/6, 3534 pass, ruff
+clean; in-image 14/14 fill_audit + 47 skills OK; frozen judgment renders
+on all four sites and `execution-plan-check` is back on trader; DB rows
+`data-honesty` and `position-management` both `seed-upgrade` at 12:07:00
+(durable); 0 tracebacks; docs 200/200. Verified twice.
+
+⚠️ **Still the owner's call:** the CAUSE. Alpha Vantage rate-limited at 25
+req/day; the feed answers "Successfully fetched" with a stale quote. And
+whether a frozen mark should ever BLOCK a fill — deliberately not built,
+because that halts trading.
+
+---
+
 ## Cycle 83 — 2026-08-06 10:58Z (prod DB clock)
 
 **1. Working per plan?** Yes. Fresh `20260806-deskeyes` stable — **0
