@@ -25,6 +25,61 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### ▶️ LOOP RESUMED — 2026-08-06 23:30Z (owner), NEW GROUND STATE
+>
+> The owner reset the balance to **1000** and cleared all history. Fleet 28
+> rebuilt: runs **980 SOLUSDT, 981 SI, 982 BTCUSDT, 983 ETHUSDT, 984 HG,
+> 985 ZC**, agent 6 seed 1000.
+>
+> **Owner's words that now govern the desk (verbatim):**
+> - *"We must be make solution for get a profit ( It's our destiny and purpose )"*
+> - *"MUST BE THINKING DEEPLY and do not make change lost profit"*
+> - *"Sooppiy AI analysis each run 30 min ( make time gap each )"*
+> - *"if got more -0.99 then clean that RUN. and make RUN again by AI Analysis"*
+>
+> **Shipped in response — PR #269, prod image `20260806-mandate30`:**
+>
+> 1. **The mandate is now the first line of every decision prompt.** The
+>    skills `_HEADER` previously framed the whole block as a brake (*"they may
+>    make you MORE cautious"*) and never said what the desk is FOR. It now
+>    opens: `YOUR PURPOSE IS REALIZED PROFIT — not activity, not being right,
+>    not holding on. THINK DEEPLY before every decision, and NEVER LET A GAIN
+>    YOU HAVE TURN INTO A LOSS: banked beats bigger.`
+>    *"REALIZED"* and *"not activity"* are deliberate: a bare "make profit"
+>    would push toward more trades, and three runs have been underwater from
+>    their entry fee alone.
+> 2. **`RUN_INTERVAL_CAP_MIN` (default 30)** caps how long a live run may go
+>    unanalysed — applied at SCHEDULING time, so no run's `config_snapshot_json`
+>    is rewritten (that belongs to the desk).
+> 3. **Per-run slots on an absolute grid.** Offsets `(run_id * 7) % interval`
+>    → runs 980-985 sit at minutes **20, 27, 4, 11, 18, 25**.
+>
+> **⚠️ TRAP worth keeping: a relative elapsed test can never break lockstep.**
+> Six runs shared `last_cycle_at = 22:57:00`. `elapsed >= interval` cannot
+> separate them, because once a full interval has passed the slot has ALWAYS
+> advanced too — the two conditions collapse into one and every run keeps its
+> inherited phase forever. The fix needs ONE early fire (floored at half an
+> interval) to snap a run onto its own slot.
+>
+> **⚠️ TRAP: changing the scheduler silently invalidates skill text.** The arm
+> skill sizes reachable levels by quoting its own cycle gap ("~45 minutes").
+> Moving to 30 would have left the desk sizing arms 1.5x too far — silently.
+> It now tracks `run_engine.INTERVAL_CAP_MIN`, bound by a test.
+>
+> **Catalogue is at capacity.** `trader/us-stock` = 33994 / 34000. The mandate
+> was funded by COMPRESSING text, not by raising `MAX_BLOCK_LEN` a fifth time.
+> There are **6 characters** of headroom. The next addition must prune first.
+> A test now fails if the header's share of the budget drops a skill.
+>
+> **Verification:** fail-before 4/5 cadence + 2/2 mandate tests; mutation on
+> `MAX_BLOCK_LEN` proves the budget guard non-vacuous; 3574 tests pass; all 5
+> CI jobs reproduced locally (GitHub Actions still `major_outage`); mandate,
+> cap and offsets confirmed inside the running prod worker.
+>
+> **State at resume (23:30Z):** equity ~1000 (FLAT — cash 892.94 is seed minus
+> ~107 of deployed margin, not a loss), 5 open positions, notional 214 at ~2x,
+> unrealized -0.01.
+
 > ### ⏸️ LOOP HELD — 2026-08-06 21:56Z (owner)
 >
 > Owner: *"hold monitoring, I will clean all history and then monitoring
