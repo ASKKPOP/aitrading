@@ -56,6 +56,22 @@ both verb and distance — still **n=1**, so the #253 clause stays closed.
 
 **5. Shipped.** Nothing. No reproduced evidence; the watch is holding.
 
+**⚠️ A PARALLEL SESSION DEPLOYED MID-CYCLE.** The verification pass found
+the containers on `20260806-prunebackups`, not the `20260806-pendflush` I
+deployed at 09:26 — another session shipped **#258** (backup pruning) on
+top of #257 at ~09:45. Checked rather than assumed, and it is clean:
+
+- `_flush_pending_close_adapts` still wired, still before the flatten
+- `ratchet_audit.RATCHET_TS` and `audit_exposures` both present
+- `run_engine.py` and `ratchet_audit.py` sha256 **match `origin/main`
+  exactly** — nothing of #255/#257 was clobbered
+
+The other session built from fresh main, which is exactly what the
+parallel-worktree rule asks for. **Never infer this from a green health
+check — an image tag changing under you is invisible unless you compare
+it.** `pending_close` adapt events fleet-wide: **0**, confirming #257 is
+still unexercised live.
+
 ---
 
 ## Cycle 80 — 2026-08-06 09:30Z (prod DB clock)
