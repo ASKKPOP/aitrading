@@ -846,6 +846,81 @@ def _trailing_lock_hit(peak_pnl: "float | None", current_pnl: float,
     return current_pnl <= peak * (1.0 - giveback)
 
 
+def _breakeven_ratchet_enabled() -> bool:
+    """Kill switch for the ratchet. A new rail that fires on EVERY run needs
+    one — default on, `BREAKEVEN_RATCHET=0` disables without a deploy."""
+    return (os.getenv("BREAKEVEN_RATCHET", "1") or "1").strip().lower() \
+        not in ("0", "false", "off", "no")
+
+
+def _breakeven_arm_usd(pnl: dict) -> float:
+    """The peak a position must clear before the floor applies: ITS OWN
+    round-trip cost.
+
+    Fee-anchored on purpose rather than a flat dollar figure — a peak that
+    has not yet paid for the trade is not a winner worth protecting, and a
+    constant would be a noise-trigger on small books and inert on large
+    ones. BREAKEVEN_ARM_FEES tunes the multiple of that round trip.
+    """
+    try:
+        pos = pnl.get("position") or {}
+        qty = abs(float(pos.get("quantity") or 0))
+        mark = float(pos.get("current_price") or 0)
+        if qty <= 0 or mark <= 0:
+            return 0.0
+        rate = float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+        mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
+        return qty * mark * rate * 2.0 * max(0.0, mult)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
+                         arm_usd: float) -> bool:
+    """Once a position has genuinely been in profit, do not let it go
+    negative. Deterministic, needs NOTHING from the desk.
+
+    Why this exists (measured 2026-08-05/06): the configured trailing lock
+    NO LONGER ARMS AT CURRENT BUDGETS. `trail.activate_usd` is set equal to
+    `max_loss_usd`, so it has RISEN with position size over time — 0.8, then
+    6.0, 26.17, 43.48, and now $78-81 on the live fleet — while the best
+    peak any run reached in two days was $22.07 and most were $2-6.
+
+    It is NOT dead code: it genuinely fired on runs 921, 919, 125, 119, 854
+    and 897 back when activation sat at 0.8-43.48. But across runs 940-972,
+    the entire current budget regime, it fired ZERO times. The protection
+    that is supposed to work without the desk has been outrun by its own
+    threshold. (An earlier draft of this comment claimed it had "never fired
+    on any run" — that was wrong, and the six runs above are the disproof.)
+
+    Note the opposite failure at the low end: run 921 armed at 0.8 and was
+    stopped 28 SECONDS after opening. That is why this rail anchors its arm
+    to the position's own round-trip cost rather than to a small constant.
+
+    Meanwhile the desk cannot cover the gap: it armed on only 37 of 133
+    held cycles (28%), and every arm it did place sat 11-13% from price. An
+    LLM will never be 100% compliant, so the guarantee cannot depend on one.
+
+    Replayed against the 08-05 book this fires on 971 at -5.10 instead of
+    -54.50, on 955 at -2.64 instead of -21.66 and on 967 at -0.54 instead
+    of -13.24 (~+81 total), while 969 — the day's best run at +19.11 — arms
+    and NEVER breaches, so the winner is protected rather than cut. Runs
+    whose peak never covered its own round trip never arm at all.
+
+    This is the breakeven ratchet PR #118 recommended after measuring and
+    REJECTING a lower trail_activate_rr; it was never built until now.
+    """
+    if not _breakeven_ratchet_enabled() or peak_pnl is None or arm_usd <= 0:
+        return False
+    try:
+        peak = float(peak_pnl)
+        if peak < arm_usd:
+            return False        # never was a winner — nothing to protect
+        return float(current_pnl) <= 0.0
+    except (TypeError, ValueError):
+        return False
+
+
 def _evaluate_stop(run: dict) -> Optional[str]:
     """Return a stop reason string when a stop event fired, None otherwise.
     Raises on evaluation FAILURE (stale marks, unreadable state) — the
@@ -970,6 +1045,21 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     if has_position and pnl["mark_age_ok"] and \
             _trailing_lock_hit(run.get("peak_pnl_usd"), pnl["total"],
                                conditions.get("trail")):
+        return "stop_event:trailing_lock"
+
+    # Breakeven ratchet (2026-08-06). Deliberately reuses the trailing_lock
+    # REASON rather than minting a new one: this IS a trailing lock whose
+    # floor sits at breakeven, the string is already classified in both
+    # fleet disposition sets and all six notification languages, and a new
+    # reason would silently fall through every one of them. It needs no
+    # `trail` config at all, which is the point — runs like 961 carry
+    # `stop_conditions_json = {}` and had NO peak protection whatsoever.
+    if has_position and pnl["mark_age_ok"] and \
+            _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"],
+                                 _breakeven_arm_usd(pnl)):
+        logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
+                    run["id"], run.get("peak_pnl_usd"), pnl["total"],
+                    round(_breakeven_arm_usd(pnl), 4))
         return "stop_event:trailing_lock"
 
     # Conviction-collapse exit (2026-07-31, desk item I5). Ships dark. A held
@@ -1139,11 +1229,45 @@ def _flatten_run(run: dict) -> tuple[bool, Optional[str]]:
         return False, "manual breaker halt blocks exits"
     from automation import execute_paper_trade
     side = "cover" if qty < 0 else "sell"
+    # Realized BEFORE the exit leg, so the flatten's own P&L can be
+    # journalled below. See the emit for why this matters.
+    try:
+        realized_before = float((compute_run_pnl(run) or {}).get("realized") or 0)
+    except Exception:  # noqa: BLE001 — reporting must never block the exit
+        realized_before = None
     signal_id, skip = execute_paper_trade(
         run["agent_id"], run["symbol"], run["market"], side, abs(qty), float(mark),
         content=f"Trading run #{run['id']} flatten on stop",
         run_id=run["id"], client_order_id=f"run:{run['id']}:flatten")
     if signal_id:
+        # FINDING 1 (2026-08-05), fixed here. A forced flatten emitted a
+        # `trade` event and NOTHING else, while every ordinary close emits an
+        # `adapt` carrying `realized` — so the standard realized-P&L query
+        # silently OMITTED every flatten. It understates losses exactly on
+        # the worst days, because a flatten happens when a brake, a retire or
+        # a stop fires on a losing position: 08-04 read −20.61 against a true
+        # −62.57, and 08-05 read +73.21 against a true +8.62, the gap being
+        # almost entirely run 971's −54.47 flatten. 70+ flattens exist
+        # historically.
+        #
+        # Emitting an `adapt` with `realized` (rather than inventing a new
+        # event type) fixes every downstream consumer at once without a query
+        # change. It cannot double-count: run_feedback derives its own adapt
+        # events from closed SIGNALS on a later cycle, and a flattened run is
+        # stopping/stopped, so no later cycle ever processes this leg — which
+        # is precisely why the number went missing in the first place.
+        try:
+            if realized_before is not None:
+                realized_after = float(
+                    (compute_run_pnl(run) or {}).get("realized") or 0)
+                emit_telemetry_event(run["id"], "adapt", {
+                    "trigger": "flatten_close",
+                    "realized": round(realized_after - realized_before, 4),
+                    "side": side, "quantity": abs(qty), "price": float(mark),
+                    "client_order_id": f"run:{run['id']}:flatten"})
+        except Exception:  # noqa: BLE001 — never let reporting undo an exit
+            logger.debug("flatten realized journal failed (run %s)",
+                         run["id"], exc_info=True)
         return True, None
     if skip and "duplicate client_order_id" in skip:
         return True, None  # a prior attempt already flattened
