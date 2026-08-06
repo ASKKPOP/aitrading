@@ -596,6 +596,23 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
+### 🚨 URGENCY 2026-08-06 (cycle 101) — the fleet is EMPTYING, 8 → 2 in one day
+
+The root cause below is diagnosed and unchanged. **What changed is the cost.**
+
+- **8 runs this morning → 2 now** (target 10), and the replenish loop cannot
+  refill.
+- **The compounding shape:** each retire adds a 24-hour cooldown, which
+  removes that symbol from a **~12-symbol universe** — so **the fleet's own
+  losses shrink the pool it needs to recover from.** Cooldowns now hold
+  SOLUSDT, HG, BTCUSDT, SI and ETHUSDT.
+- **This is no longer an idle-slot inefficiency. It is a fleet emptying
+  itself.** If the last two runs close without replacements the fleet reaches
+  **0/10 and stops trading entirely.**
+- Nothing to ship — the remedy (widen the universe, or lower the target) is
+  the owner's design call. What a monitoring session can do is say plainly
+  that the clock is now running.
+
 ### ✅ ROOT CAUSE, FINAL 2026-08-06 (cycle 100) — the research UNIVERSE is too small
 
 **Investigation complete over cycles 97→100. Owner decision, not more
