@@ -14,6 +14,75 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 97 — 2026-08-06 17:49Z (prod DB clock) — 🚨 THE FLEET HAS BEEN STUCK AT 3/10 FOR 4.5 HOURS
+
+**1. Working per plan?** The runs, yes — **0 tracebacks**, docs 200/200,
+ledger **−92.89 unchanged**, one event in the whole beat (978 hold).
+**The fleet, no.**
+
+**2. Losses.** None this beat. But **capital is idle**, which the P&L does
+not show.
+
+**3. 🚨 THE FINDING — fleet 27 is `replenishing:3/10` and has built
+NOTHING for 4h31m.**
+
+`[FleetPlanner] tick: {'claimed': 1, 'researched': 0, 'built': 0,
+'supervised': 1}` on every tick. The cause is a deterministic loop:
+
+```
+backtest_gate   kept: ["ZBTUSDT"]
+                dropped: NVDA  −200.50 USD/trade over 9 closed trades
+                         SNOW   −72.43 USD/trade over 6 closed trades
+candidate_skipped  slot N, ZBTUSDT:
+   "no price available for ZBTUSDT (crypto) — an unpriceable symbol
+    cannot be traded or stop-checked"
+```
+
+**Every empty slot draws the same sole survivor, and that survivor cannot
+be priced.** Measured: **271 skips between 13:18:38Z and 17:49:51Z**,
+across slots 2, 3, 6, 8, 9…
+
+**ZBTUSDT is genuinely untradeable, not a casualty of the freeze.**
+Verified directly: `Hyperliquid symbol not listed: ZBTUSDT -> ZBT`, while
+BTCUSDT (64599.5) and SOLUSDT (73.1165) price fine.
+
+**Two separable problems, and I want to be precise about which is which:**
+
+**(a) An ordering defect.** `fleet_planner` runs a chain of build-time
+feasibility checks — `thesis_expired`, `symbol_busy`,
+`_thesis_fee_infeasible`, `_bucket_expectancy_block` — each with the
+explicit rationale *"decide once, before the run exists."* **Priceability
+is not among them**; it fails later, at run creation
+(`routes_runs.py:462`). This is a **seventh instance** of the documented
+infeasible-at-build class.
+
+**(b) The real reason the slots stay empty — candidate SUPPLY.** The pool
+is **three symbols**. One is untradeable, and the other two were dropped
+on measured negative expectancy. **Fixing (a) would stop 271 futile build
+attempts and make the reason honest, but it would NOT fill a single
+slot** — the gate would simply report `kept: []`.
+
+**4. Docs.** Both 200.
+
+**5. Shipped: nothing, deliberately — and the reasoning matters.** The
+priceability filter is well-evidenced (271×) and low-risk, but it is a
+**partial** fix: it removes waste and restores honest reporting without
+addressing why 7 of 10 slots have no viable candidate. Shipping the easy
+half at the end of a long session would leave the fleet exactly as idle
+while looking addressed. **Research is proposing symbols the exchange
+does not list** — that is the thread to pull, and it deserves a fresh
+look rather than a rushed patch.
+
+**→ TOP NEW ITEM.** Recommended order: (i) add priceability to the
+build-time feasibility chain beside `_thesis_fee_infeasible`; (ii)
+investigate why the candidate pool is 3 and why research emits unlisted
+symbols at all.
+
+*Also:* **#264 still blocked** — Security workflow runners still
+unavailable after a third rerun. CI's have recovered. Not merging on red.
+
+---
+
 ## Cycle 96 — 2026-08-06 17:19Z (prod DB clock) — ⭐ #257 FIRED, EXACTLY AS PREDICTED
 
 **1. Working per plan?** Yes. `20260806-floorstatus` (tag compared),
