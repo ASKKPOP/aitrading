@@ -881,10 +881,21 @@ def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
     negative. Deterministic, needs NOTHING from the desk.
 
     Why this exists (measured 2026-08-05/06): the configured trailing lock
-    NEVER ARMS. `trail.activate_usd` is set equal to `max_loss_usd` — $78-81
-    on the live fleet — while the best peak any run reached in two days was
-    $22.07 and most were $2-6. The protection that is supposed to work
-    without the desk has therefore never fired once, on any run.
+    NO LONGER ARMS AT CURRENT BUDGETS. `trail.activate_usd` is set equal to
+    `max_loss_usd`, so it has RISEN with position size over time — 0.8, then
+    6.0, 26.17, 43.48, and now $78-81 on the live fleet — while the best
+    peak any run reached in two days was $22.07 and most were $2-6.
+
+    It is NOT dead code: it genuinely fired on runs 921, 919, 125, 119, 854
+    and 897 back when activation sat at 0.8-43.48. But across runs 940-972,
+    the entire current budget regime, it fired ZERO times. The protection
+    that is supposed to work without the desk has been outrun by its own
+    threshold. (An earlier draft of this comment claimed it had "never fired
+    on any run" — that was wrong, and the six runs above are the disproof.)
+
+    Note the opposite failure at the low end: run 921 armed at 0.8 and was
+    stopped 28 SECONDS after opening. That is why this rail anchors its arm
+    to the position's own round-trip cost rather than to a small constant.
 
     Meanwhile the desk cannot cover the gap: it armed on only 37 of 133
     held cycles (28%), and every arm it did place sat 11-13% from price. An
