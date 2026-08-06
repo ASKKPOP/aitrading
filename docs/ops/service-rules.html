@@ -215,11 +215,11 @@ exception turns on, and it needs to be a recorded checkbox, not a line buried in
 <table>
 <tr><th>Plan</th><th>Price</th><th>Billing</th><th>Free trial</th><th>What it unlocks</th></tr>
 <tr><td><b>Junior</b> <code>junior</code></td><td><b>$60</b> / month</td><td>Monthly, in advance</td><td class="ok">7 days</td><td>Spot markets, manual trading, signals, paper ledger. AI features locked; no Analyst</td></tr>
-<tr><td><b>Pro</b> <code>pro</code></td><td><b>$250</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds futures, Analyst, your own AI key. No fleets</td></tr>
-<tr><td><b>Professional</b> <code>professional</code></td><td><b>$500</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds AI fleets — the full automation desk</td></tr>
+<tr><td><b>Pro</b> <code>pro</code></td><td><b>$119</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds futures, Analyst, your own AI key. No fleets</td></tr>
+<tr><td><b>Professional</b> <code>professional</code></td><td><b>$199</b> / month</td><td>Monthly, in advance</td><td class="no">None</td><td>Adds AI fleets — the full automation desk</td></tr>
 <tr><td><b>Enterprise</b> <code>enterprise</code></td><td>Contact us</td><td>By contract</td><td class="no">None</td><td>Custom terms</td></tr>
 </table>
-<p class="t-small">Prices are USD and match <code>subscription_plans</code> as seeded on prod. Tier capabilities follow the owner's feature-gate spec of 2026-08-02. Currency, taxes and any local VAT/GST are shown at checkout by the payment provider.</p>
+<p class="t-small">Prices are USD and match <code>subscription_plans</code> as set on prod 2026-08-05 (the owner repriced Pro $250→$119 and Professional $500→$199; the seed values in <code>database.py</code> only apply to fresh installs). Tier capabilities follow the owner's feature-gate spec of 2026-08-02. Currency, taxes and any local VAT/GST are shown at checkout by the payment provider.</p>
 <p class="kr">가격은 USD이며 운영 DB의 <code>subscription_plans</code>와 일치합니다. 세금·부가세는 결제 단계에서 결제사가 표시합니다.</p>
 </div>
 
