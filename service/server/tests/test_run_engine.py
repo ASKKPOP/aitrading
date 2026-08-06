@@ -1530,3 +1530,81 @@ class StandingArmBriefTests(unittest.TestCase):
         full = inspect.getsource(run_engine.run_cycle)
         self.assertIn("_standing_arm_line", light, "missing from light path")
         self.assertIn("_standing_arm_line", full, "missing from full path")
+
+
+class FloorStatusBriefTests(unittest.TestCase):
+    """24-hour sweep, 2026-08-06. The breakeven floor arms only once a run's
+    peak clears its own round-trip cost. Across the 22 runs closed in that
+    window the split was 13 of 13: all ten losers had a peak BELOW their arm
+    threshold, all three winners above it. The threshold scales with book
+    size, so protection arms LAST exactly where it would save most — run 971
+    needed $16.36, reached $16.15, and lost -$58.18. The desk sees its peak
+    and has never been told where protection begins."""
+
+    RUN_ID = 919191
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            # 15.811514-unit book, the shape of run 971.
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, 1, 'trade', '2026-08-05T10:00:00Z', ?)",
+                (self.RUN_ID, json.dumps({"side": "buy", "quantity": 15.811514,
+                                          "price": 517.3})))
+            conn.commit()
+        finally:
+            conn.close()
+        self.pnl = {"position": {"quantity": 15.811514, "current_price": 517.3}}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_a_peak_short_of_the_threshold_says_NOT_ARMED(self):
+        # 971's real numbers: arm 16.36, peak 16.15 — short by 0.21.
+        line = run_engine._floor_status_line({"id": self.RUN_ID}, self.pnl, 16.15)
+        self.assertIn("NOT ARMED", line)
+        self.assertIn("$16.36", line)
+        self.assertIn("$16.15", line)
+        self.assertIn("nothing exits this position automatically", line)
+
+    def test_a_peak_over_the_threshold_says_ARMED(self):
+        line = run_engine._floor_status_line({"id": self.RUN_ID}, self.pnl, 42.84)
+        self.assertIn("ARMED", line)
+        self.assertNotIn("NOT ARMED", line)
+        self.assertIn("give-back to breakeven", line)
+
+    def test_the_threshold_is_anchored_to_the_LARGEST_book_not_the_current(self):
+        # Same #251 anchor the floor itself uses: a reduce must not lower the
+        # bar the desk is being shown.
+        reduced = {"position": {"quantity": 1.0, "current_price": 517.3}}
+        line = run_engine._floor_status_line({"id": self.RUN_ID}, reduced, 5.0)
+        self.assertIn("$16.36", line)
+
+    def test_a_flat_book_renders_nothing(self):
+        flat = {"position": {"quantity": 0.0, "current_price": 517.3}}
+        self.assertEqual(
+            run_engine._floor_status_line({"id": self.RUN_ID}, flat, 5.0), "")
+
+    def test_a_missing_peak_still_reports_the_threshold(self):
+        line = run_engine._floor_status_line({"id": self.RUN_ID}, self.pnl, None)
+        self.assertIn("NOT ARMED", line)
+        self.assertIn("$0.00", line)
+
+    def test_a_db_failure_renders_nothing_rather_than_breaking_the_cycle(self):
+        with patch.object(run_engine, "_run_max_abs_qty",
+                          side_effect=RuntimeError("db down")):
+            self.assertEqual(
+                run_engine._floor_status_line({"id": self.RUN_ID}, self.pnl, 5.0), "")
+
+    def test_it_is_WIRED_into_the_position_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._position_state_line)
+        self.assertIn("_floor_status_line(run, pnl, peak)", src,
+                      "floor status not wired into the position brief")
