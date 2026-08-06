@@ -14,6 +14,70 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 80 — 2026-08-06 09:30Z (prod DB clock)
+
+**1. Working per plan?** Yes. 8 runs live, both containers on
+`20260806-pendflush`, docs 200/200, **0 tracebacks** since the deploy,
+`ratchet_audit` EXIT=0, events current to the second.
+
+**A false alarm I checked before raising it.** `[TradingRuns] tick` was
+**absent from the entire worker log** after the 09:27:38 restart, which
+reads like a stalled control loop. It is not. `tasks.py:795` prints that
+line **only when `dispatched` or `armed_started` or `stopping_finished`
+is truthy** — silence means nothing was due. Positive proof the loop is
+alive: `_maybe_emit_equity` is called from `_control_active`, on the same
+tick as `_control_stopping`, and equity events are landing at 09:31:10.
+So the path #257's flush sits on is confirmed running. Recorded as a trap
+— a future session could easily mis-call this a dead worker.
+
+**2. Losses and WHY.** 08-06 ledger **−19.21**, unchanged; no realized
+movement this beat. `pnl_audit` DRIFT persists at −9.56 exactly as
+predicted — #257 is forward-only and both affected runs are already
+`stopped`.
+
+**3. What we missed — the first post-#253 counter-example.**
+
+Cycle 79 reported 3 post-#253 arms, all `reduce`, and called it *not yet
+significant*. That caution was right: **968 armed `close 1.0` at 09:27:18.**
+Post-#253 tally is now **4 arms — 3 `reduce`, 1 `close` = 25% full-book**
+against a 45% pre-fix base rate. n=4. **The clause has not eliminated
+full-book arms**, and nothing here is significant either way.
+
+**The instance is worse than the verb alone.** 968 *replaced its own
+better arm*:
+
+| time | verb | level | distance |
+|---|---|---|---|
+| 08:42:25 | `reduce` 0.5 | 1442.6 | 1.000% = **2.03** ordinary days |
+| 09:27:18 | `close` 1.0 | 1447.0 | 1.309% = **2.65** ordinary days |
+
+It moved the level **further away** *and* **escalated the verb** in one
+cycle — on a run that has never been in profit (realized −3.59, peak
+−2.08). Watch (ii) asks ≤~1 ordinary day; both are beyond it.
+
+**But this is 968-specific, not systemic** — the split matters:
+
+| run | arm | ordinary days |
+|---|---|---|
+| 975 BTCUSDT | reduce | 1.28 |
+| 975 BTCUSDT | reduce | **0.75** (moved CLOSER) |
+| 968 USDKRW | reduce | 2.03 |
+| 968 USDKRW | close | 2.65 |
+
+975 is doing exactly what the skills ask — partial verb, and it tightened
+its own level on the second pass. Only 968 drifts.
+
+*Watch (vii):* `conviction_missing` = **4 of 52** decisions today (7.7%).
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** **Nothing, deliberately.** One counter-example on one run
+is not reproduced evidence, and the standing daily-solution duty never
+licenses a thinly-evidenced ship. Logged as a named watch: **a second
+run authoring an unreachable full-book arm re-opens the #253 clause.**
+
+---
+
 ## Inter-cycle ship — 2026-08-06 09:28Z — owner asked for a solution to the pnl_audit DRIFT; PR #257
 
 Owner: *"make solution for pnl_audit는 여전히 08-06 DRIFT … 알려진 미수정

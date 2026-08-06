@@ -470,6 +470,18 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### Added 2026-08-06 (cycle 80) — `[TradingRuns] tick` silence is NOT a dead loop
+
+- **`tasks.py:795` prints that line ONLY when `dispatched` or `armed_started`
+  or `stopping_finished` is truthy.** An empty grep across the whole worker
+  log means *nothing was due*, not that the control loop stalled. Run cycles
+  are ~45 min apart, so multi-minute silences are normal.
+- **Positive liveness proof, use this instead:** `_maybe_emit_equity` is
+  called from `_control_active`, on the SAME tick as `_control_stopping`.
+  Fresh `equity` rows in `run_events` therefore prove the control loop — and
+  #257's flush path — is running. Absence of a log line is not evidence;
+  presence of an equity event is.
+
 ### Added 2026-08-06 (#257) — "fixed on the next cycle" means LOST when the run dies
 
 - **Decompose a drift before naming it.** The standing `pnl_audit` DRIFT was
