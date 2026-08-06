@@ -145,7 +145,7 @@ Checkout endpoints <b>never</b> activate a plan. They only return a redirect URL
 <h4 style="margin:16px 0 4px;font-size:14px">Business description — full</h4>
 <pre><code>Sooppiy is a subscription software (SaaS) platform for market research and
 trading-strategy automation. Customers pay a recurring monthly fee (USD 60 /
-119 / 199) for access to the web application.
+250 / 500) for access to the web application.
 
 The software aggregates public market data, news and sentiment, publishes
 research and signals, and lets customers build, back-test and run automated
@@ -177,7 +177,7 @@ customer funds — Stripe collects only the software subscription fee.</code></p
 <tr><td>Product description</td><td>"Monthly subscription granting access to the Sooppiy web application: market dashboards, research and signals, paper-trading simulator, back-testing and strategy automation. Access is granted immediately, delivered digitally, and renews monthly until cancelled."</td><td>Answers delivery timing and fulfilment, which underwriting asks next</td></tr>
 <tr><td>Website</td><td><code>https://sooppiy.com</code></td><td>Must be live and show pricing — see the blockers below</td></tr>
 <tr><td>Statement descriptor</td><td><code>SOOPPIY</code> (≤22 chars), suffix <code>SUBSCRIPTION</code></td><td>Unrecognisable descriptors are the #1 cause of "I don't know this charge" disputes</td></tr>
-<tr><td>Average transaction</td><td>~$60–$199/month</td><td>Match the real plan prices; a mismatch triggers review</td></tr>
+<tr><td>Average transaction</td><td>~$60–$500/month</td><td>Match the real plan prices; a mismatch triggers review</td></tr>
 <tr><td>When do you charge?</td><td>Immediately, then monthly in advance</td><td>True of Stripe Checkout in <code>mode: subscription</code></td></tr>
 </table>
 
@@ -196,7 +196,7 @@ customer funds — Stripe collects only the software subscription fee.</code></p
 <ol style="margin:6px 0 0">
 <li><b>Terms &amp; Conditions §8 says the opposite of what you're applying for.</b> <code>marketing/src/pages/termsconditions.astro</code> currently reads <em>"The Service is currently free to use… Sooppiy may introduce paid features or subscriptions in the future."</em> Applying to charge subscriptions while your published terms say the product is free is a direct contradiction on the linked page.</li>
 <li><b>No refund / cancellation policy is published.</b> Stripe requires one to be reachable from the site. State the actual policy: monthly term, cancel any time, access runs to <code>expires_at</code>, no partial-month refunds — whatever you decide, but it must be written down.</li>
-<li><b>Pricing is behind the login wall.</b> <code>/subscribe</code> only renders for a signed-in user (<code>App.tsx</code> membership gate), so a reviewer cannot see the $60 / $119 / $199 tiers. Put a public pricing section on the marketing page or a public <code>/pricing</code> route. <b>FIXED 2026-08-06:</b> <code>sooppiy.com/pricing</code> now serves the Astro pricing page anonymously (nginx <code>location /pricing</code> → the marketing root). Before that the SPA had no <code>/pricing</code> route at all and its catch-all bounced anonymous visitors to <code>/</code>.</li>
+<li><b>Pricing is behind the login wall.</b> <code>/subscribe</code> only renders for a signed-in user (<code>App.tsx</code> membership gate), so a reviewer cannot see the $60 / $250 / $500 tiers. Put a public pricing section on the marketing page or a public <code>/pricing</code> route.</li>
 </ol>
 <p class="kr" style="margin:8px 0 0">① 이용약관 8조가 "현재 무료"라고 되어 있어 유료 구독 신청과 정면으로 모순됩니다. ② 환불·해지 정책이 공개되어 있지 않습니다(스트라이프 필수). ③ 가격이 로그인 뒤에 있어 심사자가 볼 수 없습니다.</p>
 </div>
@@ -215,8 +215,8 @@ customer funds — Stripe collects only the software subscription fee.</code></p
 <table>
 <tr><th>Sooppiy plan code</th><th>Name</th><th>Price</th><th>Billing period</th><th>Needs a Stripe price?</th></tr>
 <tr><td><code>junior</code></td><td>Junior</td><td>$60.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
-<tr><td><code>pro</code></td><td>Pro</td><td>$119.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
-<tr><td><code>professional</code></td><td>Professional</td><td>$199.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
+<tr><td><code>pro</code></td><td>Pro</td><td>$250.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
+<tr><td><code>professional</code></td><td>Professional</td><td>$500.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
 <tr><td><code>enterprise</code></td><td>Enterprise</td><td>—</td><td>—</td><td class="no">No — contact-only</td></tr>
 </table>
 <p>Copy each <b>Price ID</b> (<code>price_…</code>, not the product <code>prod_…</code>). You need all three in step 4.</p>
@@ -298,8 +298,8 @@ curl -s -X POST https://api-m.paypal.com/v1/catalogs/products \
   -H "Authorization: Bearer &lt;ACCESS_TOKEN&gt;" \
   -H "Content-Type: application/json" \
   -d '{"name":"Sooppiy Subscription","type":"SERVICE","category":"SOFTWARE"}'</code></pre>
-<p>Copy the returned <code>id</code> (<code>PROD-…</code>), then create one plan per tier — repeat with <code>119</code> and <code>199</code>. <b>Prices must match the live plan rows</b> (<code>GET /api/subscriptions/plans</code>) — a PayPal plan priced above the site price charges the member the PayPal amount:</p>
-<pre><code># 2) plan (repeat per tier: Junior 60 / Pro 119 / Professional 199)
+<p>Copy the returned <code>id</code> (<code>PROD-…</code>), then create one plan per tier — repeat with <code>250</code> and <code>500</code>:</p>
+<pre><code># 2) plan (repeat per tier: Junior 60 / Pro 250 / Professional 500)
 curl -s -X POST https://api-m.paypal.com/v1/billing/plans \
   -H "Authorization: Bearer &lt;ACCESS_TOKEN&gt;" \
   -H "Content-Type: application/json" \
@@ -316,15 +316,23 @@ curl -s -X POST https://api-m.paypal.com/v1/billing/plans \
   }'</code></pre>
 <p><code>"total_cycles": 0</code> means bill forever — that is what makes it auto-renew. Copy each <code>P-…</code> plan id.</p>
 <p class="kr"><code>total_cycles: 0</code>이 무기한 갱신을 뜻합니다. 각 <code>P-…</code> 플랜 ID를 복사하세요.</p>
-<div class="card">
-<b>No trial cycle on any plan — the trial never touches a provider (revised 2026-08-05).</b> The
-owner replaced the card-up-front trial with a card-free one granted by the platform itself at
-sign-up (<a href="service-rules.html">service-rules.html</a> §1). PayPal and Stripe never see the
-trial: <b>create Junior exactly like Pro and Professional</b> — a single REGULAR cycle at its
-monthly price, as shown above. Do NOT add a <code>TRIAL</code> billing cycle, and do not pass
-<code>subscription_data.trial_period_days</code> on Stripe — a provider-side trial would stack a
-second free week on top of the platform's own.
-<p class="kr" style="margin:8px 0 0"><b>어느 플랜에도 체험 주기를 넣지 마십시오 (2026-08-05 개정).</b> 체험은 가입 시 플랫폼이 자체 부여하는 카드 없는 방식으로 바뀌었고, 결제사는 체험을 알지 못합니다. 주니어도 Pro·Professional과 동일하게 <b>단일 REGULAR 주기</b>로 만드십시오. PayPal <code>TRIAL</code> 주기나 Stripe <code>trial_period_days</code>를 넣으면 플랫폼 체험 위에 공짜 한 주가 중복됩니다.</p>
+<div class="card bad">
+<b>Junior needs a trial cycle — and it cannot be added later.</b> Under the service rules
+(<a href="service-rules.html">service-rules.html</a> §1) Junior carries a 7-day free trial. On PayPal that is a
+second <code>billing_cycles</code> entry, and a plan created without it must be <b>deleted and recreated</b> —
+there is no way to add a trial to a live plan. Create Junior like this instead:
+<pre><code>"billing_cycles": [
+  { "tenure_type": "TRIAL",   "sequence": 1, "total_cycles": 1,
+    "frequency": {"interval_unit": "DAY", "interval_count": 7},
+    "pricing_scheme": {"fixed_price": {"value": "0", "currency_code": "USD"}} },
+  { "tenure_type": "REGULAR", "sequence": 2, "total_cycles": 0,
+    "frequency": {"interval_unit": "MONTH", "interval_count": 1},
+    "pricing_scheme": {"fixed_price": {"value": "60", "currency_code": "USD"}} }
+]</code></pre>
+Pro and Professional keep the single REGULAR cycle shown above — no trial. On Stripe the equivalent is
+<code>subscription_data.trial_period_days = 7</code> passed on the Junior Checkout Session only, which
+<b>is</b> changeable later, so Stripe is not blocked by this.
+<p class="kr" style="margin:8px 0 0"><b>주니어에는 체험 주기가 필요하고, 나중에 추가할 수 없습니다.</b> PayPal은 체험을 <code>billing_cycles</code>의 두 번째 항목으로 정의하며, 체험 없이 만든 플랜은 <b>삭제 후 재생성</b>해야 합니다. Pro·Professional은 위의 단일 REGULAR 주기 그대로 둡니다. Stripe는 <code>trial_period_days</code>를 나중에 넣을 수 있어 제약이 없습니다.</p>
 </div>
 </div>
 

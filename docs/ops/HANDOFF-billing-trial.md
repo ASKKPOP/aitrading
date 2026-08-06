@@ -137,7 +137,7 @@ later reversed it: *"TRIAL is first 7 days don't need subscription payment (Stri
 and added *"after 7 days, stop all user daemon and services, email to user and always open
 Subscription page."*
 
-The **code** implements the final (card-free) design. The **documents did not**:
+The **code** implements the final (card-free) design. The **documents do not**:
 
 - `docs/ops/service-rules.html` §1 and §3 — describes card-up-front, Stripe
   `trial_period_days`, PayPal `TRIAL` billing cycle, once-per-person via card fingerprint.
@@ -148,15 +148,7 @@ The **code** implements the final (card-free) design. The **documents did not**:
   and the subscription renews automatically after the trial. **Now false.**
 - `marketing/src/pages/pricing.astro` — same problem in the "Free trial" section.
 
-> ✅ **Fixed 2026-08-05 (continuation session, branch `feat/welcome-and-subscription`):**
-> all four documents above now describe the card-free trial. Terms §8.2 rewritten (no
-> payment method, no conversion), §8.3 split into auto-renew (card/PayPal) vs one-time
-> (USDT/bank), pricing.astro notice/trial/billing/cancellation sections rewritten,
-> service-rules §1 rewritten + §5.1/§5.4 marked built with dated notes, payment-keys 2.3
-> now says to create ALL plans with a single REGULAR cycle (a provider trial would stack
-> a second free week on the platform's own). The marketing/legal edits were also ported
-> off the stale `feat/i18n-followups` checkout onto this branch, so the branch deploys
-> them together with the trial code.
+**These are user-facing false statements about billing. Fix before any deploy.**
 
 ---
 
