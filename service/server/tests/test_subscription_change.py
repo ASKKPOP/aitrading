@@ -210,5 +210,67 @@ class ChangePreviewTests(_Case):
         self.assertEqual(sub["change_kind"], "downgrade")
 
 
+class ManualUpgradeSubmitTests(_Case):
+    def _upgrade(self, plan_code="pro", method="bank", reference="wire-123"):
+        return self.client.post(
+            "/api/subscriptions/change/upgrade",
+            json={"plan_code": plan_code, "method": method, "reference": reference},
+            headers=self.auth)
+
+    def test_upgrade_lands_pending_with_server_computed_amount(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        r = self._upgrade("pro")
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["status"], "pending")
+        # (250 − 60) × 15/30 — the CLIENT never sends an amount
+        self.assertAlmostEqual(body["amount_usd"], 95.0, delta=0.02)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM user_subscriptions WHERE user_id = ? "
+                        "AND status = 'pending'", (self.uid,))
+            row = dict(cur.fetchone())
+        finally:
+            conn.close()
+        self.assertEqual(row["plan_code"], "pro")
+        self.assertEqual(row["change_kind"], "upgrade")
+        self.assertEqual(row["method"], "bank")
+        self.assertAlmostEqual(float(row["amount_usd"]), 95.0, delta=0.02)
+
+    def test_duplicate_pending_upgrade_is_refused(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade().status_code, 200)
+        self.assertEqual(self._upgrade().status_code, 400)
+
+    def test_trial_cannot_use_the_upgrade_path(self):
+        _mk_sub(self.uid, "junior", method="trial", days_left=5)
+        self.assertEqual(self._upgrade().status_code, 400)
+
+    def test_downgrade_direction_is_refused(self):
+        _mk_sub(self.uid, "professional", days_left=15)
+        r = self._upgrade("pro")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("downgrade", r.json()["detail"].lower())
+
+    def test_reference_is_required(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(reference="  ").status_code, 400)
+
+    def test_method_must_be_a_manual_rail(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="paypal").status_code, 400)
+
+    def test_usdt_upgrade_needs_the_rail_configured(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="usdt").status_code, 503)
+
+    def test_usdt_upgrade_works_once_configured(self):
+        import platform_settings
+        platform_settings.set_setting("usdt_address", "TTestAddr123")
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="usdt", reference="0xhash").status_code, 200)
+
+
 if __name__ == "__main__":
     unittest.main()

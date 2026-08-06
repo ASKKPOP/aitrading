@@ -450,35 +450,90 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {"ok": True, "status": "active"}
 
     def _submit_manual_payment(authorization: str, plan_code: str, reference: str,
-                               method: str, empty_msg: str, duplicate_msg: str) -> dict:
+                               method: str, empty_msg: str, duplicate_msg: str,
+                               amount_override: Optional[float] = None,
+                               change_kind: Optional[str] = None) -> dict:
         """Shared path for the two operator-approved rails (bank, usdt): record
         a pending subscription carrying the user's proof of payment, which an
         admin approves in the console. Identical in every respect except the
-        method tag and the wording of the two refusals."""
+        method tag and the wording of the two refusals. A prorated upgrade
+        passes amount_override (server-computed — never the client's number)
+        and change_kind='upgrade' so the admin approve path knows to flip the
+        plan in place instead of starting a fresh 30-day period."""
         user = _require_user(authorization)
         reference = reference.strip()
         if not reference:
             raise HTTPException(status_code=400, detail=empty_msg)
+        amount: Any = None
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
             plan = _load_plan(cursor, plan_code)
+            amount = plan["price_usd"] if amount_override is None else amount_override
             state = get_subscription_state(cursor, user["id"])
             if state["status"] == "pending" and state["subscription"]["method"] == method:
                 raise HTTPException(status_code=400, detail=duplicate_msg)
             cursor.execute(
-                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, reference, amount_usd) "
-                "VALUES (?, ?, 'pending', ?, ?, ?)",
-                (user["id"], plan["code"], method, reference[:500], plan["price_usd"]),
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
+                "reference, amount_usd, change_kind) "
+                "VALUES (?, ?, 'pending', ?, ?, ?, ?)",
+                (user["id"], plan["code"], method, reference[:500], amount, change_kind),
             )
             conn.commit()
         finally:
             conn.close()
-        logger.info("%s subscription submitted: user=%s plan=%s", method, user["id"], plan_code)
+        logger.info("%s subscription submitted: user=%s plan=%s kind=%s",
+                    method, user["id"], plan_code, change_kind or "new")
         _alert_new_subscription(
-            email=user.get("email"), plan_code=plan["code"], amount=plan["price_usd"],
-            method=method, status_note="pending — needs approval", reference=reference)
-        return {"ok": True, "status": "pending"}
+            email=user.get("email"), plan_code=plan["code"], amount=amount,
+            method=method,
+            status_note=("pending upgrade — needs approval" if change_kind == "upgrade"
+                         else "pending — needs approval"),
+            reference=reference)
+        return {"ok": True, "status": "pending", "amount_usd": amount}
+
+    @app.post('/api/subscriptions/change/upgrade')
+    async def change_upgrade(body: ChangeUpgradeBody, authorization: str = Header(None)):
+        """Immediate upgrade on the manual rails: the member pays the prorated
+        difference (computed HERE, at submit time) and the row waits for admin
+        approval, which flips the plan while leaving expires_at alone."""
+        user = _require_user(authorization)
+        if body.method not in ("usdt", "bank"):
+            raise HTTPException(status_code=400,
+                                detail="Method must be 'usdt' or 'bank'")
+        if body.method == "usdt" and not _usdt_address():
+            raise HTTPException(status_code=503, detail="USDT payment is not configured")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            sub, current = _manual_change_context(cursor, user)
+            target = _load_plan(cursor, body.plan_code)
+            # The shared duplicate guard below only sees the ACTIVE row (state
+            # prefers it), so a member with active + pending-upgrade rows
+            # needs an explicit check here.
+            cursor.execute(
+                "SELECT id FROM user_subscriptions WHERE user_id = ? "
+                "AND status = 'pending' LIMIT 1", (user["id"],))
+            already_pending = cursor.fetchone() is not None
+            conn.commit()
+        finally:
+            conn.close()
+        if already_pending:
+            raise HTTPException(status_code=400,
+                                detail="A payment is already awaiting approval")
+        if target["code"] == current["code"]:
+            raise HTTPException(status_code=400, detail="Already on this plan")
+        if int(target["sort_order"]) <= int(current["sort_order"]):
+            raise HTTPException(status_code=400,
+                                detail="That is a downgrade — use the downgrade option")
+        prorated = _prorated_upgrade_usd(
+            float(target["price_usd"]), float(current["price_usd"]),
+            sub.get("expires_at") or "")
+        return _submit_manual_payment(
+            authorization, body.plan_code, body.reference, body.method,
+            "Payment reference required",
+            "A payment is already awaiting approval",
+            amount_override=prorated, change_kind="upgrade")
 
     @app.post('/api/subscriptions/bank-transfer')
     async def bank_transfer(body: BankTransferBody, authorization: str = Header(None)):
