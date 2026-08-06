@@ -596,6 +596,28 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
+### ⚠️ Added 2026-08-06 (cycle 102) — CHECK THE PROVIDER'S STATUS PAGE FIRST
+
+Before theorising about a provider from its symptoms, ask it:
+
+```bash
+curl -s https://www.githubstatus.com/api/v2/components.json | \
+  python3 -c "import json,sys; [print(c['name'], c['status']) for c in json.load(sys.stdin)['components']]"
+gh api repos/<owner>/<repo>/actions/permissions      # billing / disabled?
+gh api repos/<owner>/<repo>/actions/workflows        # workflow state
+```
+
+**2026-08-06:** I spent parts of two cycles inferring a CI outage from its
+symptoms — first runner-acquisition failures, then no triggering at all. One
+call settled it: **`Actions: major_outage`** while **`Webhooks: operational`**,
+with the repo side healthy (`enabled: true`, workflows `active`). That
+combination explains it exactly — webhooks created the branch and PR, Actions
+could not run anything.
+
+**Same class as the frozen-feed episode**, where querying Yahoo's own
+timestamps settled in one call what the symptoms could only suggest. When a
+dependency looks broken, **ask the dependency**.
+
 ### ⏸️ PENDING MERGE 2026-08-06 — TWO PRs BUILT, TESTED, BLOCKED ON A GITHUB OUTAGE
 
 **First thing next session: check if Actions recovered, then merge and deploy
