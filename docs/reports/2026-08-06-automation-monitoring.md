@@ -14,6 +14,59 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 95 — 2026-08-06 16:49Z (prod DB clock)
+
+**1. Working per plan?** Yes. `20260806-floorstatus` (tag compared),
+**0 tracebacks**, 6 runs live, docs 200/200.
+
+**2. Losses and WHY.** Ledger **−92.90, unchanged** this beat — no closes
+since 16:30. A quiet half-hour after a costly one.
+
+**The fleet is now almost entirely flat.** Only 2 of 6 runs hold a
+position:
+
+| run | symbol | realized | position |
+|---|---|---|---|
+| 968 | USDKRW | −3.35 | 0.005706 |
+| 978 | ETHUSDT | −5.67 | 0.322224 |
+| 979 | SI | **−31.17** | flat |
+| 977 | GC | +5.04 | flat |
+| 972 | SLV | +1.43 | flat |
+| 961 | UBER | 0.00 | never traded |
+
+979's `peak_pnl_usd` re-anchored −0.26 → −31.17 on going flat — the same
+documented `_ratchet_peak_pnl` behaviour seen on 972 last cycle, not a
+new loss.
+
+**3. What we found — CI recovered PARTIALLY, and #264 is still held.**
+
+The GitHub hosted-runner outage has cleared for the **CI** workflow:
+Frontend now passes (2m55s) and Backend passes (17m7s). It has **not**
+cleared for the **Security** workflow — all three jobs re-ran and failed
+again with the identical annotation:
+
+> `The job was not acquired by Runner of type hosted even after multiple
+> attempts`
+
+**#264 remains unmerged.** My diff is Python-only, adds no dependency and
+no secret, so the practical risk of merging is nil — **but "the check
+never ran" is not "the check passed", and I am not substituting my own
+judgment for the gate.** The correction it carries is already published
+(cycle 94: post-fix survived is **5**, not 6), which was the part that
+mattered. Retry next cycle.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing — #264 blocked on infrastructure, and no new
+evidence this beat.
+
+*Watches:* the restated trigger (*lifetime peak never exceeds its own
+round-trip cost AND held past ~4h*) stands at **n=2** (975, 979); both
+are now closed out, so a third instance needs a fresh run.
+`conviction_missing`, `armed_exit` 2, `pending_close` 0 all unchanged.
+
+---
+
 ## Cycle 94 — 2026-08-06 16:19Z (prod DB clock) — ⚠️ A NUMBER I REPORTED WAS WRONG
 
 **1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
