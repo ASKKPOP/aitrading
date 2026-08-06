@@ -984,3 +984,85 @@ class ArmExecutorTests(unittest.TestCase):
         import inspect
         self.assertIn("_fire_armed_order(run, pnl, out)",
                       inspect.getsource(run_engine._control_active))
+
+
+class BreakevenRatchetTests(unittest.TestCase):
+    """The configured trailing lock NEVER ARMS: trail.activate_usd is set
+    equal to max_loss_usd ($78-81 live) while the best peak any run reached
+    in two days was $22.07. The desk cannot cover the gap either — it armed
+    on 37 of 133 held cycles. This rail needs nothing from either."""
+
+    ARM = 5.0   # ~= a 2500 notional round trip at 0.001/side
+
+    def setUp(self):
+        self._env = {k: os.environ.get(k)
+                     for k in ("BREAKEVEN_RATCHET", "BREAKEVEN_ARM_FEES",
+                               "BREAKEVEN_FEE_RATE")}
+        for k in self._env:
+            os.environ.pop(k, None)
+
+    def tearDown(self):
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def test_a_peaked_position_may_not_go_negative(self):
+        # run 971: peak +16.15, then -54.50. Fires the moment it crosses 0.
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(16.15, -0.01, self.ARM))
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
+
+    def test_it_does_not_cut_a_winner_that_never_breaches(self):
+        # run 969 — the day's BEST at +19.11 — armed and never went <= 0.
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(22.07, 19.11, self.ARM))
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(22.07, 0.01, self.ARM))
+
+    def test_a_peak_that_never_paid_its_round_trip_never_arms(self):
+        # runs 957 (+2.60) and 962 (+1.94): below the fee floor, so their
+        # small losses are left alone rather than churned.
+        self.assertFalse(run_engine._breakeven_floor_hit(2.60, -13.51, self.ARM))
+        self.assertFalse(run_engine._breakeven_floor_hit(1.94, -6.44, self.ARM))
+
+    def test_arm_is_the_positions_own_round_trip_not_a_constant(self):
+        pnl = {"position": {"quantity": 5.0, "current_price": 500.0}}
+        # 2500 notional * 0.001 * 2 sides = 5.00
+        self.assertAlmostEqual(run_engine._breakeven_arm_usd(pnl), 5.0)
+        # it SCALES with the book — a constant would be noise on small
+        # positions and inert on large ones
+        big = {"position": {"quantity": 50.0, "current_price": 500.0}}
+        self.assertAlmostEqual(run_engine._breakeven_arm_usd(big), 50.0)
+        for bad in ({}, {"position": {}},
+                    {"position": {"quantity": 0, "current_price": 500.0}}):
+            self.assertEqual(run_engine._breakeven_arm_usd(bad), 0.0)
+
+    def test_fail_closed_on_missing_inputs(self):
+        self.assertFalse(run_engine._breakeven_floor_hit(None, -50.0, self.ARM))
+        self.assertFalse(run_engine._breakeven_floor_hit(16.15, -50.0, 0.0))
+        self.assertFalse(run_engine._breakeven_floor_hit("x", -50.0, self.ARM))
+
+    def test_the_kill_switch_disables_it(self):
+        os.environ["BREAKEVEN_RATCHET"] = "0"
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
+        os.environ["BREAKEVEN_RATCHET"] = "1"
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
+
+    def test_it_is_WIRED_into_stop_evaluation(self):
+        # A rail nothing calls is the exact bug this fixes — the configured
+        # trailing lock has never fired once.
+        import inspect
+        src = inspect.getsource(run_engine._evaluate_stop)
+        self.assertIn("_breakeven_floor_hit(", src)
+        self.assertIn("_breakeven_arm_usd(pnl)", src)
+
+    def test_it_works_with_NO_trail_config_at_all(self):
+        # run 961 carries stop_conditions_json = {} and therefore had no peak
+        # protection of any kind. The ratchet must not depend on `trail`.
+        self.assertFalse(run_engine._trailing_lock_hit(16.15, -54.50, None))
+        self.assertTrue(run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
