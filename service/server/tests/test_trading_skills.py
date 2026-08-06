@@ -304,7 +304,9 @@ class RegistryTests(_Db):
         # 0.48% of its level. The yardstick was the wrong clock.
         for site in ("light", "trader"):
             block = trading_skills.skills_block(site)
-            self.assertIn("~45 minutes", block, f"cycle horizon missing from {site}")
+            import run_engine
+            self.assertIn(f"~{run_engine.INTERVAL_CAP_MIN} minutes", block,
+                          f"cycle horizon missing from {site}")
             self.assertIn("60+ arms placed here", block,
                           f"the measured arm-fire evidence missing from {site}")
             self.assertNotIn("inside roughly one ordinary day's move", block,
@@ -524,6 +526,58 @@ class RegistryTests(_Db):
         trading_skills.invalidate_trading_skills_cache()
         self.assertEqual(trading_skills.skills_block("trader"), "")
         self.assertEqual(trading_skills.all_skills(fresh=True), [])
+
+
+class MandateHeaderTests(_Db):
+    """Owner, 2026-08-06: "We must be make solution for get a profit (It's
+    our destiny and purpose)", "MUST BE THINKING DEEPLY and do not make
+    change lost profit". The header is the one text every decision site reads
+    first, and it previously stated only what may restrain the desk."""
+
+    def test_every_real_prompt_site_states_the_mandate(self):
+        # The four sites that actually call skills_block in the codebase.
+        for site in ("planner", "trader", "verifier", "light"):
+            for market in (None, "crypto", "us-stock", "futures", "forex"):
+                block = trading_skills.skills_block(site, market=market)
+                self.assertTrue(block, f"{site}/{market} produced no block")
+                self.assertTrue(
+                    block.startswith("YOUR PURPOSE IS REALIZED PROFIT"),
+                    f"{site}/{market} does not open with the mandate")
+                for phrase in ("THINK DEEPLY",
+                               "NEVER LET A GAIN YOU HAVE TURN INTO A LOSS"):
+                    self.assertIn(phrase, block, f"{site}/{market}: {phrase}")
+
+    def test_mandate_does_not_push_the_catalogue_over_budget(self):
+        """The header counts against MAX_BLOCK_LEN, so a longer mandate
+        silently DROPS a trailing skill rather than erroring."""
+        for site in ("planner", "trader", "verifier", "light"):
+            for market in (None, "crypto", "us-stock", "futures", "forex"):
+                n_all = len(trading_skills.skills_for_prompt(site, market))
+                block = trading_skills.skills_block(site, market=market)
+                self.assertLessEqual(len(block), trading_skills.MAX_BLOCK_LEN,
+                                     f"{site}/{market} over budget")
+                kept = block.count("### ")
+                self.assertEqual(
+                    kept, n_all,
+                    f"{site}/{market}: {n_all - kept} skill(s) dropped by the "
+                    f"header's share of the budget")
+
+    def test_mandate_keeps_the_limits_clause(self):
+        """The mandate must not read as a licence to override the rails."""
+        block = trading_skills.skills_block("trader", market="crypto")
+        self.assertIn("never override risk limits", block)
+
+    def test_arm_cadence_matches_the_scheduler(self):
+        """The arm skill tells the desk how far away a reachable level is by
+        quoting its own cycle gap. Changing the scheduler without changing
+        this text leaves the desk sizing arms for the wrong horizon."""
+        import run_engine
+        block = trading_skills.skills_block("trader", market="crypto")
+        if "ARM THE LEVEL YOU CANNOT WAIT FOR" in block:
+            self.assertIn(f"~{run_engine.INTERVAL_CAP_MIN} ", block,
+                          "arm skill quotes a cycle gap the scheduler no "
+                          "longer uses")
+            self.assertNotIn("~45 ", block)
 
 
 class PromptInjectionTests(_Db):

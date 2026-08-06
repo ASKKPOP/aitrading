@@ -1683,3 +1683,109 @@ class LossVerdictBriefTests(unittest.TestCase):
         src = inspect.getsource(run_engine._position_state_line)
         self.assertIn("_loss_verdict_line(run, pnl)", src,
                       "loss verdict not wired into the position brief")
+
+
+class CycleCadenceTests(unittest.TestCase):
+    """Owner, 2026-08-06: "Sooppiy AI analysis each run 30 min (make time gap
+    each)". Two mechanisms — a scheduling-time cap on how long a live run may
+    go unanalysed, and a per-run slot on the absolute clock grid."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        resp = self.client.post(
+            "/api/claw/agents/selfRegister",
+            json={"name": "cadence-agent", "password": "pw123",
+                  "initial_balance": 1000.0})
+        self.token = resp.json()["token"]
+
+    def tearDown(self):
+        self.probe.stop()
+        os.environ.pop("AUTO_TRADING_ENABLED", None)
+        os.environ.pop("RUN_INTERVAL_CAP_MIN", None)
+        self.tmp.cleanup()
+
+    def _run_at(self, interval_minutes, minutes_ago):
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 50.0},
+            headers={"Authorization": f"Bearer {self.token}"}).json()["id"]
+        self.client.post(f"/api/runs/{run_id}/start",
+                         headers={"Authorization": f"Bearer {self.token}"})
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT config_snapshot_json FROM trading_runs WHERE id = ?",
+                        (run_id,))
+            cfg = json.loads(cur.fetchone()[0] or "{}")
+            cfg["interval_minutes"] = interval_minutes
+            cur.execute("UPDATE trading_runs SET config_snapshot_json = ?, "
+                        "last_cycle_at = ? WHERE id = ?",
+                        (json.dumps(cfg),
+                         _ts(datetime.now(timezone.utc)
+                             - timedelta(minutes=minutes_ago)), run_id))
+            conn.commit()
+        finally:
+            conn.close()
+        return run_id
+
+    def test_cap_analyses_a_45_minute_run_within_30(self):
+        """A run the desk built at 45m must still be looked at every 30m."""
+        run_id = self._run_at(45, minutes_ago=31)
+        self.assertEqual(run_engine.due_run_ids(), [run_id])
+
+    def test_cap_is_env_overridable(self):
+        """Elapsed 20m: under the raised cap the interval is 45m, so 20m is
+        below the half-interval floor and the run is deterministically NOT
+        due. (Assertions here stay either above a full interval or below half
+        of one — in between, whether a slot boundary was crossed depends on
+        the wall-clock time of day, which would make the test flaky.)"""
+        os.environ["RUN_INTERVAL_CAP_MIN"] = "60"
+        self.assertEqual(run_engine._interval_cap_min(), 60)
+        self._run_at(45, minutes_ago=20)
+        self.assertEqual(run_engine.due_run_ids(), [])
+
+    def test_never_fires_before_half_an_interval(self):
+        """The one early fire that snaps a run onto its slot is bounded."""
+        self._run_at(30, minutes_ago=14)
+        self.assertEqual(run_engine.due_run_ids(), [])
+
+    def test_lockstep_fleet_separates_into_distinct_slots(self):
+        """Six runs born in one pass shared last_cycle_at 22:57:00 on prod.
+        A plain elapsed>=interval test can never separate them: once a full
+        interval has passed the slot has always advanced too, so the run keeps
+        its inherited phase forever."""
+        ids = [980, 981, 982, 983, 984, 985]
+        iv = 30
+        last = {r: datetime(2026, 8, 6, 22, 57, tzinfo=timezone.utc) for r in ids}
+        fires = {r: [] for r in ids}
+        t = datetime(2026, 8, 6, 22, 57, tzinfo=timezone.utc)
+        for _ in range(24 * 60):
+            t += timedelta(minutes=1)
+            for r in ids:
+                off = run_engine._phase_offset_min(r, iv)
+                if (run_engine._slot(t, iv, off)
+                        > run_engine._slot(last[r], iv, off)
+                        and t - last[r] >= timedelta(minutes=iv / 2)):
+                    fires[r].append(t)
+                    last[r] = t
+        for r in ids:
+            gaps = {(fires[r][i + 1] - fires[r][i]).total_seconds() / 60
+                    for i in range(2, len(fires[r]) - 1)}
+            self.assertEqual(gaps, {float(iv)},
+                             f"run {r} settled period {gaps}, want {iv}m")
+            self.assertGreaterEqual(len(fires[r]), 47, f"run {r} starved")
+        minutes = [f.strftime("%H:%M") for r in ids for f in fires[r][3:]]
+        self.assertEqual(len(minutes), len(set(minutes)),
+                         "two runs still cycle in the same minute")
+
+    def test_offsets_separate_consecutive_run_ids(self):
+        offs = [run_engine._phase_offset_min(r, 30) for r in range(980, 986)]
+        self.assertEqual(len(set(offs)), 6, f"offsets collide: {offs}")
+        self.assertTrue(all(0 <= o < 30 for o in offs))
