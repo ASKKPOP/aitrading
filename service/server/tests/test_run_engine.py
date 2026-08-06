@@ -1647,11 +1647,16 @@ class LossVerdictBriefTests(unittest.TestCase):
         line = run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-1.50))
         self.assertIn("past the $-0.99 floor", line)
         self.assertIn("round-trip cost", line)
-        self.assertIn("it is a tick, not a wound", line)
+        self.assertIn("it is a tick, not a wound.", line)
+        # Two sentences in a prompt must not run together — the first draft
+        # rendered "...not a wound The house rule..." on prod.
+        self.assertNotIn("wound The house rule", line)
+        self.assertIn("wound. The house rule", line)
 
     def test_a_loss_past_the_round_trip_is_named_real(self):
         line = run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-25.0))
         self.assertIn("this loss has cleared the cost of leaving", line)
+        self.assertIn("so it is real. The house rule", line)
         self.assertNotIn("tick, not a wound", line)
 
     def test_the_house_rule_and_its_escape_clause_are_always_stated(self):
