@@ -94,6 +94,21 @@ class RepeatPriceTests(unittest.TestCase):
         self._fill(9, "2026-08-06T05:00:00Z", "SI", 62.099998)
         self.assertEqual(len(fa.repeat_price_fills("2026-08-06", conn=self.conn)), 2)
 
+    def test_cross_run_fills_pair_in_TIME_order_not_seq_order(self):
+        # run_events.seq is per-RUN. The first live run ordered by seq and
+        # paired run 960's 08:18:07 fill as the "repeat" of run 979's
+        # 08:54:26 one — a pair whose repeat predated its first. No fixture
+        # caught it because fixtures seed a single run in order.
+        self._fill(979, "2026-08-06T08:54:26Z", "SI", 62.099998)   # seq 1
+        self._fill(960, "2026-08-06T08:18:07Z", "SI", 62.099998)   # seq 2
+        rows = fa.repeat_price_fills("2026-08-06", conn=self.conn)
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertLess(r["first_at"], r["repeat_at"],
+                        "a repeat must never predate its first sighting")
+        self.assertEqual(r["first_at"][:19], "2026-08-06T08:18:07")
+        self.assertEqual(r["run_id"], 979)
+
     def test_garbage_payloads_are_skipped_not_fatal(self):
         self._seq += 1
         cur = self.conn.cursor()
