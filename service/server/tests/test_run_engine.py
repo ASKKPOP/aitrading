@@ -1608,3 +1608,78 @@ class FloorStatusBriefTests(unittest.TestCase):
         src = inspect.getsource(run_engine._position_state_line)
         self.assertIn("_floor_status_line(run, pnl, peak)", src,
                       "floor status not wired into the position brief")
+
+
+class LossVerdictBriefTests(unittest.TestCase):
+    """OWNER RULE 2026-08-06: 'if got more -0.99 then clean that RUN, and make
+    RUN again by AI Analysis ... It's make decision by sooppiy AI.'
+
+    The raw dollar figure cannot stand alone. Measured before writing this:
+    -$0.99 is 3.7% of one ordinary day for GC and 0.23x its own round-trip
+    cost, and three runs today (971, 967, 955) were already past the floor
+    from their ENTRY FEE alone. A bare threshold would retire runs on noise
+    and pay a round trip each time."""
+
+    RUN_ID = 990099
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ.pop("RUN_LOSS_FLOOR_USD", None)
+
+    def tearDown(self):
+        os.environ.pop("RUN_LOSS_FLOOR_USD", None)
+        self.tmp.cleanup()
+
+    def _pnl(self, total, qty=0.495, mark=4300.0):
+        return {"total": total,
+                "position": {"quantity": qty, "current_price": mark}}
+
+    def test_a_run_above_the_floor_says_nothing(self):
+        self.assertEqual(
+            run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-0.50)), "")
+
+    def test_a_loss_inside_the_round_trip_is_named_a_tick_not_a_wound(self):
+        # GC's real shape: $2,128 notional, round trip ~$4.26. A -$1.50 loss
+        # costs more to exit than it is worth.
+        line = run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-1.50))
+        self.assertIn("past the $-0.99 floor", line)
+        self.assertIn("round-trip cost", line)
+        self.assertIn("it is a tick, not a wound", line)
+
+    def test_a_loss_past_the_round_trip_is_named_real(self):
+        line = run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-25.0))
+        self.assertIn("this loss has cleared the cost of leaving", line)
+        self.assertNotIn("tick, not a wound", line)
+
+    def test_the_house_rule_and_its_escape_clause_are_always_stated(self):
+        line = run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-25.0))
+        self.assertIn("CLOSE a run that is genuinely past the floor", line)
+        self.assertIn("hand its slot back for a fresh thesis", line)
+        self.assertIn("name the specific condition that reverses it", line)
+
+    def test_the_floor_is_env_overridable(self):
+        os.environ["RUN_LOSS_FLOOR_USD"] = "5"
+        self.assertEqual(
+            run_engine._loss_verdict_line({"id": self.RUN_ID}, self._pnl(-2.0)), "")
+        self.assertIn("past the $-5.00 floor",
+                      run_engine._loss_verdict_line({"id": self.RUN_ID},
+                                                    self._pnl(-25.0)))
+
+    def test_a_flat_book_still_reports_the_floor_without_dividing_by_zero(self):
+        line = run_engine._loss_verdict_line(
+            {"id": self.RUN_ID}, {"total": -3.0, "position": {"quantity": 0}})
+        self.assertIn("past the $-0.99 floor", line)
+        self.assertIn("CLOSE a run", line)
+
+    def test_a_broken_pnl_renders_nothing_rather_than_breaking_the_cycle(self):
+        self.assertEqual(
+            run_engine._loss_verdict_line({"id": self.RUN_ID}, {"total": "oops"}), "")
+
+    def test_it_is_WIRED_into_the_position_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._position_state_line)
+        self.assertIn("_loss_verdict_line(run, pnl)", src,
+                      "loss verdict not wired into the position brief")

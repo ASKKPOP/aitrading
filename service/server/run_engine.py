@@ -3125,6 +3125,83 @@ def _breadth_state_line(run: dict) -> str:
     return line + "\n"
 
 
+LOSS_FLOOR_USD = 0.99
+
+
+def _loss_floor_usd() -> float:
+    """The owner's house floor for a losing run (2026-08-06): below this, the
+    run is a candidate to be closed and its slot returned for a fresh thesis."""
+    try:
+        return abs(float(os.getenv("RUN_LOSS_FLOOR_USD", str(LOSS_FLOOR_USD))))
+    except (TypeError, ValueError):
+        return LOSS_FLOOR_USD
+
+
+def _loss_verdict_line(run: dict, pnl: dict) -> str:
+    """The owner's house rule on a losing run, handed to the desk with the
+    arithmetic that decides whether it is a real loss or a tick.
+
+    OWNER RULE (2026-08-06): *"if got more -0.99 then clean that RUN, and make
+    RUN again by AI Analysis ... It's make decision by sooppiy AI."* The
+    decision is the desk's — this line supplies the rule and the two numbers
+    that make it answerable.
+
+    ⚠️ WHY THE RAW DOLLAR FIGURE CANNOT STAND ALONE, measured before writing
+    this. On the live book, −$0.99 is **3.7% of one ordinary day** for GC and
+    **0.23x its own round-trip cost** — closing there spends $4.26 in fees to
+    avoid a $0.99 loss, and three runs today (971, 967, 955) were already
+    below the floor from their ENTRY FEE alone, before any price moved. A bare
+    threshold would retire runs on noise and pay a round trip each time; the
+    fleet would churn itself flat. So the line always states the loss in the
+    two units that separate a tick from a wound:
+
+      * as a share of ONE ORDINARY DAY for this symbol, and
+      * as a multiple of THIS position's own round-trip cost.
+
+    When the loss has not yet cleared the round trip, the line says so
+    plainly — closing costs more than it saves, and that is a fact the desk
+    should have before it acts, not a veto on acting.
+
+    Fact + the owner's rule; the verb is the desk's. Fail-soft.
+    """
+    try:
+        total = float(pnl.get("total") or 0)
+        floor = _loss_floor_usd()
+        if total >= -floor:
+            return ""
+        pos = pnl.get("position") or {}
+        qty = abs(float(pos.get("quantity") or 0))
+        mark = float(pos.get("current_price") or 0)
+        bits = [f"House floor: this run is at ${total:,.2f}, past the "
+                f"${-floor:,.2f} floor."]
+        if qty > 0 and mark > 0:
+            notional = qty * mark
+            rt = notional * float(os.getenv("BREAKEVEN_FEE_RATE", "0.001")) * 2.0
+            od_pct = _typical_daily_move_pct(run)
+            if od_pct:
+                od_usd = notional * od_pct / 100.0
+                if od_usd > 0:
+                    bits.append(f"That is {abs(total) / od_usd:.0%} of one "
+                                f"ordinary day for this symbol")
+            if rt > 0:
+                mult = abs(total) / rt
+                bits.append(f"and {mult:.2f}x your own round-trip cost of "
+                            f"${rt:,.2f}")
+                if mult < 1.0:
+                    bits.append("— closing here spends more than the loss it "
+                                "avoids, so it is a tick, not a wound")
+                else:
+                    bits.append("— this loss has cleared the cost of leaving, "
+                                "so it is real")
+        bits.append("The house rule is to CLOSE a run that is genuinely past "
+                    "the floor and hand its slot back for a fresh thesis, "
+                    "unless you can name the specific condition that reverses "
+                    "it before your next look.")
+        return " ".join(bits) + "\n"
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _floor_status_line(run: dict, pnl: dict, peak: "float | None") -> str:
     """Whether the platform's automatic profit floor is even SWITCHED ON.
 
@@ -3206,6 +3283,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                             f"are holding {max(0.0, upnl) / peak:.0%} of that "
                             f"high-water mark.")
             bits.append(_floor_status_line(run, pnl, peak))
+            bits.append(_loss_verdict_line(run, pnl))
             try:
                 want = abs(float(thesis.get("expected_move_pct")))
                 ent = float(pos.get("entry_price") or 0)
