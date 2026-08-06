@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RegionSetupDialog } from './components/RegionSetup'
 
 import {
@@ -53,6 +53,7 @@ const SpotPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default:
 const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ default: m.FuturesPage })))
 const SubscribePage = lazy(() => import('./pages/SubscribePage'))
 const ContractPage = lazy(() => import('./pages/ContractPage'))
+const WelcomePage = lazy(() => import('./pages/WelcomePage'))
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { BacktestPage } from './BacktestPage'
@@ -438,6 +439,21 @@ function AppRouter({
   // Close mobile nav on route change
   useEffect(() => { setMobileNavOpen(false) }, [location.pathname])
 
+  // First-run welcome: until the member ticks "do not show next time",
+  // steer them to /welcome ONCE per browser session — a redirect on every
+  // navigation would trap them on the page. Signup lands there directly
+  // (authV2), so the sessionStorage flag also stops a double redirect.
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!userToken || !userInfo) return
+    if (userInfo.subscription_status !== 'active') return
+    if (userInfo.welcome_dismissed) return
+    if (sessionStorage.getItem('sooppiy_welcome_seen')) return
+    sessionStorage.setItem('sooppiy_welcome_seen', '1')
+    navigate('/welcome')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userToken, userInfo])
+
   // Update browser tab title per route
   useEffect(() => {
     const PAGE_TITLES: Record<string, string> = {
@@ -462,6 +478,7 @@ function AppRouter({
       '/dev':              'Sooppiy · For Developers',
       '/login':            'Sooppiy · Login',
       '/register':         'Sooppiy · Register',
+      '/welcome':          'Sooppiy · Welcome',
       '/about':            'Sooppiy',
     }
     const path = location.pathname
@@ -654,6 +671,12 @@ function AppRouter({
                 path="/settings"
                 element={userToken
                   ? <SettingsPage userToken={userToken} userInfo={userInfo} onSignOut={userLogout} />
+                  : <Navigate to="/sign-in" replace />}
+              />
+              <Route
+                path="/welcome"
+                element={userToken
+                  ? <WelcomePage userToken={userToken} />
                   : <Navigate to="/sign-in" replace />}
               />
 
