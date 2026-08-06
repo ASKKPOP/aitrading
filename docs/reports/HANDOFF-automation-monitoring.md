@@ -470,6 +470,20 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### Added 2026-08-06 (cycle 81) — COMPARE THE IMAGE TAG EVERY VERIFICATION PASS
+
+- **A parallel session can redeploy prod between your deploy and your next
+  check.** Cycle 81's verification found `20260806-prunebackups` where
+  `20260806-pendflush` had been 20 minutes earlier — another session shipped
+  #258 on top of #257.
+- **A green health check cannot see this.** Containers up, events flowing,
+  0 tracebacks — all true, and all true of *someone else's build*. The only
+  thing that catches it is reading `{{.Config.Image}}` and comparing.
+- **When it happens, verify rather than assume:** re-check your own change is
+  still wired (`inspect.getsource` from inside the image) and sha256 your
+  files against `origin/main`. #257/#255 survived intact because the other
+  session built from fresh main — but that was confirmed, not hoped.
+
 ### Added 2026-08-06 (cycle 80) — `[TradingRuns] tick` silence is NOT a dead loop
 
 - **`tasks.py:795` prints that line ONLY when `dispatched` or `armed_started`
