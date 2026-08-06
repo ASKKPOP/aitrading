@@ -14,6 +14,69 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 88 — 2026-08-06 13:49Z (prod DB clock) — 🚨 FREEZE CONFIRMED CONCLUSIVELY
+
+**1. Working per plan?** The platform, yes — `20260806-fillorder` (tag
+compared), **0 tracebacks**, 7 runs live, docs 200/200. **The prices it
+trades on, no.**
+
+**2. Losses and WHY.** Ledger **−50.98 → −55.02** (−4.04), nearly all
+978 ETHUSDT: bought 1.2888970 @ 1906.7, `reduce` 0.5 at 1901.1 →
+`(1901.1 − 1906.7) × 0.6444485 − 0.5513 = −4.16`. A **−0.29%** move,
+partial verb, book still open. Right shape again. 972 SLV +0.12.
+
+**3. 🚨 THE FREEZE IS CONCLUSIVE — and it is now filling orders inside a
+LIVE market session.**
+
+The US regular session opened at 13:30Z. Twenty minutes in, queried from
+the prod container at 13:50:09Z:
+
+| ticker | Yahoo price | age of Yahoo's OWN data |
+|---|---|---|
+| SLV | 56.07 | **1070 min (17.8 h)** |
+| UBER | 68.18 | **1070 min** |
+| **SPY** | 769.79 | **1070 min** |
+| BTC-USD | 64786.2 | 370 min |
+
+**SPY is the most liquid ETF in the world and cannot go 17.8 hours
+without a print during market hours.** BTC-USD's age grew from 282 min
+(12:22) to 370 min (13:50) — **1:1 with the wall clock**, so the data is
+not lagging, it is completely static. `marketState` is absent from the
+payload entirely.
+
+**The US open changed nothing**, which kills the last alternative
+explanation: this is not session semantics, not the Alpha Vantage rate
+limit (different provider), and not our clock (verified against an
+external `Date` header, chrony synced). **Yahoo is serving this host a
+frozen snapshot on every ticker.**
+
+**And the consequence escalated this beat.** 972 filled **SLV at 56.07 at
+13:41:30 — eleven minutes into an active US session**, against a
+17.8-hour-old price. Earlier frozen fills were at least outside regular
+hours; this one was not. **Four of the seven live runs are currently
+priced off that snapshot** (GC, SI, SLV, USDKRW); only the three
+Hyperliquid-served crypto runs have real marks.
+
+**The desk is behaving correctly within its remit.** #260's clause
+endorses reduce/close on a frozen mark, and 972 did exactly that — a
+`reduce`. What the desk cannot control is the *price it gets*. This is
+now entirely a platform/provider matter.
+
+**4. Docs.** Both 200.
+
+**5. Shipped — nothing, and I want the reasoning on the record.** Every
+remedy is one of: (a) halt the Yahoo-served markets — trading-halting,
+not mine to do unattended; (b) switch provider — needs a decision and
+credentials; (c) record the upstream timestamp without gating — needs an
+alembic column and changes no behaviour. **The evidence is now conclusive
+enough that (a) or (b) is a decision that can be made immediately.**
+
+*Unchanged:* `fill_audit` 8 repeats / $12,149.41; `ratchet_audit` still
+"post-fix 2 survived"; `conviction_missing` 6/79 (7.6%); `armed_exit` 1;
+`pending_close` **0**.
+
+---
+
 ## Cycle 87 — 2026-08-06 13:19Z (prod DB clock) — ⭐ TWO FIRSTS
 
 **1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
