@@ -14,6 +14,60 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 101 — 2026-08-06 20:29Z (prod DB clock) — THE DIAGNOSED PROBLEM NOW HAS A VISIBLE COST
+
+⚠️ **A cycle was missed.** 70 minutes since cycle 100 — the ~19:43 firing
+did not land because the session was mid-investigation. Documented
+idle-only cron limitation (§1), not a new fault.
+
+**1. Working per plan?** The platform, yes — `20260806-floorstatus`,
+**0 tracebacks**, docs 200/200. **The fleet, no: it is now 2/10.**
+
+**2. Losses and WHY.** Ledger **−93.67 → −97.83** (−4.16), fully
+attributed:
+
+| run | event | realized |
+|---|---|---|
+| 978 ETHUSDT | `adapt_retired / consecutive_losses` 19:40, then flatten | −0.14 (final **−6.38**) |
+| 977 GC | sell 0.495024 @ 4298.100098 at 20:01:20 | **−4.01** |
+
+978 was the third run today retired by the **consecutive-losses rail** —
+after 975 and 979. The rail keeps working; it is the only thing reliably
+closing losers.
+
+**3. The structural finding from cycles 97–100 now has a measurable
+outcome.**
+
+**The fleet has gone from 8 runs this morning to 2**, and the replenish
+loop cannot refill it:
+
+| | |
+|---|---|
+| fleet target | 10 |
+| running | **2** (972 SLV +1.43 flat, 977 GC +0.81) |
+| cooldowns blocking crypto/futures | SOLUSDT, HG, BTCUSDT, SI, **ETHUSDT** (new) |
+
+Each retire adds a 24-hour cooldown, which removes that symbol from a
+universe of ~12 — so **the fleet's own losses shrink the pool it needs to
+recover from.** That is the compounding shape behind the diagnosis, and
+it is now visible in the run count rather than only in the logs.
+
+**✅ Cycle 100's prediction confirmed.** I wrote: *"ZBTUSDT is selectable
+again, so the unpriceable skip loop from cycle 97 should resume."* It
+did — skips went **276 → 365**, latest 20:01:30.
+
+**4. Docs.** Both 200.
+
+**5. Shipped: nothing.** The diagnosis is complete (cycle 100) and the
+remedy — widen the research universe or lower the fleet target — is a
+design decision. What changed today is the **urgency**: this is no longer
+an idle-slot inefficiency, it is a fleet emptying itself.
+
+*Watch:* if 972 and 977 close without replacements, the fleet reaches
+**0/10** and stops trading entirely.
+
+---
+
 ## Cycle 100 — 2026-08-06 19:19Z (prod DB clock) — ROOT CAUSE REFINED, AND CYCLE 99 PARTLY CORRECTED
 
 **1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
