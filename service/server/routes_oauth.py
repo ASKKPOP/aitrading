@@ -257,6 +257,14 @@ def register_oauth_routes(app: FastAPI, ctx: RouteContext) -> None:
         lang = await asyncio.to_thread(resolve_signup_lang, request)
         user_id, created = _find_or_create_user_from_google(user_info, lang=lang)
         if created:
+            # Same card-free trial as the email signup path — a member must not
+            # get a different starting entitlement for having used Google.
+            try:
+                from billing_sync import grant_trial
+                await asyncio.to_thread(grant_trial, user_id)
+            except Exception:  # noqa: BLE001
+                _logger.warning("trial grant failed for google signup "
+                                "user_id=%s", user_id, exc_info=True)
             # Every new signup gets a welcome email, Google OAuth included.
             # Off the event loop (mail providers can hang for seconds) and
             # fail-soft: the account is already committed.

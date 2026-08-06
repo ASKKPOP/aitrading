@@ -171,6 +171,34 @@ class PlanPatchBody(BaseModel):
     contact_only: Optional[int] = None
     active: Optional[int] = None
     sort_order: Optional[int] = None
+    # Billing ids. Empty string clears; None leaves the column untouched, so
+    # setting one rail never wipes the other.
+    stripe_price_id: Optional[str] = None
+    paypal_plan_id: Optional[str] = None
+
+
+# Stripe shows the PRODUCT id (prod_…) more prominently than the PRICE id, and
+# PayPal likewise shows PROD-… next to P-…. Pasting the wrong one is the most
+# likely setup mistake and would surface only as a 502 at a member's first
+# checkout, so it is rejected here with a message that names the right prefix.
+_BILLING_ID_RULES = {
+    "stripe_price_id": (re.compile(r"^price_[A-Za-z0-9]+$"),
+                        "Stripe price id must look like price_… "
+                        "(prod_… is the product id, not the price id)"),
+    "paypal_plan_id": (re.compile(r"^P-[A-Za-z0-9]+$"),
+                       "PayPal plan id must look like P-… "
+                       "(PROD-… is the product id, not the plan id)"),
+}
+
+
+def _clean_billing_id(field: str, raw: str) -> str:
+    value = (raw or "").strip()
+    if not value:
+        return ""  # explicit clear
+    pattern, message = _BILLING_ID_RULES[field]
+    if not pattern.fullmatch(value):
+        raise HTTPException(status_code=400, detail=message)
+    return value
 
 
 class SubscriptionExtendBody(BaseModel):
@@ -372,6 +400,7 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         try:
             cursor.execute(
                 "SELECT id, code, name, price_usd, contact_only, active, sort_order, "
+                "stripe_price_id, paypal_plan_id, "
                 "(SELECT COUNT(*) FROM user_subscriptions s WHERE s.plan_code = subscription_plans.code) AS subscriber_rows "
                 "FROM subscription_plans ORDER BY sort_order, id")
             plans = [dict(r) for r in cursor.fetchall()]
@@ -436,6 +465,15 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         if body.sort_order is not None:
             sets.append("sort_order = ?"); params.append(int(body.sort_order))
             changes.append(f"sort={int(body.sort_order)}")
+        for field, raw in (("stripe_price_id", body.stripe_price_id),
+                           ("paypal_plan_id", body.paypal_plan_id)):
+            if raw is None:
+                continue
+            # Validate BEFORE opening the connection so a rejected patch is a
+            # clean 400 that has written nothing.
+            value = _clean_billing_id(field, raw)
+            sets.append(f"{field} = ?"); params.append(value or None)
+            changes.append(f"{field}={value or '(cleared)'}")
         if not sets:
             raise HTTPException(status_code=400, detail="Nothing to update")
         conn = get_db_connection()

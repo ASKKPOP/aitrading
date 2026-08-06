@@ -106,3 +106,21 @@ def send_welcome_email(to_email: str, lang: str = "en") -> bool:
     subject, html = welcome_email(lang)
     text = welcome_email_text(lang)
     return _deliver(to_email, subject, text, html)
+
+
+def send_trial_notice_email(*, kind: str, to_email: str, lang: str = "en",
+                            amount_usd: float, on_date: str) -> bool:
+    """Free-trial notice: `kind` is 'reminder' (day 4) or 'ended' (expiry).
+
+    Keyword-only on purpose: the payload is an amount and a date that both
+    render into money-facing copy, and a positional swap would ship a notice
+    quoting the wrong figure to every trialling member.
+
+    The trial holds no payment method, so neither notice announces a charge —
+    the reminder asks the member to subscribe, and 'ended' tells them their
+    automation has stopped.
+    """
+    from email_i18n import trial_email, trial_email_text
+    subject, html = trial_email(kind, lang, amount_usd, on_date)
+    text = trial_email_text(kind, lang, amount_usd, on_date)
+    return _deliver(to_email, subject, text, html)
