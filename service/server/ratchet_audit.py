@@ -53,6 +53,20 @@ FIX_TS = "2026-08-06T06:40"
 # read as a reduce.
 _SHRINK_EPS = 1e-6
 
+# When the breakeven ratchet itself (#249) merged to main. Before this the
+# rail DID NOT EXIST, so asking "would the anchor have changed the outcome?"
+# of an earlier reduce is anachronistic — the first live table answered it
+# for eight 08-01/08-02 reduces that no ratchet could ever have judged.
+# Deploy was necessarily later than the merge, so this is inclusive; it only
+# matters for context rows, never for the post-FIX_TS evidence.
+RATCHET_TS = "2026-08-06T01:45"
+
+# A fire is journalled in the same second as the reduce that provoked it, or
+# in the NEXT one — run 976 reduced at 05:40:01 and was flattened at
+# 05:40:02. Matching on an exact-second equality read 976 as "survived",
+# i.e. the tool got the single cell whose answer is known EXACTLY BACKWARDS.
+_FIRE_WINDOW_S = 90
+
 
 def _is_flatten(trade: dict[str, Any]) -> bool:
     """The forced liquidation the fire itself causes.
@@ -186,6 +200,26 @@ def classify_exposure(peak_pnl: "float | None", step: dict[str, Any]
     }
 
 
+def _within(reduce_ts: str, fire_ts: str) -> bool:
+    """Did `fire_ts` land in the escalation window just after `reduce_ts`?
+
+    Second-resolution ISO strings, compared as seconds since midnight with a
+    day-boundary guard. A fire BEFORE the reduce is never a match.
+    """
+    def _secs(s: str) -> "int | None":
+        t = str(s)[:19].replace(" ", "T")
+        try:
+            d, hms = t.split("T")
+            h, m, sec = (int(x) for x in hms.split(":"))
+            return (int(d.replace("-", "")), h * 3600 + m * 60 + sec)
+        except (ValueError, TypeError):
+            return None
+    a, b = _secs(reduce_ts), _secs(fire_ts)
+    if a is None or b is None or a[0] != b[0]:
+        return False
+    return 0 <= b[1] - a[1] <= _FIRE_WINDOW_S
+
+
 def _rows(cursor, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
     cursor.execute(sql, params)
     return [dict(r) for r in cursor.fetchall()]
@@ -294,13 +328,14 @@ def audit_exposures(since: str, *, conn=None, fix_ts: str = FIX_TS
                     continue
                 p["ts"] = t["ts"]
                 parsed.append(p)
-            fires = {str(f["ts"])[:19] for f in _rows(
+            fires = [str(f["ts"]) for f in _rows(
                 cursor,
                 "SELECT ts FROM run_events WHERE event_type = 'run_status' "
                 "AND run_id = ? AND payload LIKE ? AND payload LIKE ?",
-                (rid, "%trailing_lock%", '%"to": "stopping"%'))}
+                (rid, "%trailing_lock%", '%"to": "stopping"%'))]
             for step in reduce_steps(parsed):
-                if str(step.get("ts") or "") < since:
+                ts = str(step.get("ts") or "")
+                if ts < since or ts < RATCHET_TS:
                     continue
                 cls = classify_exposure(peaks[0]["peak_pnl_usd"], step)
                 if not cls["in_band"]:
@@ -308,8 +343,8 @@ def audit_exposures(since: str, *, conn=None, fix_ts: str = FIX_TS
                 out.append({
                     "run_id": rid,
                     "reduced_at": step["ts"],
-                    "post_fix": str(step["ts"]) >= fix_ts,
-                    "fired": str(step["ts"])[:19] in fires,
+                    "post_fix": ts >= fix_ts,
+                    "fired": any(_within(ts, f) for f in fires),
                     **cls,
                 })
         return out
@@ -324,9 +359,11 @@ def format_exposures(rows: list[dict[str, Any]]) -> str:
     lines = ["", "IN-BAND REDUCES — where the anchor decides the outcome",
              head, "-" * len(head)]
     for r in rows:
+        # 4dp, not 2: a book reduced to a sliver has an arm of $0.004, and
+        # printing that as "0.00" made the band read as trivially satisfied.
         lines.append(
             f"{r['run_id']:>6}  {str(r['reduced_at'])[:19]:<20} "
-            f"{r['arm_after']:>10.2f} {r['peak']:>8.2f} {r['arm_full']:>9.2f}  "
+            f"{r['arm_after']:>10.4f} {r['peak']:>8.2f} {r['arm_full']:>9.4f}  "
             f"{'post-fix' if r['post_fix'] else 'pre-fix':<9} "
             + ("FLATTENED" if r["fired"] else "survived"))
     lines.append("-" * len(head))
