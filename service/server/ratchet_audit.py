@@ -53,6 +53,15 @@ FIX_TS = "2026-08-06T06:40"
 # read as a reduce.
 _SHRINK_EPS = 1e-6
 
+# A leg that leaves less than this FRACTION of the book it started with was a
+# full close, not a reduce. Absolute epsilons are not enough: run 972 halved a
+# 42.92-unit book six times and its final full close left 1.47e-08 units of
+# float dust — comfortably above any 1e-12 guard, functionally zero, and it
+# was being counted as a reduce whose post-reduce arm was ~0. That row then
+# satisfied the in-band test trivially and inflated the post-fix "survived"
+# count from a true 5 to a reported 6.
+_FLAT_FRACTION = 1e-6
+
 # When the breakeven ratchet itself (#249) merged to main. Before this the
 # rail DID NOT EXIST, so asking "would the anchor have changed the outcome?"
 # of an earlier reduce is anachronistic — the first live table answered it
@@ -148,7 +157,8 @@ def reduce_steps(trades: Iterable[dict[str, Any]]
         peak_qty = max(peak_qty, abs(qty))
         after = abs(qty)
         if opposing and not _is_flatten(t) \
-                and after > 1e-12 and after < before * (1.0 - _SHRINK_EPS):
+                and after > before * _FLAT_FRACTION \
+                and after < before * (1.0 - _SHRINK_EPS):
             try:
                 price = float(t.get("price") or 0)
             except (TypeError, ValueError):
