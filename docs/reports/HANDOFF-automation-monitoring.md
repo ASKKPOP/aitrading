@@ -596,7 +596,35 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
-### 🚨 Added 2026-08-06 (cycle 97) — TOP ITEM: the fleet is stuck at 3/10
+### 🚨 TOP ITEM, refined 2026-08-06 (cycle 98) — 13 symbols available, 2 offered
+
+**The fleet has been 3/10 with no new candidate since 08:53:59.** Cycle 97
+blamed an unpriceable sole survivor; cycle 98 measured it properly and that
+was only the surface.
+
+| | count | |
+|---|---|---|
+| researched today | **21 symbols** | 200 theses |
+| active cooldown | 5 | BTCUSDT, HG, SI, SOLUSDT, ZECUSDT |
+| busy (running) | 3 | ETHUSDT, GC, SLV |
+| **available** | **13** | AVGO, BICOUSDT, CHFJPY, DIS, HYPEUSDT, LABUSDT, NG, NVDA, RIVN, SNOW, USDJPY, USDKRW, ZBTUSDT |
+| **reaching the gate** | **2** | NVDA, SNOW — both correctly dropped on measured negative expectancy |
+
+**ELIMINATED as causes:** research supply, symbol cooldowns, and the backtest
+gate itself. **The filter is between "thesis exists" and "candidate presented
+to the gate"** — the gate events carry `context: "replacement"`, so start in
+the replacement-candidate selection path of `fleet_planner`.
+
+⚠️ **Do NOT ship the priceability ordering fix expecting it to help.**
+Cycle 97 predicted it would only change the log line; cycle 98 confirmed that
+within 30 minutes when ZBTUSDT aged out on its own and the gate began
+reporting `kept: []` **with the fleet still at 3/10**. Worth doing for
+hygiene (7th instance of the infeasible-at-build class), never as the fix.
+
+**Re-check:** `SELECT ... FROM fleet_candidates WHERE fleet_id=<n> ORDER BY id
+DESC` (newest row's age) and the `backtest_gate` payloads in `fleet_events`.
+
+### Superseded 2026-08-06 (cycle 97) — the unpriceable sole survivor
 
 **Not shipped. Two separable problems and the easy one does not help.**
 
