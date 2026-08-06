@@ -25,6 +25,28 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### ⏸️ LOOP HELD — 2026-08-06 21:56Z (owner)
+>
+> Owner: *"hold monitoring, I will clean all history and then monitoring
+> again."* **Both crons cancelled** (`688d79c1` 30-min, `d869c56a` 24h sweep);
+> `CronList` confirms none scheduled. **Do not restart the loop until the
+> owner says so** — and when they do, re-arm BOTH per §1.
+>
+> **State at hold:**
+> - prod image **`20260806-lossfloor`**, prod == `main` (`e93cfb2`), 0 tracebacks
+> - fleet **2/10** — the known universe-size problem; #265 shipped but its first
+>   post-deploy research batch had not yet arrived
+> - **⏸️ PR #267 is PARKED, fully verified, NOT merged.** A 4-line punctuation
+>   fix to the loss-verdict brief (two sentences ran together on the live
+>   render). fail-before 2/2, 3558 pass, ruff clean, CI reproduced locally
+>   (Actions was in `major_outage`). **Merge + deploy it in one step when
+>   monitoring resumes** — nothing else is in flight.
+> - GitHub Actions was in **`major_outage`** since 16:33Z; check the status page
+>   before assuming CI works.
+>
+> ⚠️ The owner intends to **clean all history**. Treat `docs/reports/` and this
+> file as the durable record; do not assume any session state survives.
+
 > ### ▶️ LOOP RESUMED — 2026-08-06 05:47Z (new account) — cadence now 30 MIN
 >
 > The owner stopped the loop at 05:45Z ("stop monitoring, I will use other
