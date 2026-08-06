@@ -14,6 +14,52 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 104 — 2026-08-06 21:19Z (prod DB clock) — #265's EFFECT IS NOT YET MEASURABLE (by 31 seconds)
+
+**1. Working per plan?** Yes. `20260806-pool` (both containers), **0
+tracebacks**, docs 200/200, ledger **−97.83 unchanged**, fleet 2/10.
+
+**2. Losses.** None this beat.
+
+**3. The measurement I came to take cannot be taken yet — and the margin
+is 31 seconds.**
+
+Batch `research:496125` carries **12** theses, not 24. Before concluding
+anything from that, I checked the clocks:
+
+| | |
+|---|---|
+| batch `research:496125` created | **21:07:15** |
+| worker container started (= deploy) | **21:07:46** |
+
+**The batch was produced 31 seconds BEFORE the new code began running.**
+It is an old-cap batch, and the log agrees — the post-deploy refresh
+returned `{'skipped': 'batch_exists'}` rather than building one.
+
+Had I read the count alone I would have reported the fix as ineffective.
+The caps ARE live in the running image (`{'crypto': 8, 'us-stock': 8,
+'futures': 4, 'forex': 4}` = 24); they simply have not had a batch yet.
+
+**Research interval is 3600s, so the first batch under the new cap is due
+≈22:07Z.** That is the earliest honest measurement. What to check then:
+
+1. survivors per batch **12 → ~24**
+2. how many of those are `selectable`
+3. whether any clears cooldowns + holdings + gates to actually **build**
+4. `'llm': N` in `[SymbolResearch]` — the #95 tell that the reuse/fallback
+   mix has shifted under a wider pool
+
+**Fleet remains 2/10, which is expected** — nothing could refill it from
+an old-cap batch.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing this beat; the two PRs landed 11 minutes ago and
+the right action is to let the next batch arrive rather than touch
+anything.
+
+---
+
 ## Inter-cycle ship — 2026-08-06 21:08Z — CI RUN BY US, BOTH PRs MERGED AND DEPLOYED
 
 Owner: *"if github CI got issued then can CI processing by us?"* — then
