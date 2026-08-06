@@ -14,6 +14,104 @@ Suggestions + shipped solutions.
 
 ---
 
+## ⏱️ 24-HOUR VERIFICATION SWEEP — 2026-08-06 15:20Z (prod DB clock) — SHIPPED #263
+
+The 15:07Z sweep cron did not fire — the session was mid-deploy on #262,
+the documented idle-only limitation. Run here instead.
+
+### The 24h ledger
+
+| UTC day | ledger | adapt | delta | flattens |
+|---|---|---|---|---|
+| 08-04 | −62.57 | −20.61 | −41.96 | 2 |
+| 08-05 | **+7.09** | +71.82 | −64.73 | 2 |
+| 08-06 | −70.36 | −47.59 | −22.77 | 5 |
+
+**22 runs closed** in the KST-day window (08-05 15:00Z → 08-06 15:00Z):
+10 losers totalling **−191.33**, 4 winners totalling **+94.01**, and **8
+runs that produced exactly 0.00** while holding slots.
+
+### The SHAPE — and it is adversarial about my own week
+
+I shipped #249/#251/#254/#255 around the breakeven floor and reported
+#251 "proven live" this morning. **The sweep asked a question I had
+not: could that floor have protected the runs that actually lost the
+money?**
+
+The split is **13 of 13**:
+
+| | runs | |
+|---|---|---|
+| **losers** | 971 975 955 944 949 957 967 962 976 973 | peak **<** arm → **the floor could never have armed** |
+| **winners** | 969 960 958 | peak **≥** arm → covered |
+
+The floor arms only once a run's peak clears its own round-trip cost, and
+**that threshold scales with book size — so the protection arms last
+exactly where it would save most.**
+
+**Run 971 is the case that makes it concrete:** a 15.81-unit ZEC book
+needed a peak of **$16.36**, reached **$16.15**, then lost **−$58.18**.
+**It missed its own protection by 1.3%** — and it was the largest single
+loss in the window.
+
+**This is not the tautology it first looks like.** Four of the ten losers
+had *positive* peaks — 971 +16.15, 976 +7.22, 975 +2.84, 973 +1.72 — and
+still sat under their thresholds.
+
+Secondary shapes worth recording:
+- **Winners give back 34–49% of peak** (969 20.71→10.57, 960 42.84→28.47).
+  Only 958 banked at its peak (54.45→54.45).
+- **8 of 22 runs (36%) produced nothing at all** — five ZEC `desk_retired`
+  zeros plus three `idle_retired`.
+
+### Shipped — PR #263 (`918416d`, image `20260806-floorstatus`)
+
+The desk is already shown its peak. It has **never** been shown where
+protection begins, so it cannot know it is uncovered — the same shape as
+#241/#244/#245. `_floor_status_line` states it and nothing else; the
+judgment lives in the skills and both verbs (bank, arm) already exist. It
+uses the **same #251 max-book anchor as the floor itself**, so a reduce
+cannot quietly lower the bar the desk is reading.
+
+**Live on all five open runs immediately, and the split is useful:**
+
+| run | status |
+|---|---|
+| 972 SLV | **ARMED** (peak 8.63 > 4.75) |
+| 977 GC | **ARMED** (peak 21.08 > 11.38) |
+| 968 USDKRW | NOT ARMED (best −2.08, needs 4.74) |
+| 978 ETHUSDT | NOT ARMED (best 0.83, needs 4.94) |
+| **979 SI** | NOT ARMED (best −0.26, needs 10.21) — **and −9.63 open right now** |
+
+**979 is the 971 shape happening live.** It is unprotected, and as of this
+sweep it is told so every cycle.
+
+No skill text touched — `trader/us-stock` has 60 characters left (#262).
+
+**Verified:** fail-before 7/7, mutation 4/4 (incl. unwiring and reverting
+to the current-book anchor), 3543 pass, ruff clean; in-image 7/7 OK;
+renders on all 5 open runs through the real `_position_state_line` path;
+0 tracebacks; docs 200/200.
+
+### Re-proving the week's other fixes against live data
+
+- **#251** — still "post-fix 2 survived, 0 flattened". Holds.
+- **#253/#262 arm verb** — 9 `reduce` : 1 `close` since #253.
+- **#257** — `pending_close` still 0; cycle 89 established this is
+  structural (`adapt_retired` self-drains), not a failure.
+- **#259 reachability** — the two arms that fired were 0.16 and 0.75
+  ordinary days out, taking 1h44m and 4h32m. Direction supported, n=2.
+- **#260/#262 frozen-mark** — the feed is still frozen; `fill_audit` 10
+  repeats / $12,655.93.
+
+### Noted, not acted on
+
+`_position_state_line` can render *"you are holding 350% of that
+high-water mark"* (978: unrealized 2.90 vs peak-total 0.83). Pre-existing,
+out of this scope, and worth a look when the catalogue is next opened.
+
+---
+
 ## Cycle 90 — 2026-08-06 14:49Z (prod DB clock) — SHIPPED #262
 
 **1. Working per plan?** Yes. 6 runs live, **0 tracebacks**, docs 200/200.
