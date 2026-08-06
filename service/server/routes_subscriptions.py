@@ -535,6 +535,51 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             "A payment is already awaiting approval",
             amount_override=prorated, change_kind="upgrade")
 
+    @app.post('/api/subscriptions/downgrade')
+    async def schedule_downgrade(body: PlanOrderBody, authorization: str = Header(None)):
+        """Schedule a downgrade at renewal: no payment, the member keeps the
+        limits they paid for until expiry. Stamped on the ACTIVE row so /me
+        and the account page can show it; cancellable until expiry."""
+        user = _require_user(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            sub, current = _manual_change_context(cursor, user)
+            target = _load_plan(cursor, body.plan_code)
+            if target["code"] == current["code"]:
+                raise HTTPException(status_code=400, detail="Already on this plan")
+            if int(target["sort_order"]) >= int(current["sort_order"]):
+                raise HTTPException(status_code=400,
+                                    detail="That is an upgrade — use the upgrade option")
+            cursor.execute(
+                "UPDATE user_subscriptions SET pending_plan_code = ?, "
+                "change_kind = 'downgrade' WHERE id = ?",
+                (target["code"], sub["id"]))
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("downgrade scheduled: user=%s %s -> %s at %s",
+                    user["id"], current["code"], target["code"], sub.get("expires_at"))
+        return {"ok": True, "pending_plan_code": target["code"],
+                "effective_at": sub.get("expires_at")}
+
+    @app.post('/api/subscriptions/downgrade/cancel')
+    async def cancel_downgrade(authorization: str = Header(None)):
+        """Clear a scheduled downgrade (idempotent — clearing nothing is ok)."""
+        user = _require_user(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE user_subscriptions SET pending_plan_code = NULL, "
+                "change_kind = NULL WHERE user_id = ? AND status = 'active' "
+                "AND change_kind = 'downgrade'",
+                (user["id"],))
+            conn.commit()
+        finally:
+            conn.close()
+        return {"ok": True}
+
     @app.post('/api/subscriptions/bank-transfer')
     async def bank_transfer(body: BankTransferBody, authorization: str = Header(None)):
         return _submit_manual_payment(

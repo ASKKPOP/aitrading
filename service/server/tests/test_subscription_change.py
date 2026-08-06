@@ -272,5 +272,62 @@ class ManualUpgradeSubmitTests(_Case):
         self.assertEqual(self._upgrade(method="usdt", reference="0xhash").status_code, 200)
 
 
+class DowngradeScheduleTests(_Case):
+    def _downgrade(self, plan_code="junior"):
+        return self.client.post("/api/subscriptions/downgrade",
+                                json={"plan_code": plan_code}, headers=self.auth)
+
+    def _me_sub(self) -> dict:
+        r = self.client.get("/api/subscriptions/me", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        return r.json()["subscription"]
+
+    def test_downgrade_schedules_on_the_active_row(self):
+        sub_id = _mk_sub(self.uid, "pro", days_left=15)
+        r = self._downgrade("junior")
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["pending_plan_code"], "junior")
+        row = _sub_row(sub_id)
+        self.assertEqual(row["pending_plan_code"], "junior")
+        self.assertEqual(row["change_kind"], "downgrade")
+        # the member keeps the paid-for plan until expiry
+        me = self._me_sub()
+        self.assertEqual(me["plan_code"], "pro")
+        self.assertEqual(me["pending_plan_code"], "junior")
+
+    def test_upgrade_direction_is_refused(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self._downgrade("professional")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("upgrade", r.json()["detail"].lower())
+
+    def test_cancel_clears_the_schedule(self):
+        sub_id = _mk_sub(self.uid, "pro", days_left=15)
+        self._downgrade("junior")
+        r = self.client.post("/api/subscriptions/downgrade/cancel", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        row = _sub_row(sub_id)
+        self.assertIsNone(row["pending_plan_code"])
+        self.assertIsNone(row["change_kind"])
+
+    def test_cancel_with_nothing_scheduled_is_ok(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self.client.post("/api/subscriptions/downgrade/cancel", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+
+    def test_trial_and_provider_rails_are_refused(self):
+        _mk_sub(self.uid, "pro", method="trial", days_left=5)
+        self.assertEqual(self._downgrade("junior").status_code, 400)
+
+    def test_stripe_downgrade_goes_through_the_portal(self):
+        _mk_sub(self.uid, "pro", method="stripe", days_left=15,
+                auto_renew=1, external_id="sub_x")
+        self.assertEqual(self._downgrade("junior").status_code, 400)
+
+    def test_same_plan_downgrade_is_refused(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        self.assertEqual(self._downgrade("pro").status_code, 400)
+
+
 if __name__ == "__main__":
     unittest.main()
