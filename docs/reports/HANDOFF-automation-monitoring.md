@@ -492,6 +492,29 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### ⚠️ Added 2026-08-06 (#262) — THE SKILLS CATALOGUE IS OUT OF ROOM
+
+**`trader/us-stock` is 33,940 of 34,000 — SIXTY characters.** The next
+addition has nowhere to go. Room for #262 was found by compressing that
+lesson's own backstory and removing a duplication; there is no third time.
+**Prune or market-scope a skill that has stopped earning its place** — do not
+shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
+
+### Added 2026-08-06 (#262) — a caveat in a DIFFERENT skill loses to a local imperative
+
+- Reproduced n=2 with a clean n=1 control. #260 put "set no stop, target or
+  arm off a motionless price" in **Data Honesty**. The arm lesson separately
+  said "Whenever you hold a position, arm the level" — **unconditional, and
+  in the skill actually about arming**. Of three arms authored after the
+  clause deployed, the one on a live feed FIRED and **two were placed on
+  frozen marks** where they can never fire.
+- **Put the exception where the instruction is.** A distant caveat does not
+  survive contact with a nearer imperative.
+- **A lesson that states a fact must not keep stating it once it is untrue.**
+  The same lesson still claimed "64 arms placed here, NOT ONE ever fired"
+  hours after two had fired. When a watch resolves, grep the skills for the
+  claim it invalidates.
+
 ### Added 2026-08-06 (cycle 89) — #257's silence is STRUCTURAL, not a failure
 
 - **`pending_close` has stayed 0 through several stops. That is correct.**
