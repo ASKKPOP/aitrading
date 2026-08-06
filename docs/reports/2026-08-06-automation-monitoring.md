@@ -14,6 +14,74 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 85 — 2026-08-06 12:19Z (prod DB clock) — 🔍 FROZEN-FEED CAUSE FOUND
+
+Seven minutes after cycle 84, so no meaningful new trading data. Spent the
+beat narrowing the standing owner decision instead — and the answer is
+**not** what cycle 82 implied.
+
+**1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
+tracebacks**, 7 runs live, docs 200/200, events current. Ledger **−30.17**
+and DRIFT **−10.66**, both unchanged.
+
+**2. Losses.** No closes this beat; nothing new to attribute.
+
+**3. 🔍 THE FINDING — the frozen feed is UPSTREAM STALENESS, and the
+platform is blind to it by design.**
+
+Yahoo's chart response carries its own timestamps. Queried directly from
+the prod container at 12:20:26Z:
+
+| ticker | Yahoo's price | age of Yahoo's OWN data |
+|---|---|---|
+| GC=F | 4320.7 | **290 min** |
+| SI=F | 62.1 | **290 min** |
+| USDKRW=X | 1428.31 | **280 min** |
+| SLV | 56.07 | **980 min** |
+| **BTC-USD** | 64786.2 | **280 min** |
+
+**BTC-USD trades 24/7 and cannot be 4h40m without a print.** The last
+1-minute *candle* is equally old on every ticker, so this is not a
+`regularMarketPrice`-outside-the-session artefact — I tested that
+hypothesis and it is refuted. **Yahoo is serving ~4.8-hour-old data to
+this host across the board.**
+
+The split matches exactly: **every Yahoo-served market is frozen**
+(futures, forex, us-stock — GC, SI, USDKRW, SLV) and **every
+Hyperliquid-served market is live** (crypto — our BTCUSDT reads 64457
+while Yahoo's stale BTC-USD says 64786).
+
+**Host clock verified before trusting any of this**: `date -u` matches
+Google's `Date` header to the second, chrony synced, stratum 4. The ages
+are real.
+
+**Why the platform cannot see it:** `mark_age_ok` measures **our fetch
+time**, not the data's own timestamp — and Yahoo *gives* us that
+timestamp, which `_get_yahoo_chart_price` discards. A stale upstream
+answering 200 OK is therefore indistinguishable from a live one.
+
+**⚠️ CORRECTION to cycle 82.** That note reported the Alpha Vantage rate
+limit (*"25 requests per day"*) alongside the freeze, which implied a
+link I had not established. **It is not the cause.** Alpha Vantage serves
+Market Intel; the price path is Yahoo. Reporting the two together was
+suggestive and wrong, and the AV limit is a separate (real) issue.
+
+**4. Docs.** Both 200.
+
+**5. Shipped — nothing, and the reason is specific.** The minimal fix is
+to record Yahoo's own timestamp and judge staleness against it. But the
+natural form of that — gating on true staleness — **would halt the fleet
+the moment it shipped**, because the marks are stale right now. That is
+not a change to make unattended. It also likely needs a new column
+(alembic + prod upgrade).
+
+**→ The owner decision is now specific rather than vague:** (a) is Yahoo
+degrading/caching for this host's IP, and is a different provider needed
+for futures/forex/us-stock? (b) should the platform record and act on the
+upstream's timestamp — warn, or block?
+
+---
+
 ## Cycle 84 — 2026-08-06 12:12Z (prod DB clock)
 
 **1. Working per plan?** Yes. `20260806-fillorder` stable (tag compared),
