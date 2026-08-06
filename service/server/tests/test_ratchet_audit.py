@@ -290,7 +290,8 @@ class AuditExposureTests(AuditFiresTests):
     def test_a_pre_fix_in_band_reduce_that_flattened_is_the_defect(self):
         self._run_peak(976, 7.22)
         self._life(976, "2026-08-06T05:40:01Z")
-        self._fire(976, "2026-08-06T05:40:01Z")
+        # 976's REAL timestamps: the fire lands the second AFTER the reduce.
+        self._fire(976, "2026-08-06T05:40:02Z")
         rows = ra.audit_exposures("2026-08-01", conn=self.conn)
         self.assertEqual(len(rows), 1)
         self.assertFalse(rows[0]["post_fix"])
@@ -307,3 +308,59 @@ class AuditExposureTests(AuditFiresTests):
 
     def test_empty_band_says_so_rather_than_implying_the_fix_is_proven(self):
         self.assertIn("not yet been asked", ra.format_exposures([]))
+
+
+class LiveTableDefectTests(AuditFiresTests):
+    """Defects the first live run of the exposure table exposed, which its
+    own unit tests had passed. Same lesson as _is_flatten: a monitoring tool
+    carries the defects it hunts until real data is pointed at it."""
+
+    def _run_peak(self, run_id, peak):
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO trading_runs (id, agent_id, symbol, market, "
+                    "status, peak_pnl_usd, created_at) VALUES (?, 1, 'GC', "
+                    "'futures', 'stopped', ?, '2026-08-06T00:00:00Z')",
+                    (run_id, peak))
+        self.conn.commit()
+
+    def test_a_fire_one_second_after_the_reduce_is_the_same_event(self):
+        # The first live table read 976 — the ONE case whose answer is known
+        # — as "survived", because it matched fire to reduce on an exact
+        # second. 976 reduced at 05:40:01 and was flattened at 05:40:02.
+        self._run_peak(976, 7.22)
+        self._ev(976, "trade", "2026-08-06T04:54:31Z",
+                 {"side": "buy", "quantity": 1.3166, "price": 4317.4})
+        self._ev(976, "trade", "2026-08-06T05:40:01Z",
+                 {"side": "sell", "quantity": 0.6583, "price": 4314.1})
+        self._fire(976, "2026-08-06T05:40:02Z")
+        rows = ra.audit_exposures("2026-08-01", conn=self.conn)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["fired"], "976 was flattened, not survived")
+
+    def test_a_fire_hours_later_is_not_this_reduce(self):
+        self._run_peak(973, 7.22)
+        self._ev(973, "trade", "2026-08-06T02:00:00Z",
+                 {"side": "buy", "quantity": 1.3166, "price": 4317.4})
+        self._ev(973, "trade", "2026-08-06T02:10:00Z",
+                 {"side": "sell", "quantity": 0.6583, "price": 4314.1})
+        self._fire(973, "2026-08-06T04:12:00Z")
+        rows = ra.audit_exposures("2026-08-01", conn=self.conn)
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0]["fired"])
+
+    def test_reduces_from_before_the_ratchet_existed_are_not_judged(self):
+        # The first live table judged eight 08-01/08-02 reduces against a
+        # rail that did not exist until 08-06 01:45Z and called them all
+        # "survived" — eight counts of evidence for nothing.
+        self._run_peak(898, 1.49)
+        self._ev(898, "trade", "2026-08-01T00:10:00Z",
+                 {"side": "buy", "quantity": 1.3166, "price": 4317.4})
+        self._ev(898, "trade", "2026-08-01T00:39:17Z",
+                 {"side": "sell", "quantity": 1.3160, "price": 4314.1})
+        self.assertEqual(ra.audit_exposures("2026-08-01", conn=self.conn), [])
+
+    def test_a_sliver_arm_is_printed_with_enough_precision_to_read(self):
+        rows = [{"run_id": 1, "reduced_at": "2026-08-06T02:00:00Z",
+                 "arm_full": 1.70, "arm_after": 0.0042, "peak": 1.49,
+                 "in_band": True, "post_fix": False, "fired": False}]
+        self.assertIn("0.0042", ra.format_exposures(rows))
