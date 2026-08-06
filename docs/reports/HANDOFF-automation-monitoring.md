@@ -470,6 +470,28 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### Added 2026-08-06 (#260/#261) — the skills catalogue is AT CAPACITY
+
+- **`trader/us-stock` sits at ~33,890 of 34,000 — about 110 chars spare.**
+  Every other site/market pair has 3,700–30,800. Adding ONE sentence to a
+  trader-site skill overflowed it by 166 and **silently dropped
+  `execution-plan-check`**, a 667-char safety skill. An over-budget block does
+  not error — it prunes whichever skill sorts last.
+- **Before adding any trader-site text**, run
+  `tests/test_trading_skills.py::test_defaults_never_hit_the_budget` and
+  expect to compress something first. Compress your OWN prose; do not raise
+  `MAX_BLOCK_LEN` (that would be the fifth bump). The measurement recipe is
+  documented at the constant.
+
+### Added 2026-08-06 (#260) — an OBSERVABLE WITH NO LESSON is half a fix
+
+- #259 gave the desk `_mark_freshness_line` — the fact of a motionless tape —
+  and **no skill attached any judgment to it.** The desk got a number and no
+  instruction about what it means for action.
+- **Every brief line needs a matching skill clause**, or it is decoration.
+  The pattern this file keeps recording is "the desk cannot perceive X";
+  supplying X without teaching what to do about it only completes half of it.
+
 ### 🚨 Escalated 2026-08-06 (cycle 83) — the freeze is a FILL-PRICE problem too
 
 - **Trades are EXECUTING at frozen marks.** 977 exited GC at
