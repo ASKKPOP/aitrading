@@ -89,8 +89,49 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
 }
 
 # top-K per market keeps cross-market diversity (a hot crypto tape must not
-# starve every other market out of the survivor set)
-SURVIVORS_PER_MARKET = {"crypto": 4, "us-stock": 4, "futures": 2, "forex": 2}
+# starve every other market out of the survivor set).
+#
+# SIZING (2026-08-06, cycles 97-101). These were 4/4/2/2 = TWELVE survivors,
+# and a 10-slot fleet starved on that: measured on prod, batch research:496122
+# yielded ZERO buildable candidates and the fleet fell from 8 running runs to
+# 2 in a single day, unable to replenish. The arithmetic is unforgiving —
+# every retire adds a 24h symbol cooldown, so the fleet's own losses subtract
+# from the same pool it must rebuild from:
+#
+#     12 survivors − 4 not selectable (un-shortable spot / sub-R:R moves)
+#                  − 5 in cooldown (retired earlier that day)
+#                  − 2 already running
+#                  − ZBTUSDT unpriceable            =  0 buildable
+#
+# The screen already SCORES the whole universe (129 candidates that day); this
+# cap only decides how many of those already-paid-for scores survive. Raising
+# it costs no extra candle fetches — it stops discarding 117 finished results.
+#
+# ⚠️ Stage 2 interaction: fresh theses are chunked (FLEET_RESEARCH_BATCH_SIZE,
+# default 5) and capped at MAX_LLM_CALLS_PER_REFRESH (default 2), so at most
+# ~10 survivors get a FRESH LLM thesis per refresh; beyond that they reuse an
+# unchanged prior thesis or fall back. A wider survivor set therefore widens
+# the fleet's choice without widening LLM spend — but watch `'llm': N` in the
+# [SymbolResearch] log line: if it collapses toward zero the reuse/fallback
+# mix has shifted and FLEET_RESEARCH_MAX_LLM_CALLS is the knob.
+_SURVIVOR_DEFAULTS = {"crypto": 8, "us-stock": 8, "futures": 4, "forex": 4}
+
+
+def _survivors_per_market() -> dict[str, int]:
+    """Per-market survivor cap, env-overridable so the pool can be tuned
+    against fleet size without a deploy."""
+    out: dict[str, int] = {}
+    for market, default in _SURVIVOR_DEFAULTS.items():
+        key = "FLEET_RESEARCH_SURVIVORS_" + market.replace("-", "_").upper()
+        try:
+            out[market] = max(1, int(os.environ.get(key, default)))
+        except ValueError:
+            out[market] = default
+    return out
+
+
+# Back-compat alias: the defaults as a plain dict.
+SURVIVORS_PER_MARKET = dict(_SURVIVOR_DEFAULTS)
 
 LIQUIDITY_FLOOR_USD = {"crypto": 5_000_000.0}   # curated lists elsewhere are exempt
 MIN_CANDLES = 30
@@ -580,7 +621,7 @@ def screen_universe(universe: list[dict[str, str]],
         })
 
     survivors: list[dict[str, Any]] = []
-    for market, k in SURVIVORS_PER_MARKET.items():
+    for market, k in _survivors_per_market().items():
         pool = sorted((s for s in scored if s["market"] == market),
                       key=lambda s: s["screen_score"], reverse=True)
         survivors.extend(pool[:k])

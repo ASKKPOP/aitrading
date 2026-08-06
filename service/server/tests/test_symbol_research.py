@@ -727,3 +727,57 @@ class PolicyFeedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SurvivorPoolSizingTests(unittest.TestCase):
+    """Cycles 97-101: the survivor cap was 4/4/2/2 = TWELVE, and a 10-slot
+    fleet starved on it. Prod batch research:496122 produced ZERO buildable
+    candidates and the fleet fell 8 runs -> 2 in a day. Each retire adds a 24h
+    cooldown, so the fleet's own losses subtract from the pool it must rebuild
+    from — the cap has to clear (slots + cooldowns + infeasible), not just
+    slots."""
+
+    def setUp(self):
+        for k in list(os.environ):
+            if k.startswith("FLEET_RESEARCH_SURVIVORS_"):
+                del os.environ[k]
+
+    tearDown = setUp
+
+    def test_the_pool_clears_a_ten_slot_fleet_with_room_for_cooldowns(self):
+        total = sum(sr._survivors_per_market().values())
+        self.assertGreaterEqual(
+            total, 20,
+            "12 survivors could not sustain 10 slots once cooldowns and "
+            "infeasible theses were subtracted — see cycles 97-101")
+
+    def test_every_automatable_market_keeps_a_share(self):
+        # Cross-market diversity: a hot crypto tape must not starve the rest.
+        caps = sr._survivors_per_market()
+        for market in ("crypto", "us-stock", "futures", "forex"):
+            self.assertGreaterEqual(caps.get(market, 0), 1,
+                                    f"{market} lost its survivor share")
+
+    def test_each_market_cap_is_env_overridable(self):
+        os.environ["FLEET_RESEARCH_SURVIVORS_CRYPTO"] = "3"
+        os.environ["FLEET_RESEARCH_SURVIVORS_US_STOCK"] = "9"
+        caps = sr._survivors_per_market()
+        self.assertEqual(caps["crypto"], 3)
+        self.assertEqual(caps["us-stock"], 9)
+
+    def test_a_garbage_override_falls_back_to_the_default(self):
+        os.environ["FLEET_RESEARCH_SURVIVORS_CRYPTO"] = "not-a-number"
+        self.assertEqual(sr._survivors_per_market()["crypto"],
+                         sr._SURVIVOR_DEFAULTS["crypto"])
+
+    def test_a_zero_override_cannot_silently_disable_a_market(self):
+        os.environ["FLEET_RESEARCH_SURVIVORS_FOREX"] = "0"
+        self.assertGreaterEqual(sr._survivors_per_market()["forex"], 1)
+
+    def test_screen_universe_honours_the_configured_cap(self):
+        os.environ["FLEET_RESEARCH_SURVIVORS_CRYPTO"] = "2"
+        rows = [{"symbol": f"S{i}USDT", "market": "crypto"} for i in range(6)]
+        candles = _candles(volume=50_000_000)
+        out = sr.screen_universe(rows, fetch_candles=lambda s, m: candles,
+                                 overlays={})
+        self.assertLessEqual(len([s for s in out if s["market"] == "crypto"]), 2)
