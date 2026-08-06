@@ -470,6 +470,17 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### 🚨 Escalated 2026-08-06 (cycle 83) — the freeze is a FILL-PRICE problem too
+
+- **Trades are EXECUTING at frozen marks.** 977 exited GC at
+  `4320.700195` — the identical price it had printed for 70+ minutes — and
+  booked +1.65 measured against that stale number. Cycle 82 framed the freeze
+  as a decision-quality issue; it is also a **fill-quality** one. The book is
+  being marked *and transacted* at a number that is not moving.
+- #259 shipped the desk's ability to SEE it (`_mark_freshness_line`). It does
+  not change what price a fill gets. That remains part of the open provider
+  decision below.
+
 ### 🚨 Added 2026-08-06 (cycle 82) — A FRESH TIMESTAMP IS NOT A FRESH PRICE
 
 **TOP OPEN ITEM — needs an owner decision, deliberately not shipped.**
