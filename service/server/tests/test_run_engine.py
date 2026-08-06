@@ -1066,3 +1066,101 @@ class BreakevenRatchetTests(unittest.TestCase):
         # protection of any kind. The ratchet must not depend on `trail`.
         self.assertFalse(run_engine._trailing_lock_hit(16.15, -54.50, None))
         self.assertTrue(run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
+
+
+class FlattenRealizedJournalTests(unittest.TestCase):
+    """FINDING 1: a forced flatten emitted a `trade` event and nothing else,
+    while every ordinary close emits an `adapt` carrying `realized` — so the
+    standard realized-P&L query silently omitted every flatten. It
+    understated losses exactly on the worst days: 08-04 read -20.61 against
+    a true -62.57, 08-05 read +73.21 against a true +8.62."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "flat-agent", "password": "pw123",
+                                   "initial_balance": 100000.0})
+        self.token = r.json()["token"]
+
+    def tearDown(self):
+        self.probe.stop()
+        os.environ.pop("AUTO_TRADING_ENABLED", None)
+        self.tmp.cleanup()
+
+    def _row(self, run_id):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM trading_runs WHERE id = ?", (run_id,))
+        row = dict(cur.fetchone())
+        conn.close()
+        return row
+
+    def _flattened_run(self, exit_price):
+        h = {"Authorization": f"Bearer {self.token}"}
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 500.0}, headers=h).json()["id"]
+        self.client.post(f"/api/runs/{run_id}/start", headers=h)
+        with patch("analysis_agents.run_analysis", return_value=BUY_ANALYSIS):
+            run_engine.run_cycle(run_id)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        database.begin_write_transaction(cur)
+        cur.execute("UPDATE positions SET current_price = ? WHERE run_id = ?",
+                    (exit_price, run_id))
+        conn.commit()
+        conn.close()
+        ok, err = run_engine._flatten_run(self._row(run_id))
+        self.assertTrue(ok, err)
+        evs = self.client.get(f"/api/runs/{run_id}/events?limit=500",
+                              headers=h).json()["events"]
+        out = []
+        for e in evs:
+            if e["event_type"] != "adapt":
+                continue
+            p = json.loads(e["payload"]) if isinstance(e["payload"], str) \
+                else e["payload"]
+            out.append(p)
+        return out
+
+    def test_a_losing_flatten_journals_its_realized_loss(self):
+        # Bought 5 @ 100 (fee 0.50); flatten at 90 => -50 price, -0.45 fee.
+        adapts = [a for a in self._flattened_run(90.0)
+                  if a.get("trigger") == "flatten_close"]
+        self.assertEqual(len(adapts), 1, "the flatten was not journalled")
+        self.assertLess(adapts[0]["realized"], -50.0)
+        self.assertEqual(adapts[0]["side"], "sell")
+
+    def test_the_standard_pnl_query_now_SEES_the_flatten(self):
+        # This is the actual defect: the reporting query sums adapt events
+        # carrying `realized`, and a flatten contributed nothing to it.
+        adapts = self._flattened_run(90.0)
+        with_realized = [a for a in adapts if a.get("realized") is not None]
+        self.assertTrue(with_realized,
+                        "no adapt carries `realized` — the query stays blind")
+        self.assertLess(sum(a["realized"] for a in with_realized), -50.0)
+
+    def test_a_winning_flatten_is_journalled_too(self):
+        adapts = [a for a in self._flattened_run(110.0)
+                  if a.get("trigger") == "flatten_close"]
+        self.assertEqual(len(adapts), 1)
+        self.assertGreater(adapts[0]["realized"], 45.0)
+
+    def test_a_flat_run_journals_nothing(self):
+        h = {"Authorization": f"Bearer {self.token}"}
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 500.0}, headers=h).json()["id"]
+        self.client.post(f"/api/runs/{run_id}/start", headers=h)
+        ok, _ = run_engine._flatten_run(self._row(run_id))
+        self.assertTrue(ok)
+        evs = self.client.get(f"/api/runs/{run_id}/events?limit=500",
+                              headers=h).json()["events"]
+        self.assertFalse([e for e in evs if e["event_type"] == "adapt"])

@@ -1229,11 +1229,45 @@ def _flatten_run(run: dict) -> tuple[bool, Optional[str]]:
         return False, "manual breaker halt blocks exits"
     from automation import execute_paper_trade
     side = "cover" if qty < 0 else "sell"
+    # Realized BEFORE the exit leg, so the flatten's own P&L can be
+    # journalled below. See the emit for why this matters.
+    try:
+        realized_before = float((compute_run_pnl(run) or {}).get("realized") or 0)
+    except Exception:  # noqa: BLE001 — reporting must never block the exit
+        realized_before = None
     signal_id, skip = execute_paper_trade(
         run["agent_id"], run["symbol"], run["market"], side, abs(qty), float(mark),
         content=f"Trading run #{run['id']} flatten on stop",
         run_id=run["id"], client_order_id=f"run:{run['id']}:flatten")
     if signal_id:
+        # FINDING 1 (2026-08-05), fixed here. A forced flatten emitted a
+        # `trade` event and NOTHING else, while every ordinary close emits an
+        # `adapt` carrying `realized` — so the standard realized-P&L query
+        # silently OMITTED every flatten. It understates losses exactly on
+        # the worst days, because a flatten happens when a brake, a retire or
+        # a stop fires on a losing position: 08-04 read −20.61 against a true
+        # −62.57, and 08-05 read +73.21 against a true +8.62, the gap being
+        # almost entirely run 971's −54.47 flatten. 70+ flattens exist
+        # historically.
+        #
+        # Emitting an `adapt` with `realized` (rather than inventing a new
+        # event type) fixes every downstream consumer at once without a query
+        # change. It cannot double-count: run_feedback derives its own adapt
+        # events from closed SIGNALS on a later cycle, and a flattened run is
+        # stopping/stopped, so no later cycle ever processes this leg — which
+        # is precisely why the number went missing in the first place.
+        try:
+            if realized_before is not None:
+                realized_after = float(
+                    (compute_run_pnl(run) or {}).get("realized") or 0)
+                emit_telemetry_event(run["id"], "adapt", {
+                    "trigger": "flatten_close",
+                    "realized": round(realized_after - realized_before, 4),
+                    "side": side, "quantity": abs(qty), "price": float(mark),
+                    "client_order_id": f"run:{run['id']}:flatten"})
+        except Exception:  # noqa: BLE001 — never let reporting undo an exit
+            logger.debug("flatten realized journal failed (run %s)",
+                         run["id"], exc_info=True)
         return True, None
     if skip and "duplicate client_order_id" in skip:
         return True, None  # a prior attempt already flattened
