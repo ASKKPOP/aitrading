@@ -219,6 +219,10 @@ class UserLanguageRequest(BaseModel):
     lang: str
 
 
+class WelcomeDismissRequest(BaseModel):
+    dismissed: bool = True
+
+
 class UserLocaleRequest(BaseModel):
     region: str
     lang: str | None = None
@@ -626,6 +630,27 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         _delete_code(store_key, ctx)
         return {'success': True, 'phone': phone}
 
+    @app.post('/api/users/welcome/dismiss')
+    async def welcome_dismiss(data: WelcomeDismissRequest,
+                              authorization: str = Header(None)):
+        """Two-way: the /welcome checkbox both sets and clears the stamp, so a
+        member can re-enable the page from the profile menu later."""
+        token = _extract_token(authorization)
+        user = _get_user_by_token(token) if token else None
+        if not user:
+            raise HTTPException(status_code=401, detail='Invalid token')
+        stamp = (datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+                 if data.dismissed else None)
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET welcome_dismissed_at = ? WHERE id = ?',
+                           (stamp, user['id']))
+            conn.commit()
+        finally:
+            conn.close()
+        return {'success': True, 'welcome_dismissed': data.dismissed}
+
     @app.post('/api/users/login')
     async def user_login(data: UserLoginRequest):
         conn = get_db_connection()
@@ -708,6 +733,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
             'locale_confirmed': bool(user.get('locale_confirmed_at')),
             'phone': user.get('phone'),
             'phone_verified': bool(user.get('phone_verified_at')),
+            # The first-run /welcome gate reads this; the page's checkbox
+            # writes it via /users/welcome/dismiss.
+            'welcome_dismissed': bool(user.get('welcome_dismissed_at')),
             'subscription_status': sub['status'],
             'subscription': sub['subscription'],
         }

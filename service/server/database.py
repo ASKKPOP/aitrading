@@ -1401,6 +1401,13 @@ def init_database():
         # Account security — phone verification (Task 1)
         "ALTER TABLE users ADD COLUMN phone TEXT",
         "ALTER TABLE users ADD COLUMN phone_verified_at TEXT",
+        # First-run /welcome page dismissal. MySQL mirror: alembic 0044.
+        "ALTER TABLE users ADD COLUMN welcome_dismissed_at TEXT",
+        # Subscription changes on the manual rails: pending upgrade rows are
+        # tagged change_kind='upgrade'; a scheduled downgrade stamps
+        # pending_plan_code on the active row. MySQL mirror: alembic 0044.
+        "ALTER TABLE user_subscriptions ADD COLUMN pending_plan_code TEXT",
+        "ALTER TABLE user_subscriptions ADD COLUMN change_kind TEXT",
     ):
         try:
             cursor.execute(_ddl)
