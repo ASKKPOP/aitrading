@@ -492,6 +492,28 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### ⭐ Added 2026-08-06 (#263, from the 24h sweep) — ASK WHETHER THE RAIL COULD EVEN HAVE FIRED
+
+The most useful question a sweep can ask about a protective rail is not "did
+it work" but **"could it have applied to the cases that hurt?"**
+
+- **13 of 13 split.** Of the 22 runs that closed in the 24h window, **all ten
+  losers had a peak BELOW their own arm threshold** — the breakeven floor
+  could never have armed for any of them — and **all three winners** were
+  above it.
+- **The threshold scales with book size, so the protection arms LAST exactly
+  where it would save most.** Run 971: a 15.81-unit ZEC book needed a peak of
+  **$16.36**, reached **$16.15**, then lost **−$58.18**. Missed by 1.3%.
+- **Not a tautology** — four losers had *positive* peaks (971 +16.15, 976
+  +7.22, 975 +2.84, 973 +1.72) and still sat under threshold.
+- Fixed AI-first in #263: `_floor_status_line` tells the desk whether the
+  floor is switched on at all, using the same #251 max-book anchor as the
+  floor itself. Re-check with the per-run render through
+  `_position_state_line`.
+- ⚠️ **This does not make the floor protect them.** It tells the desk it is
+  uncovered so it can bank or arm. Whether the threshold itself should scale
+  differently is an open question, deliberately not answered.
+
 ### ⚠️ Added 2026-08-06 (#262) — THE SKILLS CATALOGUE IS OUT OF ROOM
 
 **`trader/us-stock` is 33,940 of 34,000 — SIXTY characters.** The next
