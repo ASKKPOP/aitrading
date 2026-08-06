@@ -2032,6 +2032,39 @@ def _control_stopping(run: dict, out: dict) -> None:
                        dedupe=f"run:{run['id']}:positions_held")
 
 
+# ── cycle cadence (#269) ───────────────────────────────────────────────────
+# Owner, 2026-08-06: "Sooppiy AI analysis each run 30 min (make time gap
+# each)". Two separate problems, two separate mechanisms.
+INTERVAL_CAP_MIN = 30
+
+
+def _interval_cap_min() -> int:
+    """Platform ceiling on how long a live run may go unanalysed. Applied at
+    SCHEDULING time, deliberately: the per-run `interval_minutes` in the
+    config snapshot belongs to the desk that built the run, and this caps it
+    without rewriting a single run row."""
+    try:
+        return max(5, int(os.environ.get("RUN_INTERVAL_CAP_MIN", INTERVAL_CAP_MIN)))
+    except ValueError:
+        return INTERVAL_CAP_MIN
+
+
+def _phase_offset_min(run_id: int, interval_min: int) -> int:
+    """Each run's own repeating slot on the absolute clock grid.
+
+    A fleet built in one pass inherits one identical `last_cycle_at` (six runs
+    here shared 22:57:00) and then cycles in lockstep forever — every run
+    competing for the same worker slot and, worse, every decision taken on the
+    same tick of the same data. 7 is coprime with the intervals in use, so
+    consecutive run ids land 7 minutes apart."""
+    return (run_id * 7) % max(1, interval_min)
+
+
+def _slot(dt: datetime, interval_min: int, offset_min: int) -> int:
+    """Index of the run's slot containing `dt`."""
+    return (int(dt.timestamp()) // 60 - offset_min) // max(1, interval_min)
+
+
 def due_run_ids() -> list[int]:
     """Running runs whose per-run interval has elapsed (interval lives in the
     config snapshot; the comparison is done in Python — dual-dialect date
@@ -2050,13 +2083,22 @@ def due_run_ids() -> list[int]:
     for row in rows:
         try:
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
-            interval_min = max(5, int(cfg.get("interval_minutes") or 60))
+            interval_min = max(5, min(_interval_cap_min(),
+                                       int(cfg.get("interval_minutes") or 60)))
             last = row.get("last_cycle_at")
             if not last:
                 due.append(row["id"])
                 continue
             last_dt = datetime.strptime(last, TS_FMT).replace(tzinfo=timezone.utc)
-            if now - last_dt >= timedelta(minutes=interval_min):
+            offset = _phase_offset_min(row["id"], interval_min)
+            # A plain "elapsed >= interval" test can never break lockstep:
+            # once a full interval has passed the slot has ALWAYS advanced, so
+            # the two conditions collapse into one and every run keeps its
+            # inherited phase forever. Allowing one early fire — never sooner
+            # than half an interval — lets a run snap onto its own slot once,
+            # after which it fires exactly once per slot at a true period.
+            if (_slot(now, interval_min, offset) > _slot(last_dt, interval_min, offset)
+                    and now - last_dt >= timedelta(minutes=interval_min / 2)):
                 due.append(row["id"])
         except Exception:  # noqa: BLE001
             logger.warning("due-check failed for run %s", row.get("id"), exc_info=True)

@@ -71,9 +71,24 @@ MAX_BODY_LEN = 4000
 # and expect to compress something first.
 MAX_BLOCK_LEN = 34000
 
-_HEADER = ("TRADING SKILLS (house decision methods — apply them to the data "
-           "in this prompt; they may make you MORE cautious; they can never "
-           "override risk limits or execution gates):\n")
+# The mandate (owner, 2026-08-06). The header used to frame the entire block
+# as a brake — "they may make you MORE cautious" — and never once said what
+# the desk is FOR. A desk told only what may stop it has no stated purpose to
+# weigh a stop against. Owner's words: "We must be make solution for get a
+# profit (It's our destiny and purpose)", "MUST BE THINKING DEEPLY", "do not
+# make change lost profit".
+#
+# REALIZED on purpose: an unrealized gain is not profit — winners here gave
+# back 34-49% of their peak and run 977 round-tripped +7.89 to -2.81. "Not
+# activity" on purpose too: this desk's failure is not timidity — three runs
+# were underwater from their ENTRY FEE alone, so a bare "make profit" would
+# push toward more trades, the one direction the evidence says loses.
+_HEADER = ("YOUR PURPOSE IS REALIZED PROFIT — not activity, not being "
+           "right, not holding on. THINK DEEPLY before "
+           "every decision, and NEVER LET A GAIN YOU HAVE TURN INTO A LOSS: "
+           "banked beats bigger. House methods follow; they can make you "
+           "more cautious and never override risk limits or execution "
+           "gates:\n")
 
 # ── base catalogue ─────────────────────────────────────────────────────────
 # Distilled from the public trading-skill ecosystem (see docs/plan/20) into
@@ -566,20 +581,20 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "make it explicitly. End every review with one clear action — "
             "hold with plan intact, manage actively (trim, tighten), or "
             "exit decisively — and name the condition that would change it. "
-            "AND ARM THE LEVEL YOU CANNOT WAIT FOR. Your cycles are ~45 "
+            "AND ARM THE LEVEL YOU CANNOT WAIT FOR. Your cycles are ~30 "
             "minutes apart and a paying move can open and close between two "
-            "of them — measured live, most excursions lasted 5-20 minutes. "
+            "— most excursions lasted 5-20 minutes. "
             "You cannot bank what you never see. The 'arm' intent EXECUTES "
             "between cycles: state if price_above/price_below LEVEL then "
             "reduce/close with a size_frac, and the platform fires it "
             "without you. Whenever you hold a position, arm the level that "
             "would make you want to bank — but NOT on a motionless tape: an "
             "unmoving price never crosses a level. REACHABLE MEANS REACHABLE "
-            "BY YOUR "
-            "NEXT LOOK, ~45 minutes — size it to an hour's plausible move, "
-            "not a whole ordinary day (~30x that): of 60+ arms placed here "
-            "only TWO have ever fired, at 0.16 and 0.75 ordinary days out. "
-            "Anchor to the symbol's recent range, never a round number. Arm to BANK (price_above on a long, price_below "
+            "BY YOUR NEXT LOOK, ~30 minutes — size it to a half-hour's "
+            "plausible move, not a whole ordinary day: of 60+ arms placed "
+            "here only TWO have ever fired. "
+            "Anchor to the symbol's recent range, never a round number. "
+            "Arm to BANK (price_above on a long, price_below "
             "on a short), not only to protect: the stop already protects, "
             "while the gain that appears and vanishes between cycles is "
             "unrecoverable and is where the day's profit went. An arm does "
