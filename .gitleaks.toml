@@ -1,0 +1,21 @@
+# gitleaks configuration.
+#
+# Why this file exists: the operator setup docs under docs/ops/ carry copy-paste
+# API commands whose credentials are HTML-escaped placeholders, e.g.
+#   curl -u "&lt;CLIENT_ID&gt;:&lt;CLIENT_SECRET&gt;"
+# The default `curl-auth-user` rule reads the escaped placeholder as a
+# high-entropy secret (3.94) and fails the scan. That is the only finding the
+# scan has ever produced on this repo.
+#
+# The allowlist below matches the escaped-placeholder SHAPE, not the file. A real
+# key pasted into the same document is still caught, which is the point.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "HTML-escaped credential placeholders in the setup docs"
+regexTarget = "match"
+regexes = [
+  '''&lt;[A-Za-z0-9_]+&gt;:&lt;[A-Za-z0-9_]+&gt;''',
+]

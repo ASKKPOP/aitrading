@@ -107,11 +107,9 @@ function AccountHeader({ user, mfa, onSignOut }: {
             {user?.subscription?.plan_code && (
               <>
                 💎 <strong>{PLAN_NAMES[user.subscription.plan_code] || user.subscription.plan_code}</strong>
-                {user.subscription.plan_code !== 'enterprise' && (
-                  <>{' '}<Link to="/subscribe" style={{ color: '#fde68a', textDecoration: 'underline' }}>
-                    {tr(language, { ko: '플랜 업그레이드', en: 'Upgrade plan', ja: 'プランをアップグレード', th: 'อัปเกรดแผน', vi: 'Nâng cấp gói', id: 'Tingkatkan paket' })}
-                  </Link></>
-                )}
+                {' '}<Link to="/account/subscription" style={{ color: '#fde68a', textDecoration: 'underline' }}>
+                  {tr(language, { ko: '구독 관리', en: 'Manage subscription', ja: '購読を管理', th: 'จัดการการสมัคร', vi: 'Quản lý gói', id: 'Kelola langganan' })}
+                </Link>
                 {' · '}
               </>
             )}

@@ -171,6 +171,34 @@ class PlanPatchBody(BaseModel):
     contact_only: Optional[int] = None
     active: Optional[int] = None
     sort_order: Optional[int] = None
+    # Billing ids. Empty string clears; None leaves the column untouched, so
+    # setting one rail never wipes the other.
+    stripe_price_id: Optional[str] = None
+    paypal_plan_id: Optional[str] = None
+
+
+# Stripe shows the PRODUCT id (prod_…) more prominently than the PRICE id, and
+# PayPal likewise shows PROD-… next to P-…. Pasting the wrong one is the most
+# likely setup mistake and would surface only as a 502 at a member's first
+# checkout, so it is rejected here with a message that names the right prefix.
+_BILLING_ID_RULES = {
+    "stripe_price_id": (re.compile(r"^price_[A-Za-z0-9]+$"),
+                        "Stripe price id must look like price_… "
+                        "(prod_… is the product id, not the price id)"),
+    "paypal_plan_id": (re.compile(r"^P-[A-Za-z0-9]+$"),
+                       "PayPal plan id must look like P-… "
+                       "(PROD-… is the product id, not the plan id)"),
+}
+
+
+def _clean_billing_id(field: str, raw: str) -> str:
+    value = (raw or "").strip()
+    if not value:
+        return ""  # explicit clear
+    pattern, message = _BILLING_ID_RULES[field]
+    if not pattern.fullmatch(value):
+        raise HTTPException(status_code=400, detail=message)
+    return value
 
 
 class SubscriptionExtendBody(BaseModel):
@@ -372,6 +400,7 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         try:
             cursor.execute(
                 "SELECT id, code, name, price_usd, contact_only, active, sort_order, "
+                "stripe_price_id, paypal_plan_id, "
                 "(SELECT COUNT(*) FROM user_subscriptions s WHERE s.plan_code = subscription_plans.code) AS subscriber_rows "
                 "FROM subscription_plans ORDER BY sort_order, id")
             plans = [dict(r) for r in cursor.fetchall()]
@@ -436,6 +465,15 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         if body.sort_order is not None:
             sets.append("sort_order = ?"); params.append(int(body.sort_order))
             changes.append(f"sort={int(body.sort_order)}")
+        for field, raw in (("stripe_price_id", body.stripe_price_id),
+                           ("paypal_plan_id", body.paypal_plan_id)):
+            if raw is None:
+                continue
+            # Validate BEFORE opening the connection so a rejected patch is a
+            # clean 400 that has written nothing.
+            value = _clean_billing_id(field, raw)
+            sets.append(f"{field} = ?"); params.append(value or None)
+            changes.append(f"{field}={value or '(cleared)'}")
         if not sets:
             raise HTTPException(status_code=400, detail="Nothing to update")
         conn = get_db_connection()
@@ -494,7 +532,8 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
                 f"""
                 SELECT s.id, s.user_id, u.email, s.plan_code, s.status, s.method,
                        s.reference, s.amount_usd, s.started_at, s.expires_at,
-                       s.decided_by, s.decided_at, s.note, s.created_at
+                       s.decided_by, s.decided_at, s.note, s.created_at,
+                       s.change_kind, s.pending_plan_code
                 FROM user_subscriptions s LEFT JOIN users u ON u.id = s.user_id
                 {where} ORDER BY s.id DESC LIMIT ? OFFSET ?
                 """,
@@ -565,8 +604,8 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "SELECT id, user_id, plan_code, status, auto_renew, method, external_id "
-                "FROM user_subscriptions WHERE id = ?",
+                "SELECT id, user_id, plan_code, status, auto_renew, method, external_id, "
+                "change_kind FROM user_subscriptions WHERE id = ?",
                 (sub_id,))
             row = cursor.fetchone()
             if not row:
@@ -576,16 +615,46 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
             if row["auto_renew"] or (row["method"] in ("stripe", "paypal") and row["external_id"]):
                 raise HTTPException(status_code=400,
                                     detail="Auto-renew subscriptions activate via the provider webhook only")
-            cursor.execute(
-                "UPDATE user_subscriptions SET status = 'active', started_at = ?, expires_at = ?, "
-                "decided_by = ?, decided_at = ?, note = ? WHERE id = ?",
-                (_iso(started), _iso(started + timedelta(days=SUBSCRIPTION_DAYS)),
-                 admin["id"], _iso(started), body.note[:1000], sub_id),
-            )
-            conn.commit()
+            if row["change_kind"] == "upgrade":
+                # Prorated upgrade: the member already paid for this period at
+                # the old tier and paid the difference for the rest of it —
+                # the plan flips NOW and the clock must not move. The pending
+                # row becomes the active one at the ORIGINAL expiry; the old
+                # row drops out as superseded.
+                cursor.execute(
+                    "SELECT id, expires_at FROM user_subscriptions "
+                    "WHERE user_id = ? AND status = 'active' AND id != ? "
+                    "ORDER BY id DESC LIMIT 1",
+                    (row["user_id"], sub_id))
+                active = cursor.fetchone()
+                if not active:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Original subscription expired — reject this and "
+                               "let the member subscribe normally")
+                cursor.execute(
+                    "UPDATE user_subscriptions SET status = 'superseded' WHERE id = ?",
+                    (active["id"],))
+                cursor.execute(
+                    "UPDATE user_subscriptions SET status = 'active', started_at = ?, "
+                    "expires_at = ?, decided_by = ?, decided_at = ?, note = ? WHERE id = ?",
+                    (_iso(started), active["expires_at"], admin["id"], _iso(started),
+                     body.note[:1000], sub_id),
+                )
+                conn.commit()
+            else:
+                cursor.execute(
+                    "UPDATE user_subscriptions SET status = 'active', started_at = ?, expires_at = ?, "
+                    "decided_by = ?, decided_at = ?, note = ? WHERE id = ?",
+                    (_iso(started), _iso(started + timedelta(days=SUBSCRIPTION_DAYS)),
+                     admin["id"], _iso(started), body.note[:1000], sub_id),
+                )
+                conn.commit()
         finally:
             conn.close()
-        audit(admin, "subscription.approve", f"subscription:{sub_id}",
+        action = ("subscription.approve_upgrade" if row["change_kind"] == "upgrade"
+                  else "subscription.approve")
+        audit(admin, action, f"subscription:{sub_id}",
               f"user={row['user_id']} plan={row['plan_code']}")
         return {"ok": True, "status": "active"}
 

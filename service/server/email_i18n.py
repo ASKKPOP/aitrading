@@ -334,6 +334,209 @@ def welcome_email_text(lang: str) -> str:
     return f"{c['heading']}\n\n{c['body']}\n\n{steps}\n\n{SITE_URL}\n"
 
 
+# lang -> trial notices. The trial is CARD-FREE: no payment method is held, so
+# nothing is charged when it ends and neither notice may promise or imply a
+# charge. Two moments, both sent by tasks.subscription_enforcer_loop:
+#   'reminder' — day 4 of 7, while there is still time to subscribe
+#   'ended'    — at expiry, once automation has actually been stopped
+# '{amount}' (cheapest plan) and '{date}' are substituted by _trial_copy();
+# every language must keep both tokens in body/note or the notice ships with a
+# hole in it (test_every_translation_keeps_both_placeholders guards this).
+_TRIAL = {
+    'reminder': {
+        'en': {'subject': 'Your Sooppiy free trial ends in 3 days',
+               'heading': 'Your free trial ends soon',
+               'body': ('Your 7-day free trial ends on {date}. Choose a plan '
+                        'before then to keep your access and keep your '
+                        'automation running. Plans start at {amount} a month.'),
+               'note': ('Nothing is charged automatically — we hold no payment '
+                        'method for you. When the trial ends your automation '
+                        'and alerts stop, and your account returns to the '
+                        'subscription page until you choose a plan.'),
+               'cta': 'Choose a plan'},
+        'ko': {'subject': 'Sooppiy 무료 체험이 3일 후 종료됩니다',
+               'heading': '무료 체험이 곧 종료됩니다',
+               'body': ('7일 무료 체험이 {date}에 종료됩니다. 그전에 플랜을 '
+                        '선택하시면 이용과 자동매매가 그대로 유지됩니다. 플랜은 '
+                        '월 {amount}부터입니다.'),
+               'note': ('결제수단을 보관하고 있지 않으므로 자동으로 청구되는 금액은 '
+                        '없습니다. 체험이 종료되면 자동매매와 알림이 중지되고, 플랜을 '
+                        '선택하실 때까지 계정은 구독 페이지로 이동합니다.'),
+               'cta': '플랜 선택'},
+        'ja': {'subject': 'Sooppiyの無料トライアルは3日後に終了します',
+               'heading': '無料トライアルがまもなく終了します',
+               'body': ('7日間の無料トライアルは{date}に終了します。それまでに'
+                        'プランをお選びいただくと、ご利用と自動売買がそのまま'
+                        '継続します。プランは月額{amount}からです。'),
+               'note': ('お支払い方法をお預かりしていないため、自動的に請求される'
+                        'ことはありません。トライアル終了後は自動売買と通知が停止し、'
+                        'プランを選択されるまでアカウントはサブスクリプション'
+                        'ページに戻ります。'),
+               'cta': 'プランを選ぶ'},
+        'th': {'subject': 'ทดลองใช้ฟรีของ Sooppiy จะสิ้นสุดในอีก 3 วัน',
+               'heading': 'การทดลองใช้ฟรีของคุณกำลังจะสิ้นสุด',
+               'body': ('การทดลองใช้ฟรี 7 วันของคุณจะสิ้นสุดในวันที่ {date} '
+                        'เลือกแพลนก่อนวันดังกล่าวเพื่อคงการเข้าใช้งานและให้ระบบ'
+                        'อัตโนมัติทำงานต่อ แพลนเริ่มต้นที่ {amount} ต่อเดือน'),
+               'note': ('จะไม่มีการเรียกเก็บเงินอัตโนมัติ เนื่องจากเราไม่ได้เก็บ'
+                        'วิธีชำระเงินของคุณไว้ เมื่อการทดลองใช้สิ้นสุด ระบบอัตโนมัติ'
+                        'และการแจ้งเตือนจะหยุดลง และบัญชีของคุณจะกลับไปที่หน้าสมัคร'
+                        'สมาชิกจนกว่าคุณจะเลือกแพลน'),
+               'cta': 'เลือกแพลน'},
+        'vi': {'subject': 'Bản dùng thử miễn phí Sooppiy kết thúc sau 3 ngày',
+               'heading': 'Bản dùng thử miễn phí sắp kết thúc',
+               'body': ('Bản dùng thử miễn phí 7 ngày của bạn kết thúc vào '
+                        '{date}. Hãy chọn gói trước thời điểm đó để giữ quyền '
+                        'truy cập và để tự động hóa tiếp tục chạy. Các gói bắt '
+                        'đầu từ {amount} mỗi tháng.'),
+               'note': ('Không có khoản nào bị tính tự động — chúng tôi không '
+                        'lưu phương thức thanh toán của bạn. Khi bản dùng thử '
+                        'kết thúc, tự động hóa và cảnh báo sẽ dừng, và tài khoản '
+                        'của bạn quay lại trang đăng ký cho đến khi bạn chọn gói.'),
+               'cta': 'Chọn gói'},
+        'id': {'subject': 'Uji coba gratis Sooppiy berakhir dalam 3 hari',
+               'heading': 'Uji coba gratis Anda segera berakhir',
+               'body': ('Uji coba gratis 7 hari Anda berakhir pada {date}. '
+                        'Pilih paket sebelum itu untuk mempertahankan akses dan '
+                        'menjaga otomatisasi tetap berjalan. Paket mulai dari '
+                        '{amount} per bulan.'),
+               'note': ('Tidak ada tagihan otomatis — kami tidak menyimpan '
+                        'metode pembayaran Anda. Saat uji coba berakhir, '
+                        'otomatisasi dan notifikasi berhenti, dan akun Anda '
+                        'kembali ke halaman langganan sampai Anda memilih paket.'),
+               'cta': 'Pilih paket'},
+    },
+    'ended': {
+        'en': {'subject': 'Your Sooppiy free trial has ended',
+               'heading': 'Your free trial has ended',
+               'body': ('Your 7-day free trial ended on {date}. Your automation '
+                        'and alerts have been stopped, and your account is '
+                        'paused until you choose a plan.'),
+               'note': ('Your account and your history are kept — choose a plan '
+                        'to pick up where you left off. Plans start at {amount} '
+                        'a month.'),
+               'cta': 'Choose a plan'},
+        'ko': {'subject': 'Sooppiy 무료 체험이 종료되었습니다',
+               'heading': '무료 체험이 종료되었습니다',
+               'body': ('7일 무료 체험이 {date}에 종료되었습니다. 자동매매와 알림이 '
+                        '중지되었으며, 플랜을 선택하실 때까지 계정은 일시 정지 '
+                        '상태입니다.'),
+               'note': ('계정과 기록은 그대로 보관됩니다. 플랜을 선택하시면 중단된 '
+                        '지점부터 이어서 이용하실 수 있습니다. 플랜은 월 {amount}'
+                        '부터입니다.'),
+               'cta': '플랜 선택'},
+        'ja': {'subject': 'Sooppiyの無料トライアルが終了しました',
+               'heading': '無料トライアルが終了しました',
+               'body': ('7日間の無料トライアルは{date}に終了しました。自動売買と'
+                        '通知は停止し、プランを選択されるまでアカウントは一時停止'
+                        '状態です。'),
+               'note': ('アカウントと履歴はそのまま保持されます。プランをお選び'
+                        'いただくと、中断した所から再開できます。プランは月額'
+                        '{amount}からです。'),
+               'cta': 'プランを選ぶ'},
+        'th': {'subject': 'การทดลองใช้ฟรีของ Sooppiy สิ้นสุดแล้ว',
+               'heading': 'การทดลองใช้ฟรีของคุณสิ้นสุดแล้ว',
+               'body': ('การทดลองใช้ฟรี 7 วันของคุณสิ้นสุดเมื่อวันที่ {date} '
+                        'ระบบอัตโนมัติและการแจ้งเตือนถูกหยุดแล้ว และบัญชีของคุณ'
+                        'ถูกพักไว้จนกว่าคุณจะเลือกแพลน'),
+               'note': ('บัญชีและประวัติของคุณยังถูกเก็บไว้ เลือกแพลนเพื่อกลับมา'
+                        'ใช้งานต่อจากจุดเดิม แพลนเริ่มต้นที่ {amount} ต่อเดือน'),
+               'cta': 'เลือกแพลน'},
+        'vi': {'subject': 'Bản dùng thử miễn phí Sooppiy đã kết thúc',
+               'heading': 'Bản dùng thử miễn phí đã kết thúc',
+               'body': ('Bản dùng thử miễn phí 7 ngày của bạn đã kết thúc vào '
+                        '{date}. Tự động hóa và cảnh báo đã dừng, và tài khoản '
+                        'của bạn tạm dừng cho đến khi bạn chọn gói.'),
+               'note': ('Tài khoản và lịch sử của bạn vẫn được giữ — chọn gói để '
+                        'tiếp tục từ chỗ đang dở. Các gói bắt đầu từ {amount} '
+                        'mỗi tháng.'),
+               'cta': 'Chọn gói'},
+        'id': {'subject': 'Uji coba gratis Sooppiy telah berakhir',
+               'heading': 'Uji coba gratis Anda telah berakhir',
+               'body': ('Uji coba gratis 7 hari Anda berakhir pada {date}. '
+                        'Otomatisasi dan notifikasi telah dihentikan, dan akun '
+                        'Anda dijeda sampai Anda memilih paket.'),
+               'note': ('Akun dan riwayat Anda tetap tersimpan — pilih paket '
+                        'untuk melanjutkan dari tempat Anda berhenti. Paket '
+                        'mulai dari {amount} per bulan.'),
+               'cta': 'Pilih paket'},
+    },
+}
+
+TRIAL_NOTICE_KINDS = tuple(_TRIAL)
+
+
+def _trial_copy(kind: str, lang: str, amount_usd: float, on_date: str) -> dict:
+    table = _TRIAL.get(kind) or _TRIAL['reminder']
+    c = table.get(normalize_lang(lang), table['en'])
+    amount = f'${amount_usd:,.2f}'
+    return {'subject': c['subject'],
+            'heading': c['heading'],
+            'body': c['body'].format(amount=amount, date=on_date),
+            'note': c['note'].format(amount=amount, date=on_date),
+            'cta': c['cta']}
+
+
+def trial_email(kind: str, lang: str, amount_usd: float,
+                on_date: str) -> tuple[str, str]:
+    """(subject, html) for a trial notice. `kind` is 'reminder' or 'ended'.
+
+    Same shell as the welcome mail; the price and the date are also rendered
+    into their own box so a reader who only skims still sees both."""
+    c = _trial_copy(kind, lang, amount_usd, on_date)
+    chrome = _CHROME.get(normalize_lang(lang), _CHROME['en'])
+    e = _html.escape
+    html = (
+        '<div style="margin:0;padding:24px 12px;background:#f1f5f9;'
+        "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+        "'Noto Sans KR','Noto Sans JP','Noto Sans Thai',Arial,sans-serif;\">"
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td align="center">'
+        '<table role="presentation" cellpadding="0" cellspacing="0" '
+        'style="max-width:520px;width:100%;">'
+        # header
+        '<tr><td style="background:#0f172a;border-radius:12px 12px 0 0;'
+        'padding:20px 28px;">'
+        '<div style="color:#ffffff;font-size:20px;font-weight:700;'
+        'letter-spacing:0.5px;">Sooppiy</div>'
+        f'<div style="color:#94a3b8;font-size:12px;margin-top:2px;">{e(chrome["tagline"])}</div>'
+        '</td></tr>'
+        # card
+        '<tr><td style="background:#ffffff;padding:28px;">'
+        f'<h2 style="margin:0 0 12px;font-size:18px;color:#0f172a;">{e(c["heading"])}</h2>'
+        f'<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#334155;">'
+        f'{e(c["body"])}</p>'
+        '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
+        'padding:16px;text-align:center;margin-bottom:18px;">'
+        '<div style="font-size:26px;font-weight:700;color:#0f172a;">'
+        f'${amount_usd:,.2f}</div>'
+        f'<div style="font-size:12px;color:#64748b;margin-top:4px;">{e(on_date)}</div>'
+        '</div>'
+        f'<p style="margin:0 0 22px;font-size:12px;line-height:1.6;color:#64748b;">'
+        f'{e(c["note"])}</p>'
+        f'<p style="margin:0 0 4px;"><a href="{SITE_URL}/subscribe" '
+        f'style="background:#0f172a;color:#ffffff;padding:10px 22px;'
+        f'border-radius:8px;text-decoration:none;font-size:14px;'
+        f'display:inline-block;">{e(c["cta"])}</a></p>'
+        '</td></tr>'
+        # footer
+        '<tr><td style="background:#0f172a;border-radius:0 0 12px 12px;'
+        'padding:16px 28px;">'
+        f'<div style="color:#64748b;font-size:11px;line-height:1.6;">{e(chrome["footer"])}</div>'
+        f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
+        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        '</td></tr>'
+        '</table></td></tr></table></div>')
+    return c['subject'], html
+
+
+def trial_email_text(kind: str, lang: str, amount_usd: float,
+                     on_date: str) -> str:
+    c = _trial_copy(kind, lang, amount_usd, on_date)
+    return (f"{c['heading']}\n\n{c['body']}\n\n{c['note']}\n\n"
+            f"{SITE_URL}/subscribe\n")
+
+
 def verification_email_text(code: str, lang: str, purpose: str = 'signup') -> str:
     """Plain-text body for the same email — SendGrid wants text/plain
     listed before text/html, so the fallback rail needs both."""

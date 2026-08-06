@@ -44,6 +44,21 @@ class UserApiSettingsTests(unittest.TestCase):
             json={"email": _EMAIL, "code": _FIXED_CODE_STR, "password": _PASSWORD},
         )
         assert resp.status_code == 200, resp.text
+        # Signup now grants the card-free 7-day trial, which carries JUNIOR
+        # entitlements — and Junior is pinned to the system-default AI, so the
+        # provider-config endpoints under test would 403. Put the fixture on
+        # Pro, which is the tier these settings actually exist for. (Before the
+        # trial existed, a fresh account had no plan at all and slipped past
+        # the junior-specific gate.)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE user_subscriptions SET plan_code = 'pro' "
+                        "WHERE user_id = (SELECT id FROM users WHERE email = ?)",
+                        (_EMAIL,))
+            conn.commit()
+        finally:
+            conn.close()
         return resp.json()["token"]
 
     def _auth(self) -> dict:

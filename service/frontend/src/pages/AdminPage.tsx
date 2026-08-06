@@ -295,6 +295,18 @@ export function AdminPage() {
     planOff: tr(language, { ko: '비활성', en: 'Deactivate', ja: '無効', th: 'ปิดใช้งาน', vi: 'Vô hiệu', id: 'Nonaktifkan' }),
     planOn: tr(language, { ko: '활성', en: 'Activate', ja: '有効', th: 'เปิดใช้งาน', vi: 'Kích hoạt', id: 'Aktifkan' }),
     subscriberRows: tr(language, { ko: '구독 이력', en: 'History', ja: '履歴', th: 'ประวัติ', vi: 'Lịch sử', id: 'Riwayat' }),
+    planBilling: tr(language, { ko: '결제 연동 ID', en: 'Billing IDs', ja: '決済連携ID', th: 'รหัสการชำระเงิน', vi: 'ID thanh toán', id: 'ID penagihan' }),
+    editStripeId: tr(language, { ko: 'Stripe 가격 ID', en: 'Stripe price id', ja: 'Stripe価格ID', th: 'รหัสราคา Stripe', vi: 'ID giá Stripe', id: 'ID harga Stripe' }),
+    editPaypalId: tr(language, { ko: 'PayPal 플랜 ID', en: 'PayPal plan id', ja: 'PayPalプランID', th: 'รหัสแพลน PayPal', vi: 'ID gói PayPal', id: 'ID paket PayPal' }),
+    billingUnset: tr(language, { ko: '미설정', en: 'not set', ja: '未設定', th: 'ยังไม่ตั้ง', vi: 'chưa đặt', id: 'belum diatur' }),
+    billingHint: tr(language, {
+      ko: '이 값이 비어 있으면 API 키가 올바르더라도 결제가 503으로 실패합니다. Stripe는 price_… (prod_… 아님), PayPal은 P-… 형식입니다.',
+      en: 'While these are empty, checkout fails with 503 even when the API keys are correct. Stripe wants price_… (not prod_…); PayPal wants P-….',
+      ja: 'これらが空のままだと、APIキーが正しくても決済は503で失敗します。Stripeはprice_…（prod_…ではない）、PayPalはP-…です。',
+      th: 'หากเว้นว่างไว้ การชำระเงินจะล้มเหลวด้วย 503 แม้คีย์ API จะถูกต้อง Stripe ใช้ price_… (ไม่ใช่ prod_…) ส่วน PayPal ใช้ P-…',
+      vi: 'Khi để trống, thanh toán sẽ lỗi 503 dù khóa API đúng. Stripe cần price_… (không phải prod_…); PayPal cần P-….',
+      id: 'Selama kosong, checkout gagal dengan 503 meski kunci API benar. Stripe memakai price_… (bukan prod_…); PayPal memakai P-….',
+    }),
     status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái', id: 'Status' }),
     plan: tr(language, { ko: '플랜', en: 'Plan', ja: 'プラン', th: 'แพลน', vi: 'Gói', id: 'Paket' }),
     method: tr(language, { ko: '결제수단', en: 'Method', ja: '決済手段', th: 'ช่องทางชำระ', vi: 'Phương thức', id: 'Metode' }),
@@ -1030,7 +1042,17 @@ export function AdminPage() {
                 {(subs?.subscriptions || []).map((s: any) => (
                   <tr key={s.id}>
                     <td style={td}>{s.id}</td><td style={{ ...td, fontWeight: 600 }}>{s.email || s.user_id}</td>
-                    <td style={td}>{s.plan_code}</td><td style={td}>{s.method}</td>
+                    <td style={td}>
+                      {s.plan_code}
+                      {/* A prorated upgrade: approving flips the plan and keeps
+                          the original expiry — the amount is the difference,
+                          not a full month. The tag is what tells the admin. */}
+                      {s.change_kind === 'upgrade' && (
+                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '1px 7px', background: 'rgba(42,120,214,0.15)', color: 'var(--accent-primary,#2a78d6)' }}>
+                          ⬆ {tr(language, { ko: '업그레이드', en: 'upgrade', ja: 'アップグレード', th: 'อัปเกรด', vi: 'nâng cấp', id: 'peningkatan' })}
+                        </span>
+                      )}
+                    </td><td style={td}>{s.method}</td>
                     {/* The proof of payment. Shown in full and copyable — a
                         truncated tx hash cannot be checked against a chain. */}
                     <td style={{ ...td, maxWidth: 300 }}>
@@ -1082,16 +1104,27 @@ export function AdminPage() {
           </div>
 
           <div style={sectionTitle}>{T.planMgmt}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.planMgmtHint}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 4 }}>{T.planMgmtHint}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 10 }}>{T.billingHint}</div>
           <div style={{ ...tableCard, marginBottom: 12 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
-              <thead><tr><th style={th}>{T.planCode}</th><th style={th}>{T.planName}</th><th style={th}>{T.planPrice}</th><th style={th}>{T.planSort}</th><th style={th}>{T.subscriberRows}</th><th style={th}>{T.status}</th><th style={th}></th></tr></thead>
+              <thead><tr><th style={th}>{T.planCode}</th><th style={th}>{T.planName}</th><th style={th}>{T.planPrice}</th><th style={th}>{T.planBilling}</th><th style={th}>{T.planSort}</th><th style={th}>{T.subscriberRows}</th><th style={th}>{T.status}</th><th style={th}></th></tr></thead>
               <tbody>
                 {adminPlans.map((p: any) => (
                   <tr key={p.code}>
                     <td style={{ ...td, fontWeight: 600 }}>{p.code}{p.contact_only ? ' 📞' : ''}</td>
                     <td style={td}>{p.name}</td>
                     <td style={td}>{p.contact_only ? '—' : fmtMoney(p.price_usd)}</td>
+                    <td style={{ ...td, fontSize: 11, whiteSpace: 'nowrap' }}>
+                      {p.contact_only ? '—' : <>
+                        <div style={{ color: p.stripe_price_id ? undefined : 'var(--text-muted,#8a8073)' }}>
+                          Stripe: {p.stripe_price_id || T.billingUnset}
+                        </div>
+                        <div style={{ color: p.paypal_plan_id ? undefined : 'var(--text-muted,#8a8073)' }}>
+                          PayPal: {p.paypal_plan_id || T.billingUnset}
+                        </div>
+                      </>}
+                    </td>
                     <td style={td}>{p.sort_order}</td>
                     <td style={td}>{p.subscriber_rows}</td>
                     <td style={{ ...td, color: p.active ? '#22c55e' : 'var(--text-muted,#8a8073)' }}>{p.active ? 'active' : 'off'}</td>
@@ -1103,7 +1136,15 @@ export function AdminPage() {
                       {!p.contact_only && <><button style={actionBtn} onClick={() => {
                         const price = window.prompt(T.editPrice, String(p.price_usd))
                         if (price !== null && !isNaN(parseFloat(price))) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ price_usd: parseFloat(price) }) }, 'subscriptions')
-                      }}>{T.editPrice}</button>{' '}</>}
+                      }}>{T.editPrice}</button>{' '}
+                      <button style={actionBtn} onClick={() => {
+                        const v = window.prompt(T.editStripeId, p.stripe_price_id || '')
+                        if (v !== null) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ stripe_price_id: v }) }, 'subscriptions')
+                      }}>{T.editStripeId}</button>{' '}
+                      <button style={actionBtn} onClick={() => {
+                        const v = window.prompt(T.editPaypalId, p.paypal_plan_id || '')
+                        if (v !== null) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ paypal_plan_id: v }) }, 'subscriptions')
+                      }}>{T.editPaypalId}</button>{' '}</>}
                       {p.active
                         ? <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 0 }) }, 'subscriptions')}>{T.planOff}</button>
                         : <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 1 }) }, 'subscriptions')}>{T.planOn}</button>}{' '}
@@ -1111,7 +1152,7 @@ export function AdminPage() {
                     </td>
                   </tr>
                 ))}
-                {!adminPlans.length && <tr><td style={td} colSpan={7}>{T.noData}</td></tr>}
+                {!adminPlans.length && <tr><td style={td} colSpan={8}>{T.noData}</td></tr>}
               </tbody>
             </table>
           </div>

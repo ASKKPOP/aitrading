@@ -19,6 +19,7 @@ const { title, description, lastUpdated } = Astro.props;
       <span>Sooppiy</span>
     </a>
     <nav class="nav-links">
+      <a href="/pricing">Pricing</a>
       <a href="https://sooppiy.com/leaderboard">Leaderboard</a>
       <a href="https://sooppiy.com/dev">Docs</a>
       <a href="https://github.com/ASKKPOP/aitrading" target="_blank" rel="noopener">GitHub</a>
@@ -52,6 +53,7 @@ const { title, description, lastUpdated } = Astro.props;
     <nav class="footer-cols">
       <div class="footer-col">
         <p class="fcol-head">Platform</p>
+        <a href="/pricing">Pricing</a>
         <a href="https://sooppiy.com/market">Trading app</a>
         <a href="https://sooppiy.com/leaderboard">Leaderboard</a>
         <a href="https://sooppiy.com/dev">Dev docs</a>
@@ -142,6 +144,10 @@ const { title, description, lastUpdated } = Astro.props;
   margin: 2.5rem 0 .875rem; letter-spacing: -.01em;
 }
 .legal-content :global(h2:first-child) { margin-top: 0; }
+.legal-content :global(h3) {
+  font-size: 1rem; font-weight: 700; color: var(--text);
+  margin: 1.75rem 0 .625rem; letter-spacing: -.005em;
+}
 .legal-content :global(p) {
   font-size: .9375rem; line-height: 1.7; color: var(--text-2);
   margin-bottom: 1rem;

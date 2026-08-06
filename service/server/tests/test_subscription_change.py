@@ -1,0 +1,457 @@
+"""Subscription changes from /account/subscription — the manual-rail work.
+
+Upgrade = pay the plan-price difference now, prorated over the unexpired part
+of the 30-day period, admin-approved, expires_at untouched. Downgrade = no
+payment, scheduled on the active row, effective at renewal. Trial rows are
+NEVER prorated — the member paid $0, so proration against junior's list price
+would sell credit they never bought; trials go through the normal
+first-purchase flow instead. Stripe/PayPal rows are refused too — those rails
+have provider-native flows (portal / change-plan).
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
+import database  # noqa: E402
+from routes import create_app  # noqa: E402
+
+
+def _iso(dt: datetime) -> str:
+    return dt.isoformat().replace("+00:00", "Z")
+
+
+def _mk_user_with_token(email: str) -> tuple[int, str]:
+    conn = database.get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (email, password_hash, lang) VALUES (?, 'x', 'en')",
+                    (email,))
+        uid = int(cur.lastrowid)
+        token = f"tok-{uid}-subchange"
+        expires = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("INSERT INTO user_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+                    (uid, token, expires))
+        conn.commit()
+        return uid, token
+    finally:
+        conn.close()
+
+
+def _mk_sub(uid: int, plan: str, *, status: str = "active", method: str = "usdt",
+            days_left: float = 15.0, amount: float | None = None,
+            auto_renew: int = 0, external_id: str | None = None) -> int:
+    now = datetime.now(timezone.utc)
+    conn = database.get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO user_subscriptions (user_id, plan_code, status, method, reference, "
+            "amount_usd, auto_renew, external_id, started_at, expires_at) "
+            "VALUES (?, ?, ?, ?, 'ref', ?, ?, ?, ?, ?)",
+            (uid, plan, status, method, amount, auto_renew, external_id,
+             _iso(now - timedelta(days=30 - days_left)),
+             _iso(now + timedelta(days=days_left))))
+        conn.commit()
+        return int(cur.lastrowid)
+    finally:
+        conn.close()
+
+
+def _sub_row(sub_id: int) -> dict:
+    conn = database.get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM user_subscriptions WHERE id = ?", (sub_id,))
+        return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+class _Case(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+        self.uid, token = _mk_user_with_token("change@t.dev")
+        self.auth = {"Authorization": f"Bearer {token}"}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _preview(self, plan_code: str):
+        return self.client.post("/api/subscriptions/change/preview",
+                                json={"plan_code": plan_code}, headers=self.auth)
+
+
+class ProrationMathTests(unittest.TestCase):
+    """Pure function — deterministic via an explicit `now`."""
+
+    def _f(self):
+        from routes_subscriptions import _prorated_upgrade_usd
+        return _prorated_upgrade_usd
+
+    def test_half_period_prices_half_the_difference(self):
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        ends = _iso(now + timedelta(days=15))
+        self.assertEqual(self._f()(500.0, 250.0, ends, now), 125.0)
+
+    def test_one_day_left(self):
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        ends = _iso(now + timedelta(days=1))
+        self.assertEqual(self._f()(500.0, 250.0, ends, now), 8.33)
+
+    def test_expired_row_prices_zero_never_credit(self):
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        ends = _iso(now - timedelta(days=2))
+        self.assertEqual(self._f()(500.0, 250.0, ends, now), 0.0)
+        # mis-ordered pair (downgrade fed in) must clamp at 0, not go negative
+        self.assertEqual(self._f()(60.0, 250.0, _iso(now + timedelta(days=15)), now), 0.0)
+
+    def test_full_period_prices_the_full_difference(self):
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        ends = _iso(now + timedelta(days=30))
+        self.assertEqual(self._f()(500.0, 250.0, ends, now), 250.0)
+
+    def test_more_than_a_period_remaining_is_clamped(self):
+        # extended/grace rows can exceed 30 days; the upgrade never charges
+        # more than the plain price difference
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        ends = _iso(now + timedelta(days=45))
+        self.assertEqual(self._f()(500.0, 250.0, ends, now), 250.0)
+
+    def test_garbage_expiry_prices_zero(self):
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        self.assertEqual(self._f()(500.0, 250.0, "not-a-date", now), 0.0)
+
+
+class ChangePreviewTests(_Case):
+    def test_upgrade_preview_prorates_the_difference(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        r = self._preview("pro")
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["kind"], "upgrade")
+        self.assertEqual(body["effective"], "immediate")
+        # (119 − 60) × 15/30 = 29.50 — allow a cent for test wall-clock skew
+        self.assertAlmostEqual(body["prorated_usd"], 29.5, delta=0.02)
+        self.assertEqual(body["current_plan"], "junior")
+        self.assertEqual(body["target_plan"], "pro")
+
+    def test_downgrade_preview_is_free_and_at_renewal(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self._preview("junior")
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["kind"], "downgrade")
+        self.assertEqual(body["prorated_usd"], 0.0)
+        self.assertEqual(body["effective"], "at_renewal")
+
+    def test_same_plan_is_refused(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        self.assertEqual(self._preview("pro").status_code, 400)
+
+    def test_trial_rows_are_never_prorated(self):
+        _mk_sub(self.uid, "junior", method="trial", days_left=5, amount=None)
+        r = self._preview("pro")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("full price", r.json()["detail"])
+
+    def test_stripe_rows_use_the_portal(self):
+        _mk_sub(self.uid, "pro", method="stripe", days_left=15,
+                auto_renew=1, external_id="sub_123")
+        r = self._preview("professional")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("portal", r.json()["detail"].lower())
+
+    def test_no_subscription_is_404(self):
+        self.assertEqual(self._preview("pro").status_code, 404)
+
+    def test_enterprise_target_routes_to_contract(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        self.assertEqual(self._preview("enterprise").status_code, 400)
+
+    def test_unknown_plan_is_404(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        self.assertEqual(self._preview("platinum").status_code, 404)
+
+    def test_preview_requires_auth(self):
+        r = self.client.post("/api/subscriptions/change/preview",
+                             json={"plan_code": "pro"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_me_exposes_pending_change_columns(self):
+        sub_id = _mk_sub(self.uid, "pro", days_left=15)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE user_subscriptions SET pending_plan_code = 'junior', "
+                        "change_kind = 'downgrade' WHERE id = ?", (sub_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        r = self.client.get("/api/subscriptions/me", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        sub = r.json()["subscription"]
+        self.assertEqual(sub["pending_plan_code"], "junior")
+        self.assertEqual(sub["change_kind"], "downgrade")
+
+
+class ManualUpgradeSubmitTests(_Case):
+    def _upgrade(self, plan_code="pro", method="bank", reference="wire-123"):
+        return self.client.post(
+            "/api/subscriptions/change/upgrade",
+            json={"plan_code": plan_code, "method": method, "reference": reference},
+            headers=self.auth)
+
+    def test_upgrade_lands_pending_with_server_computed_amount(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        r = self._upgrade("pro")
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["status"], "pending")
+        # (119 − 60) × 15/30 — the CLIENT never sends an amount
+        self.assertAlmostEqual(body["amount_usd"], 29.5, delta=0.02)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM user_subscriptions WHERE user_id = ? "
+                        "AND status = 'pending'", (self.uid,))
+            row = dict(cur.fetchone())
+        finally:
+            conn.close()
+        self.assertEqual(row["plan_code"], "pro")
+        self.assertEqual(row["change_kind"], "upgrade")
+        self.assertEqual(row["method"], "bank")
+        self.assertAlmostEqual(float(row["amount_usd"]), 29.5, delta=0.02)
+
+    def test_duplicate_pending_upgrade_is_refused(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade().status_code, 200)
+        self.assertEqual(self._upgrade().status_code, 400)
+
+    def test_trial_cannot_use_the_upgrade_path(self):
+        _mk_sub(self.uid, "junior", method="trial", days_left=5)
+        self.assertEqual(self._upgrade().status_code, 400)
+
+    def test_downgrade_direction_is_refused(self):
+        _mk_sub(self.uid, "professional", days_left=15)
+        r = self._upgrade("pro")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("downgrade", r.json()["detail"].lower())
+
+    def test_reference_is_required(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(reference="  ").status_code, 400)
+
+    def test_method_must_be_a_manual_rail(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="paypal").status_code, 400)
+
+    def test_usdt_upgrade_needs_the_rail_configured(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="usdt").status_code, 503)
+
+    def test_usdt_upgrade_works_once_configured(self):
+        import platform_settings
+        platform_settings.set_setting("usdt_address", "TTestAddr123")
+        _mk_sub(self.uid, "junior", days_left=15)
+        self.assertEqual(self._upgrade(method="usdt", reference="0xhash").status_code, 200)
+
+
+class DowngradeScheduleTests(_Case):
+    def _downgrade(self, plan_code="junior"):
+        return self.client.post("/api/subscriptions/downgrade",
+                                json={"plan_code": plan_code}, headers=self.auth)
+
+    def _me_sub(self) -> dict:
+        r = self.client.get("/api/subscriptions/me", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        return r.json()["subscription"]
+
+    def test_downgrade_schedules_on_the_active_row(self):
+        sub_id = _mk_sub(self.uid, "pro", days_left=15)
+        r = self._downgrade("junior")
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["pending_plan_code"], "junior")
+        row = _sub_row(sub_id)
+        self.assertEqual(row["pending_plan_code"], "junior")
+        self.assertEqual(row["change_kind"], "downgrade")
+        # the member keeps the paid-for plan until expiry
+        me = self._me_sub()
+        self.assertEqual(me["plan_code"], "pro")
+        self.assertEqual(me["pending_plan_code"], "junior")
+
+    def test_upgrade_direction_is_refused(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self._downgrade("professional")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("upgrade", r.json()["detail"].lower())
+
+    def test_cancel_clears_the_schedule(self):
+        sub_id = _mk_sub(self.uid, "pro", days_left=15)
+        self._downgrade("junior")
+        r = self.client.post("/api/subscriptions/downgrade/cancel", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        row = _sub_row(sub_id)
+        self.assertIsNone(row["pending_plan_code"])
+        self.assertIsNone(row["change_kind"])
+
+    def test_cancel_with_nothing_scheduled_is_ok(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self.client.post("/api/subscriptions/downgrade/cancel", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+
+    def test_trial_and_provider_rails_are_refused(self):
+        _mk_sub(self.uid, "pro", method="trial", days_left=5)
+        self.assertEqual(self._downgrade("junior").status_code, 400)
+
+    def test_stripe_downgrade_goes_through_the_portal(self):
+        _mk_sub(self.uid, "pro", method="stripe", days_left=15,
+                auto_renew=1, external_id="sub_x")
+        self.assertEqual(self._downgrade("junior").status_code, 400)
+
+    def test_same_plan_downgrade_is_refused(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        self.assertEqual(self._downgrade("pro").status_code, 400)
+
+
+class HistoryTests(_Case):
+    def _history(self, limit=20, offset=0, headers=None):
+        return self.client.get(
+            f"/api/subscriptions/history?limit={limit}&offset={offset}",
+            headers=headers or self.auth)
+
+    def test_history_pages_without_fanout(self):
+        for i in range(5):
+            _mk_sub(self.uid, "junior", status="expired", days_left=-(i + 1))
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self._history(limit=4, offset=0)
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["total"], 6)
+        self.assertEqual(len(body["items"]), 4)
+        # newest first
+        self.assertEqual(body["items"][0]["plan_code"], "pro")
+        r2 = self._history(limit=4, offset=4)
+        self.assertEqual(len(r2.json()["items"]), 2)
+
+    def test_history_carries_plan_names(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        item = self._history().json()["items"][0]
+        self.assertEqual(item["plan_name"], "Pro")
+        self.assertIn("change_kind", item)
+
+    def test_history_never_leaks_another_member(self):
+        other_uid, other_token = _mk_user_with_token("other@t.dev")
+        _mk_sub(other_uid, "professional", days_left=20)
+        _mk_sub(self.uid, "junior", days_left=15)
+        body = self._history().json()
+        self.assertEqual(body["total"], 1)
+        self.assertEqual(body["items"][0]["plan_code"], "junior")
+
+    def test_history_requires_auth(self):
+        r = self.client.get("/api/subscriptions/history")
+        self.assertEqual(r.status_code, 401)
+
+
+class AdminApproveUpgradeTests(_Case):
+    def setUp(self):
+        super().setUp()
+        from admin_auth import create_admin
+        create_admin("root@test.com", "rootpass123", "superadmin")
+        r = self.client.post("/api/admin/login",
+                             json={"email": "root@test.com", "password": "rootpass123"})
+        self.admin = {"Authorization": f"Bearer {r.json()['token']}"}
+
+    def _approve(self, sub_id: int):
+        return self.client.post(f"/api/admin/subscriptions/{sub_id}/approve",
+                                json={"note": ""}, headers=self.admin)
+
+    def _submit_upgrade(self) -> int:
+        r = self.client.post(
+            "/api/subscriptions/change/upgrade",
+            json={"plan_code": "pro", "method": "bank", "reference": "wire-9"},
+            headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM user_subscriptions WHERE user_id = ? "
+                        "AND status = 'pending'", (self.uid,))
+            return int(dict(cur.fetchone())["id"])
+        finally:
+            conn.close()
+
+    def test_approving_an_upgrade_flips_the_plan_but_not_the_expiry(self):
+        old_id = _mk_sub(self.uid, "junior", days_left=15)
+        old_expires = _sub_row(old_id)["expires_at"]
+        pending_id = self._submit_upgrade()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 200, r.text)
+        me = self.client.get("/api/subscriptions/me", headers=self.auth).json()
+        self.assertEqual(me["status"], "active")
+        self.assertEqual(me["subscription"]["plan_code"], "pro")
+        # the member already paid for this period — the clock must not move
+        self.assertEqual(me["subscription"]["expires_at"], old_expires)
+        self.assertEqual(_sub_row(old_id)["status"], "superseded")
+        self.assertEqual(_sub_row(pending_id)["status"], "active")
+
+    def test_upgrade_approval_with_the_original_expired_is_refused(self):
+        old_id = _mk_sub(self.uid, "junior", days_left=15)
+        pending_id = self._submit_upgrade()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE user_subscriptions SET status = 'expired' WHERE id = ?",
+                        (old_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(_sub_row(pending_id)["status"], "pending")
+
+    def test_plain_pending_rows_keep_the_legacy_thirty_days(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
+                "reference, amount_usd) VALUES (?, 'pro', 'pending', 'bank', 'r', 250)",
+                (self.uid,))
+            pending_id = int(cur.lastrowid)
+            conn.commit()
+        finally:
+            conn.close()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 200, r.text)
+        row = _sub_row(pending_id)
+        started = datetime.fromisoformat(row["started_at"].replace("Z", "+00:00"))
+        expires = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
+        self.assertEqual((expires - started).days, 30)
+
+    def test_admin_list_reports_change_kind(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self._submit_upgrade()
+        r = self.client.get("/api/admin/subscriptions?status=pending", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        rows = r.json()["subscriptions"]
+        self.assertTrue(any(s.get("change_kind") == "upgrade" for s in rows), rows)
+
+
+if __name__ == "__main__":
+    unittest.main()

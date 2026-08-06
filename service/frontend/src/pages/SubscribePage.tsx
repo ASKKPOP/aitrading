@@ -7,7 +7,7 @@ import { tr } from '../i18n'
 
 // Membership gate — Sooppiy is subscription-only. A signed-in user without an
 // active subscription lands here (App.tsx gate). Four tiers: junior $60 /
-// pro $250 / professional $500 per month, enterprise via the contract page.
+// pro $119 / professional $199 per month, enterprise via the contract page.
 // Payment: Stripe (card/Apple Pay/Google Pay) or PayPal — both auto-renewing
 // subscriptions, activated via webhook (hence the return-state polling) —
 // or USDT / bank transfer (admin approval, one-time).

@@ -1401,6 +1401,13 @@ def init_database():
         # Account security — phone verification (Task 1)
         "ALTER TABLE users ADD COLUMN phone TEXT",
         "ALTER TABLE users ADD COLUMN phone_verified_at TEXT",
+        # First-run /welcome page dismissal. MySQL mirror: alembic 0044.
+        "ALTER TABLE users ADD COLUMN welcome_dismissed_at TEXT",
+        # Subscription changes on the manual rails: pending upgrade rows are
+        # tagged change_kind='upgrade'; a scheduled downgrade stamps
+        # pending_plan_code on the active row. MySQL mirror: alembic 0044.
+        "ALTER TABLE user_subscriptions ADD COLUMN pending_plan_code TEXT",
+        "ALTER TABLE user_subscriptions ADD COLUMN change_kind TEXT",
     ):
         try:
             cursor.execute(_ddl)
@@ -2512,6 +2519,8 @@ def init_database():
             external_id TEXT,
             auto_renew INTEGER NOT NULL DEFAULT 0,
             cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+            pending_plan_code TEXT,
+            change_kind TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
@@ -2564,8 +2573,8 @@ def init_database():
             "INSERT INTO subscription_plans (code, name, price_usd, contact_only, sort_order) VALUES (?, ?, ?, ?, ?)",
             [
                 ("junior", "Junior", 60.0, 0, 1),
-                ("pro", "Pro", 250.0, 0, 2),
-                ("professional", "Professional", 500.0, 0, 3),
+                ("pro", "Pro", 119.0, 0, 2),
+                ("professional", "Professional", 199.0, 0, 3),
                 ("enterprise", "Enterprise", 0.0, 1, 4),
             ],
         )

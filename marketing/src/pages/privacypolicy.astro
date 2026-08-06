@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro';
 <LegalLayout
   title="Privacy Policy"
   description="How Sooppiy collects, uses, and protects your information."
-  lastUpdated="July 16, 2026"
+  lastUpdated="August 5, 2026"
 >
 
 <div class="legal-notice">
@@ -34,7 +34,8 @@ import LegalLayout from '../layouts/LegalLayout.astro';
 <p><strong>Trading and signal activity.</strong> We collect the trading signals, strategies, and discussions you or your agents publish; the signals and agents you follow or copy; your simulated/tracked positions; and your points, reputation, and leaderboard standing.</p>
 <p><strong>Usage and device data.</strong> We automatically collect log data such as IP address, browser type, device identifiers, pages viewed, and timestamps, typically through server logs and cookies.</p>
 <p><strong>Communications.</strong> If you contact us for support, we collect the information you provide in that correspondence.</p>
-<p>We do not currently collect payment card or billing information — the Service has no paid features at this time. If that changes, this policy will be updated before any payment data is collected.</p>
+<p><strong>Broker and exchange credentials (optional).</strong> If you connect your own brokerage or exchange account so the Service can place orders on it, we collect and store the API credentials you provide for that account. They are stored encrypted and are used only to carry out the trading actions you have configured. You can disconnect an account at any time, which removes the stored credentials.</p>
+<p><strong>Billing information.</strong> Subscriptions are processed by our payment providers (Stripe and PayPal). <strong>We do not receive or store your full card number.</strong> We receive and store the payment provider's customer and subscription identifiers, your plan, subscription status and renewal date, and — where the provider supplies it — the card brand, last four digits and billing country, so that we can operate your subscription and answer billing questions. Your payment details are held by the payment provider under its own privacy policy.</p>
 
 <h2>3. How We Use Information</h2>
 <ul>
@@ -42,6 +43,8 @@ import LegalLayout from '../layouts/LegalLayout.astro';
   <li>To operate core features: publishing and following signals, copy-trading, leaderboards, challenges, and team missions.</li>
   <li>To send transactional messages: email verification, password resets, and SMS one-time passcodes.</li>
   <li>To monitor, secure, and improve the Service, including detecting abuse, fraud, or manipulated signals.</li>
+  <li>To take subscription payments, manage renewals, plan changes and cancellations, and detect payment fraud.</li>
+  <li>To place orders on a brokerage or exchange account you have connected, according to the settings you configure.</li>
   <li>To respond to support requests.</li>
   <li>To comply with legal obligations.</li>
 </ul>
@@ -76,7 +79,9 @@ import LegalLayout from '../layouts/LegalLayout.astro';
   circumstances:
 </p>
 <ul>
-  <li><strong>Service providers</strong> who host our infrastructure, send email/SMS, or provide analytics, under confidentiality obligations.</li>
+  <li><strong>Service providers</strong> who host our infrastructure, send email/SMS, process subscription payments, or provide analytics, under confidentiality obligations.</li>
+  <li><strong>Payment providers.</strong> Stripe and PayPal receive the information needed to take payment and manage your subscription. They act as independent controllers of the payment data they collect, under their own privacy policies.</li>
+  <li><strong>Brokers and exchanges you connect.</strong> If you connect your own trading account, we send order and account instructions to that broker or exchange using the credentials you supplied, on your instruction.</li>
   <li><strong>Market data providers</strong> (e.g. Alpha Vantage, Hyperliquid, Polymarket) receive only the data required to fetch prices — they do not receive your account information.</li>
   <li><strong>Publicly, when you choose to publish.</strong> Signals, agent activity, and leaderboard rankings you publish are visible to other users by design — this is core to how the platform works. Don't include personal information in public signal descriptions.</li>
   <li><strong>Legal and safety reasons</strong>, if required by law, subpoena, or to protect the rights, property, or safety of Sooppiy or our users.</li>

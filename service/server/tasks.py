@@ -882,6 +882,21 @@ async def subscription_enforcer_loop():
         except Exception as e:
             print(f"[Entitlements Error] {e}")
 
+        # Trial notices ride this sweep deliberately: it is the same tick that
+        # pauses a lapsed member's runs, so "your automation has stopped" is
+        # sent by the cycle that stopped it rather than by a second scheduler
+        # that could drift. Unlike the enforcer it runs regardless of
+        # auto_trading_enabled — a trial still expires on a deployment with
+        # automation switched off, and the member still has to be told.
+        try:
+            from billing_sync import trial_notice_tick
+            notices = await asyncio.to_thread(trial_notice_tick)
+            if notices.get("reminded") or notices.get("ended"):
+                print(f"[Trial] reminded={notices['reminded']} "
+                      f"ended={notices['ended']}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[Trial Notice Error] {e}")
+
         await asyncio.sleep(tick_interval)
 
 

@@ -198,6 +198,7 @@ export function TopNav({
     support: tr(language, { ko: '고객지원 문의', en: 'Support', ja: 'サポート', th: 'ฝ่ายสนับสนุน', vi: 'Hỗ trợ', id: 'Dukungan' }),
     notifications: tr(language, { ko: '알림', en: 'Notifications', ja: '通知', th: 'การแจ้งเตือน', vi: 'Thông báo', id: 'Notifikasi' }),
     profile: tr(language, { ko: '내 계정 · 프로필', en: 'My Account · Profile', ja: 'マイアカウント', th: 'บัญชีของฉัน', vi: 'Tài khoản của tôi', id: 'Akun saya · Profil' }),
+    welcome: tr(language, { ko: '웰컴 가이드', en: 'Welcome guide', ja: 'ウェルカムガイド', th: 'ไกด์ต้อนรับ', vi: 'Hướng dẫn chào mừng', id: 'Panduan selamat datang' }),
     settings: tr(language, { ko: '설정 · API 구성', en: 'Settings · API Config', ja: '設定 · API構成', th: 'ตั้งค่า · API', vi: 'Cài đặt · API', id: 'Pengaturan · Konfigurasi API' }),
     login: tr(language, { ko: '로그인 / 가입', en: 'Login / Register', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk / Daftar' }),
     lockHint: tr(language, { ko: '로그인 필요', en: 'Login required', ja: 'ログインが必要', th: 'ต้องเข้าสู่ระบบ', vi: 'Cần đăng nhập', id: 'Perlu masuk' }),
@@ -321,6 +322,9 @@ export function TopNav({
                   <>
                     <Link to="/my-trading" className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
                       <span className="nav-icon">◱</span>{label.profile}
+                    </Link>
+                    <Link to="/welcome" className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
+                      <span className="nav-icon">👋</span>{label.welcome}
                     </Link>
                     <Link to="/settings" className="topnav-dropdown-item" onClick={() => setProfileOpen(false)}>
                       <span className="nav-icon">⚙</span>{label.settings}

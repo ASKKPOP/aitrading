@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment Keys — Stripe &amp; PayPal Setup Guide</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  h3 { font-size: 15.5px; margin: 22px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .card.warn { border-color: var(--warn); }
+  .card.bad { border-color: var(--bad); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  pre { background: var(--code); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+        font-size: 12.5px; line-height: 1.55; margin: 10px 0; }
+  pre code { background: none; padding: 0; }
+  ol, ul { padding-left: 22px; }
+  li { margin: 6px 0; }
+  .step { border-left: 3px solid var(--accent); padding-left: 14px; margin: 20px 0; overflow-x: auto; }
+  .step h3 { margin-top: 0; }
+  .tag { display: inline-block; font-size: 11px; border: 1px solid var(--line);
+         border-radius: 6px; padding: 1px 7px; color: var(--muted); margin-left: 6px; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wn { color: var(--warn); }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Payment Keys — Stripe &amp; PayPal Setup Guide</h1>
+<p class="kr">Sooppiy 자동 갱신 구독 결제 키 발급 · 등록 단계별 가이드 (코드 기준: <code>routes_billing.py</code>, <code>billing_sync.py</code> — main, PR #236)</p>
+
+<div class="chips">
+  <div class="chip"><b>7</b><span>env vars to set</span></div>
+  <div class="chip"><b>6</b><span>IDs to seed into the DB</span></div>
+  <div class="chip"><b>2</b><span>webhook endpoints</span></div>
+  <div class="chip"><b>10</b><span>webhook events to subscribe</span></div>
+</div>
+
+<div class="card bad">
+  <b>Do this yourself — do not paste live secrets into a chat, a ticket, or a repo file.</b><br>
+  Secret keys go straight from the provider dashboard into the prod <code>.env</code> over SSH, and nowhere else.
+  <code>.env</code> is git-ignored; keep it that way. If a key is ever pasted somewhere shared, roll it immediately in the dashboard.
+  <p class="kr" style="margin:8px 0 0">라이브 시크릿 키는 대화·티켓·저장소에 붙여넣지 말고, 대시보드에서 prod <code>.env</code>로 직접 옮길 것. 노출되면 즉시 재발급.</p>
+</div>
+
+<h2>0. What the platform already expects</h2>
+<p class="kr">플랫폼이 이미 기대하고 있는 값들 — 아래 이름 그대로 맞춰야 동작합니다</p>
+
+<div class="card">
+<table>
+<tr><th>Env var</th><th>Read by</th><th>Example / live value</th><th>Without it</th></tr>
+<tr><td><code>STRIPE_SECRET_KEY</code></td><td><code>billing_sync.stripe_configured()</code>, all Stripe API calls</td><td><code>sk_live_…</code></td><td>Card button hidden; <code>/stripe/checkout</code> → 503</td></tr>
+<tr><td><code>STRIPE_WEBHOOK_SECRET</code></td><td><code>POST /api/webhooks/stripe</code></td><td><code>whsec_…</code></td><td>Webhook → 503; <b>nothing ever activates</b></td></tr>
+<tr><td><code>PAYPAL_CLIENT_ID</code></td><td><code>_paypal_token()</code></td><td>live app client id</td><td>PayPal button hidden; token call fails</td></tr>
+<tr><td><code>PAYPAL_CLIENT_SECRET</code></td><td><code>_paypal_token()</code></td><td>live app secret</td><td>same</td></tr>
+<tr><td><code>PAYPAL_WEBHOOK_ID</code></td><td><code>POST /api/webhooks/paypal</code></td><td><code>WH-…</code></td><td>Webhook → 503; <b>nothing ever activates</b></td></tr>
+<tr><td><code>PAYPAL_API_BASE</code></td><td><code>_paypal_base()</code></td><td><code>https://api-m.paypal.com</code></td><td>Defaults to <b>sandbox</b> — live keys will fail</td></tr>
+<tr><td><code>PAYPAL_UI_ENABLED</code></td><td><code>_paypal_ui_enabled()</code></td><td><code>true</code></td><td>Routes live but the button stays hidden</td></tr>
+</table>
+<p class="legend kr" style="margin-top:10px;color:var(--muted);font-size:12.5px">
+<code>.env.example</code>에는 현재 Stripe 2개와 <code>PAYPAL_WEBHOOK_ID</code>만 기재되어 있습니다. 나머지 PayPal 4개는 코드가 읽지만 예제 파일에 없으므로, 이 표를 기준으로 삼으세요.</p>
+</div>
+
+<h3>The state rule that makes the keys matter</h3>
+<p class="kr">키가 중요한 이유 — 활성화는 오직 웹훅으로만 일어납니다</p>
+<div class="card">
+Checkout endpoints <b>never</b> activate a plan. They only return a redirect URL. Activation, renewal, plan change and cancellation are applied by <code>billing_sync</code> when a <b>signed webhook</b> arrives. So a working secret key with a broken webhook secret produces the worst failure mode there is: <b>the customer is charged and gets nothing</b>. Set both, and verify both.
+<p class="kr" style="margin:8px 0 0">체크아웃 엔드포인트는 결제를 활성화하지 않습니다. 활성화·갱신·변경·해지는 전부 서명 검증된 웹훅이 처리합니다. 시크릿 키만 맞고 웹훅 시크릿이 틀리면 <b>돈은 빠져나가고 구독은 안 열리는</b> 최악의 상태가 됩니다.</p>
+</div>
+
+<div class="card">
+<svg viewBox="0 0 960 190" role="img" aria-label="Checkout returns a URL; only the signed webhook activates the subscription">
+  <rect class="box" x="10" y="30" width="150" height="52"/>
+  <text class="t-b" x="85" y="52" text-anchor="middle">User</text>
+  <text class="t-small" x="85" y="70" text-anchor="middle">/subscribe page</text>
+
+  <rect class="box" x="205" y="30" width="180" height="52"/>
+  <text class="t-b" x="295" y="52" text-anchor="middle">Sooppiy backend</text>
+  <text class="t-small" x="295" y="70" text-anchor="middle">/stripe/checkout · /paypal/subscribe</text>
+
+  <rect class="box-accent" x="430" y="30" width="180" height="52"/>
+  <text class="t-b" x="520" y="52" text-anchor="middle">Provider hosted page</text>
+  <text class="t-small" x="520" y="70" text-anchor="middle">card / PayPal approval</text>
+
+  <rect class="box" x="655" y="30" width="180" height="52"/>
+  <text class="t-b" x="745" y="52" text-anchor="middle">Money captured</text>
+  <text class="t-small" x="745" y="70" text-anchor="middle">at the provider</text>
+
+  <path class="ln" d="M160 56 H200" marker-end="url(#a)"/>
+  <path class="ln" d="M385 56 H425" marker-end="url(#a)"/>
+  <path class="ln" d="M610 56 H650" marker-end="url(#a)"/>
+
+  <rect class="box-accent" x="430" y="120" width="405" height="52"/>
+  <text class="t-b" x="632" y="142" text-anchor="middle">POST /api/webhooks/{stripe|paypal} — signature verified</text>
+  <text class="t-small" x="632" y="160" text-anchor="middle">billing_sync → user_subscriptions.expires_at pushed forward. THIS is activation.</text>
+  <path class="ln" d="M745 82 V118" marker-end="url(#a)"/>
+  <path class="ln" d="M430 146 H300 V88" marker-end="url(#a)"/>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+</svg>
+</div>
+
+<h2>1. Stripe — step by step</h2>
+<p class="kr">스트라이프 설정 순서</p>
+
+<div class="step">
+<h3>1.0 Answering "What does your business do?" <span class="tag">onboarding</span></h3>
+<p>Stripe underwrites trading-adjacent platforms carefully. The description below is accurate to what the code actually does — describe it this way, not more modestly. An account activated on a vague description and later found to be trading-related gets frozen <em>with a balance in it</em>.</p>
+<p class="kr">스트라이프는 트레이딩 관련 플랫폼을 엄격히 심사합니다. 아래 문구는 코드가 실제로 하는 일 그대로입니다. 모호하게 적어 승인받았다가 나중에 발각되면 <b>잔액이 묶인 채</b> 계정이 정지됩니다.</p>
+
+<h4 style="margin:16px 0 4px;font-size:14px">Business description — full</h4>
+<pre><code>Sooppiy is a subscription software (SaaS) platform for market research and
+trading-strategy automation. Customers pay a recurring monthly fee (USD 60 /
+119 / 199) for access to the web application.
+
+The software aggregates public market data, news and sentiment, publishes
+research and signals, and lets customers build, back-test and run automated
+trading rules. By default every strategy runs against a simulated $100,000
+paper-trading ledger — no real money is involved. Optionally, a customer may
+connect their own brokerage or exchange account (e.g. Alpaca, Binance,
+Interactive Brokers) using their own API credentials, so the software can
+place orders on that account on their behalf.
+
+Sooppiy is not a broker-dealer, exchange, money transmitter or investment
+adviser. It never takes custody of customer funds or securities, and no
+customer trading capital passes through Sooppiy or through Stripe. Stripe is
+used solely to collect the monthly software subscription fee.</code></pre>
+
+<h4 style="margin:16px 0 4px;font-size:14px">Short version <span class="tag">for length-limited fields</span></h4>
+<pre><code>Monthly SaaS subscription for market-research and trading-strategy automation
+software. Strategies run on a simulated paper-trading ledger by default;
+customers may optionally connect their own brokerage account. Sooppiy holds no
+customer funds — Stripe collects only the software subscription fee.</code></pre>
+
+<h4 style="margin:16px 0 4px;font-size:14px">One line</h4>
+<pre><code>Subscription software for market research, trading signals and strategy automation.</code></pre>
+
+<h4 style="margin:16px 0 4px;font-size:14px">The adjacent fields</h4>
+<table>
+<tr><th>Field</th><th>Answer</th><th>Why</th></tr>
+<tr><td>Industry / MCC</td><td><b>7372</b> — Computer Programming, Data Processing &amp; Integrated Systems Design<br><span class="t-small">alt: <b>5817</b> Digital Goods — Applications/Software</span></td><td>You sell software access. <b>Not</b> 6211 (Security Brokers/Dealers) or 6051 — you are neither</td></tr>
+<tr><td>What are you selling?</td><td>Digital goods / SaaS subscription</td><td>Not physical, not a service rendered later</td></tr>
+<tr><td>Product description</td><td>"Monthly subscription granting access to the Sooppiy web application: market dashboards, research and signals, paper-trading simulator, back-testing and strategy automation. Access is granted immediately, delivered digitally, and renews monthly until cancelled."</td><td>Answers delivery timing and fulfilment, which underwriting asks next</td></tr>
+<tr><td>Website</td><td><code>https://sooppiy.com</code></td><td>Must be live and show pricing — see the blockers below</td></tr>
+<tr><td>Statement descriptor</td><td><code>SOOPPIY</code> (≤22 chars), suffix <code>SUBSCRIPTION</code></td><td>Unrecognisable descriptors are the #1 cause of "I don't know this charge" disputes</td></tr>
+<tr><td>Average transaction</td><td>~$60–$199/month</td><td>Match the real plan prices; a mismatch triggers review</td></tr>
+<tr><td>When do you charge?</td><td>Immediately, then monthly in advance</td><td>True of Stripe Checkout in <code>mode: subscription</code></td></tr>
+</table>
+
+<div class="card" style="border-color:var(--good)">
+<b>Points in your favour — say them, they are all verifiable on the live site:</b>
+<ul style="margin:6px 0 0">
+<li>Paper trading is the default; the marketing page states <em>"$100,000 of paper money. Zero real risk."</em></li>
+<li>Live trading is opt-in, off by default, and runs on the customer's own broker account after they accept that broker's terms.</li>
+<li>The site already carries an explicit disclaimer: <em>"Nothing on this site is investment advice."</em></li>
+<li>No performance or guaranteed-return claims anywhere in the marketing copy — Stripe's restricted-business list bars exactly those.</li>
+</ul>
+</div>
+
+<div class="card bad">
+<b>Three things to fix before you submit — a reviewer opens the site and reads these:</b>
+<ol style="margin:6px 0 0">
+<li><b>Terms &amp; Conditions §8 says the opposite of what you're applying for.</b> <code>marketing/src/pages/termsconditions.astro</code> currently reads <em>"The Service is currently free to use… Sooppiy may introduce paid features or subscriptions in the future."</em> Applying to charge subscriptions while your published terms say the product is free is a direct contradiction on the linked page.</li>
+<li><b>No refund / cancellation policy is published.</b> Stripe requires one to be reachable from the site. State the actual policy: monthly term, cancel any time, access runs to <code>expires_at</code>, no partial-month refunds — whatever you decide, but it must be written down.</li>
+<li><b>Pricing is behind the login wall.</b> <code>/subscribe</code> only renders for a signed-in user (<code>App.tsx</code> membership gate), so a reviewer cannot see the $60 / $119 / $199 tiers. Put a public pricing section on the marketing page or a public <code>/pricing</code> route.</li>
+</ol>
+<p class="kr" style="margin:8px 0 0">① 이용약관 8조가 "현재 무료"라고 되어 있어 유료 구독 신청과 정면으로 모순됩니다. ② 환불·해지 정책이 공개되어 있지 않습니다(스트라이프 필수). ③ 가격이 로그인 뒤에 있어 심사자가 볼 수 없습니다.</p>
+</div>
+<p class="t-small" style="color:var(--muted)">This is descriptive guidance, not legal advice, and Stripe's classification decision is theirs alone.</p>
+</div>
+
+<div class="step">
+<h3>1.1 Activate the account <span class="tag">dashboard</span></h3>
+<p>Sign in at <code>dashboard.stripe.com</code> and complete business verification until the account shows <b>Live mode available</b>. Until then only <code>sk_test_…</code> keys exist.</p>
+<p class="kr">사업자 인증을 끝내야 라이브 모드가 열립니다. 그 전에는 테스트 키만 발급됩니다.</p>
+</div>
+
+<div class="step">
+<h3>1.2 Create one recurring Price per paid plan <span class="tag">Product catalog</span></h3>
+<p><b>Products → Add product.</b> For each tier create a product with a <b>recurring, monthly</b> price in <b>USD</b>:</p>
+<table>
+<tr><th>Sooppiy plan code</th><th>Name</th><th>Price</th><th>Billing period</th><th>Needs a Stripe price?</th></tr>
+<tr><td><code>junior</code></td><td>Junior</td><td>$60.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
+<tr><td><code>pro</code></td><td>Pro</td><td>$119.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
+<tr><td><code>professional</code></td><td>Professional</td><td>$199.00</td><td>Monthly</td><td class="ok">Yes</td></tr>
+<tr><td><code>enterprise</code></td><td>Enterprise</td><td>—</td><td>—</td><td class="no">No — contact-only</td></tr>
+</table>
+<p>Copy each <b>Price ID</b> (<code>price_…</code>, not the product <code>prod_…</code>). You need all three in step 4.</p>
+<p class="kr">플랜별로 <b>월 정기</b> 가격을 만들고 <code>price_…</code> ID를 복사하세요. <code>prod_…</code>가 아닙니다. Enterprise는 문의 전용이라 가격이 필요 없습니다.</p>
+</div>
+
+<div class="step">
+<h3>1.3 Copy the secret key <span class="tag">Developers → API keys</span></h3>
+<p>Switch the dashboard to <b>Live mode</b>, then <b>Developers → API keys → Secret key → Reveal</b>. It starts with <code>sk_live_</code> and is shown once.</p>
+<p>The publishable key is <b>not</b> used — Sooppiy uses hosted Checkout, so no Stripe key ever reaches the browser.</p>
+<p>Optional hardening: a <b>restricted key</b> works if you grant write on <em>Customers</em>, <em>Checkout Sessions</em> and <em>Billing Portal Sessions</em>. Nothing else is called.</p>
+<p class="kr">라이브 모드에서 시크릿 키(<code>sk_live_</code>)를 복사합니다. 한 번만 표시됩니다. 퍼블리셔블 키는 쓰지 않습니다(호스티드 체크아웃이라 브라우저로 키가 나가지 않음). 제한 키를 쓸 경우 Customers·Checkout Sessions·Billing Portal Sessions 쓰기 권한이면 충분합니다.</p>
+</div>
+
+<div class="step">
+<h3>1.4 Create the webhook endpoint <span class="tag">Developers → Webhooks</span></h3>
+<p><b>Add endpoint</b> → URL:</p>
+<pre><code>https://sooppiy.com/api/webhooks/stripe</code></pre>
+<p>Select exactly these four events — the handler ignores everything else, and a missing one silently breaks that transition:</p>
+<table>
+<tr><th>Event</th><th>What it drives in Sooppiy</th></tr>
+<tr><td><code>checkout.session.completed</code></td><td>First activation — links the subscription to the user</td></tr>
+<tr><td><code>invoice.paid</code></td><td>Every renewal — pushes <code>expires_at</code> to period end + 3-day grace</td></tr>
+<tr><td><code>customer.subscription.updated</code></td><td>Plan switch, and <code>cancel_at_period_end</code></td></tr>
+<tr><td><code>customer.subscription.deleted</code></td><td>Subscription ended</td></tr>
+</table>
+<p>After saving, open the endpoint and copy the <b>Signing secret</b> (<code>whsec_…</code>).</p>
+<p class="kr">위 네 개 이벤트만 선택하면 됩니다. 하나라도 빠지면 해당 전환(최초 활성화·갱신·플랜 변경·종료)이 조용히 멈춥니다. 저장 후 서명 시크릿(<code>whsec_…</code>)을 복사하세요.</p>
+<div class="card" style="border-color:var(--good)">
+<b>API version:</b> leave the endpoint on your account default. The handler reads <b>both</b> the old <code>invoice.subscription</code> and the 2025-03-31 <code>basil</code> shape <code>invoice.parent.subscription_details.subscription</code>, so either version keeps renewals working.
+<p class="kr" style="margin:8px 0 0">API 버전은 계정 기본값 그대로 두세요. 구·신 두 가지 응답 형태를 모두 처리하므로 갱신이 끊기지 않습니다.</p>
+</div>
+</div>
+
+<div class="step">
+<h3>1.5 Configure the Customer Portal <span class="tag">Settings → Billing → Customer portal</span></h3>
+<p><code>POST /api/subscriptions/stripe/portal</code> hands subscribers straight to this page, so whatever you don't enable here, they can't do. Turn on:</p>
+<ul>
+<li><b>Update payment method</b> — otherwise an expiring card silently ends the subscription.</li>
+<li><b>Cancel subscription → at end of billing period</b> (not immediately — Sooppiy's model keeps access until <code>expires_at</code>).</li>
+<li><b>Switch plans</b>, listing the three prices from 1.2. Upgrade = immediate + prorated; downgrade = at period end. No proration code on our side.</li>
+</ul>
+<p class="kr">구독자 관리 화면은 전적으로 이 설정에 따릅니다. 결제수단 변경, <b>기간 말 해지</b>, 세 플랜 간 전환을 켜세요.</p>
+</div>
+
+<div class="step">
+<h3>1.6 Enable Apple Pay / Google Pay <span class="tag">Settings → Payment method domains</span></h3>
+<p>Add and verify <code>sooppiy.com</code>. Stripe hosts the verification file itself for Checkout, so no repo change is needed. Skip this and the wallet buttons just don't render — cards still work.</p>
+<p class="kr">도메인 인증만 하면 지갑 결제가 열립니다. 건너뛰어도 카드 결제는 정상 동작합니다.</p>
+</div>
+
+<h2>2. PayPal — step by step</h2>
+<p class="kr">페이팔 설정 순서</p>
+
+<div class="card warn">
+Sooppiy uses the <b>Subscriptions API</b> (<code>/v1/billing</code>), not the old one-time Orders flow. A PayPal "plan" (<code>P-…</code>) is a real object you must create — it is not the same thing as a Sooppiy plan row.
+<p class="kr" style="margin:8px 0 0">일회성 주문이 아니라 구독 API를 씁니다. PayPal 플랜(<code>P-…</code>)은 별도로 생성해야 하는 실제 객체입니다.</p>
+</div>
+
+<div class="step">
+<h3>2.1 Create the Live app <span class="tag">developer.paypal.com</span></h3>
+<p><b>Apps &amp; Credentials → toggle to Live → Create App</b> (type: <em>Merchant</em>). Copy the <b>Client ID</b> and <b>Secret</b>.</p>
+<p>Do the whole flow in <b>Sandbox</b> first if you want a rehearsal — the steps are identical, only the toggle and the API host change.</p>
+<p class="kr">Live로 전환한 뒤 Merchant 앱을 만들고 Client ID·Secret을 복사합니다. 먼저 Sandbox에서 그대로 연습해도 됩니다 — 호스트만 다릅니다.</p>
+</div>
+
+<div class="step">
+<h3>2.2 Get an access token</h3>
+<pre><code>curl -s -X POST https://api-m.paypal.com/v1/oauth2/token \
+  -u "&lt;CLIENT_ID&gt;:&lt;CLIENT_SECRET&gt;" \
+  -d "grant_type=client_credentials"</code></pre>
+<p>Sandbox host: <code>https://api-m.sandbox.paypal.com</code>. Take <code>access_token</code> from the response.</p>
+</div>
+
+<div class="step">
+<h3>2.3 Create one Product, then one Plan per tier</h3>
+<pre><code># 1) product (once)
+curl -s -X POST https://api-m.paypal.com/v1/catalogs/products \
+  -H "Authorization: Bearer &lt;ACCESS_TOKEN&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sooppiy Subscription","type":"SERVICE","category":"SOFTWARE"}'</code></pre>
+<p>Copy the returned <code>id</code> (<code>PROD-…</code>), then create one plan per tier — repeat with <code>119</code> and <code>199</code>. <b>Prices must match the live plan rows</b> (<code>GET /api/subscriptions/plans</code>) — a PayPal plan priced above the site price charges the member the PayPal amount:</p>
+<pre><code># 2) plan (repeat per tier: Junior 60 / Pro 119 / Professional 199)
+curl -s -X POST https://api-m.paypal.com/v1/billing/plans \
+  -H "Authorization: Bearer &lt;ACCESS_TOKEN&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_id": "&lt;PROD-…&gt;",
+    "name": "Sooppiy Junior Monthly",
+    "status": "ACTIVE",
+    "billing_cycles": [{
+      "frequency": {"interval_unit": "MONTH", "interval_count": 1},
+      "tenure_type": "REGULAR", "sequence": 1, "total_cycles": 0,
+      "pricing_scheme": {"fixed_price": {"value": "60", "currency_code": "USD"}}
+    }],
+    "payment_preferences": {"auto_bill_outstanding": true}
+  }'</code></pre>
+<p><code>"total_cycles": 0</code> means bill forever — that is what makes it auto-renew. Copy each <code>P-…</code> plan id.</p>
+<p class="kr"><code>total_cycles: 0</code>이 무기한 갱신을 뜻합니다. 각 <code>P-…</code> 플랜 ID를 복사하세요.</p>
+<div class="card">
+<b>No trial cycle on any plan — the trial never touches a provider (revised 2026-08-05).</b> The
+owner replaced the card-up-front trial with a card-free one granted by the platform itself at
+sign-up (<a href="service-rules.html">service-rules.html</a> §1). PayPal and Stripe never see the
+trial: <b>create Junior exactly like Pro and Professional</b> — a single REGULAR cycle at its
+monthly price, as shown above. Do NOT add a <code>TRIAL</code> billing cycle, and do not pass
+<code>subscription_data.trial_period_days</code> on Stripe — a provider-side trial would stack a
+second free week on top of the platform's own.
+<p class="kr" style="margin:8px 0 0"><b>어느 플랜에도 체험 주기를 넣지 마십시오 (2026-08-05 개정).</b> 체험은 가입 시 플랫폼이 자체 부여하는 카드 없는 방식으로 바뀌었고, 결제사는 체험을 알지 못합니다. 주니어도 Pro·Professional과 동일하게 <b>단일 REGULAR 주기</b>로 만드십시오. PayPal <code>TRIAL</code> 주기나 Stripe <code>trial_period_days</code>를 넣으면 플랫폼 체험 위에 공짜 한 주가 중복됩니다.</p>
+</div>
+</div>
+
+<div class="step">
+<h3>2.4 Create the webhook <span class="tag">app page → Webhooks → Add</span></h3>
+<pre><code>https://sooppiy.com/api/webhooks/paypal</code></pre>
+<p>Subscribe to these six events:</p>
+<table>
+<tr><th>Event</th><th>What it drives</th></tr>
+<tr><td><code>BILLING.SUBSCRIPTION.ACTIVATED</code></td><td>First activation (user id read from <code>custom_id</code>)</td></tr>
+<tr><td><code>PAYMENT.SALE.COMPLETED</code></td><td>Every renewal payment — extends access</td></tr>
+<tr><td><code>BILLING.SUBSCRIPTION.UPDATED</code></td><td>Plan change applied</td></tr>
+<tr><td><code>BILLING.SUBSCRIPTION.CANCELLED</code></td><td>Marked cancelled; access runs to <code>expires_at</code></td></tr>
+<tr><td><code>BILLING.SUBSCRIPTION.SUSPENDED</code></td><td>Same treatment as cancelled</td></tr>
+<tr><td><code>BILLING.SUBSCRIPTION.EXPIRED</code></td><td>Subscription ended</td></tr>
+</table>
+<p>Save, then copy the <b>Webhook ID</b> (<code>WH-…</code>) shown on the webhook. That ID is what the server sends to PayPal's <code>verify-webhook-signature</code> API — a wrong one rejects every event with 400.</p>
+<p class="kr">저장 후 <b>Webhook ID</b>(<code>WH-…</code>)를 복사하세요. 서버가 서명 검증 API에 이 값을 보내므로, 값이 틀리면 모든 이벤트가 400으로 거부됩니다.</p>
+</div>
+
+<h2>3. Put the keys on prod</h2>
+<p class="kr">운영 서버에 키 반영</p>
+
+<div class="card">
+<p>SSH in, edit the env file the containers read (<code>docker-compose.yml</code> loads <code>env_file: .env</code> for both <code>backend</code> and <code>worker</code>):</p>
+<pre><code>ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202
+cd /home/ec2-user/sooppiy
+cp .env .env.bak.$(date +%F)      # keep a rollback copy
+vi .env</code></pre>
+<p>Append — no quotes, no trailing spaces:</p>
+<pre><code>STRIPE_SECRET_KEY=sk_live_…
+STRIPE_WEBHOOK_SECRET=whsec_…
+PAYPAL_CLIENT_ID=…
+PAYPAL_CLIENT_SECRET=…
+PAYPAL_WEBHOOK_ID=WH-…
+PAYPAL_API_BASE=https://api-m.paypal.com
+PAYPAL_UI_ENABLED=true</code></pre>
+<p>Recreate both services — the worker shares the same env file:</p>
+<pre><code>docker compose --profile prod up -d backend worker
+# if the containers come back "up-to-date" instead of recreated:
+docker compose --profile prod up -d --force-recreate backend worker</code></pre>
+<div class="card warn" style="margin-top:14px">
+<b>The two easiest ways to get this wrong:</b>
+<ol style="margin:6px 0 0">
+<li>Leaving <code>PAYPAL_API_BASE</code> unset. It defaults to the <b>sandbox</b> host, so live credentials fail authentication and every PayPal call 502s.</li>
+<li>Restarting only <code>backend</code>. The <code>worker</code> reads the same <code>.env</code>; leave it stale and the two processes disagree about what is configured.</li>
+</ol>
+<p class="kr" style="margin:8px 0 0">① <code>PAYPAL_API_BASE</code>를 비워두면 기본값이 샌드박스라 라이브 인증이 실패합니다. ② <code>backend</code>만 재시작하면 <code>worker</code>가 옛 설정을 들고 있게 됩니다.</p>
+</div>
+</div>
+
+<h2>4. Seed the plan IDs into the database</h2>
+<p class="kr">플랜 ID를 DB에 등록 — 이 단계를 빠뜨리면 결제 버튼이 503을 냅니다</p>
+
+<div class="card bad">
+<b>There is no admin-console screen for this yet.</b> The IDs live in <code>subscription_plans.stripe_price_id</code> and <code>subscription_plans.paypal_plan_id</code> (added by migration <code>0041_billing_autorenew</code>) and must be set with SQL. Without them, checkout returns
+<code>503 "This plan is not configured for card payments"</code> — even with perfect keys.
+<p class="kr" style="margin:8px 0 0">현재 관리자 콘솔에 입력 화면이 없어 SQL로 직접 넣어야 합니다. 키가 완벽해도 이 값이 없으면 503이 납니다.</p>
+</div>
+
+<div class="card">
+<pre><code>-- prod MySQL
+UPDATE subscription_plans SET stripe_price_id='price_…', paypal_plan_id='P-…' WHERE code='junior';
+UPDATE subscription_plans SET stripe_price_id='price_…', paypal_plan_id='P-…' WHERE code='pro';
+UPDATE subscription_plans SET stripe_price_id='price_…', paypal_plan_id='P-…' WHERE code='professional';
+-- enterprise stays NULL — contact-only, no checkout
+
+SELECT code, price_usd, stripe_price_id, paypal_plan_id FROM subscription_plans ORDER BY sort_order;</code></pre>
+<p>Check the <code>SELECT</code> output before moving on: the price you typed into Stripe must match <code>price_usd</code>, and every id must sit on the row it belongs to. A swapped pair charges the wrong amount for the right plan, and no code path catches that.</p>
+<p class="kr">이동 전에 <code>SELECT</code> 결과를 확인하세요. Stripe에 입력한 금액과 <code>price_usd</code>가 일치해야 하고, ID가 엉뚱한 행에 들어가면 <b>다른 금액이 청구</b>됩니다. 이건 코드가 못 잡습니다.</p>
+</div>
+
+<h2>5. Verify — in this order</h2>
+<p class="kr">검증 순서</p>
+
+<div class="card">
+<h3>5.1 Configuration is visible</h3>
+<pre><code>curl -s https://sooppiy.com/api/subscriptions/plans | jq '{stripe_available, paypal_available}'</code></pre>
+<p>Both must be <code>true</code>. <code>stripe_available</code> reflects only <code>STRIPE_SECRET_KEY</code>; <code>paypal_available</code> needs client id + secret <b>and</b> <code>PAYPAL_UI_ENABLED=true</code>. Neither tells you anything about the webhook secrets — that is 5.2.</p>
+
+<h3>5.2 Webhooks are actually accepted <span class="tag">the step people skip</span></h3>
+<p>In the <b>Stripe</b> dashboard, on the endpoint, use <b>Send test webhook</b> → <code>checkout.session.completed</code>. Expect <code>200</code>. A <code>400</code> means the signing secret is wrong; <code>503</code> means <code>STRIPE_WEBHOOK_SECRET</code> is unset in the running container.</p>
+<p>In <b>PayPal</b>, use the webhook simulator for <code>BILLING.SUBSCRIPTION.ACTIVATED</code>. Expect <code>200</code>; <code>400</code> = wrong <code>PAYPAL_WEBHOOK_ID</code>.</p>
+<p>Then confirm the row landed — duplicates are ignored by design, so this table is the receipt:</p>
+<pre><code>SELECT provider, event_id, type, processed_at FROM billing_events ORDER BY id DESC LIMIT 5;</code></pre>
+
+<h3>5.3 One real end-to-end purchase</h3>
+<p>Buy <code>junior</code> once with a real card and once with a real PayPal account, then refund. Confirm:</p>
+<ul>
+<li><code>user_subscriptions</code> row with <code>auto_renew=1</code>, the correct <code>external_id</code>, and a future <code>expires_at</code>;</li>
+<li>the account leaves <code>/subscribe</code> and the platform unlocks;</li>
+<li>"Manage subscription" opens the Stripe portal / shows the PayPal controls.</li>
+</ul>
+<p class="kr">실제 카드·PayPal로 <code>junior</code>를 각각 1건 결제한 뒤 환불하세요. 자동갱신 플래그, <code>expires_at</code>, 잠금 해제, 관리 화면까지 확인합니다.</p>
+</div>
+
+<h2>6. Rehearsing in test mode first</h2>
+<p class="kr">라이브 전에 테스트 모드로 예행 — 권장</p>
+<div class="card">
+<p>Same env var names, test values: <code>sk_test_…</code>, and for PayPal <code>PAYPAL_API_BASE=https://api-m.sandbox.paypal.com</code> with sandbox app credentials. Stripe's CLI forwards live-looking events at a local backend and prints its own signing secret:</p>
+<pre><code>stripe login
+stripe listen --forward-to localhost:8001/api/webhooks/stripe
+# prints whsec_… → use THAT as STRIPE_WEBHOOK_SECRET locally
+stripe trigger checkout.session.completed</code></pre>
+<p>Test-mode price ids differ from live ones. When you switch to live, the DB values from step 4 must be re-seeded with the live <code>price_…</code> / <code>P-…</code> ids.</p>
+<p class="kr">테스트 모드의 가격 ID는 라이브와 다릅니다. 라이브 전환 시 4단계 값을 라이브 ID로 다시 넣어야 합니다.</p>
+</div>
+
+<h2>7. Rotating or revoking a key</h2>
+<p class="kr">키 교체·폐기</p>
+<div class="card">
+<table>
+<tr><th>Key</th><th>How to rotate</th><th>Impact while rotating</th></tr>
+<tr><td><code>STRIPE_SECRET_KEY</code></td><td>Create a new key, update <code>.env</code>, restart, then delete the old one in the dashboard</td><td>None if you delete last — existing subscriptions are unaffected</td></tr>
+<tr><td><code>STRIPE_WEBHOOK_SECRET</code></td><td>Roll the secret on the endpoint; Stripe keeps the old one valid for a grace window</td><td>Update <code>.env</code> inside that window or events start 400-ing</td></tr>
+<tr><td><code>PAYPAL_CLIENT_SECRET</code></td><td>Generate a second secret on the app, deploy, then remove the first</td><td>Two secrets can coexist — rotate with no downtime</td></tr>
+<tr><td><code>PAYPAL_WEBHOOK_ID</code></td><td>Only changes if you delete and recreate the webhook</td><td>Every event 400s until the new ID is deployed</td></tr>
+</table>
+<p>Failed webhooks are retried by both providers, so a short mismatch is recoverable — events land once the secret is correct, and <code>billing_events</code> keeps replays idempotent. A long one is not: providers stop retrying eventually.</p>
+<p class="kr">양쪽 모두 실패한 웹훅을 재시도하므로 짧은 불일치는 복구됩니다(중복은 <code>billing_events</code>가 걸러냄). 다만 재시도에는 한계가 있어 오래 방치하면 유실됩니다.</p>
+</div>
+
+<h2>Checklist</h2>
+<p class="kr">최종 체크리스트</p>
+<div class="card">
+<table>
+<tr><th>#</th><th>Item</th><th>Done when</th></tr>
+<tr><td>1</td><td>Stripe live mode active</td><td>Dashboard shows Live</td></tr>
+<tr><td>2</td><td>3 recurring monthly prices created</td><td>3 × <code>price_…</code> copied</td></tr>
+<tr><td>3</td><td><code>STRIPE_SECRET_KEY</code></td><td><code>sk_live_…</code> in prod <code>.env</code></td></tr>
+<tr><td>4</td><td>Stripe webhook + 4 events</td><td><code>whsec_…</code> in prod <code>.env</code>; test send → 200</td></tr>
+<tr><td>5</td><td>Customer Portal configured</td><td>Update card + cancel-at-period-end + plan switch enabled</td></tr>
+<tr><td>6</td><td>Apple/Google Pay domain verified</td><td><code>sooppiy.com</code> verified <span class="tag">optional</span></td></tr>
+<tr><td>7</td><td>PayPal live app</td><td>client id + secret in prod <code>.env</code></td></tr>
+<tr><td>8</td><td>PayPal product + 3 plans</td><td>3 × <code>P-…</code> copied</td></tr>
+<tr><td>9</td><td>PayPal webhook + 6 events</td><td><code>WH-…</code> in prod <code>.env</code>; simulator → 200</td></tr>
+<tr><td>10</td><td><code>PAYPAL_API_BASE</code> = live host</td><td>Not sandbox</td></tr>
+<tr><td>11</td><td><code>PAYPAL_UI_ENABLED=true</code></td><td>Button visible on /subscribe</td></tr>
+<tr><td>12</td><td>DB ids seeded</td><td><code>SELECT</code> shows all 6 ids on the right rows</td></tr>
+<tr><td>13</td><td>backend + worker restarted</td><td>Both recreated</td></tr>
+<tr><td>14</td><td>Live smoke test + refund</td><td><code>auto_renew=1</code> row, platform unlocked</td></tr>
+</table>
+</div>
+
+<p class="kr" style="margin-top:30px">Source of truth: <code>service/server/routes_billing.py</code>, <code>billing_sync.py</code>, <code>routes_subscriptions.py</code>, migration <code>0041_billing_autorenew</code> (main). Spec: <code>docs/superpowers/specs/2026-08-04-billing-stripe-paypal-design.md</code>.</p>
+
+</div>
+</body>
+</html>
