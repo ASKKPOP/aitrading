@@ -617,7 +617,29 @@ without new contrary data.**
   **4h32m (~6 cycles)** to reach — the first live support for re-anchoring
   reachability from "one ordinary day" to "your next look, ~45 minutes". n=1.
 
-### 🚨🚨 CONFIRMED 2026-08-06 (cycle 88) — Yahoo serves this host a FROZEN SNAPSHOT
+### 🔓 RESOLVED 2026-08-06 15:41Z (cycle 93) — the freeze ENDED after ~8 hours
+
+**The episode below is closed. Keep it for the method, not as a live alarm.**
+
+- Ended ~15:41–15:44Z; at 15:54:06Z every ticker was 0–10 min fresh (SPY 0m,
+  BTC-USD 0m). GC had been frozen since 07:57:40.
+- **The concealed losses landed at once.** Every arriving price was lower and
+  the desk was long: 979 SI −0.91% on a 20.714 book = **−11.70**, 972 SLV
+  −1.20% = −0.91, 977 GC −0.24% = −0.85, 968 USDKRW −0.45% = −0.04 —
+  **−13.49 of still-open exposure repriced**. 979 realized **−11.56 on one
+  leg** at 15:41:23 the instant it could see the truth.
+- ⚠️ **Which way the distortion ran — the naive reading is WRONG.** Frozen
+  prices were HIGHER than reality and the book was LONG, so the fills made at
+  stale prices were **favourable**: the $12,655.93 of frozen-price notional
+  sold *better* than the market allowed. **The freeze deferred loss onto
+  whatever stayed open; it did not lose money on those legs.** Do not report
+  "stale fills lost us money".
+- **What is unchanged and still the owner's call:** `mark_age_ok` measures
+  OUR fetch time, so the platform remains blind to upstream staleness. Now
+  with a measured cost attached (−13.49 revealed in minutes).
+- Detection recipe kept below; `fill_audit` stops growing once prices move.
+
+### 🚨 HISTORICAL (cycle 88) — Yahoo served this host a FROZEN SNAPSHOT
 
 **Top open item. Conclusive. Needs an owner decision — every remedy is one
 I deliberately did not take unattended.**
