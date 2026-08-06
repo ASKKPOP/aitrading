@@ -14,6 +14,78 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 99 — 2026-08-06 18:49Z (prod DB clock) — ✅ ROOT CAUSE FOUND: RESEARCH PROPOSES WHAT THE FLEET JUST RETIRED
+
+**1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
+docs 200/200, ledger **−93.10**, 4 runs live.
+
+**2. Losses.** −0.21 this beat, immaterial.
+
+**3. ✅ THE TOP ITEM IS SOLVED — full causal chain, verified read-only.**
+
+Cycle 98 narrowed it to *"the filter is between thesis and candidate."*
+It is `symbol_research.select_targets`, and here is the whole chain:
+
+**Step 1 — only ONE batch is ever eligible.** `select_targets` takes the
+*newest* batch with live selectable theses and reads **only that batch**:
+
+```sql
+SELECT batch_id FROM research_theses WHERE selectable = 1
+AND expires_at > ? ORDER BY batch_id DESC LIMIT 1
+```
+
+So "200 theses across 21 symbols today" was never the pool. The pool is
+one batch.
+
+**Step 2 — that batch holds 8 theses.** `research:496121`:
+SOLUSDT, HG, BTCUSDT, NVDA, ETHUSDT, SNOW, GC, AVGO.
+
+**Step 3 — 5 of those 8 are symbols the fleet definitionally cannot
+use:**
+
+| symbol | why unusable |
+|---|---|
+| SOLUSDT, HG, BTCUSDT | in 24h cooldown — **this fleet retired them today** |
+| ETHUSDT, GC | currently running |
+
+**Step 4 — 3 remain** (NVDA, SNOW, AVGO), and the backtest gate correctly
+refuses NVDA (−200.50 USD/trade over 9 trades) and SNOW (−72.43 over 6).
+
+**Confirmed by direct read-only call:**
+`select_targets(agent 6, depth=10, exclude=∅, all six markets in scope)`
+→ **3 rows: NVDA, SNOW, AVGO.** Depth 10 was requested. Market scope and
+the exclude set are both eliminated as causes.
+
+**THE ROOT CAUSE, stated plainly: research and the cooldown list are not
+coordinated. The fleet retires a symbol on a loss, the symbol enters a
+24-hour cooldown, and research keeps proposing that same symbol — so the
+usable pool collapses to whatever is left.** 63% of the newest batch was
+unusable before the gate even looked.
+
+This is not the backtest gate misbehaving, not cooldowns being wrong, and
+not thin research. Each part is doing its job; **they are not talking to
+each other.**
+
+**4. Docs.** Both 200.
+
+**5. Shipped: nothing — and this one genuinely needs a decision, not a
+patch.** The obvious fix (feed the busy/cooldown set into research
+targeting so it proposes usable symbols) is a change to how the platform
+chooses what to research. That is a design decision with real
+consequences — it would bias research away from recently-traded symbols
+permanently — and it is not mine to make unilaterally at 18:49 on a day
+that has already taken five ships.
+
+**→ RECOMMENDATION for the owner:** pass the agent's busy + cooldown set
+into `symbol_research`'s target selection so a batch is not 63% dead on
+arrival. Second-order option: let `select_targets` fall back to older
+still-unexpired batches when the newest yields too few eligible rows —
+smaller change, keeps research untouched.
+
+*#264 still blocked* — Security runners unavailable after a third rerun.
+
+---
+
 ## Cycle 98 — 2026-08-06 18:19Z (prod DB clock) — THE FLEET THREAD, PULLED
 
 **1. Working per plan?** Yes. `20260806-floorstatus`, docs 200/200,
