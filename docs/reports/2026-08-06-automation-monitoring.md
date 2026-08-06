@@ -14,6 +14,76 @@ Suggestions + shipped solutions.
 
 ---
 
+## Inter-cycle ship — 2026-08-06 10:56Z — owner asked for solutions to cycle 82's items 3 and 5; PR #259
+
+Owner: *"try to make solution for 3,5."* Both shipped in one PR
+(`a6f752f`, image `20260806-deskeyes`). Both are the same shape as
+#241/#244/#245 — **the desk judged against something it cannot perceive**
+— so both are AI-first: facts into the brief, judgment left to the desk.
+**Neither halts trading.**
+
+### Item 3 — a fresh timestamp is not a fresh price
+
+`_mark_freshness_line` counts trailing `equity` events whose `unrealized`
+is unchanged and states it. Deliberately **not** a gate: I raised in
+cycle 82 that a value-staleness rail *halts trading*, and quiet markets
+are real — so the desk gets the observable and stays the actor.
+
+Conservative by construction: `unrealized = (mark − avg) × qty`, so an
+add or reduce moves it even under a frozen mark and **resets** the count.
+It can under-report a freeze, never invent one.
+
+**Live render immediately found more than I had measured** — SLV, a
+us-stock, is frozen too, so this is not a futures/forex problem:
+
+| run | line rendered |
+|---|---|
+| 968 USDKRW | SAME price for **38** straight reads (~44 min) |
+| 972 **SLV** | SAME price for **60** straight reads (~69 min) |
+| 977 GC | SAME price for **60** straight reads (~69 min) |
+| 979 SI | SAME price for **60** straight reads (~69 min) |
+| 975 BTCUSDT | *(silent — it moves)* ✅ |
+
+The detector fires exactly where a freeze was measured and stays silent
+on the one symbol that is trading. That discrimination is the evidence
+it works.
+
+### Item 5 — 64 arms, zero fires, and the yardstick was the wrong clock
+
+I verified the executor first, so the fix would land on the real cause:
+`arm_fires()` 5/5 correct tested live in the image, `_fire_armed_order`
+provably reached, and **no level ever crossed**. So the levels, not the
+code.
+
+**The skill contradicted itself.** It told the desk *"your cycles are
+roughly 45 minutes apart"* and, in the same breath, to place the level
+*"inside roughly one ordinary day's move"* — **two horizons ~30× apart**.
+The desk followed the yardstick it was given. Re-anchored to the clock
+the arm actually runs on, with the 64/0 evidence stated in the lesson.
+
+**And one claim in it was simply false.** *"Each cycle's arm replaces the
+last"* — `_store_armed_order` runs only on `intent == "arm"`, so a reduce
+or hold cycle leaves the arm standing. Corrected to what the code does,
+and `_standing_arm_line` now shows the desk the arm it already has. Live
+proof of why that was needed: **975's arm had been standing 137 minutes
+unrestated**, and 968's `close 1.0` 89 minutes.
+
+Skill text was **tightened to fit the existing budget** rather than raise
+`MAX_BLOCK_LEN` a fifth time — the same call as #253.
+
+**Verified:** fail-before 16/16, mutation 6/6 (incl. both unwirings and a
+revert to the day-yardstick), 3519 pass, ruff clean; in-image 13/13 then
+the full 46-test skills suite OK; both lines wired on **both** prompt
+paths; skill text live on both sites with the old yardstick gone; DB row
+`position-management` shows `seed-upgrade` at 10:56:42 (durable, not just
+in the image); 0 tracebacks; docs 200/200. Verified twice.
+
+⚠️ **Still open for the owner:** the *cause* of the freeze. Alpha Vantage
+is rate-limited at 25 req/day and the feed answers "Successfully fetched"
+with a stale quote. That is a provider/tier decision, not a code one.
+
+---
+
 ## Cycle 82 — 2026-08-06 10:19Z (prod DB clock) — 🚨 FROZEN MARKS
 
 **1. Working per plan?** Containers healthy on `20260806-prunebackups`
