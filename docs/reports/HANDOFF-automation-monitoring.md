@@ -596,7 +596,44 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
-### 🚨 TOP ITEM, refined 2026-08-06 (cycle 98) — 13 symbols available, 2 offered
+### ✅ ROOT CAUSE 2026-08-06 (cycle 99) — research proposes what the fleet just retired
+
+**The fleet-stuck-at-3/10 investigation is COMPLETE. What remains is an owner
+decision, not more diagnosis.**
+
+**The chain, verified read-only:**
+1. `symbol_research.select_targets` reads **only the newest batch** with live
+   selectable theses (`ORDER BY batch_id DESC LIMIT 1`). "200 theses / 21
+   symbols today" was never the pool — **one batch is**.
+2. That batch (`research:496121`) holds **8** theses.
+3. **5 of the 8 are unusable**: SOLUSDT, HG, BTCUSDT are in 24h cooldown
+   *because this fleet retired them today*; ETHUSDT and GC are running.
+4. Three remain; the gate correctly refuses NVDA (−200.50/trade) and SNOW
+   (−72.43/trade). Nothing builds.
+
+**Proof:** `select_targets(agent 6, depth=10, exclude=∅, all six markets)`
+returns **3 rows**. Depth 10 was asked for. Market scope and `exclude` are
+eliminated.
+
+**ROOT CAUSE: research and the cooldown list are not coordinated.** A symbol
+is retired on a loss → 24h cooldown → research keeps proposing it → the
+usable pool collapses. **63% of the newest batch was dead on arrival.** Every
+component is doing its job; they do not talk to each other.
+
+**Owner decision, not shipped:**
+- **Primary:** pass the agent's busy + cooldown set into research target
+  selection. ⚠️ Real consequence: biases research away from recently-traded
+  symbols permanently.
+- **Smaller:** let `select_targets` fall back to older still-unexpired
+  batches when the newest yields too few eligible rows. Leaves research
+  untouched.
+
+⚠️ **Do not re-diagnose this.** Three cycles (97→98→99) narrowed it from "an
+unpriceable symbol" to the exact line. Re-check with:
+`SELECT batch_id, COUNT(*), GROUP_CONCAT(symbol) FROM research_theses WHERE
+selectable=1 AND expires_at > NOW() GROUP BY batch_id ORDER BY batch_id DESC`.
+
+### Superseded (cycle 98) — 13 symbols available, 2 offered
 
 **The fleet has been 3/10 with no new candidate since 08:53:59.** Cycle 97
 blamed an unpriceable sole survivor; cycle 98 measured it properly and that
