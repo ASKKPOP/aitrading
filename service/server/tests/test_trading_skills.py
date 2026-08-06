@@ -305,8 +305,8 @@ class RegistryTests(_Db):
         for site in ("light", "trader"):
             block = trading_skills.skills_block(site)
             self.assertIn("~45 minutes", block, f"cycle horizon missing from {site}")
-            self.assertIn("64 arms placed here", block,
-                          f"the measured 64/0 evidence missing from {site}")
+            self.assertIn("60+ arms placed here", block,
+                          f"the measured arm-fire evidence missing from {site}")
             self.assertNotIn("inside roughly one ordinary day's move", block,
                              f"the wrong yardstick survives in {site}")
 
@@ -353,6 +353,33 @@ class RegistryTests(_Db):
             self.assertIn("reducing or closing is the one act that "
                           "still makes sense", block,
                           f"the exit carve-out missing from {site}")
+
+    def test_the_arm_lesson_carves_out_a_motionless_tape_ITSELF(self):
+        # Cycle 90, reproduced n=2: since #260's Data Honesty clause went
+        # live at 12:07, THREE arms were authored — ETHUSDT (live feed, and
+        # it FIRED at 13:51), GC 12:29:05 and USDKRW 14:45:08 (both on marks
+        # frozen for hours, so neither can ever fire). The desk was obeying
+        # the arm lesson's own unconditional "whenever you hold a position,
+        # arm the level", which outranked a caveat sitting in a different
+        # skill. The exception has to live where the instruction lives.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("NOT on a motionless tape", block,
+                          f"arm-lesson carve-out missing from {site}")
+            self.assertIn("unmoving price never crosses a level", block,
+                          f"the reason missing from {site}")
+
+    def test_the_arm_lesson_no_longer_claims_zero_arms_have_fired(self):
+        # "64 arms placed here, NOT ONE ever fired" became FALSE on
+        # 2026-08-06: run 975 fired at 13:11:19 and run 978 at 13:51:38.
+        # A lesson that states a fact must not go on stating it once it is
+        # untrue.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertNotIn("NOT ONE ever fired", block,
+                             f"the false zero-fires claim survives in {site}")
+            self.assertIn("only TWO have ever fired", block,
+                          f"the corrected count missing from {site}")
 
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
