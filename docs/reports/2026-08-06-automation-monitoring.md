@@ -14,6 +14,113 @@ Suggestions + shipped solutions.
 
 ---
 
+## ⏱️ 24-HOUR SWEEP (cron-fired) — 2026-08-06 15:46Z (prod DB clock)
+
+The early sweep at 15:20Z built the ledger and shipped #263. This one does
+what that one did not: **shape statistics against the §7 baseline, both day
+boundaries, the regression check, and a live re-proof of every fix.**
+
+### (5) True P&L, flatten-reconciled, both boundaries
+
+| window | result |
+|---|---|
+| UTC 08-05 | **+7.09** |
+| UTC 08-06 | **−70.36** |
+| KST 08-05 (04T15:00Z→05T15:00Z) | closing-leg net −4.11 (wins +91.43 / losses −85.68) |
+| KST 08-06 (05T15:00Z→06T15:00Z) | closing-leg net **−101.69** (wins +38.58 / losses −130.11) |
+
+### (6) SHAPE vs the §7 baseline (55% win rate; 6/84 closes = 74% of loss)
+
+Measured **per closing leg**, the way the baseline was measured:
+
+| metric | UTC 08-05 (prior) | UTC 08-06 | baseline |
+|---|---|---|---|
+| win rate | 57% | **39%** | 55% |
+| median win | +3.52 | **+0.40** | — |
+| median loss | −0.90 | **−2.87** | — |
+| **full closes' share of loss** | **92%** | **19%** | 74% |
+| worst 6 legs' share | 93% | 69% | 74% |
+
+**This cuts both ways and I am not going to report only the good half.**
+
+**The exit-verb work landed decisively.** Whole-book closes carried **92%**
+of all loss on 08-05 and **19%** today — well below even the 74% baseline.
+That is the single largest shape improvement of the week, and #245/#253/#262
+are what changed it.
+
+**And the day still lost far more.** The loss moved out of the tail and into
+the body: median win collapsed **+3.52 → +0.40** while median loss worsened
+**−0.90 → −2.87** — a **7.2:1 adverse ratio** at a 39% hit rate. Per-leg
+expectancy went from **+1.62** to **−1.60**.
+
+### The confound I tested — and rejected
+
+Four of seven runs were pricing off a frozen feed, so the honest move was to
+split the day by feed health before blaming anything:
+
+| bucket | legs | win rate | median win / loss | net |
+|---|---|---|---|---|
+| **crypto (LIVE feed)** | 7 | **14%** | +0.40 / **−4.69** | **−40.30 (61%)** |
+| yahoo-served (FROZEN) | 26 | 46% | +0.48 / −2.20 | −26.00 (39%) |
+
+**61% of the day's loss is in the markets whose prices are real.** The frozen
+feed is *not* the explanation for the damage — it distorts the bookkeeping,
+not the outcome. And **975 BTCUSDT alone is −38.26: 95% of the live-feed loss
+and ~54% of the entire day.**
+
+**975's shape:** a $4,739 notional whose lifetime peak was **+2.84** — 0.06%
+of notional, or **6.5% of one ordinary day** in its favour — held 7h18m and
+exited in four partial legs. **It was never right.** Not an exit failure; an
+entry that never worked, held long. The exit machinery behaved correctly
+throughout (partial verbs, and the arm fired for the first time ever).
+
+### (2) Re-proof of every fix, in the running container
+
+All twelve confirmed live by source inspection inside `sooppiy-worker`:
+#251 max-book anchor · #253 arm-verb · #262 motionless carve-out · #262
+corrected fire-count · #254/#255 exposure audit (`RATCHET_TS 2026-08-06T01:45`)
+· #257 flush wired · #259 both briefs on both prompt paths · #260 Data Honesty
+clause · #260/#261 `fill_audit` · #263 floor-status · `pnl_audit`.
+
+### (3) Watch triggers
+
+| watch | state |
+|---|---|
+| (i) trailing_lock | 2 fires today, **both pre-fix era** (973 00:21, 976 05:40); `ratchet_audit` post-fix **2 survived, 0 flattened** |
+| (ii) armed_exit | **2 — the first ever**; 0.16 and 0.75 ordinary days → 1h44m and 4h32m |
+| (iv) newborn cycle-1 retires | none |
+| (v) drawdown brake | 1 (975 12:24) — **NOT** add-then-brake; 975 never added. Untriggered |
+| (vii) conviction_missing | 6 of 92 = **6.5%** (was 9.4%) |
+| #257 `pending_close` | 0 — structural (cycle 89), not a failure |
+| frozen feed | `fill_audit` 10 repeats / **$12,655.93** |
+
+⚠️ **A trap worth recording:** my ad-hoc SQL counted 4 `trailing_lock` fires
+where `ratchet_audit` correctly reports 2 — the hand-written query matched
+**both** status rows, exactly the double-count bug the tool was built to
+avoid. *Use the tool.*
+
+### (7) The day's solution — and where I stop
+
+**Shipped this window: #263**, which addresses precisely the 13/13 finding —
+not one of the ten losers could ever have armed the floor. That is the day's
+solution and it is already live on all five open runs.
+
+**Beyond that, no further change is evidenced today, and I am saying so
+rather than shipping on n=1.** 975 is a single instance of "large notional,
+never right, held long". The retire rail did eventually catch it
+(`consecutive_losses`).
+
+**Triggers being watched, any one of which acts:**
+1. A **second** run with 975's shape — notional > ~$4k, lifetime peak under
+   ~10% of one ordinary day, held > 4h.
+2. Full-close share of loss climbing back above ~40%.
+3. Median-win : median-loss staying worse than 1:2 for a **second** day —
+   one day is a market, two is a mechanism.
+4. The frozen feed (owner decision, unchanged).
+5. #257's non-null case: a control-pass stop with an un-ingested close.
+
+---
+
 ## ⏱️ 24-HOUR VERIFICATION SWEEP — 2026-08-06 15:20Z (prod DB clock) — SHIPPED #263
 
 The 15:07Z sweep cron did not fire — the session was mid-deploy on #262,
