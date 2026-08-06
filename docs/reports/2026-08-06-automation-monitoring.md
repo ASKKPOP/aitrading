@@ -14,6 +14,55 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 79 — 2026-08-06 08:53Z (prod DB clock)
+
+Fired 59 seconds after cycle 78's final verification, so this is a short
+beat with one genuine observable and **nothing to ship**.
+
+**1. Working per plan?** Yes. 8 runs live (979 SI newborn 08:53), both
+containers on `20260806-band2`, docs 200/200, **0 tracebacks** in both
+containers over 60m. `ratchet_audit` EXIT=0.
+
+**2. Losses and WHY.** 08-06 ledger **−14.58**, unchanged since 08:49 —
+no new realized loss this beat.
+
+**960 SI closed +28.47** (peak 42.84), the day's best run, on
+`stop_event:at_time` — its 24h horizon expiring exactly one day after
+birth (08-05 08:53 → 08-06 08:53). **Not** a rail fire. It did reduce
+0.5 at 08:18:07 and is worth checking against the band: book 39.22 →
+19.61 at mark 62.10 gives arm-full **4.87** and arm-after **2.44**
+against a peak of **42.84**. The peak cleared *both* arms by ~9×, so the
+floor was armed under old and new code alike and simply never reached —
+correct behaviour, and **non-discriminating**, exactly as the auditor
+reports (0 in-band rows for 960).
+
+**3. What we missed.** Nothing new. The post-#251 discriminating sample
+is still **n=0** and the in-band table still reads one row (976,
+pre-fix, FLATTENED).
+
+*The one observable:* since #253 deployed at 07:51:01 the desk has taken
+**7 decisions — 3 arms, all `reduce` 0.5; 3 executed reduces; 1 hold.
+Zero `close 1.0`, zero full exits.** Against the measured pre-fix base
+rate of **45% full-book arms**, three consecutive partials carries
+p ≈ 0.55³ ≈ **0.17** under the null. Suggestive, **not significant** —
+the base rate would predict ~1.4 full-book arms in three. Keep counting;
+do not call it working yet.
+
+*Noted, not alarming:* 968 USDKRW carries `peak_pnl_usd` = **−2.08**. A
+negative peak can never satisfy `peak >= arm > 0`, so the breakeven floor
+is simply inert on that run — which is the intended shape for a position
+that has never been in profit.
+
+**4. Docs.** how-it-works 200, liquidation-defense 200.
+
+**5. Shipped.** Nothing. No reproduced evidence called for a change, and
+a quiet beat is the correct outcome one hour after two ships.
+
+⚠️ `pnl_audit` still reports 08-06 DRIFT (ledger −14.58 vs adapt −5.28,
+3 flattens) — the known unfixed adapt-omits-flattens gap.
+
+---
+
 ## Cycle 78 — 2026-08-06 07:55Z (prod DB clock)
 
 **1. Working per plan?** Yes. 8 runs live, both containers on
