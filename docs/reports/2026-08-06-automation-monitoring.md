@@ -14,6 +14,71 @@ Suggestions + shipped solutions.
 
 ---
 
+## Inter-cycle ship — 2026-08-06 09:28Z — owner asked for a solution to the pnl_audit DRIFT; PR #257
+
+Owner: *"make solution for pnl_audit는 여전히 08-06 DRIFT … 알려진 미수정
+adapt-flatten 누락 문제입니다."*
+
+**First finding: it is NOT mostly the known flatten gap.** Decomposing the
+day's −9.56 delta to the cent:
+
+| component | USD |
+|---|---:|
+| (a) entry-side fees, by design | −3.2027 |
+| **(b) adapt NEVER emitted** | **−6.6894** |
+| (c) 973's pre-#249 flatten | +0.3967 |
+| (d) 08-05 close landing on 08-06 | −0.0644 |
+| **sum** | **−9.5598** = observed |
+
+#249's emission fix **is working**: 3 of today's 4 flattens emitted
+`flatten_close` adapts (969, 976, 960); only 973 predates the deploy.
+
+**(b) is a different, unfixed defect — and #249's own comment states its
+mechanism while fixing only one instance of it:**
+
+> "run_feedback derives its own adapt events from closed SIGNALS on a later
+> cycle, and a flattened run is stopping/stopped, so no later cycle ever
+> processes this leg"
+
+True of the flatten leg — and equally true of **every other close still
+pending when the run stops**. Run 960 reduced at 08:18:07 (−4.3752) and
+stopped at 08:53; run 976 reduced at 05:40:01 (−2.3142) and was flattened
+at 05:40:02. Neither ever reached the adapt stream. **The same failure shape
+twice: a number journalled only "next cycle" is lost precisely when there is
+no next cycle — which is precisely when the run died.**
+
+**Fix (PR #257, image `20260806-pendflush`, main `4041812`).**
+`_flush_pending_close_adapts` at the **top** of `_control_stopping`, before
+all three terminal branches and before the flatten leg exists as a signal.
+Emits, never adapts — a terminal run's `size_mult` ladder is moot, so it
+deliberately skips the claim fence `save_state` needs (a stopping run is
+unclaimed; the write would be discarded). Idempotent by construction: the
+watermark is read back out of the run's *own* adapt events, so the bounded
+flatten retry cannot double-journal.
+
+**NOT an AI-first fix, deliberately.** The desk cannot emit the platform's
+record of what the desk already did — the "code only where the desk cannot
+be the actor" case, stated rather than skipped.
+
+**Verified:** fail-before 7/7, mutation 4/4 (incl. unwiring, and moving the
+call after the flatten), 3504 pass, ruff clean; in-image 7/7 then the full
+82-test `test_run_engine` OK; wiring confirmed live from the image twice;
+0 tracebacks; docs 200/200. **Read-only replay proves it would have caught
+exactly the two lost legs: run 960 signal 475 = −4.3752, run 976 signal 469
+= −2.3142** — the decomposition's (b) to four decimal places.
+
+⚠️ **The fix is forward-looking.** Today's −6.69 is already lost (both runs
+are `stopped`, and `_control_stopping` only visits `stopping`), so the
+08-06 DRIFT line will not change retroactively.
+
+⚠️ **Open, not shipped:** even after this, component (a) — entry-side fees,
+which the ledger charges on the opening leg and the adapt stream never sees
+— will keep the delta non-zero, ~−3.20 on a 4-newborn day against a $5.00
+tolerance. On busy days the alarm will still fire benignly. Deciding whether
+to model (a) in the tolerance is a separate call; **do not chase it as a bug**.
+
+---
+
 ## Cycle 79 — 2026-08-06 08:53Z (prod DB clock)
 
 Fired 59 seconds after cycle 78's final verification, so this is a short

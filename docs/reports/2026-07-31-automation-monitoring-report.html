@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automation Monitoring — Recommendations & Issues (2026-07-31)</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn: #d8a013;
+    --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea; --neu-bg: #eef2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+      --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13; --neu-bg: #16202b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+    --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13; --neu-bg: #16202b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 46px 0 10px; padding-top: 6px; border-top: 1px solid var(--grid); }
+  h2:first-of-type { border-top: none; }
+  .sub { color: var(--ink-2); margin: 0 0 4px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  p { color: var(--ink-1); }
+  .lead { color: var(--ink-2); font-size: 15.5px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .tile .val { font-size: 22px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .pos { color: var(--good-txt); } .negc { color: var(--neg); }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 620px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 8px 12px 8px 0; vertical-align: bottom; }
+  td { border-bottom: 1px solid var(--grid); padding: 8px 12px 8px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 14px; white-space: nowrap; }
+  code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--neu-bg); padding: 1px 5px; border-radius: 4px; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 650; padding: 2px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: .01em; }
+  .p-rej { background: var(--crit-bg); color: var(--crit); }
+  .p-ok  { background: var(--ok-bg);  color: var(--good-txt); }
+  .p-warn{ background: var(--warn-bg);color: var(--warn); }
+  .p-neu { background: var(--neu-bg); color: var(--s1); }
+  .p-ship{ background: var(--ok-bg);  color: var(--good-txt); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.ok   { border-left: 3px solid var(--s3); }
+  .card.chg  { border-left: 3px solid var(--s2); }
+  ul { margin: 8px 0; padding-left: 20px; } li { margin: 4px 0; }
+  .foot { margin-top: 40px; color: var(--ink-3); font-size: 12.5px; }
+  .kpos { color: var(--good-txt); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Sooppiy Automation — Monitoring Report</h1>
+  <p class="sub">Recommendations &amp; issues from the 30-minute auto-trading monitoring loop.</p>
+  <p class="meta">28 cycles · 2026-07-31 ~08:30 → ~21:14 UTC · source: prod MySQL (<code>run_events</code>, <code>trading_runs</code>, <code>positions</code>) + <code>sooppiy-worker</code> logs over SSH.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Cycles run</div><div class="val">28</div><div class="d">every 30 min</div></div>
+    <div class="tile"><div class="lbl">Lifetime realized</div><div class="val negc">−$396.59</div><div class="d">all runs, cumulative</div></div>
+    <div class="tile"><div class="lbl">Recent 3-day net</div><div class="val pos">+$90.71</div><div class="d">current cohort — profitable</div></div>
+    <div class="tile"><div class="lbl">Levers rejected</div><div class="val">4</div><div class="d">R6 · R7 · R7′ · R9, on backtest</div></div>
+    <div class="tile"><div class="lbl">Features delivered</div><div class="val">2</div><div class="d">verified, awaiting deploy</div></div>
+  </div>
+
+  <p class="lead">Bottom line: the <b>current auto-trading works and is profitable</b> over the recent window (+$90.71). The −$396 lifetime loss is <b>legacy large-run risk sizing</b>, already self-correcting. Every <i>signal/exit</i> profit lever was rigorously backtested and <b>rejected</b> — the desk's losses look statistically ordinary at entry, and the exit config (which I first mis-flagged as broken) is proven to bank the winners that matter.</p>
+
+  <h2>Sooppiy.com AI desk — decisions</h2>
+  <p class="sub">These verdicts were rendered <b>BY the platform's own trading AI</b> (model <code>local / gpt-oss:120b</code>, the desk's decision tier) — <b>not by the monitoring session</b>. Escalated per the base rule: trading decisions belong to the sooppiy AI. Journaled in <code>2026-07-31-sooppiy-ai-desk-decisions.md</code>.</p>
+
+  <h3>Profit recommendations — desk verdict</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Recommendation</th><th>Desk decision</th><th>Desk reason (gpt-oss:120b)</th></tr></thead>
+    <tbody>
+      <tr><td><b>R8</b></td><td>Per-run risk (<code>max_loss</code>) ceiling</td><td><span class="pill p-warn">DEFER</span></td><td>Need risk-adjusted cap study; $50 may blunt big winners while giving only modest loss reduction.</td></tr>
+      <tr><td><b>R6</b></td><td>Breakeven / low-arm trailing ratchet</td><td><span class="pill p-rej">REJECT</span></td><td>Trailing ratchet cuts proven winners more than it protects; backtest shows net loss increase.</td></tr>
+      <tr><td><b>R7</b></td><td>Gate entries on conviction vs confidence</td><td><span class="pill p-rej">REJECT</span></td><td>Conviction gating lacks discriminative power; confidence already anti-predictive, no win-rate improvement.</td></tr>
+      <tr><td><b>R7′</b></td><td>Down-size missing-conviction entries</td><td><span class="pill p-rej">REJECT</span></td><td>Reducing size on missing conviction harms profitable runs; biggest losers had normal conviction.</td></tr>
+      <tr><td><b>R9</b></td><td>Block adds into a losing long</td><td><span class="pill p-neu">ACKNOWLEDGE</span></td><td>Existing gate already blocks adds to losing longs; functionality confirmed.</td></tr>
+      <tr><td><b>R1</b></td><td>Per-market fee table / min-edge gate</td><td><span class="pill p-ship">ADOPT</span></td><td>Per-market fee table prevents unprofitable small moves; aligns edge with actual transaction costs.</td></tr>
+      <tr><td>DOCS</td><td>Wire <code>/docs/how-it-works</code></td><td><span class="pill p-warn">DEFER</span></td><td>Routing docs not implemented yet; integration pending before wiring.</td></tr>
+      <tr><td>LB</td><td>Leaderboard: real user trading only</td><td><span class="pill p-neu">ACKNOWLEDGE</span></td><td>Leaderboard filter already applied, ensuring only live agents displayed.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Observed issues — desk verdict</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Issue</th><th>Desk decision</th><th>Desk reason (gpt-oss:120b)</th></tr></thead>
+    <tbody>
+      <tr><td>I1</td><td>Give-back leak (trail arms at 1× <code>max_loss</code>)</td><td><span class="pill p-warn">DEFER</span></td><td>Trailing stop triggers too early, limiting winner upside; need more data before changing design.</td></tr>
+      <tr><td>I2</td><td>Large-run risk concentration (83% of loss)</td><td><span class="pill p-ship">ADOPT</span></td><td>Risk concentration from large runs causing majority of losses; diversify exposure now.</td></tr>
+      <tr><td>I3</td><td>Confidence is the gate yet anti-predictive</td><td><span class="pill p-rej">REJECT as gate</span></td><td>Confidence metric inversely correlates with results; stop using it as gate.</td></tr>
+      <tr><td>I4</td><td>qty=0 zombie BTC position open</td><td><span class="pill p-neu">ACKNOWLEDGE</span></td><td>Zero-quantity BTC position adds no risk but clutters books; note and clean later.</td></tr>
+      <tr><td>I5</td><td>KAITO −$10.94 (round-trip + add into fall)</td><td><span class="pill p-ship">ADOPT</span></td><td>KAITO exit timing flawed, adding to loss; improve conviction thresholds.</td></tr>
+      <tr><td>I6</td><td>qa-* test agents ranking on leaderboard</td><td><span class="pill p-neu">ACKNOWLEDGE</span></td><td>QA agents ranking issue resolved; acknowledge fix.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="card chg">
+    <p style="margin:0"><b>Desk vs. review:</b> the sooppiy AI <b>agrees</b> on rejecting R6 / R7 / R7′ and acknowledging R9 / LB. It <b>diverges toward action</b> where the review was cautious — it wants to <b>ADOPT R1</b> (per-market fees), <b>act now on risk concentration (I2)</b>, and <b>improve KAITO-style exit/conviction timing (I5)</b>. Implementation still follows the operating model: build off <code>main</code>, verify, deploy, then monitor.</p>
+  </div>
+
+  <h2>Profit recommendations — monitoring-review detail</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Recommendation</th><th>Verdict</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>R8</b></td>
+        <td>Per-run risk (<code>max_loss_usd</code>) ceiling</td>
+        <td><span class="pill p-warn">REAL LEVER · self-correcting</span></td>
+        <td>Loss dominated by a few large-risk runs (<code>max_loss</code> $1.3k–$2.6k); band totals: LARGE &gt;$500 = −$389 (83% of loss) vs small ≤$100 = −$61. Capping at $50 → −$61 book (Δ +$403). <b>But</b> caps winners too (same cohort holds +$203/+$195 runs), and recent sizing already dropped to $719 max. Deliberate policy, not urgent.</td>
+      </tr>
+      <tr>
+        <td><b>R6</b></td>
+        <td>Breakeven / low-arm trailing ratchet for give-backs</td>
+        <td><span class="pill p-rej">REJECTED — backtested ×2</span></td>
+        <td>28-run then 30-run replay: best net +$5 → −$36; clip cost grew to $68.86. It scratches real winners (run 125 +$20.80→−0.18). Live proof it was right: a low arm would have clipped HYPE 854 (+$34.70) and 897 (+$56.26).</td>
+      </tr>
+      <tr>
+        <td><b>R7</b></td>
+        <td>Gate entries on conviction instead of confidence</td>
+        <td><span class="pill p-rej">REJECTED</span></td>
+        <td>Confidence <i>is</i> anti-predictive (conf≥0.68 → 11% win) — but conviction doesn't separate winners from losers where present (loser 113 conv 0.640 ≈ winner 119 conv 0.642). No shippable gate.</td>
+      </tr>
+      <tr>
+        <td><b>R7′</b></td>
+        <td>Down-size entries with missing conviction</td>
+        <td><span class="pill p-rej">REJECTED — inverted at scale</span></td>
+        <td>7-day sample said missing-conviction = bad (−$87); full history inverts: conv_MISSING 11 runs = <b>+$56</b>, conv_present 81 = −$521. The 3 biggest catastrophes have normal conviction.</td>
+      </tr>
+      <tr>
+        <td><b>R9</b></td>
+        <td>Fix add-into-loser gap on longs</td>
+        <td><span class="pill p-ok">NOT A BUG</span></td>
+        <td>Deployed <code>_add_limit_skip</code> (run_engine.py:1986) already blocks adds when unrealized&lt;0, cites run 112, fires 7×/24h. KAITO's add passed because it wasn't underwater at that instant.</td>
+      </tr>
+      <tr>
+        <td><b>R1</b></td>
+        <td>Per-market fee table / min-edge-vs-fee gate</td>
+        <td><span class="pill p-neu">STAGED</span></td>
+        <td>Fees ~$0.49/trade dominate small-move losses. A fee-infeasible gate already exists; per-market table is the remaining piece. Lower priority than it looked.</td>
+      </tr>
+      <tr>
+        <td>—</td>
+        <td>Wire <code>/docs/how-it-works</code> (Plan-18 HTML unwired)</td>
+        <td><span class="pill p-neu">SOFT / docs</span></td>
+        <td>Not a registered slug → authed falls back to Guide; unauth → login (correct). Docs-only.</td>
+      </tr>
+      <tr>
+        <td>—</td>
+        <td>Leaderboard: show only real user trading</td>
+        <td><span class="pill p-ship">DELIVERED</span></td>
+        <td>Hide <code>qa-*</code> test agents (keep the AI fleet). Committed <code>feat/leaderboard-real-users</code>, verified vs prod (11 hide / fleet keep). Awaiting deploy.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Issues observed &amp; resolution</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Cycle</th><th>Issue</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1–2</td><td><b>My own analysis bug</b> — queried <code>run_events</code> by <code>created_at</code> (col is <code>ts</code>); errored silently → false "reads not journaled" headline.</td><td><span class="pill p-ok">CORRECTED c3</span> — reads are fully journaled (39,903 rows).</td></tr>
+      <tr><td class="num">1</td><td><b>SOL orphan test position</b> open ~4 days (agent 6, run_id NULL); reclaim stuck holding.</td><td><span class="pill p-ok">REMOVED</span> — deleted on owner request.</td></tr>
+      <tr><td class="num">1</td><td><b>qty=0 BTC zombie</b> position (agent 37, ownerless).</td><td><span class="pill p-warn">OPEN</span> — harmless; left pending owner call.</td></tr>
+      <tr><td class="num">2–5</td><td><b>Give-back leak</b> — winners round-trip unbanked; trail arms only at 1×<code>max_loss</code> (~$40) vs fleet peaks $3–11.</td><td><span class="pill p-ok">ROOT-CAUSED → BY DESIGN</span> — fix (R6) rejected; exit config later vindicated live.</td></tr>
+      <tr><td class="num">2</td><td><code>/docs/how-it-works</code> not a real route.</td><td><span class="pill p-neu">EXPLAINED</span> — owner-only, unregistered slug; Plan-18 HTML unwired.</td></tr>
+      <tr><td class="num">6</td><td><b>Confidence anti-predictive</b> — the gate keys on the one scalar that doesn't predict outcome.</td><td><span class="pill p-warn">FOUND, no fix</span> — conviction doesn't separate either (R7).</td></tr>
+      <tr><td class="num">10–11</td><td><b>Large-run risk concentration</b> — a few runs risking $1.3k–$2.6k drive 83% of the loss.</td><td><span class="pill p-warn">R8 — self-correcting</span> — recent max risk already down to $719.</td></tr>
+      <tr><td class="num">15</td><td><b>KAITO −$10.94</b> — peaked +$10.98, round-tripped + an add into the fall.</td><td><span class="pill p-ok">EXPLAINED</span> — give-back + normal directional; add gate confirmed working.</td></tr>
+      <tr><td class="num">—</td><td><b>qa-* test agents on public leaderboard</b> (screenshot).</td><td><span class="pill p-ship">FIXED</span> — filter built &amp; verified.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>What's working (verified)</h2>
+  <div class="card ok">
+    <ul>
+      <li><b>Exit config — vindicated live.</b> The trailing lock I first thought was broken banked two big winners: <span class="kpos">HYPE 854 +$34.70</span> and <span class="kpos">897 +$56.26</span> via <code>stop_event:trailing_lock</code>. It leaves small $3–20 peaks unprotected <i>by design</i> so genuine runners can go to $76 and bank $56.</li>
+      <li><b>Liquidation Defense Daemon — verified end-to-end.</b> Measurement (<code>liq_price</code>, <code>health</code>, <code>velocity</code>, TTL) → 4-tier classifier with hysteresis → reflex executor (<code>execute_reflex</code> → flatten at T3, called from <code>tasks.py:916</code>, guarded by stale-mark + retry). Idle only because no position approached T3 (health ~0.99).</li>
+      <li><b>Decisions fully journaled</b> — <code>decision</code> (action/confidence/conviction/sub-scores), <code>order_params</code>, <code>order_intent</code>, <code>gate_skip</code>, <code>trade</code>, <code>equity</code>. Fully auditable.</li>
+      <li><b>Self-pruning works</b> — adapt loop retired the persistent laggard (HG via <code>adapt_retired</code>); idle/fee-infeasible retires firing as designed.</li>
+      <li><b>Engine health</b> — <code>dispatched=due</code>, <code>eval_failures=0</code>, no tracebacks across 28 cycles; prod stable.</li>
+    </ul>
+  </div>
+
+  <h2>Delivered — built, verified, committed (awaiting deploy)</h2>
+  <div class="card chg">
+    <ul>
+      <li><code>feat/liq-defense-card</code> — a per-card <b>Liquidation Defense</b> readout on <code>/automation</code> (tier · health % · ~hrs-to-liq · daemon liq price), frontend-only, live from streamed <code>margin</code> events. <span class="pill p-ok">tsc + vite build clean</span></li>
+      <li><code>feat/leaderboard-real-users</code> — hide <code>qa-*</code> test agents from the public board (keep the AI fleet). <span class="pill p-ok">ruff + syntax + prod-data verified</span></li>
+    </ul>
+    <p class="meta">Both off clean <code>main</code>. Operating model: they ship to sooppiy.com prod on owner go, then monitored.</p>
+  </div>
+
+  <h2>Conclusion</h2>
+  <p>After 28 cycles and multiple backtests, the profit picture is firm: <b>there is no cheap gate to add.</b> The desk reads sanely, the exits work, the liquidation daemon works, and the losses are ordinary directional moves indistinguishable at entry. The single real loss driver — large-run risk sizing (R8) — is already trending the right way on its own. The current system runs roughly break-even at present risk sizing and was strongly profitable over the monitored window.</p>
+
+  <p class="foot">Companion data: <code>docs/reports/2026-07-31-automation-monitoring.md</code> (cycle log) · <code>automation-snapshot.json</code> (final state) · <code>recommendations-backlog.md</code> (full R1–R9 detail) · <code>r6-backtest-result.md</code>. Monitoring loop stopped 2026-07-31.</p>
+
+</div>
+</body>
+</html>

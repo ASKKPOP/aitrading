@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overnight Report — Deploy, Issues & Recommendations (2026-08-01)</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn: #b8860b;
+    --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --neu-bg: #eef2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+      --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --neu-bg: #16202b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+    --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --neu-bg: #16202b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.58 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 34px 20px 90px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 46px 0 10px; padding-top: 8px; border-top: 1px solid var(--grid); }
+  .ko { color: var(--ink-3); font-size: 13px; margin: 2px 0 12px; }
+  .sub { color: var(--ink-2); margin: 0 0 4px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin: 22px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 11.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; }
+  .tile .val { font-size: 22px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .negc { color: var(--neg); } .posc { color: var(--good-txt); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 640px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 8px 12px 8px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 8px 12px 8px 0; vertical-align: top; }
+  code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--neu-bg); padding: 1px 5px; border-radius: 4px; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 650; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .p-ok { background: var(--ok-bg); color: var(--good-txt); }
+  .p-crit { background: var(--crit-bg); color: var(--crit); }
+  .p-warn { background: var(--warn-bg); color: var(--warn); }
+  .p-neu { background: var(--neu-bg); color: var(--s1); }
+  /* timeline */
+  .tl { border-left: 3px solid var(--axis); margin: 18px 0 18px 8px; padding-left: 22px; }
+  .tl .ev { position: relative; margin: 0 0 18px; }
+  .tl .ev::before { content: ""; position: absolute; left: -29px; top: 5px; width: 11px; height: 11px;
+                    border-radius: 50%; background: var(--s1); border: 2px solid var(--page); }
+  .tl .ev.bad::before { background: var(--crit); }
+  .tl .ev.good::before { background: var(--s3); }
+  .tl .ev.warn::before { background: var(--warn); }
+  .tl .t { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-3); }
+  .tl .h { font-weight: 650; }
+  .tl .d { color: var(--ink-2); font-size: 13.5px; }
+  ul { margin: 8px 0; padding-left: 20px; } li { margin: 5px 0; }
+  .foot { margin-top: 44px; color: var(--ink-3); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Overnight Report — Deploy, Issues &amp; Recommendations</h1>
+  <p class="sub">Everything that happened from last night's deploy to now: 5 features shipped, 1 incident fixed, 39 monitoring cycles, and the fleet-24 deadlock found → resolved.</p>
+  <p class="ko">어젯밤부터 지금까지: 기능 5개 배포, 사고 1건 수정, 모니터링 39 사이클, 플릿-24 교착 발견 → 해소.</p>
+  <p class="meta">2026-08-01 01:47Z → 21:15Z · prod images <code>20260801-lbfix → gateway</code> · monitoring cron every 30 min (PD1–PD39)</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Features deployed</div><div class="val posc">5</div><div class="d">PRs #165–#169, all live</div></div>
+    <div class="tile"><div class="lbl">Incidents</div><div class="val">1</div><div class="d">leaderboard 500 · fixed in ~30 min</div></div>
+    <div class="tile"><div class="lbl">Monitoring cycles</div><div class="val">39</div><div class="d">every 30 min, all features verified</div></div>
+    <div class="tile"><div class="lbl">Structural defect found</div><div class="val negc">1</div><div class="d">fleet-24 deadlock → churn loop</div></div>
+    <div class="tile"><div class="lbl">Book (realized)</div><div class="val">−$439</div><div class="d">−$396 → −$439 (pre-deploy losses)</div></div>
+  </div>
+
+  <h2>1 · Timeline — last night → now</h2>
+  <p class="ko">타임라인 — 어젯밤 → 지금</p>
+  <div class="tl">
+    <div class="ev good"><div class="t">01:47–02:03Z</div><div class="h">Quad-feature deploy + desk flags ON</div>
+      <div class="d">PRs #165–#168 merged &amp; shipped: calibration scoreboard + Platt map · I2 max-loss ceiling (<code>RUN_MAX_LOSS_CEILING_USD=1000</code>) · I5 conviction exit (<code>RUN_CONVICTION_EXIT=true</code>, 0.35×2) · per-card liq-defense readout · leaderboard qa-filter. Frontend published to both static roots.</div></div>
+    <div class="ev bad"><div class="t">02:0xZ</div><div class="h">INCIDENT: /api/profit/history 500 on prod</div>
+      <div class="d">My #168 used <code>LIKE … ESCAPE '\'</code> — legal on SQLite, a MySQL 1064 (backslash eats the closing quote). Public board endpoint broke minutes after deploy.</div></div>
+    <div class="ev good"><div class="t">+~5 min</div><div class="h">Mitigated live, then hotfixed properly</div>
+      <div class="d">Env override blanked the filter → endpoint recovered instantly. Hotfix #169 (<code>ESCAPE '!'</code>, portable) with regression tests (no-backslash assertion + real execution + the exact predicate run on prod MySQL), redeployed, filter re-enabled. Two follow-on traps also cleared: stale materialized snapshot + the Redis-less backend's in-process response cache (needed a backend restart). Lessons saved to memory.</div></div>
+    <div class="ev"><div class="t">02:20Z→</div><div class="h">Post-deploy monitoring loop started (PD1–…)</div>
+      <div class="d">Baseline: overnight pre-deploy losses HYPE −23.81 / BTC −13.65 (adapt-retired; I5 shadow-test correctly shows it would NOT have fired — ordinary directional riders, not conviction collapses).</div></div>
+    <div class="ev"><div class="t">03:45Z</div><div class="h">Prod image moved under the loop (parallel Plan-19 deploy)</div>
+      <div class="d">All five features verified to survive the image swap — flags, task registry, runtime clamp, board filter.</div></div>
+    <div class="ev warn"><div class="t">10:45Z</div><div class="h">Fleet replaced: aggressive fleet 24 (5× / $17k bets)</div>
+      <div class="d">Old fleet stopped (<code>fleet_stop_all</code>). New runs 903/904: max_bet ~$17k, 5× leverage, max_loss 679/716 — <b>I2 creation path verified live</b> (≤$1,000 ceiling).</div></div>
+    <div class="ev bad"><div class="t">12:15Z</div><div class="h">DEFECT FOUND: fleet 24 structurally deadlocked</div>
+      <div class="d">Desk decides buy/sell every cycle but sizes <b>$25–34k orders against the $10,000 per-symbol exposure cap</b> → 100% risk-stage blocks. A fleet whose minimum order exceeds the cap can never trade — pure LLM burn.</div></div>
+    <div class="ev bad"><div class="t">16:15Z</div><div class="h">Deadlock became a CHURN LOOP</div>
+      <div class="d">903/904 idle-retired (~12 flat cycles) → fleet rebuilt 905/906 with identical sizing → deadlocked again (906 even sized bigger, $34k). Same shape as the fee-infeasible churn before PR #94 added a build gate.</div></div>
+    <div class="ev good"><div class="t">19:45Z</div><div class="h">RESOLVED (by configuration): fleet 25 at sane sizing</div>
+      <div class="d">905/906 stopped; new 907/908 at max_bet $1.4–1.6k, 1×, max_loss $29/31 — orders fit the cap.</div></div>
+    <div class="ev good"><div class="t">20:45Z→</div><div class="h">Trading resumed + book expanding</div>
+      <div class="d">908 ETH opened long ($706 notional). Five $1k cash runs added (DOGE/SOL/BTC/ETH/HYPE) + TSLA. 8 runs live.</div></div>
+  </div>
+
+  <h2>2 · The five deployed features — verification status</h2>
+  <p class="ko">배포된 5개 기능 — 검증 현황</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Feature</th><th>Status</th><th>Evidence from live prod</th></tr></thead>
+    <tbody>
+      <tr><td><b>Calibration scoreboard + Platt</b> (#165)</td><td><span class="pill p-ok">LIVE &amp; DECISIVE</span></td>
+        <td><code>[Calibration] n=99 brier_raw=0.3717 brier_platt=0.1668</code>, fitted slope <b>negative (a=−0.73)</b> — the platform now continuously measures that its stated confidence is inverted. Survived 2 image swaps.</td></tr>
+      <tr><td><b>I2 max-loss ceiling</b> (#166)</td><td><span class="pill p-ok">VERIFIED ×2</span></td>
+        <td>Runtime: 2600→<b>1000.0</b> through deployed code. Creation path: fleet-24's big runs passed the live validator ≤$1,000. Now load-bearing against the R8 risk profile.</td></tr>
+      <tr><td><b>I5 conviction exit</b> (#166)</td><td><span class="pill p-ok">ARMED · 0 fires (correct)</span></td>
+        <td>Enabled, floor 0.35 × 2 strikes. Zero fires — correct: shadow-tests on the overnight losers show their convictions (0.40–0.73) never qualified. Waiting for a true KAITO-shape collapse.</td></tr>
+      <tr><td><b>Liq-defense card</b> (#167)</td><td><span class="pill p-ok">SERVED</span></td>
+        <td>Chunk with "Liq. defense" + "청산 방어" live on both hostnames. Daemon itself verified by direct <code>watch_tick</code>: measured 3/3, worst T0, healths ~1.0.</td></tr>
+      <tr><td><b>Leaderboard qa-filter</b> (#168+#169)</td><td><span class="pill p-ok">LIVE (after hotfix)</span></td>
+        <td>Board serves only the fleet ("info"), 0 qa-* — verified across 30+ cycles after the ESCAPE hotfix + snapshot refresh + cache clear.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>3 · Issues found (and their state)</h2>
+  <p class="ko">발견된 이슈와 상태</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Issue</th><th>Severity</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><b>ESCAPE-backslash 500</b> — #168 broke the public board on MySQL (SQLite-only syntax)</td>
+        <td><span class="pill p-crit">prod outage (1 endpoint)</span></td>
+        <td><span class="pill p-ok">FIXED #169</span> — mitigated in ~5 min, hotfixed ~30 min, regression-tested on both dialects, lesson saved to memory.</td></tr>
+      <tr><td><b>Fleet-24 deadlock → churn loop</b> — planner builds fleets whose minimum order exceeds the $10k exposure cap; idle-retire + build-parity rebuild the impossible config forever</td>
+        <td><span class="pill p-crit">flagship fleet could never trade</span></td>
+        <td><span class="pill p-warn">RESOLVED BY CONFIG</span> (owner rebuilt at sane size) — <b>structural fix still recommended</b> (see R-A below).</td></tr>
+      <tr><td><b>Five $1k cash runs with max_loss NULL</b> (909–913) — legal 1× books, but no stop-loss rail; risk bounded only by notional</td>
+        <td><span class="pill p-warn">risk hygiene</span></td>
+        <td><span class="pill p-neu">OPEN — owner call</span> (one-line <code>max_loss_usd</code> per run if a bound is wanted).</td></tr>
+      <tr><td><b>Pre-deploy overnight losses</b> — HYPE −$23.81, BTC −$13.65, both adapt-retired ordinary directional riders</td>
+        <td><span class="pill p-neu">expected class</span></td>
+        <td><span class="pill p-ok">BY DESIGN</span> — bounded by small max_loss + adapt; no shipped/rejected gate catches this class (proven via I5 shadow-test).</td></tr>
+      <tr><td><b>In-process response cache</b> — Redis-less backend served a stale (pre-filter) board even after the snapshot was clean</td>
+        <td><span class="pill p-warn">verification trap</span></td>
+        <td><span class="pill p-ok">DOCUMENTED</span> — restart backend before verifying board changes; saved to memory.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>4 · Recommendations</h2>
+  <p class="ko">권고 — 강한 순서대로</p>
+  <div class="card crit">
+    <b>R-A · STRONG — exposure-feasibility gate at fleet build (the PR-#94 pattern).</b>
+    <p style="margin:6px 0 0">The planner accepted a fleet whose minimum order ($25–34k) exceeded the $10k per-symbol cap — twice, because replacement build-parity re-creates the config after idle-retire. Two full churn laps burned ~24 LLM cycles each for zero trades. Exactly like the fee-infeasible class fixed by PR #94, the fix belongs at <b>build time</b>: refuse (or size down) any candidate whose minimum order can't pass the symbol-exposure cap. Deterministic, no trading-behavior change for valid fleets, testable (a $17k/5× candidate must be rejected/downsized; a $1.5k/1× candidate must pass). <span class="ko" style="display:block; margin-top:4px">플래너가 최소 주문이 상한을 넘는 플릿을 두 번 수용 — 수수료-불가능 클래스(PR #94)와 동일하게 <b>빌드 시점 게이트</b>로 거부/축소해야 함. 유효한 플릿엔 무영향, 테스트 가능.</span></p>
+  </div>
+  <div class="card chg">
+    <b>R-B · Put a <code>max_loss_usd</code> on the five $1k cash runs</b> (909–913) — they currently have no P&L stop; only notional bounds them. One-line setting each; I2 will keep any future value ≤$1,000. <span class="ko" style="display:block">$1k 현물 런 5개에 max_loss 설정 권고 — 현재 P&L 스톱 없음.</span>
+  </div>
+  <div class="card ok">
+    <b>R-C · Let the calibration scoreboard accumulate, then act on it.</b> Step 0+1 are live; the first line already proves the thesis (raw 0.372 vs Platt 0.167, negative slope). After ~1–2 weeks of nightly lines: flip <code>RUN_CONF_CALIBRATED=shadow</code>, compare weekly Brier, then decide the gate change (Step 1 "apply") and the sub-score meta-model (Step 2) by measurement — the full plan is in <code>2026-08-01-confidence-calibration-solution.html</code>. <span class="ko" style="display:block">보정 스코어보드 축적 후 측정으로 결정 — 첫 라인이 이미 논지를 입증(원시 0.372 대 Platt 0.167, 음의 기울기).</span>
+  </div>
+  <div class="card">
+    <b>R-D · Keep I5/I2 armed and watch the firsts.</b> The first <code>conviction_collapse</code> fire needs a correctness check (only on a held position, only after 2 real sub-0.35 reads); the first >$1,000 run request should show up as a clamp to exactly 1000.0. Both are one-query checks in the monitoring loop. <span class="ko" style="display:block">I5/I2 유지, 첫 발동 시 정확성 검증.</span>
+  </div>
+
+  <h2>5 · Current state (as of ~21:15Z)</h2>
+  <p class="ko">현재 상태</p>
+  <div class="card">
+    <ul>
+      <li><b>8 runs live</b> on sane sizing: fleet-25 SOL/ETH ($1.4–1.6k, 1×, with stops) + five $1k cash runs (DOGE/SOL/BTC/ETH/HYPE) + TSLA. First position open: 908 ETH long, $706 notional.</li>
+      <li><b>Book:</b> −$439.49 realized lifetime. The −$43 move since last night is pre-deploy losses (HYPE/BTC/SOL) — nothing lost to the deploy, the incident, or the deadlock (deadlocked runs never traded).</li>
+      <li><b>All five features healthy</b> across 39 cycles and 2 image swaps; zero tracebacks; board qa-free with the fleet visible; liquidation daemon nominal (T0).</li>
+      <li><b>Monitoring loop</b> continues every 30 min until 2026-08-02 10:00.</li>
+    </ul>
+  </div>
+
+  <p class="foot">Companions: <code>automation-snapshot.json</code> (PD1–PD39 cycle log) · <code>2026-08-01-confidence-calibration-solution.html</code> (calibration plan) · <code>2026-07-31-automation-monitoring-report.html</code> (previous session) · memory: <code>like-escape-backslash-mysql-trap</code>.</p>
+
+</div>
+</body>
+</html>

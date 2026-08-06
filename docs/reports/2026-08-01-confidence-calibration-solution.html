@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making 신뢰도+확신도 Predictive — Analysis & Solution</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neg: #e34948;
+    --good-txt: #006300; --crit: #d03b3b; --warn: #b8860b;
+    --warn-bg: #fff7e6; --crit-bg: #fdeeee; --ok-bg: #eef7ee; --chg-bg: #fdf1ea; --neu-bg: #eef2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+      --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+      --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13; --neu-bg: #16202b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neg: #e66767;
+    --good-txt: #0ca30c; --crit: #d03b3b; --warn: #c08f10;
+    --warn-bg: #2b2413; --crit-bg: #2b1616; --ok-bg: #14240f; --chg-bg: #2b1d13; --neu-bg: #16202b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 15px/1.58 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 34px 20px 90px; }
+  h1 { font-size: 27px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 52px 0 4px; padding-top: 10px; border-top: 1px solid var(--grid); }
+  h3 { font-size: 15.5px; margin: 26px 0 8px; }
+  .ko { color: var(--ink-3); font-size: 13px; font-weight: 500; margin: 0 0 14px; }
+  .sub { color: var(--ink-2); margin: 0 0 4px; }
+  .meta { color: var(--ink-3); font-size: 13px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 22px 0; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .lbl { font-size: 11.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; }
+  .tile .val { font-size: 23px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 12.5px; margin-top: 3px; color: var(--ink-3); }
+  .negc { color: var(--neg); } .posc { color: var(--good-txt); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+  .card.crit { border-left: 3px solid var(--crit); }
+  .card.ok { border-left: 3px solid var(--s3); }
+  .card.chg { border-left: 3px solid var(--s2); }
+  .fig { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 18px 18px 10px; margin: 16px 0; }
+  .fig .cap { font-size: 13px; color: var(--ink-2); margin: 8px 2px 6px; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 640px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); padding: 8px 12px 8px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 8px 12px 8px 0; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 16px; white-space: nowrap; }
+  code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--neu-bg); padding: 1px 5px; border-radius: 4px; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 650; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .p-now { background: var(--ok-bg); color: var(--good-txt); }
+  .p-next { background: var(--neu-bg); color: var(--s1); }
+  .p-later { background: var(--warn-bg); color: var(--warn); }
+  svg { max-width: 100%; height: auto; display: block; }
+  svg text { font: 11.5px system-ui, sans-serif; fill: var(--ink-2); }
+  svg .vlab { font-weight: 650; fill: var(--ink-1); }
+  svg .axis { stroke: var(--axis); stroke-width: 1; }
+  svg .grid { stroke: var(--grid); stroke-width: 1; }
+  /* flow diagram */
+  .flowwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  @media (max-width: 760px) { .flowwrap { grid-template-columns: 1fr; } }
+  .flowcol { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .flowcol h4 { margin: 0 0 12px; font-size: 13.5px; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-2); }
+  .fbox { border: 1.5px solid var(--axis); border-radius: 8px; padding: 9px 12px; font-size: 13px; margin: 0 auto; max-width: 380px; background: var(--page); }
+  .fbox b { font-size: 13.5px; }
+  .fbox .fk { color: var(--ink-3); font-size: 12px; display: block; margin-top: 2px; }
+  .fbox.bad { border-color: var(--crit); }
+  .fbox.new { border-color: var(--s1); }
+  .fbox.gate { border-color: var(--s2); }
+  .farrow { text-align: center; color: var(--ink-3); font-size: 15px; line-height: 1.4; margin: 2px 0; }
+  .lane { border-left: 3px solid var(--s1); padding: 10px 14px; margin: 12px 0; background: var(--surface-1); border-radius: 0 10px 10px 0; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .lane .ln { font-size: 11.5px; font-weight: 700; letter-spacing: .05em; color: var(--s1); text-transform: uppercase; }
+  ul { margin: 8px 0; padding-left: 20px; } li { margin: 5px 0; }
+  .foot { margin-top: 44px; color: var(--ink-3); font-size: 12.5px; }
+  .refs li { font-size: 13px; margin: 3px 0; }
+  a { color: var(--s1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Making 신뢰도 + 확신도 Actually Predictive</h1>
+  <p class="sub">Full analysis of why the desk's confidence &amp; conviction fail, and a measured, step-by-step solution.</p>
+  <p class="ko">데스크의 신뢰도·확신도가 왜 실패하는지에 대한 전체 분석과, 측정 기반 단계별 해법. 데이터: 프로덕션 1,522개 결정 + 종료된 런 98개.</p>
+  <p class="meta">Evidence: prod MySQL <code>run_events</code> (1,522 decisions, 30d) + 98 closed runs with entry decisions · decision model <code>local/gpt-oss:120b</code> · research sources linked at the end.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Base win rate</div><div class="val">21%</div><div class="d">21 of 98 closed entries</div></div>
+    <div class="tile"><div class="lbl">Quantization</div><div class="val negc">63%</div><div class="d">of 1,522 decisions land on just 3 values (0.58 · 0.62 · 0.55)</div></div>
+    <div class="tile"><div class="lbl">"Most confident" bucket</div><div class="val negc">14% win</div><div class="d">conf ≥ 0.70 · claims ~72%</div></div>
+    <div class="tile"><div class="lbl">Signal that works</div><div class="val posc">+0.08</div><div class="d">momentum &amp; thesis sub-score gap, winners vs losers</div></div>
+    <div class="tile"><div class="lbl">Conviction missing</div><div class="val">7.8%</div><div class="d">119 / 1,522 decisions</div></div>
+  </div>
+
+  <div class="card crit">
+    <b>The one-sentence diagnosis:</b> the desk asks its LLM to <i>verbalize</i> a confidence number — a technique that research shows is systematically overconfident and barely quantized — while the inputs that actually predict outcomes (<code>thesis_alignment</code>, <code>momentum_quality</code>) get averaged away inside that one broken scalar, and nothing ever feeds trade <i>outcomes</i> back into the number.
+    <p class="ko" style="margin:8px 0 0">한 문장 진단: 데스크는 LLM에게 신뢰도 숫자를 "말로 표현"하게 시키는데(연구상 체계적으로 과신·양자화되는 방식), 정작 결과를 예측하는 입력(thesis_alignment, momentum_quality)은 그 고장난 스칼라 안에서 평균되어 사라지고, 거래 결과가 그 숫자로 피드백되는 일은 전혀 없다.</p>
+  </div>
+
+  <!-- ============ SECTION 1: EVIDENCE ============ -->
+  <h2>1 · The problem, measured on our own book</h2>
+  <p class="ko">문제를 우리 장부에서 직접 측정</p>
+
+  <h3>1a. Confidence is not calibrated — claimed vs delivered</h3>
+  <div class="fig">
+    <svg viewBox="0 0 700 290" role="img" aria-label="Win rate by confidence bucket vs perfect calibration">
+      <!-- gridlines 0,20,40,60,80% -->
+      <line class="grid" x1="46" y1="210" x2="690" y2="210"/>
+      <line class="grid" x1="46" y1="160" x2="690" y2="160"/>
+      <line class="grid" x1="46" y1="110" x2="690" y2="110"/>
+      <line class="grid" x1="46" y1="60"  x2="690" y2="60"/>
+      <line class="grid" x1="46" y1="10"  x2="690" y2="10"/>
+      <text x="40" y="214" text-anchor="end">0%</text>
+      <text x="40" y="164" text-anchor="end">20</text>
+      <text x="40" y="114" text-anchor="end">40</text>
+      <text x="40" y="64"  text-anchor="end">60</text>
+      <text x="40" y="14"  text-anchor="end">80</text>
+      <!-- baseline -->
+      <line class="axis" x1="46" y1="210" x2="690" y2="210"/>
+      <!-- bars: actual win rate. scale 2.5px/% -->
+      <!-- <0.55: 0% -->
+      <rect x="78"  y="208" width="56" height="2"    rx="1" fill="var(--s1)"><title>&lt;0.55 · n=3 · won 0%</title></rect>
+      <!-- 0.55-0.60: 22.2 -->
+      <rect x="204" y="154.5" width="56" height="55.5" rx="4" fill="var(--s1)"><title>0.55–0.60 · n=27 · won 22.2%</title></rect>
+      <!-- 0.60-0.65: 22.9 -->
+      <rect x="330" y="152.7" width="56" height="57.3" rx="4" fill="var(--s1)"><title>0.60–0.65 · n=48 · won 22.9%</title></rect>
+      <!-- 0.65-0.70: 33.3 -->
+      <rect x="456" y="126.7" width="56" height="83.3" rx="4" fill="var(--s1)"><title>0.65–0.70 · n=6 · won 33.3%</title></rect>
+      <!-- >=0.70: 14.3 -->
+      <rect x="582" y="174.2" width="56" height="35.8" rx="4" fill="var(--s1)"><title>≥0.70 · n=14 · won 14.3%</title></rect>
+      <!-- value labels -->
+      <text class="vlab" x="106" y="200" text-anchor="middle">0%</text>
+      <text class="vlab" x="232" y="147" text-anchor="middle">22%</text>
+      <text class="vlab" x="358" y="145" text-anchor="middle">23%</text>
+      <text class="vlab" x="484" y="119" text-anchor="middle">33%</text>
+      <text class="vlab" x="610" y="167" text-anchor="middle">14%</text>
+      <!-- perfect-calibration dashed line at bucket midpoints 52.5/57.5/62.5/67.5/72.5 -->
+      <polyline points="106,78.8 232,66.3 358,53.8 484,41.3 610,28.8" fill="none"
+        stroke="var(--ink-3)" stroke-width="2" stroke-dasharray="6 5"/>
+      <circle cx="106" cy="78.8" r="3.5" fill="var(--ink-3)"/><circle cx="232" cy="66.3" r="3.5" fill="var(--ink-3)"/>
+      <circle cx="358" cy="53.8" r="3.5" fill="var(--ink-3)"/><circle cx="484" cy="41.3" r="3.5" fill="var(--ink-3)"/>
+      <circle cx="610" cy="28.8" r="3.5" fill="var(--ink-3)"/>
+      <text x="616" y="22">what the number CLAIMS</text>
+      <!-- x labels -->
+      <text x="106" y="228" text-anchor="middle">&lt;0.55</text>
+      <text x="232" y="228" text-anchor="middle">0.55–0.60</text>
+      <text x="358" y="228" text-anchor="middle">0.60–0.65</text>
+      <text x="484" y="228" text-anchor="middle">0.65–0.70</text>
+      <text x="610" y="228" text-anchor="middle">≥0.70</text>
+      <text x="106" y="243" text-anchor="middle" fill="var(--ink-3)">n=3</text>
+      <text x="232" y="243" text-anchor="middle" fill="var(--ink-3)">n=27</text>
+      <text x="358" y="243" text-anchor="middle" fill="var(--ink-3)">n=48</text>
+      <text x="484" y="243" text-anchor="middle" fill="var(--ink-3)">n=6</text>
+      <text x="610" y="243" text-anchor="middle" fill="var(--ink-3)">n=14</text>
+      <!-- annotation for inversion -->
+      <text x="610" y="264" text-anchor="middle" fill="var(--neg)" font-weight="650">inverted ⤵</text>
+      <text x="360" y="282" text-anchor="middle" fill="var(--ink-3)">bars = realized win rate (98 closed runs) · dashed = what perfect calibration would deliver</text>
+    </svg>
+    <p class="cap"><b>The desk claims 55–75% and delivers 0–33% — and its most-confident bucket (≥0.70) wins the least (14%).</b> A confidence number this far from reality cannot gate trades. <span class="ko">데스크는 55–75%를 주장하고 0–33%를 낸다 — 가장 확신한 구간(≥0.70)의 승률이 최저(14%). 이런 숫자는 게이트가 될 수 없다.</span></p>
+  </div>
+
+  <h3>1b. The scale is barely used — 3 numbers = 63% of all decisions</h3>
+  <div class="fig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Histogram of confidence values">
+      <line class="axis" x1="46" y1="196" x2="690" y2="196"/>
+      <line class="grid" x1="46" y1="121" x2="690" y2="121"/>
+      <line class="grid" x1="46" y1="46"  x2="690" y2="46"/>
+      <text x="40" y="200" text-anchor="end">0</text>
+      <text x="40" y="125" text-anchor="end">200</text>
+      <text x="40" y="50"  text-anchor="end">400</text>
+      <!-- 10 bars, slot 64, width 44; scale 0.375 px/count; y=196-h -->
+      <rect x="56"  y="185.5" width="44" height="10.5"  rx="3" fill="var(--s1)"><title>0.52 · 28 decisions</title></rect>
+      <rect x="120" y="176.9" width="44" height="19.1"  rx="3" fill="var(--s1)"><title>0.53 · 51</title></rect>
+      <rect x="184" y="178"   width="44" height="18"    rx="3" fill="var(--s1)"><title>0.54 · 48</title></rect>
+      <rect x="248" y="118"   width="44" height="78"    rx="3" fill="var(--s2)"><title>0.55 · 208 (3rd most)</title></rect>
+      <rect x="312" y="183.3" width="44" height="12.7"  rx="3" fill="var(--s1)"><title>0.56 · 34</title></rect>
+      <rect x="376" y="158.1" width="44" height="37.9"  rx="3" fill="var(--s1)"><title>0.57 · 101</title></rect>
+      <rect x="440" y="26.9"  width="44" height="169.1" rx="3" fill="var(--s2)"><title>0.58 · 451 (most common)</title></rect>
+      <rect x="504" y="168.3" width="44" height="27.7"  rx="3" fill="var(--s1)"><title>0.60 · 74</title></rect>
+      <rect x="568" y="84.6"  width="44" height="111.4" rx="3" fill="var(--s2)"><title>0.62 · 297 (2nd most)</title></rect>
+      <rect x="632" y="185.9" width="44" height="10.1"  rx="3" fill="var(--s1)"><title>0.65 · 27</title></rect>
+      <text class="vlab" x="462" y="20"  text-anchor="middle">451</text>
+      <text class="vlab" x="590" y="78"  text-anchor="middle">297</text>
+      <text class="vlab" x="270" y="111" text-anchor="middle">208</text>
+      <text x="78"  y="214" text-anchor="middle">.52</text><text x="142" y="214" text-anchor="middle">.53</text>
+      <text x="206" y="214" text-anchor="middle">.54</text><text x="270" y="214" text-anchor="middle">.55</text>
+      <text x="334" y="214" text-anchor="middle">.56</text><text x="398" y="214" text-anchor="middle">.57</text>
+      <text x="462" y="214" text-anchor="middle">.58</text><text x="526" y="214" text-anchor="middle">.60</text>
+      <text x="590" y="214" text-anchor="middle">.62</text><text x="654" y="214" text-anchor="middle">.65</text>
+      <text x="360" y="238" text-anchor="middle" fill="var(--ink-3)">confidence value emitted · 1,522 decisions over 30 days · orange = the three dominant values (63%)</text>
+    </svg>
+    <p class="cap"><b>The model has collapsed onto a few habitual numbers</b> (0.58, 0.62, 0.55) hovering just under/over the 0.55–0.65 gates it knows about — classic anchor behavior, not probability estimation. <span class="ko">모델은 게이트 문턱 주변의 습관적 숫자 몇 개(0.58, 0.62, 0.55)로 붕괴했다 — 확률 추정이 아니라 앵커 행동.</span></p>
+  </div>
+
+  <h3>1c. The signal exists — it's in the sub-scores, and the scalar buries it</h3>
+  <div class="fig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Sub-scores winners vs losers">
+      <line class="axis" x1="46" y1="196" x2="690" y2="196"/>
+      <line class="grid" x1="46" y1="96" x2="690" y2="96"/>
+      <text x="40" y="200" text-anchor="end">0</text>
+      <text x="40" y="100" text-anchor="end">0.4</text>
+      <text x="40" y="18"  text-anchor="end">0.8</text>
+      <!-- 4 groups, slot 160 starting x=50; pair bars w=52 gap=6; scale 250px/1.0 -> v*250; y=196-h -->
+      <!-- thesis: win .693 loss .620 -->
+      <rect x="66"  y="22.75" width="52" height="173.25" rx="4" fill="var(--s1)"><title>thesis_alignment · winners 0.693</title></rect>
+      <rect x="124" y="41"    width="52" height="155"    rx="4" fill="var(--s2)"><title>thesis_alignment · losers 0.620</title></rect>
+      <!-- momentum: .652 / .571 -->
+      <rect x="226" y="33"    width="52" height="163"    rx="4" fill="var(--s1)"><title>momentum_quality · winners 0.652</title></rect>
+      <rect x="284" y="53.25" width="52" height="142.75" rx="4" fill="var(--s2)"><title>momentum_quality · losers 0.571</title></rect>
+      <!-- entry_quality: .475 / .549 (INVERTED) -->
+      <rect x="386" y="77.25" width="52" height="118.75" rx="4" fill="var(--s1)"><title>entry_quality · winners 0.475 — INVERTED</title></rect>
+      <rect x="444" y="58.75" width="52" height="137.25" rx="4" fill="var(--s2)"><title>entry_quality · losers 0.549 — INVERTED</title></rect>
+      <!-- risk_context: .533 / .526 -->
+      <rect x="546" y="62.75" width="52" height="133.25" rx="4" fill="var(--s1)"><title>risk_context · winners 0.533</title></rect>
+      <rect x="604" y="64.5"  width="52" height="131.5"  rx="4" fill="var(--s2)"><title>risk_context · losers 0.526</title></rect>
+      <!-- labels -->
+      <text class="vlab" x="92"  y="16" text-anchor="middle">.69</text><text x="150" y="35" text-anchor="middle">.62</text>
+      <text class="vlab" x="252" y="27" text-anchor="middle">.65</text><text x="310" y="47" text-anchor="middle">.57</text>
+      <text class="vlab" x="412" y="71" text-anchor="middle">.48</text><text x="470" y="53" text-anchor="middle">.55</text>
+      <text class="vlab" x="572" y="57" text-anchor="middle">.53</text><text x="630" y="59" text-anchor="middle">.53</text>
+      <text x="121" y="214" text-anchor="middle">thesis_alignment</text>
+      <text x="281" y="214" text-anchor="middle">momentum_quality</text>
+      <text x="441" y="214" text-anchor="middle">entry_quality</text>
+      <text x="601" y="214" text-anchor="middle">risk_context</text>
+      <text x="121" y="229" text-anchor="middle" fill="var(--good-txt)">predictive ✓</text>
+      <text x="281" y="229" text-anchor="middle" fill="var(--good-txt)">predictive ✓</text>
+      <text x="441" y="229" text-anchor="middle" fill="var(--neg)">inverted ✗</text>
+      <text x="601" y="229" text-anchor="middle" fill="var(--ink-3)">flat —</text>
+      <!-- legend -->
+      <rect x="46" y="238" width="12" height="12" rx="3" fill="var(--s1)"/><text x="63" y="248">winners (n=21)</text>
+      <rect x="175" y="238" width="12" height="12" rx="3" fill="var(--s2)"/><text x="192" y="248">losers (n=77)</text>
+    </svg>
+    <p class="cap"><b>Two of the four inputs genuinely separate winners from losers</b> (thesis +0.073, momentum +0.081), one is anti-signal (entry_quality −0.074), one is noise. Averaging them into one verbalized scalar destroys exactly the information a gate needs. <span class="ko">4개 입력 중 2개(thesis, momentum)는 실제로 승패를 구분하고, 1개(entry_quality)는 역신호, 1개는 노이즈다. 이를 하나의 스칼라로 뭉개는 순간 게이트에 필요한 정보가 파괴된다.</span></p>
+  </div>
+
+  <!-- ============ SECTION 2: WHY ============ -->
+  <h2>2 · Why this happens (research-grounded)</h2>
+  <p class="ko">왜 이런 일이 생기는가 (연구 근거)</p>
+  <div class="card">
+    <ul>
+      <li><b>Verbalized confidence is a known-broken instrument.</b> LLMs asked to state a confidence number are systematically overconfident, and the failure is <i>structural</i> — recent work traces it to identifiable internal circuits, and benchmarks (ConfidenceBench) document that verbalized scores "fail to distinguish reliable answers from unreliable ones." Smaller models are worse; ours is a 120B local model asked to compress a market read into one number.</li>
+      <li><b>Quantization is expected behavior, not a bug of our prompt alone.</b> Models collapse onto habitual "safe" values — ours learned 0.58/0.62 because those sit exactly around the platform's historical 0.55/0.65 gates. The number is an <i>anchor negotiation with the gate</i>, not a probability.</li>
+      <li><b>No feedback loop = no calibration, ever.</b> Calibration is a mapping from claimed probability to observed frequency. Today nothing maps trade outcomes back onto the score. Without that loop even a perfect model drifts; with it, even a mediocre score becomes honest (this is standard Platt/isotonic recalibration, and with our n≈100, Platt scaling is the right small-sample tool).</li>
+      <li><b>Agreement beats self-report.</b> Research consistently finds that <i>self-consistency</i> — sample the decision K times and use the agreement rate — is a more reliable confidence signal than any verbalized number; unanimous agreement is "nearly always correct" in graded tasks, and cross-model agreement adds an independent check.</li>
+      <li><b>Important honesty:</b> calibration does not manufacture alpha. It makes the gate <i>honest</i> so expectancy math (p·win − (1−p)·loss − fees) can refuse bad trades and size good ones. The alpha itself lives where the data says it lives: thesis/momentum quality, R:R ~2:1, and the trailing lock that banks big winners.</li>
+    </ul>
+  </div>
+
+  <!-- ============ SECTION 3: SOLUTION PIPELINE ============ -->
+  <h2>3 · The solution — replace self-report with measurement</h2>
+  <p class="ko">해법 — 자기 신고를 측정으로 교체하는 5계층 파이프라인</p>
+
+  <div class="flowwrap">
+    <div class="flowcol">
+      <h4>Today — why it fails</h4>
+      <div class="fbox"><b>Market data + thesis</b><span class="fk">briefs, indicators, research</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox"><b>gpt-oss:120b decision call</b><span class="fk">action + 4 sub-scores computed…</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox bad"><b>…collapsed to one verbalized scalar</b><span class="fk">"confidence: 0.58" — quantized, overconfident, signal destroyed</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox gate"><b>Gate: conf ≥ 0.55/0.65?</b><span class="fk">gates on the one number that does not predict</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox"><b>Trade → outcome journaled</b><span class="fk">…and the outcome never feeds back ✗</span></div>
+    </div>
+    <div class="flowcol">
+      <h4>Target — closed loop</h4>
+      <div class="fbox"><b>Market data + thesis</b><span class="fk">unchanged</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox new"><b>K-sample decision (borderline only)</b><span class="fk">agreement rate = structural confidence · cross-model vote on big size</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox new"><b>Meta-score p(win)</b><span class="fk">logistic on thesis · momentum · (−entry_q) · regime · fee-adjusted move</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox new"><b>Calibration map (Platt, weekly refit)</b><span class="fk">claimed → observed frequency; Brier-scored nightly</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox gate"><b>Gate on EXPECTANCY</b><span class="fk">p·avgWin − (1−p)·avgLoss − fees &gt; 0 → trade &amp; size by p</span></div>
+      <div class="farrow">▼</div>
+      <div class="fbox new"><b>Outcome feeds the map back ✓</b><span class="fk">the loop that makes any score honest</span></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: STEPS ============ -->
+  <h2>4 · Step-by-step rollout (each ships dark, each is measured)</h2>
+  <p class="ko">단계별 적용 — 전부 다크 출하, 전부 Brier 점수로 측정, 이기는 것만 승격</p>
+
+  <div class="lane"><span class="ln">Step 0 · Score it — the foundation</span>
+    <b>Nightly calibration scoreboard.</b> A worker job computes the <b>Brier score</b> and the calibration curve (like §1a) from the already-journaled decisions+outcomes. Zero trading risk — it only reads. From this day on, every idea below is judged by one number: <i>did Brier go down?</i>
+    <span class="ko" style="display:block">매일 밤 Brier 점수 + 캘리브레이션 곡선을 자동 산출. 거래 위험 0. 이후 모든 아이디어는 "Brier가 내려갔는가" 하나로 판정.</span></div>
+
+  <div class="lane"><span class="ln">Step 1 · Recalibrate the existing number (cheap, ~1 week of data needed)</span>
+    <b>Platt scaling on our own outcomes.</b> Fit <code>p(win) = σ(a·conf + b)</code> on closed runs; refit weekly. "0.62" stops meaning 62% and starts meaning what it has actually delivered (~21%). Gate and sizing consume the <i>calibrated</i> p. Platt (not isotonic) because n≈100 — isotonic overfits small samples. Flag: <code>RUN_CONF_CALIBRATED=shadow→apply</code>.
+    <span class="ko" style="display:block">우리 결과로 Platt 보정 맵을 학습, 주간 재적합. 게이트는 보정된 p를 사용. 표본이 작으므로 isotonic이 아닌 Platt.</span></div>
+
+  <div class="lane"><span class="ln">Step 2 · Stop burying the signal — score from sub-scores</span>
+    <b>A tiny meta-model instead of the verbalized scalar.</b> Logistic regression on {thesis_alignment, momentum_quality, entry_quality (learns its own negative weight), risk_context, regime, fee-adjusted expected move} → p(win). Runs in <b>shadow</b> next to the scalar; promoted only when its Brier beats Step 1's for 2+ consecutive weeks. This is where 확신도 becomes a computed quantity, not a vibe. Flag: <code>RUN_META_SCORE</code>.
+    <span class="ko" style="display:block">말로 만든 스칼라 대신 하위 점수들로 학습한 소형 로지스틱 모델이 p(win)을 계산. 그림자 모드로 나란히 실행, Brier가 2주 연속 이길 때만 승격.</span></div>
+
+  <div class="lane"><span class="ln">Step 3 · Self-consistency — confidence from agreement, not self-report</span>
+    <b>Sample the decision K=3 times on borderline reads only</b> (the decision-routing pattern already used for E1). Agreement rate is the structural confidence: 3/3 buy = strong; 2/3 = weak; split = no trade. The local model makes the marginal cost compute-time, not dollars. Add <b>one cross-model vote</b> (claude-sonnet-5, already wired in per-tier routing) on large-notional entries only. Flags: <code>RUN_DECISION_ENSEMBLE_K</code>, <code>RUN_CROSS_MODEL_VOTE</code>.
+    <span class="ko" style="display:block">경계 구간 결정만 K=3회 샘플링 — 일치율이 구조적 확신도. 대형 주문에는 sonnet-5 교차 투표 1회. 로컬 모델이라 추가 비용은 시간뿐.</span></div>
+
+  <div class="lane"><span class="ln">Step 4 · Fix the elicitation — stop asking for a number it can't give</span>
+    <b>Evidence-count elicitation + anchor removal.</b> The prompt stops asking "confidence 0–1" and instead asks for <i>countable evidence</i>: N checkable factors for, M against, each named; the score derives from the tally. Never reveal gate thresholds in the prompt (0.58/0.62 are learned anchors). Introspective CoT before scoring — research shows both reduce verbalized overconfidence. A/B against Step 2 by Brier.
+    <span class="ko" style="display:block">"0~1 신뢰도"를 묻지 말고 셀 수 있는 근거(찬성 N개/반대 M개)를 요구, 점수는 집계에서 도출. 프롬프트에 게이트 문턱 노출 금지(앵커 제거).</span></div>
+
+  <div class="lane"><span class="ln">Step 5 · Keep it honest forever — the loop, conditioned</span>
+    <b>Weekly auto-refit + regime/market conditioning + cohort A/B.</b> As data grows: per-market calibration maps (crypto ≠ forex), regime features, and a permanent A/B (calibrated-gate fleet vs control fleet) so every future model swap (e.g. 20b→120b→Sonnet) is judged by Brier + realized expectancy, not by anyone's impression.
+    <span class="ko" style="display:block">주간 자동 재적합 + 시장/레짐별 보정 + 상시 A/B. 이후 모델 교체는 인상이 아니라 Brier + 실현 기대값으로 판정.</span></div>
+
+  <h3>Rollout table</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Step</th><th>What ships</th><th>Flag (all default off)</th><th>Promote when</th><th>Risk</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>Brier + calibration-curve nightly job</td><td><code>CALIB_SCOREBOARD</code></td><td>— (pure measurement)</td><td>none</td><td><span class="pill p-now">now</span></td></tr>
+      <tr><td>1</td><td>Platt map, weekly refit; gate consumes calibrated p</td><td><code>RUN_CONF_CALIBRATED</code></td><td>shadow Brier &lt; raw Brier, 1 wk</td><td>low</td><td><span class="pill p-now">now</span></td></tr>
+      <tr><td>2</td><td>Sub-score logistic meta-model (shadow)</td><td><code>RUN_META_SCORE</code></td><td>Brier beats Step 1, 2 wks</td><td>low-med</td><td><span class="pill p-next">next</span></td></tr>
+      <tr><td>3</td><td>K=3 self-consistency on borderline + cross-model vote on size</td><td><code>RUN_DECISION_ENSEMBLE_K</code> / <code>RUN_CROSS_MODEL_VOTE</code></td><td>agreement-conditioned win rate separates by ≥15pp</td><td>med (latency ×K)</td><td><span class="pill p-next">next</span></td></tr>
+      <tr><td>4</td><td>Evidence-count elicitation, anchor removal, CoT-then-score</td><td>prompt version flag</td><td>A/B Brier vs Step 2</td><td>med (prompt regression)</td><td><span class="pill p-later">later</span></td></tr>
+      <tr><td>5</td><td>Per-market maps, regime features, permanent A/B</td><td>—</td><td>continuous</td><td>low</td><td><span class="pill p-later">ongoing</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <h2>5 · What success looks like (and what it won't do)</h2>
+  <p class="ko">성공의 모습 — 그리고 이것이 해주지 않는 것</p>
+  <div class="card ok">
+    <ul>
+      <li><b>Success metric #1 — Brier score falls.</b> Today's implied Brier on entries is ≈0.30+ (claiming ~0.62 on a 21% base). A calibrated map alone should land near 0.17 (the base-rate Brier); the meta-model must beat that to earn its place.</li>
+      <li><b>Success metric #2 — the calibration curve becomes monotonic.</b> Higher score → genuinely higher win rate. The ≥0.70-wins-14% inversion disappears by construction once outcomes feed the map.</li>
+      <li><b>Success metric #3 — expectancy-gated entries.</b> Trades fire only when calibrated p clears the fee-adjusted expectancy line; sizing scales with p (Kelly-lite, capped). Fewer, better trades — the 69%-hold discipline is already there.</li>
+      <li><b>What it will NOT do:</b> invent alpha. If thesis/momentum stop predicting, no calibration saves it — but then the scoreboard will say so <i>within a week</i>, which is precisely the point: every future claim about the desk's judgment becomes checkable.</li>
+    </ul>
+  </div>
+
+  <h2>References</h2>
+  <ul class="refs">
+    <li><a href="https://arxiv.org/html/2607.20526">ConfidenceBench: Evaluating Confidence Calibration in LLMs</a> — verbalized scores fail to separate reliable from unreliable answers.</li>
+    <li><a href="https://arxiv.org/html/2604.01457">Wired for Overconfidence: A Mechanistic Perspective on Inflated Verbalized Confidence</a> — overconfidence is structural, identifiable circuits.</li>
+    <li><a href="https://arxiv.org/pdf/2410.09724">Taming Overconfidence in LLMs: Reward Calibration in RLHF</a> — why RLHF training inflates stated confidence.</li>
+    <li><a href="https://www.emergentmind.com/topics/verbalized-confidence-scores">Verbalized Confidence Scores in LLMs</a> — survey: poorly calibrated; improves with scale and reasoning.</li>
+    <li><a href="https://www.emergentmind.com/topics/self-consistency-technique">Self-Consistency: Ensemble Methods for LLMs</a> · <a href="https://arxiv.org/html/2607.08065v1">When LLMs Agree, Are They Right?</a> — agreement rate as the reliable confidence signal.</li>
+    <li><a href="https://arxiv.org/pdf/2510.26277">Do LLMs Signal When They're Right? Neuron Agreement</a> — unanimous samples are nearly always correct.</li>
+    <li><a href="https://arxiv.org/pdf/2002.10199">Better Classifier Calibration for Small Data Sets</a> · <a href="https://www.blog.trainindata.com/probability-calibration-in-machine-learning/">Probability Calibration in ML</a> — Platt for small n, isotonic for large; Brier as the scoreboard.</li>
+    <li><a href="https://towardsdatascience.com/you-think-80-means-80-why-prediction-probabilities-need-a-second-look-ebc8b650cf21/">You Think 80% Means 80%?</a> — why raw model probabilities need recalibration before use.</li>
+  </ul>
+
+  <p class="foot">Data: prod <code>run_events</code> 1,522 decisions (30d), 98 closed runs with entry decisions, decision model <code>local/gpt-oss:120b</code> · Companion: <code>2026-07-31-automation-monitoring-report.html</code>, <code>recommendations-backlog.md</code> · Palette CVD-validated (light+dark). Per the operating model: every step ships dark to sooppiy.com, is measured by the Step-0 scoreboard, and is promoted or killed by that measurement.</p>
+
+</div>
+</body>
+</html>

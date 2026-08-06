@@ -470,6 +470,27 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### Added 2026-08-06 (#257) — "fixed on the next cycle" means LOST when the run dies
+
+- **Decompose a drift before naming it.** The standing `pnl_audit` DRIFT was
+  labelled "the known adapt-omits-flattens gap" for days. Decomposed to the
+  cent, the flatten gap was **+0.40 of a −9.56 delta**; the real term was
+  **−6.69 (70%)** from a *different* defect, and −3.20 was by design. **A
+  standing alarm with an inherited explanation is an unexamined alarm.**
+- **When a fix's rationale explains a mechanism, check every instance of that
+  mechanism.** #249's comment said "no later cycle ever processes this leg"
+  — true of the flatten leg it fixed, and equally true of every other close
+  pending when a run stops. It fixed one and left the rest for six days.
+- **Anything journalled "next cycle" is lost exactly when the run dies** —
+  which is exactly the worst moments. Same shape as #241/#244/#245: the
+  system is blind precisely where it most needs to see.
+- ⚠️ **The fix is forward-only.** `_control_stopping` visits `stopping`
+  runs; already-`stopped` runs keep their hole, so a historical DRIFT line
+  does NOT clear retroactively. Do not read that as the fix failing.
+- ⚠️ **OPEN, deliberately not shipped:** entry-side fees (component (a)) keep
+  the delta non-zero — ~−3.20 on a 4-newborn day against a $5.00 tolerance —
+  so busy days still raise a BENIGN drift alarm. **Do not chase it as a bug.**
+
 ### Added 2026-08-06 (#254/#255) — the trap above repeated ONE PR LATER
 
 The `#253` lesson below was written, and then broken immediately. #254's new
