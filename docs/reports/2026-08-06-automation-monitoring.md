@@ -14,6 +14,72 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 94 — 2026-08-06 16:19Z (prod DB clock) — ⚠️ A NUMBER I REPORTED WAS WRONG
+
+**1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
+6 runs live, docs 200/200. **The thaw is holding** — GC 4310.40 → 4295.30,
+SI 61.535 → 61.450, USDKRW 1421.88 → 1423.68, ETH 1916.80 → 1909.20, all
+moving between reads.
+
+**2. Losses and WHY.** Ledger **−71.53**, unchanged this beat. 972 SLV
+fully exited at **55.180099** — a real price, not the frozen 56.07 —
+banking **+1.43** on the run. Its `peak_pnl_usd` re-anchored 8.63 → 1.43
+on going flat, which is the documented `_ratchet_peak_pnl` behaviour, not
+a loss.
+
+**3. ⚠️ A NUMBER I HAVE BEEN CITING WAS WRONG.** `ratchet_audit` reported
+**"post-fix 6 survived"** for #251. **The honest figure is 5.**
+
+972 halved a 42.92-unit SLV book six times. Its final **full close** left
+**1.47e-08** units of float dust — above the absolute `1e-12` guard in
+`reduce_steps`, and functionally zero. That flat close was counted as a
+*reduce* whose post-reduce arm was ~0, which satisfied the in-band test
+trivially and produced a seventh row:
+
+```
+972  2026-08-06T15:55:25   arm after 0.0000   peak 1.43   arm full 4.7372
+```
+
+An absolute epsilon cannot express "essentially nothing left" for a book
+whose size is unknown in advance. **PR #264** makes the guard relative
+(`_FLAT_FRACTION` 1e-6): 972's residual is 1.1e-08 of its book and is
+excluded; a genuine 50% reduce is 0.5 and is kept.
+
+**This is the FOURTH time live data has caught a defect in one of these
+audit tools that its own unit tests passed** — after #253's
+flatten-timestamp and duplicate-status-row traps and #261's seq-vs-time
+ordering. Every one came from fixtures using tidy round numbers where
+prod has float residue and repeated timestamps.
+
+**Corrected evidence: 5 genuine post-fix in-band survivals** against
+976's single pre-fix FLATTENED. #251's direction is unchanged; its
+magnitude is one weaker than I reported.
+
+**#264 is NOT merged — CI is down.** `"The job was not acquired by Runner
+of type hosted even after multiple attempts"` and `"Failed to resolve
+action download info"` on four jobs. **The backend suite itself passed
+(✓ Run pytest, ✓ Complete job)**; the others never got runners. I am not
+merging on red checks. Local: fail-before 1/1, mutation 2/2, 3544 pass,
+ruff clean. Re-check next cycle.
+
+**4. What we checked and cleared.** 961 UBER has run **32 cycles over 31
+hours with zero trades**, which looks like an idle-retire failure. **It is
+not.** `_closed_market_cycles` correctly discounts 23 closed-market ticks,
+leaving **9 worked cycles against a limit of 12**. Checked, not assumed.
+(The runs the query flagged "past the limit" all hold positions, so the
+idle rail does not apply to them.) It does mean a us-stock run can hold a
+slot 31+ hours before the rail can even consider it — structural, and
+already recorded as the dead-capital cost.
+
+**5. Docs** 200/200. **Shipped:** #264 authored and verified locally,
+merge blocked on the GitHub outage.
+
+*Watches:* `fill_audit` frozen at 10 repeats / $12,655.93 — it stopped
+growing the moment prices moved, exactly as cycle 93 predicted.
+`conviction_missing` 6 of 95 (6.3%); `armed_exit` 2; `pending_close` 0.
+
+---
+
 ## Cycle 93 — 2026-08-06 15:52Z (prod DB clock) — 🔓 THE FEED THAWED, AND THE BILL CAME DUE
 
 **1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
