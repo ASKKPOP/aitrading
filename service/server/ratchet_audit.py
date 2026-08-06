@@ -102,6 +102,90 @@ def book_sizes(trades: Iterable[dict[str, Any]], until_ts: Optional[str] = None
     return peak_qty, at_ts
 
 
+def reduce_steps(trades: Iterable[dict[str, Any]]
+                 ) -> list[dict[str, Any]]:
+    """Every trade that SHRANK the book without flattening it.
+
+    Yields `{ts, price, max_book_before, book_after}` per reduce — the four
+    numbers the arm arithmetic needs. A leg that closes the position outright
+    is not a reduce (nothing is left for an arm to sit under), and neither is
+    the forced flatten a fire causes.
+    """
+    qty = 0.0
+    peak_qty = 0.0
+    out: list[dict[str, Any]] = []
+    for t in trades:
+        try:
+            side = str(t["side"]).strip().lower()
+            q = abs(float(t["quantity"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if q <= 0:
+            continue
+        before = abs(qty)
+        direction = 1 if side in _LONGING else -1
+        opposing = bool(qty) and (qty > 0) != (direction > 0)
+        if opposing:
+            closed = min(q, abs(qty))
+            qty += direction * closed
+            q -= closed
+        if q > 1e-12:
+            qty += direction * q
+        peak_qty = max(peak_qty, abs(qty))
+        after = abs(qty)
+        if opposing and not _is_flatten(t) \
+                and after > 1e-12 and after < before * (1.0 - _SHRINK_EPS):
+            try:
+                price = float(t.get("price") or 0)
+            except (TypeError, ValueError):
+                price = 0.0
+            out.append({"ts": t.get("ts"), "price": price,
+                        "max_book_before": peak_qty, "book_after": after})
+    return out
+
+
+def _arm_usd(qty: float, mark: float) -> float:
+    """The breakeven floor's arm threshold for a book of `qty` at `mark`.
+
+    ⚠️ DELIBERATE DUPLICATION of run_engine._breakeven_arm_usd, for the same
+    reason this whole module avoids importing run_engine: a checker that
+    calls the thing it checks cannot notice that thing changing. Same env
+    knobs, same defaults — if they ever drift apart the exposure table goes
+    wrong, so keep them in step.
+    """
+    import os
+    if qty <= 0 or mark <= 0:
+        return 0.0
+    rate = float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+    mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
+    return qty * mark * rate * 2.0 * max(0.0, mult)
+
+
+def classify_exposure(peak_pnl: "float | None", step: dict[str, Any]
+                      ) -> dict[str, Any]:
+    """Would the OLD anchor have retro-armed on this reduce, where the new
+    one does not?
+
+    That is true in exactly one band: the run's lifetime peak clears the arm
+    computed on the SHRUNKEN book but not the arm computed on the LARGEST
+    book it ever held. Below the band neither anchor arms; above it both do,
+    and the fix changes nothing. Run 976 landed inside it (arm-after 5.68 ≤
+    peak 7.22 < arm-full 11.36) and died; run 977's peak of 21.08 cleared
+    both arms, so it proves nothing either way — which is precisely the
+    distinction this function exists to stop a reader from fudging.
+    """
+    mark = float(step.get("price") or 0)
+    arm_full = _arm_usd(float(step.get("max_book_before") or 0), mark)
+    arm_after = _arm_usd(float(step.get("book_after") or 0), mark)
+    peak = float(peak_pnl or 0)
+    return {
+        "arm_full": arm_full,
+        "arm_after": arm_after,
+        "peak": peak,
+        "in_band": bool(arm_after > 0 and arm_after <= peak < arm_full),
+    }
+
+
 def _rows(cursor, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
     cursor.execute(sql, params)
     return [dict(r) for r in cursor.fetchall()]
@@ -163,6 +247,100 @@ def audit_fires(since: str, *, conn=None, fix_ts: str = FIX_TS
             conn.close()
 
 
+def audit_exposures(since: str, *, conn=None, fix_ts: str = FIX_TS
+                    ) -> list[dict[str, Any]]:
+    """One row per IN-BAND reduce — the cases where the anchor actually
+    decides something.
+
+    WHY THIS EXISTS (cycle 78, 2026-08-06). `audit_fires` can only alarm on a
+    bad fire. It is structurally blind to the fix WORKING: a post-fix sample
+    of zero fires reads identically to "the rail never got a chance", which
+    is exactly what it printed while run 976 — the textbook instance — sat
+    one hour the wrong side of the boundary. Counting the reduces that landed
+    in the discriminating band, and whether each was followed by a fire,
+    turns an unobservable into an observable.
+
+    ⚠️ `peak_pnl_usd` is read as it stands NOW, not as it stood at the
+    reduce. It is a monotone high-water mark, so for a still-running run this
+    can only OVERstate the peak, which can only push a case above the band.
+    The count therefore under-reports and never invents.
+    """
+    from database import get_db_connection
+    own = conn is None
+    conn = conn or get_db_connection()
+    try:
+        cursor = conn.cursor()
+        runs = _rows(cursor,
+                     "SELECT DISTINCT run_id FROM run_events WHERE "
+                     "event_type = 'trade' AND ts >= ? ORDER BY run_id",
+                     (since,))
+        out: list[dict[str, Any]] = []
+        for r in runs:
+            rid = r["run_id"]
+            peaks = _rows(cursor,
+                          "SELECT peak_pnl_usd FROM trading_runs WHERE id = ?",
+                          (rid,))
+            if not peaks:
+                continue
+            trades = _rows(cursor,
+                           "SELECT ts, payload FROM run_events WHERE "
+                           "run_id = ? AND event_type = 'trade' ORDER BY seq",
+                           (rid,))
+            parsed = []
+            for t in trades:
+                try:
+                    p = json.loads(t["payload"])
+                except (ValueError, TypeError):
+                    continue
+                p["ts"] = t["ts"]
+                parsed.append(p)
+            fires = {str(f["ts"])[:19] for f in _rows(
+                cursor,
+                "SELECT ts FROM run_events WHERE event_type = 'run_status' "
+                "AND run_id = ? AND payload LIKE ? AND payload LIKE ?",
+                (rid, "%trailing_lock%", '%"to": "stopping"%'))}
+            for step in reduce_steps(parsed):
+                if str(step.get("ts") or "") < since:
+                    continue
+                cls = classify_exposure(peaks[0]["peak_pnl_usd"], step)
+                if not cls["in_band"]:
+                    continue
+                out.append({
+                    "run_id": rid,
+                    "reduced_at": step["ts"],
+                    "post_fix": str(step["ts"]) >= fix_ts,
+                    "fired": str(step["ts"])[:19] in fires,
+                    **cls,
+                })
+        return out
+    finally:
+        if own:
+            conn.close()
+
+
+def format_exposures(rows: list[dict[str, Any]]) -> str:
+    head = (f"{'run':>6}  {'reduced':<20} {'arm after':>10} {'peak':>8} "
+            f"{'arm full':>9}  {'era':<9} {'outcome'}")
+    lines = ["", "IN-BAND REDUCES — where the anchor decides the outcome",
+             head, "-" * len(head)]
+    for r in rows:
+        lines.append(
+            f"{r['run_id']:>6}  {str(r['reduced_at'])[:19]:<20} "
+            f"{r['arm_after']:>10.2f} {r['peak']:>8.2f} {r['arm_full']:>9.2f}  "
+            f"{'post-fix' if r['post_fix'] else 'pre-fix':<9} "
+            + ("FLATTENED" if r["fired"] else "survived"))
+    lines.append("-" * len(head))
+    held = [r for r in rows if r["post_fix"] and not r["fired"]]
+    lost = [r for r in rows if r["post_fix"] and r["fired"]]
+    if not rows:
+        lines.append("no reduce landed in the band — the anchor has not yet "
+                     "been asked a question it could get wrong.")
+    else:
+        lines.append(f"{len(rows)} in-band reduce(s); post-fix "
+                     f"{len(held)} survived, {len(lost)} flattened.")
+    return "\n".join(lines)
+
+
 def format_report(rows: list[dict[str, Any]]) -> str:
     head = (f"{'run':>6}  {'fired':<20} {'max book':>12} {'at fire':>12}  "
             f"{'verdict':<10} {'era':<9}")
@@ -197,6 +375,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = ap.parse_args(argv)
     rows = audit_fires(args.since, fix_ts=args.fix_ts)
     print(format_report(rows))
+    print(format_exposures(audit_exposures(args.since, fix_ts=args.fix_ts)))
     return 1 if any(r["needs_review"] for r in rows) else 0
 
 
