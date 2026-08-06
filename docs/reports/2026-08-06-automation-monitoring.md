@@ -14,6 +14,80 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 100 — 2026-08-06 19:19Z (prod DB clock) — ROOT CAUSE REFINED, AND CYCLE 99 PARTLY CORRECTED
+
+**1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
+docs 200/200, ledger **−93.67**. **Fleet down to 3 runs** (972 SLV, 977
+GC, 978 ETHUSDT) from 8 this morning.
+
+**961 UBER idle-retired at 19:05:59** — the run that never traded. It hit
+its 12 worked cycles and the rail collected it. **Exactly what cycle 94
+predicted**: *"a us-stock run can hold a slot 31+ hours before the rail
+can even consider it."*
+
+**2. Losses.** −0.57 this beat, immaterial.
+
+**3. A new batch reproduced the pathology within 30 minutes — with ZERO
+buildable candidates.**
+
+`research:496122` arrived. Applying the filters:
+
+| status | symbols |
+|---|---|
+| cooldown | SOLUSDT, HG, BTCUSDT |
+| running | GC, ETHUSDT |
+| unpriceable | **ZBTUSDT (back again)** |
+| negative expectancy | NVDA, SNOW |
+| **buildable** | **none** |
+
+496121 and 496122 share **7 of 8** selectable symbols. Across eight
+consecutive batches (496115→496122) the universe is a fixed rotation —
+CHFJPY, ETHUSDT, HG, NVDA and SNOW appear in **all eight**.
+
+**4. ⚠️ CORRECTING MYSELF MID-INVESTIGATION.** I found that batch 496122
+holds **12** theses but only **8** are `selectable`, and that the four
+excluded — DIS, PYPL, CHFJPY, USDKRW — were precisely the ones neither
+running nor cooling. I was forming the conclusion *"the filter excludes
+the usable symbols."* **That reading is wrong, and checking the reason
+killed it.**
+
+`selectable = ev_pct > 0 AND expressible AND feasible`. The four:
+
+| symbol | score | why excluded |
+|---|---|---|
+| **DIS** | **0.983** (2nd best) | us-stock **SHORT** — a spot-only book cannot express it |
+| PYPL | 0.582 | long, +EV, fails the **R:R feasibility** floor (3.0% move) |
+| CHFJPY | 0.422 | short, 1.0% move — same R:R floor |
+| USDKRW | 0.323 | short, 1.0% move — same |
+
+**Every exclusion is legitimate.** `selectable` is doing its job, and
+"score" was never the criterion — DIS outscores six selectable symbols
+and is still correctly refused.
+
+**THE REFINED ROOT CAUSE.** Cycle 99 said *"research and the cooldown
+list are not coordinated."* True, but not the binding constraint. The
+sharper statement:
+
+> **The research universe — roughly 12 symbols per batch, heavily
+> repeated across batches — is too small to sustain a 10-slot fleet.
+> The fleet's own holdings (3) plus its 24-hour cooldowns (5) plus
+> structural infeasibility (one un-shortable spot thesis, three
+> sub-R:R moves) consume the entire batch. Nothing is left over.**
+
+It is not one broken component. It is a **universe-size problem**: every
+gate is correct, and correct gates over a 12-symbol rotation leave zero.
+
+**5. Docs** 200/200. **Shipped: nothing.** The fix is to widen what
+research covers, or to shrink the fleet's target — both are the owner's
+call, and neither is a patch. Coordinating research with cooldowns
+(cycle 99's suggestion) would help at the margin but **cannot create
+symbols that are not in the universe**.
+
+*Prediction to check next cycle:* ZBTUSDT is selectable again, so the
+unpriceable skip loop from cycle 97 should resume.
+
+---
+
 ## Cycle 99 — 2026-08-06 18:49Z (prod DB clock) — ✅ ROOT CAUSE FOUND: RESEARCH PROPOSES WHAT THE FLEET JUST RETIRED
 
 **1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
