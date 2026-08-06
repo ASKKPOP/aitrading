@@ -2519,6 +2519,8 @@ def init_database():
             external_id TEXT,
             auto_renew INTEGER NOT NULL DEFAULT 0,
             cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+            pending_plan_code TEXT,
+            change_kind TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )

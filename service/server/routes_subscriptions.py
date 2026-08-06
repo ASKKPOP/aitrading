@@ -154,7 +154,8 @@ def _require_user(authorization: Optional[str]) -> dict[str, Any]:
 
 def _load_plan(cursor, plan_code: str) -> dict[str, Any]:
     cursor.execute(
-        "SELECT code, name, price_usd, contact_only FROM subscription_plans WHERE code = ? AND active = 1",
+        "SELECT code, name, price_usd, contact_only, sort_order "
+        "FROM subscription_plans WHERE code = ? AND active = 1",
         (plan_code,),
     )
     plan = cursor.fetchone()
@@ -163,6 +164,56 @@ def _load_plan(cursor, plan_code: str) -> dict[str, Any]:
     if plan["contact_only"]:
         raise HTTPException(status_code=400, detail="Enterprise plans use the contract form")
     return dict(plan)
+
+
+def _prorated_upgrade_usd(new_price: float, old_price: float,
+                          expires_at: str, now: datetime | None = None) -> float:
+    """Pay-the-difference-now price of an immediate upgrade: the plan-price
+    delta scaled by the unexpired fraction of the 30-day period. Clamped at 0
+    (an expired row or a mis-ordered pair can never produce a credit) and at
+    the full difference (grace/extended rows can exceed 30 remaining days)."""
+    now = now or _now()
+    try:
+        ends = datetime.fromisoformat((expires_at or "").replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    if ends.tzinfo is None:
+        ends = ends.replace(tzinfo=timezone.utc)
+    remaining_days = max(0.0, (ends - now).total_seconds() / 86400.0)
+    return round(max(0.0, new_price - old_price)
+                 * min(remaining_days, SUBSCRIPTION_DAYS) / SUBSCRIPTION_DAYS, 2)
+
+
+def _manual_change_context(cursor, user: dict[str, Any]) -> tuple[dict, dict]:
+    """(active subscription row, its plan row) for a manual-rail change.
+
+    Refuses everything that must not reach the proration path: no active
+    subscription, a trial (the member paid $0 — proration against list price
+    would sell credit they never bought; they buy at full price on /subscribe),
+    and the two provider rails, which have their own change flows."""
+    state = get_subscription_state(cursor, user["id"])
+    if state["status"] != "active" or not state["subscription"]:
+        raise HTTPException(status_code=404, detail="No active subscription")
+    sub = state["subscription"]
+    if sub.get("method") == billing_sync.TRIAL_METHOD:
+        raise HTTPException(
+            status_code=400,
+            detail="Trial members subscribe at full price on the subscribe page")
+    if sub.get("method") == "stripe":
+        raise HTTPException(
+            status_code=400, detail="Use the Stripe portal to change this subscription")
+    if sub.get("method") == "paypal":
+        raise HTTPException(
+            status_code=400, detail="Use PayPal change-plan to change this subscription")
+    # Deliberately NOT _load_plan: a retired (active=0) plan row must still
+    # resolve for the member who is on it, and enterprise is contact_only.
+    cursor.execute(
+        "SELECT code, name, price_usd, contact_only, sort_order "
+        "FROM subscription_plans WHERE code = ?", (sub["plan_code"],))
+    current = cursor.fetchone()
+    if not current:
+        raise HTTPException(status_code=400, detail="Current plan no longer exists")
+    return sub, dict(current)
 
 
 def get_subscription_state(cursor, user_id: int) -> dict[str, Any]:
@@ -176,7 +227,8 @@ def get_subscription_state(cursor, user_id: int) -> dict[str, Any]:
     cursor.execute(
         """
         SELECT id, plan_code, status, method, started_at, expires_at, created_at,
-               external_id, auto_renew, cancel_at_period_end
+               external_id, auto_renew, cancel_at_period_end,
+               pending_plan_code, change_kind
         FROM user_subscriptions
         WHERE user_id = ? AND status IN ('active', 'pending')
         ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, id DESC
@@ -192,6 +244,12 @@ def get_subscription_state(cursor, user_id: int) -> dict[str, Any]:
 
 class PlanOrderBody(BaseModel):
     plan_code: str
+
+
+class ChangeUpgradeBody(BaseModel):
+    plan_code: str
+    method: str
+    reference: str
 
 
 class PaypalCaptureBody(BaseModel):
@@ -252,6 +310,38 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return state
+
+    @app.post('/api/subscriptions/change/preview')
+    async def change_preview(body: PlanOrderBody, authorization: str = Header(None)):
+        """What would changing to this plan cost, and when does it happen.
+        Upgrade = prorated difference now; downgrade = free, at renewal."""
+        user = _require_user(authorization)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            sub, current = _manual_change_context(cursor, user)
+            target = _load_plan(cursor, body.plan_code)
+            conn.commit()  # get_subscription_state lazily expires stale rows
+        finally:
+            conn.close()
+        if target["code"] == current["code"]:
+            raise HTTPException(status_code=400, detail="Already on this plan")
+        out = {
+            "current_plan": current["code"],
+            "target_plan": target["code"],
+            "expires_at": sub.get("expires_at"),
+        }
+        if int(target["sort_order"]) > int(current["sort_order"]):
+            out.update({
+                "kind": "upgrade", "effective": "immediate",
+                "prorated_usd": _prorated_upgrade_usd(
+                    float(target["price_usd"]), float(current["price_usd"]),
+                    sub.get("expires_at") or ""),
+            })
+        else:
+            out.update({"kind": "downgrade", "effective": "at_renewal",
+                        "prorated_usd": 0.0})
+        return out
 
     @app.post('/api/subscriptions/paypal/create-order')
     async def paypal_create_order(body: PlanOrderBody, authorization: str = Header(None)):
