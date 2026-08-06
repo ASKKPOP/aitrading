@@ -332,7 +332,7 @@
 <h2>9 · Open questions for Henry <span class="ko">(결정 필요 사항)</span></h2>
 <div class="card"><ol style="margin-left:20px; font-size:14px;">
   <li><b>Input set:</b> you asked "N only" — money safety wants a budget. v1: N stepper + tier-defaulted <i>editable</i> budget, rest defaulted/Advanced. OK? <span class="ko">런 개수만 입력 + 예산은 티어 기본값(수정 가능)으로 처리하는 방식 확인</span></li>
-  <li><b>Tier numbers:</b> fleet size 0/0/3/10/25 · tick caps 150/400/2,000 · churn alert 8/day · light cycle mode default — confirm vs $60/$250/$500 pricing. <span class="ko">(로테이션 일일 상한은 2026-07-20 지시로 제거 — 사용자가 멈출 때까지 항상 N개 유지)</span></li>
+  <li><b>Tier numbers:</b> fleet size 0/0/3/10/25 · tick caps 150/400/2,000 · churn alert 8/day · light cycle mode default — confirm vs $60/$250/$500 pricing. <span class="ko">(로테이션 일일 상한은 2026-07-20 지시로 제거 — 사용자가 멈출 때까지 항상 N개 유지)</span><br><b>2026-08-06 — the pricing this was costed against no longer holds.</b> Prod repriced Pro $250→$119 and Professional $500→$199 on 2026-08-05. The "~$29–86/day, cost-negative vs $500/mo" figure above and the light-mode "$2.4–7.2/day, viable against $500/mo" claim both assumed the old ceiling; at $199/mo the light-mode worst case is $72–216/month against $199 of revenue — at or past break-even. Left as written as the July record; the margin needs re-deriving. <span class="ko">(2026-08-06 — 위 비용 계산은 옛 가격 기준입니다. $199/월에서는 손익분기 부근이므로 마진 재산출 필요)</span></li>
   <li><b>Feedback depth:</b> deterministic adaptation ON; decision-LLM seeing its own record ships default-OFF pending A/B. Accept?</li>
   <li><b>Market scope at launch:</b> all 5 automatable markets, or crypto + us-stock first week?</li>
   <li><b>Shorts from day one</b> where the book supports them, or long-only until data accumulates?</li>

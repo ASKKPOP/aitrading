@@ -146,8 +146,8 @@ class ChangePreviewTests(_Case):
         body = r.json()
         self.assertEqual(body["kind"], "upgrade")
         self.assertEqual(body["effective"], "immediate")
-        # (250 − 60) × 15/30 = 95.00 — allow a cent for test wall-clock skew
-        self.assertAlmostEqual(body["prorated_usd"], 95.0, delta=0.02)
+        # (119 − 60) × 15/30 = 29.50 — allow a cent for test wall-clock skew
+        self.assertAlmostEqual(body["prorated_usd"], 29.5, delta=0.02)
         self.assertEqual(body["current_plan"], "junior")
         self.assertEqual(body["target_plan"], "pro")
 
@@ -223,8 +223,8 @@ class ManualUpgradeSubmitTests(_Case):
         self.assertEqual(r.status_code, 200, r.text)
         body = r.json()
         self.assertEqual(body["status"], "pending")
-        # (250 − 60) × 15/30 — the CLIENT never sends an amount
-        self.assertAlmostEqual(body["amount_usd"], 95.0, delta=0.02)
+        # (119 − 60) × 15/30 — the CLIENT never sends an amount
+        self.assertAlmostEqual(body["amount_usd"], 29.5, delta=0.02)
         conn = database.get_db_connection()
         try:
             cur = conn.cursor()
@@ -236,7 +236,7 @@ class ManualUpgradeSubmitTests(_Case):
         self.assertEqual(row["plan_code"], "pro")
         self.assertEqual(row["change_kind"], "upgrade")
         self.assertEqual(row["method"], "bank")
-        self.assertAlmostEqual(float(row["amount_usd"]), 95.0, delta=0.02)
+        self.assertAlmostEqual(float(row["amount_usd"]), 29.5, delta=0.02)
 
     def test_duplicate_pending_upgrade_is_refused(self):
         _mk_sub(self.uid, "junior", days_left=15)

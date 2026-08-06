@@ -40,8 +40,10 @@ there is no downgrade path at all.
 - **Schema:** `user_subscriptions(user_id, plan_code, status, method, reference,
   amount_usd, started_at, expires_at, decided_by, …)` plus `external_id`,
   `auto_renew`, `cancel_at_period_end` from migration `0041`. Plans seeded in
-  `database.py:2566`: junior $60 (sort 1), pro $250 (2), professional $500 (3),
+  `database.py:2566`: junior $60 (sort 1), pro $119 (2), professional $199 (3),
   enterprise contact-only (4). Tier order = `sort_order`.
+  *(2026-08-06: the seed was $60/$250/$500 when this spec was written; it now
+  matches the repriced prod values, so a fresh install no longer starts wrong.)*
 - **Entitlements** read `expires_at` as the single gate and `plan_code` for
   limits (`entitlements.py:33–41`).
 

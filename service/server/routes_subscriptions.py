@@ -3,7 +3,7 @@ routes_subscriptions.py — paid membership for human users.
 
 Sooppiy is subscription-gated: a user signs in, and without an active
 subscription the frontend routes them to the /subscribe page. Plans are
-seeded in subscription_plans (junior $60 / pro $250 / professional $500 /
+seeded in subscription_plans (junior $60 / pro $119 / professional $199 /
 enterprise = contact us). Three payment paths:
 
   * USDT     — THE DEFAULT. The user sends to the published address on the

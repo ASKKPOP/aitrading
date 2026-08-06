@@ -2573,8 +2573,8 @@ def init_database():
             "INSERT INTO subscription_plans (code, name, price_usd, contact_only, sort_order) VALUES (?, ?, ?, ?, ?)",
             [
                 ("junior", "Junior", 60.0, 0, 1),
-                ("pro", "Pro", 250.0, 0, 2),
-                ("professional", "Professional", 500.0, 0, 3),
+                ("pro", "Pro", 119.0, 0, 2),
+                ("professional", "Professional", 199.0, 0, 3),
                 ("enterprise", "Enterprise", 0.0, 1, 4),
             ],
         )
