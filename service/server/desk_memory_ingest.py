@@ -196,6 +196,7 @@ def _date_from_name(name: str) -> Optional[str]:
 # to supervise. It must never be able to break a trading tick: see the guard
 # in run_engine.tick().
 _INGEST_EVERY_MIN = 30
+_DEFAULT_REPORTS_DIR = "docs/reports"
 _last_ingest_epoch: float = 0.0
 
 
@@ -220,7 +221,10 @@ def maybe_ingest(now_epoch: Optional[float] = None) -> Optional[dict[str, int]]:
     _last_ingest_epoch = now
     out = {"decisions": ingest_decisions(limit=500),
            "outcomes": ingest_run_outcomes()}
-    root = os.environ.get("DESK_MEMORY_REPORTS_DIR") or ""
+    # Relative on purpose: both the container and a local checkout run from
+    # the project root, so one default works in both without a prod env edit.
+    # Absent directory is a no-op, so this is safe wherever it does not apply.
+    root = os.environ.get("DESK_MEMORY_REPORTS_DIR", _DEFAULT_REPORTS_DIR)
     if root and os.path.isdir(root):
         out["reports"] = ingest_reports(root)
     return out

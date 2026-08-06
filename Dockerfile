@@ -37,6 +37,12 @@ COPY --from=deps /usr/local/bin /usr/local/bin
 # Copy application source (keep same relative path so imports work)
 COPY service/server/ ./service/server/
 
+# Monitoring analysis — desk_memory_ingest chunks these into the desk corpus.
+# Without them the corpus keeps only the AI's own decisions, which is half of
+# what it is for: the findings, traps and verdicts learned about this desk
+# live in these notes and would otherwise never reach prod.
+COPY docs/reports/ ./docs/reports/
+
 # Built SPA — served by the API's routes_misc fallback from service/frontend/dist
 COPY --from=frontend /fe/dist ./service/frontend/dist/
 
