@@ -853,7 +853,7 @@ def _breakeven_ratchet_enabled() -> bool:
         not in ("0", "false", "off", "no")
 
 
-def _breakeven_arm_usd(pnl: dict) -> float:
+def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None) -> float:
     """The peak a position must clear before the floor applies: ITS OWN
     round-trip cost.
 
@@ -861,6 +861,11 @@ def _breakeven_arm_usd(pnl: dict) -> float:
     has not yet paid for the trade is not a winner worth protecting, and a
     constant would be a noise-trigger on small books and inert on large
     ones. BREAKEVEN_ARM_FEES tunes the multiple of that round trip.
+
+    `floor_qty` anchors the threshold to the LARGEST book the run has ever
+    held (see _run_max_abs_qty for why — run 976's reduce halved the arm
+    under a full-book peak and turned the desk's partial exit into a full
+    flatten). A flat book still never arms, whatever the history says.
     """
     try:
         pos = pnl.get("position") or {}
@@ -868,10 +873,62 @@ def _breakeven_arm_usd(pnl: dict) -> float:
         mark = float(pos.get("current_price") or 0)
         if qty <= 0 or mark <= 0:
             return 0.0
+        try:
+            qty = max(qty, float(floor_qty or 0))
+        except (TypeError, ValueError):
+            pass
         rate = float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
         mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
         return qty * mark * rate * 2.0 * max(0.0, mult)
     except (TypeError, ValueError):
+        return 0.0
+
+
+def _run_max_abs_qty(run: dict) -> float:
+    """The largest absolute position this run has EVER held, replayed from
+    its own `trade` events (same signed-qty convention as pnl_audit:
+    buy/cover build a long, sell/short build a short).
+
+    WHY (2026-08-06, run 976): the breakeven floor's arm threshold was
+    sized off the CURRENT book while `peak_pnl_usd` is a lifetime
+    high-water mark. 976 was never armed on its full book (arm 11.36 >
+    peak 7.22); the desk's own `reduce 0.5` halved the book, the arm fell
+    to 5.68, the floor retro-armed against a peak the FULL book had earned
+    and flattened the remainder the same second — escalating the desk's
+    deliberate partial exit into the full close it had just declined, on a
+    position that then recovered. A peak must cover the round trip of the
+    largest book held while it was being earned; shrinking the book
+    afterwards must not lower that bar.
+
+    Fail-soft to 0.0: the caller then falls back to the current book,
+    i.e. the pre-fix behaviour — this is a protection rail, not a blocker.
+    """
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT payload FROM run_events "
+                "WHERE run_id = ? AND event_type = 'trade' ORDER BY seq",
+                (run["id"],))
+            rows = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+        qty = 0.0
+        biggest = 0.0
+        for row in rows:
+            try:
+                t = json.loads(row.get("payload") or "{}")
+                q = abs(float(t.get("quantity") or 0))
+                side = str(t.get("side") or "").strip().lower()
+            except (TypeError, ValueError):
+                continue
+            if q <= 0 or not side:
+                continue
+            qty += q if side in ("buy", "cover") else -q
+            biggest = max(biggest, abs(qty))
+        return biggest
+    except Exception:  # noqa: BLE001 — fail-soft, see docstring
         return 0.0
 
 
@@ -1054,13 +1111,15 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # reason would silently fall through every one of them. It needs no
     # `trail` config at all, which is the point — runs like 961 carry
     # `stop_conditions_json = {}` and had NO peak protection whatsoever.
-    if has_position and pnl["mark_age_ok"] and \
-            _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"],
-                                 _breakeven_arm_usd(pnl)):
-        logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
-                    run["id"], run.get("peak_pnl_usd"), pnl["total"],
-                    round(_breakeven_arm_usd(pnl), 4))
-        return "stop_event:trailing_lock"
+    # The arm is anchored to the largest book the run ever held — a reduce
+    # must not lower the bar under an already-earned peak (run 976).
+    if has_position and pnl["mark_age_ok"]:
+        _be_arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
+        if _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"], _be_arm):
+            logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
+                        run["id"], run.get("peak_pnl_usd"), pnl["total"],
+                        round(_be_arm, 4))
+            return "stop_event:trailing_lock"
 
     # Conviction-collapse exit (2026-07-31, desk item I5). Ships dark. A held
     # position whose desk has read conviction below the floor for N straight
@@ -2713,6 +2772,12 @@ def _typical_daily_move_pct(run: dict) -> Optional[float]:
             run["symbol"], run["market"], days=30) or []
         closes = [float(c["close"]) for c in candles[-21:] if c.get("close")]
         if len(closes) < 6:
+            # Loud on purpose (2026-08-06, run 976): the GC daily fetch
+            # failed at build time and this returned None SILENTLY, so the
+            # brief's ordinary-day context vanished with no trace to find.
+            logger.info("typical-daily-move unavailable for %s/%s (%d bars) "
+                        "— ordinary-day context absent from this brief",
+                        run.get("symbol"), run.get("market"), len(closes))
             return None
         moves = [abs(b - a) / a * 100.0
                  for a, b in zip(closes, closes[1:]) if a]
