@@ -14,6 +14,74 @@ Suggestions + shipped solutions.
 
 ---
 
+## Inter-cycle ship — 2026-08-06 20:40Z — owner asked for a solution to the universe-size root cause; PR #265 (BLOCKED ON A GITHUB OUTAGE)
+
+Owner: *"make solutions & implement"* for the refined root cause. Built
+and verified in full. **It cannot be merged — GitHub Actions has stopped
+triggering workflows for this repo entirely.**
+
+### The solution
+
+`SURVIVORS_PER_MARKET` was `4/4/2/2` = **twelve**. Prod batch
+`research:496122`:
+
+| | |
+|---|---:|
+| survivors | 12 |
+| − not selectable (a us-stock SHORT on a spot-only book; 3 sub-R:R moves) | −4 |
+| − in 24h cooldown (**retired earlier that same day**) | −5 |
+| − already running | −2 |
+| − ZBTUSDT unpriceable | −1 |
+| **buildable** | **0** |
+
+**Why this is the right place to fix it:** `screen_universe` already
+**scores the entire universe** — 129 candidates that day, every candle
+fetched and every composite computed — and then throws away all but 12.
+**The expensive work is already paid.** Raising the cap costs no extra
+fetches; it stops discarding 117 finished results.
+
+Defaults now **8/8/4/4 = 24**, each env-overridable
+(`FLEET_RESEARCH_SURVIVORS_CRYPTO` / `_US_STOCK` / `_FUTURES` /
+`_FOREX`), floor of 1 per market so an override cannot silently delete a
+market, and a garbage value falls back to the default rather than zero.
+
+**Stage 2 is deliberately NOT widened.** Fresh theses are chunked
+(`FLEET_RESEARCH_BATCH_SIZE=5`) and capped
+(`MAX_LLM_CALLS_PER_REFRESH=2`), so at most ~10 survivors get a *fresh*
+LLM thesis per refresh; the rest reuse an unchanged prior or fall back.
+**A wider survivor set widens the fleet's CHOICE without widening LLM
+spend.** Watch `'llm': N` in the `[SymbolResearch]` line — the documented
+tell from #95.
+
+**Not AI-first, deliberately:** the desk cannot choose its own research
+universe. "Code only where the desk cannot be the actor."
+
+**Verified:** fail-before 6/6, mutation 4/4 caught (including reverting
+to 12 and bypassing the env override), **3549 pass**, ruff F-gates clean.
+
+### ⛔ Why it is not deployed
+
+**GitHub Actions has not triggered a single workflow for this repo since
+16:26:24Z — over four hours.** The #265 push created the branch and PR
+(confirmed: 1 commit, state OPEN) and produced **no run at all**.
+`gh pr checks 265` → *"no checks reported"*.
+
+Earlier today the same outage manifested as runner-acquisition failures
+(*"The job was not acquired by Runner of type hosted"*); it has since
+escalated to no triggering.
+
+**I am not merging without CI, and I am not deploying an unmerged branch
+to prod.** The drift guard the whole deploy procedure rests on assumes
+prod == `main`; bypassing it to move faster would break the one
+invariant that makes every future deploy verifiable. **#264 is blocked
+the same way.**
+
+**Both PRs are authored, tested and waiting.** The moment Actions
+recovers they merge and deploy in order: #264 (audit-tool correction),
+then #265 (survivor pool).
+
+---
+
 ## Cycle 101 — 2026-08-06 20:29Z (prod DB clock) — THE DIAGNOSED PROBLEM NOW HAS A VISIBLE COST
 
 ⚠️ **A cycle was missed.** 70 minutes since cycle 100 — the ~19:43 firing
