@@ -3125,6 +3125,42 @@ def _breadth_state_line(run: dict) -> str:
     return line + "\n"
 
 
+def _floor_status_line(run: dict, pnl: dict, peak: "float | None") -> str:
+    """Whether the platform's automatic profit floor is even SWITCHED ON.
+
+    WHY (2026-08-06, the 24-hour sweep). The breakeven floor arms only once a
+    run's peak clears its own round-trip cost. Across the 22 runs that closed
+    in that window the split was **13 of 13**: every one of the ten losers had
+    a peak BELOW its arm threshold — the floor could never have armed for any
+    of them — and all three winners were above it.
+
+    The threshold scales with book size, so **the protection arms last exactly
+    where it would save most.** Run 971 is the case that makes it concrete: a
+    15.81-unit ZEC book needed a peak of **$16.36**, reached **$16.15**, and
+    went on to lose **−$58.18**. It missed its own protection by 1.3% and
+    nothing automatic could stop what followed.
+
+    The desk sees its peak already; it has never been told where protection
+    begins, so it cannot know it is uncovered. Fact only — the judgment
+    (bank it, or arm a level) lives in the skills, and both verbs already
+    exist. Fail-soft: anything unreadable renders "".
+    """
+    try:
+        arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
+        if arm <= 0:
+            return ""
+        best = float(peak or 0)
+        if best >= arm:
+            return (f"Automatic floor: ARMED (peak ${best:,.2f} cleared its "
+                    f"${arm:,.2f} round-trip cost) — a give-back to breakeven "
+                    "exits you without a decision.\n")
+        return (f"Automatic floor: NOT ARMED — it switches on at a peak of "
+                f"${arm:,.2f} and your best is ${best:,.2f}. Until then "
+                "nothing exits this position automatically on a give-back.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                          thesis: dict) -> str:
     """The open position's own trajectory, for the desk's exit decision.
@@ -3169,6 +3205,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                 bits.append(f"Best this run has reached: ${peak:,.2f} — you "
                             f"are holding {max(0.0, upnl) / peak:.0%} of that "
                             f"high-water mark.")
+            bits.append(_floor_status_line(run, pnl, peak))
             try:
                 want = abs(float(thesis.get("expected_move_pct")))
                 ent = float(pos.get("entry_price") or 0)
