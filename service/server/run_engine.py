@@ -3189,10 +3189,10 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
                             f"${rt:,.2f}")
                 if mult < 1.0:
                     bits.append("— closing here spends more than the loss it "
-                                "avoids, so it is a tick, not a wound")
+                                "avoids, so it is a tick, not a wound.")
                 else:
                     bits.append("— this loss has cleared the cost of leaving, "
-                                "so it is real")
+                                "so it is real.")
         bits.append("The house rule is to CLOSE a run that is genuinely past "
                     "the floor and hand its slot back for a fresh thesis, "
                     "unless you can name the specific condition that reverses "
