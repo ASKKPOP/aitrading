@@ -1883,7 +1883,88 @@ def _maybe_auto_restart(run: dict) -> None:
                dedupe=f"run:{run['id']}:auto_restart")
 
 
+def _flush_pending_close_adapts(run: dict) -> int:
+    """Journal any close whose `adapt` never fired because the run stopped
+    first. Returns how many were emitted.
+
+    WHY (2026-08-06, cycle 79). #249 fixed the forced flatten's missing
+    `adapt` and its own comment states the mechanism exactly:
+
+        "run_feedback derives its own adapt events from closed SIGNALS on a
+         later cycle, and a flattened run is stopping/stopped, so no later
+         cycle ever processes this leg"
+
+    That is true of the flatten leg — and EQUALLY true of every other close
+    still pending when the run stops. #249 fixed one leg and left the desk's
+    own final-cycle exits behind. Measured on 08-06: run 960's `reduce` at
+    08:18:07 (−4.3752) and run 976's `reduce` at 05:40:01 (−2.3142) were both
+    followed by a stop before the next cycle, so neither ever reached the
+    adapt stream. Together **−6.69 of that day's −9.56 ledger-vs-adapt drift,
+    70% of it** — a bigger hole than the flatten defect #249 was raised for.
+
+    It is the SAME failure shape twice: a number that is only journalled
+    "next cycle" is lost precisely when there is no next cycle, which is
+    precisely when the run died — the worst moments, again.
+
+    Emits, never adapts. A terminal run's `size_mult` ladder is moot, so this
+    deliberately does NOT take the claim fence `run_feedback.save_state`
+    needs (a stopping run is unclaimed, and the write would be discarded).
+    It is a record of what already happened, exactly as #249's is.
+
+    Idempotent by construction — the watermark is read back out of the
+    run's OWN adapt events rather than from `adapt_state_json`, so the
+    bounded flatten retry in `_control_stopping` cannot double-journal, and
+    a run carrying older unjournalled closes is self-healed.
+    """
+    try:
+        import run_feedback
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT payload FROM run_events WHERE run_id = ? "
+                "AND event_type = 'adapt'", (run["id"],))
+            done: set[int] = set()
+            for row in cursor.fetchall():
+                try:
+                    sid = json.loads(dict(row)["payload"]).get("signal_id")
+                except (ValueError, TypeError):
+                    continue
+                if sid is not None:
+                    done.add(int(sid))
+            # #249 already journals the flatten leg under `flatten_close`,
+            # and that event carries no signal_id — so it would NOT appear in
+            # `done` and would be re-journalled here on a retry after a
+            # successful flatten whose transition failed. Exclude by id.
+            cursor.execute(
+                "SELECT id FROM signals WHERE run_id = ? "
+                "AND client_order_id LIKE '%flatten%'", (run["id"],))
+            done.update(int(dict(r)["id"]) for r in cursor.fetchall())
+        finally:
+            conn.close()
+        emitted = 0
+        for o in run_feedback.leg_outcomes(run, 0):
+            if int(o["signal_id"]) in done:
+                continue
+            emit_telemetry_event(run["id"], "adapt", {
+                "trigger": "pending_close",
+                "signal_id": int(o["signal_id"]),
+                "realized": round(float(o["realized"]), 4),
+                "direction": o.get("direction"),
+                "reason": "run stopped before the next cycle could ingest it"})
+            emitted += 1
+        return emitted
+    except Exception:  # noqa: BLE001 — reporting must never wedge a stop
+        logger.debug("pending-close flush failed (run %s)", run["id"],
+                     exc_info=True)
+        return 0
+
+
 def _control_stopping(run: dict, out: dict) -> None:
+    # BEFORE any branch, and before the flatten leg exists as a signal: all
+    # three exits below are terminal, and each one is a place a pending close
+    # would otherwise be lost.
+    _flush_pending_close_adapts(run)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
