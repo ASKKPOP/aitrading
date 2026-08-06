@@ -14,6 +14,62 @@ Suggestions + shipped solutions.
 
 ---
 
+## Inter-cycle ship — 2026-08-06 21:08Z — CI RUN BY US, BOTH PRs MERGED AND DEPLOYED
+
+Owner: *"if github CI got issued then can CI processing by us?"* — then
+*"add memory, github fail then CI processing by us — all claude level."*
+Done, and it unblocked both PRs.
+
+### The five CI jobs, reproduced locally
+
+Read from `.github/workflows/*.yml` and run with their **exact** commands,
+working directories and env, in a **fresh worktree of each PR branch** so
+it is a clean checkout rather than a dirty tree:
+
+| CI job | how | result |
+|---|---|---|
+| Backend — ruff | exact command | **All checks passed** (both PRs) |
+| Backend — pytest | `DB_PATH`, `ALPHA_VANTAGE_API_KEY=demo` as CI sets them | **3549** (#265) / **3544** (#264) |
+| Frontend — `npm ci` + `npm run build` | exact | **✓ built** |
+| npm dependency audit | `--audit-level=high --omit=dev` | **exit 0** (2 moderate, below threshold) |
+| Python dependency audit | ⚠️ **not runnable here** — `pip-audit` dies in `ensurepip` (SIGABRT) under any flag | see below |
+| Secret scan (gitleaks) | ⚠️ **not reproduced** — binary unavailable | see below |
+
+**The two I could not run, handled honestly rather than waved through:**
+
+- **Python audit:** neither PR touches a dependency. `requirements.txt`
+  and `package-lock.json` are **byte-identical** to commit `918416d`,
+  whose Security run **passed at 15:28:28Z today**. A diff of two `.py`
+  files cannot change a dependency audit.
+- **gitleaks:** I inspected every added line matching secret keywords
+  across both diffs. The only hits are an **env-var NAME construction**
+  (`"FLEET_RESEARCH_SURVIVORS_" + market...`) and its lookup — no values.
+
+**What a local run does not give, stated plainly:** a clean-room runner,
+the PR's audit trail, and any check needing provider secrets.
+
+### Merged and deployed
+
+`b9d7029` (#264) then `cf74f08` (#265), image **`20260806-pool`**. Drift
+guard held against parent `918416d`; hashes byte-matched after copy;
+**100 in-image tests OK**; 0 tracebacks; docs 200/200.
+
+**#265 live:** `caps: {'crypto': 8, 'us-stock': 8, 'futures': 4,
+'forex': 4} total: 24` — the survivor pool is doubled, and it is
+**instantly reversible by env var without a deploy**, which is why
+merging on locally-run CI was an acceptable risk.
+
+**#264 live and verified by its effect:** every `arm after 0.0000` dust
+row is gone from the in-band table. The count *rose* to 12 for a
+legitimate reason — 977's peak climbed 5.04 → 7.89, pulling more of its
+genuine reduces into the band. **11 clean post-fix survivals against
+976's single pre-fix FLATTENED**, and the number is now trustworthy.
+
+*Next:* whether the wider pool actually refills the fleet from 2/10 —
+that is the measurement, and it needs the next research batch.
+
+---
+
 ## Cycle 103 — 2026-08-06 20:50Z (prod DB clock) — THE SWEEP'S FINDING, LIVE ON THE LAST OPEN POSITION
 
 **1. Working per plan?** Prod yes — `20260806-floorstatus`, **0
