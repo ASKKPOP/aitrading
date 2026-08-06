@@ -492,6 +492,34 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### Added 2026-08-06 (cycle 89) — #257's silence is STRUCTURAL, not a failure
+
+- **`pending_close` has stayed 0 through several stops. That is correct.**
+  The `adapt_retired` path runs `run_cycle`'s feedback pass, which calls
+  `ingest_outcomes` FIRST and only then `retire_run` — so by the time
+  `_control_stopping` runs, nothing is pending and the flush rightly emits
+  nothing. **The path self-drains.**
+- **#257's non-null case needs a CONTROL-PASS stop** (`at_time`, `max_loss`,
+  `trailing_lock`, `profit_target`, idle/fee retire) **with a close from the
+  last decision cycle still un-ingested** — exactly what runs 960 and 976
+  were. Wait for one of those; do not read the silence as a broken fix, and
+  do not "fix" it.
+
+### Added 2026-08-06 (cycle 89) — arm-distance calibration, n=2
+
+| run | distance when armed | time to fire |
+|---|---|---|
+| 975 BTCUSDT | 0.75 ordinary days | 4h32m |
+| 978 ETHUSDT | **0.16** ordinary days | **1h44m** |
+
+- Closer arm fired ~2.6× faster — the direction #259's re-anchor predicts.
+- ⚠️ **Neither fired inside one cycle.** Even 0.16 ordinary days took ~2.3
+  cycles. If the goal is a fire before the desk's next look, arms may need to
+  be closer than #259 currently asks. Two points are not a curve — keep
+  collecting before changing the lesson again.
+- **Both fires were on crypto**, the only live-feed markets. Zero on
+  Yahoo-served symbols: "dead on arrival" holds at 2/2.
+
 ### ⭐ RESOLVED 2026-08-06 (cycle 87) — #251 PROVEN LIVE, and the arm executor FIRED
 
 Two long-standing open items closed on real evidence. **Do not re-open either
