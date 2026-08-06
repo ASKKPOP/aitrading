@@ -368,5 +368,90 @@ class HistoryTests(_Case):
         self.assertEqual(r.status_code, 401)
 
 
+class AdminApproveUpgradeTests(_Case):
+    def setUp(self):
+        super().setUp()
+        from admin_auth import create_admin
+        create_admin("root@test.com", "rootpass123", "superadmin")
+        r = self.client.post("/api/admin/login",
+                             json={"email": "root@test.com", "password": "rootpass123"})
+        self.admin = {"Authorization": f"Bearer {r.json()['token']}"}
+
+    def _approve(self, sub_id: int):
+        return self.client.post(f"/api/admin/subscriptions/{sub_id}/approve",
+                                json={"note": ""}, headers=self.admin)
+
+    def _submit_upgrade(self) -> int:
+        r = self.client.post(
+            "/api/subscriptions/change/upgrade",
+            json={"plan_code": "pro", "method": "bank", "reference": "wire-9"},
+            headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM user_subscriptions WHERE user_id = ? "
+                        "AND status = 'pending'", (self.uid,))
+            return int(dict(cur.fetchone())["id"])
+        finally:
+            conn.close()
+
+    def test_approving_an_upgrade_flips_the_plan_but_not_the_expiry(self):
+        old_id = _mk_sub(self.uid, "junior", days_left=15)
+        old_expires = _sub_row(old_id)["expires_at"]
+        pending_id = self._submit_upgrade()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 200, r.text)
+        me = self.client.get("/api/subscriptions/me", headers=self.auth).json()
+        self.assertEqual(me["status"], "active")
+        self.assertEqual(me["subscription"]["plan_code"], "pro")
+        # the member already paid for this period — the clock must not move
+        self.assertEqual(me["subscription"]["expires_at"], old_expires)
+        self.assertEqual(_sub_row(old_id)["status"], "superseded")
+        self.assertEqual(_sub_row(pending_id)["status"], "active")
+
+    def test_upgrade_approval_with_the_original_expired_is_refused(self):
+        old_id = _mk_sub(self.uid, "junior", days_left=15)
+        pending_id = self._submit_upgrade()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE user_subscriptions SET status = 'expired' WHERE id = ?",
+                        (old_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(_sub_row(pending_id)["status"], "pending")
+
+    def test_plain_pending_rows_keep_the_legacy_thirty_days(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, "
+                "reference, amount_usd) VALUES (?, 'pro', 'pending', 'bank', 'r', 250)",
+                (self.uid,))
+            pending_id = int(cur.lastrowid)
+            conn.commit()
+        finally:
+            conn.close()
+        r = self._approve(pending_id)
+        self.assertEqual(r.status_code, 200, r.text)
+        row = _sub_row(pending_id)
+        started = datetime.fromisoformat(row["started_at"].replace("Z", "+00:00"))
+        expires = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
+        self.assertEqual((expires - started).days, 30)
+
+    def test_admin_list_reports_change_kind(self):
+        _mk_sub(self.uid, "junior", days_left=15)
+        self._submit_upgrade()
+        r = self.client.get("/api/admin/subscriptions?status=pending", headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        rows = r.json()["subscriptions"]
+        self.assertTrue(any(s.get("change_kind") == "upgrade" for s in rows), rows)
+
+
 if __name__ == "__main__":
     unittest.main()

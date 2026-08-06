@@ -1042,7 +1042,17 @@ export function AdminPage() {
                 {(subs?.subscriptions || []).map((s: any) => (
                   <tr key={s.id}>
                     <td style={td}>{s.id}</td><td style={{ ...td, fontWeight: 600 }}>{s.email || s.user_id}</td>
-                    <td style={td}>{s.plan_code}</td><td style={td}>{s.method}</td>
+                    <td style={td}>
+                      {s.plan_code}
+                      {/* A prorated upgrade: approving flips the plan and keeps
+                          the original expiry — the amount is the difference,
+                          not a full month. The tag is what tells the admin. */}
+                      {s.change_kind === 'upgrade' && (
+                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '1px 7px', background: 'rgba(42,120,214,0.15)', color: 'var(--accent-primary,#2a78d6)' }}>
+                          ⬆ {tr(language, { ko: '업그레이드', en: 'upgrade', ja: 'アップグレード', th: 'อัปเกรด', vi: 'nâng cấp', id: 'peningkatan' })}
+                        </span>
+                      )}
+                    </td><td style={td}>{s.method}</td>
                     {/* The proof of payment. Shown in full and copyable — a
                         truncated tx hash cannot be checked against a chain. */}
                     <td style={{ ...td, maxWidth: 300 }}>
