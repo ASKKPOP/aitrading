@@ -596,6 +596,35 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
+### 🚨 Added 2026-08-06 (cycle 97) — TOP ITEM: the fleet is stuck at 3/10
+
+**Not shipped. Two separable problems and the easy one does not help.**
+
+- Fleet 27 is `replenishing:3/10` and has **built nothing for 4h31m**.
+  `[FleetPlanner] tick: {researched: 0, built: 0}` every tick.
+- **The loop:** `backtest_gate` keeps only **ZBTUSDT** (drops NVDA −200.50/
+  trade, SNOW −72.43/trade), then `candidate_skipped` — *"no price available
+  for ZBTUSDT (crypto)"*. **Every empty slot draws the same unpriceable sole
+  survivor. 271 skips, 13:18:38Z → 17:49:51Z.**
+- **ZBTUSDT is genuinely untradeable**, not a freeze casualty: `Hyperliquid
+  symbol not listed: ZBTUSDT -> ZBT`, while BTCUSDT and SOLUSDT price fine.
+- **(a) Ordering defect — SEVENTH instance of the infeasible-at-build class.**
+  `fleet_planner` has a build-time chain (`thesis_expired`, `symbol_busy`,
+  `_thesis_fee_infeasible`, `_bucket_expectancy_block`) each justified
+  *"decide once, before the run exists"* — **priceability is not in it** and
+  fails later at run creation (`routes_runs.py:462`).
+- **(b) The real cause of the empty slots is candidate SUPPLY.** The pool is
+  **three symbols**: one untradeable, two dropped on measured negative
+  expectancy. ⚠️ **Fixing (a) stops 271 futile attempts and makes the reason
+  honest but fills ZERO slots.** Do not ship (a) alone and call the fleet
+  fixed.
+- **Recommended order:** (i) priceability into the build-time chain; (ii)
+  find out why research emits symbols the exchange does not list, and why the
+  pool is only 3.
+
+**Re-check with:** `SELECT status_reason FROM fleets WHERE status='active'`
+and `SELECT ... FROM fleet_events WHERE event_type='candidate_skipped'`.
+
 ### ⭐ RESOLVED 2026-08-06 17:00Z (cycle 96) — #257 FIRED, and the cycle-89 prediction held
 
 **The open verification from cycle 84 is CLOSED, positive. Do not re-open.**
