@@ -596,7 +596,43 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
-### ✅ ROOT CAUSE 2026-08-06 (cycle 99) — research proposes what the fleet just retired
+### ✅ ROOT CAUSE, FINAL 2026-08-06 (cycle 100) — the research UNIVERSE is too small
+
+**Investigation complete over cycles 97→100. Owner decision, not more
+diagnosis. Do not re-diagnose.**
+
+> **The research universe — ~12 symbols per batch, heavily repeated across
+> batches — cannot sustain a 10-slot fleet. The fleet's own holdings, its
+> 24-hour cooldowns, and structural infeasibility consume the entire batch.**
+
+Worked example, batch `research:496122` (**zero** buildable):
+
+| status | symbols |
+|---|---|
+| cooldown (retired today) | SOLUSDT, HG, BTCUSDT |
+| running | GC, ETHUSDT |
+| unpriceable | ZBTUSDT |
+| negative expectancy | NVDA, SNOW |
+| not selectable | DIS, PYPL, CHFJPY, USDKRW |
+
+Across 496115→496122, CHFJPY/ETHUSDT/HG/NVDA/SNOW appear in **all eight**
+batches; consecutive batches share **7 of 8** selectable symbols.
+
+⚠️ **`selectable = 0` is NOT a bug — I nearly reported it as one.**
+`selectable = ev_pct > 0 AND expressible AND feasible`. DIS scored 0.983
+(2nd best in its batch) and is correctly refused because it is a **us-stock
+SHORT and the book is spot-only**; PYPL/CHFJPY/USDKRW fail the **R:R
+feasibility floor**. Score was never the criterion. **Check the reason before
+calling a filter wrong.**
+
+**Every gate is correct. Correct gates over a 12-symbol rotation leave zero.**
+Coordinating research with cooldowns (the cycle-99 suggestion) helps at the
+margin but **cannot create symbols that are not in the universe**.
+
+**Owner decision:** widen what research covers, or lower the fleet's target
+from 10. Both are design calls.
+
+### Superseded (cycle 99) — "research proposes what the fleet just retired"
 
 **The fleet-stuck-at-3/10 investigation is COMPLETE. What remains is an owner
 decision, not more diagnosis.**
