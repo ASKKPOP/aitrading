@@ -14,6 +14,66 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 83 — 2026-08-06 10:58Z (prod DB clock)
+
+**1. Working per plan?** Yes. Fresh `20260806-deskeyes` stable — **0
+tracebacks** in either container since deploy, 8 runs live, docs 200/200,
+`ratchet_audit` EXIT=0, events current to the second.
+
+**2. Losses and WHY — the biggest single-beat drop today, and it came
+from a CORRECTLY-shaped decision.** Ledger **−20.18 → −30.05**.
+
+**975 BTCUSDT took −11.51 on one reduce**, the whole of the move:
+
+| | |
+|---|---|
+| 05:37:34 | buy 0.0730544 BTC @ **64870**, fee 2.1326 |
+| 10:54:43 | sell 0.0365272 @ **64584**, fee 1.0616 |
+
+`(64584 − 64870) × 0.0365272 − 1.0616 = −11.51` ✓, and with the entry fee
+the run stands at −13.64 on a $4,739 notional.
+
+**This is not a #245-shaped loss.** The desk used the **partial verb**
+(`reduce` 0.5, conviction 0.63), on a losing position, after 5h17m — the
+exact discipline the skills teach. The price simply went **−0.44%**
+against it. This is the "we can not fix 100%" case: right shape, losing
+outcome.
+
+Worth noting rather than acting on: **fees are 3.194 of the 13.64 = 23%
+of the loss.** Round trip is ~0.09% against a BTCUSDT ordinary day of
+0.915%, so the hurdle is ~10% of a normal day — not dominant here, but it
+compounds with every reduce.
+
+Also 977 GC banked +1.65 and 968 +0.14. DRIFT widened to −20.53 purely
+because 975's and 977's closes had not yet emitted their next-cycle
+adapts — the documented lag, not a new hole.
+
+**3. What we missed — a consequence of the freeze I had not stated.**
+
+**Trades are EXECUTING at frozen marks.** 977 exited GC at
+**4320.700195** — the identical price it has printed for 70+ minutes. The
+freeze is therefore not only a decision-quality problem, it is a **fill-
+price** problem: the book is being marked, and now transacted, at a
+number that is not moving. The +1.65 it booked is measured against that
+stale price.
+
+*First post-#259 decision:* 977 cycle 8 at 10:58:41 (deploy was 10:56:42)
+chose `reduce` 0.5 at conviction 0.80 and did **not** re-arm — while
+holding a standing arm the new line now shows it (price_below 4285,
+reduce 0.5, set 43 min earlier). That is exactly the intended response to
+`_standing_arm_line`, but it is **n=1 and I cannot see the prompt**, so
+it is recorded as data, not as proof the line worked.
+
+*Watch (vii):* `conviction_missing` **6 of 64** decisions today (9.4%, up
+from 7.7%). *Watch (ii):* `armed_exit` still **0** fleet-wide.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing this beat — #259 landed two minutes before it and
+needs live cycles to judge, not another change on top.
+
+---
+
 ## Inter-cycle ship — 2026-08-06 10:56Z — owner asked for solutions to cycle 82's items 3 and 5; PR #259
 
 Owner: *"try to make solution for 3,5."* Both shipped in one PR
