@@ -14,6 +14,96 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 82 — 2026-08-06 10:19Z (prod DB clock) — 🚨 FROZEN MARKS
+
+**1. Working per plan?** Containers healthy on `20260806-prunebackups`
+(tag compared per the new trap — unchanged since 09:45), docs 200/200,
+**0 tracebacks**, `ratchet_audit` EXIT=0. But see below: healthy
+processes are running against a **frozen tape**.
+
+**2. Losses and WHY.** 08-06 ledger **−20.18** (was −19.21). The −0.97
+decomposes exactly: 978 ETHUSDT's entry fee **−1.1059** plus 968's reduce
+**+0.14**. That is component (a) — entry-side fees — the by-design term,
+not a trading loss.
+
+**3. 🚨 THE FINDING: futures and forex marks have not moved in over two
+hours, and the staleness guard cannot see it.**
+
+| symbol | last change | frozen for | value |
+|---|---|---|---|
+| GC | 07:57:40 | **2h26m** | 4320.700195 |
+| SI | 08:18:07 | **2h05m** | 62.099998 |
+| USDKRW | — | ~40m+ | 1428.310059 |
+| BTCUSDT | continuous | — | moves 64564–64936 ✅ |
+
+Evidence chain, each step checked rather than assumed:
+
+1. **Marks are FRESH by timestamp** — `price_updated_at` = 91s old on all
+   four. So `mark_age_ok` passes.
+2. **`_maybe_emit_equity` only emits on a CHANGED total or a heartbeat.**
+   979 produced 36 consecutive samples with identical unrealized, 977
+   produced 8. The value genuinely did not move.
+3. **Three SI trades printed at exactly 62.099998** across 08:18→08:54,
+   and SI had been stepping normally before that (62.55 → 62.47 → 62.32
+   → 62.10).
+4. **Calling `get_price_from_market` directly returns the same frozen
+   numbers** — GC 4320.7, SI 62.1 — and logs *"Successfully fetched"*.
+5. **Alpha Vantage is fully rate-limited**: *"our standard API rate limit
+   is 25 requests per day"*, hitting equities, macro, crypto and
+   commodities refreshes.
+
+**The guard measures the wrong thing.** `mark_age_ok` checks the
+*timestamp* of the last fetch, not whether the *value* changed. A feed
+that keeps answering with a stale quote refreshes the timestamp every
+90s and is therefore invisible to every staleness check in the engine.
+
+**4. Docs.** Both 200.
+
+**5. What this explains — watch (ii), answered.**
+
+**64 arms authored, ever. `armed_exit` events: 0. Not one has ever
+fired.** I verified this is *not* a dead executor:
+
+- `order_intent.arm_fires()` returns True on all should-fire cases and
+  False on all should-not (5/5 correct, tested live in the image).
+- `_fire_armed_order` is provably reached — `_maybe_emit_equity` sits
+  after it in `_control_active`, and equity events are flowing.
+- **No arm level has ever been crossed.** Reconstructing price from
+  equity events, all four standing arms remain 0.48–0.88% short:
+  968 0.877%, 975 0.533%, 977 0.826%, 979 0.483%.
+
+So the executor is sound and the levels were never reached — and on GC,
+SI and USDKRW they *could not* be reached, because the price is not
+moving at all.
+
+Standing arms, all reachable-by-the-skill except 968:
+
+| run | verb | ordinary days |
+|---|---|---|
+| 979 SI | reduce 0.5 | 0.24 ✅ |
+| 977 GC | reduce 0.5 | 0.61 ✅ |
+| 975 BTCUSDT | reduce 0.5 | 0.62 ✅ |
+| 968 USDKRW | **close 1.0** | **2.65** ❌ |
+
+*Also noted:* `_store_armed_order` is called **only when
+`intent == "arm"`**, so a cycle that reduces or holds leaves the previous
+arm standing. 968 executed a reduce at 10:12:40 and its 09:27 `close 1.0`
+arm still stands. The code comment says "each cycle's arm replaces the
+last" — that is true only of arming cycles.
+
+**Shipped: nothing, deliberately.** Stated plainly because the owner is
+asleep: the natural fix — a *value*-staleness guard — would **halt
+trading** when it fires, and shipping a trading-halting rail unattended
+is not a call I should make alone. The root cause may also be an API
+tier/key decision (Alpha Vantage exhausted; memory already carries a
+"watch FMP tier thinness" item) which is the owner's, not mine.
+
+**→ TOP OPEN ITEM FOR THE OWNER.** Two separable decisions: (a) the data
+provider/tier, (b) whether a frozen-value guard should pause runs, warn,
+or only be reported by a read-only detector like `ratchet_audit`.
+
+---
+
 ## Cycle 81 — 2026-08-06 09:49Z (prod DB clock)
 
 Owner is asleep from this beat; the loop continues on cron `688d79c1`

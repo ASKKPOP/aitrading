@@ -470,6 +470,42 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### 🚨 Added 2026-08-06 (cycle 82) — A FRESH TIMESTAMP IS NOT A FRESH PRICE
+
+**TOP OPEN ITEM — needs an owner decision, deliberately not shipped.**
+
+- **`mark_age_ok` checks `price_updated_at`, NOT whether the value moved.**
+  A feed that keeps answering with a stale quote refreshes the timestamp
+  every ~90s and is invisible to every staleness check in the engine.
+- **Observed 2026-08-06:** GC frozen **2h26m** at `4320.700195`, SI frozen
+  **2h05m** at `62.099998`, USDKRW static at `1428.310059` — while BTCUSDT
+  moved normally. All four marks were 91s "fresh".
+- **How to re-check it (cheap, read-only):** count consecutive `equity`
+  events with identical `unrealized` (the emitter dedupes on a changed
+  total, so repeats mean the mark truly did not move); confirm with
+  `get_price_from_market` called twice in the image; then check
+  `docker logs sooppiy-worker | grep -i "rate limit"`.
+- **Alpha Vantage was fully rate-limited** (*"25 requests per day"*) across
+  equities, macro, crypto and commodities. Relates to the existing "watch
+  FMP tier thinness" item.
+- ⚠️ **Do NOT ship a value-staleness guard casually — it HALTS TRADING when
+  it fires.** Quiet markets are real. Two separable owner decisions: (a) the
+  data provider/tier, (b) whether a frozen-value condition should pause
+  runs, merely warn, or only be surfaced by a read-only detector.
+
+### Added 2026-08-06 (cycle 82) — watch (ii) ANSWERED: the arm executor is sound
+
+- **64 arms authored, 0 `armed_exit` events, ever** — and it is **not** a
+  dead executor. Verified: `order_intent.arm_fires()` is 5/5 correct tested
+  live in the image, and `_fire_armed_order` is provably reached because
+  `_maybe_emit_equity` sits AFTER it in `_control_active` and equity events
+  flow. **No arm level has ever been crossed** (all four standing arms
+  0.48–0.88% short, price reconstructed from equity events).
+- **`_store_armed_order` runs ONLY on `intent == "arm"`** (`run_engine:3796`),
+  so a reduce/hold cycle leaves the previous arm standing. The comment "each
+  cycle's arm replaces the last" is true only of arming cycles. Noted; not
+  yet shown harmful.
+
 ### Added 2026-08-06 (cycle 81) — COMPARE THE IMAGE TAG EVERY VERIFICATION PASS
 
 - **A parallel session can redeploy prod between your deploy and your next
