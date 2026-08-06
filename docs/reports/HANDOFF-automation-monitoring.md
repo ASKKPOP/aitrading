@@ -492,6 +492,35 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### 🔍 Added 2026-08-06 (cycle 85) — the frozen feed is UPSTREAM Yahoo staleness
+
+**Supersedes the cycle-82 framing. It is NOT the Alpha Vantage rate limit** —
+that note reported the two together and implied a link that was never
+established. AV serves Market Intel; the price path is Yahoo.
+
+- **Yahoo returns ~4.8-hour-old data to this host on EVERY ticker**, measured
+  from its own timestamps at 12:20:26Z: GC=F 290 min, SI=F 290 min,
+  USDKRW=X 280 min, SLV 980 min, **BTC-USD 280 min**.
+- **BTC-USD trades 24/7 and cannot be 4h40m without a print.** The last 1-min
+  *candle* is equally old, so it is not a `regularMarketPrice`-outside-session
+  artefact — that hypothesis was tested and refuted.
+- The split is exact: **every Yahoo-served market frozen** (futures, forex,
+  us-stock) and **every Hyperliquid-served market live** (crypto).
+- **Verify the host clock before trusting any staleness claim.** `date -u`
+  vs an external `Date` header, plus `chronyc tracking`. It was exact here.
+- **Why it is invisible:** `mark_age_ok` measures OUR fetch time. Yahoo gives
+  us its own timestamp and `_get_yahoo_chart_price` discards it. A stale
+  upstream answering 200 OK looks identical to a live one.
+- ⚠️ **Do NOT ship the obvious fix unattended.** Gating on true staleness
+  would **halt the fleet the moment it deployed**, because the marks are
+  stale right now. It also likely needs an alembic column for the upstream
+  timestamp.
+
+**Recipe to re-check (read-only, from the prod container):** fetch
+`query1.finance.yahoo.com/v8/finance/chart/<ticker>` with the Yahoo UA and
+compare `meta.regularMarketTime` and the last non-null 1-min candle timestamp
+against `now`.
+
 ### 🚨 Escalated 2026-08-06 (cycle 83) — the freeze is a FILL-PRICE problem too
 
 - **Trades are EXECUTING at frozen marks.** 977 exited GC at
