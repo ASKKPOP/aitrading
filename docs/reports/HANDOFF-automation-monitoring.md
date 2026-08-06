@@ -492,6 +492,36 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### 📊 Added 2026-08-06 (24h sweep) — NEW SHAPE BASELINE, and a fix that moved its metric without saving the day
+
+**Replaces the old §7 baseline (55% win rate; 6/84 closes = 74% of loss) with
+a measured two-day pair.** Measure **per closing leg**, not per run.
+
+| metric | UTC 08-05 | UTC 08-06 |
+|---|---|---|
+| win rate | 57% | **39%** |
+| median win | +3.52 | **+0.40** |
+| median loss | −0.90 | **−2.87** |
+| **full closes' share of loss** | **92%** | **19%** |
+| worst-6 share | 93% | 69% |
+| per-leg expectancy | +1.62 | **−1.60** |
+
+- **The exit-verb work (#245/#253/#262) landed decisively** — whole-book
+  closes fell from 92% of all loss to 19%, below even the old 74% baseline.
+- **And the day lost far more.** The loss moved out of the tail into the
+  body. **A fix can move its own metric decisively and not save the day** —
+  always re-measure the whole distribution, not just the thing you fixed.
+- **Split by feed health before blaming the feed.** 08-06: crypto (live)
+  **−40.30 = 61% of the day at a 14% win rate**; yahoo-served (frozen)
+  −26.00 = 39%. The frozen feed distorts **bookkeeping, not the outcome**.
+- **975's shape, the day's −54%:** $4,739 notional, lifetime peak **6.5% of
+  one ordinary day**, held 7h18m, four partial exits, −38.26. Never right.
+  Not an exit failure — an entry that never worked, held long.
+
+⚠️ **USE THE TOOLS.** Ad-hoc SQL counted 4 `trailing_lock` fires where
+`ratchet_audit` reports 2 — the hand-written query matched **both** status
+rows, the exact double-count bug the tool exists to avoid.
+
 ### ⭐ Added 2026-08-06 (#263, from the 24h sweep) — ASK WHETHER THE RAIL COULD EVEN HAVE FIRED
 
 The most useful question a sweep can ask about a protective rail is not "did
