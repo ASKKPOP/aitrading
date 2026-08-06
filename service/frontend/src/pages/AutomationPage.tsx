@@ -197,26 +197,32 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     let dead = false
     const loadAssets = async () => {
       try {
-        const pos = await (await fetch(`${API_BASE}/positions`,
-          { headers: { Authorization: `Bearer ${token}` } })).json()
+        const auth = { headers: { Authorization: `Bearer ${token}` } }
+        const sinceIso = new Date(periodStartMs(sumPeriod)).toISOString()
+        // The three requests are independent, so they go out together. Chained
+        // with await they cost three serial round-trips before the strip could
+        // paint anything at all, and the strip is the first thing in the page
+        // header — it must not wait on a queue of its own making. Each request
+        // now pays network latency once, concurrently, instead of three times
+        // end to end.
+        //
+        // The trades list is capped at 200 rows (server cap) — it feeds the
+        // fill lists in the tile modals only. Every SUM comes from the
+        // server-side aggregate, which has no row cap. That aggregate is
+        // optional: if it fails, the capped-list sums below stand in, so it
+        // resolves to null on error rather than sinking the whole batch.
+        const [pos, mine, sm] = await Promise.all([
+          fetch(`${API_BASE}/positions`, auth).then(r => r.json()),
+          fetch(`${API_BASE}/positions/trades?limit=200`, auth).then(r => r.json()),
+          fetch(`${API_BASE}/positions/trades/summary?since=${encodeURIComponent(sinceIso)}&split=${EXIT_RAILS_EPOCH}`,
+            auth).then(r => r.json()).catch(() => null),
+        ])
         const positions = pos.positions || []
         const value = positions.reduce((s: number, p: any) =>
           s + Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0), 0)
         const unrealized = positions.reduce((s: number, p: any) => s + (p.pnl ?? 0), 0)
-        // The list is capped at 200 rows (server cap) — it feeds the fill
-        // lists in the tile modals only. Every SUM comes from the server-side
-        // aggregate below, which has no row cap.
-        const mine = await (await fetch(`${API_BASE}/positions/trades?limit=200`,
-          { headers: { Authorization: `Bearer ${token}` } })).json()
         const mineTrades = mine.trades || []
-        let summary: any = null
-        try {
-          const sinceIso = new Date(periodStartMs(sumPeriod)).toISOString()
-          const sm = await (await fetch(
-            `${API_BASE}/positions/trades/summary?since=${encodeURIComponent(sinceIso)}&split=${EXIT_RAILS_EPOCH}`,
-            { headers: { Authorization: `Bearer ${token}` } })).json()
-          if (typeof sm?.pnl === 'number') summary = sm
-        } catch { /* fall back to the capped list below */ }
+        const summary: any = typeof sm?.pnl === 'number' ? sm : null
         const realized = summary ? summary.pnl : mineTrades.reduce(
           (s: number, t: any) => s + (t.pnl ?? 0), 0)
         const realizedCurrent = summary ? summary.split.pnl : mineTrades.reduce(
@@ -811,8 +817,15 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // data you glance at, not the thing you came to do — the create buttons are.
   // Full-width tiles under the buttons pushed the actual TRADING list below
   // the fold on a laptop.
-  const summaryStrip = assets && win && (() => {
-    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer' }
+  // Rendered from the first paint, before any fetch resolves: the tiles are
+  // the page's masthead, and gating the whole strip on `assets` made it pop in
+  // a beat after everything else. While loading, each tile keeps its label and
+  // its footprint and shows an em dash where the number will land — no reflow
+  // when the values arrive, and no stale money figure shown as if it were
+  // current. Tiles only become clickable once there is something to open.
+  const summaryStrip = (() => {
+    const ready = !!(assets && win)
+    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: ready ? 'pointer' : 'default' }
     const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap' }
     const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
     const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
@@ -832,25 +845,25 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           ))}
         </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        <button style={tile} title={T.dHint} onClick={() => setSumDetail('deposit')}>
+        <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('deposit') : undefined}>
           <div style={kSt}>💰 {T.sumDeposit}</div>
-          <div style={vSt}>{fmtUsd(assets.total)}</div>
-          <div style={sSt}>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</div>
+          <div style={vSt}>{assets ? fmtUsd(assets.total) : '—'}</div>
+          <div style={sSt}>{assets ? <>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</> : '\u00a0'}</div>
         </button>
-        <button style={tile} title={T.dHint} onClick={() => setSumDetail('lifetime')}>
+        <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('lifetime') : undefined}>
           <div style={kSt}>📅 {T.sumLifetime}</div>
-          <div style={vSt}>{win.opWindow ? <>{win.opWindow.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{win.opWindow.h}{T.sumHour}</span></> : '—'}</div>
-          <div style={sSt}>{Number.isFinite(win.opStartMs) ? `${win.localDate(win.opStartMs)} ${T.sumSince}` : T.sumNoHistory}</div>
+          <div style={vSt}>{win && win.opWindow ? <>{win.opWindow.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{win.opWindow.h}{T.sumHour}</span></> : '—'}</div>
+          <div style={sSt}>{!win ? '\u00a0' : Number.isFinite(win.opStartMs) ? `${win.localDate(win.opStartMs)} ${T.sumSince}` : T.sumNoHistory}</div>
         </button>
-        <button style={tile} title={T.dHint} onClick={() => setSumDetail('profit')}>
+        <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('profit') : undefined}>
           <div style={kSt}>📈 {T.sumProfit}</div>
-          <div style={{ ...vSt, color: pnlColor(win.profit) }}>{win.profit >= 0 ? '+' : ''}{fmtUsd(win.profit)}</div>
-          <div style={sSt}>{T.assetsRealized} {win.realized >= 0 ? '+' : ''}{fmtUsd(win.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</div>
+          <div style={{ ...vSt, color: win ? pnlColor(win.profit) : undefined }}>{win ? `${win.profit >= 0 ? '+' : ''}${fmtUsd(win.profit)}` : '—'}</div>
+          <div style={sSt}>{win && assets ? <>{T.assetsRealized} {win.realized >= 0 ? '+' : ''}{fmtUsd(win.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</> : '\u00a0'}</div>
         </button>
-        <button style={tile} title={T.dHint} onClick={() => setSumDetail('rails')}>
+        <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('rails') : undefined}>
           <div style={kSt}>🛡️ {T.sumCurrentRails}</div>
-          <div style={{ ...vSt, color: pnlColor(win.realizedRails) }}>{win.realizedRails >= 0 ? '+' : ''}{fmtUsd(win.realizedRails)}</div>
-          <div style={sSt}>{T.sumRailsSince} {win.railsSince}</div>
+          <div style={{ ...vSt, color: win ? pnlColor(win.realizedRails) : undefined }}>{win ? `${win.realizedRails >= 0 ? '+' : ''}${fmtUsd(win.realizedRails)}` : '—'}</div>
+          <div style={sSt}>{win ? `${T.sumRailsSince} ${win.railsSince}` : '\u00a0'}</div>
         </button>
       </div>
       </div>
