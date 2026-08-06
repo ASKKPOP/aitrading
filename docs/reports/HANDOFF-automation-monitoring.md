@@ -596,7 +596,26 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
-### Added 2026-08-06 (cycle 89) — #257's silence is STRUCTURAL, not a failure
+### ⭐ RESOLVED 2026-08-06 17:00Z (cycle 96) — #257 FIRED, and the cycle-89 prediction held
+
+**The open verification from cycle 84 is CLOSED, positive. Do not re-open.**
+
+Run 968, 17:00: desk `reduce` 0.5 → trade signal 499 at 17:00:16 → equity
+realized −3.351328 → **−3.346403 (+0.0049)** at 17:00:47 → the **control
+pass** fires `conviction_collapse` at 17:00:48 → **`adapt: pending_close`
+realized +0.0049** → flatten leg and #249's `flatten_close` +0.0046 → stopped.
+
+- **The +0.0049 matches the equity delta to the cent.**
+- **The flush ran BEFORE the flatten existed as a signal**, so #257 and #249
+  both journalled with **no overlap** — the ordering the design depends on.
+- **Cycle 89's structural prediction was exactly right**: a control-pass stop
+  with a close from the last decision cycle still un-ingested.
+  `conviction_collapse` fired **32 seconds** after the reduce.
+- ⚠️ **The captured amount was POSITIVE.** The flush recovers wins as well as
+  losses — the hole was never loss-specific, and describing it as "missing
+  losses" would be wrong.
+
+### Added 2026-08-06 (cycle 89) — #257's silence was STRUCTURAL, not a failure
 
 - **`pending_close` has stayed 0 through several stops. That is correct.**
   The `adapt_retired` path runs `run_cycle`'s feedback pass, which calls
