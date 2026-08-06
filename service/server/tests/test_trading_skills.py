@@ -329,9 +329,30 @@ class RegistryTests(_Db):
         # armed is the size taken with no cycle in between to reconsider.
         for site in ("light", "trader"):
             block = trading_skills.skills_block(site)
-            self.assertIn("SIZE THE ARM THE WAY YOU SIZE ANY EXIT", block,
+            self.assertIn("SIZE THE ARM AS YOU SIZE ANY EXIT", block,
                           f"arm-verb clause missing from {site}")
-            self.assertIn("spends your reassessment", block)
+            self.assertIn("repeating it with close 1.0 buys nothing", block)
+
+    def test_a_frozen_price_is_taught_as_missing_data_not_a_calm_market(self):
+        # Cycle 83: #259 gave the desk the FACT of a motionless tape
+        # (_mark_freshness_line) and NO skill attached any judgment to it —
+        # an observable with no lesson. Data Honesty's existing clause covers
+        # inputs that are missing or visibly stale; a frozen price is the
+        # case it missed, because it does not look stale at all. Data Honesty
+        # rides every prompt site, so assert on all of them unconditionally —
+        # an earlier draft guarded on "is this skill present?" and would have
+        # passed vacuously if it ever stopped being.
+        for site in trading_skills.PROMPT_SITES:
+            block = trading_skills.skills_block(site)
+            self.assertIn("### Data Honesty\n", block,
+                          f"Data Honesty itself dropped from {site}")
+            self.assertIn("A PRICE THAT IS NOT MOVING IS MISSING DATA", block,
+                          f"frozen-mark judgment missing from {site}")
+            self.assertIn("Do not OPEN or ADD on it", block,
+                          f"the entry refusal missing from {site}")
+            self.assertIn("reducing or closing is the one act that "
+                          "still makes sense", block,
+                          f"the exit carve-out missing from {site}")
 
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
@@ -674,3 +695,4 @@ class AdminRoutesTests(_Db):
 
 if __name__ == "__main__":
     unittest.main()
+
