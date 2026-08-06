@@ -21,11 +21,46 @@ Suggestions + shipped solutions.
 SI 61.535 → 61.450, USDKRW 1421.88 → 1423.68, ETH 1916.80 → 1909.20, all
 moving between reads.
 
-**2. Losses and WHY.** Ledger **−71.53**, unchanged this beat. 972 SLV
-fully exited at **55.180099** — a real price, not the frozen 56.07 —
-banking **+1.43** on the run. Its `peak_pnl_usd` re-anchored 8.63 → 1.43
-on going flat, which is the documented `_ratchet_peak_pnl` behaviour, not
-a loss.
+**2. Losses and WHY.** *(Corrected at 16:44 — the ledger moved while
+this cycle's PR work was in flight, and the first draft of this line said
+"unchanged".)* Ledger **−71.53 → −92.90**, a **−21.37** beat:
+
+| time | run | leg | realized |
+|---|---|---|---|
+| 16:30:19 | **979 SI** | sell 20.714 @ 61.174999 vs 62.099998 entry | **−19.22** |
+| 16:30:17 | 977 GC | sell 0.0824 @ 4284.700195 | −2.14 |
+
+972 SLV also fully exited at **55.180099** — a real price, not the frozen
+56.07 — banking **+1.43**. Its `peak_pnl_usd` re-anchored 8.63 → 1.43 on
+going flat: documented `_ratchet_peak_pnl` behaviour, not a loss.
+
+**979 is now −31.17, and this is the sweep's own prediction playing out.**
+Ninety minutes ago the sweep flagged it as *"the 971 shape happening
+live — NOT ARMED, best −0.26, needs 10.21, and −9.63 open right now."*
+SI fell **−1.49%** from its entry and it has lost −31.17.
+
+**But my trigger was mis-specified, and I would rather say so than claim
+a hit.** I wrote the trigger as *"notional > ~$4k, peak under ~10% of one
+ordinary day, held > 4h."* 979 is **$2,573** notional — it **misses on
+size** while matching the two criteria that matter:
+
+| | 975 | 979 |
+|---|---|---|
+| lifetime peak | +2.84 (on $4,739) | **−0.26 — never in profit at all** |
+| held | 7h18m | **7h50m** |
+| notional | $4,739 | $2,573 ❌ |
+| final | −38.26 | −31.17 |
+
+**Notional is not the discriminator; "the peak never meaningfully cleared
+zero" is.** The trigger is restated accordingly: *a run whose lifetime
+peak never exceeds its own round-trip cost and is still held past ~4
+hours.* Both 975 and 979 satisfy that; it is now n=2.
+
+The desk is not misbehaving here. 979 reduced at 15:41 and again at
+16:30 — correct partial exits. It has been told *"NOT ARMED — needs
+$10.21, your best is −$0.26"* every cycle since #263 went live at 15:18.
+**The loss is an entry that was never right, held long** — the same
+conclusion the sweep reached for 975, now with a second instance.
 
 **3. ⚠️ A NUMBER I HAVE BEEN CITING WAS WRONG.** `ratchet_audit` reported
 **"post-fix 6 survived"** for #251. **The honest figure is 5.**
