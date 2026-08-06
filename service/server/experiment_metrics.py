@@ -8,10 +8,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from database import begin_write_transaction, get_db_connection
-from routes_shared import utc_now_iso_z
+from routes_shared import DEFAULT_AGENT_SEED_CAPITAL, utc_now_iso_z
 
 
-INITIAL_CAPITAL = 100000.0
+# Seed default for agents created without an explicit balance. Per-agent
+# math must use that agent's own `starting_capital`; measuring everyone
+# against this constant reports a phantom collapse for any other seed.
+INITIAL_CAPITAL = DEFAULT_AGENT_SEED_CAPITAL
 
 
 def _json_dumps(value: Any) -> str:
@@ -22,11 +25,12 @@ def _iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _max_drawdown_from_history(rows: list[dict[str, Any]]) -> float:
+def _max_drawdown_from_history(rows: list[dict[str, Any]],
+                               starting_capital: float = INITIAL_CAPITAL) -> float:
     peak = None
     max_drawdown = 0.0
     for row in rows:
-        value = float(row.get("profit") or 0) + INITIAL_CAPITAL
+        value = float(row.get("profit") or 0) + starting_capital
         peak = value if peak is None else max(peak, value)
         if peak and peak > 0:
             max_drawdown = max(max_drawdown, (peak - value) / peak * 100.0)
@@ -47,10 +51,13 @@ def refresh_agent_metric_snapshots(window_days: int = 7, window_key: str | None 
     inserted = 0
     try:
         begin_write_transaction(cursor)
-        cursor.execute("SELECT id FROM agents ORDER BY id")
-        agent_ids = [row["id"] for row in cursor.fetchall()]
+        cursor.execute(
+            "SELECT id, COALESCE(starting_capital, ?) AS starting_capital"
+            " FROM agents ORDER BY id", (INITIAL_CAPITAL,))
+        agent_seeds = [(row["id"], float(row["starting_capital"] or INITIAL_CAPITAL))
+                       for row in cursor.fetchall()]
 
-        for agent_id in agent_ids:
+        for agent_id, starting_capital in agent_seeds:
             cursor.execute(
                 """
                 SELECT profit, recorded_at
@@ -62,8 +69,9 @@ def refresh_agent_metric_snapshots(window_days: int = 7, window_key: str | None 
             )
             history = [dict(row) for row in cursor.fetchall()]
             latest_profit = float(history[-1]["profit"] or 0) if history else 0.0
-            return_pct = latest_profit / INITIAL_CAPITAL * 100.0
-            max_drawdown = _max_drawdown_from_history(history)
+            return_pct = (latest_profit / starting_capital * 100.0
+                          if starting_capital else 0.0)
+            max_drawdown = _max_drawdown_from_history(history, starting_capital)
 
             cursor.execute(
                 """

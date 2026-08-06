@@ -11,6 +11,7 @@ from database import get_db_connection
 from experiment_events import record_event
 from routes_models import FollowRequest
 from routes_shared import (
+    DEFAULT_AGENT_SEED_CAPITAL,
     LEADERBOARD_CACHE_KEY_PREFIX,
     LEADERBOARD_CACHE_TTL_SECONDS,
     POSITIONS_CACHE_TTL_SECONDS,
@@ -33,7 +34,24 @@ from services import _get_agent_by_token
 from utils import _extract_token
 
 
-INITIAL_CAPITAL = 100000.0
+# The seed balance a NEW agent is created with. It is a default, not a fact
+# about agents already on the books — each of those carries its own
+# `agents.starting_capital`, and profit must be measured against that. Reading
+# this constant per-agent is what made a 1,000-seeded agent report -99%.
+INITIAL_CAPITAL = DEFAULT_AGENT_SEED_CAPITAL
+
+
+def starting_capital_of(row, default: float = INITIAL_CAPITAL) -> float:
+    """The capital this agent actually began with.
+
+    Falls back to the seed default when the column is absent (stale schema) or
+    NULL (row predates the migration), which is exactly what those rows were
+    started with, so the fallback is not a guess."""
+    value = _row_value(row, 'starting_capital') if row is not None else None
+    try:
+        return float(value) if value is not None else float(default)
+    except (TypeError, ValueError):
+        return float(default)
 
 
 def _row_value(row, key: str):
@@ -46,8 +64,10 @@ def _row_value(row, key: str):
         return None
 
 
-def profit_percent_for_display(profit: float, deposited: float) -> float:
-    base_capital = INITIAL_CAPITAL + (deposited or 0)
+def profit_percent_for_display(profit: float, deposited: float,
+                               starting_capital: float = INITIAL_CAPITAL) -> float:
+    base_capital = (starting_capital if starting_capital is not None
+                    else INITIAL_CAPITAL) + (deposited or 0)
     if base_capital <= 0:
         return 0.0
     return clamp_profit_for_display(profit) / base_capital * 100
@@ -231,7 +251,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                             ),
                             0
                         ) -
-                        (? + COALESCE(a.deposited, 0))
+                        (COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0))
                     ) AS profit,
                     (
                         (
@@ -246,8 +266,8 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                                 ),
                                 0
                             ) -
-                            (? + COALESCE(a.deposited, 0))
-                        ) / NULLIF((? + COALESCE(a.deposited, 0)), 0) * 100
+                            (COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0))
+                        ) / NULLIF((COALESCE(a.starting_capital, ?) + COALESCE(a.deposited, 0)), 0) * 100
                     ) AS profit_percent,
                     (
                         SELECT MAX(ph.recorded_at)
@@ -267,7 +287,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 -- top_n, so leaving it unfiltered put the deploy-check agents
                 -- straight back on the board.
                 WHERE {_rankable()}
-                GROUP BY a.id, a.name, a.cash, a.deposited
+                GROUP BY a.id, a.name, a.cash, a.deposited, a.starting_capital
             )
             SELECT
                 ap.*,
@@ -747,7 +767,8 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             if positions[-1]['market'] == 'polymarket':
                 decorate_polymarket_item(positions[-1], fetch_remote=False)
 
-        payload = {'positions': positions, 'cash': agent.get('cash', 100000.0)}
+        payload = {'positions': positions,
+                   'cash': agent.get('cash', starting_capital_of(agent))}
         ctx.positions_cache[agent['id']] = (now_ts, payload)
         return payload
 
@@ -1172,7 +1193,8 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         cursor.execute(
             """
-            SELECT id, name, cash, points, COALESCE(deposited, 0) AS deposited
+            SELECT id, name, cash, points, COALESCE(deposited, 0) AS deposited,
+                   starting_capital
             FROM agents
             WHERE id = ?
             """,
@@ -1183,13 +1205,14 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
             raise HTTPException(status_code=404, detail='Agent not found')
 
-        cash = float(row['cash'] or INITIAL_CAPITAL)
+        seed = starting_capital_of(row)
+        cash = float(row['cash'] or seed)
         # Partial public display: points are shown (social/reward standing),
         # while email/tokens/API settings stay private to the agent itself.
         points = int(row['points'] or 0)
         deposited = float(row['deposited'] or 0)
-        profit = cash - INITIAL_CAPITAL
-        profit_pct = profit_percent_for_display(profit, deposited)
+        profit = cash - seed
+        profit_pct = profit_percent_for_display(profit, deposited, seed)
 
         cursor.execute(
             """

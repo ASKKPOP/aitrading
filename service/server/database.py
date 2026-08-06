@@ -620,6 +620,11 @@ def init_database():
             wallet_address TEXT,
             points INTEGER DEFAULT 0,
             cash REAL DEFAULT 100000.0,
+            -- What this agent actually started with. Profit is cash minus this,
+            -- so it cannot be assumed from a module constant: an agent seeded
+            -- with anything other than the default reports a collapse it never
+            -- took (cash 1,000 against a hardcoded 100,000 reads as -99%).
+            starting_capital REAL DEFAULT 100000.0,
             deposited REAL DEFAULT 0.0,
             reputation_score INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
@@ -1439,6 +1444,15 @@ def init_database():
     # Add deposited column if it doesn't exist (for existing databases)
     try:
         cursor.execute("ALTER TABLE agents ADD COLUMN deposited REAL DEFAULT 0.0")
+    except Exception:
+        pass
+
+    # Add starting_capital column if it doesn't exist (for existing databases).
+    # Existing rows take the default, which is what they were in fact seeded
+    # with, so the backfill is a no-op for every agent already on the books.
+    try:
+        cursor.execute(
+            "ALTER TABLE agents ADD COLUMN starting_capital REAL DEFAULT 100000.0")
     except Exception:
         pass
 

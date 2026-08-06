@@ -1351,10 +1351,14 @@ async def periodic_token_cleanup():
 
 def _record_profit_history_once() -> int:
     from database import get_db_connection
+    from routes_shared import DEFAULT_AGENT_SEED_CAPITAL
 
     started_at = time.monotonic()
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    initial_capital = 100000.0
+    # Seed default only — each agent's own starting_capital wins (see the
+    # COALESCE below). Measuring every agent against one constant is what
+    # recorded a -99,000 'loss' for an agent seeded with 1,000.
+    initial_capital = DEFAULT_AGENT_SEED_CAPITAL
     max_abs_profit = 1e12
     conn = get_db_connection()
     try:
@@ -1367,6 +1371,7 @@ def _record_profit_history_once() -> int:
                     a.id AS agent_id,
                     COALESCE(a.cash, 0) AS cash,
                     COALESCE(a.deposited, 0) AS deposited,
+                    COALESCE(a.starting_capital, ?) AS starting_capital,
                     COALESCE(
                         SUM(
                             CASE
@@ -1385,7 +1390,7 @@ def _record_profit_history_once() -> int:
                     WHERE ale.agent_id = a.id
                       AND COALESCE(ale.active, 1) = 1
                 )
-                GROUP BY a.id, a.cash, a.deposited
+                GROUP BY a.id, a.cash, a.deposited, a.starting_capital
             ),
             calculated AS (
                 SELECT
@@ -1393,7 +1398,7 @@ def _record_profit_history_once() -> int:
                     cash,
                     position_value,
                     cash + position_value AS total_value,
-                    cash + position_value - (? + deposited) AS raw_profit
+                    cash + position_value - (starting_capital + deposited) AS raw_profit
                 FROM agent_values
             )
             SELECT

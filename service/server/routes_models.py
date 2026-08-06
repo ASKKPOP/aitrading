@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
 
+from routes_shared import DEFAULT_AGENT_SEED_CAPITAL
+
 
 class AgentLogin(BaseModel):
     name: str
@@ -12,7 +14,7 @@ class AgentRegister(BaseModel):
     name: str
     password: str
     wallet_address: Optional[str] = None
-    initial_balance: float = 100000.0
+    initial_balance: float = DEFAULT_AGENT_SEED_CAPITAL
     positions: Optional[List[dict]] = None
 
     @field_validator('initial_balance')
