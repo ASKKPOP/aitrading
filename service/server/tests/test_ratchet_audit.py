@@ -22,6 +22,8 @@ if str(SERVER_DIR) not in sys.path:
 import database
 import ratchet_audit as ra
 
+fa_reduce_steps = ra.reduce_steps
+
 
 def _t(side, qty, ts):
     return {"side": side, "quantity": qty, "ts": ts}
@@ -209,6 +211,26 @@ class ReduceStepTests(unittest.TestCase):
         self.assertAlmostEqual(steps[0]["max_book_before"], 1.32, places=6)
         self.assertAlmostEqual(steps[0]["book_after"], 0.66, places=6)
         self.assertAlmostEqual(steps[0]["price"], 4314.1, places=4)
+
+    def test_float_dust_from_a_full_close_is_not_a_reduce(self):
+        # Run 972's real shape: a 42.92-unit book halved six times, whose
+        # final FULL close left 1.47e-08 units of float dust. An absolute
+        # 1e-12 guard let that through as a "reduce" with a post-reduce arm
+        # of ~0, which satisfied the in-band test trivially and inflated the
+        # post-fix survived count from a true 5 to a reported 6.
+        legs = [{"side": "buy", "quantity": 42.92458890030832,
+                 "price": 56.0448, "ts": "a"}]
+        for i, sell in enumerate([21.46229445, 10.731147225, 5.365573615,
+                                  2.6827868099999996, 1.341393405,
+                                  1.34139341]):
+            legs.append({"side": "sell", "quantity": sell, "price": 56.0,
+                         "ts": f"t{i}"})
+        steps = fa_reduce_steps(legs)
+        self.assertEqual(len(steps), 5,
+                         "the final full close must not count as a reduce")
+        for s in steps:
+            self.assertGreater(s["book_after"], 1e-3,
+                               "no dust-sized residual may survive as a step")
 
     def test_a_full_close_is_not_a_reduce(self):
         # Nothing is left for an arm to sit under.
