@@ -841,3 +841,146 @@ class BreadthBriefTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ArmExecutorTests(unittest.TestCase):
+    """The desk pre-commits an exit level; the CONTROL PASS fires it between
+    decision cycles. 54 arm intents were emitted lifetime and every one was
+    discarded before this existed — and cycle 65 measured the cost: on
+    2026-08-05 every losing run was in profit first, and for four of seven
+    that profit existed ONLY between cycles (5-20 min dwell vs a ~45 min
+    cycle), so the desk never saw it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        os.environ["AUTO_TRADING_ENABLED"] = "true"
+        self.probe = patch("routes_runs._probe_price", return_value=100.0)
+        self.probe.start()
+        self.client = TestClient(create_app())
+        r = self.client.post("/api/claw/agents/selfRegister",
+                             json={"name": "arm-agent", "password": "pw123",
+                                   "initial_balance": 100000.0})
+        self.token = r.json()["token"]
+        self.agent_id = r.json()["agent_id"]
+
+    def tearDown(self):
+        self.probe.stop()
+        os.environ.pop("AUTO_TRADING_ENABLED", None)
+        self.tmp.cleanup()
+
+    def _run_with_position(self, qty=5.0, entry=100.0):
+        run_id = self.client.post(
+            "/api/runs", json={"symbol": "BTC", "market": "crypto",
+                               "max_bet_usd": 500.0},
+            headers={"Authorization": f"Bearer {self.token}"}).json()["id"]
+        self.client.post(f"/api/runs/{run_id}/start",
+                         headers={"Authorization": f"Bearer {self.token}"})
+        with patch("analysis_agents.run_analysis", return_value=BUY_ANALYSIS):
+            run_engine.run_cycle(run_id)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT quantity FROM positions WHERE run_id = ?", (run_id,))
+        held = float(cur.fetchone()["quantity"])
+        conn.close()
+        return run_id, held
+
+    def _row(self, run_id):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM trading_runs WHERE id = ?", (run_id,))
+        row = dict(cur.fetchone())
+        conn.close()
+        return row
+
+    def _pos_qty(self, run_id):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT quantity FROM positions WHERE run_id = ?", (run_id,))
+        r = cur.fetchone()
+        conn.close()
+        return float(r["quantity"]) if r else 0.0
+
+    def test_armed_reduce_fires_on_the_control_pass_and_sheds_half(self):
+        run_id, held = self._run_with_position()
+        self.assertGreater(held, 0)
+        run_engine._store_armed_order(
+            run_id, {"if": "price_above", "then": "reduce",
+                     "level": 110.0, "size_frac": 0.5}, 1)
+        out = {}
+        pnl = {"mark_age_ok": True,
+               "position": {"quantity": held, "current_price": 111.0}}
+        run_engine._fire_armed_order(self._row(run_id), pnl, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+        self.assertAlmostEqual(self._pos_qty(run_id), held * 0.5, places=6)
+        # one-shot: the arm is cleared so the next tick cannot re-fire
+        self.assertIsNone(self._row(run_id)["armed_order_json"])
+
+    def test_it_does_not_fire_before_the_level(self):
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_above", "then": "reduce",
+                     "level": 110.0, "size_frac": 0.5}, 1)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "current_price": 109.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), None)
+        self.assertAlmostEqual(self._pos_qty(run_id), held, places=6)
+        self.assertIsNotNone(self._row(run_id)["armed_order_json"])
+
+    def test_a_stale_mark_never_fires(self):
+        # The stop_eval_failed lesson: never price an exit on data we have
+        # already declared untrustworthy.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_above", "then": "close", "level": 110.0}, 1)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": False,
+                                "position": {"quantity": held,
+                                             "current_price": 999.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), None)
+        self.assertAlmostEqual(self._pos_qty(run_id), held, places=6)
+
+    def test_going_flat_clears_a_standing_arm(self):
+        run_id, _ = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_above", "then": "close", "level": 110.0}, 1)
+        run_engine._fire_armed_order(
+            self._row(run_id),
+            {"mark_age_ok": True, "position": {"quantity": 0.0,
+                                               "current_price": 111.0}}, {})
+        self.assertIsNone(self._row(run_id)["armed_order_json"])
+
+    def test_it_fires_through_a_gap_and_journals_the_slippage(self):
+        # ARM_THEN is exits-only, so an arm can only shed risk and is never
+        # refused — the module's own doctrine. Distance is reported, not vetoed.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 90.0}, 3)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "current_price": 45.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+        self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
+        evs = self.client.get(
+            f"/api/runs/{run_id}/events?limit=500",
+            headers={"Authorization": f"Bearer {self.token}"}).json()["events"]
+        fired = [e for e in evs if e["event_type"] == "armed_exit"]
+        self.assertEqual(len(fired), 1)
+        payload = json.loads(fired[0]["payload"]) \
+            if isinstance(fired[0]["payload"], str) else fired[0]["payload"]
+        self.assertTrue(payload["executed"])
+        self.assertAlmostEqual(payload["slippage_pct"], -50.0, places=2)
+
+    def test_the_executor_is_WIRED_into_the_control_pass(self):
+        # An executor nothing calls is the exact bug this feature fixes.
+        import inspect
+        self.assertIn("_fire_armed_order(run, pnl, out)",
+                      inspect.getsource(run_engine._control_active))
