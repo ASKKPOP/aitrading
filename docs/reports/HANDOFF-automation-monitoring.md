@@ -514,6 +514,31 @@ without new contrary data.**
   **4h32m (~6 cycles)** to reach — the first live support for re-anchoring
   reachability from "one ordinary day" to "your next look, ~45 minutes". n=1.
 
+### 🚨🚨 CONFIRMED 2026-08-06 (cycle 88) — Yahoo serves this host a FROZEN SNAPSHOT
+
+**Top open item. Conclusive. Needs an owner decision — every remedy is one
+I deliberately did not take unattended.**
+
+- **20 minutes into the US regular session** (opened 13:30Z, measured
+  13:50:09Z): **SPY age 1070 min (17.8 h)**, SLV 1070 min, UBER 1070 min,
+  BTC-USD 370 min. **SPY cannot go 17.8 hours without a print during market
+  hours.** `marketState` is absent from the payload entirely.
+- **BTC-USD's age grew 282 → 370 min across 88 minutes of wall clock — 1:1.**
+  The data is not lagging, it is completely static.
+- **The US open changed nothing**, which eliminates session semantics. Not
+  Alpha Vantage (different provider). Not our clock (verified twice).
+- **It is now filling orders inside a live session:** 972 filled SLV at
+  56.07 at 13:41:30, eleven minutes into the session, against a 17.8-hour-old
+  price. **4 of 7 live runs are priced off this snapshot** (GC, SI, SLV,
+  USDKRW); only the Hyperliquid-served crypto runs have real marks.
+- **The desk is not at fault and cannot fix it.** #260's clause endorses
+  reduce/close on a frozen mark and the desk complied; it cannot control the
+  price a fill receives.
+- **Remedies, none shipped:** (a) halt the Yahoo-served markets — *halts
+  trading*; (b) switch provider for futures/forex/us-stock — needs a decision
+  and credentials; (c) record the upstream timestamp without gating — alembic
+  column, no behaviour change.
+
 ### 🔍 Added 2026-08-06 (cycle 85) — the frozen feed is UPSTREAM Yahoo staleness
 
 **Supersedes the cycle-82 framing. It is NOT the Alpha Vantage rate limit** —
