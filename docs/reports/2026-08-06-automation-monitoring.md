@@ -14,6 +14,66 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 96 — 2026-08-06 17:19Z (prod DB clock) — ⭐ #257 FIRED, EXACTLY AS PREDICTED
+
+**1. Working per plan?** Yes. `20260806-floorstatus` (tag compared),
+**0 tracebacks**, 4 runs live, docs 200/200.
+
+**2. Losses and WHY.** Ledger **−92.89, unchanged**. DRIFT narrowed
+−32.04 → **−10.67** as the lagged adapts landed (979's −19.2239 at
+17:11:35). Two runs closed, neither adding new loss:
+
+- **968 USDKRW −3.34** on `stop_event:conviction_collapse` (17:00:49)
+- **979 SI −31.17** on `adapt_retired / consecutive_losses` (17:11:35),
+  the loss already booked at 16:30
+
+Only 978 ETHUSDT still holds a position.
+
+**3. ⭐ `pending_close` FIRED FOR THE FIRST TIME — #257's open
+verification is CLOSED, positive.**
+
+Open since cycle 84. The sequence on 968 is textbook:
+
+| time | event |
+|---|---|
+| 17:00:15 | decision cycle 38, `sell`, conviction 0.275 |
+| 17:00:16 | desk `reduce` 0.5 → trade signal 499 |
+| 17:00:47 | equity: realized −3.351328 → **−3.346403** (**+0.0049**) |
+| 17:00:48 | control pass fires `conviction_collapse` → `stopping` |
+| **17:00:48** | **`adapt: pending_close` signal 498, realized +0.0049** |
+| 17:00:49 | flatten leg → #249's `flatten_close` +0.0046 |
+| 17:00:49 | `stopped` |
+
+**The +0.0049 matches the equity delta to the cent**, and the flush ran
+**before** the flatten leg existed as a signal — so #257 and #249 both
+journalled, with no overlap. That is the design working exactly as
+written.
+
+**And it validates cycle 89's structural prediction word for word.**
+That cycle argued the silence was not a failure:
+
+> *"#257's non-null case requires a stop fired by the CONTROL pass
+> (at_time, max_loss, trailing_lock, profit_target, idle/fee retire)
+> while a close from the last decision cycle is still un-ingested."*
+
+`conviction_collapse` is a control-pass stop, and it fired **32 seconds**
+after the desk's reduce — before any next cycle could ingest it. Exactly
+that shape.
+
+*Worth noting:* the captured amount is **positive** (+0.0049). The flush
+recovers wins as well as losses; the hole was never loss-specific.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing new. **#264 still blocked** — the Security
+workflow's runners remain unavailable (`"The job was not acquired by
+Runner of type hosted"`), while CI's have recovered (Frontend and Backend
+both pass). Not merging on red. Its correction stands published:
+`ratchet_audit`'s raw *"post-fix 10 survived"* contains **2 float-dust
+rows**; the honest figure is **8**.
+
+---
+
 ## Cycle 95 — 2026-08-06 16:49Z (prod DB clock)
 
 **1. Working per plan?** Yes. `20260806-floorstatus` (tag compared),
