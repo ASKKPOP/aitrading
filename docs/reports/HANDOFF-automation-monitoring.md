@@ -492,6 +492,28 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### ⭐ RESOLVED 2026-08-06 (cycle 87) — #251 PROVEN LIVE, and the arm executor FIRED
+
+Two long-standing open items closed on real evidence. **Do not re-open either
+without new contrary data.**
+
+- **#251 (max-book arm anchor) is proven.** The post-fix sample was n=0 from
+  cycle 77 to 86. On 2026-08-06 run 975 produced **two in-band reduces that
+  SURVIVED** (13:10:32 arm_after 1.8755 / peak 2.84 / arm_full 9.3777, and
+  13:11:19 0.9378 / 2.84 / 9.3778) against run 976's pre-fix in-band reduce
+  that **FLATTENED**. Under the old anchor both arms sat below the peak → the
+  floor would have armed, and 975's P&L was far below breakeven → it would
+  have fired. **#251 prevented two forced flattens**; 975 kept its remainder.
+  Re-check any time with `python -m ratchet_audit --since <date>`.
+- **Watch (ii) closed positive: the arm executor works.** 64+ arms, zero
+  fires, until `run:975:arm:6` at 13:11:19 — predicate, 50%-of-remaining
+  sizing, idempotent order id, telemetry, **−0.056% slippage**. It fired on
+  BTCUSDT, the one live-feed symbol, confirming that Yahoo-served arms are
+  inert *because of the freeze*, not because the mechanism is broken.
+- **Calibration for #259:** that arm was **0.75 ordinary days** away and took
+  **4h32m (~6 cycles)** to reach — the first live support for re-anchoring
+  reachability from "one ordinary day" to "your next look, ~45 minutes". n=1.
+
 ### 🔍 Added 2026-08-06 (cycle 85) — the frozen feed is UPSTREAM Yahoo staleness
 
 **Supersedes the cycle-82 framing. It is NOT the Alpha Vantage rate limit** —
