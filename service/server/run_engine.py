@@ -2797,6 +2797,12 @@ def _earnings_state_line(run: dict) -> str:
 
 HOLD_STREAK_BRIEF_MIN = 4
 
+# A held book emits an equity heartbeat every few minutes, so 6 identical
+# reads is minutes of a motionless tape — well past ordinary quiet, and far
+# short of the 36 straight reads GC and SI produced on 2026-08-06.
+MARK_FROZEN_BRIEF_MIN = 6
+MARK_FROZEN_BRIEF_SCAN = 60
+
 
 def _hold_streak_line(run: dict, pos_qty: float) -> str:
     """The desk's own flat streak, as a fact it cannot otherwise perceive.
@@ -2835,6 +2841,107 @@ def _hold_streak_line(run: dict, pos_qty: float) -> str:
             return ""
         return (f"Streak: you have been flat with no action for {streak} "
                 "consecutive cycles.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
+def _mark_freshness_line(run: dict, pos_qty: float) -> str:
+    """How many straight reads returned the SAME price — the one thing a
+    fresh timestamp cannot tell the desk.
+
+    WHY (2026-08-06, cycle 82). `mark_age_ok` checks `price_updated_at`, not
+    whether the value moved. A feed that keeps answering with a stale quote
+    refreshes that timestamp every ~90s and is invisible to every staleness
+    check in the engine. Measured live: GC printed 4320.700195 for 2h26m and
+    SI 62.099998 for 2h05m — three SI fills at the identical price — while
+    BTCUSDT moved normally and Alpha Vantage sat fully rate-limited at 25
+    requests/day. The desk was reading a frozen tape and could not tell.
+
+    Fact only; the judgment lives in the skill. Deliberately NOT a gate: a
+    value-staleness rail HALTS TRADING when it fires and quiet markets are
+    real, so this hands the desk the observable and lets it be the actor.
+
+    Counts trailing `equity` events whose `unrealized` is unchanged. That is
+    conservative in the right direction: `unrealized = (mark - avg) * qty`,
+    so an add or a reduce moves it even under a frozen mark and RESETS the
+    count — this can under-report a freeze, never invent one. Held books
+    only (a flat book's unrealized is a constant 0 and would read as frozen
+    forever), and fail-soft.
+    """
+    if not pos_qty:
+        return ""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT ts, payload FROM run_events WHERE run_id = ? AND "
+                "event_type = 'equity' ORDER BY seq DESC LIMIT ?",
+                (run["id"], MARK_FROZEN_BRIEF_SCAN))
+            rows = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+        seen: Optional[float] = None
+        reads = 0
+        oldest = None
+        for row in rows:
+            try:
+                u = float(json.loads(row["payload"]).get("unrealized"))
+            except (ValueError, TypeError):
+                break
+            if seen is None:
+                seen = u
+            elif u != seen:
+                break
+            reads += 1
+            oldest = row.get("ts")
+        if reads < MARK_FROZEN_BRIEF_MIN:
+            return ""
+        span = ""
+        try:
+            mins = _age_seconds(str(oldest)) / 60.0
+            if mins >= 1:
+                span = f" (~{mins:.0f} minutes)"
+        except Exception:  # noqa: BLE001
+            span = ""
+        return (f"Mark check: this symbol has returned the SAME price for "
+                f"{reads} straight reads{span}.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
+def _standing_arm_line(run: dict, pos_qty: float) -> str:
+    """The arm the desk already has standing — which it could not see.
+
+    WHY (2026-08-06, cycle 82). `_store_armed_order` is called ONLY when
+    `intent == "arm"` (see its call site), so a cycle that reduces or holds
+    leaves the previous arm in force. The arm skill told the desk "each
+    cycle's arm replaces the last", which is true only of ARMING cycles —
+    the desk was being asked to restate something it was never shown and
+    whose lifetime it was told wrongly. Run 968 armed `close 1.0` at 09:27,
+    reduced at 10:12 without restating, and the full-book arm stood on.
+
+    Fact only. Held books only, fail-soft.
+    """
+    if not pos_qty:
+        return ""
+    try:
+        blob = json.loads(run.get("armed_order_json") or "null") or {}
+        arm = blob.get("arm") or {}
+        cond, level = arm.get("if"), arm.get("level")
+        verb, frac = arm.get("then"), arm.get("size_frac")
+        if not cond or level is None or not verb:
+            return ""
+        try:
+            age = f", set {_age_seconds(str(blob.get('armed_at'))) / 60.0:.0f} minutes ago"
+        except Exception:  # noqa: BLE001
+            age = ""
+        try:
+            size = f" {float(frac):.0%} of the book"
+        except (TypeError, ValueError):
+            size = ""
+        return (f"Standing arm: {cond} {level} then {verb}{size}{age}. It "
+                "stays in force until you arm a different one.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
@@ -3223,7 +3330,9 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _breadth_state_line(run)
                       + _hold_streak_line(run, pos_qty)
                       + _brake_distance_line(run, pos_qty)
-                      + _exit_size_line(run, pos_qty))
+                      + _exit_size_line(run, pos_qty)
+                      + _mark_freshness_line(run, pos_qty)
+                      + _standing_arm_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -3608,7 +3717,9 @@ def run_cycle(run_id: int) -> dict:
                                         + _breadth_state_line(run)
                                         + _hold_streak_line(run, held)
                                         + _brake_distance_line(run, held)
-                                        + _exit_size_line(run, held)),
+                                        + _exit_size_line(run, held)
+                                        + _mark_freshness_line(run, held)
+                                        + _standing_arm_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.

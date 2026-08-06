@@ -1415,3 +1415,118 @@ class PendingCloseFlushTests(unittest.TestCase):
         self.assertLess(src.index("_flush_pending_close_adapts"),
                         src.index("_flatten_run"),
                         "flush must run BEFORE the flatten leg is created")
+
+
+class MarkFreshnessBriefTests(unittest.TestCase):
+    """Cycle 82: `mark_age_ok` checks price_updated_at, not whether the value
+    moved. GC printed 4320.700195 for 2h26m and SI 62.099998 for 2h05m while
+    their marks were 91 SECONDS "fresh" — invisible to every staleness check
+    in the engine. This hands the desk the observable."""
+
+    RUN_ID = 828282
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _equity(self, unrealized_series):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            for seq, u in enumerate(unrealized_series, start=1):
+                cur.execute(
+                    "INSERT INTO run_events (run_id, seq, event_type, ts, "
+                    "payload) VALUES (?, ?, 'equity', ?, ?)",
+                    (self.RUN_ID, seq, f"2026-08-06T09:{seq:02d}:00Z",
+                     json.dumps({"unrealized": u, "total": u})))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_a_motionless_tape_is_stated(self):
+        self._equity([1.0] * 8)
+        line = run_engine._mark_freshness_line({"id": self.RUN_ID}, 5.0)
+        self.assertIn("SAME price for 8 straight reads", line)
+
+    def test_a_moving_mark_says_nothing(self):
+        self._equity([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+        self.assertEqual(
+            run_engine._mark_freshness_line({"id": self.RUN_ID}, 5.0), "")
+
+    def test_a_short_quiet_patch_is_below_the_floor(self):
+        self._equity([1.0] * 3)
+        self.assertEqual(
+            run_engine._mark_freshness_line({"id": self.RUN_ID}, 5.0), "")
+
+    def test_a_reduce_resets_the_count_rather_than_inventing_a_freeze(self):
+        # unrealized = (mark - avg) * qty, so a size change moves it even
+        # under a frozen mark. Under-reporting is the safe direction.
+        self._equity([9.0] * 4 + [1.0] * 4)   # newest first = four 9.0s
+        self.assertEqual(
+            run_engine._mark_freshness_line({"id": self.RUN_ID}, 5.0), "")
+
+    def test_a_flat_book_never_reports(self):
+        self._equity([0.0] * 30)
+        self.assertEqual(
+            run_engine._mark_freshness_line({"id": self.RUN_ID}, 0.0), "")
+
+    def test_a_db_failure_renders_nothing_rather_than_breaking_the_cycle(self):
+        with patch.object(run_engine, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            self.assertEqual(
+                run_engine._mark_freshness_line({"id": self.RUN_ID}, 5.0), "")
+
+    def test_it_is_WIRED_into_both_prompt_paths(self):
+        import inspect
+        light = inspect.getsource(run_engine._light_analysis)
+        full = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_mark_freshness_line", light, "missing from light path")
+        self.assertIn("_mark_freshness_line", full, "missing from full path")
+
+
+class StandingArmBriefTests(unittest.TestCase):
+    """Cycle 82: _store_armed_order runs ONLY on intent == 'arm', so a reduce
+    or hold cycle leaves the arm standing. The skill claimed the opposite and
+    the desk was never shown the arm it already had — 968 armed close 1.0 at
+    09:27, reduced at 10:12 without restating, and it stood on."""
+
+    ARM = ('{"arm": {"if": "price_above", "level": 1447.0, "then": "close", '
+           '"size_frac": 1.0}, "seq": 28, "armed_at": "2026-08-06T09:27:18Z"}')
+
+    def test_the_standing_arm_is_stated_with_its_size(self):
+        line = run_engine._standing_arm_line({"armed_order_json": self.ARM}, 5.0)
+        self.assertIn("price_above 1447.0 then close", line)
+        self.assertIn("100% of the book", line)
+        self.assertIn("stays in force until you arm a different one", line)
+
+    def test_no_arm_says_nothing(self):
+        self.assertEqual(
+            run_engine._standing_arm_line({"armed_order_json": None}, 5.0), "")
+
+    def test_a_flat_book_says_nothing(self):
+        self.assertEqual(
+            run_engine._standing_arm_line({"armed_order_json": self.ARM}, 0.0), "")
+
+    def test_garbage_json_renders_nothing_rather_than_raising(self):
+        self.assertEqual(
+            run_engine._standing_arm_line({"armed_order_json": "{oops"}, 5.0), "")
+
+    def test_a_partial_arm_renders_its_own_fraction(self):
+        arm = ('{"arm": {"if": "price_below", "level": 4285.0, "then": '
+               '"reduce", "size_frac": 0.5}, "seq": 7}')
+        line = run_engine._standing_arm_line({"armed_order_json": arm}, 5.0)
+        self.assertIn("price_below 4285.0 then reduce", line)
+        self.assertIn("50% of the book", line)
+
+    def test_it_is_WIRED_into_both_prompt_paths(self):
+        import inspect
+        light = inspect.getsource(run_engine._light_analysis)
+        full = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_standing_arm_line", light, "missing from light path")
+        self.assertIn("_standing_arm_line", full, "missing from full path")
