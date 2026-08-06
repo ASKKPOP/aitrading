@@ -14,6 +14,62 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 90 — 2026-08-06 14:49Z (prod DB clock) — SHIPPED #262
+
+**1. Working per plan?** Yes. 6 runs live, **0 tracebacks**, docs 200/200.
+
+**2. Losses and WHY.** Ledger **−59.14 → −58.26**, a **+0.88 GAIN**.
+DRIFT narrowed to −9.79 as 978's lagged adapts landed (fourth
+consecutive confirmation of that explanation).
+
+**3. Reproduced — the arm lesson was overriding the frozen-mark clause.**
+
+Since #260's Data Honesty clause went live at 12:07, the desk authored
+**three** arms:
+
+| symbol | armed | feed | outcome |
+|---|---|---|---|
+| ETHUSDT | 12:07:32 | **live** | **FIRED** 13:51:38 |
+| GC | 12:29:05 | frozen 4h+ | can never fire |
+| USDKRW | 14:45:08 | frozen | can never fire |
+
+**n=2 on frozen marks, with a clean n=1 control that worked.** The cause
+is a conflict between two skills: the clause says *"set no stop, target
+or arm off"* a motionless price, while the arm lesson says *"Whenever you
+hold a position, arm the level"* — unconditional, imperative, and in the
+skill that is actually about arming. **The desk followed the nearer
+instruction.** A caveat parked in a different skill loses to a local
+imperative.
+
+**Also: the lesson had become factually false.** It asserted *"64 arms
+placed here, NOT ONE ever fired"* — untrue since 13:11:19 yesterday…
+untrue since **today** at 13:11:19 (975) and 13:51:38 (978). A lesson
+that states a fact must not go on stating it once it is untrue.
+
+**Shipped PR #262** (`4730d20`, image `20260806-armcarve`): the exception
+now lives inside the arm lesson, and the evidence line states the real
+count plus the two measured distances (0.16 and 0.75 ordinary days).
+
+Budget: the carve-out overflowed `trader/us-stock`, so room came from
+compressing the lesson's own backstory and dropping "arm" from the Data
+Honesty list — that case now lives in the arm lesson, so the duplication
+was mine to remove. **No `MAX_BLOCK_LEN` bump.**
+
+⚠️ **`trader/us-stock` is now 33,940 of 34,000 — 60 characters.** The
+catalogue needs pruning, not more shaving.
+
+**Verified:** fail-before 3/3, mutation 4/4 (incl. restoring the false
+claim), 3536 pass, ruff clean; in-image 49/49 OK; live on both sites with
+`execution-plan-check` retained on trader; DB rows `data-honesty` and
+`position-management` both `seed-upgrade` at 15:18:17; 0 tracebacks;
+docs 200/200.
+
+**4. Unchanged.** Feed still frozen — 972 filled SLV at 56.07 again at
+14:27:19 (mid-session) and 977 filled GC at 4320.700195 at 14:44:38.
+`fill_audit` now **10 repeats across 4 symbols, $12,655.93**.
+
+---
+
 ## Cycle 89 — 2026-08-06 14:19Z (prod DB clock)
 
 **1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
