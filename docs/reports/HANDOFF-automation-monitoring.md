@@ -618,7 +618,33 @@ could not run anything.
 timestamps settled in one call what the symptoms could only suggest. When a
 dependency looks broken, **ask the dependency**.
 
-### ⏸️ PENDING MERGE 2026-08-06 — TWO PRs BUILT, TESTED, BLOCKED ON A GITHUB OUTAGE
+### ✅ OWNER RULE 2026-08-06 — WHEN CI IS DOWN, RUN CI OURSELVES
+
+**Owner, verbatim intent: "github fail then CI processing by us — all claude
+level, not only this session but also other sessions."** Saved to the global
+`~/.claude/CLAUDE.md` and to memory, so it survives account rotation.
+
+**Procedure:**
+1. **Confirm it is the provider**, not billing — status API +
+   `gh api repos/<o>/<r>/actions/permissions`. Billing is the owner's to fix.
+2. Take the **exact** commands/workdirs/env from `.github/workflows/*.yml`.
+3. Run each job in a **fresh worktree of the PR branch** — clean checkout, not
+   your dirty tree.
+4. Run **every** job, audits and secret scans included.
+5. **Report each separately and state what a local run does not give:** a
+   clean-room runner, the PR audit trail, checks needing provider secrets.
+
+**Applied 2026-08-06 to #264 and #265** (both merged, image `20260806-pool`):
+ruff clean, pytest 3544/3549 under CI's env, frontend build OK, npm audit
+exit 0. `pip-audit` (ensurepip SIGABRT) and gitleaks were **not runnable** —
+closed by argument instead: neither PR touches a dependency and the manifests
+are byte-identical to a commit whose Security run passed that day, and every
+secret-keyword line in the diffs is an env-var *name*, not a value.
+
+⚠️ **Deploy invariants are unchanged** — merge first, drift-guard against the
+parent commit, keep prod == `main`.
+
+### Superseded — the two PRs are now merged and deployed
 
 **First thing next session: check if Actions recovered, then merge and deploy
 in this order.**
