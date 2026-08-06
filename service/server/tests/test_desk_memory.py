@@ -255,6 +255,35 @@ class DaemonTests(_Db):
         self.assertIsNone(desk_memory_ingest.maybe_ingest(now_epoch=10_200.0))
         self.assertIsNotNone(desk_memory_ingest.maybe_ingest(now_epoch=10_302.0))
 
+    def test_reports_are_ingested_without_a_prod_env_edit(self):
+        """The container and a local checkout both run from the project root,
+        so the default path must work in both. Prod shipped with the corpus
+        keeping only decisions because the reports dir was never set."""
+        self.assertEqual(desk_memory_ingest._DEFAULT_REPORTS_DIR, "docs/reports")
+        root = os.path.join(self.tmp.name, "docs", "reports")
+        os.makedirs(root)
+        with open(os.path.join(root, "2026-08-06-note.md"), "w",
+                  encoding="utf-8") as fh:
+            fh.write("## Finding\n\nThe stop was placed inside ordinary noise "
+                     "so it was tripped by noise rather than by the thesis "
+                     "actually failing on the tape.\n")
+        os.environ["DESK_MEMORY_REPORTS_DIR"] = root
+        try:
+            out = desk_memory_ingest.maybe_ingest(now_epoch=99_000.0)
+        finally:
+            os.environ.pop("DESK_MEMORY_REPORTS_DIR", None)
+        self.assertEqual(out.get("reports"), 1)
+        self.assertTrue(desk_memory.search("tripped by noise",
+                                           kind="monitoring"))
+
+    def test_a_missing_reports_dir_is_a_no_op(self):
+        os.environ["DESK_MEMORY_REPORTS_DIR"] = "/nonexistent/path/xyz"
+        try:
+            out = desk_memory_ingest.maybe_ingest(now_epoch=99_000.0)
+        finally:
+            os.environ.pop("DESK_MEMORY_REPORTS_DIR", None)
+        self.assertNotIn("reports", out)
+
     def test_a_failing_corpus_never_kills_a_trading_tick(self):
         """A corpus that cannot be written is a lost lesson; a tick that dies
         is a position nobody is managing."""
