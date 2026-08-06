@@ -14,6 +14,64 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 93 — 2026-08-06 15:52Z (prod DB clock) — 🔓 THE FEED THAWED, AND THE BILL CAME DUE
+
+**1. Working per plan?** Yes. `20260806-floorstatus`, **0 tracebacks**,
+6 runs live, docs 200/200.
+
+**2. 🔓 THE FREEZE IS OVER — after roughly eight hours.** Every Yahoo
+ticker is fresh again, measured at 15:54:06Z:
+
+| ticker | price | age |
+|---|---|---|
+| SPY | 768.6 | **0m** |
+| BTC-USD | 64683.97 | **0m** |
+| SLV | 55.265 | **0m** |
+| USDKRW=X | 1422.87 | **0m** |
+| SI=F | 61.53 | 10m |
+| GC=F | 4308.3 | 10m |
+
+It ended around 15:41–15:44Z. GC had been frozen since 07:57:40.
+
+**3. The sweep's central claim was tested by events within minutes — and
+it held.** Ninety minutes ago I wrote that the frozen feed *"distorts
+bookkeeping, not the outcome."* **The thaw proves it.** Every price that
+arrived was lower, and the concealed losses landed at once:
+
+| run | frozen mark | real mark | move | book | revealed |
+|---|---|---|---|---|---|
+| 979 SI | 62.099998 | 61.535 | **−0.91%** | 20.714 | **−11.70** |
+| 972 SLV | 56.07 | 55.395 | −1.20% | 1.341 | −0.91 |
+| 977 GC | 4320.700195 | 4310.400 | −0.24% | 0.082 | −0.85 |
+| 968 USDKRW | 1428.310059 | 1421.880 | −0.45% | 0.006 | −0.04 |
+| | | | | **total** | **−13.49** |
+
+**979 realized −11.56 on a single leg at 15:41:23** — a `reduce` 0.5 at
+61.544998 against a 62.099998 entry — the instant it could see the truth.
+Its realized went **−0.39 → −11.95**. It was the run flagged in the sweep
+as the live 971 shape, and it was underwater the whole time.
+
+**A note on which way the distortion ran.** Because every frozen price was
+*higher* than reality and the desk was long, the **fills made at stale
+prices were FAVOURABLE** — the $12,655.93 of frozen-price notional was
+sold better than the market allowed. The distortion did not cost money on
+those legs; it deferred it onto whatever stayed open. That is the more
+precise version of "bookkeeping, not outcome", and it is worth stating
+because the naive reading — "stale fills lost us money" — is wrong.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing, and nothing is called for: the condition
+resolved itself upstream. What the episode leaves behind is evidence, not
+a defect to patch — the platform's blindness to upstream staleness
+(`mark_age_ok` measuring our fetch time) is unchanged and remains the
+owner's call, now with a measured cost attached.
+
+*Watches:* `fill_audit` will stop growing now that prices move; the
+$12,655.93 figure is the closed record of the episode.
+
+---
+
 ## ⏱️ 24-HOUR SWEEP (cron-fired) — 2026-08-06 15:46Z (prod DB clock)
 
 The early sweep at 15:20Z built the ledger and shipped #263. This one does
