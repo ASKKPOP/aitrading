@@ -63,7 +63,33 @@ evidence this beat.
 *Watches:* the restated trigger (*lifetime peak never exceeds its own
 round-trip cost AND held past ~4h*) stands at **n=2** (975, 979); both
 are now closed out, so a third instance needs a fresh run.
-`conviction_missing`, `armed_exit` 2, `pending_close` 0 all unchanged.
+`armed_exit` 2, `pending_close` 0 unchanged.
+
+### Addendum, 17:06Z — two things moved during the verification pass
+
+**(a) A rail fired that I have not seen fire before.** 968 USDKRW stopped
+at **17:00:49** on **`stop_event:conviction_collapse`** at −3.34 — the
+dark-shipped rail that closes a held position whose desk has read
+conviction below the floor for N straight cycles. First observed firing
+in this monitoring run. It behaved correctly: 968 had been holding a
+losing forex book for hours.
+
+**(b) The #264 defect is now inflating the number MORE, exactly as
+expected.** `ratchet_audit` reports **"post-fix 10 survived"**. Two of
+those rows are float dust from full closes:
+
+```
+972  2026-08-06T15:55:25   arm after 0.0000
+977  2026-08-06T16:30:17   arm after 0.0000   <-- new this beat
+```
+
+**The honest count is 8 genuine post-fix survivals**, not 10 — of 9
+genuine in-band rows, 8 post-fix survived and 1 (976) pre-fix FLATTENED.
+**The over-report grows every time a run goes flat**, which is precisely
+why #264 matters and why I am publishing the corrected figure alongside
+the tool's raw output rather than waiting for the merge.
+
+Fleet is down to 5 running.
 
 ---
 
