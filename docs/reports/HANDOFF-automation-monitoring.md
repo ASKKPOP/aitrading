@@ -596,6 +596,33 @@ shave, and do not bump `MAX_BLOCK_LEN` (that would be the fifth).
   hours after two had fired. When a watch resolves, grep the skills for the
   claim it invalidates.
 
+### ⏸️ PENDING MERGE 2026-08-06 — TWO PRs BUILT, TESTED, BLOCKED ON A GITHUB OUTAGE
+
+**First thing next session: check if Actions recovered, then merge and deploy
+in this order.**
+
+| PR | what | verification |
+|---|---|---|
+| **#264** | `ratchet_audit` counted a full close's float dust as a reduce — corrects the published "post-fix survived" figure from **6 to 5** | FB 1/1, mutation 2/2, 3544 pass |
+| **#265** | **the fleet fix** — survivor pool `4/4/2/2` = 12 → `8/8/4/4` = 24, env-overridable | FB 6/6, mutation 4/4, 3549 pass |
+
+**#265 is the answer to the universe-size root cause.** `screen_universe`
+already scores the whole universe (129 candidates) and then discards all but
+12 — the fetches are already paid, so raising the cap costs nothing and stops
+throwing away 117 finished results. Stage 2 is deliberately NOT widened
+(theses chunk at 5, cap 2 LLM calls), so the pool widens **choice**, not
+spend. Watch `'llm': N` in `[SymbolResearch]` (#95's tell).
+
+⛔ **The blocker:** GitHub Actions stopped triggering **any** workflow for this
+repo at **16:26:24Z**. A push creates the branch and PR but produces no run
+(`gh pr checks` → *"no checks reported"*). Earlier it was runner-acquisition
+failures; it escalated.
+
+⚠️ **Do not merge without CI, and do not deploy an unmerged branch.** The
+drift guard the entire deploy procedure rests on assumes **prod == `main`**;
+bypassing it to move faster destroys the one invariant that makes every
+future deploy verifiable.
+
 ### 🚨 URGENCY 2026-08-06 (cycle 101) — the fleet is EMPTYING, 8 → 2 in one day
 
 The root cause below is diagnosed and unchanged. **What changed is the cost.**
