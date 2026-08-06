@@ -14,6 +14,83 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 87 — 2026-08-06 13:19Z (prod DB clock) — ⭐ TWO FIRSTS
+
+**1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
+tracebacks**, 7 runs live, docs 200/200.
+
+**2. Losses and WHY.** Ledger **−30.11 → −50.98**, a **−20.87** beat —
+the day's largest, and **all of it is run 975**.
+
+| time | leg | price | realized |
+|---|---|---|---|
+| 05:37:34 | buy 0.0730544 | 64870 | (entry) |
+| 13:10:32 | desk `reduce` 0.6 → 0.0219163 | 64183 | **−15.69** |
+| 13:11:19 | **armed exit** `reduce` 0.5 → 0.0073054 | 64184 | **−5.22** |
+
+BTC fell **−1.06%** from entry. Both exits used the **partial verb**; the
+book still holds 0.0073054. **Right shape, losing outcome** — the same
+class as cycle 83, not a #245 dump. Fees across 975's life are **4.04 of
+the −34.55, 11.7%**.
+
+**3. ⭐ FIRST — the arm executor fired. Ever.**
+
+64+ arms had been authored and **not one had executed**. At **13:11:19**
+run 975 fired `run:975:arm:6`:
+
+```
+{"armed_seq": 6, "if": "price_below", "level": 64220.0, "then": "reduce",
+ "size_frac": 0.5, "mark": 64184.0, "qty": 0.00730544,
+ "slippage_pct": -0.0561, "executed": true, "skip": null}
+```
+
+End-to-end proof: predicate fired, size taken as 50% **of the remaining**
+book, idempotent `client_order_id`, telemetry with slippage — and
+**slippage of only −0.056%** past the level.
+
+**It fired on BTCUSDT — the one symbol whose feed is live.** That is a
+direct confirmation of cycle 86's "dead on arrival" claim: the only arm
+that *could* fire, did. Every Yahoo-served arm remains inert.
+
+**A calibration data point for #259:** this arm was **0.75 ordinary days**
+away when set and took **4h32m** — roughly six cycles — to reach. #259
+re-anchored the reachability lesson from "one ordinary day" to "your next
+look, ~45 minutes"; this is the first live measurement supporting that
+direction. n=1.
+
+**4. ⭐ FIRST — #251 is now PROVEN live, with discriminating evidence.**
+
+The post-fix sample has been **n=0 since cycle 77**. It is no longer:
+
+| run | reduced | arm after | peak | arm full | era | outcome |
+|---|---|---|---|---|---|---|
+| 975 | 13:10:32 | 1.8755 | 2.84 | 9.3777 | post-fix | **survived** |
+| 975 | 13:11:19 | 0.9378 | 2.84 | 9.3778 | post-fix | **survived** |
+| 976 | 05:40:01 | 5.6799 | 7.22 | 11.3597 | pre-fix | **FLATTENED** |
+
+Both post-fix reduces landed **inside the discriminating band**. Under
+the OLD anchor the arm would have been 1.8755 and 0.9378, both **below**
+the peak of 2.84 → the breakeven floor **would have armed**; 975's total
+P&L was far below breakeven → it **would have fired and flattened the
+remainder**. Under the new max-book anchor the arm is 9.3777 > peak 2.84
+→ never arms. **#251 demonstrably prevented two forced flattens today**,
+and 975 still holds its 0.0073054 remainder because of it.
+
+That is the exact 976 shape, twice, with the opposite outcome — the
+comparison the audit was built to make.
+
+**5. What is unchanged.** The feed is still frozen (GC/SI/SLV/USDKRW
+byte-identical; BTCUSDT 64503→64222, ETHUSDT 1902.90→1895.20 moving).
+`fill_audit` **8 repeats, $12,149.41**. `conviction_missing` 6/76 (7.9%).
+`pending_close` still **0** — #257 remains untested on a non-null case.
+DRIFT widened to −31.54 on 975's two closes awaiting their next-cycle
+adapts — the documented lag, already validated in cycle 84.
+
+**Docs.** Both 200. **Shipped:** nothing — this beat produced evidence,
+not a defect.
+
+---
+
 ## Cycle 86 — 2026-08-06 12:49Z (prod DB clock)
 
 **1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
