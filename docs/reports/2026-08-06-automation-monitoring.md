@@ -14,6 +14,72 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 89 — 2026-08-06 14:19Z (prod DB clock)
+
+**1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
+tracebacks**, 6 runs live, docs 200/200.
+
+**2. Losses and WHY.** Ledger **−55.02 → −59.14** (−4.12).
+
+**975 BTCUSDT retired at −38.26** — the day's largest loser — on
+`adapt_retired / consecutive_losses` at 13:55:02, then flattened its
+0.00730544 remainder at 64391 (−3.71). **The adaptation rail caught it**:
+three losing closes in a row triggered the retire, with a 24-hour symbol
+cooldown. That is the rail working, not failing.
+
+978's armed exit contributed −0.40 (sold 0.3222 @ 1906.3 against a 1906.7
+entry — a **−0.02%** move; essentially the fee).
+
+**3. What we found.**
+
+**⭐ A SECOND `armed_exit` fired** — 978 ETHUSDT at 13:51:38, `armed_seq
+8`, `price_above 1905.2 → reduce 0.5`, mark 1906.3, **slippage
++0.0577%**. Both fires to date are on **crypto**, the only live-feed
+symbols; **zero** on Yahoo-served ones. The "dead on arrival" claim from
+cycle 86 now holds at **2/2**.
+
+**Calibration for #259, now n=2 and consistent:**
+
+| run | arm distance | time to fire |
+|---|---|---|
+| 975 BTCUSDT | 0.685% = **0.75** ordinary days | **4h32m** |
+| 978 ETHUSDT | 0.174% = **0.16** ordinary days | **1h44m** |
+
+The closer arm fired ~2.6× faster — the relationship #259's re-anchor
+predicts. **But note neither fired inside one cycle**: even at 0.16
+ordinary days it took ~2.3 cycles. The re-anchor is directionally
+supported; two points do not make a curve, and if the goal is a fire
+before the next look, arms may need to be closer still.
+
+**🔍 WHY #257 HAS NOT FIRED — a structural answer, not a silence.**
+975's retire went through `run_cycle`'s feedback pass, which calls
+`ingest_outcomes` **first** (emitting `losing_close` for signals 484 and
+485 at 13:55:02) and only then `retire_run`. By the time
+`_control_stopping` ran, nothing was pending — so the flush correctly
+emitted nothing.
+
+**#257's non-null case requires a stop fired by the CONTROL pass**
+(`at_time`, `max_loss`, `trailing_lock`, `profit_target`, idle/fee
+retire) **while a close from the last decision cycle is still
+un-ingested** — precisely what runs 960 and 976 were. The
+`adapt_retired` path **self-drains**. That is not a broken fix, and the
+silence should not be read as one.
+
+**DRIFT narrowed −35.58 → −15.11** as 975's lagged adapts landed
+(−15.6895, −5.2225, −3.711). Third consecutive confirmation of the lag
+explanation.
+
+**The feed is still frozen** — GC/SI/SLV/USDKRW byte-identical; only
+crypto moves. `fill_audit` unchanged at 8 repeats / $12,149.41.
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing. `conviction_missing` 6/83 (7.2%); `armed_exit`
+**2**; `pending_close` **0**; `ratchet_audit` still "post-fix 2
+survived".
+
+---
+
 ## Cycle 88 — 2026-08-06 13:49Z (prod DB clock) — 🚨 FREEZE CONFIRMED CONCLUSIVELY
 
 **1. Working per plan?** The platform, yes — `20260806-fillorder` (tag
