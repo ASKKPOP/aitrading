@@ -196,3 +196,114 @@ class AuditFiresTests(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class ReduceStepTests(unittest.TestCase):
+    """The reduce leg is the only moment the anchor decides anything."""
+
+    def test_a_partial_exit_is_a_reduce(self):
+        steps = ra.reduce_steps([
+            {"side": "buy", "quantity": 1.32, "price": 4317.4, "ts": "a"},
+            {"side": "sell", "quantity": 0.66, "price": 4314.1, "ts": "b"}])
+        self.assertEqual(len(steps), 1)
+        self.assertAlmostEqual(steps[0]["max_book_before"], 1.32, places=6)
+        self.assertAlmostEqual(steps[0]["book_after"], 0.66, places=6)
+        self.assertAlmostEqual(steps[0]["price"], 4314.1, places=4)
+
+    def test_a_full_close_is_not_a_reduce(self):
+        # Nothing is left for an arm to sit under.
+        self.assertEqual(ra.reduce_steps([
+            {"side": "buy", "quantity": 1.0, "price": 10.0, "ts": "a"},
+            {"side": "sell", "quantity": 1.0, "price": 10.0, "ts": "b"}]), [])
+
+    def test_the_forced_flatten_is_not_a_reduce(self):
+        steps = ra.reduce_steps([
+            {"side": "buy", "quantity": 2.0, "price": 10.0, "ts": "a"},
+            {"side": "sell", "quantity": 0.5, "price": 10.0, "ts": "b",
+             "client_order_id": "run:9:flatten"}])
+        self.assertEqual(steps, [])
+
+    def test_an_add_is_not_a_reduce(self):
+        self.assertEqual(ra.reduce_steps([
+            {"side": "buy", "quantity": 1.0, "price": 10.0, "ts": "a"},
+            {"side": "buy", "quantity": 1.0, "price": 10.0, "ts": "b"}]), [])
+
+    def test_shorts_reduce_by_covering(self):
+        steps = ra.reduce_steps([
+            {"side": "short", "quantity": 2.0, "price": 10.0, "ts": "a"},
+            {"side": "cover", "quantity": 0.5, "price": 10.0, "ts": "b"}])
+        self.assertEqual(len(steps), 1)
+        self.assertAlmostEqual(steps[0]["book_after"], 1.5, places=6)
+
+
+class BandTests(unittest.TestCase):
+    """Runs 976 and 977 are the two live cases, and they must classify
+    OPPOSITE ways — 977 looks superficially like a confirmation and is not."""
+
+    def test_run_976_is_inside_the_band(self):
+        cls = ra.classify_exposure(7.22, {
+            "price": 4314.1, "max_book_before": 1.3166, "book_after": 0.6583})
+        self.assertTrue(cls["in_band"])
+        self.assertLess(cls["arm_after"], 7.22)
+        self.assertGreater(cls["arm_full"], 7.22)
+
+    def test_run_977_proves_nothing_because_its_peak_cleared_both_arms(self):
+        cls = ra.classify_exposure(21.08, {
+            "price": 4313.3, "max_book_before": 1.3187, "book_after": 0.6593})
+        self.assertFalse(cls["in_band"])
+
+    def test_a_peak_below_both_arms_proves_nothing_either(self):
+        cls = ra.classify_exposure(0.5, {
+            "price": 4314.1, "max_book_before": 1.3166, "book_after": 0.6583})
+        self.assertFalse(cls["in_band"])
+
+    def test_a_flat_book_after_never_bands(self):
+        cls = ra.classify_exposure(50.0, {
+            "price": 4314.1, "max_book_before": 1.3166, "book_after": 0.0})
+        self.assertFalse(cls["in_band"])
+
+
+class AuditExposureTests(AuditFiresTests):
+    def _run_peak(self, run_id, peak):
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO trading_runs (id, agent_id, symbol, market, "
+                    "status, peak_pnl_usd, created_at) VALUES (?, 1, 'GC', "
+                    "'futures', 'stopped', ?, '2026-08-06T00:00:00Z')",
+                    (run_id, peak))
+        self.conn.commit()
+
+    def _life(self, run_id, reduce_ts):
+        self._ev(run_id, "trade", "2026-08-06T04:54:31Z",
+                 {"side": "buy", "quantity": 1.3166, "price": 4317.4})
+        self._ev(run_id, "trade", reduce_ts,
+                 {"side": "sell", "quantity": 0.6583, "price": 4314.1})
+
+    def test_a_post_fix_in_band_reduce_that_survived_is_the_evidence(self):
+        self._run_peak(977, 7.22)
+        self._life(977, "2026-08-06T07:12:00Z")
+        rows = ra.audit_exposures("2026-08-01", conn=self.conn)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["post_fix"])
+        self.assertFalse(rows[0]["fired"])
+        self.assertIn("1 survived", ra.format_exposures(rows))
+
+    def test_a_pre_fix_in_band_reduce_that_flattened_is_the_defect(self):
+        self._run_peak(976, 7.22)
+        self._life(976, "2026-08-06T05:40:01Z")
+        self._fire(976, "2026-08-06T05:40:01Z")
+        rows = ra.audit_exposures("2026-08-01", conn=self.conn)
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0]["post_fix"])
+        self.assertTrue(rows[0]["fired"])
+        self.assertIn("FLATTENED", ra.format_exposures(rows))
+
+    def test_out_of_band_reduces_are_not_counted_as_evidence(self):
+        # 977's real peak. Both anchors arm, so the fix changed nothing.
+        self._run_peak(977, 21.08)
+        self._life(977, "2026-08-06T07:12:00Z")
+        rows = ra.audit_exposures("2026-08-01", conn=self.conn)
+        self.assertEqual(rows, [])
+        self.assertIn("not yet been asked", ra.format_exposures(rows))
+
+    def test_empty_band_says_so_rather_than_implying_the_fix_is_proven(self):
+        self.assertIn("not yet been asked", ra.format_exposures([]))
