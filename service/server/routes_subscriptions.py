@@ -311,6 +311,43 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         return state
 
+    @app.get('/api/subscriptions/history')
+    async def subscription_history(limit: int = 20, offset: int = 0,
+                                   authorization: str = Header(None)):
+        """The member's own subscription rows, newest first. Pages the BASE
+        table and decorates plan names via IN (…) — joining plans into a
+        paginated query fans out rows and corrupts LIMIT/total."""
+        user = _require_user(authorization)
+        limit = max(1, min(limit, 100))
+        offset = max(0, offset)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id, plan_code, status, method, amount_usd, started_at, "
+                "expires_at, created_at, change_kind, pending_plan_code "
+                "FROM user_subscriptions WHERE user_id = ? "
+                "ORDER BY id DESC LIMIT ? OFFSET ?",
+                (user["id"], limit, offset))
+            items = [dict(r) for r in cursor.fetchall()]
+            cursor.execute(
+                "SELECT COUNT(*) AS c FROM user_subscriptions WHERE user_id = ?",
+                (user["id"],))
+            total = int(cursor.fetchone()["c"])
+            codes = sorted({i["plan_code"] for i in items if i.get("plan_code")})
+            names: dict[str, str] = {}
+            if codes:
+                placeholders = ", ".join("?" for _ in codes)
+                cursor.execute(
+                    f"SELECT code, name FROM subscription_plans WHERE code IN ({placeholders})",
+                    tuple(codes))
+                names = {r["code"]: r["name"] for r in cursor.fetchall()}
+        finally:
+            conn.close()
+        for i in items:
+            i["plan_name"] = names.get(i["plan_code"], i["plan_code"])
+        return {"items": items, "total": total}
+
     @app.post('/api/subscriptions/change/preview')
     async def change_preview(body: PlanOrderBody, authorization: str = Header(None)):
         """What would changing to this plan cost, and when does it happen.

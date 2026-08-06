@@ -329,5 +329,44 @@ class DowngradeScheduleTests(_Case):
         self.assertEqual(self._downgrade("pro").status_code, 400)
 
 
+class HistoryTests(_Case):
+    def _history(self, limit=20, offset=0, headers=None):
+        return self.client.get(
+            f"/api/subscriptions/history?limit={limit}&offset={offset}",
+            headers=headers or self.auth)
+
+    def test_history_pages_without_fanout(self):
+        for i in range(5):
+            _mk_sub(self.uid, "junior", status="expired", days_left=-(i + 1))
+        _mk_sub(self.uid, "pro", days_left=15)
+        r = self._history(limit=4, offset=0)
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["total"], 6)
+        self.assertEqual(len(body["items"]), 4)
+        # newest first
+        self.assertEqual(body["items"][0]["plan_code"], "pro")
+        r2 = self._history(limit=4, offset=4)
+        self.assertEqual(len(r2.json()["items"]), 2)
+
+    def test_history_carries_plan_names(self):
+        _mk_sub(self.uid, "pro", days_left=15)
+        item = self._history().json()["items"][0]
+        self.assertEqual(item["plan_name"], "Pro")
+        self.assertIn("change_kind", item)
+
+    def test_history_never_leaks_another_member(self):
+        other_uid, other_token = _mk_user_with_token("other@t.dev")
+        _mk_sub(other_uid, "professional", days_left=20)
+        _mk_sub(self.uid, "junior", days_left=15)
+        body = self._history().json()
+        self.assertEqual(body["total"], 1)
+        self.assertEqual(body["items"][0]["plan_code"], "junior")
+
+    def test_history_requires_auth(self):
+        r = self.client.get("/api/subscriptions/history")
+        self.assertEqual(r.status_code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()
