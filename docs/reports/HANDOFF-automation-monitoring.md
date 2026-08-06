@@ -492,6 +492,35 @@ statement of the problem:
   The pattern this file keeps recording is "the desk cannot perceive X";
   supplying X without teaching what to do about it only completes half of it.
 
+### ⚠️ Added 2026-08-06 (#264) — FIXTURES USE ROUND NUMBERS; PROD HAS FLOAT DUST
+
+**Fourth live-caught defect in these audit tools, and it corrected a number
+I had reported.** `ratchet_audit` said "post-fix **6** survived" for #251;
+the honest figure is **5**.
+
+- Run 972 halved a 42.92-unit book six times; its final **full close** left
+  **1.47e-08** units — above the absolute `1e-12` guard, functionally zero —
+  and was counted as a *reduce* with a post-reduce arm of ~0, satisfying the
+  in-band test trivially.
+- **Absolute epsilons cannot express "essentially nothing left"** when the
+  book size is not known in advance. Use a **relative** fraction of the book
+  the leg started with (`_FLAT_FRACTION` 1e-6).
+- **The running tally of live-caught tool defects:** #253 flatten-timestamp,
+  #253 duplicate status rows, #261 seq-vs-time ordering, #264 float dust.
+  **Every one came from fixtures with tidy round numbers and distinct
+  timestamps.** When you write a fixture, use a real prod row.
+- ⚠️ **Corrected #251 evidence: 5 post-fix in-band survivals** vs 976's
+  single pre-fix FLATTENED. Direction unchanged, magnitude one weaker.
+
+### ⚠️ Added 2026-08-06 — CI CAN FAIL FOR REASONS THAT ARE NOT THE DIFF
+
+`"The job was not acquired by Runner of type hosted even after multiple
+attempts"` and `"Failed to resolve action download info"` at the **Set up
+job** step = a GitHub hosted-runner outage, not your change. Diagnose via
+`gh run view <id>` **ANNOTATIONS**, confirm your own job's steps passed, and
+**do not merge on red** — leave the PR and re-check next cycle. (Distinct
+from the billing-limit signature, which kills every job in seconds.)
+
 ### 📊 Added 2026-08-06 (24h sweep) — NEW SHAPE BASELINE, and a fix that moved its metric without saving the day
 
 **Replaces the old §7 baseline (55% win rate; 6/84 closes = 74% of loss) with
