@@ -14,6 +14,63 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 86 — 2026-08-06 12:49Z (prod DB clock)
+
+**1. Working per plan?** Yes. `20260806-fillorder` (tag compared), **0
+tracebacks**, 7 runs live, docs 200/200, events current.
+
+**2. Losses and WHY.** Ledger **−30.17 → −30.11** (+0.06). DRIFT −10.60.
+No closes; nothing to attribute.
+
+**975 emitted `drawdown_soft_brake`** at 12:24:35 (size_mult 1.0 → 0.5).
+**Watch (v) is NOT triggered** — I checked the shape rather than assuming
+it: 975 bought once (05:37:34) and reduced once (10:54:43), **no adds**.
+FINDING 2 is specifically the add-then-brake shape, and this is not it.
+
+**3. What we missed — and two n=1 reads on fixes shipped 40 minutes ago.**
+
+**The freeze is unchanged and now 4h52m on GC.** Yahoo-served marks are
+byte-identical to 30 minutes ago (GC 4320.700195, SI 62.099998, SLV
+56.07, USDKRW 1428.310059) while BTCUSDT moved 64457→64503 and ETHUSDT
+1901.90→1902.90. The split diagnosed in cycle 85 holds exactly.
+
+**A systemic consequence worth naming:** an arm can only fire when the
+mark crosses its level, so **every arm on a Yahoo-served symbol is
+currently dead on arrival** — that is 4 of the 7 live runs. It also
+explains part of the 64-arms/0-fires record independently of the
+distance question.
+
+**#260's clause is live; the desk did one thing it endorses and one it
+forbids.** Both mark-check lines were rendering:
+
+| run | line the desk saw | action | verdict |
+|---|---|---|---|
+| 968 USDKRW | SAME price, 19 reads (~22 min) | **reduce** 0.5 at 12:28:35 | ✅ the clause's carve-out — the one act that still makes sense |
+| 977 GC | SAME price, 60 reads (~69 min) | **armed** price_above 4345 at 12:29:05 | ❌ the clause says *"set no stop, target or arm off it"* |
+
+**n=1 each way, 22 minutes after deploy.** Far too early to read either
+as signal. Recorded as data.
+
+**The arm-verb tally is starting to look real, with a caveat.** 968
+replaced its `close 1.0` (1447) with **`reduce` 0.5 (1445)**. Post-#253:
+**9 `reduce`, 1 `close` = 10% full-book** against a **45%** pre-fix base
+rate. Nominal binomial p ≈ **0.023** for ≤1 close in 10 under the null —
+**but the arms are not independent draws**; several are the same handful
+of runs restating. Encouraging, not established.
+
+*Watches:* `conviction_missing` **6 of 72** (8.3%); `armed_exit` **0**;
+`pending_close` **0** (#257 still untested on a non-null case);
+`fill_audit` now **7 repeats, $12,141.26** (968's 12:28:35 reduce filled
+at the frozen 1428.310059).
+
+**4. Docs.** Both 200.
+
+**5. Shipped.** Nothing. The one change worth making — judging staleness
+against the upstream's own timestamp — still halts the fleet the moment
+it lands, because the marks are stale right now.
+
+---
+
 ## Cycle 85 — 2026-08-06 12:19Z (prod DB clock) — 🔍 FROZEN-FEED CAUSE FOUND
 
 Seven minutes after cycle 84, so no meaningful new trading data. Spent the
