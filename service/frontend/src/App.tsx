@@ -54,6 +54,7 @@ const FuturesPage = lazy(() => import('./pages/TerminalPage').then(m => ({ defau
 const SubscribePage = lazy(() => import('./pages/SubscribePage'))
 const ContractPage = lazy(() => import('./pages/ContractPage'))
 const WelcomePage = lazy(() => import('./pages/WelcomePage'))
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))
 import { ChallengePage } from './ChallengePage'
 import { ExperimentAdminPage } from './ExperimentAdminPage'
 import { BacktestPage } from './BacktestPage'
@@ -479,6 +480,7 @@ function AppRouter({
       '/login':            'Sooppiy · Login',
       '/register':         'Sooppiy · Register',
       '/welcome':          'Sooppiy · Welcome',
+      '/account/subscription': 'Sooppiy · Subscription',
       '/about':            'Sooppiy',
     }
     const path = location.pathname
@@ -677,6 +679,12 @@ function AppRouter({
                 path="/welcome"
                 element={userToken
                   ? <WelcomePage userToken={userToken} />
+                  : <Navigate to="/sign-in" replace />}
+              />
+              <Route
+                path="/account/subscription"
+                element={userToken
+                  ? <SubscriptionPage userToken={userToken} />
                   : <Navigate to="/sign-in" replace />}
               />
 

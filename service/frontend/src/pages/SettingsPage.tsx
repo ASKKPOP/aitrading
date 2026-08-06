@@ -296,11 +296,9 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
                 </span>
               )}
               <div style={{ flex: 1 }} />
-              {plan !== 'enterprise' && (
-                <Link to="/subscribe" className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 14px' }}>
-                  ⬆ {tr(language, { ko: '플랜 업그레이드', en: 'Upgrade plan', ja: 'プランをアップグレード', th: 'อัปเกรดแผน', vi: 'Nâng cấp gói', id: 'Tingkatkan paket' })}
-                </Link>
-              )}
+              <Link to="/account/subscription" className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                💎 {tr(language, { ko: '구독 관리', en: 'Manage subscription', ja: '購読を管理', th: 'จัดการการสมัคร', vi: 'Quản lý gói', id: 'Kelola langganan' })}
+              </Link>
             </div>
             {bullets.length > 0 && (
               <ul style={{ margin: '10px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5, fontSize: '12.5px', color: 'var(--text-secondary)' }}>
