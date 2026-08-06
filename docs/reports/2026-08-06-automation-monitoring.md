@@ -14,6 +14,76 @@ Suggestions + shipped solutions.
 
 ---
 
+## Cycle 98 — 2026-08-06 18:19Z (prod DB clock) — THE FLEET THREAD, PULLED
+
+**1. Working per plan?** Yes. `20260806-floorstatus`, docs 200/200,
+ledger **−92.89 unchanged**, 4 runs live.
+
+**One traceback** — a **MySQL deadlock (1213)** on a single equity
+heartbeat for run 978 at 18:10:04. `emit_telemetry_event` **caught it and
+logged a warning**, which is the intended fail-soft behaviour for
+telemetry; no cycle broke and the next heartbeat wrote. **One occurrence
+in 57 days of MySQL uptime and 46.5M queries** — recorded as a singleton,
+not a pattern.
+
+**2. Losses.** None this beat.
+
+**3. ✅ Cycle 97's prediction confirmed within 30 minutes — and it
+retires the fix I declined to ship.**
+
+I wrote yesterday-hour: *"Fixing (a) would stop the futile build attempts
+and make the reason honest, but it would NOT fill a single slot — the
+gate would simply report `kept: []`."*
+
+**That is now literally the log:**
+
+```
+18:19:07  backtest_gate  kept: []
+          dropped: NVDA −200.50 USD/trade, SNOW −72.43 USD/trade
+```
+
+ZBTUSDT aged out of the pool on its own (skips stopped at **276**), the
+gate reports `kept: []`, and the fleet is **still 3/10**. **Declining the
+priceability patch was correct** — it would have changed the log line and
+nothing else.
+
+**4. What the thread actually leads to — and it is NOT cooldowns.**
+
+I expected the 24-hour symbol cooldowns from today's retires to explain
+the empty slots. **They do not.** Measured:
+
+| | count | |
+|---|---|---|
+| symbols researched today | **21** | 200 theses |
+| in active cooldown | 5 | BTCUSDT, HG, SI, SOLUSDT, ZECUSDT |
+| busy (already running) | 3 | ETHUSDT, GC, SLV |
+| **available** | **13** | AVGO, BICOUSDT, CHFJPY, DIS, HYPEUSDT, LABUSDT, NG, NVDA, RIVN, SNOW, USDJPY, USDKRW, ZBTUSDT |
+| **actually reaching the gate** | **2** | NVDA, SNOW |
+
+**Thirteen symbols are available and two are offered.** The bottleneck is
+between "thesis exists" and "candidate presented to the gate" — not
+research supply (200 theses/21 symbols today), not cooldowns, and not the
+gate itself, which is correctly refusing two proven money-losers.
+
+Also relevant: **no `fleet_candidates` row has been created since
+08:53:59** — 9.5 hours.
+
+**5. Shipped: nothing, and I am stopping at the honest boundary.** What
+filters the other ~11 symbols is in the replacement-candidate selection
+path (the gate events carry `context: "replacement"`). Reading that
+properly is a code investigation, not a monitoring beat, and I would
+rather hand forward a sharp question than a half-read answer at the end
+of a long session.
+
+**→ TOP ITEM, now much sharper than cycle 97:** *13 available symbols, 2
+offered. Find the filter between thesis and candidate in the
+`"replacement"` path.* Cooldowns, research supply and the backtest gate
+are all **eliminated** as causes.
+
+*#264 still blocked* — Security runners unavailable after a third rerun.
+
+---
+
 ## Cycle 97 — 2026-08-06 17:49Z (prod DB clock) — 🚨 THE FLEET HAS BEEN STUCK AT 3/10 FOR 4.5 HOURS
 
 **1. Working per plan?** The runs, yes — **0 tracebacks**, docs 200/200,
