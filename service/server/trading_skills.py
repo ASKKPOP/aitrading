@@ -574,7 +574,14 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "protect: protection you already have in the stop, while the "
             "gain that appears and vanishes between cycles is unrecoverable "
             "and is where the day's profit actually went. Each cycle's arm "
-            "replaces the last, so restate it as the position moves."
+            "replaces the last, so restate it as the position moves. "
+            "AND SIZE THE ARM THE WAY YOU SIZE ANY EXIT: it fires "
+            "unattended, so the size you arm is the size you get, with no "
+            "cycle in between to reconsider. Whole-book exits carry 91% of "
+            "all loss measured here, so `reduce` is an arm's default verb "
+            "too; a level that truly ends the thesis is what your STOP "
+            "already covers, and an arm repeating it with close 1.0 buys "
+            "nothing while it spends your reassessment."
         ),
     },
     {

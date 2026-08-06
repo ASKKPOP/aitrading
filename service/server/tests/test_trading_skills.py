@@ -297,6 +297,17 @@ class RegistryTests(_Db):
             self.assertIn("Make it REACHABLE", block)
             self.assertIn("Arm to BANK", block)
 
+    def test_arm_verb_discipline_reaches_both_sites(self):
+        # 968 armed `close 1.0` (2026-08-06 06:25Z). #245's exit-verb lesson
+        # was written for DISCRETIONARY exits; the ARM vocabulary never
+        # received it — and an armed level fires unattended, so the size
+        # armed is the size taken with no cycle in between to reconsider.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site)
+            self.assertIn("SIZE THE ARM THE WAY YOU SIZE ANY EXIT", block,
+                          f"arm-verb clause missing from {site}")
+            self.assertIn("spends your reassessment", block)
+
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
         # admin-authored additions, not to silently prune the defaults. Every
