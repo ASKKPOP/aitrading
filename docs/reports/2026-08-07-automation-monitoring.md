@@ -5,6 +5,64 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 03:45Z · all three audits run; one false positive cleared
+
+**Book:** equity **1000.4339**, profit **+0.4339 (+0.043%)**, cross-checked and
+agreeing. Realized +0.4734, unrealized −0.0396. Cadence **8/8 distinct
+minutes**. Nothing below −0.99. 986 USDKRW retired, 991 GC opened.
+
+### pnl_audit — clean
+
+    day          ledger   adapt   delta  flat  check
+    2026-08-06     0.03    0.02    0.01     0  ok
+    2026-08-07     0.45    0.53   -0.08     2  ok
+    ledger validated 71/71 against the platform's own stored realized_pnl_usd
+
+The −0.08 delta with 2 flattens is the known `adapt realized` flatten omission,
+within tolerance. The ledger is authoritative and matches every stored row.
+
+### ratchet_audit — clean
+
+4 in-band reduces, all on run 981, **all post-fix, all survived, 0 flattened.**
+The breakeven ratchet (#264/#118) is doing its job: repeated reduces did not
+trip a premature flatten.
+
+### fill_audit — one flag, investigated, FALSE POSITIVE
+
+    985 ZC  463.500000  first 00:25:59  repeat 02:56:03  gap 150m  $7.34
+
+02:56:03 is exactly when 985 made its best-performing close, so a stale mark
+there would have made the book's best win illusory. **It did not.** ZC's mark
+moved between the two fills — 462.5 at 01:26, **464.0 at 02:26** — and the
+window holds 15 distinct unrealized values. The price genuinely revisited
+463.50.
+
+The audit's own wording is honest about this ("evidence the mark was stuck, not
+proof"). Checked rather than assumed; **985's +0.2553 is real.**
+
+### What 985 actually did — the behaviour that works
+
+    23:00:15  buy   0.12664 @ 461.25
+    00:25:59  sell  0.06332 @ 463.50     <- half
+    01:26:11  sell  0.03166 @ 462.50     <- half of the rest
+    02:26:26  sell  0.01583 @ 464.00     <- half again
+    02:56:03  sell  0.01583 @ 463.50     <- the remainder
+
+Four halving exits. It kept **91% of its true high-water mark**, the best on the
+book. This is `reduce`-as-default-verb working exactly as the exit skill asks.
+
+### Nothing shipped
+
+Three audits, one flag, and the flag was refuted by the surrounding data. No
+reproduced defect.
+
+### 983 — fourth cycle unchanged
+
+11 cycles, 1 trade, realized −0.0100, still running. It has now been static
+across four consecutive cycles. Still one cent, still a watch item.
+
+---
+
 ## Cycle — 03:15Z · two hypotheses tested and refuted; nothing shipped
 
 **Book:** equity **1000.4894**, profit **+0.4894 (+0.049%)**, cross-checked two
