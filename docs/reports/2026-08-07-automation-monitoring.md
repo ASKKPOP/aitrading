@@ -5,7 +5,35 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
-## Cycle — 22:55Z · quiet cycle; #324 constants verified in the new image
+## Owner question — 23:0xZ · "profit +1.17, why deposit 1,040.83?" — TWO display-ledger defects, both proven to the cent
+
+Owner: the deposit card is the BALANCE. It showed 1,040.83 for a book whose
+true equity is 1000.93.
+
+### D1 — the deposit card counts the broker's money
+
+`AutomationPage` summed `|qty| × price` (NOTIONAL) into the deposit:
+cash 960.8877 + notional 79.9452 = **1040.83, cent-exact match**. At leverage
+2, only 39.90 of that notional is the user's margin; the other half is
+borrowed. Same pattern in `AssetsPage` and the deposit modal rows.
+
+Root cause: `/api/positions` never exposed `leverage`, so no client COULD
+compute margin. Fix: payload gains `leverage`; new `tradeShared.positionMargin
+/ positionEquity` mirror the server's `POSITION_VALUE_CASE`; card total =
+cash + Σmargin + Σupnl, "in use" = Σmargin.
+
+### D2 — realized excludes the OPENING leg's fee
+
+Card realized +1.02 vs runs-ledger AND cash-implied +0.7873. Gap **0.2342 =
+open-leg fees exactly** (buy 0.1927 + short 0.0415, proven by side-grouped
+sum). `automation.py` stamps close-leg pnl net of ITS OWN fee only; the
+open row has pnl NULL, so `/positions/trades/summary` and `/series` never
+saw its cost. Fix (read-side, heals history, no migration): every SUM uses
+`COALESCE(pnl, -COALESCE(fee_usd, 0))` — an open row contributes minus its
+fee in its own hour/window/split bucket.
+
+Fail-before ×3 (leverage payload, summary netting, series bucket), 3687
+pass, ruff(CI-set)+tsc clean.
 
 **Book:** equity **1000.9332** (+0.093%): cash 960.8877 + position value
 40.0455; cross-check seed 1000 + realized 0.7873 + unrealized 0.1458 =

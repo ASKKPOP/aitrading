@@ -109,6 +109,34 @@ class TradingRouteTests(unittest.TestCase):
         self.assertIn("positions", body)
         self.assertEqual(body["positions"], [])
 
+    def test_my_positions_carries_leverage(self) -> None:
+        """Clients compute balances from this payload. Without leverage they
+        can only sum qty*price — which counts the BORROWED half of a
+        leveraged position as the user's money (prod /automation deposit
+        card: 1040.83 shown for a 1000.93 book)."""
+        agent = _register(self.client, name="lev-agent")
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            # current_price set so the price resolver never goes fetching.
+            cur.execute(
+                "INSERT INTO positions (agent_id, symbol, market, side,"
+                " quantity, entry_price, current_price, opened_at, leverage)"
+                " VALUES (?, 'ADBE', 'us-stock', 'long', 0.05, 330.0, 331.0,"
+                " '2026-08-07T00:00:00Z', 2.0)",
+                (agent["agent_id"],))
+            conn.commit()
+        finally:
+            conn.close()
+        resp = self.client.get(
+            "/api/positions",
+            headers={"Authorization": f"Bearer {agent['token']}"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.json()["positions"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["leverage"], 2.0)
+
     def test_my_positions_invalid_token_rejected(self) -> None:
         resp = self.client.get(
             "/api/positions",

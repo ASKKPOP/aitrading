@@ -97,6 +97,29 @@ class TradesSeriesTestCase(unittest.TestCase):
         self.assertEqual(by_t['2026-07-26T11']['trades'], 1)
         self.assertAlmostEqual(by_t['2026-07-27T00']['pnl'], 7.5, places=6)
 
+    def test_open_leg_fee_lands_in_its_own_hour(self):
+        """An opening leg's fee is realized cost the moment it is paid; the
+        graph must show it in that hour, not hide it (the summary tile and
+        this series must agree — prod showed +1.02 for a +0.79 book)."""
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        for i, (created_at, pnl, fee) in enumerate([
+                ('2026-07-26T09:10:00Z', None, 0.10),   # open with fee
+                ('2026-07-26T10:20:00Z', 1.00, 0.05)]):  # close, pnl net already
+            cursor.execute(
+                """INSERT INTO signals
+                   (signal_id, agent_id, message_type, market, symbol, side,
+                    pnl, fee_usd, timestamp, created_at)
+                   VALUES (?, ?, 'operation', 'crypto', 'BTC', 'sell', ?, ?, ?, ?)""",
+                (920000 + i, self.agent_id, pnl, fee, 1700000000 + i, created_at),
+            )
+        conn.commit()
+        conn.close()
+        out = self._series(split=SPLIT)
+        by_t = {p['t']: p for p in out['points']}
+        self.assertAlmostEqual(by_t['2026-07-26T09']['pnl'], -0.10, places=6)
+        self.assertAlmostEqual(by_t['2026-07-26T10']['pnl'], 1.00, places=6)
+
     def test_since_windows_the_series(self):
         self._insert_fills([
             ('2026-07-20T10:00:00Z', 50.0),

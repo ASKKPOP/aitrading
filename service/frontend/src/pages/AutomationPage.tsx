@@ -10,7 +10,7 @@ import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { fearGreedLabel, tr } from '../i18n'
 import { RunsLiveSection } from './RunsLivePage'
-import { fmtUsd, pnlColor } from './tradeShared'
+import { fmtUsd, pnlColor, positionEquity, positionMargin } from './tradeShared'
 
 // The day the fleet's exit rails were replaced: stops rescaled from the run
 // budget to the position, plus the peak-tracked trailing lock. Trades before
@@ -222,8 +222,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
             auth).then(r => r.json()).catch(() => null),
         ])
         const positions = pos.positions || []
+        // Margin escrowed, NOT qty*price: notional counts the borrowed half
+        // of a leveraged position as deposit (prod showed 1040.83 for a
+        // 1000.93 book — the "extra" 39.90 was the broker's money).
         const value = positions.reduce((s: number, p: any) =>
-          s + Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0), 0)
+          s + positionMargin(p), 0)
         const unrealized = positions.reduce((s: number, p: any) => s + (p.pnl ?? 0), 0)
         const mineTrades = mine.trades || []
         const summary: any = typeof sm?.pnl === 'number' ? sm : null
@@ -239,7 +242,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
             return c && (!min || c < min) ? c : min
           }, null as string | null)
         const cash = pos.cash ?? 0
-        if (!dead) setAssets({ total: cash + value, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades, positions, summary })
+        if (!dead) setAssets({ total: cash + value + unrealized, unrealized, realized, realizedCurrent, cash, inUse: value, since, trades: mineTrades, positions, summary })
       } catch { /* transient */ }
     }
     loadAssets()
@@ -1083,7 +1086,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                         {assets.positions.map((p: any, i: number) => (
                           <div key={p.id ?? i} style={{ ...rowSt, fontSize: 12.5 }}>
                             <span style={{ fontWeight: 600 }}>{p.symbol} <span style={{ fontWeight: 500, color: 'var(--text-muted,#a89f92)' }}>{p.side}</span></span>
-                            <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary,#8a8073)' }}>{fmtUsd(Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0))}</span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary,#8a8073)' }}>{fmtUsd(positionEquity(p))}</span>
                             <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: pnlColor(p.pnl ?? 0) }}>{money(p.pnl ?? 0)}</span>
                           </div>
                         ))}
