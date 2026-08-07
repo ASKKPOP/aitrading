@@ -5,6 +5,43 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 09:15Z · quiet and healthy; the halving scale-out repeats
+
+**Book:** equity **1001.7858**, profit **+1.7858 (+0.1786%)** — session high.
+Realized **+1.7364** (from +1.5189), unrealized **+0.0493** (from +0.2239).
+Roughly 0.19 moved from paper to booked in half an hour — the mandate
+behaviour again. Fleet 10/10, **all on-slot, 10/10 distinct minutes, off-slot
+none**. Nothing below −0.99.
+
+**991 GC is now the largest winner at +0.7261**, edging past 981 SI's +0.7230.
+Shape holds at **7.0:1** (5 winners +2.0270, 9 losers −0.2905).
+
+### Three audits clean
+
+**pnl_audit** — ok both days, ledger validated 71/71. Worth noting: the 08-07
+delta flipped from **−0.11 to +0.08** across 3 flattens, so the adapt-vs-ledger
+gap is NOT a consistent one-way omission. Both within tolerance.
+
+**ratchet_audit** — 5 in-band reduces, all post-fix, **all survived, 0
+flattened**. And **990 ZW now shows a four-step halving sequence**:
+
+    0.0270 -> 0.0135 -> 0.0068 -> 0.0034
+
+That is the same shape 985 used to keep **91%** of its true high-water mark.
+Three runs have now converged on it independently (985, 990, and 981's
+partial ladder). It is looking like the desk's default way of banking, not a
+one-off.
+
+**fill_audit** — only the ZC flag cleared at 03:45Z. No new flags.
+
+### Nothing shipped
+
+Sixth cycle in a row with no reproduced defect. The recent findings have been
+corrections to my own analysis rather than platform faults, which is the
+expected shape once the real defects are out.
+
+---
+
 ## Cycle — 08:45Z · the arm/excursion ratio has a domain of validity
 
 **Book:** equity **1001.6647**, profit **+1.6647 (+0.1665%)** — session high.
