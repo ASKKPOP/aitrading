@@ -69,7 +69,32 @@ MAX_BODY_LEN = 4000
 # skill sorts last. Before adding ANY trader-site text, run the headroom
 # check in tests/test_trading_skills.py::test_defaults_never_hit_the_budget
 # and expect to compress something first.
-MAX_BLOCK_LEN = 34000
+# 2026-08-07 — RAISED to 48000, and the reasoning above is corrected.
+#
+# The owner asked the right question: "why fixed size?" This cap is NOT a model
+# limit. 34,000 characters is ~8,500 tokens; the context is far larger. It was
+# a proxy for ATTENTION — the claim, written above by an earlier session of
+# mine, that "each new lesson competes with 29 others".
+#
+# That claim was never measured. It is an assumption. What HAS been measured is
+# the cost of honouring it: to add a lesson the cap forces prose to be
+# compressed, and on 2026-08-07 that happened twice in one day to the same arm
+# skill. The second compression produced a clause that was logically
+# unactionable — "move the level inside the range the tape has shown" is
+# impossible when that range is below the round-trip fee, which is exactly run
+# 983's case (excursion 0.055%, fee 0.053%). Terser is not cheaper when the
+# terseness removes a case.
+#
+# So: do not compress a lesson into a worse lesson to satisfy an unmeasured
+# constraint. The budget stays as a BACKSTOP against a runaway admin catalogue
+# (the silent-drop failure mode below is real and still guarded by
+# test_defaults_never_hit_the_budget), not as a design constraint on defaults.
+#
+# The principled fix remains retrieval — send the skills a situation needs,
+# with an always-present safety core — see docs/plan/22. That is a change to
+# how every trading decision is assembled, so it ships on evidence and with an
+# explicit always-on set, NOT on the strength of the assumption above.
+MAX_BLOCK_LEN = 48000
 
 # The mandate (owner, 2026-08-06). The header used to frame the entire block
 # as a brake — "they may make you MORE cautious" — and never once said what
@@ -600,8 +625,12 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "BY YOUR NEXT LOOK, ~30 minutes: of 60+ arms here only three "
             "ever fired. AN ARM MANY TIMES YOUR LARGEST FAVOURABLE MOVE IS "
             "NOT PROTECTION — the scale check names that multiple. At a "
-            "large multiple you are UNPROTECTED whatever you armed: move it "
-            "inside the range the tape has shown, or bank now. "
+            "large multiple you are UNPROTECTED whatever you armed. Move it "
+            "inside the range the tape has actually shown — unless that range "
+            "is itself below your round-trip cost, in which case there is "
+            "nothing an arm can bank and the position must earn its place on "
+            "the thesis alone or be retired. Anchor to that range, never to a "
+            "round number. "
             "Arm to BANK (price_above on a long, price_below "
             "on a short), not only to protect: the stop already protects, "
             "while the gain that appears and vanishes between cycles is "
