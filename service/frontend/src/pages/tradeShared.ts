@@ -29,6 +29,19 @@ export function pair(symbol: string) {
   return `${symbol.toUpperCase()}/USDT`
 }
 
+// A position's contribution to the OWNER'S balance: margin actually escrowed
+// (notional / leverage) plus unrealized P&L. Summing qty*price instead counts
+// the BORROWED half of every leveraged position as the user's money — the
+// /automation deposit card did exactly that (1040.83 shown vs 1000.93 true).
+// Mirrors the server's portfolio_value.POSITION_VALUE_CASE.
+export function positionMargin(p: { quantity?: number; entry_price?: number | null; leverage?: number | null }): number {
+  return Math.abs(p.quantity ?? 0) * (p.entry_price ?? 0) / (Number(p.leverage) || 1)
+}
+
+export function positionEquity(p: { quantity?: number; entry_price?: number | null; leverage?: number | null; pnl?: number | null }): number {
+  return positionMargin(p) + (p.pnl ?? 0)
+}
+
 export function fmtUsd(v: number | null | undefined, digits = 2): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '—'
   return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })

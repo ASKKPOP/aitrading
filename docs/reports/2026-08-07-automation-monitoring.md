@@ -5,7 +5,58 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
-## Cycle — 22:00Z · "fix all issued for 24hours monitoing" — the ADBE floor evasion (#324)
+## Owner question — 23:0xZ · "profit +1.17, why deposit 1,040.83?" — TWO display-ledger defects, both proven to the cent
+
+Owner: the deposit card is the BALANCE. It showed 1,040.83 for a book whose
+true equity is 1000.93.
+
+### D1 — the deposit card counts the broker's money
+
+`AutomationPage` summed `|qty| × price` (NOTIONAL) into the deposit:
+cash 960.8877 + notional 79.9452 = **1040.83, cent-exact match**. At leverage
+2, only 39.90 of that notional is the user's margin; the other half is
+borrowed. Same pattern in `AssetsPage` and the deposit modal rows.
+
+Root cause: `/api/positions` never exposed `leverage`, so no client COULD
+compute margin. Fix: payload gains `leverage`; new `tradeShared.positionMargin
+/ positionEquity` mirror the server's `POSITION_VALUE_CASE`; card total =
+cash + Σmargin + Σupnl, "in use" = Σmargin.
+
+### D2 — realized excludes the OPENING leg's fee
+
+Card realized +1.02 vs runs-ledger AND cash-implied +0.7873. Gap **0.2342 =
+open-leg fees exactly** (buy 0.1927 + short 0.0415, proven by side-grouped
+sum). `automation.py` stamps close-leg pnl net of ITS OWN fee only; the
+open row has pnl NULL, so `/positions/trades/summary` and `/series` never
+saw its cost. Fix (read-side, heals history, no migration): every SUM uses
+`COALESCE(pnl, -COALESCE(fee_usd, 0))` — an open row contributes minus its
+fee in its own hour/window/split bucket.
+
+Fail-before ×3 (leverage payload, summary netting, series bucket), 3687
+pass, ruff(CI-set)+tsc clean.
+
+**Book:** equity **1000.9332** (+0.093%): cash 960.8877 + position value
+40.0455; cross-check seed 1000 + realized 0.7873 + unrealized 0.1458 =
+1000.9331 ✓. 10/10 running, **10 distinct minutes** (17,20,22,24,26,27,28,
+31,39,42) — stagger holds. Nothing below −0.99; **1001 ADBE unchanged at
+−0.6925** (cycle 16). Zero tracebacks. Fresh decision 22:42Z (983 hold, conf
+0.38) — first one after the notesync deploy, prompt path live.
+
+- Mandate drift check: my first predicate was WRONG (`MANDATE_CORE in
+  _research_mandate()` — the test asserts all three layers *start with* the
+  shared core sentence, research rephrases the rest by design). Re-checked
+  with the test's own predicate: all three True. Lesson: read the test's
+  assertion before inventing a stricter one and calling it drift.
+- Vary-on-loss live: `LOSS_SYMBOL_COOLDOWN_HOURS = 6` in the running image;
+  no ADBE cooldown row yet because 1001 has not stopped — the watch stands.
+- Cooldowns live: SOLUSDT until 08-08T09:39Z (987), HYPEUSDT until
+  08-08T01:05Z (995).
+- New watch (single data point, not chased): `[Market Intel] Refreshed market
+  news snapshots: inserted=0 errors=4` — if it repeats next cycles, count the
+  INPUT before touching anything (see the dead-feed trap).
+
+No changes shipped — no new evidence. Daily minus-profit duty already
+answered by #324.
 
 **Book:** equity **1000.93**, profit **+0.93 (+0.093%)**. 10/10 runs, all
 on-slot. Shape degraded **7.0:1 → 1.4:1** across the ~9 unattended hours —

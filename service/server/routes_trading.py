@@ -742,6 +742,12 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                 'take_profit': _row_value(row, 'take_profit'),
                 'source': source,
                 'opened_at': row['opened_at'],
+                # Clients computing balances need the margin actually
+                # escrowed (notional / leverage) — without this field the
+                # /automation deposit card summed qty*price and counted the
+                # BORROWED half of every leveraged position as deposit
+                # (prod: 1040.83 shown vs 1000.93 true equity).
+                'leverage': float(_row_value(row, 'leverage') or 1),
                 # Who is actually watching this position. A run releases its
                 # run_id on stop (run_engine: "close it by hand"), and a manual
                 # terminal fill never had one — so an unowned row is normal,
@@ -977,11 +983,19 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         if not agent:
             raise HTTPException(status_code=401, detail='Invalid token')
 
-        cols = ["COALESCE(SUM(pnl), 0) AS pnl", "COUNT(*) AS trades",
+        # A fill's realized contribution the moment it happens. A closing
+        # leg's pnl is already net of ITS OWN fee (automation.py stamps it),
+        # but the OPENING leg's fee was invisible to this ledger — measured
+        # on prod agent 6 the tile showed +1.02 while the runs ledger and
+        # the cash-implied figure both said +0.79; the 0.2342 gap was
+        # exactly the open-leg fees (buy 0.1927 + short 0.0415). An open
+        # row (pnl NULL) therefore contributes minus its fee.
+        net = "COALESCE(pnl, -COALESCE(fee_usd, 0))"
+        cols = [f"COALESCE(SUM({net}), 0) AS pnl", "COUNT(*) AS trades",
                 "MIN(created_at) AS first_trade", "MAX(created_at) AS last_trade"]
         params: list = []
         if split:
-            cols += ["COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS split_pnl",
+            cols += [f"COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS split_pnl",
                      "SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS split_trades"]
             params += [split, split]
         if since:
@@ -989,9 +1003,9 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             # lexically is the later instant (date-only 'YYYY-MM-DD' sorts
             # before every 'YYYY-MM-DDT...' of the same day).
             win_split = max(since, split) if split else since
-            cols += ["COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS window_pnl",
+            cols += [f"COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS window_pnl",
                      "SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS window_trades",
-                     "COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS window_split_pnl"]
+                     f"COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS window_split_pnl"]
             params += [since, since, win_split]
 
         conn = get_db_connection()
@@ -1035,10 +1049,13 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
 
         # Binding order follows placeholder order in the SQL text: the split
         # CASE lives in the SELECT list, so its param comes FIRST.
+        # Same net-of-open-fee expression as the summary above — the two
+        # endpoints feed the same tiles and must agree.
+        net = "COALESCE(pnl, -COALESCE(fee_usd, 0))"
         select_params: list = []
         split_col = ""
         if split:
-            split_col = ", COALESCE(SUM(CASE WHEN created_at >= ? THEN pnl END), 0) AS split_pnl"
+            split_col = f", COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS split_pnl"
             select_params.append(split)
         where = ["agent_id = ?", "message_type = 'operation'"]
         where_params: list = [agent['id']]
@@ -1050,7 +1067,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor = conn.cursor()
         cursor.execute(
             f"""SELECT REPLACE(SUBSTR(created_at, 1, 13), ' ', 'T') AS t,
-                       COALESCE(SUM(pnl), 0) AS pnl,
+                       COALESCE(SUM({net}), 0) AS pnl,
                        COUNT(*) AS trades{split_col}
                 FROM signals
                 WHERE {' AND '.join(where)}

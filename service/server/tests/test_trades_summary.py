@@ -116,6 +116,35 @@ class TradesSummaryTestCase(unittest.TestCase):
         # since < split → the overlap starts at the split epoch
         self.assertAlmostEqual(out['window']['split_pnl'], -10.0, places=6)
 
+    def test_open_leg_fees_reduce_realized(self):
+        """A closing leg's pnl nets only ITS OWN fee (automation.py); the
+        opening leg's fee was invisible here. Measured on prod agent 6: tile
+        +1.02 vs the runs ledger's +0.79 — the 0.2342 gap was exactly the
+        open-leg fees. An open row (pnl NULL) must contribute minus its fee,
+        in every bucket (lifetime, split, window)."""
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        rows = [
+            # (created_at, pnl, fee_usd)
+            ('2026-07-20T10:00:00Z', None, 0.10),   # open, pre-split
+            ('2026-07-26T10:00:00Z', 1.00, 0.05),   # close (pnl already net)
+            ('2026-08-01T10:00:00Z', None, 0.20),   # open, in window
+        ]
+        for i, (created_at, pnl, fee) in enumerate(rows):
+            cursor.execute(
+                """INSERT INTO signals
+                   (signal_id, agent_id, message_type, market, symbol, side,
+                    pnl, fee_usd, timestamp, created_at)
+                   VALUES (?, ?, 'operation', 'crypto', 'BTC', 'sell', ?, ?, ?, ?)""",
+                (910000 + i, self.agent_id, pnl, fee, 1700000000 + i, created_at),
+            )
+        conn.commit()
+        conn.close()
+        out = self._summary(since='2026-08-01T00:00:00.000Z', split=SPLIT)
+        self.assertAlmostEqual(out['pnl'], 0.70, places=6)          # 1.00 - 0.10 - 0.20
+        self.assertAlmostEqual(out['split']['pnl'], 0.80, places=6)  # 1.00 - 0.20
+        self.assertAlmostEqual(out['window']['pnl'], -0.20, places=6)
+
     def test_params_optional(self):
         self._insert_fills([('2026-07-20T10:00:00Z', 50.0)])
         out = self._summary()

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
 import { tr } from '../i18n'
-import { fmtUsd, fmtQty, pnlColor } from './tradeShared'
+import { fmtUsd, fmtQty, pnlColor, positionEquity } from './tradeShared'
 
 // My Assets — modeled on ga's AssetsView (assets overview + wallet cards +
 // per-coin expand + activity table), adapted to Sooppiy's paper engine:
@@ -72,7 +72,10 @@ export function AssetsPage() {
 
   const longs = positions.filter(p => p.side === 'long')
   const shorts = positions.filter(p => p.side !== 'long')
-  const val = (p: any) => Math.abs(p.quantity) * (p.current_price ?? p.entry_price ?? 0)
+  // Margin + unrealized, not qty*price — notional would count the borrowed
+  // half of a leveraged position as the user's balance (see tradeShared).
+  // For spot (leverage 1) this equals market value, unchanged.
+  const val = (p: any) => positionEquity(p)
   const spotValue = longs.reduce((s, p) => s + val(p), 0)
   const futValue = shorts.reduce((s, p) => s + val(p), 0)
   const totalPnl = positions.reduce((s, p) => s + (p.pnl ?? 0), 0)
