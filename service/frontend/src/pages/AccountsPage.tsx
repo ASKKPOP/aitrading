@@ -66,6 +66,7 @@ export function AccountsPage() {
     exchange: tr(language, { ko: '브로커', en: 'Broker', ja: 'ブローカー', th: 'โบรกเกอร์', vi: 'Broker', id: 'Broker' }),
     apiKey: tr(language, { ko: 'API 키', en: 'API key', ja: 'APIキー', th: 'คีย์ API', vi: 'Khóa API', id: 'Kunci API' }),
     apiSecret: tr(language, { ko: 'API 시크릿', en: 'API secret', ja: 'APIシークレット', th: 'ความลับ API', vi: 'Bí mật API', id: 'Secret API' }),
+    pemSecret: tr(language, { ko: '개인 키 (PEM 전체를 줄바꿈 그대로 붙여넣기) — 키는 반드시 ECDSA로 생성하세요. Ed25519는 지원되지 않습니다', en: 'Private key (paste the whole PEM, line breaks and all) — the key must be created with ECDSA; Ed25519 is not supported', ja: '秘密鍵 (PEM 全体を改行ごと貼り付け) — キーは ECDSA で作成してください。Ed25519 は非対応です', th: 'คีย์ส่วนตัว (วาง PEM ทั้งหมดพร้อมการขึ้นบรรทัดใหม่) — ต้องสร้างคีย์ด้วย ECDSA ไม่รองรับ Ed25519', vi: 'Khóa riêng tư (dán toàn bộ PEM, giữ nguyên xuống dòng) — khóa phải được tạo bằng ECDSA; Ed25519 không được hỗ trợ', id: 'Kunci privat (tempel seluruh PEM beserta baris barunya) — kunci harus dibuat dengan ECDSA; Ed25519 tidak didukung' }),
     passphrase: tr(language, { ko: 'API 패스프레이즈 (키 생성 시 설정)', en: 'API passphrase (set when the key was created)', ja: 'APIパスフレーズ (キー作成時に設定)', th: 'พาสเฟรส API (ตั้งตอนสร้างคีย์)', vi: 'Passphrase API (đặt khi tạo khóa)', id: 'Passphrase API (dibuat saat kunci dibuat)' }),
     needPassphrase: tr(language, { ko: '이 브로커는 API 키·시크릿과 함께 패스프레이즈도 필요합니다.', en: 'This broker also needs the API passphrase alongside the key and secret.', ja: 'このブローカーはキーとシークレットに加えパスフレーズが必要です。', th: 'โบรกเกอร์นี้ต้องใช้พาสเฟรสร่วมกับคีย์และความลับ', vi: 'Broker này cần cả passphrase cùng khóa và bí mật.', id: 'Broker ini juga memerlukan passphrase selain kunci dan secret.' }),
     regionLabel: tr(language, { ko: '지역', en: 'Region', ja: '地域', th: 'ภูมิภาค', vi: 'Khu vực', id: 'Wilayah' }),
@@ -172,6 +173,10 @@ export function AccountsPage() {
 
   const isIbkr = broker === 'ibkr'
   const needsPassphrase = (specs[broker]?.fields || []).includes('passphrase')
+  // Coinbase signs with an ES256 JWT, so its "secret" is a multi-line EC
+  // private key. A single-line input eats the newlines and the PEM stops
+  // parsing, so that one venue gets a textarea.
+  const secretIsPem = broker === 'coinbase'
 
   async function openGuide() {
     if (!broker || guideBusy) return
@@ -382,8 +387,14 @@ export function AccountsPage() {
             <>
               <input value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={T.apiKey}
                 autoComplete="off" spellCheck={false} style={field} />
-              <input value={apiSecret} onChange={e => setApiSecret(e.target.value)} placeholder={T.apiSecret}
-                type="password" autoComplete="new-password" spellCheck={false} style={field} />
+              {secretIsPem ? (
+                <textarea value={apiSecret} onChange={e => setApiSecret(e.target.value)}
+                  placeholder={T.pemSecret} rows={5} autoComplete="off" spellCheck={false}
+                  style={{ ...field, fontFamily: 'ui-monospace, monospace', fontSize: 12, resize: 'vertical' }} />
+              ) : (
+                <input value={apiSecret} onChange={e => setApiSecret(e.target.value)} placeholder={T.apiSecret}
+                  type="password" autoComplete="new-password" spellCheck={false} style={field} />
+              )}
               {needsPassphrase && (
                 <input value={passphrase} onChange={e => setPassphrase(e.target.value)} placeholder={T.passphrase}
                   type="password" autoComplete="new-password" spellCheck={false} style={field} />

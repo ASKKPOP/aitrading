@@ -219,6 +219,10 @@ def _build_real_broker(account: dict) -> Broker:
         from execution.kucoin import KucoinBroker
         return KucoinBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
                             passphrase=creds.get("passphrase", ""), test_only=sandbox)
+    if broker_name == "coinbase":
+        from execution.coinbase import CoinbaseBroker
+        return CoinbaseBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                              preview_only=sandbox)
 
     return PaperBroker()
 

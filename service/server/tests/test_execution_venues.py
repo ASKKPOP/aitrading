@@ -103,8 +103,24 @@ def _mk_order(symbol="BTCUSDT", side="buy", qty=0.5, price=100.0):
                  quantity=qty, price=price)
 
 
+def _make_ec_pem() -> str:
+    """A throwaway P-256 key. Coinbase signs with ES256, so its adapter cannot
+    be exercised with a string stand-in the way the HMAC venues can."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    return ec.generate_private_key(ec.SECP256R1()).private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode()
+
+
+_EC_PEM = _make_ec_pem()
+
+
 def _new_adapters():
     from execution.bybit import BybitBroker
+    from execution.coinbase import CoinbaseBroker
     from execution.cryptocom import CryptocomBroker
     from execution.kraken import KrakenBroker
     from execution.kucoin import KucoinBroker
@@ -117,6 +133,7 @@ def _new_adapters():
         CryptocomBroker(key="", secret=""),
         UpbitBroker(key="", secret=""),
         KucoinBroker(key="", secret="", passphrase=""),
+        CoinbaseBroker(key="", secret=""),
     ]
 
 
@@ -138,11 +155,13 @@ class VenueContractTests(unittest.TestCase):
         import httpx
         from execution.base import OrderStatus
         from execution.bybit import BybitBroker
+        from execution.coinbase import CoinbaseBroker
         from execution.kucoin import KucoinBroker
         from execution.okx import OKXBroker
         adapters = [BybitBroker(key="k", secret="s"),
                     OKXBroker(key="k", secret="s", passphrase="p"),
-                    KucoinBroker(key="k", secret="s", passphrase="p")]
+                    KucoinBroker(key="k", secret="s", passphrase="p"),
+                    CoinbaseBroker(key="kn", secret=_EC_PEM)]
         patcher, _ = _patch_http(
             lambda m, u, k: httpx.ConnectError("boom", request=None))
         with patcher:
@@ -390,6 +409,209 @@ class KucoinDryRunTests(unittest.TestCase):
                                       test_only=False).submit_order(_mk_order()))
         self.assertIs(order.status, OrderStatus.SUBMITTED)
         self.assertTrue(calls[0][1].endswith("/api/v1/orders"))
+
+
+class CoinbaseTests(unittest.TestCase):
+    """Coinbase is the only venue that signs with a per-request ES256 JWT
+    instead of an HMAC, and the only one whose books are USD- not USDT-quoted.
+    Both are places a wrong assumption is silent rather than loud."""
+
+    def test_product_maps_usdt_onto_usd(self):
+        from execution.coinbase import CoinbaseBroker
+        # The crypto feed quotes USDT; Coinbase's book is USD. Getting this
+        # wrong asks for a product Coinbase does not list.
+        self.assertEqual(CoinbaseBroker._product("BTCUSDT"), "BTC-USD")
+        self.assertEqual(CoinbaseBroker._product("ETHUSDC"), "ETH-USD")
+        self.assertEqual(CoinbaseBroker._product("SOLUSD"), "SOL-USD")
+        self.assertEqual(CoinbaseBroker._product("BTC"), "BTC-USD")
+
+    def test_preview_endpoint_and_validated_status(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: _FakeResponse(200, {"errs": []}))
+        with patcher:
+            order = _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                        preview_only=True).submit_order(_mk_order()))
+        self.assertIs(order.status, OrderStatus.VALIDATED)
+        self.assertTrue(calls[0][1].endswith("/api/v3/brokerage/orders/preview"))
+        # A dry run must never invent a broker order id.
+        self.assertIsNone(order.broker_order_id)
+
+    def test_preview_errs_reject_never_validate(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, _ = _patch_http(
+            lambda m, u, k: _FakeResponse(200, {"errs": ["INSUFFICIENT_FUND"]}))
+        with patcher:
+            order = _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                        preview_only=True).submit_order(_mk_order()))
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertIn("INSUFFICIENT_FUND", order.error_message or "")
+
+    def test_preview_sends_no_client_order_id(self):
+        # The preview endpoint rejects a client_order_id outright.
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: _FakeResponse(200, {"errs": []}))
+        with patcher:
+            _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                preview_only=True).submit_order(_mk_order()))
+        self.assertNotIn("client_order_id", json.loads(calls[0][2]["content"]))
+
+    def test_live_uses_orders_endpoint_and_carries_client_order_id(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: _FakeResponse(
+            200, {"success": True, "success_response": {"order_id": "o-1"}}))
+        with patcher:
+            order = _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                        preview_only=False).submit_order(_mk_order()))
+        self.assertIs(order.status, OrderStatus.SUBMITTED)
+        self.assertEqual(order.broker_order_id, "o-1")
+        self.assertTrue(calls[0][1].endswith("/api/v3/brokerage/orders"))
+        self.assertTrue(json.loads(calls[0][2]["content"])["client_order_id"])
+
+    def test_unsuccessful_create_is_rejected_with_reason(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, _ = _patch_http(lambda m, u, k: _FakeResponse(
+            200, {"success": False,
+                  "error_response": {"message": "INVALID_SIZE_PRECISION"}}))
+        with patcher:
+            order = _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                        preview_only=False).submit_order(_mk_order()))
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertIn("INVALID_SIZE_PRECISION", order.error_message or "")
+
+    def test_pins_base_size_not_quote_size(self):
+        """Same silent-100x trap as bybit/okx: a market BUY sized in USD
+        instead of coins spends `quantity` dollars."""
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: _FakeResponse(200, {"errs": []}))
+        with patcher:
+            _run(CoinbaseBroker(key="kn", secret=_EC_PEM,
+                                preview_only=True).submit_order(_mk_order()))
+        config = json.loads(calls[0][2]["content"])["order_configuration"]
+        self.assertEqual(config["market_market_ioc"]["base_size"], "0.50000000")
+        self.assertNotIn("quote_size", config["market_market_ioc"])
+
+    def test_short_and_cover_map_onto_spot_sides(self):
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: _FakeResponse(200, {"errs": []}))
+        with patcher:
+            for side, expected in (("buy", "BUY"), ("sell", "SELL"),
+                                   ("short", "SELL"), ("cover", "BUY")):
+                _run(CoinbaseBroker(key="kn", secret=_EC_PEM, preview_only=True)
+                     .submit_order(_mk_order(side=side)))
+                self.assertEqual(json.loads(calls[-1][2]["content"])["side"], expected)
+
+    def test_jwt_binds_method_host_and_path(self):
+        """The `uri` claim is what stops a token minted for a read being
+        replayed against an order. Verify it against the real signature."""
+        import jwt as _jwt
+        from cryptography.hazmat.primitives import serialization
+        from execution.coinbase import CoinbaseBroker
+        header_value = CoinbaseBroker(key="kn", secret=_EC_PEM)._auth_header(
+            "POST", "/api/v3/brokerage/orders")
+        self.assertTrue(header_value.startswith("Bearer "))
+        token = header_value.split(" ", 1)[1]
+        public_key = serialization.load_pem_private_key(
+            _EC_PEM.encode(), password=None).public_key()
+        claims = _jwt.decode(token, public_key, algorithms=["ES256"],
+                            options={"verify_aud": False})
+        self.assertEqual(claims["uri"], "POST api.coinbase.com/api/v3/brokerage/orders")
+        self.assertEqual(claims["iss"], "cdp")
+        self.assertEqual(claims["sub"], "kn")
+        # Short-lived by construction — a leaked token dies in two minutes.
+        self.assertEqual(claims["exp"] - claims["nbf"], 120)
+        headers = _jwt.get_unverified_header(token)
+        self.assertEqual(headers["kid"], "kn")
+        self.assertEqual(headers["alg"], "ES256")
+        self.assertTrue(headers["nonce"])
+
+    def test_pem_with_escaped_newlines_still_loads(self):
+        # A PEM that has been through a form and a JSON column often arrives
+        # with its newlines escaped; that must not read as a bad key.
+        from execution.coinbase import CoinbaseBroker
+        escaped = _EC_PEM.replace("\n", "\\n")
+        self.assertIsNotNone(
+            CoinbaseBroker(key="kn", secret=escaped)._auth_header("GET", "/x"))
+
+    def test_unusable_private_key_rejects_without_network(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            order = _run(CoinbaseBroker(key="kn", secret="not-a-pem",
+                                        preview_only=True).submit_order(_mk_order()))
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertEqual(calls, [], "an unusable key must not reach the venue")
+
+    def test_status_lookup_maps_venue_states(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        cases = {
+            "FILLED": OrderStatus.FILLED,
+            "CANCELLED": OrderStatus.CANCELLED,
+            "EXPIRED": OrderStatus.CANCELLED,
+            "FAILED": OrderStatus.REJECTED,
+        }
+        for venue_status, expected in cases.items():
+            patcher, _ = _patch_http(lambda m, u, k, s=venue_status: _FakeResponse(
+                200, {"order": {"status": s, "filled_size": "0.5",
+                                "average_filled_price": "100"}}))
+            with patcher:
+                out = _run(CoinbaseBroker(key="kn", secret=_EC_PEM)
+                           .get_order_status("o-1"))
+            self.assertEqual(out["status"], expected, venue_status)
+            self.assertEqual(out["filled_qty"], 0.5)
+            self.assertEqual(out["avg_price"], 100.0)
+
+    def test_open_with_partial_fill_is_partial_not_submitted(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, _ = _patch_http(lambda m, u, k: _FakeResponse(
+            200, {"order": {"status": "OPEN", "filled_size": "0.2"}}))
+        with patcher:
+            out = _run(CoinbaseBroker(key="kn", secret=_EC_PEM).get_order_status("o-1"))
+        self.assertIs(out["status"], OrderStatus.PARTIAL_FILL)
+
+    def test_open_with_no_fill_is_submitted(self):
+        from execution.base import OrderStatus
+        from execution.coinbase import CoinbaseBroker
+        patcher, _ = _patch_http(lambda m, u, k: _FakeResponse(
+            200, {"order": {"status": "OPEN", "filled_size": "0"}}))
+        with patcher:
+            out = _run(CoinbaseBroker(key="kn", secret=_EC_PEM).get_order_status("o-1"))
+        self.assertIs(out["status"], OrderStatus.SUBMITTED)
+
+
+class USRegionTests(unittest.TestCase):
+    def test_us_row_recommends_only_us_reachable_venues(self):
+        """Without a US row the GLOBAL fallback recommends binance/bybit/okx,
+        none of which a US person can open an account on."""
+        from execution.base import REGION_VENUES
+        self.assertIn("US", REGION_VENUES)
+        for blocked in ("binance", "bybit", "okx"):
+            self.assertNotIn(blocked, REGION_VENUES["US"])
+        self.assertIn("coinbase", REGION_VENUES["US"])
+
+    def test_coinbase_is_a_connectable_broker(self):
+        from execution.base import AVAILABLE_BROKERS, BROKER_SPECS
+        self.assertIn("coinbase", AVAILABLE_BROKERS)
+        spec = BROKER_SPECS["coinbase"]
+        self.assertEqual(spec.fields, ("key", "secret"))
+        self.assertEqual(spec.shadow, "dry_run")
+        # USD-quoted, so no FX capture is forced at fill recording.
+        self.assertEqual(spec.quote, "USD")
+
+    def test_router_builds_coinbase_with_mode_derived_preview_flag(self):
+        from execution.coinbase import CoinbaseBroker
+        from execution.router import _build_real_broker
+        for mode, preview in (("shadow", True), ("live", False)):
+            built = _build_real_broker({"broker": "coinbase", "credentials_enc": "",
+                                        "execution_mode": mode, "agent_id": 1})
+            self.assertIsInstance(built, CoinbaseBroker, mode)
+            self.assertEqual(built._preview_only, preview, mode)
 
 
 # ── Gateway rails (DB-backed) ─────────────────────────────────────────────────

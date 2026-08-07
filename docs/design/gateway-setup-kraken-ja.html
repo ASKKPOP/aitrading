@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">SOOPPIY ドキュメント — 取引ゲートウェイ接続</div>
   <h1>Kraken接続ガイド</h1>
-  <p class="sub">KrakenでAPI資格情報を作成し、アカウントページで接続する方法。 <span class="tag warn">シャドー優先 — 実取引は段階的に開放中</span></p>
+  <p class="sub">KrakenでAPI資格情報を作成し、アカウントページで接続する方法。 <span class="tag ok">実取引可能</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>モード</th><th>動作</th></tr>
     <tr><td>paper</td><td><b>paper / シミュレーター</b> — すべての取引はSooppiy内部台帳のみに記録されます。Krakenには接続しません。</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — Krakenにはテスト環境がないため、シャドーは実口座に対しKraken自身の<b>検証専用(validate-only)</b>注文コールを送ります。認証・ペア・数量・残高は検査されますが、注文は決して約定せず資金も動きません。取引所の承認/拒否の応答が記録されます。</td></tr>
-    <tr><td>live</td><td><b>live</b> — Krakenはまだ実取引が開放されていません。シャドー検証期間が完了しプラットフォームで有効化されるまで、実注文は明示的なメッセージとともに拒否されます。その間もルールはシャドーで運用できます。新規開放された取引所には当初、注文あたり$1,000の上限があります(超過注文は縮小ではなく拒否)。</td></tr>
+    <tr><td>live</td><td><b>live</b> — 実際の注文がKraken口座に送信されます。ブローカーが正であり、拒否された注文はプラットフォームのポジションを作りません。規約同意と有効な資格情報が必要で、拒否は常に明示されます — 無断でシミュレーションに切り替わることはありません。</td></tr>
   </table>
   <div class="note">どのモードでも、アカウントページ下部の<b>ブローカー注文履歴</b>と<b>ドリフト記録</b>で、Krakenが実際に確認した値と台帳の想定を並べて確認できます — 差異は大きく表示されるだけで、自動修正はされません。</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>トラブルシューティング</h2>
   <table>
     <tr><th>症状</th><th>意味 / 対処</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>この取引所はまだシャドー検証中です。シャドーは現在も動作し、検証完了後に実取引が開放されます。</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>別のアプリケーションが同じキーを使っています。Sooppiy専用キーを作成してください — 競合が続くとKrakenが最終的にキーを無効化します。</td></tr><tr><td>“EGeneral:Permission denied”</td><td>キーにCreate &amp; modify orders(またはQuery funds)権限がありません。Krakenでキーの権限を修正してください。</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>別のアプリケーションが同じキーを使っています。Sooppiy専用キーを作成してください — 競合が続くとKrakenが最終的にキーを無効化します。</td></tr><tr><td>“EGeneral:Permission denied”</td><td>キーにCreate &amp; modify orders(またはQuery funds)権限がありません。Krakenでキーの権限を修正してください。</td></tr>
   </table>
 </section>
 </div>

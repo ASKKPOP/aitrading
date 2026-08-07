@@ -27,4 +27,7 @@ anthropic>=0.25.0
 # Phase 2: broker execution layer
 httpx>=0.27.0
 cryptography>=42.0.0
+# Coinbase Advanced Trade authenticates with a per-request ES256 JWT rather
+# than an HMAC, so the execution layer needs a JWT signer.
+PyJWT>=2.8.0
 pyotp>=2.9

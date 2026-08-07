@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">DOKUMEN SOOPPIY — MENGHUBUNGKAN GATEWAY TRADING</div>
   <h1>Panduan Menghubungkan Kraken</h1>
-  <p class="sub">Cara membuat kredensial API di Kraken dan menghubungkannya di halaman Akun. <span class="tag warn">shadow dulu — trading live dibuka bertahap</span></p>
+  <p class="sub">Cara membuat kredensial API di Kraken dan menghubungkannya di halaman Akun. <span class="tag ok">trading live tersedia</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>Mode</th><th>Yang terjadi</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — semua transaksi hanya tercatat di buku internal Sooppiy. Kraken tidak pernah dihubungi.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — Kraken tidak punya lingkungan uji, jadi shadow memakai panggilan order <b>validate-only</b> milik Kraken pada akun asli Anda: autentikasi, pasangan, ukuran, dan saldo diperiksa, tetapi order tidak mungkin tereksekusi dan tidak ada dana bergerak. Jawaban terima/tolak bursa dicatat.</td></tr>
-    <tr><td>live</td><td><b>live</b> — belum dibuka untuk Kraken: bursa ini masih dalam masa uji shadow, dan order live ditolak dengan pesan eksplisit sampai Sooppiy mengaktifkannya. Sementara itu aturan Anda tetap bisa berjalan di shadow. Bursa yang baru diaktifkan juga membawa batas $1.000 per order pada awalnya (order yang melebihi batas ditolak, bukan diperkecil).</td></tr>
+    <tr><td>live</td><td><b>live</b> — order sungguhan dikirim ke akun Kraken Anda. Broker adalah sumber kebenaran: order yang ditolak tidak pernah membuat posisi di platform. Perlu ketentuan yang sudah diterima dan kredensial yang valid; penolakan selalu eksplisit, tidak pernah diam-diam menjadi simulasi.</td></tr>
   </table>
   <div class="note">Apa pun modenya, panel <b>Order broker</b> dan <b>Catatan penyimpangan</b> di bagian bawah halaman Akun menampilkan apa yang benar-benar dikonfirmasi Kraken di samping asumsi buku internal — perbedaan ditampilkan mencolok, tidak pernah dikoreksi otomatis.</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>Pemecahan masalah</h2>
   <table>
     <tr><th>Gejala</th><th>Arti / tindakan</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>Kunci tersimpan tidak lagi bisa dibaca (mis. setelah rotasi kunci server). Hubungkan ulang broker dengan kredensial baru.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Terima ketentuan untuk broker ini di halaman Akun — persetujuan dicatat per broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>Bursa masih dalam masa uji shadow. Shadow sudah berfungsi; live dibuka setelah masa uji selesai.</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>Aplikasi lain memakai kunci yang sama. Buat kunci khusus Sooppiy — perebutan berkelanjutan akhirnya membuat Kraken menonaktifkan kunci.</td></tr><tr><td>“EGeneral:Permission denied”</td><td>Kunci tidak punya izin Create &amp; modify orders (atau Query funds). Ubah izin kunci di Kraken.</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>Kunci tersimpan tidak lagi bisa dibaca (mis. setelah rotasi kunci server). Hubungkan ulang broker dengan kredensial baru.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Terima ketentuan untuk broker ini di halaman Akun — persetujuan dicatat per broker.</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>Aplikasi lain memakai kunci yang sama. Buat kunci khusus Sooppiy — perebutan berkelanjutan akhirnya membuat Kraken menonaktifkan kunci.</td></tr><tr><td>“EGeneral:Permission denied”</td><td>Kunci tidak punya izin Create &amp; modify orders (atau Query funds). Ubah izin kunci di Kraken.</td></tr>
   </table>
 </section>
 </div>

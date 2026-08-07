@@ -224,6 +224,15 @@
       "th": "คู่มือเชื่อมต่อ KuCoin",
       "vi": "Hướng dẫn kết nối KuCoin",
       "id": "Panduan Menghubungkan KuCoin"
+    },
+    {
+      "group": "gwsetup-coinbase",
+      "en": "Connect Coinbase",
+      "ko": "코인베이스 연결 가이드",
+      "ja": "Coinbase接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Coinbase",
+      "vi": "Hướng dẫn kết nối Coinbase",
+      "id": "Panduan Menghubungkan Coinbase"
     }
   ],
   "docs": [
@@ -1156,6 +1165,42 @@
       "lang": "id",
       "group": "gwsetup-kucoin",
       "title": "Panduan Menghubungkan KuCoin"
+    },
+    {
+      "key": "gwsetup-coinbase-en",
+      "lang": "en",
+      "group": "gwsetup-coinbase",
+      "title": "Connect Coinbase"
+    },
+    {
+      "key": "gwsetup-coinbase-ko",
+      "lang": "ko",
+      "group": "gwsetup-coinbase",
+      "title": "코인베이스 연결 가이드"
+    },
+    {
+      "key": "gwsetup-coinbase-ja",
+      "lang": "ja",
+      "group": "gwsetup-coinbase",
+      "title": "Coinbase接続ガイド"
+    },
+    {
+      "key": "gwsetup-coinbase-th",
+      "lang": "th",
+      "group": "gwsetup-coinbase",
+      "title": "คู่มือเชื่อมต่อ Coinbase"
+    },
+    {
+      "key": "gwsetup-coinbase-vi",
+      "lang": "vi",
+      "group": "gwsetup-coinbase",
+      "title": "Hướng dẫn kết nối Coinbase"
+    },
+    {
+      "key": "gwsetup-coinbase-id",
+      "lang": "id",
+      "group": "gwsetup-coinbase",
+      "title": "Panduan Menghubungkan Coinbase"
     }
   ]
 }

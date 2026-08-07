@@ -335,6 +335,8 @@ _GWSETUP_TITLES = {
                  "th": "คู่มือเชื่อมต่อ Upbit", "vi": "Hướng dẫn kết nối Upbit", "id": "Panduan Menghubungkan Upbit"},
     "kucoin":   {"en": "Connect KuCoin", "ko": "쿠코인 연결 가이드", "ja": "KuCoin接続ガイド",
                  "th": "คู่มือเชื่อมต่อ KuCoin", "vi": "Hướng dẫn kết nối KuCoin", "id": "Panduan Menghubungkan KuCoin"},
+    "coinbase": {"en": "Connect Coinbase", "ko": "코인베이스 연결 가이드", "ja": "Coinbase接続ガイド",
+                 "th": "คู่มือเชื่อมต่อ Coinbase", "vi": "Hướng dẫn kết nối Coinbase", "id": "Panduan Menghubungkan Coinbase"},
 }
 for _broker, _titles in _GWSETUP_TITLES.items():
     GROUPS.append({"group": f"gwsetup-{_broker}", **_titles})
