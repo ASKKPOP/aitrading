@@ -25,6 +25,36 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 💰 PROFIT ON A LEVERAGED BOOK WAS WRONG 3 WAYS — 2026-08-07 (#288)
+>
+> `agents.cash` has only the **MARGIN** of an open position deducted. The
+> identity `seed − margin + realized = cash` holds to 0.0001 on prod. So:
+>
+> | path | agent 6 showed | truth |
+> |---|---|---|
+> | profile `cash - seed` | **−29.04 (−2.9%)** | +0.51 (+0.05%) |
+> | leaderboard `cash + notional - seed` | **+30.09 (+3.0%)** | +0.51 |
+>
+> Same agent, DOWN 2.9% on one page and UP 3.0% on another. Both errors are the
+> leverage gap (notional − margin).
+>
+> **A position is worth its MARGIN + UNREALIZED**, now defined once in
+> `portfolio_value.py` (`POSITION_VALUE_CASE` / `POSITION_VALUE_SUM`) with a
+> Python mirror. It was inlined 4× across 2 files — that is how three versions
+> drifted apart. **Do not inline it again.**
+>
+> At leverage 1 the new expression equals the old one, so spot books are
+> unaffected (test pins this).
+>
+> **⚠️ Same class as #268.** Anything deriving profit from `cash` alone is
+> suspect on a leveraged book — check `tasks.py:1413` and
+> `routes_admin_manage.py:835` if their numbers ever look odd.
+>
+> **⚠️ MY OWN formula had the mirror-image bug:** `cash + (seed − cash) + upnl`
+> collapses to `seed + upnl` and ignores realized. Use
+> `seed + realized + unrealized`, or `cash + POSITION_VALUE_SUM − seed`, and
+> cross-check the two.
+
 > ### 🎯 THE TARGET, AND THE CORPUS MUST BE READ — 2026-08-07 (#280)
 >
 > **Owner:** *"AI Analysis & Macro & Desk & all project target is make plus
