@@ -5,6 +5,72 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 02:05Z · a seq collision that the design absorbed
+
+**Book:** equity **1000.10**. Realized **+0.2207** (was +0.1648). Unrealized
++0.105. 8 runs, 6 positions, notional 132.52. No run below −0.99.
+**Cadence 8/8 distinct minutes** (32, 34, 35, 39, 41, 48, 55, 57).
+
+### A duplicate-key traceback in the worker log
+
+```
+pymysql.err.IntegrityError: (1062,
+  "Duplicate entry '981-191' for key 'run_events.uq_run_events_run_seq'")
+  ... trading_runs.py line 268, in _emit_event
+```
+
+**Mechanism.** `_emit_event` reads `SELECT last_event_seq FROM trading_runs`,
+computes `seq + 1`, then INSERTs — **with no row lock**. Two concurrent writers
+on the same run read the same value and collide. The docstring's crash-safety
+argument ("a reclaiming worker re-reads last_event_seq, never a stale in-memory
+counter") covers RESTART, not CONCURRENCY.
+
+**Impact — checked, not assumed.** Run 981: **195 rows, max seq 195, zero
+missing**, and no seq gaps on ANY run. Signal 523's trade is present at seq
+192. The collision was on seq 191, an `equity` telemetry row, and
+`emit_telemetry_event` is fail-soft for exactly that class. The critical trade
+rode its own transaction and landed.
+
+**So the invariant held** — "a committed trade may never be missing from the
+journal" is intact. One equity sample was dropped.
+
+**Not fixed this cycle: one occurrence in ~24h, benign by design.** If it
+recurs the fix is `SELECT … FOR UPDATE` on the seq read, or catching
+IntegrityError and retrying with a fresh seq. Expect it to recur more often as
+the fleet grows — two writers per run (the cycle, and the arm executor firing
+between cycles) is the collision source.
+
+One small real cost: a fail-soft path logs a full ERROR traceback, which trains
+readers to skim tracebacks. A one-line warning would be better.
+
+### Arm ratios — the reproduction test is INCONCLUSIVE
+
+| run | arm | excursion | ratio | armed at |
+|---|---|---|---|---|
+| 982 BTCUSDT | 1.27% | 0.205% | 6.2× | 01:34 (post-brief) |
+| 983 ETHUSDT | 0.73% | 0.055% | 13.3× | 23:42 (pre-brief) |
+| 984 HG | 2.29% | 0.350% | 6.5× | 00:18 (pre-brief) |
+| 986 USDKRW | 1.18% | 0.000% | n/a | 01:32 (post-brief) |
+
+**984's ratio improved from 11.5× to 6.5× — but the arm did NOT move.** Its
+EXCURSION grew (0.216% → 0.350%) while the level stayed where it was set at
+00:18. Reading that as "the brief is working" would be wrong.
+
+**No new arm has been authored since 01:34**, so there is no new data for the
+test. Do not conclude anything about the brief's effect yet.
+
+**981 SI and 985 ZC still have no arm**, with excursions of 1.498% and 1.921% —
+the two largest on the book, both winners, both unprotected.
+
+### My fourth measurement error of the day
+
+I read "zero events since 02:00Z" as a stall. The clock was **01:59:38Z** — my
+filter was in the FUTURE. Along with the host-side glob, the null timestamp and
+the missing column, the pattern is trusting an aggregate without a cross-check.
+**Check the clock before filtering on it.**
+
+---
+
 ## Cycle — 02:00Z · the first arm fired, and the book turned positive
 
 **Book:** equity **1000.02** — positive for the first time since the reset.
