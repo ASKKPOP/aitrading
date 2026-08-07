@@ -36,13 +36,15 @@ from execution.base import BROKER_SPECS  # noqa: E402
 OUT = Path(__file__).resolve().parent
 LANGS = ["en", "ko", "ja", "th", "vi", "id"]
 
-# Brokers already allowed to route live money (gateway._LEGACY_LIVE_BROKERS).
-LIVE_TODAY = {"alpaca", "binance", "ibkr"}
+# Brokers already allowed to route live money (gateway._LEGACY_LIVE_BROKERS
+# plus venues since added to prod's LIVE_BROKER_ALLOWLIST — kraken 2026-08-07).
+LIVE_TODAY = {"alpaca", "binance", "ibkr", "kraken"}
 
 BROKER_NAMES = {
     "binance": "Binance", "alpaca": "Alpaca", "ibkr": "Interactive Brokers",
     "bybit": "Bybit", "okx": "OKX", "kraken": "Kraken",
     "cryptocom": "Crypto.com Exchange", "upbit": "Upbit", "kucoin": "KuCoin",
+    "coinbase": "Coinbase",
 }
 
 # ── shared strings ───────────────────────────────────────────────────────────
@@ -955,6 +957,95 @@ B = {
                 "Passphrase tersimpan berbeda dari yang dipilih saat kunci dibuat, atau kuncinya versi 1 lama. Hubungkan ulang dengan passphrase benar pada kunci v2.")],
     },
 },
+"coinbase": {
+    "fields": ["key", "secret"],
+    "steps": {
+        "en": ["Log in at coinbase.com → profile → <b>Settings</b> → <b>API</b> (this opens the Coinbase Developer Platform portal) → <b>Create API key</b>.",
+               "Under advanced settings choose <b>ECDSA</b> as the signature algorithm — <b>not Ed25519</b>. An Ed25519 key cannot sign for Advanced Trade and every request will fail.",
+               "Permissions: <b>View</b> and <b>Trade</b>. Never Transfer.",
+               "Download or copy the key file. The <b>key name</b> looks like <code>organizations/…/apiKeys/…</code> and the <b>private key</b> is a multi-line block starting with <code>BEGIN EC PRIVATE KEY</code>. Both go into Sooppiy exactly as they are — keep the private key's line breaks."],
+        "ko": ["coinbase.com 로그인 → 프로필 → <b>Settings</b> → <b>API</b>(Coinbase Developer Platform 포털이 열립니다) → <b>Create API key</b>.",
+               "고급 설정에서 서명 알고리즘으로 <b>ECDSA</b>를 선택하세요 — <b>Ed25519는 안 됩니다</b>. Ed25519 키는 Advanced Trade 서명에 쓸 수 없어 모든 요청이 실패합니다.",
+               "권한: <b>View</b>와 <b>Trade</b>. Transfer(이체) 권한은 절대 안 됩니다.",
+               "키 파일을 다운로드하거나 복사하세요. <b>키 이름</b>은 <code>organizations/…/apiKeys/…</code> 형태이고 <b>개인 키</b>는 <code>BEGIN EC PRIVATE KEY</code>로 시작하는 여러 줄 블록입니다. 두 값 모두 그대로 Sooppiy에 넣으세요 — 개인 키의 줄바꿈을 유지해야 합니다."],
+        "ja": ["coinbase.comにログイン → プロフィール → <b>Settings</b> → <b>API</b>(Coinbase Developer Platformポータルが開きます) → <b>Create API key</b>。",
+               "詳細設定で署名アルゴリズムに<b>ECDSA</b>を選択してください — <b>Ed25519は不可</b>。Ed25519キーはAdvanced Tradeの署名に使えず、すべてのリクエストが失敗します。",
+               "権限: <b>View</b>と<b>Trade</b>。Transfer(送金)権限は絶対に不可。",
+               "キーファイルをダウンロードまたはコピーします。<b>キー名</b>は<code>organizations/…/apiKeys/…</code>形式、<b>秘密鍵</b>は<code>BEGIN EC PRIVATE KEY</code>で始まる複数行のブロックです。どちらもそのままSooppiyに貼り付けてください — 秘密鍵の改行は保持すること。"],
+        "th": ["เข้าสู่ระบบ coinbase.com → โปรไฟล์ → <b>Settings</b> → <b>API</b> (จะเปิดพอร์ทัล Coinbase Developer Platform) → <b>Create API key</b>",
+               "ในการตั้งค่าขั้นสูง เลือกอัลกอริทึมลายเซ็นเป็น <b>ECDSA</b> — <b>ห้ามใช้ Ed25519</b> คีย์ Ed25519 เซ็นให้ Advanced Trade ไม่ได้ ทุกคำขอจะล้มเหลว",
+               "สิทธิ์: <b>View</b> และ <b>Trade</b> ห้าม Transfer เด็ดขาด",
+               "ดาวน์โหลดหรือคัดลอกไฟล์คีย์ <b>ชื่อคีย์</b>อยู่ในรูป <code>organizations/…/apiKeys/…</code> และ<b>คีย์ส่วนตัว</b>เป็นบล็อกหลายบรรทัดที่ขึ้นต้นด้วย <code>BEGIN EC PRIVATE KEY</code> ใส่ทั้งสองค่าใน Sooppiy ตามที่เป็น — คงการขึ้นบรรทัดใหม่ของคีย์ส่วนตัวไว้"],
+        "vi": ["Đăng nhập coinbase.com → hồ sơ → <b>Settings</b> → <b>API</b> (mở cổng Coinbase Developer Platform) → <b>Create API key</b>.",
+               "Trong cài đặt nâng cao, chọn thuật toán ký là <b>ECDSA</b> — <b>không phải Ed25519</b>. Khóa Ed25519 không ký được cho Advanced Trade và mọi yêu cầu sẽ thất bại.",
+               "Quyền: <b>View</b> và <b>Trade</b>. Tuyệt đối không Transfer.",
+               "Tải xuống hoặc sao chép tệp khóa. <b>Tên khóa</b> có dạng <code>organizations/…/apiKeys/…</code> và <b>khóa riêng tư</b> là khối nhiều dòng bắt đầu bằng <code>BEGIN EC PRIVATE KEY</code>. Dán cả hai vào Sooppiy nguyên trạng — giữ nguyên xuống dòng của khóa riêng tư."],
+        "id": ["Masuk ke coinbase.com → profil → <b>Settings</b> → <b>API</b> (membuka portal Coinbase Developer Platform) → <b>Create API key</b>.",
+               "Di pengaturan lanjutan pilih <b>ECDSA</b> sebagai algoritma tanda tangan — <b>bukan Ed25519</b>. Kunci Ed25519 tidak bisa menandatangani untuk Advanced Trade dan semua permintaan akan gagal.",
+               "Izin: <b>View</b> dan <b>Trade</b>. Jangan pernah Transfer.",
+               "Unduh atau salin berkas kunci. <b>Nama kunci</b> berbentuk <code>organizations/…/apiKeys/…</code> dan <b>kunci privat</b> adalah blok multibaris yang diawali <code>BEGIN EC PRIVATE KEY</code>. Masukkan keduanya ke Sooppiy apa adanya — pertahankan baris baru kunci privat."],
+    },
+    "shadow": {
+        "en": "<b>shadow</b> — Coinbase has no test environment for Advanced Trade, so shadow uses Coinbase's own <b>order preview</b> call against your real account: authentication, product, size and balance are checked, but nothing is placed and no money moves. The venue's accept/reject answer is journalled.",
+        "ko": "<b>shadow</b> — 코인베이스 Advanced Trade에는 테스트 환경이 없어서, 섀도는 실계정에 코인베이스 자체의 <b>주문 미리보기(preview)</b> 호출을 보냅니다. 인증·상품·수량·잔고는 검사되지만 주문은 접수되지 않고 돈도 움직이지 않습니다. 거래소의 승인/거부 응답이 기록됩니다.",
+        "ja": "<b>shadow</b> — Coinbase Advanced Tradeにはテスト環境がないため、シャドーは実口座に対しCoinbase自身の<b>注文プレビュー</b>コールを送ります。認証・商品・数量・残高は検査されますが、注文は発注されず資金も動きません。取引所の承認/拒否の応答が記録されます。",
+        "th": "<b>shadow</b> — Coinbase Advanced Trade ไม่มีสภาพแวดล้อมทดสอบ shadow จึงใช้คำสั่ง<b>พรีวิวออเดอร์</b>ของ Coinbase เองกับบัญชีจริงของคุณ: ตรวจการยืนยันตัวตน สินค้า ขนาด และยอดเงิน แต่ไม่มีการส่งคำสั่งจริงและเงินไม่เคลื่อนไหว คำตอบรับ/ปฏิเสธของกระดานถูกบันทึกไว้",
+        "vi": "<b>shadow</b> — Coinbase không có môi trường thử nghiệm cho Advanced Trade, nên shadow dùng lệnh <b>xem trước đơn hàng (preview)</b> của chính Coinbase trên tài khoản thật: xác thực, sản phẩm, khối lượng và số dư được kiểm, nhưng không lệnh nào được đặt và tiền không di chuyển. Câu trả lời chấp nhận/từ chối của sàn được ghi lại.",
+        "id": "<b>shadow</b> — Coinbase tidak punya lingkungan uji untuk Advanced Trade, jadi shadow memakai panggilan <b>pratinjau order</b> milik Coinbase pada akun asli Anda: autentikasi, produk, ukuran, dan saldo diperiksa, tetapi tidak ada order yang dipasang dan tidak ada dana bergerak. Jawaban terima/tolak bursa dicatat.",
+    },
+    "notes": {
+        "en": ["The credential pair is unusual: the <b>API key</b> is a long resource name and the <b>secret</b> is a multi-line EC private key (PEM), not a random string. Paste the whole PEM including its BEGIN/END lines.",
+               "Coinbase's main books quote in <b>USD</b>. Sooppiy translates its USDT symbols automatically (BTCUSDT → BTC-USD).",
+               "Spot only — there is nothing to short on Coinbase spot.",
+               "Sooppiy pins market buys to base-currency size — the quantity your rule sets is coins bought, never USD spent."],
+        "ko": ["자격 증명 형태가 특이합니다: <b>API 키</b>는 긴 리소스 이름이고 <b>시크릿</b>은 임의 문자열이 아니라 여러 줄짜리 EC 개인 키(PEM)입니다. BEGIN/END 줄까지 포함해 PEM 전체를 붙여넣으세요.",
+               "코인베이스 주요 마켓은 <b>USD</b> 호가입니다. Sooppiy가 USDT 심볼을 자동 변환합니다(BTCUSDT → BTC-USD).",
+               "현물 전용입니다 — 코인베이스 현물에는 공매도가 없습니다.",
+               "Sooppiy는 시장가 매수를 기초 통화 수량으로 고정합니다 — 규칙에 설정한 수량은 매수할 코인 수이지, 지출할 USD가 아닙니다."],
+        "ja": ["資格情報の形が独特です: <b>APIキー</b>は長いリソース名で、<b>シークレット</b>はランダム文字列ではなく複数行のEC秘密鍵(PEM)です。BEGIN/END行を含むPEM全体を貼り付けてください。",
+               "Coinbaseの主要マーケットは<b>USD</b>建てです。SooppiyがUSDTシンボルを自動変換します(BTCUSDT → BTC-USD)。",
+               "現物のみ — Coinbase現物に空売りはありません。",
+               "Sooppiyは成行買いを基軸通貨数量に固定します — ルールに設定した数量は購入するコイン数であり、支出するUSDではありません。"],
+        "th": ["ข้อมูลรับรองมีรูปแบบพิเศษ: <b>คีย์ API</b> เป็นชื่อรีซอร์สยาว และ<b>ซีเคร็ต</b>คือคีย์ส่วนตัว EC หลายบรรทัด (PEM) ไม่ใช่สตริงสุ่ม วางทั้ง PEM รวมบรรทัด BEGIN/END",
+               "กระดานหลักของ Coinbase อ้างอิงราคาเป็น <b>USD</b> — Sooppiy แปลงสัญลักษณ์ USDT ให้อัตโนมัติ (BTCUSDT → BTC-USD)",
+               "สปอตเท่านั้น — สปอตของ Coinbase ไม่มีการชอร์ต",
+               "Sooppiy ตรึงการซื้อ market ด้วยขนาดสกุลเงินฐาน — จำนวนที่กฎกำหนดคือจำนวนเหรียญที่ซื้อ ไม่ใช่จำนวน USD ที่จ่าย"],
+        "vi": ["Cặp thông tin xác thực khác thường: <b>khóa API</b> là tên tài nguyên dài và <b>bí mật</b> là khóa riêng tư EC nhiều dòng (PEM), không phải chuỗi ngẫu nhiên. Dán toàn bộ PEM gồm cả dòng BEGIN/END.",
+               "Các sổ lệnh chính của Coinbase định giá bằng <b>USD</b>. Sooppiy tự động chuyển ký hiệu USDT (BTCUSDT → BTC-USD).",
+               "Chỉ spot — spot của Coinbase không có bán khống.",
+               "Sooppiy cố định mua market theo số lượng tiền gốc — số mà quy tắc đặt là coin mua vào, không phải USD chi ra."],
+        "id": ["Pasangan kredensialnya tidak biasa: <b>kunci API</b> adalah nama resource panjang dan <b>secret</b>-nya adalah kunci privat EC multibaris (PEM), bukan string acak. Tempel seluruh PEM termasuk baris BEGIN/END.",
+               "Pasar utama Coinbase dikutip dalam <b>USD</b>. Sooppiy menerjemahkan simbol USDT otomatis (BTCUSDT → BTC-USD).",
+               "Spot saja — spot Coinbase tidak punya short.",
+               "Sooppiy mengunci market buy pada ukuran mata uang dasar — jumlah yang diatur aturan adalah koin yang dibeli, bukan USD yang dibelanjakan."],
+    },
+    "trouble": {
+        "en": [("“credentials could not be used to sign the request”",
+                "The stored private key is not a loadable ECDSA PEM — most often an Ed25519 key, or a PEM that lost its line breaks in pasting. Create an ECDSA key and paste the whole block again."),
+               ("401 Unauthorized on every call",
+                "The key name and private key do not belong together, or the key was revoked in the Developer Platform portal. Reconnect with a freshly created pair.")],
+        "ko": [("“credentials could not be used to sign the request”",
+                "저장된 개인 키를 ECDSA PEM으로 읽을 수 없습니다 — 대개 Ed25519 키이거나, 붙여넣을 때 줄바꿈이 사라진 PEM입니다. ECDSA 키를 만들어 블록 전체를 다시 붙여넣으세요."),
+               ("모든 호출에서 401 Unauthorized",
+                "키 이름과 개인 키가 서로 짝이 아니거나, Developer Platform 포털에서 키가 폐기되었습니다. 새로 만든 쌍으로 다시 연결하세요.")],
+        "ja": [("“credentials could not be used to sign the request”",
+                "保存された秘密鍵をECDSA PEMとして読み込めません — 多くはEd25519キーか、貼り付け時に改行が失われたPEMです。ECDSAキーを作成しブロック全体を貼り直してください。"),
+               ("すべての呼び出しで401 Unauthorized",
+                "キー名と秘密鍵が対応していないか、Developer Platformポータルでキーが失効しています。新しく作成したペアで再接続してください。")],
+        "th": [("“credentials could not be used to sign the request”",
+                "คีย์ส่วนตัวที่บันทึกอ่านเป็น ECDSA PEM ไม่ได้ — ส่วนใหญ่เป็นคีย์ Ed25519 หรือ PEM ที่การขึ้นบรรทัดหายตอนวาง สร้างคีย์ ECDSA แล้ววางทั้งบล็อกใหม่"),
+               ("401 Unauthorized ทุกคำขอ",
+                "ชื่อคีย์กับคีย์ส่วนตัวไม่ใช่คู่กัน หรือคีย์ถูกเพิกถอนในพอร์ทัล Developer Platform — เชื่อมต่อใหม่ด้วยคู่ที่สร้างใหม่")],
+        "vi": [("“credentials could not be used to sign the request”",
+                "Khóa riêng tư đã lưu không đọc được dưới dạng ECDSA PEM — thường là khóa Ed25519, hoặc PEM mất xuống dòng khi dán. Tạo khóa ECDSA và dán lại toàn bộ khối."),
+               ("401 Unauthorized ở mọi yêu cầu",
+                "Tên khóa và khóa riêng tư không thuộc về nhau, hoặc khóa đã bị thu hồi trong cổng Developer Platform. Kết nối lại bằng cặp mới tạo.")],
+        "id": [("“credentials could not be used to sign the request”",
+                "Kunci privat tersimpan tidak bisa dibaca sebagai ECDSA PEM — paling sering kunci Ed25519, atau PEM yang kehilangan baris barunya saat ditempel. Buat kunci ECDSA dan tempel ulang seluruh blok."),
+               ("401 Unauthorized di setiap panggilan",
+                "Nama kunci dan kunci privat bukan pasangan, atau kuncinya dicabut di portal Developer Platform. Hubungkan ulang dengan pasangan yang baru dibuat.")],
+    },
+},
 }
 
 TITLES = {
@@ -976,6 +1067,8 @@ TITLES = {
                  "th": "คู่มือเชื่อมต่อ Upbit", "vi": "Hướng dẫn kết nối Upbit", "id": "Panduan Menghubungkan Upbit"},
     "kucoin":   {"en": "Connect KuCoin", "ko": "쿠코인 연결 가이드", "ja": "KuCoin接続ガイド",
                  "th": "คู่มือเชื่อมต่อ KuCoin", "vi": "Hướng dẫn kết nối KuCoin", "id": "Panduan Menghubungkan KuCoin"},
+    "coinbase": {"en": "Connect Coinbase", "ko": "코인베이스 연결 가이드", "ja": "Coinbase接続ガイド",
+                 "th": "คู่มือเชื่อมต่อ Coinbase", "vi": "Hướng dẫn kết nối Coinbase", "id": "Panduan Menghubungkan Coinbase"},
 }
 
 
@@ -994,6 +1087,8 @@ PASTE_MAP = {
     "cryptocom": [("API Key", "key"), ("Secret Key", "secret")],
     "upbit":     [("Access key (액세스 키)", "key"), ("Secret key (시크릿 키)", "secret")],
     "kucoin":    [("API Key", "key"), ("API Secret", "secret"), ("API Passphrase", "pass")],
+    "coinbase":  [("API key name (organizations/…/apiKeys/…)", "key"),
+                  ("Private key — the whole PEM block", "secret")],
 }
 
 
@@ -1051,6 +1146,13 @@ AVAIL = {
  "th": "ผู้พำนักใน<b>สหรัฐอเมริกา</b>ใช้ไม่ได้ พื้นที่อื่นแตกต่างกันและระดับการยืนยันตัวตนมีผลต่อวงเงิน ตรวจข้อกำหนดสำหรับประเทศของคุณก่อนสร้างคีย์",
  "vi": "Không khả dụng với người cư trú tại <b>Hoa Kỳ</b>. Nơi khác thì khác nhau và mức xác minh ảnh hưởng tới hạn mức — hãy xem điều khoản cho quốc gia của bạn trước khi tạo khóa.",
  "id": "Tidak tersedia bagi penduduk <b>Amerika Serikat</b>. Ketersediaan di tempat lain bervariasi dan tingkat verifikasi memengaruhi limit — periksa ketentuan untuk negara Anda sebelum membuat kunci."},
+"coinbase": {
+ "en": "A <b>US-regulated</b> exchange serving the <b>United States</b> (most states) and 100+ other countries. One of the two crypto venues here a US resident can actually use — product availability still varies by state and country.",
+ "ko": "<b>미국</b>(대부분의 주)과 100여 개국을 지원하는 <b>미국 규제</b> 거래소입니다. 여기 있는 암호화폐 거래소 중 미국 거주자가 실제로 이용할 수 있는 두 곳 중 하나이며, 상품별 이용 범위는 주·국가에 따라 다릅니다.",
+ "ja": "<b>米国</b>(大半の州)と100か国以上に対応する<b>米国規制</b>の取引所です。ここに挙げた暗号資産取引所の中で米国居住者が実際に利用できる2つのうちの1つで、取扱商品は州や国により異なります。",
+ "th": "กระดานที่<b>กำกับดูแลโดยสหรัฐฯ</b> ให้บริการ<b>สหรัฐอเมริกา</b> (เกือบทุกรัฐ) และอีกกว่า 100 ประเทศ เป็นหนึ่งในสองกระดานคริปโตที่นี่ที่ผู้พำนักในสหรัฐฯ ใช้ได้จริง — ผลิตภัณฑ์ที่ใช้ได้ต่างกันตามรัฐและประเทศ",
+ "vi": "Sàn <b>chịu quản lý của Hoa Kỳ</b>, phục vụ <b>Hoa Kỳ</b> (hầu hết các bang) và hơn 100 quốc gia khác. Một trong hai sàn crypto ở đây mà người cư trú Mỹ thực sự dùng được — sản phẩm khả dụng vẫn khác nhau theo bang và quốc gia.",
+ "id": "Bursa <b>teregulasi AS</b> yang melayani <b>Amerika Serikat</b> (sebagian besar negara bagian) dan 100+ negara lain. Salah satu dari dua bursa kripto di sini yang benar-benar bisa dipakai penduduk AS — ketersediaan produk tetap berbeda per negara bagian dan negara."},
 "alpaca": {
  "en": "A <b>US broker-dealer</b> for US-listed stocks. It serves US residents and a list of supported non-US countries — check that list before opening the account. US market hours and pattern-day-trading rules apply to your account, not to Sooppiy.",
  "ko": "미국 상장 주식을 다루는 <b>미국 브로커-딜러</b>입니다. 미국 거주자와 지원 국가 목록의 해외 거주자를 대상으로 하니 계좌 개설 전 목록을 확인하세요. 미국 장 시간과 패턴 데이트레이딩(PDT) 규정은 Sooppiy가 아니라 회원님 계좌에 적용됩니다.",

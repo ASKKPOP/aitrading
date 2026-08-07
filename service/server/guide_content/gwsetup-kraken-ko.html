@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">SOOPPIY 문서 — 거래 게이트웨이 연결</div>
   <h1>크라켄 연결 가이드</h1>
-  <p class="sub">Kraken에서 API 자격 증명을 만들고 계정 페이지에서 연결하는 방법. <span class="tag warn">섀도 우선 — 실거래는 단계적 오픈 중</span></p>
+  <p class="sub">Kraken에서 API 자격 증명을 만들고 계정 페이지에서 연결하는 방법. <span class="tag ok">실거래 가능</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>모드</th><th>동작</th></tr>
     <tr><td>paper</td><td><b>paper / 시뮬레이터</b> — 모든 거래가 Sooppiy 내부 원장에만 기록됩니다. Kraken에는 접속하지 않습니다.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — 크라켄에는 테스트 환경이 없어서, 섀도는 실계정에 크라켄 자체의 <b>검증 전용(validate-only)</b> 주문 호출을 보냅니다. 인증·페어·수량·잔고는 검사되지만 주문은 절대 체결될 수 없고 돈도 움직이지 않습니다. 거래소의 승인/거부 응답이 기록됩니다.</td></tr>
-    <tr><td>live</td><td><b>live</b> — Kraken은(는) 아직 실거래가 열리지 않았습니다. 섀도 검증 기간(소크)이 끝나고 플랫폼에서 활성화될 때까지 실거래 주문은 명시적 메시지와 함께 거부됩니다. 그동안 규칙은 섀도로 운영할 수 있습니다. 새로 열린 거래소는 초기에 주문당 $1,000 한도가 적용됩니다(초과 주문은 축소가 아니라 거부).</td></tr>
+    <tr><td>live</td><td><b>live</b> — 실제 주문이 Kraken 계좌로 전송됩니다. 브로커가 기준이며, 거부된 주문은 플랫폼 포지션을 만들지 않습니다. 약관 동의와 유효한 자격 증명이 필요하며, 거부는 항상 명시적으로 표시됩니다 — 몰래 시뮬레이션으로 바뀌지 않습니다.</td></tr>
   </table>
   <div class="note">어떤 모드든 계정 페이지 하단의 <b>브로커 주문 내역</b>과 <b>드리프트 기록</b>에서 Kraken이(가) 실제로 확인한 값과 원장의 가정을 나란히 볼 수 있습니다 — 차이는 크게 표시될 뿐, 자동으로 수정되지 않습니다.</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>문제 해결</h2>
   <table>
     <tr><th>증상</th><th>의미 / 조치</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>저장된 키를 더 이상 읽을 수 없는 상태입니다(예: 서버 키 교체 후). 새 자격 증명으로 브로커를 다시 연결하세요.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>계정 페이지에서 이 브로커의 실거래 약관에 동의하세요 — 동의는 브로커별로 기록됩니다.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>이 거래소는 아직 섀도 검증 중입니다. 섀도는 지금도 동작하며, 검증이 끝나면 실거래가 열립니다.</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>다른 애플리케이션이 같은 키를 쓰고 있습니다. Sooppiy 전용 키를 만드세요 — 경합이 계속되면 크라켄이 결국 키를 무효화합니다.</td></tr><tr><td>“EGeneral:Permission denied”</td><td>키에 Create &amp; modify orders(또는 Query funds) 권한이 없습니다. 크라켄에서 키 권한을 수정하세요.</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>저장된 키를 더 이상 읽을 수 없는 상태입니다(예: 서버 키 교체 후). 새 자격 증명으로 브로커를 다시 연결하세요.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>계정 페이지에서 이 브로커의 실거래 약관에 동의하세요 — 동의는 브로커별로 기록됩니다.</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>다른 애플리케이션이 같은 키를 쓰고 있습니다. Sooppiy 전용 키를 만드세요 — 경합이 계속되면 크라켄이 결국 키를 무효화합니다.</td></tr><tr><td>“EGeneral:Permission denied”</td><td>키에 Create &amp; modify orders(또는 Query funds) 권한이 없습니다. 크라켄에서 키 권한을 수정하세요.</td></tr>
   </table>
 </section>
 </div>

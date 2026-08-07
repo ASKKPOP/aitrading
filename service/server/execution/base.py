@@ -70,6 +70,9 @@ BROKER_SPECS: dict[str, BrokerSpec] = {
     "cryptocom": BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USDT"),
     "upbit":     BrokerSpec(fields=("key", "secret"),               shadow="journal", quote="KRW"),
     "kucoin":    BrokerSpec(fields=("key", "secret", "passphrase"), shadow="dry_run", quote="USDT"),
+    # secret is an EC private key in PEM form, not a shared secret — Coinbase
+    # signs with a per-request ES256 JWT rather than an HMAC.
+    "coinbase":  BrokerSpec(fields=("key", "secret"),               shadow="dry_run", quote="USD"),
 }
 
 AVAILABLE_BROKERS = tuple(BROKER_SPECS)
@@ -79,6 +82,9 @@ AVAILABLE_BROKERS = tuple(BROKER_SPECS)
 # ordering only, never a geo-block: every venue stays connectable everywhere.
 REGION_VENUES: dict[str, tuple] = {
     "GLOBAL": ("binance", "bybit", "okx", "kraken", "cryptocom"),
+    # US persons cannot use binance.com / bybit / okx, so the GLOBAL fallback
+    # would recommend three venues they cannot open an account on.
+    "US": ("coinbase", "kraken", "alpaca"),
     "KR": ("upbit", "kraken"),
     "JP": ("kraken",),
     "TH": ("binance", "bybit", "kucoin"),

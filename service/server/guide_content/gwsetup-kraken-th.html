@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">เอกสาร SOOPPIY — การเชื่อมต่อเกตเวย์เทรด</div>
   <h1>คู่มือเชื่อมต่อ Kraken</h1>
-  <p class="sub">วิธีสร้างข้อมูลรับรอง API ที่ Kraken และเชื่อมต่อในหน้าบัญชี <span class="tag warn">เริ่มที่ shadow — การเทรดจริงกำลังทยอยเปิด</span></p>
+  <p class="sub">วิธีสร้างข้อมูลรับรอง API ที่ Kraken และเชื่อมต่อในหน้าบัญชี <span class="tag ok">เทรดจริงได้</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>โหมด</th><th>สิ่งที่เกิดขึ้น</th></tr>
     <tr><td>paper</td><td><b>paper / จำลอง</b> — ทุกการเทรดอยู่ในบัญชีภายในของ Sooppiy เท่านั้น ไม่ติดต่อ Kraken เลย</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — Kraken ไม่มีสภาพแวดล้อมทดสอบ shadow จึงใช้คำสั่งแบบ <b>validate-only</b> ของ Kraken เองกับบัญชีจริงของคุณ: ตรวจการยืนยันตัวตน คู่เทรด ขนาด และยอดเงิน แต่คำสั่งไม่มีทางจับคู่และเงินไม่เคลื่อนไหว คำตอบรับ/ปฏิเสธของกระดานถูกบันทึกไว้</td></tr>
-    <tr><td>live</td><td><b>live</b> — Kraken ยังไม่เปิดเทรดจริง: กระดานนี้อยู่ระหว่างช่วงทดสอบ shadow และคำสั่งจริงจะถูกปฏิเสธพร้อมข้อความชัดเจนจนกว่า Sooppiy จะเปิดใช้งาน ระหว่างนี้กฎของคุณรันแบบ shadow ได้ กระดานที่เพิ่งเปิดใหม่มีเพดานคำสั่งละ $1,000 ในช่วงแรก (คำสั่งเกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด)</td></tr>
+    <tr><td>live</td><td><b>live</b> — คำสั่งจริงถูกส่งไปยังบัญชี Kraken ของคุณ โบรกเกอร์คือแหล่งความจริง: คำสั่งที่ถูกปฏิเสธจะไม่สร้างสถานะบนแพลตฟอร์ม ต้องยอมรับข้อกำหนดและมีข้อมูลรับรองที่ใช้ได้ การปฏิเสธจะแสดงชัดเจนเสมอ ไม่มีการแอบเปลี่ยนเป็นการจำลอง</td></tr>
   </table>
   <div class="note">ไม่ว่าโหมดใด แผง <b>คำสั่งโบรกเกอร์</b> และ <b>บันทึกดริฟต์</b> ด้านล่างหน้าบัญชีจะแสดงสิ่งที่ Kraken ยืนยันจริงคู่กับสิ่งที่บัญชีภายในสันนิษฐาน — ความต่างจะถูกแสดงชัดเจน ไม่ถูกแก้อัตโนมัติ</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>การแก้ปัญหา</h2>
   <table>
     <tr><th>อาการ</th><th>ความหมาย / วิธีแก้</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>คีย์ที่บันทึกไว้อ่านไม่ได้แล้ว (เช่นหลังการหมุนเวียนคีย์เซิร์ฟเวอร์) — เชื่อมต่อโบรกเกอร์ใหม่ด้วยข้อมูลรับรองใหม่</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>ยอมรับข้อกำหนดของโบรกเกอร์นี้ในหน้าบัญชี — การยินยอมบันทึกแยกต่อโบรกเกอร์</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>กระดานนี้ยังอยู่ในช่วงทดสอบ shadow ตอนนี้ shadow ใช้ได้ และเทรดจริงจะเปิดเมื่อการทดสอบเสร็จ</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>มีแอปอื่นใช้คีย์เดียวกันอยู่ — สร้างคีย์เฉพาะ Sooppiy หากแข่งกันต่อไป Kraken จะทำให้คีย์ใช้ไม่ได้ในที่สุด</td></tr><tr><td>“EGeneral:Permission denied”</td><td>คีย์ขาดสิทธิ์ Create &amp; modify orders (หรือ Query funds) — แก้สิทธิ์คีย์บน Kraken</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>คีย์ที่บันทึกไว้อ่านไม่ได้แล้ว (เช่นหลังการหมุนเวียนคีย์เซิร์ฟเวอร์) — เชื่อมต่อโบรกเกอร์ใหม่ด้วยข้อมูลรับรองใหม่</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>ยอมรับข้อกำหนดของโบรกเกอร์นี้ในหน้าบัญชี — การยินยอมบันทึกแยกต่อโบรกเกอร์</td></tr><tr><td>“EAPI:Invalid nonce”</td><td>มีแอปอื่นใช้คีย์เดียวกันอยู่ — สร้างคีย์เฉพาะ Sooppiy หากแข่งกันต่อไป Kraken จะทำให้คีย์ใช้ไม่ได้ในที่สุด</td></tr><tr><td>“EGeneral:Permission denied”</td><td>คีย์ขาดสิทธิ์ Create &amp; modify orders (หรือ Query funds) — แก้สิทธิ์คีย์บน Kraken</td></tr>
   </table>
 </section>
 </div>
