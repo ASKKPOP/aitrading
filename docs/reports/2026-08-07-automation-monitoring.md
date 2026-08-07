@@ -5,6 +5,60 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 05:00Z · why the fleet sits at 7/10, and one dead symbol removed
+
+**Book:** equity **1000.5312**, profit **+0.5312 (+0.0531%)**. Realized
+**+0.5029** (still climbing), unrealized +0.0281 — the desk keeps converting
+paper into booked. Cadence **7/7 distinct minutes**. Nothing below −0.99.
+
+### `built: 0` on every FleetPlanner tick for 40 minutes — explained, not a defect
+
+Fleet 28 targets 10 runs and holds 7. The newest research batch has **12
+selectable theses**, so the universe is not empty. Where they go:
+
+    7 unheld  us-stock   -> US equities CLOSED at 05:00Z; the planner
+                            deliberately will not bind a slot to a symbol
+                            that would idle until the session opens
+    1 selectable futures -> HG, already held
+    0 selectable forex
+    1 unheld  crypto     -> ZBTUSDT, unpriceable
+
+**7/10 overnight is correct behaviour**, and the slots should fill when US
+markets open at 13:30Z. Nothing to fix in the planner.
+
+### The one real defect: ZBTUSDT (#297)
+
+**48 log failures** — 23 x `Hyperliquid symbol not listed: ZBTUSDT -> ZBT` and
+23 fetch failures — across at least two days, while consuming a survivor slot
+and an LLM thesis in every batch. It is not listed on the venue, so it can
+never be priced and can never be built.
+
+**It was already known.** The 2026-08-06 starvation arithmetic in
+`symbol_research` counts it by name (`- ZBTUSDT unpriceable = 0 buildable`) and
+the survivor cap was raised instead of removing the dead symbol. I had also
+seen its error line earlier tonight and dismissed it as "harmless but noisy" —
+it was not harmless.
+
+Tonight it stopped being cosmetic: **it was the only unheld crypto candidate**,
+so one dead symbol was holding the fleet's last buildable overnight slot.
+
+`build_universe` now filters crypto through the venue's own listed set, reusing
+the check `price_fetcher` already runs before every fetch — one cached call.
+**Fails open in two directions**, both tested: an exception leaves the universe
+intact, and an all-unlisted answer is treated as a broken read rather than an
+empty venue.
+
+Verified live 3x: ZBTUSDT absent, BTCUSDT retained.
+
+### New observation — the crypto discovery channel is thin
+
+With ZBTUSDT gone the crypto universe is **5 symbols** (ETHUSDT, BTCUSDT,
+SOLUSDT, XRPUSDT, DOGEUSDT) and three are already held. `top_symbols` is
+returning very few candidates. **Recorded, not chased** — one reading, and
+overnight is the worst time to judge a discovery feed.
+
+---
+
 ## Cycle — 04:45Z · arms are standing, not churning; 985 completed cleanly
 
 **Book:** equity **1000.6394**, profit **+0.6394 (+0.0639%)** — session high
