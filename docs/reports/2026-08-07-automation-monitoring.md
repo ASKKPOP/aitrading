@@ -5,6 +5,45 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 10:45Z · 991 GC completes a profitable lifecycle at +0.7261
+
+**Book:** equity **1002.1438**, profit **+2.1438 (+0.2144%)**. Realized
+**+1.9727** (from +1.9239) — **997 BTCUSDT banked +0.0517 -> +0.1178**.
+Unrealized +0.1711. 8/10 runs, all on-slot, 8/8 distinct minutes. Shape
+**5.5:1**. Nothing below −0.99.
+
+### 991 GC retired itself at +0.7261
+
+    desk_retired   16 cycles   arm fired 08:46 banking +0.245
+
+Built ~06:30, worked the position, fired a near arm, kept trading it, then
+**closed and freed the slot on its own decision**. That is the third complete
+profitable lifecycle of the session after 985 ZC (+0.2553, kept 91% of its
+high-water mark) — entry through exit through retirement, no intervention.
+
+### The research loop is healthy on the widened universe
+
+    496137  10:00:20  21 rows   universe 131, 21 survivors, 21 LLM theses
+    496136  08:54:39  19 rows
+    496135  07:50:17  21 rows
+    496134  06:55:23  21 rows
+
+Four batches in four hours, every one at **universe 131** — the post-#299
+figure. The hourly loop is producing consistently and all 21 survivors get a
+fresh LLM thesis each time.
+
+### Corpus synced
+
+Monitoring chunks had been frozen at 500 since the 07:45Z deploy, with seven
+cycle notes unsynced. Deployed now, while the fleet is quiet at 8/10 — after
+the 13:30Z US open, fresh research batches matter more than a phase shift, so
+this is the cheap moment to pay the ~40-minute research-timer reset (see the
+06:25Z finding).
+
+### Nothing shipped
+
+---
+
 ## Cycle — 10:15Z · quiet; the R:R gate is refusing unbracketable setups
 
 **Book:** equity **1002.1452**, profit **+2.1452 (+0.2145%)**. Realized
