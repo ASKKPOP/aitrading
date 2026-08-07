@@ -1690,6 +1690,74 @@ class LossVerdictBriefTests(unittest.TestCase):
                       "loss verdict not wired into the position brief")
 
 
+class ExcursionScaleBriefTests(unittest.TestCase):
+    """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
+    conversion the desk armed levels 12-13x beyond anything its tape had done
+    (measured 2026-08-07 on runs 983 and 984)."""
+
+    def _pnl(self, entry, mark, qty):
+        return {"position": {"entry_price": entry, "current_price": mark,
+                             "quantity": qty}}
+
+    def test_states_the_peak_as_a_percentage_of_price(self):
+        # 984 HG: peak $0.103 on a $49.42 book = 0.208% of price.
+        run = {"armed_order_json": None}
+        line = run_engine._excursion_scale_line(
+            run, self._pnl(6.7185, 6.7155, 7.3557), 0.103)
+        self.assertIn("0.21% of price", line)
+        self.assertIn("$0.10", line)
+        self.assertIn("No level is armed", line)
+
+    def test_compares_the_standing_arm_in_the_same_unit(self):
+        # arm at 6.89 vs mark 6.7155 = 2.60% away, against a 0.21% excursion.
+        run = {"armed_order_json": json.dumps(
+            {"arm": {"if": "price_above", "level": 6.89, "then": "reduce",
+                     "size_frac": 0.5}})}
+        line = run_engine._excursion_scale_line(
+            run, self._pnl(6.7185, 6.7155, 7.3557), 0.103)
+        self.assertIn("2.60% away", line)
+        self.assertIn("12.5x that", line,
+                      "the desk is not told how far beyond its own range the "
+                      "arm sits")
+
+    def test_a_reachable_arm_reads_as_a_small_multiple(self):
+        # 981 SI: arm 0.50% away against a 0.297% excursion -> 1.7x.
+        run = {"armed_order_json": json.dumps(
+            {"arm": {"if": "price_above", "level": 62.05}})}
+        line = run_engine._excursion_scale_line(
+            run, self._pnl(61.845, 61.74, 0.61), 0.112)
+        self.assertIn("1.7x that", line)
+
+    def test_silent_before_any_favourable_excursion(self):
+        """Nothing to calibrate against until the tape has moved for you."""
+        run = {"armed_order_json": None}
+        self.assertEqual(
+            run_engine._excursion_scale_line(run, self._pnl(10.0, 9.9, 5), 0), "")
+        self.assertEqual(
+            run_engine._excursion_scale_line(run, self._pnl(10.0, 9.9, 5), None), "")
+
+    def test_never_blocks_a_cycle(self):
+        for bad in ({}, {"position": {}}, {"position": {"entry_price": 0,
+                                                        "quantity": 0}}):
+            self.assertEqual(
+                run_engine._excursion_scale_line({}, bad, 1.0), "")
+
+    def test_it_is_wired_into_the_brief(self):
+        """A brief line unwired from the prompt passes every other test —
+        helpers are tested for rendering, never for being concatenated."""
+        import inspect
+        src = inspect.getsource(run_engine._position_state_line)
+        self.assertIn("_excursion_scale_line(run, pnl, peak)", src,
+                      "excursion scale not wired into the position brief")
+
+    def test_the_brief_reaches_both_prompt_paths(self):
+        import inspect
+        src = inspect.getsource(run_engine)
+        self.assertGreaterEqual(
+            src.count("_position_state_line("), 3,
+            "the light and full prompt paths must both carry the brief")
+
+
 class CycleCadenceTests(unittest.TestCase):
     """Owner, 2026-08-06: "Sooppiy AI analysis each run 30 min (make time gap
     each)". Two mechanisms — a scheduling-time cap on how long a live run may
