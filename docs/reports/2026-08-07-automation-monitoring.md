@@ -5,6 +5,55 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 05:45Z · crypto discovery was asking for 5 while slicing for 50
+
+**Book:** equity **1000.6511**, profit **+0.6511 (+0.0651%)**. Realized
+**+0.5334**, unrealized +0.1176. Cadence **7/7 distinct minutes**. Nothing
+below −0.99.
+
+### ZBTUSDT confirmed gone — the way I said I would check
+
+Batch `research:496133` was created at **05:13:13Z**, AFTER the 05:08 log
+lines, with **19 rows instead of 20** — exactly one fewer, and ZBTUSDT is the
+one missing. **Zero ZBT lines in the following three minutes.** The 05:08
+fetches were a research pass already in flight around the deploy. Declining to
+declare it last cycle was correct.
+
+### The next layer down: crypto discovery pinned at five
+
+Removing the dead symbol made the real constraint visible. Three readings:
+
+    build_universe by market: crypto 5, us-stock 72, futures 21, forex 30
+
+**`get_top_symbols()` DEFAULTS TO 5** — `TOP_SYMBOLS_LIMIT`, sized for the UI
+widget that first used it. `build_universe` called it bare and then sliced
+`rows[:50]`, so **the slice was a no-op**. The slice documents the intent; the
+missing argument defeated it. This module's own docstring says the universe is
+"~198 symbols" against an actual **128**.
+
+It bit tonight: three of the five were already held, so the entire unheld
+crypto opportunity set was **TWO symbols** while the fleet sat at 7 of 10 with
+US equities closed.
+
+**Fix (#299):** pass the limit the slice already asks for.
+
+### Measured outcome — smaller than the ceiling I quoted
+
+    before: crypto 5   universe 128
+    after:  crypto 8   universe 131
+
+**Not 20.** `_VOLUME_CANDIDATES` caps the volume ranking at 20 and the
+priceable-bases filter cuts it further, so the real gain is **+3 symbols**
+(ZECUSDT, ADAUSDT, HYPEUSDT). The unheld crypto set goes 2 -> 5, which is a
+2.5x improvement in overnight replenishment options and still far short of the
+docstring's ~198.
+
+I deliberately did NOT raise `_VOLUME_CANDIDATES`: it would also change the
+ranking the UI consumer sees, and that is a separate decision on separate
+evidence.
+
+---
+
 ## Cycle — 05:00Z · why the fleet sits at 7/10, and one dead symbol removed
 
 **Book:** equity **1000.5312**, profit **+0.5312 (+0.0531%)**. Realized
