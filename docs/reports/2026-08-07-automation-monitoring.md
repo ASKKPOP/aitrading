@@ -5,6 +5,33 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 06:00Z · session high; the #299 payoff test has not run yet
+
+**Book:** equity **1000.9454**, profit **+0.9454 (+0.0945%)** — session high.
+Realized **+0.6162** (from +0.5334), unrealized +0.3290. The move came from
+**981 SI banking +0.1703 -> +0.2531**.
+
+Cadence **7/7 distinct minutes**, and every run is on its own slot — 982 (:04/
+:34) last at 05:34, 990 (:00/:30) at 05:30, 991 (:07/:37) at 05:37, 987 (:09/
+:39) at 05:39. Nothing below −0.99.
+
+### #299 not yet testable
+
+Newest batch is still `research:496133`, created **05:13:13Z — before** the
+cryptobreadth deploy at ~05:50. Its crypto rows are the pre-fix three
+(BTCUSDT, ETHUSDT, SOLUSDT), all already held.
+
+Research batches run roughly hourly (03:17, 04:07, 05:13), so the first batch
+built from the 8-symbol universe is due around 06:10. **No claim either way
+until it lands.**
+
+Fleet stays 7/10 for the reason established at 05:00: the unheld candidates are
+us-stock and the market is closed until 13:30Z.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 05:45Z · crypto discovery was asking for 5 while slicing for 50
 
 **Book:** equity **1000.6511**, profit **+0.6511 (+0.0651%)**. Realized
