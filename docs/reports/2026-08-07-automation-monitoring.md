@@ -5,6 +5,55 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 09:45Z · third arm fire, and its slippage is 7x the fee
+
+**Book:** equity **1001.9840**, profit **+1.9840 (+0.1984%)** — session high,
+nearing +2.00. Realized +1.7463, unrealized +0.2376. 9/10 runs, all on-slot,
+9/9 distinct minutes. Nothing below −0.99.
+
+### Shape moved to 5.0:1 — one run closed
+
+    7 winners +2.1805  |  7 losers −0.4342  |  5.0:1   (was 7.0:1)
+
+**987 SOLUSDT `adapt_retired` at −0.2621** (from −0.0651) — now the largest
+single loss of the session. In context: 21 cycles over 8.5 hours ending at
+**−0.026% of the book**, nowhere near the −0.99 floor. The ratio fell because
+this landed, not because the desk changed behaviour.
+
+### ⚠️ NEW: arm slippage scales with symbol thinness
+
+Third arm fire — 993 ZECUSDT, 09:37:31, `price_above 508.0 -> reduce/0.5`:
+
+    981 SI       slip 0.0403%
+    991 GC       slip 0.0596%
+    993 ZECUSDT  slip 0.2697%   <- 7.1x the round-trip fee (0.0382%)
+
+All three fired, all `reduce/0.5`, all executed. But ZEC — the thinnest of the
+three — cost **7x the round trip in slippage alone**. On a partial take that
+eats a real share of what the arm was banking.
+
+**One observation, not a finding.** Worth watching whether arms on thin symbols
+systematically give back their edge in fill cost; three fires is not enough to
+say. If it holds, the lesson belongs in the arm skill (prefer arms where the
+book can absorb the size), not in a platform rail.
+
+### Gate skips are mostly not obstructions
+
+119 gate_skip events today, and **74% are simply the desk choosing to hold**:
+
+     88  decision is 'hold'          <- a decision, not a gate
+     19  loss cooldown
+      6  re-entry cooldown (45m at 2x leverage)
+      5  desk retired this run
+      1  dust order skip (margin $9.19 < floor $10.00)
+
+The per-cycle gate_skip counts I have been reporting (7-11) therefore overstate
+how often the desk is actually being blocked. Only ~26 of 119 are real gates.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 09:15Z · quiet and healthy; the halving scale-out repeats
 
 **Book:** equity **1001.7858**, profit **+1.7858 (+0.1786%)** — session high.
