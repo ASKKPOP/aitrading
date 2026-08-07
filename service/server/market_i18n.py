@@ -1,7 +1,11 @@
-"""Response-layer localization for the /financial-events free-text.
+"""Response-layer localization for the /financial-events free-text — and, on
+the same two tiers, the desk-cycle free text behind /automation/ai-analysis.
 
 The market-intel caches (and the snapshot rows behind them) stay English — one
-shared entry per payload, exactly like /api/market-intel/regime. Translation
+shared entry per payload, exactly like /api/market-intel/regime. The desk
+journal stays English for the same reason plus one more: its reports are the
+corpus desk_memory retrieves from, and a corpus that changes language with the
+reader's setting is a corpus that no longer matches its own past. Translation
 happens per request on the way out, keyed by the request's Accept-Language.
 
 Two tiers of free text:
@@ -40,6 +44,7 @@ from typing import Any, Optional
 
 from analysis_agents import LANG_NAMES, normalize_lang
 from cache import get_json, set_json
+from desk_i18n_data import DESK_PHRASES
 from llm_client import (
     LlmContext,
     generate_text,
@@ -71,9 +76,13 @@ def _warm_enabled() -> bool:
     return os.getenv("MARKET_I18N_LLM_WARM", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # ── catalogue index (exact + interpolated), built once at import ────────────
+# Two catalogues, one index: MARKET_PHRASES is the market-intel free text,
+# DESK_PHRASES the desk-cycle gate-skip reasons. They are kept in separate data
+# modules because they are separate surfaces, but the matcher and the Tier-C
+# fallback behind them are the same, so there is one lookup rather than two.
 _EXACT: dict[str, dict[str, str]] = {}
 _PATTERNS: list[tuple[re.Pattern[str], dict[str, str]]] = []
-for _en, _variants in MARKET_PHRASES.items():
+for _en, _variants in {**MARKET_PHRASES, **DESK_PHRASES}.items():
     if "{}" in _en:
         _rx = "(.*?)".join(re.escape(part) for part in _en.split("{}"))
         _PATTERNS.append((re.compile(f"^{_rx}$", re.DOTALL), _variants))
@@ -441,3 +450,48 @@ def localize_stock_history_payload(payload: dict[str, Any], lang: str) -> dict[s
         for (container, key), value in zip(slots, localized):
             container[key] = value
     return payload
+
+
+def localize_desk_cycles(cycles: Any, lang: str) -> Any:
+    """Localize the free text inside /automation/ai-analysis cycles.
+
+    Two kinds of string live in a cycle, and both come out of the journal in
+    English: the gate-skip REASONS the run engine writes (catalogue hits, see
+    desk_i18n_data) and the desk's own written REPORT, which the model authors
+    and so has no catalogue entry — it takes the cached-translation path like a
+    news headline. Cache-only and non-blocking, exactly like the market
+    payloads: a first read of a new report shows English and the next poll
+    (60s) shows it localized.
+
+    Transition reasons are deliberately NOT touched here. Those are stable
+    codes ('stop_event:max_loss', 'created'), and the frontend already renders
+    them through its own REASON_TEXT map — translating them server-side would
+    turn a code the client can still recognise into prose it cannot.
+    """
+    if normalize_lang(lang) == "en" or not isinstance(cycles, list):
+        return cycles
+    cycles = copy.deepcopy(cycles)
+    strings: list[str] = []
+    slots: list[tuple[Any, Any]] = []
+
+    def _collect(container: Any, key: Any) -> None:
+        val = container.get(key) if isinstance(container, dict) else None
+        if isinstance(val, str) and val.strip():
+            strings.append(val)
+            slots.append((container, key))
+
+    for cycle in cycles:
+        if not isinstance(cycle, dict):
+            continue
+        for cell in cycle.get("runs") or []:
+            if not isinstance(cell, dict):
+                continue
+            _collect(cell, "report")
+            for skip in cell.get("skips") or []:
+                _collect(skip, "reason")
+
+    if strings:
+        localized = localize_texts(strings, lang)
+        for (container, key), value in zip(slots, localized):
+            container[key] = value
+    return cycles

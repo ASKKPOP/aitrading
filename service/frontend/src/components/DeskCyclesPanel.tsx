@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { tr } from '../i18n'
+import { Language, tr } from '../i18n'
+import { reasonLabel, statusLabel } from '../pages/RunsLivePage'
 import { fmtUsd, pnlColor } from '../pages/tradeShared'
 
 // AI Analysis — the desk's 30-minute cycles, opened from under the account
@@ -10,6 +11,18 @@ import { fmtUsd, pnlColor } from '../pages/tradeShared'
 // its interval and journals the result; /automation/ai-analysis folds that
 // journal onto a fixed 30-minute grid. What this panel adds is the desk's
 // WRITTEN report, which the runs grid only ever rendered as "buy conf 0.72".
+//
+// EVERY string in this panel localizes, including the ones that arrive from
+// the server. The split is by kind, not by convenience:
+//   * the verb (buy/sell/hold) and the status a run moved to are enums, so
+//     they map here — ACTION_TEXT below, STATUS_TEXT/REASON_TEXT on the runs
+//     page, which is where those maps already lived;
+//   * the gate-skip reasons and the desk's written report are prose, so they
+//     arrive already localized from /automation/ai-analysis (catalogue for
+//     ours, cached translation for the model's — see market_i18n.py).
+// The journal itself stays English on purpose: it is the corpus desk_memory
+// retrieves from, and a corpus that changes language with the reader is one
+// that no longer matches its own past.
 
 type RunCell = {
   run_id: number; symbol: string; market: string
@@ -30,7 +43,21 @@ type Cycle = {
   runs_active: number; runs: RunCell[]
 }
 
-const CYCLES = 12   // 6 hours of grid — one screen's worth of scrollback
+const BUCKET_MS = 30 * 60 * 1000
+const MAX_CYCLES = 48      // desk_cycles.MAX_CYCLES — one whole day of grid
+const PER_PAGE = 8         // cycles per page, ~4 hours at a glance
+
+// The desk's verb. Rendered as a chip next to the run, so it has to read as a
+// word in the reader's language — "HOLD 55%" is not a Korean sentence.
+const ACTION_TEXT: Record<string, Record<Language, string>> = {
+  buy: { ko: '매수', en: 'BUY', ja: '買い', th: 'ซื้อ', vi: 'MUA', id: 'BELI' },
+  sell: { ko: '매도', en: 'SELL', ja: '売り', th: 'ขาย', vi: 'BÁN', id: 'JUAL' },
+  hold: { ko: '보류', en: 'HOLD', ja: 'ホールド', th: 'ถือไว้', vi: 'GIỮ', id: 'TAHAN' },
+  retire: { ko: '슬롯 반납', en: 'RETIRE', ja: 'スロット返却', th: 'คืนสล็อต', vi: 'TRẢ SUẤT', id: 'LEPAS SLOT' },
+}
+
+const actionLabel = (action: string, lang: Language): string =>
+  ACTION_TEXT[action] ? tr(lang, ACTION_TEXT[action]) : action
 
 // Cycle stamps are UTC; render them in the reader's own clock and in the
 // app's chosen language, not the browser's.
@@ -40,11 +67,38 @@ const hhmm = (iso: string, lang: string) =>
 const dayLabel = (iso: string, lang: string) =>
   new Date(iso).toLocaleDateString(lang, { month: 'short', day: 'numeric' })
 
+// Local calendar day <-> the YYYY-MM-DD a <input type="date"> speaks. Built
+// by hand rather than via toISOString(), which would shift the day for every
+// reader east or west of UTC — the exact bug a date filter must not have.
+const dayKeyOf = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// The window a day key asks the server for. The grid is UTC and the reader's
+// day is not, so the browser is the only place that can compute this: it ends
+// the window at `end_ms` and counts back the buckets the day covers.
+function dayWindow(key: string): { start: number; endMs: number; cycles: number } | null {
+  const [y, m, d] = key.split('-').map(Number)
+  if (!y || !m || !d) return null
+  const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
+  const nextDay = new Date(y, m - 1, d + 1, 0, 0, 0, 0).getTime()
+  // A day still running ends at now; one already over ends a millisecond
+  // before midnight, so the bucket that opens the NEXT day is not counted in.
+  const endMs = Math.min(Date.now(), nextDay - 1)
+  if (endMs < start) return null   // a day that has not happened yet
+  const first = Math.floor(start / BUCKET_MS) * BUCKET_MS
+  const last = Math.floor(endMs / BUCKET_MS) * BUCKET_MS
+  const cycles = Math.min(MAX_CYCLES, Math.max(1, (last - first) / BUCKET_MS + 1))
+  return { start, endMs, cycles }
+}
+
 export function DeskCyclesPanel({ token, onClose }: { token: string | null; onClose: () => void }) {
   const { language } = useLanguage()
   const [cycles, setCycles] = useState<Cycle[] | null>(null)
   const [error, setError] = useState('')
   const [open, setOpen] = useState<Record<string, boolean>>({})
+  const today = dayKeyOf(new Date())
+  const [day, setDay] = useState(today)
+  const [page, setPage] = useState(0)
 
   const T = {
     title: tr(language, { ko: 'AI 분석 (30분 주기)', en: 'AI Analysis (30-min cycles)', ja: 'AI分析（30分サイクル）', th: 'การวิเคราะห์ AI (รอบ 30 นาที)', vi: 'Phân tích AI (chu kỳ 30 phút)', id: 'Analisis AI (siklus 30 menit)' }),
@@ -77,24 +131,65 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
     closed: tr(language, { ko: '종료', en: 'closed', ja: '終了', th: 'ปิด', vi: 'đóng', id: 'ditutup' }),
     reason: tr(language, { ko: '사유', en: 'reason', ja: '理由', th: 'เหตุผล', vi: 'lý do', id: 'alasan' }),
     failed: tr(language, { ko: '분석을 불러오지 못했습니다', en: 'Could not load the analysis', ja: '分析を読み込めませんでした', th: 'โหลดการวิเคราะห์ไม่สำเร็จ', vi: 'Không tải được phân tích', id: 'Gagal memuat analisis' }),
+    date: tr(language, { ko: '날짜', en: 'Date', ja: '日付', th: 'วันที่', vi: 'Ngày', id: 'Tanggal' }),
+    today: tr(language, { ko: '오늘', en: 'Today', ja: '今日', th: 'วันนี้', vi: 'Hôm nay', id: 'Hari ini' }),
+    prevDay: tr(language, { ko: '이전 날', en: 'Previous day', ja: '前の日', th: 'วันก่อนหน้า', vi: 'Ngày trước', id: 'Hari sebelumnya' }),
+    nextDay: tr(language, { ko: '다음 날', en: 'Next day', ja: '次の日', th: 'วันถัดไป', vi: 'Ngày sau', id: 'Hari berikutnya' }),
+    prevPage: tr(language, { ko: '이전', en: 'Previous', ja: '前へ', th: 'ก่อนหน้า', vi: 'Trước', id: 'Sebelumnya' }),
+    nextPage: tr(language, { ko: '다음', en: 'Next', ja: '次へ', th: 'ถัดไป', vi: 'Tiếp', id: 'Berikutnya' }),
+    emptyDay: tr(language, {
+      ko: '이 날에는 분석 기록이 없습니다.',
+      en: 'No analysis was recorded on this day.',
+      ja: 'この日は分析記録がありません。',
+      th: 'วันนี้ไม่มีบันทึกการวิเคราะห์',
+      vi: 'Ngày này không có bản ghi phân tích nào.',
+      id: 'Tidak ada catatan analisis pada hari ini.',
+    }),
+  }
+
+  const win = useMemo(() => dayWindow(day), [day])
+  // Buckets are UTC and the filter is a LOCAL day, so the response can open
+  // with the bucket that straddles the reader's midnight. Drop it here rather
+  // than show a row stamped with yesterday's clock under today's heading.
+  const dayCycles = useMemo(() => (cycles || []).filter(c => {
+    if (!win) return false
+    const t = new Date(c.start).getTime()
+    return t >= win.start && t <= win.endMs
+  }), [cycles, win])
+  const pages = Math.max(1, Math.ceil(dayCycles.length / PER_PAGE))
+  const pageIndex = Math.min(page, pages - 1)
+  const visible = dayCycles.slice(pageIndex * PER_PAGE, pageIndex * PER_PAGE + PER_PAGE)
+  const shiftDay = (delta: number) => {
+    const [y, m, d] = day.split('-').map(Number)
+    setDay(dayKeyOf(new Date(y, m - 1, d + delta)))
   }
 
   const load = useCallback(async () => {
     if (!token) return
+    if (!win) { setCycles([]); setError(''); return }   // a future day
     try {
-      const r = await fetch(`${API_BASE}/automation/ai-analysis?cycles=${CYCLES}`,
+      const r = await fetch(
+        `${API_BASE}/automation/ai-analysis?cycles=${win.cycles}&end_ms=${win.endMs}`,
         { headers: { Authorization: `Bearer ${token}` } })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const d = await r.json()
       setCycles(d.cycles || [])
       setError('')
     } catch { setError(T.failed) }
-  }, [token])
+    // `win.endMs` moves with the clock on today, so it is deliberately not a
+    // dependency — refetching every render is not the same as refreshing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, day])
+
+  useEffect(() => { setPage(0) }, [day])
 
   useEffect(() => {
     load()
     // A cycle closes every 30 min; refreshing on the minute keeps the
     // in-progress entry at the top current without hammering the endpoint.
+    // The poll runs on a past day too, even though its numbers are settled:
+    // a report the translator has not seen before comes back English and is
+    // warmed in the background, so the next poll is what makes it localize.
     const iv = setInterval(load, 60000)
     return () => clearInterval(iv)
   }, [load])
@@ -102,6 +197,7 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
   const card: any = { border: '1px solid var(--border-color,rgba(0,0,0,0.12))', borderRadius: 10, marginBottom: 10, overflow: 'hidden' }
   const meta: any = { fontSize: 11.5, color: 'var(--text-secondary,#8a8073)' }
   const num: any = { fontVariantNumeric: 'tabular-nums' }
+  const navBtn: any = { width: 28, height: 28, lineHeight: 1, borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12.5 }
 
   return (
     // z 600 + 32px top padding: the sticky top nav is z-index 500 and covers
@@ -122,11 +218,31 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
           </button>
         </div>
 
+        {/* Date filter — the day is the reader's local one, defaulting to
+            today. `max` stops the picker offering a day the desk cannot have
+            journaled yet. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <span style={meta}>{T.date}</span>
+          <button onClick={() => shiftDay(-1)} aria-label={T.prevDay} title={T.prevDay}
+            style={navBtn}>‹</button>
+          <input type="date" value={day} max={today}
+            onChange={e => e.target.value && setDay(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', font: 'inherit', fontSize: 12.5 }} />
+          <button onClick={() => shiftDay(1)} aria-label={T.nextDay} title={T.nextDay}
+            disabled={day >= today} style={{ ...navBtn, opacity: day >= today ? 0.4 : 1 }}>›</button>
+          <button onClick={() => setDay(today)} disabled={day === today}
+            style={{ ...navBtn, width: 'auto', padding: '5px 10px', opacity: day === today ? 0.4 : 1 }}>
+            {T.today}
+          </button>
+        </div>
+
         {error && <div style={{ color: '#f0663f', fontSize: 13 }}>⚠️ {error}</div>}
         {!error && cycles === null && <div style={meta}>{T.loading}</div>}
-        {!error && cycles !== null && cycles.length === 0 && <div style={meta}>{T.empty}</div>}
+        {!error && cycles !== null && dayCycles.length === 0 && (
+          <div style={meta}>{day === today ? T.empty : T.emptyDay}</div>
+        )}
 
-        {(cycles || []).map(c => {
+        {visible.map(c => {
           const expandable = c.runs.length > 0
           const isOpen = !!open[c.start]
           return (
@@ -173,7 +289,7 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
                           <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 5, textTransform: 'uppercase',
                             background: r.action === 'buy' ? 'rgba(63,185,80,0.16)' : r.action === 'sell' ? 'rgba(240,102,63,0.16)' : 'rgba(227,160,8,0.16)',
                             color: r.action === 'buy' ? '#3fb950' : r.action === 'sell' ? '#f0663f' : '#e3a008' }}>
-                            {r.action}{r.confidence !== null && ` ${Math.round(r.confidence * 100)}%`}
+                            {actionLabel(r.action, language)}{r.confidence !== null && ` ${Math.round(r.confidence * 100)}%`}
                           </span>
                         )}
                         <span style={{ ...meta, ...num, marginLeft: 'auto' }}>
@@ -193,9 +309,13 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
                         </p>
                       )}
 
+                      {/* Status and reason are enums, so they render through
+                          the runs page's own maps — the server leaves them as
+                          codes precisely so this side can. */}
                       {r.transitions.map((t, i) => (
                         <div key={i} style={{ ...meta, marginTop: 5 }}>
-                          → <b>{t.to}</b>{t.reason && <> · {T.reason}: {t.reason}</>}
+                          → <b>{statusLabel(t.to || undefined, language) || t.to}</b>
+                          {t.reason && <> · {T.reason}: {reasonLabel(t.reason, language)}</>}
                         </div>
                       ))}
 
@@ -211,6 +331,24 @@ export function DeskCyclesPanel({ token, onClose }: { token: string | null; onCl
             </div>
           )
         })}
+
+        {/* Page through the day at the BOTTOM, where the reader arrives after
+            the last cycle on the page — a single day is 48 cycles and the
+            modal scrolls, so paging from the top would mean scrolling back up
+            to move on. Hidden on a day that fits in one page. */}
+        {pages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 4 }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pageIndex === 0}
+              style={{ ...navBtn, width: 'auto', padding: '5px 10px', opacity: pageIndex === 0 ? 0.4 : 1 }}>
+              ‹ {T.prevPage}
+            </button>
+            <span style={{ ...meta, ...num }}>{pageIndex + 1} / {pages}</span>
+            <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={pageIndex >= pages - 1}
+              style={{ ...navBtn, width: 'auto', padding: '5px 10px', opacity: pageIndex >= pages - 1 ? 0.4 : 1 }}>
+              {T.nextPage} ›
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
