@@ -117,6 +117,30 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
 _SURVIVOR_DEFAULTS = {"crypto": 8, "us-stock": 8, "futures": 4, "forex": 4}
 
 
+def _research_mandate() -> str:
+    """The same purpose the desk is given, in the verb research works in.
+
+    WHY (owner, 2026-08-07): "AI Analysis & Macro & Desk & all project target
+    is make plus profit. Think always make plus profit."
+
+    This prompt asked for a DESCRIPTION — direction, expected move, horizon,
+    confidence — and never once said what the description is FOR. It picks the
+    fleet's entire universe, so an analyst optimising for "what will move"
+    rather than "what will pay" sets a ceiling on everything downstream that no
+    desk skill can lift.
+
+    The cost clause is not rhetoric: measured on this book the round trip is
+    0.053% of notional, and one live run's largest favourable excursion was
+    0.055% — exactly 1.0x its own fee, a "correct" thesis worth nothing.
+    """
+    return (
+        "YOUR PURPOSE IS REALIZED PROFIT. Every thesis you emit is a PROFIT "
+        "CASE, not a description of something that might move: a move that "
+        "does not comfortably clear its own round-trip cost is not an "
+        "opportunity, however well you have called it. Prefer fewer candidates "
+        "you would actually pay to hold over a full list of plausible ones.\n\n")
+
+
 def _survivors_per_market() -> dict[str, int]:
     """Per-market survivor cap, env-overridable so the pool can be tuned
     against fleet size without a deploy."""
@@ -759,6 +783,7 @@ def generate_theses(survivors: list[dict[str, Any]],
                     pass
             rows.append(row)
         prompt = (
+            _research_mandate() +
             "You are a trading research analyst. For EACH candidate below, emit one JSON "
             "object with keys: symbol, market, direction ('long'|'short'), "
             "expected_move_pct (percent, e.g. 2.5 means 2.5%), horizon_hours (4-168), "

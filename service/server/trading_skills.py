@@ -83,6 +83,13 @@ MAX_BLOCK_LEN = 34000
 # activity" on purpose too: this desk's failure is not timidity — three runs
 # were underwater from their ENTRY FEE alone, so a bare "make profit" would
 # push toward more trades, the one direction the evidence says loses.
+# Owner, 2026-08-07: "AI Analysis & Macro & Desk & all project target is make
+# plus profit. Think always make plus profit." The mandate lives HERE, once, so
+# the desk and the research layer that picks its universe state the same
+# purpose in the same words — see symbol_research._research_mandate().
+MANDATE_CORE = ("YOUR PURPOSE IS REALIZED PROFIT — not activity, not being "
+                "right, not holding on.")
+
 _HEADER = ("YOUR PURPOSE IS REALIZED PROFIT — not activity, not being "
            "right, not holding on. THINK DEEPLY before "
            "every decision, and NEVER LET A GAIN YOU HAVE TURN INTO A LOSS: "

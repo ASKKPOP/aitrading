@@ -3245,6 +3245,72 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
         return ""
 
 
+# ── retrieval from the desk corpus (#280) ─────────────────────────────────
+# Owner, 2026-08-07: "from tomorrow sooppiy and this session must be ref RAG".
+# Until now the corpus only ACCUMULATED — the desk filled it and never read it.
+_RECALL_MAX = 2
+_RECALL_CHARS = 700
+
+
+def _recall_enabled() -> bool:
+    return os.environ.get("DESK_RECALL_ENABLED", "1").strip().lower() not in (
+        "0", "false", "no", "off")
+
+
+def _recall_query(run: dict, pnl: dict, pos_qty: float) -> str:
+    """What this cycle is actually about, in the corpus's own vocabulary.
+
+    Built from the run's SITUATION rather than its symbol: the lesson that
+    helps a position giving back its peak is the same lesson whether the
+    symbol is ZC or ETHUSDT, and keying on the symbol would return a handful
+    of notes about that ticker and miss every one of them."""
+    parts: list[str] = [str(run.get("market") or "")]
+    if not pos_qty:
+        parts.append("flat considering entry fee hurdle expected move")
+        return " ".join(p for p in parts if p)
+    try:
+        upnl = float(pnl.get("unrealized") or 0)
+        peak = float(run.get("peak_pnl_usd") or 0)
+    except (TypeError, ValueError):
+        upnl = peak = 0.0
+    parts.append("holding position")
+    if peak > 0 and upnl < peak:
+        parts.append("gave back peak give-back bank the gain arm the level")
+    if upnl < 0:
+        parts.append("losing position stop distance cut or hold reduce")
+    else:
+        parts.append("winning position trailing take partial profit")
+    return " ".join(p for p in parts if p)
+
+
+def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
+    """What the desk has already learned about a cycle like this one.
+
+    Fact only, and clearly labelled as PAST material so it is never mistaken
+    for live tape. Fail-soft and hard-capped: the corpus must be able to be
+    empty, slow or wrong without costing a cycle."""
+    if not _recall_enabled():
+        return ""
+    try:
+        import desk_memory
+        hits = desk_memory.search(_recall_query(run, pnl, pos_qty),
+                                  kind="monitoring",
+                                  market=str(run.get("market") or "") or None,
+                                  limit=_RECALL_MAX)
+        if not hits:
+            return ""
+        out = ["What this desk has already learned about cycles like this "
+               "(past findings, NOT live tape):"]
+        for h in hits:
+            body = " ".join(str(h.get("body") or "").split())
+            if len(body) > _RECALL_CHARS:
+                body = body[:_RECALL_CHARS].rsplit(" ", 1)[0] + "…"
+            out.append(f"- {body}")
+        return "\n".join(out) + "\n"
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _excursion_scale_line(run: dict, pnl: dict, peak: "float | None") -> str:
     """The desk's own excursion, expressed in the unit it must ARM in.
 
@@ -3385,6 +3451,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
             bits.append(_floor_status_line(run, pnl, peak))
             bits.append(_excursion_scale_line(run, pnl, peak))
             bits.append(_loss_verdict_line(run, pnl))
+            bits.append(_recall_line(run, pnl, pos_qty))
             try:
                 want = abs(float(thesis.get("expected_move_pct")))
                 ent = float(pos.get("entry_price") or 0)

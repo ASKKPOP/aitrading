@@ -134,6 +134,57 @@ Durable strategic thinking lives under [docs/](docs/README.md) — read the inde
 
 When a finding turns out wrong, **edit the relevant section with a dated note** rather than starting a new document. The "Suggested first sprint" in [docs/README.md](docs/README.md) is the current execution focus.
 
+### THE TARGET (owner, 2026-08-07) — binds every layer
+
+> **AI Analysis, Macro, the Desk, and every part of this project have one
+> target: make plus profit. Think always: make plus profit.**
+
+Not a slogan to quote — the thing each layer is measured against, stated to
+each of them in their own verb:
+
+| layer | where it is stated | the form it takes there |
+|---|---|---|
+| Desk (trader / light / planner / verifier) | `trading_skills._HEADER` | "YOUR PURPOSE IS REALIZED PROFIT — not activity, not being right, not holding on." |
+| AI Analysis (research → what the fleet trades) | `symbol_research._research_mandate()` | every thesis is a **profit case**; a move that does not clear its round-trip cost is not an opportunity |
+| Macro / market intel | *deliberately NOT given a profit motive* | its job is to be **accurate** — a macro read motivated to find profit produces confident bad trades. It must be honest about uncertainty precisely because profit decisions rest on it. |
+| This session (monitoring) | the operating model below | every fix is judged by whether it changes the win/loss **shape**, not by whether it is clever |
+
+`trading_skills.MANDATE_CORE` is the single source of the wording. If the desk
+and the research layer state it differently, the layer picking the universe and
+the layer trading it are optimising for different things — a test asserts they
+do not drift.
+
+**REALIZED** and **not activity** are load-bearing. An unrealized gain is not
+profit: winners have given back 34-49% of peak. And this desk's failure mode is
+not timidity — runs have been underwater on their entry fee alone — so a bare
+"make profit" pushes toward more trades, the one direction the evidence says
+loses.
+
+### The corpus must be READ, not just written (owner, 2026-08-07)
+
+> *"from tomorrow sooppiy and this session must be ref RAG"*
+
+`desk_memory` holds the monitoring analysis, the desk's own decisions, and run
+outcomes. From 2026-08-08 both sides consult it:
+
+- **The desk** — `run_engine._recall_line` puts past findings matching the
+  current *situation* (not the symbol) into the position brief, labelled as
+  past material, capped and fail-soft (`DESK_RECALL_ENABLED=0` disables).
+- **This session** — search the corpus BEFORE proposing any fix, and say what
+  it returned. A finding already recorded must not be rediscovered as new.
+
+### Automation monitoring sessions (operating model)
+
+For recurring "monitor sooppiy.com/automation" work (owner-set, 2026-07-31):
+
+1. **Purpose is analysis, not trading.** The session monitors the live auto-trading fleet to *improve, extend, and find solutions* for sooppiy.com — it never places trades itself (trading is always the daemon's job).
+2. **Default mode is monitoring.** Observe every ~30 min via prod MySQL (`run_events` — query by the `ts` column, NOT `created_at`; there is no `created_at` and filtering on it errors silently — plus `trading_runs`, `positions`) and `sooppiy-worker` logs over SSH. Make no premature changes.
+3. **Change only when monitoring proves it required** — reproduced evidence, not a single data point.
+4. **When required, the fix is applied to sooppiy.com itself (prod):** code → test (fail-before/pass-after) → local ruff+pytest+tsc green → build → deploy to prod. Never a local/session-only edit that stops short of prod.
+5. **Then keep monitoring** to confirm the deployed change works on prod (or roll it back).
+
+Cycle notes live in `docs/reports/` (`*-automation-monitoring.md`, `automation-snapshot.json`, `recommendations-backlog.md`) — these are monitoring artifacts, never the deliverable. See also memory `automation-monitoring-operating-model`.
+
 ### Claude Code frameworks installed
 
 This project uses three Claude Code frameworks. Use them in sequence (not parallel) — they cover different phases.
