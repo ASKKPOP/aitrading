@@ -25,6 +25,25 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### ⚠️ `slippage_pct` ON AN ARM IS FAVOURABLE, NOT A COST — 2026-08-07
+>
+> The field is the gap between the armed LEVEL and the mark the executor
+> actually caught. For a `price_above` arm on a long, filling ABOVE the trigger
+> is **profit**:
+>
+>     981 SI       trigger 62.05    filled 62.075     +
+>     991 GC       trigger 4360.0   filled 4362.600   +
+>     993 ZECUSDT  trigger 508.0    filled 509.370    +  ($0.0412, 24% of that
+>                                                        run's entire realized)
+>
+> I reported the 0.2697% figure as a cost that "eats what the arm was banking".
+> **Wrong in direction — I read the magnitude and never checked the sign.**
+> There is no thin-symbol slippage problem.
+>
+> **Standing check: before reporting a metric, state which direction is good
+> and confirm the observed value is on the side you assumed.** Three of my
+> errors this session share exactly that shape.
+
 > ### 🎯 ARMS: ONLY NEAR ONES EVER FIRE — 2026-08-07
 >
 > **Every arm that has ever fired on this platform was a near one.** Two fired
