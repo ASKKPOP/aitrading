@@ -5,6 +5,46 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 07:05Z · full fleet trading; newborns share their first tick as designed
+
+**Book:** equity **1001.5916**, profit **+1.5916 (+0.1592%)**. Realized
+**+1.2785**, unrealized +0.3130. Slightly below the 07:00 reading because the
+three new runs opened positions and took small initial marks (992 −0.0166,
+993 −0.0110) — normal, not a leak. Nothing below −0.99.
+
+### Cadence at 10 runs
+
+**Distinct slots 10/10** — offsets 0, 4, 7, 9, 11, 14, 18, 21, 27, 28. But
+**distinct cycle-minutes 8/10**, because 992/993/994 all cycled at
+**06:59:34**, the same second.
+
+That is the documented first-cycle behaviour, and I checked `cycle_seq` before
+flagging it: **all three are `seq=1`**. A run with no `last_cycle_at` fires
+immediately, and these three were created together. They separate from their
+second cycle — 992 at :14, 993 at :21, 994 at :28.
+
+(My own slot-check heuristic flagged 992/993 as "OFF-SLOT?" and passed 994 —
+purely because :59 happens to sit within two minutes of 994's :58. The
+heuristic is fine for steady state and useless on a first cycle.)
+
+### The new runs are working
+
+    992 HYPEUSDT  buy  — stop 1.3% below entry, target 2.6% above   (2:1)
+    993 ZECUSDT   buy  — stop 1.9% at the prior trough, target 4%   (2:1)
+    994 USDKRW    hold — "thesis weakens amid continued downtrend, so we stay flat"
+
+Both entries carry proper 2:1 brackets anchored to structure rather than round
+numbers. **994 declined to enter at all** — the desk overriding a candidate the
+planner had just handed it, which is the division of labour working.
+
+### Nothing shipped
+
+Deliberately did not deploy: nothing to ship, and a restart would reset the
+research timer (see 06:25Z), pulling bucket 496135 forward for no benefit while
+the fleet is already full.
+
+---
+
 ## Cycle — 07:00Z · #299 confirmed end to end; fleet back to 10/10
 
 **Book:** equity **1001.6503**, profit **+1.6503 (+0.1650%)**. Realized
