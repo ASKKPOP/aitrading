@@ -195,7 +195,24 @@ def build_universe() -> list[dict[str, str]]:
         crypto: list[str] = []
         try:
             import top_symbols
-            rows = top_symbols.get_top_symbols() or []
+            # Pass the limit this slice already asks for. get_top_symbols
+            # DEFAULTS TO 5 (TOP_SYMBOLS_LIMIT, sized for the UI widget that
+            # first used it), so calling it bare made the `[:50]` below a
+            # no-op and pinned crypto discovery at five symbols.
+            #
+            # MEASURED 2026-08-07 05:42Z, three readings: build_universe
+            # returned crypto 5 against us-stock 72, futures 21, forex 30 —
+            # and this module's own docstring says the universe is "~198
+            # symbols", against an actual 128. Crypto's shortfall was almost
+            # exactly the gap. Of those five, three were already held, so the
+            # entire unheld crypto opportunity set was TWO symbols while the
+            # fleet sat at 7 of 10.
+            #
+            # The effective ceiling is top_symbols._VOLUME_CANDIDATES (20),
+            # not 50: _compute ranks that many by volume before the priceable
+            # filter. So this widens crypto to at most 20, costing ~15 extra
+            # daily-candle reads per refresh against the crypto feed.
+            rows = top_symbols.get_top_symbols(50) or []
             crypto = [s.get("symbol") for s in rows[:50]
                       if isinstance(s, dict) and s.get("symbol")]
         except Exception:  # noqa: BLE001
