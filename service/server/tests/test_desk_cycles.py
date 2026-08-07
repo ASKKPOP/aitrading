@@ -167,6 +167,22 @@ class DeskCycleTests(unittest.TestCase):
         self.assertAlmostEqual(row["peak"], 0.2806)
         self.assertAlmostEqual(row["preservation"], 0.7844, places=3)
 
+    def test_preservation_floors_at_zero_when_the_peak_was_given_back(self):
+        """Prod run 991: peak +0.0852, realized -0.0045 — -5.3% of peak.
+
+        A negative "preservation rate" is not a rate; the run preserved none
+        of its peak, which is 0%. The realized figure beside it still shows
+        the loss.
+        """
+        self._run(991, symbol="GC", peak=0.08518493267322495)
+        self._event(991, "equity", {"realized": -0.0045, "unrealized": 0.0},
+                    self.now - timedelta(minutes=5))
+        self._event(991, "decision", {"action": "hold", "confidence": 0.61},
+                    self.now - timedelta(minutes=5))
+        row = self._cycles(2)[0]["runs"][0]
+        self.assertAlmostEqual(row["realized"], -0.0045)
+        self.assertEqual(row["preservation"], 0.0)
+
     def test_preservation_is_none_when_the_run_never_went_up(self):
         self._run(985, peak=None)
         self._event(985, "decision", {"action": "hold", "confidence": 0.5},
