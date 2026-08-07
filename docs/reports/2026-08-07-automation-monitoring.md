@@ -5,6 +5,59 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 12:45Z · my deploy burned a research bucket (explained, not shipped)
+
+**Book:** equity **1002.0609**, profit **+2.0609 (+0.2061%)**. Realized
++1.7836, unrealized +0.2773. 8/10 runs, all on-slot, 8/8 distinct minutes.
+Shape **4.6:1** (994 closed at −0.0776). Nothing below −0.99. Zero tracebacks
+in 30 minutes — the seq lock still holding.
+
+### ⚠️ A deploy during a research refresh burns that hour's bucket
+
+No new theses since 10:53:30Z — nearly two hours. The cause, confirmed by data
+rather than inferred:
+
+    research_batches sentinel  496139  claimed 11:53:30Z
+    research_theses  rows for  496139  =  0
+
+`claim_batch` inserts the sentinel FIRST (so two workers cannot both pay for
+LLM theses), then does the work. **If the claimer dies, the sentinel survives
+and the work does not.** And the work is not instantaneous:
+
+    496136  claimed 08:50:17  ->  theses 08:54:39   (4.4 min)
+    496137  claimed 09:54:40  ->  theses 10:00:20   (5.7 min)
+    496138  claimed 10:48:10  ->  theses 10:53:30   (5.3 min)
+
+**A refresh takes ~5 minutes** (screen 131 symbols, then 21 LLM theses). My
+seqlock deploy recreated the worker at ~11:58 — about 4.5 minutes after the
+11:53:30 claim, right before persist. One research window lost.
+
+**Not shipped: one occurrence.** The rule is reproduced evidence, and this is a
+single instance even though the mechanism is now fully understood. If it recurs
+the fix is small — treat a sentinel older than a refresh timeout with zero
+theses as reclaimable.
+
+**Behavioural mitigation available immediately and costing nothing: check for
+an in-flight refresh before deploying.** A claim with no theses and a timestamp
+inside the last ~6 minutes means a refresh is running; wait for it. This is a
+cost of MY deploy cadence — ~10 deploys today, one landed in the ~5-minute
+window each hour, which is about the rate you would expect.
+
+### Fourth arm fire — favourable again
+
+    990 ZW  12:20:47  price_above 637.0 -> reduce/0.5  filled 637.5  slip 0.0785%
+
+Selling a long ABOVE its trigger: favourable, consistent with all four fires.
+(Direction checked before reporting, per the 10:00Z standing rule.)
+
+### 994 USDKRW closed at −0.0776 — the rail, not a decision
+
+Final sell 12:30:52 with **`id=None`** — a protective rail, **83 seconds after
+a `hold` decision**. Same shape as 984 at 11:45Z: the desk holds, the tape
+moves, the rail cuts. Contained under eight cents.
+
+---
+
 ## Cycle — 12:00Z · the seq lock holds; both fixes recorded durably
 
 **Book:** equity **1001.9641**, profit **+1.9641 (+0.1964%)**. Realized
