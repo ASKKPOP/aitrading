@@ -5,6 +5,66 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 02:15Z · the desk read the ratio and trusted the arm anyway
+
+**Book:** equity **1000.24** — best yet. Realized **+0.1655**, unrealized
++0.242. 8 runs, 6 positions. **Cadence 8/8 distinct minutes** (00, 02, 04, 09,
+11, 48, 55, 57). No run below −0.99.
+
+Realized fell from +0.2207 to +0.1655 because 986 USDKRW sold half at a loss —
+*"Reduce half of the long position to limit further loss while keeping some
+upside"*. Equity still rose, so this was a cut, not a leak.
+
+### The reproduction, and it was not what I expected
+
+**No new arm has been authored in 40 minutes** — every `armed_at` is unchanged.
+The ratios moved anyway, purely because the tape moved:
+
+| run | arm | excursion | ratio | armed at |
+|---|---|---|---|---|
+| 982 BTCUSDT | 1.45% | 0.205% | 7.0× | 01:34 |
+| 983 ETHUSDT | 0.90% | 0.055% | **16.4×** | 23:42 |
+| 984 HG | 2.08% | 0.551% | 3.8× | 00:18 |
+| 986 USDKRW | 1.16% | 0.000% | n/a | 01:32 |
+
+984 improved 6.5× → 3.8× **because its excursion grew**, not because anything
+was re-armed. Ratios drift with price; only `armed_at` shows desk action.
+
+**What the desk actually said, with the scale check in front of it:**
+
+> *"let the existing arm (reduce half at 1916) manage upside"* — 983, **16.4×**
+> *"let the existing arm protect gains"* — 982, **7.0×**
+
+**The fact lands; the judgment does not convert.** No skill said what a large
+multiple MEANS. The arm skill only asked the desk to restate an arm "once it no
+longer fits the book" — which never says a far arm is not protection at all.
+
+**Fix (#284, AI-first, skill not rail):** *at a large multiple you are
+UNPROTECTED whatever you armed: move it inside the range the tape has shown, or
+bank now.*
+
+### A fact went stale for the second time
+
+*"of 60+ arms only TWO have ever fired"* became false at **01:50:52Z** when run
+981's arm fired. The count was previously "NOT ONE". The test now asserts the
+current figure exactly and **rejects both superseded ones by name**, because
+this particular sentence keeps ageing.
+
+### ⚠️ The catalogue is FULL
+
+`trader/us-stock` = **34000 of 34000, zero headroom**. All 30 skills still fit
+(verified 3× on prod, none dropped) but there is no room whatsoever. **The next
+skill addition must prune first.** Four times the cap has been raised; it was
+not raised again.
+
+### Still unprotected
+
+**981 SI (1.615% excursion) and 985 ZC (1.921%)** — the two largest movers on
+the book, both winners, still carry no arm. The next cycle is the test of
+whether the new clause changes that.
+
+---
+
 ## Cycle — 02:05Z · a seq collision that the design absorbed
 
 **Book:** equity **1000.10**. Realized **+0.2207** (was +0.1648). Unrealized
