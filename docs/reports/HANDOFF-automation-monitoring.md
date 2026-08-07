@@ -25,6 +25,43 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🔒 run_events SEQ ALLOCATION NEEDED A ROW LOCK — 2026-08-07 (#319)
+>
+> `_emit_event` did a plain `SELECT last_event_seq`, +1, INSERT — **no lock**.
+> Two writers per run (the cycle, and the arm executor firing BETWEEN cycles)
+> read the same value and collided:
+>
+>     (1062, "Duplicate entry '981-191' …)  01:57Z   fleet of 6
+>     (1062, "Duplicate entry '983-784' …)  11:41Z   fleet of 10
+>
+> **The prediction held**: at 01:57 I logged it as one benign occurrence and
+> said it would recur as the fleet grew. It did, once the fleet hit 10.
+>
+> Impact was contained BOTH times — 73 trade events vs 73 signals, no seq gaps
+> — but only because the loser happened to be a fail-soft telemetry row. **Luck
+> about WHICH writer lost, not design.**
+>
+> Fix: **UPDATE-then-SELECT**. The UPDATE takes the row lock so a second writer
+> blocks until commit. **Dialect-neutral on purpose — `SELECT … FOR UPDATE` is
+> MySQL-only and SQLite cannot parse it.**
+>
+> ### ⚠️ A TEST THAT DEPENDS ON THE WORLD IS NOT A TEST — 2026-08-07 (#319)
+>
+> `test_quiet_cycles_never_call_the_model` asserted "no triggers means light"
+> but never ENSURED there were no triggers — it relied on the environment being
+> quiet. It passed all night and failed at ~11:45Z because
+> `active_event_window()` was **genuinely true** (a macro release window), so
+> `full` was CORRECT and the test was wrong.
+>
+> It now patches the trigger sources off AND asserts `triggers == []`, so it can
+> tell "I controlled my inputs" from "the world was quiet". A mirror test with a
+> live event window pins the opposite direction so the patching cannot hide a
+> regression that makes everything light.
+>
+> **A test that fails during every macro event window teaches people to ignore
+> failures.** If a suite that was green this morning goes red, check whether the
+> WORLD changed before assuming the CODE did.
+
 > ### ⚠️ `slippage_pct` ON AN ARM IS FAVOURABLE, NOT A COST — 2026-08-07
 >
 > The field is the gap between the armed LEVEL and the mark the executor
