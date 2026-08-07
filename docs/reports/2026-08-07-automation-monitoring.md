@@ -5,6 +5,35 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 12:00Z · the seq lock holds; both fixes recorded durably
+
+**Book:** equity **1001.9641**, profit **+1.9641 (+0.1964%)**. Realized
++1.8377, unrealized +0.1264. 8/10 runs, all on-slot, 8/8 distinct minutes.
+Shape **5.2:1**. Nothing below −0.99.
+
+### The seq lock is holding
+
+    seq gaps           0
+    trade events       73  vs  73 signals
+    tracebacks (20m)   0
+
+The unpatched code produced two collisions in ten hours; twenty minutes
+post-deploy there are none. Not proof — the collision was always rare — but the
+journal invariants are intact and the lock order is verified live (3x).
+
+### Both fixes written into the handoff
+
+The handoff survives account rotation and now carries the seq-lock finding
+(including that `SELECT … FOR UPDATE` is unusable here because SQLite cannot
+parse it) and the environment-dependent-test lesson.
+
+The second is the more transferable: **if a suite that was green this morning
+goes red, check whether the WORLD changed before assuming the CODE did.**
+
+### Nothing else shipped
+
+---
+
 ## Cycle — 11:45Z · 984 gave back 60% of its bank — to a 70-second move
 
 **Book:** equity **1001.9261**, profit **+1.9261 (+0.1926%)** — down from
