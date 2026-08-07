@@ -5,6 +5,63 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 02:00Z · the first arm fired, and the book turned positive
+
+**Book:** equity **1000.02** — positive for the first time since the reset.
+Realized **+0.1648** (was +0.0567). Unrealized +0.022. 8 runs, 6 positions,
+notional 141.95. No run below −0.99.
+
+**Cadence: 8 of 8 distinct minutes** (25, 27, 32, 34, 35, 39, 41, 48). Perfect
+separation, no first-cycle collision this time.
+
+### An arm fired — the first in this fleet
+
+```
+run 981 SI  01:50:52Z  price_above 62.05 -> reduce 0.5
+fill 62.075001  qty 0.305081  slippage 0.0403%  fee $0.00095
+```
+
+Accounting checked by hand: 0.305 units × (62.075 − 61.845) = $0.0702 gross,
+less $0.00095 fee = **+$0.0692**, and realized moved −0.064 → +0.006, a +0.070
+swing. Matches. The arm path works end to end — author, stand between cycles,
+fire, execute, book.
+
+This is the mechanism that the "60+ arms, only two ever fired" history said was
+broken. It is not broken; the levels were unreachable.
+
+### Arm distances, before vs after the scale brief
+
+| run | arm | excursion | ratio | armed at |
+|---|---|---|---|---|
+| 983 ETHUSDT | 0.70% | 0.055% | 12.9× | 23:42 — **before** the brief |
+| 984 HG | 2.48% | 0.216% | 11.5× | 00:18 — **before** |
+| 982 BTCUSDT | 1.24% | 0.205% | **6.0×** | 01:34 — **after** |
+| 986 USDKRW | 1.17% | 0.000% | n/a | 01:32 — **after** |
+
+The two arms authored after the scale brief went live are meaningfully closer
+than the two authored before (6.0× vs 11.5–12.9×). **Two data points is not
+reproduction — no change shipped this cycle.** Measure again next cycle before
+concluding the brief changed behaviour.
+
+### Unprotected winners
+
+**981 SI and 985 ZC have no arm standing.** 981's just fired and was consumed;
+985 banked +0.177 at 01:26 and did not re-arm. 985 has the largest excursion on
+the book (**1.92%**) and is the largest winner. The scale brief already tells
+both of them "No level is armed" — whether they act is the desk's call, and the
+next cycle shows whether they do.
+
+### A measurement bug of my own
+
+I first reported "NO ARM" on every run. That was my query selecting specific
+columns and omitting `armed_order_json`, so every run read as unarmed. The
+decisions plainly showed active arming, which is what caught it. **Third
+measurement bug of this class today** — a host-side glob through `docker exec`,
+a null timestamp, and now a missing column. Read the decisions as a
+cross-check before trusting an aggregate.
+
+---
+
 ## Cycle — 01:45Z · arms were a unit-conversion bug
 
 **Book:** equity 999.87 vs seed 1000 (flat). Realized +0.0567, unrealized
