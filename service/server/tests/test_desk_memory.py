@@ -47,6 +47,24 @@ class StorageTests(_Db):
         desk_memory.remember("monitoring", "a.md#x", "T", "the corrected finding")
         self.assertEqual(desk_memory.stats()["total"], 2)
 
+    def test_preloaded_shas_replace_the_per_chunk_lookup(self):
+        """Measured on prod: a no-op ingest took 26-33s because it issued one
+        SELECT per chunk. The pre-loaded set must dedupe identically."""
+        desk_memory.remember("monitoring", "a.md#x", "T", "the first finding")
+        seen = desk_memory.known_shas()
+        self.assertEqual(len(seen), 1)
+        # already stored -> skipped without touching the database
+        self.assertIsNone(desk_memory.remember("monitoring", "a.md#x", "T",
+                                               "the first finding", known=seen))
+        # new -> stored, and the set is updated in place so a duplicate later
+        # in the SAME batch is caught too
+        self.assertIsNotNone(desk_memory.remember("monitoring", "b.md#x", "T",
+                                                  "a second finding", known=seen))
+        self.assertEqual(len(seen), 2)
+        self.assertIsNone(desk_memory.remember("monitoring", "b.md#x", "T",
+                                               "a second finding", known=seen))
+        self.assertEqual(desk_memory.stats()["total"], 2)
+
     def test_empty_body_is_not_stored(self):
         self.assertIsNone(desk_memory.remember("monitoring", "a.md", "T", "   "))
         self.assertEqual(desk_memory.stats()["total"], 0)

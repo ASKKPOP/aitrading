@@ -72,11 +72,33 @@ def _sha(kind: str, source: str, body: str) -> str:
         f"{kind}\x00{source}\x00{body}".encode("utf-8")).hexdigest()
 
 
+def known_shas() -> set[str]:
+    """Every stored chunk's identity, in one query.
+
+    Measured on prod: a full ingest that stored NOTHING still took 26-33s,
+    because it issued one SELECT per chunk — 442 round-trips to answer "have I
+    seen this?". That cost grows with the corpus, on the same database that
+    serves trading. Callers ingesting in bulk should fetch this once and pass
+    it to `remember`."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT sha FROM desk_memory")
+        return {dict(r)["sha"] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+
 def remember(kind: str, source: str, title: str, body: str, *,
              ts: Optional[str] = None, run_id: Optional[int] = None,
              symbol: Optional[str] = None, market: Optional[str] = None,
-             tags: Optional[Iterable[str]] = None) -> Optional[int]:
+             tags: Optional[Iterable[str]] = None,
+             known: Optional[set[str]] = None) -> Optional[int]:
     """Store one chunk. Idempotent: re-ingesting identical content is a no-op.
+
+    `known` is an optional pre-loaded sha set (see `known_shas`) that replaces
+    the per-chunk existence query; it is updated in place so a duplicate within
+    the same batch is caught too. The unique index remains the real guarantee.
 
     Returns the row id, or None when the chunk was already present."""
     if kind not in KINDS:
@@ -85,13 +107,15 @@ def remember(kind: str, source: str, title: str, body: str, *,
     if not body:
         return None
     sha = _sha(kind, source, body)
+    if known is not None and sha in known:
+        return None
     conn = get_db_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM desk_memory WHERE sha = ?", (sha,))
-        row = cur.fetchone()
-        if row:
-            return None
+        if known is None:
+            cur.execute("SELECT id FROM desk_memory WHERE sha = ?", (sha,))
+            if cur.fetchone():
+                return None
         cur.execute(
             "INSERT INTO desk_memory (kind, source, ts, run_id, symbol, market,"
             " tags_json, title, body, sha, created_at)"
@@ -100,6 +124,8 @@ def remember(kind: str, source: str, title: str, body: str, *,
              json.dumps(sorted({str(t) for t in (tags or [])})),
              (title or source)[:255], body, sha, _now()))
         conn.commit()
+        if known is not None:
+            known.add(sha)
         cur.execute("SELECT id FROM desk_memory WHERE sha = ?", (sha,))
         got = cur.fetchone()
         return dict(got)["id"] if got else None

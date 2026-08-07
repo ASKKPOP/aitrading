@@ -28,7 +28,7 @@ import time
 from typing import Any, Optional
 
 from database import get_db_connection
-from desk_memory import remember
+from desk_memory import known_shas, remember
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,8 @@ def _f(v: Any, default: float = 0.0) -> float:
         return default
 
 
-def ingest_decisions(limit: int = 5000) -> int:
+def ingest_decisions(limit: int = 5000,
+                     known: Optional[set[str]] = None) -> int:
     """Store each decision as the desk's own words plus the numbers behind it."""
     conn = get_db_connection()
     try:
@@ -87,12 +88,12 @@ def ingest_decisions(limit: int = 5000) -> int:
                     f"{row.get('symbol') or '?'} {action} (conf {conf:.2f})",
                     body, ts=row.get("ts"), run_id=row.get("run_id"),
                     symbol=row.get("symbol"), market=row.get("market"),
-                    tags=tags):
+                    tags=tags, known=known):
             stored += 1
     return stored
 
 
-def ingest_run_outcomes() -> int:
+def ingest_run_outcomes(known: Optional[set[str]] = None) -> int:
     """Join each finished run to what it actually realized.
 
     Deliberately reads the run's own terminal state rather than summing
@@ -128,7 +129,8 @@ def ingest_run_outcomes() -> int:
         if remember("outcome", f"run:{r['id']}:outcome",
                     f"Run {r['id']} {r.get('symbol')} {verdict} {pnl:+.2f}",
                     body, ts=r.get("stopped_at"), run_id=r["id"],
-                    symbol=r.get("symbol"), market=r.get("market"), tags=tags):
+                    symbol=r.get("symbol"), market=r.get("market"), tags=tags,
+                    known=known):
             stored += 1
     return stored
 
@@ -155,7 +157,8 @@ def _chunk_markdown(text: str) -> list[tuple[str, str]]:
     return [(t, b) for t, b in chunks if b]
 
 
-def ingest_reports(root: str, *, min_chars: int = 120) -> int:
+def ingest_reports(root: str, *, min_chars: int = 120,
+                   known: Optional[set[str]] = None) -> int:
     """Chunk the monitoring markdown under `root` (docs/reports, docs/plan)."""
     stored = 0
     for dirpath, _dirs, files in os.walk(root):
@@ -177,7 +180,7 @@ def ingest_reports(root: str, *, min_chars: int = 120) -> int:
                     continue
                 if remember("monitoring", f"{rel}#{heading or 'intro'}",
                             f"{name}: {heading or 'intro'}", body,
-                            ts=_date_from_name(name)):
+                            ts=_date_from_name(name), known=known):
                     stored += 1
     return stored
 
@@ -219,19 +222,24 @@ def maybe_ingest(now_epoch: Optional[float] = None) -> Optional[dict[str, int]]:
     if now - _last_ingest_epoch < _ingest_every_min() * 60:
         return None
     _last_ingest_epoch = now
-    out = {"decisions": ingest_decisions(limit=500),
-           "outcomes": ingest_run_outcomes()}
+    # One query for every stored identity, instead of one per chunk. Measured
+    # on prod: a no-op ingest took 26-33s of pure round-trips before this.
+    seen = known_shas()
+    out = {"decisions": ingest_decisions(limit=500, known=seen),
+           "outcomes": ingest_run_outcomes(known=seen)}
     # Relative on purpose: both the container and a local checkout run from
     # the project root, so one default works in both without a prod env edit.
     # Absent directory is a no-op, so this is safe wherever it does not apply.
     root = os.environ.get("DESK_MEMORY_REPORTS_DIR", _DEFAULT_REPORTS_DIR)
     if root and os.path.isdir(root):
-        out["reports"] = ingest_reports(root)
+        out["reports"] = ingest_reports(root, known=seen)
     return out
 
 
 def ingest_all(reports_root: Optional[str] = None) -> dict[str, int]:
-    out = {"decisions": ingest_decisions(), "outcomes": ingest_run_outcomes()}
+    seen = known_shas()
+    out = {"decisions": ingest_decisions(known=seen),
+           "outcomes": ingest_run_outcomes(known=seen)}
     if reports_root and os.path.isdir(reports_root):
-        out["reports"] = ingest_reports(reports_root)
+        out["reports"] = ingest_reports(reports_root, known=seen)
     return out
