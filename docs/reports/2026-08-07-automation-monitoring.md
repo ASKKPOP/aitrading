@@ -5,6 +5,61 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 02:45Z · the desk banked hard; my arm clause did not land
+
+**Book:** equity 1000.15. **Realized +0.4042 — up from +0.1655 in one cycle.**
+Unrealized fell +0.242 → +0.149. Cadence 8/8 distinct minutes. Nothing below
+−0.99.
+
+**That shape is the mandate working.** Equity roughly flat while realized more
+than doubled and unrealized shrank: the desk converted paper gains into booked
+ones and took risk off the table. Three runs banked:
+
+| run | realized | peak | kept |
+|---|---|---|---|
+| 985 ZC | **+0.2201** | +0.2806 | 78% |
+| 984 HG | **+0.1918** | +0.3463 | 55% |
+| 981 SI | **+0.1094** | +0.1628 | 67% |
+
+Against the earlier finding that winners gave back 34-49% of peak, keeping
+55-78% is a real improvement — though it is one cycle.
+
+### My arm clause did NOT work on its only test case
+
+#284 went live at 02:20. Exactly one arm has been authored since — run 983 at
+**02:41:59** — and it re-armed at the SAME level, still **14.9×** beyond its
+own excursion:
+
+> *"keep existing arm to trim half if price rises above 1916"*
+
+**The clause is logically unactionable for that run, and that is my error, not
+the desk's.** 983's excursion is **0.055%, exactly 1.0× the round-trip fee**.
+"Move it inside the range the tape has shown" would mean arming inside the
+fee — banking nothing. My clause offers a false binary (move it, or bank now)
+when a third case exists: *the range is below your cost, so there is nothing to
+bank and no arm can help.*
+
+### Run 983 is dead capital
+
+Started 22:56, **9 cycles, 1 trade**, peak $0.0122 on a $22.28 book = 0.055% =
+1.0× the cost of a round trip. Realized −0.010. It cannot pay from here without
+a regime change. This is the `dead-capital-and-fee-hurdle` pattern again, not
+an arm problem.
+
+### The real constraint is not the catalogue size
+
+`MAX_BLOCK_LEN` is not a model limit — 34,000 chars is ~8,500 tokens. It is a
+proxy for ATTENTION, and a poor one: compressing prose makes each lesson
+terser while all 30 skills still reach every decision. Four raises and repeated
+compression have been fighting the symptom.
+
+**The answer is retrieval, not a bigger cap or better compression:** send the
+skills this situation needs, with a safety core that is always present. That is
+Phase 1 of docs/plan/22 and it supersedes the "prune first" rule recorded last
+cycle.
+
+---
+
 ## Cycle — 02:15Z · the desk read the ratio and trusted the arm anyway
 
 **Book:** equity **1000.24** — best yet. Realized **+0.1655**, unrealized
