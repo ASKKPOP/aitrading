@@ -5,6 +5,58 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 11:45Z · 984 gave back 60% of its bank — to a 70-second move
+
+**Book:** equity **1001.9261**, profit **+1.9261 (+0.1926%)** — down from
+1002.1634. Realized +1.8377, unrealized +0.0883. 8/10 runs, all on-slot.
+Shape **5.2:1**. Nothing below −0.99.
+
+### What happened to 984 HG
+
+    23:48-07:49  eight-step halving ladder      -> banked +0.2929
+    10:19:11     NEW long at 6.6820, 56.61 notional (its largest)
+    11:19:03     sold half at 6.6790
+    11:24:20     sold rest at 6.6440 — id=None, NOT a cycle trade
+
+Realized fell **+0.2929 -> +0.1164**; it kept **32% of its true high-water
+(+0.3606)**. The give-back came entirely from the second thesis.
+
+### ⚠️ I nearly reported a reasoning error that was not one
+
+The 11:19 decision reads *"Reduce half the long to bank the small profit"* —
+but it sold at 6.6790 against a 6.6820 entry, which looks like selling at a
+loss while calling it profit. I was about to flag the desk for conflating
+run-level and position-level P&L.
+
+**Checking what it was actually told first:**
+
+    11:19  equity: realized 0.29287, unrealized +0.038122   <- IN PROFIT
+
+The position WAS in profit at decision time. The phrasing was accurate. My
+suspicion was wrong.
+
+### What actually cost the money: a 70-second move, then the rail
+
+    11:22:55  unrealized −0.019061
+    11:24:07  unrealized −0.160960   <- −0.142 in ~70 seconds (HG −0.52%)
+    11:24:20  remainder sold, id=None — 13 SECONDS later
+
+No `client_order_id` means this was **not a desk decision** — a protective rail
+fired. And it fired **13 seconds** after the adverse mark appeared.
+
+**So this is the system working, not failing.** The desk banked while genuinely
+in profit; the tape moved 0.52% against it in seventy seconds; the rail cut the
+remainder almost immediately. A run keeping 32% of high-water looks bad until
+you see that the missing 68% was a gap the desk never had a cycle to react to —
+which is precisely what the rail exists for.
+
+**Fourth near-miss of the day** on the same failure mode: reading a number and
+inferring intent without checking what the desk was actually shown.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 11:15Z · the halving ladder pays for itself (measured)
 
 **Book:** equity **1002.1634**, profit **+2.1634 (+0.2163%)**. Realized
