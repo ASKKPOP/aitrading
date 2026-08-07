@@ -601,6 +601,21 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         if reason == "idle_retired":
             _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
 
+        # vary-on-loss (2026-08-07): a member stopped by a LOSS stop-event was
+        # wrong on today's tape. Without a cooldown the very next tick rebuilds
+        # the same symbol with a fresh loss meter — three consecutive ADBE runs
+        # lost -1.30 combined (999 -0.40, 1000 -0.21, 1001 rebuilt 34 seconds
+        # later, -0.69) while each stayed inside the per-run -0.99 floor.
+        # Gated on realized < 0 so a PROFITABLE stop (a trailing lock banking
+        # a win) does not bench its symbol.
+        if str(reason).startswith("stop_event:"):
+            try:
+                lost = float(member.get("realized_pnl_usd") or 0) < 0
+            except (TypeError, ValueError):
+                lost = False
+            if lost:
+                _ensure_cooldown(member, hours=fp.LOSS_SYMBOL_COOLDOWN_HOURS)
+
         if reason in fp.REPLACE_DEFERRED:
             if reason == "synthetic_liquidation":
                 _ensure_cooldown(member)

@@ -276,6 +276,15 @@ LIQUIDATION_COOLDOWN_HOURS = 24
 # DIFFERENT symbol instead of rebuilding the same idleness (939/940
 # 2026-08-04: ~43 hold cycles each, recalled, parity-eligible for rebuild).
 IDLE_SYMBOL_COOLDOWN_HOURS = 12
+# A run stopped by a LOSS stop-event proved its thesis wrong on today's tape.
+# Rebuilding the same symbol immediately restarts the same losing thesis with
+# a FRESH loss meter — which quietly evades the owner's per-run -0.99 floor.
+# Measured 2026-08-07: three consecutive ADBE runs (999 trailing_lock -0.40,
+# 1000 trailing_lock -0.21 after ONE cycle, 1001 rebuilt 34 SECONDS later,
+# -0.69) lost -1.30 combined in seven hours; no single run crossed the floor,
+# the symbol did. Shorter than idle's 12h on purpose: a losing thesis can
+# become right again intraday, an un-actionable symbol usually cannot.
+LOSS_SYMBOL_COOLDOWN_HOURS = 6
 
 
 def _now_dt() -> datetime:
