@@ -25,6 +25,42 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🎯 ARMS WERE A UNIT-CONVERSION BUG — 2026-08-07 01:45Z (#277)
+>
+> **The long-running "60+ arms authored, only two ever fired" has a mechanism.**
+> Peak reaches the desk in DOLLARS ("Best this run has reached: $0.10") but an
+> arm is a PRICE LEVEL. The conversion was never given, so the desk could not
+> know $0.10 was two tenths of one percent of its position.
+>
+> Measured live, every standing arm vs the largest move its own tape had made:
+>
+> | run | arm | excursion | ratio |
+> |---|---|---|---|
+> | 983 ETHUSDT | 0.74% | 0.055% | **13.4x** |
+> | 984 HG | 2.60% | 0.208% | **12.5x** |
+> | 982 BTCUSDT | 0.46% | 0.205% | 2.2x |
+> | 981 SI | 0.50% | 0.297% | 1.7x |
+>
+> Four of four beyond their own tape's range. `_excursion_scale_line` now
+> states the excursion as a % of price and how many times further the arm sits.
+> Fact only — moving the arm stays the desk's call.
+>
+> **Measured fee, for calibration: 0.0265% per side, 0.053% round trip.** So a
+> 0.05% excursion (983) was never bankable — 1.0x the fee. But 981 (5.6x fee),
+> 982 and 984 (3.9x) genuinely were. Do NOT conclude "excursions are too small
+> to bank"; that was checked and is false for most runs.
+>
+> **⚠️ Give-back is still the shape.** Peak vs current total this cycle: 981
+> +0.112 -> -0.128, 982 +0.025 -> -0.005, 983 +0.012 -> -0.043 (all three gave
+> back MORE than their whole peak), 984 +0.103 -> +0.022, 985 +0.281 -> +0.217.
+> 985 is the counter-example that works: it banked +0.138 of a +0.281 peak.
+>
+> **⚠️ A first cycle always fires immediately** (no `last_cycle_at`), so a
+> newly built run shares a minute with whatever else is due. Run 989 was
+> created 01:18:29 and cycled 01:18:33 alongside 984. NOT a stagger failure —
+> its slots are :23/:53 and it separates from the second cycle. Check
+> `cycle_seq` before calling a collision a bug.
+
 > ### 🧠 DESK CORPUS (RAG) LIVE — 2026-08-07 01:15Z
 >
 > Owner: *"RAG keep all analysis and monitoring for this session and sooppiy
