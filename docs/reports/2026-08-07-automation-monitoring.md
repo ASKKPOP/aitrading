@@ -5,6 +5,52 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 07:00Z · #299 confirmed end to end; fleet back to 10/10
+
+**Book:** equity **1001.6503**, profit **+1.6503 (+0.1650%)**. Realized
+**+1.2970** — up from +0.8271, driven by **981 SI banking +0.2531 -> +0.7230**.
+Nothing below −0.99.
+
+### The full chain, measured
+
+    build_universe crypto 5 -> 8                    (verified live 3x)
+      -> research universe 128 -> 131
+      -> batch 496134: crypto candidates 3 -> 5
+      -> UNHELD selectable crypto 0 -> 2            (HYPEUSDT, ZECUSDT)
+      -> planner replacement builds took them
+      -> FLEET 7/10 -> 10/10
+
+Batch 496134 landed **06:55:23Z**, against the ~06:50 I predicted from worker
+uptime. The builds followed at **06:59:23-25**:
+
+    kept ["HYPEUSDT", "USDKRW", "ZECUSDT"]
+    kept ["ZECUSDT", "USDKRW"]
+    kept ["USDKRW"]
+
+New runs: **992 HYPEUSDT, 993 ZECUSDT, 994 USDKRW**. Fleet `status_reason` is
+now `None` — no longer "replenishing".
+
+**Attribution, honestly:** #299 delivered HYPEUSDT and ZECUSDT. **USDKRW is
+NOT mine** — forex went 0 -> 1 selectable in the same batch through ordinary
+market conditions, and my change touched only the crypto branch.
+
+### The gate did its job alongside
+
+Every build attempt dropped **MGC**: *"non-positive expectancy −511.16
+USD/trade over 7 closed trades"*. Correct refusal — though the magnitude is
+inflated by pre-reset history on a 60,000 book being applied to a 1,000 one.
+The SIGN is what the gate acts on, so this is not wrong, but a future session
+should not read −511 as a live-scale number.
+
+### Why the build lagged the batch by four minutes
+
+The last attempt before the batch was 06:54:15, using the OLD batch — where
+crypto were all held, so it could only offer MGC. The next attempt at 06:59:23
+saw the new batch and took three candidates immediately. Build attempts are
+periodic, not batch-triggered; four minutes was the gap, not a fault.
+
+---
+
 ## Cycle — 06:25Z · over +1.00; and my deploys are delaying research
 
 **Book:** equity **1001.1644**, profit **+1.1644 (+0.1164%)** — **over +1.00
