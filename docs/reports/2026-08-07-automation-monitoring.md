@@ -5,6 +5,49 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 04:15Z · the arm clause landed — measured
+
+**Book:** equity **1000.5947**, profit **+0.5947 (+0.0595%)** — new session
+high. Realized +0.4734, unrealized +0.1211. Cadence **8/8 distinct minutes**.
+Nothing below −0.99.
+
+### Every arm authored since the clause is reachable
+
+| run | arm | excursion | ratio | armed |
+|---|---|---|---|---|
+| 983 ETHUSDT | 0.93% | 0.055% | **17.0x** | 02:41 — **before** the clause |
+| 984 HG | 0.88% | 2.803% | **0.3x** | 03:48 — with clause |
+| 991 GC | 0.30% | 0.157% | **1.9x** | 04:08 — with clause |
+| 987 SOLUSDT | 0.25% | — | — | 04:09 — with clause |
+| 990 ZW | 0.59% | — | — | 04:01 — with clause |
+
+**4 of 4 arms authored after 02:55 sit at 0.25-0.93% from the mark.** The one
+surviving pre-clause arm sits at 17.0x its own excursion. The desk has moved
+from authoring arms at 1.2-2.6% to 0.25-0.93%.
+
+**984 is the clean case: it was RE-ARMED from 2.48% to 0.88%** with a fresh
+`armed_at`. That is desk action, not the tape drifting under a fixed level —
+the trap that made this same test misleading two cycles ago, when 984's ratio
+"improved" only because its excursion grew.
+
+**Sequence, for the record:**
+
+    02:20  #284 "a far arm is NOT PROTECTION"  -> desk re-armed at 14.9x anyway
+    02:55  #287 adds the third case (range below round-trip cost)
+    03:48+ four consecutive arms at 0.25-0.93%
+
+The first version failed because it offered a false binary; the third case is
+what made it actionable. n=4 over roughly an hour — not settled, but this is
+the first clear evidence that today's skill work changed behaviour.
+
+### Nothing shipped
+
+Fourth consecutive cycle with no reproduced defect. Deploying only to sync the
+last three cycles' notes into the corpus — monitoring chunks reach it on deploy
+only, and the desk is meant to be reading them.
+
+---
+
 ## Cycle — 04:00Z · the 983 watch closes: not a defect, a boundary
 
 **Book:** equity **1000.5033**, profit **+0.5033 (+0.050%)** — best of the
