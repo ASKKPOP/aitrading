@@ -3245,6 +3245,63 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
         return ""
 
 
+def _excursion_scale_line(run: dict, pnl: dict, peak: "float | None") -> str:
+    """The desk's own excursion, expressed in the unit it must ARM in.
+
+    WHY (2026-08-07). Peak is reported to the desk in DOLLARS — "$0.10" — but
+    an arm is a PRICE LEVEL, so choosing one requires knowing how far the price
+    has actually travelled in percent. That conversion was never given, and the
+    desk cannot do it reliably without the notional in front of it.
+
+    Measured on the live book this cycle, arm distance against the largest move
+    each tape had made:
+
+        983 ETHUSDT  arm 0.74%  vs peak excursion 0.055%   13.4x
+        984 HG       arm 2.60%  vs peak excursion 0.208%   12.5x
+        982 BTCUSDT  arm 0.46%  vs peak excursion 0.205%    2.2x
+        981 SI       arm 0.50%  vs peak excursion 0.297%    1.7x
+
+    Every standing arm sat beyond anything its own tape had done, two of them
+    by more than twelvefold — which is the mechanism behind the long-running
+    "60+ arms authored, only two ever fired". It is a missing unit conversion,
+    not a failure of judgment: a desk told "peak $0.10" and asked for a price
+    has no way to know 0.10 was two tenths of one percent.
+
+    Fact only — whether to move the arm is the desk's call and lives in the
+    skills. Fail-soft: anything unreadable renders "".
+    """
+    try:
+        best = float(peak or 0)
+        if best <= 0:
+            return ""
+        pos = pnl.get("position") or {}
+        entry = float(pos.get("entry_price") or 0)
+        mark = float(pos.get("current_price") or 0) or entry
+        qty = abs(float(pos.get("quantity") or 0))
+        notional = qty * entry
+        if notional <= 0 or mark <= 0:
+            return ""
+        peak_pct = best / notional * 100.0
+        if peak_pct <= 0:
+            return ""
+        head = (f"Scale check: the furthest this has travelled in your favour "
+                f"is {peak_pct:.2f}% of price (peak ${best:,.2f} on a "
+                f"${notional:,.2f} position).")
+        try:
+            armed = json.loads(run.get("armed_order_json") or "{}") or {}
+            level = float(((armed.get("arm") or {}).get("level")))
+        except (TypeError, ValueError):
+            level = 0.0
+        if level > 0:
+            away = abs(level - mark) / mark * 100.0
+            ratio = away / peak_pct
+            return (f"{head} Your standing arm sits {away:.2f}% away — "
+                    f"{ratio:.1f}x that.\n")
+        return f"{head} No level is armed.\n"
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _floor_status_line(run: dict, pnl: dict, peak: "float | None") -> str:
     """Whether the platform's automatic profit floor is even SWITCHED ON.
 
@@ -3326,6 +3383,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                             f"are holding {max(0.0, upnl) / peak:.0%} of that "
                             f"high-water mark.")
             bits.append(_floor_status_line(run, pnl, peak))
+            bits.append(_excursion_scale_line(run, pnl, peak))
             bits.append(_loss_verdict_line(run, pnl))
             try:
                 want = abs(float(thesis.get("expected_move_pct")))
