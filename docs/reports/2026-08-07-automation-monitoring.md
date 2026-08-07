@@ -5,6 +5,55 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 06:25Z · over +1.00; and my deploys are delaying research
+
+**Book:** equity **1001.1644**, profit **+1.1644 (+0.1164%)** — **over +1.00
+for the first time**. Realized **+0.8271** (from +0.6162), unrealized +0.3373.
+The move came from **991 GC banking −0.0045 -> +0.2268**. Cadence **7/7
+distinct minutes**. Nothing below −0.99.
+
+### Why no new research batch — and it is my own doing
+
+    current_batch_id() = f"research:{int(now // research_interval_seconds())}"
+
+A **fixed hourly bucket aligned to epoch hours**, claimed once by whichever
+runner gets there first. And `symbol_research_loop` sleeps
+`research_interval_seconds()` **from process start**, not on a wall clock.
+
+The log is explicit:
+
+    [SymbolResearch] {'batch_id': 'research:496133', 'skipped': 'batch_exists'}
+
+Sequence: batch 496133 was claimed at **05:13**. My cryptobreadth deploy
+restarted the worker at **05:50**; its refresh fired ~5s later, found 496133
+already claimed, and skipped. The next refresh is **05:50 + 3600s = ~06:50**,
+when bucket 496134 will be free.
+
+**So bucket 496134's batch arrives ~50 minutes later than it otherwise would**,
+purely because of when I deployed. Six deploys in three hours tonight, each
+resetting the timer.
+
+**Not a defect** — a restart-resetting sleep is ordinary, and the bucket
+sentinel correctly prevents duplicate LLM spend. But it is a real operational
+consequence worth knowing: **a deploy late in an hour phase-shifts research to
+that minute for as long as the process lives.** A future session seeing "no new
+batch" should check worker uptime before suspecting the research loop.
+
+### #299 still not testable
+
+The payoff test needs bucket 496134, due ~06:50. Third cycle deferred, and
+deferring remains correct — the ZBTUSDT verification proved the value of not
+declaring early.
+
+### Nothing shipped
+
+Fleet 7/10, unchanged, for the 05:00 reason. Worth adding: `_do_research` calls
+`_open_markets_scope()`, which **actively scopes closed markets out** of
+selection — so us-stock is not merely "not built" overnight, it is excluded
+from the candidate pool entirely.
+
+---
+
 ## Cycle — 06:00Z · session high; the #299 payoff test has not run yet
 
 **Book:** equity **1000.9454**, profit **+0.9454 (+0.0945%)** — session high.
