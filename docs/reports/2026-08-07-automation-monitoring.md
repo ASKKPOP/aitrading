@@ -5,6 +5,43 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 04:00Z · the 983 watch closes: not a defect, a boundary
+
+**Book:** equity **1000.5033**, profit **+0.5033 (+0.050%)** — best of the
+session. Realized +0.4734, unrealized +0.0297. Cadence **8/8 distinct
+minutes**. Nothing below −0.99.
+
+**Mandate confirmed reaching decisions:** the `light/crypto` block opens with
+`YOUR PURPOSE IS REALIZED PROFIT`, and both new clauses are present (far-arm
+`NOT PROTECTION`, and its third case `below your round-trip cost`).
+
+### 983 — five cycles watched, and the answer is "no change"
+
+11 run cycles, 1 trade, realized −0.0100, high-water 1.4x the round trip. The
+cent is not the cost; a fleet slot and ~48 LLM decisions a day are.
+
+**But the retire rails are gated `not has_position and trades == 0`** — flat
+and never-traded only. The code states why:
+
+> *"an open position is never abandoned on a cycle count"*
+
+983 has traded once and holds a position, so it is **correctly excluded**.
+Retiring it means CLOSING that position, which is a trading decision — the
+desk's, not mine. Building a rail to force-close positions that have not moved
+would take a trading decision away from the AI, which the role boundary
+forbids.
+
+**The watch item closes as "no defect".** The desk has the excursion-scale
+brief and the far-arm clause describing its own situation; whether to exit is
+its call. Five cycles of watching produced a clear answer instead of a change,
+which is the correct outcome — not a failure to find something.
+
+### Nothing shipped
+
+Third consecutive cycle with no reproduced defect. Equity at its session high.
+
+---
+
 ## Cycle — 03:45Z · all three audits run; one false positive cleared
 
 **Book:** equity **1000.4339**, profit **+0.4339 (+0.043%)**, cross-checked and
