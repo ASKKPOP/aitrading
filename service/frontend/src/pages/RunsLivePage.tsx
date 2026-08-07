@@ -268,6 +268,32 @@ const REASON_TEXT: Record<string, Record<Language, string>> = {
     id: 'Kondisi stop diperketat' },
   created: {
     ko: '생성되었습니다', en: 'Created', ja: '作成しました', th: 'สร้างแล้ว', vi: 'Đã tạo', id: 'Dibuat' },
+  // The four below were never rendered until the AI Analysis panel started
+  // showing transitions; prod's journal has all of them (2026-08-07).
+  start: {
+    ko: '실행을 시작했습니다', en: 'Started running', ja: '実行を開始しました',
+    th: 'เริ่มทำงานแล้ว', vi: 'Đã bắt đầu chạy', id: 'Mulai berjalan' },
+  desk_retired: {
+    ko: '데스크가 이 TRADING을 종료하고 슬롯을 반납했습니다',
+    en: 'The desk retired this TRADING and handed the slot back',
+    ja: 'デスクがこの TRADING を終了しスロットを返却しました',
+    th: 'เดสก์ปิด TRADING นี้และคืนสล็อต',
+    vi: 'Bàn giao dịch đã kết thúc TRADING này và trả lại suất',
+    id: 'Meja menutup TRADING ini dan mengembalikan slotnya' },
+  'stop_event:trailing_lock': {
+    ko: '추적 손절선이 이익을 잠갔습니다',
+    en: 'The trailing stop locked the gain in',
+    ja: 'トレーリングストップが利益を確定しました',
+    th: 'เทรลลิงสต็อปล็อกกำไรไว้แล้ว',
+    vi: 'Lệnh dừng lỗ động đã khóa lợi nhuận',
+    id: 'Trailing stop mengunci keuntungan' },
+  'stop_event:conviction_collapse': {
+    ko: '확신이 무너져 정지했습니다',
+    en: 'Conviction collapsed — stopped',
+    ja: '確信が崩れたため停止しました',
+    th: 'ความมั่นใจพังลง — จึงหยุด',
+    vi: 'Niềm tin sụp đổ — đã dừng',
+    id: 'Keyakinan runtuh — dihentikan' },
 }
 
 // The two stop buttons share one API action — the key tells them apart so
@@ -284,7 +310,7 @@ export function statusLabel(status: string | undefined, lang: Language): string 
 
 // Falls back to the raw reason so a newly-added backend reason still shows
 // something actionable instead of silently disappearing.
-function reasonLabel(reason: string | undefined, lang: Language): string {
+export function reasonLabel(reason: string | undefined, lang: Language): string {
   if (!reason) return ''
   return REASON_TEXT[reason] ? tr(lang, REASON_TEXT[reason]) : reason
 }

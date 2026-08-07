@@ -19,6 +19,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -285,6 +286,123 @@ class DeskCycleTests(unittest.TestCase):
         self.assertEqual(len(over.json()["cycles"]), desk_cycles.MAX_CYCLES)
         under = self.client.get("/api/automation/ai-analysis?cycles=0", headers=auth)
         self.assertEqual(len(under.json()["cycles"]), 1)
+
+    # ── end_ms: the panel's date filter ──────────────────────────────────
+    # The grid is UTC and the reader's day is not, so the browser sends the
+    # instant its local day ends and the server counts buckets back from it.
+
+    def test_end_ms_windows_the_grid_on_a_past_day(self):
+        self._run(985)
+        past = datetime.now(timezone.utc) - timedelta(days=2)
+        self._event(985, "decision",
+                    {"action": "buy", "confidence": 0.7, "report": "two days ago"},
+                    desk_cycles.cycle_start(past) + timedelta(seconds=1))
+        auth = {"Authorization": f"Bearer {self.token}"}
+        end_ms = int((desk_cycles.cycle_start(past)
+                      + timedelta(minutes=29)).timestamp() * 1000)
+        body = self.client.get(
+            f"/api/automation/ai-analysis?cycles=2&end_ms={end_ms}",
+            headers=auth).json()
+        self.assertEqual(body["cycles"][0]["runs"][0]["report"], "two days ago")
+        # Without end_ms the same event is outside a 2-cycle window from now.
+        now_body = self.client.get("/api/automation/ai-analysis?cycles=2",
+                                   headers=auth).json()
+        self.assertTrue(all(c["quiet"] for c in now_body["cycles"]))
+
+    def test_unparseable_end_ms_is_a_400_not_a_500(self):
+        resp = self.client.get(
+            "/api/automation/ai-analysis?end_ms=999999999999999999",
+            headers={"Authorization": f"Bearer {self.token}"})
+        self.assertEqual(resp.status_code, 400, resp.text)
+
+    # ── the free text comes back in the reader's language ────────────────
+
+    def _localized_row(self, lang: str, payload: dict) -> dict:
+        self._run(985)
+        self._event(985, "decision", payload, self._in_current_cycle())
+        body = self.client.get(
+            "/api/automation/ai-analysis?cycles=2",
+            headers={"Authorization": f"Bearer {self.token}",
+                     "Accept-Language": lang}).json()
+        return body["cycles"][0]["runs"][0]
+
+    def test_gate_skip_reasons_localize_from_the_catalogue(self):
+        """No model call: the desk's own skip reasons are catalogued, and the
+        prod top-two ("decision is 'hold'", 'loss cooldown') are both there."""
+        from desk_i18n_data import DESK_PHRASES
+        self._run(985)
+        for reason in ("decision is 'hold'", "loss cooldown"):
+            self._event(985, "gate_skip", {"stage": "pre", "reason": reason},
+                        self._in_current_cycle())
+        body = self.client.get(
+            "/api/automation/ai-analysis?cycles=2",
+            headers={"Authorization": f"Bearer {self.token}",
+                     "Accept-Language": "ko"}).json()
+        got = {s["reason"] for s in body["cycles"][0]["runs"][0]["skips"]}
+        self.assertEqual(got, {DESK_PHRASES["decision is 'hold'"]["ko"],
+                               DESK_PHRASES["loss cooldown"]["ko"]})
+
+    def test_interpolated_skip_reason_keeps_its_numbers(self):
+        self._run(986, symbol="ZEC")
+        self._event(986, "gate_skip",
+                    {"stage": "pre", "reason": "re-entry cooldown (45m at 2x leverage)"},
+                    self._in_current_cycle())
+        body = self.client.get(
+            "/api/automation/ai-analysis?cycles=2",
+            headers={"Authorization": f"Bearer {self.token}",
+                     "Accept-Language": "th"}).json()
+        reason = body["cycles"][0]["runs"][0]["skips"][0]["reason"]
+        self.assertNotIn("re-entry cooldown", reason)   # localized...
+        self.assertIn("45", reason)                     # ...numbers survived
+        self.assertIn("2x", reason)
+
+    def test_model_written_report_is_english_until_the_cache_is_warm(self):
+        """The report has no catalogue entry, so it takes the cached path: the
+        request never blocks on a model, it returns English and warms."""
+        import market_i18n
+        report = "Funding flipped negative while the book held its peak."
+        with patch.object(market_i18n, "_schedule_warm") as sched:
+            row = self._localized_row("ko", {"action": "buy", "confidence": 0.7,
+                                             "report": report})
+        self.assertEqual(row["report"], report)
+        self.assertEqual(sched.call_args.args[0], [report])   # queued to warm
+
+        # Once warmed, the same request serves the translation.
+        market_i18n._cache_put(market_i18n._cache_key(report, "ko"), "한국어 리포트")
+        try:
+            body = self.client.get(
+                "/api/automation/ai-analysis?cycles=2",
+                headers={"Authorization": f"Bearer {self.token}",
+                         "Accept-Language": "ko"}).json()
+            self.assertEqual(body["cycles"][0]["runs"][0]["report"], "한국어 리포트")
+        finally:
+            market_i18n._MEM_CACHE.pop(market_i18n._cache_key(report, "ko"), None)
+
+    def test_english_request_is_left_exactly_as_journaled(self):
+        row = self._localized_row("en", {
+            "action": "hold", "confidence": 0.55,
+            "report": "Thesis still holds with ample downside buffer."})
+        self.assertEqual(row["report"],
+                         "Thesis still holds with ample downside buffer.")
+
+    def test_enums_and_transition_codes_stay_raw_for_the_frontend(self):
+        """action / status / status reason are codes the client maps itself.
+        Translating them here would break that map, so they must come back
+        untouched even on a localized request."""
+        self._run(985)
+        self._event(985, "decision", {"action": "hold", "confidence": 0.55},
+                    self._in_current_cycle())
+        self._event(985, "run_status",
+                    {"from": "running", "to": "stopped", "reason": "stop_event:max_loss"},
+                    self._in_current_cycle())
+        body = self.client.get(
+            "/api/automation/ai-analysis?cycles=2",
+            headers={"Authorization": f"Bearer {self.token}",
+                     "Accept-Language": "ko"}).json()
+        row = body["cycles"][0]["runs"][0]
+        self.assertEqual(row["action"], "hold")
+        self.assertEqual(row["transitions"][0]["to"], "stopped")
+        self.assertEqual(row["transitions"][0]["reason"], "stop_event:max_loss")
 
 
 if __name__ == "__main__":

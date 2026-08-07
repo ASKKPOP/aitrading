@@ -11,14 +11,17 @@
 from __future__ import annotations
 
 import json as _json
+from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, field_validator
 
 from automation import VALID_MARKETS
 from database import begin_write_transaction, get_db_connection
 from desk_cycles import CYCLE_MINUTES, DEFAULT_CYCLES, agent_cycles
+from i18n_errors import lang_from_request
+from market_i18n import localize_desk_cycles
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
@@ -631,13 +634,32 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
 
     @app.get("/api/automation/ai-analysis")
-    async def ai_analysis(cycles: int = DEFAULT_CYCLES,
+    async def ai_analysis(request: Request, cycles: int = DEFAULT_CYCLES,
+                          end_ms: Optional[int] = None,
                           authorization: str = Header(None)):
         """The signed-in agent's desk cycles on the fixed 30-minute grid.
 
         Composed on read from the journal Sooppiy AI already writes each
         cycle — no separate analysis pass, so the list is complete for the
-        whole window whether or not the owner was watching."""
+        whole window whether or not the owner was watching.
+
+        `end_ms` (epoch milliseconds) ends the window somewhere other than
+        now, which is how the panel's date filter asks for a past day. The
+        caller sends it because the DAY is the caller's — the grid is UTC and
+        the reader's day is not, and only the browser knows the offset.
+
+        The free text comes back in the request's Accept-Language: gate-skip
+        reasons from the deterministic catalogue, the desk's written report
+        from the cached translator (English on a cache miss, localized on the
+        next poll — the request never waits on a model)."""
         agent = _auth(authorization)
+        end = None
+        if end_ms is not None:
+            try:
+                end = datetime.fromtimestamp(end_ms / 1000, tz=timezone.utc)
+            except (OverflowError, OSError, ValueError):
+                raise HTTPException(status_code=400, detail="invalid end_ms")
+        rows = agent_cycles(agent["id"], cycles, now=end)
         return {"cycle_minutes": CYCLE_MINUTES,
-                "cycles": agent_cycles(agent["id"], cycles)}
+                "cycles": localize_desk_cycles(
+                    rows, lang_from_request(request.headers))}
