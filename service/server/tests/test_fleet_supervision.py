@@ -395,6 +395,55 @@ class ReplacementTests(SupervisionBase):
         self.assertNotIn(member["symbol"], live_syms,
                          "replacement rebuilt the never-traded symbol")
 
+    def _set_realized(self, member, value):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_runs SET realized_pnl_usd = ? WHERE id = ?",
+                    (value, member["id"]))
+        conn.commit()
+        conn.close()
+
+    def test_loss_stop_writes_cooldown_and_varies_symbol(self):
+        """vary-on-loss (2026-08-07): three consecutive ADBE runs lost -1.30
+        combined (999 trailing_lock -0.40, 1000 -0.21 after one cycle, 1001
+        rebuilt 34 SECONDS later, -0.69) while each stayed inside the per-run
+        -0.99 floor. A loss stop must cool its symbol so the rebuild meter
+        cannot be reset by rebuilding."""
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        self._set_realized(member, -0.40)
+        self._stop_member(member, "stop_event:trailing_lock")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM fleet_symbol_cooldowns WHERE "
+            "agent_id = ? AND symbol = ?", (self.agent_id, member["symbol"]))
+        n = int(cur.fetchone()["n"])
+        conn.close()
+        self.assertEqual(n, 1, "a LOSS stop must write a symbol cooldown")
+        live_syms = {m["symbol"] for m in fp.list_members(fleet_id)
+                     if m["status"] in ("running", "armed")}
+        self.assertNotIn(member["symbol"], live_syms,
+                         "replacement rebuilt the symbol that just lost")
+
+    def test_profitable_stop_does_NOT_cool_its_symbol(self):
+        """The gate on realized < 0: a trailing lock that BANKED a win is the
+        system working, and its symbol must stay available."""
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        self._set_realized(member, +0.25)
+        self._stop_member(member, "stop_event:trailing_lock")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM fleet_symbol_cooldowns WHERE "
+            "agent_id = ? AND symbol = ?", (self.agent_id, member["symbol"]))
+        n = int(cur.fetchone()["n"])
+        conn.close()
+        self.assertEqual(n, 0, "a profitable stop benched its own symbol")
+
     def test_positions_held_keeps_slot_occupied(self):
         """A flatten-timeout zombie: slot occupied, no replacement, symbol
         excluded — until the unowned book clears (round-5 critical)."""
