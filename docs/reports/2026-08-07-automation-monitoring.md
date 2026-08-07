@@ -5,7 +5,30 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
-## Cycle — 22:00Z · "fix all issued for 24hours monitoing" — the ADBE floor evasion (#324)
+## Cycle — 22:55Z · quiet cycle; #324 constants verified in the new image
+
+**Book:** equity **1000.9332** (+0.093%): cash 960.8877 + position value
+40.0455; cross-check seed 1000 + realized 0.7873 + unrealized 0.1458 =
+1000.9331 ✓. 10/10 running, **10 distinct minutes** (17,20,22,24,26,27,28,
+31,39,42) — stagger holds. Nothing below −0.99; **1001 ADBE unchanged at
+−0.6925** (cycle 16). Zero tracebacks. Fresh decision 22:42Z (983 hold, conf
+0.38) — first one after the notesync deploy, prompt path live.
+
+- Mandate drift check: my first predicate was WRONG (`MANDATE_CORE in
+  _research_mandate()` — the test asserts all three layers *start with* the
+  shared core sentence, research rephrases the rest by design). Re-checked
+  with the test's own predicate: all three True. Lesson: read the test's
+  assertion before inventing a stricter one and calling it drift.
+- Vary-on-loss live: `LOSS_SYMBOL_COOLDOWN_HOURS = 6` in the running image;
+  no ADBE cooldown row yet because 1001 has not stopped — the watch stands.
+- Cooldowns live: SOLUSDT until 08-08T09:39Z (987), HYPEUSDT until
+  08-08T01:05Z (995).
+- New watch (single data point, not chased): `[Market Intel] Refreshed market
+  news snapshots: inserted=0 errors=4` — if it repeats next cycles, count the
+  INPUT before touching anything (see the dead-feed trap).
+
+No changes shipped — no new evidence. Daily minus-profit duty already
+answered by #324.
 
 **Book:** equity **1000.93**, profit **+0.93 (+0.093%)**. 10/10 runs, all
 on-slot. Shape degraded **7.0:1 → 1.4:1** across the ~9 unattended hours —
