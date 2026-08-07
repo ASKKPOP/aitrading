@@ -5,6 +5,35 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 10:15Z · quiet; the R:R gate is refusing unbracketable setups
+
+**Book:** equity **1002.1452**, profit **+2.1452 (+0.2145%)**. Realized
+**+1.9239** (unchanged), unrealized +0.2212 — the dip from 10:00 is unrealized
+decay only. 9/10 runs, all on-slot, 9/9 distinct minutes. Shape **5.4:1**.
+Nothing below −0.99. Three arm fires, all profitable.
+
+### Both fresh decisions declined to enter, on R:R grounds
+
+> *"Long thesis still plausible but target/stop ratio fails criteria, so remain
+> flat."* — 991 GC
+
+> *"Short thesis lacks a viable stop because the swing-high is within ~1% of
+> price."* — 995 HYPEUSDT
+
+This is the risk/reward feasibility check refusing setups that cannot be
+bracketed, rather than forcing a trade to look busy. Given the mandate's "not
+activity" clause, declining is the intended behaviour.
+
+### Watch: 995 HYPEUSDT, 6 cycles and zero trades
+
+The idle-retire rail collects flat-and-never-traded runs at **12 worked
+cycles**, so 995 is about halfway. That is the rail working as designed. Noting
+it so its retirement, when it comes, is not misread as a failure.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 10:00Z · ⚠️ I READ THE SLIPPAGE BACKWARDS — it is FAVOURABLE
 
 **Book:** equity **1002.2565**, profit **+2.2565 (+0.2256%)** — crossed +2.00.
