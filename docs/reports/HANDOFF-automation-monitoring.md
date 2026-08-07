@@ -25,6 +25,53 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🧠 DESK CORPUS (RAG) LIVE — 2026-08-07 01:15Z
+>
+> Owner: *"RAG keep all analysis and monitoring for this session and sooppiy
+> AI"*. Live on prod image `20260807-batchdedupe`.
+>
+> **`desk_memory` table + `desk_memory.py` + `desk_memory_ingest.py`** (#271,
+> #272, #273, #275). Corpus on prod: **420 monitoring chunks + decisions +
+> outcomes**, growing every cycle. Retrieval verified — "gain given back from
+> peak" returns the give-back-leak finding at the top.
+>
+> - No FTS5, no MySQL FULLTEXT, no embeddings. Scoring is BM25-style **in
+>   Python**, so it behaves identically on both dialects.
+> - Ingest is idempotent; an EDITED chunk stores a NEW memory (notes are
+>   corrected in place, and a stale chunk must not win).
+> - The daemon rides the existing ~30s scheduler tick, throttled to
+>   `DESK_MEMORY_INGEST_MIN` (default 30), wrapped so it can never fail a
+>   trading tick.
+>
+> **⚠️ TRAP: `.dockerignore` excludes BOTH `docs/` and `*.md`.** A
+> `COPY docs/reports/` in the Dockerfile fails to build — the files are in the
+> deploy tarball but never enter the build context. The notes are mounted
+> read-only from `$REMOTE/app/docs/reports` instead.
+>
+> **⚠️ TRAP: `scripts/deploy.sh` never updates `$REMOTE/docker-compose.yml`.**
+> It runs `docker compose up` from `$REMOTE` using whatever file is already
+> there. A compose change must be copied to the box by hand. Verified
+> byte-identical to the repo's before the mount was added, so there is no other
+> drift — **re-check this before assuming it still holds.**
+>
+> **⚠️ TRAP: don't read a corpus count mid-ingest.** A partial count in exact
+> filename order looks exactly like an interrupted run. It was not; the ingest
+> was still going. Re-read before diagnosing.
+>
+> **Measured:** a no-op ingest took **26-33s** because it asked "have I seen
+> this?" once per chunk — 442 round-trips against the trading database, growing
+> with the corpus. `known_shas()` made it **0.2s** (#275).
+>
+> **Deploy path is flaky.** Three of four deploys on 2026-08-06 died uploading
+> the ~7MB tarball (`message authentication code incorrect`, `connection reset
+> by peer`) — corrupted packets, not the box. #274 added a bounded retry plus a
+> far-side sha256 check; a truncated upload would otherwise build a quietly
+> broken image.
+>
+> **State 01:15Z:** 8 runs live, **cycling at 8 DISTINCT minutes**
+> (02 04 10 11 16 48 55 57) — the stagger works. Equity 999.87 vs seed 1000,
+> realized +0.0567, no run below the -0.99 floor, so no cleanup was due.
+
 > ### ▶️ LOOP RESUMED — 2026-08-06 23:30Z (owner), NEW GROUND STATE
 >
 > The owner reset the balance to **1000** and cleared all history. Fleet 28
