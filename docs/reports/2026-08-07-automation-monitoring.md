@@ -5,6 +5,49 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 08:00Z · daily duty: the day is POSITIVE, and the shape is right
+
+**Book:** equity **1001.6215**, profit **+1.6215 (+0.1622%)**. Realized
+**+1.2897**, unrealized +0.3317. Fleet 10/10, **all on-slot, 10/10 distinct
+minutes**. Nothing below −0.99.
+
+### Daily duty — there is no minus-profit day to solve
+
+2026-08-07 (UTC) closes the monitored stretch **positive**. But the owner's
+standing instruction is to target the SHAPE, not the absence of losses, so:
+
+| | count | total |
+|---|---|---|
+| winners | 5 | **+1.5183** |
+| losers | 8 | **−0.2288** |
+
+**38% win rate by count; 6.6:1 by magnitude.**
+
+    largest win   981 SI       +0.7230
+    largest loss  986 USDKRW   −0.0922      ratio 7.8:1
+
+    winners: 981 SI +0.7230, 984 HG +0.2957, 985 ZC +0.2553,
+             991 GC +0.2268, 990 ZW +0.0175
+    losers:  986 −0.0922, 987 −0.0651, 983 −0.0355, 992 −0.0166,
+             980 −0.0085, 982 −0.0057, 993 −0.0030, 994 −0.0022
+
+**This is the shape the work was aimed at.** The baseline finding was *"6 of 84
+closes accounted for 74% of all loss, and every one dumped 100% of book on a
+sub-2% move"*. Today the worst single loss is **nine cents** and **no run has
+dumped its book**. Losses are small and frequent; wins are large and
+concentrated — which is the correct arrangement, not an accident of a quiet
+tape.
+
+Caveat worth keeping: one session, thirteen closed-or-open runs, on a book
+seeded eight hours ago. The shape is right; the sample is not yet a claim about
+edge.
+
+### Nothing shipped
+
+Fourth cycle in a row with no reproduced defect.
+
+---
+
 ## Cycle — 07:45Z · stagger verified at full fleet size; three audits clean
 
 **Book:** equity **1001.5940**, profit **+1.5940 (+0.1594%)**. Realized
