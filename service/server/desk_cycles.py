@@ -172,8 +172,13 @@ def _finish_cell(cell: dict, carried: dict) -> None:
         cell["realized_delta"] = round(cell["realized"] - prev, 6)
     peak, realized = cell["peak"], cell["realized"]
     # Preservation only means something on a run that actually went up.
+    #
+    # Floored at zero: prod run 991 peaked at +0.085 and realized -0.0045,
+    # which is -5.3% of peak. "보존율 -5%" reads as a preservation rate and is
+    # not one — the run kept NONE of its peak, which is 0%. The realized
+    # figure sits next to it and carries the loss, so nothing is hidden.
     if peak and peak > 0 and realized is not None:
-        cell["preservation"] = round(realized / peak, 4)
+        cell["preservation"] = round(max(0.0, realized / peak), 4)
     if cell["realized"] is not None:
         carried["realized"] = cell["realized"]
     if cell["unrealized"] is not None:
