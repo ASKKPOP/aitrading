@@ -5,6 +5,48 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 08:15Z · correcting my own 04:15 claim about the arm clause
+
+**Book:** equity **1001.6006**, profit **+1.6006 (+0.1601%)**. Realized
+**+1.2876**, unrealized +0.3130. Fleet 10/10, **all on-slot, 10/10 distinct
+minutes**. Nothing below −0.99.
+
+### ⚠️ CORRECTION: "4 of 4 post-clause arms are reachable" was a snapshot
+
+At 04:15Z I reported that every arm authored after the far-arm clause sat at
+0.25-0.93%. With more samples that is **not the settled record**:
+
+    983 ETHUSDT  arm 2.52%  exc 0.219%   11.5x   armed 07:42:10  post-clause
+    990 ZW       arm 0.35%  exc 2.145%    0.2x   armed 05:30:57  post-clause
+    991 GC       arm 0.57%  exc 1.417%    0.4x   armed 07:07:44  post-clause
+    987 SOLUSDT  arm 0.47%  exc 0.000%     n/a   armed 08:10:12  post-clause
+
+Three tight, **one far** — and it is the SAME run every time. 983 was at 14.9x
+at 02:41 and 13-17x before that; it has now authored an 11.5x arm nearly five
+hours after the clause went live.
+
+**The third case does not excuse it.** 983's excursion is 0.219%, which is
+**5.8x the measured round-trip fee (0.0382%)**, so "the range is below your
+cost" does not apply. The main instruction applies and this run is not
+following it.
+
+**Not shipped.** One run out of ten, and arm placement is the desk's judgment,
+not a platform rail. Recording it as a named watch item with numbers: if 983
+authors a third far arm while the rest of the fleet arms tight, that is a
+run-specific pattern worth understanding rather than a clause to rewrite.
+
+**Lesson for me:** I measured at a moment when the sample happened to agree,
+and stated it as a result. The correct claim at 04:15 was "4 arms so far, all
+tight" — not "the clause landed".
+
+### Minor observation
+
+991 GC armed `close/1.0` — a whole-book arm — where the exit skill makes
+`reduce` the default verb. Defensible for a target-reaching arm; noted, not
+challenged.
+
+---
+
 ## Cycle — 08:00Z · daily duty: the day is POSITIVE, and the shape is right
 
 **Book:** equity **1001.6215**, profit **+1.6215 (+0.1622%)**. Realized
