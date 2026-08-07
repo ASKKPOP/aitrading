@@ -27,6 +27,7 @@ import datetime as _dt
 import os
 from typing import Any, Optional
 
+from portfolio_value import POSITION_VALUE_CASE
 import database
 from routes_shared import DEFAULT_AGENT_SEED_CAPITAL
 
@@ -105,7 +106,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
     conn = database.get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        """
+        f"""
         WITH latest_snapshots AS (
             SELECT ams.*
             FROM agent_metric_snapshots ams
@@ -126,11 +127,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                     COALESCE(a.cash, 0) +
                     COALESCE(
                         SUM(
-                            CASE
-                                WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                            END
+{POSITION_VALUE_CASE}
                         ),
                         0
                     ) -
@@ -141,11 +138,7 @@ def _compute_agent_rows() -> list[dict[str, Any]]:
                         COALESCE(a.cash, 0) +
                         COALESCE(
                             SUM(
-                                CASE
-                                    WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                    WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                    ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                                END
+{POSITION_VALUE_CASE}
                             ),
                             0
                         ) -

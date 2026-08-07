@@ -9,6 +9,7 @@ from fastapi import FastAPI, Header, HTTPException
 from cache import get_json, set_json
 from database import get_db_connection
 from experiment_events import record_event
+from portfolio_value import POSITION_VALUE_CASE, POSITION_VALUE_SUM
 from routes_models import FollowRequest
 from routes_shared import (
     DEFAULT_AGENT_SEED_CAPITAL,
@@ -243,11 +244,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                         COALESCE(a.cash, 0) +
                         COALESCE(
                             SUM(
-                                CASE
-                                    WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                    WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                    ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                                END
+{POSITION_VALUE_CASE}
                             ),
                             0
                         ) -
@@ -258,11 +255,7 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
                             COALESCE(a.cash, 0) +
                             COALESCE(
                                 SUM(
-                                    CASE
-                                        WHEN p.current_price IS NULL THEN p.entry_price * ABS(p.quantity)
-                                        WHEN p.side = 'long' THEN p.current_price * ABS(p.quantity)
-                                        ELSE (2 * p.entry_price - p.current_price) * ABS(p.quantity)
-                                    END
+{POSITION_VALUE_CASE}
                                 ),
                                 0
                             ) -
@@ -1211,7 +1204,21 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         # while email/tokens/API settings stay private to the agent itself.
         points = int(row['points'] or 0)
         deposited = float(row['deposited'] or 0)
-        profit = cash - seed
+        # `cash` has only the MARGIN of open positions deducted, so
+        # `cash - seed` books every deployed dollar as a loss: agent 6 read
+        # -29.04 (-2.9%) on 2026-08-07 while it was +0.51 (+0.05%) up. A
+        # position is worth its margin plus its unrealized P&L.
+        cursor.execute(
+            f"""
+            SELECT {POSITION_VALUE_SUM} AS open_value
+            FROM positions p
+            WHERE p.agent_id = ?
+            """,
+            (agent_id,),
+        )
+        open_row = cursor.fetchone()
+        open_value = float((open_row['open_value'] if open_row else 0) or 0)
+        profit = cash + open_value - seed
         profit_pct = profit_percent_for_display(profit, deposited, seed)
 
         cursor.execute(
