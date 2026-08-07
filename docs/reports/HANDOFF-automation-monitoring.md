@@ -25,6 +25,57 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🎯 ARMS: ONLY NEAR ONES EVER FIRE — 2026-08-07
+>
+> **Every arm that has ever fired on this platform was a near one.** Two fired
+> this session, both tight:
+>
+>     981 SI  01:50:52  price_above 62.05   -> reduce 0.5  slip 0.040%  +0.069
+>     991 GC  08:46:27  price_above 4360.0  -> reduce 0.5  slip 0.060%  +0.245
+>
+> 991's arm sat at **0.4x its own excursion**. Zero far arms have ever fired —
+> consistent with the historical "60+ authored, only two fired".
+>
+> **⚠️ BUT THE arm/excursion RATIO HAS A DOMAIN OF VALIDITY — I over-applied it
+> TWICE.** It is a good lens only when the excursion is a REAL anchor:
+>
+>     990 ZW   exc 2.219%  arm 0.20%   0.1x   mature, large range -> tight
+>     991 GC   exc 1.528%  arm 0.05%   0.0x   mature, large range -> tight
+>     983 ETH  exc 0.219%  arm 2.30%  10.5x   quiet tape
+>     994 KRW  exc 0.066%  arm 0.68%  10.3x   1.5 HOURS OLD
+>
+> A young position's excursion is small BY CONSTRUCTION; anchoring its arm
+> there would put the level at the current price and fire on noise. **Before
+> calling an arm "far", check the excursion's ABSOLUTE size and the run's age.
+> A 10x ratio on a 0.066% excursion says nothing.** I reported "the clause
+> landed, 4 of 4" on a favourable snapshot (04:15Z) and then named 983 a rogue
+> run (08:15Z); both were wrong.
+>
+> ### ⏱️ A DEPLOY RESETS THE RESEARCH TIMER — 2026-08-07
+>
+> `symbol_research_loop` sleeps `FLEET_RESEARCH_INTERVAL` (3600s) **from
+> process start**, and `current_batch_id()` is a FIXED hourly bucket
+> (`research:{int(now // 3600)}`) claimed once. So a deploy at HH:50 makes the
+> refresh fire immediately, hit `batch_exists`, skip — and the next one is at
+> HH+1:50.
+>
+>     [SymbolResearch] {'batch_id': 'research:496133', 'skipped': 'batch_exists'}
+>
+> Six deploys in three hours pushed one batch ~50 minutes late. **Not a defect.
+> A session seeing "no new research batch" should check WORKER UPTIME first**,
+> not the research loop.
+>
+> Related: `_do_research` calls `_open_markets_scope()`, which **actively
+> scopes closed markets OUT** of selection — us-stock overnight is not merely
+> "not built", it is excluded from the candidate pool.
+>
+> ### ✅ STAGGER VERIFIED AT FULL FLEET SIZE — 2026-08-07 07:45Z
+>
+> The #269 stagger was designed and verified at 6-8 runs. At **10/10 it holds**:
+> ten distinct slots, ten distinct cycle-minutes, all on-slot. Newborns share
+> their first tick (no `last_cycle_at` fires immediately) and separate from
+> cycle 2 — **check `cycle_seq` before calling that a collision.**
+
 > ### 💰 PROFIT ON A LEVERAGED BOOK WAS WRONG 3 WAYS — 2026-08-07 (#288)
 >
 > `agents.cash` has only the **MARGIN** of an open position deducted. The
