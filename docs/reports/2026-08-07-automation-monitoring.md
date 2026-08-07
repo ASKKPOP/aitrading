@@ -5,6 +5,80 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 03:15Z · two hypotheses tested and refuted; nothing shipped
+
+**Book:** equity **1000.4894**, profit **+0.4894 (+0.049%)**, cross-checked two
+ways and agreeing. Realized +0.5275. Cadence 8/8. Nothing below −0.99. Three
+positions left; the desk has closed most of the book.
+
+### Give-back, measured properly for the first time
+
+`peak_pnl_usd` **RE-ANCHORS to the banked total when a run goes flat** — by
+design, documented, with prod evidence (run 921 was stopped 28 seconds after
+opening against a stale peak). So it CANNOT measure give-back after a close. I
+nearly reported the re-anchor as a bug; reading the code first stopped that.
+
+True high-water marks, recovered from the `equity` event stream:
+
+| run | true hwm | realized | kept |
+|---|---|---|---|
+| 985 ZC | +0.2806 | +0.2553 | **91%** |
+| 981 SI | +0.1628 | +0.1370 | **84%** |
+| 984 HG | +0.3463 | +0.2574 | **74%** |
+| 980 SOLUSDT | +0.0587 | −0.0085 | −15% |
+| 982 BTCUSDT | +0.0292 | −0.0057 | −19% |
+| 983 ETHUSDT | +0.0122 | −0.0100 | −82% |
+
+**Book kept 59% of its true high-water mark; the three real winners kept
+74-91%,** against the prior finding of 51-66%. The banking has improved.
+
+### Hypothesis 1 — the fee multiple explains it. REFUTED.
+
+Measured round trip is **0.0382%** of notional. If a high-water mark below some
+multiple of cost were the discriminator, the split would be clean. It is not:
+
+    980 SOLUSDT  hwm 7.7x the round trip  ->  NEGATIVE
+    981 SI       hwm 5.7x the round trip  ->  POSITIVE
+
+### Hypothesis 2 — size tracks conviction, so weak ideas lost small. REFUTED.
+
+    run  conf  size_scale  notional   realized
+    980  0.54     0.3000     20.06     -0.0085
+    982  0.56     0.3000     24.52     -0.0057
+    983  0.56     0.3000     22.28     -0.0100
+    981  0.54     0.3000     75.47     +0.1370   <-- same conviction, 3.5x size
+    985  0.66     0.5040     58.41     +0.2553
+    984  0.73     0.9504     98.84     +0.2574
+
+981 has the SAME confidence and the SAME size_scale as all three losers and
+3.5x the notional. Conviction did not separate them.
+
+### What is actually there: conviction does not buy consistent exposure
+
+**An identical `size_scale` of 0.3000 produced notionals from $20 to $75.** The
+scale is applied to a per-run base (max_bet and leverage), so the same
+conviction buys ~3.75x more exposure in futures than in crypto. A 0.54-
+confidence idea is a $20 risk in one market and a $75 risk in another.
+
+**Recorded, not fixed. n=4 at one size_scale over four hours** is not grounds
+for touching sizing — and sizing is the desk's own domain. Watch whether the
+asymmetry persists across markets and conviction levels before proposing
+anything.
+
+### Nothing shipped this cycle
+
+Both candidate explanations died on the evidence. The losers cost 2.4 cents
+combined against +0.65 from the winners. There is no reproduced defect to fix.
+
+### 983, third cycle unchanged
+
+10 cycles, 1 trade, hwm 1.4x the round trip, realized −0.0100, still running,
+arm still ~14x beyond its excursion. It is the clearest dead-capital case on
+the book but it is costing a cent, so it stays a watch item rather than a
+justification for changing retirement rules.
+
+---
+
 ## Cycle — 03:00Z · the dashboard was lying about profit, in both directions
 
 **Book:** realized **+0.5327** (was +0.4042). Two runs closed ENTIRELY at their
