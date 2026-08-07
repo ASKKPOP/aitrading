@@ -931,13 +931,73 @@ def current_batch_id(now: Optional[float] = None) -> str:
     return f"research:{int(now // research_interval_seconds())}"
 
 
-def claim_batch(batch_id: str) -> bool:
-    """Insert the sentinel row FIRST. False ⇒ another runner owns this window
-    (abort before any LLM spend). Works with or without Redis."""
+# A refresh takes ~5 minutes (screen ~131 symbols, then the LLM theses).
+# Measured on prod: claimed 08:50:17 -> theses 08:54:39; 09:54:40 -> 10:00:20;
+# 10:48:10 -> 10:53:30.
+_CLAIM_STALE_SECONDS = 900
+
+
+def _release_unproductive_claim(batch_id: str) -> None:
+    """Drop a sentinel that claimed a window and produced nothing.
+
+    WHY (2026-08-07). The sentinel is inserted BEFORE the work, so two runners
+    cannot both pay for LLM theses. But nothing released it when the work
+    failed to produce, and a burned window means the fleet cannot replenish
+    until the NEXT one. Two burned windows in two hours, from two different
+    causes:
+
+      * 496139 — claimed 11:53:30, worker recreated by a deploy ~4.5 minutes
+        later, right before persist. A killed process cannot clean up after
+        itself.
+      * 496140 — claimed 12:58:34, refresh COMPLETED normally with
+        `survivors: 0`: `event_window` and `regime_blocks_longs` were both
+        true, which gates crypto longs AND us-stock/futures/forex at once, so
+        the entire 131-symbol universe was gated. The gates were right; the
+        burned window was not.
+
+    Retrying is cheap: a screen with no survivors makes NO LLM calls (`llm: 0`
+    in both cases), so the cost is candle reads, most of them cached.
+    """
     conn = get_db_connection()
     try:
         cur = conn.cursor()
         begin_write_transaction(cur)
+        cur.execute(
+            "DELETE FROM research_batches WHERE batch_id = ?"
+            " AND NOT EXISTS (SELECT 1 FROM research_theses t"
+            "                 WHERE t.batch_id = research_batches.batch_id)",
+            (batch_id,))
+        conn.commit()
+    except Exception:  # noqa: BLE001 — never let cleanup break the loop
+        try:
+            conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        conn.close()
+
+
+def _iso_seconds_ago(seconds: int) -> str:
+    return datetime.fromtimestamp(
+        datetime.now(timezone.utc).timestamp() - seconds, timezone.utc).strftime(TS_FMT)
+
+
+def claim_batch(batch_id: str) -> bool:
+    """Insert the sentinel row FIRST. False ⇒ another runner owns this window
+    (abort before any LLM spend). Works with or without Redis.
+
+    A sentinel older than `_CLAIM_STALE_SECONDS` with NO theses is treated as
+    abandoned and reclaimed — otherwise a runner killed mid-refresh silently
+    owns that window forever."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        begin_write_transaction(cur)
+        cur.execute(
+            "DELETE FROM research_batches WHERE batch_id = ? AND created_at < ?"
+            " AND NOT EXISTS (SELECT 1 FROM research_theses t"
+            "                 WHERE t.batch_id = research_batches.batch_id)",
+            (batch_id, _iso_seconds_ago(_CLAIM_STALE_SECONDS)))
         cur.execute("INSERT INTO research_batches (batch_id, created_at) VALUES (?, ?)",
                     (batch_id, _now_iso()))
         conn.commit()
@@ -1040,6 +1100,9 @@ def refresh_research_batch(generate_text=None, fetch_candles=None) -> dict[str, 
                                     pace_seconds=0.0 if fetch_candles else pace)
         theses = generate_theses(survivors, generate_text=generate_text)
         n = persist_batch(batch_id, theses)
+        if n == 0:
+            # Nothing to show for this window — do not keep owning it.
+            _release_unproductive_claim(batch_id)
         prune_batches()
         return {"batch_id": batch_id, "universe": len(universe),
                 "survivors": len(survivors), "persisted": n,
