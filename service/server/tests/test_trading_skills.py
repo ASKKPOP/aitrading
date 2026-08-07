@@ -307,8 +307,12 @@ class RegistryTests(_Db):
             import run_engine
             self.assertIn(f"~{run_engine.INTERVAL_CAP_MIN} minutes", block,
                           f"cycle horizon missing from {site}")
-            self.assertIn("60+ arms placed here", block,
+            self.assertIn("60+ arms here", block,
                           f"the measured arm-fire evidence missing from {site}")
+            self.assertIn("NOT PROTECTION", block,
+                          f"a far arm reads as protection in {site} — the "
+                          "desk twice reaffirmed an arm 7-16x beyond its own "
+                          "excursion while the scale check named the multiple")
             self.assertNotIn("inside roughly one ordinary day's move", block,
                              f"the wrong yardstick survives in {site}")
 
@@ -371,17 +375,19 @@ class RegistryTests(_Db):
             self.assertIn("unmoving price never crosses a level", block,
                           f"the reason missing from {site}")
 
-    def test_the_arm_lesson_no_longer_claims_zero_arms_have_fired(self):
-        # "64 arms placed here, NOT ONE ever fired" became FALSE on
-        # 2026-08-06: run 975 fired at 13:11:19 and run 978 at 13:51:38.
+    def test_the_arm_lesson_states_the_CURRENT_fire_count(self):
+        # The count has been wrong twice. "64 arms, NOT ONE ever fired" went
+        # false on 2026-08-06 when runs 975 and 978 fired; "only TWO" went
+        # false on 2026-08-07T01:50:52Z when run 981's arm fired and executed.
         # A lesson that states a fact must not go on stating it once it is
-        # untrue.
+        # untrue — and this one keeps ageing, so it is asserted exactly.
         for site in ("light", "trader"):
             block = trading_skills.skills_block(site)
-            self.assertNotIn("NOT ONE ever fired", block,
-                             f"the false zero-fires claim survives in {site}")
-            self.assertIn("only TWO have ever fired", block,
-                          f"the corrected count missing from {site}")
+            for stale in ("NOT ONE ever fired", "only TWO have ever fired"):
+                self.assertNotIn(stale, block,
+                                 f"a superseded fire count survives in {site}")
+            self.assertIn("only three ever fired", block,
+                          f"the current count missing from {site}")
 
     def test_defaults_never_hit_the_budget(self):
         # The catalogue ships with EVERY skill enabled; the budget exists for
