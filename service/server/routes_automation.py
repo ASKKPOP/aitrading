@@ -5,6 +5,7 @@
     PUT    /api/automation/configs/{id}   update a rule (partial)
     DELETE /api/automation/configs/{id}   delete a rule
     GET    /api/automation/runs           recent run history (optionally ?config_id=)
+    GET    /api/automation/ai-analysis    my desk cycles on the 30-minute grid
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from pydantic import BaseModel, field_validator
 
 from automation import VALID_MARKETS
 from database import begin_write_transaction, get_db_connection
+from desk_cycles import CYCLE_MINUTES, DEFAULT_CYCLES, agent_cycles
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
@@ -627,3 +629,15 @@ def register_automation_routes(app: FastAPI, ctx: RouteContext) -> None:
             return {"runs": [dict(r) for r in cursor.fetchall()]}
         finally:
             conn.close()
+
+    @app.get("/api/automation/ai-analysis")
+    async def ai_analysis(cycles: int = DEFAULT_CYCLES,
+                          authorization: str = Header(None)):
+        """The signed-in agent's desk cycles on the fixed 30-minute grid.
+
+        Composed on read from the journal Sooppiy AI already writes each
+        cycle — no separate analysis pass, so the list is complete for the
+        whole window whether or not the owner was watching."""
+        agent = _auth(authorization)
+        return {"cycle_minutes": CYCLE_MINUTES,
+                "cycles": agent_cycles(agent["id"], cycles)}

@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Too
 import { API_BASE, useLanguage } from '../appShared'
 import { planFeatures } from '../entitlements'
 import { AnalysisMonitorPanel, analysisStepLabels, useAnalysisRun } from '../components/AnalysisPipelineViz'
+import { DeskCyclesPanel } from '../components/DeskCyclesPanel'
 import { FleetPanel } from '../components/FleetPanel'
 import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
@@ -137,6 +138,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // ② Make by AI Analyst — one-off run as a server-side background job, so
   // closing the modal and reopening it re-attaches to a run in flight.
   const [showAnalyst, setShowAnalyst] = useState(false)
+
+  // AI Analysis — the desk's own 30-minute cycles, read from the run journal.
+  const [showCycles, setShowCycles] = useState(false)
   const [anSymbol, setAnSymbol] = useState('BTC')
   const [anMarket, setAnMarket] = useState('crypto')
   const analyze = useAnalysisRun(token)
@@ -276,6 +280,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     assetsRealized: tr(language, { ko: '실현', en: 'realized', ja: '実現', th: 'รับรู้แล้ว', vi: 'đã chốt', id: 'direalisasi' }),
     sumCurrentRails: tr(language, { ko: '현재 청산 구조', en: 'current exit rails', ja: '現行の決済ルール', th: 'กติกาปิดสถานะปัจจุบัน', vi: 'cơ chế thoát hiện tại', id: 'aturan keluar saat ini' }),
     sumRailsSince: tr(language, { ko: '이후 실현', en: 'realized since', ja: '以降の実現', th: 'รับรู้แล้วตั้งแต่', vi: 'đã chốt từ', id: 'direalisasi sejak' }),
+    aiAnalysis: tr(language, { ko: 'AI 분석 (30분)', en: 'AI Analysis (30 min)', ja: 'AI分析（30分）', th: 'การวิเคราะห์ AI (30 นาที)', vi: 'Phân tích AI (30 phút)', id: 'Analisis AI (30 menit)' }),
     sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
     sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
     sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
@@ -866,6 +871,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           <div style={sSt}>{win ? `${T.sumRailsSince} ${win.railsSince}` : '\u00a0'}</div>
         </button>
       </div>
+      {/* The desk's 30-minute analysis sits under the tiles it explains: the
+          tiles say what the number is, this says what the desk did to it. */}
+      <button onClick={() => setShowCycles(true)}
+        style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+          border: '1px solid var(--border-color,rgba(0,0,0,0.12))', background: 'transparent',
+          color: 'var(--text-secondary,#8a8073)' }}>
+        🧠 {T.aiAnalysis}
+      </button>
       </div>
     )
   })()
@@ -1113,6 +1126,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           </div>
         )
       })()}
+
+      {showCycles && <DeskCyclesPanel token={token} onClose={() => setShowCycles(false)} />}
 
       {showAnalyst && (
         <div role="dialog" aria-modal="true" aria-label={T.makeByAnalyst}
