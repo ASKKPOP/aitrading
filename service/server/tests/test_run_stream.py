@@ -246,6 +246,67 @@ class RunStreamTests(unittest.TestCase):
         resp = self.client.get(f"/api/runs/{run_id}/snapshot", headers=self._h(self.token_b))
         self.assertEqual(resp.status_code, 404)
 
+    # ── the reader's language on the wire ──────────────────────────────
+    # The run card renders a gate_skip's reason verbatim, so an English reason
+    # was the last English left on a fully Korean/Thai automation page. It is
+    # localized on the frame because the catalogue lives server-side.
+
+    def _skip_reason_over_ws(self, run_id: int, lang: str | None) -> str:
+        url = f"/ws/runs?ticket={self._ticket()}"
+        if lang:
+            url += f"&lang={lang}"
+        with self.client.websocket_connect(url) as ws:
+            ws.send_text(json.dumps({"op": "sub", "run_id": run_id, "from_seq": 0}))
+            frame = ws.receive_json()
+            reason = None
+            while frame["type"] != "backfill_done":
+                if (frame["type"] == "event"
+                        and frame["event_type"] == "gate_skip"):
+                    reason = frame["payload"]["reason"]
+                frame = ws.receive_json()
+        self.assertIsNotNone(reason, "no gate_skip frame arrived")
+        return reason
+
+    def _journal_skip(self, run_id: int, reason: str) -> None:
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT MAX(seq) s FROM run_events WHERE run_id = ?", (run_id,))
+            seq = int(dict(cur.fetchone())["s"] or 0) + 1
+            cur.execute(
+                """INSERT INTO run_events (run_id, seq, event_type, ts, payload)
+                   VALUES (?, ?, 'gate_skip', ?, ?)""",
+                (run_id, seq, datetime.now(timezone.utc).strftime(trading_runs.TS_FMT),
+                 json.dumps({"stage": "pre", "reason": reason})))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_gate_skip_reason_is_localized_on_the_frame(self):
+        from desk_i18n_data import DESK_PHRASES
+        run_id = self._running_run()
+        self._journal_skip(run_id, "decision is 'hold'")
+        self.assertEqual(self._skip_reason_over_ws(run_id, "ko"),
+                         DESK_PHRASES["decision is 'hold'"]["ko"])
+        self.assertEqual(self._skip_reason_over_ws(run_id, "th"),
+                         DESK_PHRASES["decision is 'hold'"]["th"])
+
+    def test_english_and_no_lang_leave_the_reason_as_journaled(self):
+        run_id = self._running_run()
+        self._journal_skip(run_id, "decision is 'hold'")
+        self.assertEqual(self._skip_reason_over_ws(run_id, "en"), "decision is 'hold'")
+        self.assertEqual(self._skip_reason_over_ws(run_id, None), "decision is 'hold'")
+
+    def test_localizing_a_frame_never_mutates_the_journal_row(self):
+        """The payload is rebuilt, not edited: the same run read in a second
+        language must not see the first language's text."""
+        run_id = self._running_run()
+        self._journal_skip(run_id, "loss cooldown")
+        ko = self._skip_reason_over_ws(run_id, "ko")
+        en = self._skip_reason_over_ws(run_id, "en")
+        self.assertNotEqual(ko, "loss cooldown")
+        self.assertEqual(en, "loss cooldown")
+
 
 if __name__ == "__main__":
     unittest.main()

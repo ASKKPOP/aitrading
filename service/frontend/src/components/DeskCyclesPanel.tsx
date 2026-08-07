@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { API_BASE, useLanguage } from '../appShared'
-import { Language, tr } from '../i18n'
-import { reasonLabel, statusLabel } from '../pages/RunsLivePage'
+import { tr } from '../i18n'
+import { actionLabel, reasonLabel, statusLabel } from '../pages/RunsLivePage'
 import { fmtUsd, pnlColor } from '../pages/tradeShared'
 
 // AI Analysis — the desk's 30-minute cycles, opened from under the account
@@ -46,18 +46,6 @@ type Cycle = {
 const BUCKET_MS = 30 * 60 * 1000
 const MAX_CYCLES = 48      // desk_cycles.MAX_CYCLES — one whole day of grid
 const PER_PAGE = 8         // cycles per page, ~4 hours at a glance
-
-// The desk's verb. Rendered as a chip next to the run, so it has to read as a
-// word in the reader's language — "HOLD 55%" is not a Korean sentence.
-const ACTION_TEXT: Record<string, Record<Language, string>> = {
-  buy: { ko: '매수', en: 'BUY', ja: '買い', th: 'ซื้อ', vi: 'MUA', id: 'BELI' },
-  sell: { ko: '매도', en: 'SELL', ja: '売り', th: 'ขาย', vi: 'BÁN', id: 'JUAL' },
-  hold: { ko: '보류', en: 'HOLD', ja: 'ホールド', th: 'ถือไว้', vi: 'GIỮ', id: 'TAHAN' },
-  retire: { ko: '슬롯 반납', en: 'RETIRE', ja: 'スロット返却', th: 'คืนสล็อต', vi: 'TRẢ SUẤT', id: 'LEPAS SLOT' },
-}
-
-const actionLabel = (action: string, lang: Language): string =>
-  ACTION_TEXT[action] ? tr(lang, ACTION_TEXT[action]) : action
 
 // Cycle stamps are UTC; render them in the reader's own clock and in the
 // app's chosen language, not the browser's.

@@ -38,11 +38,17 @@ async function mintTicket(token: string): Promise<string | null> {
   }
 }
 
-export function useRunStream(token: string | null, runIds: number[]): RunStreamState {
+// `lang` rides the socket URL because one payload field is localized
+// server-side: a gate_skip's REASON is English prose from the run engine, and
+// its catalogue lives on the server (see routes_run_stream._event_frame).
+// Everything else on the wire stays a code the caller maps itself.
+export function useRunStream(token: string | null, runIds: number[],
+                             lang?: string): RunStreamState {
   const [connected, setConnected] = useState(false)
   const [eventsByRun, setEvents] = useState<Record<number, RunEvent[]>>({})
   const [tickByRun, setTicks] = useState<Record<number, RunTick>>({})
   const lastSeqRef = useRef<Record<number, number>>({})
+  const langRef = useRef(lang)
   const wsRef = useRef<WebSocket | null>(null)
   const closedRef = useRef(false)
   const runIdsKey = runIds.slice().sort((a, b) => a - b).join(',')
@@ -51,6 +57,14 @@ export function useRunStream(token: string | null, runIds: number[]): RunStreamS
     closedRef.current = false
     let backoff = 500
     let reconnectTimer: any = null
+    // A language change re-opens the socket, and replaying from the old cursor
+    // would leave every already-delivered event in the previous language while
+    // only new ones switched. Reset the cursors so the reconnect backfills.
+    if (langRef.current !== lang) {
+      langRef.current = lang
+      lastSeqRef.current = {}
+      setEvents({})
+    }
 
     const subscribeAll = (ws: WebSocket) => {
       for (const id of runIds) {
@@ -66,7 +80,8 @@ export function useRunStream(token: string | null, runIds: number[]): RunStreamS
       if (!ticket || closedRef.current) return
       const proto = location.protocol === 'https:' ? 'wss' : 'ws'
       const ws = new WebSocket(
-        `${proto}://${location.host}/ws/runs?ticket=${encodeURIComponent(ticket)}`)
+        `${proto}://${location.host}/ws/runs?ticket=${encodeURIComponent(ticket)}`
+        + (lang ? `&lang=${encodeURIComponent(lang)}` : ''))
       wsRef.current = ws
 
       ws.onopen = () => { backoff = 500; setConnected(true); subscribeAll(ws) }
@@ -132,7 +147,7 @@ export function useRunStream(token: string | null, runIds: number[]): RunStreamS
       if (wsRef.current) wsRef.current.close()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, runIdsKey])
+  }, [token, runIdsKey, lang])
 
   return { connected, eventsByRun, tickByRun, lastSeqByRun: lastSeqRef.current }
 }
