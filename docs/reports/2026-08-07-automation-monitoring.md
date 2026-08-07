@@ -5,6 +5,55 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 08:45Z · the arm/excursion ratio has a domain of validity
+
+**Book:** equity **1001.6647**, profit **+1.6647 (+0.1665%)** — session high.
+Realized +1.2876, unrealized +0.3770. **9/10 runs** (one retired), all on-slot,
+9/9 distinct minutes. Nothing below −0.99.
+
+### ⚠️ SECOND CORRECTION — the flaw is my metric, not the desk
+
+983 did author a third post-clause arm (04:41 -> 05:11 -> 07:42, now 10.5x).
+But **994 USDKRW is also at 10.3x**, so it is not one rogue run. What actually
+separates them:
+
+    990 ZW       exc 2.219%   arm 0.20%    0.1x    large excursion -> tight arm
+    991 GC       exc 1.528%   arm 0.05%    0.0x    large excursion -> tight arm
+    983 ETHUSDT  exc 0.219%   arm 2.30%   10.5x    tiny excursion  -> far arm
+    994 USDKRW   exc 0.066%   arm 0.68%   10.3x    tiny excursion  -> far arm
+
+**The ratio is large exactly where the excursion is tiny.** 994 is 1.5 hours
+old; its excursion is small BY CONSTRUCTION. Anchoring its arm to 0.066% would
+put the level essentially at the current price, firing on the first tick of
+noise. Its actual arm sits at 0.68% — above the noise floor, below a normal
+daily move. That is defensible.
+
+**So the arm/excursion ratio has a domain of validity.** It was the right lens
+for the original finding — 984, a mature position, 2.60% arm against a 0.208%
+excursion, on a tape that had been running for hours. It is the WRONG lens for
+a young or quiet position, and I have now over-applied it twice: once at 04:15
+(claiming the clause landed on a favourable snapshot) and once at 08:15
+(naming 983 a persistent outlier when the same number appears on a
+1.5-hour-old run).
+
+**Not shipped, and the clause is NOT being rewritten on this.** The right
+response is to fix the MEASUREMENT: only judge arm distance by this ratio when
+the excursion is large enough to be a real anchor — a sensible floor is a few
+multiples of the round-trip cost, since below that the tape has not yet
+expressed a range at all.
+
+**Rule for the next session:** before calling an arm "far", check the
+excursion's ABSOLUTE size and the run's age. A 10x ratio on a 0.066% excursion
+says nothing.
+
+### Correcting the 08:15 entry
+
+The previous entry named 983 as a run-specific pattern. That reading does not
+survive 994 showing the same number for the same structural reason. 983 may
+still be quiet-tape rather than misjudging.
+
+---
+
 ## Cycle — 08:15Z · correcting my own 04:15 claim about the arm clause
 
 **Book:** equity **1001.6006**, profit **+1.6006 (+0.1601%)**. Realized
