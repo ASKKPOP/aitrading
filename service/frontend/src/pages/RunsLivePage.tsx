@@ -308,6 +308,78 @@ export function statusLabel(status: string | undefined, lang: Language): string 
   return STATUS_TEXT[status] ? tr(lang, STATUS_TEXT[status]) : status
 }
 
+// The desk's verb, on a decision or a fill. Same four words the AI Analysis
+// panel chips use — kept here because this is where the other enum maps live
+// and the panel already imports from this module.
+export const ACTION_TEXT: Record<string, Record<Language, string>> = {
+  buy: { ko: '매수', en: 'BUY', ja: '買い', th: 'ซื้อ', vi: 'MUA', id: 'BELI' },
+  sell: { ko: '매도', en: 'SELL', ja: '売り', th: 'ขาย', vi: 'BÁN', id: 'JUAL' },
+  hold: { ko: '보류', en: 'HOLD', ja: 'ホールド', th: 'ถือไว้', vi: 'GIỮ', id: 'TAHAN' },
+  retire: { ko: '슬롯 반납', en: 'RETIRE', ja: 'スロット返却', th: 'คืนสล็อต', vi: 'TRẢ SUẤT', id: 'LEPAS SLOT' },
+}
+
+export function actionLabel(action: string | undefined, lang: Language): string {
+  if (!action) return ''
+  return ACTION_TEXT[action] ? tr(lang, ACTION_TEXT[action]) : action
+}
+
+// Which gate turned a cycle away. The reason beside it says what happened;
+// the stage says where, so it has to be a word rather than a field name.
+const STAGE_TEXT: Record<string, Record<Language, string>> = {
+  pre: { ko: '사전 점검', en: 'pre-check', ja: '事前チェック', th: 'ตรวจก่อนเทรด', vi: 'kiểm tra trước', id: 'pra-periksa' },
+  execute: { ko: '주문 실행', en: 'execution', ja: '注文執行', th: 'การส่งคำสั่ง', vi: 'khớp lệnh', id: 'eksekusi' },
+  risk: { ko: '리스크', en: 'risk', ja: 'リスク', th: 'ความเสี่ยง', vi: 'rủi ro', id: 'risiko' },
+  budget: { ko: '예산', en: 'budget', ja: '予算', th: 'งบประมาณ', vi: 'ngân sách', id: 'anggaran' },
+  adapt: { ko: '적응', en: 'adapt', ja: 'アダプト', th: 'ปรับตัว', vi: 'thích ứng', id: 'adaptif' },
+  horizon: { ko: '보유 기간', en: 'horizon', ja: '保有期間', th: 'กรอบเวลา', vi: 'khung thời gian', id: 'horizon' },
+  fee_edge: { ko: '수수료 대비 기대값', en: 'fee edge', ja: '手数料エッジ', th: 'ส่วนต่างค่าธรรมเนียม', vi: 'biên phí', id: 'margin biaya' },
+  rr_floor: { ko: '손익비 하한', en: 'risk/reward floor', ja: 'リスクリワード下限', th: 'ขั้นต่ำผลตอบแทนต่อความเสี่ยง', vi: 'sàn lợi nhuận/rủi ro', id: 'batas imbal/risiko' },
+  add_limit: { ko: '추가 매수 제한', en: 'add limit', ja: '買い増し制限', th: 'จำกัดการเพิ่มไม้', vi: 'giới hạn gia tăng', id: 'batas penambahan' },
+  confidence_rank: { ko: '신뢰도 순위', en: 'confidence rank', ja: '信頼度ランク', th: 'อันดับความเชื่อมั่น', vi: 'xếp hạng tin cậy', id: 'peringkat keyakinan' },
+  desk_retire: { ko: '슬롯 반납', en: 'desk retire', ja: 'スロット返却', th: 'คืนสล็อต', vi: 'trả lại suất', id: 'lepas slot' },
+  master_hold: { ko: '마스터 정지', en: 'master hold', ja: 'マスター停止', th: 'หยุดด้วยสวิตช์หลัก', vi: 'giữ bằng công tắc tổng', id: 'tahan sakelar utama' },
+  flatten: { ko: '포지션 정리', en: 'flatten', ja: 'ポジション解消', th: 'ปิดสถานะทั้งหมด', vi: 'đóng hết vị thế', id: 'tutup semua posisi' },
+  error: { ko: '오류', en: 'error', ja: 'エラー', th: 'ข้อผิดพลาด', vi: 'lỗi', id: 'kesalahan' },
+}
+
+function stageLabel(stage: string | undefined, lang: Language): string {
+  if (!stage) return ''
+  return STAGE_TEXT[stage] ? tr(lang, STAGE_TEXT[stage]) : stage
+}
+
+// The event log's type column, and the card's fallback line. A raw
+// 'gate_skip' is a field name, not a word. All thirteen types prod actually
+// journals are here (counted 2026-08-07) — the six diagnostic ones matter as
+// much as the rest, because the card shows the newest NON-equity event and
+// `order_params` alone is as frequent as `decision`.
+const EVENT_TYPE_TEXT: Record<string, Record<Language, string>> = {
+  decision: { ko: '판단', en: 'decision', ja: '判断', th: 'การตัดสินใจ', vi: 'quyết định', id: 'keputusan' },
+  trade: { ko: '체결', en: 'trade', ja: '約定', th: 'การเทรด', vi: 'khớp lệnh', id: 'transaksi' },
+  gate_skip: { ko: '보류', en: 'skipped', ja: '見送り', th: 'ข้าม', vi: 'bỏ qua', id: 'dilewati' },
+  run_status: { ko: '상태 변경', en: 'status', ja: '状態変更', th: 'สถานะ', vi: 'trạng thái', id: 'status' },
+  equity: { ko: '평가액', en: 'equity', ja: '評価額', th: 'มูลค่าพอร์ต', vi: 'giá trị', id: 'ekuitas' },
+  alert: { ko: '알림', en: 'alert', ja: '通知', th: 'แจ้งเตือน', vi: 'cảnh báo', id: 'notifikasi' },
+  margin: { ko: '증거금', en: 'margin', ja: '証拠金', th: 'มาร์จิ้น', vi: 'ký quỹ', id: 'margin' },
+  order_params: { ko: '주문 설계', en: 'order design', ja: '注文設計', th: 'การออกแบบคำสั่ง', vi: 'thiết kế lệnh', id: 'desain order' },
+  order_intent: { ko: '주문 의도', en: 'order intent', ja: '注文の意図', th: 'เจตนาคำสั่ง', vi: 'ý định lệnh', id: 'maksud order' },
+  adapt: { ko: '전략 조정', en: 'adaptation', ja: '戦略調整', th: 'การปรับกลยุทธ์', vi: 'điều chỉnh chiến lược', id: 'penyesuaian strategi' },
+  hot_issue: { ko: '긴급 이슈', en: 'hot issue', ja: '緊急イシュー', th: 'ประเด็นเร่งด่วน', vi: 'vấn đề nóng', id: 'isu mendesak' },
+  thesis_review: { ko: '논지 점검', en: 'thesis review', ja: '仮説の点検', th: 'ทบทวนแนวคิด', vi: 'rà soát luận điểm', id: 'tinjauan tesis' },
+  armed_exit: { ko: '예약 청산', en: 'armed exit', ja: '予約決済', th: 'ตั้งปิดสถานะไว้', vi: 'lệnh thoát đã đặt', id: 'keluar terjadwal' },
+}
+
+function eventTypeLabel(kind: string, lang: Language): string {
+  return EVENT_TYPE_TEXT[kind] ? tr(lang, EVENT_TYPE_TEXT[kind]) : kind
+}
+
+const CONF_LABEL: Record<Language, string> = {
+  ko: '신뢰도', en: 'conf', ja: '信頼度', th: 'ความเชื่อมั่น', vi: 'độ tin cậy', id: 'keyakinan',
+}
+
+const TOTAL_LABEL: Record<Language, string> = {
+  ko: '총액', en: 'total', ja: '合計', th: 'รวม', vi: 'tổng', id: 'total',
+}
+
 // Falls back to the raw reason so a newly-added backend reason still shows
 // something actionable instead of silently disappearing.
 export function reasonLabel(reason: string | undefined, lang: Language): string {
@@ -362,7 +434,7 @@ function activityLines(run: Run, tick: any, events: any[],
   }
   const lastEv = (events || []).filter((e) => e.event_type !== 'equity').slice(-1)[0]
   if (lastEv) {
-    lines.push(`📋 ${summarize(lastEv, lang)}`)
+    lines.push(`📋 ${summarize(lastEv, lang, false)}`)
   }
   if (!lines.length) {
     lines.push(tr(lang, { ko: '⚙️ 서버에서 실행 중', en: '⚙️ running on the server',
@@ -682,7 +754,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
     () => runs.filter((r) => ['armed', 'running', 'paused', 'stopping'].includes(r.status))
       .map((r) => r.id),
     [runs])
-  const { connected, eventsByRun, tickByRun } = useRunStream(token || null, activeRunIds)
+  const { connected, eventsByRun, tickByRun } = useRunStream(token || null, activeRunIds, language)
 
   // seed equity series from snapshots for the grid
   useEffect(() => {
@@ -780,7 +852,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
       const e = events[events.length - 1]
       setFlash((f) => ({ ...f, [rid]: {
         nonce: (f[rid]?.nonce || 0) + 1,
-        text: summarize(e, language),
+        text: summarize(e, language, false),
         color: flashColor(e.event_type) } }))
       clearTimeout(flashTimers.current[rid])
       flashTimers.current[rid] = setTimeout(
@@ -1387,7 +1459,8 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdi
             <div key={i} style={{ display: 'flex', gap: 8 }}>
               <span className="muted" style={{ minWidth: 62 }}>{e.ts?.slice(11, 19)}</span>
               <span style={{ minWidth: 74, color: e.event_type === 'trade' ? '#0ca30c'
-                : e.event_type === 'run_status' ? '#2a78d6' : '#898781' }}>{e.event_type}</span>
+                : e.event_type === 'run_status' ? '#2a78d6' : '#898781' }}>
+                {eventTypeLabel(e.event_type, language)}</span>
               <span style={{ opacity: 0.85 }}>{summarize(e, language)}</span>
             </div>
           ))}
@@ -1397,7 +1470,21 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdi
   )
 }
 
-function summarize(e: any, lang: Language): string {
+// What a journal row says on the card and in the event log. Every branch has
+// to read as a sentence in the reader's language: this line was the last
+// English left on the automation page, showing "pre: decision is 'hold'" and
+// "buy conf 0.68" under a fully Korean or Thai screen.
+//
+// The gate_skip REASON is the one part that is not localized here — it is
+// English prose from the run engine and arrives already translated on the
+// socket (routes_run_stream._event_frame), so its catalogue stays in one
+// place instead of being mirrored into TypeScript.
+// `raw` is the difference between the two places this is rendered. The event
+// LOG is a diagnostic view, so an unrecognised type is worth dumping verbatim
+// there. The CARD is not: a JSON blob across the run tile is not a status
+// line in any language, and `order_params` — which has no summary sentence
+// and never will — is journaled as often as `decision`.
+function summarize(e: any, lang: Language, raw = true): string {
   const p = e.payload || {}
   if (e.event_type === 'run_status') {
     const from = statusLabel(p.from, lang) || '—'
@@ -1413,12 +1500,19 @@ function summarize(e: any, lang: Language): string {
       vi: `Đã khởi động lại thành TRADING #${p.auto_restart_run_id} với cùng thiết lập`, id: `Dimulai ulang sebagai TRADING #${p.auto_restart_run_id} dengan pengaturan yang sama` })
   }
   if (e.event_type === 'alert' && p.stop_reason) return reasonLabel(p.stop_reason, lang)
-  if (e.event_type === 'trade') return `${p.side} ${Number(p.quantity).toFixed(4)} @ $${Number(p.price).toFixed(2)}`
-  if (e.event_type === 'decision') return `${p.action ?? '—'} conf ${p.confidence ?? '—'}`
-  if (e.event_type === 'equity') return `total $${Number(p.total).toFixed(2)}`
-  if (e.event_type === 'gate_skip') return `${p.stage}: ${p.reason}`
-  if (e.event_type === 'alert') return p.stop_reason ?? JSON.stringify(p)
-  return JSON.stringify(p).slice(0, 80)
+  if (e.event_type === 'trade') {
+    return `${actionLabel(String(p.side || '').toLowerCase(), lang)} ${Number(p.quantity).toFixed(4)} @ $${Number(p.price).toFixed(2)}`
+  }
+  if (e.event_type === 'decision') {
+    const verb = p.action ? actionLabel(String(p.action).toLowerCase(), lang) : '—'
+    return `${verb} ${CONF_LABEL[lang]} ${p.confidence ?? '—'}`
+  }
+  if (e.event_type === 'equity') {
+    return `${TOTAL_LABEL[lang]} $${Number(p.total).toFixed(2)}`
+  }
+  if (e.event_type === 'gate_skip') return `${stageLabel(p.stage, lang)}: ${p.reason}`
+  if (e.event_type === 'alert') return p.stop_reason ?? eventTypeLabel(e.event_type, lang)
+  return raw ? JSON.stringify(p).slice(0, 80) : eventTypeLabel(e.event_type, lang)
 }
 
 function CreateRunForm({ token, onDone, onCancel, language, editRun }: {

@@ -41,7 +41,9 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 
+from analysis_agents import normalize_lang
 from database import get_db_connection
+from market_i18n import localize_text
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
@@ -174,12 +176,25 @@ def _mark_for(run: dict) -> Optional[dict]:
         conn.close()
 
 
-def _event_frame(run_id: int, ev: dict) -> dict:
+def _event_frame(run_id: int, ev: dict, lang: str = "en") -> dict:
     payload = ev.get("payload")
     try:
         payload = json.loads(payload) if isinstance(payload, str) else payload
     except Exception:  # noqa: BLE001
         pass
+    # A gate-skip REASON is English prose the run engine wrote ("decision is
+    # 'hold'"), and the card renders it verbatim — so it stayed English on a
+    # Korean or Thai screen. Localized here rather than on the client because
+    # the catalogue behind it already exists server-side (desk_i18n_data, the
+    # same one /automation/ai-analysis uses); duplicating it in TypeScript
+    # would be two catalogues to keep in step.
+    #
+    # This connection belongs to ONE agent, so a per-connection language is
+    # exactly right. Everything else in the payload stays raw: statuses and
+    # stop reasons are codes the client maps itself.
+    if (ev["event_type"] == "gate_skip" and isinstance(payload, dict)
+            and isinstance(payload.get("reason"), str)):
+        payload = {**payload, "reason": localize_text(payload["reason"], lang)}
     return {"type": "event", "v": 1, "run_id": run_id, "seq": ev["seq"],
             "event_type": ev["event_type"], "ts": ev["ts"], "payload": payload}
 
@@ -201,6 +216,10 @@ def register_run_stream_routes(app: FastAPI, ctx: RouteContext) -> None:
         if agent_id is None:
             await websocket.close(code=4401)
             return
+        # Explicit query param rather than the handshake's Accept-Language:
+        # the client already builds this URL, and a header the browser is not
+        # obliged to send on an upgrade is a silent fallback to English.
+        lang = normalize_lang(websocket.query_params.get("lang"))
         await websocket.accept()
 
         # run_id -> {"run": row, "cursor": last seq sent, "last_tick": frame}
@@ -210,7 +229,7 @@ def register_run_stream_routes(app: FastAPI, ctx: RouteContext) -> None:
             events = await asyncio.to_thread(
                 _events_after, run_id, sub["cursor"], BACKFILL_CAP)
             for ev in events:
-                await websocket.send_json(_event_frame(run_id, ev))
+                await websocket.send_json(_event_frame(run_id, ev, lang))
                 sub["cursor"] = max(sub["cursor"], int(ev["seq"]))
             tick = await asyncio.to_thread(_mark_for, sub["run"])
             if tick and tick != sub.get("last_tick"):
