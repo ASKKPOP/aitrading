@@ -503,18 +503,25 @@ class RegistryTests(_Db):
         self.assertEqual(trading_skills.skills_block("trader"), "")
 
     def test_block_budget_skips_whole_skills(self):
-        # Three admin-authored max-size skills blow the trader budget; the
+        # Enough admin-authored max-size skills to blow the trader budget; the
         # overflow must skip whole skills (the lowest-priority ones), never
         # truncate mid-body.
+        #
+        # The count is DERIVED, not hardcoded: three sufficed at a 34000 cap
+        # and silently stopped overflowing when the cap moved to 48000, so the
+        # test kept passing while exercising nothing. Deriving it means the
+        # overflow path stays covered at whatever the cap becomes.
+        base = len(trading_skills.skills_block("trader"))
+        per = trading_skills.MAX_BODY_LEN + 64
+        need = max(3, (trading_skills.MAX_BLOCK_LEN - base) // per + 2)
         trading_skills.create_skill(
             "huge", "Huge Skill", "x" * trading_skills.MAX_BODY_LEN,
             prompts=["trader"], priority=1)
-        trading_skills.create_skill(
-            "huge2", "Huge Skill Two", "y" * trading_skills.MAX_BODY_LEN,
-            prompts=["trader"], priority=2)
-        trading_skills.create_skill(
-            "huge3", "Huge Skill Three", "z" * trading_skills.MAX_BODY_LEN,
-            prompts=["trader"], priority=3)
+        for i in range(2, need + 1):
+            trading_skills.create_skill(
+                f"huge{i}", f"Huge Skill {i}",
+                chr(ord("a") + i % 20) * trading_skills.MAX_BODY_LEN,
+                prompts=["trader"], priority=i)
         block = trading_skills.skills_block("trader")
         self.assertIn("Huge Skill", block)
         # Budget: header + sections never exceed MAX_BLOCK_LEN (+ final \n).
