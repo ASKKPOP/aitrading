@@ -346,6 +346,24 @@ def _hyperliquid_symbol_available(coin: str) -> bool:
     return coin in symbols
 
 
+def crypto_symbol_listed(symbol: str) -> bool:
+    """Can the crypto feed price this symbol at all?
+
+    WHY (2026-08-07). ZBTUSDT sat in the research universe for at least two
+    days producing 48 log failures — 23 x "Hyperliquid symbol not listed:
+    ZBTUSDT -> ZBT" and 23 fetch failures — while consuming a survivor slot
+    and an LLM thesis in every batch. A symbol the venue does not list can
+    never be priced, so it can never be built; researching it is pure waste.
+    It was already counted as a term in the 2026-08-06 starvation arithmetic
+    ("- ZBTUSDT unpriceable = 0 buildable") and the survivor cap was raised
+    instead of removing it.
+
+    Fails OPEN, like the check it wraps: when the listed set cannot be read we
+    must not empty the crypto universe over a network hiccup.
+    """
+    return _hyperliquid_symbol_available(_normalize_hyperliquid_symbol(symbol))
+
+
 def _polymarket_get_json(url: str, params: Optional[dict] = None) -> object:
     return _request_json_with_retry(
         "polymarket",

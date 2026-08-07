@@ -211,6 +211,17 @@ def build_universe() -> list[dict[str, str]]:
                     crypto.append(sym)
         except Exception:  # noqa: BLE001
             pass
+        # A symbol the venue does not list can never be priced, so it can
+        # never be built — but it still eats a survivor slot and an LLM
+        # thesis in every batch. ZBTUSDT did exactly that for two days.
+        # Fails open: an unreadable listed-set leaves the universe intact.
+        try:
+            from price_fetcher import crypto_symbol_listed
+            kept = [s for s in crypto if crypto_symbol_listed(s)]
+            if kept:
+                crypto = kept
+        except Exception:  # noqa: BLE001
+            pass
         out.extend({"symbol": s, "market": "crypto"} for s in crypto)
 
     import routes_market
