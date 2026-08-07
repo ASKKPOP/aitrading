@@ -44,6 +44,11 @@ services:
       - .env
     volumes:
       - sooppiy_data:/app/service/server/data
+      # Monitoring notes for the desk corpus (desk_memory_ingest). Read-only,
+      # and from the deployed tree rather than the image: .dockerignore
+      # excludes docs/ and *.md, and a note changing should not require an
+      # image rebuild. Absent directory is a no-op in the ingest.
+      - ./app/docs/reports:/app/docs/reports:ro
     restart: unless-stopped
     depends_on:
       - backend
