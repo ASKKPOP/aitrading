@@ -5,6 +5,53 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 10:00Z · ⚠️ I READ THE SLIPPAGE BACKWARDS — it is FAVOURABLE
+
+**Book:** equity **1002.2565**, profit **+2.2565 (+0.2256%)** — crossed +2.00.
+Realized **+1.9239** (from +1.7463). Shape **5.4:1** (7W +2.3581 / 7L −0.4342).
+9/10 runs, all on-slot. Nothing below −0.99.
+
+### ⚠️ THIRD CORRECTION — and the most consequential
+
+At 09:45Z I wrote that 993 ZECUSDT's 0.2697% arm slippage "eats a real share of
+what the arm was banking". **That is wrong in DIRECTION.** I read the magnitude
+and never checked the sign.
+
+    993 ZECUSDT: LONG position, arm = price_above 508.0 -> reduce 0.5
+                 filled at 509.37 — $1.37 ABOVE the trigger
+                 sold 0.030044 @ 509.37 instead of 508.00  =  +$0.0412
+
+**Selling a long ABOVE its trigger is favourable.** The same holds for all three
+fires:
+
+    981 SI       trigger 62.05    filled 62.075     favourable
+    991 GC       trigger 4360.0   filled 4362.600   favourable
+    993 ZECUSDT  trigger 508.0    filled 509.370    favourable
+
+The `slippage_pct` field measures the gap between the armed LEVEL and where
+price actually was when the executor caught it. For a `price_above` arm on a
+long, that gap is **profit, not cost**. On a thin or fast-moving symbol the gap
+is larger — which HELPED: **24% of 993's +0.1716 came from that favourable
+gap**, and the arm took the run from −0.0167 to +0.1716.
+
+**So there is no thin-symbol slippage problem, and the 09:45Z watch item is
+withdrawn.**
+
+### The pattern in my own errors
+
+This is the third correction to my own analysis today (04:15 arm claim, 08:15
+"983 is a rogue run", now this). All three share a shape: **I took a number's
+magnitude and reported a conclusion without checking what the number's sign or
+domain meant.** The measurement was right each time; the interpretation was
+not.
+
+Recorded as a standing check: **before reporting a metric, state which
+direction is good and confirm the observed value is on the side you assumed.**
+
+### Nothing shipped
+
+---
+
 ## Cycle — 09:45Z · third arm fire, and its slippage is 7x the fee
 
 **Book:** equity **1001.9840**, profit **+1.9840 (+0.1984%)** — session high,
