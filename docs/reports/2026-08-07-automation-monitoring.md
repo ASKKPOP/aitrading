@@ -5,6 +5,47 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 11:00Z · realized crosses +2.00; an equity cross-check earns its keep
+
+**Book:** equity **1002.1264**, profit **+2.1264 (+0.2126%)**. **Realized
++2.0141 — over +2.00 for the first time.** Unrealized +0.1305. 8/10 runs, all
+on-slot, 8/8 distinct minutes. Shape **5.6:1**. Nothing below −0.99. Three arm
+fires, all profitable.
+
+### The two equity formulas disagreed — and it was a sampling race
+
+    cash + open_value            = 1002.1264
+    seed + realized + unrealized = 1002.1446     gap 0.0182
+
+They had agreed to 0.0001 every cycle all session. **994 sold half its position
+at 10:58:58**, one second into my query — so I read the positions table after
+the fill and `realized_pnl_usd` before its update. Three immediate re-reads:
+
+    pass 1  10:59:48   gap +0.0000
+    pass 2  10:59:48   gap +0.0000
+    pass 3  10:59:49   gap +0.0000
+
+**No defect.** Worth recording as an operational note: **the two formulas can
+disagree transiently when sampled during a trade.** A single disagreeing read
+is not a bug — re-measure before investigating. The cross-check did exactly
+what it is for: it flagged something rather than letting me publish a wrong
+equity figure.
+
+### Both fresh decisions reduced rather than dumped
+
+> *"Reduce half the long position to limit downside while keeping exposure; arm
+> full close if price breaches invalidation at 1411."* — 994 USDKRW
+
+> *"Holding the long position, arm a close at $514 to bank modest gains while
+> preserving upside toward the 4% target."* — 993 ZECUSDT
+
+`reduce` plus a protective arm, on both. Against the baseline that whole-book
+exits carried 91% of all measured loss, this is the intended verb.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 10:45Z · 991 GC completes a profitable lifecycle at +0.7261
 
 **Book:** equity **1002.1438**, profit **+2.1438 (+0.2144%)**. Realized
