@@ -25,6 +25,46 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🎯 THE TARGET, AND THE CORPUS MUST BE READ — 2026-08-07 (#280)
+>
+> **Owner:** *"AI Analysis & Macro & Desk & all project target is make plus
+> profit. Think always make plus profit."* and *"from tomorrow sooppiy and this
+> session must be ref RAG"*.
+>
+> **The target was stated to the DESK ONLY.** `symbol_research` picks the
+> fleet's entire universe and asked only for a DESCRIPTION — direction,
+> expected move, horizon, confidence — never what it is FOR. An analyst
+> optimising for "what will move" rather than "what will pay" sets a ceiling no
+> desk skill can lift. It now carries the same purpose, with the cost clause:
+> the round trip is **0.053%** of notional and one live run's largest
+> favourable excursion was **0.055%** — a "correct" thesis worth nothing.
+>
+> `trading_skills.MANDATE_CORE` is the single source of the wording, with a
+> **drift test** binding the desk and the research layer to it.
+>
+> **⚠️ MACRO IS DELIBERATELY EXCLUDED from the profit motive.** Its job is to be
+> ACCURATE. A macro read motivated to find profit produces confident bad
+> trades. Do not "fix" this by adding the mandate to `market_intel`.
+>
+> **FROM 2026-08-08 THE CORPUS IS READ, NOT JUST WRITTEN:**
+> - **Desk** — `run_engine._recall_line` puts past findings into the position
+>   brief, keyed on **SITUATION not symbol** (the give-back lesson is the same
+>   whether the symbol is ZC or ETHUSDT; keying on symbol returns notes about
+>   that ticker and misses every lesson). Labelled as past material so it can
+>   never read as live tape. Capped 2 hits / 700 chars, fail-soft,
+>   `DESK_RECALL_ENABLED=0` disables.
+> - **This session** — **search `desk_memory` BEFORE proposing any fix and say
+>   what it returned.** A finding already recorded must not be rediscovered as
+>   if it were new.
+>
+> Verified live: the desk now recalls its OWN behaviour from an hour earlier
+> ("The desk noticed its own give-back and held anyway…").
+>
+> **⚠️ SAME DURABILITY HOLE, AGAIN.** The automation-monitoring operating model
+> lived only in a local working checkout — never on main, exactly like the
+> handoff before it. Landed in #280. **When you add a rule, check it is on
+> `origin/main`, not just in the file you can see.**
+
 > ### 🎯 ARMS WERE A UNIT-CONVERSION BUG — 2026-08-07 01:45Z (#277)
 >
 > **The long-running "60+ arms authored, only two ever fired" has a mechanism.**
