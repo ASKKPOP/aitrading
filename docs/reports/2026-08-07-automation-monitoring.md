@@ -5,6 +5,46 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 04:45Z · arms are standing, not churning; 985 completed cleanly
+
+**Book:** equity **1000.6394**, profit **+0.6394 (+0.0639%)** — session high
+again. Realized +0.4967, unrealized +0.1426. Cadence **7/7 distinct minutes**.
+Nothing below −0.99.
+
+### The payoff test is still pending, and it is NOT a churn problem
+
+No tight arm has fired yet. Before calling that "too early" I checked the
+failure mode that would prevent it — the desk replacing arms every cycle so
+none lives long enough to be reached:
+
+    983  1 arm intent since 03:00     standing   1 min old
+    984  1 arm intent since 03:00     standing  55 min old
+    990  1 arm intent since 03:00     standing  42 min old
+    987  2 arm intents (moved once)   standing   3 min old
+    991  2 arm intents (moved once)   standing  35 min old
+
+**Arms are living 35-55 minutes.** Three runs have authored exactly one arm in
+an hour and three quarters. The absence of fires is the tape not reaching them,
+not churn.
+
+Two movements worth noting: **987 changed its arm from `close 1.0` to
+`reduce 0.5`** — toward the exit skill's preferred verb — and 991 trailed its
+level 4260 -> 4335 as price rose.
+
+### 985 completed a clean profitable lifecycle
+
+    status desk_retired   realized +0.2553   12 cycles
+
+Bought, scaled out in four halving exits, kept 91% of its true high-water mark,
+then **retired itself** and freed the slot. Entry through exit through
+retirement, all the desk's own decisions.
+
+### Nothing shipped
+
+Fifth consecutive cycle with no reproduced defect.
+
+---
+
 ## Cycle — 04:15Z · the arm clause landed — measured
 
 **Book:** equity **1000.5947**, profit **+0.5947 (+0.0595%)** — new session
