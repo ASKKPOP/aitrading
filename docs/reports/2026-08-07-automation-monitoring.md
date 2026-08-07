@@ -5,6 +5,48 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 11:15Z · the halving ladder pays for itself (measured)
+
+**Book:** equity **1002.1634**, profit **+2.1634 (+0.2163%)**. Realized
+**+2.0142**, unrealized +0.1492. Formulas agree exactly — the re-read guard
+added at 11:00Z did not need to fire. 8/10 runs, all on-slot, 8/8 distinct
+minutes. Shape **5.6:1**. Nothing below −0.99.
+
+### Three audits clean
+
+**pnl_audit** ok both days, ledger validated 71/71. **fill_audit** only the ZC
+flag cleared at 03:45Z. **ratchet_audit** 7 in-band reduces, **all post-fix,
+all survived, 0 flattened** — and 990 ZW now has a **five-step halving ladder**:
+
+    0.0270 -> 0.0135 -> 0.0068 -> 0.0034 -> 0.0014
+
+### Does the ladder pay for itself? Measured: yes
+
+Each reduce costs a fee, so a five-step ladder on a small position could
+plausibly be churn. Stating direction first — **fees are a COST, lower is
+better** — and then measuring:
+
+    6 trades, total fees          $0.002667
+    realized (NET of fees)        +$0.0303
+    gross before fees             +$0.0329
+    fees as a share of gross       8.1%
+
+And the fills:
+
+    buy  631.75
+    sell 632.00 / 632.25 / 633.50 / 635.25 / 634.00
+
+**Four of five reduces at successively better prices** — it scaled out into a
+rising market. An 8.1% fee drag on that is efficient, not churn.
+
+**The halving pattern is now validated economically, not just structurally.**
+Three runs found it independently (985, 990, 981), 985 kept 91% of its
+high-water mark with it, and 990 shows the fee arithmetic works at small size.
+
+### Nothing shipped
+
+---
+
 ## Cycle — 11:00Z · realized crosses +2.00; an equity cross-check earns its keep
 
 **Book:** equity **1002.1264**, profit **+2.1264 (+0.2126%)**. **Realized
