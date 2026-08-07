@@ -90,7 +90,30 @@ TARBALL=$(mktemp -t sooppiy-app.XXXXXX).tgz
 trap 'rm -f "$TARBALL"' EXIT
 say "packing $MAIN_SHA"
 git archive --format=tar.gz -o "$TARBALL" HEAD
-scp -q -i "$SSH_KEY" "$TARBALL" "$SSH_HOST:/tmp/sooppiy-deploy.tgz"
+
+# The bulk upload is the one step that fails on a flaky path: 2026-08-06 saw
+# three of four deploys die here with `message authentication code incorrect`
+# or `connection reset by peer` — corrupted packets during the ~7MB transfer,
+# not a fault on the box. Everything before this point is read-only and
+# everything after is guarded, so a bounded retry here is safe and turns a
+# hand-retried deploy back into a mechanical one.
+UPLOAD_TRIES=${SOOPPIY_UPLOAD_TRIES:-4}
+for attempt in $(seq 1 "$UPLOAD_TRIES"); do
+  if scp -q -o ConnectTimeout=30 -o ServerAliveInterval=15 \
+         -o ServerAliveCountMax=4 -i "$SSH_KEY" \
+         "$TARBALL" "$SSH_HOST:/tmp/sooppiy-deploy.tgz"; then
+    break
+  fi
+  [ "$attempt" -eq "$UPLOAD_TRIES" ] && die "upload failed after $UPLOAD_TRIES attempts"
+  say "upload attempt $attempt failed; retrying in $((attempt * 5))s"
+  sleep $((attempt * 5))
+done
+
+# A truncated tarball would extract a partial tree and build a broken image.
+LOCAL_SUM=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+REMOTE_SUM=$($SSH "sha256sum /tmp/sooppiy-deploy.tgz | awk '{print \$1}'")
+[ "$LOCAL_SUM" = "$REMOTE_SUM" ] || die "tarball checksum mismatch after upload"
+say "upload verified $LOCAL_SUM"
 
 TS=$(date -u +%Y%m%d-%H%M%S)
 say "swapping app/ (backup app.prev-$TS)"
