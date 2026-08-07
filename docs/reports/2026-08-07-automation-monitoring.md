@@ -5,6 +5,43 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 07:45Z · stagger verified at full fleet size; three audits clean
+
+**Book:** equity **1001.5940**, profit **+1.5940 (+0.1594%)**. Realized
+**+1.2891**, unrealized +0.3048. Nothing below −0.99.
+
+### The newborns separated exactly as predicted
+
+    992 HYPEUSDT  07:14:52   slot :14   on-slot
+    993 ZECUSDT   07:21:11   slot :21   on-slot
+    994 USDKRW    07:28:16   slot :28   on-slot
+
+**All 10 runs on-slot; distinct cycle-minutes 10/10.** This is the first test of
+the stagger at FULL fleet size — it was designed and verified at 6-8 runs. Ten
+runs, ten distinct slots, no collisions.
+
+### Three audits, all clean
+
+**pnl_audit** — ok both days; ledger validated **71/71** against the platform's
+own stored `realized_pnl_usd`. The −0.11 delta on 2 flattens is the known
+`adapt realized` flatten omission, in tolerance.
+
+**ratchet_audit** — 3 in-band reduces on run 990 ZW, **all post-fix, all
+survived, 0 flattened**. The shape is worth noting: **0.0270 -> 0.0135 ->
+0.0068**, halving each time — the same scale-out pattern that produced 985's
+best-on-book 91% retention. A second run has now found it independently.
+
+**fill_audit** — only the single ZC flag already investigated and cleared at
+03:45Z (the mark demonstrably moved between the two fills). No new flags.
+
+### Nothing shipped
+
+Deployed only to sync five cycles of notes into the corpus — monitoring chunks
+had been stuck at 478 since the cryptobreadth deploy, and the read-obligation
+starts 2026-08-08.
+
+---
+
 ## Cycle — 07:05Z · full fleet trading; newborns share their first tick as designed
 
 **Book:** equity **1001.5916**, profit **+1.5916 (+0.1592%)**. Realized
