@@ -5,6 +5,60 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 03:00Z · the dashboard was lying about profit, in both directions
+
+**Book:** realized **+0.5327** (was +0.4042). Two runs closed ENTIRELY at their
+peak — `peak == realized` for both — quoting the mandate almost verbatim:
+
+> *"Close the entire long position now to lock the modest profit and avoid the
+> automatic give-back floor that would otherwise erase it."* — 985 ZC, +0.2553
+> *"Close the long position to lock the small profit after most of the earlier
+> gain was given back."* — 981 SI, +0.1370
+
+984 HG banked +0.2574 of a +0.3463 peak (74%). Cadence 8/8. Nothing below −0.99.
+
+### My equity formula was wrong, and chasing it found a real bug
+
+I had been reporting equity as `cash + (seed - cash) + unrealized`. That
+collapses to `seed + unrealized` — **it ignores realized entirely.** True
+equity was **1000.51**, not the ~1000.0 I reported for several cycles. The book
+was doing better than I said. Fifth measurement error of this class today.
+
+Chasing it found that **the platform is wrong too, three different ways:**
+
+| path | reports | error |
+|---|---|---|
+| **truth** | **+0.51 (+0.05%)** | — |
+| public profile `cash - seed` | **−29.04 (−2.9%)** | −29.55 |
+| leaderboard SQL `cash + notional - seed` | **+30.09 (+3.0%)** | +29.58 |
+
+**The same agent read DOWN 2.9% on one page and UP 3.0% on another.** Both
+errors are exactly the leverage gap (notional − margin = 29.58 at 2×).
+
+**Cause.** `agents.cash` has only the MARGIN deducted — the identity
+`seed − margin + realized = cash` holds to 0.0001 on prod. The profile
+subtracted nothing back (booking every deployed dollar as a loss); the SQL
+added back the whole NOTIONAL (booking borrowed money as profit).
+
+**Fix (#288).** A position is worth its **margin plus unrealized P&L**. At
+leverage 1 that equals the old expression, so spot books do not move — pinned
+by a test. The expression was inlined **four times across two files**, which is
+how three versions drifted; it now lives once in `portfolio_value.py` with a
+Python mirror beside the SQL.
+
+Verified live 3×: product reports +0.4777, cross-check `realized + unrealized`
+= +0.4775.
+
+**This is the same class as #268** (an agent reading −99% on zero trades).
+Anything deriving profit from `cash` alone is suspect on a leveraged book.
+
+### 983 is still dead capital
+
+9 cycles, 1 trade, peak = 1.0× a round trip, not retired. Its arm is still
+13.7× beyond its excursion. Unchanged since 02:45 — the watch continues.
+
+---
+
 ## Cycle — 02:45Z · the desk banked hard; my arm clause did not land
 
 **Book:** equity 1000.15. **Realized +0.4042 — up from +0.1655 in one cycle.**
