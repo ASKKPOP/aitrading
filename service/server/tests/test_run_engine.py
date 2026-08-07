@@ -1690,6 +1690,90 @@ class LossVerdictBriefTests(unittest.TestCase):
                       "loss verdict not wired into the position brief")
 
 
+class DeskRecallTests(unittest.TestCase):
+    """Owner, 2026-08-07: "from tomorrow sooppiy and this session must be ref
+    RAG". Until now the corpus only accumulated — the desk filled it and never
+    read it back."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "r.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        self.mem.remember(
+            "monitoring", "notes.md#giveback", "Give-back",
+            "Every losing run was in profit first: peaks of 34-49% were given "
+            "back before the loss, and the arm that would have banked them sat "
+            "further away than the tape had ever moved.")
+        self.mem.remember(
+            "monitoring", "notes.md#fees", "Fee hurdle",
+            "A flat fee needs a move of at least 2.40% before a round trip "
+            "pays for itself, so a thesis under that is not an opportunity.")
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_ENABLED", None)
+        self.tmp.cleanup()
+
+    def test_a_giving_back_position_recalls_the_give_back_lesson(self):
+        run = {"market": "crypto", "peak_pnl_usd": 1.0}
+        line = run_engine._recall_line(run, {"unrealized": 0.2}, pos_qty=5)
+        self.assertIn("given back", line)
+        self.assertIn("NOT live tape", line,
+                      "past findings must never read as current tape")
+
+    def test_a_flat_run_recalls_the_entry_question_not_the_exit_one(self):
+        run = {"market": "crypto"}
+        line = run_engine._recall_line(run, {}, pos_qty=0)
+        self.assertIn("2.40%", line, "the fee hurdle is the flat-run lesson")
+
+    def test_the_query_is_built_from_situation_not_symbol(self):
+        """Keying on the symbol would return notes about that ticker and miss
+        every lesson that actually applies."""
+        run = {"market": "crypto", "symbol": "ZC", "peak_pnl_usd": 1.0}
+        q = run_engine._recall_query(run, {"unrealized": 0.2}, pos_qty=5)
+        self.assertNotIn("ZC", q)
+        self.assertIn("give-back", q)
+
+    def test_an_empty_corpus_is_silent(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM desk_memory")
+            conn.commit()
+        finally:
+            conn.close()
+        self.assertEqual(
+            run_engine._recall_line({"market": "crypto"}, {}, 0), "")
+
+    def test_recall_can_be_switched_off(self):
+        os.environ["DESK_RECALL_ENABLED"] = "0"
+        self.assertEqual(
+            run_engine._recall_line({"market": "crypto"}, {}, 0), "")
+
+    def test_a_broken_corpus_never_blocks_a_cycle(self):
+        with patch("desk_memory.search", side_effect=RuntimeError("corpus down")):
+            self.assertEqual(
+                run_engine._recall_line({"market": "crypto"}, {}, 0), "")
+
+    def test_recall_is_bounded(self):
+        for i in range(20):
+            self.mem.remember("monitoring", f"n{i}.md#x", f"n{i}",
+                              "the run gave back its peak and the arm was too "
+                              f"far away to bank anything at all, case {i}")
+        line = run_engine._recall_line(
+            {"market": "crypto", "peak_pnl_usd": 1.0}, {"unrealized": 0.2}, 5)
+        self.assertLessEqual(line.count("\n- "), run_engine._RECALL_MAX)
+        self.assertLess(len(line), run_engine._RECALL_MAX * (run_engine._RECALL_CHARS + 200))
+
+    def test_it_is_wired_into_the_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._position_state_line)
+        self.assertIn("_recall_line(run, pnl, pos_qty)", src,
+                      "corpus recall not wired into the position brief")
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done

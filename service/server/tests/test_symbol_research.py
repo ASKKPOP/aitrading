@@ -725,6 +725,40 @@ class PolicyFeedTests(unittest.TestCase):
             self.assertIsNone(psych_feed.fetch_cnn_fear_greed())
 
 
+
+class ResearchMandateTests(unittest.TestCase):
+    """Owner, 2026-08-07: "AI Analysis & Macro & Desk & all project target is
+    make plus profit." The research layer picks the fleet's whole universe and
+    was asked only to DESCRIBE what might move."""
+
+    def test_the_research_prompt_states_the_purpose(self):
+        import symbol_research
+        m = symbol_research._research_mandate()
+        self.assertIn("YOUR PURPOSE IS REALIZED PROFIT", m)
+        self.assertIn("round-trip cost", m,
+                      "a move that does not clear its cost is not an "
+                      "opportunity — that clause is the whole point")
+
+    def test_the_desk_and_research_state_the_same_purpose(self):
+        """One purpose in one wording. If these drift, the layer that picks
+        the universe and the layer that trades it are optimising for
+        different things."""
+        import symbol_research
+        import trading_skills
+        core = "YOUR PURPOSE IS REALIZED PROFIT"
+        self.assertTrue(trading_skills.MANDATE_CORE.startswith(core))
+        self.assertTrue(trading_skills._HEADER.startswith(core))
+        self.assertTrue(symbol_research._research_mandate().startswith(core))
+
+    def test_it_is_wired_into_the_thesis_prompt(self):
+        """A mandate that is never concatenated passes every other test."""
+        import inspect
+
+        import symbol_research
+        src = inspect.getsource(symbol_research)
+        self.assertIn("_research_mandate() +", src,
+                      "research mandate not wired into the thesis prompt")
+
 if __name__ == "__main__":
     unittest.main()
 
