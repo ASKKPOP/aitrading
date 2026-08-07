@@ -5,6 +5,79 @@ Ground state: owner reset the balance to **1000** and cleared all history at
 
 ---
 
+## Cycle — 22:00Z · "fix all issued for 24hours monitoing" — the ADBE floor evasion (#324)
+
+**Book:** equity **1000.93**, profit **+0.93 (+0.093%)**. 10/10 runs, all
+on-slot. Shape degraded **7.0:1 → 1.4:1** across the ~9 unattended hours —
+degraded by exactly the defect this cycle fixed. Nothing below −0.99. Zero
+tracebacks.
+
+Owner asked to fix everything degrading 24-hour unattended monitoring. Triage
+of the four candidates:
+
+1. **`adapt realized` flatten omission — ALREADY FIXED.** My memory note said
+   "UNFIXED"; `pnl_audit.py`'s ledger replay (71/71 validated) exists precisely
+   to correct it. The note was stale, not the code. Corrected before "fixing" a
+   fixed thing.
+2. **Alpha Vantage rate-limit errors — NOT A DEFECT.** AV is the *fallback*;
+   FMP primary healthy, macro snapshots 8 minutes fresh. Noise from an
+   exhausted free tier. Untouched.
+3. **The real 24h defect — a loss-stopped symbol rebuilt instantly evades the
+   −0.99 floor.** Shipped as #324 (below).
+4. **`astro: command not found` on every deploy — STILL OPEN.** Marketing-site
+   build only; backend/worker/SPA deploy first, so trading is unaffected, but
+   marketing pages have not rebuilt all day.
+
+### The finding: no single run crossed the floor — the SYMBOL did
+
+Three consecutive ADBE runs in seven hours:
+
+    999   trailing_lock  −0.4024
+    1000  trailing_lock  −0.2065   after ONE cycle
+    1001  rebuilt 34 SECONDS later  −0.6925 (still running at report time)
+    ─────────────────────────────────────────
+    combined                        −1.30
+
+Each run stayed under −0.99; the rebuild reset the loss meter each time. A
+`stop_event` loss retirement set **no symbol cooldown** — only `idle_retired`
+and liquidation did — so the planner rebuilt the same losing thesis within
+seconds, fresh floor attached.
+
+### The fix (#324) — vary-on-loss
+
+`LOSS_SYMBOL_COOLDOWN_HOURS = 6` in `fleet_planner.py`; `fleet_supervisor.py`
+writes the cooldown when a `stop_event:` retirement has `realized < 0`. Gated
+on the sign deliberately: a *profitable* trailing-lock stop is the exit ladder
+working, and benching that symbol would punish success — mutation-tested by
+`test_profitable_stop_does_NOT_cool_its_symbol`. 6h < idle's 12h on purpose: a
+losing thesis can become right again intraday; an un-actionable symbol usually
+cannot. Fail-before verified, 3667 pass, ruff clean, deployed
+`20260807-losscooldown2`, `LOSS_SYMBOL_COOLDOWN_HOURS = 6` confirmed in the
+running worker 3×.
+
+### ⚠️ Near-miss: I merged the WRONG PR first
+
+My PR was created as **#324** but I ran `gh pr merge 323` — #323 was **another
+session's work** merged into this repo during the 9-hour gap ("run cards speak
+the reader's language"). The first `losscooldown` deploy shipped main
+**without my fix** and passed the parity gate legitimately, because main
+really didn't have it. Caught on post-deploy verification (the constant was
+absent from the running image), merged #324, redeployed. Recorded as a handoff
+trap: read the PR number off the create output, and re-verify it immediately
+before merge — parallel sessions land on the same main.
+
+**Watch:** whether the ADBE chain is actually broken — 1001 still running at
+−0.6925 (70% of floor); when it stops at a loss, `fleet_symbol_cooldowns` must
+gain an ADBE row and the planner must vary. Also unverified low-priority
+observation: a live SOLUSDT cooldown row expiring at T+12h suggests an earlier
+adapt_retire used the idle path; not chased.
+
+**Still stale:** the arm skill says "only three ever fired" but there are now
+5 fires (all profitable, all near). The test asserts the exact figure — the
+next skill edit must update both together.
+
+---
+
 ## Cycle — 12:45Z · my deploy burned a research bucket (explained, not shipped)
 
 **Book:** equity **1002.0609**, profit **+2.0609 (+0.2061%)**. Realized

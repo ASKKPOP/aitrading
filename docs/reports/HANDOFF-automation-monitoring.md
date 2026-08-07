@@ -25,6 +25,42 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🛡️ VARY-ON-LOSS: A LOSS-STOPPED SYMBOL MUST COOL DOWN — 2026-08-07 (#324)
+>
+> A `stop_event` loss retirement set **no symbol cooldown** (only idle and
+> liquidation did), so the planner rebuilt the same losing thesis within
+> seconds — **with a fresh −0.99 loss meter**. Measured: three consecutive
+> ADBE runs (999 −0.40, 1000 −0.21 after one cycle, 1001 rebuilt **34
+> seconds** later, −0.69) lost **−1.30 combined** in seven hours. No single
+> run crossed the owner's floor; the symbol did. Fix:
+> `LOSS_SYMBOL_COOLDOWN_HOURS = 6` written by `fleet_supervisor` when a
+> `stop_event:` retirement has `realized < 0`. **The sign gate is
+> load-bearing** — a profitable trailing-lock stop is the exit ladder
+> working, and a mutation test (`test_profitable_stop_does_NOT_cool_its_
+> symbol`) pins it. 6h < idle's 12h on purpose: a losing thesis can become
+> right again intraday.
+>
+> ### ⚠️ PARALLEL SESSIONS: VERIFY THE PR NUMBER BEFORE MERGE — 2026-08-07
+>
+> I created **#324** and ran `gh pr merge 323` — #323 was **another
+> session's PR**, merged during a 9-hour gap. The deploy then shipped main
+> **without my fix and passed every gate legitimately** (parity to
+> origin/main held; main really lacked the change). Only post-deploy
+> verification — grepping the running image for the new constant — caught
+> it. Rules: (1) read the PR number off the `gh pr create` output, never
+> assume the next integer; (2) `gh pr view <n>` immediately before merge
+> and check the TITLE is yours; (3) post-deploy verification must assert
+> the CHANGE is present, not just that the deploy succeeded.
+>
+> ### ✅ THE ADAPT-FLATTEN OMISSION IS FIXED — MEMORY SAID OTHERWISE — 2026-08-07
+>
+> A Claude-side memory note still says the `adapt realized` query's
+> flatten omission is "UNFIXED". **`pnl_audit.py` IS the fix** — a full
+> ledger replay validated 71/71, with a drift column watching exactly this.
+> When memory and the repo disagree, the repo wins (rule 3 above); check
+> the module's docstring before re-fixing anything an audit tool already
+> owns.
+>
 > ### 🔒 run_events SEQ ALLOCATION NEEDED A ROW LOCK — 2026-08-07 (#319)
 >
 > `_emit_event` did a plain `SELECT last_event_seq`, +1, INSERT — **no lock**.
