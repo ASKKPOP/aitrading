@@ -262,15 +262,37 @@ def _emit_event(cursor, run_id: int, event_type: str, payload: dict) -> int:
     trading_runs.last_event_seq in the same transaction (crash-safe seq
     recovery: a reclaiming worker re-reads last_event_seq, never a stale
     in-memory counter)."""
+    # INCREMENT FIRST, then read. The UPDATE takes the row lock, so a second
+    # writer on the same run blocks here until this transaction commits.
+    #
+    # WHY (2026-08-07). This used to SELECT the counter, add one, and INSERT —
+    # a plain read with no lock. Two writers on one run read the same value and
+    # collided on the unique index:
+    #
+    #     (1062, "Duplicate entry '981-191' for key uq_run_events_run_seq")
+    #     (1062, "Duplicate entry '983-784' for key uq_run_events_run_seq")
+    #
+    # Twice in one session, in different containers, and the second came only
+    # after the fleet grew from 6 runs to 10 — two writers per run (the cycle,
+    # and the arm executor firing BETWEEN cycles) make it likelier the busier
+    # the desk gets. Impact was contained both times because the loser was a
+    # fail-soft telemetry row and trades ride their own transaction — 73 trade
+    # events against 73 signals, no seq gaps on any run — but the collision was
+    # luck about WHICH writer lost, not design.
+    #
+    # UPDATE-then-SELECT is dialect-neutral: it takes a row lock on both MySQL
+    # and SQLite, unlike `SELECT ... FOR UPDATE`, which SQLite cannot parse.
+    cursor.execute(
+        "UPDATE trading_runs SET last_event_seq = COALESCE(last_event_seq, 0) + 1"
+        " WHERE id = ?", (run_id,))
     cursor.execute("SELECT last_event_seq FROM trading_runs WHERE id = ?", (run_id,))
     row = cursor.fetchone()
-    seq = int(row["last_event_seq"] or 0) + 1 if row else 1
+    seq = int(row["last_event_seq"]) if row and row["last_event_seq"] else 1
     cursor.execute(
         """INSERT INTO run_events (run_id, seq, event_type, ts, payload)
            VALUES (?, ?, ?, ?, ?)""",
         (run_id, seq, event_type, _now_iso(), json.dumps(payload)),
     )
-    cursor.execute("UPDATE trading_runs SET last_event_seq = ? WHERE id = ?", (seq, run_id))
     return seq
 
 

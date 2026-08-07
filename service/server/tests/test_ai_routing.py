@@ -38,12 +38,38 @@ class AiRoutingTests(unittest.TestCase):
 
     def test_quiet_cycles_never_call_the_model(self):
         """No triggers means light regardless — spending a call to confirm
-        silence would defeat the entire point."""
+        silence would defeat the entire point.
+
+        The trigger sources are patched OFF rather than left to the
+        environment. This test asserted "no triggers means light" while only
+        ever checking "the environment happens to be quiet": on 2026-08-07 it
+        began failing because `active_event_window()` was genuinely true (a
+        macro release window), so `full` was CORRECT and the test was wrong.
+        A test that fails during every macro event window teaches people to
+        ignore failures."""
         called = []
-        with patch("llm_client.generate_text", side_effect=lambda *a, **k: called.append(1)):
+        with patch("llm_client.generate_text", side_effect=lambda *a, **k: called.append(1)), \
+             patch("market_events.active_event_window", return_value=None), \
+             patch("regime.current_regime_state", return_value=None), \
+             patch("hot_issue_daemon.recent_hot_issue", return_value=False):
             out = run_engine._classify_situation({**RUN, "market": "us-stock"}, {})
+        self.assertEqual(out["triggers"], [], "the test environment supplied a "
+                                              "trigger; this test must control "
+                                              "its own inputs")
         self.assertEqual(out["route"], "light")
         self.assertEqual(called, [], "a quiet cycle must cost nothing")
+
+    def test_a_real_trigger_still_routes_full(self):
+        """The mirror of the above: with a live event window the route MUST be
+        full. Without this, patching the triggers off could hide a regression
+        that makes everything light."""
+        with patch("market_events.active_event_window",
+                   return_value={"event": "CPI"}), \
+             patch("regime.current_regime_state", return_value=None), \
+             patch("hot_issue_daemon.recent_hot_issue", return_value=False):
+            out = run_engine._classify_situation({**RUN, "market": "us-stock"}, {})
+        self.assertIn("event_window", out["triggers"])
+        self.assertEqual(out["route"], "full")
 
     def test_desk_can_downgrade_ambient_triggers_to_light(self):
         """The prod failure: market-wide flags forcing the six-call path on a
