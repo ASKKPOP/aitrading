@@ -121,3 +121,34 @@ Mapping the standard claims onto what this platform actually does:
 
 - Phase 0 (this document) — done.
 - Phase 1 (chunking) — next.
+
+## 8. External design references (2026-08-07)
+
+`tradermonty/claude-trading-skills` (MIT) — the repo the catalogue has mined
+four times — contains a *manual* version of exactly the loop this plan
+automates. Worth reading when building Phases 1–3; none of it ports as code:
+
+- **`trader-memory-core`** — a thesis's full lifecycle (screening idea →
+  active → closed → postmortem) as first-class state, with review due-dates
+  and MAE/MFE attached at close. Our `desk_memory` rows are flat findings;
+  the lifecycle framing is the chunking model Phase 1 wants: a chunk is a
+  *thesis episode with an outcome*, not a paragraph.
+- **`signal-postmortem`** — every closed signal is scored false-positive /
+  missed / regime-mismatch, and the verdicts feed aggregator *weights*, not
+  prose. That is Phase 3's daemon in manual form: outcomes adjust retrieval
+  weight per situation class.
+- **`edge-signal-aggregator` → `edge-strategy-reviewer` pipeline** — signals
+  carry per-source reliability weights that decay when postmortems go
+  against them. The decay rule (weights fall on evidence, never on opinion)
+  is the guard Phase 3 needs against the overfitting risk in §6.
+
+Two adjacent ideas parked here so they are not rediscovered:
+
+- **13F / theme / sector trackers** (`institutional-flow-tracker`,
+  `theme-detector`, `sector-analyst`) are data feeds, not judgment — if ever
+  wanted they follow the psych/regime daemon pattern into a desk brief, not
+  the skills registry.
+- **`residual-edge-analyzer`** — OLS attribution separating a return series
+  into baseline exposure vs. residual edge. A future `backtest_gate.py`
+  quality gate ("is this thesis's replay P&L just beta?"), not a prompt
+  skill.
