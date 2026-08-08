@@ -1207,6 +1207,98 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "health."
         ),
     },
+    # ── tradermonty offense mining (2026-08-07, owner: "do") ───────────────
+    # Two more judgment skills distilled from tradermonty/claude-trading-skills
+    # (MIT). pead-drift merges stockbee-episodic-pivot-analyzer +
+    # pead-screener + earnings-trade-analyzer into the catalogue's first
+    # OFFENSIVE playbook (the defaults are otherwise almost all gates);
+    # parabolic-exhaustion distills parabolic-short-trade-planner into a
+    # short-side gate for the books that can short. Method only, per the
+    # standing rule — their FMP screeners and intraday FSMs are agent
+    # tooling, not prompt material. Both adapted to the data the desk
+    # actually sees (return_5d/volume_ratio/sigma/news items; no weekly
+    # candles, no borrow/SSR mechanics).
+    {
+        "slug": "pead-drift",
+        "name": "Post-Earnings Drift",
+        "description": ("Post-earnings underreaction: qualify a real "
+                        "surprise (discrete catalyst + decisive move + "
+                        "volume shock), then trade the weeks-long drift — "
+                        "pullback-resumption entry, stop under the "
+                        "pullback, time-boxed edge."),
+        "prompts": ["trader"],
+        "markets": ["us-stock"],
+        "priority": 18,
+        "body": (
+            "A strong earnings reaction is not a missed trade — it is "
+            "usually the START of one. Markets systematically underreact "
+            "to genuine earnings surprises: after a decisive gap on a real "
+            "catalyst, the odds favor continued drift in the gap's "
+            "direction for the following weeks, and fading it by reflex is "
+            "trading against that tendency. First qualify the event from "
+            "the data shown — all three, not any one: a discrete catalyst "
+            "in the news (beat-and-raise, guidance raise, first clear "
+            "acceleration — a raise outranks a bare beat, and an analyst "
+            "nod or story headline alone ranks lowest), a decisive move "
+            "(a day or 5-day return well beyond this name's ordinary "
+            "volatility), and a volume shock (volume well above normal on "
+            "the reaction). Any mention of dilution, an offering, an "
+            "investigation, or an executive departure disqualifies the "
+            "event no matter how price first reacts. Then trade the "
+            "drift's discipline, not its excitement: chasing far above "
+            "the gap buys someone else's exit — the highest-odds entry is "
+            "the first orderly pullback that HOLDS above the gap area, "
+            "taken on resumption through the pullback's high, with the "
+            "stop below the pullback's low. If that low breaks, the "
+            "institutional support the pattern implies was never there: "
+            "the read is void, not 'early'. Respect the clock — the drift "
+            "is strongest in the first two to three weeks and spent by "
+            "five or six; past that window the print is history, not a "
+            "thesis. The tendency is symmetric: a decisive DOWN gap on a "
+            "real negative surprise drifts lower, and a post-miss name "
+            "that looks cheap is drifting, not discounted."
+        ),
+    },
+    {
+        "slug": "parabolic-exhaustion",
+        "name": "Parabolic Exhaustion Short",
+        "description": ("Shorting a vertical move needs exhaustion "
+                        "EVIDENCE (acceleration, extension, volume climax, "
+                        "range expansion, crowding) plus a failure "
+                        "trigger; stop above the high, reduced size, "
+                        "cover into the flush."),
+        "prompts": ["trader"],
+        "markets": ["crypto", "futures"],
+        "priority": 28,
+        "body": (
+            "Shorting a vertical move is the fastest way to donate a book "
+            "to a trend, so 'this is parabolic' is a claim that requires "
+            "EVIDENCE, not a feeling of too-high. A true blow-off shows "
+            "most of these at once in the data shown: an accelerating "
+            "slope (recent gains far outrunning the earlier trend's pace), "
+            "price stretched above its short averages by multiples of its "
+            "ordinary volatility, a volume climax on the push, range "
+            "expansion well beyond recent sessions, and — where "
+            "positioning is shown — crowded longs paying rich funding. "
+            "Fewer than most is not exhaustion, it is strength: stand "
+            "aside; the reversion-requires-a-range rule applies. Even "
+            "with the evidence, never short the vertical itself — "
+            "strength can double before it breaks, and a squeeze feeds on "
+            "early shorts. Demand a failure trigger first: the first "
+            "lower high, a break of the prior session's low, or a "
+            "recovery attempt that fails below the high. Only then "
+            "structure the short, with the stop above the blow-off high — "
+            "that is the level whose reclaim voids the exhaustion read — "
+            "and at smaller size than a trend trade, because the losing "
+            "side of a parabolic short is fast and open-ended. Take "
+            "profit into the first violent flush rather than after it: "
+            "that flush is most of the trade, and covering into panic "
+            "beats round-tripping the bounce. Never add to a parabolic "
+            "short that is being squeezed on the reasoning that it is "
+            "'even more parabolic now' — that is the market saying the "
+            "top is not in."
+        ),
+    },
 ]
 
 _BASE_BY_SLUG = {s["slug"]: s for s in BASE_SKILLS}

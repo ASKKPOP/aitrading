@@ -475,6 +475,29 @@ class RegistryTests(_Db):
             slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
             self.assertNotIn("breadth-context", slugs)
 
+    def test_tradermonty_offense_skills_ride_their_trader_blocks(self):
+        # tradermonty mining (2026-08-07): pead-drift is a us-stock
+        # post-earnings entry method (EP/PEAD — the catalogue's first
+        # offensive playbook); parabolic-exhaustion gates shorts on the
+        # books that can actually short (crypto perps + futures). Each must
+        # render (not be budget-skipped) in exactly its own markets' trader
+        # blocks and stay off every other site.
+        us = trading_skills.skills_block("trader", "us-stock")
+        self.assertIn("### Post-Earnings Drift\n", us)
+        self.assertNotIn("### Parabolic Exhaustion Short\n", us)
+        for market in ("crypto", "futures"):
+            block = trading_skills.skills_block("trader", market)
+            self.assertIn("### Parabolic Exhaustion Short\n", block, market)
+            self.assertNotIn("### Post-Earnings Drift\n", block, market)
+        for market in (None, "forex"):
+            block = trading_skills.skills_block("trader", market)
+            self.assertNotIn("### Post-Earnings Drift\n", block, market)
+            self.assertNotIn("### Parabolic Exhaustion Short\n", block, market)
+        for site in ("light", "verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("pead-drift", slugs)
+            self.assertNotIn("parabolic-exhaustion", slugs)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],
