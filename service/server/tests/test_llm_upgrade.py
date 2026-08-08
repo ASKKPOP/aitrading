@@ -369,7 +369,7 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
                 return types.SimpleNamespace(content=[block])
 
         class FakeClient:
-            def __init__(self, api_key, base_url=None):
+            def __init__(self, api_key, base_url=None, **client_kw):
                 self.messages = FakeMessages()
 
         fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
@@ -397,7 +397,7 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
                 return types.SimpleNamespace(content=[block])
 
         class FakeClient:
-            def __init__(self, api_key, base_url=None):
+            def __init__(self, api_key, base_url=None, **client_kw):
                 seen["base_url"] = base_url
                 self.messages = FakeMessages()
 
@@ -458,7 +458,7 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
                 return types.SimpleNamespace(content=[block])
 
         class FakeClient:
-            def __init__(self, api_key, base_url=None):
+            def __init__(self, api_key, base_url=None, **client_kw):
                 self.messages = FakeMessages()
 
         fake_mod = types.SimpleNamespace(Anthropic=FakeClient, BadRequestError=FakeBadRequestError)
