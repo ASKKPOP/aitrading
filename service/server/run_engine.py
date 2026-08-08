@@ -3310,10 +3310,18 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         return ""
     try:
         import desk_memory
-        hits = desk_memory.search(_recall_query(run, pnl, pos_qty),
+        query = _recall_query(run, pnl, pos_qty)
+        hits = desk_memory.search(query,
                                   kind="monitoring",
                                   market=str(run.get("market") or "") or None,
                                   limit=_RECALL_MAX)
+        # Guarded HERE as well as inside the capture: a journal that raises
+        # would otherwise fall to the outer handler and silently strip the
+        # desk's recall — a degradation, not the no-op fail-soft demands.
+        try:
+            _recall_capture(run.get("id"), query, hits)
+        except Exception:  # noqa: BLE001
+            pass
         if not hits:
             return ""
         out = ["What this desk has already learned about cycles like this "
@@ -3326,6 +3334,58 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         return "\n".join(out) + "\n"
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
+
+
+# ── Phase 3(a): journal WHAT recall injected (plan 22 §5, §7) ─────────────
+# Retrieval weights can only be learned from VARIANCE in what was retrieved,
+# and until now nothing recorded which chunks a decision actually saw: the
+# corpus knew what it held, the journal knew what was decided, and no row
+# joined the two. This captures the chunk identities the brief carried so the
+# attribution dataset (increment b) has a left side to join outcomes onto.
+# Journal-only — no prompt, gate, size or order reads any of it.
+_RECALL_JOURNAL: dict[int, dict] = {}
+
+
+def _recall_reset(run_id) -> None:
+    """Forget any earlier capture for this run, before the brief is built.
+
+    Load-bearing: `_recall_line` runs only when a run is HOLDING, so without
+    this a flat cycle would emit the previous cycle's chunks as its own — the
+    exact mislabelling that would teach the weights the wrong lesson."""
+    try:
+        _RECALL_JOURNAL.pop(int(run_id), None)
+    except (TypeError, ValueError):
+        pass
+
+
+def _recall_capture(run_id, query: str, hits: list) -> None:
+    """Record the retrieval this cycle performed.
+
+    Empty hits are recorded as an EMPTY list, never as absence: a decision
+    that recalled nothing is the control group the attribution needs, and it
+    has to be distinguishable from a cycle where recall never ran."""
+    try:
+        rid = int(run_id or 0)
+        if not rid:
+            return
+        _RECALL_JOURNAL[rid] = {
+            "query": (query or "")[:300],
+            "chunks": [{"sha": h.get("sha"), "kind": h.get("kind"),
+                        "source": h.get("source"), "score": h.get("score")}
+                       for h in (hits or [])],
+        }
+    except Exception:  # noqa: BLE001 — telemetry must never cost a cycle
+        pass
+
+
+def _take_recall_journal(run_id):
+    """Pop this run's capture. Popping rather than reading is deliberate: a
+    cycle that recalled but never reached a decision must not have its chunks
+    attributed to the NEXT decision."""
+    try:
+        return _RECALL_JOURNAL.pop(int(run_id or 0), None)
+    except (TypeError, ValueError):
+        return None
 
 
 def _excursion_scale_line(run: dict, pnl: dict, peak: "float | None") -> str:
@@ -3989,6 +4049,10 @@ def run_cycle(run_id: int) -> dict:
                                   "triggers": (route or {}).get("triggers")
                                   if isinstance(route, dict) else None})
 
+        # Phase 3(a): whatever recall this cycle performs is captured while the
+        # brief is built and emitted beside the decision below. Cleared first
+        # so a cycle that never recalls cannot inherit the last one's chunks.
+        _recall_reset(run_id)
         if is_fleet_run and cycle_mode == "light":
             # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
             # everything below (gates, budget cap, fence) is byte-identical.
@@ -4065,6 +4129,18 @@ def run_cycle(run_id: int) -> dict:
                               # there is a count before anyone argues from it.
                               **_conviction_divergence(confidence, conviction),
                               "report": (decision.get("report") or "")[:1000]})
+
+        # Phase 3(a): what the desk was shown from its own corpus when it made
+        # that call. Absent when this cycle never recalled (a flat run has no
+        # position brief); present with an empty `chunks` when it recalled and
+        # the corpus had nothing — those are different rows, and the second is
+        # the control group the attribution needs.
+        recalled = _take_recall_journal(run_id)
+        if recalled is not None:
+            emit_telemetry_event(run_id, "recall",
+                                 {"cycle": seq, "action": action,
+                                  "query": recalled.get("query"),
+                                  "chunks": recalled.get("chunks")})
 
         # AI-authored order parameters (2026-07-27). Parsed and railed here,
         # journaled either way; whether they change the order is

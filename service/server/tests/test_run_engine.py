@@ -1774,6 +1774,98 @@ class DeskRecallTests(unittest.TestCase):
                       "corpus recall not wired into the position brief")
 
 
+class RecallJournalTests(unittest.TestCase):
+    """Plan 22 Phase 3(a). Weights can only be learned from VARIANCE in what
+    was retrieved, and nothing recorded WHICH chunks a decision actually saw.
+    Journal-only: no prompt, gate or order reads any of this."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "j.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        self.mem.remember(
+            "monitoring", "notes.md#fees", "Fee hurdle",
+            "A flat fee needs a move of at least 2.40% before a round trip "
+            "pays for itself, so a thesis under that is not an opportunity.")
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_ENABLED", None)
+        run_engine._RECALL_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    def test_it_records_the_chunks_the_brief_actually_carried(self):
+        line = run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0)
+        self.assertIn("2.40%", line)
+        rec = run_engine._take_recall_journal(7)
+        self.assertIsNotNone(rec, "recall was injected but never journaled")
+        shas = [c["sha"] for c in rec["chunks"]]
+        self.assertTrue(shas and all(len(s) == 64 for s in shas),
+                        f"chunk identities missing: {rec}")
+        stored = self.mem.search("fee hurdle round trip", kind="monitoring",
+                                 limit=5)
+        self.assertIn(shas[0], {h["sha"] for h in stored},
+                      "journaled sha does not match a stored chunk")
+        self.assertEqual(rec["chunks"][0]["source"], "notes.md#fees")
+
+    def test_the_query_is_journaled_beside_the_chunks(self):
+        run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0)
+        rec = run_engine._take_recall_journal(7)
+        self.assertIn("fee hurdle", rec["query"],
+                      "without the query the retrieval cannot be reproduced")
+
+    def test_recalling_nothing_is_journaled_as_empty_not_as_absent(self):
+        """A decision that recalled nothing is the CONTROL GROUP the
+        attribution needs. It must be distinguishable from a cycle where
+        recall never ran at all."""
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM desk_memory")
+            conn.commit()
+        finally:
+            conn.close()
+        self.assertEqual(
+            run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0), "")
+        rec = run_engine._take_recall_journal(7)
+        self.assertIsNotNone(rec, "an empty recall must still be journaled")
+        self.assertEqual(rec["chunks"], [])
+
+    def test_a_cycle_that_never_recalled_journals_nothing(self):
+        run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0)
+        run_engine._recall_reset(7)
+        self.assertIsNone(run_engine._take_recall_journal(7),
+                          "a flat cycle would inherit the previous cycle's "
+                          "chunks and mislabel the dataset")
+
+    def test_taking_the_journal_clears_it(self):
+        run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0)
+        self.assertIsNotNone(run_engine._take_recall_journal(7))
+        self.assertIsNone(run_engine._take_recall_journal(7),
+                          "a cycle that recalled but never decided must not "
+                          "have its chunks attributed to the NEXT decision")
+
+    def test_journaling_off_keeps_the_recall_line(self):
+        with patch.object(run_engine, "_recall_capture",
+                          side_effect=RuntimeError("journal down")):
+            line = run_engine._recall_line({"id": 7, "market": "crypto"}, {}, 0)
+        self.assertIn("2.40%", line,
+                      "a broken journal must never cost the desk its brief")
+
+    def test_it_is_wired_into_the_cycle(self):
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_recall_reset(run_id)", src,
+                      "stale recall is not cleared before the brief is built")
+        self.assertIn('"recall"', src,
+                      "the recall journal is never emitted beside the "
+                      "decision event")
+        self.assertIn("_take_recall_journal(run_id)", src)
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done

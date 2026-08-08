@@ -149,6 +149,40 @@ Every increment lands here as a dated line, in the same PR that ships it.
     re-creates it: one increment from the ladder above per day, fresh
     worktree, TDD, PR → CI → merge → `scripts/deploy.sh` → prod
     verification ×2, and a dated line added HERE.
+  - **2026-08-08 — increment (a) SHIPPED: recall journaling.** Every cycle
+    that builds a position brief now emits a `recall` telemetry event beside
+    its `decision` event, carrying the retrieval query and the chunk
+    identities (`sha`, `kind`, `source`, `score`) the brief actually
+    injected. `run_engine._recall_capture` records inside `_recall_line`,
+    `_recall_reset(run_id)` clears at the top of `run_cycle`, and
+    `_take_recall_journal(run_id)` pops at the decision emit.
+    - Two distinctions are load-bearing for (b): a cycle that never recalled
+      emits **no `recall` row at all** (a flat run has no position brief),
+      while a cycle that recalled and the corpus returned nothing emits a row
+      with `chunks: []` — that second case is the **control group** the
+      attribution needs, and collapsing the two would make the dataset
+      unreadable.
+    - Popping rather than reading is deliberate: a cycle that recalls but
+      never reaches a decision (a gate skip) must not have its chunks
+      attributed to the NEXT decision. Reset-before-brief covers the mirror
+      case.
+    - Fail-soft at both levels — the capture swallows its own errors AND its
+      call site is guarded, because an exception reaching `_recall_line`'s
+      outer handler would silently strip the desk's recall (a degradation,
+      not the no-op fail-soft requires). Pinned by
+      `test_journaling_off_keeps_the_recall_line`.
+    - No behavior change: no prompt, gate, size or order reads the journal.
+      No new flag — the event rides `DESK_RECALL_ENABLED`, since journaling
+      what recall injected is meaningless when recall is off.
+    - Tests: `RecallJournalTests` in `tests/test_run_engine.py` (7), incl. a
+      wiring test on `run_cycle`'s source — per the standing trap that brief
+      lines are tested for rendering and never for being *called*.
+    - **Next: increment (b)**, the attribution dataset, but only once the
+      `recall` rows have accumulated. Threshold to proceed, recorded here so
+      it is not argued from vibes: **≥200 `recall` events across ≥20 closed
+      runs**, with at least two distinct chunk shas appearing in ≥20 events
+      each — below that there is no retrieval VARIANCE to attribute, and §2's
+      sequencing rule forbids building on it.
 
 ## 8. External design references (2026-08-07)
 
