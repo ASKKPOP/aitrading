@@ -515,11 +515,40 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     non_terminal_symbols = {(m["market"], m["symbol"]) for m in members
                             if m["status"] != trading_runs.STATUS_STOPPED}
 
+    # Resize drain (2026-08-08): when the user lowered n_runs below the
+    # current slot count, excess slots retire AS THEY EMPTY — a live
+    # position is never touched. Drained slots are DELETED, not closed:
+    # 'closed' is the user-stop verdict and deliberately never refills,
+    # while a drained slot must be recreatable if the user raises N again.
+    open_slots = [s for s in _slots(fleet["id"]) if s["state"] != "closed"]
+    drain_excess = max(0, len(open_slots) - n)
+
     for slot in _slots(fleet["id"]):
         state = slot["state"]
         if state == "closed":
             continue
         member = by_id.get(slot.get("current_run_id") or -1)
+
+        if drain_excess > 0 and (
+                member is None
+                or (member["status"] == trading_runs.STATUS_STOPPED
+                    and (member.get("status_reason") or "") != "positions_held")):
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                begin_write_transaction(cursor)
+                cursor.execute(
+                    "DELETE FROM fleet_slots WHERE fleet_id = ? "
+                    "AND slot_index = ?",
+                    (fleet["id"], slot["slot_index"]))
+                conn.commit()
+            finally:
+                conn.close()
+            fp.emit_fleet_event(fleet["id"], "slot_removed",
+                                {"slot": slot["slot_index"],
+                                 "reason": "fleet_resized"})
+            drain_excess -= 1
+            continue
 
         # dormancy re-evaluates EVERY tick — never sticky
         if state == "dormant":

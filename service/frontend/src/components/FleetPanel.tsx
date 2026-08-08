@@ -201,6 +201,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [risk, setRisk] = useState('balanced')
   const [levKey, setLevKey] = useState('auto')
   const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
+  const [sizeN, setSizeN] = useState<number>(0)       // 0 = untouched; use fleet.n_runs
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Monitor box tabs: cards (실시간 모니터) | trading activity (거래 활동)
@@ -318,6 +319,19 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
       const r = await fetch(`${API_BASE}/fleets/${fleet.id}/rails`, {
         method: 'PUT', headers: authHeaders,
         body: JSON.stringify({ profit_target_frac: pct > 0 ? pct / 100 : 0 }),
+      })
+      if (!r.ok) { setError((await r.json()).detail || 'error'); return }
+      await load()
+    } finally { setBusy(false) }
+  }
+
+  const saveSize = async (n: number) => {
+    if (!fleet || !n || n === fleet.n_runs) return
+    setBusy(true); setError(null)
+    try {
+      const r = await fetch(`${API_BASE}/fleets/${fleet.id}/size`, {
+        method: 'PUT', headers: authHeaders,
+        body: JSON.stringify({ n_runs: n }),
       })
       if (!r.ok) { setError((await r.json()).detail || 'error'); return }
       await load()
@@ -696,6 +710,27 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               {fleet.profit_target_frac
                 ? `→ $${(fleet.total_budget_usd * fleet.profit_target_frac).toFixed(0)}`
                 : T.goalOff}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
+            <span style={{ fontWeight: 600 }}>{tr(language, { ko: '슬롯 수 (목표 TRADING 수)', en: 'Slots (target TRADINGs)', ja: 'スロット数（目標TRADING数）', th: 'จำนวนสล็อต (เป้า TRADING)', vi: 'Số slot (TRADING mục tiêu)', id: 'Slot (target TRADING)' })}</span>
+            <HelpTip text={tr(language, {
+              ko: '가동 중에도 플릿의 목표 슬롯 수를 바꿀 수 있습니다. 늘리면 예산 여유가 생기는 대로 AI가 새 슬롯을 채우고, 줄이면 초과 슬롯은 포지션이 스스로 종료될 때에만 회수됩니다 — 보유 포지션을 강제로 청산하지 않습니다(드레인 방식). 요금제의 슬롯 상한을 넘길 수는 없습니다.',
+              en: 'You can change the fleet\'s target slot count while it is running. Raising it lets the AI fill new slots as budget headroom allows; lowering it retires excess slots only when their positions finish on their own — open positions are never force-closed (drain, not dump). Your plan\'s slot cap still applies.',
+              ja: '稼働中でもフリートの目標スロット数を変更できます。増やすと予算に余裕ができ次第AIが新しいスロットを埋め、減らすと超過スロットはポジションが自然に終了したときにのみ回収されます — 保有ポジションを強制清算することはありません（ドレイン方式）。プランのスロット上限は適用されます。',
+              th: 'เปลี่ยนจำนวนสล็อตเป้าหมายได้แม้ฟลีตกำลังทำงาน เพิ่มแล้ว AI จะเติมสล็อตใหม่เมื่องบมีที่ว่าง ลดแล้วสล็อตส่วนเกินจะถูกเก็บคืนเมื่อสถานะจบเองเท่านั้น — ไม่บังคับปิดสถานะที่ถืออยู่ (เดรน ไม่ใช่ทิ้ง) เพดานสล็อตของแพ็กเกจยังมีผล',
+              vi: 'Bạn có thể đổi số slot mục tiêu khi fleet đang chạy. Tăng lên thì AI lấp slot mới khi ngân sách cho phép; giảm xuống thì slot dư chỉ được thu hồi khi vị thế của nó tự kết thúc — không bao giờ ép đóng vị thế đang mở (drain, không dump). Giới hạn slot của gói vẫn áp dụng.',
+              id: 'Anda dapat mengubah target jumlah slot saat fleet berjalan. Menaikkannya membuat AI mengisi slot baru saat anggaran memungkinkan; menurunkannya menarik slot berlebih hanya ketika posisinya selesai sendiri — posisi terbuka tidak pernah ditutup paksa (drain, bukan dump). Batas slot paket Anda tetap berlaku.',
+            })} />
+            <input type="number" min={1} max={25} step={1}
+              defaultValue={fleet.n_runs}
+              onChange={e => setSizeN(Number(e.target.value))}
+              style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 80, background: 'transparent', color: 'inherit' }} />
+            <button style={chip(false)} disabled={busy} onClick={() => saveSize(sizeN)}>
+              {tr(language, { ko: '슬롯 저장', en: 'Save slots', ja: 'スロットを保存', th: 'บันทึกสล็อต', vi: 'Lưu slot', id: 'Simpan slot' })}
+            </button>
+            <span style={{ color: 'var(--text-muted,#a89f92)' }}>
+              {tr(language, { ko: `현재 목표 ${fleet.n_runs}개`, en: `current target ${fleet.n_runs}`, ja: `現在の目標 ${fleet.n_runs}`, th: `เป้าปัจจุบัน ${fleet.n_runs}`, vi: `mục tiêu hiện tại ${fleet.n_runs}`, id: `target saat ini ${fleet.n_runs}` })}
             </span>
           </div>
           </>
