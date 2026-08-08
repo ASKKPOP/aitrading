@@ -439,10 +439,25 @@ def _usage_tokens(usage) -> tuple[int, int]:
         return (0, 0)
 
 
+def _llm_timeout_seconds() -> float:
+    """Hard wall-clock cap per LLM request. Both SDKs default to 600s with
+    automatic retries — one stalled connection blocks its caller for up to
+    half an hour. Measured on prod 2026-08-08: the research loop went silent
+    for 30+ minutes inside a single call while the provider answered a fresh
+    probe in 5.7s; the hourly refresh it was carrying never happened. Every
+    caller of generate_text is a loop that would rather fail this attempt
+    and run its next iteration than wait."""
+    try:
+        return max(10.0, float(os.environ.get("LLM_TIMEOUT_SECONDS", "120")))
+    except ValueError:
+        return 120.0
+
+
 def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature):
     from openai import OpenAI  # lazy import
 
-    client = OpenAI(api_key=ap.api_key, base_url=ap.base_url)
+    client = OpenAI(api_key=ap.api_key, base_url=ap.base_url,
+                    timeout=_llm_timeout_seconds(), max_retries=1)
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -472,7 +487,8 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature):
     # Without it the SDK falls back to reading ANTHROPIC_BASE_URL from the process
     # env itself; that happens to match ap.base_url today, but relying on it means
     # a context-supplied base_url would be silently ignored. Make ap.base_url win.
-    client = anthropic.Anthropic(api_key=ap.api_key, base_url=ap.base_url)
+    client = anthropic.Anthropic(api_key=ap.api_key, base_url=ap.base_url,
+                                 timeout=_llm_timeout_seconds(), max_retries=1)
     kwargs = {
         "model": ap.model,
         "max_tokens": max_tokens,

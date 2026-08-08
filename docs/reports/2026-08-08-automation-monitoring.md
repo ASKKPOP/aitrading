@@ -7,7 +7,26 @@ returned.
 
 ---
 
-## Cycle — 05:42Z · news feed starving on shared AV quota — rotation + age-in-brief
+## 07:42–08:00Z · research loop wedged in a timeout-less LLM call (owner: "just solving now")
+
+Batch 496159 claimed 07:17:28Z, **0 theses after 25+ min** (a refresh takes
+~5), research logs silent, FleetPlanner ticking `claimed:1 researched:0`
+every minute. Diagnosis, in order:
+
+1. `grep timeout llm_client.py` → **zero matches.** Both SDK clients are
+   constructed bare; the SDK defaults are 600s timeout × automatic retries —
+   ONE stalled connection blocks its caller up to ~30 min.
+2. Live probe of the active provider (anthropic / claude-sonnet-5) answered
+   in **5.7s** — the provider is healthy; the loop is sitting inside a
+   stalled call from 07:17. (First probe 404'd — used the OpenAI-compatible
+   path against an anthropic provider; probe with the provider's OWN path.)
+
+Fix: `_llm_timeout_seconds()` (env `LLM_TIMEOUT_SECONDS`, default 120,
+floor 10) + `timeout=…, max_retries=1` on BOTH constructors. A stalled
+request becomes a failed attempt the calling loop retries on its own
+schedule; #322's stale-reclaim then recovers the burned claim. Existing
+fake clients needed `**client_kw` (my change's footprint, updated).
+Fail-before ×3, 3694 pass.
 
 **Book:** equity 1000.9318 (+0.093%), 10/10 running, zero tracebacks, nothing
 below −0.99. HYPE re-entered legitimately after cooldown expiry (1009; a
