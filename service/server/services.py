@@ -36,6 +36,31 @@ def _get_agent_by_token(token: str) -> Optional[Dict]:
     return dict(row) if row else None
 
 
+def _get_agent_by_user_or_agent_token(token: str) -> Optional[Dict]:
+    """Resolve a bearer token to an agent for READ endpoints: an agent
+    (claw_) token first, else a web-login user token mapped to that user's
+    agent.
+
+    Why (prod 2026-08-08): the My Trading page sent the browser's USER token
+    to /api/positions, /api/signals/following and /api/strategies — all
+    agent-token-only — so every card 401'd and rendered as (0) for every web
+    user while the account's agent held open positions. Write paths keep
+    _get_agent_by_token: a browser session must not gain agent-API writes."""
+    agent = _get_agent_by_token(token)
+    if agent:
+        return agent
+    user = _get_user_by_token(token)
+    if not user:
+        return None
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM agents WHERE user_id = ? ORDER BY id LIMIT 1",
+                   (user["id"],))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def _log_audit_event(
     agent_id: Optional[int],
     action: str,

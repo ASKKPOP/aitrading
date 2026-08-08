@@ -74,7 +74,9 @@ def register_strategy_routes(app: FastAPI, ctx: RouteContext) -> None:
     # ── GET /api/strategies ───────────────────────────────────────────────────
     @app.get("/api/strategies")
     def list_strategies(req: Request):
-        agent = _require_agent(req)
+        # Read path: a web-login token resolves to the user's agent too
+        # (the My Trading page holds no claw token). Writes keep _require_agent.
+        agent = _require_agent_read(req)
         conn = database.get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -234,6 +236,20 @@ def _require_agent(req: Request) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Authorization required")
     agent = _get_agent_by_token(token)
+    if not agent:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return agent
+
+
+def _require_agent_read(req: Request) -> dict:
+    """Auth for read-only routes: agent token, or a web-login user token
+    resolved to that user's agent (see services._get_agent_by_user_or_agent_token)."""
+    from services import _get_agent_by_user_or_agent_token
+    auth = req.headers.get("authorization", "")
+    token = auth.removeprefix("Bearer ").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization required")
+    agent = _get_agent_by_user_or_agent_token(token)
     if not agent:
         raise HTTPException(status_code=401, detail="Invalid token")
     return agent
