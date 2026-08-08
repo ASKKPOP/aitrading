@@ -31,7 +31,7 @@ from routes_shared import (
     validate_market,
 )
 from backtest import run_backtest
-from services import _get_agent_by_token
+from services import _get_agent_by_token, _get_agent_by_user_or_agent_token
 from utils import _extract_token
 
 
@@ -686,7 +686,9 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get('/api/positions')
     async def get_my_positions(authorization: str = Header(None)):
         token = _extract_token(authorization)
-        agent = _get_agent_by_token(token)
+        # Read path: a web-login token resolves to the user's agent too
+        # (the My Trading page holds no claw token).
+        agent = _get_agent_by_user_or_agent_token(token)
         if not agent:
             raise HTTPException(status_code=401, detail='Invalid token')
 

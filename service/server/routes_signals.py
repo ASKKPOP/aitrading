@@ -1393,7 +1393,10 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         limit = max(1, min(limit, 500))
         offset = max(0, offset)
         token = _extract_token(authorization)
-        agent = _get_agent_by_token(token)
+        # Read path: a web-login token resolves to the user's agent too
+        # (the My Trading page holds no claw token).
+        from services import _get_agent_by_user_or_agent_token
+        agent = _get_agent_by_user_or_agent_token(token)
         if not agent:
             raise HTTPException(status_code=401, detail='Invalid token')
 
