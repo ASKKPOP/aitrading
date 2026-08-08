@@ -58,7 +58,7 @@
   <div class="chip"><b>36</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
-  <div class="chip"><b>30,000</b><span>char budget per prompt</span></div>
+  <div class="chip"><b>48,000</b><span>char budget per prompt</span></div>
   <div class="chip"><b>30s</b><span>worker cache TTL</span></div>
 </div>
 
@@ -202,7 +202,7 @@
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">budget check</text>
   <text x="505" y="112" text-anchor="middle" class="t-small">would section overflow</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">30,000 chars?</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">48,000 chars?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
   <text x="795" y="94" text-anchor="middle" class="t-b">framed block</text>
@@ -320,7 +320,7 @@
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 30,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
+<p class="legend">Skill bodies are admin-authored only in v1 and size-capped twice (4,000 per body at the route, 48,000 per prompt at the builder). Even a hostile body cannot bypass layers 2–4 — they run outside the prompt.</p>
 </div>
 
 <h2>7. Operating it — admin API + propagation timing</h2>
