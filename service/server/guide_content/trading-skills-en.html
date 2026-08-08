@@ -55,7 +55,7 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>32</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>36</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
   <div class="chip"><b>30,000</b><span>char budget per prompt</span></div>
@@ -147,7 +147,7 @@
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">LIGHT path — 1 LLM call</text>
   <text x="740" y="52" text-anchor="middle" class="t-small">price + thesis + closes + inventory rule</text>
-  <text x="740" y="72" text-anchor="middle">💡 9 light skills (10 on us-stock: earnings-preview rides there too)</text>
+  <text x="740" y="72" text-anchor="middle">💡 11 light skills (12 on us-stock: earnings-preview rides there too)</text>
   <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration excluded — light has its own rubric)</text>
 
   <!-- full path -->
@@ -157,7 +157,7 @@
   <text x="740" y="200" text-anchor="middle" class="t-small">4 analyst briefs (news · sentiment · macro · technical) — no skills, data only</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk decision</text>
-  <text x="740" y="268" text-anchor="middle">💡 all 24 market-agnostic trader skills (28 on us-stock · 25 on crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 all 26 market-agnostic trader skills (31 on us-stock · 28 on crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
   <text x="740" y="312" text-anchor="middle" class="t-b">Adversarial verifier (tries to REFUTE)</text>
   <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
@@ -222,7 +222,7 @@
 <p class="legend">Any registry error at any step degrades to an empty block — a broken skills table can never break a trading cycle.</p>
 </div>
 
-<h2>4. The thirty-two base skills — what applies where</h2>
+<h2>4. The thirty-six base skills — what applies where</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>distilled from</th></tr>
@@ -234,14 +234,18 @@
   <tr><td><code>thesis-validation</code></td><td>falsifiable claim, facts vs assumptions, timeframe fit, dependency load, concrete invalidation</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
   <tr><td><code>stage-discipline</code></td><td>four-stage read from the data shown: only Stage 2 earns fresh longs (Stage 4 fresh shorts); a fourth-or-later base cuts size; extended-from-base means wait; an unresolvable stage is a blocking gap, never assumed Stage 2 <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minervini stages)</td></tr>
   <tr><td><code>level-integrity</code></td><td>a level must be able to fire: right side of spot, clear of half-a-day's noise, inside the recent range; an unusable level = say so and anchor to visible structure</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (wrong-side levels, 2026-08-03)</td></tr>
+  <tr><td><code>pead-drift</code></td><td>markets underreact to real earnings surprises: qualify the event (discrete catalyst + decisive move + volume shock; dilution/offering/investigation disqualifies), enter the first pullback that HOLDS the gap, stop below the pullback's low; edge spent by week five–six; symmetric on down-gaps <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty episodic-pivot + pead-screener + earnings-trade-analyzer</td></tr>
   <tr><td><code>position-sizing-discipline</code></td><td>size from risk, strictest constraint wins, round down, half-Kelly caution</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
   <tr><td><code>volatility-context</code></td><td>judge ranges, stops and size against the asset's OWN volatility history; compression is loaded, extremes revert; never widen a stop at constant size</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs volatility-modeling + regime-detection</td></tr>
   <tr><td><code>macro-event-analysis</code></td><td>rank events by decision impact (sensitivity · surprise capacity · transmission · timing); events are risk, not signals</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js macro-event analysis</td></tr>
   <tr><td><code>mean-reversion-guard</code></td><td>fading a move requires proof of a RANGE, an entry at its extreme, a mid-range target and a time budget; persistence is the default; never add on "better price"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (Hurst · half-life · z-score)</td></tr>
   <tr><td><code>news-reaction-evidence</code></td><td>price reaction to news outweighs the news; exhaustion = a move AGAINST favorable news, never mere silence</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro step 2)</td></tr>
+  <tr><td><code>parabolic-exhaustion</code></td><td>shorting a vertical needs exhaustion EVIDENCE (accelerating slope · stretch vs own volatility · volume climax · range expansion · crowding) AND a failure trigger; stop above the blow-off high, reduced size, cover into the first flush; never add into a squeeze <b>(crypto · futures only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty parabolic-short-trade-planner</td></tr>
   <tr><td><code>risk-reward-structure</code></td><td>stop = objective invalidation, target = reachable level, ratio ≥ 2×, good ratio ≠ good trade</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R sanity check</td></tr>
   <tr><td><code>exit-discipline</code></td><td>banking is first-class, never add to a loser, invalidation = close not renegotiate</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy exit rails + Senpi</td></tr>
   <tr><td><code>horizon-discipline</code></td><td>a fresh position gets its stated horizon; small adverse drift is NOT invalidation; sub-horizon exits need one named trigger from a closed set — "protect capital" is not one</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (intra-horizon churn, 2026-08-03)</td></tr>
+  <tr><td><code>reentry-discipline</code></td><td>two losing closes in one direction flip the burden of proof — re-entry on the read that just lost twice needs materially NEW evidence, not more confidence; a persistent no-read streak earns retire, but only once the Streak line proves it, never at birth</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (the −57 day's re-entry churn, 2026-08-05)</td></tr>
+  <tr><td><code>loss-aging</code></td><td>an aging loss is a growing decision: past ~2 typical wins a hold needs a NAMED checkable reason + a stated stop-being-wrong point; past several, ask "would I open this now"; 3+ deteriorating cycles unacted = decision by default</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (HYPE hold-sequence, 2026-08-05)</td></tr>
   <tr><td><code>position-management</code></td><td>manage against the ORIGINAL plan, not the P&amp;L; hold / manage actively / exit decisively + the condition that changes it</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js position management</td></tr>
   <tr><td><code>reachable-exits</code></td><td>author your own stop, target and trail on every entry, each reachable inside the move you forecast; omitting them hands the trade an unseen default; unexpressible geometry → retire the slot</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (unreachable trails, 2026-08-03)</td></tr>
   <tr><td><code>drawdown-circuit-breaker</code></td><td>realized damage governs new risk; consecutive losses → cooldown (manage, don't open); survival first</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
@@ -336,13 +340,13 @@
 <div class="card">
 <table>
   <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 32 base skills seeded</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 36 base skills seeded</td></tr>
   <tr><td>selection correct</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug sets</td><td>site + market scoping as designed</td></tr>
   <tr><td>injection real</td><td>exec <code>_light_analysis</code> in the worker with <code>generate_text</code> stubbed</td><td>the actual prod code path builds prompts carrying the skills block — works even with 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 32 skills via #186, #193, #215, #221, #222, #224 and #226 (2026-08-04).</p>
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 36 skills via #186, #193, #215, #221, #222, #224, #226, #232, #233 and #331 (2026-08-07).</p>
 
 </div>
 </body>
