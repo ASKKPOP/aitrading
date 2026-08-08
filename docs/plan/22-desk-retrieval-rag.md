@@ -119,8 +119,36 @@ Mapping the standard claims onto what this platform actually does:
 
 ## 7. Status
 
+This section is the LEDGER for the once-daily Phase 3 build cadence (below).
+Every increment lands here as a dated line, in the same PR that ships it.
+
 - Phase 0 (this document) — done.
-- Phase 1 (chunking) — next.
+- Phase 1 (chunking) — **LIVE** (`desk_memory.py` + `desk_memory_ingest.py`,
+  alembic 0046; ingest rides the trading tick). Prod health 2026-08-08: 1,023
+  chunks (437 decision / 562 monitoring / 24 outcome), 50 written in 6h, zero
+  ingest failures. The `lesson` kind is defined but unwritten.
+- Phase 2 (retrieval) — **LIVE** (`run_engine._recall_line`, situation-keyed
+  query, kind=monitoring only, `DESK_RECALL_ENABLED` default on). Verified
+  in-container 2026-08-08: flat and losing situations both recall relevant
+  past findings on a live run. Known debts: decision/outcome chunks are
+  write-only today (by design — Phase 3's training data); chunk hygiene
+  carries markdown-table debris into recall bodies.
+- Phase 3 (learn the weights) — **IN PROGRESS via a once-daily build
+  cadence** (owner-directed 2026-08-08: one increment per day, shipped to
+  prod). Increment ladder: (a) journal which chunk SHAs each decision's
+  recall injected → (b) attribution dataset joining recalls to outcomes →
+  (c) shadow per-chunk usefulness scores, journal-only → (d) weighted
+  retrieval behind a default-off flag, promoted only on measured evidence.
+  The sequencing rule in §2 stays binding: never build ahead of the
+  variance data.
+  - **Standing schedule (re-arm after account rotation):** a local Claude
+    Code scheduled task `rag-phase3-daily-increment` fires daily at 14:00
+    America/Los_Angeles (21:00 UTC) on the dev machine. The Claude side is
+    lost on account rotation (~3 days) — any session that finds the task
+    missing (`~/.claude/scheduled-tasks/rag-phase3-daily-increment/`)
+    re-creates it: one increment from the ladder above per day, fresh
+    worktree, TDD, PR → CI → merge → `scripts/deploy.sh` → prod
+    verification ×2, and a dated line added HERE.
 
 ## 8. External design references (2026-08-07)
 
