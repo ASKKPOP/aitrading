@@ -202,6 +202,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [risk, setRisk] = useState('balanced')
   const [levKey, setLevKey] = useState('auto')
   const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
+  const [goalDirty, setGoalDirty] = useState(false)   // typed vs saved value
   const [sizeN, setSizeN] = useState<number>(0)       // 0 = untouched; use fleet.n_runs
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -724,13 +725,30 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             })} />
             <input type="number" min={0} max={500} step={0.5}
               defaultValue={fleet.profit_target_frac ? +(fleet.profit_target_frac * 100).toFixed(2) : 0}
-              onChange={e => setGoalPct(Number(e.target.value))}
+              onChange={e => { setGoalPct(Number(e.target.value)); setGoalDirty(true) }}
               style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 110, background: 'transparent', color: 'inherit' }} />
             <button style={chip(false)} disabled={busy} onClick={() => saveGoal(goalPct)}>{T.goalSave}</button>
             <span style={{ color: 'var(--text-muted,#a89f92)' }}>
-              {fleet.profit_target_frac
-                ? `→ $${(fleet.total_budget_usd * fleet.profit_target_frac).toFixed(0)}`
-                : T.goalOff}
+              {(() => {
+                // Live calc (owner ask 2026-08-08): as the % is typed, show
+                // the $ target on this balance and what it demands per slot —
+                // at the current slot count AND at the AI-recommended count.
+                const livePct = goalDirty ? goalPct
+                  : (fleet.profit_target_frac ? fleet.profit_target_frac * 100 : 0)
+                if (!livePct) return T.goalOff
+                const usd = fleet.total_budget_usd * livePct / 100
+                const perNow = usd / Math.max(fleet.n_runs, 1)
+                const rec = fleet.recommended_max_n_runs
+                const perRec = rec ? usd / rec : null
+                return tr(language, {
+                  ko: `→ $${usd.toFixed(0)} · 슬롯당 순익 필요 ≈ $${perNow.toFixed(1)} (현재 ${fleet.n_runs}개)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 권장 ${rec}개)` : ''}`,
+                  en: `→ $${usd.toFixed(0)} · needs ≈ $${perNow.toFixed(1)} net per slot (${fleet.n_runs} now)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 rec. ${rec})` : ''}`,
+                  ja: `→ $${usd.toFixed(0)} · スロットあたり純益 ≈ $${perNow.toFixed(1)}（現在${fleet.n_runs}）${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)}（🤖推奨${rec}）` : ''}`,
+                  th: `→ $${usd.toFixed(0)} · ต้องได้กำไรสุทธิ ≈ $${perNow.toFixed(1)} ต่อสล็อต (ปัจจุบัน ${fleet.n_runs})${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 แนะนำ ${rec})` : ''}`,
+                  vi: `→ $${usd.toFixed(0)} · cần ≈ $${perNow.toFixed(1)} lãi ròng mỗi slot (hiện ${fleet.n_runs})${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 khuyến nghị ${rec})` : ''}`,
+                  id: `→ $${usd.toFixed(0)} · butuh ≈ $${perNow.toFixed(1)} laba bersih per slot (${fleet.n_runs} sekarang)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 rek. ${rec})` : ''}`,
+                })
+              })()}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
@@ -750,8 +768,23 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             <button style={chip(false)} disabled={busy} onClick={() => saveSize(sizeN)}>
               {tr(language, { ko: '슬롯 저장', en: 'Save slots', ja: 'スロットを保存', th: 'บันทึกสล็อต', vi: 'Lưu slot', id: 'Simpan slot' })}
             </button>
-            <span style={{ color: 'var(--text-muted,#a89f92)' }}>
-              {tr(language, { ko: `현재 목표 ${fleet.n_runs}개`, en: `current target ${fleet.n_runs}`, ja: `現在の目標 ${fleet.n_runs}`, th: `เป้าปัจจุบัน ${fleet.n_runs}`, vi: `mục tiêu hiện tại ${fleet.n_runs}`, id: `target saat ini ${fleet.n_runs}` })}
+            <span style={{ color: (sizeN || fleet.n_runs) > (fleet.recommended_max_n_runs || 25) ? '#f0663f' : 'var(--text-muted,#a89f92)' }}>
+              {(() => {
+                // Live calc (owner ask 2026-08-08): as N is typed, show the
+                // per-slot budget it implies and the AI's recommendation for
+                // this balance, warning-coloured when the typed N exceeds it.
+                const liveN = sizeN || fleet.n_runs
+                const perSlot = fleet.total_budget_usd / Math.max(liveN, 1)
+                const rec = fleet.recommended_max_n_runs
+                return tr(language, {
+                  ko: `현재 목표 ${fleet.n_runs}개 · ${liveN}개면 슬롯당 ≈ $${perSlot.toFixed(0)}${rec ? ` · 🤖 권장 최대 ${rec}개` : ''}`,
+                  en: `current target ${fleet.n_runs} · ${liveN} → ≈ $${perSlot.toFixed(0)}/slot${rec ? ` · 🤖 rec. max ${rec}` : ''}`,
+                  ja: `現在の目標 ${fleet.n_runs} · ${liveN}なら1スロット ≈ $${perSlot.toFixed(0)}${rec ? ` · 🤖 推奨最大 ${rec}` : ''}`,
+                  th: `เป้าปัจจุบัน ${fleet.n_runs} · ${liveN} → ≈ $${perSlot.toFixed(0)}/สล็อต${rec ? ` · 🤖 แนะนำสูงสุด ${rec}` : ''}`,
+                  vi: `mục tiêu hiện tại ${fleet.n_runs} · ${liveN} → ≈ $${perSlot.toFixed(0)}/slot${rec ? ` · 🤖 khuyến nghị tối đa ${rec}` : ''}`,
+                  id: `target saat ini ${fleet.n_runs} · ${liveN} → ≈ $${perSlot.toFixed(0)}/slot${rec ? ` · 🤖 rek. maks ${rec}` : ''}`,
+                })
+              })()}
             </span>
           </div>
           </>
