@@ -25,6 +25,17 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### ⚠️ POSITION QUERIES: `quantity > 0` LOSES EVERY SHORT — 2026-08-08
+>
+> Shorts store NEGATIVE quantity. A session equity query filtered
+> `WHERE quantity > 0` and read **975.59 for a 1000.89 book** the moment
+> the fleet opened its first shorts (1006/1007, 00:22Z) — the missing
+> 25.28 was exactly their margin. Stable across re-reads, so it looked
+> like a real money leak. Production is immune (`POSITION_VALUE_CASE`
+> uses ABS, no sign filter); only hand-written monitoring SQL had it.
+> **Always `quantity <> 0`.** The seed+realized+unrealized cross-check is
+> what caught it — never report equity from one formula alone.
+>
 > ### 🛡️ VARY-ON-LOSS: A LOSS-STOPPED SYMBOL MUST COOL DOWN — 2026-08-07 (#324)
 >
 > A `stop_event` loss retirement set **no symbol cooldown** (only idle and
