@@ -1321,7 +1321,25 @@ def refresh_market_news_snapshots() -> dict[str, Any]:
     created_at = _utc_now_iso_z()
     rows_to_insert: list[tuple[str, str, str, str, str]] = []
 
-    for category, definition in NEWS_CATEGORY_DEFINITIONS.items():
+    # One category per refresh, stalest first. Sweeping all four cost 4 Alpha
+    # Vantage calls against the SHARED 25/day free key, so late-day sweeps
+    # failed all-or-nothing (measured 2026-08-08: two consecutive
+    # `inserted=0 errors=4` sweeps; crypto 38h stale because the quota died
+    # on it every time). One call per sweep keeps every category inside ~24h
+    # deterministically and returns 12 calls/day to the price fallbacks that
+    # share the key.
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT category, MAX(created_at) AS latest"
+            " FROM market_news_snapshots GROUP BY category")
+        latest = {dict(r)["category"]: dict(r)["latest"] for r in cursor.fetchall()}
+    finally:
+        conn.close()
+    stalest = min(NEWS_CATEGORY_DEFINITIONS, key=lambda c: latest.get(c) or "")
+
+    for category, definition in ((stalest, NEWS_CATEGORY_DEFINITIONS[stalest]),):
         try:
             items = _fetch_news_feed(category, definition)
             summary = _build_news_summary(category, items)

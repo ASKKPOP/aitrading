@@ -84,6 +84,10 @@ def _gather_news(symbol: str, market: str) -> dict[str, Any]:
     try:
         from market_intel import get_market_news_payload
         payload = get_market_news_payload(limit=6)
+        # The snapshot's age travels with the items: the analyst must be able
+        # to weigh stale headlines itself (the quota-limited feed can be
+        # many hours old), and a timestamp it never sees cannot be weighed.
+        out["as_of"] = payload.get("last_updated_at")
         for cat in payload.get("categories", []):
             for it in cat.get("items", [])[:4]:
                 out["items"].append({
@@ -271,7 +275,20 @@ def _fallback_brief(role: str, data: dict[str, Any]) -> str:
         bull = bd.get("bullish", 0) + bd.get("somewhat-bullish", 0)
         bear = bd.get("bearish", 0) + bd.get("somewhat-bearish", 0)
         tone = "constructive" if bull > bear else ("cautious" if bear > bull else "mixed")
-        msg = f"{len(items)} headlines scanned — tone {tone} ({bull} bullish vs {bear} bearish)."
+        # State the snapshot's age once it can matter (>= 2h): the decision
+        # about how much stale news is worth belongs to the analyst reading
+        # this brief, and it can only make it if the age is in the brief.
+        age = ""
+        as_of = data.get("as_of")
+        if as_of:
+            try:
+                as_of_dt = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+                hours = (datetime.now(timezone.utc) - as_of_dt).total_seconds() / 3600
+                if hours >= 2:
+                    age = f" (newest headline snapshot {hours:.0f}h old)"
+            except ValueError:
+                pass
+        msg = f"{len(items)} headlines scanned{age} — tone {tone} ({bull} bullish vs {bear} bearish)."
         if items and items[0].get("title"):
             msg += f' Lead: "{items[0]["title"]}".'
         return msg

@@ -7,7 +7,37 @@ returned.
 
 ---
 
-## Cycle — 00:59Z · steady state; new runs on distinct slots
+## Cycle — 05:42Z · news feed starving on shared AV quota — rotation + age-in-brief
+
+**Book:** equity 1000.9318 (+0.093%), 10/10 running, zero tracebacks, nothing
+below −0.99. HYPE re-entered legitimately after cooldown expiry (1009; a
+first instance 1008 was desk_retired at cycle 1 without trading — the desk
+declined, the rebuild shorted).
+
+### Reproduced: `market news inserted=0 errors=4`, twice (22:55Z and 05:42Z)
+
+Corpus searched first (obligation day 1): no direct prior finding. All 4
+errors are the Alpha Vantage free-key daily limit — the news sweep spends
+**4 AV calls per 6h refresh (16/day) against the SHARED 25/day key**, so
+late-day sweeps fail all-or-nothing. Not fully dead (early-day sweeps
+succeed) but crypto was 38h stale because the quota died on it every time.
+Consumer that matters: `analysis_agents._gather_news` — the AI Analysis
+pipeline reasons on these headlines.
+
+### Fix (AI-FIRST split, owner re-affirmed "decisions by sooppiy AI"):
+
+- **Platform half (quota fairness):** refresh ONE category per sweep,
+  stalest first — every category inside ~24h deterministically, 12 AV
+  calls/day returned to the price fallbacks sharing the key. FMP news was
+  considered and rejected: `fmp_feed` is earnings-only and the owner tier
+  is thin.
+- **AI half (the decision stays the desk's):** the news payload's
+  `last_updated_at` now travels into the analysis data as `as_of`, and the
+  news brief states "(newest headline snapshot Nh old)" once ≥2h — the
+  ANALYST weighs stale headlines, the platform just stops hiding the age.
+
+Fail-before ×3; fixture needed `time_published` (the tidy-fixture trap,
+again); 3691 pass.
 
 **Book:** equity **1000.9036 (+0.090%)**. 10/10 running, zero tracebacks,
 nothing below −0.99; 1001 ADBE unchanged at −0.6925 (cycle 21). Seven runs
