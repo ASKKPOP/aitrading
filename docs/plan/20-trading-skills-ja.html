@@ -59,7 +59,7 @@
   <div class="chip"><b>36</b><span>ベーススキル（保持・編集可・削除不可）</span></div>
   <div class="chip"><b>4</b><span>注入される判断プロンプト</span></div>
   <div class="chip"><b>0</b><span>スキル選定に費やされたLLM呼び出し</span></div>
-  <div class="chip"><b>30,000</b><span>プロンプトごとの文字数上限</span></div>
+  <div class="chip"><b>48,000</b><span>プロンプトごとの文字数上限</span></div>
   <div class="chip"><b>30s</b><span>ワーカーキャッシュTTL</span></div>
 </div>
 
@@ -203,7 +203,7 @@
   <rect class="box" x="430" y="70" width="150" height="70"/>
   <text x="505" y="94" text-anchor="middle" class="t-b">予算チェック</text>
   <text x="505" y="112" text-anchor="middle" class="t-small">セクションがオーバーフローするか</text>
-  <text x="505" y="128" text-anchor="middle" class="t-small">30,000文字？</text>
+  <text x="505" y="128" text-anchor="middle" class="t-small">48,000文字？</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
   <text x="795" y="94" text-anchor="middle" class="t-b">フレーム化されたブロック</text>
@@ -321,7 +321,7 @@
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">スキルボディはv1では管理者のみが作成でき、サイズは2段階で制限されています（ルートでは1ボディあたり4,000、ビルダーでは1プロンプトあたり30,000）。悪意のあるボディであっても、レイヤー2〜4をバイパスすることはできません — これらはプロンプトの外部で実行されます。</p>
+<p class="legend">スキルボディはv1では管理者のみが作成でき、サイズは2段階で制限されています（ルートでは1ボディあたり4,000、ビルダーでは1プロンプトあたり48,000）。悪意のあるボディであっても、レイヤー2〜4をバイパスすることはできません — これらはプロンプトの外部で実行されます。</p>
 </div>
 
 <h2>7. 運用方法 — 管理者API + 伝播タイミング</h2>
