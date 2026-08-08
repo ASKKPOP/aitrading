@@ -84,6 +84,10 @@ class StopIn(BaseModel):
     flatten: bool = True
 
 
+class SizeIn(BaseModel):
+    n_runs: int
+
+
 def _auth(authorization: Optional[str]) -> dict:
     agent = _get_agent_by_token(_extract_token(authorization))
     if not agent:
@@ -385,6 +389,27 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         fleet_planner.emit_fleet_event(fleet_id, "rails_changed",
                                        {"warn": warn, "stop": stop,
                                         "confirm": data.confirm})
+        return {"ok": True,
+                "fleet": _public_fleet(_fleet_or_404(fleet_id, agent))}
+
+    @app.put("/api/fleets/{fleet_id}/size")
+    async def edit_size(fleet_id: int, data: SizeIn,
+                        authorization: str = Header(None)):
+        """Change the slot target of a live fleet (owner ask 2026-08-08).
+        Raising re-checks the plan cap and the supervisor grows toward the
+        new N on its next pass; lowering drains — excess slots retire only
+        as they empty, a live position is never touched."""
+        agent = _auth(authorization)
+        fleet = _fleet_or_404(fleet_id, agent)
+        if fleet["status"] == fleet_planner.STATUS_STOPPED:
+            raise HTTPException(status_code=409,
+                                detail="fleet already stopped")
+        try:
+            fleet_planner.set_fleet_size(fleet_id, data.n_runs)
+        except trading_runs.EntitlementDenied as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
         return {"ok": True,
                 "fleet": _public_fleet(_fleet_or_404(fleet_id, agent))}
 

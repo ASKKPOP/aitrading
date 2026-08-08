@@ -508,6 +508,45 @@ def set_profit_target(fleet_id: int, frac: Optional[float]) -> None:
         conn.close()
 
 
+def set_fleet_size(fleet_id: int, n_runs: int) -> None:
+    """Change a live fleet's slot target (owner ask 2026-08-08).
+
+    Raising re-checks the plan cap like create/start do; the supervisor's
+    growth loop then fills toward the new target on its next pass. Lowering
+    never needs the cap (a downgraded plan must still be able to shrink) and
+    never touches a live position — excess slots drain as they empty
+    (fleet_supervisor._slot_pass)."""
+    n = int(n_runs)
+    n_lo, n_hi = FLEET_BOUNDS["n_runs"]
+    if not (n_lo <= n <= n_hi):
+        raise ValueError(f"n_runs must be between {n_lo} and {n_hi}")
+    fleet = get_fleet(fleet_id)
+    if not fleet:
+        raise ValueError("fleet not found")
+    old = int(fleet["n_runs"])
+    if n == old:
+        return
+    if n > old:
+        from entitlements import check_fleet_create
+        conn = get_db_connection()
+        try:
+            deny = check_fleet_create(conn.cursor(), fleet["agent_id"], n)
+        finally:
+            conn.close()
+        if deny:
+            raise trading_runs.EntitlementDenied(deny)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute("UPDATE fleets SET n_runs = ? WHERE id = ?",
+                       (n, fleet_id))
+        conn.commit()
+    finally:
+        conn.close()
+    emit_fleet_event(fleet_id, "size_changed", {"from": old, "to": n})
+
+
 def get_fleet(fleet_id: int, agent_id: Optional[int] = None) -> Optional[dict]:
     conn = get_db_connection()
     try:
