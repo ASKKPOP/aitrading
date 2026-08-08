@@ -25,6 +25,26 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 📋 OWNER ORDER — FULL HTML A/B REPORT DUE ~2026-08-09 08:43Z
+>
+> Owner switched agent 6's desk from local gpt-oss to **anthropic /
+> claude-opus-4-8** (Settings page, user key, ~2026-08-08 08:43Z) and
+> ordered: *"after 24 hour make full html report for compare"* — Claude vs
+> local, on **plus profit**. Deliverable: a full HTML report under `docs/`
+> comparing the Opus window (08:43Z 08-08 →) against the baseline below.
+> Metrics: realized net, fills, win rate, avg win / avg loss, shape,
+> floor-evasion chains, equity; state the regime confound honestly.
+>
+> **Pre-Opus baseline (book reset 08-06 22:56Z → 08-08 08:43Z):**
+> realized net **+0.8947**, 138 fills, **70W/31L** (69% of closes), avg win
+> **+0.0517** / avg loss **−0.0774**, equity at boundary **1001.0182**.
+>
+> Decision events now stamp `llm: {provider, model, source}` (shipped with
+> this block) — attribute by STAMP, not wall clock. Platform calls
+> (user_id NULL, key_source system) stay on their own routing by design and
+> are NOT part of the A/B. Note: successful user-context calls are absent
+> from `llm_usage` (metering gap, open observation).
+>
 > ### ⚠️ POSITION QUERIES: `quantity > 0` LOSES EVERY SHORT — 2026-08-08
 >
 > Shorts store NEGATIVE quantity. A session equity query filtered

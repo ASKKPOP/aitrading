@@ -7,6 +7,27 @@ returned.
 
 ---
 
+## 08:43–09:00Z · owner switched the desk to claude-opus-4-8; A/B begins, stamp shipped
+
+Owner changed agent 6's LLM (Settings page) local → **anthropic /
+claude-opus-4-8** with their own key, and ordered a **full HTML comparison
+report after 24h** (due ~08-09 08:43Z; spec + baseline in the handoff).
+Verified the switch works: `llm_context_for_agent(6)` resolves decision →
+anthropic claude-opus-4-8, source **user**, live in the running worker —
+settings are read fresh per decision, no restart needed. The
+`local gpt-oss:120b` usage rows continuing to appear are PLATFORM calls
+(user_id NULL, key_source system — hot-issue daemon etc.), which by the
+07-31 policy never borrow a user's AI.
+
+Shipped: decision events now stamp `llm: {provider, model, source}` so the
+A/B attributes by stamp, not wall clock. Open observation: successful
+user-context and research calls never appear in `llm_usage` — metering gap.
+
+**Pre-Opus baseline (34h):** realized net +0.8947, 138 fills, 70W/31L,
+avg win +0.0517 / avg loss −0.0774, equity 1001.0182.
+
+---
+
 ## 07:42–08:00Z · research loop wedged in a timeout-less LLM call (owner: "just solving now")
 
 Batch 496159 claimed 07:17:28Z, **0 theses after 25+ min** (a refresh takes

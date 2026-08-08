@@ -2661,6 +2661,23 @@ def _ai_route_verdict(run: dict, cfg: dict,
         return None
 
 
+def _llm_stamp() -> dict:
+    """Which model authored this decision. Without it, a provider-vs-provider
+    profit comparison (owner A/B, 2026-08-08: Claude vs local) can only be
+    attributed by wall-clock windows — which breaks the moment a setting is
+    flipped mid-window. Resolved under the run's active LLM context, the same
+    resolution the decision's own generate_text used moments earlier."""
+    try:
+        from llm_client import resolve_provider
+        ap = resolve_provider("decision")
+        if ap:
+            return {"provider": ap.spec.name, "model": ap.model,
+                    "source": ap.source}
+    except Exception:  # noqa: BLE001 — telemetry must never break a cycle
+        pass
+    return {}
+
+
 # Plan 15 P2: the scalar confidence proved quantized (0.62 pin), so the
 # desk also scores four components and CODE computes the conviction the
 # gate can eventually trust. Weights are deterministic and documented in
@@ -4030,7 +4047,8 @@ def run_cycle(run_id: int) -> dict:
             leverage=cfg.get("leverage") or 1.0)
 
         emit_telemetry_event(run_id, "decision",
-                             {"cycle": seq, "action": action, "confidence": confidence,
+                             {"cycle": seq, "llm": _llm_stamp(),
+                              "action": action, "confidence": confidence,
                               "conviction": conviction, "scores": scores,
                               "gate_source": "conviction" if use_conviction else "confidence",
                               "size_scale": size_scale,
