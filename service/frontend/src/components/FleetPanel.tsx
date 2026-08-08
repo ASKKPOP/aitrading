@@ -17,6 +17,7 @@ import { tr } from '../i18n'
 type Fleet = {
   id: number; status: string; status_reason: string | null
   n_runs: number; total_budget_usd: number; risk_appetite: string
+  recommended_max_n_runs?: number | null
   profit_target_frac?: number | null; successor_fleet_id?: number | null
   warn_loss_frac: number; stop_loss_frac: number
   warn_latched_at: string | null; warn_acked_at: string | null
@@ -327,6 +328,26 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
 
   const saveSize = async (n: number) => {
     if (!fleet || !n || n === fleet.n_runs) return
+    // Confirm-with-recommendation (owner ask 2026-08-08): the change only
+    // proceeds if the user agrees after seeing what it means for per-slot
+    // budget, the drain/fill semantics, and the AI's recommended count.
+    const perSlot = fleet.total_budget_usd / n
+    const rec = fleet.recommended_max_n_runs
+    const lines: string[] = [
+      tr(language, { ko: `슬롯 수를 ${fleet.n_runs}개 → ${n}개로 변경합니다.`, en: `Change slots from ${fleet.n_runs} to ${n}.`, ja: `スロット数を ${fleet.n_runs} → ${n} に変更します。`, th: `เปลี่ยนสล็อตจาก ${fleet.n_runs} เป็น ${n}`, vi: `Đổi số slot từ ${fleet.n_runs} thành ${n}.`, id: `Ubah slot dari ${fleet.n_runs} menjadi ${n}.` }),
+      tr(language, { ko: `슬롯당 예산은 약 $${perSlot.toFixed(0)}가 됩니다.`, en: `Each slot's budget becomes ≈ $${perSlot.toFixed(0)}.`, ja: `スロットあたりの予算は約 $${perSlot.toFixed(0)} になります。`, th: `งบต่อสล็อตจะอยู่ที่ ≈ $${perSlot.toFixed(0)}`, vi: `Ngân sách mỗi slot còn ≈ $${perSlot.toFixed(0)}.`, id: `Anggaran per slot menjadi ≈ $${perSlot.toFixed(0)}.` }),
+      n > fleet.n_runs
+        ? tr(language, { ko: '늘어난 슬롯은 예산 여유가 생길 때에만 채워집니다 (즉시 늘어나지 않을 수 있음).', en: 'New slots fill only as budget headroom frees up (may not appear immediately).', ja: '増えたスロットは予算に余裕ができたときにのみ埋まります（すぐには増えない場合があります）。', th: 'สล็อตใหม่จะถูกเติมเมื่องบมีที่ว่างเท่านั้น (อาจไม่ปรากฏทันที)', vi: 'Slot mới chỉ được lấp khi ngân sách có dư (có thể không xuất hiện ngay).', id: 'Slot baru terisi hanya saat anggaran memiliki ruang (mungkin tidak langsung muncul).' })
+        : tr(language, { ko: '줄어드는 슬롯은 포지션이 스스로 종료될 때에만 회수됩니다 — 보유 포지션을 강제 청산하지 않습니다.', en: 'Removed slots retire only when their positions finish on their own — nothing is force-closed.', ja: '減らしたスロットはポジションが自然に終了したときにのみ回収されます — 強制清算はしません。', th: 'สล็อตที่ลดจะถูกเก็บคืนเมื่อสถานะจบเองเท่านั้น — ไม่มีการบังคับปิด', vi: 'Slot bị giảm chỉ được thu hồi khi vị thế tự kết thúc — không ép đóng lệnh.', id: 'Slot yang dikurangi ditarik hanya saat posisinya selesai sendiri — tidak ada penutupan paksa.' }),
+    ]
+    if (rec) {
+      lines.push(tr(language, { ko: `🤖 AI 권장: 이 예산($${fleet.total_budget_usd.toFixed(0)})에는 최대 ${rec}개 (슬롯당 $100 이상 유지).`, en: `🤖 AI recommendation: at most ${rec} slots for this budget ($${fleet.total_budget_usd.toFixed(0)}) — keep each slot at $100+.`, ja: `🤖 AI推奨: この予算（$${fleet.total_budget_usd.toFixed(0)}）では最大 ${rec} スロット（各スロット $100 以上を維持）。`, th: `🤖 คำแนะนำ AI: งบนี้ ($${fleet.total_budget_usd.toFixed(0)}) ไม่ควรเกิน ${rec} สล็อต (รักษาสล็อตละ $100 ขึ้นไป)`, vi: `🤖 AI khuyến nghị: tối đa ${rec} slot cho ngân sách này ($${fleet.total_budget_usd.toFixed(0)}) — giữ mỗi slot từ $100 trở lên.`, id: `🤖 Rekomendasi AI: maksimal ${rec} slot untuk anggaran ini ($${fleet.total_budget_usd.toFixed(0)}) — jaga tiap slot $100+.` }))
+      if (n > rec) {
+        lines.push(tr(language, { ko: `⚠️ 권장 개수를 초과합니다. 슬롯이 작을수록 수수료 허들(왕복 비용)을 넘기 어려워 수익성이 떨어집니다.`, en: `⚠️ This exceeds the recommendation. Smaller slots struggle to clear the round-trip fee hurdle, hurting profitability.`, ja: `⚠️ 推奨数を超えています。スロットが小さいほど往復手数料のハードルを越えにくく、収益性が下がります。`, th: `⚠️ เกินจำนวนที่แนะนำ สล็อตยิ่งเล็กยิ่งข้ามต้นทุนค่าธรรมเนียมไป-กลับได้ยาก ทำให้กำไรลดลง`, vi: `⚠️ Vượt mức khuyến nghị. Slot càng nhỏ càng khó vượt rào phí khứ hồi, làm giảm lợi nhuận.`, id: `⚠️ Melebihi rekomendasi. Slot yang lebih kecil sulit melewati rintangan biaya pulang-pergi, mengurangi profitabilitas.` }))
+      }
+    }
+    lines.push(tr(language, { ko: '계속할까요?', en: 'Proceed?', ja: '続行しますか？', th: 'ดำเนินการต่อหรือไม่?', vi: 'Tiếp tục?', id: 'Lanjutkan?' }))
+    if (!window.confirm(lines.join('\n\n'))) return
     setBusy(true); setError(null)
     try {
       const r = await fetch(`${API_BASE}/fleets/${fleet.id}/size`, {

@@ -134,6 +134,13 @@ def _public_fleet(fleet: dict) -> dict:
     out.pop("claim_expires_at", None)
     out.pop("active_fleet_key", None)
     out.pop("idempotency_key", None)
+    # The AI's slot recommendation for this budget — the resize confirm
+    # dialog shows it so the user decides with the fee evidence in view.
+    try:
+        out["recommended_max_n_runs"] = fleet_planner.recommended_max_slots(
+            float(fleet.get("total_budget_usd") or 0))
+    except Exception:  # noqa: BLE001
+        out["recommended_max_n_runs"] = None
     try:
         out["market_scope"] = _json.loads(out.pop("market_scope_json") or "null")
     except Exception:  # noqa: BLE001

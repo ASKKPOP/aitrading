@@ -508,6 +508,26 @@ def set_profit_target(fleet_id: int, frac: Optional[float]) -> None:
         conn.close()
 
 
+# One viable slot per this much budget. Grounded in the measured fee
+# evidence, not taste: the dominant structural loss on this platform is the
+# fee hurdle (recommendations-backlog R1 — a flat fee needs ~2.4% of
+# favourable move to break even), and the live fleets that actually trade
+# run ~$100 slots; halving that halves each position's odds of ever
+# clearing its own round trip. Deterministic and zero-LLM by design (E1).
+SLOT_VIABLE_BUDGET_USD = 100.0
+
+
+def recommended_max_slots(total_budget_usd: float) -> int:
+    """The AI-side slot recommendation for a budget: as many slots as can
+    each carry a fee-viable allocation, clamped to the fleet bounds."""
+    n_lo, n_hi = FLEET_BOUNDS["n_runs"]
+    try:
+        viable = int(float(total_budget_usd) // SLOT_VIABLE_BUDGET_USD)
+    except (TypeError, ValueError):
+        viable = n_lo
+    return max(n_lo, min(viable, n_hi))
+
+
 def set_fleet_size(fleet_id: int, n_runs: int) -> None:
     """Change a live fleet's slot target (owner ask 2026-08-08).
 

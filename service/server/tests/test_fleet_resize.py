@@ -79,6 +79,13 @@ class ResizeApiTests(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_fleet_payload_carries_the_recommendation(self):
+        fid = self._fleet(n=2)
+        r = self.client.get(f"/api/fleets/{fid}")
+        self.assertEqual(r.status_code, 200, r.text)
+        # $2,000 budget -> 20 viable slots
+        self.assertEqual(r.json()["fleet"]["recommended_max_n_runs"], 20)
+
     def test_raise_updates_target_and_journals(self):
         fid = self._fleet(n=2)
         r = self.client.put(f"/api/fleets/{fid}/size", headers=self.h,
@@ -180,3 +187,13 @@ class ResizeDrainTests(SupervisionBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RecommendedSlotsTests(unittest.TestCase):
+    def test_recommendation_math(self):
+        # One viable slot per $100 of budget (fee-hurdle evidence), clamped
+        # to the fleet bounds.
+        self.assertEqual(fp.recommended_max_slots(1000.0), 10)
+        self.assertEqual(fp.recommended_max_slots(250.0), 2)
+        self.assertEqual(fp.recommended_max_slots(50.0), 1)   # never below 1
+        self.assertEqual(fp.recommended_max_slots(10_000.0), 25)  # bounds cap
