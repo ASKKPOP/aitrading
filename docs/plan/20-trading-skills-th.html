@@ -56,11 +56,11 @@
 <h1>Plan 20 — ทักษะการเทรด: วิธีการทำงาน</h1>
 
 <div class="chips">
-  <div class="chip"><b>32</b><span>ทักษะพื้นฐาน (คงไว้, แก้ไขได้, ลบไม่ได้)</span></div>
-  <div class="chip"><b>4</b><span>พรอมป์การตัดสินใจที่ถูกแทรกเข้าไป</span></div>
+  <div class="chip"><b>36</b><span>ทักษะพื้นฐาน (คงไว้ แก้ไขได้ ลบไม่ได้)</span></div>
+  <div class="chip"><b>4</b><span>พรอมป์การตัดสินใจที่ถูกฉีดเข้าไป</span></div>
   <div class="chip"><b>0</b><span>จำนวนการเรียก LLM ที่ใช้ในการเลือกทักษะ</span></div>
   <div class="chip"><b>30,000</b><span>งบประมาณตัวอักษรต่อพรอมป์</span></div>
-  <div class="chip"><b>30s</b><span>อายุแคชของ worker</span></div>
+  <div class="chip"><b>30s</b><span>ระยะเวลาแคชของ worker (TTL)</span></div>
 </div>
 
 <h2>1. ภาพรวม — ทักษะอยู่ที่ไหนและทำงานที่ไหน</h2>
@@ -85,31 +85,31 @@
   <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — การเขียนที่มีการตรวจสอบ</text>
 
   <rect class="box-dim" x="20" y="230" width="200" height="64"/>
-  <text x="120" y="252" text-anchor="middle" class="t-b">โฟลเดอร์ repo skills/</text>
-  <text x="120" y="270" text-anchor="middle" class="t-small">เอกสารสำหรับ external-agent เท่านั้น — ไม่ได้อยู่ใน</text>
-  <text x="120" y="284" text-anchor="middle" class="t-small">docker image, ไม่ถูกอ่านโดย AI</text>
+  <text x="120" y="252" text-anchor="middle" class="t-b">ไดเรกทอรี repo skills/</text>
+  <text x="120" y="270" text-anchor="middle" class="t-small">เอกสาร external-agent เท่านั้น — ไม่อยู่ใน</text>
+  <text x="120" y="284" text-anchor="middle" class="t-small">docker image ไม่ถูกอ่านโดย AI</text>
 
   <!-- DB -->
   <rect class="box" x="300" y="80" width="190" height="90"/>
   <text x="395" y="108" text-anchor="middle" class="t-b">ตาราง trading_skills</text>
-  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (production) / SQLite (development)</text>
+  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (สำหรับ production) / SQLite (สำหรับ development)</text>
   <text x="395" y="145" text-anchor="middle" class="t-small">slug · เนื้อหา · พรอมต์ · ตลาด</text>
   <text x="395" y="161" text-anchor="middle" class="t-small">ลำดับความสำคัญ · เปิดใช้งาน · is_base</text>
 
   <!-- cache -->
   <rect class="box" x="560" y="92" width="150" height="66"/>
-  <text x="635" y="118" text-anchor="middle" class="t-b">แคช registry</text>
-  <text x="635" y="137" text-anchor="middle" class="t-small">TTL 30 วินาทีต่อ process</text>
+  <text x="635" y="118" text-anchor="middle" class="t-b">แคชรีจิสทรี</text>
+  <text x="635" y="137" text-anchor="middle" class="t-small">30 s TTL ต่อ process</text>
 
   <!-- skills_block -->
   <rect class="box-accent" x="760" y="86" width="180" height="78"/>
   <text x="850" y="112" text-anchor="middle" class="t-b">skills_block(site)</text>
-  <text x="850" y="131" text-anchor="middle" class="t-small">การกรองแบบกำหนดแน่นอน + งบประมาณ</text>
+  <text x="850" y="131" text-anchor="middle" class="t-small">ตัวกรองที่กำหนดแน่นอน + งบประมาณ</text>
   <text x="850" y="148" text-anchor="middle" class="t-small">fail-soft → ""</text>
 
   <!-- prompts row -->
   <rect class="box" x="300" y="250" width="640" height="70"/>
-  <text x="620" y="272" text-anchor="middle" class="t-b">4 พรอมป์การตัดสินใจ</text>
+  <text x="620" y="272" text-anchor="middle" class="t-b">พรอมป์การตัดสินใจ 4 แบบ</text>
   <text x="380" y="300" text-anchor="middle">สว่าง</text>
   <text x="540" y="300" text-anchor="middle">เทรดเดอร์</text>
   <text x="700" y="300" text-anchor="middle">ผู้ตรวจสอบ</text>
@@ -117,28 +117,28 @@
 
   <!-- gates -->
   <rect class="box" x="300" y="350" width="640" height="40"/>
-  <text x="620" y="375" text-anchor="middle" class="t-small">คำตอบจาก LLM → สัญญาผลลัพธ์ JSON (รายการ action ที่อนุญาต, การจำกัดค่า, สิทธิ์กำหนดราคา) → เกณฑ์ความเสี่ยง/การดำเนินการที่กำหนดแน่นอน → คำสั่ง</text>
+  <text x="620" y="375" text-anchor="middle" class="t-small">คำตอบจาก LLM → สัญญาผลลัพธ์ JSON (รายการที่อนุญาต การจำกัดค่า อำนาจกำหนดราคา) → เกตความเสี่ยง/การดำเนินการที่กำหนดแน่นอน → คำสั่งซื้อขาย</text>
 
   <!-- arrows -->
   <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
   <text x="252" y="60" class="t-small">seed + อัปเกรดอัตโนมัติ</text>
   <path class="ln" d="M220,162 C260,162 260,150 300,145" marker-end="url(#ar)"/>
-  <text x="238" y="178" class="t-small">CRUD + ทำให้ไม่ถูกต้อง</text>
+  <text x="238" y="178" class="t-small">CRUD + ยกเลิกความถูกต้อง</text>
   <path class="ln" d="M490,125 L560,125" marker-end="url(#ar)"/>
   <path class="ln" d="M710,125 L760,125" marker-end="url(#ar)"/>
   <path class="ln-good" d="M850,164 L850,250" marker-end="url(#ar-g)"/>
-  <text x="842" y="205" text-anchor="end" class="t-small">ข้อความในกรอบ, เตือนเท่านั้น</text>
+  <text x="842" y="205" text-anchor="end" class="t-small">ข้อความในกรอบ เฉพาะข้อควรระวัง</text>
   <path class="ln" d="M620,320 L620,350" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">กล่องเส้นประคือสมมติฐานเดิมที่การออกแบบนี้ต้องทำลาย: repo <code>skills/</code> เป็นพื้นที่เผยแพร่สำหรับ external agent และถูกยกเว้นออกจาก Docker image — ดังนั้นเนื้อหาทักษะจึงอยู่ในฐานข้อมูล และแคตตาล็อกพื้นฐานมาพร้อมกับโค้ดและสร้างตัวเองโดยอัตโนมัติ</p>
+<p class="legend">กล่องเส้นประคือสมมติฐานเดิมที่การออกแบบนี้ต้องทำลาย: repo <code>skills/</code> เป็นพื้นที่เผยแพร่สำหรับ external agent และถูกยกเว้นจาก Docker image — ดังนั้นเนื้อหาทักษะจึงอยู่ใน DB และแคตตาล็อกพื้นฐานมาพร้อมกับโค้ดและ seed ตัวเอง</p>
 </div>
 
-<h2>2. ขั้นตอนวงจรการตัดสินใจ — ทักษะเข้ามามีบทบาทในวงจรการเทรดจริงอย่างไร</h2>
+<h2>2. ขั้นตอนวงจรการตัดสินใจ — ทักษะเข้าสู่วงจรการเทรดสดที่ไหน</h2>
 <div class="card">
 <svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="30" width="170" height="56"/>
   <text x="105" y="53" text-anchor="middle" class="t-b">run_cycle tick</text>
-  <text x="105" y="71" text-anchor="middle" class="t-small">claim → pre-gates ล่วงหน้า</text>
+  <text x="105" y="71" text-anchor="middle" class="t-small">claim → เกตก่อนหน้า</text>
 
   <rect class="box" x="250" y="30" width="200" height="56"/>
   <text x="350" y="53" text-anchor="middle" class="t-b">E1 _classify_situation</text>
@@ -146,204 +146,208 @@
 
   <!-- light path -->
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
-  <text x="740" y="32" text-anchor="middle" class="t-b">เส้นทาง LIGHT — เรียก LLM 1 ครั้ง</text>
-  <text x="740" y="52" text-anchor="middle" class="t-small">ราคา + ธีสิส + ราคาปิด + กฎคลังสินค้า</text>
-  <text x="740" y="72" text-anchor="middle">💡 ทักษะ light 9 รายการ (10 รายการบน us-stock: earnings-preview ก็ใช้ร่วมด้วยเช่นกัน)</text>
+  <text x="740" y="32" text-anchor="middle" class="t-b">เส้นทาง LIGHT — การเรียก LLM 1 ครั้ง</text>
+  <text x="740" y="52" text-anchor="middle" class="t-small">ราคา + แนวคิด + การปิด + กฎสินค้าคงคลัง</text>
+  <text x="740" y="72" text-anchor="middle">💡 ทักษะ light 11 รายการ (12 รายการบน us-stock: earnings-preview ก็ใช้ที่นั่นด้วย)</text>
   <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration ถูกยกเว้น — light มีเกณฑ์ของตัวเอง)</text>
 
   <!-- full path -->
   <rect class="box" x="540" y="140" width="400" height="230"/>
-  <text x="740" y="162" text-anchor="middle" class="t-b">เส้นทาง FULL — เรียก LLM 6 ครั้ง</text>
+  <text x="740" y="162" text-anchor="middle" class="t-b">เส้นทาง FULL — การเรียก LLM 6 ครั้ง</text>
   <rect class="box" x="560" y="176" width="360" height="40"/>
-  <text x="740" y="200" text-anchor="middle" class="t-small">4 บทวิเคราะห์นักวิเคราะห์ (ข่าว · ความรู้สึกตลาด · เศรษฐกิจมหภาค · เทคนิค) — ไม่มีทักษะ, ข้อมูลเท่านั้น</text>
+  <text x="740" y="200" text-anchor="middle" class="t-small">รายงานนักวิเคราะห์ 4 ฉบับ (ข่าว · ความเชื่อมั่น · เศรษฐกิจมหภาค · เทคนิค) — ไม่มีทักษะ ข้อมูลอย่างเดียว</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">การตัดสินใจของ Trader + Risk</text>
-  <text x="740" y="268" text-anchor="middle">💡 ทักษะ trader ที่ไม่ขึ้นกับตลาดทั้งหมด 24 รายการ (28 รายการบน us-stock · 25 รายการบน crypto)</text>
+  <text x="740" y="268" text-anchor="middle">💡 ทักษะ trader ที่ไม่ขึ้นกับตลาดทั้งหมด 26 รายการ (31 รายการบน us-stock · 28 รายการบน crypto)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
-  <text x="740" y="312" text-anchor="middle" class="t-b">ผู้ตรวจสอบเชิงโต้แย้ง (พยายาม REFUTE)</text>
-  <text x="740" y="332" text-anchor="middle">💡 ความเชื่อมั่น · การตอบสนองต่อข่าว · เกตสวนกระแส · ความซื่อตรง</text>
-  <text x="740" y="360" text-anchor="middle" class="t-small">memory + user guidelines + skills sit side by side in both prompts ในทั้งสองพรอมต์</text>
+  <text x="740" y="312" text-anchor="middle" class="t-b">ผู้ตรวจสอบแบบปฏิปักษ์ (พยายามหักล้าง)</text>
+  <text x="740" y="332" text-anchor="middle">💡 ความเชื่อมั่น · ปฏิกิริยาต่อข่าว · เกตสวนกระแส · ความซื่อสัตย์</text>
+  <text x="740" y="360" text-anchor="middle" class="t-small">หน่วยความจำ + แนวทางสำหรับผู้ใช้ + ทักษะ อยู่เคียงข้างกันในพรอมต์ทั้งสอง</text>
 
   <!-- planner -->
   <rect class="box-accent" x="20" y="150" width="200" height="70"/>
-  <text x="120" y="174" text-anchor="middle" class="t-b">ตัววางแผนโหมด Agent</text>
-  <text x="120" y="192" text-anchor="middle" class="t-small">เลือก symbol / size / cadence</text>
-  <text x="120" y="210" text-anchor="middle">💡 การกำหนดขนาด · รายการเฝ้าดู · แผนที่ปัจจัยกระตุ้น · ความกระจุกตัว · ความซื่อตรง</text>
+  <text x="120" y="174" text-anchor="middle" class="t-b">ตัววางแผนโหมดเอเจนต์</text>
+  <text x="120" y="192" text-anchor="middle" class="t-small">เลือกสัญลักษณ์ / ขนาด / จังหวะ</text>
+  <text x="120" y="210" text-anchor="middle">💡 การกำหนดขนาด · รายการเฝ้าติดตาม · แผนที่ปัจจัยกระตุ้น · ความเข้มข้น · ความซื่อสัตย์</text>
 
   <!-- output -->
   <rect class="box" x="250" y="390" width="690" height="34"/>
-  <text x="595" y="411" text-anchor="middle" class="t-small">สัญญา JSON → การถ่วงน้ำหนักความเชื่อมั่น (conviction weighting) → fee/edge + budget + risk gates → การดำเนินการ paper/shadow/live execution</text>
+  <text x="595" y="411" text-anchor="middle" class="t-small">สัญญา JSON → การถ่วงน้ำหนักความเชื่อมั่น → ค่าธรรมเนียม/ความได้เปรียบ + งบประมาณ + เกณฑ์ความเสี่ยง → การดำเนินการแบบ paper/shadow/live</text>
 
   <path class="ln" d="M190,58 L250,58" marker-end="url(#ar)"/>
   <path class="ln" d="M450,50 C500,45 500,50 540,52" marker-end="url(#ar)"/>
   <text x="482" y="38" class="t-small">เงียบ</text>
   <path class="ln" d="M450,70 C500,90 500,180 540,200" marker-end="url(#ar)"/>
-  <text x="466" y="110" class="t-small">เหตุการณ์ · แรงกระแทก · ระบอบตลาด · ใกล้จุดตัดขาดทุน</text>
+  <text x="466" y="110" class="t-small">เหตุการณ์ · ช็อก · ระบอบ · ใกล้จุดหยุด</text>
   <path class="ln" d="M740,106 L740,140" style="display:none"/>
   <path class="ln" d="M540,60 C520,60 500,395 550,401" style="display:none"/>
   <path class="ln" d="M740,370 L740,390" marker-end="url(#ar)"/>
   <path class="ln" d="M940,58 C952,58 952,380 942,395" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">💡 ระบุจุดแทรกทั้งสี่ E1 router prompt จงใจไม่ขยายตัว — มันมีอยู่เพื่อหลีกเลี่ยงการเรียกที่มีค่าใช้จ่ายสูงทั้งหกครั้ง ดังนั้นจึงต้องไม่กลายเป็นครั้งที่เจ็ด</p>
+<p class="legend">💡 ทำเครื่องหมายจุดแทรกทั้งสี่จุด พรอมต์ตัวจัดเส้นทาง E1 ถูกออกแบบมาโดยเจตนาให้ไม่ขยายตัวเพิ่มขึ้น — มันมีไว้เพื่อหลีกเลี่ยงการเรียกที่มีค่าใช้จ่ายสูงทั้งหกครั้ง ดังนั้นจึงต้องไม่กลายเป็นครั้งที่เจ็ด</p>
 </div>
 
-<h2>3. Selection &amp; budget — วิธีสร้างบล็อก (zero-LLM)</h2>
+<h2>3. การเลือก &amp; งบประมาณ — วิธีการสร้างบล็อก (zero-LLM)</h2>
 <div class="card">
 <svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="70" width="150" height="70"/>
-  <text x="95" y="94" text-anchor="middle" class="t-b">ทุกสกิล</text>
-  <text x="95" y="112" text-anchor="middle" class="t-small">แถวที่แคชไว้</text>
+  <text x="95" y="94" text-anchor="middle" class="t-b">ทักษะทั้งหมด</text>
+  <text x="95" y="112" text-anchor="middle" class="t-small">แถวข้อมูลที่แคชไว้,</text>
   <text x="95" y="128" text-anchor="middle" class="t-small">เรียงตามลำดับความสำคัญ</text>
 
   <rect class="box" x="230" y="70" width="140" height="70"/>
   <text x="300" y="94" text-anchor="middle" class="t-b">เปิดใช้งานหรือไม่?</text>
   <text x="300" y="112" text-anchor="middle" class="t-small">site ∈ prompts?</text>
-  <text x="300" y="128" text-anchor="middle" class="t-small">ตรงกับตลาด?</text>
+  <text x="300" y="128" text-anchor="middle" class="t-small">ตลาดตรงกันหรือไม่?</text>
 
   <rect class="box" x="430" y="70" width="150" height="70"/>
-  <text x="505" y="94" text-anchor="middle" class="t-b">ตรวจสอบงบประมาณ</text>
-  <text x="505" y="112" text-anchor="middle" class="t-small">ส่วนล้นหรือไม่</text>
+  <text x="505" y="94" text-anchor="middle" class="t-b">การตรวจสอบงบประมาณ</text>
+  <text x="505" y="112" text-anchor="middle" class="t-small">ส่วนนี้จะล้นหรือไม่</text>
   <text x="505" y="128" text-anchor="middle" class="t-small">30,000 ตัวอักษร?</text>
 
   <rect class="box-accent" x="650" y="70" width="290" height="70"/>
-  <text x="795" y="94" text-anchor="middle" class="t-b">บล็อกที่มีกรอบ</text>
-  <text x="795" y="112" text-anchor="middle" class="t-small">"อาจทำให้คุณระมัดระวังมากขึ้น; ไม่สามารถทำให้</text>
-  <text x="795" y="128" text-anchor="middle" class="t-small">ลบล้าง (override) ขีดจำกัดความเสี่ยงหรือเงื่อนไขการดำเนินการซื้อขาย (execution gates)"</text>
+  <text x="795" y="94" text-anchor="middle" class="t-b">บล็อกที่ใส่กรอบ</text>
+  <text x="795" y="112" text-anchor="middle" class="t-small">"อาจทำให้คุณระมัดระวังมากขึ้น; ไม่มีทางจะ</text>
+  <text x="795" y="128" text-anchor="middle" class="t-small">เอาชนะขีดจำกัดความเสี่ยงหรือเกตการดำเนินการได้"</text>
 
   <path class="ln" d="M170,105 L230,105" marker-end="url(#ar)"/>
   <path class="ln-good" d="M370,105 L430,105" marker-end="url(#ar-g)"/>
   <text x="385" y="98" class="t-small">ผ่าน</text>
   <path class="ln-bad" d="M300,140 L300,180" marker-end="url(#ar)"/>
-  <text x="310" y="170" class="t-small">ไม่ผ่าน → ข้าม</text>
+  <text x="310" y="170" class="t-small">ล้มเหลว → ข้าม</text>
   <path class="ln-good" d="M580,105 L650,105" marker-end="url(#ar-g)"/>
   <text x="592" y="98" class="t-small">พอดี</text>
   <path class="ln-bad" d="M505,140 L505,180" marker-end="url(#ar)"/>
-  <text x="515" y="170" class="t-small">overflow → ข้ามสกิลทั้งหมด ไม่มีการตัดข้อความกลางเนื้อหา</text>
+  <text x="515" y="170" class="t-small">เกินขนาด → ข้ามสกิลทั้งหมด ไม่มีการตัดทอนกลางเนื้อหาเด็ดขาด</text>
 </svg>
-<p class="legend">ข้อผิดพลาดของ registry ในขั้นตอนใดก็ตามจะลดระดับเป็นบล็อกเปล่า — ตาราง skills ที่พังจะไม่สามารถทำให้ trading cycle พังตามไปด้วย</p>
+<p class="legend">ข้อผิดพลาดของรีจิสทรีในขั้นตอนใดก็ตามจะลดระดับลงเป็นบล็อกว่างเปล่า — ตารางสกิลที่เสียหายไม่มีทางทำให้รอบการเทรดหยุดชะงักได้</p>
 </div>
 
-<h2>4. สกิลพื้นฐานทั้งสามสิบสอง — ใช้ที่ไหนบ้าง</h2>
+<h2>4. สกิลพื้นฐานทั้งสามสิบหก — อะไรใช้ที่ไหน</h2>
 <div class="card">
 <table>
-  <tr><th>ทักษะ</th><th>สาระสำคัญ</th><th>สว่าง</th><th>เทรดเดอร์</th><th>ผู้ตรวจสอบ</th><th>ตัววางแผน</th><th>กลั่นมาจาก</th></tr>
-  <tr><td><code>market-regime-lens</code></td><td>4 จุดอ้างอิง (แนวโน้ม · ความผันผวน · การมีส่วนร่วม · เหตุการณ์) → ป้ายกำกับแบบปิดที่ระมัดระวัง → กลยุทธ์</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การวิเคราะห์ regime ด้วย marian2js</td></tr>
-  <tr><td><code>market-topping-evidence</code></td><td>distribution-day clusters, leadership breakdown, defensive rotation → ลด exposure ตามจำนวนหลักฐาน</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัวติดตาม tradermonty market-top + IBD DD</td></tr>
-  <tr><td><code>crypto-regime-lens</code></td><td>6 anchors (BTC trend · alt breadth · dominance rotation · funding crowding · cycle position · thrust); ความขัดแย้งลด exposure <b>(คริปโตเท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัววิเคราะห์ระบอบตลาดคริปโต tradermonty</td></tr>
-  <tr><td><code>breadth-context</code></td><td>อ่านบรรทัด market breadth ของตลาดสหรัฐฯ ที่ถูกแทรกเข้ามา เป็นหลักฐานสภาพแวดล้อม: เกณฑ์ค่าเฉลี่ย 8 วัน (70%+ คือการปรับตัวขึ้นแบบกว้าง → ต่ำกว่า 40% คือความอ่อนแอสุดขั้ว), แนวโน้มระยะยาวเป็นตัวกำหนดความหมายของระดับ; โซนขาลงเชิงโครงสร้างคือระบอบเชิงป้องกัน; หากไม่มีบรรทัด breadth สุขภาพตลาดคือ UNKNOWN — ไม่ใช่แข็งแรง <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ live CSV feed)</td></tr>
-  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: วันพยายามฟื้นตัว (rally attempt) วันที่ 4 เป็นต้นไป ดัชนีปรับตัวขึ้นแรงพร้อมปริมาณการซื้อขายที่เพิ่มขึ้นเป็นการยืนยันการกลับเข้าซื้อ; การหลุดต่ำกว่าระดับเดิมจะรีเซ็ตการนับ; การสำรวจขนาดก่อนการยืนยัน <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
-  <tr><td><code>thesis-validation</code></td><td>ข้อสมมติฐานที่พิสูจน์ได้ว่าเป็นเท็จ, ข้อเท็จจริงเทียบกับสมมติฐาน, ความเหมาะสมกับกรอบเวลา, ภาระการพึ่งพา, การพิสูจน์ความไม่ถูกต้องที่เป็นรูปธรรม</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การตรวจสอบความถูกต้องของวิทยานิพนธ์ marian2js</td></tr>
-  <tr><td><code>stage-discipline</code></td><td>การอ่านสี่ระยะจากข้อมูลที่แสดง: มีเพียง Stage 2 เท่านั้นที่เปิด long ใหม่ได้ (Stage 4 เปิด short ใหม่); ฐานที่สี่ขึ้นไปให้ลดขนาด; extended-from-base หมายถึงให้รอ; ระยะที่ไม่สามารถระบุได้คือช่องว่างที่ต้องหยุด (blocking gap) ห้ามสันนิษฐานว่าเป็น Stage 2 <b>(เฉพาะหุ้นสหรัฐฯ เท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (ระยะของ Minervini)</td></tr>
-  <tr><td><code>level-integrity</code></td><td>ระดับต้องสามารถทำงานได้จริง: อยู่ฝั่งขวาของราคาปัจจุบัน (spot), พ้นจาก noise ของครึ่งวัน, อยู่ภายในช่วงราคาล่าสุด; หากระดับใช้ไม่ได้ = ให้บอกตรงๆ และอ้างอิงกับโครงสร้างที่มองเห็นได้</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การเฝ้าติดตามของ sooppiy (ระดับฝั่งผิด, 2026-08-03)</td></tr>
-  <tr><td><code>position-sizing-discipline</code></td><td>กำหนดขนาดจากความเสี่ยง, ข้อจำกัดที่เข้มงวดที่สุดชนะ, ปัดเศษลง, ใช้ความระมัดระวังแบบ half-Kelly</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph ตัวกำหนดขนาดโพซิชัน</td></tr>
-  <tr><td><code>volatility-context</code></td><td>ประเมินช่วงราคา, จุดตัดขาดทุน และขนาดโพซิชันเทียบกับประวัติความผันผวนของสินทรัพย์นั้นๆ เอง; ภาวะบีบตัวคือสัญญาณที่มีน้ำหนัก, ค่าสุดขั้วมักย้อนกลับ; ห้ามขยายจุดตัดขาดทุนที่ขนาดโพซิชันเท่าเดิม</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs การสร้างแบบจำลองความผันผวน + การตรวจจับระบอบตลาด</td></tr>
-  <tr><td><code>macro-event-analysis</code></td><td>จัดอันดับเหตุการณ์ตามผลกระทบต่อการตัดสินใจ (ความอ่อนไหว · ศักยภาพความประหลาดใจ · การส่งผ่าน · จังหวะเวลา); เหตุการณ์คือความเสี่ยง ไม่ใช่สัญญาณ</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js การวิเคราะห์เหตุการณ์มหภาค</td></tr>
-  <tr><td><code>mean-reversion-guard</code></td><td>การสวนการเคลื่อนไหวของราคาต้องมีหลักฐานของ RANGE จุดเข้าที่ปลายสุดของช่วง เป้าหมายกลางช่วง และงบเวลา; ความต่อเนื่องคือค่าเริ่มต้น; ห้ามเพิ่มสถานะด้วยเหตุผล "ราคาดีขึ้น"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs การกลับสู่ค่าเฉลี่ย (Hurst · half-life · z-score)</td></tr>
-  <tr><td><code>news-reaction-evidence</code></td><td>การตอบสนองของราคาต่อข่าวสำคัญกว่าข่าวนั้นเอง; ความหมดแรง (exhaustion) = การเคลื่อนไหวสวนทางกับข่าวดี ไม่ใช่แค่ความเงียบเฉย</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty ความล้มเหลวในการตอบสนองต่อข่าว (Shapiro step 2)</td></tr>
-  <tr><td><code>risk-reward-structure</code></td><td>stop = จุดยกเลิกสมมติฐานตามหลักเกณฑ์ที่ชัดเจน, target = ระดับที่เป็นไปได้, ratio ≥ 2×, ratio ที่ดี ≠ การเทรดที่ดี</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js การตรวจสอบความสมเหตุสมผลของ R:R</td></tr>
-  <tr><td><code>exit-discipline</code></td><td>การทำกำไรเข้ากระเป๋า (banking) มีความสำคัญสูงสุด, ห้ามเพิ่มสถานะให้กับฝั่งที่ขาดทุน, การยกเลิกสมมติฐาน = ปิดสถานะ ไม่ใช่การต่อรองใหม่</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy แนวทางการออกจากสถานะ + Senpi</td></tr>
-  <tr><td><code>horizon-discipline</code></td><td>สถานะที่เพิ่งเปิดใหม่จะได้รับกรอบเวลาตามที่กำหนดไว้; การเบี่ยงเบนเล็กน้อยในทางลบไม่ถือเป็นการยกเลิกสมมติฐาน; การออกจากสถานะก่อนครบกรอบเวลาต้องมีตัวกระตุ้นที่ระบุชื่อไว้จากรายการที่กำหนดไว้แล้ว — "ปกป้องเงินทุน" ไม่ใช่หนึ่งในนั้น</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy การเฝ้าติดตาม (การปั่นป่วนภายในกรอบเวลา, 2026-08-03)</td></tr>
-  <tr><td><code>position-management</code></td><td>จัดการโดยอ้างอิงกับแผนเดิม (ORIGINAL plan) ไม่ใช่ P&amp;L; ถือ / จัดการอย่างเชิงรุก / ออกอย่างเด็ดขาด + เงื่อนไขที่ทำให้เปลี่ยนแปลง</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การจัดการโพซิชันของ marian2js</td></tr>
-  <tr><td><code>reachable-exits</code></td><td>กำหนด stop, target และ trail ของคุณเองในทุกการเข้าเทรด โดยแต่ละจุดต้องไปถึงได้ภายในการเคลื่อนไหวที่คุณคาดการณ์ไว้; การไม่กำหนดสิ่งเหล่านี้เท่ากับมอบค่าเริ่มต้นที่มองไม่เห็นให้กับการเทรด; หากกำหนดรูปทรงไม่ได้ → ยกเลิกช่องนั้น</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การตรวจสอบ sooppiy (trails ที่ไม่สามารถเข้าถึงได้, 2026-08-03)</td></tr>
-  <tr><td><code>drawdown-circuit-breaker</code></td><td>ความเสียหายที่เกิดขึ้นจริงเป็นตัวกำหนดความเสี่ยงใหม่; ขาดทุนต่อเนื่อง → ช่วงพัก (จัดการ ไม่เปิดใหม่); ความอยู่รอดมาก่อน</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
-  <tr><td><code>confidence-resolution</code></td><td>คำนวณความมั่นใจจากคะแนนองค์ประกอบทั้งสี่ของคุณเอง; เกณฑ์นี้ระบุจุดอ้างอิง ไม่ใช่รายการให้เลือก; ค่าที่เป็นจุดสำคัญหรือค่ากลางถูกเลือก ไม่ใช่ถูกคำนวณ — ทศนิยมตำแหน่งที่สองต้องมีความหมาย</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (ความเชื่อมั่นแบบควอนไทซ์, 2026-08-03)</td></tr>
-  <tr><td><code>conviction-calibration</code></td><td>ความมั่นใจ = หลักฐานที่สอดคล้องกันซึ่งนับได้; ไม่มีค่าที่ใช้ตามความเคยชิน; ไม่เข้าเทรดหากไม่มีความได้เปรียบ</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>โซน mph Druckenmiller</td></tr>
-  <tr><td><code>exposure-discipline</code></td><td>สถานะก่อนการเทรด: new-entry-allowed / reduce-only / cash-priority; เมื่อขัดแย้งกันให้เลือกความเสี่ยงที่ต่ำกว่าเป็นค่าเริ่มต้น</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty โค้ชด้านการเปิดรับความเสี่ยง</td></tr>
-  <tr><td><code>pre-trade-readiness</code></td><td>ห่วงโซ่การตรวจสอบที่สั้นที่สุด หยุดที่จุดปิดกั้นแรก; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ขั้นตอนการตรวจสอบก่อนการเทรด marian2js pre-trade-check</td></tr>
-  <tr><td><code>contrarian-crowding-gate</code></td><td>crowding → news-failure → price confirmation แต่ละขั้นตอน fail-closed; การปฏิเสธก่อนหน้าไม่มีการผ่อนปรน</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>ประตูตั้งค่าสวนกระแส tradermonty (Shapiro)</td></tr>
-  <tr><td><code>scenario-precommit</code></td><td>จำแนกประเภทเหตุการณ์ จับคู่ผลกระทบระดับที่ 1/2/3 กำหนดเงื่อนไข if/then ล่วงหน้าพร้อมระดับที่ตั้งไว้</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ตัววิเคราะห์สถานการณ์</td></tr>
-  <tr><td><code>data-honesty</code></td><td>เฉพาะตัวเลขในพรอมต์เท่านั้น; ไม่แน่ชัด ≠ ปลอดภัยทั้งหมด; ข้อมูลไม่ใช่คำสั่งเด็ดขาด</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>กฎเข้มงวดของ Senpi + การป้องกันของ Bybit</td></tr>
-  <tr><td><code>evidence-gap-check</code></td><td>known vs assumed; จัดอันดับช่องว่างตามผลกระทบต่อการตัดสินใจ; ช่องว่างที่ปิดกั้นหมายถึงความเชื่อมั่นต่ำลง + ระงับไว้</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js ตรวจสอบช่องว่างของหลักฐาน</td></tr>
-  <tr><td><code>earnings-preview</code></td><td>ความเกี่ยวข้องของ benchmark · ความเข้มข้นของการถกเถียง · read-through · ความเสี่ยงของโพซิชัน; ความสำคัญ ≠ ความแน่นอน <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js ตัวอย่างผลประกอบการ</td></tr>
-  <tr><td><code>catalyst-map</code></td><td>ให้คะแนน catalyst ตามช่วงเวลา · การส่งผ่าน · ผลกระทบ · ความทับซ้อน; ห่วงโซ่เหตุการณ์ที่ใช้ร่วมกันคือความกระจุกตัว</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>แผนที่ catalyst ของ marian2js</td></tr>
-  <tr><td><code>watchlist-review</code></td><td>จัดลำดับความสำคัญตามความสามารถในการปฏิบัติจริง (ความเกี่ยวข้องของ catalyst · ความสามารถในการเทรด · ความพร้อม · ความซ้ำซ้อน) ไม่ใช่ความคุ้นเคย</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>การตรวจสอบ watchlist ของ marian2js</td></tr>
-  <tr><td><code>execution-plan-check</code></td><td>ความเร่งด่วนเทียบกับวิธีการสั่งซื้อ, spread/depth, ช่วงเวลาของเซสชัน, ความสมจริงของ stop; แผนที่ไม่สามารถดำเนินการได้ = เปราะบาง</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การตรวจสอบแผนการดำเนินการของ marian2js</td></tr>
-  <tr><td><code>portfolio-concentration</code></td><td>การกระจายความเสี่ยง = ปัจจัยขับเคลื่อนที่ใช้ร่วมกัน ไม่ใช่จำนวน ticker; ตัดสิน the add เทียบกับพอร์ตโฟลิโอ; สูงขึ้น → เล็กลง</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>ความกระจุกตัวของพอร์ตโฟลิโอของ marian2js</td></tr>
+  <tr><th>สกิล</th><th>แก่นสาระ</th><th>เบา</th><th>เทรดเดอร์</th><th>ผู้ตรวจสอบ</th><th>ผู้วางแผน</th><th>กลั่นมาจาก</th></tr>
+  <tr><td><code>market-regime-lens</code></td><td>หลัก 4 ประการ (เทรนด์ · ความผันผวน · การมีส่วนร่วม · เหตุการณ์) → ป้ายกำกับปิดแบบระมัดระวัง → กลยุทธ์</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การวิเคราะห์ระบอบ marian2js</td></tr>
+  <tr><td><code>market-topping-evidence</code></td><td>กลุ่มวัน distribution, การล่มสลายของกลุ่มผู้นำ, การหมุนเวียนเชิงรับ → ลดการถือครองตามจำนวนหลักฐาน</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัวติดตามจุดสูงสุดของตลาดและ IBD DD จาก tradermonty</td></tr>
+  <tr><td><code>crypto-regime-lens</code></td><td>หลัก 6 ประการ (เทรนด์ BTC · ความกว้างของอัลต์คอยน์ · การหมุนเวียนความครองตลาด · ความแออัดของ funding · ตำแหน่งวัฏจักร · แรงส่ง); ความขัดแย้งจะลดการถือครอง <b>(เฉพาะคริปโต)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัววิเคราะห์ระบอบตลาดคริปโต tradermonty</td></tr>
+  <tr><td><code>breadth-context</code></td><td>อ่านเส้นความกว้างตลาดสหรัฐฯ ที่ถูกแทรกเข้ามาเป็นหลักฐานด้านสภาพแวดล้อม: เกณฑ์ค่าเฉลี่ย 8 วัน (70%+ คือการฟื้นตัวแบบกว้าง → ต่ำกว่า 40% คือความอ่อนแอสุดขีด), เทรนด์ระยะยาวเป็นตัวกำหนดคุณสมบัติของระดับ, โซนขาลงเชิงโครงสร้างคือระบอบเชิงรับ; หากไม่มีเส้นความกว้างหมายถึงสุขภาพตลาด UNKNOWN ไม่ใช่สุขภาพดีเด็ดขาด <b>(เฉพาะหุ้นสหรัฐฯ)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ ฟีด CSV แบบสด)</td></tr>
+  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: วันพยายามฟื้นตัว (rally attempt) วันที่ 4 เป็นต้นไป การที่ดัชนีปรับขึ้นแรงพร้อมปริมาณการซื้อขายที่เพิ่มขึ้นเป็นการยืนยันการเข้าซื้อใหม่ (re-entry); การหลุดต่ำกว่าจุดต่ำเดิม (undercut) จะรีเซ็ตการนับวัน; ให้สำรวจขนาดของโพซิชันก่อนที่จะมีการยืนยัน <b>(us-stock เท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
+  <tr><td><code>thesis-validation</code></td><td>ข้อกล่าวอ้างที่พิสูจน์ได้ว่าเป็นเท็จ, ข้อเท็จจริงเทียบกับข้อสมมติ, ความเหมาะสมกับกรอบเวลา, ภาระการพึ่งพา, การหักล้างที่เป็นรูปธรรม</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js การตรวจสอบความถูกต้องของสมมติฐาน</td></tr>
+  <tr><td><code>stage-discipline</code></td><td>การอ่านสี่ระยะจากข้อมูลที่แสดง: มีเพียง Stage 2 เท่านั้นที่เปิดสถานะซื้อใหม่ได้ (Stage 4 สำหรับสถานะขายใหม่); ฐานที่สี่หรือมากกว่าให้ลดขนาดตำแหน่ง; หากยืดออกจากฐานมากเกินไปให้รอ; ระยะที่ไม่สามารถระบุได้ถือเป็นช่องว่างที่ต้องหยุด ห้ามสมมติว่าเป็น Stage 2 <b>(us-stock เท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (ระยะของ Minervini)</td></tr>
+  <tr><td><code>level-integrity</code></td><td>ระดับราคาต้องสามารถทำงานได้จริง: อยู่ด้านขวาของราคาปัจจุบัน (spot), ห่างจากความผันผวนของครึ่งวัน (half-a-day's noise), อยู่ในกรอบช่วงราคาล่าสุด; ระดับที่ใช้งานไม่ได้ = ให้ระบุตรงๆ และยึดกับโครงสร้างที่มองเห็นได้</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การติดตาม sooppiy (ระดับฝั่งผิด, 2026-08-03)</td></tr>
+  <tr><td><code>pead-drift</code></td><td>ตลาดมักตอบสนองน้อยเกินไปต่อเซอร์ไพรส์กำไรที่แท้จริง: คัดกรองเหตุการณ์ (ตัวกระตุ้นที่ชัดเจน + การเคลื่อนไหวที่เด็ดขาด + ปริมาณการซื้อขายพุ่งสูงผิดปกติ; การเพิ่มทุน/การเสนอขายหุ้นใหม่/การสอบสวนทำให้ไม่ผ่านเกณฑ์), เข้าซื้อที่การพักตัวครั้งแรกที่ยังคงรักษาช่องว่างราคาไว้ได้ ตั้งจุดตัดขาดทุนไว้ต่ำกว่าจุดต่ำสุดของการพักตัว; ความได้เปรียบจะหมดลงภายในสัปดาห์ที่ห้าถึงหก; มีลักษณะสมมาตรกับช่องว่างราคาขาลง <b>(เฉพาะหุ้นสหรัฐฯ เท่านั้น)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty episodic-pivot + pead-screener + earnings-trade-analyzer</td></tr>
+  <tr><td><code>position-sizing-discipline</code></td><td>กำหนดขนาดโพซิชันจากความเสี่ยง, ข้อจำกัดที่เข้มงวดที่สุดเป็นตัวกำหนด, ปัดเศษลง, ใช้ความระมัดระวังแบบ half-Kelly</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + ตัวปรับขนาดตำแหน่ง mph</td></tr>
+  <tr><td><code>volatility-context</code></td><td>ตัดสินช่วงราคา จุดตัดขาดทุน และขนาดโพซิชันโดยเทียบกับประวัติความผันผวนของสินทรัพย์นั้นๆ เอง; ภาวะบีบตัวคือการสะสมพลัง ภาวะสุดขั้วมักย้อนกลับ; ห้ามขยายจุดตัดขาดทุนโดยคงขนาดเท่าเดิม</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs การสร้างแบบจำลองความผันผวน + การตรวจจับสภาวะตลาด</td></tr>
+  <tr><td><code>macro-event-analysis</code></td><td>จัดอันดับเหตุการณ์ตามผลกระทบต่อการตัดสินใจ (ความอ่อนไหว · ศักยภาพในการสร้างความประหลาดใจ · การส่งผ่านผลกระทบ · จังหวะเวลา); เหตุการณ์คือความเสี่ยง ไม่ใช่สัญญาณ</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การวิเคราะห์เหตุการณ์มหภาคของ marian2js</td></tr>
+  <tr><td><code>mean-reversion-guard</code></td><td>การเทรดสวนทิศทางการเคลื่อนไหวของราคาต้องมีหลักฐานของ RANGE จุดเข้าที่จุดปลายสุดของช่วง เป้าหมายกลางช่วง และกำหนดเวลาที่ชัดเจน ความต่อเนื่องคือค่าเริ่มต้น ห้ามเพิ่มสถานะเพราะ "ราคาที่ดีกว่า"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (การกลับตัวสู่ค่าเฉลี่ย Hurst · half-life · z-score)</td></tr>
+  <tr><td><code>news-reaction-evidence</code></td><td>ปฏิกิริยาของราคาต่อข่าวมีความสำคัญมากกว่าตัวข่าวเอง ความหมดแรง = การเคลื่อนไหวที่สวนทางกับข่าวดี ไม่ใช่แค่ความเงียบ</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (ขั้นตอนที่ 2 ของ Shapiro)</td></tr>
+  <tr><td><code>parabolic-exhaustion</code></td><td>ชอร์ตแนวตั้งต้องมีหลักฐานการหมดแรง (ความชันที่เร่งขึ้น · การยืดตัวเทียบกับความผันผวนของตัวเอง · จุดสูงสุดของวอลุ่ม · การขยายตัวของเรนจ์ · ความหนาแน่นของผู้เล่น) พร้อมกับสัญญาณความล้มเหลว; วางสต็อปเหนือจุดสูงสุดของการระเบิดราคา ลดขนาดโพซิชัน ปิดสถานะเมื่อเกิดการไหลลงครั้งแรก; ห้ามเพิ่มโพซิชันขณะเกิด squeeze <b>(เฉพาะคริปโต · ฟิวเจอร์ส)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัววางแผนการเทรดขาย-parabolic-short-trade-planner ของ tradermonty</td></tr>
+  <tr><td><code>risk-reward-structure</code></td><td>สต็อป = จุดที่ทำให้สมมติฐานเป็นโมฆะ, เป้าหมาย = ระดับที่เข้าถึงได้จริง, อัตราส่วน ≥ 2×, อัตราส่วนที่ดี ≠ เทรดที่ดี</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R ตรวจสอบความสมเหตุสมผล</td></tr>
+  <tr><td><code>exit-discipline</code></td><td>การจัดการเงินทุนมาก่อนเสมอ ห้ามเพิ่มตำแหน่งในสถานะที่ขาดทุน การยกเลิกความเชื่อ = การปิดสถานะ ไม่ใช่การเจรจาใหม่</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ราวป้องกันการออก (exit rails) ของ sooppiy + Senpi</td></tr>
+  <tr><td><code>horizon-discipline</code></td><td>ตำแหน่งที่เปิดใหม่จะมีขอบเขตเวลาตามที่กำหนดไว้ การเคลื่อนไหวย้อนกลับเล็กน้อยไม่ถือเป็นการยกเลิกความเชื่อ การออกก่อนถึงขอบเขตเวลาต้องมีสัญญาณกระตุ้นที่ระบุชื่อได้หนึ่งอย่างจากชุดที่กำหนดไว้ — "ป้องกันเงินทุน" ไม่ใช่หนึ่งในนั้น</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การมอนิเตอร์ sooppiy (churn ระหว่างช่วงเวลา, 2026-08-03)</td></tr>
+  <tr><td><code>reentry-discipline</code></td><td>การปิดสถานะที่ขาดทุนสองครั้งในทิศทางเดียวกันจะพลิกภาระการพิสูจน์ — การเข้าใหม่ตามการอ่านสัญญาณที่พึ่งขาดทุนไปสองครั้งนั้นต้องมีหลักฐานใหม่ที่มีนัยสำคัญ ไม่ใช่แค่ความมั่นใจที่มากขึ้น สัญญาณที่ไม่มีการอ่านต่อเนื่องเป็นเวลานานสมควรได้รับการเลิกใช้ แต่ต้องเป็นไปตามที่เส้น Streak พิสูจน์แล้วเท่านั้น ไม่ใช่ตั้งแต่แรกเริ่ม</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (the −57 day's re-entry churn, 2026-08-05)</td></tr>
+  <tr><td><code>loss-aging</code></td><td>การขาดทุนที่ยืดเยื้อคือการตัดสินใจที่เพิ่มขึ้นเรื่อยๆ เมื่อผ่านช่วงประมาณ 2 เท่าของกำไรทั่วไปแล้ว การถือต่อต้องมีเหตุผลที่ระบุชื่อได้และตรวจสอบได้ พร้อมจุดที่กำหนดไว้ว่าจะยอมรับว่าผิด เมื่อผ่านไปหลายรอบ ให้ถามว่า "ถ้าจะเปิดตำแหน่งนี้ตอนนี้ จะเปิดหรือไม่" หากมี 3 รอบขึ้นไปที่แย่ลงโดยไม่มีการดำเนินการ ถือเป็นการตัดสินใจโดยปริยาย</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Sooppiy monitoring (ลำดับการถือครอง HYPE, 2026-08-05)</td></tr>
+  <tr><td><code>position-management</code></td><td>จัดการตามแผนเดิม ไม่ใช่ตาม P&amp;L; ถือ / จัดการอย่างจริงจัง / ออกอย่างเด็ดขาด + เงื่อนไขที่เปลี่ยนแปลงมัน</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การจัดการโพซิชันของ marian2js</td></tr>
+  <tr><td><code>reachable-exits</code></td><td>กำหนด stop, target และ trail ของตัวเองในทุกการเข้า โดยแต่ละจุดต้องเข้าถึงได้ภายในการเคลื่อนไหวที่คุณคาดการณ์; การละเว้นสิ่งเหล่านี้เท่ากับมอบค่าเริ่มต้นที่ไม่มองเห็นให้กับการเทรด; รูปแบบที่ไม่สามารถแสดงออกได้ → เลิกใช้ slot นั้น</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (ไม่สามารถเข้าถึง trails, 2026-08-03)</td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td>ความเสียหายที่เกิดขึ้นจริงเป็นตัวกำหนดความเสี่ยงใหม่; ขาดทุนติดต่อกัน → พักการเทรด (จัดการ ไม่เปิดใหม่); เอาตัวรอดมาก่อน</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
+  <tr><td><code>confidence-resolution</code></td><td>ประเมินความเชื่อมั่นจากคะแนนองค์ประกอบทั้งสี่ของคุณเอง; เกณฑ์ที่ให้มาเป็นจุดอ้างอิง ไม่ใช่รายการให้เลือก; ค่าที่เป็นจุดสำคัญหรือค่ากึ่งกลางถูกเลือก ไม่ใช่ถูกคำนวณ — ทศนิยมตำแหน่งที่สองต้องมีความหมาย</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy การตรวจสอบ (ความเชื่อมั่นแบบควอนไทซ์, 2026-08-03)</td></tr>
+  <tr><td><code>conviction-calibration</code></td><td>ความเชื่อมั่น = หลักฐานที่สอดคล้องกันซึ่งนับได้; ไม่ใช่ค่าที่ใช้เป็นประจำ; ไม่มีการเทรดโดยไม่มีความได้เปรียบ</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mph Druckenmiller โซน</td></tr>
+  <tr><td><code>exposure-discipline</code></td><td>ตำแหน่งก่อนการเทรด: new-entry-allowed / reduce-only / cash-priority; เมื่อขัดแย้งกันให้เลือกความเสี่ยงที่ต่ำกว่าเป็นค่าเริ่มต้น</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>โค้ชด้านการเปิดรับความเสี่ยงของ tradermonty</td></tr>
+  <tr><td><code>pre-trade-readiness</code></td><td>ลำดับการตรวจสอบที่สั้นที่สุด หยุดที่จุดขัดขวางแรก; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>เวิร์กโฟลว์ pre-trade-check ของ marian2js</td></tr>
+  <tr><td><code>contrarian-crowding-gate</code></td><td>ความหนาแน่น → ความล้มเหลวของข่าว → การยืนยันราคา แต่ละขั้นตอนหากล้มเหลวจะปิดทันที; การปฏิเสธก่อนหน้าจะไม่ถูกผ่อนปรนอีก</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>ประตูตั้งค่าตรงข้ามของ tradermonty (Shapiro)</td></tr>
+  <tr><td><code>scenario-precommit</code></td><td>จำแนกประเภทเหตุการณ์ แผนผังผลกระทบระดับที่ 1/2/3 กำหนดแผนสำรอง if/then ล่วงหน้าพร้อมระดับที่ตั้งไว้</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตัววิเคราะห์สถานการณ์ tradermonty</td></tr>
+  <tr><td><code>data-honesty</code></td><td>ใช้เฉพาะตัวเลขในพรอมต์; ไม่แน่ชัด ≠ ปลอดภัยทั้งหมด; ข้อมูลไม่ใช่คำสั่ง</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>กฎเข้มงวดของ Senpi + การป้องกันของ Bybit</td></tr>
+  <tr><td><code>evidence-gap-check</code></td><td>รู้แล้ว vs สมมติ; จัดลำดับช่องว่างตามผลกระทบต่อการตัดสินใจ; ช่องว่างที่ขัดขวางหมายถึงความเชื่อมั่นลดลง + ถือ</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>ตรวจสอบช่องว่างของหลักฐาน marian2js</td></tr>
+  <tr><td><code>earnings-preview</code></td><td>ความเกี่ยวข้องของ benchmark · ความเข้มข้นของการถกเถียง · read-through · ความเสี่ยงจากโพซิชัน; ความสำคัญ ≠ ความแน่นอน <b>(สำหรับหุ้นสหรัฐฯ เท่านั้น)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js ตัวอย่างผลประกอบการ</td></tr>
+  <tr><td><code>catalyst-map</code></td><td>ให้คะแนนปัจจัยกระตุ้นตามความสอดคล้องด้านเวลา · การส่งผ่าน · ผลกระทบ · การซ้อนทับ; ห่วงโซ่เหตุการณ์ที่ใช้ร่วมกันคือความกระจุกตัว</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>แผนที่ปัจจัยกระตุ้นของ marian2js</td></tr>
+  <tr><td><code>watchlist-review</code></td><td>จัดลำดับความสำคัญตามความสามารถในการนำไปปฏิบัติ (ความเกี่ยวข้องของปัจจัยกระตุ้น · ความสามารถในการซื้อขาย · ความพร้อม · ความซ้ำซ้อน) ไม่ใช่ความคุ้นเคย</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>การตรวจสอบรายการเฝ้าติดตามของ marian2js</td></tr>
+  <tr><td><code>execution-plan-check</code></td><td>ความเร่งด่วนเทียบกับวิธีการส่งคำสั่ง, สเปรด/ความลึกของตลาด, ช่วงเวลาซื้อขาย, ความสมจริงของจุดตัดขาดทุน; แผนที่ไม่สามารถดำเนินการได้ = เปราะบาง</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>การตรวจสอบแผนการดำเนินการของ marian2js</td></tr>
+  <tr><td><code>portfolio-concentration</code></td><td>การกระจายความเสี่ยง = ปัจจัยขับเคลื่อนที่ใช้ร่วมกัน ไม่ใช่จำนวนสัญลักษณ์หุ้น; ประเมินการเพิ่มโดยเทียบกับพอร์ตทั้งหมด; สูง → เล็กลง</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>ความกระจุกตัวของพอร์ตของ marian2js</td></tr>
 </table>
-<p class="legend">* the light prompt มีเกณฑ์การปรับแต่งแบบ inline ของตัวเองอยู่แล้ว — การแทรก skill เข้าไปในนั้นจะทำให้เกิดความซ้ำซ้อนภายใน prompt เดียว</p>
+<p class="legend">* พรอมต์แบบเบามีเกณฑ์การปรับแต่งในตัวอยู่แล้ว — การแทรกทักษะเข้าไปที่นั่นจะทำให้เกิดความซ้ำซ้อนภายในพรอมต์เดียว</p>
 </div>
 
-<h2>5. วงจรชีวิตของ Skill — base เทียบกับ custom</h2>
+<h2>5. วงจรชีวิตของทักษะ — พื้นฐานเทียบกับกำหนดเอง</h2>
 <div class="card">
 <svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
   <rect class="box-accent" x="20" y="30" width="190" height="60"/>
-  <text x="115" y="54" text-anchor="middle" class="t-b">ค่าเริ่มต้นของ catalogue</text>
+  <text x="115" y="54" text-anchor="middle" class="t-b">ค่าเริ่มต้นของแคตตาล็อก</text>
   <text x="115" y="72" text-anchor="middle" class="t-small">BASE_SKILLS ในโค้ด</text>
 
   <rect class="box" x="330" y="30" width="180" height="60"/>
-  <text x="420" y="54" text-anchor="middle" class="t-b">แถวใน DB (base)</text>
+  <text x="420" y="54" text-anchor="middle" class="t-b">แถวข้อมูลใน DB (พื้นฐาน)</text>
   <text x="420" y="72" text-anchor="middle" class="t-small">is_base = 1</text>
 
   <rect class="box" x="630" y="30" width="180" height="60"/>
   <text x="720" y="54" text-anchor="middle" class="t-b">แก้ไข / ปิดใช้งาน</text>
-  <text x="720" y="72" text-anchor="middle" class="t-small">เวอร์ชันของ admin ชนะ</text>
+  <text x="720" y="72" text-anchor="middle" class="t-small">เวอร์ชันของผู้ดูแลระบบมีผลเหนือกว่า</text>
 
   <rect class="box" x="330" y="160" width="180" height="60"/>
-  <text x="420" y="184" text-anchor="middle" class="t-b">แถวใน DB (custom)</text>
+  <text x="420" y="184" text-anchor="middle" class="t-b">แถวข้อมูลใน DB (กำหนดเอง)</text>
   <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
 
   <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
-  <text x="228" y="52" class="t-small">seed + auto-upgrade ไม่ถูกแตะต้อง</text>
+  <text x="228" y="52" class="t-small">seed + อัปเกรดอัตโนมัติไม่ถูกแก้ไข</text>
   <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
   <text x="540" y="42" class="t-small">PATCH / ปิดใช้งาน</text>
   <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
   <text x="537" y="98" class="t-small">POST /reset → ค่าเริ่มต้น</text>
   <path class="ln-bad" d="M420,90 L420,124"/>
-  <text x="430" y="112" class="t-small">DELETE → 400 "ปิดการใช้งานหรือรีเซ็ตแทน"</text>
+  <text x="430" y="112" class="t-small">DELETE → 400 "ปิดใช้งานหรือรีเซ็ตแทน"</text>
   <path class="ln" d="M160,190 L330,190" marker-end="url(#ar)"/>
   <text x="175" y="182" class="t-small">POST /api/admin/skills</text>
   <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
   <text x="530" y="182" class="t-small">DELETE → หายไป</text>
 </svg>
-<p class="legend">การซิงค์ Catalogue (2026-08-02): เมื่อ base skill ต้นฉบับถูกอัปเดตใน catalogue แถวใน prod ทุกแถวที่ยังคงตรงกับสิ่งที่ catalogue เขียนไว้ล่าสุดจะอัปเกรดโดยอัตโนมัติในการอ่าน registry ครั้งต่อไป — fingerprint (catalog_hash) ใช้แยกความแตกต่างระหว่างสองแบบนี้ แถวที่ admin แก้ไขแล้วจะหยุดการจับคู่และคงการแก้ไขไว้จนกว่าจะมีการ reset อย่างชัดเจน ซึ่งจะเปิดใช้งาน auto-upgrade อีกครั้งด้วย การปิดใช้งาน skill เป็นสถานะของผู้ดูแลระบบ ไม่ใช่การแก้ไข; skill ที่ถูกปิดใช้งานโดยไม่ได้แก้ไขยังคงได้รับการอัปเกรด body และยังคงปิดอยู่</p>
+<p class="legend">การซิงค์แคตตาล็อก (2026-08-02): เมื่อสกิลฐานดั้งเดิมถูกอัปเดตในแคตตาล็อก แถวข้อมูลจริง (prod row) ทุกแถวที่ยังคงตรงกับสิ่งที่แคตตาล็อกเขียนไว้ล่าสุดจะอัปเกรดโดยอัตโนมัติในการอ่านรีจิสทรีครั้งต่อไป — ลายนิ้วมือ (catalog_hash) ใช้แยกความแตกต่างระหว่างทั้งสอง แถวที่ผู้ดูแลระบบแก้ไขแล้วจะเลิกตรงกันและคงการแก้ไขนั้นไว้จนกว่าจะมีการรีเซ็ตอย่างชัดแจ้ง ซึ่งจะเปิดใช้งานการอัปเกรดอัตโนมัติอีกครั้งด้วย การปิดใช้งานสกิลเป็นสถานะของผู้ดำเนินการ ไม่ใช่การแก้ไข: สกิลที่ปิดใช้งานและไม่ถูกแก้ไขจะยังคงได้รับการอัปเกรดจากส่วนเนื้อหา (body) แต่ยังคงปิดอยู่</p>
 </div>
 
-<h2>6. ชั้นความปลอดภัย — เหตุใด prompt text จึงไม่สามารถเข้าถึงคำสั่งซื้อได้โดยตรง</h2>
+<h2>6. เลเยอร์ความปลอดภัย — เหตุใดข้อความพรอมต์จึงไม่สามารถเข้าถึงคำสั่งซื้อได้โดยตรง</h2>
 <div class="card">
 <svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="35" width="200" height="60"/>
-  <text x="120" y="59" text-anchor="middle" class="t-b">1 · การกำหนดขอบเขตแบบระมัดระวังเท่านั้น</text>
-  <text x="120" y="77" text-anchor="middle" class="t-small">skills สามารถทำให้เข้มงวดขึ้นได้เท่านั้น ไม่สามารถผ่อนคลายลงได้</text>
+  <text x="120" y="59" text-anchor="middle" class="t-b">1 · การจัดกรอบเพื่อความระมัดระวังเท่านั้น</text>
+  <text x="120" y="77" text-anchor="middle" class="t-small">สกิลสามารถทำให้เข้มงวดขึ้นได้เท่านั้น ไม่สามารถผ่อนคลายลงได้</text>
   <rect class="box" x="262" y="35" width="200" height="60"/>
-  <text x="362" y="59" text-anchor="middle" class="t-b">2 · สัญญาข้อมูลผลลัพธ์ (output contract)</text>
-  <text x="362" y="77" text-anchor="middle" class="t-small">รายการ action ที่อนุญาต · การจำกัดค่า · JSON เท่านั้น</text>
+  <text x="362" y="59" text-anchor="middle" class="t-b">2 · สัญญาผลลัพธ์ (output contract)</text>
+  <text x="362" y="77" text-anchor="middle" class="t-small">รายการที่อนุญาต (action whitelist) · การจำกัดค่า (clamps) · JSON เท่านั้น</text>
   <rect class="box" x="504" y="35" width="200" height="60"/>
   <text x="604" y="59" text-anchor="middle" class="t-b">3 · อำนาจด้านราคา</text>
-  <text x="604" y="77" text-anchor="middle" class="t-small">ราคาที่ model ป้อนถูกลดระดับความสำคัญ; ราคาสดเข้ามาเติมเต็ม</text>
+  <text x="604" y="77" text-anchor="middle" class="t-small">รายการจากโมเดลถูกลดระดับ; ราคาสดเป็นตัวเติมข้อมูล</text>
   <rect class="box-accent" x="746" y="35" width="194" height="60"/>
-  <text x="843" y="59" text-anchor="middle" class="t-b">4 · เกณฑ์ที่กำหนดแน่นอน (deterministic gates)</text>
-  <text x="843" y="77" text-anchor="middle" class="t-small">งบประมาณ · ความเสี่ยง · ค่าธรรมเนียม · สิทธิ์การใช้งาน</text>
+  <text x="843" y="59" text-anchor="middle" class="t-b">4 · เกตแบบกำหนดแน่นอน (deterministic gates)</text>
+  <text x="843" y="77" text-anchor="middle" class="t-small">งบประมาณ · ความเสี่ยง · ค่าธรรมเนียม · สิทธิ์การใช้งาน (entitlements)</text>
   <path class="ln" d="M220,65 L262,65" marker-end="url(#ar)"/>
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">Skill bodies เป็นข้อความที่เขียนโดยแอดมินเท่านั้นใน v1 และมีการจำกัดขนาดสองชั้น (4,000 ตัวอักษรต่อ body ที่ route, 30,000 ตัวอักษรต่อ prompt ที่ builder) แม้แต่ body ที่เป็นอันตรายก็ไม่สามารถข้ามชั้นที่ 2–4 ได้ — เนื่องจากมันทำงานนอก prompt</p>
+<p class="legend">Skill bodies เป็น admin-authored เท่านั้นใน v1 และถูกจำกัดขนาดสองครั้ง (4,000 ต่อ body ที่ route, 30,000 ต่อ prompt ที่ builder) แม้แต่ body ที่เป็นอันตรายก็ไม่สามารถข้าม layers 2–4 ได้ — เพราะทำงานอยู่นอก prompt</p>
 </div>
 
 <h2>7. การใช้งาน — admin API และจังหวะเวลาการเผยแพร่</h2>
 <div class="card">
 <table>
-  <tr><th>คอล</th><th>ทำ</th><th>หมายเหตุ</th></tr>
-  <tr><td><code>GET /api/admin/skills</code></td><td>แสดงรายการ skill ทั้งหมด (base + custom)</td><td>อ่านข้อมูลใหม่ ข้ามแคช</td></tr>
-  <tr><td><code>POST /api/admin/skills</code></td><td>สร้าง custom skill</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 409 เมื่อซ้ำ</td></tr>
-  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>แก้ไข name/description/body/prompts/markets/priority/enabled</td><td>base skills แก้ไขได้; slug ไม่สามารถเปลี่ยนแปลงได้</td></tr>
-  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>คืนค่าแคตตาล็อกกลับเป็นค่าเริ่มต้น + เปิดใช้งานอีกครั้ง</td><td>เฉพาะ base เท่านั้น — 400 สำหรับ custom</td></tr>
-  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>ลบ custom skill</td><td>base → 400 "ปิดใช้งานหรือรีเซ็ตแทน"</td></tr>
+  <tr><th>เรียก</th><th>ทำ</th><th>หมายเหตุ</th></tr>
+  <tr><td><code>GET /api/admin/skills</code></td><td>แสดงรายการ skills ทั้งหมด (base + custom)</td><td>อ่านข้อมูลใหม่ ข้ามการใช้ cache</td></tr>
+  <tr><td><code>POST /api/admin/skills</code></td><td>สร้าง custom skill</td><td>slug <code>[a-z0-9-]</code>  ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 409 เมื่อซ้ำ</td></tr>
+  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>แก้ไข name/description/body/prompts/markets/priority/enabled</td><td>ทักษะพื้นฐานแก้ไขได้; slug ไม่เปลี่ยนแปลง</td></tr>
+  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>คืนค่าเริ่มต้นของแคตตาล็อก + เปิดใช้งานอีกครั้ง</td><td>เฉพาะพื้นฐานเท่านั้น — 400 สำหรับแบบกำหนดเอง</td></tr>
+  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>ลบทักษะที่กำหนดเอง</td><td>พื้นฐาน → 400 "ปิดใช้งานหรือรีเซ็ตแทน"</td></tr>
 </table>
-<p class="legend">ทุกการเขียนจะถูกบันทึกใน <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>) และล้างแคชของ API process ทันที <b>worker เป็น process แยกต่างหาก</b>: มันจะ converge ผ่าน TTL 30 วินาทีของ registry — การแก้ไขจะไปถึงรอบการตัดสินใจถัดไปภายในประมาณ 30 วินาที และ fleet ที่กำลังทำงานอยู่จะรับค่าไปใช้ในรอบถัดไป (v1 จงใจไม่ freeze skills ต่อการรัน; ดู non-goals ในเอกสารการออกแบบ)</p>
+<p class="legend">การเขียนทุกครั้งจะถูกบันทึกไว้ใน <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>) และทำให้แคชของโปรเซส API ใช้งานไม่ได้ทันที <b>worker เป็นโปรเซสแยกต่างหาก</b>ระบบจะปรับให้สอดคล้องกันผ่านค่า TTL 30 วินาทีของ registry — การแก้ไขจะไปถึงรอบการตัดสินใจถัดไปภายใน ~30 วินาที และฟลีตที่กำลังทำงานอยู่จะรับค่านั้นในรอบถัดไปของมัน (v1 จงใจไม่ล็อกสกิลไว้ตายตัวต่อการรัน แต่ละครั้ง; ดูส่วน non-goals ในเอกสารการออกแบบ)</p>
 </div>
 
 <h2>8. การตรวจสอบบน prod</h2>
 <div class="card">
 <table>
   <tr><th>ตรวจสอบ</th><th>อย่างไร</th><th>พิสูจน์</th></tr>
-  <tr><td>registry ทำงานอยู่</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table เข้าถึงได้ มี 32 base skills ที่ seed ไว้</td></tr>
-  <tr><td>การเลือกถูกต้อง</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> ชุด slug</td><td>site + market scoping ตามที่ออกแบบไว้</td></tr>
-  <tr><td>การ injection เป็นจริง</td><td>ดำเนินการ <code>_light_analysis</code> ใน worker โดยที่ <code>generate_text</code> ถูก stub ไว้</td><td>โค้ด prod จริงสร้าง prompts ที่มีบล็อก skills — ทำงานได้แม้มี 0 active runs</td></tr>
+  <tr><td>registry ทำงานอยู่</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>ตารางเข้าถึงได้ มี 36 base skills ถูกฝังไว้ล่วงหน้า</td></tr>
+  <tr><td>การเลือกถูกต้อง</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code>ชุด slug </td><td>การกำหนดขอบเขต site + market ตามที่ออกแบบไว้</td></tr>
+  <tr><td>injection จริง</td><td>exec <code>_light_analysis</code> ใน worker ด้วย <code>generate_text</code> stub ไว้</td><td>โค้ด prod จริงสร้าง prompt ที่มี skills block — ทำงานได้แม้มี active runs เท่ากับ 0</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">สเปกคู่กัน: <code>docs/plan/20-trading-skills.md</code> · เผยแพร่ใน PR #179 (squash <code>ba43060</code>) · ใช้งานจริงบน sooppiy.com ตั้งแต่ 2026-08-01 · แคตตาล็อกขยายเป็น 32 skills ผ่าน #186, #193, #215, #221, #222, #224 และ #226 (2026-08-04)</p>
+<p class="legend" style="margin-top:28px">ข้อกำหนด Companion: <code>docs/plan/20-trading-skills.md</code> · เผยแพร่ใน PR #179 (squash <code>ba43060</code>) · ใช้งานจริงบน sooppiy.com ตั้งแต่ 2026-08-01 · แคตตาล็อกเติบโตเป็น 36 skills ผ่าน #186, #193, #215, #221, #222, #224, #226, #232, #233 และ #331 (2026-08-07).</p>
 
 </div>
 </body>
