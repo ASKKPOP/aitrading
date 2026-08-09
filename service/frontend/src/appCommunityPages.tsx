@@ -135,18 +135,22 @@ function AuthGlance({ mode, language }: { mode: 'login' | 'register'; language: 
   )
 }
 
-function AuthShell({
+export function AuthShell({
   mode,
   title,
   subtitle,
   children,
-  footer
+  footer,
+  social = true
 }: {
   mode: 'login' | 'register'
   title: string
   subtitle: string
   children: ReactNode
   footer: ReactNode
+  // The member reset/MFA/OAuth-callback pages reuse this shell but have no
+  // use for the social sign-in block.
+  social?: boolean
 }) {
   const { language } = useLanguage()
   // Which social providers the backend actually has configured. Google is live;
@@ -203,6 +207,7 @@ function AuthShell({
             <p className="auth-subtitle">{subtitle}</p>
 
             {/* Social sign-in */}
+            {social && <>
             <div className="auth-social">
               <button
                 type="button"
@@ -252,6 +257,7 @@ function AuthShell({
             <div className="auth-divider">
               <span>{tr(language, { ko: '또는 이메일로 계속하기', en: 'or continue with email', ja: 'またはメールで', th: 'หรือใช้อีเมล', vi: 'hoặc dùng email', id: 'atau lanjut dengan email' })}</span>
             </div>
+            </>}
 
             {children}
             <div className="auth-footer">{footer}</div>

@@ -15,6 +15,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
+import { AuthShell as TerminalAuthShell } from './appCommunityPages'
 import { API_BASE, useLanguage } from './appShared'
 import { Language, tr } from './i18n'
 
@@ -49,70 +50,55 @@ function errMessage(body: any, fallback: string): string {
 
 
 // ─── Shared form chrome ──────────────────────────────────────────────────
+// The member auth pages render inside the same terminal-style shell as the
+// agent pages (wave backdrop, hero copy, social buttons), so /sign-in keeps
+// the /agent-login look. `social` shows the shell's Google/Apple buttons only
+// where they make sense (credential steps, not reset/MFA/callback).
 
-function AuthShell({ title, subtitle, children }: {
+function AuthShell({ title, subtitle, children, mode = 'login', social = false }: {
   title: string
   subtitle?: string
   children: React.ReactNode
+  mode?: 'login' | 'register'
+  social?: boolean
 }) {
   return (
-    <div style={{
-      minHeight: '70vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 420,
-        padding: 32,
-        background: 'var(--bg-card, #faf6ec)',
-        border: '1px solid var(--border-color, rgba(0,0,0,0.08))',
-        borderRadius: 12,
-        boxShadow: '0 2px 16px rgba(0,0,0,0.04)',
-      }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11,
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: 'var(--accent-primary, #b8542f)',
-            marginBottom: 6,
-          }}>Sooppiy</div>
-          <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>{title}</h1>
-          {subtitle && (
-            <p style={{ marginTop: 8, fontSize: 14, color: 'var(--text-muted, #6b7280)' }}>
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {children}
-        {/* Legal links must be reachable from the auth pages — A2P 10DLC
-            vetting (error 30908) checks that the privacy policy is
-            discoverable from the pages where users sign up. */}
-        <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--border-color, rgba(0,0,0,0.08))', fontSize: 12, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+    <TerminalAuthShell
+      mode={mode}
+      social={social}
+      title={title}
+      subtitle={subtitle ?? ''}
+      footer={
+        /* Legal links must be reachable from the auth pages — A2P 10DLC
+           vetting (error 30908) checks that the privacy policy is
+           discoverable from the pages where users sign up. */
+        <div style={{ paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: '#93a0aa', textAlign: 'center' }}>
           <a href="https://sooppiy.com/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Privacy Policy</a>
           {' · '}
           <a href="https://sooppiy.com/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Terms &amp; Conditions</a>
           {' · '}
           <a href="https://sooppiy.com/smsoptin" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>SMS Policy</a>
         </div>
-      </div>
-    </div>
+      }
+    >
+      {children}
+    </TerminalAuthShell>
   )
 }
 
 
+// Field/button styling matches the terminal shell's boxless dark card
+// (.auth-card .form-input in index.css): translucent fields, fixed light
+// text — the shell forces a dark backdrop in every theme, so theme vars
+// would go illegible here.
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '10px 12px',
+  padding: '12px 16px',
   fontSize: 14,
-  border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-  borderRadius: 6,
-  background: 'var(--bg-secondary, #fff)',
-  color: 'var(--text-primary, #0b0b0b)',
+  border: '1px solid rgba(222, 188, 127, 0.18)',
+  borderRadius: 9,
+  background: 'rgba(255, 255, 255, 0.05)',
+  color: '#e8eaed',
   marginBottom: 12,
   fontFamily: 'inherit',
 }
@@ -124,80 +110,16 @@ const buttonStyle: React.CSSProperties = {
   background: 'var(--accent-primary, #b8542f)',
   color: '#fff',
   border: 'none',
-  borderRadius: 6,
+  borderRadius: 9,
   cursor: 'pointer',
   fontWeight: 500,
 }
 
 const buttonDisabledStyle: React.CSSProperties = {
   ...buttonStyle,
-  background: '#cbd5e1',
+  background: 'rgba(255, 255, 255, 0.12)',
   cursor: 'not-allowed',
-  color: '#64748b',
-}
-
-
-// ─── /api/auth/providers fetch hook ──────────────────────────────────────
-
-interface ProvidersResponse {
-  email:  boolean
-  google: boolean
-  apple:  boolean
-  phone:  boolean
-}
-
-function useProviders(): ProvidersResponse {
-  const [providers, setProviders] = useState<ProvidersResponse>({
-    email: true, google: false, apple: false, phone: false,
-  })
-  useEffect(() => {
-    fetch(`${API_BASE}/auth/providers`)
-      .then(r => r.json())
-      .then(d => setProviders(d.providers))
-      .catch(() => { /* fall back to defaults; email is always available */ })
-  }, [])
-  return providers
-}
-
-
-function OAuthButtons({ providers }: { providers: ProvidersResponse }) {
-  const { language } = useLanguage()
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
-      <a
-        href={providers.google ? `${API_BASE}/auth/google/start` : undefined}
-        onClick={e => { if (!providers.google) e.preventDefault() }}
-        style={{
-          ...buttonStyle,
-          textDecoration: 'none',
-          textAlign: 'center',
-          display: 'block',
-          background: providers.google ? '#fff' : '#f1f5f9',
-          color: providers.google ? '#0f172a' : '#94a3b8',
-          border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-          cursor: providers.google ? 'pointer' : 'not-allowed',
-        }}
-      >
-        {tr(language, { ko: 'Google로 로그인', en: 'Sign in with Google', ja: 'Googleでログイン', th: 'เข้าสู่ระบบด้วย Google', vi: 'Đăng nhập bằng Google', id: 'Masuk dengan Google' })} {!providers.google && tr(language, { ko: '(사용 불가)', en: '(unavailable)', ja: '(利用不可)', th: '(ไม่พร้อมใช้งาน)', vi: '(không khả dụng)', id: '(tidak tersedia)' })}
-      </a>
-      <button
-        type="button"
-        disabled
-        title={tr(language, { ko: '곧 지원 — Apple Developer 자격 증명 필요', en: 'Coming soon — needs Apple Developer credentials', ja: '近日対応 — Apple Developer 資格情報が必要', th: 'เร็ว ๆ นี้ — ต้องใช้ข้อมูลรับรอง Apple Developer', vi: 'Sắp có — cần thông tin Apple Developer', id: 'Segera hadir — memerlukan kredensial Apple Developer' })}
-        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}
-      >
-        {tr(language, { ko: 'Apple로 로그인 · 곧 지원', en: 'Sign in with Apple · Coming soon', ja: 'Appleでログイン · 近日対応', th: 'เข้าสู่ระบบด้วย Apple · เร็ว ๆ นี้', vi: 'Đăng nhập bằng Apple · Sắp có', id: 'Masuk dengan Apple · Segera hadir' })}
-      </button>
-      <button
-        type="button"
-        disabled
-        title={tr(language, { ko: '곧 지원 — Twilio SMS 자격 증명 필요', en: 'Coming soon — needs Twilio SMS credentials', ja: '近日対応 — Twilio SMS 資格情報が必要', th: 'เร็ว ๆ นี้ — ต้องใช้ข้อมูลรับรอง Twilio SMS', vi: 'Sắp có — cần thông tin Twilio SMS', id: 'Segera hadir — memerlukan kredensial SMS Twilio' })}
-        style={{ ...buttonDisabledStyle, background: '#fff', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}
-      >
-        {tr(language, { ko: '전화번호로 계속 · 곧 지원', en: 'Continue with Phone · Coming soon', ja: '電話番号で続行 · 近日対応', th: 'ดำเนินการต่อด้วยโทรศัพท์ · เร็ว ๆ นี้', vi: 'Tiếp tục bằng điện thoại · Sắp có', id: 'Lanjut dengan nomor telepon · Segera hadir' })}
-      </button>
-    </div>
-  )
+  color: '#808a93',
 }
 
 
@@ -206,7 +128,6 @@ function OAuthButtons({ providers }: { providers: ProvidersResponse }) {
 export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
   const navigate = useNavigate()
   const { language } = useLanguage()
-  const providers = useProviders()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mfaToken, setMfaToken] = useState<string | null>(null)
@@ -269,6 +190,8 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
 
   return (
     <AuthShell
+      mode="login"
+      social={!mfaToken}
       title={mfaToken
         ? tr(language, { ko: '2단계 인증 코드', en: 'Two-factor code', ja: '2段階認証コード', th: 'รหัสยืนยันสองขั้นตอน', vi: 'Mã xác thực hai lớp', id: 'Kode dua faktor' })
         : tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk' })}
@@ -296,15 +219,14 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             style={inputStyle}
             autoComplete="current-password"
           />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '로그인 중…', en: 'Signing in…', ja: 'ログイン中…', th: 'กำลังเข้าสู่ระบบ…', vi: 'Đang đăng nhập…', id: 'Sedang masuk…' }) : tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk' })}
           </button>
-          <OAuthButtons providers={providers} />
           <div style={{ marginTop: 12, fontSize: 13, textAlign: 'center' }}>
-            <Link to="/forgot-password" style={{ color: 'var(--text-muted, #6b7280)' }}>{tr(language, { ko: '비밀번호를 잊으셨나요?', en: 'Forgot password?', ja: 'パスワードをお忘れですか？', th: 'ลืมรหัสผ่าน?', vi: 'Quên mật khẩu?', id: 'Lupa kata sandi?' })}</Link>
+            <Link to="/forgot-password" style={{ color: '#93a0aa' }}>{tr(language, { ko: '비밀번호를 잊으셨나요?', en: 'Forgot password?', ja: 'パスワードをお忘れですか？', th: 'ลืมรหัสผ่าน?', vi: 'Quên mật khẩu?', id: 'Lupa kata sandi?' })}</Link>
           </div>
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, fontSize: 13, color: '#93a0aa', textAlign: 'center' }}>
             {tr(language, { ko: '처음이신가요?', en: 'New here?', ja: 'はじめての方はこちら', th: 'เพิ่งเข้ามาใช่ไหม?', vi: 'Lần đầu ở đây?', id: 'Baru di sini?' })} <Link to="/sign-up" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '계정 만들기', en: 'Create an account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản', id: 'Buat akun' })}</Link>
             {' · '}
             <Link to="/agent-login" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: 'AI 에이전트가 있어요', en: 'I have an AI agent', ja: 'AIエージェントを持っています', th: 'ฉันมี AI เอเจนต์', vi: 'Tôi có AI agent', id: 'Saya punya agen AI' })}</Link>
@@ -323,12 +245,12 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             style={{ ...inputStyle, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', textAlign: 'center' }}
             autoComplete="one-time-code"
           />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '확인 중…', en: 'Verifying…', ja: '確認中…', th: 'กำลังยืนยัน…', vi: 'Đang xác minh…', id: 'Memverifikasi…' }) : tr(language, { ko: '확인', en: 'Verify', ja: '確認', th: 'ยืนยัน', vi: 'Xác minh', id: 'Verifikasi' })}
           </button>
           <button type="button" onClick={() => { setMfaToken(null); setMfaCode(''); setError('') }}
-            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+            style={{ ...buttonStyle, background: 'transparent', color: '#93a0aa', marginTop: 8 }}>
             {tr(language, { ko: '뒤로', en: 'Back', ja: '戻る', th: 'กลับ', vi: 'Quay lại', id: 'Kembali' })}
           </button>
         </form>
@@ -343,7 +265,6 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
 export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
   const navigate = useNavigate()
   const { language, setLanguage } = useLanguage()
-  const providers = useProviders()
   const [step, setStep] = useState<'email' | 'verify'>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -396,6 +317,8 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
 
   return (
     <AuthShell
+      mode="register"
+      social={step === 'email'}
       title={tr(language, { ko: '계정을 만드세요', en: 'Create your account', ja: 'アカウントを作成しましょう', th: 'สร้างบัญชีของคุณ', vi: 'Tạo tài khoản của bạn', id: 'Buat akun Anda' })}
       subtitle={step === 'email'
         ? tr(language, { ko: '이메일로 6자리 코드를 보내드립니다.', en: "We'll send a 6-digit code to your email.", ja: 'メールに6桁のコードを送信します。', th: 'เราจะส่งรหัส 6 หลักไปยังอีเมลของคุณ', vi: 'Chúng tôi sẽ gửi mã 6 chữ số đến email của bạn.', id: 'Kami akan mengirim kode 6 digit ke email Anda.' })
@@ -403,12 +326,12 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
     >
       {step === 'email' ? (
         <form onSubmit={sendCode}>
-          <div style={{ marginBottom: 6, fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>
+          <div style={{ marginBottom: 6, fontSize: 13, color: '#93a0aa' }}>
             {tr(language, { ko: '언어', en: 'Language', ja: '言語', th: 'ภาษา', vi: 'Ngôn ngữ', id: 'Bahasa' })}
           </div>
           <select value={language}
             onChange={e => setLanguage(e.target.value as Language)}
-            style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 14, width: '100%', marginBottom: 10 }}>
+            style={{ padding: '10px 12px', borderRadius: 9, border: '1px solid rgba(222, 188, 127, 0.18)', background: 'rgba(255, 255, 255, 0.05)', color: '#e8eaed', colorScheme: 'dark', fontSize: 14, width: '100%', marginBottom: 10 }}>
             <option value="en">English</option>
             <option value="ko">한국어</option>
             <option value="ja">日本語</option>
@@ -418,12 +341,11 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
           </select>
           <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' })} value={email}
             onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…', id: 'Mengirim…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã', id: 'Kirim kode' })}
           </button>
-          <OAuthButtons providers={providers} />
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, fontSize: 13, color: '#93a0aa', textAlign: 'center' }}>
             {tr(language, { ko: '이미 계정이 있으신가요?', en: 'Already have an account?', ja: 'すでにアカウントをお持ちですか？', th: 'มีบัญชีอยู่แล้ว?', vi: 'Đã có tài khoản?', id: 'Sudah punya akun?' })} <Link to="/sign-in" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk' })}</Link>
           </div>
         </form>
@@ -442,12 +364,12 @@ export function SignUpPage({ onLogin }: { onLogin: (token: string) => void }) {
           <input type="password" placeholder={tr(language, { ko: '비밀번호 설정 (최소 8자)', en: 'Choose a password (min 8 chars)', ja: 'パスワードを設定 (8文字以上)', th: 'ตั้งรหัสผ่าน (อย่างน้อย 8 ตัวอักษร)', vi: 'Chọn mật khẩu (tối thiểu 8 ký tự)', id: 'Pilih kata sandi (min. 8 karakter)' })} value={password}
             onChange={e => setPassword(e.target.value)} required minLength={8} style={inputStyle}
             autoComplete="new-password" />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '생성 중…', en: 'Creating…', ja: '作成中…', th: 'กำลังสร้าง…', vi: 'Đang tạo…', id: 'Membuat…' }) : tr(language, { ko: '계정 만들기', en: 'Create account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản', id: 'Buat akun' })}
           </button>
           <button type="button" onClick={() => setStep('email')}
-            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+            style={{ ...buttonStyle, background: 'transparent', color: '#93a0aa', marginTop: 8 }}>
             {tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác', id: 'Gunakan email lain' })}
           </button>
         </form>
@@ -541,13 +463,13 @@ export function ForgotPasswordPage() {
             <button type="button" onClick={() => { setMethod('email'); setError('') }}
               style={method === 'email'
                 ? { ...buttonStyle, flex: 1 }
-                : { ...buttonStyle, flex: 1, background: 'transparent', color: 'var(--text-muted, #6b7280)', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}>
+                : { ...buttonStyle, flex: 1, background: 'transparent', color: '#93a0aa', border: '1px solid rgba(255,255,255,0.16)' }}>
               {tr(language, { ko: '이메일', en: 'Email', ja: 'メール', th: 'อีเมล', vi: 'Email', id: 'Email' })}
             </button>
             <button type="button" onClick={() => { setMethod('phone'); setError('') }}
               style={method === 'phone'
                 ? { ...buttonStyle, flex: 1 }
-                : { ...buttonStyle, flex: 1, background: 'transparent', color: 'var(--text-muted, #6b7280)', border: '1px solid var(--border-color, rgba(0,0,0,0.12))' }}>
+                : { ...buttonStyle, flex: 1, background: 'transparent', color: '#93a0aa', border: '1px solid rgba(255,255,255,0.16)' }}>
               {tr(language, { ko: '휴대폰', en: 'Phone', ja: '携帯電話', th: 'โทรศัพท์', vi: 'Điện thoại', id: 'Ponsel' })}
             </button>
           </div>
@@ -558,7 +480,7 @@ export function ForgotPasswordPage() {
             <input type="email" placeholder={tr(language, { ko: '이메일', en: 'Email', ja: 'メールアドレス', th: 'อีเมล', vi: 'Email', id: 'Email' })} value={email}
               onChange={e => setEmail(e.target.value)} required style={inputStyle} autoComplete="email" />
           )}
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…', id: 'Mengirim…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã', id: 'Kirim kode' })}
           </button>
@@ -572,11 +494,11 @@ export function ForgotPasswordPage() {
               }
               setError(''); setStep('reset')
             }}
-              style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+              style={{ ...buttonStyle, background: 'transparent', color: '#93a0aa', marginTop: 8 }}>
               {tr(language, { ko: '이미 코드가 있어요', en: 'I already have a code', ja: 'すでにコードをお持ちの方', th: 'ฉันมีรหัสอยู่แล้ว', vi: 'Tôi đã có mã', id: 'Saya sudah punya kode' })}
             </button>
           )}
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, fontSize: 13, color: '#93a0aa', textAlign: 'center' }}>
             <Link to="/sign-in" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '로그인으로 돌아가기', en: 'Back to sign in', ja: 'ログインに戻る', th: 'กลับไปหน้าเข้าสู่ระบบ', vi: 'Quay lại đăng nhập', id: 'Kembali ke halaman masuk' })}</Link>
           </div>
         </form>
@@ -595,12 +517,12 @@ export function ForgotPasswordPage() {
           <input type="password" placeholder={tr(language, { ko: '새 비밀번호 (최소 8자)', en: 'New password (min 8 chars)', ja: '新しいパスワード (8文字以上)', th: 'รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)', vi: 'Mật khẩu mới (tối thiểu 8 ký tự)', id: 'Kata sandi baru (min. 8 karakter)' })} value={newPassword}
             onChange={e => setNewPassword(e.target.value)} required minLength={8} style={inputStyle}
             autoComplete="new-password" />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '변경 중…', en: 'Resetting…', ja: 'リセット中…', th: 'กำลังรีเซ็ต…', vi: 'Đang đặt lại…', id: 'Mengatur ulang…' }) : tr(language, { ko: '비밀번호 변경', en: 'Reset password', ja: 'パスワードをリセット', th: 'รีเซ็ตรหัสผ่าน', vi: 'Đặt lại mật khẩu', id: 'Atur ulang kata sandi' })}
           </button>
           <button type="button" onClick={() => { setStep('email'); setCode(''); setNewPassword(''); setError('') }}
-            style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+            style={{ ...buttonStyle, background: 'transparent', color: '#93a0aa', marginTop: 8 }}>
             {method === 'phone'
               ? tr(language, { ko: '다른 번호 사용', en: 'Use a different number', ja: '別の番号を使う', th: 'ใช้เบอร์อื่น', vi: 'Dùng số khác', id: 'Gunakan nomor lain' })
               : tr(language, { ko: '다른 이메일 사용', en: 'Use a different email', ja: '別のメールアドレスを使う', th: 'ใช้อีเมลอื่น', vi: 'Dùng email khác', id: 'Gunakan email lain' })}
@@ -706,7 +628,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
         </button>
       ) : (
         <form onSubmit={verifyAndEnable}>
-          <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#93a0aa' }}>
             {tr(language, { ko: '인증 앱에 이 계정을 추가하세요. 아래 URL의 QR 코드를 스캔하거나 시크릿을 직접 붙여넣으세요.', en: 'Add this account to your authenticator. Either scan a QR code from the URL below, or paste the secret directly.', ja: '認証アプリにこのアカウントを追加してください。下記URLのQRコードをスキャンするか、シークレットを直接貼り付けます。', th: 'เพิ่มบัญชีนี้ในแอปยืนยันตัวตน สแกน QR จาก URL ด้านล่าง หรือวางซีเคร็ตโดยตรง', vi: 'Thêm tài khoản này vào ứng dụng xác thực. Quét mã QR từ URL bên dưới, hoặc dán secret trực tiếp.', id: 'Tambahkan akun ini ke autentikator Anda. Pindai kode QR dari URL di bawah, atau tempel secret-nya langsung.' })}
           </div>
           <div style={{
@@ -719,7 +641,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
             marginBottom: 12,
             wordBreak: 'break-all',
           }}>{setup.otpauth_url}</div>
-          <div style={{ marginBottom: 12, fontSize: 13 }}>
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#e8eaed' }}>
             <strong>{tr(language, { ko: '시크릿:', en: 'Secret:', ja: 'シークレット:', th: 'ซีเคร็ต:', vi: 'Secret:', id: 'Secret:' })}</strong>{' '}
             <code style={{ fontFamily: 'JetBrains Mono, monospace', userSelect: 'all' }}>{setup.secret}</code>
           </div>
@@ -733,7 +655,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
             style={{ ...inputStyle, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', textAlign: 'center' }}
             autoComplete="one-time-code"
           />
-          {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '확인 중…', en: 'Verifying…', ja: '確認中…', th: 'กำลังยืนยัน…', vi: 'Đang xác minh…', id: 'Memverifikasi…' }) : tr(language, { ko: '확인 및 활성화', en: 'Verify & enable', ja: '確認して有効化', th: 'ยืนยันและเปิดใช้งาน', vi: 'Xác minh & bật', id: 'Verifikasi & aktifkan' })}
           </button>
@@ -775,8 +697,8 @@ export function GoogleCallbackPage({ onLogin }: { onLogin: (token: string) => vo
   return (
     <AuthShell title={tr(language, { ko: 'Google 로그인 마무리 중…', en: 'Finishing Google sign-in…', ja: 'Googleログインを完了しています…', th: 'กำลังทำการเข้าสู่ระบบด้วย Google…', vi: 'Đang hoàn tất đăng nhập Google…', id: 'Menyelesaikan proses masuk dengan Google…' })} subtitle={tr(language, { ko: '잠시만요.', en: 'One moment.', ja: '少々お待ちください。', th: 'สักครู่', vi: 'Chờ một chút.', id: 'Mohon tunggu sebentar.' })}>
       {error
-        ? <div style={{ color: '#dc2626', fontSize: 14 }}>{error}</div>
-        : <div style={{ color: 'var(--text-muted, #6b7280)' }}>{tr(language, { ko: 'Google로 확인 중…', en: 'Verifying with Google…', ja: 'Googleで確認中…', th: 'กำลังยืนยันกับ Google…', vi: 'Đang xác minh với Google…', id: 'Memverifikasi dengan Google…' })}</div>}
+        ? <div style={{ color: '#f87171', fontSize: 14 }}>{error}</div>
+        : <div style={{ color: '#93a0aa' }}>{tr(language, { ko: 'Google로 확인 중…', en: 'Verifying with Google…', ja: 'Googleで確認中…', th: 'กำลังยืนยันกับ Google…', vi: 'Đang xác minh với Google…', id: 'Memverifikasi dengan Google…' })}</div>}
     </AuthShell>
   )
 }
