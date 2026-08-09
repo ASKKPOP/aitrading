@@ -72,13 +72,13 @@ const CARD_GUIDE = {
         th: 'สิ่งที่ TRADING นี้เทรดและตลาดที่เทรด "fut" คือบัญชีฟิวเจอร์ส ป้าย 🚀#N หมายถึงเป็นสมาชิกฟลีต #N "กำลังทำงาน" คือ AI กำลังตัดสินใจตามรอบ',
         vi: 'Mã và thị trường mà TRADING này giao dịch. "fut" là sổ hợp đồng tương lai; huy hiệu 🚀#N nghĩa là thuộc nhóm tự động #N. "Đang chạy" nghĩa là AI đang quyết định theo chu kỳ.',
         id: 'Apa yang diperdagangkan TRADING ini dan di mana. "fut" berarti buku futures; lencana 🚀#N berarti anggota fleet Full-Auto #N. "Berjalan" berarti AI memutuskan sesuai jadwal.' } },
-    { term: { ko: 'spot/futures · 45m · ≥50%', en: 'spot/futures · 45m · ≥50%', ja: 'spot/futures · 45m · ≥50%', th: 'spot/futures · 45m · ≥50%', vi: 'spot/futures · 45m · ≥50%', id: 'spot/futures · 45m · ≥50%' },
-      desc: { ko: '전략 요약 줄입니다. spot(현물)/futures(선물)는 장부 종류, 45m은 AI가 45분마다 판단한다는 뜻, ≥50%는 신뢰도 문턱 — AI 확신이 이 값 미만이면 진입하지 않습니다.',
-        en: 'The strategy line. spot/futures is the book type, 45m means the AI decides every 45 minutes, and ≥50% is the confidence floor — the AI does not enter unless its conviction clears it.',
-        ja: '戦略行。spot/futures はブック種別、45m はAIが45分ごとに判断する意味、≥50% は信頼度の下限 — これ未満では新規に入りません。',
-        th: 'บรรทัดกลยุทธ์: spot/futures คือชนิดบัญชี, 45m คือ AI ตัดสินใจทุก 45 นาที, ≥50% คือเกณฑ์ความมั่นใจขั้นต่ำ — ต่ำกว่านี้ AI จะไม่เข้า',
-        vi: 'Dòng chiến lược: spot/futures là loại sổ, 45m nghĩa là AI quyết định mỗi 45 phút, ≥50% là ngưỡng tin cậy — dưới mức này AI không vào lệnh.',
-        id: 'Baris strategi: spot/futures adalah jenis buku, 45m berarti AI memutuskan tiap 45 menit, ≥50% adalah ambang keyakinan — di bawah itu AI tidak masuk.' } },
+    { term: { ko: '최대 베팅 · 주기 · 유형 · AI', en: 'Max bet · Interval · Type · AI', ja: '最大 · 間隔 · タイプ · AI', th: 'สูงสุด · ช่วง · ชนิด · AI', vi: 'Cược tối đa · Chu kỳ · Loại · AI', id: 'Taruhan maks · Interval · Jenis · AI' },
+      desc: { ko: '전략 요약 칸입니다. 최대 베팅은 한 포지션에 걸 수 있는 상한, 주기 45m·≥50%는 AI가 45분마다 판단하고 확신이 50% 미만이면 진입하지 않는다는 뜻, 유형은 spot(현물)/futures(선물)와 레버리지, AI는 판단에 쓰는 모델입니다.',
+        en: 'The strategy facts. Max bet is the cap per position; Interval 45m · ≥50% means the AI decides every 45 minutes and does not enter below 50% conviction; Type is the book (spot/futures) and leverage; AI is the model making the calls.',
+        ja: '戦略欄。最大はポジションあたりの上限、間隔 45m·≥50% はAIが45分ごとに判断し確信50%未満では入らない意味、タイプはブック種別（spot/futures）とレバレッジ、AI は判断に使うモデルです。',
+        th: 'ข้อมูลกลยุทธ์: สูงสุดคือเพดานต่อสถานะ, ช่วง 45m·≥50% คือ AI ตัดสินใจทุก 45 นาทีและไม่เข้าเมื่อความมั่นใจต่ำกว่า 50%, ชนิดคือบัญชี (spot/futures) กับเลเวอเรจ, AI คือโมเดลที่ใช้ตัดสินใจ',
+        vi: 'Các thông số chiến lược: Cược tối đa là trần mỗi vị thế; Chu kỳ 45m·≥50% nghĩa là AI quyết định mỗi 45 phút và không vào lệnh dưới 50% độ tin cậy; Loại là sổ (spot/futures) và đòn bẩy; AI là mô hình ra quyết định.',
+        id: 'Fakta strategi: Taruhan maks adalah batas per posisi; Interval 45m·≥50% berarti AI memutuskan tiap 45 menit dan tidak masuk di bawah keyakinan 50%; Jenis adalah buku (spot/futures) dan leverage; AI adalah model yang mengambil keputusan.' } },
     { term: { ko: '📋 메모 줄', en: '📋 note line', ja: '📋 メモ行', th: 'บรรทัด 📋', vi: 'Dòng 📋', id: 'Baris 📋' },
       desc: { ko: 'AI의 최근 판단 메모입니다 — 왜 진입/보류했는지, 어떤 리스크 조정이 걸려 있는지를 그대로 보여줍니다 (예: "risk: confidence 0.42 below threshold 0.5" = 확신 부족으로 보류).',
         en: 'The AI\'s latest decision note — why it entered or held, or which risk adjustment is active (e.g. "risk: confidence 0.42 below threshold 0.5" = held for lack of conviction).',
@@ -385,20 +385,6 @@ const TOTAL_LABEL: Record<Language, string> = {
 export function reasonLabel(reason: string | undefined, lang: Language): string {
   if (!reason) return ''
   return REASON_TEXT[reason] ? tr(lang, REASON_TEXT[reason]) : reason
-}
-
-// The run's strategy shape — the same four fields the server hashes into the
-// run's filter key. Two runs on one symbol are allowed precisely when this
-// line differs, so it is the card's answer to "how is this one different?".
-function strategyLabel(run: Run): string {
-  const cfg = (run as any).config || {}
-  const bits = [
-    run.market_type === 'futures' ? 'futures' : 'spot',
-    `${cfg.interval_minutes ?? 60}m`,
-    `≥${Math.round((cfg.min_confidence ?? 0.65) * 100)}%`,
-  ]
-  if (cfg.provider) bits.push(String(cfg.provider))
-  return bits.join(' · ')
 }
 
 function ageLabel(ts: string | undefined, lang: Language): string {
@@ -1177,11 +1163,35 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
               )}
               {/* Several runs may share a symbol as long as they are different
                   strategies, so the card has to say WHICH strategy this is —
-                  these are exactly the fields that tell them apart. */}
-              <div className="muted" style={{ fontSize: 11, marginTop: 4,
-                fontVariantNumeric: 'tabular-nums' }}>
-                {strategyLabel(run)}
-              </div>
+                  these are exactly the fields that tell them apart. Labeled
+                  2-col grid (owner ask 2026-08-09 "inside each block,
+                  arrange") instead of one run-on line. */}
+              {(() => {
+                const cfg = (run as any).config || {}
+                const lev = Number(cfg.leverage || 1)
+                const kv = (label: string, val: string) => (
+                  <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, minWidth: 0 }}>
+                    <span style={{ color: 'var(--text-muted,#a89f92)', whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ color: 'var(--text-secondary,#8a8073)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{val}</span>
+                  </span>
+                )
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 10px',
+                    marginTop: 6, fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
+                    {/* label wording mirrors the create form ('최대 베팅($)',
+                        '주기(분)', '유형') so the card and the form that made
+                        it read as one */}
+                    {kv(tr(language, { ko: '최대 베팅', en: 'Max bet', ja: '最大', th: 'สูงสุด', vi: 'Cược tối đa', id: 'Taruhan maks' }),
+                      `$${cfg.max_bet_usd ?? 500}`)}
+                    {kv(tr(language, { ko: '주기', en: 'Interval', ja: '間隔', th: 'ช่วง', vi: 'Chu kỳ', id: 'Interval' }),
+                      `${cfg.interval_minutes ?? 60}m·≥${Math.round((cfg.min_confidence ?? 0.65) * 100)}%`)}
+                    {kv(tr(language, { ko: '유형', en: 'Type', ja: 'タイプ', th: 'ชนิด', vi: 'Loại', id: 'Jenis' }),
+                      `${run.market_type === 'futures' ? 'futures' : 'spot'}${lev > 1 ? `·${lev}×` : ''}`)}
+                    {kv('AI', String(cfg.provider ||
+                      tr(language, { ko: '서버 기본값', en: 'server default', ja: 'サーバー既定', th: 'ค่าเริ่มต้นเซิร์ฟเวอร์', vi: 'mặc định máy chủ', id: 'bawaan server' })))}
+                  </div>
+                )
+              })()}
               {/* what it's doing RIGHT NOW — rotates every 3s; an arriving
                   event takes the line over for its 2s flash */}
               {run.status === 'running' && (
@@ -1673,6 +1683,25 @@ function CreateRunForm({ token, onDone, onCancel, language, editRun }: {
   return (
     <div style={{ marginTop: 16, background: 'var(--bg-card,#fff)',
       border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }}>
+      {/* Title row (owner ask 2026-08-09 "inside each block, arrange"): the
+          modal opened straight into bare fields — say what this box is. */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>
+            {editRun
+              ? lbl({ ko: '✏️ TRADING 다시 설정', en: '✏️ Reconfigure TRADING', ja: '✏️ TRADING を再設定', th: '✏️ ตั้งค่า TRADING ใหม่', vi: '✏️ Thiết lập lại TRADING', id: '✏️ Atur ulang TRADING' })
+              : lbl({ ko: '➕ 새 TRADING', en: '➕ New TRADING', ja: '➕ 新しい TRADING', th: '➕ TRADING ใหม่', vi: '➕ TRADING mới', id: '➕ TRADING baru' })}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', marginTop: 2 }}>
+            {lbl({ ko: 'AI가 아래 주기·신뢰도·금액대로 스스로 매매를 반복합니다', en: 'The AI cycles on its own with the interval, confidence and size below', ja: 'AIが以下の周期・信頼度・金額で自動売買を繰り返します', th: 'AI จะเทรดซ้ำเองตามรอบ ความมั่นใจ และวงเงินด้านล่าง', vi: 'AI tự lặp lại giao dịch theo chu kỳ, độ tin cậy và mức vốn bên dưới', id: 'AI berputar sendiri dengan interval, keyakinan, dan ukuran di bawah ini' })}
+          </div>
+        </div>
+        <button onClick={onCancel}
+          style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,rgba(0,0,0,0.15))',
+            background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>
+          {lbl({ ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' })}
+        </button>
+      </div>
       <div style={{ display: 'grid', gap: 12,
         gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <label style={field}>
