@@ -82,6 +82,11 @@ const LEV_CHOICES: { key: string; val: number | null; label: any }[] = [
   { key: '10', val: 10, label: '10×' },
 ]
 
+// Markets a fleet may be scoped to. Mirrors markets.automatable_markets() on
+// the server, which validates the request — an empty selection sends null and
+// means "every market", exactly as before this picker existed.
+const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
+
 // monitorOnly: the always-visible monitor box on /automation — renders nothing
 // until an active fleet exists, and never shows the creation form (the create
 // modal keeps that). onSelectRun opens a member TRADING's full detail drawer
@@ -204,6 +209,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [risk, setRisk] = useState('balanced')
   const [levKey, setLevKey] = useState('auto')
   const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
+  // Empty = every market, which is what the API means by a null market_scope.
+  const [mkts, setMkts] = useState<string[]>([])
   const [goalDirty, setGoalDirty] = useState(false)   // typed vs saved value
   const [sizeN, setSizeN] = useState<number>(0)       // 0 = untouched; use fleet.n_runs
   const [busy, setBusy] = useState(false)
@@ -309,7 +316,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, markets: mkts.length ? mkts : null, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -448,6 +455,25 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
               {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
+            </div>
+            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
+              {tr(language, { ko: '시장', en: 'Markets', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button style={chip(mkts.length === 0)} onClick={() => setMkts([])}>
+                {tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' })}
+              </button>
+              {FLEET_MARKETS.map(m => (
+                <button key={m} style={chip(mkts.includes(m))}
+                  onClick={() => setMkts(cur => cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m])}>
+                  {marketLabel(m, language)}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
+              {mkts.length === 0
+                ? tr(language, { ko: '전체 — AI가 지금 열려 있는 시장 중에서 고릅니다.', en: 'All — the AI picks from whichever markets are open right now.', ja: '全市場 — AIが現在開いている市場から選びます。', th: 'ทั้งหมด — AI เลือกจากตลาดที่เปิดอยู่', vi: 'Tất cả — AI chọn trong các thị trường đang mở.', id: 'Semua — AI memilih dari pasar yang sedang buka.' })
+                : tr(language, { ko: '선택한 시장에서만 종목을 고릅니다. 모두 닫혀 있으면 열릴 때까지 기다립니다.', en: 'Symbols are picked only from the markets you chose. If they are all shut, the fleet waits for a session.', ja: '選択した市場からのみ選びます。全て閉場なら開くまで待機します。', th: 'เลือกเฉพาะตลาดที่คุณเลือก หากปิดทั้งหมดจะรอจนเปิด', vi: 'Chỉ chọn trong các thị trường bạn đã chọn. Nếu đều đóng cửa, hạm đội sẽ chờ.', id: 'Simbol hanya dipilih dari pasar yang Anda pilih. Jika semuanya tutup, armada menunggu sesi berikutnya.' })}
             </div>
             <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
               {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}

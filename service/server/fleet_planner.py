@@ -62,6 +62,11 @@ FLEET_BOUNDS = {
     "n_runs": (1, 25),
     "total_budget_usd": (50.0, 10_000_000.0),
     "alloc_frac_of_equal": (0.5, 2.0),           # slot ∈ [B/2N, 2B/N], Σ ≤ B
+    # Risk-parity tilt on the allocation weight: median_vol / slot_vol, capped
+    # either way. A 0.3%/day pair next to a 5%/day coin would otherwise ask for
+    # 16× — far more than the slot clamp can grant, and more concentration than
+    # a vol estimate off 60 daily candles deserves.
+    "vol_parity_tilt": (0.5, 2.0),
     "max_bet_frac_of_run_budget": {"stable": 0.20, "balanced": 0.30,
                                    "aggressive": 0.45, "extreme": 0.70},
     # Plan 15 P0 (2026-07-22): balanced 0.65 → 0.60. The decision LLM's
@@ -132,7 +137,8 @@ def _tier(dimension: str, risk: str):
 
 
 def _trail_config(max_bet: float, leverage: float,
-                  max_loss_usd: float = 0.0) -> dict:
+                  max_loss_usd: float = 0.0,
+                  market: Optional[str] = None) -> dict:
     """Trailing-lock config for a run sized at `max_bet` margin on `leverage`.
 
     activate_usd is the greater of a notional floor and trail_activate_rr ×
@@ -141,12 +147,18 @@ def _trail_config(max_bet: float, leverage: float,
     at exactly 1/10th of the stop and needed a 90.9% hit rate to break even.
 
     tighten_usd is the fee-aware "this is a real winner" line: the round trip
-    on the position notional costs notional × 2 × TRADE_FEE_RATE, so a peak
+    on the position notional costs notional × 2 × the MARKET's fee, so a peak
     worth several round trips is worth protecting harder than one that merely
-    armed. Above it the giveback compresses (run_engine._trailing_lock_hit)."""
-    from fees import TRADE_FEE_RATE
+    armed. Above it the giveback compresses (run_engine._trailing_lock_hit).
+
+    The rate is per-market (fees.fee_rate) — a perp round trip costs 0.045%
+    and a major pair 0.008%, so the flat rate this used to read priced one of
+    them 5.6× wrong. On today's tiers the arming floor below always dominates,
+    so this is correctness rather than a behaviour change; the pin is
+    test_trail_fee_term_stays_masked_by_the_arming_floor_at_build."""
+    from fees import fee_rate
     notional = max(0.0, float(max_bet)) * max(1.0, float(leverage or 1.0))
-    round_trip_usd = notional * TRADE_FEE_RATE * 2
+    round_trip_usd = notional * fee_rate(market) * 2
     activate = max(
         float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"],
         max(0.0, float(max_loss_usd)) * FLEET_BOUNDS["trail_activate_rr"],
@@ -752,8 +764,40 @@ def _update_master_hold(fleet_id: int, held: bool) -> None:
 
 # ── budget math (pure) ──────────────────────────────────────────────────────
 
+def _thesis_vol_daily_pct(thesis: dict) -> Optional[float]:
+    """Realized daily vol from the thesis' persisted stage-1 factors.
+
+    None whenever it cannot be read — an unmeasured slot must fall back to the
+    confidence-only split rather than be guessed at."""
+    raw = thesis.get("factor_scores_json")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw or "{}")
+        except (ValueError, TypeError):
+            return None
+    if not isinstance(raw, dict):
+        return None
+    vol = (raw.get("factors") or {}).get("vol_daily_pct")
+    try:
+        vol = float(vol)
+    except (TypeError, ValueError):
+        return None
+    return vol if vol > 0 else None
+
+
 def allocate_budget(total: float, theses: list[dict]) -> list[float]:
-    """Confidence-weighted allocations, clamped to [B/2N, 2B/N], Σ ≤ B."""
+    """Confidence- and volatility-weighted allocations, clamped to
+    [B/2N, 2B/N], Σ ≤ B.
+
+    Equal dollars across markets is equal dollars, not equal risk: a 0.3%/day
+    currency pair and a 5%/day coin funded the same produce dollar P&L an
+    order of magnitude apart, so the quiet slot is dead capital under the
+    profit mandate. The vol term scales each slot toward the batch's MEDIAN
+    vol, which needs no new constant and self-normalizes to whatever mix the
+    batch happens to hold. It is a tilt, not a target: the existing
+    [B/2N, 2B/N] clamp still bounds it, and a batch with no persisted vol
+    (or one instrument) allocates exactly as before.
+    """
     n = len(theses)
     if n == 0:
         return []
@@ -761,6 +805,16 @@ def allocate_budget(total: float, theses: list[dict]) -> list[float]:
     lo_f, hi_f = FLEET_BOUNDS["alloc_frac_of_equal"]
     lo, hi = equal * lo_f, equal * hi_f
     weights = [max(0.2, min(1.0, float(t.get("confidence") or 0.5))) for t in theses]
+    vols = [_thesis_vol_daily_pct(t) for t in theses]
+    known = sorted(v for v in vols if v is not None)
+    if known:
+        mid = known[len(known) // 2] if len(known) % 2 else \
+            (known[len(known) // 2 - 1] + known[len(known) // 2]) / 2.0
+        lo_t, hi_t = FLEET_BOUNDS["vol_parity_tilt"]
+        weights = [
+            w * (1.0 if v is None else max(lo_t, min(hi_t, mid / v)))
+            for w, v in zip(weights, vols)
+        ]
     wsum = sum(weights) or 1.0
     raw = [total * w / wsum for w in weights]
     alloc = [max(lo, min(hi, r)) for r in raw]
@@ -917,7 +971,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             # below is the primary profit-realiser for intraday moves.
             "profit_target_usd": round(run_budget * gain_frac, 2),
             # Lock arms against the STOP, not just notional — see _trail_config.
-            "trail": _trail_config(max_bet, leverage, max_loss_usd),
+            "trail": _trail_config(max_bet, leverage, max_loss_usd, market),
             "at_time": at_time,
         },
         # Plan 14: stop_flatten pinned True on the builder path (the API-route

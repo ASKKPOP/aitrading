@@ -1137,15 +1137,23 @@ def _select_from_eligible(eligible: list[dict[str, Any]], n: int,
 
     Pass 1 is a PREFERENCE pass: caps ceil(n/2) per market AND, when
     dir_balance is on, keeps each market directionally balanced (majority −
-    minority ≤ _DIR_IMBALANCE_MAX) so a correlated sleeve can't stack one way.
+    minority ≤ _DIR_IMBALANCE_MAX) so a correlated sleeve can't stack one way,
+    AND keeps the WHOLE book within ceil(n/3) of neutral. The per-market rule
+    says nothing about ES + a mega-cap + BTC all long — four markets holding
+    one bet — which is the shape a broad risk-on/risk-off day punishes. This
+    is a concentration brake, not a correlation model: it counts direction, it
+    does not measure how the instruments actually co-move.
+
     Pass 2 fills any remaining slots from leftovers regardless of market OR
     direction — reaching N always outranks balance (a bearish-only batch still
     fills). Non long/short directions are never constrained.
     """
     per_market_cap = max(1, math.ceil(n / 2))
+    global_cap = max(1, math.ceil(n / 3))
     picked: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
     dir_counts: dict[tuple[str, str], int] = {}
+    book: dict[str, int] = {"long": 0, "short": 0}
     for t in eligible:
         m = t["market"]
         if counts.get(m, 0) >= per_market_cap:
@@ -1155,10 +1163,13 @@ def _select_from_eligible(eligible: list[dict[str, Any]], n: int,
             other = "short" if d == "long" else "long"
             if (dir_counts.get((m, d), 0) + 1) - dir_counts.get((m, other), 0) > _DIR_IMBALANCE_MAX:
                 continue
+            if (book[d] + 1) - book[other] > global_cap:
+                continue
         picked.append(t)
         counts[m] = counts.get(m, 0) + 1
         if d in ("long", "short"):
             dir_counts[(m, d)] = dir_counts.get((m, d), 0) + 1
+            book[d] += 1
         if len(picked) >= n:
             return picked
     chosen = {(t["market"], t["symbol"]) for t in picked}

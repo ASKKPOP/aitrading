@@ -58,6 +58,9 @@ class RunCycleOrderParamTests(unittest.TestCase):
         # entry 487.25 -> stop 462.888, target 535.975). With it off there is
         # no bracket at all and none of the exit assertions mean anything.
         os.environ["RISK_ENGINE_ENABLED"] = "true"
+        # Same reason: prod runs FEE_PER_MARKET on, so the fee floor these
+        # tests read is the market's real round trip, not the legacy flat rate.
+        os.environ["FEE_PER_MARKET"] = "true"
         self.probe = patch("routes_runs._probe_price", return_value=100.0)
         self.probe.start()
         self.client = TestClient(create_app())
@@ -72,7 +75,8 @@ class RunCycleOrderParamTests(unittest.TestCase):
     def tearDown(self):
         self.probe.stop()
         for key in ("AUTO_TRADING_ENABLED", "RUN_CONF_PERCENTILE",
-                    "RUN_AI_ORDER_PARAMS", "RISK_ENGINE_ENABLED"):
+                    "RUN_AI_ORDER_PARAMS", "RISK_ENGINE_ENABLED",
+                    "FEE_PER_MARKET"):
             os.environ.pop(key, None)
         self.tmp.cleanup()
 
@@ -230,6 +234,28 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.assertTrue(result["executed"], result.get("skip_reason"))
         fills = self._fill(run_id)
         self.assertLessEqual(float(fills[0]["quantity"]) * 100.0, 500.0 + 0.01)
+
+    def test_the_fee_floor_is_priced_at_the_run_s_own_market(self):
+        """`fees.fee_rate(market)` exists and the entry gate uses it, but the
+        bracket rail was still calling the flat legacy 0.1% for every market —
+        20x the real cost of a US equity round trip. A target-only block is
+        what exposes it: with a stop present the R:R floor produces the same
+        number and the fee rate is invisible.
+
+        Crypto's true round trip is 0.045%, so the floor is 3 x 2 x 0.045 =
+        0.27% and a 0.40% target survives. Under the flat rate the floor was
+        0.60% and the same target was pushed out to 0.60%.
+        """
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"target_pct": 0.40,
+                                                 "why": "fee floor probe"})):
+            run_engine.run_cycle(run_id)
+        params = self._events(run_id, "order_params")[0]["params"]
+        self.assertAlmostEqual(params["target_pct"], 0.40, places=6)
+        self.assertFalse([n for n in params["notes"] if "fee floor" in n],
+                         params["notes"])
 
     def test_apply_with_a_deferral_falls_back_to_the_house_bracket(self):
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"

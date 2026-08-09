@@ -142,6 +142,30 @@ class AllocationTests(unittest.TestCase):
         alloc = fp.allocate_budget(500.0, [{"confidence": 0.7}])
         self.assertEqual(alloc, [500.0])
 
+    def test_low_vol_slot_is_funded_above_a_high_vol_slot(self):
+        """Equal dollars to a 0.3%/day forex pair and a 5%/day coin means the
+        forex slot cannot move the account — dead capital under the profit
+        mandate. Same confidence ⇒ the quieter instrument gets more notional so
+        both slots carry comparable dollar risk."""
+        quiet = {"confidence": 0.7,
+                 "factor_scores_json": json.dumps({"factors": {"vol_daily_pct": 0.3}})}
+        loud = {"confidence": 0.7,
+                "factor_scores_json": json.dumps({"factors": {"vol_daily_pct": 5.0}})}
+        alloc = fp.allocate_budget(1000.0, [quiet, loud])
+        self.assertGreater(alloc[0], alloc[1])
+        self.assertLessEqual(sum(alloc), 1000.0 + 1e-6)
+        # the existing [B/2N, 2B/N] clamp still bounds the tilt
+        for a in alloc:
+            self.assertGreaterEqual(a, 250.0 - 1e-6)
+            self.assertLessEqual(a, 1000.0 + 1e-6)
+
+    def test_missing_vol_falls_back_to_confidence_only(self):
+        """A thesis with no persisted factors must not be penalised — the
+        weighting degrades to today's confidence-only split."""
+        theses = [{"confidence": 0.9}, {"confidence": 0.9}]
+        self.assertEqual(fp.allocate_budget(1000.0, theses),
+                         [500.0, 500.0])
+
     def test_profit_target_unit_conversion(self):
         """A 2.0% thesis on a $1,000 slot ⇒ ~$20 target, NOT $500 — the
         round-4 unit-confusion critical (mutation: drop the /100)."""
@@ -183,6 +207,40 @@ class AllocationTests(unittest.TestCase):
         self.assertGreater(sc["trail"]["tighten_usd"], sc["trail"]["activate_usd"])
         # and it must be MUCH tighter than the old run_budget * 0.20 = $200
         self.assertLess(sc["max_loss_usd"], 200.0)
+
+    def test_trail_tighten_uses_the_market_fee_not_a_flat_rate(self):
+        """The ratchet line is "several round trips of profit". A round trip
+        costs 0.045% on a perp and 0.008% on a major pair, so one flat rate
+        prices one of them wrong by 5.6×. Leverage here is high enough that the
+        fee term clears the arming floor and is actually observable.
+
+        FEE_PER_MARKET is what prod runs with (verified on the box); the flag
+        defaults off only for an unconfigured environment."""
+        with patch.dict(os.environ, {"FEE_PER_MARKET": "true"}):
+            crypto = fp._trail_config(10_000.0, 10.0, 0.0, market="crypto")
+            forex = fp._trail_config(10_000.0, 10.0, 0.0, market="forex")
+        # 100k notional × rate × 2 legs × 3 round trips
+        self.assertAlmostEqual(crypto["tighten_usd"], 270.0, places=2)
+        self.assertAlmostEqual(forex["tighten_usd"], 48.0, places=2)
+
+    def test_trail_fee_term_stays_masked_by_the_arming_floor_at_build(self):
+        """Honesty pin: at every tier the built config lands on activate × 1.5,
+        so the per-market fee above is a correctness fix with NO behavioural
+        change on the build path. If a future tier change lets the fee term
+        surface, this test fails and the change is a decision, not a side
+        effect."""
+        for risk in ("balanced", "aggressive", "extreme"):
+            for market in ("crypto", "forex"):
+                thesis = {"symbol": "AAA", "market": market, "direction": "long",
+                          "confidence": 0.7, "expected_move_pct": 2.0,
+                          "horizon_hours": 24}
+                sc = fp.compose_run_settings(
+                    thesis, 10_000.0,
+                    {"risk_appetite": risk, "lang": "en"})["stop_conditions"]
+                self.assertAlmostEqual(
+                    sc["trail"]["tighten_usd"],
+                    round(sc["trail"]["activate_usd"] * 1.5, 2), places=2,
+                    msg=f"{risk}/{market}")
 
     def test_short_thesis_maps_to_futures_book(self):
         thesis = {"symbol": "AAA", "market": "crypto", "direction": "short",
