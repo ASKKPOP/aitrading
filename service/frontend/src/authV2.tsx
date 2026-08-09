@@ -562,6 +562,20 @@ export function ForgotPasswordPage() {
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '전송 중…', en: 'Sending…', ja: '送信中…', th: 'กำลังส่ง…', vi: 'Đang gửi…', id: 'Mengirim…' }) : tr(language, { ko: '코드 보내기', en: 'Send code', ja: 'コードを送信', th: 'ส่งรหัส', vi: 'Gửi mã', id: 'Kirim kode' })}
           </button>
+          {method === 'email' && (
+            // Invite emails already carry a code — requesting a new one here
+            // would overwrite it, so this jumps straight to the code step.
+            <button type="button" onClick={() => {
+              if (!email.trim()) {
+                setError(tr(language, { ko: '먼저 이메일을 입력하세요', en: 'Enter your email first', ja: '先にメールアドレスを入力してください', th: 'กรุณากรอกอีเมลก่อน', vi: 'Vui lòng nhập email trước', id: 'Masukkan email Anda terlebih dahulu' }))
+                return
+              }
+              setError(''); setStep('reset')
+            }}
+              style={{ ...buttonStyle, background: 'transparent', color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>
+              {tr(language, { ko: '이미 코드가 있어요', en: 'I already have a code', ja: 'すでにコードをお持ちの方', th: 'ฉันมีรหัสอยู่แล้ว', vi: 'Tôi đã có mã', id: 'Saya sudah punya kode' })}
+            </button>
+          )}
           <div style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
             <Link to="/sign-in" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '로그인으로 돌아가기', en: 'Back to sign in', ja: 'ログインに戻る', th: 'กลับไปหน้าเข้าสู่ระบบ', vi: 'Quay lại đăng nhập', id: 'Kembali ke halaman masuk' })}</Link>
           </div>

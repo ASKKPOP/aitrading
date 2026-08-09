@@ -632,6 +632,34 @@ class MemberCreateTests(_Base):
         self.assertEqual(r.status_code, 200, r.text)
         self.assertEqual(r.json()["user_id"], uid)
 
+    def test_requesting_a_reset_code_invalidates_the_invite_code(self):
+        """Why the reset UI needs an 'I already have a code' path: requesting
+        a fresh code overwrites the invite under the same reset:{email} key,
+        killing the code the invite email told the member to enter."""
+        with patch("routes_admin_manage.send_verification_code_email",
+                   return_value=True) as sent:
+            r = self.client.post("/api/admin/members", json={"email": "inv@x.com"},
+                                 headers=self.admin)
+        self.assertEqual(r.status_code, 200, r.text)
+        invite_code = sent.call_args[0][1]
+
+        # Within the resend cooldown the member cannot even request one …
+        r = self.client.post("/api/users/forgot-password",
+                             json={"email": "inv@x.com"})
+        self.assertEqual(r.status_code, 429, r.text)
+
+        # … and once the cooldown passes, a new request replaces the invite.
+        with patch("routes_users.CODE_RESEND_COOLDOWN_SECONDS", 0), \
+             patch("routes_users.send_verification_code_email", return_value=True):
+            r = self.client.post("/api/users/forgot-password",
+                                 json={"email": "inv@x.com"})
+        self.assertEqual(r.status_code, 200, r.text)
+
+        r = self.client.post("/api/users/reset-password",
+                             json={"email": "inv@x.com", "code": invite_code,
+                                   "new_password": "chosen12345"})
+        self.assertEqual(r.status_code, 400)
+
     def test_create_can_grant_a_plan_in_one_step(self):
         with patch("routes_admin_manage.send_verification_code_email", return_value=True):
             r = self.client.post("/api/admin/members",
