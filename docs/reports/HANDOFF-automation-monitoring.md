@@ -56,6 +56,35 @@
 > **Always `quantity <> 0`.** The seed+realized+unrealized cross-check is
 > what caught it — never report equity from one formula alone.
 >
+> ### ⚠️ `run_events.ts` IS A varchar — TIME FILTERS ARE STRING COMPARES — 2026-08-09
+>
+> `run_events.ts` is **`varchar(32)`** holding ISO8601
+> `YYYY-MM-DDTHH:MM:SSZ` — **not a DATETIME.** Every comparison against it
+> is a *string* compare, so a MySQL-style literal silently means something
+> else:
+>
+>     ts >= "2026-08-09 22:44:00"   -- returned 84 rows; the true answer was 0
+>
+> At position 10 the stored `T` sorts above a space, so the filter collapses
+> to "every row dated 08-09 or later". **It does not error, and the number
+> looks plausible.** I only caught it because a since-deploy count exceeded
+> the total row delta (103 − 101 = 2, yet the filter said 84).
+>
+> - **Always pass the full ISO form, with the `T` and the `Z`:**
+>   `ts >= "2026-08-09T22:44:00Z"`.
+> - `MIN`/`MAX`/`ORDER BY`/`BETWEEN` on `ts` are **safe** — ISO8601 sorts
+>   lexicographically, which is the one thing this format gets right.
+> - `DATE_SUB(UTC_TIMESTAMP(), INTERVAL n HOUR)` comparisons are **not**
+>   safe: they mix a string column with a datetime and MySQL's coercion is
+>   not the filter you meant. Build the ISO literal instead.
+>
+> Same family as the `quantity > 0` trap above: a hand-written monitoring
+> query that returns a *stable, plausible* wrong number. Production is
+> immune — application code writes and reads the column in one format. The
+> standing defence is the one that caught both: **cross-check every count
+> against a second formula that must agree** (here, a window count can never
+> exceed the total delta over the same window).
+>
 > ### 🛡️ VARY-ON-LOSS: A LOSS-STOPPED SYMBOL MUST COOL DOWN — 2026-08-07 (#324)
 >
 > A `stop_event` loss retirement set **no symbol cooldown** (only idle and
