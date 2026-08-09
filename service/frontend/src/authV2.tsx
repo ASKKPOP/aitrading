@@ -219,13 +219,15 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
             style={inputStyle}
             autoComplete="current-password"
           />
+          {/* Standard placement: right under the password field, accent-colored —
+              below the submit button it sat unnoticed (and below the fold on mobile). */}
+          <div style={{ textAlign: 'right', marginTop: -2, marginBottom: 12, fontSize: 13 }}>
+            <Link to="/forgot-password" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '비밀번호를 잊으셨나요?', en: 'Forgot password?', ja: 'パスワードをお忘れですか？', th: 'ลืมรหัสผ่าน?', vi: 'Quên mật khẩu?', id: 'Lupa kata sandi?' })}</Link>
+          </div>
           {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button type="submit" disabled={loading} style={loading ? buttonDisabledStyle : buttonStyle}>
             {loading ? tr(language, { ko: '로그인 중…', en: 'Signing in…', ja: 'ログイン中…', th: 'กำลังเข้าสู่ระบบ…', vi: 'Đang đăng nhập…', id: 'Sedang masuk…' }) : tr(language, { ko: '로그인', en: 'Sign in', ja: 'ログイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk' })}
           </button>
-          <div style={{ marginTop: 12, fontSize: 13, textAlign: 'center' }}>
-            <Link to="/forgot-password" style={{ color: '#93a0aa' }}>{tr(language, { ko: '비밀번호를 잊으셨나요?', en: 'Forgot password?', ja: 'パスワードをお忘れですか？', th: 'ลืมรหัสผ่าน?', vi: 'Quên mật khẩu?', id: 'Lupa kata sandi?' })}</Link>
-          </div>
           <div style={{ marginTop: 20, fontSize: 13, color: '#93a0aa', textAlign: 'center' }}>
             {tr(language, { ko: '처음이신가요?', en: 'New here?', ja: 'はじめての方はこちら', th: 'เพิ่งเข้ามาใช่ไหม?', vi: 'Lần đầu ở đây?', id: 'Baru di sini?' })} <Link to="/sign-up" style={{ color: 'var(--accent-primary, #b8542f)' }}>{tr(language, { ko: '계정 만들기', en: 'Create an account', ja: 'アカウントを作成', th: 'สร้างบัญชี', vi: 'Tạo tài khoản', id: 'Buat akun' })}</Link>
             {' · '}
