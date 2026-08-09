@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 22 — How RAG Works with the Sooppiy AI</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 22 — How RAG Works with the Sooppiy AI</h1>
+<p class="kr">Sooppiy AI의 RAG 작동 원리 — 무엇을 수집하고, 언제 어떻게 회수해 쓰며, 가중치 학습으로 어떻게 나아가는가 (2026-08-09, 상태는 프로드 실측)</p>
+
+<div class="quote">Owner, 2026-08-06: <i>“RAG keep all analysis and monitoring for this session and sooppiy AI”</i> — and 2026-08-07: <i>“from tomorrow sooppiy and this session must be ref RAG.”</i> The corpus must be <b>read</b>, not just written.</div>
+
+<div class="chips">
+  <div class="chip"><b>1,103</b><span>chunks in the corpus (2026-08-09)</span></div>
+  <div class="chip"><b>562</b><span>monitoring findings (recallable)</span></div>
+  <div class="chip"><b>510</b><span>desk decisions (Phase-3 training data)</span></div>
+  <div class="chip"><b>31</b><span>run outcomes (joined P&amp;L)</span></div>
+  <div class="chip"><b>46</b><span>recall events journaled since #340</span></div>
+  <div class="chip"><b>3</b><span>chunks max injected per brief</span></div>
+</div>
+
+<h2>1. The big picture — one corpus, two readers</h2>
+<p class="kr">전체 구조 — 하나의 코퍼스(desk_memory)를 데스크와 모니터링 세션이 함께 읽는다. 임베딩 서비스 없음: 순수 파이썬 스코어러가 SQLite/MySQL 양쪽에서 동일하게 동작.</p>
+<div class="card">
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- sources -->
+  <rect class="box" x="20" y="30" width="230" height="72"/>
+  <text x="34" y="54" class="t-b">Desk decisions</text>
+  <text x="34" y="72" class="t-small">every decision event's `report` —</text>
+  <text x="34" y="87" class="t-small">the desk's own stated reasoning</text>
+  <rect class="box" x="20" y="122" width="230" height="72"/>
+  <text x="34" y="146" class="t-b">Run outcomes</text>
+  <text x="34" y="164" class="t-small">terminal runs joined to realized P&amp;L —</text>
+  <text x="34" y="179" class="t-small">"what came of that reasoning"</text>
+  <rect class="box" x="20" y="214" width="230" height="72"/>
+  <text x="34" y="238" class="t-b">Monitoring analysis</text>
+  <text x="34" y="256" class="t-small">handoff, daily cycle notes, findings —</text>
+  <text x="34" y="271" class="t-small">chunked per ## heading</text>
+  <!-- ingest -->
+  <rect class="box-accent" x="310" y="112" width="180" height="92"/>
+  <text x="324" y="138" class="t-b">desk_memory_ingest</text>
+  <text x="324" y="156" class="t-small">rides the trading tick,</text>
+  <text x="324" y="171" class="t-small">idempotent by SHA,</text>
+  <text x="324" y="186" class="t-small">fail-soft (never blocks a cycle)</text>
+  <path class="ln" marker-end="url(#ar)" d="M250 66 C 280 66, 285 128, 308 138"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 158 L 308 158"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 250 C 280 250, 285 188, 308 178"/>
+  <!-- corpus -->
+  <rect class="box-good" x="550" y="96" width="180" height="124"/>
+  <text x="564" y="122" class="t-b">desk_memory</text>
+  <text x="564" y="140" class="t-small">kind = monitoring · decision</text>
+  <text x="564" y="155" class="t-small">· outcome (+ reserved: lesson)</text>
+  <text x="564" y="173" class="t-small">situation-tagged chunks,</text>
+  <text x="564" y="188" class="t-small">unique SHA, market/symbol/run</text>
+  <text x="564" y="206" class="t-small">alembic 0046 · SQLite + MySQL</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M490 158 L 548 158"/>
+  <!-- readers -->
+  <rect class="box-accent" x="790" y="40" width="150" height="88"/>
+  <text x="804" y="64" class="t-b">The desk</text>
+  <text x="804" y="82" class="t-small">_recall_line injects top-3</text>
+  <text x="804" y="97" class="t-small">matching PAST findings</text>
+  <text x="804" y="112" class="t-small">into every position brief</text>
+  <rect class="box" x="790" y="190" width="150" height="88"/>
+  <text x="804" y="214" class="t-b">Monitoring session</text>
+  <text x="804" y="232" class="t-small">searches the corpus BEFORE</text>
+  <text x="804" y="247" class="t-small">proposing any fix — a recorded</text>
+  <text x="804" y="262" class="t-small">finding is never "new" again</text>
+  <path class="ln-accent" marker-end="url(#ar)" d="M730 130 C 760 120, 762 96, 788 88"/>
+  <path class="ln" marker-end="url(#ar)" d="M730 190 C 760 200, 762 224, 788 232"/>
+  <!-- learning loop -->
+  <rect class="box-dim" x="310" y="300" width="420" height="70"/>
+  <text x="324" y="324" class="t-b">Phase 3 (in progress): learn retrieval weights</text>
+  <text x="324" y="342" class="t-small">recall journal (#340, live) → attribution dataset → shadow scores → weighted</text>
+  <text x="324" y="357" class="t-small">retrieval behind a default-off flag — one increment per day, daily 21:00 UTC</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M840 280 C 840 330, 760 335, 732 335"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M520 300 C 560 270, 590 250, 610 222"/>
+</svg>
+<div class="legend"><span class="dot" style="background:var(--good)"></span>the corpus &nbsp; <span class="dot" style="background:var(--accent)"></span>live injection path &nbsp; dashed = the learning loop being built</div>
+</div>
+
+<h2>2. Collection — how chunks get made</h2>
+<p class="kr">수집 — 청크가 만들어지는 경로. 세 소스 모두 매 트레이딩 틱에 편승해 스로틀·멱등(SHA)·fail-soft로 적재된다. 손상된 코퍼스가 트레이딩 사이클을 죽이는 일은 구조적으로 불가능.</p>
+<div class="card">
+<table>
+  <tr><th>source</th><th>what becomes a chunk</th><th>kind</th><th>why it matters</th></tr>
+  <tr>
+    <td><code>ingest_decisions()</code></td>
+    <td>each <code>decision</code> event's <code>report</code> — the desk's stated case — plus the numbers behind it (action, confidence, conviction)</td>
+    <td><code>decision</code></td>
+    <td>the most valuable text the platform produces was read once and buried under the next 200 events</td>
+  </tr>
+  <tr>
+    <td><code>ingest_run_outcomes()</code></td>
+    <td>a terminal run (<code>stopped/finished/failed</code>) joined to its realized result</td>
+    <td><code>outcome</code></td>
+    <td>nothing else joins "this decision" to "what it earned or cost" — the desk could never be asked <i>"when you last reasoned like this, what happened?"</i></td>
+  </tr>
+  <tr>
+    <td><code>ingest_reports()</code></td>
+    <td>monitoring markdown (handoff, daily cycle notes, backlog) chunked per <code>##</code> heading — a whole day is too coarse, a paragraph loses its heading</td>
+    <td><code>monitoring</code></td>
+    <td>the measured findings (fee hurdle, full-book dumps, ladder churn…) survive account rotation and reach the desk</td>
+  </tr>
+</table>
+</div>
+<div class="card">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="35" width="160" height="58"/>
+  <text x="34" y="59" class="t-b">TradingRuns tick</text>
+  <text x="34" y="77" class="t-small">every worker pass</text>
+  <rect class="box" x="230" y="35" width="170" height="58"/>
+  <text x="244" y="59" class="t-b">maybe_ingest()</text>
+  <text x="244" y="77" class="t-small">throttled internally</text>
+  <rect class="box-accent" x="450" y="35" width="200" height="58"/>
+  <text x="464" y="59" class="t-b">SHA dedup</text>
+  <text x="464" y="77" class="t-small">re-runs safe · edits re-store</text>
+  <rect class="box-good" x="700" y="35" width="240" height="58"/>
+  <text x="714" y="59" class="t-b">INSERT desk_memory</text>
+  <text x="714" y="77" class="t-small">failure = warning log, never a dead tick</text>
+  <path class="ln" marker-end="url(#ar)" d="M180 64 L 228 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M400 64 L 448 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M650 64 L 698 64"/>
+</svg>
+</div>
+
+<h2>3. Use — how a chunk reaches a live decision</h2>
+<p class="kr">사용 — 청크가 실제 의사결정에 닿는 경로. 핵심 설계: 심볼이 아니라 <b>상황</b>으로 검색한다. ZC에서 배운 교훈이 ETH 데스크에 닿아야 하기 때문.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="20" width="170" height="62"/>
+  <text x="34" y="44" class="t-b">run_cycle starts</text>
+  <text x="34" y="62" class="t-small">~every 30 min per run</text>
+  <rect class="box-accent" x="240" y="20" width="220" height="62"/>
+  <text x="254" y="40" class="t-b">_recall_query(run, pnl, qty)</text>
+  <text x="254" y="58" class="t-small">the SITUATION, in corpus vocabulary:</text>
+  <text x="254" y="73" class="t-small">market + flat / losing / winning / gave-back</text>
+  <rect class="box" x="510" y="20" width="190" height="62"/>
+  <text x="524" y="40" class="t-b">desk_memory.search</text>
+  <text x="524" y="58" class="t-small">pure-Python lexical scorer,</text>
+  <text x="524" y="73" class="t-small">kind=monitoring, top-3</text>
+  <rect class="box-good" x="750" y="20" width="190" height="62"/>
+  <text x="764" y="40" class="t-b">recall block → brief</text>
+  <text x="764" y="58" class="t-small">"past findings, NOT live tape"</text>
+  <text x="764" y="73" class="t-small">char-capped per chunk</text>
+  <path class="ln" marker-end="url(#ar)" d="M190 51 L 238 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M460 51 L 508 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M700 51 L 748 51"/>
+  <rect class="box" x="240" y="120" width="220" height="62"/>
+  <text x="254" y="144" class="t-b">decision prompt</text>
+  <text x="254" y="162" class="t-small">light AND full desk paths —</text>
+  <text x="254" y="177" class="t-small">both see the same recall</text>
+  <rect class="box-warn" x="510" y="120" width="270" height="62"/>
+  <text x="524" y="140" class="t-b">recall telemetry event (#340)</text>
+  <text x="524" y="158" class="t-small">query + injected chunk SHAs/scores journaled</text>
+  <text x="524" y="173" class="t-small">beside the decision — Phase 3's raw material</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M840 82 C 840 108, 500 100, 462 130"/>
+  <path class="ln-warn ln-dash" marker-end="url(#ar)" d="M460 151 L 508 151"/>
+</svg>
+</div>
+<div class="card">
+<table>
+  <tr><th>situation this cycle</th><th>what the query says</th><th>the kind of finding it surfaces</th></tr>
+  <tr><td>flat, considering an entry</td><td><code>flat considering entry fee hurdle expected move</code></td><td>the fee-hurdle evidence — "a move that cannot clear its round trip is not an opportunity"</td></tr>
+  <tr><td>holding, losing</td><td><code>losing position stop distance cut or hold reduce</code></td><td>ladder-of-adds and stop-distance findings; <i>reduce</i> as the cheaper verb</td></tr>
+  <tr><td>holding, winning</td><td><code>winning position trailing take partial profit</code></td><td>trailing-lock and partial-banking lessons</td></tr>
+  <tr><td>gave back its peak</td><td><code>gave back peak give-back bank the gain arm the level</code></td><td>the give-back/arm findings — winners historically returned 34–49% of peak</td></tr>
+</table>
+<div class="legend">Real recall verified in-container on prod (run 1012, losing case): the run-932 finding — a position halved every cycle, 87.5% shed by the time price travelled 21% toward target, measured drag vs simply holding — reached a different symbol's desk because the <i>situation</i> matched.</div>
+</div>
+
+<h2>4. When — every trigger, every actor</h2>
+<p class="kr">언제 — 트리거별 실행 시점 총정리.</p>
+<div class="card">
+<table>
+  <tr><th>when</th><th>actor</th><th>what happens</th></tr>
+  <tr><td>every worker tick</td><td><code>desk_memory_ingest.maybe_ingest</code></td><td>new decisions / outcomes / edited monitoring notes become chunks (throttled, SHA-deduped)</td></tr>
+  <tr><td>every decision cycle (~30 min per run)</td><td><code>run_engine._recall_line</code></td><td>situation query → top-3 monitoring chunks → labelled block in the position brief; the injected SHAs are journaled as a <code>recall</code> event</td></tr>
+  <tr><td>before any monitoring fix is proposed</td><td>the monitoring session</td><td>search the corpus first and say what it returned — a recorded finding must not be rediscovered as new</td></tr>
+  <tr><td>daily 21:00 UTC (14:00 PT)</td><td>scheduled task <code>rag-phase3-daily-increment</code></td><td>one Phase-3 increment: TDD → PR → CI → merge → deploy → prod verify ×2 → dated line in §7 of the plan</td></tr>
+  <tr><td>emergency</td><td><code>DESK_RECALL_ENABLED=0</code></td><td>kill switch — recall disappears from briefs; ingest continues; nothing else changes</td></tr>
+</table>
+</div>
+
+<h2>5. The scoring logic — deliberately boring</h2>
+<p class="kr">스코어링 — 의도적으로 단순하게. 임베딩 서비스·FTS5·MySQL FULLTEXT 없음.</p>
+<div class="card">
+<ul style="margin:0 0 0 18px; padding:0;">
+  <li><b>Pure-Python lexical scorer.</b> The corpus is small (hundreds to low thousands of chunks); a Python scorer behaves <i>identically</i> on SQLite and MySQL — the dialect split has burned this codebase before (LIKE ESCAPE, datetime functions, FK enforcement).</li>
+  <li><b>Short stop-word list.</b> Aggressive stop-lists would strip the domain words — <code>loss</code>, <code>stop</code>, <code>close</code> — that queries are actually about.</li>
+  <li><b>kind=monitoring only is recallable today.</b> The 510 decision and 31 outcome chunks are write-only <i>by design</i>: they are the training data for Phase 3, and injecting them before attribution exists would add noise without a feedback loop.</li>
+  <li><b>Everything on the cycle path is fail-soft.</b> An empty, slow, or broken corpus returns <code>""</code> — a cycle is never lost to its own memory.</li>
+</ul>
+</div>
+
+<h2>6. Phase roadmap — where the learning loop is</h2>
+<p class="kr">로드맵 — 순서 규칙이 구속력: 회수에 <b>변동(variance)</b>이 있어야 가중치를 배울 수 있다. 데이터보다 앞서 짓지 않는다. 하루 1증분, 매일 프로드까지.</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <line class="ln" x1="40" y1="52" x2="920" y2="52"/>
+  <rect class="box-good" x="40" y="80" width="150" height="66"/>
+  <text x="54" y="104" class="t-b">Phase 0 · done</text>
+  <text x="54" y="122" class="t-small">the plan (this doc's .md)</text>
+  <circle cx="115" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="230" y="80" width="150" height="66"/>
+  <text x="244" y="104" class="t-b">Phase 1 · LIVE</text>
+  <text x="244" y="122" class="t-small">chunking + ingest</text>
+  <text x="244" y="137" class="t-small">(alembic 0046)</text>
+  <circle cx="305" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="420" y="80" width="150" height="66"/>
+  <text x="434" y="104" class="t-b">Phase 2 · LIVE</text>
+  <text x="434" y="122" class="t-small">situation-keyed recall</text>
+  <text x="434" y="137" class="t-small">into every brief</text>
+  <circle cx="495" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-warn" x="610" y="80" width="150" height="66"/>
+  <text x="624" y="104" class="t-b">Phase 3 · building</text>
+  <text x="624" y="122" class="t-small">(a) SHIPPED #340:</text>
+  <text x="624" y="137" class="t-small">recall journaling</text>
+  <circle cx="685" cy="52" r="5" fill="var(--warn)"/>
+  <rect class="box-dim" x="800" y="80" width="140" height="66"/>
+  <text x="814" y="104" class="t-b">(b)(c)(d) next</text>
+  <text x="814" y="122" class="t-small">one per day,</text>
+  <text x="814" y="137" class="t-small">21:00 UTC cadence</text>
+  <circle cx="870" cy="52" r="5" fill="var(--muted)"/>
+  <!-- ladder -->
+  <rect class="box-warn" x="40" y="186" width="205" height="84"/>
+  <text x="54" y="208" class="t-b">(a) journal recalls ✓</text>
+  <text x="54" y="226" class="t-small">which chunk SHAs each decision</text>
+  <text x="54" y="241" class="t-small">actually saw — no recall event</text>
+  <text x="54" y="256" class="t-small">≠ empty recall (both matter)</text>
+  <rect class="box-dim" x="275" y="186" width="205" height="84"/>
+  <text x="289" y="208" class="t-b">(b) attribution dataset</text>
+  <text x="289" y="226" class="t-small">join journaled recalls to run</text>
+  <text x="289" y="241" class="t-small">outcomes — shadow table,</text>
+  <text x="289" y="256" class="t-small">no behavior change</text>
+  <rect class="box-dim" x="510" y="186" width="205" height="84"/>
+  <text x="524" y="208" class="t-b">(c) shadow scores</text>
+  <text x="524" y="226" class="t-small">per-chunk usefulness computed</text>
+  <text x="524" y="241" class="t-small">offline by the worker,</text>
+  <text x="524" y="256" class="t-small">journal-only</text>
+  <rect class="box-dim" x="745" y="186" width="195" height="84"/>
+  <text x="759" y="208" class="t-b">(d) weighted retrieval</text>
+  <text x="759" y="226" class="t-small">behind a default-off flag,</text>
+  <text x="759" y="241" class="t-small">promoted only on measured</text>
+  <text x="759" y="256" class="t-small">evidence in the §7 ledger</text>
+  <path class="ln" marker-end="url(#ar)" d="M245 228 L 273 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M480 228 L 508 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M715 228 L 743 228"/>
+</svg>
+<div class="legend">The overfitting risk is named in the plan: skills and findings are written from measured episodes — that <i>is</i> fitting the past. The mitigation is that every lesson keeps its evidence clause, and weights fall on evidence, never on opinion.</div>
+</div>
+
+<h2>7. Reference — where everything lives</h2>
+<p class="kr">참조 — 모듈·함수·스위치 총람.</p>
+<div class="card">
+<table>
+  <tr><th>piece</th><th>location</th><th>role</th></tr>
+  <tr><td>corpus store + search</td><td><code>service/server/desk_memory.py</code></td><td>kinds, SHA identity, the lexical scorer, <code>remember()</code> / <code>search()</code></td></tr>
+  <tr><td>ingest</td><td><code>service/server/desk_memory_ingest.py</code></td><td><code>ingest_decisions</code> / <code>ingest_run_outcomes</code> / <code>ingest_reports</code>, <code>maybe_ingest</code> throttle</td></tr>
+  <tr><td>recall into the brief</td><td><code>run_engine._recall_query</code> · <code>_recall_line</code></td><td>situation query; top-3 monitoring chunks, labelled and capped</td></tr>
+  <tr><td>recall journaling (3a)</td><td><code>run_engine._recall_capture</code> · <code>_take_recall_journal</code></td><td><code>recall</code> telemetry event beside each decision: query + injected SHAs/kinds/scores</td></tr>
+  <tr><td>kill switch</td><td><code>DESK_RECALL_ENABLED</code> (default on)</td><td>disables injection only; collection continues</td></tr>
+  <tr><td>schema</td><td><code>alembic 0046_desk_memory</code></td><td><code>desk_memory</code> table: kind, source, ts, run/symbol/market, tags, title, body, sha</td></tr>
+  <tr><td>the plan + increment ledger</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7</td><td>every daily increment lands there, dated, in the same PR that ships it</td></tr>
+  <tr><td>daily build cadence</td><td>scheduled task <code>rag-phase3-daily-increment</code></td><td>21:00 UTC; re-arm instructions live in §7 (survives account rotation via the repo)</td></tr>
+</table>
+</div>
+
+<h2>8. What this deliberately is not</h2>
+<p class="kr">이것이 의도적으로 아닌 것 — 흔한 RAG 주장 대비 실제.</p>
+<div class="card">
+<table>
+  <tr><th>common claim</th><th>here</th></tr>
+  <tr><td>"processes vast data instantly"</td><td><span class="no">No.</span> The desk sees a small brief. Retrieval sends the <i>right</i> small brief, not more data.</td></tr>
+  <tr><td>"removes human emotion"</td><td><span class="wr">Partly.</span> Full-book dumps on sub-2% moves were measured — behaviourally identical to panic. Recall exists to put the measured lesson in front of the next such moment.</td></tr>
+  <tr><td>"learns automatically"</td><td><span class="wr">Not yet.</span> Weights require variance in what was retrieved. Journaling that variance is live (#340); learning from it is the daily cadence's job, one guarded increment at a time.</td></tr>
+  <tr><td>"a vector database"</td><td><span class="no">No.</span> A table and a Python scorer, identical on both SQL dialects, fail-soft on the money path. Boring on purpose.</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!-- machine-translated from plan/22-desk-retrieval-rag.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 22 — RAG ทำงานอย่างไรกับ Sooppiy AI</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 22 — RAG ทำงานอย่างไรกับ Sooppiy AI</h1>
+<p class="kr">หลักการทำงานของ RAG ใน Sooppiy AI — เก็บข้อมูลอะไร, เรียกคืนมาใช้เมื่อใดและอย่างไร, และพัฒนาไปอย่างไรด้วยการเรียนรู้แบบถ่วงน้ำหนัก (2026-08-09, สถานะคือการวัดผลจริงในโปรดักชัน)</p>
+
+<div class="quote">เจ้าของ, 2026-08-06: <i>“RAG เก็บการวิเคราะห์และการตรวจสอบทั้งหมดสำหรับเซสชันนี้และ sooppiy AI”</i>— และ 2026-08-07: <i>“จากพรุ่งนี้เป็นต้นไป sooppiy และเซสชันนี้ต้องอ้างอิง RAG”</i> คลังข้อมูลนี้ต้อง <b>อ่าน</b> ไม่ใช่แค่เขียน</div>
+
+<div class="chips">
+  <div class="chip"><b>1,103</b><span>chunks ในคลังข้อมูล (2026-08-09)</span></div>
+  <div class="chip"><b>562</b><span>ผลการติดตาม (recallable)</span></div>
+  <div class="chip"><b>510</b><span>การตัดสินใจของเดสก์ (Phase-3 training data)</span></div>
+  <div class="chip"><b>31</b><span>ผลลัพธ์การรัน (joined P&amp;L)</span></div>
+  <div class="chip"><b>46</b><span>เหตุการณ์การเรียกคืนที่บันทึกไว้ตั้งแต่ #340</span></div>
+  <div class="chip"><b>3</b><span>chunks สูงสุดที่แทรกต่อ brief</span></div>
+</div>
+
+<h2>1. ภาพรวม — คลังข้อมูลเดียว ผู้อ่านสองฝ่าย</h2>
+<p class="kr">โครงสร้างโดยรวม — คลังข้อมูลเดียว (desk_memory) ถูกอ่านร่วมกันโดยเดสก์และเซสชันการมอนิเตอร์ ไม่มีบริการ embedding: ตัวให้คะแนนที่เป็น Python ล้วนทำงานเหมือนกันทั้งบน SQLite/MySQL</p>
+<div class="card">
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- sources -->
+  <rect class="box" x="20" y="30" width="230" height="72"/>
+  <text x="34" y="54" class="t-b">การตัดสินใจของเดสก์</text>
+  <text x="34" y="72" class="t-small">`report` ของทุกเหตุการณ์การตัดสินใจ —</text>
+  <text x="34" y="87" class="t-small">เหตุผลที่เดสก์ระบุไว้เอง</text>
+  <rect class="box" x="20" y="122" width="230" height="72"/>
+  <text x="34" y="146" class="t-b">ผลลัพธ์การรัน</text>
+  <text x="34" y="164" class="t-small">การรันที่สิ้นสุดซึ่ง joined กับ P&amp;L ที่เกิดขึ้นจริง —</text>
+  <text x="34" y="179" class="t-small">"เหตุผลนั้นให้ผลลัพธ์อะไร"</text>
+  <rect class="box" x="20" y="214" width="230" height="72"/>
+  <text x="34" y="238" class="t-b">การวิเคราะห์การติดตาม</text>
+  <text x="34" y="256" class="t-small">handoff, บันทึกรอบประจำวัน, ผลการตรวจพบ —</text>
+  <text x="34" y="271" class="t-small">แบ่งเป็น chunk ตาม ## heading</text>
+  <!-- ingest -->
+  <rect class="box-accent" x="310" y="112" width="180" height="92"/>
+  <text x="324" y="138" class="t-b">desk_memory_ingest</text>
+  <text x="324" y="156" class="t-small">ทำงานตาม trading tick,</text>
+  <text x="324" y="171" class="t-small">idempotent ด้วย SHA,</text>
+  <text x="324" y="186" class="t-small">fail-soft (ไม่มีวันบล็อกรอบการทำงาน)</text>
+  <path class="ln" marker-end="url(#ar)" d="M250 66 C 280 66, 285 128, 308 138"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 158 L 308 158"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 250 C 280 250, 285 188, 308 178"/>
+  <!-- corpus -->
+  <rect class="box-good" x="550" y="96" width="180" height="124"/>
+  <text x="564" y="122" class="t-b">desk_memory</text>
+  <text x="564" y="140" class="t-small">kind = การตรวจสอบ · การตัดสินใจ</text>
+  <text x="564" y="155" class="t-small">· outcome (+ สำรองไว้: lesson)</text>
+  <text x="564" y="173" class="t-small">chunks ที่ติดแท็กสถานการณ์,</text>
+  <text x="564" y="188" class="t-small">SHA เฉพาะตัว, market/symbol/run</text>
+  <text x="564" y="206" class="t-small">alembic 0046 · SQLite + MySQL</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M490 158 L 548 158"/>
+  <!-- readers -->
+  <rect class="box-accent" x="790" y="40" width="150" height="88"/>
+  <text x="804" y="64" class="t-b">เดสก์</text>
+  <text x="804" y="82" class="t-small">_recall_line แทรกอันดับ top-3</text>
+  <text x="804" y="97" class="t-small">ที่ตรงกับผลการตรวจพบในอดีต</text>
+  <text x="804" y="112" class="t-small">เข้าไปในทุก position brief</text>
+  <rect class="box" x="790" y="190" width="150" height="88"/>
+  <text x="804" y="214" class="t-b">เซสชันการติดตาม</text>
+  <text x="804" y="232" class="t-small">ค้นหาในคลังข้อมูลก่อน</text>
+  <text x="804" y="247" class="t-small">จะเสนอวิธีแก้ไขใด ๆ — ผลการตรวจพบ</text>
+  <text x="804" y="262" class="t-small">ที่บันทึกไว้แล้วจะไม่มีวัน "ใหม่" อีก</text>
+  <path class="ln-accent" marker-end="url(#ar)" d="M730 130 C 760 120, 762 96, 788 88"/>
+  <path class="ln" marker-end="url(#ar)" d="M730 190 C 760 200, 762 224, 788 232"/>
+  <!-- learning loop -->
+  <rect class="box-dim" x="310" y="300" width="420" height="70"/>
+  <text x="324" y="324" class="t-b">Phase 3 (กำลังดำเนินการ): เรียนรู้น้ำหนักการเรียกคืนข้อมูล</text>
+  <text x="324" y="342" class="t-small">recall journal (#340, live) → ชุดข้อมูล attribution → shadow scores → weighted</text>
+  <text x="324" y="357" class="t-small">retrieval อยู่หลัง flag ที่ปิดเป็นค่าเริ่มต้น — เพิ่มทีละหนึ่งต่อวัน, ทุกวันเวลา 21:00 UTC</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M840 280 C 840 330, 760 335, 732 335"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M520 300 C 560 270, 590 250, 610 222"/>
+</svg>
+<div class="legend"><span class="dot" style="background:var(--good)"></span>คลังข้อมูล &nbsp; <span class="dot" style="background:var(--accent)"></span>เส้นทางการแทรกแบบ live &nbsp; เส้นประ = loop การเรียนรู้ที่กำลังสร้าง</div>
+</div>
+
+<h2>2. การรวบรวม — chunks ถูกสร้างขึ้นได้อย่างไร</h2>
+<p class="kr">การรวบรวมข้อมูล — เส้นทางที่ก่อให้เกิดชิ้นข้อมูล (chunk) ทั้งสามแหล่งข้อมูลทำงานควบคู่ไปกับทุกติ๊กการเทรด โดยมีการโหลดข้อมูลแบบมีการควบคุมอัตรา (throttle) ไม่ซ้ำซ้อน (idempotent, SHA) และ fail-soft การที่คลังข้อมูล (corpus) เสียหายจนทำให้วงจรการเทรดหยุดทำงานนั้นเป็นไปไม่ได้โดยโครงสร้าง</p>
+<div class="card">
+<table>
+  <tr><th>แหล่งข้อมูล</th><th>สิ่งที่กลายเป็นชิ้นข้อมูล (chunk)</th><th>ประเภท</th><th>เหตุใดจึงสำคัญ</th></tr>
+  <tr>
+    <td><code>ingest_decisions()</code></td>
+    <td>แต่ละ <code>decision</code> ของเหตุการณ์ <code>report</code> — เหตุผลที่โต๊ะเทรดระบุไว้ — พร้อมตัวเลขเบื้องหลัง (action, confidence, conviction)</td>
+    <td><code>decision</code></td>
+    <td>ข้อความที่มีค่าที่สุดที่แพลตฟอร์มสร้างขึ้นถูกอ่านเพียงครั้งเดียวแล้วถูกฝังไว้ใต้เหตุการณ์อีก 200 รายการถัดมา</td>
+  </tr>
+  <tr>
+    <td><code>ingest_run_outcomes()</code></td>
+    <td>การรันที่สิ้นสุด (<code>stopped/finished/failed</code>) ที่เชื่อมโยงกับผลลัพธ์ที่เกิดขึ้นจริง</td>
+    <td><code>outcome</code></td>
+    <td>ไม่มีสิ่งใดอื่นที่เชื่อมโยง "การตัดสินใจนี้" เข้ากับ "สิ่งที่มันทำกำไรหรือขาดทุน" — โต๊ะเทรดไม่มีวันถูกถามว่า <i>"ครั้งล่าสุดที่คุณให้เหตุผลแบบนี้ เกิดอะไรขึ้น?"</i></td>
+  </tr>
+  <tr>
+    <td><code>ingest_reports()</code></td>
+    <td>มาร์กดาวน์การมอนิเตอร์ (handoff, daily cycle notes, backlog) แบ่งเป็นชิ้นตาม <code>##</code> หัวข้อ — ทั้งวันหยาบเกินไป ส่วนพารากราฟจะสูญเสียหัวข้อของมัน</td>
+    <td><code>monitoring</code></td>
+    <td>ผลการวัดที่ค้นพบ (fee hurdle, full-book dumps, ladder churn…) จะคงอยู่แม้มีการหมุนบัญชี และไปถึงเดสก์</td>
+  </tr>
+</table>
+</div>
+<div class="card">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="35" width="160" height="58"/>
+  <text x="34" y="59" class="t-b">tick ของ TradingRuns</text>
+  <text x="34" y="77" class="t-small">ทุกรอบการทำงานของ worker</text>
+  <rect class="box" x="230" y="35" width="170" height="58"/>
+  <text x="244" y="59" class="t-b">maybe_ingest()</text>
+  <text x="244" y="77" class="t-small">ถูกจำกัดอัตราภายใน</text>
+  <rect class="box-accent" x="450" y="35" width="200" height="58"/>
+  <text x="464" y="59" class="t-b">ตรวจสอบข้อมูลซ้ำด้วย SHA</text>
+  <text x="464" y="77" class="t-small">การรันซ้ำปลอดภัย · การแก้ไขจะบันทึกซ้ำ</text>
+  <rect class="box-good" x="700" y="35" width="240" height="58"/>
+  <text x="714" y="59" class="t-b">INSERT desk_memory</text>
+  <text x="714" y="77" class="t-small">ความล้มเหลว = บันทึกคำเตือน ไม่ใช่ tick ที่ตาย</text>
+  <path class="ln" marker-end="url(#ar)" d="M180 64 L 228 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M400 64 L 448 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M650 64 L 698 64"/>
+</svg>
+</div>
+
+<h2>3. การใช้งาน — วิธีที่ชิ้นข้อมูลไปถึงการตัดสินใจแบบเรียลไทม์</h2>
+<p class="kr">การใช้งาน — เส้นทางที่ชิ้นข้อมูลไปถึงการตัดสินใจจริง การออกแบบหลัก: ไม่ใช่สัญลักษณ์ แต่เป็น <b>สถานการณ์</b>ค้นหาโดยใช้สิ่งนั้น เนื่องจากบทเรียนที่เรียนรู้จาก ZC ต้องเข้าถึงเดสก์ ETH</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="20" width="170" height="62"/>
+  <text x="34" y="44" class="t-b">run_cycle เริ่มทำงาน</text>
+  <text x="34" y="62" class="t-small">~ทุก 30 นาทีต่อการรัน</text>
+  <rect class="box-accent" x="240" y="20" width="220" height="62"/>
+  <text x="254" y="40" class="t-b">_recall_query(run, pnl, qty)</text>
+  <text x="254" y="58" class="t-small">SITUATION ในคำศัพท์คลังข้อมูล:</text>
+  <text x="254" y="73" class="t-small">ตลาด + นิ่ง / ขาดทุน / กำไร / คืนกำไร</text>
+  <rect class="box" x="510" y="20" width="190" height="62"/>
+  <text x="524" y="40" class="t-b">desk_memory.search</text>
+  <text x="524" y="58" class="t-small">ตัวให้คะแนนคำศัพท์แบบ pure-Python,</text>
+  <text x="524" y="73" class="t-small">kind=การเฝ้าติดตาม, top-3</text>
+  <rect class="box-good" x="750" y="20" width="190" height="62"/>
+  <text x="764" y="40" class="t-b">recall block → บทสรุปย่อ</text>
+  <text x="764" y="58" class="t-small">"ผลการค้นพบในอดีต ไม่ใช่ tape สด"</text>
+  <text x="764" y="73" class="t-small">จำกัดจำนวนตัวอักษรต่อ chunk</text>
+  <path class="ln" marker-end="url(#ar)" d="M190 51 L 238 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M460 51 L 508 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M700 51 L 748 51"/>
+  <rect class="box" x="240" y="120" width="220" height="62"/>
+  <text x="254" y="144" class="t-b">พรอมต์การตัดสินใจ</text>
+  <text x="254" y="162" class="t-small">เส้นทาง light และ full desk —</text>
+  <text x="254" y="177" class="t-small">ทั้งสองเห็นการเรียกคืนเดียวกัน</text>
+  <rect class="box-warn" x="510" y="120" width="270" height="62"/>
+  <text x="524" y="140" class="t-b">เหตุการณ์ telemetry การเรียกคืน (#340)</text>
+  <text x="524" y="158" class="t-small">query + SHA/คะแนนของ chunk ที่ฉีดเข้าไป ถูกบันทึกไว้</text>
+  <text x="524" y="173" class="t-small">ควบคู่กับการตัดสินใจ — วัตถุดิบของ Phase 3</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M840 82 C 840 108, 500 100, 462 130"/>
+  <path class="ln-warn ln-dash" marker-end="url(#ar)" d="M460 151 L 508 151"/>
+</svg>
+</div>
+<div class="card">
+<table>
+  <tr><th>สถานการณ์ในรอบนี้</th><th>สิ่งที่ query ระบุ</th><th>ลักษณะของสิ่งที่ค้นพบซึ่งมันเปิดเผยออกมา</th></tr>
+  <tr><td>flat กำลังพิจารณาการเข้า</td><td><code>flat considering entry fee hurdle expected move</code></td><td>หลักฐานอุปสรรคด้านค่าธรรมเนียม — "การเคลื่อนไหวที่ไม่สามารถคุ้มค่า round trip ไม่ใช่โอกาส"</td></tr>
+  <tr><td>holding กำลังขาดทุน</td><td><code>losing position stop distance cut or hold reduce</code></td><td>ผลการค้นพบเรื่อง ladder-of-adds และ stop-distance; <i>ลด</i> ในฐานะกริยาที่ถูกกว่า</td></tr>
+  <tr><td>การถือครอง, การชนะ</td><td><code>winning position trailing take partial profit</code></td><td>บทเรียนเรื่อง trailing-lock และ partial-banking</td></tr>
+  <tr><td>คืนจุดสูงสุดกลับไป</td><td><code>gave back peak give-back bank the gain arm the level</code></td><td>ข้อค้นพบเรื่อง give-back/arm — ผู้ชนะในอดีตคืนกลับ 34–49% ของจุดสูงสุด</td></tr>
+</table>
+<div class="legend">การเรียกคืนความจริงที่ตรวจสอบแล้วใน container บน prod (run 1012, กรณีขาดทุน): ข้อค้นพบจาก run-932 — ตำแหน่งถูกลดลงครึ่งหนึ่งทุกรอบ ลดลง 87.5% เมื่อราคาเคลื่อนที่ไป 21% สู่เป้าหมาย โดยวัดผลลากเทียบกับการถือครองไว้เฉยๆ — ไปถึงโต๊ะของสัญลักษณ์อื่นเพราะ <i>สถานการณ์</i> ตรงกัน</div>
+</div>
+
+<h2>4. เมื่อไหร่ — ทุกทริกเกอร์ ทุกผู้กระทำ</h2>
+<p class="kr">เมื่อไหร่ — สรุปรวมช่วงเวลาการทำงานตามแต่ละทริกเกอร์</p>
+<div class="card">
+<table>
+  <tr><th>เมื่อไหร่</th><th>ผู้กระทำ</th><th>สิ่งที่เกิดขึ้น</th></tr>
+  <tr><td>ทุก worker tick</td><td><code>desk_memory_ingest.maybe_ingest</code></td><td>การตัดสินใจ / ผลลัพธ์ / บันทึกการติดตามที่แก้ไขใหม่จะกลายเป็น chunks (ถูกจำกัดอัตรา, ขจัดข้อมูลซ้ำด้วย SHA)</td></tr>
+  <tr><td>ทุกรอบการตัดสินใจ (~30 นาทีต่อรอบ)</td><td><code>run_engine._recall_line</code></td><td>การค้นหาสถานการณ์ → chunk การติดตามสามอันดับแรก → บล็อกที่มีป้ายกำกับใน position brief; SHA ที่ถูกแทรกเข้าไปจะถูกบันทึกเป็น <code>recall</code> อีเวนต์</td></tr>
+  <tr><td>ก่อนที่จะมีการเสนอแก้ไขการติดตามใดๆ</td><td>เซสชันการเฝ้าติดตาม</td><td>ค้นหาในคลังข้อมูลก่อน แล้วบอกว่ามันคืนผลลัพธ์อะไรมา — ข้อค้นพบที่บันทึกไว้แล้วต้องไม่ถูกค้นพบใหม่ในฐานะสิ่งใหม่</td></tr>
+  <tr><td>ทุกวันเวลา 21:00 UTC (14:00 PT)</td><td>งานตามกำหนดเวลา <code>rag-phase3-daily-increment</code></td><td>หนึ่งการเพิ่มขึ้นของ Phase-3: TDD → PR → CI → merge → deploy → prod verify ×2 → บรรทัดที่มีวันที่ใน §7 ของแผน</td></tr>
+  <tr><td>ฉุกเฉิน</td><td><code>DESK_RECALL_ENABLED=0</code></td><td>kill switch — การเรียกคืนจะหายไปจากบรีฟ; การนำเข้าข้อมูลยังดำเนินต่อไป; ไม่มีอะไรอื่นเปลี่ยนแปลง</td></tr>
+</table>
+</div>
+
+<h2>5. ตรรกะการให้คะแนน — จงใจให้ธรรมดา</h2>
+<p class="kr">การให้คะแนน — จงใจให้เรียบง่าย ไม่มีบริการ embedding · FTS5 · MySQL FULLTEXT</p>
+<div class="card">
+<ul style="margin:0 0 0 18px; padding:0;">
+  <li><b>Pure-Python lexical scorer แบบง่าย</b> คอร์ปัสมีขนาดเล็ก (หลายร้อยถึงหลายพันชังก์); Python scorer ทำงานได้ <i>เหมือนกัน</i> ทั้งบน SQLite และ MySQL — ความแตกต่างของ dialect เคยทำให้โค้ดเบสนี้มีปัญหามาก่อน (LIKE ESCAPE, datetime functions, FK enforcement)</li>
+  <li><b>รายการ stop-word แบบสั้น</b> รายการ stop-list ที่เข้มงวดเกินไปจะตัดคำเฉพาะทางออกไปด้วย — <code>loss</code>, <code>stop</code>, <code>close</code> — ซึ่งเป็นสิ่งที่คำค้นหาต้องการค้นหาจริง ๆ</li>
+  <li><b>kind=monitoring เท่านั้นที่สามารถเรียกคืนได้ในขณะนี้</b> ชังก์ประเภท decision จำนวน 510 และ outcome จำนวน 31 เป็นแบบเขียนอย่างเดียว <i>โดยการออกแบบ</i>": สิ่งเหล่านี้คือข้อมูลฝึกสำหรับ Phase 3 และการนำเข้าข้อมูลเหล่านี้ก่อนที่จะมีการระบุแหล่งที่มา (attribution) จะเพิ่มสัญญาณรบกวนโดยไม่มีวงจรป้อนกลับ"</li>
+  <li><b>ทุกสิ่งบนเส้นทางของวงจรเป็นแบบ fail-soft</b> คลังข้อมูล (corpus) ที่ว่าง ช้า หรือเสียหาย จะส่งคืน <code>""</code> — วงจรจะไม่สูญหายไปกับความจำของตัวเอง</li>
+</ul>
+</div>
+
+<h2>6. แผนงานเฟส — ที่ซึ่งวงจรการเรียนรู้อยู่</h2>
+<p class="kr">แผนงาน — กฎลำดับมีผลผูกพัน: ที่การเรียกคืน <b>ความแปรปรวน(variance)</b>ต้องมีข้อมูลจึงจะเรียนรู้ค่าน้ำหนักได้ ไม่สร้างล่วงหน้าก่อนข้อมูล เพิ่มทีละ 1 หน่วยต่อวัน จนถึงโปรดักชันทุกวัน</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <line class="ln" x1="40" y1="52" x2="920" y2="52"/>
+  <rect class="box-good" x="40" y="80" width="150" height="66"/>
+  <text x="54" y="104" class="t-b">Phase 0 · เสร็จแล้ว</text>
+  <text x="54" y="122" class="t-small">แผนงาน (.md ของเอกสารนี้)</text>
+  <circle cx="115" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="230" y="80" width="150" height="66"/>
+  <text x="244" y="104" class="t-b">Phase 1 · ใช้งานจริง</text>
+  <text x="244" y="122" class="t-small">การแบ่งชิ้นข้อมูล + การนำเข้าข้อมูล</text>
+  <text x="244" y="137" class="t-small">(alembic 0046)</text>
+  <circle cx="305" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="420" y="80" width="150" height="66"/>
+  <text x="434" y="104" class="t-b">Phase 2 · ใช้งานจริง</text>
+  <text x="434" y="122" class="t-small">การเรียกคืนตามสถานการณ์</text>
+  <text x="434" y="137" class="t-small">เข้าไปในบรีฟทุกฉบับ</text>
+  <circle cx="495" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-warn" x="610" y="80" width="150" height="66"/>
+  <text x="624" y="104" class="t-b">เฟส 3 · การสร้าง</text>
+  <text x="624" y="122" class="t-small">(ก) จัดส่งแล้ว #340:</text>
+  <text x="624" y="137" class="t-small">การบันทึกรีคอล</text>
+  <circle cx="685" cy="52" r="5" fill="var(--warn)"/>
+  <rect class="box-dim" x="800" y="80" width="140" height="66"/>
+  <text x="814" y="104" class="t-b">(b)(c)(d) ต่อไป</text>
+  <text x="814" y="122" class="t-small">หนึ่งครั้งต่อวัน,</text>
+  <text x="814" y="137" class="t-small">จังหวะเวลา 21:00 UTC</text>
+  <circle cx="870" cy="52" r="5" fill="var(--muted)"/>
+  <!-- ladder -->
+  <rect class="box-warn" x="40" y="186" width="205" height="84"/>
+  <text x="54" y="208" class="t-b">(a) บันทึกรีคอล ✓</text>
+  <text x="54" y="226" class="t-small">ชิ้นข้อมูลใดที่ SHAs การตัดสินใจแต่ละครั้ง</text>
+  <text x="54" y="241" class="t-small">ที่เห็นจริง — ไม่มีเหตุการณ์รีคอล</text>
+  <text x="54" y="256" class="t-small">≠ รีคอลที่ว่างเปล่า (ทั้งสองมีความสำคัญ)</text>
+  <rect class="box-dim" x="275" y="186" width="205" height="84"/>
+  <text x="289" y="208" class="t-b">(b) ชุดข้อมูลการระบุแหล่งที่มา</text>
+  <text x="289" y="226" class="t-small">เชื่อมรีคอลที่บันทึกไว้เข้ากับการรัน</text>
+  <text x="289" y="241" class="t-small">ผลลัพธ์ — ตารางเงา,</text>
+  <text x="289" y="256" class="t-small">ไม่มีการเปลี่ยนแปลงพฤติกรรม</text>
+  <rect class="box-dim" x="510" y="186" width="205" height="84"/>
+  <text x="524" y="208" class="t-b">(c) คะแนนเงา (shadow scores)</text>
+  <text x="524" y="226" class="t-small">คำนวณความมีประโยชน์ต่อชิ้นข้อมูล (per-chunk)</text>
+  <text x="524" y="241" class="t-small">แบบออฟไลน์โดยเวิร์กเกอร์,</text>
+  <text x="524" y="256" class="t-small">บันทึกเท่านั้น (journal-only)</text>
+  <rect class="box-dim" x="745" y="186" width="195" height="84"/>
+  <text x="759" y="208" class="t-b">(d) การเรียกคืนแบบถ่วงน้ำหนัก</text>
+  <text x="759" y="226" class="t-small">อยู่หลังแฟล็กที่ปิดเป็นค่าเริ่มต้น,</text>
+  <text x="759" y="241" class="t-small">ได้รับการเลื่อนขั้นเมื่อมีการวัดผลเท่านั้น</text>
+  <text x="759" y="256" class="t-small">หลักฐานในบัญชี §7</text>
+  <path class="ln" marker-end="url(#ar)" d="M245 228 L 273 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M480 228 L 508 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M715 228 L 743 228"/>
+</svg>
+<div class="legend">ความเสี่ยงเรื่อง overfitting ถูกระบุไว้ในแผน: ทักษะและข้อค้นพบถูกเขียนขึ้นจากตอนที่มีการวัดผล — นั่นคือ <i>คือ</i> การปรับให้เข้ากับอดีต การบรรเทาความเสี่ยงคือบทเรียนทุกข้อต้องมีเงื่อนไขหลักฐานประกอบ และน้ำหนักจะตกอยู่ที่หลักฐานเสมอ ไม่ใช่ความเห็น</div>
+</div>
+
+<h2>7. ข้อมูลอ้างอิง — ทุกอย่างอยู่ที่ไหน</h2>
+<p class="kr">ข้อมูลอ้างอิง — สรุปโมดูล ฟังก์ชัน และสวิตช์ทั้งหมด</p>
+<div class="card">
+<table>
+  <tr><th>ส่วนประกอบ</th><th>ตำแหน่ง</th><th>หน้าที่</th></tr>
+  <tr><td>ที่จัดเก็บคอร์ปัส + การค้นหา</td><td><code>service/server/desk_memory.py</code></td><td>ประเภท, การระบุตัวตนด้วย SHA, ตัวให้คะแนนเชิงศัพท์, <code>remember()</code> / <code>search()</code></td></tr>
+  <tr><td>การนำเข้าข้อมูล</td><td><code>service/server/desk_memory_ingest.py</code></td><td><code>ingest_decisions</code> / <code>ingest_run_outcomes</code> / <code>ingest_reports</code>, <code>maybe_ingest</code> การควบคุมอัตรา</td></tr>
+  <tr><td>การเรียกคืนเข้าสู่บรีฟ</td><td><code>run_engine._recall_query</code> · <code>_recall_line</code></td><td>คำค้นหาตามสถานการณ์; ชิ้นข้อมูลการติดตาม 3 อันดับแรก มีการติดป้ายและจำกัดจำนวน</td></tr>
+  <tr><td>การบันทึกการเรียกคืน (3a)</td><td><code>run_engine._recall_capture</code> · <code>_take_recall_journal</code></td><td><code>recall</code> เหตุการณ์เทเลเมทรีควบคู่กับการตัดสินใจแต่ละครั้ง: query + SHA/ประเภท/คะแนนที่ถูกแทรกเข้าไป</td></tr>
+  <tr><td>สวิตช์ปิดฉุกเฉิน</td><td><code>DESK_RECALL_ENABLED</code> (เปิดเป็นค่าเริ่มต้น)</td><td>ปิดใช้งานการแทรกข้อมูลเท่านั้น; การเก็บข้อมูลยังดำเนินต่อไป</td></tr>
+  <tr><td>สคีมา</td><td><code>alembic 0046_desk_memory</code></td><td><code>desk_memory</code> ตาราง: kind, source, ts, run/symbol/market, tags, title, body, sha</td></tr>
+  <tr><td>แผน + บัญชีการเพิ่มขึ้น</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7</td><td>การเพิ่มขึ้นรายวันทุกครั้งจะถูกบันทึกไว้ที่นั่น พร้อมวันที่ ใน PR เดียวกันที่นำไปใช้งานจริง</td></tr>
+  <tr><td>ความถี่ในการสร้างบิลด์รายวัน</td><td>งานตามกำหนดเวลา <code>rag-phase3-daily-increment</code></td><td>21:00 UTC; คำแนะนำในการติดตั้งใหม่อยู่ใน §7 (คงอยู่ผ่านการหมุนเวียนบัญชีด้วยที่เก็บโค้ด)</td></tr>
+</table>
+</div>
+
+<h2>8. สิ่งที่นี่ไม่ได้เป็นโดยเจตนา</h2>
+<p class="kr">นี่ไม่ใช่สิ่งที่ตั้งใจ — เมื่อเทียบกับข้ออ้าง RAG ทั่วไป สิ่งที่เกิดขึ้นจริง</p>
+<div class="card">
+<table>
+  <tr><th>ข้อกล่าวอ้างทั่วไป</th><th>ที่นี่</th></tr>
+  <tr><td>"ประมวลผลข้อมูลจำนวนมากได้ในทันที"</td><td><span class="no">ไม่</span> โต๊ะเทรดเห็นเพียงบรีฟสั้นๆ การดึงข้อมูลจะส่ง <i>บรีฟ</i> ที่ถูกต้องแบบสั้นๆ ไม่ใช่ข้อมูลที่มากขึ้น</td></tr>
+  <tr><td>"ขจัดอารมณ์ของมนุษย์"</td><td><span class="wr">บางส่วน</span> การดัมพ์ข้อมูลทั้งเล่มในการเคลื่อนไหวต่ำกว่า 2% ได้ถูกตรวจวัด — มีลักษณะเหมือนความตื่นตระหนกทางพฤติกรรม การเรียกคืนความจำมีไว้เพื่อนำบทเรียนที่ตรวจวัดได้มาแสดงต่อหน้าช่วงเวลาลักษณะนั้นครั้งต่อไป</td></tr>
+  <tr><td>"เรียนรู้ได้เอง"</td><td><span class="wr">ยังไม่ใช่</span> น้ำหนักต้องอาศัยความแปรปรวนในสิ่งที่ถูกดึงข้อมูลมา การบันทึกความแปรปรวนนั้นใช้งานอยู่แล้ว (#340); การเรียนรู้จากมันเป็นหน้าที่ของความถี่ในการสร้างบิลด์รายวัน ทีละขั้นตอนอย่างระมัดระวัง</td></tr>
+  <tr><td>"ฐานข้อมูลเวกเตอร์"</td><td><span class="no">ไม่</span> เป็นตารางและตัวให้คะแนนแบบ Python เหมือนกันทั้งสองไดอะเลกต์ SQL ทำงานแบบ fail-soft บนเส้นทางเงิน จงใจให้ดูธรรมดา</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

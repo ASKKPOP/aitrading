@@ -1,0 +1,344 @@
+<!-- machine-translated from plan/22-desk-retrieval-rag.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プラン22 — Sooppiy AIにおけるRAGの仕組み</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>プラン22 — Sooppiy AIにおけるRAGの仕組み</h1>
+<p class="kr">Sooppiy AIのRAG動作原理 — 何を収集し、いつどのように回収して使い、重み付け学習によってどう進むか (2026-08-09、状態は本番実測)</p>
+
+<div class="quote">オーナー、2026-08-06: <i>「RAGはこのセッションとsooppiy AIのすべての分析とモニタリングを保持せよ」</i> — そして2026-08-07: <i>「明日からsooppiyとこのセッションはRAGを参照しなければならない」</i> コーパスは <b>読まれる</b>べきものであり、書かれるだけであってはならない。</div>
+
+<div class="chips">
+  <div class="chip"><b>1,103</b><span>コーパス内のチャンク数 (2026-08-09)</span></div>
+  <div class="chip"><b>562</b><span>モニタリングの所見（回収可能）</span></div>
+  <div class="chip"><b>510</b><span>デスクの意思決定（Phase-3トレーニングデータ）</span></div>
+  <div class="chip"><b>31</b><span>実行結果（P&amp;Lと結合）</span></div>
+  <div class="chip"><b>46</b><span>#340以降に記録された回収イベント</span></div>
+  <div class="chip"><b>3</b><span>ブリーフごとに注入されるチャンクの最大数</span></div>
+</div>
+
+<h2>1. 全体像 — 1つのコーパス、2つの読み手</h2>
+<p class="kr">全体構造 — 1つのコーパス（desk_memory）をデスクとモニタリングセッションが共に読む。埋め込みサービスなし：純粋なPythonスコアラーがSQLite/MySQLの両方で同様に動作する。</p>
+<div class="card">
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- sources -->
+  <rect class="box" x="20" y="30" width="230" height="72"/>
+  <text x="34" y="54" class="t-b">デスクの意思決定</text>
+  <text x="34" y="72" class="t-small">すべての意思決定イベントの`report` —</text>
+  <text x="34" y="87" class="t-small">デスク自身が述べた理由</text>
+  <rect class="box" x="20" y="122" width="230" height="72"/>
+  <text x="34" y="146" class="t-b">実行結果</text>
+  <text x="34" y="164" class="t-small">実現P&amp;Lに結合されたターミナル実行 —</text>
+  <text x="34" y="179" class="t-small">「その理由から何が生まれたか」</text>
+  <rect class="box" x="20" y="214" width="230" height="72"/>
+  <text x="34" y="238" class="t-b">モニタリング分析</text>
+  <text x="34" y="256" class="t-small">ハンドオフ、日次サイクルノート、所見 —</text>
+  <text x="34" y="271" class="t-small">## 見出しごとにチャンク化</text>
+  <!-- ingest -->
+  <rect class="box-accent" x="310" y="112" width="180" height="92"/>
+  <text x="324" y="138" class="t-b">desk_memory_ingest</text>
+  <text x="324" y="156" class="t-small">トレーディングティックに連動し、</text>
+  <text x="324" y="171" class="t-small">SHAによる冪等性、</text>
+  <text x="324" y="186" class="t-small">フェールソフト（サイクルを止めない）</text>
+  <path class="ln" marker-end="url(#ar)" d="M250 66 C 280 66, 285 128, 308 138"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 158 L 308 158"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 250 C 280 250, 285 188, 308 178"/>
+  <!-- corpus -->
+  <rect class="box-good" x="550" y="96" width="180" height="124"/>
+  <text x="564" y="122" class="t-b">desk_memory</text>
+  <text x="564" y="140" class="t-small">kind = monitoring（モニタリング）· decision（判断）</text>
+  <text x="564" y="155" class="t-small">· outcome（結果）（+ 予約済み: lesson）</text>
+  <text x="564" y="173" class="t-small">状況タグ付きチャンク、</text>
+  <text x="564" y="188" class="t-small">一意のSHA、market/symbol/run</text>
+  <text x="564" y="206" class="t-small">alembic 0046・SQLite + MySQL</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M490 158 L 548 158"/>
+  <!-- readers -->
+  <rect class="box-accent" x="790" y="40" width="150" height="88"/>
+  <text x="804" y="64" class="t-b">デスク</text>
+  <text x="804" y="82" class="t-small">_recall_lineが上位3件を挿入</text>
+  <text x="804" y="97" class="t-small">PASTの所見に一致するものを</text>
+  <text x="804" y="112" class="t-small">すべてのポジションブリーフに反映</text>
+  <rect class="box" x="790" y="190" width="150" height="88"/>
+  <text x="804" y="214" class="t-b">モニタリングセッション</text>
+  <text x="804" y="232" class="t-small">コーパスを検索してから</text>
+  <text x="804" y="247" class="t-small">修正を提案する — 記録済みの</text>
+  <text x="804" y="262" class="t-small">所見は二度と「新規」にはならない</text>
+  <path class="ln-accent" marker-end="url(#ar)" d="M730 130 C 760 120, 762 96, 788 88"/>
+  <path class="ln" marker-end="url(#ar)" d="M730 190 C 760 200, 762 224, 788 232"/>
+  <!-- learning loop -->
+  <rect class="box-dim" x="310" y="300" width="420" height="70"/>
+  <text x="324" y="324" class="t-b">フェーズ3（進行中）：検索の重み付けを学習</text>
+  <text x="324" y="342" class="t-small">recall journal (#340、稼働中) → 帰属データセット → シャドースコア → 重み付け</text>
+  <text x="324" y="357" class="t-small">検索をデフォルトオフのフラグの裏側で — 1日1増分、毎日21:00 UTC</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M840 280 C 840 330, 760 335, 732 335"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M520 300 C 560 270, 590 250, 610 222"/>
+</svg>
+<div class="legend"><span class="dot" style="background:var(--good)"></span>コーパス &nbsp; <span class="dot" style="background:var(--accent)"></span>ライブ注入パス &nbsp; 破線 = 構築中の学習ループ</div>
+</div>
+
+<h2>2. 収集 — チャンクの生成方法</h2>
+<p class="kr">収集 — チャンクが生成される経路。3つのソースすべてが、毎トレーディングティックに便乗してスロットル・冪等（SHA）・fail-softで蓄積される。破損したコーパスがトレーディングサイクルを止めることは構造的にあり得ない。</p>
+<div class="card">
+<table>
+  <tr><th>ソース</th><th>何がチャンクになるか</th><th>種類</th><th>重要な理由</th></tr>
+  <tr>
+    <td><code>ingest_decisions()</code></td>
+    <td>各<code>decision</code>イベントの<code>report</code> — デスクが述べた根拠 — に加え、その裏にある数値（action, confidence, conviction）</td>
+    <td><code>decision</code></td>
+    <td>プラットフォームが生み出す最も価値あるテキストは、一度読まれた後、次の200件のイベントの下に埋もれてしまう</td>
+  </tr>
+  <tr>
+    <td><code>ingest_run_outcomes()</code></td>
+    <td>終了したラン（<code>stopped/finished/failed</code>）とその実現結果を結びつけたもの</td>
+    <td><code>outcome</code></td>
+    <td>「この判断」と「それが何を生んだか、あるいは何を失ったか」を結びつけるものは他になく — デスクにはこう問うことすらできなかった<i>「前回このように判断したとき、何が起きたか？」</i></td>
+  </tr>
+  <tr>
+    <td><code>ingest_reports()</code></td>
+    <td>モニタリングmarkdown（handoff、daily cycle notes、backlog）を<code>##</code> 見出しごとにチャンク化 — 1日分は粗すぎ、1段落では見出しを失う</td>
+    <td><code>monitoring</code></td>
+    <td>測定された知見（fee hurdle、full-book dumps、ladder churn…）はアカウントのローテーションを乗り越えてデスクに届く</td>
+  </tr>
+</table>
+</div>
+<div class="card">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="35" width="160" height="58"/>
+  <text x="34" y="59" class="t-b">TradingRunsのティック</text>
+  <text x="34" y="77" class="t-small">すべてのワーカーパス</text>
+  <rect class="box" x="230" y="35" width="170" height="58"/>
+  <text x="244" y="59" class="t-b">maybe_ingest()</text>
+  <text x="244" y="77" class="t-small">内部でスロットリングされます</text>
+  <rect class="box-accent" x="450" y="35" width="200" height="58"/>
+  <text x="464" y="59" class="t-b">SHA重複排除</text>
+  <text x="464" y="77" class="t-small">再実行安全・編集は再保存</text>
+  <rect class="box-good" x="700" y="35" width="240" height="58"/>
+  <text x="714" y="59" class="t-b">desk_memoryを挿入</text>
+  <text x="714" y="77" class="t-small">失敗 = 警告ログ、決してデッドティックにはしない</text>
+  <path class="ln" marker-end="url(#ar)" d="M180 64 L 228 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M400 64 L 448 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M650 64 L 698 64"/>
+</svg>
+</div>
+
+<h2>3. 活用 — チャンクが実際の意思決定に届く経路</h2>
+<p class="kr">使用 — チャンクが実際の意思決定に届く経路。核心的な設計：シンボルではなく<b>状況</b>で検索する。ZCで学んだ教訓がETHデスクに届く必要があるから。</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="20" width="170" height="62"/>
+  <text x="34" y="44" class="t-b">run_cycle が開始します</text>
+  <text x="34" y="62" class="t-small">~30分ごとに1回実行</text>
+  <rect class="box-accent" x="240" y="20" width="220" height="62"/>
+  <text x="254" y="40" class="t-b">_recall_query(run, pnl, qty)</text>
+  <text x="254" y="58" class="t-small">SITUATION（状況）を、コーパスの語彙で表すと：</text>
+  <text x="254" y="73" class="t-small">レンジ相場 + フラット／損失中／利益中／利益を吐き出す</text>
+  <rect class="box" x="510" y="20" width="190" height="62"/>
+  <text x="524" y="40" class="t-b">desk_memory.search</text>
+  <text x="524" y="58" class="t-small">pure-Pythonの字句スコアラー、</text>
+  <text x="524" y="73" class="t-small">kind=monitoring, top-3</text>
+  <rect class="box-good" x="750" y="20" width="190" height="62"/>
+  <text x="764" y="40" class="t-b">リコールブロック → 概要</text>
+  <text x="764" y="58" class="t-small">「過去の知見であり、ライブのティックではない」</text>
+  <text x="764" y="73" class="t-small">チャンクごとに文字数が制限される</text>
+  <path class="ln" marker-end="url(#ar)" d="M190 51 L 238 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M460 51 L 508 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M700 51 L 748 51"/>
+  <rect class="box" x="240" y="120" width="220" height="62"/>
+  <text x="254" y="144" class="t-b">判断プロンプト</text>
+  <text x="254" y="162" class="t-small">light AND full desk パス —</text>
+  <text x="254" y="177" class="t-small">どちらも同じリコールを見ている</text>
+  <rect class="box-warn" x="510" y="120" width="270" height="62"/>
+  <text x="524" y="140" class="t-b">リコールテレメトリイベント (#340)</text>
+  <text x="524" y="158" class="t-small">クエリ + インジェクトされたチャンクのSHA/スコアがジャーナルに記録される</text>
+  <text x="524" y="173" class="t-small">決定の隣に — フェーズ3の生素材</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M840 82 C 840 108, 500 100, 462 130"/>
+  <path class="ln-warn ln-dash" marker-end="url(#ar)" d="M460 151 L 508 151"/>
+</svg>
+</div>
+<div class="card">
+<table>
+  <tr><th>この局面での状況</th><th>クエリの内容</th><th>Sooppiyが検出する内容の種類</th></tr>
+  <tr><td>レンジ相場、エントリーを検討中</td><td><code>flat considering entry fee hurdle expected move</code></td><td>fee-hurdleの根拠 — 「往復コストを超えられない値動きはチャンスではない」</td></tr>
+  <tr><td>保有中、含み損</td><td><code>losing position stop distance cut or hold reduce</code></td><td>ladder-of-addsとstop-distanceに関する知見；<i>削減</i>より低コストな動詞として</td></tr>
+  <tr><td>保有、勝利</td><td><code>winning position trailing take partial profit</code></td><td>トレーリングロックと部分利益確定の教訓</td></tr>
+  <tr><td>ピークからの戻し</td><td><code>gave back peak give-back bank the gain arm the level</code></td><td>ギブバック/アームの調査結果 — 勝ちトレードは過去にピークの34〜49%を戻していた</td></tr>
+</table>
+<div class="legend">実運用コンテナ内で実際に想起が検証されました（run 1012、損失ケース）：run-932の調査結果——ポジションが毎サイクル半分になり、価格がターゲットへ21％到達した時点で87.5％が縮小していたことが、単純保有と比較したドラッグとして測定された——は、別の銘柄のデスクに届きました。なぜなら、その<i>状況</i>が一致したからです。</div>
+</div>
+
+<h2>4. いつ — すべてのトリガー、すべてのアクター</h2>
+<p class="kr">いつ — トリガー別の実行タイミングまとめ。</p>
+<div class="card">
+<table>
+  <tr><th>いつ</th><th>アクター</th><th>何が起こるか</th></tr>
+  <tr><td>ワーカーの各ティック</td><td><code>desk_memory_ingest.maybe_ingest</code></td><td>新しい判断／結果／編集済みモニタリングノートがチャンクになる（スロットリング、SHA重複排除あり）</td></tr>
+  <tr><td>各判断サイクルごと（1回あたり約30分）</td><td><code>run_engine._recall_line</code></td><td>状況クエリ → 上位3件のモニタリングチャンク → ポジションブリーフ内のラベル付きブロック。挿入されたSHAは、<code>recall</code> イベントとして記録される</td></tr>
+  <tr><td>モニタリングの修正が提案される前に</td><td>監視セッション</td><td>まずコーパスを検索し、返された内容を報告すること — 記録済みの発見を新規のものとして再発見してはならない</td></tr>
+  <tr><td>毎日 21:00 UTC (14:00 PT)</td><td>スケジュールされたタスク <code>rag-phase3-daily-increment</code></td><td>Phase-3 の1インクリメント: TDD → PR → CI → merge → deploy → 本番検証 ×2 → 計画の§7への日付入り記載</td></tr>
+  <tr><td>緊急</td><td><code>DESK_RECALL_ENABLED=0</code></td><td>キルスイッチ — recall がブリーフから消える; ingest は継続; それ以外は変更なし</td></tr>
+</table>
+</div>
+
+<h2>5. スコアリングロジック — 意図的に単純</h2>
+<p class="kr">スコアリング — 意図的にシンプルに。埋め込みサービス・FTS5・MySQL FULLTEXT なし。</p>
+<div class="card">
+<ul style="margin:0 0 0 18px; padding:0;">
+  <li><b>純粋な Python の字句スコアラー。</b> コーパスは小規模（数百から数千チャンク程度）であり、Python スコアラーは <i>同一に</i> SQLite と MySQL の両方で動作する — 方言の違いはこのコードベースを過去に苦しめてきた（LIKE ESCAPE、日時関数、FK 制約）。</li>
+  <li><b>短いストップワードリスト。</b> 積極的なストップリストはドメイン語を除去してしまう — <code>loss</code>, <code>stop</code>, <code>close</code> — それこそがクエリが実際に対象としているものだ。</li>
+  <li><b>kind=monitoring のみが今日リコール可能。</b> 510件の decision と 31件の outcome チャンクは書き込み専用である <i>設計上</i>：それらはPhase 3の学習データであり、アトリビューションが存在する前に投入すると、フィードバックループのないノイズを追加するだけになる。</li>
+  <li><b>サイクルパス上のすべては fail-soft である。</b> 空の、遅い、または壊れたコーパスは <code>""</code> を返す — サイクルが自身の記憶によって失われることはない。</li>
+</ul>
+</div>
+
+<h2>6. フェーズ・ロードマップ — 学習ループの現在地</h2>
+<p class="kr">ロードマップ — 順序ルールが拘束力を持つ: 回収に <b>変動(variance)</b>がなければ重みを学習できない。データより先に構築しない。1日1インクリメント、毎日プロドまで。</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <line class="ln" x1="40" y1="52" x2="920" y2="52"/>
+  <rect class="box-good" x="40" y="80" width="150" height="66"/>
+  <text x="54" y="104" class="t-b">Phase 0 · 完了</text>
+  <text x="54" y="122" class="t-small">計画(このドキュメントの.md)</text>
+  <circle cx="115" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="230" y="80" width="150" height="66"/>
+  <text x="244" y="104" class="t-b">フェーズ1・LIVE</text>
+  <text x="244" y="122" class="t-small">チャンキング + 取り込み</text>
+  <text x="244" y="137" class="t-small">(alembic 0046)</text>
+  <circle cx="305" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="420" y="80" width="150" height="66"/>
+  <text x="434" y="104" class="t-b">フェーズ2・LIVE</text>
+  <text x="434" y="122" class="t-small">状況キー付きリコール</text>
+  <text x="434" y="137" class="t-small">すべてのブリーフに</text>
+  <circle cx="495" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-warn" x="610" y="80" width="150" height="66"/>
+  <text x="624" y="104" class="t-b">Phase 3 · 構築中</text>
+  <text x="624" y="122" class="t-small">(a) 出荷済み #340:</text>
+  <text x="624" y="137" class="t-small">リコールジャーナリング</text>
+  <circle cx="685" cy="52" r="5" fill="var(--warn)"/>
+  <rect class="box-dim" x="800" y="80" width="140" height="66"/>
+  <text x="814" y="104" class="t-b">(b)(c)(d) 次</text>
+  <text x="814" y="122" class="t-small">1日1件、</text>
+  <text x="814" y="137" class="t-small">21:00 UTC のペース</text>
+  <circle cx="870" cy="52" r="5" fill="var(--muted)"/>
+  <!-- ladder -->
+  <rect class="box-warn" x="40" y="186" width="205" height="84"/>
+  <text x="54" y="208" class="t-b">(a) リコールをジャーナル化 ✓</text>
+  <text x="54" y="226" class="t-small">各決定がどのチャンクSHAを</text>
+  <text x="54" y="241" class="t-small">実際に見たか — リコールイベントなしは</text>
+  <text x="54" y="256" class="t-small">≠ 空のリコール(どちらも重要)</text>
+  <rect class="box-dim" x="275" y="186" width="205" height="84"/>
+  <text x="289" y="208" class="t-b">(b) アトリビューションデータセット</text>
+  <text x="289" y="226" class="t-small">ジャーナル化されたリコールを実行結果に</text>
+  <text x="289" y="241" class="t-small">結合する — シャドウテーブル、</text>
+  <text x="289" y="256" class="t-small">動作変更なし</text>
+  <rect class="box-dim" x="510" y="186" width="205" height="84"/>
+  <text x="524" y="208" class="t-b">(c) シャドースコア</text>
+  <text x="524" y="226" class="t-small">チャンクごとの有用性を計算</text>
+  <text x="524" y="241" class="t-small">ワーカーによってオフラインで、</text>
+  <text x="524" y="256" class="t-small">ジャーナルのみ</text>
+  <rect class="box-dim" x="745" y="186" width="195" height="84"/>
+  <text x="759" y="208" class="t-b">(d) 重み付き検索</text>
+  <text x="759" y="226" class="t-small">デフォルトでオフのフラグの背後で、</text>
+  <text x="759" y="241" class="t-small">測定された場合にのみ昇格され、</text>
+  <text x="759" y="256" class="t-small">§7台帳内のエビデンスとして</text>
+  <path class="ln" marker-end="url(#ar)" d="M245 228 L 273 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M480 228 L 508 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M715 228 L 743 228"/>
+</svg>
+<div class="legend">過学習のリスクは計画書に明記されている：スキルと知見は測定されたエピソードから記述される — それは <i>である</i> 過去に適合させることだ。緩和策として、すべての教訓はエビデンス条項を保持し、重みは意見ではなくエビデンスに基づく。</div>
+</div>
+
+<h2>7. 参照 — すべてがどこにあるか</h2>
+<p class="kr">参照 — モジュール・関数・スイッチの総覧。</p>
+<div class="card">
+<table>
+  <tr><th>要素</th><th>場所</th><th>役割</th></tr>
+  <tr><td>コーパスストア + 検索</td><td><code>service/server/desk_memory.py</code></td><td>種別、SHA識別子、字句スコアラー、 <code>remember()</code> / <code>search()</code></td></tr>
+  <tr><td>取り込み</td><td><code>service/server/desk_memory_ingest.py</code></td><td><code>ingest_decisions</code> / <code>ingest_run_outcomes</code> / <code>ingest_reports</code>, <code>maybe_ingest</code> スロットル</td></tr>
+  <tr><td>ブリーフへの再取得</td><td><code>run_engine._recall_query</code> · <code>_recall_line</code></td><td>状況クエリ；上位3件のモニタリングチャンク、ラベル付けと上限設定あり</td></tr>
+  <tr><td>再取得ジャーナリング (3a)</td><td><code>run_engine._recall_capture</code> · <code>_take_recall_journal</code></td><td><code>recall</code> 各判断に付随するテレメトリイベント：クエリ + 注入されたSHA/種別/スコア</td></tr>
+  <tr><td>キルスイッチ</td><td><code>DESK_RECALL_ENABLED</code> (デフォルトでオン)</td><td>注入のみを無効化；収集は継続される</td></tr>
+  <tr><td>スキーマ</td><td><code>alembic 0046_desk_memory</code></td><td><code>desk_memory</code> テーブル：kind、source、ts、run/symbol/market、tags、title、body、sha</td></tr>
+  <tr><td>計画 + 増分台帳</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7</td><td>すべての日次増分は、それを出荷する同じPR内で、日付付きでそこに記録される</td></tr>
+  <tr><td>日次ビルドの周期</td><td>スケジュールされたタスク <code>rag-phase3-daily-increment</code></td><td>21:00 UTC；再設定の手順は§7に記載（リポジトリ経由でアカウントのローテーションを経ても保持される）</td></tr>
+</table>
+</div>
+
+<h2>8. これが意図的にそうでないもの</h2>
+<p class="kr">これが意図的にそうでないもの — よくあるRAGの主張に対する実態。</p>
+<div class="card">
+<table>
+  <tr><th>よくある主張</th><th>ここ</th></tr>
+  <tr><td>「膨大なデータを瞬時に処理する」</td><td><span class="no">いいえ。</span> デスクは小さなブリーフを見る。検索が送るのは<i>適切な</i>小さなブリーフであり、より多くのデータではない。</td></tr>
+  <tr><td>「人間の感情を取り除く」</td><td><span class="wr">部分的に。</span> 2%未満の値動きでのフルブックのダンプが測定された — 行動的にはパニックと同一。想起機能は、測定された教訓を次の同様の瞬間の前に提示するために存在する。</td></tr>
+  <tr><td>「自動的に学習する」</td><td><span class="wr">まだ。</span> 重みには、検索されたものの分散が必要である。その分散を記録する機能は稼働中（#340）；そこから学習することは日次ビルドの周期の役割であり、一度に一つの慎重な増分で行われる。</td></tr>
+  <tr><td>「ベクトルデータベース」</td><td><span class="no">いいえ。</span> テーブルとPythonのスコアラーは、両方のSQL方言で同一であり、金銭が絡む経路ではフェイルソフトである。意図的に地味である。</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

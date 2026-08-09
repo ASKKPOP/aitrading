@@ -136,6 +136,15 @@
       "id": "Daemon Pertahanan Likuidasi (admin)"
     },
     {
+      "group": "desk-rag",
+      "ko": "데스크 RAG (관리자)",
+      "en": "Desk RAG (owner)",
+      "ja": "デスクRAG（管理者）",
+      "th": "RAG ของเดสก์ (ผู้ดูแล)",
+      "vi": "RAG của desk (quản trị)",
+      "id": "RAG Desk (admin)"
+    },
+    {
       "group": "trading-skills",
       "ko": "트레이딩 스킬 (관리자)",
       "en": "Trading Skills (owner)",
@@ -434,6 +443,13 @@
       "owner_only": true
     },
     {
+      "key": "desk-rag-en",
+      "lang": "en",
+      "group": "desk-rag",
+      "title": "Plan 22 — How RAG Works with the Sooppiy AI",
+      "owner_only": true
+    },
+    {
       "key": "ops-keys-ko",
       "lang": "ko",
       "group": "ops-keys",
@@ -571,6 +587,41 @@
       "lang": "id",
       "group": "liq-defense",
       "title": "Rencana 16 — Daemon Pertahanan Likuidasi",
+      "owner_only": true
+    },
+    {
+      "key": "desk-rag-ko",
+      "lang": "ko",
+      "group": "desk-rag",
+      "title": "플랜 22 — Sooppiy AI의 RAG 작동 원리",
+      "owner_only": true
+    },
+    {
+      "key": "desk-rag-ja",
+      "lang": "ja",
+      "group": "desk-rag",
+      "title": "プラン22 — Sooppiy AIにおけるRAGの仕組み",
+      "owner_only": true
+    },
+    {
+      "key": "desk-rag-th",
+      "lang": "th",
+      "group": "desk-rag",
+      "title": "แผน 22 — RAG ทำงานร่วมกับ Sooppiy AI อย่างไร",
+      "owner_only": true
+    },
+    {
+      "key": "desk-rag-vi",
+      "lang": "vi",
+      "group": "desk-rag",
+      "title": "Kế hoạch 22 — RAG hoạt động với Sooppiy AI như thế nào",
+      "owner_only": true
+    },
+    {
+      "key": "desk-rag-id",
+      "lang": "id",
+      "group": "desk-rag",
+      "title": "Rencana 22 — Cara Kerja RAG dengan AI Sooppiy",
       "owner_only": true
     },
     {
