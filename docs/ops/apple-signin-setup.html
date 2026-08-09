@@ -227,6 +227,28 @@ fail, because we have not deployed it yet. That failure is expected and it is ex
 <p class="kr" style="margin:8px 0 0">도메인은 스킴 없이, 리턴 URL은 <code>https://</code> 포함. Next를 누르면 애플이 즉시 확인을 시도하고 실패합니다 — 그 실패 화면에서 Download 버튼이 나타납니다.</p>
 </div>
 
+<div class="card bad">
+<b>Registering the URLs does not select them — and the click target is a 12-pixel square.</b> After the ⊕ sheet
+succeeds, both entries appear in the dropdown under <b>Domains and Subdomains</b> and <b>Return URLs</b>, each with a
+small blue outlined <b>□</b> on its right. Those are checkboxes. <b>Clicking the row text does nothing</b>, which reads
+exactly like “I cannot select these”. Click the square itself; it fills in when selected.
+<pre><code>Domains and Subdomains
+  sooppiy.com                                    □  ← click THIS square
+Return URLs
+  https://sooppiy.com/api/auth/apple/callback    □  ← and THIS one     [Remove]</code></pre>
+<b>Tick both.</b> A domain selected without its return URL (or the reverse) leaves the Services ID half-configured, and
+the failure shows up much later as a redirect-URI mismatch at sign-in — nowhere near this screen. Then click outside the
+dropdown to close it.
+<p class="kr" style="margin:8px 0 0">등록만으로는 선택되지 않습니다. 각 항목 오른쪽의 작은 파란 네모(□)가 체크박스이며, <b>글자를 눌러도 반응하지 않습니다</b>. 네모를 직접 클릭하고, 도메인과 리턴 URL <b>둘 다</b> 체크하세요.</p>
+</div>
+
+<div class="card">
+<b>If the square genuinely will not tick:</b> it is a small hit target, so check browser zoom is at 100% (⌘0), and try
+Chrome if you are in Safari — this control misbehaves there for some accounts. A content blocker can also swallow the
+click. The entries being <i>listed</i> at all means the registration itself already succeeded, so nothing needs redoing.
+<p class="kr" style="margin:8px 0 0">체크가 안 되면: 브라우저 확대율 100%(⌘0) 확인, Safari라면 Chrome으로 시도, 광고 차단기 해제. 목록에 보인다는 것은 등록 자체는 성공했다는 뜻입니다.</p>
+</div>
+
 <div class="card warn">
 <b>Finishing the dialog is a four-click tail, and stopping early loses the work.</b> Apple spells it out in the dialog
 text: register the URLs → confirm the list → <b>Done</b> → <b>Continue</b> → <b>Save</b>. If you close after Done, the
