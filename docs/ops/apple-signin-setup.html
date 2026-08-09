@@ -125,13 +125,9 @@ This one exists purely to be that anchor.</p>
 <ol>
 <li>Identifiers → <b>+</b> → <b>Services IDs</b>.</li>
 <li>Description: <code>Sooppiy Web</code>. Identifier: <code>com.sooppiy.web</code> — <b>must differ from the App ID above</b>.</li>
-<li>Register, then click it again to configure. Tick <b>Sign in with Apple</b> → <b>Configure</b>:
-  <ul>
-    <li><b>Primary App ID</b>: the one from Step 1.</li>
-    <li><b>Domains and Subdomains</b>: <code>sooppiy.com</code></li>
-    <li><b>Return URLs</b>: <code>https://sooppiy.com/api/auth/apple/callback</code></li>
-  </ul>
-</li>
+<li>Register, then click it again to configure. Tick <b>Sign in with Apple</b> → <b>Configure</b>. Set
+    <b>Primary App ID</b> to the one from Step 1. The domain and return URL are <b>not</b> on this screen — they live
+    behind the <b>⊕</b> next to “Website URLs”, which Step 3 walks through.</li>
 </ol>
 <div class="card bad" style="margin-top:12px">
 <b>The return URL is NOT the same shape as Google's.</b> Our Google return URL is
@@ -172,45 +168,71 @@ will not find it there.
 </ol>
 </div>
 
-<h4 style="margin:18px 0 4px;font-size:14px">3b · Inside the dialog — where Download and Verify actually are</h4>
+<h4 style="margin:18px 0 4px;font-size:14px">3b · Inside the dialog — the ⊕ is the whole trick</h4>
+<div class="card bad">
+<b>The Download button is not on this screen, and that is not a bug.</b> The <b>Web Authentication Configuration</b>
+dialog opens with only a <b>Primary App ID</b> picker and an empty <b>Website URLs</b> section holding a
+<b>Search</b> box. There is nothing to download yet because <b>no website URL group exists</b>. The blue <b>⊕</b> next
+to “Website URLs” is what creates one — and that is where the domain field, the return-URL field, and the association
+file all live.
+<p class="kr" style="margin:8px 0 0">이 화면에는 Download 버튼이 없습니다 — 아직 등록된 웹사이트 URL 그룹이 없기 때문입니다. “Website URLs” 옆의 파란 <b>⊕</b>를 누르면 도메인·리턴 URL 입력과 파일 다운로드가 나옵니다.</p>
+</div>
+
 <div class="card">
-<svg viewBox="0 0 900 260" role="img" aria-label="Layout of Apple's Web Authentication Configuration dialog">
-  <rect class="box" x="10" y="10" width="880" height="240"/>
+<svg viewBox="0 0 900 250" role="img" aria-label="The Web Authentication Configuration dialog and the plus button that opens URL registration">
+  <rect class="box" x="10" y="10" width="560" height="230"/>
   <text class="t-b" x="30" y="38">Web Authentication Configuration</text>
 
   <text class="t-small" x="30" y="66">Primary App ID</text>
   <rect class="box" x="30" y="74" width="330" height="26"/>
-  <text class="t-small" x="42" y="92">com.sooppiy.app  ▾</text>
+  <text class="t-small" x="42" y="92">Sooppiy (Y2WV2C335B.com.sooppiy.app)</text>
+  <text class="t-small" x="372" y="92">✅ already set</text>
 
-  <text class="t-small" x="30" y="126">Domains and Subdomains</text>
-  <rect class="box-accent" x="30" y="134" width="330" height="26"/>
-  <text class="t-small" x="42" y="152">sooppiy.com</text>
-  <rect class="box" x="372" y="134" width="92" height="26"/>
-  <text class="t-small t-b" x="418" y="152" text-anchor="middle">Download</text>
-  <rect class="box" x="474" y="134" width="76" height="26"/>
-  <text class="t-small t-b" x="512" y="152" text-anchor="middle">Verify</text>
-  <text class="t-small" x="566" y="152">← the two buttons you are looking for</text>
+  <text class="t-b" x="30" y="134">Website URLs</text>
+  <circle cx="128" cy="128" r="10" fill="var(--accent)"/>
+  <text x="128" y="133" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:14px">+</text>
+  <text class="t-small" x="150" y="133">← click this</text>
 
-  <text class="t-small" x="30" y="192">Return URLs</text>
-  <rect class="box" x="30" y="200" width="520" height="26"/>
-  <text class="t-small" x="42" y="218">https://sooppiy.com/api/auth/apple/callback</text>
+  <rect class="box" x="30" y="152" width="330" height="26"/>
+  <text class="t-small" x="42" y="170">Search                                    ▾</text>
+  <text class="t-small" x="30" y="206">empty — nothing to download yet</text>
+
+  <path class="ln" d="M575 130 H 625" marker-end="url(#b)"/>
+  <rect class="box-accent" x="630" y="30" width="255" height="190"/>
+  <text class="t-b" x="650" y="56">Register Website URLs</text>
+  <text class="t-small" x="650" y="82">Domains and Subdomains</text>
+  <rect class="box" x="650" y="90" width="215" height="24"/>
+  <text class="t-small" x="660" y="107">sooppiy.com</text>
+  <text class="t-small" x="650" y="136">Return URLs</text>
+  <rect class="box" x="650" y="144" width="215" height="24"/>
+  <text class="t-small" x="660" y="161">https://sooppiy.com/api/auth/…</text>
+  <rect class="box" x="650" y="182" width="70" height="24"/>
+  <text class="t-small t-b" x="685" y="199" text-anchor="middle">Next</text>
+  <text class="t-small" x="732" y="199">→ then Download</text>
+  <defs><marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+    <path d="M0 0 L8 4 L0 8 z" style="fill:var(--muted)"/></marker></defs>
 </svg>
-<p style="margin-top:12px"><b>Download</b> and <b>Verify</b> sit on the <b>Domains and Subdomains</b> row — not at the
-bottom of the dialog, and not on the Return URLs row. Type the domain in first; both buttons act on what is in that
-box.</p>
-<p class="kr" style="margin:8px 0 0">두 버튼은 <b>Domains and Subdomains</b> 줄에 붙어 있습니다. 도메인을 먼저 입력해야 동작합니다.</p>
 </div>
 
 <div class="card">
-<b>Enter the domain without a scheme or path.</b>
-<pre><code>✅ sooppiy.com
-❌ https://sooppiy.com
-❌ sooppiy.com/
-❌ www.sooppiy.com     ← see the note on www below</code></pre>
-Apple rejects a scheme outright. If you registered the apex (<code>sooppiy.com</code>), that is the domain Apple will
-fetch the file from — our nginx serves <code>sooppiy.com</code> and <code>www.sooppiy.com</code> from the same root, so
-the file answers on both, but keep the registered domain and the <code>APPLE_REDIRECT_URI</code> on the <b>same</b>
-host or the return URL will not match.
+<b>What to type in the ⊕ sheet</b>
+<table style="margin-top:10px">
+<tr><th>Field</th><th>Value</th><th>Why</th></tr>
+<tr><td>Domains and Subdomains</td><td><code>sooppiy.com</code></td><td>Domain only. Apple rejects a scheme or a path — <code>https://sooppiy.com</code> and <code>sooppiy.com/</code> both fail.</td></tr>
+<tr><td>Return URLs</td><td><code>https://sooppiy.com/api/auth/apple/callback</code></td><td>Here the <code>https://</code> <b>is</b> required — the dialog says so explicitly. Must be character-identical to <code>APPLE_REDIRECT_URI</code>, and must be under <code>/api/</code> so it reaches the backend (Apple POSTs; an SPA route cannot read that).</td></tr>
+</table>
+<p style="margin-top:10px">Then <b>Next</b>. Apple immediately tries to fetch the association file from the domain — it will
+fail, because we have not deployed it yet. That failure is expected and it is exactly what surfaces the
+<b>Download</b> button.</p>
+<p class="kr" style="margin:8px 0 0">도메인은 스킴 없이, 리턴 URL은 <code>https://</code> 포함. Next를 누르면 애플이 즉시 확인을 시도하고 실패합니다 — 그 실패 화면에서 Download 버튼이 나타납니다.</p>
+</div>
+
+<div class="card warn">
+<b>Finishing the dialog is a four-click tail, and stopping early loses the work.</b> Apple spells it out in the dialog
+text: register the URLs → confirm the list → <b>Done</b> → <b>Continue</b> → <b>Save</b>. If you close after Done, the
+Services ID keeps the old configuration and the login will fail with a redirect-URI mismatch that points at nothing
+obvious.
+<p class="kr" style="margin:8px 0 0">Done → Continue → <b>Save</b>까지 눌러야 저장됩니다. 중간에 닫으면 설정이 반영되지 않습니다.</p>
 </div>
 
 <h4 style="margin:18px 0 4px;font-size:14px">3c · The file, and where it has to live</h4>
@@ -297,7 +319,8 @@ new key, revoke a stale one first. Store the file in your password manager, not 
 <h3>Step 5 · Team ID</h3>
 <p class="kr">팀 ID 확인</p>
 <p><a href="https://developer.apple.com/account">Membership details</a> → <b>Team ID</b>, a 10-character string. That is
-<code>APPLE_TEAM_ID</code>. It is also the <code>iss</code> claim of the client secret we generate in §5.</p>
+<code>APPLE_TEAM_ID</code>, and also the <code>iss</code> claim of the client secret.</p>
+<div class="card"><b>Shortcut:</b> it is already on screen in the Web Authentication Configuration dialog — the Primary App ID renders as <code>&lt;TeamID&gt;.&lt;bundle&gt;</code>, e.g. <code>Y2WV2C335B.com.sooppiy.app</code> → Team ID <code>Y2WV2C335B</code>.<p class="kr" style="margin:8px 0 0">Primary App ID 앞부분이 곧 Team ID입니다.</p></div>
 </div>
 
 <div class="step">
